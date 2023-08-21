@@ -10,6 +10,8 @@ directory is organized into two layers:
    wrapper executables that combine Chez Scheme with the Racket
    functionality implemented in this immediate directory.
 
+You will need to use `zuo` instead of `make` for working at the level
+of this directory. See "../zuo".
 
 ========================================================================
  Bootstrapping
@@ -17,20 +19,21 @@ directory is organized into two layers:
 
 The Racket source distribution includes already-bootstrapped files to
 build Racket CS. Some of those files are checked into the Racket Git
-rrepository, and the rest are in a sibling "pb" repository that that
+repository, and the rest are in a sibling "pb" repository that that
 Racket repository's top-level makefile checks out.
 
 Building Racket CS from original sources requires an existing Racket
-build:
+or Chez Scheme build:
 
- * Chez Scheme is typically used to compile Chez Scheme boot files,
-   but any recent version of Racket (v7.1 and up) can generate boot
-   files for Chez Scheme.
+ * Chez Scheme (v9.5.3 and up) is typically used to compile Chez
+   Scheme boot files, but any recent version of Racket (v7.1 and up)
+   can generate boot files for Chez Scheme.
 
    When you use `configure` as described in "../README.txt", supply
-   `--enable-racket=...` to select a Racket implementation to build
-   Racket CS boot files. That implementation could be one that is
-   built by first using `configure --enable-bc`.
+   `--enable-scheme=...` to select a Scheme implementation to build
+   boot files, or supply `--enable-racket=...` to select a Racket
+   implementation to build boot files. A Racket implementation could
+   be one that is built by first using `configure --enable-bc`.
 
    Alternatively, boot files for the pb (portable bytecode) Chez
    Scheme variant can be used to compile Chez Scheme on any supported
@@ -39,16 +42,22 @@ build:
    installed in the "../ChezScheme/boot/pb" directory as described by
    "../ChezScheme/BUILDING".
 
+   Supplying `--enable-scheme=...` is also an option if you already have
+   Chez Scheme built on the current platform; it does not need to match
+   the Chez Scheme version as used in the Racket being built; a "reboot"
+   bootstrapping path is able to reconstruct boot files even across
+   versions. Another build will be created anyway, but more quickly
+   than without Chez Scheme.
+
  * Racket is needed to generate the files in the "schemified"
    directory from the sources in sibling directories like "../io". The
    Racket version must be practically the same as the current Racket
-   verson, although it can be the Racket BC implementation (instead of
+   version, although it can be the Racket BC implementation (instead of
    the Racket CS implementation).
 
    Unlike Chez Scheme boot files, the files generated in "schemified"
    are human-readable and -editable Scheme code. That provides a way
    out of bootstrapping black holes, even without BC.
-   
 
 
 ========================================================================
@@ -64,18 +73,18 @@ executable.
 Development Mode
 ----------------
 
-The makefile in this directory is set up for modifying the
+The "main.zuo" in this directory is set up for modifying the
 implementation of Racket functionality (including in the sibling
 directories, like "io") and testing it out on a Chez Scheme
 installation.
 
 For this development mode, either Chez Scheme needs to be installed as
-`scheme`, or you must use `make SCHEME=...` to set the command for
+`scheme`, or you must use `zuo . SCHEME=...` to set the command for
 `scheme`.
 
 Development mode also needs a Racket installation with at least the
-"compiler-lib" package installed. By default, the makefile looks for
-Racket installed as "../../bin/racket"; if this directory is in a
+"compiler-lib" package installed. By default, the build script looks
+for Racket installed as "../../bin/racket"; if this directory is in a
 clone of the Git repository for Racket, you can get "../../bin/racket"
 with
 
@@ -87,22 +96,22 @@ to set the command for `racket`.
 The use of development mode is described in more detail further below.
 
 Development mode currently doesn't work on Windows, because the
-makefile makes too many Unix-ish assumptions.
+build script makes too many Unix-ish assumptions.
 
 Build Mode
 ----------
 
 To build a Racket CS executable, the `configure` script and makefile
-in "c" subdirectory are normally used via `configure` and `make` in
-the parent directory of this one, as described in "../README.txt".
+in the "c" subdirectory are normally used via `configure` and `make`
+in the parent directory of this one, as described in "../README.txt".
 However, you can use them directly with something like
 
    cd [build]
    mkdir cs
    cd cs
    [here]/c/configure
-   make
-   make install
+   zuo
+   zuo . install
 
 where [here] is the directory containing this "README.txt" and [build]
 is a build directory (usually "../build" relative to [here]).
@@ -114,11 +123,7 @@ for Racket BC). The option to select the presence or absence of "cs"
 also affects the location of ".zo" files, where they are written to a
 subdirectory of "compiled" if a "cs" suffix is used.
 
-Compilation on Windows does not use the `configure` script in "c".
-Instead, from the directory "[here]\..\worksp", run "csbuild.rkt"
-using an installed (minimal) Racket --- perhaps one created by running
-"[here]\..\build.bat". The "csbuild.rkt" script puts some intermediate
-files in "[here]\..\build".
+On Windows, use `[here]\c\winfig.bat` instead of `[here]/c/configure`.
 
 
 ========================================================================
@@ -189,30 +194,29 @@ could be a good idea.
  Development Mode
 ========================================================================
 
-Development mode is driven by the makefile in this directory.
+Development mode is driven by the build script in this directory.
 
 Building
 --------
 
-Running `make` will build the Racket CS implementation. Use `make
-expander-demo` to run a demo that loads `racket/base` from source.
+Running `zuo` will build the Racket CS implementation. You can use
+`zuo . expander-demo` to run a demo that loads `racket/base` from
+source.
 
-Use `make setup` (or `make setup-v` for a verbose version) to build
-".zo" files for collection-based libraries.
+Use `zuo . setup` (or `zuo . setup-v` for a verbose version) to build
+".zo" files for collection-based libraries. You can supply additional
+arguments to `zuo . setup` to be passed along to `raco setup`.
 
-If you want to control the `raco setup` that `make setup` runs, supply
-an `ARGS` variable to make, such as
-
-   make setup ARGS="-l typed/racket"  # only sets up TR
-   make setup ARGS="--clean -Dd"      # clears ".zo" files
-   make setup ARGS="--fail-fast"      # stop at the first error
+   zuo . setup ARGS="-l typed/racket"  # only sets up TR
+   zuo . setup ARGS="--clean -Dd"      # clears ".zo" files
+   zuo . setup ARGS="--fail-fast"      # stop at the first error
 
 Running
 -------
 
-Use `make run ARGS="..."` to run Racket on Chez Scheme analogous to
-running plain `racket`, where command-line arguments are supplied in
-`ARGS`.
+Use `zuo . run` to run Racket on Chez Scheme analogous to running
+plain `racket`, where extra command-line arguments after `run` are
+passed along to Racket.
 
 Structure
 ---------
@@ -272,16 +276,17 @@ Files in this directory:
          Racket) of the thread and event subsystem.
 
  schemified/*.scm (generated) - A conversion from a ".rktl" file to be
-         `included`d into an ".sls" library.
+         `include`d into an ".sls" library.
 
  ../build/so-rktio/rktio.rktl (generated) and
  ../../lib/librktio.{so,dylib,dll} (generated) - Created when building
          the "io" layer, the "rktio.rktl" file contains FFI descriptions
-         that are `included` by "io.sls" and "librktio.{so,dylib,dll}"
+         that are `include`d by "io.sls" and "librktio.{so,dylib,dll}"
          is the shared library that implements rktio.
 
-         CAUTION: The makefile here doesn't track dependencies for
-         rktio, so use `make rktio` if you change its implementation.
+         CAUTION: The build script here doesn't track all dependencies
+         for rktio, and you may need use `zuo build.zuo rktio-rktl` in
+         the "rktio" directory if you change its implementation.
 
  primitive/*.ss - for "expander.sls", tables of bindings for
          primitive linklet instances; see "From primitives to modules"
@@ -293,7 +298,7 @@ Files in this directory:
 
  demo/*.ss - Chez Scheme scripts to check that a library basically
          works. For example "demo/regexp.ss" runs the regexp matcher
-         on a few examples. To run "demo/*.ss", use `make *-demo`.
+         on a few examples. To run "demo/*.ss", use `zuo . *-demo`.
 
  other *.rkt - Racket scripts like "convert.rkt" or comparisons like
          "demo/regexp.rkt". For example, you can run "demo/regexp.rkt"
@@ -329,13 +334,13 @@ Safety and Debugging Mode
 -------------------------
 
 If you make changes to files in "rumble", you should turn off
-`UNSAFE_COMP` in the makefile.
+sunsafe mode by provided `UNSAFE_COMP=no` to `zuo`.
 
-You may want to turn on `DEBUG_COMP` in the makefile, so that
-backtraces provide expression-specific source locations instead of
-just procedure-specific source locations. Enabling `DEBUG_COMP` makes
-the Racket CS implementation take up twice as much memory and take
-twice as long to load.
+You may want to supply `DEBUG_COMP=yes` so that backtraces provide
+expression-specific source locations instead of just
+procedure-specific source locations. Enabling `DEBUG_COMP` makes the
+Racket CS implementation take up twice as much memory and take twice
+as long to load.
 
 Turning on `DEBUG_COMP` affects only the Racket CS implementation. To
 preserve per-expression locations on compiled Racket code, set
@@ -453,14 +458,15 @@ Performance Notes
 The best-case scenario for performance is currently the default
 configuration:
 
- * `UNSAFE_COMP` is enabled in "Makefile" --- currently on by default.
+ * `UNSAFE_COMP` is enabled in "main.zuo" --- currently on by default.
 
    Effectiveness: Can mean a 10-20% improvement in loading
    `racket/base` from source. Since the implementation is in pretty
    good shape, `UNSAFE_COMP` is enabled by default.
 
- * `DEBUG_COMP` not enabled --- or, if you enable it, run `make
-   strip`.
+ * `DEBUG_COMP` not enabled --- or, if you enable it, run `zuo .
+   strip`, but note that `zuo . run` will detect the changed files and
+   recompile.
 
    Effectiveness: Avoids increasing the load time for the Rumble and
    other layers by 30-50%.
@@ -489,8 +495,8 @@ Inlining Expectations
 
 Chez Scheme will inline small Rumble functions as long as the inlined
 function body refers only to primitives and other identifiers that are
-explicitly defined in the Rumble library body. The "explicily defined"
-part can be tricky, particularly since inling will consider the
+explicitly defined in the Rumble library body. The "explicitly defined"
+part can be tricky, particularly since inlining will consider the
 function body after other inlining is already applied. For example,
 given
 
@@ -534,7 +540,7 @@ conversion of a primitive reference to unsafe or not based on
 `(optimize-level)` is an expansion-time operation. So, macros that are
 meant to expand to uses of unsafe operations should refer to the
 operations using `#3%`; beware that such a reference will stay unsafe,
-even if `UNSAFE_COMP` is disabled in the makefile.
+even if `UNSAFE_COMP` is disabled in "main.zuo".
 
 
 ========================================================================
@@ -550,16 +556,16 @@ Modifying "thread", "io", "regexp", "schemify", or "expander"
 -------------------------------------------------------------
 
 If you modify one of the layers in "../thread", "../io", "../regexp",
-"../schemify", or "../expander", then a `make run` here in development
+"../schemify", or "../expander", then a `zuo . run` here in development
 mode will pick up those changes. Even if you don't use development
-mode here, though, use plain `make` to compile the changes into a
+mode here, though, use `zuo . schemified` to compile the changes into a
 "schemified/*.scm" form. The bootstrapped forms in "schemified/*.scm"
 should be committed to the Racket repo along with the source-file
 changes.
 
 If you're working in a Racket repo checkout, and if you have a working
 `racket` in your `PATH`, `make derived` in the checkout's top-level
-directory includes a `make` in this directory.
+directory includes a `zuo . schemified` in this directory.
 
 If you modify the "thread", "io", or "regexp" layer to add new
 bindings, you will also need to modify "primitive/kernel.ss" (or, less
@@ -570,7 +576,7 @@ from that layer, but any provided name also needs to be added to
 (a hash table) that the expander layer uses to create primitive
 modules like `#%kernel`. The entries in "primitive" files use the
 constructors defined in "../schemify/known.rkt" to describe
-primitives; note that most of the numebrs you see are arity masks in
+primitives; note that most of the numbers you see are arity masks in
 the sense of `procedure-arity-mask`.
 
 For some additions to rktio with corresponding changes to the io
@@ -584,9 +590,9 @@ Modifying Chez Scheme
 
 If you modify the Chez Scheme implementation in "../ChezScheme" in a
 way that changes compiled code, then you should also update the Chez
-Scheme version number in "../ChezScheme/s/cmacro.ss" and in
-"../ChezScheme/makefiles/Mf-install". For more about Chez Scheme's
-implementation and bootstrap, see "../ChezScheme/IMPLEMENTATION.md".
+Scheme version number in "../ChezScheme/s/cmacro.ss". For more about
+Chez Scheme's implementation and bootstrap, see
+"../ChezScheme/IMPLEMENTATION.md".
 
 If you're working in a checkout of the Racket Git repo, then when you
 update Chez Scheme in a way that needs new pb bootfiles, the updated
@@ -594,11 +600,8 @@ bootfiles should be pushed to a new branch of the Racket pb repo and
 the Racket repo's top-level makefile should be updated to refer to the
 branch. Assuming that a working `racket` is in your path:
 
- * Update ".makefile" in the checkout root to set `PB_BRANCH` to a
+ * Update "Makefile" in the checkout root to set `PB_BRANCH` to a
    fresh branch name, typically based on the Racket version number.
-
- * Use `make makemake` in the checkout root to build "Makefile" from
-   ".makefile" using `racket`.
 
  * Use `make pb-build` in the checkout root to build pb bootfiles
    using `racket`.

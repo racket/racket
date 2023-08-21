@@ -122,8 +122,8 @@
   ; don't use rtd-* as defined in record.ss in case we're building a patch
   ; file for cross compilation, because the offsets may be incorrect
   (define rtd-flds (csv7:record-field-accessor #!base-rtd 'flds))
-  (define rtd-ancestors (csv7:record-field-accessor #!base-rtd 'ancestors))
-  (define rtd-parent (lambda (x) (let ([a (rtd-ancestors x)])
+  (define rtd-ancestry (csv7:record-field-accessor #!base-rtd 'ancestry))
+  (define rtd-parent (lambda (x) (let ([a (rtd-ancestry x)])
                                    (vector-ref a (fx- (vector-length a) (constant ancestry-parent-offset))))))
   (define rtd-size (csv7:record-field-accessor #!base-rtd 'size))
   (define rtd-pm (csv7:record-field-accessor #!base-rtd 'pm))
@@ -560,7 +560,7 @@
                ; allocation operations that can be separated by a continuation grab.
                [(or can-lift? ; => `build-operands` says it's ok to lift anything past other ivory
                     (if (ivory? body) (andmap simple/profile1? e*) (andmap ivory1? e*)))
-                ; assocate each lhs with cooked operand for corresponding rhs.  make-record-constructor-descriptor,
+                ; associate each lhs with cooked operand for corresponding rhs.  make-record-constructor-descriptor,
                 ; at least, counts on this to allow protocols to be inlined.
                 (for-each (lambda (x e) (prelex-operand-set! x (build-cooked-opnd e))) x* e*)
                 (values (make-lifted #f x* e*) body)]
@@ -589,7 +589,7 @@
                       (let ([x (car x*)] [e (car e*)])
                         (if (and (not (prelex-assigned x)) (ivory? e))
                             (begin
-                              ; assocate each lhs with cooked operand for corresponding rhs.  see note above.
+                              ; associate each lhs with cooked operand for corresponding rhs.  see note above.
                               (prelex-operand-set! x (build-cooked-opnd e))
                               (loop (cdr x*) (cdr e*) rx* re* (cons x rlx*) (cons e rle*)))
                             (loop (cdr x*) (cdr e*) (cons x rx*) (cons e re*) rlx* rle*)))))]
@@ -601,7 +601,7 @@
              (guard (and (or (ivory? body) (andmap ivory1? e*))
                          ;; don't break apart (potential) loops
                          (not (possible-loop? x* body))))
-             ; assocate each lhs with cooked operand for corresponding rhs.  see note above.
+             ; associate each lhs with cooked operand for corresponding rhs.  see note above.
              (for-each (lambda (x e) (prelex-operand-set! x (build-cooked-opnd e))) x* e*)
              (values (make-lifted #f x* e*) body)]
             ; force the issue by creating an extra tmp for body
@@ -617,7 +617,7 @@
              (guard (and (or (ivory? body) (andmap ivory1? e*))
                          ;; don't break apart (potential) loops
                          (not (possible-loop? x* body))))
-             ; assocate each lhs with cooked operand for corresponding rhs.  see note above.
+             ; associate each lhs with cooked operand for corresponding rhs.  see note above.
              (for-each (lambda (x e) (prelex-operand-set! x (build-cooked-opnd e))) x* e*)
              (values (make-lifted #t x* e*) body)]
             ; force the issue by creating an extra tmp for body.
@@ -631,7 +631,7 @@
                  (values (make-lifted #t x* e*) (build-ref x))))]
             ; we can lift arbitrary subforms of record forms if we also lift
             ; a binding for the record form itself.  there's no worry about
-            ; continuation captures: if rtd-expr or e* capture a contination,
+            ; continuation captures: if rtd-expr or e* capture a continuation,
             ; invoking the continuation to return from a rhs is no worse than
             ; invoking the continuation to build the record and then return
             ; from a rhs.
@@ -906,6 +906,16 @@
                                 (make-if ctxt sc e11 (non-result-exp e12 e2) (non-result-exp e13 e3)))])))
                   #f)]
              [else #f])]
+          [(nanopass-case (Lsrc Expr) (result-exp e1)
+             [(call ,preinfo ,e10 ,e11 ,e12)
+              (guard (and (primref? e10) (memq (primref-name e10) '(eq? eqv?))))
+              (if (and (or (and (record-equal? e11 e2 'value) (record-equal? e12 e3 'value))
+                           (and (record-equal? e11 e3 'value) (record-equal? e12 e2 'value)))
+                       (simple? e2)
+                       (simple? e3))
+                  (non-result-exp e1 (make-1seq ctxt e2 e3))
+                  #f)]
+             [else #f])]
           [else
            (bump sc 1)
            `(if ,e1 ,e2 ,e3)])))
@@ -969,9 +979,15 @@
             (boolean? obj)
             (null? obj)
             (eqv? obj "")
+            (eqv? obj (string->immutable-string ""))
             (eqv? obj '#())
+            (eqv? obj (vector->immutable-vector '#()))
             (eqv? obj '#vu8())
+            (eqv? obj (bytevector->immutable-bytevector '#vu8()))
             (eqv? obj '#vfx())
+            ; no null-immutable-fxvector
+            (eqv? obj '#vfl())
+            ; no null-immutable-flvector
             (eq? obj (void))
             (eof-object? obj)
             (bwp-object? obj)
@@ -1360,9 +1376,9 @@
 
       (define (extract-called-procedure/inspect-ok pr e*)
         (case (primref-name pr)
-          [(call-setting-continuation-attachment
-            call-getting-continuation-attachment
-            call-consuming-continuation-attachment)
+          [($call-setting-continuation-attachment
+            $call-getting-continuation-attachment
+            $call-consuming-continuation-attachment)
            (and (fx= (length e*) 2)
                 (cadr e*))]
           [else #f]))
@@ -1462,6 +1478,10 @@
                                   ;; could send us into a loop for a `letrec`
                                   ;; binding. But use the prelex as a summary
                                   ;; or a way to tie a loop:
+                                  (preinfo->single-valued preinfo x)]
+                                 [(call ,preinfo0 ,pr (case-lambda ,preinfo ,cl* ...) ,e ...)
+                                  (or (eq? (primref-name pr) 'make-wrapper-procedure)
+                                      (eq? (primref-name pr) 'make-arity-wrapper-procedure))
                                   (preinfo->single-valued preinfo x)]
                                  [else #f])))]
                        ;; Recognize call to a loop, and use the loop's prelex in that case:
@@ -2075,9 +2095,16 @@
                      (handler level opnds ctxt sc wd name moi)))
               (let ([args (value-visit-operands! opnds)])
                 (cond
-                  [(and (all-set? (prim-mask mifoldable) pflags)
+                  [(and (all-set? (prim-mask mifoldable+) pflags)
                         (let ([objs (objs-if-constant args)])
-                          (and objs (guard (c [#t #f]) `(quote ,(apply ($top-level-value sym) objs)))))) =>
+                          (and objs (guard (c [#t #f])
+                                      (call-with-values
+                                        (lambda () (apply ($top-level-value sym) objs))
+                                        (case-lambda
+                                          [(v) `(quote ,v)]
+                                          [v* `(call ,(app-preinfo ctxt) ,(lookup-primref 3 'values)
+                                                 ,(map (lambda (x) `(quote ,x)) v*)
+                                                 ...)])))))) =>
                    (lambda (e)
                      (residualize-seq '() opnds ctxt)
                      e)]
@@ -2297,7 +2324,7 @@
                     xval]
                    [else #f])))))
 
-      ; could handle inequalies as well (returning #f), but that seems less likely to crop up
+      ; could handle inequalities as well (returning #f), but that seems less likely to crop up
       (define handle-equality
         (lambda (ctxt arg arg*)
           (and
@@ -2338,10 +2365,14 @@
                           `(quote ,k)))])]))
         (constant-case native-endianness
           [(unknown)
-           (define-inline 2 (native-endianness))]
+           (define-inline 2 native-endianness)]
           [else
            (define-inline-constant-parameter (native-endianness) (constant native-endianness))])
-        (define-inline-constant-parameter (directory-separator) (if-feature windows #\\ #\/))
+        (constant-case architecture
+          [(pb)
+           (define-inline 2 directory-separator)]
+          [else
+           (define-inline-constant-parameter (directory-separator) (if-feature windows #\\ #\/))])
         (define-inline-constant-parameter (threaded?) (if-feature pthreads #t #f))
         (define-inline-constant-parameter (most-negative-fixnum least-fixnum) (constant most-negative-fixnum))
         (define-inline-constant-parameter (most-positive-fixnum greatest-fixnum) (constant most-positive-fixnum))
@@ -2349,10 +2380,14 @@
         (define-inline-constant-parameter (virtual-register-count) (constant virtual-register-count))
         (define-inline-constant-parameter (stencil-vector-mask-width) (constant stencil-vector-mask-bits)))
 
-      (define-inline 2 directory-separator?
-        [(c) (visit-and-maybe-extract* char? ([dc c])
-               (residualize-seq '() (list c) ctxt)
-               `(quote ,(and (memv dc (if-feature windows '(#\\ #\/) '(#\/))) #t)))])
+      (constant-case architecture
+        [(pb)
+         (define-inline 2 directory-separator?)]
+        [else
+         (define-inline 2 directory-separator?
+           [(c) (visit-and-maybe-extract* char? ([dc c])
+                  (residualize-seq '() (list c) ctxt)
+                  `(quote ,(and (memv dc (if-feature windows '(#\\ #\/) '(#\/))) #t)))])])
 
       (define-inline 2 (foreign-sizeof foreign-alignof)
         [(x) (and (okay-to-handle?)
@@ -2535,6 +2570,45 @@
                                        e]))
                                  c-val)))))])))))])
 
+      (define-inline 2 $call-setting-continuation-attachment
+        [(val body)
+         (nanopass-case (Lsrc Expr) (value-visit-operand! body)
+           [(case-lambda ,preinfo (clause () ,interface ,e))
+            (guard (simple? e))
+            (residualize-seq (list val) (list body) ctxt)
+            (make-1seq (app-ctxt ctxt) (value-visit-operand! val) e)]
+           [else #f])])
+
+      (define-inline 2 $call-getting-continuation-attachment
+        [(def-val body)
+         (nanopass-case (Lsrc Expr) (value-visit-operand! body)
+           [(case-lambda ,preinfo (clause (,x) ,interface ,e))
+            (guard (not (prelex-was-referenced x)))
+            (residualize-seq (list def-val) (list body) ctxt)
+            (make-1seq (app-ctxt ctxt) (value-visit-operand! def-val) e)]
+           [else #f])])
+
+      (define-inline 2 $call-consuming-continuation-attachment
+        [(def-val body)
+         (nanopass-case (Lsrc Expr) (value-visit-operand! body)
+           [(case-lambda ,preinfo (clause (,x) ,interface ,e))
+            (guard (not (prelex-was-referenced x)))
+            (residualize-seq (list def-val) (list body) ctxt)
+            (make-1seq (app-ctxt ctxt) (value-visit-operand! def-val) e)]
+           [else #f])])
+
+      (define-inline 2 continuation-marks-first
+        [(set . more)
+         (and
+          (<= 1 (length more) 2)
+          (nanopass-case (Lsrc Expr) (value-visit-operand! set)
+            [(call ,preinfo ,pr)
+             (guard (eq? (primref-name pr) 'current-continuation-marks))
+             (let ([vals (map value-visit-operand! more)])
+               (residualize-seq more (list set) ctxt)
+               (build-primcall preinfo level '$continuation-marks-first vals))]
+            [else #f]))])
+
       (define-inline 2 list
         [() (begin
               (residualize-seq '() '() ctxt)
@@ -2584,8 +2658,60 @@
               empty-flvector-rec)]
         [args #f])
 
+      (define-inline 2 vector->immutable-vector
+        [(e) (let ([e-val (value-visit-operand! e)])
+               (nanopass-case (Lsrc Expr) (result-exp e-val)
+                 [(quote ,d)
+                  (cond
+                    [(immutable-vector? d)
+                     (residualize-seq (list e) '() ctxt)
+                      e-val]
+                    [(eq? d '#())
+                     (residualize-seq '() (list e) ctxt)
+                     `(quote ,(vector->immutable-vector '#()))]
+                    [else #f])]
+                 [else #f]))])
+
+      (define-inline 2 string->immutable-string
+        [(e) (let ([e-val (value-visit-operand! e)])
+               (nanopass-case (Lsrc Expr) (result-exp e-val)
+                 [(quote ,d)
+                  (cond
+                    [(immutable-string? d)
+                     (residualize-seq (list e) '() ctxt)
+                      e-val]
+                    [(eq? d "")
+                     (residualize-seq '() (list e) ctxt)
+                     `(quote ,(string->immutable-string ""))]
+                    [else #f])]
+                 [else #f]))])
+
+      (define-inline 2 bytevector->immutable-bytevector
+        [(e) (let ([e-val (value-visit-operand! e)])
+               (nanopass-case (Lsrc Expr) (result-exp e-val)
+                 [(quote ,d)
+                  (cond
+                    [(immutable-bytevector? d)
+                     (residualize-seq (list e) '() ctxt)
+                      e-val]
+                    [(eq? d '#vu8())
+                     (residualize-seq '() (list e) ctxt)
+                     `(quote ,(bytevector->immutable-bytevector '#vu8()))]
+                    [else #f])]
+                 [else #f]))])
+
       (define-inline 2 (eq? eqv? equal?)
-        [(arg1 arg2) (handle-equality ctxt arg1 (list arg2))])
+        [(arg1 arg2) (or (handle-equality ctxt arg1 (list arg2))
+                         (let ([val1 (value-visit-operand! arg1)]
+                               [val2 (value-visit-operand! arg2)])
+                           (cond
+                             [(cp0-constant? not (result-exp val1))
+                              (residualize-seq (list arg2) (list arg1) ctxt)
+                              (make-if ctxt sc val2 false-rec true-rec)]
+                             [(cp0-constant? not (result-exp val2))
+                              (residualize-seq (list arg1) (list arg2) ctxt)
+                              (make-if ctxt sc val1 false-rec true-rec)]
+                             [else #f])))])
 
       (define-inline 3 (bytevector=? enum-set=? bound-identifier=? free-identifier=? ftype-pointer=? literal-identifier=? time=?)
         [(arg1 arg2) (handle-equality ctxt arg1 (list arg2))])
@@ -3188,13 +3314,6 @@
           (nanopass-case (Lsrc Expr) (result-exp (value-visit-operand! ?fields))
             [(quote ,d) (k d)]
             [else #f]))
-        (define (get-mutability-mask ?mutability-mask k)
-          (cond
-           [(not ?mutability-mask) (k #f)]
-           [else
-            (nanopass-case (Lsrc Expr) (result-exp (value-visit-operand! ?mutability-mask))
-              [(quote ,d) (k d)]
-              [else #f])]))
         (define (get-sealed x)
           (nanopass-case (Lsrc Expr) (if x (result-exp (value-visit-operand! x)) false-rec)
             [(quote ,d) (values (if d #t #f) ctrtd-sealed-known)]
@@ -3258,7 +3377,7 @@
              (mrt ?parent ?name ?fields ?sealed ?opaque ctxt level $make-record-type '$make-record-type
                (list* ?base-id ?parent ?name ?fields ?sealed ?opaque ?extras))]))
         (let ()
-          (define (mrtd ?parent ?uid ?fields ?mutability-mask ?sealed ?opaque ctxt level prim primname opnd*)
+          (define (mrtd ?parent ?uid ?fields ?sealed ?opaque ctxt level prim primname opnd*)
             (or (nanopass-case (Lsrc Expr) (result-exp (value-visit-operand! ?uid))
                   [(quote ,d)
                    (and d
@@ -3274,49 +3393,38 @@
                   (lambda (prtd)
                     (get-fields ?fields
                       (lambda (fields)
-                        (get-mutability-mask ?mutability-mask
-                          (lambda (mutability-mask)
-                            (let-values ([(sealed? sealed-flag) (get-sealed ?sealed)]
-                                         [(opaque? opaque-flag) (get-opaque ?opaque prtd)])
-                              (cond
-                                [(guard (c [#t #f])
-                                   (if ?mutability-mask
-                                       ($make-record-type-descriptor* base-ctrtd 'tmp prtd #f
-                                         sealed? opaque? fields mutability-mask 'cp0 (fxlogor sealed-flag opaque-flag))
-                                       ($make-record-type-descriptor base-ctrtd 'tmp prtd #f
-                                         sealed? opaque? fields 'cp0 (fxlogor sealed-flag opaque-flag)))) =>
-                                 (lambda (rtd)
-                                   (residualize-seq opnd* '() ctxt)
-                                   `(record-type ,rtd
-                                      ; can't use level 3 unconditionally because we're missing checks for
-                                      ; ?base-rtd, ?name, ?uid, ?who, and ?extras
-                                      ,(build-primcall (app-preinfo ctxt) level primname
-                                         (value-visit-operands! opnd*))))]
-                                [else #f]))))))))))
+                        (let-values ([(sealed? sealed-flag) (get-sealed ?sealed)]
+                                     [(opaque? opaque-flag) (get-opaque ?opaque prtd)])
+                          (cond
+                            [(guard (c [#t #f])
+                               ($make-record-type-descriptor base-ctrtd 'tmp prtd #f
+                                  sealed? opaque? fields 'cp0 (fxlogor sealed-flag opaque-flag))) =>
+                             (lambda (rtd)
+                               (residualize-seq opnd* '() ctxt)
+                               `(record-type ,rtd
+                                   ; can't use level 3 unconditionally because we're missing checks for
+                                   ; ?base-rtd, ?name, ?uid, ?who, and ?extras
+                                   ,(build-primcall (app-preinfo ctxt) level primname
+                                      (value-visit-operands! opnd*))))]
+                            [else #f]))))))))
 
           (define-inline 2 make-record-type-descriptor
             [(?name ?parent ?uid ?sealed ?opaque ?fields)
-             (mrtd ?parent ?uid ?fields #f ?sealed ?opaque ctxt level
+             (mrtd ?parent ?uid ?fields ?sealed ?opaque ctxt level
                make-record-type-descriptor 'make-record-type-descriptor
                (list ?name ?parent ?uid ?sealed ?opaque ?fields))])
 
-          (define-inline 2 make-record-type-descriptor*
-            [(?name ?parent ?uid ?sealed ?opaque ?fields ?mutability-mask)
-             (mrtd ?parent ?uid ?fields ?mutability-mask ?sealed ?opaque ctxt level
-               make-record-type-descriptor* 'make-record-type-descriptor*
-               (list ?name ?parent ?uid ?sealed ?opaque ?fields ?mutability-mask))])
+          (define-inline 2 r6rs:make-record-type-descriptor
+            [(?name ?parent ?uid ?sealed ?opaque ?fields)
+             (mrtd ?parent ?uid ?fields ?sealed ?opaque ctxt level
+               r6rs:make-record-type-descriptor 'r6rs:make-record-type-descriptor
+               (list ?name ?parent ?uid ?sealed ?opaque ?fields))])
 
           (define-inline 2 $make-record-type-descriptor
             [(?base-rtd ?name ?parent ?uid ?sealed ?opaque ?fields ?who . ?extras)
-             (mrtd ?parent ?uid ?fields #f ?sealed ?opaque ctxt level
+             (mrtd ?parent ?uid ?fields ?sealed ?opaque ctxt level
                $make-record-type-descriptor '$make-record-type-descriptor
-               (list* ?base-rtd ?name ?parent ?uid ?sealed ?opaque ?fields ?who ?extras))])
-
-          (define-inline 2 $make-record-type-descriptor*
-            [(?base-rtd ?name ?parent ?uid ?sealed ?opaque ?fields ?mutability-mask ?who . ?extras)
-             (mrtd ?parent ?uid ?fields ?mutability-mask ?sealed ?opaque ctxt level
-               $make-record-type-descriptor* '$make-record-type-descriptor*
-               (list* ?base-rtd ?name ?parent ?uid ?sealed ?opaque ?fields ?mutability-mask ?who ?extras))])))
+               (list* ?base-rtd ?name ?parent ?uid ?sealed ?opaque ?fields ?who ?extras))])))
       (let ()
         ; if you update this, also update duplicate in record.ss
         (define-record-type rcd
@@ -3591,7 +3699,7 @@
                                        (let f ([ctprcd (ctrcd-ctprcd ctrcd)] [crtd rtd] [prtd prtd] [vars '()])
                                          (let ([pp-args (cp0-make-temp #f)]
                                                [new-vars (map (lambda (x) (cp0-make-temp #f))
-                                                           (vector->list (record-type-field-indices crtd)))])
+                                                           (vector->list (record-type-field-names crtd)))])
                                            (set-prelex-immutable-value! pp-args #t)
                                            `(case-lambda ,(make-preinfo-lambda)
                                               (clause (,pp-args) -1
@@ -3614,14 +3722,14 @@
                                                                        (f (ctrcd-ctprcd ctprcd) prtd pprtd vars))]
                                                                     [else
                                                                      (let ([new-vars (map (lambda (x) (cp0-make-temp #f))
-                                                                                       (csv7:record-type-field-indices prtd))])
+                                                                                       (csv7:record-type-field-names prtd))])
                                                                        (build-lambda new-vars
                                                                          `(call ,(app-preinfo ctxt) ,(go (< level 3) rtd rtd-e ctxt)
                                                                             ,(map build-ref (append new-vars vars))
                                                                             ...)))])))]
                                                            [else
                                                             (let ([new-vars (map (lambda (x) (cp0-make-temp #f))
-                                                                              (csv7:record-type-field-indices prtd))])
+                                                                              (csv7:record-type-field-names prtd))])
                                                               (build-lambda new-vars
                                                                 `(call ,(app-preinfo ctxt) ,(go (< level 3) rtd rtd-e ctxt)
                                                                    ,(map build-ref (append new-vars vars)) ...)))])
@@ -4822,7 +4930,7 @@
                    (residualize-seq '() (list ?x) ctxt)
                    (make-nontail (app-ctxt ctxt) (car e*))))]
            [(call ,preinfo ,pr ,e1 ,e2)
-            (guard (eq? (primref-name pr) 'cons))
+            (guard (memq (primref-name pr) '(cons weak-cons ephemeron-cons)))
             (residualize-seq (list ?x) '() ctxt)
             (non-result-exp (operand-value ?x)
               (make-1seq (app-ctxt ctxt) e2 (make-nontail (app-ctxt ctxt) e1)))]
@@ -4847,7 +4955,7 @@
                       ,(build-primcall (app-preinfo ctxt) 3 'cdr
                          (list e)))))]
            [(call ,preinfo ,pr ,e1 ,e2)
-            (guard (eq? (primref-name pr) 'cons))
+            (guard (memq (primref-name pr) '(cons weak-cons ephemeron-cons)))
             (residualize-seq (list ?x) '() ctxt)
             (non-result-exp (operand-value ?x)
               (make-1seq (app-ctxt ctxt) e1 (make-nontail (app-ctxt ctxt) e2)))]
@@ -4863,6 +4971,42 @@
             (non-result-exp (operand-value ?x)
               (make-1seq (app-ctxt ctxt) (car e*)
                 (build-call (app-preinfo ctxt) pr (cdr e*))))]
+           [else #f])])
+
+      (define-inline 2 cadr
+        [(?x)
+         (nanopass-case (Lsrc Expr) (result-exp (value-visit-operand! ?x))
+           [(immutable-list (,e* ...) ,e)
+            (and (>= (length e*) 2))
+                 (begin
+                   (residualize-seq '() (list ?x) ctxt)
+                   (make-nontail (app-ctxt ctxt) (cadr e*)))]
+           [(call ,preinfo ,pr ,e* ...)
+            (guard (eq? (primref-name pr) 'list) (>= (length e*) 2))
+            (residualize-seq (list ?x) '() ctxt)
+            (non-result-exp (operand-value ?x)
+              (fold-right
+                (lambda (e1 e2) (make-1seq (app-ctxt ctxt) e1 e2))
+                (make-nontail (app-ctxt ctxt) (cadr e*))
+                (cons (car e*) (cddr e*))))]
+           [(call ,preinfo ,pr ,e* ...)
+            (guard (memq (primref-name pr) '(list list* cons*)) (> (length e*) 2))
+            (residualize-seq (list ?x) '() ctxt)
+            (non-result-exp (operand-value ?x)
+              (fold-right
+                (lambda (e1 e2) (make-1seq (app-ctxt ctxt) e1 e2))
+                (make-nontail (app-ctxt ctxt) (cadr e*))
+                (cons (car e*) (cddr e*))))]
+           [else #f])])
+
+      (define-inline 2 unbox
+        [(?x)
+         (nanopass-case (Lsrc Expr) (result-exp (value-visit-operand! ?x))
+           [(call ,preinfo ,pr ,e)
+            (guard (memq (primref-name pr) '(box box-immobile box-immutable)))
+            (residualize-seq (list ?x) '() ctxt)
+            (non-result-exp (operand-value ?x)
+              (make-nontail (app-ctxt ctxt) e))]
            [else #f])])
 
       (let ()

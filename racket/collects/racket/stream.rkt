@@ -13,7 +13,9 @@
          (only-in "private/stream-cons.rkt"
                   stream-cons
                   stream-lazy
-                  stream-force)
+                  stream-force
+                  unpack-multivalue
+                  thunk->multivalue)
          "private/generic-methods.rkt"
          (for-syntax racket/base))
 
@@ -65,11 +67,16 @@
                            (quote-syntax stream-rest))
                      (list (quote-syntax stream-empty?)
                            (quote-syntax stream-first)
-                           (quote-syntax stream-rest))))
+                           (quote-syntax stream-rest))
+                     (list #t #t #t)))
 
 (define-match-expander stream
-  (syntax-rules ()
+  (syntax-rules (values)
     [(_) (? stream-empty?)]
+    [(_ (values hd ...) tl ...)
+     (? stream-cons?
+        (app stream-first hd ...)
+        (app stream-rest (stream tl ...)))]
     [(_ hd tl ...)
      (? stream-cons?
         (app stream-first hd)
@@ -84,8 +91,12 @@
      (stream-cons hd (stream tl ...)))))
 
 (define-match-expander stream*
-  (syntax-rules ()
+  (syntax-rules (values)
     [(_ tl) (? stream? tl)]
+    [(_ (values hd ...) tl ...)
+     (? stream-cons?
+        (app stream-first hd ...)
+        (app stream-rest (stream* tl ...)))]
     [(_ hd tl ...)
      (? stream-cons?
         (app stream-first hd)
@@ -138,38 +149,38 @@
     (raise-argument-error 'stream-tail "exact-nonnegative-integer?" i))
   (let loop ([n i] [s st])
     (cond
-     [(zero? n) s]
-     [(stream-empty? s)
-      (raise-arguments-error 'stream-tail
-                             "stream ended before index"
-                             "index" i
-                             ;; See "Why `"stream" st` is omitted" above
-                             #;"stream" #;st)]
-     [else
-      (loop (sub1 n) (stream-rest s))])))
+      [(zero? n) s]
+      [(stream-empty? s)
+       (raise-arguments-error 'stream-tail
+                              "stream ended before index"
+                              "index" i
+                              ;; See "Why `"stream" st` is omitted" above
+                              #;"stream" #;st)]
+      [else
+       (loop (sub1 n) (stream-rest s))])))
 
 (define (stream-take st i)
   (unless (stream? st) (raise-argument-error 'stream-take "stream?" st))
   (unless (exact-nonnegative-integer? i)
     (raise-argument-error 'stream-take "exact-nonnegative-integer?" i))
-  (let loop ([n i] [s st])
-    (cond
-     [(zero? n) empty-stream]
-     [(stream-empty? s)
-      (raise-arguments-error 'stream-take
-                             "stream ended before index"
-                             "index" i
-                             ;; See "Why `"stream" st` is omitted" above
-                             #;"stream" #;st)]
-     [else
-      (make-do-stream (lambda () #f)
-                      (lambda () (stream-first s))
-                      (lambda () (loop (sub1 n) (stream-rest s))))])))
+  (stream-lazy
+   (let loop ([n i] [s st])
+     (cond
+       [(zero? n) empty-stream]
+       [(stream-empty? s)
+        (raise-arguments-error 'stream-take
+                               "stream ended before index"
+                               "index" i
+                               ;; See "Why `"stream" st` is omitted" above
+                               #;"stream" #;st)]
+       [else
+        (stream-cons (stream-first s)
+                     (loop (sub1 n) (stream-rest s)))]))))
 
 (define (stream-append . l)
   (for ([s (in-list l)])
     (unless (stream? s) (raise-argument-error 'stream-append "stream?" s)))
-  (streams-append l))
+  (stream-lazy (streams-append l)))
 
 (define (streams-append l)
   (cond
@@ -177,19 +188,18 @@
    [(null? (cdr l)) (car l)]
    [(stream-empty? (car l)) (streams-append (cdr l))]
    [else
-    (make-do-stream (lambda () #f)
-                    (lambda () (stream-first (car l)))
-                    (lambda () (streams-append (cons (stream-rest (car l)) (cdr l)))))]))
+    (stream-cons (stream-first (car l))
+                 (streams-append (cons (stream-rest (car l)) (cdr l))))]))
 
 (define (stream-map f s)
   (unless (procedure? f) (raise-argument-error 'stream-map "procedure?" f))
   (unless (stream? s) (raise-argument-error 'stream-map "stream?" s))
-  (let loop ([s s])
-    (if (stream-empty? s)
-        empty-stream
-        (make-do-stream (lambda () #f)
-                        (lambda () (call-with-values (lambda () (stream-first s)) f))
-                        (lambda () (loop (stream-rest s)))))))
+  (stream-lazy
+   (let loop ([s s])
+     (cond
+       [(stream-empty? s) empty-stream]
+       [else (stream-cons (call-with-values (λ () (stream-first s)) f)
+                          (loop (stream-rest s)))]))))
 
 (define (stream-andmap f s)
   (unless (procedure? f) (raise-argument-error 'stream-andmap "procedure?" f))
@@ -219,47 +229,32 @@
 (define (stream-filter f s)
   (unless (procedure? f) (raise-argument-error 'stream-filter "procedure?" f))
   (unless (stream? s) (raise-argument-error 'stream-filter "stream?" s))
-  (cond
-   [(stream-empty? s) empty-stream]
-   [else
-    (let ([done? #f]
-          [empty? #f]
-          [stream-cons/fst #f]
-          [rst #f])
-      (define (force!)
-        (unless done?
-          (let loop ([s s])
-            (cond
-             [(stream-empty? s)
-              (set! done? #t)
-              (set! empty? #t)]
-             [(call-with-values (lambda () (stream-first s)) f)
-              (set! stream-cons/fst s)
-              (set! rst (stream-filter f (stream-rest s)))]
-             [else (loop (stream-rest s))]))
-          (set! done? #t)))
-      (make-do-stream (lambda () (force!) empty?)
-                      (lambda () (force!) (stream-first stream-cons/fst))
-                      (lambda () (force!) rst)))]))
+  (stream-lazy
+   (let loop ([s s])
+     (cond
+       [(stream-empty? s) empty-stream]
+       [(call-with-values (λ () (stream-first s)) f)
+        (define v (thunk->multivalue (λ () (stream-first s))))
+        (stream-cons (unpack-multivalue v)
+                     (loop (stream-rest s)))]
+       [else (loop (stream-rest s))]))))
 
 (define (stream-add-between s e)
   (unless (stream? s)
     (raise-argument-error 'stream-add-between "stream?" s))
-  (if (stream-empty? s)
-      empty-stream
-      (make-do-stream
-       (lambda () #f)
-       (lambda () (stream-first s))
-       (lambda ()
-         (let loop ([s (stream-rest s)])
-           (cond
-             [(stream-empty? s) empty-stream]
-             [else
-              (stream-cons e
-                           (make-do-stream
-                            (lambda () #f)
-                            (lambda () (stream-first s))
-                            (lambda () (loop (stream-rest s)))))]))))))
+  (stream-lazy
+   (cond
+     [(stream-empty? s) empty-stream]
+     [else
+      (stream-cons
+       (stream-first s)
+       (let loop ([s (stream-rest s)])
+         (cond
+           [(stream-empty? s) empty-stream]
+           [else
+            (stream-cons e
+                         (stream-cons (stream-first s)
+                                      (loop (stream-rest s))))])))])))
 
 ;; Impersonators and Chaperones ----------------------------------------------------------------------
 ;; (these are private because they would fail on lists, which satisfy `stream?`)

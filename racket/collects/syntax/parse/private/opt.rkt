@@ -1,7 +1,7 @@
 #lang racket/base
 (require racket/syntax
          racket/pretty
-         syntax/parse/private/residual-ct ;; keep abs. path
+         (submod "residual.rkt" ct)
          "minimatch.rkt"
          "rep-patterns.rkt"
          "kws.rkt")
@@ -70,12 +70,12 @@
 ;; ----
 
 (define (optimize-matrix0 rows)
-  (define now (current-inexact-milliseconds))
+  (define now (current-inexact-monotonic-milliseconds))
   (when (and (> (length rows) 1))
     (log-syntax-parse-debug "OPT matrix (~s rows)\n~a" (length rows)
                             (pretty-format (matrix->sexpr rows) #:mode 'print)))
   (define result (optimize-matrix rows))
-  (define then (current-inexact-milliseconds))
+  (define then (current-inexact-monotonic-milliseconds))
   (when (and (> (length rows) 1))
     (cond [(= (length result) (length rows))
            (log-syntax-parse-debug "OPT FAILED (~s ms)" (floor (- then now)))]

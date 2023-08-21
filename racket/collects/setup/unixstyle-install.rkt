@@ -33,6 +33,7 @@
 
 #lang racket/base
 (require setup/cross-system
+         (submod compiler/private/collects-path set-executable-tag)
          racket/file
          racket/list)
 
@@ -223,24 +224,14 @@
 
 (define (fix-executable file #:ignore-non-executable? [ignore-non-executable? #f])
   (define (fix-binary file)
-    (define (fix-one tag dir)
-      (let-values ([(i o) (open-input-output-file file #:exists 'update)])
-        (cond
-          [(regexp-match-positions tag i)
-           => (lambda (m)
-                (file-position o (cdar m))
-                (display dir o)
-                (write-byte 0 o)
-                (write-byte 0 o))]
-          [else
-           (unless ignore-non-executable?
-             (error
-              (format "could not find collection-path label in executable: ~a"
-                      file)))])
-        (close-input-port i)
-        (close-output-port o)))
-    (fix-one #rx#"coLLECTs dIRECTORy:" (dir: 'collects))
-    (fix-one #rx#"coNFIg dIRECTORy:" (dir: 'config)))
+    (define (fix-one tag desc dir)
+      (set-executable-tag 'unixstyle-install tag desc file ignore-non-executable? dir
+                          (path->bytes
+                           (if (string? dir)
+                               (string->path dir)
+                               dir))))
+    (fix-one #rx#"coLLECTs dIRECTORy:" "collects" (dir: 'collects))
+    (fix-one #rx#"coNFIg dIRECTORy:" "config" (dir: 'config)))
   (define (fix-script file)
     (let* ([size (file-size file)]
            [buf (with-input-from-file file (lambda () (read-bytes size)))]
@@ -401,10 +392,6 @@
       (printf "\n# Remove this script\n")
       (printf "exec rm \"$0\"\n")))
   (run "chmod" "+x" uninstaller))
-
-;; we need a namespace to compile the new config, grab it now, before the
-;; collection tree moves (otherwise it won't find the `scheme' collection)
-(define base-ns (make-base-namespace))
 
 (define write-config
   (case-lambda
@@ -698,6 +685,7 @@
   (define (lz4-skip? p)
     (define-values (base name dir?) (split-path p))
     (and (not (equal? (path->string name) "lib"))
+         (not (equal? (path->string name) "Makefile.inc"))
          (path? base)
          (let-values ([(base name dir?) (split-path base)])
            (and (path? base)

@@ -35,6 +35,8 @@ See also: @racket[immutable?].
 @defproc[(bytes? [v any/c]) boolean?]{ Returns @racket[#t] if @racket[v]
  is a byte string, @racket[#f] otherwise.
 
+See also @racket[immutable-bytes?] and @racket[mutable-bytes?].
+
 @mz-examples[(bytes? #"Apple") (bytes? "Apple")]}
 
 
@@ -79,7 +81,7 @@ positions are initialized with the given @racket[b]s.
 
 
 @defproc[(bytes-ref [bstr bytes?] [k exact-nonnegative-integer?])
- byte?]{  Returns the character at position @racket[k] in @racket[bstr].
+ byte?]{  Returns the byte at position @racket[k] in @racket[bstr].
  The first position in the bytes corresponds to @racket[0], so the
  position @racket[k] must be less than the length of the bytes,
  otherwise the @exnraise[exn:fail:contract].
@@ -89,7 +91,7 @@ positions are initialized with the given @racket[b]s.
 
 @defproc[(bytes-set! [bstr (and/c bytes? (not/c immutable?))] [k
  exact-nonnegative-integer?] [b byte?]) void?]{  Changes the
- character position @racket[k] in @racket[bstr] to @racket[b].  The first
+ byte at position @racket[k] in @racket[bstr] to @racket[b].  The first
  position in the byte string corresponds to @racket[0], so the position
  @racket[k] must be less than the length of the bytes, otherwise the
  @exnraise[exn:fail:contract].

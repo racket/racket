@@ -122,7 +122,8 @@
              (define n-args (length (m 'e)))
              (and (or (and (or (and (known-struct-op? d)
                                     (eq? 'constructor (known-struct-op-type d))
-                                    (= (known-struct-op-field-count d) n-args))
+                                    (or (eq? #t (known-struct-op-field-count d))
+                                        (= (known-struct-op-field-count d) n-args)))
                                (and (known-function? d)
                                     (known-function-pure? d)
                                     (arity-includes? (known-function-arity d) n-args)))
@@ -151,9 +152,34 @@
 (define (satisfies? e key defns locals)
   (define d (or (hash-ref locals e #f)
                 (lookup-defn defns e)))
-  (and d
-       (known-satisfies? d)
-       (eq? key (known-satisfies-predicate-key d))))
+  (define known-key
+    (or (and d
+             (known-satisfies? d)
+             (known-satisfies-predicate-key d))
+        (cond
+          [(not e) 'false]
+          [(exact-integer? e) 'exact-integer]
+          [(pair? e)
+           (define head (car e))
+           (cond
+             [(eq? head 'quote)
+              (define v (cadr e))
+              (cond
+                [(symbol? v) 'symbol]
+                [else #f])]
+             [else
+              (define p (lookup-defn defns head))
+              (cond
+                [(known-function-of-satisfying? p)
+                 (known-function-of-satisfying-result-key p)]
+                [else #f])])]
+          [else #f])))
+  (and known-key
+       (or (eq? key known-key)
+           (and (pair? key)
+                (eq? 'or (car key))
+                (for/or ([key (in-list (cdr key))])
+                  (eq? key known-key))))))
 
 ;; ----------------------------------------
 
@@ -197,14 +223,17 @@
 
 (define (ok-make-struct-type-property? e defns)
   (define l (correlated->list e))
-  (and (<= 2 (length l) 5)
+  (and (<= 2 (length l) 8)
        (for/and ([arg (in-list (cdr l))]
                  [pred (in-list
                         (list
                          (lambda (v) (quoted? symbol? v))
                          (lambda (v) (is-lambda? v 2 defns))
                          (lambda (v) (ok-make-struct-type-property-super? v defns))
-                         (lambda (v) (not (any-side-effects? v 1 #:known-defns defns)))))])
+                         (lambda (v) (not (any-side-effects? v 1 #:known-defns defns)))
+                         (lambda (v) (quoted? symbol? v))
+                         (lambda (v) (quoted? (lambda (x) (or (not x) (symbol? x) (string? x))) v))
+                         (lambda (v) (quoted? symbol? v))))])
          (pred arg))))
 
 (define (ok-make-struct-type-property-super? v defns)
@@ -333,6 +362,7 @@
      (and (quoted? false? super-expr)
           ;; checking that we have at least 2 fields
           (immutable-field? 1 immutables-expr))]
+    [(prop:object-name) (immutable-field? val-expr immutables-expr)]
     [else
      (define o (lookup-defn defns prop-name))
      (cond
@@ -404,7 +434,8 @@
 
 (define (ok-make-struct-field-accessor/mutator? e locals type defns)
   (define l (correlated->list e))
-  (define a (and (or (= (length l) 3) (= (length l) 4))
+  (define len (length l))
+  (define a (and (<= 3 len 6)
                  (or (hash-ref locals (correlated-e (list-ref l 1)) #f)
                      (lookup-defn defns (correlated-e (list-ref l 1))))))
   (and (known-struct-op? a)
@@ -412,7 +443,9 @@
        (let ([c (field-count-expr-to-field-count (list-ref l 2))])
          (and c
               (c . < . (known-struct-op-field-count a))))
-       (or (= (length l) 3) (quoted? symbol? (list-ref l 3)))))
+       (or (len . < . 4) (quoted? symbol? (list-ref l 3)))
+       (or (len . < . 5) (quoted? (lambda (x) (or (not x) (string? x) (symbol? x))) (list-ref l 4)))
+       (or (len . < . 6) (quoted? symbol? (list-ref l 5)))))
 
 ;; ----------------------------------------
 

@@ -1,0 +1,39 @@
+#lang zuo
+(require "../../lib.zuo")
+
+(provide targets-at)
+
+(define (targets-at at-dir [config (hash)])
+  (define libffi.a
+    (at-dir (.a "ffi")))
+
+  (define (find-all-objects dir)
+    (define match? (glob->matcher (~a "*." (hash-ref config 'LTO "o"))))
+    (define dot? (glob->matcher ".*"))
+    (reverse
+     (let loop ([dir dir])
+       (foldl (lambda (elem files)
+                (let ([p (build-path dir elem)])
+                  (cond
+                    [(dot? elem) files]
+                    [(directory-exists? p) (append (loop p) files)]
+                    [(match? elem) (cons p files)]
+                    [else files])))
+              '()
+              (ls dir)))))
+
+  (list (target libffi.a
+                (lambda (path token)
+                  (rule '()
+                        (lambda ()
+                          (shell/wait (build-shell
+                                       (let ([s (hash-ref config 'MAKE "")])
+                                         (if (equal? s "")
+                                             "make"
+                                             s))
+                                       (string->shell (~a "libffi" (hash-ref config 'FOREIGN_CONVENIENCE "") ".la")))
+                                      (hash 'dir
+                                            (at-dir ".")))
+                          (c-ar path
+                                (find-all-objects (at-dir "src"))
+                                config)))))))

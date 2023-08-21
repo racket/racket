@@ -8,7 +8,7 @@
 
   (#%require (for-syntax '#%kernel) "generic-methods.rkt")
 
-  (#%provide gen:equal+hash gen:custom-write)
+  (#%provide gen:equal+hash gen:equal-mode+hash gen:custom-write)
 
   (define-values (prop:gen:equal+hash equal+hash? gen:equal+hash-acc)
     (make-struct-type-property
@@ -48,8 +48,45 @@
                        ;; Bound identifiers used for implementations:
                        (list (quote-syntax equal-proc-impl)
                              (quote-syntax hash-proc-impl)
-                             (quote-syntax hash2-proc-impl))))
+                             (quote-syntax hash2-proc-impl))
+                       (list #t #t #t)))
 
+  (define-values (prop:gen:equal-mode+hash equal-mode+hash? gen:equal-mode+hash-acc)
+    (make-struct-type-property
+     'prop:gen:equal-mode+hash
+     (lambda (v si)
+       (if (and (vector? v)
+                (= 2 (vector-length v))
+                (procedure? (vector-ref v 0))
+                (procedure-arity-includes? (vector-ref v 0) 4)
+                (procedure? (vector-ref v 1))
+                (procedure-arity-includes? (vector-ref v 1) 3))
+           v
+           (raise-argument-error 'guard-for-prop:gen:equal-mode+hash
+                                 (string-append
+                                  "(vector/c (procedure-arity-includes/c 4)\n"
+                                  "          (procedure-arity-includes/c 3))")
+                                 v)))
+     (list (cons prop:equal+hash vector->list))))
+
+  ;; forgeries of generic functions that don't exist
+  (define (equal-mode-proc-impl a b e m)
+    (if m (equal? a b) (equal-always? a b)))
+  (define (hash-mode-proc-impl x h m)
+    (if m (equal-hash-code x) (equal-always-hash-code x)))
+
+  (define-syntax gen:equal-mode+hash
+    (make-generic-info (quote-syntax gen:equal-mode+hash)
+                       (quote-syntax prop:gen:equal-mode+hash)
+                       (quote-syntax equal-mode+hash?)
+                       (quote-syntax gen:equal-mode+hash-acc)
+                       ;; Unbound identifiers will be `free-identifier=?` to unbound in clients:
+                       (list (quote-syntax equal-mode-proc)
+                             (quote-syntax hash-mode-proc))
+                       ;; Bound identifiers used for implementations:
+                       (list (quote-syntax equal-mode-proc-impl)
+                             (quote-syntax hash-mode-proc-impl) )
+                       (list #t #t)))
 
   (define-values (prop:gen:custom-write gen:custom-write? gen:custom-write-acc)
     (make-struct-type-property
@@ -79,6 +116,7 @@
                        (quote-syntax gen:custom-write?)
                        (quote-syntax gen:custom-write-acc)
                        (list (quote-syntax write-proc))
-                       (list (quote-syntax write-proc-impl))))
+                       (list (quote-syntax write-proc-impl))
+                       (list #t)))
 
   )

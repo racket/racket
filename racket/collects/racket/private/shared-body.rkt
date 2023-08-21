@@ -1,7 +1,7 @@
 #lang racket/base
 (require (for-syntax racket/base
                      syntax/kerncase
-                     syntax/struct
+                     syntax/private/struct
                      racket/struct-info)
          racket/undefined)
 

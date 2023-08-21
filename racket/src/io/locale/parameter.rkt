@@ -74,7 +74,9 @@
      (end-atomic)
      (raise-rktio-error who c "error getting language and country information")]
     [else
-     (begin0
-       (rktio_to_bytes c)
-       (rktio_free c)
-       (end-atomic))]))
+     (bytes->string/utf-8
+      (begin0
+        (rktio_to_bytes c)
+        (rktio_free c)
+        (end-atomic))
+      #\?)]))

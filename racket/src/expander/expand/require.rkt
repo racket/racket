@@ -21,7 +21,8 @@
 (provide parse-and-perform-requires!
          perform-initial-require!
          perform-require!
-         require-spec-shift-for-syntax)
+         require-spec-shift-for-syntax
+         build-initial-require-mpi)
 
 (struct adjust-only (syms))
 (struct adjust-prefix (sym))
@@ -55,7 +56,7 @@
              [for-meta-ok? #t]
              [just-meta-ok? #t]
              [layer 'raw])
-    (for/and ([req (in-list reqs)])
+    (for ([req (in-list reqs)])
       (define (check-nested want-layer [ok? #t])
         (unless (and ok? (member want-layer (member layer layers)))
           (raise-syntax-error #f "invalid nesting" orig-s req)))
@@ -262,12 +263,15 @@
 
 ;; ----------------------------------------
 
-(define (perform-initial-require! mod-path self
+(define (build-initial-require-mpi mod-path self)
+  (module-path->mpi mod-path self))
+
+(define (perform-initial-require! mpi self
                                   in-stx m-ns
                                   requires+provides
                                   #:bind? bind?
                                   #:who who)
-  (perform-require! (module-path->mpi mod-path self) #f self
+  (perform-require! mpi #f self
                     in-stx m-ns
                     #:phase-shift 0
                     #:run-phase 0
@@ -312,13 +316,18 @@
          (add-required-module! requires+provides mpi (intern-phase+space-shift phase-shift space-level)
                                (module-cross-phase-persistent? m))
          mpi))
+   (define transitive-requires (and requires+provides
+                                    (requires+provides-transitive-requires requires+provides)))
    (when visit?
-     (namespace-module-visit! m-ns interned-mpi phase-shift #:visit-phase run-phase))
+     (namespace-module-visit! m-ns interned-mpi phase-shift #:visit-phase run-phase
+                              #:transitive-record transitive-requires))
    (when run?
-     (namespace-module-instantiate! m-ns interned-mpi phase-shift #:run-phase run-phase))
+     (namespace-module-instantiate! m-ns interned-mpi phase-shift #:run-phase run-phase
+                                    #:transitive-record transitive-requires))
    (when (not (or visit? run?))
      ;; make the module available:
-     (namespace-module-make-available! m-ns interned-mpi phase-shift #:visit-phase run-phase))
+     (namespace-module-make-available! m-ns interned-mpi phase-shift #:visit-phase run-phase
+                                       #:transitive-record transitive-requires))
    (define can-bulk-bind? (and (eq? space-level '#:none)
                                (or (not adjust)
                                    (adjust-prefix? adjust)
@@ -415,7 +424,7 @@
                          [else
                           (adjust-shadow-requires! requires+provides s bind-phase bind-space)
                           (check-not-defined #:check-not-required? #t
-                                             #:allow-defined? #t ; `define` shadows `require`
+                                             #:allow-defined? (requires+provides-definitions-shadow-imports? requires+provides)
                                              requires+provides
                                              s bind-phase bind-space
                                              #:unless-matches binding

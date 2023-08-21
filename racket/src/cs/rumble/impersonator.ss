@@ -14,13 +14,15 @@
       (impersonator-val v)
       v))
 
-(define (raise-chaperone-error who what e e2)
+;; different arg order: (chaperone-of? new  orig)
+;; vs. (raise-chaperone-error who what orig new)
+(define (raise-chaperone-error who what orig naya)
   (raise-arguments-error
    who
    (string-append "non-chaperone result; received a" (if (equal? what "argument") "n" "") " " what
                   " that is not a chaperone of the original " what)
-   "original" e
-   "received" e2))
+   "original" orig
+   "received" naya))
 
 (define (hash-ref2 ht key1 key2 default)
   (let ([ht/val (intmap-ref ht key1 #f)])
@@ -33,15 +35,19 @@
                           (intmap-set (intmap-ref ht key1 empty-hasheq) key2 val)
                           val)))
 
-(define (impersonate-ref acc rtd pos orig record-name field-name)
-  (#%$app/no-inline do-impersonate-ref acc rtd pos orig record-name field-name))
+(define impersonate-ref
+  (case-lambda
+   [(acc rtd pos orig field-name)
+    (#%$app/no-inline do-impersonate-ref acc rtd pos orig field-name #f default-realm)]
+   [(acc rtd pos orig proc-name contract realm)
+    (#%$app/no-inline do-impersonate-ref acc rtd pos orig proc-name contract realm)]))
 
-(define (do-impersonate-ref acc rtd pos orig record-name field-name)
-  (impersonate-struct-or-property-ref acc rtd rtd pos orig record-name field-name))
+(define (do-impersonate-ref acc rtd pos orig proc-name contract realm)
+  (impersonate-struct-or-property-ref acc rtd rtd pos orig proc-name contract realm))
 
 ;; `val/acc` is an accessor if `rtd`, a value otherwise;
 ;; `key2/pos` is a pos if `rtd`
-(define (impersonate-struct-or-property-ref val/acc rtd key1 key2/pos orig record-name field-name)
+(define (impersonate-struct-or-property-ref val/acc rtd key1 key2/pos orig field/proc-name contract realm)
   (cond
    [(and (impersonator? orig)
          (or (not rtd)
@@ -85,19 +91,20 @@
             (unsafe-struct*-ref v abs-pos))]
          [else val/acc])]))]
    [else
-    (raise-argument-error (string->symbol
-                           (string-append (symbol->string (or record-name 'struct))
-                                          "-"
-                                          (symbol->string (or field-name 'field))))
-                          (string-append (symbol->string (or record-name 'struct)) "?")
-                          orig)]))
+    (if contract
+        (struct-ref-error orig field/proc-name contract realm)
+        (struct-ref-error orig (record-type-name rtd) field/proc-name))]))
 
-(define (impersonate-set! set rtd pos abs-pos orig a record-name field-name)
-  (#%$app/no-inline do-impersonate-set! set rtd pos abs-pos orig a record-name field-name))
+(define impersonate-set!
+  (case-lambda
+   [(set rtd pos abs-pos orig a field-name)
+    (#%$app/no-inline do-impersonate-set! set rtd pos abs-pos orig a field-name #f default-realm)]
+   [(set rtd pos abs-pos orig a proc-name contract realm)
+    (#%$app/no-inline do-impersonate-set! set rtd pos abs-pos orig a proc-name contract realm)]))
 
 (define (struct-mutator-pos->key2 pos) (fx- -1 pos))
 
-(define (do-impersonate-set! set rtd pos abs-pos orig a record-name field-name)
+(define (do-impersonate-set! set rtd pos abs-pos orig a field/proc-name contract realm)
   (cond
    [(and (impersonator? orig)
          (record? (impersonator-val orig) rtd))
@@ -138,16 +145,9 @@
           ;; Equivalent to `(set v a)`:
           (unsafe-struct*-set! v abs-pos a)])))]
    [else
-    (raise-argument-error (string->symbol
-                           (string-append "set-"
-                                          (symbol->string (or record-name 'struct))
-                                          "-"
-                                          (if field-name
-                                              (symbol->string field-name)
-                                              (string-append "field" (number->string pos)))
-                                          "!"))
-                          (string-append (symbol->string (or record-name 'struct)) "?")
-                          orig)]))
+    (if contract
+        (struct-set!-error orig field/proc-name contract realm)
+        (struct-set!-error orig (record-type-name rtd) field/proc-name))]))
 
 (define (impersonate-struct-info orig)
   (let loop ([v orig])
@@ -250,45 +250,61 @@
 (define-record-type (impersonator-property-accessor-procedure
                      make-impersonator-property-accessor-procedure
                      raw:impersonator-property-accessor-procedure?)
-  (fields proc name))
+  (fields proc name realm))
 
-(define/who (make-impersonator-property name)
-  (check who symbol? name)
-  (let ([p (create-impersonator-property name)]
-        [predicate-name (string->symbol (format "~a?" name))]
-        [accessor-name (string->symbol (format "~a-accessor" name))])
-    (letrec ([predicate
-              (lambda (v)
-                (if (impersonator? v)
-                    (not (eq? none (hash-ref (impersonator-props v) p none)))
-                    (let ([iv (extract-impersonator-of predicate-name v)])
-                      (and iv
-                           (predicate iv)))))]
-             [accessor
-              (case-lambda
-               [(v default)
-                (let ([fail (lambda ()
-                              (cond
-                               [(eq? default none)
-                                (raise-argument-error accessor-name
-                                                      (format "~a?" name)
-                                                      v)]
-                               [(procedure? default)
-                                (default)]
-                               [else default]))])
-                (if (impersonator? v)
-                    (let ([pv (hash-ref (impersonator-props v) p none)])
-                      (if (eq? none pv)
-                          (fail)
-                          pv))
-                    (let ([iv (extract-impersonator-of accessor-name v)])
-                      (if iv
-                          (accessor iv default)
-                          (fail)))))]
-               [(v) (accessor v none)])])
-      (values p
-              (make-named-procedure predicate predicate-name)
-              (make-impersonator-property-accessor-procedure accessor accessor-name)))))
+(define/who make-impersonator-property
+  (case-lambda
+   [(name)
+    (make-impersonator-property name #f #f default-realm)]
+   [(name accessor-name)
+    (make-impersonator-property name accessor-name #f default-realm)]
+   [(name accessor-name contract)
+    (make-impersonator-property name accessor-name contract default-realm)]
+   [(name accessor-name contract realm)
+    (check who symbol? name)
+    (check who symbol? :or-false accessor-name)
+    (check who (lambda (x) (or (symbol? x) (string? x) (not x)))
+           :contract "(or/c symbol? string? #f)"
+           contract)
+    (check who symbol? realm)
+    (let ([p (create-impersonator-property name)]
+          [predicate-name (string->symbol (format "~a?" name))]
+          [accessor-name (or accessor-name
+                             (string->symbol (format "~a-accessor" name)))])
+      (let ([contract (or contract (symbol->immutable-string predicate-name))])
+        (letrec ([predicate
+                  (lambda (v)
+                    (if (impersonator? v)
+                        (not (eq? none (hash-ref (impersonator-props v) p none)))
+                        (let ([iv (extract-impersonator-of predicate-name v)])
+                          (and iv
+                               (predicate iv)))))]
+                 [accessor
+                  (case-lambda
+                   [(v default)
+                    (let ([fail (lambda ()
+                                  (cond
+                                    [(eq? default none)
+                                     (raise-argument-error* accessor-name
+                                                            realm
+                                                            contract
+                                                            v)]
+                                    [(procedure? default)
+                                     (default)]
+                                    [else default]))])
+                      (if (impersonator? v)
+                          (let ([pv (hash-ref (impersonator-props v) p none)])
+                            (if (eq? none pv)
+                                (fail)
+                                pv))
+                          (let ([iv (extract-impersonator-of accessor-name v)])
+                            (if iv
+                                (accessor iv default)
+                                (fail)))))]
+                   [(v) (accessor v none)])])
+          (values p
+                  (make-named-procedure predicate predicate-name realm)
+                  (make-impersonator-property-accessor-procedure accessor accessor-name realm)))))]))
 
 (define (impersonator-property-accessor-procedure? v)
   (or (raw:impersonator-property-accessor-procedure? v)
@@ -653,7 +669,7 @@
                           (eq? (car tag+ref)
                                (car (impersonator-of-ref a2))))
                (different 'prop:impersonator-of))
-             (unless (record-equal-procedure a (strip-impersonator a2))
+             (unless (struct-common-equal+hash a (strip-impersonator a2))
                (different 'prop:equal+hash))
              a2)]))))
 
@@ -677,24 +693,29 @@
 
 (define (set-impersonator-hash!)
   (let ([struct-impersonator-hash-code
-         (lambda (c hash-code)
-           ((record-hash-procedure (impersonator-val c))
-            c
-            hash-code))])
+         (lambda (c hash-code mode)
+           (let ([eq+hash (struct-property-ref prop:equal+hash (#%$record-type-descriptor (impersonator-val c)) #f)])
+             (let ([rec-hash (equal+hash-hash-code-proc eq+hash)])
+               (if (equal+hash-supports-mode? eq+hash)
+                   (rec-hash c hash-code mode)
+                   (rec-hash c hash-code)))))])
     (let ([add (lambda (rtd)
-                 (record-type-hash-procedure rtd struct-impersonator-hash-code))])
+                 (struct-set-equal-mode+hash! rtd
+                                              #f
+                                              struct-impersonator-hash-code))])
       (add (record-type-descriptor struct-impersonator))
       (add (record-type-descriptor struct-chaperone))
       (add (record-type-descriptor procedure-struct-impersonator))
       (add (record-type-descriptor procedure-struct-chaperone)))
     (let ([add (lambda (rtd)
-                 (record-type-hash-procedure rtd
-                                             (lambda (c hash-code)
-                                               (cond
-                                                [(record? (impersonator-val c))
-                                                 (struct-impersonator-hash-code c hash-code)]
-                                                [else
-                                                 (hash-code (impersonator-next c))]))))])
+                 (struct-set-equal-mode+hash! rtd
+                                              #f
+                                              (lambda (c hash-code mode)
+                                                (cond
+                                                  [(record? (impersonator-val c))
+                                                   (struct-impersonator-hash-code c hash-code mode)]
+                                                  [else
+                                                   (hash-code (impersonator-next c))]))))])
       (add (record-type-descriptor props-impersonator))
       (add (record-type-descriptor props-chaperone))
       (add (record-type-descriptor props-procedure-impersonator))

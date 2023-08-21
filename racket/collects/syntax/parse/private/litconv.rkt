@@ -5,8 +5,8 @@
                      "lib.rkt"
                      "kws.rkt"
                      racket/syntax)
-         syntax/parse/private/residual-ct ;; keep abs. path
-         syntax/parse/private/residual)   ;; keep abs. path
+         (submod "residual.rkt" ct)
+         "residual.rkt")
 (begin-for-syntax
  (lazy-require
   [syntax/private/keyword (options-select-value parse-keyword-options)]
@@ -188,6 +188,19 @@
                                                   (else ""))
                                                 " relative to the enclosing module")
                                         (quote-syntax #,stx) x))))))))]))
+
+;; (begin-for-syntax/once expr/phase1 ...)
+;; evaluates in pass 2 of module/intdefs expansion
+(define-syntax (begin-for-syntax/once stx)
+  (syntax-case stx ()
+    [(bfs/o e ...)
+     (cond [(list? (syntax-local-context))
+            #`(define-values ()
+                (begin (begin-for-syntax/once e ...)
+                       (values)))]
+           [else
+            #'(let-syntax ([m (lambda _ (begin e ...) #'(void))])
+                (m))])]))
 
 #|
 NOTES ON PHASES AND BINDINGS

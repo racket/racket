@@ -27,7 +27,19 @@
              (let ([hare (cdr hare)])
                 (if (pair? hare)
                     (and (not (eq? hare tortoise))
-                         (loop (cdr hare) (cdr tortoise)))
+                         (loop (cdr hare)
+                               ;; The intent of the pair test on `tortoise` is to
+                               ;; avoid a crash if the list is mutated. We can't
+                               ;; necessarily do something good at this point, but
+                               ;; to accomodate the case that the list is mutated
+                               ;; to give it a longer tail, we restart from
+                               ;; the current hare if the tortoise goes bad.
+                               ;; Other instances of this pattern (often using
+                               ;; variables "fast" and "slow") similarly double-check
+                               ;; the tortoise traversal to at least avoid a crash.
+                               (if (pair? tortoise)
+                                   (cdr tortoise)
+                                   hare)))
                     (null? hare)))
              (null? hare)))))
 
@@ -105,9 +117,11 @@
                                (if (pair? hare)
                                    (if (eq? hare tortoise)
                                        (circular-list-error who ls)
-                                       (loop (cdr hare)
-                                             (cdr tortoise)
-                                             (fx+ i 2)))
+                                       (if (pair? tortoise)
+                                           (loop (cdr hare)
+                                                 (cdr tortoise)
+                                                 (fx+ i 2))
+                                           (improper-list-error who ls)))
                                    (if (null? hare)
                                        (fx+ i 1)
                                        (improper-list-error who ls))))
@@ -136,7 +150,14 @@
                  (if (fx> i 1)
                      (if (not (eq? fast slow))
                          (if (pair? fast)
-                             (fx-list-tail (cdr fast) (cdr slow) (fx- i 2))
+                             (fx-list-tail (cdr fast)
+                                           (if (pair? slow)
+                                               (cdr slow)
+                                               ;; since we don't have an index
+                                               ;; for slow, just reset it to `fast`
+                                               ;; to avoid crashing
+                                               fast)
+                                           (fx- i 2))
                              (values 'error fast i))
                          (values 'cycle fast (fx- i 1)))
                      (values 'okay fast (fx- i 1))))
@@ -233,7 +254,9 @@
                (let ((fast2 (cdr fast1)))
                  (if (pair? fast2)
                      (if (not (eq? fast1 slow))
-                         (loop fast2 (cdr slow))
+                         (if (pair? slow)
+                             (loop fast2 (cdr slow))
+                             (improper-list-error 'last-pair ls))
                          (circular-list-error 'last-pair ls))
                      fast1))
                fast))))))
@@ -327,7 +350,9 @@
                                    a
                                    (if (eq? fast slow)
                                        (cyclic-alist who alist)
-                                       (loop (cdr fast) (cdr slow))))
+                                       (if (pair? slow)
+                                           (loop (cdr fast) (cdr slow))
+                                           (improper-alist who alist))))
                                (improper-alist who alist)))]
                         [(null? fast) #f]
                         [else (improper-alist who alist)])))
@@ -388,7 +413,9 @@
                                   a
                                   (if (eq? fast slow)
                                       (cyclic-alist 'assp alist)
-                                      (loop (cdr fast) (cdr slow))))
+                                      (if (pair? slow)
+                                          (loop (cdr fast) (cdr slow))
+                                          (improper-alist 'assp alist))))
                               (improper-alist 'assp alist)))]
                        [(null? fast) #f]
                        [else (improper-alist 'assp alist)])))
@@ -421,7 +448,9 @@
                        fast
                        (if (eq? fast slow)
                            (cyclic-list who ls)
-                           (loop (cdr fast) (cdr slow))))]
+                           (if (pair? slow)
+                               (loop (cdr fast) (cdr slow))
+                                (improper-list who ls))))]
                   [(null? fast) #f]
                   [else (improper-list who ls)])))]
          [(null? fast) #f]
@@ -468,7 +497,9 @@
                      fast
                      (if (eq? fast slow)
                          (cyclic-list 'memp ls)
-                         (loop (cdr fast) (cdr slow))))]
+                         (if (pair? slow)
+                             (loop (cdr fast) (cdr slow))
+                              (improper-list 'memp ls))))]
                 [(null? fast) #f]
                 [else (improper-list 'memp ls)])))]
        [(null? fast) #f]
@@ -490,7 +521,9 @@
                      (car fast)
                      (if (eq? fast slow)
                          (cyclic-list 'find ls)
-                         (loop (cdr fast) (cdr slow))))]
+                         (if (pair? slow)
+                             (loop (cdr fast) (cdr slow))
+                              (improper-list 'find ls))))]
                 [(null? fast) #f]
                 [else (improper-list 'find ls)])))]
        [(null? fast) #f]
@@ -511,7 +544,8 @@
              (if (pair? fast1)
                  (and (not (eq? fast1 slow))
                       (let ((fast2 (cdr fast1)))
-                        (let ((rest (f x fast2 (cdr slow))))
+                        (let ((rest (and (pair? slow)
+                                         (f x fast2 (cdr slow)))))
                           (and rest
                                (if (not (pred? (car fast) x))
                                    (if (not (pred? (car fast1) x))
@@ -568,7 +602,8 @@
                 (if (pair? fast1)
                     (and (not (eq? fast1 slow))
                          (let ((fast2 (cdr fast1)))
-                           (let ((rest (f pred? fast2 (cdr slow))))
+                           (let ((rest (and (pair? slow)
+                                            (f pred? fast2 (cdr slow)))))
                              (and rest
                                   (if (not (pred? (car fast)))
                                       (if (not (pred? (car fast1)))
@@ -599,7 +634,8 @@
                 (if (pair? fast1)
                     (and (not (eq? fast1 slow))
                          (let ((fast2 (cdr fast1)))
-                           (let ((rest (f pred? fast2 (cdr slow))))
+                           (let ((rest (and (pair? slow)
+                                            (f pred? fast2 (cdr slow)))))
                              (and rest
                                   (if (pred? (car fast))
                                       (if (pred? (car fast1))
@@ -630,30 +666,32 @@
                 (if (eq? fast1 slow)
                     (improper-list 'partition ls)
                     (let ([fast2 (cdr fast1)])
-                      (let-values ([(ins outs) (f pred? fast2 (cdr slow) ls)])
-                        (if (pred? (car fast))
-                            (if (pred? (car fast1))
-                                (values
-                                  (if (eq? ins fast2)
-                                      fast
-                                      (list* (car fast) (car fast1) ins))
-                                  outs)
-                                (values
-                                  (cons (car fast) ins)
-                                  (if (eq? outs fast2)
-                                      fast1
-                                      (cons (car fast1) outs))))
-                            (if (pred? (car fast1))
-                                (values
-                                  (if (eq? ins fast2)
-                                      fast1
-                                      (cons (car fast1) ins))
-                                  (cons (car fast) outs))
-                                (values
-                                  ins
-                                  (if (eq? outs fast2)
-                                      fast
-                                      (list* (car fast) (car fast1) outs))))))))
+                      (if (pair? slow)
+                          (let-values ([(ins outs) (f pred? fast2 (cdr slow) ls)])
+                            (if (pred? (car fast))
+                                (if (pred? (car fast1))
+                                    (values
+                                     (if (eq? ins fast2)
+                                         fast
+                                         (list* (car fast) (car fast1) ins))
+                                     outs)
+                                    (values
+                                     (cons (car fast) ins)
+                                     (if (eq? outs fast2)
+                                         fast1
+                                         (cons (car fast1) outs))))
+                                (if (pred? (car fast1))
+                                    (values
+                                     (if (eq? ins fast2)
+                                         fast1
+                                         (cons (car fast1) ins))
+                                     (cons (car fast) outs))
+                                    (values
+                                     ins
+                                     (if (eq? outs fast2)
+                                         fast
+                                         (list* (car fast) (car fast1) outs))))))
+                          (improper-list 'partition ls))))
                 (if (null? fast1)
                     (if (pred? (car fast))
                         (values fast '())
@@ -819,7 +857,10 @@
                       (cond
                         [(fx= bits 0)
                          (if slow-step?
-                             (loop (cdr fast) (cdr slow) #f)
+                             (if (pair? slow)
+                                 (loop (cdr fast) (cdr slow) #f)
+                                 ;; mutation during traversal
+                                 (return 2))
                              (loop (cdr fast) slow #t))]
                         [else
                          (return bits)]))])))))))

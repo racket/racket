@@ -17,17 +17,17 @@
 #include "system.h"
 
 /* locally defined functions */
-static void install_library_entry PROTO((ptr n, ptr x));
-static void scheme_install_library_entry PROTO((void));
-static void create_library_entry_vector PROTO((void));
-static void create_c_entry_vector PROTO((void));
-static void s_instantiate_code_object PROTO((void));
-static void s_link_code_object PROTO((ptr co, ptr objs));
-static IBOOL s_check_heap_enabledp PROTO((void));
-static void s_enable_check_heap PROTO((IBOOL b));
-static uptr s_check_heap_errors PROTO((void));
+static void install_library_entry(ptr n, ptr x);
+static void scheme_install_library_entry(void);
+static void create_library_entry_vector(void);
+static void create_c_entry_vector(void);
+static void s_instantiate_code_object(void);
+static void s_link_code_object(ptr co, ptr objs);
+static IBOOL s_check_heap_enabledp(void);
+static void s_enable_check_heap(IBOOL b);
+static uptr s_check_heap_errors(void);
 
-static void install_library_entry(n, x) ptr n, x; {
+static void install_library_entry(ptr n, ptr x) {
     if (!Sfixnump(n) || UNFIX(n) < 0 || UNFIX(n) >= library_entry_vector_size)
         S_error1("$install-library-entry", "invalid index ~s", n);
     if (!Sprocedurep(x) && !Scodep(x))
@@ -45,13 +45,13 @@ static void install_library_entry(n, x) ptr n, x; {
     if (n == FIX(library_cpu_features))
       x86_64_set_popcount_present(x);
 #endif
-#ifdef PORTABLE_BYTECODE_BIGENDIAN
+#ifdef PORTABLE_BYTECODE_SWAPENDIAN
     if (n == FIX(library_dounderflow))
       S_swap_dounderflow_header_endian(CLOSCODE(x));
 #endif
 }
 
-ptr S_lookup_library_entry(n, errorp) iptr n; IBOOL errorp; {
+ptr S_lookup_library_entry(iptr n, IBOOL errorp) {
     ptr p;
 
     if (n < 0 || n >= library_entry_vector_size)
@@ -62,12 +62,12 @@ ptr S_lookup_library_entry(n, errorp) iptr n; IBOOL errorp; {
     return p;
 }
 
-static void scheme_install_library_entry() {
+static void scheme_install_library_entry(void) {
     ptr tc = get_thread_context();
     install_library_entry(S_get_scheme_arg(tc, 1), S_get_scheme_arg(tc, 2));
 }
 
-static void create_library_entry_vector() {
+static void create_library_entry_vector(void) {
     iptr i;
 
     S_protect(&S_G.library_entry_vector);
@@ -88,7 +88,7 @@ ptr int2ptr(iptr f)
 #define proc2ptr(x) TO_PTR(x)
 #endif /* HPUX */
 
-void S_install_c_entry(i, x) iptr i; ptr x; {
+void S_install_c_entry(iptr i, ptr x) {
     if (i < 0 || i >= c_entry_vector_size)
         S_error1("install_c_entry", "invalid index ~s", FIX(i));
     if (Svector_ref(S_G.c_entry_vector, i) != Sfalse)
@@ -96,7 +96,7 @@ void S_install_c_entry(i, x) iptr i; ptr x; {
     SETVECTIT(S_G.c_entry_vector, i, x);
 }
 
-ptr S_lookup_c_entry(i) iptr i; {
+ptr S_lookup_c_entry(iptr i) {
    ptr x;
 
    if (i < 0 || i >= c_entry_vector_size)
@@ -106,11 +106,11 @@ ptr S_lookup_c_entry(i) iptr i; {
    return x;
 }
 
-static ptr s_get_thread_context() {
+static ptr s_get_thread_context(void) {
   return get_thread_context();
 }
 
-static void create_c_entry_vector() {
+static void create_c_entry_vector(void) {
     INT i;
 
     S_protect(&S_G.c_entry_vector);
@@ -174,7 +174,7 @@ void S_check_c_entry_vector() {
     }
 }
 
-void S_prim_init() {
+void S_prim_init(void) {
     if (!S_boot_time) return;
 
     create_library_entry_vector();
@@ -214,15 +214,21 @@ void S_prim_init() {
     Sforeign_symbol("(cs)object_backreferences", (void *)S_object_backreferences);
     Sforeign_symbol("(cs)list_bits_ref", (void *)S_list_bits_ref);
     Sforeign_symbol("(cs)list_bits_set", (void *)S_list_bits_set);
+#ifdef PORTABLE_BYTECODE
+    Sforeign_symbol("(cs)find_callable_code_object", (void *)Sforeign_callable_code_object);
+#endif
 }
 
-static void s_instantiate_code_object() {
+static void s_instantiate_code_object(void) {
     ptr tc = get_thread_context();
     ptr old, cookie, proc;
     ptr new, oldreloc, newreloc;
     ptr pinfos;
     uptr a, m, n;
     iptr i, size;
+#ifdef PORTABLE_BYTECODE
+    ptr desc = (ptr)0;
+#endif
 
     old = S_get_scheme_arg(tc, 1);
     cookie = S_get_scheme_arg(tc, 2);
@@ -277,15 +283,25 @@ static void s_instantiate_code_object() {
            S_set_code_obj("fcallable", RELOC_TYPE(entry), new, a, proc, item_off);
         else
            S_set_code_obj("fcallable", RELOC_TYPE(entry), new, a, obj, item_off);
+
+#ifdef PORTABLE_BYTECODE
+        if (Svectorp(obj))
+          desc = obj;
+#endif
     }
     S_flush_instruction_cache(tc);
 
     S_thread_end_code_write(tc, 0, 0, NULL, 0);
+    
+#ifdef PORTABLE_BYTECODE
+    if (desc == (ptr)0) S_error_abort("did not find callable type description");
+    new = S_ffi_closure(desc, new);
+#endif
 
     AC0(tc) = new;
 }
 
-static void s_link_code_object(co, objs) ptr co, objs; {
+static void s_link_code_object(ptr co, ptr objs) {
     ptr t, tc = get_thread_context();
     uptr a, m, n;
 

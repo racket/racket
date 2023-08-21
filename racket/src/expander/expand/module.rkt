@@ -42,7 +42,8 @@
          "expanded+parsed.rkt"
          "append.rkt"
          "save-and-restore.rkt"
-         "module-prompt.rkt")
+         "module-prompt.rkt"
+         "configure.rkt")
 
 (add-core-form!
  'module
@@ -102,7 +103,7 @@
    (unless (or keep-enclosing-scope-at-phase
                (module-path? initial-require))
      (raise-syntax-error #f "not a module path" s (m 'initial-require)))
-   
+
    ;; All module bodies start at phase 0
    (define phase 0)
    
@@ -190,17 +191,24 @@
    ;; Accumulate module path indexes used by submodules to refer to this module
    (define mpis-to-reset (box null))
 
+   ;; For recording `portal` via `#%require`:
+   (define add-defined-portal (make-add-defined-portal self requires+provides
+                                                       portal-syntaxes defined-syms
+                                                       all-scopes-s frame-id m-ns))
+
    ;; Initial require
    (define (initial-require! #:bind? bind?)
      (cond
       [(not keep-enclosing-scope-at-phase)
        ;; Install the initial require
-       (perform-initial-require! initial-require self
+       (define initial-mpi (build-initial-require-mpi initial-require self))
+       (perform-initial-require! initial-mpi self
                                  all-scopes-s
                                  m-ns
                                  requires+provides
                                  #:bind? bind?
-                                 #:who 'module)]
+                                 #:who 'module)
+       initial-mpi]
       [else
        ;; For `(module* name #f ....)`, just register the enclosing module
        ;; as an import and visit it
@@ -213,10 +221,21 @@
                                                    enclosing-mod
                                                    keep-enclosing-scope-at-phase)
        (namespace-module-visit! m-ns enclosing-mod
-                                keep-enclosing-scope-at-phase)]))
+                                keep-enclosing-scope-at-phase)
+       #f]))
    (log-expand init-ctx 'prepare-env)
-   (initial-require! #:bind? #t)
+   (define initial-mpi (initial-require! #:bind? #t))
    (log-expand init-ctx 'rename-one bodys)
+
+   (define-values (paramz exit-paramz)
+     (cond
+       [initial-mpi
+        (define-values (enter exit)
+          (load-configure-expand initial-mpi (namespace-root-namespace m-ns)))
+        (values (enter-configure-parameterization enter) exit)]
+       [else
+        (values (current-parameterization)
+                current-parameterization)]))
 
    ;; To detect whether the body is expanded multiple times:
    (define again? #f)
@@ -332,7 +351,8 @@
                                                 [require-lifts (make-require-lift-context
                                                                 phase
                                                                 (make-parse-lifted-require m-ns self requires+provides
-                                                                                           #:declared-submodule-names declared-submodule-names)
+                                                                                           #:declared-submodule-names declared-submodule-names
+                                                                                           #:add-defined-portal add-defined-portal)
                                                                 initial-lifted-requires)]
                                                 [to-module-lifts (make-to-module-lift-context
                                                                   phase
@@ -358,6 +378,7 @@
                                    #:modules-being-compiled modules-being-compiled
                                    #:mpis-to-reset mpis-to-reset
                                    #:portal-syntaxes portal-syntaxes
+                                   #:add-defined-portal add-defined-portal
                                    #:loop pass-1-and-2-loop))
 
          ;; - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -412,6 +433,11 @@
                              (hash-ref declared-keywords '#:cross-phase-persistent)))
        (check-cross-phase-persistent-form fully-expanded-bodys-except-post-submodules self))
 
+     (define realm (let ([realm-stx (hash-ref declared-keywords '#:realm #f)])
+                     (if realm-stx
+                         (syntax-e realm-stx)
+                         (current-compile-realm))))
+
      ;; - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
      ;; Pass 4: expand `module*` submodules
      
@@ -438,6 +464,7 @@
                                             #:root-ctx root-ctx
                                             #:ctx submod-ctx
                                             #:modules-being-compiled modules-being-compiled
+                                            #:realm realm
                                             #:portal-syntaxes portal-syntaxes
                                             #:fill compiled-module-box)))
      
@@ -465,7 +492,7 @@
      ;; Assemble the `#%module-begin` result:
      (cond
       [(expand-context-to-parsed? submod-ctx)
-       (parsed-#%module-begin rebuild-mb-s (parsed-only fully-expanded-bodys))]
+       (parsed-#%module-begin rebuild-mb-s (parsed-only fully-expanded-bodys) realm)]
       [else
        (define mb-result-s
          (rebuild
@@ -474,7 +501,7 @@
        (cond
         [(not (expand-context-in-local-expand? submod-ctx))
          (expanded+parsed mb-result-s
-                          (parsed-#%module-begin rebuild-mb-s (parsed-only fully-expanded-bodys)))]
+                          (parsed-#%module-begin rebuild-mb-s (parsed-only fully-expanded-bodys) realm))]
         [else mb-result-s])]))
 
    ;; - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -494,8 +521,9 @@
                    [require-lifts (make-require-lift-context
                                    phase
                                    (make-parse-lifted-require m-ns self requires+provides
-                                                              #:declared-submodule-names (make-hasheq)))]))
-   
+                                                              #:declared-submodule-names (make-hasheq)
+                                                              #:add-defined-portal add-defined-portal))]))
+
    (define mb-scopes-s
      (if keep-enclosing-scope-at-phase
          ;; for `(module* name #f)`, use the `(module* ...)` form:
@@ -517,19 +545,29 @@
                           #:ctx mb-ctx
                           #:def-ctx-scopes mb-def-ctx-scopes
                           #:phase phase
-                          #:s s))
+                          #:s s
+                          #:paramz paramz
+                          #:exit-paramz exit-paramz))
    (log-expand ctx 'next)
 
    ;; Expand the body
    (define expanded-mb (performance-region
                         ['expand 'module-begin]
-                        (expand mb (struct*-copy expand-context (accumulate-def-ctx-scopes mb-ctx mb-def-ctx-scopes)
-                                                 [def-ctx-scopes #f]))))
+                        (call-with-configure-parameterization
+                         paramz
+                         exit-paramz
+                         (lambda ()
+                           (expand mb (struct*-copy expand-context (accumulate-def-ctx-scopes mb-ctx mb-def-ctx-scopes)
+                                                    [def-ctx-scopes #f]))))))
 
    ;; - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
    ;; Assemble the `module` result
 
-   (define-values (requires provides) (extract-requires-and-provides requires+provides self self))
+   (define-values (requires recur-requires provides) (extract-requires-and-provides requires+provides self self))
+
+   (define parsed-mb (if (expanded+parsed? expanded-mb)
+                         (expanded+parsed-parsed expanded-mb)
+                         expanded-mb))
 
    (define result-form
      (and (or (expand-context-to-parsed? init-ctx)
@@ -539,13 +577,12 @@
                          (m 'id:module-name)
                          self
                          requires
+                         recur-requires
                          provides
                          (requires+provides-all-bindings-simple? requires+provides)
                          (root-expand-context-encode-for-module root-ctx self self)
-                         (parsed-#%module-begin-body
-                          (if (expanded+parsed? expanded-mb)
-                              (expanded+parsed-parsed expanded-mb)
-                              expanded-mb))
+                         (parsed-#%module-begin-body parsed-mb)
+                         (parsed-#%module-begin-realm parsed-mb)
                          portal-syntaxes
                          (unbox compiled-module-box)
                          compiled-submodules)))
@@ -596,7 +633,9 @@
                              #:ctx ctx
                              #:def-ctx-scopes def-ctx-scopes
                              #:phase phase
-                             #:s s)
+                             #:s s
+                             #:paramz paramz
+                             #:exit-paramz exit-paramz)
   (define (make-mb-ctx)
     (struct*-copy expand-context ctx
                   [context 'module-begin]
@@ -619,8 +658,12 @@
         (define partly-expanded-body
           (performance-region
            ['expand 'module-begin]
-           (expand named-body-s
-                   (make-mb-ctx))))
+           (call-with-configure-parameterization
+            paramz
+            exit-paramz
+            (lambda ()
+              (expand named-body-s
+                      (make-mb-ctx))))))
         (cond
          [(eq? '#%module-begin (core-form-sym partly-expanded-body phase))
           ;; Yes, it expanded to `#%module-begin`
@@ -723,6 +766,7 @@
                                 #:modules-being-compiled modules-being-compiled
                                 #:mpis-to-reset mpis-to-reset
                                 #:portal-syntaxes portal-syntaxes
+                                #:add-defined-portal add-defined-portal
                                 #:loop pass-1-and-2-loop)
   (namespace-visit-available-modules! m-ns phase)
   (let loop ([tail? #t] [bodys bodys])
@@ -878,22 +922,7 @@
                                        #:declared-submodule-names declared-submodule-names
                                        #:who 'module
                                        #:all-scopes-stx all-scopes-stx
-                                       #:add-defined-portal
-                                       (lambda (id phase portal-stx orig-s)
-                                         (check-ids-unbound (list id) phase requires+provides #:in orig-s)
-                                         (define syms (select-defined-syms-and-bind! (list id) defined-syms
-                                                                                     self phase all-scopes-stx
-                                                                                     #:requires+provides requires+provides
-                                                                                     #:in orig-s
-                                                                                     #:frame-id frame-id
-                                                                                     #:as-transformer? #t))
-                                         (add-defined-syms! requires+provides syms phase #:as-transformer? #t)
-                                         (define sym (car syms))
-                                         (define t (portal-syntax portal-stx))
-                                         (when phase
-                                           (namespace-set-transformer! m-ns phase sym t))
-                                         (add-portal-stx! portal-syntaxes t sym phase)
-                                         sym))
+                                       #:add-defined-portal add-defined-portal)
           (log-expand partial-body-ctx 'exit-case ready-body)
           (cons ready-body
                 (loop tail? rest-bodys))]
@@ -923,17 +952,27 @@
          [(#%declare)
           (log-expand partial-body-ctx 'prim-declare exp-body)
           (define-match m exp-body '(#%declare kw ...))
-          (for ([kw (in-list (m 'kw))])
-            (unless (keyword? (syntax-e kw))
-              (raise-syntax-error #f "expected a keyword" exp-body kw))
-            (unless (memq (syntax-e kw) '(#:cross-phase-persistent #:empty-namespace #:unsafe))
-              (raise-syntax-error #f "not an allowed declaration keyword" exp-body kw))
-            (when (hash-ref declared-keywords (syntax-e kw) #f)
-              (raise-syntax-error #f "keyword declared multiple times" exp-body kw))
-            (when (eq? (syntax-e kw) '#:unsafe)
-              (unless (eq? (current-code-inspector) initial-code-inspector)
-                (raise-syntax-error #f "unsafe compilation disallowed by code inspector" exp-body kw)))
-            (hash-set! declared-keywords (syntax-e kw) kw))
+          (let loop ([kws (m 'kw)])
+            (unless (null? kws)
+              (define kw (car kws))
+              (unless (keyword? (syntax-e kw))
+                (raise-syntax-error #f "expected a keyword" exp-body kw))
+              (unless (memq (syntax-e kw) '(#:cross-phase-persistent #:empty-namespace #:unsafe #:realm #:require=define))
+                (raise-syntax-error #f "not an allowed declaration keyword" exp-body kw))
+              (define has-arg? (eq? (syntax-e kw) '#:realm))
+              (when (hash-ref declared-keywords (syntax-e kw) #f)
+                (raise-syntax-error #f "keyword declared multiple times" exp-body kw))
+              (when (eq? (syntax-e kw) '#:unsafe)
+                (unless (eq? (current-code-inspector) initial-code-inspector)
+                  (raise-syntax-error #f "unsafe compilation disallowed by code inspector" exp-body kw)))
+              (when (eq? (syntax-e kw) '#:realm)
+                (unless (and (pair? (cdr kws))
+                             (identifier? (cadr kws)))
+                  (raise-syntax-error #f "expected an identifier after keyword" exp-body kw)))
+              (when (eq? (syntax-e kw) '#:require=define)
+                (disable-definitions-shadow-imports! requires+provides))
+              (hash-set! declared-keywords (syntax-e kw) (if has-arg? (cadr kws) kw))
+              (loop (if has-arg? (cddr kws) (cdr kws)))))
           (define parsed-body (parsed-#%declare exp-body))
           (cons (if (expand-context-to-parsed? partial-body-ctx)
                     parsed-body
@@ -1193,10 +1232,11 @@
                                       #:root-ctx root-ctx
                                       #:ctx ctx
                                       #:modules-being-compiled modules-being-compiled
+                                      #:realm realm
                                       #:portal-syntaxes portal-syntaxes
                                       #:fill compiled-module-box)
-  
-  (define-values (requires provides) (extract-requires-and-provides requires+provides self self))
+
+  (define-values (requires recur-requires provides) (extract-requires-and-provides requires+provides self self))
 
   (define parsed-mod
     (parsed-module rebuild-s
@@ -1204,10 +1244,12 @@
                    module-name-id
                    self
                    requires
+                   recur-requires
                    provides
                    (requires+provides-all-bindings-simple? requires+provides)
                    (root-expand-context-encode-for-module root-ctx self self)
                    (parsed-only fully-expanded-bodys-except-post-submodules)
+                   realm
                    portal-syntaxes
                    #f
                    (hasheq)))
@@ -1494,15 +1536,18 @@
 ;; ----------------------------------------
 
 (define (make-parse-lifted-require m-ns self requires+provides
-                                   #:declared-submodule-names declared-submodule-names)
+                                   #:declared-submodule-names declared-submodule-names
+                                   #:add-defined-portal add-defined-portal)
   (lambda (s phase)
     (define-match m s '(#%require req))
     (parse-and-perform-requires! (list (m 'req)) s #:self self
                                  m-ns phase #:run-phase phase
                                  requires+provides
                                  #:declared-submodule-names declared-submodule-names
+                                 #:add-defined-portal add-defined-portal
                                  #:who 'require)
-    (set-requires+provides-all-bindings-simple?! requires+provides #f)))
+    (set-requires+provides-all-bindings-simple?! requires+provides #f)
+    s))
 
 ;; ----------------------------------------
 
@@ -1526,3 +1571,22 @@
   (hash-set! portal-syntaxes
              phase
              (hash-set ht sym (portal-syntax-content val))))
+
+(define (make-add-defined-portal self requires+provides
+                                 portal-syntaxes defined-syms
+                                 all-scopes-stx frame-id m-ns)
+  (lambda (id phase portal-stx orig-s)
+    (check-ids-unbound (list id) phase requires+provides #:in orig-s)
+    (define syms (select-defined-syms-and-bind! (list id) defined-syms
+                                                self phase all-scopes-stx
+                                                #:requires+provides requires+provides
+                                                #:in orig-s
+                                                #:frame-id frame-id
+                                                #:as-transformer? #t))
+    (add-defined-syms! requires+provides syms phase #:as-transformer? #t)
+    (define sym (car syms))
+    (define t (portal-syntax portal-stx))
+    (when phase
+      (namespace-set-transformer! m-ns phase sym t))
+    (add-portal-stx! portal-syntaxes t sym phase)
+    sym))

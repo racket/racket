@@ -27,8 +27,10 @@ messages embedded in the macro's syntax patterns.
 
 @;{Description of how error reporting works}
 @;{and designing for good errors}
+@include-section["parse/error.scrbl"]
 
 @;{Cut and Commit for efficiency and error reporting.}
 
 @include-section["parse/debug.scrbl"]
 @include-section["parse/experimental.scrbl"]
+@include-section["parse/pre.scrbl"]

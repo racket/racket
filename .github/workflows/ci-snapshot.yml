@@ -5,13 +5,20 @@ on:
     branches:
       - master
 
+# Only run at most one snapshot action
+#   https://docs.github.com/en/enterprise-cloud@latest/actions/using-jobs/using-concurrency
+#   https://stackoverflow.com/questions/66335225/how-to-cancel-previous-runs-in-the-pr-when-you-push-new-commitsupdate-the-curre
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: true
+
 jobs:
   create-installer:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-22.04
     if: github.repository == 'racket/racket'
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
       with:
         fetch-depth: 0
 
@@ -19,7 +26,7 @@ jobs:
       run: |
         rm -rf ~/.racket/
         
-    - uses: Bogdanp/setup-racket@v1.5
+    - uses: Bogdanp/setup-racket@v1.9.1
       with:
           architecture: 'x64'
           # FIXME: use the binary s3-sync pkg

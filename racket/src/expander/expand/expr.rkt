@@ -308,7 +308,7 @@
                                   (datum->syntax #f (syntax-e val-id) val-id val-id)))
                               val-idss))
 
-    (define (get-body)
+    (define (get-body rec-ctx)
       (cond
         [(expand-context-parsing-expanded? ctx)
          (for/list ([body (in-list bodys)])
@@ -332,7 +332,7 @@
              (if (expand-context-to-parsed? ctx)
                  (list keys exp-rhs)
                  (datum->syntax #f `[,ids ,exp-rhs] clause clause))))
-         (define exp-body (get-body))
+         (define exp-body (get-body rec-ctx))
          (when frame-id
            (reference-record-clear! frame-id))
          (if (expand-context-to-parsed? ctx)
@@ -592,9 +592,10 @@
     (lookup b ctx id
             #:in s
             #:out-of-context-as-variable? (expand-context-in-local-expand? ctx)))
-  (unless (variable? t)
+  (unless (or (variable? t)
+              (rename-transformer? t))
     (raise-syntax-error #f "identifier does not refer to a variable" id s))
-  primitive?)
+  (values t primitive?))
 
 (add-core-form!
  '#%top
@@ -742,30 +743,50 @@
                     (free-identifier=? (top-m '#%top) (core-id '#%top phase) phase phase))
          (raise-syntax-error #f "bad syntax" s)))
      (define var-id (if (id-m) (id-m 'id) (top-m 'id)))
-     (define binding (resolve+shift var-id (expand-context-phase ctx)
-                                    #:ambiguous-value 'ambiguous))
-     (when (eq? binding 'ambiguous)
-       (raise-ambiguous-error var-id ctx))
-     (unless (and (or binding
-                      (expand-context-allow-unbound? ctx))
-                  (not (and (top-m) (local-binding? binding))))
-       (raise-unbound-syntax-error #f "unbound identifier" s var-id null
-                                   (syntax-debug-info-string var-id ctx)))
-     (define primitive?
+     (let rename-loop ([var-id var-id] [from-rename? #f])
+       (define binding (resolve+shift var-id (expand-context-phase ctx)
+                                      #:ambiguous-value 'ambiguous
+                                      #:immediate? (not (expand-context-to-parsed? ctx))))
+       (when (eq? binding 'ambiguous)
+         (raise-ambiguous-error var-id ctx))
+       (unless (and (or binding
+                        (expand-context-allow-unbound? ctx))
+                    (not (and (top-m) (local-binding? binding))))
+         (raise-unbound-syntax-error #f "unbound identifier" s var-id null
+                                     (syntax-debug-info-string var-id ctx)))
+       (define-values (t primitive?)
+         (cond
+           [(or (not binding)
+                (and (expand-context-allow-unbound? ctx)
+                     (top-m)))
+            (values #f #f)]
+           [else
+            (check-top-binding-is-variable ctx binding var-id s)]))
+       (define (substitute-vr-rename)
+         (cond
+           [(or from-rename?
+                (local-variable? t))
+            (define vr-id (if (id-m)
+                              (id-m '#%variable-reference)
+                              (top-m '#%variable-reference)))
+            (define s-var-id (substitute-variable var-id t #:no-stops? (free-id-set-empty-or-just-module*?
+                                                                        (expand-context-stops ctx))))
+            (datum->syntax s (list vr-id s-var-id) s s)]
+           [else s]))
        (cond
-         [(or (not binding)
-              (and (expand-context-allow-unbound? ctx)
-                   (top-m)))
-          #f]
-         [else
-          (check-top-binding-is-variable ctx binding var-id s)]))
-     (if (expand-context-to-parsed? ctx)
-         (parsed-#%variable-reference (keep-properties-only~ s)
-                                      (cond
-                                        [(top-m) (parsed-top-id var-id binding #f)]
-                                        [primitive? (parsed-primitive-id var-id binding #f)]
-                                        [else (parsed-id var-id binding #f)]))
-         s)]
+         [(expand-context-to-parsed? ctx)
+          (parsed-#%variable-reference (keep-properties-only~ s)
+                                       (cond
+                                         [(top-m) (parsed-top-id var-id binding #f)]
+                                         [primitive? (parsed-primitive-id var-id binding #f)]
+                                         [else (parsed-id var-id binding #f)]))]
+         [(rename-transformer? t)
+          (cond
+            [(not-in-this-expand-context? t ctx)
+             (expand (avoid-current-expand-context (substitute-vr-rename) t ctx)
+                     ctx)]
+            [else (rename-loop (apply-rename-transformer t var-id ctx) #t)])]
+         [else (substitute-vr-rename)]))]
     [else
      (if (expand-context-to-parsed? ctx)
          (parsed-#%variable-reference (keep-properties-only~ s) #f)

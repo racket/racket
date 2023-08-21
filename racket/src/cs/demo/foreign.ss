@@ -43,7 +43,7 @@
 
 (define wb (make-weak-box sym1))
 
-(define we/s (rumble:make-stubborn-will-executor void))
+(define we/s (rumble:make-late-will-executor void))
 (rumble:will-register we/s sym1 (lambda (s)
                                   (unless (eq? s (weak-box-value wb))
                                     (error 'stubborn-executor-test "box context wrong"))

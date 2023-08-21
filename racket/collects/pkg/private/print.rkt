@@ -67,11 +67,12 @@
          [""
           (if default-yes? 'yes 'no)]
          [x
-          (eprintf "Invalid answer: ~a\n" x)
-          (eprintf " Answer ~a`y' or `Y' for \"yes\", ~a`n' or `N' for \"no\", or\n"
+          (unless (equal? x "?")
+            (eprintf "Invalid answer: ~a\n" x))
+          (eprintf " Answer ~a'y' or 'Y' for \"yes\", ~a'n' or 'N' for \"no\", or\n"
                    (if default-yes? "nothing or " "")
                    (if default-yes? "" "nothing or "))
-          (eprintf " `a' or `A' for \"yes for all\", or `c' or `C' for \"cancel\".\n")
+          (eprintf " 'a' or 'A' for \"yes for all\", or 'c' or 'C' for \"cancel\".\n")
           (loop)])])))
 
 

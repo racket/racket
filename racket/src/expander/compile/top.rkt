@@ -145,6 +145,7 @@
    (compiled-in-memory (hash->linklet-directory (hasheq #f bundle))
                        #f ; self
                        #f ; requires
+                       #f ; recur-requires
                        #f ; provides
                        phase-to-link-module-uses
                        (current-code-inspector)
@@ -164,7 +165,7 @@
   (cond
    [(parsed-require? p)
     (define form-stx (compile-quote-syntax (parsed-s p) cctx))
-    `(,top-level-require!-id ,form-stx ,ns-id)]
+    `(,top-level-require!-id ,form-stx ,ns-id (quote ,(parsed-require-portal-syms p)))]
    [else #f]))
 
 ;; Normally, `begin` flattening is the job of a previous layer, so

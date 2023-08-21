@@ -1,0 +1,48 @@
+#lang zuo/datum
+
+;; The `read-and-eval` entry point for a language using the expander
+
+(define (make-read-and-eval make-initial-state)
+  (lambda (str start mod-path)
+    (let* ([es (string-read str start mod-path)]
+           [ctx (make-module-context mod-path)]
+           [es (map (lambda (e) (datum->syntax ctx e)) es)]
+           [parse (make-parse ctx mod-path)]
+           [initial-state (make-initial-state ctx)]
+           [es+state+modtop (expand-sequence es initial-state empty-modtop mod-path ctx parse)]
+           [es (car es+state+modtop)]
+           [state (cadr es+state+modtop)]
+           [modtop (cadr (cdr es+state+modtop))]
+           [outs (resolve-provides (modtop-provides modtop) state ctx mod-path)]
+           [body (map (lambda (e) (add-print (parse e #f state))) es)]
+           [submods (parse-submodules (modtop-modules modtop) state mod-path ctx parse)])
+      (kernel-eval (cons 'begin (cons '(void) body)))
+      (hash 'macromod-provides outs
+            'submodules submods
+            merge-bindings-export-key (make-export-merge-binds ctx (state-binds state))
+            ;; for getting into this module world from the `zuo/kernel` module world:
+           'dynamic-require dynamic-require))))
+
+(hash
+ ;; makes `#lang zuo/private/base[-hygienic] work:
+ 'read-and-eval (make-read-and-eval (lambda (ctx)
+                                      (make-state (binds-create top-provides ctx)
+                                                  (initial-nominals language-mod-path top-provides))))
+ ;; makes `(require zuo/private/base[-hygienic])` work:
+ 'macromod-provides top-provides
+ ;; for making a new `#lang` with initial imports from `mod-path`:
+ 'make-language
+ (lambda (mod-path)
+   (let* ([mod (module->hash mod-path)]
+          [provides (hash-ref mod 'macromod-provides #f)]
+          [m-binds (hash-ref mod merge-bindings-export-key #f)])
+     (unless provides 
+       (syntax-error "not a compatible module for initial imports" mod-path))
+     (hash 'read-and-eval
+           (make-read-and-eval
+            (lambda (ctx)
+              (merge-binds (make-state (binds-create provides ctx)
+                                       (initial-nominals mod-path provides))
+                           m-binds)))
+           'macromod-provides (hash-ref (module->hash mod-path) 'macromod-provides #f)
+           'dynamic-require dynamic-require))))

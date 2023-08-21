@@ -47,6 +47,7 @@
                         [(#\*) (cons #\s rest)]
                         [(#\=) (cons* #\e #\q #\l rest)]
                         [(#\?) (cons #\p rest)]
+                        [(#\$) (cons* #\s #\y #\s #\_ rest)]
                         [else (cons x rest)]))
           '()
           (string->list (symbol->string x))))))
@@ -64,7 +65,7 @@
       [(name args rhs) (pr "#define ~a~a ~a~%" name args rhs)]))
   (define export
     (lambda (tresult name targs)
-      (pr "EXPORT ~a ~a PROTO(~a);~%" tresult name targs)))
+      (pr "EXPORT ~a ~a~a;~%" tresult name targs)))
   (define &ref
     (lambda (cast x disp)
       (format "(~aTO_VOIDP((uptr)(~a)~:[+~;-~]~d))" cast x (fx< disp 0) (abs disp))))
@@ -167,7 +168,7 @@
                 (ash n -24)
                 (logand (ash n -16) 255)
                 (logand (ash n -8) 255)))
-          (format "~d.~d.~d.~d"
+          (format "~d.~d.~d-pre-release.~d"
             (ash n -24)
             (logand (ash n -16) 255)
             (logand (ash n -8) 255)
@@ -192,15 +193,12 @@
         (constant-case architecture
           [(pb)
            (nl)
-           (pr "#ifndef _LARGEFILE64_SOURCE\n")
+           (pr "#if !defined(_LARGEFILE64_SOURCE) && !defined(FEATURE_WINDOWS)\n")
            (pr "# define _LARGEFILE64_SOURCE\n") ; needed on some 32-bit platforms before <stdint.h>
            (pr "#endif\n")
            (pr "#include <stdint.h>\n")]
           [else (void)])
 
-        (nl) (comment "Enable function prototypes by default.")
-        (pr "#ifndef PROTO~%#define PROTO(x) x~%#endif~%")
-  
         (nl) (comment "Specify declaration of exports.")
         (pr "#ifdef _WIN32~%")
         (pr "#  if __cplusplus~%")
@@ -282,6 +280,8 @@
         (deftotypep "Sbytevectorp" ($ mask-bytevector) ($ type-bytevector))
         (deftotypep "Sstringp" ($ mask-string) ($ type-string))
         (deftotypep "Sstencil_vectorp" ($ mask-stencil-vector) ($ type-stencil-vector))
+        (deftotypep "Ssystem_stencil_vectorp" ($ mask-sys-stencil-vector) ($ type-sys-stencil-vector))
+        (deftotypep "Sany_stencil_vectorp" ($ mask-any-stencil-vector) ($ type-any-stencil-vector))
         (deftotypep "Sbignump" ($ mask-bignum) ($ type-bignum))
         (deftotypep "Sboxp" ($ mask-box) ($ type-box))
         (deftotypep "Sinexactnump" ($ mask-inexactnum) ($ type-inexactnum))
@@ -421,11 +421,17 @@
         (export "void" "Sinitframe" "(iptr)")
         (export "void" "Sput_arg" "(iptr, ptr)")
         (export "ptr" "Scall" "(ptr, iptr)")
-        (comment "Warning: Sforeign_callable_entry_point(x) returns a pointer into x.")
-        (def "Sforeign_callable_entry_point(x)"
-             (&ref "(void (*) PROTO((void)))" "x" ($ code-data-disp)))
-        (def "Sforeign_callable_code_object(x)"
-             (&ref "(ptr)" "x" (- ($ code-data-disp))))
+        (constant-case architecture
+          [(pb)
+           (def "Sforeign_callable_entry_point(x)"
+                "TO_PTR(Svector_ref(x, 2))")
+           (export "ptr" "Sforeign_callable_code_object" "(void*)")]
+          [else
+           (comment "Warning: Sforeign_callable_entry_point(x) returns a pointer into x.")
+           (def "Sforeign_callable_entry_point(x)"
+                (&ref "(void (*)(void))" "x" ($ code-data-disp)))
+           (def "Sforeign_callable_code_object(x)"
+                (&ref "(ptr)" "x" (- ($ code-data-disp))))])
   
         (nl) (comment "Customization support.")
         (export "const char *" "Skernel_version" "(void)")
@@ -446,6 +452,10 @@
         (export "int"  "Sscheme_program" "(const char *, int, const char *[])")
         (export "void" "Sscheme_deinit" "(void)")
         (export "void" "Sscheme_register_signal_registerer" "(void (*f)(int))")
+        (constant-case architecture
+          [(pb)
+           (export "void" "Sregister_pbchunks" "(void **, int, int)")]
+          [else (void)])
 
         (when-feature pthreads
         (nl) (comment "Thread support.")
@@ -454,13 +464,23 @@
           (export "int" "Sdestroy_thread" "(void)")
         )
 
-        (when-feature windows
-        (nl) (comment "Windows support.")
-          (pr "#include <wchar.h>~%")
-          (export "char *" "Sgetenv" "(const char *)")
-          (export "wchar_t *" "Sutf8_to_wide" "(const char *)")
-          (export "char *" "Swide_to_utf8" "(const wchar_t *)")
-        )
+        (let ()
+          (define (gen-windows pre post)
+            (nl) (comment "Windows support.")
+            (pre)
+            (pr "#include <wchar.h>~%")
+            (export "char *" "Sgetenv" "(const char *)")
+            (export "wchar_t *" "Sutf8_to_wide" "(const char *)")
+            (export "char *" "Swide_to_utf8" "(const wchar_t *)")
+            (post))
+          (constant-case architecture
+            [(pb)
+             (gen-windows (lambda ()
+                            (pr "#if defined(FEATURE_WINDOWS)\n"))
+                          (lambda ()
+                            (pr "#endif\n")))]
+            [else
+             (when-feature windows (gen-windows void void))]))
 
         (nl) (comment "Features.")
         (for-each
@@ -679,7 +699,7 @@
             (pr "                        \"lwz ~ar0, 0(%0)\\n\\t\"\\~%" reg)   ;  try a non-reserved load to see if we are likely to succeed
             (pr "                        \"cmpwi ~ar0, 0\\n\\t\"\\~%" reg)     ;  if it is = 0, try to acquire at start
             (pr "                        \"beq 0b\\n\\t\"\\~%")                ;
-            (pr "                        \"b 1b\\n\\t\"\\~%")                  ;  othwerise loop through the try again
+            (pr "                        \"b 1b\\n\\t\"\\~%")                  ;  otherwise loop through the try again
             (pr "                        \"2:\\n\\t\"\\~%")                    ; done:
             (pr "                        :                \\~%")
             (pr "                        : \"b\" (addr)\\~%")
@@ -792,88 +812,189 @@
             (pr "                        : \"r\" (addr)\\~%")
             (pr "                        : \"cc\", \"memory\", \"r12\", \"r7\")~%")]
           [(arm64)
-            (pr "#define INITLOCK(addr)     \\~%")
-            (pr "  __asm__ __volatile__ (\"mov x12, #0\\n\\t\"\\~%")
-            (pr "                        \"str x12, [%0, #0]\\n\\t\"\\~%")
-            (pr "                        :             \\~%")
-            (pr "                        : \"r\" (addr)\\~%")
-            (pr "                        :\"memory\", \"x12\")~%")
+           (if-feature windows
+             (begin
+               (pr "#define INITLOCK(addr) (*((long long *) addr) = 0)~%")
 
-            (nl)
-            (pr "#define SPINLOCK(addr)      \\~%")
-            (pr "  __asm__ __volatile__ (\"0:\\n\\t\"\\~%")
-            (pr "                        \"ldxr x12, [%0, #0]\\n\\t\"\\~%")
-            (pr "                        \"cmp x12, #0\\n\\t\"\\~%")
-            (pr "                        \"bne 1f\\n\\t\"\\~%")
-            (pr "                        \"mov x12, #1\\n\\t\"\\~%")
-            (pr "                        \"stxr w7, x12, [%0]\\n\\t\"\\~%")
-            (pr "                        \"cmp w7, #0\\n\\t\"\\~%")
-            (pr "                        \"beq 2f\\n\\t\"\\~%")
-            (pr "                        \"1:\\n\\t\"\\~%")
-            (pr "                        \"ldr x12, [%0, #0]\\n\\t\"\\~%")
-            (pr "                        \"cmp x12, #0\\n\\t\"\\~%")
-            (pr "                        \"beq 0b\\n\\t\"\\~%")
-            (pr "                        \"b 1b\\n\\t\"\\~%")
-            (pr "                        \"2:\\n\\t\"\\~%")
-            (pr "                        :                \\~%")
-            (pr "                        : \"r\" (addr)\\~%")
-            (pr "                        : \"cc\", \"memory\", \"x12\", \"x7\")~%")
+               (nl)
+               (pr "#define SPINLOCK(addr)                           \\~%")
+               (pr "{                                                \\~%")
+               (pr "  while (_InterlockedExchange64(addr, 1) != 0) { \\~%")
+               (pr "    while(*((long long *) addr) != 0);           \\~%")
+               (pr "  }                                              \\~%")
+               (pr "} while(0)                                         ~%")
 
-            (nl)
-            (pr "#define UNLOCK(addr)     \\~%")
-            (pr "  __asm__ __volatile__ (\"mov x12, #0\\n\\t\"\\~%")
-            (pr "                        \"str x12, [%0, #0]\\n\\t\"\\~%")
-            (pr "                        :             \\~%")
-            (pr "                        : \"r\" (addr)\\~%")
-            (pr "                        :\"memory\", \"x12\")~%")
+               (nl)
+               (pr "#define UNLOCK(addr) (*((long long *) addr) = 0)~%")
 
-            (nl)
-            (pr "#define LOCKED_INCR(addr, ret) \\~%")
-            (pr "  do {\\~%")
-            (pr "  long _return_;\\~%")
-            (pr "  __asm__ __volatile__ (\"mov %0, #0\\n\\t\"\\~%")
-            (pr "                        \"0:\\n\\t\"\\~%")
-            (pr "                        \"ldxr x12, [%1, #0]\\n\\t\"\\~%")
-            (pr "                        \"add x12, x12, #1\\n\\t\"\\~%")
-            (pr "                        \"stxr w7, x12, [%1]\\n\\t\"\\~%")
-            (pr "                        \"cmp w7, #0\\n\\t\"\\~%")
-            (pr "                        \"bne 0b\\n\\t\"\\~%")
-            (pr "                        \"cmp x12, #0\\n\\t\"\\~%")
-            (pr "                        \"bne 1f\\n\\t\"\\~%")
-            (pr "                        \"mov %0, #1\\n\\t\"\\~%")
-            (pr "                        \"1:\\n\\t\"\\~%")
-            (pr "                        : \"=&r\" (_return_)\\~%")
-            (pr "                        : \"r\" (addr)\\~%")
-            (pr "                        : \"cc\", \"memory\", \"x12\", \"x7\");\\~%")
-            (pr "  ret = _return_;\\~%")
-            (pr "  } while (0)~%")
+               (nl)
+               (pr "#define LOCKED_INCR(addr, res) (res = (-1 == _InterlockedExchangeAdd64(addr, 1)))~%")
 
-            (nl)
-            (pr "#define LOCKED_DECR(addr, ret) \\~%")
-            (pr "  do {\\~%")
-            (pr "  long _return_;\\~%")
-            (pr "  __asm__ __volatile__ (\"mov %0, #0\\n\\t\"\\~%")
-            (pr "                        \"0:\\n\\t\"\\~%")
-            (pr "                        \"ldxr x12, [%1, #0]\\n\\t\"\\~%")
-            (pr "                        \"sub x12, x12, #1\\n\\t\"\\~%")
-            (pr "                        \"stxr w7, x12, [%1]\\n\\t\"\\~%")
-            (pr "                        \"cmp w7, #0\\n\\t\"\\~%")
-            (pr "                        \"bne 0b\\n\\t\"\\~%")
-            (pr "                        \"cmp x12, #0\\n\\t\"\\~%")
-            (pr "                        \"bne 1f\\n\\t\"\\~%")
-            (pr "                        \"mov %0, #1\\n\\t\"\\~%")
-            (pr "                        \"1:\\n\\t\"\\~%")
-            (pr "                        : \"=&r\" (_return_)\\~%")
-            (pr "                        : \"r\" (addr)\\~%")
-            (pr "                        : \"cc\", \"memory\", \"x12\", \"x7\");\\~%")
-            (pr "  ret = _return_;\\~%")
-            (pr "  } while (0)~%")]
+               (nl)
+               (pr "#define LOCKED_DECR(addr, res) (res = (1 == _InterlockedExchangeAdd64(addr, -1)))~%"))
+             (begin
+               (pr "#define INITLOCK(addr)     \\~%")
+               (pr "  __asm__ __volatile__ (\"mov x12, #0\\n\\t\"\\~%")
+               (pr "                        \"str x12, [%0, #0]\\n\\t\"\\~%")
+               (pr "                        :             \\~%")
+               (pr "                        : \"r\" (addr)\\~%")
+               (pr "                        :\"memory\", \"x12\")~%")
+
+               (nl)
+               (pr "#define SPINLOCK(addr)      \\~%")
+               (pr "  __asm__ __volatile__ (\"0:\\n\\t\"\\~%")
+               (pr "                        \"ldxr x12, [%0, #0]\\n\\t\"\\~%")
+               (pr "                        \"cmp x12, #0\\n\\t\"\\~%")
+               (pr "                        \"bne 1f\\n\\t\"\\~%")
+               (pr "                        \"mov x12, #1\\n\\t\"\\~%")
+               (pr "                        \"stxr w7, x12, [%0]\\n\\t\"\\~%")
+               (pr "                        \"cmp w7, #0\\n\\t\"\\~%")
+               (pr "                        \"beq 2f\\n\\t\"\\~%")
+               (pr "                        \"1:\\n\\t\"\\~%")
+               (pr "                        \"ldr x12, [%0, #0]\\n\\t\"\\~%")
+               (pr "                        \"cmp x12, #0\\n\\t\"\\~%")
+               (pr "                        \"beq 0b\\n\\t\"\\~%")
+               (pr "                        \"b 1b\\n\\t\"\\~%")
+               (pr "                        \"2:\\n\\t\"\\~%")
+               (pr "                        :                \\~%")
+               (pr "                        : \"r\" (addr)\\~%")
+               (pr "                        : \"cc\", \"memory\", \"x12\", \"x7\")~%")
+
+               (nl)
+               (pr "#define UNLOCK(addr)     \\~%")
+               (pr "  __asm__ __volatile__ (\"mov x12, #0\\n\\t\"\\~%")
+               (pr "                        \"str x12, [%0, #0]\\n\\t\"\\~%")
+               (pr "                        :             \\~%")
+               (pr "                        : \"r\" (addr)\\~%")
+               (pr "                        :\"memory\", \"x12\")~%")
+
+               (nl)
+               (pr "#define LOCKED_INCR(addr, ret) \\~%")
+               (pr "  do {\\~%")
+               (pr "  long _return_;\\~%")
+               (pr "  __asm__ __volatile__ (\"mov %0, #0\\n\\t\"\\~%")
+               (pr "                        \"0:\\n\\t\"\\~%")
+               (pr "                        \"ldxr x12, [%1, #0]\\n\\t\"\\~%")
+               (pr "                        \"add x12, x12, #1\\n\\t\"\\~%")
+               (pr "                        \"stxr w7, x12, [%1]\\n\\t\"\\~%")
+               (pr "                        \"cmp w7, #0\\n\\t\"\\~%")
+               (pr "                        \"bne 0b\\n\\t\"\\~%")
+               (pr "                        \"cmp x12, #0\\n\\t\"\\~%")
+               (pr "                        \"bne 1f\\n\\t\"\\~%")
+               (pr "                        \"mov %0, #1\\n\\t\"\\~%")
+               (pr "                        \"1:\\n\\t\"\\~%")
+               (pr "                        : \"=&r\" (_return_)\\~%")
+               (pr "                        : \"r\" (addr)\\~%")
+               (pr "                        : \"cc\", \"memory\", \"x12\", \"x7\");\\~%")
+               (pr "  ret = _return_;\\~%")
+               (pr "  } while (0)~%")
+
+               (nl)
+               (pr "#define LOCKED_DECR(addr, ret) \\~%")
+               (pr "  do {\\~%")
+               (pr "  long _return_;\\~%")
+               (pr "  __asm__ __volatile__ (\"mov %0, #0\\n\\t\"\\~%")
+               (pr "                        \"0:\\n\\t\"\\~%")
+               (pr "                        \"ldxr x12, [%1, #0]\\n\\t\"\\~%")
+               (pr "                        \"sub x12, x12, #1\\n\\t\"\\~%")
+               (pr "                        \"stxr w7, x12, [%1]\\n\\t\"\\~%")
+               (pr "                        \"cmp w7, #0\\n\\t\"\\~%")
+               (pr "                        \"bne 0b\\n\\t\"\\~%")
+               (pr "                        \"cmp x12, #0\\n\\t\"\\~%")
+               (pr "                        \"bne 1f\\n\\t\"\\~%")
+               (pr "                        \"mov %0, #1\\n\\t\"\\~%")
+               (pr "                        \"1:\\n\\t\"\\~%")
+               (pr "                        : \"=&r\" (_return_)\\~%")
+               (pr "                        : \"r\" (addr)\\~%")
+               (pr "                        : \"cc\", \"memory\", \"x12\", \"x7\");\\~%")
+               (pr "  ret = _return_;\\~%")
+               (pr "  } while (0)~%")))]
+          [(riscv64)
+           (pr "#define INITLOCK(addr) \\~%")
+           (pr "  __asm__ __volatile__ (\"li t0, 0\\n\\t\" \\~%")
+           (pr "                        \"sd t0, (%0)\\n\\t\" \\~%")
+           (pr "                        : \\~%")
+           (pr "                        : \"r\" (addr)  \\~%")
+           (pr "                        : \"memory\", \"t0\")~%")
+
+           (nl)
+           (pr "#define SPINLOCK(addr) \\~%")
+           (pr "  __asm__ __volatile__ (\"1:\\n\\t\" \\~%")
+           (pr "                        \"lr.d t0, (%[Addr])\\n\\t\" \\~%")
+           (pr "                        \"bne  t0, zero, 2f\\n\\t\" \\~%")
+           (pr "                        \"li   t0, 1\\n\\t\" \\~%")
+           (pr "                        \"sc.d t1, t0, (%[Addr])\\n\\t\" \\~%")
+           (pr "                        \"beq  t1, zero, 3f\\n\\t\" \\~%")
+           (pr "                        \"2:\\n\\t\" \\~%")
+           (pr "                        \"ld   t0, (%[Addr])\\n\\t\" \\~%")
+           (pr "                        \"beq  t0, zero, 1b\\n\\t\" \\~%")
+           (pr "                        \"j 2b\\n\\t\" \\~%")
+           (pr "                        \"3:\\n\\t\" \\~%")
+           (pr "                        : \\~%")
+           (pr "                        : [Addr] \"r\" (addr) \\~%")
+           (pr "                        : \"memory\", \"t0\", \"t1\")~%")
+
+           (nl)
+           (pr "#define UNLOCK(addr) \\~%")
+           (pr "  __asm__ __volatile__ (\"li t0, 0\\n\\t\" \\~%")
+           (pr "                        \"sd t0, (%0)\\n\\t\" \\~%")
+           (pr "                        : \\~%")
+           (pr "                        : \"r\" (addr) \\~%")
+           (pr "                        : \"memory\", \"t0\")~%")
+
+           (nl)
+           (pr "#define LOCKED_INCR(addr, ret) \\~%")
+           (pr "  do { \\~%")
+           (pr "    long _return_; \\~%")
+           (pr "    __asm__ __volatile__ (\"li %0, 0\\n\\t\" \\~%")
+           (pr "                          \"1:\\n\\t\" \\~%")
+           (pr "                          \"lr.d t0, (%1)\\n\\t\" \\~%")
+           (pr "                          \"addi t0, t0, 1\\n\\t\" \\~%")
+           (pr "                          \"sc.d t1, t0, (%1)\\n\\t\" \\~%")
+           (pr "                          \"bne  t1, zero, 1b\\n\\t\" \\~%")
+           (pr "                          \"bne  t0, zero, 2f\\n\\t\" \\~%")
+           (pr "                          \"li   %0, 1\\n\\t\" \\~%")
+           (pr "                          \"2:\\n\\t\" \\~%")
+           (pr "                          : \"=&r\" (_return_) \\~%")
+           (pr "                          : \"r\" (addr) \\~%")
+           (pr "                          : \"memory\", \"t0\", \"t1\" \\~%")
+           (pr "                          ); \\~%")
+           (pr "    ret = _return_; \\~%")
+           (pr "  } while (0)~%")
+
+           (nl)
+           (pr "#define LOCKED_DECR(addr, ret) \\~%")
+           (pr "  do { \\~%")
+           (pr "    long _return_; \\~%")
+           (pr "    __asm__ __volatile__ (\"li %0, 0\\n\\t\" \\~%")
+           (pr "                          \"1:\\n\\t\" \\~%")
+           (pr "                          \"lr.d t0, (%1)\\n\\t\" \\~%")
+           (pr "                          \"addi t0, t0, -1\\n\\t\" \\~%")
+           (pr "                          \"sc.d t1, t0, (%1)\\n\\t\" \\~%")
+           (pr "                          \"bne  t1, zero, 1b\\n\\t\" \\~%")
+           (pr "                          \"bne  t0, zero, 2f\\n\\t\" \\~%")
+           (pr "                          \"li   %0, 1\\n\\t\" \\~%")
+           (pr "                          \"2:\\n\\t\" \\~%")
+           (pr "                          : \"=&r\" (_return_) \\~%")
+           (pr "                          : \"r\" (addr) \\~%")
+           (pr "                          : \"memory\", \"t0\", \"t1\" \\~%")
+           (pr "                          ); \\~%")
+           (pr "    ret = _return_; \\~%")
+           (pr " } while (0)~%")]
           [(pb)
            (pr "#define INITLOCK(addr) (*((long *) addr) = 0)~%")
-           (pr "#define SPINLOCK(addr) (*((long *) addr) = 1)~%")
            (pr "#define UNLOCK(addr) (*((long *) addr) = 0)~%")
-           (pr "#define LOCKED_INCR(addr, res) (res = ((*(uptr*)addr)-- == 1))~%")
-           (pr "#define LOCKED_DECR(addr, res) (res = ((*(uptr*)addr)-- == 1))~%")]
+           (if-feature pthreads
+             (begin
+               (pr "#define SPINLOCK(addr) S_pb_spinlock(addr)~%")
+               (pr "#define LOCKED_INCR(addr, res) (res = S_pb_locked_adjust(addr, 1))~%")
+               (pr "#define LOCKED_DECR(addr, res) (res = S_pb_locked_adjust(addr, -1))~%")
+               (export "void" "S_pb_spinlock" "(void*)")
+               (export "int" "S_pb_locked_adjust" "(void*, int)"))
+             (begin
+               (pr "#define SPINLOCK(addr) (*((long *) addr) = 1)~%")               
+               (pr "#define LOCKED_INCR(addr, res) (res = ((*(uptr*)addr)++ == -1))~%")
+               (pr "#define LOCKED_DECR(addr, res) (res = ((*(uptr*)addr)-- == 1))~%")))]
           [else
             ($oops who "asm locking code is not yet defined for ~s" (constant architecture))]))))
 
@@ -963,6 +1084,26 @@
           (print-field-disps "eq_hashtable" (let () (include "hashtable-types.ss") (record-type-descriptor eq-ht)))
           (print-field-disps "symbol_hashtable" (let () (include "hashtable-types.ss") (record-type-descriptor symbol-ht)))
           (print-field-disps "code_info" (let () (include "types.ss") (record-type-descriptor code-info))))
+
+        (nl)
+        (comment "derived endianness")
+        (case (constant native-endianness)
+          [(little)
+           (def "native_endianness_is_little" 1)
+           (def "native_endianness_is_big" 0)]
+          [(big)
+           (def "native_endianness_is_little" 0)
+           (def "native_endianness_is_big" 1)]
+          [else
+           (def "native_endianness_is_little" 0)
+           (def "native_endianness_is_big" 0)])
+        (case (constant fasl-endianness)
+          [(little)
+           (def "fasl_endianness_is_little" 1)
+           (def "fasl_endianness_is_big" 0)]
+          [else
+           (def "fasl_endianness_is_little" 0)
+           (def "fasl_endianness_is_big" 1)])
 
         (nl)
         (comment "predicates")

@@ -41,16 +41,22 @@ machs=$machs$sep2$last
 m=""
 w=""
 pb=no
+pbarch=no
 threads=yes
 nothreads=no
+libffi=no
 temproot=""
 help=no
+forceworkarea=no
 gzipmanpages=yes
 installowner=""
 installgroup=""
 installbin=""
 installlib=""
 installman=""
+installdoc=""
+installcsug=""
+installreleasenotes=""
 installschemename="scheme"
 installpetitename="petite"
 installscriptname="scheme-script"
@@ -71,21 +77,21 @@ default_warning_flags="-Wpointer-arith -Wall -Wextra -Wno-implicit-fallthrough"
 : ${ARFLAGS:="rc"}
 : ${RANLIB:="ranlib"}
 : ${WINDRES:="windres"}
-zlibInc=-I../zlib
-LZ4Inc=-I../lz4/lib
-zlibDep=../zlib/libz.a
-LZ4Dep=../lz4/lib/liblz4.a
-zlibLib=../zlib/libz.a
-LZ4Lib=../lz4/lib/liblz4.a
-zlibHeaderDep="../zlib/zconf.h ../zlib/zlib.h"
-LZ4HeaderDep="../lz4/lib/lz4.h ../lz4/lib/lz4frame.h"
+: ${STRIP:="strip"}
+zlibLib=
+LZ4Lib=
 Kernel=KernelLib
-installkerneltarget=installkernellib
-installzlibtarget=installzlib
-installlz4target=installlz4
+buildKernelOnly=no
+enableFrompb=yes
+pbendian=l
+emscripten=no
+empetite=no
+moreBootFiles=
+preloadBootFiles=
+alwaysUseBootFile=
 
-# On WSL, set OS to "Windows_NT" to create a Windows
-# build instead of a Linux (on Windows) build:
+# On WSL, set OS to "Windows_NT" (as already set in MSYS2) to create a
+# Windows build instead of a Linux (on Windows) build:
 if [ "$OS" = "Windows_NT" ] ; then
     CONFIG_UNAME="CYGWIN_NT-"
 else
@@ -95,6 +101,11 @@ fi
 case "${CONFIG_UNAME}" in
   Linux)
     unixsuffix=le
+    installprefix=/usr
+    installmansuffix=share/man
+    ;;
+  GNU)
+    unixsuffix=gnu # the Hurd
     installprefix=/usr
     installmansuffix=share/man
     ;;
@@ -134,6 +145,7 @@ case "${CONFIG_UNAME}" in
     elif uname -a | egrep 'Power' > /dev/null 2>&1 ; then
       m64=ppc32osx
       tm64=tppc32osx
+      pbendian=b
       default_warning_flags=""
     fi
     installprefix=/usr/local
@@ -162,6 +174,8 @@ case "${CONFIG_UNAME}" in
     ;;
 esac
 
+unknownm=no
+
 if [ "$unixsuffix" != "" ] ; then
     if uname -a | egrep 'i386|i686|amd64|athlon|x86_64' > /dev/null 2>&1 ; then
         m32=i3${unixsuffix}
@@ -171,11 +185,30 @@ if [ "$unixsuffix" != "" ] ; then
     elif uname -a | egrep 'power|ppc' > /dev/null 2>&1 ; then
         m32=ppc32${unixsuffix}
         tm32=tppc32${unixsuffix}
+        m64=ppc64${unixsuffix}
+        tm64=tppc64${unixsuffix}
+        if uname -a | egrep 'ppc64le' > /dev/null 2>&1 ; then
+            pbendian=l
+        else
+            pbendian=b
+        fi
     elif uname -a | egrep 'armv|aarch64' > /dev/null 2>&1 ; then
         m32=arm32${unixsuffix}
         m64=arm64${unixsuffix}
         tm32=tarm32${unixsuffix}
         tm64=tarm64${unixsuffix}
+    elif uname -a | grep 'riscv64' > /dev/null 2>&1 ; then
+        m32=""
+        m64=rv64${unixsuffix}
+        tm32=""
+        tm64=trv64${unixsuffix}
+    else
+        # using "unknown" helps at least select OS-based flags
+        m32=unknown32${unixsuffix}
+        m64=unknown64${unixsuffix}
+        tm32=tunknown32${unixsuffix}
+        tm64=tunknown64${unixsuffix}
+        unknownm=yes
     fi
 fi
 
@@ -189,6 +222,9 @@ while [ $# != 0 ] ; do
       ;;
     --machine=*)
       m=`echo $1 | sed -e 's/^--machine=//'`
+      ;;
+    --boot=*)
+      mboot=`echo $1 | sed -e 's/^--boot=//'`
       ;;
     --threads)
       threads=yes
@@ -205,6 +241,21 @@ while [ $# != 0 ] ; do
     --pb)
       pb=yes
       ;;
+    --pbarch)
+      pbarch=yes
+      ;;
+    --emscripten)
+      emscripten=yes
+      CC_FOR_BUILD="${CC}"
+      CC="emcc"
+      LD="emld"
+      AR="emar"
+      RANLIB="emranlib"
+      ;;
+    --force)
+      forceworkarea=yes
+      enableFrompb=no
+      ;;
     --installprefix=*)
       installprefix=`echo $1 | sed -e 's/^--installprefix=//'`
       ;;
@@ -216,6 +267,15 @@ while [ $# != 0 ] ; do
       ;;
     --installman=*)
       installman=`echo $1 | sed -e 's/^--installman=//'`
+      ;;
+    --installdoc=*)
+      installdoc=`echo $1 | sed -e 's/^--installdoc=//'`
+      ;;
+    --installcsug=*)
+      installcsug=`echo $1 | sed -e 's/^--installcsug=//'`
+      ;;
+    --installreleasenotes=*)
+      installreleasenotes=`echo $1 | sed -e 's/^--installreleasenotes=//'`
       ;;
     --installowner=*)
       installowner=`echo $1 | sed -e 's/^--installowner=//'`
@@ -239,6 +299,7 @@ while [ $# != 0 ] ; do
       AR="${toolprefix}${AR}"
       RANLIB="${toolprefix}${RANLIB}"
       WINDRES="${toolprefix}${WINDRES}"
+      STRIP="${toolprefix}${STRIP}"
       ;;
     --gzip-man-pages)
       gzipmanpages=yes
@@ -264,6 +325,9 @@ while [ $# != 0 ] ; do
     --disable-iconv)
       disableiconv=yes
       ;;
+    --enable-libffi)
+      libffi=yes
+      ;;
     --disable-auto-flags)
       addflags=no
       ;;
@@ -272,19 +336,19 @@ while [ $# != 0 ] ; do
       ;;
     --libkernel)
       Kernel=KernelLib
-      installkerneltarget=installkernellib
-      if [ "$zlibInc" != "" ]; then
-          installzlibtarget=installzlib
-      fi
-      if [ "$LZ4Inc" != "" ]; then
-          installlz4target=installlz4
-      fi
       ;;
     --kernelobj)
       Kernel=KernelO
-      installkerneltarget=installkernelobj
-      installzlibtarget=
-      installlz4target=
+      ;;
+    --emboot=*)
+      bootfilenames=`echo $1 | sed -e 's/^--emboot=//'`
+      moreBootFiles="${moreBootFiles} ${bootfilenames}"
+      ;;
+    --empetite)
+      empetite=yes
+      ;;
+    --start=*)
+      alwaysUseBootFile=`echo $1 | sed -e 's/^--start=//'`
       ;;
     CC=*)
       CC=`echo $1 | sed -e 's/^CC=//'`
@@ -295,6 +359,9 @@ while [ $# != 0 ] ; do
     CFLAGS=*)
       CFLAGS=`echo $1 | sed -e 's/^CFLAGS=//'`
       cflagsset=yes
+      ;;
+    CC_FOR_BUILD=*)
+      CC_FOR_BUILD=`echo $1 | sed -e 's/^CC_FOR_BUILD=//'`
       ;;
     LD=*)
       LD=`echo $1 | sed -e 's/^LD=//'`
@@ -317,19 +384,14 @@ while [ $# != 0 ] ; do
     WINDRES=*)
       WINDRES=`echo $1 | sed -e 's/^WINDRES=//'`
       ;;
+    STRIP=*)
+      STRIP=`echo $1 | sed -e 's/^STRIP=//'`
+      ;;
     ZLIB=*)
       zlibLib=`echo $1 | sed -e 's/^ZLIB=//'`
-      zlibInc=
-      zlibDep=
-      zlibHeaderDep=
-      installzlibtarget=
       ;;
     LZ4=*)
       LZ4Lib=`echo $1 | sed -e 's/^LZ4=//'`
-      LZ4Inc=
-      LZ4Dep=
-      LZ4HeaderDep=
-      installlz4target=
       ;;
     *)
       echo "option '$1' unrecognized or missing an argument; try $0 --help"
@@ -339,15 +401,32 @@ while [ $# != 0 ] ; do
   shift
 done
 
-if [ "$m" = "pb" ] ; then
-    echo "Don't select pb using -m or --machine, because pb needs the"
-    echo " machine as the kernel host machine. Instead, use --pb to select"
-    echo " a pb (portable bytecode) build."
-    exit 1
+if [ $pbarch = yes ] ; then
+    pb=yes
 fi
 
+if [ $emscripten = yes ] ; then
+    pb=yes
+    bits=32
+    if [ "$m" != "" ] ; then
+        echo "Don't combine --emscripten with -m or --machine"
+        exit 1
+    fi
+    m32=pb32l
+    tm32=tpb32l
+fi
+
+case "$m" in
+    pb)
+        echo "Don't select pb using -m or --machine, because pb prefers to use the"
+        echo " machine as the kernel host machine. Instead, use --pb or --pbarch"
+        echo " to select a pb (portable bytecode) build."
+        exit 1
+        ;;
+esac
+
 if [ "$bits" = "" ] ; then
-  if uname -a | egrep 'amd64|x86_64|aarch64|arm64|ppc64|powerpc64' > /dev/null 2>&1 ; then
+  if uname -a | egrep 'amd64|x86_64|aarch64|arm64|ppc64|powerpc64|riscv64' > /dev/null 2>&1 ; then
     bits=64
   else
     bits=32
@@ -355,34 +434,44 @@ if [ "$bits" = "" ] ; then
 fi
 
 if [ "$threads" = "" ] ; then
-  threads=yes
+    defaultthreads=yes
+else
+    defaultthreads=$threads
+fi
+
+if [ "$threads" = "" ] ; then
+    if [ "$pb" = "yes" ] ; then
+        if [ "$pbarch" = "yes" ] ; then
+            threads=yes
+        else
+            threads=no
+        fi
+    else
+        threads=yes
+    fi
 fi
 
 if [ $bits = 64 ] ; then
-  if [ $threads = yes ] ; then defaultm=$tm64 ; else defaultm=$m64 ; fi
+  if [ $defaultthreads = yes ] ; then defaultm=$tm64 ; else defaultm=$m64 ; fi
 else
-  if [ $threads = yes ] ; then defaultm=$tm32 ; else defaultm=$m32 ; fi
+  if [ $defaultthreads = yes ] ; then defaultm=$tm32 ; else defaultm=$m32 ; fi
 fi
 
 if [ "$m" = "" ] ; then
   machine_supplied=no
   if [ $pb = yes ] ; then
      m=pb
+     if [ $threads = yes ] ; then m=t$m ; fi
      if [ $bits = 64 ] ; then mpbhost=$m64 ; else mpbhost=$m32 ; fi
      flagsm=$mpbhost
      if [ "$mpbhost" = "" ] ; then
-         echo "Could not infer current machine type."
-         echo ""
-         echo "Event for a pb build, a machine type is needed to select C compiler"
-         echo "and linker flags. You can use"
-         echo "  $0 --pb -m=<machine type>"
-         echo "to specify the available machine type, but since it wasn't inferred,"
-         echo "probably your OS and architecture combination is not supported."
-         exit 1
+         flagsm=unknown
      fi
-  else      
-    m=$defaultm
-    flagsm=$m
+  else
+    if [ "$unknownm" != "yes" ] ; then
+        m=$defaultm
+    fi
+    flagsm=$defaultm
   fi
 elif [ $pb = yes ] ; then
   mpbhost=$m
@@ -390,10 +479,33 @@ elif [ $pb = yes ] ; then
   m=pb
 else
   flagsm=$m
+  defaultm=$m
+fi
+
+if [ $pbarch = yes ] ; then
+    m=pb$bits$pbendian
+    if [ $threads = yes ] ; then
+        m=t$m
+    fi
+fi
+
+if [ "$mboot" = "" ] ; then
+    mboot="$m"
+else
+    magain=`echo $mboot | sed -e 's/-.*//'`
+    if [ "$m" != "$magain" ]; then
+        echo "Machine $m is not consistent with boot directory $magain"
+        exit 1
+    fi
+    buildKernelOnly=yes
 fi
 
 if [ "$w" = "" ] ; then
-  w=$m
+    if [ $emscripten = yes ] ; then
+        w=em-$mboot
+    else
+        w=$mboot
+    fi
 fi
 
 if [ "$installbin" = "" ] ; then
@@ -408,20 +520,36 @@ if [ "$installman" = "" ] ; then
   installman=$installprefix/$installmansuffix
 fi
 
+if [ "$installdoc" = "" ] ; then
+  installdoc=$installprefix/share/doc
+fi
+
+if [ "$installcsug" = "" ] ; then
+  installcsug=$installdoc/csug9.5
+fi
+
+if [ "$installreleasenotes" = "" ] ; then
+  installreleasenotes=$installdoc/csv9
+fi
+
 if [ "$help" = "yes" ]; then
   echo "Purpose:"
   echo "  $0 determines the machine type and constructs a custom Makefile"
-  echo "  and Mf-install, taking into account the options below."
+  echo "  taking into account the options below."
   echo ""
   echo "Options (defaults shown in parens):"
   echo "  --machine=<machine type>          explicitly specify machine type ($m)"
-  echo "  -m=<machine type>                 same as --machine <machine type> ($m)"
+  echo "  -m=<machine type>                 same as --machine=<machine type> ($m)"
   echo "  --threads                         specify threaded version ($threads)"
   echo "  --nothreads                       specify non-threaded version ($nothreads)"
   echo "  --32|--64                         specify 32/64-bit version ($bits)"
+  echo "  --pb                              specify pb (portable bytecode) version"
+  echo "  --pbarch                          specify pb with inferred word and endianness"
+  echo "  --emscripten                      build via emscripten (\"em\" tool prefix)"
   echo "  --disable-x11                     disable X11 support"
   echo "  --disable-curses                  disable [n]curses support"
   echo "  --disable-iconv                   disable iconv support"
+  echo "  --enable-libffi                   enable libffi support for pb"
   echo "  --disable-auto-flags              no auto additions to CFLAGS/LDFLAGS/LIBS"
   echo "  --enable-warning-flags            add GCC warning flags to CFLAGS"
   echo "  --libkernel                       build libkernel.a (the default)"
@@ -430,18 +558,28 @@ if [ "$help" = "yes" ]; then
   echo "  --installbin=<pathname>           bin directory ($installbin)"
   echo "  --installlib=<pathname>           lib directory ($installlib)"
   echo "  --installman=<pathname>           manpage directory ($installman)"
+  echo "  --installdoc=<pathname>           documentation root ($installdoc)"
+  echo "  --installcsug=<pathname>          guide directory ($installcsug)"
+  # abbreviate "release notes" to fit default help in 80 cols:
+  echo "  --installreleasenotes=<pathname>  notes directory ($installreleasenotes)"
   echo "  --temproot=<pathname>             staging root ($temproot)"
   echo "  --installowner=<ownername>        install with owner ($installowner)"
   echo "  --installgroup=<groupname>        install with group ($installgroup)"
-  echo "  --installschemename=<schemename>  install with group ($installschemename)"
-  echo "  --installpetitename=<petitename>  install with group ($installpetitename)"
-  echo "  --installscriptname=<scriptname>  install with group ($installscriptname)"
+  echo "  --installschemename=<schemename>  install scheme as ($installschemename)"
+  echo "  --installpetitename=<petitename>  install petite as ($installpetitename)"
+  echo "  --installscriptname=<scriptname>  install scheme-script as ($installscriptname)"
   echo "  --toolprefix=<prefix>             prefix tool (compiler, linker, ...) names"
+  echo "  --boot=<machine type>-<tag>       build from prepared variant (e.g., pbchunk)"
+  echo "  --emboot=\"<file> ...\"             additional boot <file>s with emscripten"
+  echo "  --empetite                        omit \"scheme.boot\" with emscripten"
+  echo "  --start=<name>                    load <boot>.boot instead of <exe>.boot"
   echo "  --[no]gzip-man-pages              compress manual pages ($gzipmanpages)"
   echo "  --workarea=<pathname>             build directory ($w)"
+  echo "  --force                           disable use of pb to (re)build boot files"
   echo "  CC=<C compiler>                   C compiler"
   echo "  CPPFLAGS=<C preprocessor flags>   C preprocessor flags"
   echo "  CFLAGS=<C compiler flags>         C compiler flags"
+  echo "  CC_FOR_BUILD=<C compiler>         C compiler and flags for build machine"
   echo "  LD=<linker>                       linker"
   echo "  LDFLAGS=<linker flags>            additional linker flags"
   echo "  LIBS=<libraries>                  additional libraries"
@@ -449,6 +587,7 @@ if [ "$help" = "yes" ]; then
   echo "  ARFLAGS=<archiver flgs>           archiver flags"
   echo "  RANLIB=<archive indexer>          archive indexer"
   echo "  WINDRES=<resource compiler>       resource compiler"
+  echo "  STRIP=<strip>                     executable stripper"
   echo "  ZLIB=<lib>                        link to <lib> instead of own zlib"
   echo "  LZ4=<lib>                         link to <lib> instead of own LZ4"
   echo ""
@@ -475,6 +614,13 @@ fi
 
 optFlags=-O2
 
+if [ "$emscripten" = "yes" ]; then
+    flagsm=em
+    buildKernelOnly=yes
+    disableiconv=yes
+    disablecurses=yes
+fi
+
 if [ "$cflagsset" = "no" -o "$addwarningflags" = "yes" ] ; then
     warningFlags="$default_warning_flags"
 else
@@ -483,13 +629,17 @@ fi
 
 # Infer flags needed for threads:
 case "${flagsm}" in
-  *le|*fb|*ob|*nb)
+  *le|*gnu|*fb|*ob|*nb)
       threadFlags="-D_REENTRANT -pthread"
       threadLibs="-lpthread"
       ;;
   *s2)
       threadFlags="-pthread"
       threadLibs="-lpthread"
+      ;;
+  em)
+      threadFlags="-pthread"
+      threadLibs=""
       ;;
   *)
       threadFlags=""
@@ -515,8 +665,8 @@ if [ "$cflagsset" = "no" ] ; then
     a6*)
         CFLAGS="-m64 ${optFlags}"
         ;;
-    i3le)
-        CFLAGS="-m32 -msse2 ${optFlags}"
+    i3le) # intentionally not including i3gnu, which may not support sse2
+        CFLAGS="-m32 -msse2 -mfpmath=sse ${optFlags}"
         ;;
     i3nt)
         CFLAGS="${optFlags}"
@@ -540,42 +690,38 @@ if [ "$cflagsset" = "no" ] ; then
     ppc32*)
         CFLAGS="-m32 ${optFlags}"
         ;;
+    rv64*)
+        CFLAGS="-mabi=lp64d ${optFlags}"
+        ;;
+    em)
+        CFLAGS="${optFlags}"
+        ;;
+    *)
+        CFLAGS="${optFlags}"
+        ;;
   esac
 fi
 
-# architecture-specific for Mf-unix
-case "${muni}" in
-  pb)
-      Cpu=PORTABLE_BYTECODE
-      mdarchsrc=pb
-      ;;
-  a6*)
-      Cpu=X86_64
-      mdarchsrc=i3le
-      ;;
-  i3*)
-      Cpu=I386
-      mdarchsrc=i3le
-      ;;
-  arm32*)
-      Cpu=ARMV6
-      mdarchsrc=arm32le
-      ;;
-  arm64*)
-      Cpu=AARCH64
-      mdarchsrc=arm32le
-      ;;
-  ppc32*)
-      Cpu=PPC32
-      mdarchsrc=ppc32
-      ;;
-esac
+if [ "$CC_FOR_BUILD" = "" ] ; then
+    CC_FOR_BUILD="${CC} ${CFLAGS}"
+else
+    enableFrompb=no
+fi
 
 # Add automatic thread compilation flags, unless suppressed by --disable-auto-flags
 if [ "$addflags" = "yes" ] ; then
-  if [ "$threadFlags" != "" ] ; then
-    CFLAGS="${CFLAGS} ${threadFlags}"
-  fi
+    if [ "$threads" = "yes" ] ; then
+        if [ "$threadFlags" != "" ] ; then
+            CFLAGS="${CFLAGS} ${threadFlags}"
+        fi
+    fi
+fi
+
+# Add libffi library, unless suppressed by --disable-auto-flags
+if [ "$addflags" = "yes" ] ; then
+    if [ "$libffi" = "yes" ] ; then
+        LIBS="${LIBS} -lffi"
+    fi
 fi
 
 cursesLib=-lcurses
@@ -588,7 +734,6 @@ fi
 
 if [ "$disableiconv" = "yes" ]; then
     iconvLib=
-    CPPFLAGS="${CPPFLAGS} -DDISABLE_ICONV"
 else
     iconvLib="-liconv"
 fi
@@ -596,7 +741,7 @@ fi
 # Add automatic linking flags, unless suppressed by --disable-auto-flags
 if [ "$addflags" = "yes" ] ; then
   case "${flagsm}" in
-    *le)
+    *le|*gnu)
         LDFLAGS="${LDFLAGS} -rdynamic"
         ;;
     *fb|*nb)
@@ -610,7 +755,7 @@ if [ "$addflags" = "yes" ] ; then
   esac
 
   case "${flagsm}" in
-    *le)
+    *le|*gnu)
         LIBS="${LIBS} -lm -ldl ${ncursesLib} -lrt"
         ;;
     *fb|*ob)
@@ -631,7 +776,7 @@ if [ "$addflags" = "yes" ] ; then
     *nt)
         LIBS="${LIBS} -lshell32 -luser32 -lole32 -lrpcrt4 -luuid"
         ;;
-    8qnx)
+    *qnx)
         if [ "$disableiconv" = "no" ]; then
             iconvLib="/usr/local/lib/libiconv.so"
         fi
@@ -648,13 +793,16 @@ mdinclude=
 mdcppflags=
 mdcflags=
 mdldflags=
-mdlinkflags= 
+mdlinkflags=
+zlibConfigureEnv=
 zlibConfigureFlags=
+exeExtraDeps=
 exePostStep=":"
+exeSuffix=
 
 # compile flags for c/Mf-unix and mats/Mf-unix
 case "${flagsmuni}" in
-    *le)
+    *le|*gnu)
         mdcflags="-fPIC -shared"
         ;;
     *fb|*ob)
@@ -665,6 +813,9 @@ case "${flagsmuni}" in
         mdcflags="-fPIC -shared"
         mdinclude="-I/usr/X11R7/include -I/usr/pkg/include -I/usr/pkg/include/ncurses -I/usr/X11R6/include"
         ;;
+    *nt)
+        mdcflags="-shared"
+	;;
     *osx)
         mdcflags="-dynamiclib -undefined dynamic_lookup"
         ;;
@@ -686,7 +837,7 @@ case "${flagsmuni}" in
     i3le)
         mdldflags="-melf_i386"
         ;;
-    *le)
+    *le|*gnu)
         ;;
     i3nb)
         mdldflags="-m elf_i386"
@@ -705,31 +856,67 @@ case "${flagsmuni}" in
         mdlinkflags="-Wl,--export-dynamic"
         mdldflags="-mi386nto"
         ;;
+    em)
+        mdlinkflags="-s EXIT_RUNTIME=1 -s ALLOW_MEMORY_GROWTH=1"
+        ;;
 esac
 
-# post-link-executable step for c/Mf-unix
+# pre- and post-link-executable step for c/Mf-unix
 case "${flagsmuni}" in
     *nb)
-        exePostStep='paxctl +m ${Scheme}'
+        exePostStep='paxctl +m'
+        ;;
+    em)
+        if [ "$empetite" = yes ]; then
+            preloadBootFiles="$w/boot/$m/petite.boot"
+        else
+            preloadBootFiles="$w/boot/$m/petite.boot $w/boot/$m/scheme.boot"
+        fi
+        preloadBootFiles="$preloadBootFiles $moreBootFiles"
+        exeSuffix=".html"
         ;;
 esac
 
 # zlib configure flags for c/Mf-unix
 case "${flagsmuni}" in
-    a6*)
-        zlibConfigureFlags="--64"
+    em)
+        if  [ "$zlibLib" = "" ]; then
+            zlibLib="-s USE_ZLIB=1"
+            CFLAGS="${CFLAGS} -s USE_ZLIB=1"
+            # not used, but this is how we might build our own zlib:
+            zlibConfigureEnv="CROSS_PREFIX=em uname=wasm-em"
+        fi
         ;;
 esac
 
+if [ "$w" = "$m" ] ; then
+    configuringin=""
+else
+    configuringin=" in $w"
+fi
+
+if [ "$m" = "" ] ; then
+    enableFrompb=no
+    forceworkarea=no
+fi
+
+if [ "$buildKernelOnly" = yes ] ; then
+    enableFrompb=no
+fi
+
 if [ -f boot/$m/scheme.boot -o -f "$srcdir"/boot/$m/scheme.boot ] ; then
-  echo "Configuring for $m"
+    echo "Configuring for $m$configuringin"
+elif [ -f "$srcdir"/boot/pb/scheme.boot -a "$enableFrompb" = "yes" ] ; then
+    echo "Configuring for $m$configuringin, and will create boot files via pb"
+elif [ "$forceworkarea" = yes ] ; then
+    echo "Configuring for $m$configuringin despite missing boot files"
 else
   if [ "$m" = "" ] ; then
       maybem="<machine type>"
   else
       maybem=$m
   fi
-  echo 'No suitable machine type found in "boot".'
+  echo "No suitable machine type found in \"${srcdir}/boot\"."
   echo ""
   echo "Available machine types:"
   echo "  $machs"
@@ -746,23 +933,7 @@ else
       echo "to specify one of the available machine types."
   fi
   echo ""
-  if [ "$m" = "" ] ; then
-      echo 'If no directory in "boot" exists for the correct machine type,'
-      echo "then you can use Racket v7.1 or later with"
-  else
-      echo "Since no directory in "'"boot"'" exists for $m, you can try"
-      echo "using Racket v7.1 or later with"
-  fi
-  echo "  racket rktboot/main.rkt --machine $maybem"
-  echo "to create the boot files, and then try $0 again."
-  if [ -f boot/pb/scheme.boot ] ; then
-      echo ""
-      echo "Alternatively, a pb machine type is available, so try"
-      echo "  $0 --pb"
-      echo "  make $maybem.bootquick"
-      echo "to create the boot files using a portable-bytecode build,"
-      echo "and then try $0 again."
-  fi
+  echo "See \"${srcdir}/BUILDING\" for ways of getting boot files."
   exit 1
 fi
 
@@ -775,93 +946,40 @@ case "$srcdir" in
         ;;
 esac
 
-if "$srcdir"/workarea $m $w $mpbhost ; then
-    :
-else
-    # not a recognized host, or other error
-    exit 1
-fi
+# Makefile to build and launch Zuo
+sed -e 's/$(w)/'$w'/g'\
+    "$srcdir"/makefiles/Makefile.in > Makefile
 
-sed -e 's/$(m)/'$m'/g'\
-    -e 's/$(defaultm)/'$defaultm'/g'\
-    -e 's/$(workarea)/'$w'/g'\
-  "$srcdir"/makefiles/Makefile.in > Makefile
+mkdir -p $w
 
-mkdir -p csug
-sed -e 's/$(m)/'$m'/g'\
-    -e "s;^srcdir = .*\$;srcdir = $upsrcdir/csug;"\
-    "$srcdir"/makefiles//Makefile-csug.in > csug/Makefile
+# Stub Zuo script to lanch the real one, using "Makefile"
+# to locate the workarea:
+cp "$srcdir"/makefiles/buildmain.zuo main.zuo
 
-mkdir -p release_notes
-sed -e 's/$(m)/'$m'/g'\
-    "$srcdir"/makefiles//Makefile-release_notes.in > release_notes/Makefile
+# Some idea, but in the workarea, so it refers to "workarea.zuo" here:
+cp "$srcdir"/makefiles/workmain.zuo $w/main.zuo
 
-cat "$srcdir"/makefiles/Makefile-workarea.in > $w/Makefile
-
-sed -e 's/$(m)/'$m'/g'\
-    -e 's/$(m)/'$m'/g'\
-    -e 's/$(workarea)/'$w'/g'\
-    "$srcdir"/makefiles/Mf-boot.in > $w/Mf-boot
-
-sed -e "s;^m=none\$;m=$m;"\
-    -e "s;^InstallBin=.*\$;InstallBin=$installbin;"\
-    -e "s;^InstallLib=.*\$;InstallLib=$installlib;"\
-    -e "s;^InstallMan=.*\$;InstallMan=$installman/man1;"\
-    -e "s;^InstallOwner=.*\$;InstallOwner=$installowner;"\
-    -e "s;^InstallGroup=.*\$;InstallGroup=$installgroup;"\
-    -e "s;^TempRoot=.*;TempRoot=$temproot;"\
-    -e "s;^GzipManPages=.*$;GzipManPages=$gzipmanpages;"\
-    -e "s;^InstallSchemeName=.*$;InstallSchemeName=$installschemename;"\
-    -e "s;^InstallPetiteName=.*$;InstallPetiteName=$installpetitename;"\
-    -e "s;^InstallScriptName=.*$;InstallScriptName=$installscriptname;"\
-    -e "s;^InstallKernelTarget=.*$;InstallKernelTarget=$installkerneltarget;"\
-    -e "s;^InstallZlibTarget=.*$;InstallZlibTarget=$installzlibtarget;"\
-    -e "s;^InstallLZ4Target=.*$;InstallLZ4Target=$installlz4target;"\
-    "$srcdir"/makefiles/Mf-install.in > $w/Mf-install
-
-cat > $w/c/next_config.h << END
-#define SCHEME_SCRIPT "$installscriptname"
-#ifndef WIN32
-#define DEFAULT_HEAP_PATH "$installlib/csv%v/%m"
-#endif
-END
-
-if [ "$disablecurses" = "yes" ]; then
-  echo '#define DISABLE_CURSES' >> $w/c/next_config.h
-fi
-
-if [ "$disablex11" = "yes" ]; then
-  echo '#define DISABLE_X11' >> $w/c/next_config.h
-fi
-
-if [ ! -f "$w/c/config.h" ] ; then
-   mv $w/c/next_config.h $w/c/config.h
-elif `cmp -s $w/c/next_config.h $w/c/config.h` ; then
-   rm $w/c/next_config.h
-else
-   mv $w/c/next_config.h $w/c/config.h
-fi
-
-case "$srcdir" in
-    /*)
-        upupsrcdir=$srcdir
-        ;;
-    *)
-        upupsrcdir=../../$srcdir
-        ;;
-esac
-
-cat > $w/c/Mf-config << END
-upupsrcdir=$upupsrcdir
+# The content of "$w/Makefile" records configuration decisions,
+# and the Zuo build script takes it from there
+cat > $w/Mf-config << END
+srcdir=$srcdir
+upsrcdir=$upsrcdir
 m=$m
-Cpu=$Cpu
-mdarchsrc=$mdarchsrc
+defaultm=$defaultm
+mboot=$mboot
+buildKernelOnly=$buildKernelOnly
+enableFrompb=$enableFrompb
 mdinclude=$mdinclude
 mdcppflags=$mdcppflags
+mdcflags=$mdcflags
 mdldflags=$mdldflags
 mdlinkflags=$mdlinkflags
+exeExtraDeps=$exeExtraDeps
 exePostStep=$exePostStep
+exeSuffix=$exeSuffix
+zlibConfigureEnv=$zlibConfigureEnv
 zlibConfigureFlags=
+CC_FOR_BUILD=$CC_FOR_BUILD
 CC=$CC
 CPPFLAGS=$CPPFLAGS
 CFLAGS=$CFLAGS
@@ -872,29 +990,31 @@ AR=$AR
 ARFLAGS=$ARFLAGS
 RANLIB=$RANLIB
 WINDRES=$WINDRES
+STRIP=$STRIP
 cursesLib=$cursesLib
 ncursesLib=$ncursesLib
-zlibInc=$zlibInc
-LZ4Inc=$LZ4Inc
-zlibDep=$zlibDep
-LZ4Dep=$LZ4Dep
 zlibLib=$zlibLib
 LZ4Lib=$LZ4Lib
-zlibHeaderDep=$zlibHeaderDep
-LZ4HeaderDep=$LZ4HeaderDep
 warningFlags=$warningFlags
-KernelCFlags=$KernelCFlags
-Kernel=\${${Kernel}}
-KernelLinkDeps=\${${Kernel}LinkDeps}
-KernelLinkLibs=\${${Kernel}LinkLibs}
-C=\${CC} \${CPPFLAGS} \${CFLAGS} \${warningFlags}
-END
+Kernel=$Kernel
+installscriptname=$installscriptname
+disablecurses=$disablecurses
+disableiconv=$disableiconv
+disablex11=$disablex11
+enablelibffi=$libffi
+preloadBootFiles=$preloadBootFiles
+alwaysUseBootFile=$alwaysUseBootFile
 
-cat > $w/mats/Mf-config << END
-upupsrcdir=$upupsrcdir
-m=$m
-mdcflags=$mdcflags
-CC=$CC
-CPPFLAGS=$CPPFLAGS
-CFLAGS=$CFLAGS
+InstallBin=$installbin
+InstallLib=$installlib
+InstallMan=$installman/man1
+InstallCSUG=$installcsug
+InstallReleaseNotes=$installreleasenotes
+InstallOwner=$installowner
+InstallGroup=$installgroup
+TempRoot=$temproot
+GzipManPages=$gzipmanpages
+InstallSchemeName=$installschemename
+InstallPetiteName=$installpetitename
+InstallScriptName=$installscriptname
 END

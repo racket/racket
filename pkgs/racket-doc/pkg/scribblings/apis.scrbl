@@ -24,12 +24,19 @@ to the @exec{raco pkg} sub-subcommands.
  Each-long form option of the command-line interface is a keyword
  argument to the functions described below. An argument corresponding to @DFlag{type}, @DFlag{deps},
  @DFlag{format}, @DFlag{scope}, or @DFlag{multi-clone} accepts its argument as a symbol, while
- other flags that take arguments expect strings.
- An argument corresponding to @DFlag{scope} is also allowed to be a path string,
+ other flags that take text arguments expect strings, and flags that expect number arguments
+ expect exact integers. An argument corresponding to @DFlag{scope} is also allowed to be a path string,
  as would be provided to @DFlag{scope-dir}.
  Options without argument correspond to keyword arguments that
  accept booleans, where @racket[#t] is equivalent to the presence of
- the option.
+ the option. When a flag can be used multiple times, its keyword-argument form
+ can hold a single value, a list of values, or @racket[#f] to indicate the
+ default implied by zero instances of the flag.
+
+The parameters @racket[current-pkg-catalogs],
+@racket[current-pkg-scope], @racket[current-pkg-scope-version], and
+@racket[current-pkg-error] do not to affect command functions, because the
+functions explicitly configure parameters based on their arguments.
 
 @defthing[pkg-install-command procedure?]{Implements @command-ref{install}.}
 @defthing[pkg-update-command procedure?]{Implements @command-ref{update}.}

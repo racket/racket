@@ -7,7 +7,7 @@
 @racket[v] is a procedure, @racket[#f] otherwise.}
 
 
-@defproc[(apply [proc procedure?] 
+@defproc[(apply [proc procedure?]
                 [v any/c] ... [lst list?]
                 [#:<kw> kw-arg any/c] ...) any]{
 
@@ -63,14 +63,17 @@ one has an optional input with different semantics.  In addition,
 }
 
 @defproc[(procedure-rename [proc procedure?]
-                           [name symbol?])
+                           [name symbol?]
+                           [realm symbol? 'racket])
          procedure?]{
 
 Returns a procedure that is like @racket[proc], except that its name
 as returned by @racket[object-name] (and as printed for debugging) is
-@racket[name].
+@racket[name] and its @tech{realm} (potentially used for adjusting
+error messages) is @racket[realm].
 
-The given @racket[name] is used for printing an error message if the
+The given @racket[name] and @racket[realm] are used for printing and adjusting
+an error message if the
 resulting procedure is applied to the wrong number of arguments.  In
 addition, if @racket[proc] is an @tech{accessor} or @tech{mutator}
 produced by @racket[struct],
@@ -79,7 +82,22 @@ produced by @racket[struct],
 @racket[name] when its (first) argument has the wrong type. More
 typically, however, @racket[name] is not used for reporting errors,
 since the procedure name is typically hard-wired into an internal
-check.}
+check.
+
+@history[#:changed "8.4.0.2" @elem{Added the @racket[realm] argument.}]}
+
+
+@defproc[(procedure-realm [proc procedure?])
+         symbol?]{
+
+Reports the @tech{realm} of a procedure, which can depend on the
+module where the procedure was created, the
+@racket[current-compile-realm] value when the procedure's code was
+compiled, or a realm explicitly assigned through a function like
+@racket[procedure-rename].
+
+@history[#:added "8.4.0.2"]}
+
 
 @defproc[(procedure->method [proc procedure?]) procedure?]{
 
@@ -201,7 +219,8 @@ keyword arguments.
 
 @defproc[(procedure-reduce-arity [proc procedure?]
                                  [arity procedure-arity?]
-                                 [name (or/c symbol? #f) #f])
+                                 [name (or/c symbol? #f) #f]
+                                 [realm symbol? 'racket])
          procedure?]{
 
 Returns a procedure that is the same as @racket[proc] (including
@@ -220,9 +239,10 @@ arity-reduced procedure) or @racket[arity] must be the empty list
 @exnraise[exn:fail:contract].
 
 If @racket[name] is not @racket[#f], then @racket[object-name] of the
-result procedure produces @racket[name]. Otherwise,
-@racket[object-name] of the result procedure produces the same result
-as for @racket[proc].
+result procedure produces @racket[name], and @racket[procedure-realm]
+of the result produced produces @racket[realm]. Otherwise,
+@racket[object-name] and @racket[procedure-realm] of the result procedure
+produce the same result as for @racket[proc].
 
 @examples[
 (define my+ (procedure-reduce-arity + 2 ))
@@ -233,11 +253,13 @@ as for @racket[proc].
 ]
 
 @history[#:changed "7.0.0.11" @elem{Added the optional @racket[name]
-                                    argument.}]}
+                                    argument.}
+         #:changed "8.4.0.2" @elem{Added the @racket[realm] argument.}]}
 
 @defproc[(procedure-reduce-arity-mask [proc procedure?]
                                       [mask exact-integer?]
-                                      [name (or/c symbol? #f) #f])
+                                      [name (or/c symbol? #f) #f]
+                                      [realm symbol? 'racket])
          procedure?]{
 
 The same as @racket[procedure-reduce-arity], but using the
@@ -247,7 +269,8 @@ The mask encoding of an arity is often easier to test and manipulate,
 and @racket[procedure-reduce-arity-mask] is sometimes faster than
 @racket[procedure-reduce-arity] while always being at least as fast.
 
-@history[#:added "7.0.0.11"]}
+@history[#:added "7.0.0.11"
+         #:changed "8.4.0.2" @elem{Added the @racket[realm] argument.}]}
 
 @defproc[(procedure-keywords [proc procedure?])
          (values
@@ -328,7 +351,7 @@ new procedure is the same as for @racket[plain-proc]. See also
  (define show2
    (make-keyword-procedure (lambda (kws kw-args . rest)
                              (list kws kw-args rest))
-                           (lambda args 
+                           (lambda args
                              (list->vector args)))))
 (show2 1)
 (show2 #:init 0 1 2 3 #:extra 4)
@@ -338,7 +361,9 @@ new procedure is the same as for @racket[plain-proc]. See also
                                          [arity procedure-arity?]
                                          [required-kws (listof keyword?)]
                                          [allowed-kws (or/c (listof keyword?)
-                                                            #f)])
+                                                            #f)]
+                                         [name (or/c symbol? #f) #f]
+                                         [realm symbol? 'racket])
          procedure?]{
 
 Like @racket[procedure-reduce-arity], but constrains the keyword
@@ -357,25 +382,30 @@ must require no more keywords than the ones listed in
  (define orig-show
    (make-keyword-procedure (lambda (kws kw-args . rest)
                              (list kws kw-args rest))))
- (define show (procedure-reduce-keyword-arity 
+ (define show (procedure-reduce-keyword-arity
                orig-show 3 '(#:init) '(#:extra #:init))))
 (show #:init 0 1 2 3 #:extra 4)
 (eval:error (show 1))
 (eval:error (show #:init 0 1 2 3 #:extra 4 #:more 7))
-]}
+]
+
+@history[#:changed "8.4.0.2" @elem{Added the @racket[realm] argument.}]}
 
 
 @defproc[(procedure-reduce-keyword-arity-mask [proc procedure?]
                                               [mask exact-integer?]
                                               [required-kws (listof keyword?)]
                                               [allowed-kws (or/c (listof keyword?)
-                                                                  #f)])
+                                                                  #f)]
+                                              [name (or/c symbol? #f) #f]
+                                              [realm symbol? 'racket])
          procedure?]{
 
 The same as @racket[procedure-reduce-keyword-arity], but using the
 representation of arity described with @racket[procedure-arity-mask].
 
-@history[#:added "7.0.0.11"]}
+@history[#:added "7.0.0.11"
+         #:changed "8.4.0.2" @elem{Added the @racket[realm] argument.}]}
 
 
 @defstruct[arity-at-least ([value exact-nonnegative-integer?])]{
@@ -424,7 +454,7 @@ redundant and disallowed).
 
 @examples[
 (struct annotated-proc (base note)
-  #:property prop:procedure 
+  #:property prop:procedure
              (struct-field-index base))
 (define plus1 (annotated-proc
                 (lambda (x) (+ x 1))
@@ -459,9 +489,9 @@ is disallowed).
 @mz-examples[
 (struct fish (weight color)
   #:mutable
-  #:property 
-  prop:procedure  
-  (lambda (f n) 
+  #:property
+  prop:procedure
+  (lambda (f n)
     (let ([w (fish-weight f)])
       (set-fish-weight! f (+ n w)))))
 (define wanda (fish 12 'red))
@@ -578,10 +608,11 @@ bound outside of the @racket[lambda] or @racket[case-lambda], and when
 
 @section{Reflecting on Primitives}
 
-A @idefterm{primitive procedure} is a built-in procedure that is
-implemented in low-level language. Not all procedures of
+A @deftech{primitive procedure} is a built-in procedure that may be
+implemented in a lower-level language. Not all procedures of
 @racketmodname[racket/base] are primitives, but many are. The
-distinction is mainly useful to other low-level code.
+distinction between primitives and other procedures may be useful to
+other low-level code.
 
 @defproc[(primitive? [v any/c]) boolean?]{
 
@@ -614,15 +645,34 @@ applied.}
 Returns @racket[v].
 }
 
-@defproc[(const [v any]) procedure?]{
+@defproc[(const [v any/c]) procedure?]{
 
 Returns a procedure that accepts any arguments (including keyword
 arguments) and returns @racket[v].
 
 @mz-examples[#:eval fun-eval
-((const 'foo) 1 2 3)
 ((const 'foo))
+((const 'foo) 1 2 3)
+((const 'foo) 'a 'b #:c 'c)
 ]}
+
+@defproc[(const* [v any/c] ...) procedure?]{
+
+Similar to @racket[const], except it returns @racket[v]s.
+
+@mz-examples[#:eval fun-eval
+((const*))
+((const*) 1 2 3)
+((const*) 'a 'b #:c 'c)
+((const* 'foo))
+((const* 'foo) 1 2 3)
+((const* 'foo) 'a 'b #:c 'c)
+((const* 'foo 'foo))
+((const* 'foo 'foo) 1 2 3)
+((const* 'foo 'foo) 'a 'b #:c 'c)
+]
+
+@history[#:added "8.7.0.5"]}
 
 @deftogether[(@defform[(thunk  body ...+)]
               @defform[(thunk* body ...+)])]{
@@ -692,7 +742,7 @@ Combines calls to each function with @racket[or].  Equivalent to
 }
 
 @defproc*[([(curry [proc procedure?]) procedure?]
-           [(curry [proc procedure?] [v any/c] ...+) any/c])]{
+           [(curry [proc procedure?] [v any/c] ...+) any])]{
 
 The result of @racket[(curry proc)] is a procedure that is a curried
 version of @racket[proc]. When
@@ -749,7 +799,7 @@ have been supplied.
 @history[#:changed "7.0.0.7" @elem{Added support for keyword arguments.}]}
 
 @defproc*[([(curryr [proc procedure?]) procedure?]
-           [(curryr [proc procedure?] [v any/c] ...+) any/c])]{
+           [(curryr [proc procedure?] [v any/c] ...+) any])]{
 
 Like @racket[curry], except that the arguments are collected in the
 opposite direction: the first step collects the rightmost group of

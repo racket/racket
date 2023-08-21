@@ -1,0 +1,68 @@
+#lang zuo
+(require "../lib.zuo")
+
+(provide targets-at)
+
+(define (targets-at at-dir config windows?)
+  (define starter (if windows? "starter" (at-dir "starter")))
+  (define MzStart.exe (at-dir "MzStart.exe"))
+  (define MrStart.exe (at-dir "MrStart.exe"))
+
+  (define msvc? (eq? 'windows (hash-ref (runtime-env) 'toolchain-type)))
+
+  (define start_rc.o (at-dir (~a "start_rc" (if msvc? ".res" ".o"))))
+  (define gstart_rc.o (at-dir (~a "gstart_rc" (if msvc? ".res" ".o"))))
+
+  (make-targets
+   (cond
+     [windows?
+      `([:target starter (,MzStart.exe ,MrStart.exe) ,void]
+        ,@(map (lambda (.exe .rc gui?)
+                 `[:target ,.exe (,(at-source "start.c") ,.rc)
+                           ,(lambda (path token)
+                              (c-compile .exe
+                                         (append (list (at-source "start.c")
+                                                       .rc)
+                                                 (if msvc?
+                                                     (list "User32.lib")
+                                                     '()))
+                                         (config-merge (if gui?
+                                                           (config-merge config
+                                                                         'LDFLAGS
+                                                                         (if msvc?
+                                                                             "/link /SUBSYSTEM:windows"
+                                                                             "-mwindows"))
+                                                           config)
+                                                       'CFLAGS
+                                                       (build-shell
+                                                        (if gui?
+                                                            "-DMRSTART"
+                                                            "-DMZSTART")
+                                                        (if msvc?
+                                                            (build-shell "/Fo:"
+                                                                         (string->shell (at-dir "start.obj")))
+                                                            "")))))])
+               (list MzStart.exe MrStart.exe)
+               (list start_rc.o gstart_rc.o)
+               (list #f #t))
+        ,@(map (lambda (.rc gui?)
+                 `[:target ,.rc (,(at-source "../worksp/starters/start.rc"))
+                           ,(lambda (path token)
+                              (windres (at-source "../worksp/starters/start.rc")
+                                       .rc
+                                       config msvc?
+                                       (if gui?
+                                           "-DMRSTART"
+                                           "-DMZSTART")))])
+               
+               (list start_rc.o gstart_rc.o)
+               (list #f #t)))]
+     [else
+      `([:target ,starter (,(at-source "ustart.c") ,(at-source "self_exe.inc"))
+                 ,(lambda (path token)
+                    (c-compile path
+                               (list (at-source "ustart.c"))
+                               (let ([plain-cc (shell-subst* (hash-ref config 'PLAIN_CC #f) config)])
+                                 (if plain-cc
+                                     (hash-set config 'CC plain-cc)
+                                     config))))])])))

@@ -47,6 +47,7 @@
   (define dup-mods (make-hash)) ; modules that are provided by multiple packages
   (define pkg-version-deps (make-hash)) ; save version dependencies
   (define pkg-versions (make-hash)) ; save declared versions
+  (define bad-pkg-versions (make-hash))
   (define path-cache (make-hash))
   (define metadata-ns (make-base-namespace))
   (define pkg-dir-cache (make-hash))
@@ -193,11 +194,19 @@
                                                         'core))
                                               pkg))
     (when vers
+      (unless (valid-version? vers)
+        (hash-set! bad-pkg-versions pkg vers)
+        (setup-fprintf* (current-error-port) #f
+                        (string-append
+                         "invalid package version declaration:\n"
+                         "  package: ~s\n"
+                         "  declared version: ~s\n")
+                        pkg vers))
       (hash-set! pkg-versions pkg vers))
     (when check-unused?
       (hash-set! pkg-implies pkg implies))
     (values deps implies))
-  
+
   ;; ----------------------------------------
   ;; Flatten package dependencies, record mod->pkg mappings,
   ;; return representative package name (of a recursive set)
@@ -331,7 +340,8 @@
   (define doc-pkgs (make-hash))
   (define doc-reported (make-hash))
   (define doc-all-registered? #f)
-  (define (check-doc! pkg dep dest-dir)
+  (define (check-doc! pkg dep+tag dest-dir)
+    (define dep (car dep+tag))
     (define-values (base name dir?) (split-path dep))
     (when (and all-pkgs-lazily?
                (not doc-all-registered?)
@@ -354,11 +364,13 @@
                            "  for package: ~s\n"
                            "  on package: ~s\n"
                            "  from document: ~s\n"
-                           "  to document: ~s")
+                           "  to document: ~s\n"
+                           "  for tag: ~s")
                           pkg
                           src-pkg
                           (get-name dest-dir)
-                          (get-name base))))))
+                          (get-name base)
+                          (cdr dep+tag))))))
 
   ;; ----------------------------------------
   (define (check-bytecode-deps f dir coll-path pkg)
@@ -449,13 +461,15 @@
                                (build-path path "doc" name)))
           (cond
            [check?
-            (for ([dep (in-list (doc-db-get-dependencies (build-path dest-dir "in.sxref") 
-                                                         db-file
-                                                         #:attach (if main? 
-                                                                      #f
-                                                                      (and (file-exists? main-db-file)
-                                                                           main-db-file))))])
-              (check-doc! pkg dep dest-dir))]
+            (for ([dep+tag (in-list (doc-db-get-dependencies
+                                     (build-path dest-dir "in.sxref")
+                                     db-file
+                                     #:include-tags? #t
+                                     #:attach (if main?
+                                                  #f
+                                                  (and (file-exists? main-db-file)
+                                                       main-db-file))))])
+              (check-doc! pkg dep+tag dest-dir))]
            [else
             (hash-set! doc-pkgs (path->directory-path dest-dir) pkg)])))))
 
@@ -520,23 +534,42 @@
   ;; check version dependencies:
   (hash-set! pkg-versions "racket" (version))
   (define bad-version-dependencies
-    (for*/fold ([ht #hash()]) ([(pkg deps) (in-hash pkg-version-deps)]
-                               [d (in-list deps)])
+    (for*/fold ([ht #hash()])
+               ([(pkg deps) (in-hash pkg-version-deps)]
+                [d (in-list deps)])
       (define dep-pkg (car d))
       (define dep-vers (cdr d))
       (define decl-vers (hash-ref pkg-versions dep-pkg "0.0"))
       (cond
-       [(version<? decl-vers dep-vers)
-        (setup-fprintf* (current-error-port) #f 
-                        (string-append
-                         "package depends on newer version:\n"
-                         "  package: ~s\n"
-                         "  depends on package: ~s\n"
-                         "  depends on version: ~s\n"
-                         "  current package version: ~s")
-                        pkg dep-pkg dep-vers decl-vers)
-        (hash-update ht pkg (lambda (l) (cons d l)) null)]
-       [else ht])))
+        [(hash-has-key? bad-pkg-versions dep-pkg)
+         (setup-fprintf* (current-error-port) #f
+                         (string-append
+                          "package depends on package whose version is invalid:\n"
+                          "  package: ~s\n"
+                          "  depends on package: ~s\n"
+                          "  ~s version: ~s\n")
+                         pkg dep-pkg dep-pkg decl-vers)
+         ht]
+        [(not (valid-version? dep-vers))
+         (setup-fprintf* (current-error-port) #f
+                         (string-append
+                          "invalid version in package dependency specification:\n"
+                          "  package: ~s\n"
+                          "  depends on package: ~s\n"
+                          "  depends on version: ~s\n"
+                          pkg dep-pkg dep-vers))
+         (hash-update ht pkg (lambda (l) (cons d l)) null)]
+        [(version<? decl-vers dep-vers)
+         (setup-fprintf* (current-error-port) #f
+                         (string-append
+                          "package depends on newer version:\n"
+                          "  package: ~s\n"
+                          "  depends on package: ~s\n"
+                          "  depends on version: ~s\n"
+                          "  current package version: ~s")
+                         pkg dep-pkg dep-vers decl-vers)
+         (hash-update ht pkg (lambda (l) (cons d l)) null)]
+        [else ht])))
 
   (when check-unused?
     (for ([(pkg actuals) (in-hash pkg-actual-deps)])
@@ -578,10 +611,11 @@
                        (if (= (hash-count unused) 1) "y" "ies")
                        pkg
                        (if (= (hash-count unused) 1) "" "s")))))
-  
+
   ;; Report result summary and (optionally) repair:
   (define all-ok? (and (zero? (hash-count missing))
                        (zero? (hash-count dup-mods))
+                       (zero? (hash-count bad-pkg-versions))
                        (zero? (hash-count bad-version-dependencies))
                        (zero? (hash-count missing-pkgs))))
   (unless all-ok?
@@ -591,6 +625,13 @@
       (setup-fprintf* (current-error-port) #f
                       "package not installed: ~a"
                       pkg))
+    (for ([(pkg ver) (in-hash bad-pkg-versions)])
+      (setup-fprintf* (current-error-port) #f
+                      (string-append
+                       "package has invalid version:\n"
+                       "  package: ~s\n"
+                       "  version: ~s\n")
+                      pkg ver))
     (for ([(pkg deps) (in-hash bad-version-dependencies)])
       (setup-fprintf* (current-error-port) #f
                       (string-append

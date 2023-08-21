@@ -71,6 +71,7 @@
     local-label-trap-check local-label-trap-check-set!
     direct-call-label? make-direct-call-label
     direct-call-label-referenced direct-call-label-referenced-set!
+    aligned-label? make-aligned-label
     return-point-label? make-return-point-label
     return-point-label-compact? return-point-label-compact?-set!
     Lsrc Lsrc? Ltype Ltype? unparse-Ltype unparse-Lsrc
@@ -326,12 +327,12 @@
         (fprintf p "#<info>"))))
 
   (define-record-type label
-    (nongenerative #{var n93q6qho9id46fha8itaytldd-6})
+    (nongenerative #{label n93q6qho9id46fha8itaytldd-6})
     (fields name))
 
   (define-record-type libspec-label
     (parent label)
-    (nongenerative #{var n93q6qho9id46fha8itaytldd-7})
+    (nongenerative #{label n93q6qho9id46fha8itaytldd-7})
     (sealed #t)
     (fields libspec live-reg*)
     (protocol
@@ -343,7 +344,7 @@
   ; different purposes in different passes.
   (define-record-type local-label
     (parent label)
-    (nongenerative #{var n93q6qho9id46fha8itaytldd-8})
+    (nongenerative #{label n93q6qho9id46fha8itaytldd-8})
     (fields (mutable func) (mutable offset) (mutable iteration) (mutable block)
       ; following used by place-overflow-and-trap-check pass
       (mutable overflow-check) (mutable trap-check))
@@ -354,7 +355,7 @@
 
   (define-record-type direct-call-label
     (parent local-label)
-    (nongenerative #{var n93q6qho9id46fha8itaytldd-9})
+    (nongenerative #{label n93q6qho9id46fha8itaytldd-9})
     (sealed #t)
     (fields (mutable referenced))
     (protocol
@@ -362,9 +363,17 @@
         (lambda (name)
           ((pargs->new name) #f)))))
 
-  (define-record-type return-point-label
+  (define-record-type aligned-label
     (parent local-label)
-    (nongenerative #{var n93q6qho9id46fha8itaytldd-10})
+    (nongenerative #{label n93q6qho9id46fha8itaytlxx-12})
+    (protocol
+      (lambda (pargs->new)
+        (lambda (name)
+          ((pargs->new name))))))
+
+  (define-record-type return-point-label
+    (parent aligned-label)
+    (nongenerative #{label n93q6qho9id46fha8itaytlxx-10})
     (sealed #t)
     (fields (mutable compact?))
     (protocol
@@ -543,7 +552,7 @@
 
  ; move labels to top level and expands closures forms to more primitive operations
   (define-language L7 (extends L6)
-    (nongenerative-id #{L7 jczowy6yjfz400ntojb6av7y0-7})
+    (nongenerative-id #{L7 cdzl2w7vcr40l9ebd38t92bxg-7})
     (terminals
       (- (uvar (x))
          (fixnum (interface)))
@@ -573,6 +582,12 @@
          ; moved up one language to support closure instrumentation
          (inline info prim e* ...)                     => (inline info prim e* ...)
          (call info mdcl (maybe e0) e1 ...)            => (call mdcl e0 e1 ...)
+         ; use (raw e) to mark a raw non-immediate rvalue in expand-inline
+         ; (np-expand-primitives) so that we use a uptr temporary in bind or
+         ; when flattening the code in np-remove-complex-opera*; raw is optional
+         ; where we already bind or assign to a uptr temporary or where we
+         ; ensure the value is not live across a call
+         (raw e)
          (set! lvalue e)
          ; these two forms are added here so expand-inline handlers can expand into them
          (values info e* ...)
@@ -646,6 +661,9 @@
   (declare-primitive push effect #f)
   (declare-primitive pop-multiple effect #f) ; arm
   (declare-primitive push-multiple effect #f) ; arm
+  (declare-primitive call-arena-in effect #f) ;pb
+  (declare-primitive fp-call-arena-in effect #f) ;pb
+  (declare-primitive c-stack-call effect #f) ;pb
   (declare-primitive remember effect #f)
   (declare-primitive restore-flrv effect #f)
   (declare-primitive restore-lr effect #f) ; ppc
@@ -664,6 +682,7 @@
   (declare-primitive store-store-fence effect #f)
   (declare-primitive acquire-fence effect #f)
   (declare-primitive release-fence effect #f)
+  (declare-primitive set-cr-bit effect #f) ; ppc32
   
   (declare-primitive < pred #t)
   (declare-primitive <= pred #t)
@@ -735,6 +754,9 @@
   (declare-primitive load-single value #t) ; not required by cpnanopass
   (declare-primitive load-single->double value #t)
 
+  (declare-primitive call-arena-out value #f) ;pb
+  (declare-primitive fp-call-arena-out value #f) ;pb
+
   (declare-primitive fpcastto value #t) ; 64-bit only
   (declare-primitive fpcastto/hi value #t) ; 32-bit only
   (declare-primitive fpcastto/lo value #t) ; 32-bit only
@@ -768,7 +790,7 @@
  ; '(), (eof-object), ($unbound-object), #!bwp, characters, and fixnums as
  ; scheme-object ptrs and inlines primitive calls
   (define-language L9 (extends L7)
-    (nongenerative-id #{L9 jczowy6yjfz400ntojb6av7y0-9})
+    (nongenerative-id #{L9 cdzl2w7vcr40l9ebd38t92bxg-9})
     (entry Program)
     (terminals
       (- (datum (d))
@@ -783,7 +805,7 @@
 
  ; determine where we should be placing interrupt and overflow
   (define-language L9.5 (extends L9)
-    (nongenerative-id #{L9.5 jczowy6yjfz400ntojb6av7y0-9.5})
+    (nongenerative-id #{L9.5 cdzl2w7vcr40l9ebd38t92bxg-9.5})
     (entry Program)
     (terminals
       (+ (boolean (ioc))))
@@ -793,7 +815,7 @@
 
  ; remove the loop form
   (define-language L9.75 (extends L9.5)
-    (nongenerative-id #{L9.75 jczowy6yjfz400ntojb6av7y0-9.75})
+    (nongenerative-id #{L9.75 cdzl2w7vcr40l9ebd38t92bxg-9.75})
     (entry Program)
     (Expr (e body)
       (- (loop x (x* ...) body))))
@@ -805,7 +827,7 @@
  ; Rhs expressions can appear on the right-hand-side of a set! or anywhere arbitrary
  ; Exprs can appear.  Exprs appear in the body of a case-lambda clause.
   (define-language L10 (extends L9.75)
-    (nongenerative-id #{L10 jczowy6yjfz400ntojb6av7y0-10})
+    (nongenerative-id #{L10 cdzl2w7vcr40l9ebd38t92bxg-10})
     (terminals
       (+ (uvar (local))))
     (entry Program)
@@ -842,6 +864,7 @@
          (let ([x e] ...) body)
          (set! lvalue e)
          (mvcall info e1 e2)
+         (raw e)
          (foreign-call info e e* ...)
          (attachment-get reified (maybe e))
          (attachment-consume reified (maybe e))
@@ -970,7 +993,7 @@
 
  ; calling conventions are imposed; clauses no longer have formals (they are
  ; now locals set by arguments from argument registers and frame); calls no
- ; longer have arguments; case-lambda is resposible for dispatching to correct
+ ; longer have arguments; case-lambda is responsible for dispatching to correct
  ; clause, even when the game is being played
   (define-language L13
     (nongenerative-id #{L13 jczowy6yjfz400ntojb6av7y0-13})

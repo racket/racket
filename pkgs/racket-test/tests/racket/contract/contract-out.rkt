@@ -1279,22 +1279,119 @@
       (eval '(dynamic-require ''provide/contract69-b 'answer)))
    '#f)
 
-  (test/spec-passed
+  (test/spec-passed/result
    'provide/contract70
-   ;; https://github.com/racket/racket/issues/2572
    '(let ()
       (eval '(module provide/contract70-a racket/base
+               (require racket/contract/base)
+               (provide
+                (contract-out
+                 [present? (->* (any/c)
+                                (#:a-keyword number?)
+                                #:pre/desc #t
+                                any/c)]))
+               (define (present? x #:a-keyword [a-keyword 1]) x)))
+
+      (eval '(module provide/contract70-b racket/base
+               (require 'provide/contract70-a)
+               (define answer (present? 11))
+               (provide answer)))
+
+      (eval '(dynamic-require ''provide/contract70-b 'answer)))
+   11)
+
+  (test/spec-passed/result
+   'provide/contract71
+   '(let ()
+      (eval '(module provide/contract71-a racket/base
+               (require racket/contract/base)
+               (provide
+                (contract-out
+                 [present? (->* (any/c)
+                                (#:a-keyword number?)
+                                any/c
+                                #:post/desc #t)]))
+               (define (present? x #:a-keyword [a-keyword 1]) (+ 1 x))))
+
+      (eval '(module provide/contract71-b racket/base
+               (require 'provide/contract71-a)
+               (define answer (present? 93))
+               (provide answer)))
+
+      (eval '(dynamic-require ''provide/contract71-b 'answer)))
+   94)
+
+  (test/spec-failed
+   'provide/contract72
+   '(let ()
+      (eval '(module provide/contract72-a racket/base
+               (require racket/contract/base)
+               (provide
+                (contract-out
+                 [present? (->* (any/c)
+                                (#:a-keyword number?)
+                                #:pre/desc #f
+                                any/c)]))
+               (define (present? x #:a-keyword [a-keyword 1]) x)))
+
+      (eval '(module provide/contract72-b racket/base
+               (require 'provide/contract72-a)
+               (define answer (present? 11))
+               (provide answer)))
+
+      (eval '(dynamic-require ''provide/contract72-b #f)))
+   "provide/contract72-b")
+
+  (test/spec-failed
+   'provide/contract73
+   '(let ()
+      (eval '(module provide/contract73-a racket/base
+               (require racket/contract/base)
+               (provide
+                (contract-out
+                 [present? (->* (any/c)
+                                (#:a-keyword number?)
+                                any/c
+                                #:post/desc "something wrong")]))
+               (define (present? x #:a-keyword [a-keyword 1]) (+ 1 x))))
+
+      (eval '(module provide/contract73-b racket/base
+               (require 'provide/contract73-a)
+               (define answer (present? 93))
+               (provide answer)))
+
+      (eval '(dynamic-require ''provide/contract73-b #f)))
+   "provide/contract73-a")
+
+  (test/spec-passed
+   'provide/contract74
+   ;; https://github.com/racket/racket/issues/2572
+   '(let ()
+      (eval '(module provide/contract74-a racket/base
                (require racket/contract/base)
                (struct stream (x [y #:mutable]))
                (provide (contract-out (struct stream ([x any/c] [y any/c]))))))
 
-      (eval '(module provide/contract70-b racket/base
-               (require 'provide/contract70-a racket/contract/base)
+      (eval '(module provide/contract74-b racket/base
+               (require 'provide/contract74-a racket/contract/base)
                (provide (contract-out (struct stream ([x any/c] [y any/c]))))))
 
-      (eval '(module provide/contract70-c racket/base
-               (require 'provide/contract70-b racket/contract/base)
+      (eval '(module provide/contract74-c racket/base
+               (require 'provide/contract74-b racket/contract/base)
                (void stream stream? stream-x stream-y set-stream-y!)))))
+
+  (test/spec-passed/result
+   'provide/contract75
+   '(let ()
+      (eval '(module provide/contract75 racket/base
+               (require racket/contract/base)
+               (provide
+                (contract-out
+                 [f (->* () #:rest (listof integer?) #:pre #t any)]))
+               (define (f . args) args)))
+      (eval '(require 'provide/contract75))
+      (eval '(f 1 12)))
+   '(1 12))
 
   (test/spec-passed/result
    'provide/contract-struct-out

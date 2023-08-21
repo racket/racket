@@ -31,7 +31,7 @@ the @rfc for more information about JSON.
 
   @itemize[
     @item{the value of @racket[jsnull], @racket['null] by default,
-  which is recognized using @racket[eq?]}
+          which is recognized using @racket[eq?]}
     @item{@racket[boolean?]}
     @item{@racket[string?]}
     @item{@racket[(or/c exact-integer? (and/c inexact-real? rational?))]}
@@ -44,16 +44,16 @@ the @rfc for more information about JSON.
   (jsexpr? "cheesecake")
   (jsexpr? 3.5)
   (jsexpr? (list 18 'null #f))
-  (jsexpr? #hasheq((turnip . 82)))
+  (jsexpr? #hasheq([turnip . 82]))
   (jsexpr? (vector 1 2 3 4))
-  (jsexpr? #hasheq(("turnip" . 82)))
+  (jsexpr? #hasheq(["turnip" . 82]))
   (jsexpr? +inf.0)
 ]
 }
 
 @defparam[json-null jsnull any/c]{
   This parameter determines the default Racket value that corresponds to
-  a JSON ``@tt{null}''.  By default, it is the @racket['null] symbol.
+  a JSON ``@tt{null}''. By default, it is the @racket['null] symbol.
   In some cases a different value may better fit your needs, therefore
   all functions in this library accept a @racket[#:null] keyword
   argument for the value that is used to represent a JSON ``@tt{null}'',
@@ -67,8 +67,9 @@ the @rfc for more information about JSON.
 
 @defproc[(write-json [x jsexpr?] [out output-port? (current-output-port)]
                      [#:null jsnull any/c (json-null)]
-                     [#:encode encode (or/c 'control 'all) 'control])
-         any]{
+                     [#:encode encode (or/c 'control 'all) 'control]
+                     [#:indent indent (or/c #f #\tab natural-number/c) #f])
+         void?]{
   Writes the @racket[x] @tech{jsexpr}, encoded as JSON, to the
   @racket[out] output port.
 
@@ -80,35 +81,47 @@ the @rfc for more information about JSON.
   the range of @tt{U+10000} and above are encoded as two @tt{\uHHHH}
   escapes, see Section 2.5 of the @|rfc|.
 
+  If @racket[indent] is provided and is not @racket[#f], each array element or object key--value pair
+  is written on a new line, and the value of @racket[indent] specifies the whitespace to be added
+  for each level of nesting: either a @racket[#\tab] character or, if @racket[indent] is a number,
+  the corresponding number of @racket[#\space] characters.
+
 @examples[#:eval ev
   (with-output-to-string
-    (λ () (write-json #hasheq((waffle . (1 2 3))))))
+    (λ () (write-json #hasheq([waffle . (1 2 3)]))))
   (with-output-to-string
-    (λ () (write-json #hasheq((와플 . (1 2 3)))
+    (λ () (write-json #hasheq([와플 . (1 2 3)])
                       #:encode 'all)))
+  (for ([indent (in-list '(#f 0 4 #\tab))])
+    (newline)
+    (write-json #hasheq([waffle . (1 2 3)] [와플 . (1 2 3)])
+                #:indent indent)
+    (newline))
 ]
 }
 
 @defproc[(jsexpr->string [x jsexpr?]
                          [#:null jsnull any/c (json-null)]
-                         [#:encode encode (or/c 'control 'all) 'control])
+                         [#:encode encode (or/c 'control 'all) 'control]
+                         [#:indent indent (or/c #f #\tab natural-number/c) #f])
          string?]{
   Generates a JSON source string for the @tech{jsexpr} @racket[x].
 
 @examples[#:eval ev
-  (jsexpr->string #hasheq((waffle . (1 2 3))))
+  (jsexpr->string #hasheq([waffle . (1 2 3)]))
 ]
 }
 
 @defproc[(jsexpr->bytes [x jsexpr?]
                         [#:null jsnull any/c (json-null)]
-                        [#:encode encode (or/c 'control 'all) 'control])
+                        [#:encode encode (or/c 'control 'all) 'control]
+                        [#:indent indent (or/c #f #\tab natural-number/c) #f])
          bytes?]{
   Generates a JSON source byte string for the @tech{jsexpr} @racket[x].
   (The byte string is encoded in UTF-8.)
 
 @examples[#:eval ev
-  (jsexpr->bytes #hasheq((waffle . (1 2 3))))
+  (jsexpr->bytes #hasheq([waffle . (1 2 3)]))
 ]
 }
 
@@ -123,9 +136,10 @@ the @rfc for more information about JSON.
   remains. Like @racket[read], the function leaves all remaining
   characters in the port so that a second call can retrieve the
   remaining JSON input(s). If the JSON inputs aren't delimited per se
-  (true, false, null), they  must be separated by whitespace from the
-  following JSON input. 
-  
+  (true, false, null), they must be separated by whitespace from the
+  following JSON input. Raises @racket[exn:fail:read] if @racket[in] is not
+  at EOF and starts with malformed JSON (that is, no initial sequence of bytes
+  in @racket[in] can be parsed as JSON); see below for examples.
 
 @examples[#:eval ev
   (with-input-from-string
@@ -157,10 +171,19 @@ the @rfc for more information about JSON.
       "sandwich sandwich" (code:comment "invalid JSON")
       (λ () (read-json))))
 
+  (with-input-from-string
+    "false sandwich" (code:comment "valid JSON prefix, invalid remainder is not (immediately) problematic")
+    (λ () (read-json)))
+
   (eval:error
     (with-input-from-string
       "false42" (code:comment "invalid JSON text sequence")
       (λ () (read-json))))
+
+  (with-input-from-string
+    "false 42" (code:comment "valid JSON text sequence (notice the space)")
+    (λ () (list (read-json) (read-json))))
+
 ]
 
 @history[#:changed "8.1.0.2" @list{Adjusted the whitespace handling to reject whitespace that isn't either
@@ -170,8 +193,9 @@ the @rfc for more information about JSON.
 @defproc[(string->jsexpr [str string?] [#:null jsnull any/c (json-null)])
          jsexpr?]{
   Parses a recognizable prefix of the string @racket[str] as an immutable @tech{jsexpr}.
-  If the prefix isn't a delimited per se   (true, false, null), it
+  If the prefix isn't delimited per se (true, false, null), it
   must be separated by whitespace from the remaining characters.
+  Raises @racket[exn:fail:read] if the string is malformed JSON.
 
 
 @examples[#:eval ev
@@ -182,8 +206,9 @@ the @rfc for more information about JSON.
 @defproc[(bytes->jsexpr [str bytes?] [#:null jsnull any/c (json-null)])
          jsexpr?]{
   Parses a recognizable prefix of the string @racket[str] as an immutable @tech{jsexpr}.
-  If the prefix isn't a delimited per se (true, false, null), it
-  must be separated by whitespace from the remaining bytes.
+  If the prefix isn't delimited per se (true, false, null), it
+  must be separated by whitespace from the remaining bytes. Raises
+  @racket[exn:fail:read] if the byte string is malformed JSON.
 
 
 @examples[#:eval ev

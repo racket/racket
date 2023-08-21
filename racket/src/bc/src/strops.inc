@@ -144,6 +144,18 @@ X__(string_p) (int argc, Scheme_Object *argv[])
 }
 
 static Scheme_Object *
+X_(immutable, string_p) (int argc, Scheme_Object *argv[])
+{
+  return ((SCHEME_X_STRINGP(argv[0]) && SCHEME_IMMUTABLEP(argv[0])) ? scheme_true : scheme_false);
+}
+
+static Scheme_Object *
+X_(mutable, string_p) (int argc, Scheme_Object *argv[])
+{
+  return ((SCHEME_X_STRINGP(argv[0]) && !SCHEME_IMMUTABLEP(argv[0])) ? scheme_true : scheme_false);
+}
+
+static Scheme_Object *
 X_(make, string) (int argc, Scheme_Object *argv[])
 {
   intptr_t len;
@@ -333,7 +345,7 @@ X__(do_string_append) (const char *who, int argc, Scheme_Object *argv[])
   }
 
   if (!len)
-    return X(zero_length, _string);
+    return X(scheme_zero_length, _string);
 
   naya = X(scheme_alloc, _string)(len, 0);
   chars = SCHEME_X_STR_VAL(naya);

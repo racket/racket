@@ -34,6 +34,8 @@ See also: @racket[immutable?], @racket[symbol->string],
 @defproc[(string? [v any/c]) boolean?]{ Returns @racket[#t] if @racket[v]
  is a string, @racket[#f] otherwise.
 
+See also @racket[immutable-string?] and @racket[mutable-string?].
+
 @mz-examples[(string? "Apple") (string? 'apple)]}
 
 
@@ -55,7 +57,13 @@ whose positions are initialized with the given @racket[char]s.
 @defproc[(string->immutable-string [str string?]) (and/c string? immutable?)]{
 Returns an immutable string with the same content as
  @racket[str], returning @racket[str] itself if @racket[str] is
- immutable.}
+ immutable.
+
+@mz-examples[
+(immutable? (string #\H #\e #\l #\l #\o))
+(immutable? (string->immutable-string (string #\H #\e #\l #\l #\o)))
+]
+}
 
 
 @defproc[(string-length [str string?]) exact-nonnegative-integer?]{
@@ -304,7 +312,9 @@ _i)] is the character produced by @racket[(proc _i)].
 @; ----------------------------------------
 @section{String Conversions}
 
-@defproc[(string-upcase [str string?]) string?]{ Returns a string
+@defproc[(string-upcase [str string?]) string?]{
+ @index['("strings" "upper-case")]{@index['("strings" "uppercase")]{Returns}}
+ a string
  whose characters are the upcase conversion of the characters in
  @racket[str]. The conversion uses Unicode's locale-independent
  conversion rules that map code-point sequences to code-point
@@ -317,7 +327,8 @@ _i)] is the character produced by @racket[(proc _i)].
 (string-upcase "Stra\xDFe")
 ]}
 
-@defproc[(string-downcase [string string?]) string?]{ Like
+@defproc[(string-downcase [string string?]) string?]{
+ @index['("strings" "lower-case")]{@index['("strings" "lowercase")]{Like}}
  @racket[string-upcase], but the downcase conversion.
 
 @mz-examples[
@@ -353,16 +364,36 @@ _i)] is the character produced by @racket[(proc _i)].
 string that is the Unicode normalized form D of @racket[string]. If
 the given string is already in the corresponding Unicode normal form,
 the string may be returned directly as the result (instead of a newly
-allocated string).}
+allocated string).
+
+@mz-examples[
+(equal? (string-normalize-nfd "Ç") "C\u0327")
+]
+}
 
 @defproc[(string-normalize-nfkd [string string?]) string?]{ Like
- @racket[string-normalize-nfd], but for normalized form KD.}
+ @racket[string-normalize-nfd], but for normalized form KD.
+
+@mz-examples[
+(equal? (string-normalize-nfkd "ℌ") "H")
+]
+}
 
 @defproc[(string-normalize-nfc [string string?]) string?]{ Like
- @racket[string-normalize-nfd], but for normalized form C.}
+ @racket[string-normalize-nfd], but for normalized form C.
+
+@mz-examples[
+(equal? (string-normalize-nfc "C\u0327") "Ç")
+]
+}
 
 @defproc[(string-normalize-nfkc [string string?]) string?]{ Like
- @racket[string-normalize-nfd], but for normalized form KC.}
+ @racket[string-normalize-nfd], but for normalized form KC.
+
+@mz-examples[
+(equal? (string-normalize-nfkc "ℋ̧") "Ḩ")
+]
+}
 
 @; ----------------------------------------
 @section{Locale-Specific String Operations}
@@ -416,6 +447,60 @@ allocated string).}
  @racket[string-downcase], but using locale-specific case-conversion
  rules based on the value of @racket[current-locale].
 }
+
+@; ----------------------------------------
+@section{String Grapheme Clusters}
+
+@defproc[(string-grapheme-span [str string?] 
+                               [start exact-nonnegative-integer?]
+                               [end exact-nonnegative-integer? (string-length str)])
+         exact-nonnegative-integer?]{
+
+Returns the number of characters (i.e., code points) in the string
+that form a Unicode grapheme cluster starting at @racket[start], assuming
+that @racket[start] is the start of a grapheme cluster and extending no
+further than the character before @racket[end]. The result is @racket[0]
+if @racket[start] equals @racket[end].
+
+The @racket[start] and @racket[end] arguments must be valid indices as
+for @racket[substring], otherwise the @exnraise[exn:fail:contract].
+
+See also @racket[char-grapheme-cluster-step].
+
+@mz-examples[
+(string-grapheme-span "" 0)
+(string-grapheme-span "a" 0)
+(string-grapheme-span "ab" 0)
+(string-grapheme-span "\r\n" 0)
+(string-grapheme-span "\r\nx" 0)
+(string-grapheme-span "\r\nx" 2)
+(string-grapheme-span "\r\nx" 0 1)
+]
+
+@history[#:added "8.6.0.2"]}
+
+@defproc[(string-grapheme-count [str string?] 
+                                [start exact-nonnegative-integer?]
+                                [end exact-nonnegative-integer? (string-length str)])
+         exact-nonnegative-integer?]{
+
+Returns the number of grapheme clusters in @racket[(substring str start
+end)].
+
+The @racket[start] and @racket[end] arguments must be valid indices as
+for @racket[substring], otherwise the @exnraise[exn:fail:contract].
+
+@mz-examples[
+(string-grapheme-count "")
+(string-grapheme-count "a")
+(string-grapheme-count "ab")
+(string-grapheme-count "ab" 0 2)
+(string-grapheme-count "ab" 0 1)
+(string-grapheme-count "\r\n")
+(string-grapheme-count "a\r\nb")
+]
+
+@history[#:added "8.6.0.2"]}
 
 @; ----------------------------------------
 @section{Additional String Functions}

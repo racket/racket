@@ -3,6 +3,8 @@
          rackunit
          racket/runtime-path)
 
+(define PORT 4438)
+
 (define (make-sctx key-file cert-file)
   (define sctx (ssl-make-server-context 'auto))
   (ssl-load-default-verify-sources! sctx)
@@ -28,7 +30,7 @@
 (ssl-seal-context! lambda-sctx)
 (ssl-seal-context! theultimate-sctx)
 (define listener
-  (ssl-listen 4433 5 #t #f lambda-sctx))
+  (ssl-listen PORT 5 #t #f lambda-sctx))
 (void
  (thread
   (lambda ()
@@ -36,7 +38,7 @@
       (ssl-accept listener)))))
 
 (define (test-name name)
-  (let*-values ([(in out) (tcp-connect "localhost" 4433)]
+  (let*-values ([(in out) (tcp-connect "localhost" PORT)]
 		[(ssl-in ssl-out)
                  (ports->ssl-ports in out
                                    #:encrypt 'auto

@@ -1,0 +1,34 @@
+# `configure` adds some variables before this line, and
+# the rest dispatch to "build.zuo" to build
+
+all: .\zuo.exe
+	.\zuo.exe . all
+
+install: .\zuo.exe
+	.\zuo.exe . install
+
+plain-install: .\zuo.exe
+	.\zuo.exe . plain-install
+
+cs: .\zuo.exe
+	.\zuo.exe . cs
+
+cs-install: .\zuo.exe
+	.\zuo.exe . cs-install
+
+plain-cs-install: .\zuo.exe
+	.\zuo.exe . plain-cs-install
+
+bc: .\zuo.exe
+	.\zuo.exe . bc
+
+bc-install: .\zuo.exe
+	.\zuo.exe . bc-install
+
+plain-bc-install: .\zuo.exe
+	.\zuo.exe . plain-bc-install
+
+zuo.exe: "$(srcdir)\zuo\zuo.c"
+	cl.exe /O2 /Fe:pre_zuo.exe "$(srcdir)\zuo\zuo.c"
+	.\pre_zuo.exe -X "$(srcdir)\zuo\lib" "$(srcdir)\ChezScheme\makefiles\libpath.zuo" "$(srcdir)\zuo"
+	cl.exe /O2 /Fe:zuo.exe zuo.c

@@ -1,0 +1,60 @@
+#lang zuo/datum
+
+(require "../pair.zuo"
+         "and-or.zuo"
+         "syntax-error.zuo"
+         "../list.zuo"
+         "check-dups.zuo")
+
+(provide (rename-out [let-or-named-let let])
+         let*)
+
+(define-syntax let-or-named-let
+  (lambda (stx)
+    (cond
+      [(not (pair? stx)) (bad-syntax stx)]
+      [(and (pair? (cdr stx))
+            (identifier? (cadr stx)))
+       ;; named `let`
+       (unless (and (list? stx)
+                    (>= (length stx) 4))
+         (bad-syntax stx))
+       (let ([name (cadr stx)]
+             [bindings (cadr (cdr stx))])
+         (for-each (lambda (binding)
+                     (unless (and (list? binding)
+                                  (= 2 (length binding))
+                                  (identifier? (car binding)))
+                       (syntax-error "named let: bad syntax at binding" binding)))
+                   bindings)
+         (let ([args (map car bindings)]
+               [inits (map cadr bindings)])
+           (check-duplicates args)
+           (cons (list (quote-syntax letrec)
+                       (list (list name
+                                   (list* (quote-syntax lambda)
+                                          args
+                                          (cddr (cdr stx)))))
+                       name)
+                 inits)))]
+      [else (cons (quote-syntax let) (cdr stx))])))
+
+(define-syntax let*
+  (lambda (stx)
+    (unless (and (list? stx) (>= (length stx) 3))
+      (bad-syntax stx))
+    (let ([bindings (cadr stx)])
+      (unless (list? bindings) (bad-syntax stx))
+      (for-each (lambda (binding)
+                  (unless (and (list? binding)
+                               (= 2 (length binding))
+                               (identifier? (car binding)))
+                    (syntax-error "let*: bad syntax at binding" binding)))
+                bindings)
+      (letrec ([nest-bindings
+                (lambda (bindings)
+                  (if (null? bindings)
+                      (cons (quote-syntax begin) (cddr stx))
+                      (list (quote-syntax let) (list (car bindings))
+                            (nest-bindings (cdr bindings)))))])
+        (nest-bindings bindings)))))

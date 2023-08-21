@@ -261,7 +261,7 @@
       (copy-directory/files (build-path "pkg-git" f) (build-path pkg-git.git f))))
   (define checksum
     (parameterize ([current-directory pkg-git.git])
-      (system "git init")
+      (system "git init -b main")
       (system "git add -A")
       (system "git commit -m 'initial commit'")
       (string-trim

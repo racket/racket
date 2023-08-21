@@ -13,7 +13,7 @@
                     prop:pattern-expander
                     syntax-local-syntax-parse-pattern-introduce)
          "private/runtime.rkt"
-         "private/runtime-progress.rkt"
+         (submod "private/residual.rkt" progress)
          "private/runtime-report.rkt"
          "private/kws.rkt")
 

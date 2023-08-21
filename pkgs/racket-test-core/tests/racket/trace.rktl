@@ -94,6 +94,18 @@
     (parameterize ([current-output-port (open-output-nowhere)]) (verbose-fact 2))))
 
 (test
+  (list ">(plus1 2)"
+        "<3")
+  'trace-define-in-definition-only-context
+   (trace-output
+     (define (f x)
+       (local-require racket/local)
+       (local [(trace-define (plus1 x) (add1 x))]
+         (plus1 x)))
+         (parameterize ([current-output-port (open-output-nowhere)])
+           (f 2))))
+
+(test
   (list ">(fact 120)"
         "<120")
   'trace-lambda-named
@@ -127,5 +139,22 @@
       (test current-file-name
             'trace-lambda-source
             (proc-file-name f3)))))
+
+(module sub racket/base
+  (provide some-id)
+  (define (some-id) 1))
+
+(define (some-id*) 1)
+
+(let ()
+  (syntax-test #'(trace add1))
+  (syntax-test #'(let ()
+                   (local-require 'sub)
+                   (trace some-id)))
+
+  (trace some-id*)
+
+  (define (some-id**) 1)
+  (trace some-id**))
 
 (report-errs)

@@ -22,29 +22,66 @@
 # define PTHREADS
 #endif
 
+#ifdef WIN32
+# undef FORCEINLINE
+# ifndef __MINGW32__
+#  define FORCEINLINE static __forceinline
+# else
+#  define FORCEINLINE static __attribute__((__always_inline__)) inline
+# endif
+#else
+#define FORCEINLINE static inline
+#endif
+
 /*****************************************/
 /* Architectures                         */
 
-#if (defined(__powerpc__) || defined(__POWERPC__)) && !defined(__powerpc64__)
-# define PORTABLE_BYTECODE_BIGENDIAN
-# define BIG_ENDIAN_IEEE_DOUBLE
+#if defined(__powerpc__) || defined(__POWERPC__) || defined(__sparc__)
+# if !(defined(__LITTLE_ENDIAN__) || defined(_LITTLE_ENDIAN))
+#  define PORTABLE_BYTECODE_BIGENDIAN
+#  define BIG_ENDIAN_IEEE_DOUBLE
+# endif
 # define FLUSHCACHE
 #endif
 
-#if (defined(__arm__) || defined(__arm64__) || defined(__aarch64__))
+#if defined(__arm__) || defined(__arm64__) || defined(__aarch64__) || defined(_M_ARM64) || defined(__riscv)
 # define FLUSHCACHE
 #endif
 
-#if (machine_type == machine_type_pb)
+#ifdef PORTABLE_BYTECODE
 # undef FLUSHCACHE
+# ifdef PORTABLE_BYTECODE_BIGENDIAN
+#  if fasl_endianness_is_little
+#   define PORTABLE_BYTECODE_SWAPENDIAN
+#  endif
+# else
+#  if fasl_endianness_is_big
+#   define PORTABLE_BYTECODE_SWAPENDIAN
+#  endif
+# endif
 #else
 # undef PORTABLE_BYTECODE_BIGENDIAN
+#endif
+
+/* For an architecture where a load or store of a 64-bit value needs
+   to be 8-byte aligned, define `LOAD_UNALIGNED_UPTR` and
+   `STORE_UNALIGNED_UPTR` to support a read that is 4-byte aligned. */
+#if defined(__sparc_v9__) || defined(__sparcv9)
+FORCEINLINE uptr load_unaligned_uptr(uptr *addr) {
+  return (((uptr)((unsigned *)addr)[0]) << 32) | ((unsigned *)addr)[1];
+}
+FORCEINLINE void store_unaligned_uptr(uptr *addr, uptr val) {
+  ((int *)addr)[0] = (val >> 32);
+  ((int *)addr)[1] = (val & (uptr)0xFFFFFFFF);
+}
+# define LOAD_UNALIGNED_UPTR(addr) load_unaligned_uptr((uptr *)(addr))
+# define STORE_UNALIGNED_UPTR(addr, v) store_unaligned_uptr((uptr *)(addr), v) 
 #endif
 
 /*****************************************/
 /* Operating systems                     */
 
-#if defined(__linux__)
+#if defined(__linux__) || defined(__GNU__) /* Hurd */
 #define NOBLOCK O_NONBLOCK
 #define LOAD_SHARED_OBJECT
 #define USE_MMAP
@@ -55,7 +92,10 @@
 #define GETPAGESIZE() getpagesize()
 typedef char *memcpy_t;
 #define MAKE_NAN(x) { x = 0.0; x = x / x; }
-#define GETWD(x) getcwd((x),PATH_MAX)
+#ifndef __GNU__ /* Hurd: no PATH_MAX */
+/* n.b. don't test PATH_MAX directly: we have not yet included <limits.h>  */
+# define GETWD(x) getcwd((x),PATH_MAX)
+#endif
 typedef int tputsputcchar;
 #ifndef __ANDROID__
 # define LOCKF
@@ -78,7 +118,6 @@ typedef int tputsputcchar;
 # define NOFILE 256
 # define NO_USELOCALE
 #endif
-#define UNUSED __attribute__((__unused__))
 #endif
 
 #if defined(__FreeBSD__) || defined(__FreeBSD_kernel__)
@@ -106,7 +145,6 @@ typedef int tputsputcchar;
 #define NSECCTIME(sb) (sb).st_ctimespec.tv_nsec
 #define NSECMTIME(sb) (sb).st_mtimespec.tv_nsec
 #define ICONV_INBUF_TYPE char **
-#define UNUSED __attribute__((__unused__))
 #define USE_OSSP_UUID
 #endif
 
@@ -139,7 +177,6 @@ typedef int tputsputcchar;
 #define NSECCTIME(sb) (sb).st_ctimespec.tv_nsec
 #define NSECMTIME(sb) (sb).st_mtimespec.tv_nsec
 #define ICONV_INBUF_TYPE const char **
-#define UNUSED __attribute__((__unused__))
 #define USE_NETBSD_UUID
 #define USE_MBRTOWC_L
 #endif
@@ -158,9 +195,19 @@ typedef int tputsputcchar;
 #endif
 typedef char *memcpy_t;
 struct timespec;
-#ifndef __MINGW32__
-# define _setjmp setjmp
-# define _longjmp longjmp
+#ifdef __MINGW32__
+# if defined(__aarch64__)
+#  define HAND_CODED_SETJMP_SIZE 32
+# endif
+#else
+# if defined(_M_ARM64) && !defined(PORTABLE_BYTECODE)
+#  define HAND_CODED_SETJMP_SIZE 32
+# elif defined(_WIN64) && !defined(PORTABLE_BYTECODE)
+#  define HAND_CODED_SETJMP_SIZE 32
+# else
+#  define _setjmp setjmp
+#  define _longjmp longjmp
+# endif
 #endif
 #ifndef __MINGW32__
 #define ftruncate _chsize_s
@@ -200,11 +247,6 @@ struct timespec;
 #define NSECMTIME(sb) 0
 #define ICONV_INBUF_TYPE char **
 struct timespec;
-#if defined(__MINGW32__)
-# define UNUSED __attribute__((__unused__))
-#else
-# define UNUSED
-#endif
 #if defined(__MINGW32__) && (machine_type == machine_type_ti3nt || machine_type == machine_type_i3nt)
 #define time_t __time64_t
 #define GET_TIME _time64
@@ -237,7 +279,6 @@ typedef int tputsputcchar;
 #define NSECCTIME(sb) (sb).st_ctimespec.tv_nsec
 #define NSECMTIME(sb) (sb).st_mtimespec.tv_nsec
 #define ICONV_INBUF_TYPE char **
-#define UNUSED __attribute__((__unused__))
 #define USE_OSSP_UUID
 #endif
 
@@ -287,7 +328,6 @@ typedef int tputsputcchar;
 #define NSECCTIME(sb) (sb).st_ctimespec.tv_nsec
 #define NSECMTIME(sb) (sb).st_mtimespec.tv_nsec
 #define ICONV_INBUF_TYPE char **
-#define UNUSED __attribute__((__unused__))
 #endif
 
 #if defined(__QNX__)
@@ -316,7 +356,6 @@ typedef int tputsputcchar;
 #define NSECMTIME(sb) 0
 #define ICONV_INBUF_TYPE char **
 #define NOFILE 256
-#define UNUSED
 #endif
 
 #if defined(sun)
@@ -348,7 +387,40 @@ typedef char tputsputcchar;
 #define NSECCTIME(sb) (sb).st_ctim.tv_nsec
 #define NSECMTIME(sb) (sb).st_mtim.tv_nsec
 #define ICONV_INBUF_TYPE const char **
-#define UNUSED __attribute__((__unused__))
+#endif
+
+#if defined(__EMSCRIPTEN__)
+#define USE_MALLOC
+#define GETPAGESIZE() 4096
+#define NOBLOCK O_NONBLOCK
+#define IEEE_DOUBLE
+#define LDEXP
+#define ARCHYPERBOLIC
+typedef char *memcpy_t;
+#define MAKE_NAN(x) { x = 0.0; x = x / x; }
+#define GETWD(x) getcwd((x),PATH_MAX)
+typedef int tputsputcchar;
+#define DIRMARKERP(c) ((c) == '/')
+#define LSEEK lseek64
+#define OFF_T off64_t
+#define _LARGEFILE64_SOURCE
+#define SECATIME(sb) (sb).st_atim.tv_sec
+#define SECCTIME(sb) (sb).st_ctim.tv_sec
+#define SECMTIME(sb) (sb).st_mtim.tv_sec
+#define NSECATIME(sb) (sb).st_atim.tv_nsec
+#define NSECCTIME(sb) (sb).st_ctim.tv_nsec
+#define NSECMTIME(sb) (sb).st_mtim.tv_nsec
+#define ICONV_INBUF_TYPE char **
+#define UNUSED_SUB_INDEX , UNUSED int sub_index
+#endif
+
+/*****************************************/
+/* Compilers                             */
+
+#if defined(__GNUC__)
+# define UNUSED __attribute__((__unused__))
+#else
+# define UNUSED
 #endif
 
 /*****************************************/
@@ -419,6 +491,10 @@ typedef char tputsputcchar;
 # define WRITE write
 #endif
 
+#ifdef PORTABLE_BYTECODE
+# undef WRITE_XOR_EXECUTE_CODE
+#endif
+
 #ifndef S_PROT_CODE
 # ifdef WRITE_XOR_EXECUTE_CODE
 #  define S_PROT_CODE (PROT_WRITE | PROT_READ)
@@ -449,6 +525,11 @@ typedef char tputsputcchar;
 # define NO_THREADS_UNUSED UNUSED
 #endif
 
+
+#ifndef UNUSED_SUB_INDEX
+# define UNUSED_SUB_INDEX /* empty */
+#endif
+
 #if defined(__has_feature)
 # if __has_feature(thread_sanitizer)
 #  define NO_THREAD_SANITIZE __attribute__((no_sanitize("thread")))
@@ -461,3 +542,8 @@ typedef char tputsputcchar;
 
 /* Use "/dev/urandom" everywhere except Windows */
 #define USE_DEV_URANDOM_UUID
+
+#ifndef LOAD_UNALIGNED_UPTR
+# define LOAD_UNALIGNED_UPTR(addr) (*(uptr*)(addr))
+# define STORE_UNALIGNED_UPTR(addr, val) (*(uptr*)(addr) = val)
+#endif

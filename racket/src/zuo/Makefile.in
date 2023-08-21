@@ -1,0 +1,42 @@
+# @PACKAGE_NAME@ @configure_input@
+@SET_MAKE@
+
+srcdir = @srcdir@
+
+prefix = @prefix@
+exec_prefix = @exec_prefix@
+datarootdir = @datarootdir@
+datadir = @datadir@
+
+bindir = @bindir@
+pkgdatadir = @datadir@/@PACKAGE_TARNAME@
+
+CC = @CC@
+CFLAGS = @CFLAGS@
+CPPFLAGS = @CPPFLAGS@
+LDFLAGS = @LDFLAGS@
+LIBS = @LIBS@
+
+CC_FOR_BUILD = @CC_FOR_BUILD@
+CFLAGS_FOR_BUILD = @CFLAGS_FOR_BUILD@
+CPPFLAGS_FOR_BUILD = @CPPFLAGS_FOR_BUILD@
+LDFLAGS_FOR_BUILD = @LDFLAGS_FOR_BUILD@
+LIBS_FOR_BUILD = @LIBS_FOR_BUILD@
+
+EMBED_LIBS = @EMBED_LIBS@
+
+.PHONY: zuos-to-run-and-install
+zuos-to-run-and-install: zuo
+	./zuo . zuos-to-run-and-install
+
+zuo: $(srcdir)/zuo.c
+	$(CC_FOR_BUILD) $(CFLAGS_FOR_BUILD) $(CPPFLAGS_FOR_BUILD) -DZUO_LIB_PATH='"'"$(srcdir)/lib"'"' -o zuo $(srcdir)/zuo.c $(LDFLAGS_FOR_BUILD) $(LIBS_FOR_BUILD)
+
+.PHONY: check
+check: zuo
+	./zuo . to-run/zuo
+	to-run/zuo . check
+
+.PHONY: install
+install: zuo
+	./zuo . install DESTDIR="$(DESTDIR)"

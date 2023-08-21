@@ -1,0 +1,108 @@
+#lang zuo/kernel
+
+;; The `zuo/private/looper` language is like `zuo/kernel`, but adds
+;; `letrec`, `cond`, and `let*` --- because implementing simple
+;; transformations like `or` and `and` is especially tedious without
+;; those. This language use is to implement `zuo/private/stitcher`.
+
+(let ([convert-var (variable 'convert)])
+  (let ([convert (lambda (s) ((variable-ref convert-var) s))])
+    (begin
+      (variable-set!
+       convert-var
+       (lambda (s)
+         (if (pair? s)
+             (if (eq? (car s) 'letrec)
+                 (let ([no (lambda () (error (~a "letrec: bad looper syntax: " (~s s))))])
+                   (let ([clauses (if (pair? (cdr s))
+                                      (car (cdr s))
+                                      #f)])
+                     (if (if (list? clauses)
+                             (if (= 1 (length clauses))
+                                 (= 2 (length (car clauses)))
+                                 #f)
+                             #f)
+                         (let ([id (car (car clauses))])
+                           (let ([rhs (car (cdr (car clauses)))])
+                             (if (if (pair? rhs)
+                                     (eq? 'lambda (car rhs))
+                                     #f)
+                                 (let ([var (string->uninterned-symbol "recvar")])
+                                   (list 'let
+                                         (list (list var (list 'variable (list 'quote id))))
+                                         (list 'let
+                                               (list (list id
+                                                           (list 'lambda (car (cdr rhs))
+                                                                 (cons (list 'variable-ref var)
+                                                                       (car (cdr rhs))))))
+                                               (list 'begin
+                                                     (list variable-set!
+                                                           var
+                                                           (let ([lam (convert rhs)])
+                                                             (if #t ; keep-names?
+                                                                 (cons (car lam)
+                                                                       (cons (car (cdr lam))
+                                                                             (cons (symbol->string id)
+                                                                                   (cdr (cdr lam)))))
+                                                                 lam)))
+                                                     (let ([body (cdr (cdr s))])
+                                                       (if (if (list? body)
+                                                               (pair? body)
+                                                               #f)
+                                                           (convert (if (null? (cdr body))
+                                                                        (car body)
+                                                                        (cons 'begin body)))
+                                                           (no)))))))
+                                 (no))))
+                         (no))))
+                 (if (eq? (car s) 'cond)
+                     (if (not (list? s))
+                         (error (~a "cond: bad looper syntax: " (~s s)))
+                         (if (null? (cdr s))
+                             '(void)
+                             (let ([cl (car (cdr s))])
+                               (if (if (list? cl)
+                                       (>= (length cl) 2)
+                                       #f)
+                                   (let ([rhs (convert (cons 'begin (cdr cl)))])
+                                     (if (null? (cdr (cdr s)))
+                                         (if (eq? (car cl) 'else)
+                                             rhs
+                                             (list 'if (car cl) rhs '(void)))
+                                         (list 'if (car cl) rhs
+                                               (convert (cons 'cond (cdr (cdr s)))))))
+                                   (error (~a "cond clause: bad looper syntax: " (~s cl)))))))
+                     (if (eq? (car s) 'let*)
+                         (if (if (list? s)
+                                 (if (= (length s) 3)
+                                     (list? (car (cdr s)))
+                                     #f)
+                                 #f)
+                             (let ([clauses (car (cdr s))])
+                               (if (null? clauses)
+                                   (convert (car (cdr (cdr s))))
+                                   (let ([cl (car clauses)])
+                                     (if (if (list? cl)
+                                             (if (= (length cl) 2)
+                                                 (symbol? (car cl))
+                                                 #f)
+                                             #f)
+                                         (convert (list 'let (list cl)
+                                                        (cons 'let*
+                                                              (cons (cdr clauses)
+                                                                    (cdr (cdr s))))))
+                                         (error (~a "let* clause: bad looper syntax: " (~s cl)))))))
+                             (error (~a "let*: bad looper syntax: " (~s s))))
+                         (if (eq? (car s) 'quote)
+                             s
+                             (cons (convert (car s))
+                                   (convert (cdr s)))))))
+             (if (eq? s 'looper-eval) ; this is how we expose looper's eval to the next layer
+                 (lambda (e) (kernel-eval (convert e)))
+                 s))))
+      (hash 'read-and-eval
+            (lambda (str start mod-path)
+              (let ([es (string-read str start mod-path)])
+                (if (= 1 (length es))
+                    (kernel-eval (convert (car es)))
+                    (error "looper: only one expression allowed"))))))))

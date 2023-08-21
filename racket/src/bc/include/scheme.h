@@ -25,7 +25,7 @@
 # endif
 #endif
 
-#if SGC_STD_DEBUGGING
+#if SGC_STD_DEBUGGING && !defined(MZ_PRECISE_GC)
 # ifndef USE_SENORA_GC
 #  define USE_SENORA_GC
 # endif
@@ -426,6 +426,12 @@ typedef struct Scheme_Long_Double_Vector {
 } Scheme_Long_Double_Vector;
 #endif
 
+typedef struct Scheme_Stencil_Vector {
+  Scheme_Object so;
+  intptr_t mask;
+  Scheme_Object *els[mzFLEX_ARRAY_DECL];
+} Scheme_Stencil_Vector;
+
 typedef struct Scheme_Print_Params Scheme_Print_Params;
 typedef void (*Scheme_Type_Printer)(Scheme_Object *v, int for_display, Scheme_Print_Params *pp);
 
@@ -542,6 +548,8 @@ typedef intptr_t (*Scheme_Secondary_Hash_Proc)(Scheme_Object *obj, void *cycle_d
 #define SCHEME_FLVECTORP(obj)  SAME_TYPE(SCHEME_TYPE(obj), scheme_flvector_type)
 #define SCHEME_EXTFLVECTORP(obj)  SAME_TYPE(SCHEME_TYPE(obj), scheme_extflvector_type)
 #define SCHEME_FXVECTORP(obj)  SAME_TYPE(SCHEME_TYPE(obj), scheme_fxvector_type)
+
+#define SCHEME_STENCIL_VECTORP(obj)  SAME_TYPE(SCHEME_TYPE(obj), scheme_stencil_vector_type)
 
 #define SCHEME_STRUCTP(obj) (SAME_TYPE(SCHEME_TYPE(obj), scheme_structure_type) || SAME_TYPE(SCHEME_TYPE(obj), scheme_proc_struct_type))
 #define SCHEME_STRUCT_TYPEP(obj) SAME_TYPE(SCHEME_TYPE(obj), scheme_struct_type_type)
@@ -723,7 +731,7 @@ typedef struct Scheme_Offset_Cptr
 #define scheme_ispunc(x) ((scheme_uchar_find(scheme_uchar_table, x)) & 0x4)
 #define scheme_iscontrol(x) ((scheme_uchar_find(scheme_uchar_table, x)) & 0x8)
 #define scheme_isspace(x) ((scheme_uchar_find(scheme_uchar_table, x)) & SCHEME_ISSPACE_BIT)
-/* #define scheme_isSOMETHING(x) ((scheme_uchar_find(scheme_uchar_table, x)) & 0x20) - not yet used */
+#define scheme_isextpict(x) ((scheme_uchar_find(scheme_uchar_table, x)) & 0x20)
 #define scheme_isdigit(x) ((scheme_uchar_find(scheme_uchar_table, x)) & 0x40)
 #define scheme_isalpha(x) ((scheme_uchar_find(scheme_uchar_table, x)) & 0x80)
 #define scheme_istitle(x) ((scheme_uchar_find(scheme_uchar_table, x)) & 0x100)
@@ -745,6 +753,9 @@ typedef struct Scheme_Offset_Cptr
 
 #define scheme_general_category(x) ((scheme_uchar_find(scheme_uchar_cats_table, x)) & 0x1F)
 /* Note: 3 bits available in the cats table */
+
+#define scheme_grapheme_cluster_break(x) (scheme_uchar_find(scheme_uchar_graphbreaks_table, x))
+#define scheme_isextend(x) ((scheme_grapheme_cluster_break(x)) == MZ_GRAPHBREAK_EXTEND)
 
 /*========================================================================*/
 /*                          procedure values                              */
@@ -960,7 +971,8 @@ enum {
 enum {
   SCHEME_hashtr_eq,
   SCHEME_hashtr_equal,
-  SCHEME_hashtr_eqv
+  SCHEME_hashtr_eqv,
+  SCHEME_hashtr_equal_always
 };
 
 typedef struct Scheme_Env Scheme_Env;
@@ -1160,7 +1172,7 @@ typedef struct Scheme_Thread {
   int running;
   Scheme_Object *suspended_box; /* contains pointer to thread when it's suspended */
   Scheme_Object *resumed_box;   /* contains pointer to thread when it's resumed */
-  Scheme_Object *dead_box;      /* contains non-zero when the thread is dead */
+  /* Scheme_Object *dead_box; */ /* in mr_hop: contains non-zero when the thread is dead */
   Scheme_Object *running_box;   /* contains pointer to thread when it's running */
   Scheme_Object *sync_box;      /* semaphore used for NACK events */
 
@@ -1248,8 +1260,8 @@ typedef struct Scheme_Thread {
   intptr_t current_start_process_msec;
 
   struct Scheme_Thread_Custodian_Hop *mr_hop;
-  Scheme_Custodian_Reference *mref;
-  Scheme_Object *extra_mrefs; /* More owning custodians */
+  /* Scheme_Custodian_Reference *mref; */ /* In mr_hop: owning custodian */
+  /* Scheme_Object *extra_mrefs; */ /* In mr_hop: more owning custodians */
   Scheme_Object *transitive_resumes; /* A hash table of running-boxes */
 
   Scheme_Object *name;
@@ -1330,6 +1342,7 @@ enum {
   MZCONFIG_ERROR_DISPLAY_HANDLER,
   MZCONFIG_ERROR_PRINT_VALUE_HANDLER,
   MZCONFIG_ERROR_PRINT_SYNTAX_HANDLER,
+  MZCONFIG_ERROR_MESSAGE_ADJUSTER,
 
   MZCONFIG_EXIT_HANDLER,
 
@@ -1369,6 +1382,7 @@ enum {
   MZCONFIG_USE_JIT,
   MZCONFIG_DISALLOW_INLINE,
   MZCONFIG_COMPILE_TARGET_MACHINE,
+  MZCONFIG_COMPILE_REALM,
 
   MZCONFIG_CUSTODIAN,
   MZCONFIG_INSPECTOR,
@@ -1948,9 +1962,13 @@ MZ_EXTERN void scheme_set_dll_procs(scheme_dll_open_proc,
                                     scheme_dll_close_proc);
 #endif
 
+MZ_EXTERN Scheme_Object *scheme_read_installation_config_table(Scheme_Env *global_env);
 MZ_EXTERN void scheme_init_collection_paths(Scheme_Env *global_env, Scheme_Object *extra_dirs);
 MZ_EXTERN void scheme_init_collection_paths_post(Scheme_Env *global_env, Scheme_Object *extra_dirs, Scheme_Object *extra_post_dirs);
+MZ_EXTERN void scheme_init_collection_paths_post_config(Scheme_Env *global_env, Scheme_Object *extra_dirs, Scheme_Object *extra_post_dirs,
+                                                        Scheme_Object *config_table);
 MZ_EXTERN void scheme_init_compiled_roots(Scheme_Env *global_env, const char *paths);
+MZ_EXTERN void scheme_init_compiled_roots_config(Scheme_Env *global_env, const char *paths, Scheme_Object *config_table);
 
 MZ_EXTERN void scheme_seal_parameters();
 

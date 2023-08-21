@@ -69,23 +69,20 @@ In order to understand a module's services, organize the module in three
 sections below the purpose statement: its exports, its imports, and its
 implementation:
 @;%
-@codebox[
-@(begin
-#reader scribble/comment-reader
- (racketmod0 #:file
- @tt{good}
- racket/base
+@codebox0[
+ (racketmod0
+racket/base
 
-;; the module implements a tv server
+(code:comment2 #, @elem{the module implements a tv server})
 
 (provide
-  ;; launch the tv server function
-  tv-launch
-  ;; set up a tv client to receive messages from the tv server
-  tv-client)
+ (code:comment2 #, @elem{launch the tv server function})
+ tv-launch
+ (code:comment2 #, @elem{set up a tv client to receive messages from the tv server})
+ tv-client)
 
-(code:comment #, @line)
-(code:comment #, @t{import and implementation section})
+(code:comment2 #, @line)
+(code:comment2 #, @t{import and implementation section})
 
 (require 2htdp/universe htdp/image)
 
@@ -94,7 +91,7 @@ implementation:
 
 (define (tv-client)
   (big-bang ...))
-))]
+)]
 @;%
 
 If you choose to use @racket[provide] with @racket[contract-out], you
@@ -108,24 +105,23 @@ If you choose to use @racket[provide] with @racket[contract-out], you
  If your contracts call for additional concepts, define those right below
  the @racket[provide] specification:
 @;%
-@codebox[
-@(begin
-#reader scribble/comment-reader
- (racketmod0 #:file
- @tt{good}
- racket/base
+@codebox0[
+ (racketmod0
+racket/base
 
-;; the module implements a tv server
+(code:comment2 #, @elem{the module implements a tv server})
+
+(require racket/contract) ;; needed for contract-out
 
 (provide
-  (contract-out
-    ;; initialize the board for the given number of players
-    [board-init        (-> player#/c plain-board/c)]
-    ;; initialize a board and place the tiles
-    [create-board      (-> player#/c (listof placement/c)
-			   (or/c plain-board/c string?))]
-    ;; create a board from an X-expression representation
-    [board-deserialize (-> xexpr? plain-board/c)]))
+ (contract-out
+  (code:comment2 #, @elem{initialize the board for the given number of players})
+  [board-init        (-> player#/c plain-board/c)]
+  (code:comment2 #, @elem{initialize a board and place the tiles})
+  [create-board      (-> player#/c (listof placement/c)
+                         (or/c plain-board/c string?))]
+  (code:comment2 #, @elem{create a board from an X-expression representation})
+  [board-deserialize (-> xexpr? plain-board/c)]))
 
 (require xml)
 
@@ -136,12 +132,12 @@ If you choose to use @racket[provide] with @racket[contract-out], you
 (define placement/c
   (flat-named-contract "placement" ...))
 
-(code:comment #, @line)
-(code:comment #, @t{import and implementation section})
+(code:comment2 #, @line)
+(code:comment2 #, @t{import and implementation section})
 
 (require 2htdp/universe htdp/image)
 
-; implementation:
+(code:comment2 #, @t{implementation:})
 (define (board-init n)
   (new board% ...))
 
@@ -151,7 +147,7 @@ If you choose to use @racket[provide] with @racket[contract-out], you
 
 (define board%
   (class ... some 900 lines ...))
-))]
+)]
 @;%
  In the preceding code snippet, @xml[] imports the @racket[xexpr?]
  predicate. Since the latter is needed to articulate the contract for
@@ -185,30 +181,27 @@ A module's interface describes the services it provides; its body
 @;
 This helps people find the relevant information quickly.
 
-@compare[
+@compare0[
 @;%
-@(begin
-#reader scribble/comment-reader
-(racketmod0 #:file
- @tt{good}
+(racketmod0
  racket
 
- ;; This module implements
- ;; several strategies.
+ (code:comment2 #, @elem{This module implements})
+ (code:comment2 #, @elem{several strategies.})
 
  (provide
-  ;; Stgy = State -> Action
+  (code:comment2 #, @elem{Stgy = State -> Action})
 
-  ;; Stgy
-  ;; people's strategy
+  (code:comment2 #, @elem{Stgy})
+  (code:comment2 #, @elem{people's strategy})
   human-strategy
 
-  ;; Stgy
-  ;; tree traversal
+  (code:comment2 #, @elem{Stgy})
+  (code:comment2 #, @elem{tree traversal})
   ai-strategy)
 
- (code:comment #, @1/2-line[])
- (code:comment #, @t{implementation})
+ (code:comment2 #, @1/2-line[])
+ (code:comment2 #, @t{implementation})
 
  (require "basics.rkt")
 
@@ -221,31 +214,28 @@ This helps people find the relevant information quickly.
 
  ... some 100 lines ...
  (define ai-strategy
-   (general traversal))))
+   (general traversal)))
 
-@(begin
-#reader scribble/comment-reader
-(racketmod0 #:file
- @tt{bad}
+(racketmod0
  racket
 
- ;; This module implements
- ;; several strategies.
+ (code:comment2 #, @elem{This module implements})
+ (code:comment2 #, @elem{several strategies.})
 
- (code:comment #, @1/2-line[])
- (code:comment #, @t{implementation})
+ (code:comment2 #, @1/2-line[])
+ (code:comment2 #, @t{implementation})
 
  (require "basics.rkt")
 
- ;; Stgy = State -> Action
+ (code:comment2 #, @elem{Stgy = State -> Action})
 
  (define (general p)
    ... )
  ... some 100 lines ...
 
  (provide
-  ;; Stgy
-  ;; a person's strategy
+  (code:comment2 #, @elem{Stgy})
+  (code:comment2 #, @elem{a person's strategy})
   human-strategy)
 
  (define human-strategy
@@ -253,14 +243,14 @@ This helps people find the relevant information quickly.
  ... some 100 lines ...
 
  (provide
-  ;; Stgy
-  ;; a tree traversal
+  (code:comment2 #, @elem{Stgy})
+  (code:comment2 #, @elem{a tree traversal})
   ai-strategy)
 
  (define ai-strategy
    (general traversal))
  ... some 100 lines ...
-))
+)
 ]
 
 As you can see from this comparison, an interface shouldn't just
@@ -273,24 +263,21 @@ While a one-line purpose statement for a function is usually enough, syntax
 should come with a description of the grammar clause it introduces
 @emph{and} its meaning.
 
-@codebox[
-@(begin
-#reader scribble/comment-reader
-(racketmod0 #:file
-@tt{good}
+@codebox0[
+(racketmod0
 racket
 
 (provide
- ;; (define-strategy (s:id a:id b:id c:id d:id)
- ;;   action:definition-or-expression)
- ;;
- ;; (define-strategy (s board tiles available score) ...)
- ;; defines a function from an instance of player to a
- ;; placement. The four identifiers denote the state of
- ;; the board, the player's hand, the places where a
- ;; tile can be placed, and the player's current score.
+ (code:comment# #, @elem{(define-strategy (s:id a:id b:id c:id d:id)
+   action:definition-or-expression)})
+ 
+ (code:comment2 #, @elem{(define-strategy (s board tiles available score) ...)})
+ (code:comment2 #, @elem{defines a function from an instance of player to a})
+ (code:comment2 #, @elem{placement. The four identifiers denote the state of})
+ (code:comment2 #, @elem{the board, the player's hand, the places where a})
+ (code:comment2 #, @elem{tile can be placed, and the player's current score.})
  define-strategy)
-))]
+)]
 
 Use @scheme[provide] with @racket[contract-out] for module interfaces.
  Contracts often provide the right level of specification for first-time
@@ -342,17 +329,14 @@ As of version 5.3, Racket supports sub-modules. Use sub-modules to
  name) and leave it to the language to stitch pieces together.
 
 @;%
-@codebox[
-@(begin
-#reader scribble/comment-reader
- (racketmod0 #:file
- @tt{fahrenheit.rkt}
+@codebox0[#:label "fahrenheit.rkt"
+ (racketmod0
  racket
 
  (provide
-   (contract-out
-     (code:comment #, @t{convert a fahrenheit temperature to a celsius})
-     [fahrenheit->celsius (-> number? number?)]))
+  (contract-out
+   (code:comment2 #, @t{convert a fahrenheit temperature to a celsius})
+   [fahrenheit->celsius (-> number? number?)]))
 
  (define (fahrenheit->celsius f)
    (/ (* 5 (- f 32)) 9))
@@ -362,7 +346,7 @@ As of version 5.3, Racket supports sub-modules. Use sub-modules to
    (check-equal? (fahrenheit->celsius -40) -40)
    (check-equal? (fahrenheit->celsius 32) 0)
    (check-equal? (fahrenheit->celsius 212) 100))
-))]
+)]
 @;%
  If you develop your code in DrRacket, it will run the test sub-module
  every time you click ``run'' unless you explicitly disable this
@@ -424,21 +408,18 @@ a file that erects three internal contract boundaries: two for plain
 constants and one for a function.
 
 @;%
-@codebox[
-@(begin
-#reader scribble/comment-reader
- (racketmod0 #:file
- @tt{celsius.rkt}
- racket
+@codebox0[#:label "celsius.rkt"
+ (racketmod0
+racket
 
 (define/contract AbsoluteC real? -273.15)
 (define/contract AbsoluteF real? -459.67)
 
 (define/contract (celsius->fahrenheit c)
-  (code:comment #, @t{convert a celsius temperature to a fahrenheit temperature})
+  (code:comment2 #, @t{convert a celsius temperature to a fahrenheit temperature})
   (-> (and/c real? (>=/c AbsoluteC))
       (and/c real? (>=/c AbsoluteF)))
-  ;; -- IN --
+  (code:comment2 #, @elem{-- IN --})
   (+ (* 9/5 c) 32))
 
 (module+ test
@@ -446,7 +427,7 @@ constants and one for a function.
   (check-equal? (celsius->fahrenheit -40) -40)
   (check-equal? (celsius->fahrenheit 0) 32)
   (check-equal? (celsius->fahrenheit 100) 212))
-))]
+)]
 @;%
 
 To find out how these contract boundaries work, you may wish to conduct
@@ -484,11 +465,8 @@ a contract boundary between itself and the rest of the module. Any value
 flow between a client module and the submodule is governed by
 contracts. Any value flow within the submodule is free of any constraints.
 
-@codebox[
-@(begin
-#reader scribble/comment-reader
- (racketmod0 #:file
- @tt{graph-traversal.rkt}
+@codebox0[#:label "graph-traversal.rkt"
+ (racketmod0
  racket
  ...
  (module traversal racket
@@ -503,15 +481,15 @@ contracts. Any value flow within the submodule is free of any constraints.
        [(node=? s d) '()]
        [(been-here? s visited) #f]
        [else (define neighbors (node-neighbors G s))
-	     (define there (record s visited))
-	     (define path (find-path* G neighbors d there))
-	     (if path (cons s path) #f)]))
+             (define there (record s visited))
+             (define path (find-path* G neighbors d there))
+             (if path (cons s path) #f)]))
 
    (define (find-path* G s* d visited)
      (cond
        [(empty? s*) #f]
        [else (or (find-path G (first s*) d visited)
-		 (find-path* G (rest s*) d visited))]))
+                 (find-path* G (rest s*) d visited))]))
 
    (define (node-neighbors G n)
      (rest (assq n G))))
@@ -519,7 +497,7 @@ contracts. Any value flow within the submodule is free of any constraints.
  (module+ test
    (require (submod ".." traversal) (submod ".." graph))
    (find-path G 'a 'd))
-))]
+)]
 @;%
 
 Since modules and submodules cannot refer to each other in a mutual

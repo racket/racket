@@ -11,9 +11,9 @@
   LINEWIDTH
   eli
   codebox
-  compare ;; create a comparison box for two code snippets
-  ;; good    ;; label a code fragment 'good' [doesn't work]
-  ;; bad     ;; label a code fragment 'bad' [doesn't work]
+  compare
+  codebox0
+  compare0
   column-table
   row-table
   rkt rkt/base rkt/gui xml)
@@ -23,7 +23,7 @@
          scribble/manual
          scribble/struct
          (only-in scribble/core table-columns table-cells style plain
-                  color-property)
+                  color-property nested-flow)
          scribble/html-properties
          racket/list)
 
@@ -41,14 +41,39 @@
 (define (xml) (racketmodname xml))
 
 
+(define stretching-style
+  (style #f (list (attributes '([style . "margin-left: 0; margin-right: 0"])))))
+
+(define (stretch d)
+  (match d
+    [(nested-flow _ content) (nested-flow stretching-style content)]
+    [_ d]))
+
 ;; compare: two code snippets, in two columns: left is good, right is bad
+;; The styling is slightly broken.
+;; Consider using compare0 instead;
+;; compare is provided only for backward compatibility
 (define (compare stuff1 stuff2)
   (define stuff (list (list stuff1) (list stuff2)))
   (table (sty 2 500) (apply map (compose make-flow list) stuff)))
 
-;; good: a code snippet in a box
+;; compare0: two code snippets, in two columns: left is good, right is bad
+(define (compare0 #:left [left "good"] #:right [right "bad"]
+                  stuff1 stuff2)
+  (define stuff (list (list (stretch (filebox (tt left) stuff1)))
+                      (list (stretch (filebox (tt right) stuff2)))))
+  (table (sty 2 500) (apply map (compose make-flow list) stuff)))
+
+;; codebox: a code snippet in a box. The styling is slightly broken.
+;; Consider using codebox0 instead;
+;; codebox is provided only for backward compatibility
 (define (codebox stuff1)
   (define stuff (list (list stuff1)))
+  (table (sty 1 700) (apply map (compose make-flow list) stuff)))
+
+;; codebox0: a code snippet in a box.
+(define (codebox0 stuff1 #:label [label "good"])
+  (define stuff (list (list (stretch (filebox (tt label) stuff1)))))
   (table (sty 1 700) (apply map (compose make-flow list) stuff)))
 
 (define-syntax (column-table stx)
@@ -61,12 +86,13 @@
 
 (define-syntax (row-table stx)
   (syntax-case stx (row)
-    [(row-table (row titles ...) (row char x ...) ...)
+    [(row-table (row titles ...) (row char kind example) ...)
      #`(row-table/proc
         (list
          (list (paragraph plain (format "~a" 'titles)) ...)
          (list (paragraph plain (litchar (~a 'char)))
-               (paragraph plain (format "~a" 'x)) ...) ...))]))
+               (paragraph plain (format "~a" 'kind))
+               (paragraph plain (litchar (~a 'example)))) ...))]))
 
 (define (row-table/proc stuff)
   (table (sty (length (car stuff)) 200 #:valign? #f)

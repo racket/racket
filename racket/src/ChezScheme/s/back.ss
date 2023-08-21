@@ -32,17 +32,6 @@
     
 (define suppress-greeting (make-parameter #f (lambda (x) (and x #t))))
 
-(define-who eval-syntax-expanders-when
-   ($make-thread-parameter '(compile load eval)
-      (lambda (x)
-         (unless (let check ([x x] [l '(compile load eval visit revisit)])
-                    (or (null? x)
-                        (and (pair? x)
-                             (memq (car x) l)
-                             (check (cdr x) (remq (car x) l)))))
-            ($oops who "invalid eval-when list ~s" x))
-         x)))
-
 (define-who collect-maximum-generation
   (let ([$get-maximum-generation (foreign-procedure "(cs)maxgen" () int)]
         [$set-maximum-generation! (foreign-procedure "(cs)set_maxgen" (int) void)])
@@ -216,6 +205,13 @@
 
 (define-who compile-omit-concatenate-support
   ($make-thread-parameter #f (lambda (x) (and x #t))))
+
+(define-who compile-procedure-realm
+  ($make-thread-parameter #f (lambda (x)
+                               (when x
+                                 (unless (symbol? x)
+                                   ($oops who "~a not is #f or a symbol" x)))
+                               x)))
 
 (define-who debug-level
   ($make-thread-parameter

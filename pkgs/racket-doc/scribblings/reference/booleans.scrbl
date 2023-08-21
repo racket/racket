@@ -54,6 +54,8 @@ of the datatype. In particular, @racket[immutable?] produces
 @racket[#f] for a @tech{pair}, even though pairs are immutable, since
 @racket[pair?] implies immutability.
 
+See also @racket[immutable-string?], @racket[mutable-string?], etc.
+
 @examples[
 (immutable? 'hello)
 (immutable? "a string")
@@ -139,4 +141,31 @@ Returns @racket[(not v)].}
 }
 
 
+@section{Mutability Predicates}
+
+@note-lib[racket/mutability]
+
+@history[#:added "8.9.0.3"]
+
+@deftogether[(
+@defproc[(mutable-string? [v any/c]) boolean?]
+@defproc[(immutable-string? [v any/c]) boolean?]
+@defproc[(mutable-bytes? [v any/c]) boolean?]
+@defproc[(immutable-bytes? [v any/c]) boolean?]
+@defproc[(mutable-vector? [v any/c]) boolean?]
+@defproc[(immutable-vector? [v any/c]) boolean?]
+@defproc[(mutable-box? [v any/c]) boolean?]
+@defproc[(immutable-box? [v any/c]) boolean?]
+@defproc[(mutable-hash? [v any/c]) boolean?]
+@defproc[(immutable-hash? [v any/c]) boolean?]
+)]{
+
+Predicates that combine @racket[string?], @racket[bytes?],
+@racket[vector?], @racket[box?], and @racket[hash?] with
+@racket[immutable?] or its inverse. The predicates are potentially
+faster than using @racket[immutable?] and other predicates separately.
+
+}
+
 @close-eval[bool-eval]
+

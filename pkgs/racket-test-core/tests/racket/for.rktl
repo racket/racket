@@ -3,18 +3,8 @@
 
 (Section 'for)
 
-(require "for-util.rkt")
-
-;; These are copied from
-;; https://github.com/racket/r6rs/blob/master/r6rs-lib/rnrs/arithmetic/fixnums-6.rkt
-(define CS? (eq? 'chez-scheme (system-type 'vm)))
-(define 64-bit? (fixnum? (expt 2 33)))
-(define (least-fixnum) (if CS?
-                           (if 64-bit? (- (expt 2 60)) -536870912)
-                           (if 64-bit? (- (expt 2 62)) -1073741824)))
-(define (greatest-fixnum) (if CS?
-                              (if 64-bit? (- (expt 2 60) 1) +536870911)
-                              (if 64-bit? (- (expt 2 62) 1) +1073741823)))
+(require "for-util.rkt"
+         racket/fixnum)
 
 (define (five) 5)
 
@@ -37,14 +27,14 @@
 (test-sequence [(3.0 4.0 5.0 6.0)] (in-inclusive-range 3.0 6.0))
 (test-sequence [(3.0 3.5 4.0 4.5 5.0 5.5 6.0)] (in-inclusive-range 3.0 6.0 0.5))
 (test-sequence [(#e3.0 #e3.1 #e3.2 #e3.3)] (in-inclusive-range #e3.0 #e3.3 #e0.1))
-(test-sequence [(,(least-fixnum)
-                 ,(+ (least-fixnum) 1))]
-               (in-inclusive-range (least-fixnum)
-                                   (+ (least-fixnum) 1)))
-(test-sequence [(,(- (greatest-fixnum) 1)
-                 ,(greatest-fixnum))]
-               (in-inclusive-range (- (greatest-fixnum) 1)
-                                   (greatest-fixnum)))
+(test-sequence [(,(most-negative-fixnum)
+                 ,(+ (most-negative-fixnum) 1))]
+               (in-inclusive-range (most-negative-fixnum)
+                                   (+ (most-negative-fixnum) 1)))
+(test-sequence [(,(- (most-positive-fixnum) 1)
+                 ,(most-positive-fixnum))]
+               (in-inclusive-range (- (most-positive-fixnum) 1)
+                                   (most-positive-fixnum)))
 (err/rt-test (for/list ([x (in-range)]) x))
 (err/rt-test (in-range))
 (err/rt-test (for/list ([x (in-inclusive-range 1)]) x))
@@ -105,6 +95,10 @@
 ;; Test optimized:
 (test '(2) 'in-list-of-list (for/list ([v (in-list (list 1))]) (add1 v)))
 (test '(0) 'in-mlist-of-mlist (for/list ([v (in-mlist (mlist 1))]) (sub1 v)))
+(test '() 'in-mlist-of-mlist (for/list ([v (in-mlist null)]) v))
+
+;; `in-mlist` only checks listness as much as explored
+(test 1 'in-mlist-of-mlist (for/first ([v (in-mlist (mcons 1 2))]) v))
 
 (test-sequence [(1 2 3)] (in-port read (open-input-string "1 2 3")))
 (test-sequence [((123) 4)] (in-port read (open-input-string "(123) 4")))
@@ -426,6 +420,33 @@
                    #:unless (even? x)
                    [y (in-range 3)])
         (+ x y)))
+
+;; Check #:do:
+(test (vector 0 0 1 0 1 2)
+      'do
+      (for/vector #:length 6
+                  ([x (in-range 3)]
+                   #:do [(define z (+ x 1))]
+                   [y (in-range z)])
+                  y))
+(test (vector 0 0 1 0 1 2)
+      'do
+      (for/vector #:length 6
+                  ([x (in-range 3)]
+                   #:do [(define-syntax-rule (z) (+ x 1))]
+                   [x (in-list '(oops))]
+                   #:when #t
+                   [y (in-range (z))])
+                  y))
+(test (vector 0 0 0 1 1 1)
+      'do
+      (for/vector #:length 6
+                  ([x (in-range 3)]
+                   #:do [(struct pt (x y))
+                         (define (mk x y) (pt x y))]
+                   #:when #t
+                   [y (in-range 3)])
+        (pt-x (mk x y))))
 
 (test #hash((a . 1) (b . 2) (c . 3)) 'mk-hash
       (for/hash ([v (in-naturals)]
@@ -770,13 +791,13 @@
              #rx"expected\\: vector")
 (err/rt-test (for ([x (in-vector (vector 1 2) -1)]) x)
              exn:fail:contract?
-             #rx"starting index is out of range")
+             #rx"expected\\: exact-nonnegative-integer\\?")
 (err/rt-test (for ([x (in-vector (vector 1 2) 10)]) x)
              exn:fail:contract?
              #rx"starting index is out of range")
 (err/rt-test (for ([x (in-vector (vector 1 2) 1.1)]) x)
              exn:fail:contract?
-             #rx"expected\\: exact-integer\\?")
+             #rx"expected\\: exact-nonnegative-integer\\?")
 (err/rt-test (for ([x (in-vector (vector 1 2) 0 1.1)]) x)
              exn:fail:contract?
              #rx"expected\\: exact-integer\\?")
@@ -822,7 +843,7 @@
              #rx"starting index is out of range")
 (err/rt-test (for/sum ([x (in-vector (vector) -1 -1 -1)]) x)
              exn:fail:contract?
-             #rx"starting index is out of range")
+             #rx"expected: exact-nonnegative-integer?")
 (err/rt-test (for/sum ([x (in-vector (vector) 1 1 1)]) x)
              exn:fail:contract?
              #rx"starting index is out of range")
@@ -878,6 +899,7 @@
 (syntax-test #'(for*/fold ([x 42] [x 42] #:wrong-keyword 42) ([z '()]) 1)
              #rx".*for\\*/fold:.*invalid accumulator binding clause.*")
 
+(syntax-test #'(for ()) #rx".*missing body.*")
 (syntax-test #'(for/vector ()) #rx".*missing body.*")
 
 ;; specific hash set iterators
@@ -1068,7 +1090,42 @@
   (check for/list values map extra) ; 1 and 2 arguments are special-cased
   (check for/list values for-each)
   (check for/list values ormap)
-  (check for/list values andmap))
+  (check for/list values andmap)
+
+  ;; similar check for `sequence-generate`
+  (let ()
+    (define l (cons (box 1) (cons (box 2) null)))
+    (define wb (make-weak-box (car l)))
+
+    (define-values (more? val) (sequence-generate l))
+    (set! l #f)
+
+    (let loop ()
+      (cond
+        [(more?)
+         (define u (unbox (val)))
+         (collect-garbage)
+         (cons (cons u (weak-box-value wb)) (loop))]
+        [else null])))
+
+  ;; similar check for `sequence-generate*`
+  (let ()
+    (define l (cons (box 1) (cons (box 2) null)))
+    (define wb (make-weak-box (car l)))
+
+    (define-values (vals next) (sequence-generate* l))
+    (set! l #f)
+
+    (let loop ([vals vals] [next next])
+      (cond
+        [vals
+         (define u (unbox (car vals)))
+         (collect-garbage)
+         (cons (cons u (weak-box-value wb))
+               (let ()
+                 (define-values (new-vals new-next) (next))
+                 (loop new-vals new-next)))]
+        [else null]))))
 
 ;; ----------------------------------------
 ;; `for/foldr`
@@ -1125,6 +1182,14 @@
                    [y (in-range x (+ x 3))]
                    #:final (and (= x 2) (= y 3)))
         (cons (list x y) lst)))
+
+(test (list 0 0 1 0 1 2)
+      'do
+      (for/foldr ([acc null])
+                 ([x (in-range 3)]
+                  #:do [(define-syntax-rule (z) (+ x 1))]
+                  [y (in-range (z))])
+         (cons y acc)))
 
 (test '(408 . 20400)
       'for/foldr-two-accs
@@ -1211,7 +1276,7 @@
 (let ()
   (test #t 'same-expansion-for-integer-clause
         (equal? (syntax->datum (expand #'(for ([j 100]) j)))
-                (syntax->datum (expand #'(for ([j (in-range 100)]) j)))))
+                (syntax->datum (expand #'(for ([j (in-range '100)]) j)))))
 
   (test #t 'same-expansion-for-list-clause
         (equal? (syntax->datum (expand #'(for ([j '(1 2 3)]) j)))
@@ -1254,6 +1319,167 @@
 
 (err/rt-test (for/list ([x -1]) x))
 (err/rt-test (for/list ([x 1.5]) x))
+
+;; ----------------------------------------
+;; splicing clauses
+
+(define-splicing-for-clause-syntax parallel3
+  (lambda (stx)
+    (syntax-case stx ()
+      [(_ n m) #'([n (in-range 3)]
+                  [m (in-range 3)])])))
+
+(define-splicing-for-clause-syntax cross3
+  (lambda (stx)
+    (syntax-case stx ()
+      [(_ n m) #'([n (in-range 3)]
+                  #:when #t
+                  [m (in-range 3)])])))
+
+(test '((0 0) (1 1) (2 2))
+      'parallel3
+      (for/list (#:splice (parallel3 n m))
+        (list n m)))
+(test '((0 0) (1 1) (2 2))
+      'parallel3
+      (for*/list (#:splice (parallel3 n m))
+        (list n m)))
+
+(test '((0 0) (0 1) (0 2) (1 0) (1 1) (1 2) (2 0) (2 1) (2 2))
+      'cross3
+      (for/list (#:splice (cross3 n m))
+        (list n m)))
+(test '((0 0) (0 1) (0 2) (1 0) (1 1) (1 2) (2 0) (2 1) (2 2))
+      'cross3
+      (for*/list (#:splice (cross3 n m))
+        (list n m)))
+
+(define-splicing-for-clause-syntax final-if-7
+  (lambda (stx)
+    (syntax-case stx ()
+      [(_ i) #'(#:final (= i 7))])))
+(test '(0 1 2 3 4 5 6 7)
+      'final-if-7
+      (for/list ([i (in-range 10)] #:splice (final-if-7 i)) i))
+
+;; ----------------------------------------
+;; defining sequence syntax
+
+(define (every-third/proc l)
+  (unless (list? l) (error "oops"))
+  (make-do-sequence
+   (lambda ()
+     (values car
+             (lambda (l)
+               (and (pair? l)
+                    (pair? (cdr l))
+                    (pair? (cddr l))
+                    (cdddr l)))
+             values
+             l
+             pair?
+             (lambda (v) #t)
+             #f))))
+
+(define-sequence-syntax every-third
+  (lambda () #'every-third/proc)
+  (lambda (stx)
+    (syntax-case stx ()
+      [[(id) (_ expr)]
+       #`[(id) (:do-in
+                ;; outer-ids
+                ([(l) expr])
+                ;; outer-expr-or-defn
+                (begin
+                  (define (check-list l)
+                    (unless (list? l)
+                      (error "oops")))
+                  (check-list l))
+                ;; loop vars
+                ([l l])
+                ;; pos guard
+                (pair? l)
+                ;; inner vars
+                ([(id) (car l)]
+                 [(next-l) (and (pair? l)
+                                (pair? (cdr l))
+                                (pair? (cddr l))
+                                (cdddr l))])
+                ;; inner-end-or-defn
+                #,@(if (eq? (syntax-e #'expr) 'hack-skip)
+                       null
+                       (list
+                        #'(begin
+                            (define (bad-check)
+                              (when (eq? id 'bad)
+                                (error "that's bad")))
+                            (bad-check))))
+                ;; pre-guard
+                #t
+                ;; post-guard
+                #t
+                ;; loop args
+                (next-l))]])))
+
+(define-syntax-rule (check a b c) c)
+
+(test '(1 4 7) 'every-third (for/list ([i (every-third '(1 2 3 4 5 6 7 8))])
+                              i))
+
+(test '(1 4 7) 'every-third (let ([hack-skip '(1 2 3 4 5 6 7 8)])
+                              (for/list ([i (every-third hack-skip)])
+                                i)))
+
+(err/rt-test (for/list ([i (every-third '(1 2 3 bad 5 6 7 8))])
+               i)
+             "that's bad")
+
+(test '(1 bad 7) 'every-third (let ([hack-skip '(1 2 3 bad 5 6 7 8)])
+                                (for/list ([i (every-third hack-skip)])
+                                  i)))
+
+(test '(1 4 7) 'every-third (let ([seq (every-third '(1 2 3 4 5 6 7 8))])
+                              (for/list ([i seq])
+                                i)))
+
+;; ----------------------------------------
+;; Make sure explicitly quoted datum doesn't need to have a `#%datum` binding
+
+(test '(0)
+      eval-syntax #`(for/list ([i (quote #,(datum->syntax #f 1))]) i))
+(test '(1)
+      eval-syntax #`(for/list ([i (quote #,(datum->syntax #f '(1)))]) i))
+(test '(1)
+      eval-syntax #`(for/list ([i (quote #,(datum->syntax #f '#(1)))]) i))
+(test '(#\1)
+      eval-syntax #`(for/list ([i (quote #,(datum->syntax #f "1"))]) i))
+(test '(49)
+      eval-syntax #`(for/list ([i (quote #,(datum->syntax #f #"1"))]) i))
+(test '(1)
+      eval-syntax #`(for/list ([(k v) (quote #,(datum->syntax #f #hash((1 . 0))))]) k))
+
+;; ----------------------------------------
+;; regression test for a missing "outer edge" scope
+
+(let ()
+  (define-sequence-syntax in-digits
+    (lambda () #'values)
+    (lambda (stx)
+      (syntax-case stx ()
+        [[(d) (_ nat)]
+         #'[(d)
+            (:do-in
+             ([(n) nat])
+             values
+             ([i n])
+             (not (zero? i))
+             ([(j d) (quotient/remainder i 10)])
+             #t
+             #t
+             [(- i 1)])]] ; <- regression would make this `i` ambigious
+        [_ #f])))
+
+  (for ([i (in-digits 12)]) i))
 
 ;; ----------------------------------------
 

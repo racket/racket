@@ -264,11 +264,13 @@ All @tech{strings} @racket[display] as their literal character sequences.
 
 The @racket[write] or @racket[print] form of a string starts with @litchar{"} and ends
 with another @litchar{"}. Between the @litchar{"}s, each character is
-represented. Each graphic or blank character is represented as itself,
+represented. Each graphic or blank character (according to @racket[char-graphic?] and
+@racket[char-blank?]) is represented as itself,
 with two exceptions: @litchar{"} is printed as @litchar{\"}, and
-@litchar{\} is printed as @litchar{\\}. Each non-graphic, non-blank
-character (according to @racket[char-graphic?] and
-@racket[char-blank?]) is printed using the escape sequences described
+@litchar{\} is printed as @litchar{\\}. A non-graphic, non-blank character
+that is part of a grapheme sequence that starts with a graphic character
+is also represented as itself. Each other non-graphic, non-blank
+character is printed using the escape sequences described
 in @secref["parse-string"], using @litchar{\a}, @litchar{\b},
 @litchar{\t}, @litchar{\n}, @litchar{\v}, @litchar{\f}, @litchar{\r},
 or @litchar{\e} if possible, otherwise using @litchar{\u} with four

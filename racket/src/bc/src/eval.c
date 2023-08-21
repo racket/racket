@@ -194,6 +194,7 @@ static Scheme_Object *use_jit(int argc, Scheme_Object **argv);
 static Scheme_Object *disallow_inline(int argc, Scheme_Object **argv);
 static Scheme_Object *compile_target_machine(int argc, Scheme_Object **argv);
 static Scheme_Object *compile_is_target_machine(int argc, Scheme_Object **argv);
+static Scheme_Object *compile_realm(int argc, Scheme_Object **argv);
 
 void scheme_escape_to_continuation(Scheme_Object *obj, int num_rands, Scheme_Object **rands, Scheme_Object *alt_full);
 
@@ -243,7 +244,8 @@ scheme_init_eval (Scheme_Startup_Env *env)
   ADD_PARAMETER("compile-enforce-module-constants",  compile_module_constants, MZCONFIG_COMPILE_MODULE_CONSTS, env);
   ADD_PARAMETER("eval-jit-enabled",                  use_jit,                  MZCONFIG_USE_JIT,               env);
   ADD_PARAMETER("compile-context-preservation-enabled", disallow_inline,       MZCONFIG_DISALLOW_INLINE,       env);
-  ADD_PARAMETER("current-compile-target-machine",    compile_target_machine,  MZCONFIG_COMPILE_TARGET_MACHINE, env);
+  ADD_PARAMETER("current-compile-target-machine",    compile_target_machine,   MZCONFIG_COMPILE_TARGET_MACHINE, env);
+  ADD_PARAMETER("current-compile-realm",             compile_realm,            MZCONFIG_COMPILE_REALM, env);
 
   ADD_PRIM_W_ARITY("compile-target-machine?",        compile_is_target_machine,                       1, 1, env);
 }
@@ -1066,17 +1068,19 @@ static Scheme_Object *do_eval_stack_overflow(Scheme_Object *obj, int num_rands, 
 }
 
 static Scheme_Dynamic_Wind *intersect_dw(Scheme_Dynamic_Wind *a, Scheme_Dynamic_Wind *b, 
-                                         Scheme_Object *prompt_tag, int b_has_tag, int *_common_depth)
+                                         Scheme_Object *prompt_tag, int b_has_tag, int *_common_depth,
+                                         int *_skip_winds)
 {
   int alen = 0, blen = 0;
-  int a_has_tag = 0, a_prompt_delta = 0, b_prompt_delta = 0;
-  Scheme_Dynamic_Wind *dw, *match_a, *match_b;
+  int a_has_tag = 0, a_prompt_delta = 0, a_prompt_len = 0, b_prompt_delta = 0;
+  Scheme_Dynamic_Wind *dw, *match_a, *match_b, *start_a = a, *start_b = b, *common;
 
   for (dw = a; dw && (dw->prompt_tag != prompt_tag); dw = dw->prev) {
   }
   if (dw) {
     /* Cut off `a' below the prompt dw. */
     a_prompt_delta = dw->depth;
+    a_prompt_len = dw->actual_len;
     a_has_tag = 1;
   }
 
@@ -1094,40 +1098,96 @@ static Scheme_Dynamic_Wind *intersect_dw(Scheme_Dynamic_Wind *a, Scheme_Dynamic_
   }
   if (!alen) {
     *_common_depth = b_prompt_delta - 1;
-    return a;
-  }
-  while (blen > alen) {
-    --blen;
-    b = b->prev;
-  }
-
-  /* At this point, we have chains that are the same length. */
-  match_a = NULL;
-  match_b = NULL;
-  while (blen) {
-    if (SAME_OBJ(a->id ? a->id : (Scheme_Object *)a, 
-                 b->id ? b->id : (Scheme_Object *)b)) {
-      if (!match_a) {
-        match_a = a;
-        match_b = b;
-      }
-    } else {
-      match_a = NULL;
-      match_b = NULL;
+    common = a;
+  } else {
+    while (blen > alen) {
+      --blen;
+      b = b->prev;
     }
+
+    /* At this point, we have chains that are the same length. */
+    match_a = NULL;
+    match_b = NULL;
+    while (blen) {
+      if (SAME_OBJ(a->id ? a->id : (Scheme_Object *)a,
+                   b->id ? b->id : (Scheme_Object *)b)) {
+        if (!match_a) {
+          match_a = a;
+          match_b = b;
+        }
+      } else {
+        match_a = NULL;
+        match_b = NULL;
+      }
+      a = a->prev;
+      b = b->prev;
+      blen--;
+    }
+
+    if (!match_a) {
+      match_a = a;
+      match_b = b;
+    }
+
+    *_common_depth = (match_b ? match_b->depth : -1);
+
+    common = match_a;
+  }
+
+  /* We've found the exact-common tail, but maybe we'd find more
+     commonality if we ignore fake prompt D-W records. If so, return a
+     non-0 value for `_skip_winds`. */
+
+  a = start_a;
+  b = start_b;
+  alen = ((a ? a->actual_len : 0) - a_prompt_len);
+  blen = (b ? b->actual_len : 0);
+
+  while (alen > blen) {
     a = a->prev;
-    b = b->prev;
-    blen--;
+    alen = (a ? a->actual_len : 0);
+  }
+  if (!alen) {
+    *_skip_winds = 0;
+  } else {
+    while (blen > alen) {
+      b = b->prev;
+      blen = (b ? b->actual_len : 0);
+    }
+
+    /* At this point, we have chains that are the same length in terms
+       of actual (non-prompt) wind actions. */
+    match_a = NULL;
+    match_b = NULL;
+    while (blen && a) {
+      if (a->prompt_tag) {
+        a = a->prev;
+      } else if (b->prompt_tag) {
+        b = b->prev;
+      } else {
+        if (SAME_OBJ(a->id ? a->id : (Scheme_Object *)a,
+                     b->id ? b->id : (Scheme_Object *)b)) {
+          if (!match_a) {
+            match_a = a;
+            match_b = b;
+          }
+        } else {
+          match_a = NULL;
+          match_b = NULL;
+        }
+        a = a->prev;
+        b = b->prev;
+        blen--;
+      }
+    }
+
+    if (!match_a)
+      *_skip_winds = 0;
+    else
+      *_skip_winds = (match_a->actual_len - common->actual_len);
   }
 
-  if (!match_a) {
-    match_a = a;
-    match_b = b;
-  }
-
-  *_common_depth = (match_b ? match_b->depth : -1);
-
-  return match_a;
+  return common;
 }
 
 static Scheme_Prompt *lookup_cont_prompt(Scheme_Cont *c, 
@@ -1205,8 +1265,8 @@ void scheme_recheck_prompt_and_barrier(Scheme_Cont *c)
   check_barrier(prompt, prompt_cont, prompt_pos, c);
 }
 
-static int exec_dyn_wind_posts(Scheme_Dynamic_Wind *common, Scheme_Cont *c, int common_depth,
-                               Scheme_Dynamic_Wind **_common)
+static Scheme_Dynamic_Wind *exec_dyn_wind_posts(Scheme_Dynamic_Wind *common, Scheme_Cont *c,
+                                                int *_common_depth, int *_skip_winds)
 {
   int meta_depth;
   Scheme_Thread *p = scheme_current_thread;
@@ -1214,15 +1274,15 @@ static int exec_dyn_wind_posts(Scheme_Dynamic_Wind *common, Scheme_Cont *c, int 
   int old_cac = scheme_continuation_application_count;
   Scheme_Object *pt;
 
-  *_common = common;
-
   for (dw = p->dw; 
        (common ? dw->depth != common->depth : dw != common);  /* not id, which may be duplicated */
        ) {
+    int skip_winds = *_skip_winds;
     meta_depth = p->next_meta;
     p->next_meta += dw->next_meta;
     p->dw = dw->prev;
-    if (dw->post) {
+    if (dw->post && ((skip_winds <= 0)
+                     || (dw->actual_len > (skip_winds + (common ? common->actual_len : 0))))) {
       if (meta_depth > 0) {
         scheme_apply_dw_in_meta(dw, 1, meta_depth, c);
       } else {
@@ -1252,13 +1312,13 @@ static int exec_dyn_wind_posts(Scheme_Dynamic_Wind *common, Scheme_Cont *c, int 
         if (SCHEME_NP_CHAPERONEP(pt))
           pt = SCHEME_CHAPERONE_VAL(pt);
 
-        common = intersect_dw(p->dw, c->dw, pt, c->has_prompt_dw, &common_depth);
-        *_common = common;
+        common = intersect_dw(p->dw, c->dw, pt, c->has_prompt_dw, _common_depth, _skip_winds);
       }
     } else
       dw = dw->prev;
   }
-  return common_depth;
+
+  return common;
 }
 
 Scheme_Object *scheme_jump_to_continuation(Scheme_Object *obj, int num_rands, Scheme_Object **rands, 
@@ -1271,7 +1331,7 @@ Scheme_Object *scheme_jump_to_continuation(Scheme_Object *obj, int num_rands, Sc
   Scheme_Meta_Continuation *prompt_mc;
   MZ_MARK_POS_TYPE prompt_pos;
   Scheme_Prompt *prompt, *barrier_prompt;
-  int common_depth;
+  int common_depth, skip_winds;
 
   /* Since scheme_escape_continuation_ok() may allocate... */
   if (rands == p->tail_buffer)
@@ -1338,11 +1398,11 @@ Scheme_Object *scheme_jump_to_continuation(Scheme_Object *obj, int num_rands, Sc
     /* Find `common', the intersection of dynamic-wind chain for 
        the current continuation and the given continuation, looking
        no further back in the current continuation than a prompt. */
-    common = intersect_dw(p->dw, c->dw, pt, c->has_prompt_dw, &common_depth);
+    common = intersect_dw(p->dw, c->dw, pt, c->has_prompt_dw, &common_depth, &skip_winds);
 
     /* For dynamic-winds after `common' in this
        continuation, execute the post-thunks */
-    common_depth = exec_dyn_wind_posts(common, c, common_depth, &new_common);
+    new_common = exec_dyn_wind_posts(common, c, &common_depth, &skip_winds);
     p = scheme_current_thread;
 
     if (orig_cac != scheme_continuation_application_count) {
@@ -1354,6 +1414,7 @@ Scheme_Object *scheme_jump_to_continuation(Scheme_Object *obj, int num_rands, Sc
     }
 
     c->common_dw_depth = common_depth;
+    c->skip_winds = skip_winds;
       
     /* in case we need it (since no allocation allowed later): */
     thread_end_oflow = scheme_get_thread_end_overflow();
@@ -3531,8 +3592,11 @@ Scheme_Object *scheme_eval(Scheme_Object *obj, Scheme_Env *env)
   Scheme_Object *eval_proc, *a[2];
   eval_proc = scheme_get_startup_export("eval-top-level");
   a[0] = obj;
-  a[1] = env->namespace;
-  return scheme_apply(eval_proc, 2, a);
+  if (env) {
+    a[1] = env->namespace;
+    return scheme_apply(eval_proc, 2, a);
+  } else
+    return scheme_apply(eval_proc, 1, a);
 }
 
 Scheme_Object *scheme_eval_multi(Scheme_Object *obj, Scheme_Env *env)
@@ -3540,8 +3604,11 @@ Scheme_Object *scheme_eval_multi(Scheme_Object *obj, Scheme_Env *env)
   Scheme_Object *eval_proc, *a[2];
   eval_proc = scheme_get_startup_export("eval-top-level");
   a[0] = obj;
-  a[1] = env->namespace;
-  return scheme_apply_multi(eval_proc, 2, a);
+  if (env) {
+    a[1] = env->namespace;
+    return scheme_apply_multi(eval_proc, 2, a);
+  } else
+    return scheme_apply_multi(eval_proc, 1, a);
 }
 
 static Scheme_Object *finish_eval_with_prompt(void *_data, int argc, Scheme_Object **argv)
@@ -3553,13 +3620,19 @@ static Scheme_Object *finish_eval_with_prompt(void *_data, int argc, Scheme_Obje
 Scheme_Object *scheme_eval_with_prompt(Scheme_Object *obj, Scheme_Env *env)
 {
   return scheme_call_with_prompt(finish_eval_with_prompt, 
-                                 scheme_make_pair(obj, (Scheme_Object *)env));
+                                 scheme_make_pair(obj,
+                                                  (env
+                                                   ? (Scheme_Object *)env
+                                                   : scheme_false)));
 }
 
 static Scheme_Object *finish_eval_multi_with_prompt(void *_data, int argc, Scheme_Object **argv)
 {
   Scheme_Object *data = (Scheme_Object *)_data;
-  return scheme_eval_multi(SCHEME_CAR(data), (Scheme_Env *)SCHEME_CDR(data));
+  return scheme_eval_multi(SCHEME_CAR(data),
+                           (SCHEME_TRUEP(SCHEME_CDR(data))
+                            ? (Scheme_Env *)SCHEME_CDR(data)
+                            : NULL));
 }
 
 Scheme_Object *scheme_eval_multi_with_prompt(Scheme_Object *obj, Scheme_Env *env)
@@ -3649,7 +3722,8 @@ static Scheme_Object *namespace_introduce(Scheme_Object *stx)
 
 static Scheme_Object *do_eval_string_all(Scheme_Object *port, const char *str, Scheme_Env *env, 
                                          int cont, int w_prompt)
-/* cont == -2 => module (no result)
+/* env can be NULL to use the current environment
+   cont == -2 => module (no result)
    cont == -1 => single result
    cont == 1 -> multiple result ok
    cont == 2 -> #%top-interaction, multiple result ok, use current_print to show results */
@@ -3797,7 +3871,35 @@ int scheme_is_predefined_module_path(Scheme_Object *m)
   return SCHEME_TRUEP(r);
 }
 
+Scheme_Object *scheme_read_installation_config_table(Scheme_Env *global_env)
+{
+  mz_jmp_buf * volatile save, newbuf;
+  Scheme_Thread * volatile p;
+  Scheme_Object *config_table = scheme_false;
+  p = scheme_get_current_thread();
+  save = p->error_buf;
+  p->error_buf = &newbuf;
+  if (!scheme_setjmp(newbuf)) {
+    Scheme_Object *rct;
+
+    rct = scheme_builtin_value("read-installation-configuration-table");
+    config_table = _scheme_apply(rct, 0, NULL);
+  } else {
+    scheme_clear_escape();
+  }
+  p->error_buf = save;
+
+  return config_table;
+}
+
 void scheme_init_collection_paths_post(Scheme_Env *env, Scheme_Object *extra_dirs, Scheme_Object *post_dirs)
+{
+  scheme_init_collection_paths_post_config(env, extra_dirs, post_dirs,
+                                           scheme_read_installation_config_table(env));
+}
+
+void scheme_init_collection_paths_post_config(Scheme_Env *env, Scheme_Object *extra_dirs, Scheme_Object *post_dirs,
+                                              Scheme_Object *config_table)
 {
   mz_jmp_buf * volatile save, newbuf;
   Scheme_Thread * volatile p;
@@ -3805,13 +3907,19 @@ void scheme_init_collection_paths_post(Scheme_Env *env, Scheme_Object *extra_dir
   save = p->error_buf;
   p->error_buf = &newbuf;
   if (!scheme_setjmp(newbuf)) {
-    Scheme_Object *clcp, *flcp, *a[2];
+    Scheme_Object *gin, *clcp, *flcp, *a[4], *name;
+
+    gin = scheme_builtin_value("get-installation-name");
+    a[0] = config_table;
+    name = _scheme_apply(gin, 1, a);
 
     clcp = scheme_builtin_value("current-library-collection-links");
     flcp = scheme_builtin_value("find-library-collection-links");
 
     if (clcp && flcp) {
-      a[0] = _scheme_apply(flcp, 0, NULL);
+      a[0] = config_table;
+      a[1] = name;
+      a[0] = _scheme_apply(flcp, 2, a);
       _scheme_apply(clcp, 1, a);
     }
 
@@ -3821,7 +3929,9 @@ void scheme_init_collection_paths_post(Scheme_Env *env, Scheme_Object *extra_dir
     if (clcp && flcp) {
       a[0] = extra_dirs;
       a[1] = post_dirs;
-      a[0] = _scheme_apply(flcp, 2, a);
+      a[2] = config_table;
+      a[3] = name;
+      a[0] = _scheme_apply(flcp, 4, a);
       _scheme_apply(clcp, 1, a);
     }
   } else {
@@ -3836,6 +3946,11 @@ void scheme_init_collection_paths(Scheme_Env *env, Scheme_Object *extra_dirs)
 }
 
 void scheme_init_compiled_roots(Scheme_Env *global_env, const char *paths)
+{
+  scheme_init_compiled_roots_config(global_env, paths, scheme_read_installation_config_table(global_env));
+}
+
+void scheme_init_compiled_roots_config(Scheme_Env *global_env, const char *paths, Scheme_Object *config_table)
 {
   mz_jmp_buf * volatile save, newbuf;
   Scheme_Thread * volatile p;
@@ -3924,6 +4039,20 @@ static Scheme_Object *compile_is_target_machine(int argc, Scheme_Object **argv)
   if (!SCHEME_SYMBOLP(argv[0]))
     scheme_wrong_contract("compile-target-machine?", "symbol?", 0, argc, argv);
   return scheme_compile_target_check(argc, argv);
+}
+
+static Scheme_Object *compile_realm_check(int argc, Scheme_Object **argv)
+{
+  return SCHEME_SYMBOLP(argv[0]) ? scheme_true : scheme_false;
+}
+
+static Scheme_Object *compile_realm(int argc, Scheme_Object **argv)
+{
+  return scheme_param_config2("current-compile-realm", 
+                              scheme_make_integer(MZCONFIG_COMPILE_REALM),
+                              argc, argv,
+                              -1, compile_realm_check, 
+                              "symbol?", 0);
 }
 
 static Scheme_Object *

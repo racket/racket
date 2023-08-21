@@ -147,6 +147,7 @@
   scheme_extension_table->scheme_eq = scheme_eq;
   scheme_extension_table->scheme_eqv = scheme_eqv;
   scheme_extension_table->scheme_equal = scheme_equal;
+  scheme_extension_table->scheme_equal_always = scheme_equal_always;
   scheme_extension_table->scheme_list_length = scheme_list_length;
   scheme_extension_table->scheme_alloc_list = scheme_alloc_list;
   scheme_extension_table->scheme_map_1 = scheme_map_1;

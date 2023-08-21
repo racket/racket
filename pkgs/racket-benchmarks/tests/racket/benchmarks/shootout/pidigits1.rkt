@@ -1,4 +1,6 @@
 #lang racket/base
+;; SPDX-License-Identifier: LGPL-3.0-or-later
+;; SPDX-FileCopyrightText: 1991, 1993, 1994, 1995 Free Software Foundation, Inc.
 
 ; The Computer Language Shootout
 ; http://shootout.alioth.debian.org/

@@ -5,6 +5,10 @@
 
 (require racket/list)
 
+(define (test-equal-always . args)
+  (apply test (append args (list equal-always?)))
+  (apply test (append args (list (λ (x y) (equal-always? x y))))))
+
 (test (list 1 2 3 4) foldl cons '() (list 4 3 2 1))
 (test (list 1 2 3 4) foldr cons '() (list 1 2 3 4))
 (test (list (list 5 6) (list 3 4) (list 1 2))
@@ -351,6 +355,10 @@
 (test #f check-duplicates '(#t #f #f) #:default "no dups")
 (test "no dups" check-duplicates '(#t #f) #:default "no dups")
 (test "no dups" check-duplicates '(#t #f) #:default (lambda () "no dups"))
+(test (box 1) check-duplicates (list (box 1) (box 1)) equal?)
+(test-equal-always #f check-duplicates (list (box 1) (box 1)))
+(let ([b (box 1)])
+  (test-equal-always b check-duplicates (list b b)))
 (err/rt-test (check-duplicates 'a))
 (err/rt-test (check-duplicates '(1) #f))
 (err/rt-test (check-duplicates '(1) #:key #f))
@@ -372,7 +380,20 @@
     (test long rd (append long (reverse long))) ; keeps first
     (test long rd (append* (map (lambda (x) (list x x)) long)))
     (test long rd (append long (map (lambda (x) (- x)) long)) #:key abs)
-    (test long rd (append long (map (lambda (x) (- x)) long)) = #:key abs)))
+    (test long rd (append long (map (lambda (x) (- x)) long)) = #:key abs))
+  (test (list (box 1)) rd (list (box 1) (box 1)) equal?)
+  (test (list* (box 1) (box 0) (map box (range 2 100))) rd
+        (append (list (box 1)) (map box (range 100)) (list (box 1)))
+        equal?)
+  (test-equal-always (list (box 1) (box 1)) rd (list (box 1) (box 1)))
+  (test-equal-always
+   (append (list (box 1)) (map box (range 100)) (list (box 1))) rd
+   (append (list (box 1)) (map box (range 100)) (list (box 1))))
+  (let ([b (box 1)])
+    (test-equal-always (list b) rd (list b b))
+    (test-equal-always
+     (cons b (map box (range 100))) rd
+     (append (list b) (map box (range 100)) (list b)))))
 
 ;; ---------- filter and filter-not ----------
 (let ()
@@ -490,10 +511,10 @@
                           (and (= (car l1) (car l2))
                                (loop (cdr l1) (cdr l2)))))))
   (define (sorted-perms l)
-    (define l1 (sort (permutations l) perm<?))
-    (define l2 (sort (for/list ([p (in-permutations l)]) p) perm<?))
+    (define l1 (permutations l))
+    (define l2 (for/list ([p (in-permutations l)]) p))
     (test #t equal? l1 l2)
-    l1)
+    (sort l1 perm<?))
   (test '(())  sorted-perms '())
   (test '((1)) sorted-perms '(1))
   (test '((1 2) (2 1)) sorted-perms '(1 2))

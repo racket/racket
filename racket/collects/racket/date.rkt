@@ -1,6 +1,7 @@
 #lang racket/base
-(require racket/promise
-         racket/contract/base)
+
+(require racket/contract/base
+         racket/promise)
 
 (provide/contract
  [current-date (-> date*?)]
@@ -59,7 +60,6 @@
   (define year (number->string (date-year date)))
   (define num-month (number->string (date-month date)))
   (define week-day (day/number->string (date-week-day date)))
-  (define week-day-num (date-week-day date))
   (define month (month/number->string (date-month date)))
   (define day (number->string (date-day date)))
   (define day-th
@@ -149,53 +149,6 @@
          (if time?
              (append day-strs time-strs)
              day-strs)))
-
-(define (leap-year? year)
-  (or (= 0 (modulo year 400))
-      (and (= 0 (modulo year 4))
-           (not (= 0 (modulo year 100))))))
-
-;; it's not clear what months mean in this context -- use days
-(define-struct date-offset (second minute hour day year))
-
-(define (fixup s x) (if (< s 0) (+ s x) s))
-(define (date- date1 date2)
-  (define second (- (date-second date1) (date-second date2)))
-  (define minute 
-    (+ (- (date-minute date1) (date-minute date2))
-       (if (< second 0) -1 0)))
-  (define hour 
-    (+ (- (date-hour date1) (date-hour date2))
-       (if (< minute 0) -1 0)
-       (cond [(equal? (date-dst? date1) (date-dst? date2)) 0]
-             [(date-dst? date1) -1]
-             [(date-dst? date2) 1])))
-  (define day 
-    (+ (- (date-year-day date1) (date-year-day date2))
-       (if (< hour 0) -1 0)))
-  (define year 
-    (+ (- (date-year date1) (date-year date2))
-       (if (< day 0) -1 0)))
-  (make-date-offset 
-   (fixup second 60)
-   (fixup minute 60)
-   (fixup hour 24)
-   (fixup day (if (leap-year? (date-year date1)) 366 365))
-   year))
-
-(define (one-entry b)
-  (string-append
-   (number->string (car b))
-   " "
-   (cadr b)
-   (if (= 1 (car b)) "" "s")))
-
-(define (days-per-month year month)
-  (cond
-    [(and (= month 2) (leap-year? year)) 29]
-    [(= month 2) 28]
-    [(<= month 7) (+ 30 (modulo month 2))]
-    [else (+ 30 (- 1 (modulo month 2)))]))
 
 (define (find-extreme-date-seconds start offset)
   (let/ec found

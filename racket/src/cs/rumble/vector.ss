@@ -9,12 +9,23 @@
 
 ;; ----------------------------------------
 
-(define (vector-immutable . args)
-  (if (null? args)
-      (vector->immutable-vector '#())
-      (let ([vec (apply vector args)])
-        (#%$vector-set-immutable! vec)
-        vec)))
+(define vector-immutable
+  (case-lambda
+   [() (vector->immutable-vector '#())]
+   [args (let ([vec (apply vector args)])
+           (#%$vector-set-immutable! vec)
+           vec)]))
+
+(define-syntax (inline:vector-immutable stx)
+  (syntax-case stx ()
+    [(_) #'(vector->immutable-vector '#())]
+    [(_ arg ...)
+     #'(let ([vec (vector arg ...)])
+         (#%$vector-set-immutable! vec)
+         vec)]
+    [(_ . args)
+     #'(vector-immutable . args)]
+    [_ #'vector-immutable]))
 
 ;; ----------------------------------------
 
@@ -27,6 +38,11 @@
   (or (#%mutable-vector? v)
       (and (impersonator? v)
            (#%mutable-vector? (impersonator-val v)))))
+
+(define (immutable-vector? v)
+  (or (#%immutable-vector? v)
+      (and (impersonator? v)
+           (#%immutable-vector? (impersonator-val v)))))
 
 ;; ----------------------------------------
 
@@ -61,12 +77,14 @@
         (make-props-impersonator val vec props))))
 
 (define (set-vector-impersonator-hash!)
-  (record-type-hash-procedure (record-type-descriptor vector-chaperone)
-                              (lambda (c hash-code)
-                                (hash-code (vector-copy c))))
-  (record-type-hash-procedure (record-type-descriptor vector-impersonator)
-                              (lambda (i hash-code)
-                                (hash-code (vector-copy i)))))
+  (struct-set-equal+hash! (record-type-descriptor vector-chaperone)
+                          #f
+                          (lambda (c hash-code)
+                            (hash-code (vector-copy c))))
+  (struct-set-equal+hash! (record-type-descriptor vector-impersonator)
+                          #f
+                          (lambda (i hash-code)
+                            (hash-code (vector-copy i)))))
 
 (define (check-vector-wrapper-consistent who ref set)
   (unless (eq? (not ref) (not set))
@@ -197,7 +215,7 @@
     (unless (#%vector? vec)
       (raise-argument-error who "(and/c vector? (not impersonator?))" vec))])
   (check who exact-nonnegative-integer? idx)
-  (check-range who "vector" vec idx #f (fx- (#%vector-length vec) 1)))
+  (check-range who "vector" vec idx 'none (fx- (#%vector-length vec) 1)))
 
 (define (impersonate-vector-ref orig idx)
   (if (and (impersonator? orig)

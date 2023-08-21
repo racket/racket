@@ -61,10 +61,59 @@
             (positive? n))
        (raise (|#%app|
                exn:fail:out-of-memory
-               "arithmetic-shift: out of memory"
+               (error-message->adjusted-string
+                'arithmetic-shift primitive-realm
+                "out of memory"
+                primitive-realm)
                (current-continuation-marks)))]
       [else
        (#2%bitwise-arithmetic-shift x n)]))))
+
+;; similar to `arithmetic-shift`, we need to guard against
+;; large immediate allocations
+(define-syntax (expt stx)
+  (syntax-case stx ()
+    [(_ x-expr n-expr)
+     #'(let ([x x-expr]
+             [n n-expr])
+         (if (and (fixnum? n)
+                  (#3%fx< n 10000))
+             (#2%expt x n)
+             (general-expt x n)))]
+    [(_ expr ...) #'(general-expt expr ...)]
+    [_ #'general-expt]))
+
+(define general-expt
+  (|#%name|
+   expt
+   (lambda (x n)
+     (cond
+      [(not (number? x))
+       (#2%expt x n)]
+      [(and (fixnum? n)
+            (fxpositive? n)
+            (exact? x))
+       (unless (or (#3%fx< (fxabs n) 10000)
+                   (eqv? x 0)
+                   (eqv? x 1)
+                   (eqv? x -1))
+         (guard-large-allocation 'expt 'number n 1))
+       (#2%expt x n)]
+      [(and (bignum? n)
+            (positive? n)
+            (exact? x)
+            (not (or (eqv? x 0)
+                     (eqv? x 1)
+                     (eqv? x -1))))
+       (raise (|#%app|
+               exn:fail:out-of-memory
+               (error-message->adjusted-string
+                'expt primitive-realm
+                "out of memory"
+                primitive-realm)
+               (current-continuation-marks)))]
+      [else
+       (#2%expt x n)]))))
 
 (define-syntax-rule (define-bitwise op fxop)
   (...
@@ -112,6 +161,7 @@
 (define (fxrshift x y) (#2%fxarithmetic-shift-right x y))
 (define (fxlshift x y) (#2%fxarithmetic-shift-left x y))
 (define (fxlshift/wraparound x y) (#2%fxsll/wraparound x y))
+(define (fxrshift/logical x y) (#2%fxsrl x y))
 
 (define (fl->fx x) (#2%flonum->fixnum x))
 (define/who (->fl x)
@@ -483,3 +533,14 @@
 (define (flatan n) (#2%flatan n))
 
 (define (fxquotient n d) (#2%fxquotient n d))
+
+(define (init-flonum-printing!)
+  (print-subnormal-precision #f)
+  (print-positive-exponent-sign #t)
+  (print-select-flonum-exponential-format
+   (lambda (r e n-digits)
+     (not (or (fx> r 10)
+              (cond
+                [(fx< e -4) #f]
+                [(fx< e 14) #t]
+                [else (fx< (fx- e n-digits) 3)]))))))

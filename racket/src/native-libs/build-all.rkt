@@ -10,9 +10,12 @@
    '("pkg-config")
    (cond
     [win?
-     '("sed"
-       "longdouble"
-       "libiconv")]
+     (append
+      '("sed"
+        "libiconv")
+      (if aarch64?
+          null
+          '("longdouble")))]
     [else
      null])
    (cond
@@ -21,8 +24,13 @@
        "zlib")]
     [else
      null])
-   '("openssl"
-     "expat"
+   (cond
+     [(and win?
+           aarch64?)
+      '("openssl-3")]
+     [else
+      '("openssl-1")])
+   '("expat"
      "gettext")
    (cond
     [linux?
@@ -87,7 +95,9 @@
                     (list->vector
                      (append
                       (list (if win? "--win" (if linux? "--linux" "--mac"))
-                            (if m32? (if ppc? "--mppc" "--m32") "--m64"))
+                            (if m32?
+                                (if ppc? "--mppc" "--m32")
+                                (if aarch64? "--maarch64" "--m64")))
                       (cons "--archives"
                             (add-between (map ~a archives-dirs)
                                          "--archives"))

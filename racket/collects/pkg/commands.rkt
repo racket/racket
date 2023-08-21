@@ -83,7 +83,10 @@
                [(alias ... #,arg-str)
                 k.arg-val ...
                 doc
-                (set! #,arg-var (k.fun k.arg-val ...))
+                (set! #,arg-var #,(let ([one #'(k.fun k.arg-val ...)])
+                                    (if (eq? (syntax-e #'k) '#:multi)
+                                        #`(append (or #,arg-var '()) (list #,one))
+                                        one)))
                 body ...])])
 
   (define-syntax-class group-kind

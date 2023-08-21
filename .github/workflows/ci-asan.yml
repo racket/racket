@@ -2,17 +2,20 @@ name: Test with ASan
 
 on: [push]
 
+permissions:
+  contents: read
+
 jobs:
 
   racketcs-asan:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-22.04
     container: racket/racket-ci:latest
 
     env:
       ASAN_OPTIONS: 'halt_on_error=0,log_path=racket-asan'
     
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
       with:
         fetch-depth: 100
     - name: Create logs directory
@@ -73,14 +76,14 @@ jobs:
       run: raco test -c tests/xml 
     - name: Run tests/future
       continue-on-error: true
-      run: raco test -c tests/future
+      run: raco test --timeout 300 -c tests/future
     - name: Run tests/stxparse
       continue-on-error: true
       run: raco test -c tests/stxparse
     - name: Run db tests
       continue-on-error: true
       run: raco test -l tests/db/all-tests
-    - uses: actions/upload-artifact@v2
+    - uses: actions/upload-artifact@v3
       with:
         name: asan-errors-cs_git${{ github.sha }}
         path: ./racket-asan.*

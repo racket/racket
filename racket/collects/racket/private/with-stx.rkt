@@ -76,7 +76,7 @@
     (unless (stx-list? sl)
       (raise-argument-error 
        'generate-temporaries
-       "(or/c list? syntax->list)"
+       "stx-list?"
        sl))
     (let ([l (stx->list sl)])
       (map (lambda (x) 

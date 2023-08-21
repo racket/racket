@@ -66,6 +66,7 @@
               (lambda (addr)
                 (cond
                   [(and who (rktio-error? addr))
+                   (end-atomic)
                    (raise-network-error who addr (string-append
                                                   "can't resolve " which "address"
                                                   "\n  address: " (or hostname "<unspec>")

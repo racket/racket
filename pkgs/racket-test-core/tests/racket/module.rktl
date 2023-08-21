@@ -54,6 +54,11 @@
 (syntax-test #'(module m racket/base (#%declare something)))
 (syntax-test #'(module m racket/base (#%declare "something")))
 (syntax-test #'(module m racket/base (#%declare #:something)))
+(syntax-test #'(module m racket/base (#%declare #:realm)))
+(syntax-test #'(module m racket/base (#%declare #:unsafe #:unsafe)))
+(syntax-test #'(module m racket/base (#%declare #:unsafe) (#%declare #:unsafe)))
+(syntax-test #'(module m racket/base (#%declare #:realm elsewhere #:realm elsewhere)))
+(syntax-test #'(module m racket/base (#%declare #:realm elsewhere) (#%declare #:realm elsewhere)))
 
 (syntax-test #'(#%provide))
 (syntax-test #'(#%provide . x))
@@ -139,6 +144,12 @@
   (define car 5)
   (provide car))
 
+;; ... even in `#:require=define` mode
+(module _shadow_initial_always_ racket/base
+  (#%declare #:require=define)
+  (define car 5)
+  (provide car))
+
 (test 5 dynamic-require ''_shadow_ 'car)
 
 ;; Ok to redefine imported:
@@ -148,6 +159,13 @@
 (test 6 dynamic-require ''defines-car-that-overrides-import/stx 'car)
 ;; Can't redefine multiple times or import after definition:
 (syntax-test #'(module m racket/base (#%require racket/base) (define car 5) (define car 5)))
+
+;; Not in `#:require=define` mode
+(syntax-test #'(module m racket/base (#%require racket/base) (#%declare #:require=define) (define car 5)))
+(syntax-test #'(module m racket/base (#%require racket/base (for-syntax racket/base)) (#%declare #:require=define) (define-syntax car 5)))
+(syntax-test #'(module m racket/base (#%declare #:require=define) (define car 5) (#%require racket/base)))
+(syntax-test #'(module m racket/base (#%require (for-syntax racket/base)) (#%declare #:require=define) (define-syntax car 5) (require racket/base)))
+(syntax-test #'(module m racket/base (#%require (for-syntax racket/base)) (#%declare #:require=define) (define-syntax car 5) (require (only-in racket/base car))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -350,12 +368,16 @@
                        #,((make-interned-syntax-introducer (syntax-e #'space))
                           (syntax-local-introduce (datum->syntax #f (syntax-e #'id)))))]))
   
-  (define (make-soup-module #:with-default? with-default?)
+  (define (make-soup-module #:with-default? with-default?
+                            #:all-defined-out? [all-defined-out? #f])
     `(module soup-kettle racket/base
        (require (for-syntax racket/base))
-       (provide (for-space soup kettle) ,@(if with-default?
-                                              '(kettle)
-                                              '()))
+       (provide (for-space soup ,(if all-defined-out?
+                                     '(all-defined-out)
+                                     'kettle))
+                ,@(if with-default?
+                      '(kettle)
+                      '()))
        (define-syntax (define-soup stx)
          (syntax-case stx ()
            [(_ id rhs)
@@ -400,6 +422,16 @@
                (require 'soup-kettle)
                (provide (all-from-out 'soup-kettle))))
       (eval '(require 'also-soup-kettle))
+      (test 'soup eval (namespace-syntax-introduce (in-space soup kettle)))
+      (if with-default?
+          (test 'default eval 'kettle)
+          (err/rt-test/once (eval 'kettle) exn:fail:contract:variable?))))
+
+    ;; check all-defined-out and spaces
+  (for ([with-default? '(#f #t)])
+    (parameterize ([current-namespace (make-base-namespace)])
+      (eval (make-soup-module #:with-default? with-default? #:all-defined-out? #t))
+      (eval '(require 'soup-kettle))
       (test 'soup eval (namespace-syntax-introduce (in-space soup kettle)))
       (if with-default?
           (test 'default eval 'kettle)
@@ -484,6 +516,24 @@
       (void)))
 
   (void))
+
+;; make sure `provide` isn't confused by a rename transformer
+
+(module should-be-an-ok-provide-for-space racket/base
+  (require (for-syntax racket/base))
+  (define-syntax (go stx)
+    #`(begin
+        (provide (for-space example_space x))
+        (define x 'ok)
+        (define-syntax #,((make-interned-syntax-introducer 'example_space) #'x)
+          (make-rename-transformer (quote-syntax x)))))
+  (go))
+
+;; make sure `for-space #f` works
+
+(module should-be-an-ok-provide-for-default-space racket/base
+  (provide (for-space #f x))
+  (define x "ok"))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Test proper bindings for `#%module-begin'
@@ -729,6 +779,9 @@
 (test #t module-path? '(planet "foo.rkt" ("robby" "redex.plt") "sub" "deeper"))
 (test #t module-path? '(planet "foo%2e.rkt" ("robby%2e" "redex%2e.plt") "sub%2e" "%2edeeper"))
 
+(err/rt-test (make-resolved-module-path "not good"))
+(err/rt-test (resolved-module-path-name "not good"))
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; check `relative-in'
 
@@ -750,6 +803,19 @@
   (check `(relative-in ,(collection-file-path "promise.rkt" "racket") "string.rkt"))
   (check '(relative-in racket (relative-in "private/reqprov.rkt" "../string.rkt"))))
 
+
+(module module-that-defines-submodule-named-a racket/base
+  (module a racket/base
+    (define a 'a)
+    (provide a)))
+
+(module module-that-uses-submodule-named-a racket/base
+  (require (relative-in (submod 'module-that-defines-submodule-named-a a) (submod ".." a)))
+  (define got-a a)
+  (provide got-a))
+
+(test 'a dynamic-require ''module-that-uses-submodule-named-a 'got-a)
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; check collection-path details
 
@@ -768,16 +834,16 @@
 ;; Check 'module-language, `module-compiled-language-info', and `module->language-info'
 
 (let ([mk (lambda (val)
-            (compile (syntax-property #'(module m scheme/base)
+            (compile (syntax-property #'(module m racket/base)
                                       'module-language
                                       val)))])
   (test #f 'info (module-compiled-language-info (mk 10)))
-  (test '#(scheme x "whatever") 'info (module-compiled-language-info (mk '#(scheme x "whatever"))))
+  (test '#(racket x "whatever") 'info (module-compiled-language-info (mk '#(racket x "whatever"))))
   (let ([ns (make-base-namespace)])
     (parameterize ([current-namespace ns])
       (eval mk ns)
-      (eval (mk '#(scheme x "whatever")))
-      (test '#(scheme x "whatever") module->language-info ''m)
+      (eval (mk '#(racket x "whatever")))
+      (test '#(racket x "whatever") module->language-info ''m)
       (let ([path (build-path (collection-path "tests" "racket")
                               "langm.rkt")])
         (parameterize ([read-accept-reader #t]
@@ -802,6 +868,11 @@
   (test '(nested) cdr (resolved-module-path-name m)))
 
 (test #f module-declared? '(submod no-such-collection/x nested) #t)
+
+;; don't call the resolver in this case:
+(err/rt-test (module-path-index-resolve (module-path-index-join #f #f))
+             exn:fail:contract?
+             #rx"^module-path-index-resolve")
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; provide a source-location syntax object to `module-path-index-resolve`
@@ -3036,6 +3107,45 @@ case of module-leve bindings; it doesn't cover local bindings.
 (require 'unsafe-module-so-call-provided-carefully)
 (test 3 unsafe-first '(3 4 5))
 
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check `#:realm`
+
+(module module-with-body-in-elsewhere-realm racket/base
+  (#%declare #:realm elsewhere)
+  (provide f1 f2 f3 f4)
+  (define (f1 x) x)
+  (define f2 (lambda (x) x))
+  (define f3 (case-lambda
+               [(x) x]
+               [(x y) y]))
+  (define f4 (lambda (x)
+               (lambda (y) x))))
+
+(test 'elsewhere procedure-realm (dynamic-require ''module-with-body-in-elsewhere-realm 'f1))
+(test 'elsewhere procedure-realm (dynamic-require ''module-with-body-in-elsewhere-realm 'f2))
+(test 'elsewhere procedure-realm (dynamic-require ''module-with-body-in-elsewhere-realm 'f3))
+(test 'elsewhere procedure-realm ((dynamic-require ''module-with-body-in-elsewhere-realm 'f4) 1))
+
+(test 'elsewhere module->realm ''module-with-body-in-elsewhere-realm)
+(test 'elsewhere values (module-compiled-realm (compile '(module m racket/base
+                                                           (#%declare #:realm elsewhere)))))
+
+(parameterize ([current-compile-realm 'somewhere])
+  (eval '(module module-with-body-in-parameterized-realm racket/base
+           (provide f1)
+           (define (f1 x) x)))
+  (test 'somewhere procedure-realm (eval '(lambda (x) x)))
+  (test 'somewhere procedure-realm (eval '(begin
+                                            (define procedure-that-is-somewhere (lambda (x) x))
+                                            procedure-that-is-somewhere)))
+  (eval '(module module-with-body-still-in-elsewhere-realm racket/base
+           (#%declare #:realm elsewhere)
+           (provide f1)
+           (define (f1 x) x))))
+
+(test 'somewhere procedure-realm (dynamic-require ''module-with-body-in-parameterized-realm 'f1))
+(test 'elsewhere procedure-realm (dynamic-require ''module-with-body-still-in-elsewhere-realm 'f1))
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Make sure that a module with an attached instance
 ;; cannot be redeclared in the target namespace
@@ -3071,7 +3181,8 @@ case of module-leve bindings; it doesn't cover local bindings.
      (module use (submod ".." mb)
        (module* m racket/base)
        (require (submod "." m "..")))))
- exn:fail?)
+ exn:fail?
+ #rx"cycle detected")
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; If `local-expand` creates a macro binding, and if
@@ -3947,6 +4058,102 @@ case of module-leve bindings; it doesn't cover local bindings.
                                (provide (all-from-out mod)))
                         ...))]))
         (bounce 'p2)))))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; check that write and reading a module preserves flonum `eq?`
+
+(let ([m '(module defines-a-and-b-infinity racket/base
+            (provide a b)
+            (define a +inf.0)
+            (define b +inf.0))])
+  (define o (open-output-bytes))
+  (write (compile m) o)
+  (parameterize ([read-accept-compiled #t])
+    (eval (read (open-input-bytes (get-output-bytes o)))))
+  (test #t eq?
+        (dynamic-require ''defines-a-and-b-infinity 'a)
+        (dynamic-require ''defines-a-and-b-infinity 'b)))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Regression test aimed at a compiler bug: the target of known-copy
+;; information from an imported module was confused with an import
+;; from another module where the target and import happen to have the
+;; same name
+
+(module check-no-crash-on-misapplication racket/base
+  (provide check)
+
+  (module one racket/base
+    (provide thing)
+    (define f (random))
+    (define thing f))
+
+  (module two racket/base
+    (provide f)
+    (define (f x) (let loop () (loop))))
+
+  (require 'one
+           'two)
+
+  (define (check)
+    (when (thing #f)
+      (f 10))))
+
+(err/rt-test ((dynamic-require ''check-no-crash-on-misapplication 'check)))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(test 'cwv-ok
+      (dynamic-require ''#%kernel 'call-with-values)
+      (lambda () 'cwv-ok)
+      (chaperone-procedure (lambda (v) v) (lambda (v) v)))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; regression test aimed at instantiation via shifting up and back down
+
+(let ()
+  (define ns (make-base-namespace))
+  (define ns2 (make-base-namespace))
+
+  (define d
+    (parameterize ([current-namespace ns])
+      (eval '(module zo racket/base
+               (require (for-template racket/base))))
+      (define d
+        (compile '(module d racket/base
+                    (require 'zo
+                             racket/phase+space)
+                    phase+space)))
+      (eval d)
+      (dynamic-require ''d #f)
+      d))
+
+  (parameterize ([current-namespace ns2])
+    (namespace-attach-module ns ''zo)
+    (eval d)
+    (dynamic-require ''d #f)))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; make sure that definitions with interned scopes are accessible
+;; via `module->namespace`, even if no syntax object is in the module
+
+(parameterize ([current-namespace (make-base-namespace)])
+  (eval '(module ex racket/base
+           (require (for-syntax racket/base))
+           (define-syntax (def stx)
+             (syntax-case stx ()
+               [(_ id)
+                #`(define #,((make-interned-syntax-introducer 'racket/example) #'id) 5)]))
+           (define-syntax (ref stx)
+             (syntax-case stx ()
+               [(_ id)
+                ((make-interned-syntax-introducer 'racket/example) #'id)]))
+           (provide def ref)))
+  (eval '(module m racket/base
+           (require 'ex)
+           (def x)))
+  (namespace-require ''m)
+  (eval '(ref x) (module->namespace ''m)))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

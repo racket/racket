@@ -1,5 +1,7 @@
 #lang scribble/doc
-@(require "mz.rkt" scribble/bnf scribble/core
+@(require "mz.rkt" 
+          scribble/bnf scribble/core
+	  scribblings/private/docname
           (for-label (only-in racket/require-transform
                               make-require-transformer
                               current-require-module-path)
@@ -125,8 +127,9 @@ path. A @racket[module] form is not allowed in an @tech{expression context}
 or @tech{internal-definition context}.
 
 @margin-note/ref{For a @racket[module]-like form that works in
-definitions context other than the top level or a module body, see
-@racket[define-package].}
+definition contexts other than the top level or a module body, there's
+@racket[define-package], but using a separate module or @tech{submodule}
+is usually better.}
 
 The @racket[module-path] form must be as for @racket[require], and it
 supplies the initial bindings for the body @racket[form]s. That is, it
@@ -227,8 +230,9 @@ that produces syntax definitions must be defined before it is used.
 
 No identifier can be imported or defined more than once at any
 @tech{phase level} within a single module, except that a definition
-via @racket[define-values] or @racket[define-syntaxes] can shadow a
-preceding import via @racket[#%require].
+via @racket[define-values] or @racket[define-syntaxes] can shadow an
+import via @racket[#%require]---as long as no preceding
+@racket[#%declare] form includes @racket[#:require=defined].
 Every exported identifier must be imported or
 defined. No expression can refer to a @tech{top-level variable}.
 A @racket[module*] form in which the enclosing module's bindings are visible
@@ -350,6 +354,10 @@ enclosing module. If there is only one @racket[module+] for a given
 @racket[(module* id #f form ...)], but still moved to the end of the
 enclosing module.
 
+A @tech{syntax property} on the @racket[module*] form with the key
+@indexed-racket['origin-form-srcloc] records the @racket[srcloc] for
+every contributing @racket[module+] form.
+
 When a module contains multiple submodules declared with
 @racket[module+], then the relative order of the initial
 @racket[module+] declarations for each submodule determines the
@@ -360,6 +368,9 @@ A submodule must not be defined using @racket[module+] @emph{and}
 @racket[module] or @racket[module*]. That is, if a submodule is made
 of @racket[module+] pieces, then it must be made @emph{only} of
 @racket[module+] pieces. }
+
+@history[#:changed "8.9.0.1"
+         @elem{Added @racket['origin-form-srcloc] syntax property.}]
 
 
 @defform[(#%module-begin form ...)]{
@@ -397,7 +408,9 @@ Legal only in a @tech{module begin context}, and handled by the
          #:grammar
          ([declaration-keyword #:cross-phase-persistent
                                #:empty-namespace
-                               #:unsafe])]{
+                               #:require=define
+                               #:unsafe
+                               (code:line #:realm identifier)])]{
 
 Declarations that affect run-time or reflective properties of the
 module:
@@ -415,6 +428,12 @@ module:
        way can reduce the @tech{lexical information} that
        otherwise must be preserved for the module.}
 
+@item{@indexed-racket[#:require=define] --- declares that no
+       subsequent definition immediately with the module body is
+       allowed to shadow a @racket[#%require] (or @racket[require])
+       binding. This declaration does not affect shadowing of a
+       module's initial imports (i.e., the module's language).}
+
 @item{@indexed-racket[#:unsafe] --- declares that the module can be
        compiled without checks that could trigger
        @racket[exn:fail:contract], and the resulting behavior is
@@ -430,6 +449,11 @@ module:
        @racket[(variable-reference-from-unsafe?
        (#%variable-reference))].}
 
+@item{@racket[@#,indexed-racket[#:realm] identifier] --- declares that
+       the module and any procedures within the module are given a
+       @tech{realm} that is the symbol form of @racket[identifier], effectively
+       overriding the value of @racket[current-compile-realm].}
+
 ]
 
 A @racket[#%declare] form must appear in a @tech{module
@@ -438,7 +462,9 @@ context} or a @tech{module-begin context}. Each
 @racket[module] body.
 
 @history[#:changed "6.3" @elem{Added @racket[#:empty-namespace].}
-         #:changed "7.9.0.5" @elem{Added @racket[#:unsafe].}]}
+         #:changed "7.9.0.5" @elem{Added @racket[#:unsafe].}
+         #:changed "8.4.0.2" @elem{Added @racket[#:realm].}
+         #:changed "8.6.0.9" @elem{Added @racket[#:require=define].}]}
 
 
 @;------------------------------------------------------------------------
@@ -582,7 +608,14 @@ bindings of each @racket[require-spec] are visible for expanding later
     (require (prefix-in tcp: racket/tcp))
     tcp:tcp-accept
     tcp:tcp-listen
-  ]}
+  ]
+
+  A @tech{syntax property} with the key
+  @indexed-racket['import-or-export-prefix-ranges] is added to the
+  local identifier in the expanded form of @racket[require].
+
+  @history[#:changed "8.9.0.5" @elem{Added the @racket['import-or-export-prefix-ranges]
+                                     syntax property.}]}
 
  @defsubform[(rename-in require-spec [orig-id bind-id] ...)]{
   Like @racket[require-spec], but replacing the identifier to
@@ -1107,7 +1140,14 @@ as follows.
      (define num-eggs 2))
    (require 'nest)
    chicken:num-eggs
- ]}
+ ]
+ 
+  A @tech{syntax property} with the key
+  @indexed-racket['import-or-export-prefix-ranges] is added to the
+  exported identifier in the expanded form of @racket[provide].
+
+  @history[#:changed "8.9.0.5" @elem{Added the @racket['import-or-export-prefix-ranges]
+                                     syntax property.}]}
 
  @defsubform[(struct-out id)]{Exports the bindings associated with a
  structure type @racket[id]. Typically, @racket[id] is bound with
@@ -2462,10 +2502,9 @@ result of @racket[val-expr]. If no such @racket[datum] is present, the
 @racket[else] @racket[case-clause] is selected; if no @racket[else]
 @racket[case-clause] is present, either, then the result of the
 @racket[case] form is @|void-const|.@margin-note{The @racket[case]
-form of @racketmodname[racket] differs from that of @other-manual['(lib
-"r6rs/scribblings/r6rs.scrbl")] or @other-manual['(lib
-"r5rs/r5rs.scrbl")] by being based on @racket[equal?] instead of
-@racket[eqv?] (in addition to allowing internal definitions).}
+form of @racketmodname[racket] differs from that of @R6RS{R6RS} or
+@R5RS{R5RS} by being based on @racket[equal?] instead
+of @racket[eqv?] (in addition to allowing internal definitions).}
 
 For the selected @racket[case-clause], the results of the last
 @racket[then-body], which is in tail position with respect to the
@@ -2781,8 +2820,7 @@ For backward compatibility only; equivalent to @racket[syntax-local-introduce].
            (begin expr ...+)]]{
 
 The first form applies when @racket[begin] appears at the top level,
-at module level, or in an internal-definition position (before any
-expression in the internal-definition sequence). In that case, the
+at module level, or in an internal-definition position. In that case, the
 @racket[begin] form is equivalent to splicing the @racket[form]s into
 the enclosing context.
 

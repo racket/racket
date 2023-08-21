@@ -21,7 +21,6 @@
   [|#%struct-field-mutator| (known-constant)]
   [|#%nongenerative-uid| (known-constant)]
   [make-record-type-descriptor (known-constant)]
-  [make-record-type-descriptor* (known-constant)]
   [make-record-constructor-descriptor (known-constant)]
   [record-constructor (known-constant)]
   [record-predicate (known-constant)]

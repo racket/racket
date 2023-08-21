@@ -169,7 +169,7 @@
 ;; Chez Scheme makefile
 (define scheme-lib
   (call-with-input-file*
-   (build-path scheme-dir "c" (format "Makefile.~a" machine))
+   (build-path scheme-dir "c" "Makefile.nt")
    (lambda (i)
      (for/or ([l (in-lines i)])
        (define m (regexp-match #rx"MTKernelLib *= *.*(csv.*mt.lib)" l))
@@ -316,6 +316,7 @@
 (system*! (find-exe)
           "../cs/c/gen-system.rkt"
           (format "../../lib/system~a.rktd" cs-suffix)
+          machine
           machine
           "machine"
           "../cs/c"

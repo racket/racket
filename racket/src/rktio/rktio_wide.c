@@ -43,19 +43,16 @@ void rktio_init_wide(rktio_t *rktio)
    sequences are accessible. */
 static intptr_t utf8ish_to_utf16ish(const unsigned char *s, intptr_t end, unsigned short *us)
 {
-  intptr_t i, j, oki;
+  intptr_t i, j;
   int state;
-  int init_doki;
   int nextbits, v;
   unsigned int sc;
   int pending_surrogate = 0;
 
   state = 0;
-  init_doki = 0;
   nextbits = 0;
   v = 0;
 
-  oki = 0;
   j = 0;
   i = 0;
   while (i < end) {
@@ -179,8 +176,6 @@ static intptr_t utf8ish_to_utf16ish(const unsigned char *s, intptr_t end, unsign
     }
     j++;
     i++;
-    oki = i;
-    init_doki = 0;
   }
 
   if (pending_surrogate) {

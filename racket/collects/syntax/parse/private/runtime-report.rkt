@@ -5,7 +5,8 @@
          racket/struct
          syntax/srcloc
          "minimatch.rkt"
-         syntax/parse/private/residual
+         "residual.rkt"
+         "../report-config.rkt"
          "kws.rkt")
 (provide call-current-failure-handler
          current-failure-handler
@@ -14,16 +15,12 @@
          invert-ps
          ps->stx+index)
 
-#|
-TODO: given (expect:thing _ D _ R) and (expect:thing _ D _ #f),
-  simplify to (expect:thing _ D _ #f)
-  thus, "expected D" rather than "expected D or D for R" (?)
-|#
+;; TODO: given (expect:thing _ D _ R) and (expect:thing _ D _ #f),
+;;   simplify to (expect:thing _ D _ #f)
+;;   thus, "expected D" rather than "expected D or D for R" (?)
 
-#|
-Note: there is a cyclic dependence between residual.rkt and this module,
-broken by a lazy-require of this module into residual.rkt
-|#
+;; Note: there is a cyclic dependence between residual.rkt and this module,
+;; broken by a lazy-require of this module into residual.rkt
 
 (define (call-current-failure-handler ctx fs)
   (call-with-values (lambda () ((current-failure-handler) ctx fs))
@@ -44,15 +41,13 @@ broken by a lazy-require of this module into residual.rkt
 ;; ============================================================
 ;; Processing failure sets
 
-#|
-We use progress to select the maximal failures and determine the syntax
-they're complaining about. After that, we no longer care about progress.
+;; We use progress to select the maximal failures and determine the syntax
+;; they're complaining about. After that, we no longer care about progress.
 
-Old versions of syntax-parse (through 6.4) grouped failures into
-progress-equivalence-classes and generated reports by class, but only showed
-one report. New syntax-parse just mixes all maximal failures together and
-deals with the fact that they might not be talking about the same terms.
-|#
+;; Old versions of syntax-parse (through 6.4) grouped failures into
+;; progress-equivalence-classes and generated reports by class, but only showed
+;; one report. New syntax-parse just mixes all maximal failures together and
+;; deals with the fact that they might not be talking about the same terms.
 
 ;; handle-failureset : (list Symbol/#f Syntax) FailureSet -> escapes
 (define (handle-failureset ctx fs)
@@ -99,7 +94,7 @@ deals with the fact that they might not be talking about the same terms.
 ;; ============================================================
 ;; Progress
 
-;; maximal-failures : (listof InvFailure) -> (listof (listof InvFailure))
+;; maximal-failures : (Listof InvFailure) -> (Listof (Listof InvFailure))
 (define (maximal-failures fs)
   (maximal/progress
    (for/list ([f (in-list fs)])
@@ -129,12 +124,12 @@ ie (ps->stx+index ps1) = (ps->stx+index ps2).
 ;; An Inverted PS (IPS) is a PS inverted for easy comparison.
 ;; An IPS may not contain any 'opaque frames.
 
-;; invert-ps : PS -> IPS
+;; invert-ps : Progress -> IPS
 ;; Reverse and truncate at earliest 'opaque frame.
 (define (invert-ps ps)
   (reverse (ps-truncate-opaque ps)))
 
-;; ps-truncate-opaque : PS -> PS
+;; ps-truncate-opaque : Progress -> Progress
 ;; Returns maximal tail with no 'opaque frame.
 (define (ps-truncate-opaque ps)
   (let loop ([ps ps] [acc ps])
@@ -144,7 +139,7 @@ ie (ps->stx+index ps1) = (ps->stx+index ps2).
            (loop (cdr ps) (cdr ps))]
           [else (loop (cdr ps) acc)])))
 
-;; maximal/progress : (listof (cons IPS A)) -> (listof (listof A))
+;; maximal/progress : (Listof (cons IPS A)) -> (Listof (Listof A))
 ;; Eliminates As with non-maximal progress, then groups As into
 ;; equivalence classes according to progress.
 (define (maximal/progress items)
@@ -161,7 +156,7 @@ ie (ps->stx+index ps1) = (ps->stx+index ps2).
                  [else
                   (maximal/prf1 (append non-ORD non-ORD-items))]))]))
 
-;; maximal/prf1 : (Listof (Cons IPS A) -> (Listof (Listof A))
+;; maximal/prf1 : (Listof (cons IPS A) -> (Listof (Listof A))
 (define (maximal/prf1 items)
   (define-values (POST rest1)
     (partition (lambda (item) (eq? 'post (item-first-prf item))) items))
@@ -193,7 +188,7 @@ ie (ps->stx+index ps1) = (ps->stx+index ps2).
                 (list (map cdr NULL))]
                [else null])]))
 
-;; maximal-prf1/ord : (NEListof (Cons IPS A)) -> (NEListof (Cons IPS A))
+;; maximal-prf1/ord : (NEListof (cons IPS A)) -> (NEListof (Cons IPS A))
 ;; PRE: each item has ORD first frame
 ;; Keep only maximal by first frame and pop first frame from each item.
 (define (maximal-prf1/ord items)
@@ -227,7 +222,7 @@ ie (ps->stx+index ps1) = (ps->stx+index ps2).
                  [else
                   (loop (cdr xs) nmax r-keep)])])))
 
-;; item-first-prf : (cons IPS A) -> prframe/#f
+;; item-first-prf : (cons IPS A) -> ProgressFrame/#f
 (define (item-first-prf item)
   (define ips (car item))
   (and (pair? ips) (car ips)))
@@ -617,7 +612,8 @@ This suggests the following new algorithm based on (s):
 (define (report/expectstack es stx+index)
   (define frame-expect (and (pair? es) (car es)))
   (define context-frames (if (pair? es) (cdr es) null))
-  (define context (append* (map context-prose-for-expect context-frames)))
+  (define config (current-report-configuration))
+  (define context (append* (map (context-prose-for-expect config) context-frames)))
   (cond [(not frame-expect)
          (report "bad syntax" context #f #f)]
         [else
@@ -626,88 +622,96 @@ This suggests the following new algorithm based on (s):
                      (stx-pair? frame-stx))
                 (report "unexpected term" context (stx-car frame-stx) #f)]
                [(expect:disj? frame-expect)
-                (report (prose-for-expects (expect:disj-expects frame-expect))
+                (report (prose-for-expects (expect:disj-expects frame-expect) config)
                         context frame-stx within-stx)]
                [else
-                (report (prose-for-expects (list frame-expect))
+                (report (prose-for-expects (list frame-expect) config)
                         context frame-stx within-stx)])]))
 
-;; prose-for-expects : (listof Expect) -> string
-(define (prose-for-expects expects)
+;; prose-for-expects : (Listof Expect) Config -> String
+(define (prose-for-expects expects config)
   (define msgs (filter expect:message? expects))
   (define things (filter expect:thing? expects))
   (define literal (filter expect:literal? expects))
-  (define atom/symbol
-    (filter (lambda (e) (and (expect:atom? e) (symbol? (expect:atom-atom e)))) expects))
-  (define atom/nonsym
-    (filter (lambda (e) (and (expect:atom? e) (not (symbol? (expect:atom-atom e))))) expects))
+  (define atom (filter expect:atom? expects))
+  (define literal-whats (map (hash-ref config 'literal-to-what)
+                             (map expect:literal-literal literal)))
+  (define atom-whats (map (hash-ref config 'datum-to-what)
+                          (map expect:atom-atom atom)))
+  (define what-vss (group-by-what (append literal atom) (append literal-whats atom-whats)))
   (define proper-pairs (filter expect:proper-pair? expects))
   (join-sep
-   (append (map prose-for-expect (append msgs things))
-           (prose-for-expects/literals literal "identifiers")
-           (prose-for-expects/literals atom/symbol "literal symbols")
-           (prose-for-expects/literals atom/nonsym "literals")
+   (append (map (prose-for-expect "thing" config) (append msgs things))
+           (apply append
+                  (for/list ([what-vs (in-list what-vss)])
+                    (prose-for-expects/literals (cdr what-vs) (car what-vs) config)))
            (prose-for-expects/pairs proper-pairs))
    ";" "or"))
 
-(define (prose-for-expects/literals expects whats)
+(define (prose-for-expects/literals expects what config)
   (cond [(null? expects) null]
-        [(singleton? expects) (map prose-for-expect expects)]
+        [(singleton? expects) (map (prose-for-expect what config) expects)]
         [else
          (define (prose e)
            (match e
-             [(expect:atom (? symbol? atom) _)
-              (format "`~s'" atom)]
              [(expect:atom atom _)
-              (format "~s" atom)]
+              ((hash-ref config 'datum-to-string) atom)]
              [(expect:literal literal _)
-              (format "`~s'" (syntax-e literal))]))
-         (list (string-append "expected one of these " whats ": "
+              ((hash-ref config 'literal-to-string) literal)]))
+         (list (string-append "expected one of these "
+                              (plural what) ": "
                               (join-sep (map prose expects) "," "or")))]))
 
 (define (prose-for-expects/pairs expects)
   (if (pair? expects) (list (prose-for-proper-pair-expects expects)) null))
 
-;; prose-for-expect : Expect -> string
-(define (prose-for-expect e)
+;; prose-for-expect : Config -> Expect -> String
+(define ((prose-for-expect what config) e)
   (match e
     [(expect:thing _ description transparent? role _)
      (if role
          (format "expected ~a for ~a" description role)
          (format "expected ~a" description))]
-    [(expect:atom (? symbol? atom) _)
-     (format "expected the literal symbol `~s'" atom)]
     [(expect:atom atom _)
-     (format "expected the literal ~s" atom)]
+     (format "expected the ~a ~a"
+             (singular what)
+             ((hash-ref config 'datum-to-string) atom))]
     [(expect:literal literal _)
-     (format "expected the identifier `~s'" (syntax-e literal))]
+     (format "expected the ~a ~a"
+             (singular what)
+             ((hash-ref config 'literal-to-string) literal))]
     [(expect:message message _)
      message]
     [(expect:proper-pair '#f _)
      "expected more terms"]))
 
-;; prose-for-proper-pair-expects : (listof expect:proper-pair) -> string
+;; prose-for-proper-pair-expects : (Listof expect:proper-pair) -> String
 (define (prose-for-proper-pair-expects es)
   (define descs (remove-duplicates (map expect:proper-pair-first-desc es)))
   (cond [(for/or ([desc descs]) (equal? desc #f))
          ;; FIXME: better way to indicate unknown ???
          "expected more terms"]
         [else
+         (define config (current-report-configuration))
          (format "expected more terms starting with ~a"
-                 (join-sep (map prose-for-first-desc descs)
+                 (join-sep (map (prose-for-first-desc config) descs)
                            "," "or"))]))
 
-;; prose-for-first-desc : FirstDesc -> string
-(define (prose-for-first-desc desc)
+;; prose-for-first-desc : FirstDesc -> String
+(define ((prose-for-first-desc config) desc)
   (match desc
     [(? string?) desc]
     [(list 'any) "any term"] ;; FIXME: maybe should cancel out other descs ???
-    [(list 'literal id) (format "the identifier `~s'" id)]
-    [(list 'datum (? symbol? s)) (format "the literal symbol `~s'" s)]
-    [(list 'datum d) (format "the literal ~s" d)]))
+    [(list 'literal id) (format "the ~a ~a"
+                                ;; FIXME?: we have only a symbol here, not an identifier
+                                (singular ((hash-ref config 'literal-to-what) id))
+                                ((hash-ref config 'literal-to-string) id))]
+    [(list 'datum d) (format "the ~a ~a"
+                             (singular ((hash-ref config 'datum-to-what) d))
+                             ((hash-ref config 'datum-to-string) d))]))
 
-;; context-prose-for-expect : (U '... expect:thing) -> (listof string)
-(define (context-prose-for-expect e)
+;; context-prose-for-expect : (U '... expect:thing) -> (Listof String)
+(define ((context-prose-for-expect config) e)
   (match e
     ['...
      (list "while parsing different things...")]
@@ -717,13 +721,17 @@ This suggests the following new algorithm based on (s):
                  (if role (~a " for " role) ""))
              (if (error-print-source-location)
                  (list (~a " term: "
-                           (~s (syntax->datum stx)
-                               #:limit-marker "..."
-                               #:max-width 50))
+                           ((error-syntax->string-handler) stx 50))
                        (~a " location: "
                            (or (source-location->string stx) "not available")))
                  null)))]))
 
+(define (singular what/s) (if (pair? what/s) (car what/s) what/s))
+(define (plural what/s) (if (pair? what/s) (cadr what/s) what/s))
+
+(define (group-by-what vs whats)
+  (map (lambda (l) (cons (caar l) (map cdr l)))
+       (group-by car (map cons whats vs))))
 
 ;; ============================================================
 ;; Raise exception

@@ -1,5 +1,6 @@
 #lang racket/base
-(require "test-util.rkt")
+(require "test-util.rkt"
+         "../../utils/test-util.rkt")
 
 (parameterize ([current-contract-namespace
                 (make-basic-contract-namespace
@@ -93,6 +94,28 @@
       ((contract (-> c any/c) values 'p 'n) '(1 . 2)))
    '(1 . 2))
 
+  (contract-syntax-error-test
+   'recursive-contract15
+   #'(recursive-contract
+      any/c
+      #:flat
+      #:list-contract? #t))
+
+  (test/neg-blame
+   'recursive-contract-in-negative-position-wrt-itself.1
+   '(let ()
+      (define dyn2/c (recursive-contract (-> dyn2/c #t)))
+      (define f2 (contract dyn2/c (λ (f) #t) 'pos 'neg))
+      (f2 #f)))
+
+  (test/spec-passed
+   'recursive-contract-in-negative-position-wrt-itself.2
+   '(let ()
+      (define dyn2/c (recursive-contract (-> dyn2/c #t)))
+      (define f2 (contract dyn2/c (λ (f) #t) 'pos 'neg))
+      (f2 f2)
+      (f2 f2)
+      (f2 f2)))
   
   (test/spec-passed/result
    'memoize-applied-blame
@@ -122,25 +145,26 @@
       counter)
    2)
 
-  (test/spec-passed/result
-   'recursive-contract-not-too-slow
-   '(let ()
-      (define (time-it n)
-        (define c
-          (recursive-contract
-           (or/c null?
-                 (cons/c (-> integer? integer? integer?) c)
-                 (cons/c (-> integer? integer?) (cons/c (-> integer? integer?) c)))))
-        (collect-garbage)
-        (define l (build-list n (λ (x) (λ (x) x))))
-        (define-values (_ cpu real gc)
-          (time-apply (λ () (contract c l 'pos 'neg)) '()))
-        cpu)
-      ;; Doubling the list length should not increase the
-      ;; run time by more than a factor of three; try up
-      ;; to three times, just in case
-      (for/or ([i (in-range 3)])
-        (> (* 3 (time-it 4000))
-           (time-it 8000))))
-   #t
-   do-not-double-wrap))
+  (when (run-unreliable-tests? 'timing)
+    (test/spec-passed/result
+     'recursive-contract-not-too-slow
+     '(let ()
+        (define (time-it n)
+          (define c
+            (recursive-contract
+             (or/c null?
+                   (cons/c (-> integer? integer? integer?) c)
+                   (cons/c (-> integer? integer?) (cons/c (-> integer? integer?) c)))))
+          (collect-garbage)
+          (define l (build-list n (λ (x) (λ (x) x))))
+          (define-values (_ cpu real gc)
+            (time-apply (λ () (contract c l 'pos 'neg)) '()))
+          cpu)
+        ;; Doubling the list length should not increase the
+        ;; run time by more than a factor of three; try up
+        ;; to three times, just in case
+        (for/or ([i (in-range 3)])
+          (> (* 3 (time-it 4000))
+             (time-it 8000))))
+     #t
+     do-not-double-wrap)))

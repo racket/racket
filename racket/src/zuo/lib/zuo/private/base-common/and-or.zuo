@@ -1,0 +1,82 @@
+#lang zuo/datum
+
+(require "../pair.zuo"
+         "syntax-error.zuo")
+
+(provide or
+         and
+         cond else
+         when
+         unless)
+
+(define-syntax or
+  (lambda (stx)
+    (if (list? stx)
+        (if (null? (cdr stx))
+            #f
+            (if (null? (cddr stx))
+                (cadr stx)
+                (list (quote-syntax let) (list (list 'tmp (cadr stx)))
+                      (list (quote-syntax if) 'tmp
+                            'tmp
+                            (cons (quote-syntax or) (cddr stx))))))
+        (bad-syntax stx))))
+
+(define-syntax and
+  (lambda (stx)
+    (if (list? stx)
+        (if (null? (cdr stx))
+            #t
+            (if (null? (cddr stx))
+                (cadr stx)
+                (list (quote-syntax if) (cadr stx)
+                      (cons (quote-syntax and) (cddr stx))
+                      #f)))
+        (bad-syntax stx))))
+
+(define-syntax else misplaced-syntax)
+
+(define-syntax cond
+  (context-consumer
+   (lambda (stx free-id=? name)
+     (if (and (list? stx)
+              (letrec ([ok-clauses?
+                        (lambda (l)
+                          (or (null? l)
+                              (let ([cl (car l)])
+                                (and (list? cl)
+                                     (>= (length cl) 2)
+                                     (ok-clauses? (cdr l))))))])
+                (ok-clauses? (cdr stx))))
+         (if (null? (cdr stx))
+             (list (quote-syntax void))
+             (let ([cl1 (cadr stx)]
+                   [cls (cddr stx)])
+               (list 'if (if (and (null? cls)
+                                  (identifier? (car cl1))
+                                  (free-id=? 'else (car cl1)))
+                             #t
+                             (car cl1))
+                     (cons (quote-syntax let) (cons '() (cdr cl1)))
+                     (if (null? cls)
+                         '(void)
+                         (cons (quote-syntax cond) cls)))))
+         (bad-syntax stx)))))
+
+(define-syntax when
+  (lambda (stx)
+    (if (and (list? stx)
+             (>= (length stx) 3))
+        (list 'if (cadr stx)
+              (cons (quote-syntax let) (cons '() (cddr stx)))
+              '(void))
+        (bad-syntax stx))))
+
+(define-syntax unless
+  (lambda (stx)
+    (if (and (list? stx)
+             (>= (length stx) 3))
+        (list 'if (cadr stx)
+              '(void)
+              (cons (quote-syntax let) (cons '() (cddr stx))))
+        (bad-syntax stx))))

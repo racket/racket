@@ -115,6 +115,7 @@
                                 (raise-connect-error fd)])]
                             [else
                              (define name (string->immutable-string hostname))
+                             (rktio_tcp_nodelay rktio fd #t) ; initially block buffered
                              (open-input-output-tcp fd name)])]))])))])))])))))
 
 ;; in atomic mode

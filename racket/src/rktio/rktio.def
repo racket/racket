@@ -57,6 +57,7 @@ rktio_connect_stop
 rktio_poll_connect_ready
 rktio_connect_trying
 rktio_socket_shutdown
+rktio_tcp_nodelay
 rktio_udp_open
 rktio_udp_disconnect
 rktio_udp_bind
@@ -155,6 +156,7 @@ rktio_directory_list_step
 rktio_directory_list_stop
 rktio_filesystem_roots
 rktio_copy_file_start
+rktio_copy_file_start_permissions
 rktio_copy_file_is_done
 rktio_copy_file_step
 rktio_copy_file_finish_permissions

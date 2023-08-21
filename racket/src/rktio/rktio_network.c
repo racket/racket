@@ -10,6 +10,7 @@
 #ifdef RKTIO_SYSTEM_UNIX
 # include <unistd.h>
 # include <netinet/in.h>
+# include <netinet/tcp.h>
 # include <netdb.h>
 # include <sys/socket.h>
 # include <sys/types.h>
@@ -966,6 +967,18 @@ int rktio_socket_shutdown(rktio_t *rktio, rktio_fd_t *rfd, int mode)
     return 0;
   }
   
+  return 1;
+}
+
+int rktio_tcp_nodelay(rktio_t *rktio, rktio_fd_t *rfd, rktio_bool_t enable)
+{
+  rktio_socket_t s = rktio_fd_socket(rktio, rfd);
+  int nd = (enable ? 1 : 0), r;
+  r = setsockopt(s, IPPROTO_TCP, TCP_NODELAY, &nd, sizeof(nd));
+  if (r) {
+    get_socket_error();
+    return 0;
+  }
   return 1;
 }
 

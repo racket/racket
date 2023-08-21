@@ -35,7 +35,7 @@
 
 ;; (match-p id Pattern SuccessExpr FailureExpr)
 (define-syntax (match-p stx)
-  (syntax-case stx (quote cons list vector ?)
+  (syntax-case stx (quote cons list list* vector ?)
     [(match-p x wildcard success failure)
      (and (identifier? #'wildcard) (free-identifier=? #'wildcard #'_))
      #'success]
@@ -53,6 +53,10 @@
      #'(match-p x (quote ()) success failure)]
     [(match-p x (list p1 p ...) success failure)
      #'(match-p x (cons p1 (list p ...)) success failure)]
+    [(match-p x (list* p) success failure)
+     #'(match-p x p success failure)]
+    [(match-p x (list* p1 p ...) success failure)
+     #'(match-p x (cons p1 (list* p ...)) success failure)]
     [(match-p x (vector p ...) success failure)
      (with-syntax ([(i ...) (range (length (syntax->list #'(p ...))))])
        #'(if (and (vector? x) (= (vector-length x) (length '(p ...))))

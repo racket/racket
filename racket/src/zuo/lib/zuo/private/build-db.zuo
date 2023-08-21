@@ -1,0 +1,236 @@
+#lang zuo/base
+
+;; Build results for each target are stored in the target's directory
+;; in "_zuo.db". Since multiple targets are likely to be in the same
+;; directory, the goal here is to be able to load information for all
+;; the targets at once.
+
+;; A timestamp-based SHA-256 cache for input files is stored in
+;; "_zuo_tc.db" alongside "_zuo.db" --- in the directory of a target
+;; that depends on the input files, not in the input file's directory
+;; (which is likely to be in the source tree). An input used by
+;; targets in different directories will have information cached in
+;; each of those directories. The cache may also include information
+;; for non-input targets that are dependencies, just because it's
+;; easier to not distinguish when writing.
+
+;; Paths are stored in the ".db" files as absolute (when they started
+;; that way in a target) or relative to the file's directory. The
+;; format of each file is a top-level sequence of
+;;   (<rel-path> . <info>)
+;; For "_zuo.db", it's more specifically
+;;   (<rel-path> <sha256> (<dep-rel-path> <sha256>) ...)
+;; For "_zuo_tc.db", it's
+;;   (<rel-path> (<time-secs> . <time-msec>) <sha256>)
+
+(provide db-record-target-sha256s
+         db-load-sha256s
+
+         sha256-length
+
+         file-sha256/cached
+         path->absolute-path
+         dir-part
+
+         symbol->key
+         symbol-key?
+         symbol-key->symbol)
+
+(define sha256-length 64)
+
+;; for serialization and deserialization of dep-sha256s tables
+(define (hash->list ht db-dir)
+  (map (lambda (k) (list (serialize-key k db-dir) (hash-ref ht k)))
+       (hash-keys ht)))
+(define (list->hash l db-dir)
+  (foldl (lambda (p ht) (hash-set ht (deserialize-key (car p) db-dir) (cadr p)))
+         (hash)
+         l))
+(define (serialize-key key db-dir)
+  (if (symbol-key? key)
+      (symbol-key->symbol key)
+      ;; otherwise, represents a path
+      (let ([path (symbol->string key)])
+        (if (relative-path? path)
+            (find-relative-path db-dir
+                                (if (relative-path? db-dir)
+                                    path
+                                    (path->complete-path path)))
+            path))))
+(define (deserialize-key key db-dir)
+  (if (string? key)
+      (string->symbol (if (relative-path? key)
+                          (build-path db-dir key)
+                          key))
+      (symbol->key key)))
+
+;; All relative file names are stored relative to `db-dir`, which
+;; defaults to the directory of target-path. Meanwhile, `target-path`
+;; and keys in an incoming ts are (or outgoing ts must be) relative to
+;; the current directory.
+(define (db-paths maybe-db-dir target-path k)
+  (define target-dir+name (split-path target-path))
+  (define target-dir (or (car target-dir+name) "."))
+  (define db-dir (or maybe-db-dir target-dir))
+  (define rel-target-path
+    (if (relative-path? target-path)
+        (if maybe-db-dir
+            (find-relative-path maybe-db-dir target-path)
+            (cdr target-dir+name))
+        target-path))
+  (define db-path (build-path db-dir "_zuo.db"))
+  (define tc-path (build-path db-dir "_zuo_tc.db"))
+  (k rel-target-path db-dir db-path tc-path))
+
+;; Records the result of a build of `name`, mainly storing the
+;; SHA-256 and dep SHA-256s in "_zuo.db", but also recording a timestamp
+;; plus SHA-256 for dependencies in "_zuo_tc.db".
+;; All relative file names are stored relative to `db-dir`, which
+;; defaults to the directory of target-path. On entry, `target-path`
+;; and keys in `ts` are relative to the current directory.
+(define (db-record-target-sha256s maybe-db-dir target-path ts co-outputs)
+  (db-paths
+   maybe-db-dir target-path
+   (lambda (rel-target-path db-dir db-path tc-path)
+     (define db-content
+       (if (file-exists? db-path)
+           (string-read (file->string db-path) 0 db-path)
+           '()))
+     (define dep-sha256s-l (hash->list (cdr ts) db-dir))
+     (define new-db-content (reassoc (list* rel-target-path (car ts) dep-sha256s-l) db-content))
+     (update-file db-path new-db-content)
+     (unless (ormap (lambda (p) (string=? (car p) "SOURCE_DATE_EPOCH")) (hash-ref (runtime-env) 'env))
+       (define tc-content
+         (if (file-exists? tc-path)
+             (string-read (file->string tc-path) 0 tc-path)
+             '()))
+       (define new-tc-content
+         (foldl (lambda (dep tc-content)
+                  (define dep-name (car dep))
+                  (cond
+                    [(symbol? dep-name) tc-content]
+                    [else
+                     (define time (file-timestamp (if (relative-path? dep-name)
+                                                      (build-path db-dir dep-name)
+                                                      dep-name)))
+                     (cond
+                       [time (reassoc (list dep-name time (substring (cadr dep) 0 sha256-length)) tc-content)]
+                       [else tc-content])]))
+                tc-content
+                (if (pair? co-outputs)
+                    (append (split-sha256s rel-target-path co-outputs (car ts) db-dir)
+                            dep-sha256s-l)
+                    (cons (list rel-target-path (car ts)) dep-sha256s-l))))
+       (update-file tc-path new-tc-content)))))
+
+;; Loads previous-build information for `abs-path`, as well as cached
+;; SHA-256s for things that might be dependencies; loading needs to
+;; happen only once per directory that has a (non-input) build target
+(define (db-load-sha256s maybe-db-dir target-path db tc)
+  (db-paths
+   maybe-db-dir target-path
+   (lambda (name db-dir db-path tc-path)
+     (define key (string->symbol db-path))
+     (cond
+       [(hash-ref db key #f)
+        ;; already loaded
+        #f]
+       [else
+        ;; if loading fails, then we'll delete files on the
+        ;; grounds that they must be in bad shape
+        (define (read-in path table deserialize)
+          (suspend-signal) ; don't lose the file as a result of Ctl-C
+          (define c-handle (cleanable-file path))
+          (define content (if (file-exists? path)
+                              (string-read (file->string path) 0 path)
+                              '()))
+          (define new
+            (foldl (lambda (name+val table)
+                     (define name (car name+val))
+                     (define key (string->symbol (if (relative-path? name)
+                                                     (build-path db-dir name)
+                                                     name)))
+                     (hash-set table key (deserialize (cdr name+val))))
+                   table
+                   content))
+          (cleanable-cancel c-handle)
+          (resume-signal)
+          new)
+        (define new-db (read-in db-path (hash-set db key #t)
+                                (lambda (v)
+                                  (cons (car v)
+                                        (list->hash (cdr v) db-dir)))))
+        (define new-tc (read-in tc-path tc (lambda (v) v)))
+        (cons new-db new-tc)]))))
+
+;; Helpers to get an input file's SHA-256, possibly cached
+(define (file-sha256/cached path time-cache)
+  (let ([timestamp (file-timestamp path)])
+    (and timestamp
+         (let ([cached (and time-cache
+                            (hash-ref time-cache
+                                      (string->symbol path)
+                                      #f))])
+           (if (and cached
+                    (equal? (car cached) timestamp)
+                    ;; might be a stale SHA-1 rather than an SHA-256
+                    (= sha256-length (string-length (cadr cached))))
+               (cadr cached)
+               (string-sha256 (file->string path)))))))
+
+;; Split "sha256", which should have a sha256 for each of `rel-target-path`
+;; and each element of `co-outputs`, into a list of sha256s
+(define (split-sha256s rel-target-path co-outputs sha256 db-dir)
+  (cons (list rel-target-path (substring sha256 0 sha256-length))
+        (let loop ([co-outputs co-outputs] [start sha256-length])
+          (cond
+            [(null? co-outputs) '()]
+            [else
+             (let ([co-output (car co-outputs)])
+               (cons (list (if (relative-path? co-output)
+                               (find-relative-path db-dir co-output)
+                               co-output)
+                           (substring sha256 start (+ start sha256-length)))
+                     (loop (cdr co-outputs) (+ start sha256-length))))]))))
+
+;; Atomic write by write-to-temporary-and-move
+(define (update-file path new-content)
+  (define path-tmp (~a path "-tmp"))
+  (display-to-file (string-join (map ~s new-content) "\n") path-tmp :truncate)
+  (when (eq? 'windows (hash-ref (runtime-env) 'system-type))
+    (when (file-exists? path) (rm path)))
+  (mv path-tmp path))
+
+;; Like `hash-set`, but for an association list
+(define (reassoc pr content)
+  (cond
+    [(null? content) (list pr)]
+    [(string=? (caar content) (car pr)) (cons pr (cdr content))]
+    [else (cons (car content) (reassoc pr (cdr content)))]))
+
+(define (file-timestamp path)
+  (define s (stat path))
+  (and s (list (hash-ref s 'modify-time-seconds)
+               (hash-ref s 'modify-time-nanoseconds))))
+
+(define (path->absolute-path p)
+  (if (relative-path? p)
+      (build-path (hash-ref (runtime-env) 'dir) p)
+      p))
+
+(define (dir-part path)
+  (if (symbol? path)
+      "."
+      (or (car (split-path path)) ".")))
+
+(define (symbol->key name)
+  (string->uninterned-symbol (~a "!" (symbol->string name))))
+
+(define (symbol-key? sym)
+  (let ([str (symbol->string sym)])
+    (and (= (char "!") (string-ref str 0))
+         (not (eq? sym (string->symbol str))))))
+
+(define (symbol-key->symbol sym)
+  (let ([str (symbol->string sym)])
+    (string->symbol (substring str 1 (string-length str)))))

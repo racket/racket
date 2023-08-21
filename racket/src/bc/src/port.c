@@ -254,7 +254,7 @@ static void force_close_input_port(Scheme_Object *port);
 ROSYM static Scheme_Object *text_symbol, *binary_symbol, *module_symbol;
 ROSYM static Scheme_Object *append_symbol, *error_symbol, *update_symbol, *can_update_symbol;
 ROSYM static Scheme_Object *replace_symbol, *truncate_symbol, *truncate_replace_symbol;
-ROSYM static Scheme_Object *must_truncate_symbol;
+ROSYM static Scheme_Object *must_truncate_symbol, *replace_permissions_symbol;
 
 ROSYM Scheme_Object *scheme_none_symbol, *scheme_line_symbol, *scheme_block_symbol;
 
@@ -294,6 +294,7 @@ scheme_init_port (Scheme_Startup_Env *env)
   REGISTER_SO(update_symbol);
   REGISTER_SO(can_update_symbol);
   REGISTER_SO(must_truncate_symbol);
+  REGISTER_SO(replace_permissions_symbol);
 
   text_symbol = scheme_intern_symbol("text");
   binary_symbol = scheme_intern_symbol("binary");
@@ -306,6 +307,7 @@ scheme_init_port (Scheme_Startup_Env *env)
   update_symbol = scheme_intern_symbol("update");
   can_update_symbol = scheme_intern_symbol("can-update");
   must_truncate_symbol = scheme_intern_symbol("must-truncate");
+  replace_permissions_symbol = scheme_intern_symbol("replace-permissions");
 
   REGISTER_SO(scheme_none_symbol);
   REGISTER_SO(scheme_line_symbol);
@@ -967,8 +969,9 @@ static void post_progress(Scheme_Input_Port *ip)
   ip->progress_evt = NULL;
 }
 
-XFORM_NONGCING static void inc_pos(Scheme_Port *ip, int a)
+XFORM_NONGCING static void inc_pos_for_special(Scheme_Port *ip)
 {
+  int a = 1;
   if (ip->column >= 0)
     ip->column += a;
   if (ip->readpos >= 0)
@@ -1239,7 +1242,7 @@ intptr_t scheme_get_byte_string_unless(const char *who,
 	if (ip->p.position >= 0)
 	  ip->p.position++;
 	if (ip->p.count_lines)
-	  inc_pos((Scheme_Port *)ip, 1);
+	  inc_pos_for_special((Scheme_Port *)ip);
       }
 
       if (!peek && ip->progress_evt)
@@ -1399,7 +1402,7 @@ intptr_t scheme_get_byte_string_unless(const char *who,
 	    if (ip->p.position >= 0)
 	      ip->p.position++;
 	    if (ip->p.count_lines)
-	      inc_pos((Scheme_Port *)ip, 1);
+	      inc_pos_for_special((Scheme_Port *)ip);
 	  }
 	  
 	  return SCHEME_SPECIAL;
@@ -2137,7 +2140,7 @@ static intptr_t get_one_byte_slow(const char *who,
     if (ip->p.position >= 0)
       ip->p.position++;
     if (ip->p.count_lines)
-      inc_pos((Scheme_Port *)ip, 1);
+      inc_pos_for_special((Scheme_Port *)ip);
     return SCHEME_SPECIAL;
   } else {
     if (ip->pending_eof > 1) {
@@ -2161,7 +2164,7 @@ static intptr_t get_one_byte_slow(const char *who,
             if (ip->p.position >= 0)
               ip->p.position++;
             if (ip->p.count_lines)
-              inc_pos((Scheme_Port *)ip, 1);
+              inc_pos_for_special((Scheme_Port *)ip);
             return SCHEME_SPECIAL;
           } else {
             scheme_bad_time_for_special(who, port);
@@ -3788,8 +3791,8 @@ Scheme_Object *
 scheme_do_open_output_file(char *name, int offset, int argc, Scheme_Object *argv[], int and_read, 
                            int internal)
 {
-  int e_set = 0, m_set = 0, i;
-  int open_flags = 0, try_replace = 0;
+  int e_set = 0, m_set = 0, r_set =0, i;
+  int open_flags = 0, replace_flags = 0, try_replace = 0;
   char *filename;
   char mode[4];
   int typepos;
@@ -3812,8 +3815,8 @@ scheme_do_open_output_file(char *name, int offset, int argc, Scheme_Object *argv
         && (SCHEME_INT_VAL(argv[i]) <= 65535)) {
       perms = SCHEME_INT_VAL(argv[i]);
     } else {
-      if (!SCHEME_SYMBOLP(argv[i]))
-        scheme_wrong_contract(name, "(or/c symbol? (integer-in 0 65535))", i, argc, argv);
+      if (!SCHEME_FALSEP(argv[i]) && !SCHEME_SYMBOLP(argv[i]))
+        scheme_wrong_contract(name, "(or/c symbol? (integer-in 0 65535) #f)", i, argc, argv);
 
       if (SAME_OBJ(argv[i], append_symbol)) {
         mode[0] = 'a';
@@ -3859,6 +3862,11 @@ scheme_do_open_output_file(char *name, int offset, int argc, Scheme_Object *argv
       } else if (SAME_OBJ(argv[i], binary_symbol)) {
         /* This is the default */
         m_set++;
+      } else if (SAME_OBJ(argv[i], replace_permissions_symbol)) {
+        replace_flags |= RKTIO_OPEN_REPLACE_PERMS;
+        r_set++;
+      } else if (SCHEME_FALSEP(argv[i])) {
+        /* skip */
       } else {
         char *astr;
         intptr_t alen;
@@ -3871,7 +3879,7 @@ scheme_do_open_output_file(char *name, int offset, int argc, Scheme_Object *argv
                          astr, alen);
       }
 
-      if (m_set > 1 || e_set > 1) {
+      if (m_set > 1 || e_set > 1 || r_set > 1) {
         char *astr;
         intptr_t alen;
 
@@ -3911,7 +3919,8 @@ scheme_do_open_output_file(char *name, int offset, int argc, Scheme_Object *argv
                                             (RKTIO_OPEN_WRITE
                                              | open_flags
                                              | (and_read ? RKTIO_OPEN_READ : 0)
-                                             | ((mode[1] == 't') ? RKTIO_OPEN_TEXT : 0)),
+                                             | ((mode[1] == 't') ? RKTIO_OPEN_TEXT : 0)
+                                             | replace_flags),
                                             perms);
     
     if (!fd
@@ -6487,7 +6496,12 @@ static Scheme_Object *sch_shell_execute(int c, Scheme_Object *argv[])
     mzseCMP(SW_SHOWNORMAL, "sw_shownormal");
 
     if (!show_set)
-      scheme_wrong_type("shell-execute", "show-mode symbol", 4, c, argv);
+      scheme_wrong_contract("shell-execute",
+                            "(or/c 'sw_hide 'sw_maximize 'sw_minimize 'sw_restore\n"
+                            "      'sw_show 'sw_showdefault 'sw_showmaximized\n"
+                            "      'sw_showminimized 'sw_showminnoactive 'sw_snowna\n"
+                            "      'sw_shownoactivate 'sw_shownormal)",
+                            4, c, argv);
   }
 
   dir = scheme_expand_string_filename(argv[3],
@@ -7099,7 +7113,7 @@ static char *Swide_to_utf8(const wchar_t *arg) {
 }
 
 static Scheme_Object *Sstring_utf8(const char *s, int len) {
-  return scheme_make_sized_utf8_string(s, len);
+  return scheme_make_sized_utf8_string((char *)s, len);
 }
 
 static Scheme_Object *S_LastErrorString() {
@@ -7156,10 +7170,19 @@ static Scheme_Object *terminal_read_char(int argc, Scheme_Object **argv) {
 }
 
 static Scheme_Object *terminal_write_char(int argc, Scheme_Object **argv) {
+  int width = 1;
 #if MZ_EXPR_EDIT
-  s_ee_write_char(SCHEME_CHAR_VAL(argv[0]));
+  width = s_ee_write_char(SCHEME_CHAR_VAL(argv[0]));
 #endif
-  return scheme_void;
+  return scheme_make_integer(width);
+}
+
+static Scheme_Object *terminal_char_width(int argc, Scheme_Object **argv) {
+  int width = 1;
+#if MZ_EXPR_EDIT
+  width = s_ee_char_width(SCHEME_CHAR_VAL(argv[0]));
+#endif
+  return scheme_make_integer(width);
 }
 
 static Scheme_Object *terminal_set_color(int argc, Scheme_Object **argv) {
@@ -7340,6 +7363,7 @@ void scheme_init_terminal(Scheme_Startup_Env *env) {
   ADDTO_EE("terminal-init", terminal_init_term, 2);
   ADDTO_EE("terminal-read-char", terminal_read_char, 1);
   ADDTO_EE("terminal-write-char", terminal_write_char, 1);
+  ADDTO_EE("terminal-char-width", terminal_char_width, 1);
   ADDTO_EE("terminal-set-color", terminal_set_color, 2);
   ADDTO_EE("terminal-flush", terminal_flush, 0);
   ADDTO_EE("terminal-get-screen-size", terminal_get_screen_size, 0);

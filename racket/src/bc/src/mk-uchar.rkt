@@ -89,24 +89,28 @@
 (define top (make-vector hi-count #f))
 (define top2 (make-vector hi-count #f))
 (define top3 (make-vector hi-count #f))
+(define top4 (make-vector hi-count #f))
 
 (define range-bottom 0)
 (define range-top -1)
 (define range-v -1)
 (define range-v2 -1)
 (define range-v3 -1)
+(define range-v4 -1)
+(define range-v5 -1)
 (define ranges null)
 
 (define ccount 0)
 
-(define (map1 c v v2 v3 cc)
+(define (map1 c v v2 v3 v4 cc)
   (hash-set! combining-class-ht c cc)
   (set! ccount (add1 ccount))
   (if (= c (add1 range-top))
       (begin
 	(unless (and (= v range-v)
 		     (= v2 range-v2)
-		     (= v3 range-v3))
+		     (= v3 range-v3)
+		     (= v4 range-v4))
 	  (set! range-v -1))
 	(set! range-top c))
       (begin
@@ -127,30 +131,36 @@
 	(set! range-top c)
 	(set! range-v v)
 	(set! range-v2 v2)
-	(set! range-v3 v3)))
+	(set! range-v3 v3)
+	(set! range-v4 v4)))
   (let ([top-index (arithmetic-shift c (- low-bits))])
     (let ([vec (vector-ref top top-index)]
 	  [vec2 (vector-ref top2 top-index)]
-	  [vec3 (vector-ref top3 top-index)])
+	  [vec3 (vector-ref top3 top-index)]
+	  [vec4 (vector-ref top4 top-index)])
       (unless vec
 	(vector-set! top top-index (make-vector (add1 low))))
       (unless vec2
 	(vector-set! top2 top-index (make-vector (add1 low))))
       (unless vec3
 	(vector-set! top3 top-index (make-vector (add1 low))))
+      (unless vec4
+	(vector-set! top4 top-index (make-vector (add1 low))))
       (let ([vec (vector-ref top top-index)]
 	    [vec2 (vector-ref top2 top-index)]
-	    [vec3 (vector-ref top3 top-index)])
+	    [vec3 (vector-ref top3 top-index)]
+	    [vec4 (vector-ref top4 top-index)])
 	(vector-set! vec (bitwise-and c low) v)
 	(vector-set! vec2 (bitwise-and c low) v2)
-	(vector-set! vec3 (bitwise-and c low) v3)))))
+	(vector-set! vec3 (bitwise-and c low) v3)
+	(vector-set! vec4 (bitwise-and c low) v4)))))
 
-(define (mapn c from v v2 v3 cc)
+(define (mapn c from v v2 v3 get-v4 cc)
   (if (= c from)
-      (map1 c v v2 v3 cc)
+      (map1 c v v2 v3 (get-v4 c) cc)
       (begin
-	(map1 from v v2 v3 cc)
-	(mapn c (add1 from) v v2 v3 cc))))
+	(map1 from v v2 v3 (get-v4 from) cc)
+	(mapn c (add1 from) v v2 v3 get-v4 cc))))
 
 (define (set-compose-initial! c)
   (let ([top-index (arithmetic-shift c (- low-bits))])
@@ -319,6 +329,71 @@
 
 (define default-casing (make-hash))
 
+(define grapheme-cluster-breaks (make-hash))
+(define graph-props '("Other"
+                      "CR"
+                      "LF"
+                      "Control"
+                      "Extend"
+                      "ZWJ"
+                      "Regional_Indicator"
+                      "Prepend"
+                      "SpacingMark"
+                      "L"
+                      "V"
+                      "T"
+                      "LV"
+                      "LVT"))
+(call-with-input-file "Unicode/GraphemeBreakProperty.txt"
+  (lambda (i)
+    (let loop ()
+      (let ([l (read-line i)])
+	(unless (eof-object? l)
+	  (let ([m-one (regexp-match #rx"^([0-9A-F]+) *; *([a-zA-Z_]+)" l)]
+                [m-range (regexp-match #rx"^([0-9A-F]+)[.][.]([0-9A-F]+) *; *([a-zA-Z_]+)" l)])
+	    (when (or m-one m-range)
+              (let* ([lo (if m-one
+                             (string->number (cadr m-one) 16)
+                             (string->number (cadr m-range) 16))]
+                     [hi (if m-one
+                             lo
+                             (string->number (caddr m-range) 16))]
+                     [prop (if m-one
+                               (caddr m-one)
+                               (cadddr m-range))]
+                     [prop-v (let loop ([i 0] [graph-props graph-props])
+                               (cond
+                                 [(null? graph-props) (error "not found" prop)]
+                                 [(equal? prop (car graph-props)) i]
+                                 [else (loop (add1 i) (cdr graph-props))]))])
+                (for ([i (in-range lo (add1 hi))])
+                  (hash-set! grapheme-cluster-breaks i prop-v)))))
+          (loop))))))
+
+(define extended-pictographics (make-hash))
+(call-with-input-file "Unicode/emoji-data.txt"
+  (lambda (i)
+    (let loop ()
+      (let ([l (read-line i)])
+	(unless (eof-object? l)
+	  (let ([m-one (regexp-match #rx"^([0-9A-F]+) *; *([a-zA-Z_]+)" l)]
+                [m-range (regexp-match #rx"^([0-9A-F]+)[.][.]([0-9A-F]+) *; *([a-zA-Z_]+)" l)])
+	    (when (or m-one m-range)
+              (let* ([lo (if m-one
+                             (string->number (cadr m-one) 16)
+                             (string->number (cadr m-range) 16))]
+                     [hi (if m-one
+                             lo
+                             (string->number (caddr m-range) 16))]
+                     [prop (if m-one
+                               (caddr m-one)
+                               (cadddr m-range))]
+                     [ext? (equal? prop "Extended_Pictographic")])
+                (when ext?
+                  (for ([i (in-range lo (add1 hi))])
+                    (hash-set! extended-pictographics i #t))))))
+          (loop))))))
+
 (call-with-input-file "Unicode/UnicodeData.txt"
   (lambda (i)
     (let loop ([prev-code 0])
@@ -387,8 +462,8 @@
                        numeric?
                        #;
                        (member cat digit-cats)
-                       ;; SOMETHING - this bit not yet used
-                       #f
+                       ;; extended pictographic
+                       (hash-ref extended-pictographics code #f)
                        ;; whitespace
                        (hash-ref white_spaces code #f)
                        #;
@@ -414,6 +489,9 @@
                        combining)
                       ;; Category
                       (combine-cat cat)
+                      ;; Grapheme cluster breaks, can vary within a "<first>"-"<last>" range
+                      (lambda (code)
+                        (hash-ref grapheme-cluster-breaks code 0))
                       ;; Combining class - used again to filter initial composes
                       combining))
 	      (loop code))))))))
@@ -478,14 +556,15 @@
  (sort (hash-map k-decomp-ht cons)
        (lambda (a b) (< (car a) (car b)))))
 
-
 (define vectors (make-hash))
 (define vectors2 (make-hash))
 (define vectors3 (make-hash))
+(define vectors4 (make-hash))
 
 (define pos 0)
 (define pos2 0)
 (define pos3 0)
+(define pos4 0)
 
 (current-output-port (open-output-file "schuchar.inc" #:exists 'truncate/replace))
 
@@ -502,6 +581,7 @@
 (hash-vectors! top vectors (lambda () pos) (lambda (v) (set! pos v)))
 (hash-vectors! top2 vectors2 (lambda () pos2) (lambda (v) (set! pos2 v)))
 (hash-vectors! top3 vectors3 (lambda () pos3) (lambda (v) (set! pos3 v)))
+(hash-vectors! top4 vectors4 (lambda () pos4) (lambda (v) (set! pos4 v)))
 
 ;; copy folding special cases to the special-cases table, if not there already:
 (hash-for-each special-case-foldings
@@ -530,18 +610,24 @@
 	      (* 1 (add1 (length (hash-map vectors2 cons)))))
 	   (* (add1 low) 
 	      (* 1 (add1 (length (hash-map vectors3 cons)))))
+	   (* (add1 low) 
+	      (* 1 (add1 (length (hash-map vectors4 cons)))))
 	   (* (hash-count decomp-ht)
 	      8)
 	   (* (hash-count compose-map)
 	      2)
 	   (* (hash-count k-decomp-map-ht) (+ 4 1 2))
-	   (* 2 k-decomp-strs-len)
+	   (* 4 k-decomp-strs-len)
 	   (* 4 4 (unbox (cdr cases)))
 	   (* 4 (* 2 hi-count))))
 
 (printf (string-append
 	 "/* Each of the following maps a character to a value\n"
-	 "   via the scheme_uchar_find() macro in scheme.h. */\n\n"))
+	 "   via the scheme_uchar_find() macro in scheme.h. That\n"
+         "   macro works on a two-level table, where the high " (number->string (- 21 low-bits)) " bits\n"
+         "   of a scalar value index the main array, and then " (number->string low-bits)  " bits\n"
+         "   index the secondary array. Note that empty parts of the\n"
+         "   code-point space can share the same secondary array. */\n\n"))
 
 (printf "/* Character properties: */\n")
 (printf "READ_ONLY unsigned short *scheme_uchar_table[~a];\n" hi-count)
@@ -551,6 +637,9 @@
 
 (printf "\n/* Character general categories: */\n")
 (printf "READ_ONLY unsigned char *scheme_uchar_cats_table[~a];\n" hi-count)
+
+(printf "\n/* Grapheme-cluster break categories: */\n")
+(printf "READ_ONLY unsigned char *scheme_uchar_graphbreaks_table[~a];\n" hi-count)
 
 (printf "\n/* The udata... arrays are used by init_uchar_table to fill the above mappings.*/\n\n")
 
@@ -580,6 +669,16 @@
 (printf "\n")
 (print-table "char" "_cases" vectors2 pos2 #f)
 (print-table "char" "_cats" vectors3 pos3 #f)
+(define (print-graphbreak-constants)
+  (for ([prop (in-list graph-props)]
+        [i (in-naturals)])
+    (printf "#define MZ_GRAPHBREAK_~a ~a\n"
+            (string-upcase prop)
+            i))
+  (printf "#define MZ_GRAPHBREAK_COUNT ~a\n" (length graph-props))
+  (printf "#define MZ_GRAPHBREAK_BITS ~a\n" (integer-length (length graph-props))))
+(print-graphbreak-constants)
+(print-table "char" "_graphbreaks" vectors4 pos4 #f)
 
 (printf "\n/* Case mapping size: ~a */\n" (hash-count (car cases)))
 (printf "/* Find an index into the ups, downs, etc. table for a character\n")
@@ -619,6 +718,17 @@
 	    l)
   (printf "\n};\n"))
 
+(let ([l graph-props])
+  (printf "\n#define NUM_GRAPHEME_BREAK_PROPERTIES ~a\n" (length l))
+  (printf "READ_ONLY static const char *grapheme_break_propoerty_names[] = {")
+  (for ([p (in-list graph-props)]
+        [i (in-naturals)])
+    (printf (if (zero? i)
+                "\n  ~s"
+                ",\n  ~s")
+            p))
+  (printf "\n};\n"))
+
 (set! ranges (cons (list range-bottom range-top (range-v . > . -1))
 		   ranges))
 
@@ -642,6 +752,7 @@
 (printf "    scheme_uchar_table[i] = udata;\n")
 (printf "    scheme_uchar_cases_table[i] = udata_cases;\n")
 (printf "    scheme_uchar_cats_table[i] = udata_cats;\n")
+(printf "    scheme_uchar_graphbreaks_table[i] = udata_graphbreaks;\n")
 (printf "  }\n")
 (printf "\n")
 (define (print-init top vectors suffix)
@@ -674,6 +785,7 @@
 (print-init top vectors "")
 (print-init top2 vectors2 "_cases")
 (print-init top3 vectors3 "_cats")
+(print-init top4 vectors4 "_graphbreaks")
 (printf "}\n")
 
 ;; ----------------------------------------
@@ -874,4 +986,7 @@
       (print-compose-data "short" "kompat_decomp_indices" cadr
 			  k-decomp-vector (vector-length k-decomp-vector) #f 16)
       (let ([l (list->vector (reverse k-decomp-strs))])
-	(print-compose-data "unsigned short" "kompat_decomp_strs" values l (vector-length l) #t 8)))))
+	(print-compose-data "unsigned int" "kompat_decomp_strs" values l (vector-length l) #t 8)))))
+
+(newline)
+(print-graphbreak-constants)

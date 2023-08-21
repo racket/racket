@@ -2,6 +2,9 @@ name: CI MacOS
 
 on: [push]
 
+permissions:
+  contents: read
+
 jobs:
   
 # Build jobs
@@ -19,7 +22,7 @@ jobs:
       RACKET_EXTRA_CONFIGURE_ARGS: ""
     
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
       with:
         fetch-depth: 100
     - name: Setup cify if enabled1
@@ -55,7 +58,7 @@ jobs:
     - name: Tarballing
       working-directory: ${{ github.workspace }}
       run: tar -cvjf racketcgc-macos-${{ matrix.cify }}-x64_git${{ github.sha }}.tar.bz2 racketcgc
-    - uses: actions/upload-artifact@v2
+    - uses: actions/upload-artifact@v3
       with:
         name: racketcgc-macos-${{ matrix.cify }}-x64_git${{ github.sha }}
         path: ${{ github.workspace }}/racketcgc-macos-${{ matrix.cify }}-x64_git${{ github.sha }}.tar.bz2
@@ -74,7 +77,7 @@ jobs:
       RACKET_EXTRA_CONFIGURE_ARGS: ""
     
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
       with:
         fetch-depth: 100
     - name: Setup cify if enabled
@@ -83,7 +86,7 @@ jobs:
     - name: Setup cify if disabled
       if: matrix.cify == 'nocify'
       run: echo "CIFY_OPTION=--disable-cify" >> $GITHUB_ENV
-    - uses: actions/download-artifact@v2
+    - uses: actions/download-artifact@v3
       with:
         name: racketcgc-macos-nocify-x64_git${{ github.sha }}
         path: ${{ runner.temp }}
@@ -120,7 +123,7 @@ jobs:
     - name: Tarballing
       working-directory: ${{ github.workspace }}
       run: tar -cvjf racket3m-macos-${{ matrix.cify }}-x64_git${{ github.sha}}.tar.bz2 racket3m
-    - uses: actions/upload-artifact@v2
+    - uses: actions/upload-artifact@v3
       with:
         name: racket3m-macos-${{ matrix.cify }}-x64_git${{ github.sha }}
         path: ${{ github.workspace }}/racket3m-macos-${{ matrix.cify }}-x64_git${{ github.sha }}.tar.bz2
@@ -130,7 +133,7 @@ jobs:
     needs: build-racketcgc
     
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
       with:
         fetch-depth: 100
     - uses: actions/download-artifact@master
@@ -167,7 +170,7 @@ jobs:
     - name: Tarballing
       working-directory: ${{ github.workspace }}
       run: tar -cvjf racketcs-macos-x64_git${{ github.sha}}.tar.bz2 racketcs
-    - uses: actions/upload-artifact@v2
+    - uses: actions/upload-artifact@v3
       with:
         name: racketcs-macos-x64_git${{ github.sha }}
         path: ${{ github.workspace }}/racketcs-macos-x64_git${{ github.sha }}.tar.bz2
@@ -176,8 +179,8 @@ jobs:
     runs-on: macos-latest
     needs: build-racketcs
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions/download-artifact@v2
+      - uses: actions/checkout@v3
+      - uses: actions/download-artifact@v3
         with:
           name: racketcs-macos-x64_git${{ github.sha }}
           path: ${{ github.workspace }}
@@ -196,10 +199,6 @@ jobs:
             --enable-racket=${{ github.workspace }}/host-racket/bin/racket \
             --enable-scheme=${{ github.workspace }}/host-racket/src/cs/c
           make
-          (cd cs/c/ && make install-cross)
-          mkdir -p ../../lib
-          cp cs/c/compile-xpatch.tarm64osx ../../lib/
-          cp cs/c/library-xpatch.tarm64osx ../../lib/
           make install
 
   # Tests
@@ -218,8 +217,8 @@ jobs:
     needs: build-racketcgc
 
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions/download-artifact@v2
+      - uses: actions/checkout@v3
+      - uses: actions/download-artifact@v3
         with:
           name: racketcgc-macos-${{ matrix.cify }}-x64_git${{ github.sha }}
           path: ${{ github.workspace }}
@@ -285,7 +284,7 @@ jobs:
     needs: build-racket3m
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - uses: actions/download-artifact@master
         with:
           name: racket3m-macos-${{ matrix.cify }}-x64_git${{ github.sha }}
@@ -347,8 +346,8 @@ jobs:
     needs: build-racketcs
 
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions/download-artifact@v2
+      - uses: actions/checkout@v3
+      - uses: actions/download-artifact@v3
         with:
           name: racketcs-macos-x64_git${{ github.sha }}
           path: ${{ github.workspace }}

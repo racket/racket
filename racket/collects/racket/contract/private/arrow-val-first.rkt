@@ -502,9 +502,9 @@ plus1 arg list construction: build-plus-one-arity-function/real
         (define number-of-rngs (and rngs (with-syntax ([rngs rngs]) (length (syntax->list #'rngs)))))
         #`(λ (f)
             (λ (blame regb ... optb ... kb ... okb ...
+                      #,@(if rest (list #'restb) '())
                       #,@(if pre (list pre) '())
                       #,@(if pre/desc (list pre/desc) '())
-                      #,@(if rest (list #'restb) '())
                       rb ...
                       #,@(if post (list post) '())
                       #,@(if post/desc (list post/desc) '()))
@@ -607,7 +607,7 @@ plus1 arg list construction: build-plus-one-arity-function/real
                    (loop (cdr regular-args) (cdr rbs)))]))))
      (define blame+neg-party (cons blame neg-party))
      (when pre (check-pre-cond pre blame+neg-party f))
-     (when pre/desc (check-pre-cond/desc pre blame+neg-party f))
+     (when pre/desc (check-pre-cond/desc pre/desc blame+neg-party f))
      (cond
        [rngs
         (define results (call-with-values mk-call list))
@@ -616,7 +616,7 @@ plus1 arg list construction: build-plus-one-arity-function/real
           (bad-number-of-results (blame-add-missing-party blame neg-party)
                                  f rng-len results))
         (when post (check-post-cond post blame+neg-party f))
-        (when post/desc (check-post-cond post/desc blame+neg-party f))
+        (when post/desc (check-post-cond/desc post/desc blame+neg-party f))
         (apply
          values
          (for/list ([result (in-list results)]

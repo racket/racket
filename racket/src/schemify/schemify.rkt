@@ -398,7 +398,7 @@
                           ;; Must be simple enough, otherwise a variable might be referenced
                           ;; too early:
                           (for/and ([rhs (in-list rhss)])
-                            (simple? rhs prim-knowns knowns imports mutated simples unsafe-mode?)))
+                            (simple? #:ordered? #t rhs prim-knowns knowns imports mutated simples unsafe-mode?)))
                      (let values-loop ([ids ids] [rhss rhss] [accum-exprs accum-exprs] [accum-ids accum-ids] [knowns knowns])
                        (cond
                          [(null? ids) (loop (cdr l) mut-l accum-exprs accum-ids knowns)]
@@ -678,7 +678,7 @@
             (cond
               [authentic-key?
                (cond
-                 [(simple? s-body prim-knowns knowns imports mutated simples unsafe-mode? #:result-arity #f)
+                 [(simple? #:ordered? #t s-body prim-knowns knowns imports mutated simples unsafe-mode? #:result-arity #f)
                   (build-begin s-key s-val s-body)]
                  [else
                   ;; Simplify (with-continuation-mark <same-key> <val1>
@@ -692,7 +692,7 @@
                     [`(with-continuation-mark* ,mode2 ,s-key2 ,s-val2 ,s-body2)
                      (cond
                        [(and (always-eq/no-marks? s-key s-key2 mutated)
-                             (simple? s-val2 prim-knowns knowns imports mutated simples unsafe-mode?))
+                             (simple? #:ordered? #t s-val2 prim-knowns knowns imports mutated simples unsafe-mode?))
                         (build-begin s-key s-val
                                      ;; rebuild to use current `wcm-state`:
                                      (build-wcm s-key2 s-val2 s-body2))]

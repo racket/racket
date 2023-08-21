@@ -1621,6 +1621,46 @@
     (saved-errno 5)
     (test 5 saved-errno)))
 
+(let ()
+  (define-ffi-definer define-test-lib test-lib)
+
+  (define-test-lib g1 _int #:variable)
+  (define-test-lib curry_ret_int_int (_fun _int -> _int))
+
+  (g1 12)
+  (test 25 curry_ret_int_int 13)
+  (test 12 g1)
+
+  (define-test-lib g2 _int #:variable)
+  (define-test-lib ho_return (_fun _int -> _int))
+  (define update-g2-fun-name 'ho)
+  (define-test-lib update-g2 (_fun (_fun _int -> _int) _int -> _void)
+    #:c-id ,update-g2-fun-name)
+  (g2 20)
+  (test (void) update-g2 (lambda (n) (* n 3)) 15)
+  (test 45 g2)
+  (test 48 ho_return 3)
+
+  (define-test-lib no_such_var _int #:variable #:fail (lambda () #f))
+  (test #f values no_such_var))
+
+(let ()
+  (define-ffi-definer define-test-lib test-lib
+    #:make-c-id convention:hyphen->underscore
+    #:default-make-fail (lambda (name) (lambda () #f)))
+  (define (valid-cpointer? v) (and (cpointer? v) (not (eq? v #f))))
+  (let ()
+    (define-test-lib add1-int-int _fpointer)
+    (test #t valid-cpointer? add1-int-int))
+  (let ()
+    ;; Convention should not be applied when explicit #:c-id.
+    (define-test-lib add1-by-any-other-name _fpointer #:c-id add1_int_int)
+    (test #t valid-cpointer? add1-by-any-other-name))
+  (let ()
+    ;; Convention should not be applied when explicit #:c-id.
+    (define-test-lib add1-int-int _fpointer #:c-id add1-int-int)
+    (test #f valid-cpointer? add1-int-int)))
+
 ;; ----------------------------------------
 ;; Make sure `_union` can deal with various things
 ;; that create a large structure

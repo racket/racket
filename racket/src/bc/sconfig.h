@@ -79,12 +79,14 @@
 
 #endif
 
-  /************** Linux with gcc ****************/
+  /************** Linux (or Hurd) with gcc ****************/
 
-#if defined(__linux__)
+#if defined(__linux__) || defined(__GNU__)
 
 # ifdef __ANDROID__
 #  define SCHEME_OS "android"
+# elif defined(__GNU__)
+#  define SCHEME_OS "gnu-hurd"
 # else
 #  define SCHEME_OS "linux"
 # endif
@@ -146,13 +148,15 @@
 # define USE_IEEE_FP_PREDS
 # define USE_EXPLICT_FP_FORM_CHECK
 
-# define LINUX_FIND_STACK_BASE
+# define LINUX_FIND_STACK_BASE /* also ok for Hurd */
 
 # define FLAGS_ALREADY_SET
 
 #if defined(__i386__)
-# define MZ_USE_JIT_I386
-# define MZ_JIT_USE_MPROTECT
+# ifndef __GNU__ /* Hurd */
+#  define MZ_USE_JIT_I386
+#  define MZ_JIT_USE_MPROTECT
+# endif
 # ifndef MZ_NO_UNWIND_SUPPORT
 #  define MZ_USE_DWARF_LIBUNWIND
 # endif
@@ -352,7 +356,7 @@
 #   define FREEBSD_CONTROL_387
 #  endif
 # elif defined(__amd64__)
-#  define SCHEME_ARCH "amd64"
+#  define SCHEME_ARCH "x86_64"
 #  define REGISTER_POOR_MACHINE
 #  define MZ_USE_JIT_X86_64
 #  define MZ_TRY_EXTFLONUMS
@@ -494,7 +498,10 @@
      || ((defined(_MSC_VER) || defined(__MINGW32__)) \
          && (defined(__WIN32__) || defined(WIN32) || defined(_WIN32))))
 
-# ifdef _WIN64
+# if defined(_M_ARM64)
+#  define SCHEME_PLATFORM_LIBRARY_SUBPATH "win32\\arm64"
+#  define SCHEME_ARCH "aarch64"
+# elif defined(_WIN64)
 #  define SCHEME_PLATFORM_LIBRARY_SUBPATH "win32\\x86_64"
 #  define SCHEME_ARCH "x86_64"
 # else
@@ -594,7 +601,8 @@
 # define USE_ICONV_DLL
 # define NO_MBTOWC_FUNCTIONS
 
-# ifdef _WIN64
+# if defined(_M_ARM64)
+# elif defined(_WIN64)
 #  define MZ_USE_JIT_X86_64
 # else
 #  define MZ_USE_JIT_I386
@@ -657,7 +665,6 @@
 #  if !defined(TARGET_OS_IPHONE)
 #   define MZ_USE_MAP_JIT
 #  endif
-#  define USE_DLOPEN_GLOBAL_BY_DEFAULT
 # elif defined(__x86_64__)
 #   define SCHEME_ARCH "x86_64"
 # else
@@ -684,6 +691,8 @@
 # define TRIG_ZERO_NEEDS_SIGN_CHECK
 
 # define USE_UNDERSCORE_SETJMP
+
+# define LIMIT_POLL_FREQUENCY_BY_MONOTONIC_TIME
 
 #ifndef XONX
 # define MACOS_UNICODE_SUPPORT
@@ -1195,6 +1204,10 @@
  /* FFI_CALLBACK_NEED_INT_CLEAR indiates thet libffi callback results
     that are smaller than an `int' should clear `int'-sized space
     in the result area. */
+
+ /* LIMIT_POLL_FREQUENCY_BY_MONOTONIC_TIME indicates that getting
+    monotonic time is much faster than polling, so it makes sense
+    to check monotonic time to limit polling frequency. */
 
 #endif  /* FLAGS_ALREADY_SET */
 

@@ -108,7 +108,7 @@
                                   #:when (exact-integer? k))
                          k)
                        <))
-  (define-values (mpi-vector requires provides phase-to-link-modules)
+  (define-values (mpi-vector requires recur-requires provides phase-to-link-modules)
     (deserialize-requires-and-provides l))
   (define (phase-wrap phase l)
     (case phase
@@ -123,6 +123,15 @@
                  (for/list ([phase+mpis (in-list requires)])
                    (phase-wrap (car phase+mpis)
                                (map collapse-module-path-index (cdr phase+mpis))))))
+     (quote (recurs: ,@(apply
+                        append
+                        (for/list ([phase+mpis (in-list requires)]
+                                   [recurs (in-list recur-requires)])
+                          (phase-wrap (car phase+mpis)
+                                      (for/list ([mpi (cdr phase+mpis)]
+                                                 [recur? (in-list recurs)]
+                                                 #:when recur?)
+                                        (collapse-module-path-index mpi)))))))
      (provide ,@(apply
                  append
                  (for/list ([(phase ht) (in-hash provides)])

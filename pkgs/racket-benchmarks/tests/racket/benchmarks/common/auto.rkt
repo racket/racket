@@ -675,9 +675,9 @@ exec racket -qu "$0" ${1+"$@"}
           (rprintf "[~a ~a ~s #f]\n" (hash-ref names impl impl) bm '(#f #f #f))
           (begin
             ((impl-setup i) bm)
-            (let ([start (current-inexact-milliseconds)])
+            (let ([start (current-inexact-monotonic-milliseconds)])
               ((impl-make i) bm)
-              (let ([end (current-inexact-milliseconds)])
+              (let ([end (current-inexact-monotonic-milliseconds)])
                 (let loop ([n num-iterations])
                   (unless (zero? n)
                     (let ([out (open-output-bytes)])

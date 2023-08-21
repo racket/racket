@@ -352,8 +352,8 @@
 (define-syntax-rule (checker who ?) (lambda (for-whom x) (if (? x) x (bad-ctype-value for-whom who x))))
 (define-syntax integer-checker
   (syntax-rules (signed unsigned)
-    [(_ who signed n int?) (checker who (lambda (x) (and (int? x) (<= (- (expt 2 (- n 1))) x  (- (expt 2 (- n 1)) 1)))))]
-    [(_ who unsigned n int?) (checker who (lambda (x) (and (int? x) (<= 0 x  (- (expt 2 n) 1)))))]))
+    [(_ who signed n int?) (checker who (lambda (x) (and (int? x) (<= (- (#%expt 2 (- n 1))) x  (- (#%expt 2 (- n 1)) 1)))))]
+    [(_ who unsigned n int?) (checker who (lambda (x) (and (int? x) (<= 0 x  (- (#%expt 2 n) 1)))))]))
 
 (define-ctype _bool 'boolean 'bool)
 (define-ctype _double 'double 'double (checker who flonum?))
@@ -1295,6 +1295,9 @@
                               (car args))]))))
 
 (define (normalized-malloc size mode)
+  (unless (and (fixnum? size)
+               (fx<? size 4096))
+    (guard-large-allocation 'malloc "allocation" size 1))
   (cond
    [(eqv? size 0) #f]
    [(eq? mode 'raw)
@@ -1642,7 +1645,8 @@
                         (when lock (mutex-release lock))
                         (c->s out-type r))))])
                arity-mask
-               name))))]
+               name
+               default-realm))))]
        [else
         (lambda (to-wrap)
           (let* ([proc-p (unwrap-cpointer 'ffi-call to-wrap)]
@@ -1706,7 +1710,8 @@
                                  (go))))])
                  (c->s out-type r)))
              (fxsll 1 (length in-types))
-             name)))])]
+             name
+             default-realm)))])]
      [else ; callable
       (lambda (to-wrap)
         (gen-proc (lambda args ; if ret-id, includes an extra initial argument to receive the result
@@ -1990,14 +1995,16 @@
 ;; function is called with interrupts disabled
 (define get-errno
   (cond
-   [(not (#%memq (machine-type) '(a6nt ta6nt i3nt ti3nt)))
+   [(not (#%memq (machine-type) '(a6nt ta6nt i3nt ti3nt arm64nt tarm64nt)))
     (foreign-procedure "(cs)s_errno" () int)]
    [else
     ;; On Windows, `errno` could be a different one from
     ;; `_errno` in MSVCRT. Therefore fallback to the foreign function.
     ;; See `save_errno_values` in `foreign.c` from Racket BC for more
     ;; information.
-    (load-shared-object "msvcrt.dll")
+    (load-shared-object (if (#%memq (machine-type) '(arm64nt tarm64nt))
+			    "API-MS-WIN-CRT-RUNTIME-L1-1-1.0.DLL"
+			    "msvcrt.dll"))
     (let ([get-&errno (foreign-procedure "_errno" () void*)])
       (lambda ()
         (foreign-ref 'int (get-&errno) 0)))]))
@@ -2031,12 +2038,13 @@
 ;; ----------------------------------------
 
 (define (set-cpointer-hash!)
-  (record-type-equal-procedure (record-type-descriptor cpointer)
-                               (lambda (a b eql?)
-                                 (ptr-equal? a b)))
-  (record-type-hash-procedure (record-type-descriptor cpointer)
-                              (lambda (a hc)
-                                (if (number? (cpointer-memory a))
-                                    (hc (+ (cpointer-memory a)
-                                           (ptr-offset* a)))
-                                    (eq-hash-code (cpointer-memory a))))))
+  (struct-set-equal+hash! (record-type-descriptor cpointer)
+                          (lambda (a b eql?)
+                            (ptr-equal? a b))
+                          (lambda (a hc)
+                            (if (number? (cpointer-memory a))
+                                (hc (+ (cpointer-memory a)
+                                       (ptr-offset* a)))
+                                (eq-hash-code (cpointer-memory a)))))
+  (inherit-equal+hash! (record-type-descriptor cpointer+offset)
+                       (record-type-descriptor cpointer)))

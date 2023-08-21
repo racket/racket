@@ -1,0 +1,122 @@
+#lang zuo/base
+(require "shell.zuo")
+
+(provide c-compile
+         c-link
+         c-ar
+
+         .c->.o
+         .exe
+         .a
+
+         config-include
+         config-define
+         config-merge)
+
+(define (c-compile .o .c config)
+  (unless (path-string? .o) (arg-error 'c-compile "path string" .o))
+  (unless (or (path-string? .c)
+              (and (list? .c) (andmap path-string? .c)))
+    (arg-error 'c-compile "path string or list of paths strings" .c))
+  (unless (hash? config) (arg-error 'c-compile "hash table" config))
+  (define windows? (eq? (hash-ref (runtime-env) 'toolchain-type) 'windows))
+  (define lookup (make-lookup config))
+  (define command
+    (build-shell (or (lookup 'CC)
+                     (if windows?
+                         "cl.exe"
+                         "cc"))
+                 (or (lookup 'CPPFLAGS) "")
+                 (or (lookup 'CFLAGS) "")
+                 (if windows? (if (path-string? .c) "/Fo:" "/Fe:") "-o") (string->shell .o)
+                 (if (string? .c)
+                     (build-shell "-c" (string->shell .c))
+                     (apply build-shell (map string->shell .c)))
+                 (if (string? .c)
+                     ""
+                     (build-shell (or (lookup 'LDFLAGS) "")
+                                  (or (lookup 'LIBS) "")))))
+  (shell/wait command (hash 'desc "compile")))
+
+(define (c-link .exe ins config)
+  (unless (path-string? .exe) (arg-error 'c-link "path string" .exe))
+  (unless (and (list? ins) (andmap path-string? ins)) (arg-error 'c-link "list of path strings" ins))
+  (unless (hash? config) (arg-error 'c-link "hash table" config))
+  (define windows? (eq? (hash-ref (runtime-env) 'toolchain-type) 'windows))
+  (define lookup (make-lookup config))
+  (define command
+    (build-shell (or (lookup 'CC)
+                     (if windows?
+                         "cl.exe"
+                         "cc"))
+                 (or (lookup 'CFLAGS) "")
+                 (if windows? "/Fe:" "-o") (string->shell .exe)
+                 (string-join (map string->shell ins))
+                 (or (lookup 'LDFLAGS) "")
+                 (or (lookup 'LIBS) "")))
+  (shell/wait command (hash 'desc "link")))
+
+(define (c-ar .a ins config)
+  (unless (path-string? .a) (arg-error 'c-ar "path string" .exe))
+  (unless (and (list? ins) (andmap path-string? ins)) (arg-error 'c-ar "list of path strings" ins))
+  (unless (hash? config) (arg-error 'c-ar "hash table" config))
+  (define windows? (eq? (hash-ref (runtime-env) 'toolchain-type) 'windows))
+  (define lookup (make-lookup config))
+  (shell/wait
+   (build-shell (or (lookup 'AR)
+                    (if windows?
+                        "lib.exe"
+                        "ar"))
+                (or (lookup 'ARFLAGS) "")
+                (string->shell (if windows? (~a "/OUT:" .a) .a))
+                (string-join (map string->shell ins)))
+   (hash 'desc
+         "library creation")))
+
+(define (make-lookup config)
+  (lambda (key) (hash-ref config key #f)))
+
+(define (.c->.o .c)
+  (unless (path-string? .c) (arg-error '.c->.o "path string" .c))
+  (path-replace-extension .c (if (eq? (hash-ref (runtime-env) 'toolchain-type) 'windows)
+                                 ".obj"
+                                 ".o")))
+
+(define (.exe name)
+  (unless (path-string? name) (arg-error '.exe "string" name))
+  (if (eq? (hash-ref (runtime-env) 'system-type) 'windows)
+      (~a name ".exe")
+      name))
+
+(define (.a name)
+  (unless (path-string? name) (arg-error '.a "string" name))
+  (if (eq? (hash-ref (runtime-env) 'toolchain-type) 'windows)
+      (~a name ".lib")
+      (let ([l (split-path name)])
+        (build-path (or (car l) ".") (~a "lib" (cdr l) ".a")))))
+
+(define (config-include config . paths)
+  (unless (hash? config) (arg-error 'config-include "hash table" config))
+  (foldl (lambda (path config)
+           (unless (path-string? path) (arg-error 'config-include "path string" path))
+           (do-config-merge config 'CPPFLAGS (~a "-I" (string->shell path))))
+         config
+         paths))
+
+(define (config-define config . defs)
+  (unless (hash? config) (arg-error 'config-define "hash table" config))
+  (foldl (lambda (def config)
+           (unless (string? def) (arg-error 'config-define "string" def))
+           (do-config-merge config 'CPPFLAGS (~a "-D" (string->shell def))))
+         config
+         defs))
+
+(define (config-merge config key shell-str)
+  (unless (hash? config) (arg-error 'config-merge "hash table" config))
+  (unless (symbol? key) (arg-error 'config-merge "symbol" key))
+  (unless (string? shell-str) (arg-error 'config-merge "string" shell-str))
+  (do-config-merge config key shell-str))
+  
+(define (do-config-merge config key shell-str)
+  (define now-str (hash-ref config key ""))
+  (hash-set config key (build-shell now-str shell-str)))

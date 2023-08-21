@@ -14,7 +14,7 @@
          "misc.rkt"
          "list.rkt")
 
-(provide and/c integer-in)
+(provide (rename-out [_and/c and/c]) integer-in)
 
 (define (and-name ctc)
   (apply build-compound-type-name 'and/c (base-and/c-ctcs ctc)))
@@ -178,19 +178,19 @@
    #:generate and/c-generate?
    #:equivalent and-equivalent?))
 
-(define-syntax (and/c stx)
+(define-syntax (_and/c stx)
   (syntax-case stx (pair? listof)
     [(_ pair? (listof e))
      #'(non-empty-listof e)]
     [(_ (listof e) pair?)
      #'(non-empty-listof e)]
     [(_ . args)
-     #'(real-and/c . args)]
+     #'(and/c . args)]
     [x
      (identifier? #'x)
-     #'real-and/c]))
+     #'and/c]))
 
-(define/subexpression-pos-prop/name real-and/c-name (real-and/c . raw-fs)
+(define/subexpression-pos-prop/name real-and/c-name (and/c . raw-fs)
   (let ([contracts (coerce-contracts 'and/c raw-fs)])
     (cond
       [(null? contracts) any/c]
@@ -200,12 +200,12 @@
          [(and (pair? (cdr preds))
                (null? (cddr preds)))
           (cond
-            [(chaperone-of? (car preds) real?)
+            [(eq? (car preds) real?)
              (define second-pred (cadr preds))
              (cond
-               [(chaperone-of? second-pred negative?)
+               [(eq? second-pred negative?)
                 (renamed-<-ctc 0 `(and/c real? negative?))]
-               [(chaperone-of? second-pred positive?)
+               [(eq? second-pred positive?)
                 (renamed->-ctc 0 `(and/c real? positive?))]
                [else
                 (define second-contract (cadr contracts))
@@ -216,10 +216,10 @@
                    (renamed-between/c 0 +inf.0 `(and/c real? (not/c negative?)))]
                   [else
                    (make-first-order-and/c contracts preds)])])]
-            [(or (chaperone-of? (car preds) exact-nonnegative-integer?)
-                 (chaperone-of? (car preds) natural?)
-                 (chaperone-of? (cadr preds) exact-nonnegative-integer?)
-                 (chaperone-of? (cadr preds) natural?))
+            [(or (eq? (car preds) exact-nonnegative-integer?)
+                 (eq? (car preds) natural?)
+                 (eq? (cadr preds) exact-nonnegative-integer?)
+                 (eq? (cadr preds) natural?))
              (define other (if (procedure? (car preds)) (cadr contracts) (car contracts)))
              (cond
                [(between/c-s? other)
@@ -228,8 +228,8 @@
                 (integer-in (exact-ceiling (max 0 (if (= other-low -inf.0) 0 other-low)))
                             (if (= other-high +inf.0) #f (exact-floor other-high)))]
                [else (make-first-order-and/c contracts preds)])]
-            [(or (chaperone-of? (car preds) exact-positive-integer?)
-                 (chaperone-of? (cadr preds) exact-positive-integer?))
+            [(or (eq? (car preds) exact-positive-integer?)
+                 (eq? (cadr preds) exact-positive-integer?))
              (define other (if (procedure? (car preds)) (cadr contracts) (car contracts)))
              (cond
                [(between/c-s? other)
@@ -238,8 +238,8 @@
                 (integer-in (exact-ceiling (max 1 (if (= other-low -inf.0) 1 other-low)))
                             (if (= other-high +inf.0) #f (exact-floor other-high)))]
                [else (make-first-order-and/c contracts preds)])]
-            [(or (chaperone-of? (car preds) exact-integer?)
-                 (chaperone-of? (cadr preds) exact-integer?))
+            [(or (eq? (car preds) exact-integer?)
+                 (eq? (cadr preds) exact-integer?))
              (define other (if (procedure? (car preds)) (cadr contracts) (car contracts)))
              (cond
                [(between/c-s? other)
@@ -254,9 +254,9 @@
                (pair? (cddr preds))
                (null? (cdddr preds)))
           (cond
-            [(or (chaperone-of? (car preds) exact-integer?)
-                 (chaperone-of? (cadr preds) exact-integer?)
-                 (chaperone-of? (caddr preds) exact-integer?))
+            [(or (eq? (car preds) exact-integer?)
+                 (eq? (cadr preds) exact-integer?)
+                 (eq? (caddr preds) exact-integer?))
              (define lb #f)
              (define ub #f)
              (for ([ctc (in-list contracts)])
@@ -395,7 +395,7 @@
   (check-two-args 'integer-in start end |(or/c #f exact-integer?)| |(or/c #f exact-integer?)|)
   (cond
     [(and start end (= start end))
-     (and/c start exact?)]
+     (_and/c start exact?)]
     [else
      (integer-in-ctc start end)]))
 

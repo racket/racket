@@ -338,6 +338,22 @@ dividing \var{fixnum_1} by the product of the remaining arguments
 
 %----------------------------------------------------------------------------
 \entryheader
+\formdef{fx+/wraparound}{\categoryprocedure}{(fx+/wraparound \var{fixnum} \dots)}
+\formdef{fx-/wraparound}{\categoryprocedure}{(fx-/wraparound \var{fixnum} \dots)}
+\formdef{fx*/wraparound}{\categoryprocedure}{(fx*/wraparound \var{fixnum} \dots)}
+\formdef{fxsll/wraparound}{\categoryprocedure}{(fxsll/wraparound \var{fixnum} \dots)}
+\returns the arithmetic result, wrapping on overflow
+\listlibraries
+\endentryheader
+
+\noindent
+These functions are like \scheme{fx+}, \scheme{fx-}, \scheme{fx*}, and
+\scheme{fxsll}, but when the result is too large to fit in a fixnum,
+as many high bits of the result as necessary are discarded to make the result representable
+as a fixnum.
+
+%----------------------------------------------------------------------------
+\entryheader
 \formdef{fx1+}{\categoryprocedure}{(fx1+ \var{fixnum})}
 \formdef{fx1-}{\categoryprocedure}{(fx1- \var{fixnum})}
 \returns \var{fixnum} plus 1 or \var{fixnum} minus 1
@@ -558,7 +574,7 @@ are considered nonpositive and nonnegative.
 
 \noindent
 Potentially discards precision from \var{fl} so that the result is
-representable as an 32-bit IEEE floating-point number.
+representable as a 32-bit IEEE floating-point number.
 
 %----------------------------------------------------------------------------
 \entryheader
@@ -1455,15 +1471,15 @@ random seed to the argument.
 \formdef{make-pseudo-random-generator}{\categoryprocedure}{(make-pseudo-random-generator)}
 \returns a fresh pseudo-random generator
 \listlibraries
-\endnoskipentryheader
+\endentryheader
 
 \noindent
-Creates a pseduo-random generator state for use with
-\scheme{pseduo-random-generator-next!}. This generator use a more
+Creates a pseudo-random generator state for use with
+\scheme{pseudo-random-generator-next!}. This generator uses a more
 modern algorithm than \scheme{random} and generates number sequences
 that better approximate true randomness.
 
-The initial state of the pseduo-random generator is based on the
+The initial state of the pseudo-random generator is based on the
 current time, which is good enough for generating variability in most
 programs but not good enough for security purposes.
 
@@ -1472,7 +1488,7 @@ programs but not good enough for security purposes.
 \formdef{pseudo-random-generator?}{\categoryprocedure}{(pseudo-random-generator? \var{val})}
 \returns a boolean
 \listlibraries
-\endnoskipentryheader
+\endentryheader
 
 \noindent
 Checks whether \var{val} is a pseudo-random generator state.
@@ -1481,15 +1497,15 @@ Checks whether \var{val} is a pseudo-random generator state.
 \entryheader
 \formdef{pseudo-random-generator-next!}{\categoryprocedure}{(pseudo-random-generator-next! \var{prgen})}
 \formdef{pseudo-random-generator-next!}{\categoryprocedure}{(pseudo-random-generator-next! \var{prgen} \var{below-int})}
-\returns a pseduo-random number
+\returns a pseudo-random number
 \listlibraries
-\endnoskipentryheader
+\endentryheader
 
 \noindent
-\var{prgen} must be a psuedo-random generator state. If \var{below-int} is
+\var{prgen} must be a pseudo-random generator state. If \var{below-int} is
 provided, it must be a positive, exact integer.
 
-Steps a pseduo-random generator to produce a number. The result is an
+Steps a pseudo-random generator to produce a number. The result is an
 inexact number between \scheme{0.0} (inclusive) and \scheme{1.0}
 (exclusive) if \var{below-int} is not provided. If \scheme{below-int} is
 provided, the result is an exact integer between \scheme{0} (inclusive)
@@ -1500,33 +1516,36 @@ and \scheme{below-int} (exclusive).
 \formdef{pseudo-random-generator-seed!}{\categoryprocedure}{(pseudo-random-generator-seed! \var{prgen} \var{seed-int})}
 \returns unspecified
 \listlibraries
-\endnoskipentryheader
+\endentryheader
 
 \noindent
-\var{prgen} must be a psuedo-random generator state, and \var{seed-int} must
+\var{prgen} must be a pseudo-random generator state, and \var{seed-int} must
 be a nonnegative, exact integer.
 
-Sets the state of a pseduo-random generator using only 31 or so bits
+Sets the state of a pseudo-random generator using only 31 or so bits
 of \var{seed-int}. This procedure is useful for initializing the state
-of a pseduo-random generator to one of a small number of known states
-for triggering predicatble output, but it is not a good way to put a
+of a pseudo-random generator to one of a small number of known states
+for triggering predictable output, but it is not a good way to put a
 generator into an unpredictable state.
 
 %----------------------------------------------------------------------------
 \entryheader
 \formdef{pseudo-random-generator->vector}{\categoryprocedure}{(pseudo-random-generator->vector \var{prgen})}
+\returns a vector
+\listlibraries
+
 \formdef{vector->pseudo-random-generator}{\categoryprocedure}{(vector->pseudo-random-generator \var{vec})}
 \formdef{vector->pseudo-random-generator!}{\categoryprocedure}{(vector->pseudo-random-generator! \var{prgen} \var{vec})}
 \returns unspecified
 \listlibraries
-\endnoskipentryheader
+\endentryheader
 
 \noindent
-\var{prgen} must be a psuedo-random generator state, and \var{vec} must
+\var{prgen} must be a pseudo-random generator state, and \var{vec} must
 be a vector previously produced by \scheme{pseudo-random-generator->vector}.
 
 \scheme{pseudo-random-generator->vector} converts the current state of
-a pseduo-random generator to a vector of numbers, \scheme{vector->pseudo-random-generator}
+a pseudo-random generator to a vector of numbers, \scheme{vector->pseudo-random-generator}
 creates a fresh pseudo-random generator with the same state, and
 \scheme{vector->pseudo-random-generator!}
 changes an existing pseudo-random generator to have the same state.

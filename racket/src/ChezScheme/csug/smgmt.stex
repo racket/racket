@@ -93,6 +93,23 @@ If \scheme{collect-generation-radix} is set to 4, the system thus
 collects generation 0 every time, generation 1 every 4 times,
 generation 2 every 16 times, and so on.
 
+The maximum generation $mg$ is collected on the gc-trip schedule only
+if the total amount of allocated memory before collection is $k$ times
+the total amount of allocated memory after the previous collection of
+$mg$, where the $k$ is the value of
+\index{\scheme{collect-maximum-generation-threshold-factor}}\scheme{collect-maximum-generation-threshold-factor}.
+If a collection of $mg$ is skipped by this rule, then gc-trip is
+rewound to the previous value that is a multiple of $r^{mg-1}$ (so
+that the next time to collect $mg-1$ is potentially also a time to
+collect $mg$). The intent of this $k$ factor is to avoid unnecessary
+traversal of long-lived objects when rapidly allocating short-lived
+objects; for objects that will live until the end of a process, promoting
+them to the static generation can be even more effective, but
+promotion requires additional reasoning to ensure that an object is
+not retained inappropriately, while the
+\scheme{collect-maximum-generation-threshold-factor} parameter allows
+the collector to adapt more automatically.
+
 When \scheme{collect} is invoked with arguments, the generations to be
 collected and their target generations are determined by the arguments.
 In addition, the first argument \var{cg} affects the value of gc-trip;
@@ -180,7 +197,7 @@ in \scheme{compute-size-increments}. Counting looks through all
 generations, as when \scheme{'static} is the second argument to
 \scheme{compute-size-increments}, but the returned sizes from
 \scheme{collect} do not include any objects in a generation older than
-\var{g}. Another difference is that an object later in \var{objs} are
+\var{g}. Another difference is that an object later in \var{objs} is
 treated as unreachable by earlier objects in \var{objs} only when the
 later object is a record, thread, or procedure (including
 continuations). Finally, if an object is included in \var{objs} using
@@ -264,6 +281,30 @@ Setting \scheme{collect-generation-radix} to one forces all generations
 to be collected each time a collection occurs.
 Setting \scheme{collect-generation-radix} to a very large number
 effectively delays collection of older generations indefinitely.
+
+
+%----------------------------------------------------------------------------
+\entryheader
+\formdef{collect-maximum-generation-threshold-factor}{\categoryglobalparameter}{collect-maximum-generation-threshold-factor}
+\listlibraries
+\endentryheader
+
+\noindent
+This parameter determines how often the maximum generation is collected
+when \scheme{collect} is invoked without arguments, as by the default
+collect-request handler.
+Its value must be a nonnegative real number.
+The maximum generation is collected only when the total amount of allocated
+memory before a collection is $k$ times the amount of memory allocated
+after the most recent collection of the maximum generation, where $k$
+is the value of \scheme{collect-maximum-generation-threshold-factor}.
+
+Setting \scheme{collect-maximum-generation-threshold-factor} to zero
+causes every regularly scheduled collection of the maximum generation
+to take place. Setting the value of
+\scheme{collect-maximum-generation-threshold-factor} to a large number
+can increase peak memory use by delaying collection of the maximum
+generation.
 
 
 %----------------------------------------------------------------------------
@@ -359,13 +400,13 @@ if (a) the two parameters have the same value before the change, or (b)
 
 This parameter determines when the storage-management system attempts
 to trade long-term space usage for the benefit of collection time and
-short-term space usage. When performing a collection at the generation
+short-term space usage. When performing a collection at a generation
 at least as large as this parameter's value, objects already residing
 at the generation are kept in place---unless the objects are in a
 memory region where previously keeping them in place resulted in too
 much fragmentation.
 
-Typically, the value of \scheme{release-minimum-generation} should
+Typically, the value of \scheme{in-place-minimum-generation} should
 match the value of the \scheme{collect-maximum-generation} parameter,
 but the value of this parameter can be lower to move objects even less
 frequently, or it can be higher to disable attempts to keep otherwise
@@ -691,7 +732,7 @@ Continuing the above example:
 The initial call to \scheme{G} returns \scheme{#f}, since the pairs bound
 to \scheme{x} and \scheme{y} are the
 only object registered with \scheme{G}, and the pairs are still accessible
-through those binding.
+through those bindings.
 When \scheme{collect} is called, the objects shift into the inaccessible group.
 The two calls to \scheme{G} therefore return the pair previously bound to
 \scheme{x} and the representative of the pair previously bound to \scheme{y},
@@ -725,7 +766,7 @@ can never become inaccessible unless the cycle is broken or some of
 the relevant guardians are dropped by the program, and each
 registered object's representative (if different from the object) can
 contribute to such cycles. If an object is registered to an ordered
-custodian with a representative that is different from the object but
+guardian with a representative that is different from the object but
 that references the object, then the object is in a cycle and will not
 become inaccessible unless the reference from the representative to
 the object is destroyed. Weak references do not count, so objects that
@@ -750,7 +791,7 @@ case it will be retrievable more than once:
 It may also be registered with more than one guardian, and guardians
 themselves can be registered with other guardians. If an object
 is registered to both an unordered guardian and an ordered guardian
-and neither guardians is dropped, the object can become
+and neither guardian is dropped, the object can become
 inaccessible for the ordered guardian only after it has been
 determined inaccessible for the unordered guardian and then
 retrieved and dropped again by the program.

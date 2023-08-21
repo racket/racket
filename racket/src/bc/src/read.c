@@ -118,6 +118,10 @@ static Scheme_Object *read_vector(Scheme_Object *port,
 				  int opener, char closer,
 				  ReadParams *params,
                                   int allow_infix);
+static Scheme_Object *read_flvector(Scheme_Object *port,
+                                    ReadParams *params);
+static Scheme_Object *read_fxvector(Scheme_Object *port,
+                                    ReadParams *params);
 static Scheme_Object *read_number_or_symbol(int init_ch, Scheme_Object *port,
                                             int is_float, int is_not_float,
                                             int radix, int radix_set,
@@ -567,8 +571,16 @@ static Scheme_Object *read_inner(Scheme_Object *port, ReadParams *params, int pr
             /* found delimited `#f' */
             return scheme_false;
           } else {
-            GC_CAN_IGNORE const mzchar str[] = { 'f', 'a', 'l', 's', 'e', 0 };
-            return read_delimited_constant(ch, str, scheme_false, port, params);
+            int next_ch;
+            next_ch = scheme_peekc(port);
+            if (next_ch == 'l')
+              return read_flvector(port, params);
+            else if (next_ch == 'x')
+              return read_fxvector(port, params);
+            else {
+              GC_CAN_IGNORE const mzchar str[] = { 'f', 'a', 'l', 's', 'e', 0 };
+              return read_delimited_constant(ch, str, scheme_false, port, params);
+            }
           }
 	case 's':
 	case 'S':
@@ -766,13 +778,22 @@ static Scheme_Object *read_inner(Scheme_Object *port, ReadParams *params, int pr
               scheme_read_err(port, "read: expected `a` after `#h`");
               return NULL;
 	    } else {
-	      GC_CAN_IGNORE const mzchar str[] = { 's', 'h', 'e', 'q', 'v', 0 };
-	      int scanpos = 0, failed = 0;
+	      GC_CAN_IGNORE const mzchar str1[] = { 's', 'h', 'e', 'q', 'v', 0 };
+	      GC_CAN_IGNORE const mzchar str2[] = { 's', 'h', 'a', 'l', 'w', 0 };
+	      int scanpos = 0, track = 0, failed = 0;
 
 	      do {
 		ch = scheme_getc(port);
-		if ((mzchar)ch == str[scanpos]) {
+		if (((mzchar)ch == str1[scanpos]) && ((mzchar)ch == str2[scanpos])) {
 		  scanpos++;
+		} else if ((track != 2) && ((mzchar)ch == str1[scanpos])) {
+		  /* track 1: hasheq or hasheqv */
+		  scanpos++;
+		  track = 1;
+		} else if ((track != 1) && ((mzchar)ch == str2[scanpos])) {
+		  /* track 2: hashalw */
+		  scanpos++;
+		  track = 2;
 		} else {
 		  if ((scanpos == 2) || (scanpos == 4)) {
 		    if (!(ch == '(')
@@ -783,21 +804,29 @@ static Scheme_Object *read_inner(Scheme_Object *port, ReadParams *params, int pr
 		    failed = 1;
 		  break;
 		}
-	      } while (str[scanpos]);
+	      } while (str1[scanpos]);
               
 	      if (!failed) {
 		/* Found recognized tag. Look for open paren... */
-                int kind;
+		int kind;
 
-		if (scanpos > 4)
+		if (scanpos > 4) {
 		  ch = scheme_getc(port);
-                
-                if (scanpos == 4)
+		}
+
+                if ((track == 1) && (scanpos == 4)) {
+                  /* hasheq */
                   kind = 0;
-                else if (scanpos == 2)
+                } else if ((track == 0) && (scanpos == 2)) {
+                  /* hash */
                   kind = 1;
-                else 
+                } else if ((track == 2) && (scanpos == 5)) {
+                  /* hashalw */
+                  kind = 3;
+                } else {
+                  /* hasheqv */
                   kind = 2;
+                }
 
 		if (ch == '(')
 		  return read_hash(port, ch, ')', kind, params);
@@ -811,7 +840,11 @@ static Scheme_Object *read_inner(Scheme_Object *port, ReadParams *params, int pr
 	      {
 		mzchar str_part[7], one_more[2];
 
-		memcpy(str_part, str, scanpos * sizeof(mzchar));
+		if (track == 2) {
+		  memcpy(str_part, str2, scanpos * sizeof(mzchar));
+		} else {
+		  memcpy(str_part, str1, scanpos * sizeof(mzchar));
+		}
 		str_part[scanpos] = 0;
 		if (NOT_EOF_OR_SPECIAL(ch)) {
 		  one_more[0] = ch;
@@ -1068,6 +1101,8 @@ static Scheme_Object *resolve_references(Scheme_Object *obj,
       mzlonglong i;
       if (scheme_is_hash_tree_equal(obj))
         kind = 1;
+      else if (scheme_is_hash_tree_equal_always(obj))
+        kind = 3;
       else if (scheme_is_hash_tree_eqv(obj))
         kind = 2;
       else
@@ -1704,6 +1739,60 @@ read_vector (Scheme_Object *port,
   }
 
   return vec;
+}
+
+static Scheme_Object *read_flfxvector_as_vector(Scheme_Object *port,
+                                                ReadParams *params,
+                                                const char *prefix)
+{
+  int ch;
+
+  (void)scheme_getc(port); /* must be `l` or `x` */
+
+  ch = scheme_getc(port);
+  if (ch != '(')
+    scheme_read_err(port,
+                    "read: expected `(` after `%s`",
+                    prefix);
+
+  return read_vector(port, ch, ')', params, 0);
+}
+
+
+static Scheme_Object *read_flvector(Scheme_Object *port,
+                                    ReadParams *params)
+{
+  intptr_t i, len;
+  Scheme_Object *vec, *flvec;
+
+  vec = read_flfxvector_as_vector(port, params, "#fl");
+  len = SCHEME_VEC_SIZE(vec);
+  flvec = (Scheme_Object *)scheme_alloc_flvector(len);
+  for (i = 0; i < len; i++) {
+    if (!SCHEME_DBLP(SCHEME_VEC_ELS(vec)[i]))
+      scheme_read_err(port, "read: non-flonum in `#fl`");
+    SCHEME_FLVEC_ELS(flvec)[i] = SCHEME_DBL_VAL(SCHEME_VEC_ELS(vec)[i]);
+  }
+
+  return (Scheme_Object *)flvec;
+}
+
+static Scheme_Object *read_fxvector(Scheme_Object *port,
+                                    ReadParams *params)
+{
+  intptr_t i, len;
+  Scheme_Object *vec, *fxvec;
+
+  vec = read_flfxvector_as_vector(port, params, "#fl");
+  len = SCHEME_VEC_SIZE(vec);
+  fxvec = (Scheme_Object *)scheme_alloc_fxvector(len);
+  for (i = 0; i < len; i++) {
+    if (!SCHEME_INTP(SCHEME_VEC_ELS(vec)[i]))
+      scheme_read_err(port, "read: non-fixnum in `#fx`");
+    SCHEME_FXVEC_ELS(fxvec)[i] = SCHEME_VEC_ELS(vec)[i];
+  }
+
+  return (Scheme_Object *)fxvec;
 }
 
 /*========================================================================*/
@@ -2727,7 +2816,7 @@ static Scheme_Object *read_compact(CPort *port, int use_stack)
         Scheme_Object *k;
 
 	kind = read_compact_number(port);
-        if ((kind < 0) || (kind > 2))
+        if ((kind < 0) || (kind > 3))
           scheme_ill_formed_code(port);
 	len = read_compact_number(port);
 
@@ -3347,6 +3436,14 @@ static Scheme_Object *read_compact(CPort *port, int use_stack)
             v = scheme_make_prefab_struct_instance(st, v);
           }
         }
+        break;
+      }
+    case CPT_PREFAB_TYPE:
+      {
+        intptr_t len;
+        v = read_compact(port, 0);
+        len = read_compact_number(port);
+        v = (Scheme_Object *)scheme_lookup_prefab_type(v, len);
         break;
       }
     case CPT_SMALL_LOCAL_START:

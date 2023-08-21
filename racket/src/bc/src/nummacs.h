@@ -76,7 +76,7 @@ static Scheme_Object *name (const Scheme_Object *n1, const Scheme_Object *n2)
 
 /* This macro is used to implement most all binary math and comparison functions (!): */
 #define GEN_BIN_THING(rettype, name, scheme_name, \
-                      iop, fop, fsop, bn_op, rop, cxop, \
+                      iop, fop, fsop, ieop, eiop, iesop, eisop, bn_op, rop, cxop,      \
                       wrap, combineinf, \
                       waybigf, swaybigf, waysmallf, swaysmallf, \
                       waybigs, swaybigs, waysmalls, swaysmalls, \
@@ -294,13 +294,13 @@ name (const Scheme_Object *n1, const Scheme_Object *n2) \
       if (t2 == scheme_float_type) { \
         float d = SCHEME_FLT_VAL(n2); \
         snanchk(d); \
-        return fsop(SCHEME_INT_VAL(n1), d); \
+        return eisop(SCHEME_INT_VAL(n1), d); \
       } \
       ) \
       if (t2 == scheme_double_type) { \
         double d = SCHEME_DBL_VAL(n2); \
         nanchk(d); \
-        return fop(SCHEME_INT_VAL(n1), d); \
+        return eiop(SCHEME_INT_VAL(n1), d); \
       } \
       if (t2 == scheme_bignum_type) { \
         return name ## __int_big(n1, n2); \
@@ -323,7 +323,7 @@ name (const Scheme_Object *n1, const Scheme_Object *n2) \
       float d1 = SCHEME_FLT_VAL(n1); \
       if (SCHEME_INTP(n2)) { \
         snanchk(d1); \
-        return fsop(d1, SCHEME_INT_VAL(n2)); \
+        return iesop(d1, SCHEME_INT_VAL(n2)); \
       } \
       t2 = _SCHEME_TYPE(n2); \
       if (t2 == scheme_float_type) { \
@@ -357,7 +357,7 @@ name (const Scheme_Object *n1, const Scheme_Object *n2) \
       double d1 = SCHEME_DBL_VAL(n1); \
       if (SCHEME_INTP(n2)) { \
         nanchk(d1); \
-        return fop(d1, SCHEME_INT_VAL(n2)); \
+        return ieop(d1, SCHEME_INT_VAL(n2)); \
       } \
       t2 = _SCHEME_TYPE(n2); \
       FLOATWRAP( \
@@ -519,7 +519,7 @@ name (const Scheme_Object *n1, const Scheme_Object *n2) \
 
 #define GEN_BIN_OP(name, scheme_name, iop, fop, fsop, bn_op, rop, cxop, exzeopl, exzeopr, nanckop, snanckop, nanckop_more, snanckop_more, c0_1, c1_1, c0_2, c1_2) \
   GEN_BIN_THING(Scheme_Object *, name, scheme_name, \
-                iop, fop, fsop, bn_op, rop, cxop, \
+                iop, fop, fsop, fop, fop, fsop, fsop, bn_op, rop, cxop,  \
                 GEN_OMIT, GEN_FIRST_ONLY, \
                 0, 0, 0, 0, \
                 0, 0, 0, 0, \
@@ -530,7 +530,7 @@ name (const Scheme_Object *n1, const Scheme_Object *n2) \
 
 #define GEN_BIN_DIV_OP(name, scheme_name, iop, fop, fsop, bn_op, rop, cxop, c0_1, c1_1, c0_2, c1_2) \
   GEN_BIN_THING(Scheme_Object *, name, scheme_name, \
-                iop, fop, fsop, bn_op, rop, cxop, \
+                iop, fop, fsop, fop, fop, fsop, fsop, bn_op, rop, cxop,  \
                 GEN_IDENT, GEN_APPLY, \
                 GEN_SAME_INF, GEN_SAME_SINF, GEN_OPP_INF, GEN_OPP_SINF, \
                 GEN_MAKE_NZERO, GEN_MAKE_NSZERO, GEN_MAKE_PZERO, GEN_MAKE_PSZERO, \
@@ -539,9 +539,9 @@ name (const Scheme_Object *n1, const Scheme_Object *n2) \
                 GEN_IDENT, GEN_IDENT, GEN_RETURN_0, GEN_OMIT, "number?", GEN_TOI, \
                 c0_1, c1_1, c0_2, c1_2)
 
-#define GEN_BIN_COMP(name, scheme_name, iop, fop, bn_op, rop, cxop, waybig, waysmall, firstzero, secondzero, complexwrap, noniziwrap, numbertype) \
+#define GEN_BIN_COMP(name, scheme_name, iop, fop, ieop, eiop, bn_op, rop, cxop, waybig, waysmall, firstzero, secondzero, complexwrap, noniziwrap, numbertype) \
  GEN_BIN_THING(int, name, scheme_name, \
-               iop, fop, fop, bn_op, rop, cxop, \
+               iop, fop, fop, ieop, eiop, ieop, eiop, bn_op, rop, cxop,      \
                GEN_IDENT, GEN_FIRST_ONLY, \
                waybig, waybig, waysmall, waysmall, \
                waybig, waybig, waysmall, waysmall, \

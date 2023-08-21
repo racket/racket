@@ -1,0 +1,183 @@
+#lang zuo/base
+(require "private/cmdline-run.zuo"
+         (only-in "private/base/define-help.zuo"
+                  check-args))
+
+(provide command-line)
+
+(define-syntax (command-line stx)
+  (unless (list? stx) (bad-syntax stx))
+  (define all-stx stx)
+  (define cmd-id 'cmd)
+
+  (define (formals->spec stx)
+    (define (id->desc id) (~a "<" (syntax-e id) ">"))
+    (let loop ([stx stx] [rev-reqd '()] [rev-opt '()])
+      (cond
+        [(identifier? stx) (list (reverse rev-reqd)
+                                 (reverse (cons (id->desc stx) rev-opt))
+                                 '...)]
+        [(null? stx) (list (reverse rev-reqd) (reverse rev-opt))]
+        [(identifier? (car stx)) (loop (cdr stx)
+                                       (cons (id->desc (car stx))
+                                             rev-reqd)
+                                       rev-opt)]
+        [else (loop (cdr stx)
+                    rev-reqd
+                    (cons (id->desc (caar stx))
+                          rev-opt))])))
+
+  (define (parse-flag-line mode group-id accum line-stx)
+    (define maybe-cmd-id (and (and (pair? all-stx)
+                                   (identifier? (car all-stx)))
+                              (car line-stx)))
+    (define stx (if maybe-cmd-id
+                    (cdr line-stx)
+                    line-stx))
+    (unless (and (list? stx)
+                 (>= (length stx) 2))
+      (syntax-error "command-line: bad syntax for flag" line-stx))
+    (unless (or (string? (car stx))
+                (and (list? (car stx))
+                     (andmap string? (car stx))))
+      (syntax-error "command-line: bad flag-string list for flag" line-stx))
+    ;; check identifiers and then help string/sequence, with at least one more:
+    (unless (let loop ([stx (cdr stx)])
+              (cond
+                [(null? (cdr stx)) #f]
+                [(string? (car stx)) #t]
+                [(list? (car stx)) #t]
+                [(identifier? (car stx)) (loop (cdr stx))]
+                [else #f]))
+      (syntax-error "command-line: missing or misplaced help string/sequence for flag" line-stx))
+    (define flags (if (string? (car stx)) (list (car stx)) (car stx)))
+    (define ids (let loop ([stx (cdr stx)])
+                  (if (identifier? (car stx))
+                      (cons (car stx) (loop (cdr stx)))
+                      '())))
+    (define help-str (let loop ([stx (cdr stx)])
+                       (if (identifier? (car stx))
+                           (loop (cdr stx))
+                           (car stx))))
+    (define body (let loop ([stx (cdr stx)])
+                   (if (identifier? (car stx))
+                       (loop (cdr stx))
+                       (cdr stx))))
+    (define flag-id (string->uninterned-symbol "flag-handler"))
+    (define key (or group-id (and (not (eq? mode 'multi)) flag-id)))
+    (define proc `(,(quote-syntax flag-parser)
+                   ',key
+                   (,(quote-syntax lambda)
+                    ,ids
+                    ,@(if maybe-cmd-id
+                          `((,(quote-syntax lambda) (,maybe-cmd-id) ,@body))
+                          body))
+                   ',(formals->spec ids)))
+    (define spec (list (map (lambda (id) (~a "<" (syntax-e id) ">")) ids)
+                       '()))
+    (define accum+expr
+      (hash-set accum 'flags-expr
+                `(,(quote-syntax let)
+                  ((,flag-id ,proc))
+                  ,(let loop ([flags flags])
+                     (if (null? flags)
+                         (hash-ref accum 'flags-expr)
+                         `(,(quote-syntax cons)
+                           (,(quote-syntax cons) ,(car flags) ,flag-id)
+                           ,(loop (cdr flags))))))))
+    (hash-set accum+expr 'help
+              (cons (list (quote-syntax list)
+                          (list (quote-syntax quote) key)
+                          (list (quote-syntax quote) flags)
+                          (list (quote-syntax quote) spec)
+                          (if (string? help-str)
+                              (list (quote-syntax list) help-str)
+                              (cons (quote-syntax list) help-str)))
+                    (hash-ref accum 'help '()))))
+ 
+  (define (expected-mode stx)
+    (syntax-error "command-line: expected tag like `:multi` or `:args`" (car stx)))
+  
+  (define (check-already accum what)
+    (when (hash-ref accum what #f)
+      (syntax-error (~a "command-line: multiple `:" what "` clauses") all-stx)))
+
+  (let loop ([stx (cdr stx)] [mode #f] [group-id #f] [accum (hash 'flags-expr (quote-syntax '()))])
+    (cond
+      [(null? stx)
+       (list (quote-syntax run-cmdline)
+             (hash-ref accum 'program (quote-syntax (hash-ref (runtime-env) 'script "[script]")))
+             (hash-ref accum 'init (quote-syntax (hash)))
+             (hash-ref accum 'args-in (quote-syntax (hash-ref (runtime-env) 'args '())))
+             (hash-ref accum 'flags-expr)
+             (hash-ref accum 'finish (quote-syntax (lambda () (lambda (cmd) cmd))))
+             (hash-ref accum 'finish-spec (quote-syntax '(() ())))
+             (hash-ref accum 'preamble #f)
+             (hash-ref accum 'usage #f)
+             (cons (quote-syntax list) (reverse (hash-ref accum 'help '()))))]
+      [(identifier? (car stx))
+       (define head (syntax-e (car stx)))
+       (cond
+         [(eq? head ':multi) (loop (cdr stx) 'multi #f accum)]
+         [(eq? head ':once-each) (loop (cdr stx) 'once #f accum)]
+         [(eq? head ':once-any) (loop (cdr stx) 'once (string->uninterned-symbol "once") accum)]
+         [(eq? head ':init)
+          (unless (pair? (cdr stx))
+            (syntax-error "command-line: missing expression for `:init`" all-stx))
+          (check-already accum 'init)
+          (loop (cddr stx) #f #f (hash-set accum 'init (cadr stx)))]
+         [(eq? head ':args)
+          (unless (>= (length stx) 3)
+            (syntax-error "command-line: bad syntax at `:args`" all-stx))
+          (check-args all-stx (cadr stx))
+          (loop '() #f #f (hash-set (hash-set accum
+                                              'finish `(,(quote-syntax lambda)
+                                                        ,(cadr stx)
+                                                        ,@(cddr stx)))
+                                    'finish-spec `(,(quote-syntax quote)
+                                                   ,(formals->spec (cadr stx)))))]
+         [(eq? head ':args-in)
+          (unless (pair? (cdr stx))
+            (syntax-error "command-line: bad syntax at `:args-in`" all-stx))
+          (check-already accum 'args-in)
+          (loop (cddr stx) #f #f (hash-set accum 'args-in (list (quote-syntax check-args-in) (cadr stx))))]
+         [(eq? head ':program)
+          (unless (pair? (cdr stx))
+            (syntax-error "command-line: bad syntax at `:program`" all-stx))
+          (check-already accum 'program)
+          (loop (cddr stx) #f #f (hash-set accum 'program (list (quote-syntax check-program) (cadr stx))))]
+         [(eq? head ':usage)
+          (unless (pair? (cdr stx))
+            (syntax-error "command-line: bad syntax at `:usage`" all-stx))
+          (check-already accum 'usage)
+          (loop (cddr stx) #f #f (hash-set accum 'usage (list (quote-syntax check-usage) (cadr stx))))]
+         [(eq? head ':preamble)
+          (unless (pair? (cdr stx))
+            (syntax-error "command-line: bad syntax at `:preamble`" all-stx))
+          (check-already accum 'preamble)
+          (loop (cddr stx) #f #f (hash-set accum 'preamble (list (quote-syntax check-preamble) (cadr stx))))]
+         [else (expected-mode stx)])]
+      [(not mode)
+       (expected-mode stx)]
+      [else
+       (loop (cdr stx) mode group-id (parse-flag-line mode group-id accum (car stx)))])))
+
+(define (check-args-in args)
+  (unless (and (list? args) (andmap string? args))
+    (error "command-line: result for `:args-in` is not a list of strings" args))
+  args)
+
+(define (check-program prog)
+  (unless (string? prog)
+    (error "command-line: result for `:program` is not a string" prog))
+  prog)
+
+(define (check-usage usage)
+  (unless (string? usage)
+    (error "command-line: result for `:usage` is not a string" usage))
+  usage)
+
+(define (check-preamble preamble)
+  (unless (string? preamble)
+    (error "command-line: result for `:preamble` is not a string" preamble))
+  preamble)

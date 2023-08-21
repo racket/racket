@@ -1,0 +1,24 @@
+#lang zuo
+
+(require "harness.zuo")
+
+(alert "symbols")
+
+(check (symbol? 'apple))
+(check (symbol? (string->uninterned-symbol "apple")))
+(check (not (symbol? "apple")))
+(check (not (symbol? 10)))
+
+(check (symbol->string 'apple) "apple")
+(check-arg-fail (symbol->string "apple") "not a symbol")
+
+(check (eq? 'apple (string->symbol "apple")))
+(check (not (eq? 'apple (string->uninterned-symbol "apple"))))
+(check (not (eq? (string->uninterned-symbol "apple")
+                 (string->uninterned-symbol "apple"))))
+(check (not (equal? 'apple (string->uninterned-symbol "apple"))))
+(check-arg-fail (string->symbol 'apple) not-string)
+(check-arg-fail (string->uninterned-symbol 'apple) not-string)
+
+(check-arg-fail (string->symbol "apple\0spice") "without a nul character")
+(check (symbol? (string->uninterned-symbol "apple\0spice")))

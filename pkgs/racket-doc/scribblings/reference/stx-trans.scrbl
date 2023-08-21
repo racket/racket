@@ -167,7 +167,7 @@ rename transformer:
 ]
 
 @history[#:changed "6.3" @elem{Removed an optional second argument.}
-         #:changed "7.4.0.10" @elem{Adjust rename-transformer expansion
+         #:changed "7.4.0.10" @elem{Adjusted rename-transformer expansion
                                     to add a macro-introduction scope, the
                                     same as regular macro expansion.}]}
 
@@ -372,7 +372,7 @@ expansion history to external tools.
                                    an explicit wrapper.}
          #:changed "6.0.90.27" @elem{Loosened the contract on the @racket[intdef-ctx] argument to
                                      allow an empty list.}
-         #:changed "8.2.0.4" @elem{Changined binding to protected.}]}
+         #:changed "8.2.0.4" @elem{Changed binding to @tech{protected}.}]}
 
 
 @defproc[(syntax-local-expand-expression [stx any/c] [opaque-only? any/c #f])
@@ -408,7 +408,7 @@ result of @racket[syntax-local-expand-expression] can include
 @transform-time[] @provided-as-protected[]
 
 @history[#:changed "6.90.0.13" @elem{Added the @racket[opaque-only?] argument.}
-         #:changed "8.2.0.4" @elem{Changined binding to protected.}]}
+         #:changed "8.2.0.4" @elem{Changed binding to @tech{protected}.}]}
 
 
 @defproc[(local-transformer-expand [stx any/c]
@@ -433,9 +433,9 @@ or @racket[let-values] wrapper is added.
 
 @provided-as-protected[]
 
-@history[#:changed "6.5.0.3" @elem{Allow and capture lifts in a
+@history[#:changed "6.5.0.3" @elem{Allowed and captured lifts in a
                                    @racket['top-level] context.}
-         #:changed "8.2.0.4" @elem{Changined binding to protected.}]}
+         #:changed "8.2.0.4" @elem{Changed binding to @tech{protected}.}]}
 
 
 @defproc[(local-expand/capture-lifts
@@ -466,7 +466,7 @@ If @racket[context-v] is @racket['top-level] or @racket['module], then
 
 @provided-as-protected[]
 
-@history[#:changed "8.2.0.4" @elem{Changined binding to protected.}]}
+@history[#:changed "8.2.0.4" @elem{Changed binding to @tech{protected}.}]}
 
 
 @defproc[(local-transformer-expand/capture-lifts
@@ -487,7 +487,7 @@ transformer environment).
 
 @provided-as-protected[]
 
-@history[#:changed "8.2.0.4" @elem{Changined binding to protected.}]}
+@history[#:changed "8.2.0.4" @elem{Changed binding to @tech{protected}.}]}
 
 
 @defproc[(syntax-local-apply-transformer
@@ -798,7 +798,7 @@ if not @racket[#f]. If @racket[failure-thunk] is @racket[false], the
  #:changed "6.90.0.27" @elem{Changed @racket[intdef-ctx] to accept a list of internal-definition
                              contexts in addition to a single internal-definition context or
                              @racket[#f].}
- #:changed "8.2.0.4" @elem{Changed binding to protected.}]}
+ #:changed "8.2.0.4" @elem{Changed binding to @tech{protected}.}]}
 
 
 @defproc[(syntax-local-value/immediate [id-stx syntax?]
@@ -838,7 +838,7 @@ values), or an exception is raised if @racket[failure-thunk] is
 
 @provided-as-protected[]
 
-@history[#:changed "8.2.0.4" @elem{Changined binding to protected.}]}
+@history[#:changed "8.2.0.4" @elem{Changed binding to @tech{protected}.}]}
 
 
 @defproc[(syntax-local-lift-expression [stx syntax?])
@@ -932,7 +932,7 @@ within a @racket[module] form (see @racket[syntax-transforming-module-expression
 then the @exnraise[exn:fail:contract].}
 
 
-@defproc[(syntax-local-lift-require [raw-require-spec any/c] [stx syntax?])
+@defproc[(syntax-local-lift-require [raw-require-spec any/c] [stx syntax?] [new-scope? any/c #t])
          syntax?]{
 
 Lifts a @racket[#%require] form corresponding to
@@ -941,27 +941,31 @@ to the top-level or to the top of the module currently being expanded
  or to an enclosing @racket[begin-for-syntax].
 
 The resulting syntax object is the same as @racket[stx], except that a
-fresh @tech{scope} is added. The same @tech{scope} is
+fresh @tech{scope} is added if @racket[new-scope?] is true. The same @tech{scope} is
 added to the lifted @racket[#%require] form, so that the
 @racket[#%require] form can bind uses of imported identifiers in the
 resulting syntax object (assuming that the lexical information of
 @racket[stx] includes the binding environment into which the
-@racket[#%require] is lifted).
+@racket[#%require] is lifted). If @racket[new-scope?] is @racket[#f], then
+the result exactly @racket[stx], and no scope is added to the lifted
+@racket[#%require] form; in that case, take care to ensure that the lifted
+require does not change the meaning of already-expanded identifiers in the module,
+otherwise re-expansion of the enclosing module will not produce the same result
+as the expanded module.
 
-If @racket[raw-require-spec] and @racket[stx] are part of the input to
-a transformer, then typically @racket[syntax-local-introduce] should be
-applied to each before passing them to
-@racket[syntax-local-lift-require], and then
-@racket[syntax-local-introduce] should be applied to the result of
-@racket[syntax-local-lift-require]. Otherwise, marks added
-by the macro expander can prevent access to the new imports.
+If @racket[raw-require-spec] is part of the input to a transformer,
+then typically @racket[syntax-local-introduce] should be applied
+before passing it to @racket[syntax-local-lift-require]. Otherwise,
+marks added by the macro expander can prevent access to the new
+imports.
 
 @transform-time[]
 
 @history[#:changed "6.90.0.27" @elem{Changed the @tech{scope} added to inputs from a
                                      macro-introduction scope to one that does not affect whether or
                                      not the resulting syntax is considered original as reported by
-                                     @racket[syntax-original?].}]}
+                                     @racket[syntax-original?].}
+         #:changed "8.6.0.4" @elem{Added the @racket[new-scope?] optional argument.}]}
 
 @defproc[(syntax-local-lift-provide [raw-provide-spec-stx syntax?])
          void?]{
@@ -1397,8 +1401,9 @@ Often used in combination with @racket[expand-import].
    (lambda (stx)
      (syntax-case stx ()
        [(_ path)
-        (printf "Importing: ~a~n" #'path)
-        (expand-import #'path)]))))
+        (begin
+          (printf "Importing: ~a~n" #'path)
+          (expand-import #'path))]))))
 
 (require (printing racket/match))
 ]}
@@ -1669,7 +1674,7 @@ Returns @racket[#t] if @racket[v] has the
 
 
 @defstruct[export ([local-id identifier?]
-                   [out-sym symbol?]
+                   [out-id identifier?]
                    [mode phase+space?]
                    [protect? any/c]
                    [orig-stx syntax?])]{
@@ -1681,7 +1686,7 @@ A structure representing a single exported identifier:
  @item{@racket[local-id] --- the identifier that is bound within the
        exporting module.}
 
- @item{@racket[out-sym] --- the external name of the binding.}
+ @item{@racket[out-id] --- the external name of the binding.}
 
  @item{@racket[mode] --- the @tech{phase level} and @tech{binding
        space} of the export (which affects how it is imported).}
@@ -1694,8 +1699,25 @@ A structure representing a single exported identifier:
 
 ]
 
-@history[#:changed "8.2.0.3" @elem{Generalized @racket[mode] to phase--space combinations.}]}
+@history[#:changed "8.2.0.3" @elem{Generalized @racket[mode] to phase--space combinations.}]
 
+@history[#:changed "8.9.0.5" @elem{Changed the @racket[out-sym] field
+        to @racket[out-id]. For backward compatibility, the
+        @racket[make-export] constructor also accepts a symbol, and a
+        @racket[export-out-sym] function returns the @racket[syntax-e]
+        value of the @racket[out-id].}]
+
+}
+
+@defproc[(export-out-sym [ex export?]) symbol?]{
+
+Composes @racket[syntax-e] with @racket[export-out-id].
+
+This function is intended for backward compatibility. Use
+@racket[export-out-id] directly, instead.
+
+@history[#:added "8.9.0.5"]
+}
 
 @defproc[(syntax-local-provide-certifier)
          ((syntax?) (or/c #f (syntax? . -> . syntax?))

@@ -76,10 +76,7 @@ using the functions described in @secref["cert-procs"].
 @defproc[(ssl-connect [hostname string?]
                       [port-no (integer-in 1 65535)]
                       [client-protocol
-                       (or/c ssl-client-context?
-                             'secure
-                             'auto
-                             'sslv2-or-v3 'sslv2 'sslv3 'tls 'tls11 'tls12)
+                       (or/c ssl-client-context? ssl-protocol-symbol/c)
                        'auto]
                       [#:alpn alpn-protocols (listof bytes?) null])
          (values input-port? output-port?)]{
@@ -136,9 +133,7 @@ whether the other end is supposed to be sending or reading data.
           [hostname string?]
 	  [port-no (integer-in 1 65535)]
 	  [client-protocol
-	   (or/c ssl-client-context?
-                 'secure 'auto
-                 'sslv2-or-v3 'sslv2 'sslv3 'tls 'tls11 'tls12)
+	   (or/c ssl-client-context? ssl-protocol-symbol/c)
            'auto])
          (values input-port? output-port?)]{
 
@@ -181,9 +176,7 @@ chain to it. If client credentials are required, use
 
 
 @defproc[(ssl-make-client-context
-          [protocol (or/c 'secure 'auto
-                          'sslv2-or-v3 'sslv2 'sslv3 'tls 'tls11 'tls12)
-                    'auto]
+          [protocol ssl-protocol-symbol/c 'auto]
           [#:private-key private-key
                          (or/c (list/c 'pem path-string?)
                                (list/c 'der path-string?)
@@ -209,19 +202,18 @@ The @racket[protocol] should be one of the following:
 from those that this library considers sufficiently secure---currently
 TLS versions 1.0 and higher, but subject to change.}
 @item{@racket['tls12] : Only TLS protocol version 1.2.}
+@item{@racket['tls13] : Only TLS protocol version 1.3.}
 ]
-Note that later TLS versions are supported, but there is no corresponding
-@racket[protocol] symbol; using @racket['secure] is best and forward-compatible.
 The following @racket[protocol] symbols are deprecated but still supported:
 @itemlist[
 @item{@racket['sslv2-or-v3] : Alias for @racket['auto]. Note that
 despite the name, neither SSL 2.0 nor 3.0 are considered sufficiently
 secure, so this @racket[protocol] no longer allows either of them.}
-@item{@racket['sslv2] : SSL protocol version 2.0. @bold{Insecure.}
+@item{@racket['sslv2] : SSL protocol version 2.0. @bold{Deprecated by RFC 6176 (2011).}
 Note that SSL 2.0 support has been removed from many platforms.}
-@item{@racket['sslv3] : SSL protocol version 3.0. @bold{Insecure.}}
-@item{@racket['tls] : Only TLS protocol version 1.0.}
-@item{@racket['tls11] : Only TLS protocol version 1.1.}
+@item{@racket['sslv3] : SSL protocol version 3.0. @bold{Deprecated by RFC 7568 (2015).}}
+@item{@racket['tls] : Only TLS protocol version 1.0. @bold{Deprecated by RFC 8996 (2021).}}
+@item{@racket['tls11] : Only TLS protocol version 1.1. @bold{Deprecated by RFC 8996 (2021).}}
 ]
 
 Not all protocol versions are supported by all servers. The
@@ -247,10 +239,21 @@ in other kind of servers.
 arguments.}
 ]}
 
+@defthing[ssl-protocol-symbol/c contract?
+          #:value (or/c 'secure 'auto 'sslv2-or-v3
+                        'sslv2 'sslv3 'tls 'tls11 'tls12 'tls13)]{
+
+Contract for symbols representing SSL/TLS protocol versions. See
+@racket[ssl-make-client-context] for an explanation of how the symbols are
+interpreted.
+
+@history[
+#:added "8.6.0.4"
+#:changed "8.6.0.4" @elem{Added @racket['tls13].}
+]}
 
 @defproc[(supported-client-protocols)
-         (listof (or/c 'secure 'auto
-                       'sslv2-or-v3 'sslv2 'sslv3 'tls 'tls11 'tls12))]{
+         (listof ssl-protocol-symbol/c)]{
 
 Returns a list of symbols representing protocols that are supported
 for clients on the current platform.
@@ -265,13 +268,21 @@ Returns @racket[#t] if @racket[v] is a value produced by
 
 @history[#:added "6.0.1.3"]}
 
-@defproc[(ssl-max-client-protocol) (or/c 'sslv2 'sslv3 'tls 'tls11 'tls12 #f)]{
+@defproc[(ssl-max-client-protocol) (or/c ssl-protocol-symbol/c #f)]{
 
 Returns the most recent SSL/TLS protocol version supported by the
 current platform for client connections.
 
 @history[#:added "6.1.1.3"]
 }
+
+@defproc[(ssl-protocol-version [p ssl-port?])
+         ssl-protocol-symbol/c]{
+
+Returns a symbol representing the SSL/TLS protocol version negotiated for the
+connection represented by @racket[p].
+
+@history[#:added "8.6.0.4"]}
 
 @; ----------------------------------------------------------------------
 
@@ -283,9 +294,7 @@ current platform for client connections.
 	  [reuse? any/c #f]
 	  [hostname-or-#f (or/c string? #f) #f]
 	  [server-protocol
-	   (or/c ssl-server-context? 
-                 'secure 'auto
-                 'sslv2-or-v3 'sslv2 'sslv3 'tls 'tls11 'tls12)
+	   (or/c ssl-server-context?  ssl-protocol-symbol/c)
            'auto])
 	 ssl-listener?]{
 
@@ -356,9 +365,7 @@ Returns @racket[#t] of @racket[v] is an SSL port produced by
 
 
 @defproc[(ssl-make-server-context
-          [protocol (or/c 'secure 'auto
-                          'sslv2-or-v3 'sslv2 'sslv3 'tls 'tls11 'tls12)
-                    'auto]
+          [protocol ssl-protocol-symbol/c 'auto]
           [#:private-key private-key
                          (or/c (list/c 'pem path-string?)
                                (list/c 'der path-string?)
@@ -388,8 +395,7 @@ Returns @racket[#t] if @racket[v] is a value produced by
 @racket[ssl-make-server-context], @racket[#f] otherwise.}
 
 @defproc[(supported-server-protocols)
-         (listof (or/c 'secure 'auto
-                       'sslv2-or-v3 'sslv2 'sslv3 'tls 'tls11 'tls12))]{
+         (listof ssl-protocol-symbol/c)]{
 
 Returns a list of symbols representing protocols that are supported
 for servers on the current platform.
@@ -397,7 +403,7 @@ for servers on the current platform.
 @history[#:added "6.0.1.3"
          #:changed "6.3.0.12" @elem{Added @racket['secure].}]}
 
-@defproc[(ssl-max-server-protocol) (or/c 'sslv2 'sslv3 'tls 'tls11 'tls12 #f)]{
+@defproc[(ssl-max-server-protocol) (or/c ssl-protocol-symbol/c #f)]{
 
 Returns the most recent SSL/TLS protocol version supported by the
 current platform for server connections.
@@ -419,9 +425,7 @@ current platform for server connections.
                            ssl-make-server-context 
                            ssl-make-client-context)
                        protocol)]
-	   [#:encrypt protocol (or/c 'secure 'auto
-                                     'sslv2-or-v3 'sslv2 'sslv3 'tls 'tls11 'tls12)
-                      'auto]
+	   [#:encrypt protocol ssl-protocol-symbol/c 'auto]
 	   [#:close-original? close-original? boolean? #f]
 	   [#:shutdown-on-close? shutdown-on-close? boolean? #f]
 	   [#:error/ssl error procedure? error]
@@ -482,7 +486,8 @@ If @racket[alpn-protocols] is not empty and @racket[mode] is
 @hyperlink[alpn-url]{ALPN}; see also @racket[ssl-connect] and
 @racket[ssl-get-alpn-selected]. If @racket[alpn-protocols] is not
 empty and @racket[mode] is @racket['accept], an exception
-(@racket[exn:fail]) is raised.
+(@racket[exn:fail]) is raised; use @racket[ssl-set-server-alpn!] to set
+the ALPN protocols for a server context.
 
 @history[#:changed "8.0.0.13" @elem{Added @racket[#:alpn] argument.}]}
 
@@ -495,7 +500,7 @@ empty and @racket[mode] is @racket['accept], an exception
             [src (or/c path-string?
                        (list/c 'directory path-string?)
                        (list/c 'win32-store string?)
-                       (list/c 'macosx-keychain path-string?))]
+                       (list/c 'macosx-keychain (or/c #f path-string?)))]
             [#:try? try? any/c #f])
          void?]{
 
@@ -522,6 +527,11 @@ needs verification.}
 certificates from the store named @racket[_store] are loaded
 immediately. Only supported on Windows.}
 
+@item{If @racket[src] is @racket[(list 'macosx-keychain #f)], then the
+certificates from the Mac OS trust anchor (root) certificates (as
+returned by @hyperlink["https://developer.apple.com/documentation/security/1401507-sectrustcopyanchorcertificates"]{@tt{SecTrustCopyAnchorCertificates}})
+are loaded immediately. Only supported on Mac OS.}
+
 @item{If @racket[src] is @racket[(list 'macosx-keychain _path)], then
 the certificates from the keychain stored at @racket[_path] are loaded
 immediately. Only supported on Mac OS.}
@@ -536,13 +546,15 @@ failure is ignored.
 You can use the file @filepath{test.pem} of the @filepath{openssl}
 collection for testing purposes. Since @filepath{test.pem} is public,
 such a test configuration obviously provides no security.
-}
+
+@history[#:changed "8.4.0.5" @elem{Added @racket[(list 'macosx-keychain #f)]
+                             variant.}]}
 
 @defparam[ssl-default-verify-sources srcs
           (let ([source/c (or/c path-string?
                                 (list/c 'directory path-string?)
                                 (list/c 'win32-store string?)
-                                (list/c 'macosx-keychain path-string?))])
+                                (list/c 'macosx-keychain (or/c #f path-string?)))])
             (listof source/c))]{
 
 Holds a list of verification sources, used by
@@ -555,16 +567,16 @@ on the platform:
 @tt{SSL_CERT_FILE} and @tt{SSL_CERT_DIR} environment variables, if the
 variables are set, or the system-wide default locations otherwise.}
 
-@item{On Mac OS, the default sources consist of the system keychain
-for root certificates: @racket['(macosx-keychain
-"/System/Library/Keychains/SystemRootCertificates.keychain")].}
+@item{On Mac OS, the default sources consist of the OS trust anchor
+(root) certificates: @racket['(macosx-keychain #f)].}
 
 @item{On Windows, the default sources consist of the system
 certificate store for root certificates: @racket['(win32-store
 "ROOT")].}
 
 ]
-}
+
+@history[#:changed "8.4.0.5" @elem{Changed default source on Mac OS.}]}
 
 @defproc[(ssl-load-default-verify-sources!
            [context (or/c ssl-client-context? ssl-server-context?)])
@@ -726,7 +738,7 @@ The client sends this information via the TLS
 extension, which was created to allow @hyperlink["http://en.wikipedia.org/wiki/Virtual_hosting"]{virtual hosting}
 for secure servers.
 
-The suggested use it to prepare the appropriate server contexts, 
+The suggested use is to prepare the appropriate server contexts,
 define a single callback which can dispatch between them, and then
 apply it to all the contexts before sealing them. A minimal example:
 
@@ -759,11 +771,75 @@ using the original server context.
 
 }
 
+@defproc[(ssl-set-server-alpn! [context ssl-server-context?]
+                               [alpn-protocols (listof bytes?)]
+                               [allow-no-match? boolean? #t])
+         void?]{
+
+Sets the @hyperlink[alpn-url]{ALPN} protocols supported by the server
+context. The protocols are listed in order of preference,
+most-preferred first. That is, when a client connects, the server
+selects the first protocol in its @racket[alpn-protocols] that is
+supported by the client. If the client does not use ALPN, then the
+connection is accepted and no protocol is selected. If the client uses
+ALPN but has no protocols in common with the server, then if
+@racket[allow-no-match?] is true, the connection is accepted and no
+protocol is selected; if @racket[allow-no-match?]  is false, then the
+connection is refused.
+
+@history[#:added "8.4.0.5"]}
+
+@defproc[(ssl-set-keylogger! [context (or/c ssl-server-context? ssl-client-context?)]
+                             [logger (or/c #f logger?)]) void?]{
+
+Instructs the @racket[context] to log a message to @racket[logger]
+whenever TLS key material is generated or received.  The message is
+logged with its level set to @racket['debug], its topic set to
+@racket['openssl-keylogger], and its associated data is a byte string
+representing the key material.  When @racket[logger] is @racket[#f],
+the context is instructed to stop logging this information.
+
+@bold{Warning:} if @racket[logger] has any ancestors, then this
+information may also be available to them, depending on the logger's
+propagation settings.
+
+Debugging is the typical use case for this functionality.  The owner
+of a context can use it to write key material to a file to be consumed
+by tools such as Wireshark.  In the following example, anyone with
+access to @filepath{keylogfile.txt} is able to decrypt connections made via
+@racket[ctx]:
+
+@racketblock[
+  (define out
+    (open-output-file
+     #:exists 'append
+     "keylogfile.txt"))
+  (define logger
+    (make-logger))
+  (void
+   (thread
+    (lambda ()
+      (define receiver
+        (make-log-receiver logger 'debug 'openssl-keylogger))
+      (let loop ()
+        (match-define (vector _ _ key-data _)
+          (sync receiver))
+        (write-bytes key-data out)
+        (newline out)
+        (flush-output out)
+        (loop)))))
+
+  (define ctx (ssl-make-client-context 'auto))
+  (ssl-set-keylogger! ctx logger)
+]
+
+@history[#:added "8.7.0.8"]}
+
 @; ----------------------------------------------------------------------
 @section[#:tag "peer-verif"]{Peer Verification}
 
 @defproc[(ssl-set-verify! [clp (or/c ssl-client-context? ssl-server-context?
-                                     ssl-listener? ssl-port?)] 
+                                     ssl-listener? ssl-port?)]
                           [on? any/c])
          void?]{
 
@@ -856,24 +932,43 @@ If @racket[ssl-peer-verified?] would return @racket[#t] for
 the certificate presented by the SSL port's peer, otherwise the result
 is @racket[#f].}
 
+@defproc[(ssl-default-channel-binding [p ssl-port?])
+         (list/c symbol? bytes?)]{
+
+Returns the default channel binding type and value for @racket[p], based on the
+connection's TLS protocol version. Following
+@hyperlink["https://datatracker.ietf.org/doc/html/rfc9266#section-3"]{RFC 9266 Section 3},
+the result uses @racket['tls-exporter] for TLS 1.3 and later;
+it uses @racket['tls-unique] for TLS 1.2 and earlier.
+
+@history[#:added "8.6.0.4"]}
+
 @defproc[(ssl-channel-binding [p ssl-port?]
-                              [type (or/c 'tls-unique 'tls-server-end-point)])
+                              [type (or/c 'tls-exporter
+                                          'tls-unique
+                                          'tls-server-end-point)])
          bytes?]{
 
 Returns channel binding information for the TLS connection of
 @racket[p]. An authentication protocol run over TLS can incorporate
-information identifying the TLS connection (@racket['tls-unique]) or
+information identifying the TLS connection (@racket['tls-exporter] or
+@racket['tls-unique]) or
 server certificate (@racket['tls-server-end-point]) into the
 authentication process, thus preventing the authentication steps from
 being replayed on another channel. Channel binding is described in
 general in @hyperlink["https://tools.ietf.org/html/rfc5056"]{RFC 5056};
 channel binding for TLS is described in
-@hyperlink["https://tools.ietf.org/html/rfc5929"]{RFC 5929}.
+@hyperlink["https://tools.ietf.org/html/rfc5929"]{RFC 5929} and
+@hyperlink["https://datatracker.ietf.org/doc/html/rfc9266"]{RFC 9266}.
 
 If the channel binding cannot be retrieved (for example, if the
 connection is closed), an exception is raised.
 
-@history[#:added "7.7.0.9"]}
+@history[
+#:added "7.7.0.9"
+#:changed "8.6.0.4" @elem{Added @racket['tls-exporter]. An exception is raised
+for @racket['tls-unique] with a TLS 1.3 connection.}
+]}
 
 
 @defproc[(ssl-get-alpn-selected [p ssl-port?])
@@ -882,16 +977,11 @@ connection is closed), an exception is raised.
 Returns the ALPN protocol selected during negotiation, or @racket[#f]
 if no protocol was selected.
 
-This library currently only supports ALPN for client connections.
-
-According to @hyperlink["https://tools.ietf.org/html/rfc7301"]{RFC
-7301}, if a server does not support any of the protocols proposed by
-the client, it must reject the connection with a
-``no_application_protocol'' alert. In practice, however, some servers
-simply continue without selecting an application protocol (see
-@hyperlink["https://github.com/openssl/openssl/issues/2708"]{this
-OpenSSL bug}, for example), so it is recommended to always check the
-selected protocol after making a connection.
+If a server does not support any of the protocols proposed by a
+client, it might reject the connection or it might accept the
+connection without selecting an application protocol. So it is
+recommended to always check the selected protocol after making a
+connection.
 
 @history[#:added "8.0.0.13"]}
 

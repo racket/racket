@@ -155,7 +155,7 @@ Nothing special is done by \scheme{define-integrable} to maintain lexical
 scoping, since lexical scoping is maintained automatically by the
 expander.
 
-{\ChezScheme} integrate locally defined procedures automatically when it is
+{\ChezScheme} integrates locally defined procedures automatically when it is
 appropriate to do so.
 It cannot integrate procedures defined at top-level,
 however, since code that assigns top-level variables can be introduced
@@ -1527,21 +1527,6 @@ rather than:
 \endschemedisplay
 
 
-\section{Unsafety\label{SECTSYNTAXBEGINUNSAFE}}
-
-%----------------------------------------------------------------------------
-\noskipentryheader
-\formdef{begin-unsafe}{\categorysyntax}{(begin-unsafe \var{e_1} \var{e_2} \dots)}
-\returns value of last \var{e}
-\listlibraries
-\endentryheader
-
-\scheme{begin-unsafe} is like \scheme{begin} in an expression
-position, but it sets \scheme{optimize-level} to 3 while expanding the
-body expressions---which, for example, causes references to primitives
-to refer to unsafe variants.
-
-
 \section{Annotations\label{SECTSYNTAXANNOTATIONS}}
 
 \index{annotations}%
@@ -1618,7 +1603,7 @@ be positive exact integers.
 \index{source-file descriptors}%
 Source-file descriptors are also values of a type distinct
 from all other types and have two components: the file's path,
-represented by a string, and a checksum, represented by a number.
+usually represented by a string, and a checksum, represented by a number.
 The path might or might not be an absolute path depending on how
 the file's path was specified when the source-file descriptor was
 created.
@@ -1659,6 +1644,7 @@ and described in more detail later in this section.
 
 (make-source-file-descriptor \var{obj} \var{binary-input-port}) ;-> \var{sfd}
 (make-source-file-descriptor \var{obj} \var{binary-input-port} \var{reset?}) ;-> \var{sfd}
+(source-file-descriptor \var{obj} \var{checksum}) ;-> \var{sfd}
 (source-file-descriptor? \var{obj}) ;-> \var{boolean}
 (source-file-descriptor-checksum \var{sfd}) ;-> \var{obj}
 (source-file-descriptor-path \var{sfd}) ;-> \var{obj}
@@ -1773,7 +1759,7 @@ marked \scheme{profile} are used for profiling.
 
 %----------------------------------------------------------------------------
 \entryheader
-\formdef{annotation-options}{\categoryprocedure}{(annotation-options \var{annotation})}
+\formdef{annotation-option-set}{\categoryprocedure}{(annotation-option-set \var{annotation})}
 \returns the options enumeration set of \var{annotation}
 \listlibraries
 \endentryheader
@@ -1843,7 +1829,7 @@ should not be greater than \var{efp}.
 \scheme{current-make-source-object} is used by the reader to construct
 a source object for an annotation. \scheme{current-make-source-object}
 is initially bound to \scheme{make-source-object}, and the reader always
-calls the function bound to the paramater with three arguments.
+calls the function bound to the parameter with three arguments.
 
 Adjust this parameter to, for example, eagerly convert a position integer
 to a file-position object, instead of delaying the conversion to
@@ -1890,18 +1876,19 @@ source file descriptor can have any value representing a path.
 
 %----------------------------------------------------------------------------
 \entryheader
-\formdef{source-file-descriptor}{\categoryprocedure}{(source-file-descriptor \var{obj} \var{checksum})}
+\formdef{source-file-descriptor}{\categoryprocedure}{(source-file-descriptor \var{path} \var{checksum})}
 \returns a new source-file-descriptor
 \listlibraries
 \endentryheader
 
-\var{checksum} must be an exact nonnegative integer.
+\var{checksum} must be an exact nonnegative integer.  \var{path} is usually a string, but
+may be any object.
 This procedure can be used to construct custom source-file descriptors or to reconstitute
 source-file descriptors from the \var{path} and \var{checksum} components.
 
 %----------------------------------------------------------------------------
 \entryheader
-\formdef{annotation-option-set}{\categorysyntax}{(annotation-option-set \var{symbol} \dots)}
+\formdef{annotation-options}{\categorysyntax}{(annotation-options \var{symbol} \dots)}
 \returns an annotation-options enumeration set
 \listlibraries
 \endentryheader
@@ -1909,7 +1896,7 @@ source-file descriptors from the \var{path} and \var{checksum} components.
 \noindent
 Annotation-options enumeration sets may be passed to \scheme{make-annotation} to
 control whether the annotation is used for debugging, profiling, both, or neither.
-Accordingly, each \var{symbol} must be either \var{debug} or \scheme{profile}.
+Accordingly, each \var{symbol} must be either \scheme{debug} or \scheme{profile}.
 
 %----------------------------------------------------------------------------
 \entryheader
@@ -2001,7 +1988,7 @@ this procedure returns the path in
 \var{source-objects}'s sfd, \var{source-object}'s line, and
 \var{source-objects}'s column.
 
-If \var{source-object} has no line and column, then
+Otherwise,
 this procedure calls \scheme{locate-source} on
 \var{source-object}'s sfd, either \var{source-object}'s bfp or efp
 depending on \var{get-start?}, and \var{use-cache?}.

@@ -325,6 +325,26 @@
                          "not the error!"))
          #t)
    #t)
+
+  (test/spec-passed/result
+   'and/c-real-chaperone.1
+   '(let ()
+      (define n "original")
+      (contract (and/c (chaperone-procedure real? (λ (x) (set! n "updated") x))
+                       negative?)
+                -1 'pos 'neg)
+      n)
+   "updated")
+
+  (test/spec-passed/result
+   'and/c-real-chaperone.2
+   '(let ()
+      (define n "original")
+      (contract (and/c (chaperone-procedure exact-nonnegative-integer? (λ (x) (set! n "updated") x))
+                       (between/c 2 10))
+                5 'pos 'neg)
+      n)
+   "updated")
   
   (test/spec-passed
    'contract-flat1

@@ -12,6 +12,8 @@ When a thread is created, it is placed into the management of the
 @tech{current custodian} and added to the current @tech{thread
 group}. A thread can have any number of custodian managers added
 through @racket[thread-resume].
+The allocation made by a thread is accounted to the thread's custodian managers.
+See @racket[custodian-limit-memory] for examples.
 
 A thread that has not terminated can be garbage collected (see
 @secref["gc-model"]) if it is unreachable and suspended or if it is
@@ -194,18 +196,38 @@ otherwise.}
 
 Blocks execution of the current thread until @racket[thd] has
 terminated. Note that @racket[(thread-wait (current-thread))]
-deadlocks the current thread, but a break can end the deadlock (if
-breaking is enabled; see @secref["breakhandler"]).}
+deadlocks the current thread, but a break can end the deadlock if
+breaking is enabled and if the thread is the main thread or otherwise
+accessible; see @secref["breakhandler"].
+
+Unless @racket[thd] was created with @racket[thread/suspend-to-kill],
+a @racket[(thread-wait thd)] may potentially continue even if
+@racket[thd] is otherwise inaccessible, because a @tech{custodian}
+shut down could terminate the thread. As a result, a thread blocking
+with @racket[thread-wait] normally cannot be garbage collected (see
+@secref["gc-model"]). As a special case, however, @racket[(thread-wait
+thd)] blocks without preventing garbage collection of the thread if
+@racket[thd] is the current thread, since the thread could only
+continue if a break escapes from the wait.}
 
 @defproc[(thread-dead-evt [thd thread?]) evt?]{
 
 Returns a @tech{synchronizable event} (see @secref["sync"]) that is
-@tech{ready for synchronization} if and only if @racket[thd] has terminated.  Unlike using
-@racket[thd] directly, however, a reference to the event does not
+@tech{ready for synchronization} if and only if @racket[thd] has terminated. Unlike using
+@racket[thd] directly, however, retaining a reference to the event does not
 prevent @racket[thd] from being garbage collected (see
-@secref["gc-model"]). For a given @racket[thd],
-@racket[thread-dead-evt] always returns the same (i.e., @racket[eq?])
-result. @ResultItself{thread-dead event}.}
+@secref["gc-model"]). @ResultItself{thread-dead event}.
+
+A thread waiting on the result of @racket[(thread-dead-evt thd)]
+normally cannot itself be garbage collected, unless @racket[thd] was
+created with @racket[thread/suspend-to-kill], along the same lines as
+waiting via @racket[thread-wait]. However, there is no special case
+for waiting on the result of @racket[(thread-dead-evt thd)] where
+@racket[thd] is the current thread.
+
+For a given @racket[thd], @racket[thread-dead-evt] always returns the
+same (i.e., @racket[eq?]) result.}
+
 
 @defproc[(thread-resume-evt [thd thread?]) evt?]{
 
@@ -225,12 +247,23 @@ Returns a @tech{synchronizable event} (see @secref["sync"]) that
 becomes @tech{ready for synchronization} when @racket[thd] is suspended.  (If @racket[thd] has
 terminated, the event will never unblock.)  If @racket[thd] is
 suspended and then resumes after a call to
-@racket[thread-suspend-evt], the result event remains ready; after
-each resume of @racket[thd] created a fresh event to be returned by
+@racket[thread-suspend-evt], the result event remains ready;
+each resume of @racket[thd] creates a fresh event to be returned by
 @racket[thread-suspend-evt]. The
-result of the event is @racket[thd], but if @racket[thd] is never
+result of the event is @racket[thd], but if @racket[thd] was created
+with @racket[thread] (as opposed to @racket[thread/suspend-to-kill]) and is never
 resumed, then reference to the event does not prevent @racket[thd]
-from being garbage collected (see @secref["gc-model"]).}
+from being garbage collected (see @secref["gc-model"]).
+
+If @racket[thd] was created with @racket[thread/suspend-to-kill], then
+waiting on @racket[(thread-suspend-evt thd)] prevents garbage
+collection of the waiting thread in the same way as
+@racket[(thread-dead-evt _another-thd)] for a @racket[_another-thd]
+created via @racket[thread]. Furthermore, since the event result is
+@racket[thd], waiting on @racket[(thread-suspend-evt thd)] prevents
+garbage collection of @racket[thd].
+
+}
 
 @;------------------------------------------------------------------------
 @section[#:tag "threadmbox"]{Thread Mailboxes}

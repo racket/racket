@@ -35,7 +35,7 @@ parsing of a module.
 The syntax of a @racket[_language] intentionally overlaps with the
 syntax of a module path as used in @racket[require] or as a
 @tech{module language}, so that names like @racketmodname[racket],
-@racketmodname[racket/base], @racketmodname[slideshow], or
+@racketmodname[racket/base], @racketmodname[slideshow #:indirect], or
 @racketmodname[scribble/manual] can be used both as @hash-lang[]
 languages and as module paths.
 
@@ -342,10 +342,10 @@ prints the list in the usual Racket result format:
 ]
 
 However, if @filepath{death-list-5.rkt} is required by a
-@filepath{kiddo.rkt} that is implemented with @racketmodname[scheme]
+@filepath{kiddo.rkt} that is implemented with @racketmodname[scheme #:indirect]
 instead of @racketmodname[racket]:
 
-@racketmodfile["kiddo.rkt"]
+@racketmod[#:file "kiddo.rkt" (racketmodname scheme #:indirect) (require "death-list-5.rkt")]
 
 then, if you run @filepath{kiddo.rkt} file in DrRacket or if you run it
 directly with @exec{racket}, @filepath{kiddo.rkt} causes

@@ -620,19 +620,18 @@ ac_includes_default="\
 # include <unistd.h>
 #endif"
 
-enable_option_checking=no
 ac_subst_vars='LTLIBOBJS
 LIBOBJS
-subdirs
+upsrcdir
+CFLAGS_FOR_BUILD
+CC_FOR_BUILD
+RKTIO_CONFIGURE_ARGS
+LIBFFI_CONFIGURE_ARGS
+INSTALL_NAME_TOOL
 CROSS_COMPILE_TARGET_KIND
-STARTUP_AS_AUTO
-STARTUP_AS_C
-STARTUP_AS_BYTECODE
-BOOT_MODE
-CGC_IF_NEEDED_FOR_MMM
-RUN_RACKET_MAIN_VARIANT
-RUN_RACKET_MMM
-RUN_RACKET_CGC
+ENABLE_CIFY
+SETUP_BOOT_MODE
+RACKET
 INSTALL_LIBS_ENABLE
 INSTALL_SETUP_RACKET_FLAGS
 INSTALL_SETUP_FLAGS
@@ -643,13 +642,12 @@ FOREIGNTARGET
 FOREIGN_CONVENIENCE
 FOREIGN_OBJSLIB
 FOREIGN_IF_USED
+LIBFFI_BUILD_ENABLED
+FOREIGN_ENABLED
 EXTRA_OSK_LIBS
 OSKHOME
 DLLTOOL
 WINDRES
-DIRCVTPOST
-DIRCVTPRE
-PWD
 WX_MMD_FLAG
 INCLUDEDEP
 USE_WXPRECOMP
@@ -662,18 +660,15 @@ ICP
 WXVARIANT
 WXLIBS
 LIBSFX
+MACH
 OWN_LIBFFI
 SO_SUFFIX
 EXE_SUFFIX
-FRAMEWORK_PREFIX
 FRAMEWORK_REL_INSTALL
 FRAMEWORK_INSTALL_DIR
-NOT_MINGW
 MINGW
-NOT_OSX
 OSX
-EXTRA_GMP_DEP
-EXTRA_GMP_OBJ
+EXTRA_GMP_NAME
 MZINSTALLBINDIR
 MZINSTALLTARGET
 MZBINTARGET
@@ -681,7 +676,6 @@ XFORMFLAGS
 GCDIR
 MROPTIONS
 GC2OPTIONS
-CGCOPTIONS
 MZOPTIONS
 OPTIONS
 X_EXTRA_LIBS
@@ -826,6 +820,7 @@ enable_dynlib
 enable_lt
 enable_libs
 enable_libffi
+enable_iconv
 enable_curses
 enable_curseslib
 enable_sdk
@@ -835,9 +830,13 @@ enable_libfw
 enable_userfw
 enable_embedfw
 enable_mac64
-enable_bcdefault
-enable_csonly
 enable_csdefault
+enable_csonly
+enable_cs
+enable_bcdefault
+enable_bconly
+enable_bc
+enable_cgcdefault
 enable_sgc
 enable_sgcdebug
 enable_generations
@@ -849,6 +848,8 @@ enable_bigendian
 enable_ffipoll
 enable_gprof
 enable_gcov
+enable_postlink
+enable_strip
 enable_noopt
 enable_ubsan
 enable_jitframe
@@ -864,7 +865,7 @@ LDFLAGS
 LIBS
 CPPFLAGS
 CPP'
-ac_subdirs_all='foreign/libffi '
+
 
 # Initialize some variables set by options.
 ac_init_help=
@@ -1490,12 +1491,14 @@ Optional Features:
   --enable-lt=<prog>      use <prog> instead of libtool; disable to use bundled
   --enable-libs           install static libraries (enabled by default for Unix)
   --enable-libffi         use installed libffi (enabled by default for Unix)
+  --enable-iconv          use iconv (usually auto-enabled)
   --enable-curses         use curses (usually auto-enabled)
   --enable-curseslib=<libs> use <libs> for linking to curses library
   --enable-sdk=<path>     use Mac OS 10.4 SDK directory
   --enable-sdk5=<path>    use Mac OS 10.5 SDK directory
   --enable-sdk6=<path>    use Mac OS 10.6 SDK directory
   --enable-sdk9=<path>    use Mac OS 10.9 SDK directory
+  --enable-sdk11=<path>   use Mac OS 11.0 SDK directory
   --enable-ios=<path>     use iOS SDK directory
   --enable-sysroot=<path> use sysroot directory (e.g., for Android)
   --enable-xonx           use Unix style (e.g., use Gtk) for Mac OS
@@ -1504,11 +1507,14 @@ Optional Features:
   --enable-userfw         install Mac OS frameworks to ~/Library/Frameworks
   --enable-embedfw        embed Mac OS framework content in executables
   --enable-mac64          allow 64-bit Mac OS build (enabled by default)
-  --enable-bcdefault      install BC without suffix
-  --enable-bconly         BC default, and skip CS build
   --enable-csdefault      install CS without suffix
   --enable-csonly         CS default, and skip BC build
-  --enable-sgc            obsolte; Senora GC is always enabled
+  --enable-cs             CS enabled
+  --enable-bcdefault      install BC without suffix
+  --enable-bconly         BC default, and skip CS build
+  --enable-bc             BC enabled
+  --enable-cgcdefault     BC CGC default (discouraged)
+  --enable-sgc            obsolete; Senora GC is always enabled for CGC
   --enable-sgcdebug       use Senora GC for debugging (expensive; CGC only)
   --enable-generations    3m: support generational GC (enabled by default)
   --enable-backtrace      3m: support GC backtrace dumps (expensive debug mode)
@@ -1519,6 +1525,7 @@ Optional Features:
   --enable-ffipoll        FFI calls only when embedding program explicitly polls
   --enable-gprof          compile for profiling with gprof (gcc only)
   --enable-gcov           compile to gather gcov statistics (gcc3 only)
+  --enable-postlink=<cmd> apply <cmd> to executable after linking
   --enable-strip          strip debug on install (usually enabled by default)
   --enable-noopt          drop -O C flags (useful for low-level debugging)
   --enable-ubsan          compile with -fsanitize=undefined
@@ -2769,6 +2776,12 @@ else
   enable_libffi=default
 fi
 
+# Check whether --enable-iconv was given.
+if test "${enable_iconv+set}" = set; then :
+  enableval=$enable_iconv;
+fi
+
+
 
 # Check whether --enable-curses was given.
 if test "${enable_curses+set}" = set; then :
@@ -2781,6 +2794,11 @@ if test "${enable_curseslib+set}" = set; then :
 fi
 
 
+
+# Check whether --enable-sdk was given.
+if test "${enable_sdk+set}" = set; then :
+  enableval=$enable_sdk;
+fi
 
 # Check whether --enable-sdk was given.
 if test "${enable_sdk+set}" = set; then :
@@ -2846,16 +2864,6 @@ fi
 
 
 
-# Check whether --enable-bcdefault was given.
-if test "${enable_bcdefault+set}" = set; then :
-  enableval=$enable_bcdefault;
-fi
-
-# Check whether --enable-csonly was given.
-if test "${enable_csonly+set}" = set; then :
-  enableval=$enable_csonly;
-fi
-
 # Check whether --enable-csdefault was given.
 if test "${enable_csdefault+set}" = set; then :
   enableval=$enable_csdefault;
@@ -2864,6 +2872,31 @@ fi
 # Check whether --enable-csonly was given.
 if test "${enable_csonly+set}" = set; then :
   enableval=$enable_csonly;
+fi
+
+# Check whether --enable-cs was given.
+if test "${enable_cs+set}" = set; then :
+  enableval=$enable_cs;
+fi
+
+# Check whether --enable-bcdefault was given.
+if test "${enable_bcdefault+set}" = set; then :
+  enableval=$enable_bcdefault;
+fi
+
+# Check whether --enable-bconly was given.
+if test "${enable_bconly+set}" = set; then :
+  enableval=$enable_bconly;
+fi
+
+# Check whether --enable-bc was given.
+if test "${enable_bc+set}" = set; then :
+  enableval=$enable_bc;
+fi
+
+# Check whether --enable-cgcdefault was given.
+if test "${enable_cgcdefault+set}" = set; then :
+  enableval=$enable_cgcdefault;
 fi
 
 
@@ -2932,9 +2965,16 @@ if test "${enable_gcov+set}" = set; then :
 fi
 
 
-# Check whether --enable-noopt was given.
-if test "${enable_noopt+set}" = set; then :
-  enableval=$enable_noopt;
+# Check whether --enable-postlink was given.
+if test "${enable_postlink+set}" = set; then :
+  enableval=$enable_postlink;
+fi
+
+
+
+# Check whether --enable-strip was given.
+if test "${enable_strip+set}" = set; then :
+  enableval=$enable_strip;
 fi
 
 
@@ -3458,12 +3498,7 @@ if test "${enable_racket}" != "" ; then
   if test "${enable_racket}" = "auto" ; then
     echo "=== Creating and using local Racket executable"
   else
-    if test ! -f "${enable_racket}"; then
-      echo "cannot find racket executable in ${enable_racket}"
-      exit 1
-    else
-      echo "=== Using Racket executable ${enable_racket}"
-    fi
+    echo "=== Using Racket executable ${enable_racket}"
   fi
 fi
 
@@ -3513,9 +3548,10 @@ MZINSTALLTARGET=unix-install
 MZINSTALLBINDIR='$(bindir)'
 
 MZOPTIONS=
-CGCOPTIONS=
 GC2OPTIONS=
 DYN_CFLAGS=
+
+RACKET=
 
 WXVARIANT="wx_xt"
 
@@ -3523,9 +3559,6 @@ MROPTIONS=
 INCLUDEDEP="#"
 WX_MMD_FLAG=
 
-DIRCVTPRE=
-DIRCVTPOST=
-PWD=pwd
 WINDRES=windres
 DLLTOOL=dlltool
 
@@ -3540,8 +3573,6 @@ LIBRACKET_DEP=""
 EXE_SUFFIX=
 SO_SUFFIX=.so
 
-POST_LINKER="echo"
-
 MMM=3m
 MMM_INSTALLED=
 MMM_CAP_INSTALLED=
@@ -3549,6 +3580,9 @@ CGC=cgc
 CGC_INSTALLED=cgc
 CGC_CAP_INSTALLED=CGC
 MAIN_VARIANT=3m
+
+# Needed only for Windows build on Windows
+MACH=unknown
 
 INSTALL_SETUP_FLAGS=
 INSTALL_SETUP_RACKET_FLAGS=
@@ -3563,19 +3597,17 @@ try_no_nullability_completeness=no
 check_for_unwind=no
 
 if test "${enable_cify}" = "yes" ; then
-  STARTUP_AS_BYTECODE=_bytecode
-  STARTUP_AS_C=
-  STARTUP_AS_AUTO=_auto
+  ENABLE_CIFY=yes
 else
   if test "${enable_cify}" = "no" ; then
-    STARTUP_AS_BYTECODE=
-    STARTUP_AS_C=_c
-    STARTUP_AS_AUTO=_auto
+    ENABLE_CIFY=no
   else
-    STARTUP_AS_BYTECODE=_bytecode
-    STARTUP_AS_C=_c
-    STARTUP_AS_AUTO=
+    ENABLE_CIFY=auto
   fi
+fi
+
+if test "${CC_FOR_BUILD}" = ""; then
+  CC_FOR_BUILD='$(PLAIN_CC) -O2'
 fi
 
 ###### OSKit stuff #######
@@ -4946,14 +4978,10 @@ fi
 EXTRALIBS=
 
 # for gmp assembly:
-EXTRA_GMP_OBJ=
-EXTRA_GMP_DEP=
+EXTRA_GMP_NAME=
 
-# For Racket targets:
-OSX=".osx"
-NOT_OSX=""
-MINGW=".mingw"
-NOT_MINGW=""
+OSX="f"
+MINGW="f"
 CGC_X86_64=""
 
 case "$host_os" in
@@ -4990,7 +5018,7 @@ case "$host_os" in
     LIBS="$LIBS -rdynamic"
     skip_curses_check=yes
     add_curses_lib="/usr/pkg/lib/libncurses.a"
-    POST_LINKER="paxctl +m"
+    default_post_linker="paxctl +m"
     ;;
   irix*)
     enable_cgcdefault="yes"
@@ -5000,7 +5028,7 @@ case "$host_os" in
       X_PRE_LIBS=""
     fi
     ;;
-  linux*)
+  linux*|gnu*)
     LIBS="$LIBS -ldl -lm -lrt -rdynamic"
     DYN_CFLAGS="-fPIC"
     curses_portable_link="/usr/lib/${host_cpu}-${host_os}/libncurses.a /usr/lib/${host_cpu}-${host_os}/libtermcap.a"
@@ -5014,16 +5042,14 @@ case "$host_os" in
       ppc|powerpc)
        ;;
       alpha)
-       EXTRA_GMP_OBJ='gmp_alpha_gcc.$(LTO)'
-       EXTRA_GMP_DEP='$(EXTRA_GMP_DEP_FILE)'
+       EXTRA_GMP_NAME='gmp_alpha_gcc.s'
        ;;
       i386|i486|i586|i686)
        enable_parallel_by_default=yes
        check_for_unwind=REG_ESP
        ;;
       arm*)
-       EXTRA_GMP_OBJ='gmp_arm_gcc.$(LTO)'
-       EXTRA_GMP_DEP='$(EXTRA_GMP_DEP_FILE)'
+       EXTRA_GMP_NAME='gmp_arm_gcc.S'
        ;;
       *)
        ;;
@@ -5034,8 +5060,7 @@ case "$host_os" in
     if test "$CC" = "cc" ; then
       COMPFLAGS="$COMPFLAGS -ieee_with_inexact -assume noaligned_objects"
     elif test "$CC" = "gcc" ; then
-      EXTRA_GMP_OBJ='gmp_alpha_gcc.$(LTO)'
-      EXTRA_GMP_DEP='$(EXTRA_GMP_DEP_FILE)'
+      EXTRA_GMP_NAME='gmp_alpha_gcc.S'
     fi
     ;;
   hpux*)
@@ -5046,7 +5071,6 @@ case "$host_os" in
       CFLAGS="$CFLAGS -Wp,-H,64000"
       PREFLAGS="$PREFLAGS -D_HPUX_SOURCE"
       COMPFLAGS="$COMPFLAGS -Aa +Z"
-      CGCOPTIONS="$CGCOPTIONS +ESdbgasm"
       MZOPTIONS="$MZOPTIONS +e"
     fi
     LIBS="$LIBS -Wl,-E"
@@ -5057,15 +5081,13 @@ case "$host_os" in
     use_flag_pthread=no
     skip_curses_check=yes
     MZOPTIONS="$MZOPTIONS -fno-omit-frame-pointer" # to make JIT backtraces work
-    MINGW=""
-    NOT_MINGW=".other"
+    MINGW="t"
+    WXVARIANT="wx_win"
     MZINSTALLTARGET=mingw-install
     MZINSTALLBINDIR="${MZINSTALLBINDIR}/.."
     EXE_SUFFIX=".exe"
     COLLECTS_PATH="collects"
-    GUI_COLLECTS_PATH="../collects"
     CONFIG_PATH="etc"
-    GUI_CONFIG_PATH="../etc"
     skip_iconv_check=yes
     check_for_mprotect=no
     # ".a" is typically not useful, since we always build a DLL:
@@ -5081,12 +5103,19 @@ $as_echo "#define HAVE_STDINT_H 1" >>confdefs.h
     if `which ${host}-dlltool > /dev/null` ; then
       DLLTOOL="${host}-dlltool"
     fi
-
-    case "$build_os" in
-      *cygwin*)
-        PWD="cygpath -m \\\`pwd\\\`"
-        DIRCVTPRE="\`cygpath -m "
-        DIRCVTPOST="\`"
+    case "$host_cpu" in
+      x86_64)
+        MACH="ta6nt"
+       ;;
+      x86|i*86)
+        MACH="ti3nt"
+        ;;
+      aarch64*|arm64*)
+        MACH="tarm64nt"
+        ;;
+      *)
+        echo "unknown Windows host CPU"
+        exit 1
         ;;
     esac
     ;;
@@ -5155,6 +5184,16 @@ $as_echo "#define HAVE_STDINT_H 1" >>confdefs.h
       fi
     fi
 
+    if test "${enable_sdk11}" != "" ; then
+      PREFLAGS="$PREFLAGS -isysroot ${enable_sdk11} -mmacosx-version-min=11.0"
+      LDFLAGS="$LDFLAGS -isysroot ${enable_sdk11} -mmacosx-version-min=11.0"
+      if test "$PROPAGATE_SUB_CONFIGURE" != "no" ; then
+        SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} CFLAGS="'"'"${CFLAGS}"'"'
+        SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} CPPFLAGS="'"'"${PREFLAGS}"'"'
+        SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} LDFLAGS="'"'"${LDFLAGS}"'"'
+      fi
+    fi
+
     # Force 32-bit build unless mac64 is enabled:
     if test "${enable_mac64}" != "yes" ; then
       if test "$host_cpu" != "powerpc" ; then
@@ -5183,6 +5222,8 @@ $as_echo "#define HAVE_STDINT_H 1" >>confdefs.h
       i386|x86_64)
        enable_parallel_by_default=yes
        ;;
+      aarch64*|arm64*)
+       ;;
       *)
        ;;
     esac
@@ -5207,30 +5248,25 @@ $as_echo "#define HAVE_STDINT_H 1" >>confdefs.h
       SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} LD="'"'"${LD}"'"'
     fi
 
+    LDFLAGS="$LDFLAGS -Wl,-headerpad_max_install_names"
+    LIBS="$LIBS -framework CoreFoundation"
+
     if test "${enable_quartz}" = "yes" ; then
       WXVARIANT="wx_mac"
       INCLUDEDEP="-include"
       OPTIONS="$OPTIONS -fno-common"
-      OSX=""
-      NOT_OSX=".other"
+      OSX="t"
       MZINSTALLTARGET=osx-install
       DYN_CFLAGS=""
       if test "${enable_libfw}" = "yes" ; then
         FRAMEWORK_INSTALL_DIR=/Library/Frameworks
         FRAMEWORK_REL_INSTALL=no
-        FRAMEWORK_PREFIX=''
       elif test "${enable_userfw}" = "yes" ; then
         FRAMEWORK_INSTALL_DIR=~/Library/Frameworks
         FRAMEWORK_REL_INSTALL=no
-        FRAMEWORK_PREFIX=''
       else
         FRAMEWORK_INSTALL_DIR='${libpltdir}'
         FRAMEWORK_REL_INSTALL=yes
-        if test "${libpltdir_rel}" = "" ; then
-          FRAMEWORK_PREFIX='$(FRAMEWORK_ABS_PREFIX)'
-        else
-          FRAMEWORK_PREFIX='$(FRAMEWORK_REL_PREFIX)'
-        fi
       fi
       if test "${enable_embedfw}" = "yes" ; then
         strip_needs_dash_s=yes
@@ -5408,7 +5444,7 @@ $as_echo "no" >&6; }
 fi
 
   if test "x$ac_ct_STRIP" = x; then
-    STRIP=""
+    STRIP=":"
   else
     case $cross_compiling:$ac_tool_warned in
 yes:)
@@ -5429,6 +5465,9 @@ fi
   fi
   if test "${strip_needs_dash_s}" = "yes" ; then
     check_strip_dash_s=yes
+  fi
+  if test "${STRIP}" = ":"; then
+    check_strip_dash_s=no
   fi
   if test "${check_strip_dash_s}" = "yes" ; then
     # Can only support library stripping if something like "-S" is available:
@@ -5461,28 +5500,18 @@ $as_echo "$set_strip_lib" >&6; }
   ICP_STRIP_FLAG=" -s"
 fi
 
-case "$host_os" in
-  darwin*)
-    if test "${enable_codesign}" = "yes" ; then
-      case "$host_cpu" in
-         aarch64)
-           STRIP_SIGNATURE="codesign --remove-signature"
-           RESTORE_SIGNATURE="codesign -s - --entitlements"
-         ;;
-         *)
-          # Check whether `codesign` can remove signatures
-          touch sig-test-file
-          if `codesign --remove-signature sig-test-file > /dev/null 2>&1` ; then
-             STRIP_SIGNATURE="codesign --remove-signature"
-          fi
-          rm sig-test-file
-          ;;
-      esac
-   else
-     STRIP_SIGNATURE='$(STRIP_SIGNATURE_VIA_RACKET)'
-     RESTORE_SIGNATURE='$(RESTORE_SIGNATURE_VIA_RACKET)'
-   fi
-esac
+
+############## post-linker ################
+
+if test "${enable_postlink}" != "" ; then
+  POST_LINKER="${enable_postlink}"
+else
+  POST_LINKER="${default_post_linker}"
+fi
+
+if test "${POST_LINKER}" != "" ; then
+  echo "post-linker command: ${POST_LINKER}"
+fi
 
 
 ############## C flags ################
@@ -5966,7 +5995,7 @@ rm -f core conftest.err conftest.$ac_objext \
       if test "${enable_curses}" = "no" ; then
         if test "${enable_portable}" = "yes" ; then
           if test "${curses_portable_link}" != "" ; then
-            # Try adding portabel link flags
+            # Try adding portable link flags
             ORIG_LIBS="$LIBS"
             ORIG_CPPFLAGS="$CPPFLAGS"
             ORIG_PREFLAGS="$PREFLAGS"
@@ -6037,6 +6066,38 @@ rm -f core conftest.err conftest.$ac_objext \
           curses_lib_flag=""
         fi
       fi
+      if test "${enable_curses}" = "no" ; then
+        # Try adding -lncurses -ltinfo
+        ORIG_LIBS="$LIBS"
+        curses_lib_flag=" -lncurses -ltinfo"
+        LIBS="$LIBS $curses_lib_flag"
+        cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+#include <curses.h>
+        #include <term.h>
+int
+main ()
+{
+        int errret;
+        setupterm("", 0, &errret);
+         return 0;
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  enable_curses=yes
+else
+  enable_curses=no
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+        if test "${enable_curses}" = "no" ; then
+          LIBS="$ORIG_LIBS"
+          curses_lib_flag=""
+        fi
+      fi
     fi
   fi
  fi
@@ -6050,9 +6111,9 @@ fi
 
 if test "${enable_curses}" = "no" ; then
   add_curses_lib=
-  disable_curses_arg=--disable-curses
+  DISABLE_CURSES=yes
 else
-  disable_curses_arg=
+  DISABLE_CURSES=no
 fi
 
 # when `add_curses_lib` is set, then `skip_curses_check`
@@ -7065,6 +7126,8 @@ if test "${enable_libffi}" = "default" ; then
   esac
 fi
 
+libffi_unavailable_message="Building own libffi"
+
 if test "${enable_libffi}" = "yes" ; then
  if test "${enable_foreign}" = "yes" ; then
   { $as_echo "$as_me:${as_lineno-$LINENO}: checking for libffi" >&5
@@ -7121,7 +7184,7 @@ $as_echo "$have_libffi" >&6; }
   if test "${have_libffi}" = "no" ; then
     CFLAGS="${OLD_CFLAGS}"
     LIBS="${OLD_LIBS}"
-    echo "Building own libffi"
+    echo "${libffi_unavailable_message}"
     if test "${complain_if_libffi_fails}" = "yes" ; then
        echo configure: unable to link to libffi
        exit 1
@@ -7135,6 +7198,7 @@ $as_echo "$have_libffi" >&6; }
   fi
  fi
 fi
+
 
 ############## Solaris grunge ################
 
@@ -7214,23 +7278,11 @@ fi
 
 ############## Racket for Racket ################
 
-if test "${enable_racket}" = "auto" ; then
-  # See also "configure-parent.ac"
-  enable_racket="`pwd`/../local/bc/racket3m"
-fi
-
 if test "${enable_racket}" = "" ; then
-  RUN_RACKET_CGC='$(RUN_THIS_RACKET_CGC)'
-  RUN_RACKET_MMM='$(RUN_THIS_RACKET_MMM)'
-  RUN_RACKET_MAIN_VARIANT='$(RUN_THIS_RACKET_MAIN_VARIANT)'
-  CGC_IF_NEEDED_FOR_MMM="cgc"
-  BOOT_MODE="--boot"
+  SETUP_BOOT_MODE="--boot"
 else
-  RUN_RACKET_CGC="${enable_racket}"
-  RUN_RACKET_MMM="${enable_racket}"
-  RUN_RACKET_MAIN_VARIANT="${enable_racket}"
-  CGC_IF_NEEDED_FOR_MMM="no-cgc-needed"
-  BOOT_MODE="--chain"
+  RACKET="${enable_racket}"
+  SETUP_BOOT_MODE="--chain"
 fi
 
 ############## libtool ################
@@ -7241,7 +7293,6 @@ if test "${enable_shared}" = "yes" ; then
   abssrcdir=`(cd ${srcdir}; pwd)`
 
   # Try to convert libdir to an absolute path:
-  # (Is this necessary anymore?)
   if test -d "${libdir}" ; then
     abslibdir=`(cd ${libdir}; pwd)`
   else
@@ -7266,26 +7317,22 @@ if test "${enable_shared}" = "yes" ; then
     fi
   fi
 
-  if test "$INCLUDEDEP" = "-include" ; then
-    plt_lib_version="\$(FWVERSION)"
-  else
-    VERSION_X=`grep 'define MZSCHEME_VERSION_X ' ${srcdir}/../version/racket_version.h | cut -d ' ' -f 3`
-    VERSION_Y=`grep 'define MZSCHEME_VERSION_Y ' ${srcdir}/../version/racket_version.h | cut -d ' ' -f 3`
-    VERSION_Z=`grep 'define MZSCHEME_VERSION_Z ' ${srcdir}/../version/racket_version.h | cut -d ' ' -f 3`
-    VERSION_W=`grep 'define MZSCHEME_VERSION_W ' ${srcdir}/../version/racket_version.h | cut -d ' ' -f 3`
+  VERSION_X=`grep 'define MZSCHEME_VERSION_X ' ${srcdir}/../version/racket_version.h | cut -d ' ' -f 3`
+  VERSION_Y=`grep 'define MZSCHEME_VERSION_Y ' ${srcdir}/../version/racket_version.h | cut -d ' ' -f 3`
+  VERSION_Z=`grep 'define MZSCHEME_VERSION_Z ' ${srcdir}/../version/racket_version.h | cut -d ' ' -f 3`
+  VERSION_W=`grep 'define MZSCHEME_VERSION_W ' ${srcdir}/../version/racket_version.h | cut -d ' ' -f 3`
 
-    if test "${VERSION_W}" != "0" ; then
-      plt_lib_version="${VERSION_X}.${VERSION_Y}.${VERSION_Z}.${VERSION_W}"
+  if test "${VERSION_W}" != "0" ; then
+    plt_lib_version="${VERSION_X}.${VERSION_Y}.${VERSION_Z}.${VERSION_W}"
+  else
+    if test "${VERSION_Z}" != "0" ; then
+      plt_lib_version="${VERSION_X}.${VERSION_Y}.${VERSION_Z}"
     else
-      if test "${VERSION_Z}" != "0" ; then
-        plt_lib_version="${VERSION_X}.${VERSION_Y}.${VERSION_Z}"
-      else
-        plt_lib_version="${VERSION_X}.${VERSION_Y}"
-      fi
+      plt_lib_version="${VERSION_X}.${VERSION_Y}"
     fi
   fi
 
-  AR="${LIBTOOLPROG} --mode=link --tag=CC $CC${need_gcc_static_libgcc}${ar_libtool_no_undefined} -release ${plt_lib_version} -rpath ${abslibdir} \$(ARLIBFLAGS) -o"
+  AR="${LIBTOOLPROG} --mode=link --tag=CC $CC${need_gcc_static_libgcc}${ar_libtool_no_undefined} -release ${plt_lib_version} -rpath ${abslibdir} -o"
   STATIC_AR="${LIBTOOLPROG} --mode=link --tag=CC $CC -o"
   ARFLAGS=""
   RANLIB=":"
@@ -7316,9 +7363,9 @@ else
   LIBFINISH=echo
   LTO="o"
   LTA="a"
-  MZLINKER='$(CC)'
+  MZLINKER='${CC}'
   STATIC_AR="$AR"
-  PLAIN_CC='$(CC)'
+  PLAIN_CC='${CC}'
   FOREIGN_CONVENIENCE=""
   FOREIGN_OBJSLIB="\$(FOREIGN_OBJS)"
 fi
@@ -7328,7 +7375,74 @@ if test "${enable_werror}" = "yes"; then
   CFLAGS="-Werror ${CFLAGS}"
 fi
 
+############## subconfigures ################
+
+# Make sure the --enable-shared default is propagated:
+if test "${enable_shared}" = "yes" ; then
+  SUB_CONFIGURE_EXTRAS="$SUB_CONFIGURE_EXTRAS --enable-shared"
+fi
+
+# Make sure the --enable-pthread result is propagated:
+if test "${enable_pthread}" = "yes" ; then
+  SUB_CONFIGURE_EXTRAS="$SUB_CONFIGURE_EXTRAS --enable-pthread"
+else
+  SUB_CONFIGURE_EXTRAS="$SUB_CONFIGURE_EXTRAS --disable-pthread"
+fi
+
+# Make sure the --enable-iconv result is propagated:
+if test "${enable_iconv}" = "yes" ; then
+  SUB_CONFIGURE_EXTRAS="$SUB_CONFIGURE_EXTRAS --enable-iconv"
+else
+  SUB_CONFIGURE_EXTRAS="$SUB_CONFIGURE_EXTRAS --disable-iconv"
+fi
+
+if test -d "${srcdir}/foreign" && test "${enable_foreign}" = "yes" ; then
+  FOREIGN_ENABLED=yes
+  if test "${have_libffi}" != "yes" ; then
+    LIBFFI_BUILD_ENABLED=yes
+  else
+    LIBFFI_BUILD_ENABLED=no
+  fi
+else
+  FOREIGN_ENABLED=no
+  MZOPTIONS="$MZOPTIONS -DDONT_USE_FOREIGN"
+fi
+
+# Pass certain configure args on to rktio
+keep_configure_args=
+fixup_prev=
+eval "set x $ac_configure_args"
+shift
+for fixup_arg
+do
+  case $fixup_arg in
+  # Strip away all feature choices
+  -enable* | --enable* | -disable* | --disable*)
+    ;;
+  -collects* | --collects* | -apps* | --apps* | -pkgs* | --pkgs*)
+    ;;
+  *)
+    case $fixup_arg in
+    *\'*) fixup_arg=`echo "$fixup_arg" | sed "s/'/'\\\\\\\\''/g"` ;;
+    esac
+    keep_configure_args="$keep_configure_args '$fixup_arg'" ;;
+  esac
+done
+
+
+LIBFFI_CONFIGURE_ARGS="--disable-option-checking $keep_configure_args$LIBFFI_CONFIGURE_EXTRAS$SUB_CONFIGURE_EXTRAS --disable-builddir"
+RKTIO_CONFIGURE_ARGS="${keep_configure_args} ${SUB_CONFIGURE_EXTRAS}"
+
 ############## final output ################
+
+case "$srcdir" in
+    /*)
+        upsrcdir="$srcdir"
+        ;;
+    *)
+        upsrcdir="../$srcdir"
+        ;;
+esac
 
 LIBS="$LIBS $EXTRALIBS"
 
@@ -7436,116 +7550,9 @@ LIBS="$LIBS $EXTRALIBS"
 
 
 
-mk_needed_dir()
-{
-  if test ! -d "$1" ; then
-    mkdir "$1"
-  fi
-}
-
-makefiles="Makefile
-             src/Makefile dynsrc/Makefile
-             sgc/Makefile gc2/Makefile"
-
-# Make sure the --enable-shared default is propagated:
-if test "${enable_shared}" = "yes" ; then
-  SUB_CONFIGURE_EXTRAS="$SUB_CONFIGURE_EXTRAS --enable-shared"
-fi
-
-# Make sure the --enable-pthread result is propagated:
-if test "${enable_pthread}" = "yes" ; then
-  SUB_CONFIGURE_EXTRAS="$SUB_CONFIGURE_EXTRAS --enable-pthread"
-else
-  SUB_CONFIGURE_EXTRAS="$SUB_CONFIGURE_EXTRAS --disable-pthread"
-fi
-
-# Make sure the --enable-iconv result is propagated:
-if test "${enable_iconv}" = "yes" ; then
-  SUB_CONFIGURE_EXTRAS="$SUB_CONFIGURE_EXTRAS --enable-iconv"
-else
-  SUB_CONFIGURE_EXTRAS="$SUB_CONFIGURE_EXTRAS --disable-iconv"
-fi
-
-FOREIGNTARGET=
-FOREIGN_IF_USED="FOREIGN_NOT_USED"
-if test -d "${srcdir}/foreign" && test "${enable_foreign}" = "yes" ; then
-  if test "${have_libffi}" != "yes" ; then
-    ac_aux_dir=
-for ac_dir in foreign/libffi  "$srcdir"/foreign/libffi ; do
-  if test -f "$ac_dir/install-sh"; then
-    ac_aux_dir=$ac_dir
-    ac_install_sh="$ac_aux_dir/install-sh -c"
-    break
-  elif test -f "$ac_dir/install.sh"; then
-    ac_aux_dir=$ac_dir
-    ac_install_sh="$ac_aux_dir/install.sh -c"
-    break
-  elif test -f "$ac_dir/shtool"; then
-    ac_aux_dir=$ac_dir
-    ac_install_sh="$ac_aux_dir/shtool install -c"
-    break
-  fi
-done
-if test -z "$ac_aux_dir"; then
-  as_fn_error $? "cannot find install-sh, install.sh, or shtool in foreign/libffi  \"$srcdir\"/foreign/libffi " "$LINENO" 5
-fi
-
-# These three variables are undocumented and unsupported,
-# and are intended to be withdrawn in a future Autoconf release.
-# They can cause serious problems if a builder's source tree is in a directory
-# whose full name contains unusual characters.
-ac_config_guess="$SHELL $ac_aux_dir/config.guess"  # Please don't use this var.
-ac_config_sub="$SHELL $ac_aux_dir/config.sub"  # Please don't use this var.
-ac_configure="$SHELL $ac_aux_dir/configure"  # Please don't use this var.
 
 
-
-
-subdirs="$subdirs foreign/libffi"
-
-    # Smooth transition from libffi v3.1 to v3.3:
-    if test -h foreign/libffi/include/ffitarget.h ; then
-       rm foreign/libffi/include/ffitarget.h
-    fi
-  fi
-  FOREIGNTARGET="foreign-stuff"
-  FOREIGN_IF_USED="FOREIGN_USED"
-else
-  FOREIGNTARGET="foreign-stub"
-  MZOPTIONS="$MZOPTIONS -DDONT_USE_FOREIGN"
-fi
-makefiles="$makefiles foreign/Makefile"
-
-# Pass certain configure args on to rktio
-keep_configure_args=
-fixup_prev=
-eval "set x $ac_configure_args"
-shift
-for fixup_arg
-do
-  case $fixup_arg in
-  # Strip away all feature choices
-  -enable* | --enable* | -disable* | --disable*)
-    ;;
-  -collects* | --collects* | -apps* | --apps* | -pkgs* | --pkgs*)
-    ;;
-  *)
-    case $fixup_arg in
-    *\'*) fixup_arg=`echo "$fixup_arg" | sed "s/'/'\\\\\\\\''/g"` ;;
-    esac
-    keep_configure_args="$keep_configure_args '$fixup_arg'" ;;
-  esac
-done
-
-
-# Add in `SUB_CONFIGURE_EXTRAS'
-ac_configure_args="$keep_configure_args$LIBFFI_CONFIGURE_EXTRAS$SUB_CONFIGURE_EXTRAS"
-
-if test "${enable_gracket}" = "yes" ; then
-  makefiles="$makefiles
-             gracket/Makefile
-               gracket/gc2/Makefile"
-fi
+makefiles="Makefile"
 
 ac_config_files="$ac_config_files $makefiles"
 
@@ -8817,158 +8824,17 @@ if test "$no_create" != yes; then
   # would make configure fail if this is the last instruction.
   $ac_cs_success || as_fn_exit 1
 fi
-
-#
-# CONFIG_SUBDIRS section.
-#
-if test "$no_recursion" != yes; then
-
-  # Remove --cache-file, --srcdir, and --disable-option-checking arguments
-  # so they do not pile up.
-  ac_sub_configure_args=
-  ac_prev=
-  eval "set x $ac_configure_args"
-  shift
-  for ac_arg
-  do
-    if test -n "$ac_prev"; then
-      ac_prev=
-      continue
-    fi
-    case $ac_arg in
-    -cache-file | --cache-file | --cache-fil | --cache-fi \
-    | --cache-f | --cache- | --cache | --cach | --cac | --ca | --c)
-      ac_prev=cache_file ;;
-    -cache-file=* | --cache-file=* | --cache-fil=* | --cache-fi=* \
-    | --cache-f=* | --cache-=* | --cache=* | --cach=* | --cac=* | --ca=* \
-    | --c=*)
-      ;;
-    --config-cache | -C)
-      ;;
-    -srcdir | --srcdir | --srcdi | --srcd | --src | --sr)
-      ac_prev=srcdir ;;
-    -srcdir=* | --srcdir=* | --srcdi=* | --srcd=* | --src=* | --sr=*)
-      ;;
-    -prefix | --prefix | --prefi | --pref | --pre | --pr | --p)
-      ac_prev=prefix ;;
-    -prefix=* | --prefix=* | --prefi=* | --pref=* | --pre=* | --pr=* | --p=*)
-      ;;
-    --disable-option-checking)
-      ;;
-    *)
-      case $ac_arg in
-      *\'*) ac_arg=`$as_echo "$ac_arg" | sed "s/'/'\\\\\\\\''/g"` ;;
-      esac
-      as_fn_append ac_sub_configure_args " '$ac_arg'" ;;
-    esac
-  done
-
-  # Always prepend --prefix to ensure using the same prefix
-  # in subdir configurations.
-  ac_arg="--prefix=$prefix"
-  case $ac_arg in
-  *\'*) ac_arg=`$as_echo "$ac_arg" | sed "s/'/'\\\\\\\\''/g"` ;;
-  esac
-  ac_sub_configure_args="'$ac_arg' $ac_sub_configure_args"
-
-  # Pass --silent
-  if test "$silent" = yes; then
-    ac_sub_configure_args="--silent $ac_sub_configure_args"
-  fi
-
-  # Always prepend --disable-option-checking to silence warnings, since
-  # different subdirs can have different --enable and --with options.
-  ac_sub_configure_args="--disable-option-checking $ac_sub_configure_args"
-
-  ac_popdir=`pwd`
-  for ac_dir in : $subdirs; do test "x$ac_dir" = x: && continue
-
-    # Do not complain, so a configure script can configure whichever
-    # parts of a large source tree are present.
-    test -d "$srcdir/$ac_dir" || continue
-
-    ac_msg="=== configuring in $ac_dir (`pwd`/$ac_dir)"
-    $as_echo "$as_me:${as_lineno-$LINENO}: $ac_msg" >&5
-    $as_echo "$ac_msg" >&6
-    as_dir="$ac_dir"; as_fn_mkdir_p
-    ac_builddir=.
-
-case "$ac_dir" in
-.) ac_dir_suffix= ac_top_builddir_sub=. ac_top_build_prefix= ;;
-*)
-  ac_dir_suffix=/`$as_echo "$ac_dir" | sed 's|^\.[\\/]||'`
-  # A ".." for each directory in $ac_dir_suffix.
-  ac_top_builddir_sub=`$as_echo "$ac_dir_suffix" | sed 's|/[^\\/]*|/..|g;s|/||'`
-  case $ac_top_builddir_sub in
-  "") ac_top_builddir_sub=. ac_top_build_prefix= ;;
-  *)  ac_top_build_prefix=$ac_top_builddir_sub/ ;;
-  esac ;;
-esac
-ac_abs_top_builddir=$ac_pwd
-ac_abs_builddir=$ac_pwd$ac_dir_suffix
-# for backward compatibility:
-ac_top_builddir=$ac_top_build_prefix
-
-case $srcdir in
-  .)  # We are building in place.
-    ac_srcdir=.
-    ac_top_srcdir=$ac_top_builddir_sub
-    ac_abs_top_srcdir=$ac_pwd ;;
-  [\\/]* | ?:[\\/]* )  # Absolute name.
-    ac_srcdir=$srcdir$ac_dir_suffix;
-    ac_top_srcdir=$srcdir
-    ac_abs_top_srcdir=$srcdir ;;
-  *) # Relative name.
-    ac_srcdir=$ac_top_build_prefix$srcdir$ac_dir_suffix
-    ac_top_srcdir=$ac_top_build_prefix$srcdir
-    ac_abs_top_srcdir=$ac_pwd/$srcdir ;;
-esac
-ac_abs_srcdir=$ac_abs_top_srcdir$ac_dir_suffix
-
-
-    cd "$ac_dir"
-
-    # Check for guested configure; otherwise get Cygnus style configure.
-    if test -f "$ac_srcdir/configure.gnu"; then
-      ac_sub_configure=$ac_srcdir/configure.gnu
-    elif test -f "$ac_srcdir/configure"; then
-      ac_sub_configure=$ac_srcdir/configure
-    elif test -f "$ac_srcdir/configure.in"; then
-      # This should be Cygnus configure.
-      ac_sub_configure=$ac_aux_dir/configure
-    else
-      { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: no configuration information is in $ac_dir" >&5
-$as_echo "$as_me: WARNING: no configuration information is in $ac_dir" >&2;}
-      ac_sub_configure=
-    fi
-
-    # The recursion is here.
-    if test -n "$ac_sub_configure"; then
-      # Make the cache file name correct relative to the subdirectory.
-      case $cache_file in
-      [\\/]* | ?:[\\/]* ) ac_sub_cache_file=$cache_file ;;
-      *) # Relative name.
-	ac_sub_cache_file=$ac_top_build_prefix$cache_file ;;
-      esac
-
-      { $as_echo "$as_me:${as_lineno-$LINENO}: running $SHELL $ac_sub_configure $ac_sub_configure_args --cache-file=$ac_sub_cache_file --srcdir=$ac_srcdir" >&5
-$as_echo "$as_me: running $SHELL $ac_sub_configure $ac_sub_configure_args --cache-file=$ac_sub_cache_file --srcdir=$ac_srcdir" >&6;}
-      # The eval makes quoting arguments work.
-      eval "\$SHELL \"\$ac_sub_configure\" $ac_sub_configure_args \
-	   --cache-file=\"\$ac_sub_cache_file\" --srcdir=\"\$ac_srcdir\"" ||
-	as_fn_error $? "$ac_sub_configure failed for $ac_dir" "$LINENO" 5
-    fi
-
-    cd "$ac_popdir"
-  done
-fi
 if test -n "$ac_unrecognized_opts" && test "$enable_option_checking" != no; then
   { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: unrecognized options: $ac_unrecognized_opts" >&5
 $as_echo "$as_me: WARNING: unrecognized options: $ac_unrecognized_opts" >&2;}
 fi
 
 
-mkdir -p rktio
-abssrcdir=`(cd ${srcdir}; pwd)`
-echo "=== configuring in rktio (${abssrcdir}/rktio)"
-cd rktio; eval "${abssrcdir}/../rktio/configure ${keep_configure_args} ${SUB_CONFIGURE_EXTRAS}"
+# mkdir -p rktio
+# abssrcdir=`(cd ${srcdir}; pwd)`
+# echo "=== configuring in rktio (${abssrcdir}/rktio)"
+# cd rktio; eval "${abssrcdir}/../rktio/configure ${keep_configure_args} ${SUB_CONFIGURE_EXTRAS}"
+
+cp ${srcdir}/buildmain.zuo main.zuo
+
+show_path_results

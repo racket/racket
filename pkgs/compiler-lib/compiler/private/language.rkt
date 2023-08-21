@@ -43,12 +43,18 @@
                                         mod)])
                         (get-info-proc in #f #f #f #f)))
      (define mod-lang-mod (get-info 'module-language #f))
-     (unless mod-lang-mod
+     (define mod-lang-mod-datum (if (syntax? mod-lang-mod)
+                                    (syntax->datum mod-lang-mod)
+                                    mod-lang-mod))
+     (unless (module-path? mod-lang-mod-datum)
         (raise-user-error who
                           (string-append
                            "cannot extract module language\n"
                            "  language: ~a\n"
-                           "  info field not available: 'module-language")
+                           (if mod-lang-mod-datum
+                               (format "  info field ill-formed: ~e"
+                                       mod-lang-mod-datum)
+                               "  info field not available: 'module-language"))
                           lang))
-     (cons mod-lang-mod
+     (cons mod-lang-mod-datum
            (hash-keys reader-mods)))))

@@ -159,6 +159,7 @@ static Scheme_Object *srcloc_path_to_string(Scheme_Object *p);
     || SCHEME_CHAPERONE_VECTORP(obj) \
     || SCHEME_FLVECTORP(obj) \
     || SCHEME_FXVECTORP(obj) \
+    || SCHEME_STENCIL_VECTORP(obj) \
     || (qk(pp->print_box, 1) && SCHEME_CHAPERONE_BOXP(obj)) \
     || (qk(pp->print_struct  \
 	   && SCHEME_CHAPERONE_STRUCTP(obj) \
@@ -524,6 +525,7 @@ static int check_cycles(Scheme_Object *obj, int for_write, Scheme_Hash_Table *ht
       || SCHEME_CHAPERONE_VECTORP(obj)
       || SCHEME_FLVECTORP(obj)
       || SCHEME_FXVECTORP(obj)
+      || SCHEME_STENCIL_VECTORP(obj)
       || (SCHEME_CHAPERONE_STRUCTP(obj)
           && ((pp->print_struct 
 	       && PRINTABLE_STRUCT(obj, pp))
@@ -583,6 +585,22 @@ static int check_cycles(Scheme_Object *obj, int for_write, Scheme_Hash_Table *ht
   } else if (SCHEME_FLVECTORP(obj) 
              || SCHEME_FXVECTORP(obj)) {
     res = CHECK_CHECK_HAS_UNQUOTE; /* escape for qq printing */
+  } else if (SCHEME_STENCIL_VECTORP(obj)) {
+    Scheme_Stencil_Vector *sv = (Scheme_Stencil_Vector *)obj;
+    int i, len;
+    Scheme_Object *v;
+    if (for_write > 1) for_write = 1;
+
+    len = scheme_stencil_vector_popcount(sv->mask);
+
+    res = 0;
+    for (i = 0; i < len; i++) {
+      v = sv->els[i];
+      res2 = check_cycles(v, for_write, ht, pp);
+      res |= res2;
+      if (res & CHECK_CHECK_HAS_CYCLE)
+	return res;
+    }
   } else if (SCHEME_CHAPERONE_STRUCTP(obj)) {
     if (scheme_is_writable_struct(obj)) {
       if (pp->print_unreadable) {
@@ -751,6 +769,20 @@ static int check_cycles_fast(Scheme_Object *obj, PrintParams *pp, int *fast_chec
 	break;
     }
     obj->type = t;
+  } else if (SCHEME_STENCIL_VECTORP(obj)) {
+    Scheme_Stencil_Vector *sv = (Scheme_Stencil_Vector *)obj;
+    int i, len;
+    len = scheme_stencil_vector_popcount(sv->mask);
+
+    if (write > 1) write = 1;
+
+    obj->type = -t;
+    for (i = 0; i < len; i++) {
+      cycle = check_cycles_fast(sv->els[i], pp, fast_checker_counter, write);
+      if (cycle)
+	break;
+    }
+    obj->type = t;
   } else if (SAME_TYPE(t, scheme_structure_type)
 	     || SAME_TYPE(t, scheme_proc_struct_type)) {
     if (scheme_is_writable_struct(obj)) {
@@ -888,6 +920,17 @@ static void setup_graph_table(Scheme_Object *obj, int for_write, Scheme_Hash_Tab
       else
         v = scheme_chaperone_vector_ref(obj, i);
       setup_graph_table(v, for_write, ht, counter, pp);
+    }
+  } else if (SCHEME_STENCIL_VECTORP(obj)) {
+    Scheme_Stencil_Vector *sv = (Scheme_Stencil_Vector *)obj;
+    int i, len;
+    Scheme_Object *v;
+
+    len = scheme_stencil_vector_popcount(sv->mask);
+    if (for_write > 1) for_write = 1;
+
+    for (i = 0; i < len; i++) {
+      setup_graph_table(sv->els[i], for_write, ht, counter, pp);
     }
   } else if (pp && SCHEME_CHAPERONE_STRUCTP(obj)) { /* got here => printable */
     if (scheme_is_writable_struct(obj)) {
@@ -1800,14 +1843,18 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
 
   if (ht && HAS_SUBSTRUCT(obj, ssQUICK)) {
     intptr_t val;
-    
+
     val = (intptr_t)scheme_hash_get(ht, obj);
-    
+
     if (val) {
       if (val != 1) {
 	if (compact) {
-	  print_escaped(pp, notdisplay, obj, ht, mt, 0);
-	  return 1;
+          if (SCHEME_CHAPERONE_STRUCTP(obj) && scheme_is_location(obj)) {
+            /* special case: srcloc is handled through symtab */
+          } else  {
+            print_escaped(pp, notdisplay, obj, ht, mt, 0);
+            return 1;
+          }
 	} else {
 	  if (val > 0) {
 	    sprintf(quick_buffer, "#%" PRIdPTR "=", (val - 3) >> 1);
@@ -2038,6 +2085,28 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
       print_fxvector(obj, notdisplay, compact, ht, mt, pp, 0);
       closed = 1;
     }
+  else if (SCHEME_STENCIL_VECTORP(obj))
+    {
+      Scheme_Stencil_Vector *sv = (Scheme_Stencil_Vector *)obj;
+      intptr_t len, i;
+      int sub_notdisplay = ((notdisplay > 1) ? 1 : notdisplay);
+      
+      len = scheme_stencil_vector_popcount(sv->mask);
+
+      print_utf8_string(pp, "#<stencil ", 0, 10);
+      sprintf(quick_buffer, "%" PRIdPTR "", sv->mask);
+      print_utf8_string(pp, quick_buffer, 0, -1);
+      if (sv->mask != 0)
+        print_utf8_string(pp, ":", 0, 1);
+
+      for (i = 0; i < len; i++) {
+        print_utf8_string(pp, " ", 0, 1);
+        print(sv->els[i], sub_notdisplay, compact, ht, mt, pp);
+      }
+
+      print_utf8_string(pp, ">", 0, 1);
+      closed = 1;
+    }
   else if ((compact || pp->print_box) && SCHEME_CHAPERONE_BOXP(obj))
     {
       if (compact && !pp->print_box) {
@@ -2081,6 +2150,9 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
 	if ((SCHEME_HASHTP(obj) && scheme_is_hash_table_equal(obj))
             || (SCHEME_HASHTRP(obj) && scheme_is_hash_tree_equal(obj)))
 	  print_compact_number(pp, 1);
+	else if ((SCHEME_HASHTP(obj) && scheme_is_hash_table_equal_always(obj))
+	         || (SCHEME_HASHTRP(obj) && scheme_is_hash_tree_equal_always(obj)))
+	  print_compact_number(pp, 3);
 	else if ((SCHEME_HASHTP(obj) && scheme_is_hash_table_eqv(obj))
                  || (SCHEME_HASHTRP(obj) && scheme_is_hash_tree_eqv(obj)))
 	  print_compact_number(pp, 2);
@@ -2096,6 +2168,8 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
           if (!scheme_is_hash_table_equal(obj)) {
             if (scheme_is_hash_table_eqv(obj))
               print_utf8_string(pp, "eqv", 0, 3);
+            else if (scheme_is_hash_table_equal_always(obj))
+              print_utf8_string(pp, "alw", 0, 3);
             else
               print_utf8_string(pp, "eq", 0, 2);
           }
@@ -2103,6 +2177,8 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
           if (!scheme_is_hash_tree_equal(obj)) {
             if (scheme_is_hash_tree_eqv(obj))
               print_utf8_string(pp, "eqv", 0, 3);
+            else if (scheme_is_hash_tree_equal_always(obj))
+              print_utf8_string(pp, "alw", 0, 3);
             else
               print_utf8_string(pp, "eq", 0, 2);
           }
@@ -2226,46 +2302,56 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
       /* Support srclocs in marshaled form with special treatment
          of paths */
       int i;
-      Scheme_Object *src, *rel_src, *dir;
+      Scheme_Object *src, *rel_src, *dir, *idx;
+      
+      if (compact)
+	idx = get_symtab_idx(mt, obj);
+      else
+	idx = NULL;
 
-      src = scheme_struct_ref(obj, 0);
-      if (SCHEME_PATHP(src)) {
-        /* To make paths portable and to avoid full paths, check
-           whether the path can be made relative, in which case it is
-           turned into a list of byte strings. If not, convert to a
-           string using only the last couple of path elements. */
-        dir = scheme_get_param(scheme_current_config(),
-                               MZCONFIG_WRITE_DIRECTORY);
-        if (SCHEME_TRUEP(dir))
-          rel_src = scheme_extract_relative_to(src, dir, mt->path_cache);
-        else
-          rel_src = src;
-        if (SCHEME_PATHP(rel_src)) {
-          src = scheme_hash_get(mt->path_cache, scheme_box(rel_src));
-          if (!src) {
-            src = srcloc_path_to_string(rel_src);
-            scheme_hash_set(mt->path_cache, scheme_box(rel_src), src);
-          }
-        } else {
-          /* let the printer make it relative when recurring */
-        }
-      } else if (SCHEME_FALSEP(src)
-                 || SCHEME_CHAR_STRINGP(src)
-                 || SCHEME_BYTE_STRINGP(src)
-                 || SCHEME_SYMBOLP(src)
-                 || SCHEME_GENERAL_PATHP(src)) {
-        /* ok */
+      if (idx) {
+        print_symtab_ref(pp, idx);
       } else {
-        cannot_print(pp, notdisplay, obj, ht, compact);
-      }
+        src = scheme_struct_ref(obj, 0);
+        if (SCHEME_PATHP(src)) {
+          /* To make paths portable and to avoid full paths, check
+             whether the path can be made relative, in which case it is
+             turned into a list of byte strings. If not, convert to a
+             string using only the last couple of path elements. */
+          dir = scheme_get_param(scheme_current_config(),
+                                 MZCONFIG_WRITE_DIRECTORY);
+          if (SCHEME_TRUEP(dir))
+            rel_src = scheme_extract_relative_to(src, dir, mt->path_cache);
+          else
+            rel_src = src;
+          if (SCHEME_PATHP(rel_src)) {
+            src = scheme_hash_get(mt->path_cache, scheme_box(rel_src));
+            if (!src) {
+              src = srcloc_path_to_string(rel_src);
+              scheme_hash_set(mt->path_cache, scheme_box(rel_src), src);
+            }
+          } else {
+            /* let the printer make it relative when recurring */
+          }
+        } else if (SCHEME_FALSEP(src)
+                   || SCHEME_CHAR_STRINGP(src)
+                   || SCHEME_BYTE_STRINGP(src)
+                   || SCHEME_SYMBOLP(src)
+                   || SCHEME_GENERAL_PATHP(src)) {
+          /* ok */
+        } else {
+          cannot_print(pp, notdisplay, obj, ht, compact);
+        }
 
-      print_compact(pp, CPT_SRCLOC);
-      print(src, notdisplay, compact, ht, mt, pp);
-      for (i = 1; i < 5; i++) {
-        print(scheme_struct_ref(obj, i), notdisplay, compact, ht, mt, pp);
-      }
+        print_compact(pp, CPT_SRCLOC);
+        print(src, notdisplay, compact, ht, mt, pp);
+        for (i = 1; i < 5; i++) {
+          print(scheme_struct_ref(obj, i), notdisplay, compact, ht, mt, pp);
+        }
 
-      closed = 1;
+        closed = 1;
+        symtab_set(pp, mt, obj);
+      }
     }
   else if (SCHEME_CHAPERONE_STRUCTP(obj))
     {
@@ -2541,7 +2627,12 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
   else if (SAME_TYPE(SCHEME_TYPE(obj), scheme_struct_type_type))
     {
       if (compact || !pp->print_unreadable) {
-	cannot_print(pp, notdisplay, obj, ht, compact);
+        if (compact && ((Scheme_Struct_Type *)obj)->prefab_key) {
+          print_compact(pp, CPT_PREFAB_TYPE);
+          print(SCHEME_CDR(((Scheme_Struct_Type *)obj)->prefab_key), notdisplay, compact, ht, mt, pp);
+          print_compact_number(pp, ((Scheme_Struct_Type *)obj)->num_slots);
+        } else
+          cannot_print(pp, notdisplay, obj, ht, compact);
       } else {
 	print_utf8_string(pp, "#<", 0, 2);
         if (((Scheme_Struct_Type *)obj)->name) {
@@ -3323,7 +3414,7 @@ print_char_string(const char *str, int len,
 		  int notdisplay, PrintParams *pp)
 {
   char minibuf[12], *esc;
-  int a, i, v, ui, cont_utf8 = 0, isize;
+  int a, i, v, ui, cont_utf8 = 0, isize, keep = 0;
 
   if (notdisplay) {
     print_utf8_string(pp, "\"", 0, 1);
@@ -3331,6 +3422,9 @@ print_char_string(const char *str, int len,
     for (a = i = ui = 0; i < len; i += isize, ui++) {
       v = ((unsigned char *)str)[i];
       isize = 1;
+
+      if (keep && (v < 128))
+        v = 'x';
 
       switch (v) {
       case '\"': 
@@ -3350,22 +3444,29 @@ print_char_string(const char *str, int len,
 	  if (cont_utf8) {
 	    cont_utf8--;
 	    ui--;
+            if (keep) keep++;
 	    esc = NULL;
 	  } else {
 	    int clen;
 	    clen = scheme_utf8_encode(ustr, ui+delta, ui+delta+1, NULL, 0, 0);
-	    if (scheme_isgraphic(ustr[ui+delta])
+	    if (keep
+                || scheme_isgraphic(ustr[ui+delta])
 		|| scheme_isblank(ustr[ui+delta])) {
 	      cont_utf8 = clen - 1;
+              if ((keep == 0) && scheme_isgraphic(ustr[ui+delta]))
+                keep = scheme_grapheme_cluster_span(ustr, ui+delta, ulen);
 	      esc = NULL;
 	    } else {
 	      esc = minibuf;
 	      isize = clen;
 	    }
 	  }
-	} else if (scheme_isgraphic(v)
+	} else if (keep
 		   || scheme_isblank(v)) {
 	  esc = NULL;
+        } else if (scheme_isgraphic(v)) {
+          esc = NULL;
+          keep = scheme_grapheme_cluster_span(ustr, ui+delta, ulen);
 	} else {
 	  esc = minibuf;
 	}
@@ -3385,6 +3486,9 @@ print_char_string(const char *str, int len,
         print_utf8_string(pp, esc, 0, -1);
         a = i+isize;
       }
+
+      if (keep)
+        keep--;
     }
     if (a < i)
       print_utf8_string(pp, str, a, i-a);

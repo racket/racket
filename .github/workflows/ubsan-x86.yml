@@ -2,16 +2,19 @@ name: Test with UBSan on X86
 
 on: [push]
 
+permissions:
+  contents: read
+
 jobs:
 
 # Build jobs
 # These jobs build Racket using undefined behaviour sanitizers and gathers the results into a final log
   racket3m-ubsan:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-22.04
     container: racket/racket-ci:latest
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
       with:
         fetch-depth: 100
     - name: Create logs directory
@@ -72,7 +75,7 @@ jobs:
       run: raco test -c tests/xml | tee logs/xml.log
     - name: Run tests/future
       continue-on-error: true
-      run: raco test -c tests/future | tee logs/future.log
+      run: raco test --timeout 300 -c tests/future | tee logs/future.log
     - name: Run tests/stxparse
       continue-on-error: true
       run: raco test -c tests/stxparse | tee logs/stxparse.log
@@ -83,17 +86,17 @@ jobs:
       run: |
         grep 'runtime error' logs/*.log > runtime-errors_git${{ github.sha }}.log || true
         test ! -s runtime-errors_git${{ github.sha }}.log
-    - uses: actions/upload-artifact@v2
+    - uses: actions/upload-artifact@v3
       with:
         name: runtime-errors_git${{ github.sha }}
         path: runtime-errors_git${{ github.sha }}.log
 
   racketcs-ubsan:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-22.04
     container: racket/racket-ci:latest
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
       with:
         fetch-depth: 100
     - name: Create logs directory
@@ -154,7 +157,7 @@ jobs:
       run: raco test -c tests/xml | tee logs/xml.log
     - name: Run tests/future
       continue-on-error: true
-      run: raco test -c tests/future | tee logs/future.log
+      run: raco test --timeout 300 -c tests/future | tee logs/future.log
     - name: Run tests/stxparse
       continue-on-error: true
       run: raco test -c tests/stxparse | tee logs/stxparse.log
@@ -165,7 +168,7 @@ jobs:
       run: |
         grep 'runtime error' logs/*.log > runtime-errors-cs_git${{ github.sha }}.log || true
         test ! -s runtime-errors_git${{ github.sha }}.log
-    - uses: actions/upload-artifact@v2
+    - uses: actions/upload-artifact@v3
       if: failure()
       with:
         name: runtime-errors-cs_git${{ github.sha }}

@@ -246,7 +246,7 @@
             (define old (collapse-mpi rmp))
             (if (and (pair? old)
                      (eq? (car old) 'submod))
-                (d->s (append old ".."))
+                (d->s (append old (list "..")))
                 sub/stx)]
            [else
             (convert-relative-module-path sub/stx)]))
@@ -258,8 +258,8 @@
                               new-sub/stx))
           (if (and (pair? new-sub)
                    (eq? (car new-sub) 'submod))
-              (d->s (append new-sub (cddr sub)))
-              (d->s `(submod ,new-sub/stx . ,(cddr sub))))])]
+              (d->s (append new-sub (cddr mp)))
+              (d->s `(submod ,new-sub/stx . ,(cddr mp))))])]
        [else mp/stx])]))
 
   ;; expand-import : stx bool -> (listof import)

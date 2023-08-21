@@ -435,6 +435,7 @@
 (err/rt-test (readstr "#hashe") exn:fail:read:eof?)
 (err/rt-test (readstr "#hasheq") exn:fail:read:eof?)
 (err/rt-test (readstr "#hasheqv") exn:fail:read:eof?)
+(err/rt-test (readstr "#hashalw") exn:fail:read:eof?)
 (err/rt-test (readstr "#hash(") (make-exn:fail:read:eof?/span 1 6))
 (err/rt-test (readstr "#hash((1") exn:fail:read:eof?)
 (err/rt-test (readstr "#hash((1 .") exn:fail:read:eof?)
@@ -456,10 +457,13 @@
 (err/rt-test (readstr "#0=#hash#0#") exn:fail:read?)
 (err/rt-test (readstr "#0=#hash(#0#)") exn:fail:read?)
 (err/rt-test (readstr "#hash([1 . 2))") exn:fail:read?)
+(err/rt-test (readstr "#hash([1 . ;; a\n))") exn:fail:read?)
+(err/rt-test (readstr "#hash([;; a\n . 1))") exn:fail:read?)
 
 (test #t eq? (readstr "#hash()") (hash))
 (test #t eq? (readstr "#hasheq()") (hasheq))
 (test #t eq? (readstr "#hasheqv()") (hasheqv))
+(test #t eq? (readstr "#hashalw()") (hashalw))
 
 (define (test-ht t size eq? key val)
   (test #t hash? t)
@@ -476,15 +480,21 @@
 (test-ht (readstr "#hash{[1 . 2]}") 1 #f 1 2)
 (test-ht (readstr "#hasheq((1 . 2))") 1 #t 1 2)
 (test-ht (readstr "#hasheqv((1 . 2))") 1 #f 1 2)
+(test-ht (readstr "#hashalw((1 . 2))") 1 #f 1 2)
 (test-ht (readstr "#hash((\"apple\" . 1))") 1 #f "apple" 1)
 (test-ht (readstr "#hasheq((\"apple\" . 1))") 1 #t "apple" #f)
 (test-ht (readstr "#hasheqv((\"apple\" . 1))") 1 #f "apple" #f)
+;; NOTE: these strings produced by the `read` are mutable! so not equal-always?
+(test-ht (readstr "#hashalw((\"apple\" . 1))") 1 #f "apple" #f)
 (test-ht (readstr "#hash((\"apple\" . 1) (\"apple\" . 10))") 1 #f "apple" 10)
 (test-ht (readstr "#hasheq((\"apple\" . 1) (\"apple\" . 10))") 2 #t "apple" #f)
 (test-ht (readstr "#hasheqv((\"apple\" . 1) (\"apple\" . 10))") 2 #f "apple" #f)
+;; NOTE: these strings produced by the `read` are mutable! so not equal-always?
+(test-ht (readstr "#hashalw((\"apple\" . 1) (\"apple\" . 10))") 2 #f "apple" #f)
 (test-ht (readstr "#hash((apple . 1) (apple . 10))") 1 #f 'apple 10)
 (test-ht (readstr "#hasheq((apple . 1) (apple . 10))") 1 #t 'apple 10)
 (test-ht (readstr "#hasheqv((apple . 1) (apple . 10))") 1 #f 'apple 10)
+(test-ht (readstr "#hashalw((apple . 1) (apple . 10))") 1 #f 'apple 10)
 (test-ht (readstr "#hasheq((#0=\"apple\" . 1) (#0# . 10))") 1 #t "apple" #f)
 (test-ht (readstr "#hash((#0=\"apple\" . 1) (\"banana\" . #0#))") 2 #f "banana" "apple")
 (test-ht (readstr "#hash((a . 1) (b . 2) (c . 3) (e . 4) (f . 5) (g . 6) (h . 7) (i . 8))") 8 #f 'f 5)
@@ -497,6 +507,20 @@
 (let ([t (readstr "#0=#hash((#0# . 17))")])
   ;; Don't look for t, because that's a hash on a circular object!
   (test-ht t 1 #f 'none #f))
+(test-ht (readstr "#hash( [ 1 . 2 ] )")
+         1 #f 1 2)
+(test-ht (readstr "#hash( ;abc\n[ 1 . 2 ] )")
+         1 #f 1 2)
+(test-ht (readstr "#hash( [ ;abc\n1 . 2 ] )")
+         1 #f 1 2)
+(test-ht (readstr "#hash( [ 1;abc\n. 2 ] )")
+         1 #f 1 2)
+(test-ht (readstr "#hash( [ 1 .;abc\n2 ] )")
+         1 #f 1 2)
+(test-ht (readstr "#hash( [ 1 . 2;abc\n] )")
+         1 #f 1 2)
+(test-ht (readstr "#hash( [ 1 . 2 ];abc\n)")
+         1 #f 1 2)
 
 (define (test-write-ht writer t . strings)
   (let ([o (open-output-string)])
@@ -568,6 +592,28 @@
 (test #t (lambda (x) (and (vector? x) (eq? x (vector-ref x 0)) (eq? x (vector-ref x 1)))) (readstr "#0=#2(#0#)"))
 (test #t (lambda (x) (and (vector? x) (eq? (vector-ref x 1) (vector-ref x 2)))) (readstr "#3(#0=(1 2) #0#)"))
 (test '(1 1 1) readstr "(#0=1 #1=#0# #1#)")
+
+(err/rt-test (read-syntax #f (open-input-string "(#0=1 #1=#0# #1#)")) exn:fail:read?)
+(let ()
+  (define (stx-placeholder-get* stx)
+    (if (placeholder? (syntax-e stx))
+        (stx-placeholder-get* (placeholder-get (syntax-e stx)))
+        stx))
+
+  (let ()
+    (define stxs (syntax->list
+                  (parameterize ([read-accept-graph #f]
+                                 [read-syntax-accept-graph #t])
+                    (read-syntax #f (open-input-string "(#0=1 #1=#0# #1#)")))))
+    (test #t (lambda (xs) (andmap (lambda (x) (placeholder? (syntax-e x))) xs)) stxs)
+    (test '(1 1 1) (lambda (xs) (map (lambda (x) (syntax-e (stx-placeholder-get* x))) xs)) stxs))
+
+  (test #t
+        (lambda (stx)
+          (define lst-stx (placeholder-get (syntax-e stx)))
+          (eq? lst-stx (placeholder-get (syntax-e (cdr (syntax-e lst-stx))))))
+        (parameterize ([read-syntax-accept-graph #t])
+          (read-syntax #f (open-input-string "#0=(1 . #0#)")))))
 
 ;; Show that syntax, expansion, etc. do not preserve vector sharing
 (test #f 
@@ -1009,7 +1055,8 @@
 (require racket/flonum
          racket/fixnum)
 
-(define (run-comment-special)
+(define (run-comment-special [special-comment special-comment]
+                             #:skip-num? [skip-num? #f])
   (test (list 5) read (make-p (list #"(" special-comment #"5)") (lambda (x) 1) void))
   (test (list 5) read (make-p (list #"(5" special-comment #")") (lambda (x) 1) void))
   (test (cons 1 5) read (make-p (list #"(1 . " special-comment #"5)") (lambda (x) 1) void))
@@ -1020,14 +1067,51 @@
   (test (list 2 1 5) read (make-p (list #"(1 . " special-comment #"2 . 5)") (lambda (x) 1) void))
   (test (list 2 1 5) read (make-p (list #"(1 . 2 " special-comment #" . 5)") (lambda (x) 1) void))
   (test (vector 1 2 5) read (make-p (list #"#(1 2 " special-comment #"5)") (lambda (x) 1) void))
-  (test (flvector 1.0) read (make-p (list #"#fl(1.0 " special-comment #")") (lambda (x) 1) void))
-  (test (fxvector 1) read (make-p (list #"#fx(1 " special-comment #")") (lambda (x) 1) void))
+  (unless skip-num?
+    (test (flvector 1.0) read (make-p (list #"#fl(1.0 " special-comment #")") (lambda (x) 1) void))
+    (test (fxvector 1) read (make-p (list #"#fx(1 " special-comment #")") (lambda (x) 1) void)))
+  (test (hash 1 'a) read (make-p (list #"#hash(" special-comment #"(1 . a))") (lambda (x) 1) void))
+  (test (hash 1 'a) read (make-p (list #"#hash((" special-comment #"1 . a))") (lambda (x) 1) void))
+  (test (hash 1 'a) read (make-p (list #"#hash((1 " special-comment #". a))") (lambda (x) 1) void))
+  (test (hash 1 'a) read (make-p (list #"#hash((1 ." special-comment #" a))") (lambda (x) 1) void))
+  (test (hash 1 'a) read (make-p (list #"#hash((1 . a" special-comment #"))") (lambda (x) 1) void))
+  (test (hash 1 'a) read (make-p (list #"#hash((1 . a)" special-comment #")") (lambda (x) 1) void))
   (err/rt-test (read (make-p (list #"#fl(1.0 " a-special #")") (lambda (x) 1) void)) exn:fail:read?)
   (err/rt-test (read (make-p (list #"#fx(1 " a-special #")") (lambda (x) 1) void)) exn:fail:read?))
 (run-comment-special)
 (parameterize ([current-readtable (make-readtable #f)])
   (run-comment-special))
-  
+(parameterize ([current-readtable (make-readtable #f
+                                                  #\* 'terminating-macro (lambda args
+                                                                           (make-special-comment #f)))])
+  (run-comment-special #"*"))
+(parameterize ([current-readtable (make-readtable #f
+                                                  #\* 'dispatch-macro (lambda args
+                                                                        (make-special-comment #f)))])
+  (run-comment-special #" #* " #:skip-num? #t))
+
+(let ()
+  ;; check that minimal characters are read to determine that wrong
+  ;; characters won't produce a comment via the readtable
+  (define (check-consumed s n [read read])
+    (define i (open-input-bytes s))
+    (err/rt-test/once (read i) exn:fail:read?)
+    (test n file-position i))
+  (check-consumed #"(1 . x yzq)" 8)
+  (parameterize ([current-readtable (make-readtable #f
+                                                    #\y 'terminating-macro (lambda (ch in . args)
+                                                                             (read-char in)))])
+    (check-consumed #"(1 . x yzq)" 9))
+  (check-consumed #"(1 . x #yzq)" 8)
+  (parameterize ([current-readtable (make-readtable #f
+                                                    #\y 'dispatch-macro (lambda (ch in . args)
+                                                                          (read-char in)))])
+    (check-consumed #"(1 . x #yzq)" 10))
+  (check-consumed #"#hash(yzq)" 7)
+  (check-consumed #"#hash(#yzq)" 7)
+  (check-consumed #"yzq #lang" 1 read-language)
+  (check-consumed #"#yzq #lang" 2 read-language))
+
 ;; Test read-char-or-special:
 (let ([p (make-p (list #"x" a-special #"y") (lambda (x) 5) void)])
   (test #\x peek-char-or-special p)
@@ -1562,6 +1646,26 @@
   (test 'abc myread (open-input-string "#!ABC"))
   ;; Change also sticks:
   (test 'abc myread (open-input-string "ABC")))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(test #t eq?
+      (datum-intern-literal (make-string 10 #\x))
+      (datum-intern-literal (make-string 10 #\x)))
+
+;; make sure this doesn't take too long and use so much memory
+;; that we crash:
+(test #t integer? (datum-intern-literal (- (expt 2 10000000))))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; make sure span is in bytes when port does not count lines
+(let ()
+  (define s (open-input-string "\u3BB"))
+  (test 2 syntax-span (read-syntax 'x s)))
+(let ()
+  (define s (open-input-string "↑"))
+  (test 3 syntax-span (read-syntax 'x s)))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -100,31 +100,7 @@
          (not (thread-condition? 'condition))))
   (thread? (get-initial-thread))
   (begin
-    (define $threads (foreign-procedure "(cs)threads" () scheme-object))
-    (define $fib (lambda (x) (if (< x 2) 1 (+ ($fib (- x 1)) ($fib (- x 2))))))
-    (define $nthreads 1)
-    (define $yield
-      (let ([t (make-time 'time-duration 1000000 0)])
-        (lambda () (sleep t))))
-    (define $thread-check
-      (lambda ()
-        (unless (memq (get-initial-thread) ($threads))
-          (errorf #f "initial thread is missing from list"))
-        (let loop ([n 100] [nt (length ($threads))])
-          (cond
-            [(<= nt $nthreads)
-             (set! $nthreads nt)
-             (collect)]
-            [else
-             ($yield)
-             (let* ([ls ($threads)] [nnt (length ls)])
-               (cond
-                 [(< nnt nt) (loop n nnt)]
-                 [(= n 0)
-                  (set! $nthreads nnt)
-                  (errorf #f "extra threads running ~s" ls)]
-                 [else (loop (- n 1) nnt)]))]))
-        #t))
+    (include "thread-check.ss")
     (define $time-in-range?
       (lambda (start stop target)
         (let ([t (time-difference stop start)])
@@ -142,49 +118,44 @@
        (let f () (if n n (begin ($yield) (f)))))
      (get-process-id))
   ($thread-check)
-  (equal?
-    (let ()
-      (define fat+
-        (lambda (x y)
-          (if (zero? y)
-              x
-              (fat+ (1+ x) (1- y)))))
-      (define fatfib
-        (lambda (x)
-          (if (< x 2)
-              1
-              (fat+ (fatfib (1- x)) (fatfib (1- (1- x)))))))
-      (define iota
-        (case-lambda
-          [(n) (iota 0 n)]
-          [(i n)
-           (if (= n 0)
-               '()
-               (cons i (iota (+ i 1) (- n 1))))]))
-      (define-syntax parallel-list
-        (syntax-rules ()
-          [(_ x ...)
-           (let ([v (make-vector (length '(x ...)) #f)]
-                 [m (make-mutex)]
-                 [c (make-condition)]
-                 [n (length '(x ...))])
-             (map (lambda (p i) (p i))
-               (list (lambda (i)
-                       (fork-thread
-                        (lambda ()
-                          (vector-set! v i x)
-                          (with-mutex m
-                            (set! n (- n 1))
-                            (when (= n 0)
-                              (condition-signal c))))))
-                     ...)
-               (iota (length '(x ...))))
-             (and (with-mutex m
-                    (condition-wait c m (make-time 'time-duration 0 60)))
-                  (vector->list v)))]))
+  (let ()
+    (define fat+
+      (lambda (x y)
+        (if (zero? y)
+            x
+            (fat+ (1+ x) (1- y)))))
+    (define fatfib
+      (lambda (x)
+        (if (< x 2)
+            1
+            (fat+ (fatfib (1- x)) (fatfib (1- (1- x)))))))
+    (define-syntax parallel-list
+      (syntax-rules ()
+        [(_ x ...)
+         (let ([v (make-vector (length '(x ...)) #f)]
+               [m (make-mutex)]
+               [c (make-condition)]
+               [n (length '(x ...))])
+           (and
+            (with-mutex m
+              (map (lambda (p i) (p i))
+                (list (lambda (i)
+                        (fork-thread
+                         (lambda ()
+                           (vector-set! v i x)
+                           (with-mutex m
+                             (set! n (- n 1))
+                             (when (= n 0)
+                               (condition-signal c))))))
+                  ...)
+                (iota (length '(x ...))))
+              (condition-wait c m (make-time 'time-duration 0 60)))
+            (vector->list v)))]))
+    (define result
       (parallel-list (fatfib 26) (fatfib 27) (fatfib 28)
         (fatfib 29) (fatfib 30) (fatfib 31)))
-    '(196418 317811 514229 832040 1346269 2178309))
+    (or (equal? result '(196418 317811 514229 832040 1346269 2178309))
+        (errorf #f "result=~s" result)))
   ($thread-check)
   (let ([m (make-mutex)] [c (make-condition)])
     (with-mutex m
@@ -751,11 +722,37 @@
                                            (collect))])
                            (chew 0)))
                        (set! q (+ q 7)))])
+              (lock-object p)
+              (bt p)
+              (let f () (when (= q 0) ($yield) (f)))
+              (let f () (unless (= (length ($threads)) 1) ($yield) (f)))
+              (unlock-object p))
+            (unless (= q 14) (errorf #f "~s isn't 14" q))
+            (f (- n 1)))))
+      'cool)
+    'cool)
+  ($thread-check)
+  ;; copy of the test above, this time trying an immobile box instead of locked procedure
+  (eq?
+    (let ()
+      (define bt (foreign-procedure "(cs)backdoor_thread" (scheme-object) iptr))
+      (let f ([n 100])
+        (let ([q 0])
+          (unless (= n 0)
+            (let ([p (lambda ()
+                       (let ([count 10])
+                         (define chew (lambda (x) (when (> count 0) (chew (list 0)))))
+                         (parameterize ([collect-request-handler
+                                         (lambda ()
+                                           (set! count (- count 1))
+                                           (collect))])
+                           (chew 0)))
+                       (set! q (+ q 7)))])
               (let ([b (box-immobile p)])
                 (bt b)
                 (let f () (when (= q 0) ($yield) (f)))
                 (let f () (unless (= (length ($threads)) 1) ($yield) (f)))
-                (set-box! b #f)))
+                (keep-live b)))
             (unless (= q 14) (errorf #f "~s isn't 14" q))
             (f (- n 1)))))
       'cool)
@@ -1356,7 +1353,13 @@
     '(3.4 -4))
   ($thread-check)
   (begin
-    (load-shared-object (format "~a/foreign1.so" *mats-dir*))
+    (load-shared-object (let ([p (find-source "foreign1.so")])
+                          p
+                          (if (or (path-absolute? p)
+                                  (not (equal? "" (path-parent p))))
+                              p
+                              ;; specify relative to current directory:
+                              (path-build "." p))))
     #t)
   (equal?
     (let ()
@@ -1370,6 +1373,8 @@
       (define ls '())
       (ftype-set! A (x) a 3.4)
       (ftype-set! A (y) a 1)
+      (ff-locked-incr! (ftype-&ref A (y) a)) ; try once in main thread, in case this errors
+      (ff-locked-decr! (ftype-&ref A (y) a))
       (with-mutex m
         (do ([n n (fx- n 1)])
           ((fx= n 0))

@@ -637,6 +637,20 @@ extflvector_obj {
 }
 #endif
 
+stencil_vector_obj {
+  Scheme_Stencil_Vector *vec = (Scheme_Stencil_Vector *)p;
+  intptr_t size = scheme_stencil_vector_popcount(vec->mask);
+
+ mark:
+  int i;
+  for (i = size; i--; )
+    gcMARK2(vec->els[i], gc);
+
+ size:
+  gcBYTES_TO_WORDS((sizeof(Scheme_Stencil_Vector) 
+		    + ((size - mzFLEX_DELTA) * sizeof(Scheme_Object *))));
+}
+
 input_port {
  mark:
   Scheme_Input_Port *ip = (Scheme_Input_Port *)p;
@@ -776,8 +790,6 @@ thread_val {
   gcMARK2(pr->gmp_tls_data, gc);
   
   gcMARK2(pr->mr_hop, gc);
-  gcMARK2(pr->mref, gc);
-  gcMARK2(pr->extra_mrefs, gc);
 
   gcMARK2(pr->name, gc);
 
@@ -785,7 +797,6 @@ thread_val {
 
   gcMARK2(pr->suspended_box, gc);
   gcMARK2(pr->resumed_box, gc);
-  gcMARK2(pr->dead_box, gc);
   gcMARK2(pr->running_box, gc);
   gcMARK2(pr->sync_box, gc);
 
@@ -1116,6 +1127,7 @@ mark_comp_env {
   gcMARK2(e->vars, gc);
   gcMARK2(e->value_name, gc);
   gcMARK2(e->linklet, gc);
+  gcMARK2(e->realm, gc);
 
  size:
   gcBYTES_TO_WORDS(sizeof(Scheme_Comp_Env));
@@ -1725,6 +1737,9 @@ mark_thread_hop {
   Scheme_Thread_Custodian_Hop *hop = (Scheme_Thread_Custodian_Hop *)p;
 
   gcMARK2(hop->p, gc);
+  gcMARK2(hop->mref, gc);
+  gcMARK2(hop->extra_mrefs, gc);
+  gcMARK2(hop->dead_box, gc);
 
  size:
    gcBYTES_TO_WORDS(sizeof(Scheme_Thread_Custodian_Hop));
@@ -1770,7 +1785,7 @@ mark_syncing {
   gcMARK2(w->wrapss, gc);
   gcMARK2(w->nackss, gc);
   gcMARK2(w->reposts, gc);
-  gcMARK2(w->accepts, gc);
+  gcMARK2(w->concludes, gc);
   gcMARK2(w->disable_break, gc);
   gcMARK2(w->thread, gc);
 
@@ -1956,6 +1971,8 @@ mark_struct_property {
   gcMARK2(i->name, gc);
   gcMARK2(i->guard, gc);
   gcMARK2(i->supers, gc);
+  gcMARK2(i->contract_name, gc);
+  gcMARK2(i->realm, gc);
  size:
   gcBYTES_TO_WORDS(sizeof(Scheme_Struct_Property));
 }

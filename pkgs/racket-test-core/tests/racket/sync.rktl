@@ -155,6 +155,16 @@
   (test 'ok sync/timeout 100
         (wrap-evt
          (alarm-evt (+ (current-inexact-milliseconds) 50))
+         (lambda (x) 'ok)))
+
+  (test #f sync/timeout 0.1 (alarm-evt (+ (current-inexact-monotonic-milliseconds) 200) #t))
+  (test 'ok sync/timeout 0.1
+        (wrap-evt
+         (alarm-evt (+ (current-inexact-monotonic-milliseconds) 50) #t)
+         (lambda (x) 'ok)))
+  (test 'ok sync/timeout 100
+        (wrap-evt
+         (alarm-evt (+ (current-inexact-monotonic-milliseconds) 50) #t)
          (lambda (x) 'ok))))
 
 ;; ----------------------------------------
@@ -1085,7 +1095,7 @@
                               (set! counter (sub1 counter))
                               (when wakeups
                                 ;; Cancel any sleep:
-                                (unsafe-poll-ctx-milliseconds-wakeup wakeups (current-inexact-milliseconds)))
+                                (unsafe-poll-ctx-milliseconds-wakeup wakeups (current-inexact-monotonic-milliseconds)))
                               (values #f self)]))))
   (test #t sync (p)))
 
@@ -1257,7 +1267,7 @@
 		  pre-thunk act-thunk post-thunk
 		  ;; sema-wait or sema-wait/enable-break:
 		  pre-semaphore-wait act-semaphore-wait post-semaphore-wait)
-	   ;; This reset function is called for a cptured continuation
+	   ;; This reset function is called for a captured continuation
 	   ;;  to reset the effective arguments
 	   (define (reset
 		    -capture-pre -capture-act -capture-post
@@ -1598,7 +1608,7 @@
       (test val values got)))
 
   (try values 'ok-channel)
-  (try (lambda (c) (choice-evt c (alarm-evt (+ 10000 (current-inexact-milliseconds)))))
+  (try (lambda (c) (choice-evt c (alarm-evt (+ 10000 (current-inexact-monotonic-milliseconds)) #t)))
        'ok-channel+alarm))
 
 ;; ----------------------------------------

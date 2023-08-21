@@ -1,0 +1,18 @@
+#lang zuo/datum
+
+(require "and-or.zuo"
+         "syntax-error.zuo"
+         "../list.zuo")
+
+(provide check-duplicates)
+
+(define check-duplicates
+  (lambda (args)
+    (foldl (lambda (id seen)
+             (when (ormap (lambda (seen-id)
+                            (bound-identifier=? id seen-id))
+                          seen)
+               (duplicate-identifier id))
+             (cons id seen))
+           '()
+           args)))

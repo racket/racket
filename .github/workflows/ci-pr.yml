@@ -2,6 +2,9 @@ name: CI Pull Request
 
 on: [pull_request]
 
+permissions:
+  contents: read
+
 jobs:
 
   buildtest-linux-x86:
@@ -9,10 +12,10 @@ jobs:
       image: racket/racket-ci:latest
       options: --init
 
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-22.04
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
     - name: Build
       run: make CPUS=$(nproc) PKGS="racket-test db-test unstable-flonum-lib net-test"
     - name: Test
@@ -32,7 +35,7 @@ jobs:
         raco test -l tests/match/main
         raco test -l tests/zo-path
         raco test -c tests/xml
-        raco test -c tests/future
+        raco test --timeout 300 -c tests/future
         raco test -l tests/db/all-tests
         raco test -c tests/stxparse
         raco test -c tests/syntax
@@ -42,7 +45,7 @@ jobs:
     runs-on: macos-latest
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
     - name: Build
       run: make CPUS=$(sysctl -n hw.physicalcpu) PKGS="racket-test db-test unstable-flonum-lib net-test"
     - name: Test
@@ -62,13 +65,13 @@ jobs:
         raco test -l tests/match/main
         raco test -l tests/zo-path
         raco test -c tests/xml
-        raco test -c tests/future
+        raco test --timeout 300 -c tests/future
         raco test -l tests/db/all-tests
         raco test -c tests/stxparse
         raco test -c tests/syntax
     - name: Tarball
       run: tar -cvjf racketcs-macos-x64_git${{ github.sha }}.tar.bz2 racket
-    - uses: actions/upload-artifact@v2
+    - uses: actions/upload-artifact@v3
       with:
         name: racketcs-macos-x64_git${{ github.sha }}
         path: racketcs-macos-x64_git${{ github.sha }}.tar.bz2
@@ -77,8 +80,8 @@ jobs:
     runs-on: macos-latest
     needs: buildtest-macos
     steps:
-    - uses: actions/checkout@v2
-    - uses: actions/download-artifact@v2
+    - uses: actions/checkout@v3
+    - uses: actions/download-artifact@v3
       with:
         name: racketcs-macos-x64_git${{ github.sha }}
         path: ${{ github.workspace }}
@@ -97,8 +100,4 @@ jobs:
           --enable-racket=${{ github.workspace }}/host-racket/bin/racket \
           --enable-scheme=${{ github.workspace }}/host-racket/src/build/cs/c
         make
-        (cd cs/c/ && make install-cross)
-        mkdir -p ../../lib
-        cp cs/c/compile-xpatch.tarm64osx ../../lib/
-        cp cs/c/library-xpatch.tarm64osx ../../lib/
         make install

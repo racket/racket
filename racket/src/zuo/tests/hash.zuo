@@ -1,0 +1,54 @@
+#lang zuo
+
+(require "harness.zuo")
+
+(alert "hash tables")
+
+(check (hash? (hash)))
+(check (not (hash? 'apple)))
+
+(check (hash-ref (hash 'a 1) 'a #f) 1)
+(check (hash-ref (hash 'a 1) 'b #f) #f)
+(check (hash-ref (hash 'a 1) 'b 'no) 'no)
+(check-arg-fail (hash-ref 0 0 0) "not a hash table")
+(check-arg-fail (hash-ref (hash) 0 0) "not a symbol")
+
+(check (hash-set (hash 'a 1) 'b 2) (hash 'a 1 'b 2))
+(check (hash-ref (hash-set (hash 'a 1) 'b 2) 'a #f) 1)
+(check (hash-ref (hash-set (hash 'a 1) 'b 2) 'b #f) 2)
+(check (hash-ref (hash-set (hash 'a 1) 'b 2) 'c #f) #f)
+(check-arg-fail (hash-set 0 0 0) "not a hash table")
+(check-arg-fail (hash-set (hash) 0 0) "not a symbol")
+
+(check (hash-remove (hash 'a 1) 'a) (hash))
+(check (hash-remove (hash 'a 1) 'b) (hash 'a 1))
+(check (hash-remove (hash 'a 1 'b 2) 'a) (hash 'b 2))
+(check (hash-ref (hash-remove (hash 'a 1) 'a) 'a #f) #f)
+(check-arg-fail (hash-remove 0 0) "not a hash table")
+(check-arg-fail (hash-remove (hash) 0) "not a symbol")
+
+(check (hash-count (hash)) 0)
+(check (hash-count (hash 'a 1 'a 2 'b 3)) 2)
+(check (hash-count (hash-set (hash 'a 1 'b 3) 'c 3)) 3)
+(check (hash-count (hash-remove (hash 'a 1 'b 3) 'b)) 1)
+(check-arg-fail (hash-count 0) "not a hash table")
+
+(check (hash-keys (hash)) '())
+(check (hash-keys (hash 'a 1)) '(a))
+(check (hash-keys (hash 'a 1 'b 2)) '(a b)) ; always in order
+(check (length (hash-keys (hash 'a 1 'b 2 'c 3))) 3)
+(check (length (hash-keys (hash 'a 1 'b 2 'a 3))) 2)
+(check-arg-fail (hash-keys 0) "not a hash table")
+
+(check (hash-keys-subset? (hash) (hash 'a 1)) #t)
+(check (hash-keys-subset? (hash 'a 1) (hash)) #f)
+(check (hash-keys-subset? (hash 'a 1) (hash 'a 1 'b 2)) #t)
+(check (hash-keys-subset? (hash 'b 2) (hash 'a 1 'b 2)) #t)
+(check (hash-keys-subset? (hash 'a 1 'b 2) (hash 'a 1)) #f)
+(check (hash-keys-subset? (hash 'a 1 'b 2) (hash 'b 1)) #f)
+(check-arg-fail (hash-keys-subset? 0 (hash)) "not a hash table")
+(check-arg-fail (hash-keys-subset? (hash) 0) "not a hash table")
+
+;; print sorts keys alphabetically:
+(check (~a (hash 'a 1 'b 2)) "#hash((a . 1) (b . 2))")
+(check (~a (hash 'b 2 'a 1)) "#hash((a . 1) (b . 2))")

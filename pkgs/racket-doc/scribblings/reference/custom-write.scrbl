@@ -99,6 +99,10 @@ implementation of a @racket[write-proc], as in this example:
   (print (point 1 2))
 
   (write (point 1 2))]
+
+@history[#:changed "8.7.0.5"
+         @elem{Added a check so that omitting
+               @racket[_write-proc] is now a syntax error.}]
 }
 
 @defthing[prop:custom-write struct-type-property?]{

@@ -142,6 +142,11 @@
    '->i-stx23
    #'(->i ([f (f x) any/c]) (#:x [x any/c]) [res any/c]))
   
+  (contract-syntax-error-test
+   '->i-stx24
+   #'(let ([p (make-parameter #f)])
+       (->i ([x integer?]) #:param (x) p any)))
+
   (test/spec-passed
    '->i1
    '((contract (->i () () [x number?]) (lambda () 1) 'pos 'neg)))
@@ -1273,6 +1278,42 @@
    '(2 0 0 1 4 5 3 3 6)
    do-not-double-wrap)
   
+  (test/spec-passed/result
+   '->i62
+   '(let* ([p (make-parameter 0)]
+           [f (contract (->i ([x integer?])
+                             #:param (x) p x
+                             any)
+                        (λ (_) (p)) 'pos 'neg)])
+      (list (f 1) (f 2)))
+   '(1 2))
+
+  (test/spec-passed/result
+   '->i63
+   '(let* ([p (make-parameter 0)]
+           [f (contract (->i (#:x [x integer?])
+                             (#:y [y integer?])
+                             #:rest [rst (listof integer?)]
+                             #:param (x y rst) p
+                             (+ x (if (unsupplied-arg? y) 0 y) (apply + rst))
+                             any)
+                        (λ (#:x x #:y [y -100]. rst) (p)) 'pos 'neg)])
+      (list (f #:x 1 10 13) (f 10 8 #:x 2 #:y 1)))
+   '(24 21))
+
+  (test/spec-passed/result
+   '->i64
+   '(let* ([p1 (make-parameter 0)]
+           [p2 (make-parameter 0)]
+           [f (contract (->i ([x integer?]
+                              [y integer?])
+                             #:param (x) p1 (add1 x)
+                             #:param (y) p2 (add1 y)
+                             any)
+                        (λ (_x _y) (list (p1) (p2))) 'pos 'neg)])
+      (list (f 1 2) (f 3 4)))
+   '((2 3) (4 5)))
+
   (test/pos-blame
    '->i-arity1
    '(contract (->i ([x number?]) () any) (λ () 1) 'pos 'neg))

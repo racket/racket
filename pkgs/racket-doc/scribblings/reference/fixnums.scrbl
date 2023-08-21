@@ -86,6 +86,19 @@ result would not be a fixnum.
 
 
 @deftogether[(
+@defproc[(fxpopcount [a (and/c fixnum? (not/c negative?))]) fixnum?]
+@defproc[(fxpopcount32 [a (and/c fixnum? (integer-in 0 @#,racketvalfont{#xFFFFFFFF}))]) fixnum?]
+@defproc[(fxpopcount16 [a (and/c fixnum? (integer-in 0 @#,racketvalfont{#xFFFF})) ]) fixnum?]
+)]{
+
+Counts the number of bits in the two's complement representation of
+@racket[a]. Depending on the platform, the @racket[fxpopcount32] and
+@racket[fxpopcount16] operations can be faster when the result is
+known to be no more than 32 or 16, respectively.
+
+@history[#:added "8.5.0.7"]}
+
+@deftogether[(
 @defproc[(fx+/wraparound [a fixnum?] [b fixnum?]) fixnum?]
 @defproc[(fx-/wraparound [a fixnum?] [b fixnum?]) fixnum?]
 @defproc[(fx*/wraparound [a fixnum?] [b fixnum?]) fixnum?]
@@ -102,6 +115,23 @@ the highest of the retained bits is set---even, for example, if the
 value was produced by adding two positive fixnums.
 
 @history[#:added "7.9.0.6"]}
+
+@defproc[(fxrshift/logical [a fixnum?] [b fixnum?]) fixnum?]{
+
+Shifts the bits in @racket[a] to the right by @racket[b], filling in with zeros.
+With the sign bit treated as just another bit, a logical right-shift of a
+negative-signed fixnum can produce a large positive fixnum.
+For example, @racket[(fxrshift/logical -1 1)] produces @racket[(most-positive-fixnum)],
+illustrating that logical right-shift results are platform-dependent.
+
+@mz-examples[
+  #:eval flfx-eval
+  (fxrshift/logical 128 2)
+  (fxrshift/logical 255 4)
+  (= (fxrshift/logical -1 1) (most-positive-fixnum))
+]
+
+@history[#:added "8.8.0.5"]}
 
 
 @deftogether[(

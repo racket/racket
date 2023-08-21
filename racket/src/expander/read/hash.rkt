@@ -84,6 +84,15 @@
              (reader-error in config
                            "bad syntax `~a`"
                            (accum-string-get! accum-str config)))]
+        [(#\a #\A)
+         (accum-string-add! accum-str c)
+         (get-next! #\l #\L)
+         (get-next! #\w #\W)
+         (if (eq? mode 'equal)
+             (loop 'equal-always)
+             (reader-error in config
+                           "bad syntax `~a`"
+                           (accum-string-get! accum-str config)))]
         [else
          (when (char? c)
            (accum-string-add! accum-str c))
@@ -107,14 +116,19 @@
           [(eqv)
            (if graph?
                (make-hasheqv-placeholder content)
-               (make-immutable-hasheqv content))])
+               (make-immutable-hasheqv content))]
+          [(equal-always)
+           (if graph?
+               (make-hashalw-placeholder content)
+               (make-immutable-hashalw content))])
         in
         config
         opener))
 
 ;; ----------------------------------------
 
-(define ((make-read-one-key+value read-one overall-opener-c overall-closer-ec prefix-end-pos) init-c in config)
+(define ((make-read-one-key+value read-one overall-opener-c overall-closer-ec prefix-end-pos) init-c in config/maybe-keep-comment)
+  (define config (discard-comment config/maybe-keep-comment))
   (define c (read-char/skip-whitespace-and-comments init-c read-one in config))
   (define-values (open-line open-col open-pos) (port-next-location* in c))
   (define ec (effective-char c config))
@@ -141,43 +155,48 @@
       (reader-error in (reading-at config open-line open-col open-pos)
                     "~a"
                     (indentation-unexpected-closer-message ec c config))]
+     [(special-comment-via-readtable? c read-one in elem-config)
+      => (lambda (v)
+           (if (read-config-keep-comment? config/maybe-keep-comment)
+               v
+               ;; Try again
+               ((make-read-one-key+value read-one overall-opener-c overall-closer-ec prefix-end-pos) #f in config)))]
      [else
-      ;; If it's a special or we have a readtable, we need to read ahead
-      ;; to make sure that it's not a comment. For consistency, always
-      ;; read ahead.
-      (define v (read-one c in (keep-comment elem-config)))
-      (cond
-       [(special-comment? v)
-        ;; Try again
-        ((make-read-one-key+value read-one overall-opener-c overall-closer-ec prefix-end-pos) #f in config)]
-       [else
-        (reader-error in (reading-at config open-line open-col open-pos)
-                      "expected ~a to start a hash pair"
-                      (all-openers-str config))])])]
+      (reader-error in (reading-at config open-line open-col open-pos)
+                    "expected ~a to start a hash pair"
+                    (all-openers-str config))])]
    [else
     (define k (read-one #f in (disable-wrapping elem-config)))
-    
-    (define dot-c (read-char/skip-whitespace-and-comments #f read-one in config))
-    (define-values (dot-line dot-col dot-pos) (port-next-location* in dot-c))
-    (define dot-ec (effective-char dot-c config))
 
-    (unless (and (eqv? dot-ec #\.)
-                 (char-delimiter? (peek-char/special in config) config))
-      (reader-error in (reading-at config dot-line dot-col dot-pos)
-                    #:due-to dot-c
-                    "expected ~a and value for hash"
-                    (dot-name config)))
-    
-    (define v (read-one #f in elem-config))
-    
-    (define closer-c (read-char/skip-whitespace-and-comments #f read-one in config))
-    (define-values (closer-line closer-col closer-pos) (port-next-location* in closer-c))
-    (define closer-ec (effective-char closer-c config))
-    
-    (unless (eqv? closer-ec closer)
-      (reader-error in (reading-at config closer-line closer-col closer-pos)
-                    #:due-to closer-c
-                    "expected ~a after value within a hash"
-                    (closer-name closer config)))
-    
-    (cons (coerce-key k elem-config) v)]))
+    (let dot-loop ()
+      (define dot-c (read-char/skip-whitespace-and-comments #f read-one in config))
+      (define-values (dot-line dot-col dot-pos) (port-next-location* in dot-c))
+      (define dot-ec (effective-char dot-c config))
+      
+      (cond
+        [(and (eqv? dot-ec #\.)
+              (char-delimiter? (peek-char/special in config) config))
+         (define v (read-one #f in elem-config))
+
+         (let closer-loop ()
+           (define closer-c (read-char/skip-whitespace-and-comments #f read-one in config))
+           (define-values (closer-line closer-col closer-pos) (port-next-location* in closer-c))
+           (define closer-ec (effective-char closer-c config))
+
+           (cond
+             [(eqv? closer-ec closer)
+              (cons (coerce-key k elem-config) v)]
+             [(special-comment-via-readtable? closer-c read-one in config)
+              (closer-loop)]
+             [else
+              (reader-error in (reading-at config closer-line closer-col closer-pos)
+                            #:due-to closer-c
+                            "expected ~a after value within a hash"
+                            (closer-name closer config))]))]
+        [(special-comment-via-readtable? dot-c read-one in config)
+         (dot-loop)]
+        [else
+         (reader-error in (reading-at config dot-line dot-col dot-pos)
+                       #:due-to dot-c
+                       "expected ~a and value for hash"
+                       (dot-name config))]))]))

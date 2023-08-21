@@ -234,9 +234,9 @@
 (test 0 'when (when (< 1 2) (cons 1 2) 0))
 (test-values '(0 10) (lambda () (when (< 1 2) (values 0 10))))
 (syntax-test #'when)
-(syntax-test #'(when))
+(syntax-test #'(when) #rx"missing test expression and body")
 (syntax-test #'(when . 1))
-(syntax-test #'(when 1))
+(syntax-test #'(when 1) #rx"missing body")
 (syntax-test #'(when 1 . 2))
 (error-test #'(when (values 1 2) 0) arity?)
 
@@ -246,9 +246,9 @@
 (test 0 'unless (unless (> 1 2) (cons 1 2) 0))
 (test-values '(0 10) (lambda () (unless (> 1 2) (values 0 10))))
 (syntax-test #'unless)
-(syntax-test #'(unless))
+(syntax-test #'(unless) #rx"missing test expression and body")
 (syntax-test #'(unless . 1))
-(syntax-test #'(unless 1))
+(syntax-test #'(unless 1) #rx"missing body")
 (syntax-test #'(unless 1 . 2))
 (error-test #'(unless (values 1 2) 0) arity?)
 
@@ -970,7 +970,17 @@
   (test #f sync/timeout 0 pr)
   (test 'done force pr)
   (test #t promise-forced? pr)
+  (test #f promise-running? pr)
   (test (void) sync/timeout 0 pr))
+
+(let* ([p (delay/sync (sync never-evt))]
+       [th (thread (lambda () (force p)))])
+  (test #f promise-forced? p)
+  (test #f promise-running? p)
+  (sync (system-idle-evt))
+  (test #f promise-forced? p)
+  (test #t promise-running? p)
+  (kill-thread th))
 
 (test '(list 3 4) 'quasiquote `(list ,(+ 1 2) 4))
 (test '(list a (quote a)) 'quasiquote (let ((name 'a)) `(list ,name ',name)))
@@ -1381,6 +1391,26 @@
 (syntax-test #'(#%app lambda 1))
 (syntax-test #'(let ([#%app 5])
 		 (+ 1 2)))
+
+(err/rt-test ('oops (/ 1 0)) exn:fail:contract:divide-by-zero?)
+(test "#<procedure:*>\n"
+      'left-to-right-error
+      (let ([o (open-output-string)])
+        (parameterize ([current-output-port o])
+          (with-handlers ([exn:fail? void])
+            ((void)
+             (letrec ((E (writeln *))
+                      (H 1))
+               (let () H)))))
+        (get-output-string o)))
+
+
+(err/rt-test ((if (zero? (random 1)) 'oops 'nope) (/ 1 0)) exn:fail:contract:divide-by-zero?)
+(err/rt-test ((void)
+              (letrec ((E (/ 1 0))
+                       (H 1))
+                (let () H)))
+             exn:fail:contract:divide-by-zero?)
 
 (test 3 '#%app (#%app + 1 2))
 (syntax-test #'())
@@ -2393,6 +2423,7 @@
 
   (test #t check '(a b))
   (test #t check '#(a b #hash((c . 9))))
+  (test #t check '#(a b #hashalw(("c" . 10) ("d" . 11))))
   (test #t check '(#hasheqv((10 . 11) (12 . 13)) #&"str" #s(color r G #b0)))
   (test #t check '(#hasheq((x . 11) (y . 13) (z . #f)) (1 . 2))))
 
@@ -2516,6 +2547,17 @@
                        ([i '(1)])
                (values (values x y)))
              exn:fail:contract:arity?)
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Regression test to make that an ok reference to `unsafe-undefined`
+;; isn't mangled to a disallowed reference:
+
+(parameterize ([current-code-inspector (current-code-inspector)])
+  (parameterize ([current-namespace (make-base-namespace)])
+    (eval '(module test racket/base
+             (provide t)
+             (define (t #:a [a "12345678"]) (list a))
+             (t)))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

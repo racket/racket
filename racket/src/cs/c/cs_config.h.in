@@ -1,5 +1,5 @@
 /* The size of a `void *', as computed by sizeof. */
 #undef SIZEOF_VOID_P
 
-/* Whether use put ".zo" files in a subdirectory of "compiled" */
+/* Whether to put ".zo" files in a subdirectory of "compiled" */
 #undef CS_COMPILED_SUBDIR

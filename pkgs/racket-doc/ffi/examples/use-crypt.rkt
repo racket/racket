@@ -2,6 +2,11 @@
 
 #lang racket/base
 
+(module test racket/base
+  ;; See "crypt.rkt" for an explanation of why this
+  ;; example is obsolete.
+  (void))
+
 (require "crypt.rkt")
 
 (define passwd "foo")

@@ -49,7 +49,7 @@
                ; we use write instead of wr here so that the field doesn't get
                ; a reference (#n#) when print-graph is true.
                 (write (or (record-reader rtd) (record-type-uid rtd)) p)
-                (do ([flds (csv7:record-type-field-indices rtd) (cdr flds)]
+                (do ([flds (csv7:record-type-field-names rtd) (cdr flds)]
                      [i 0 (+ i 1)])
                     ((null? flds))
                   (write-char #\space p)
@@ -101,7 +101,7 @@
           ($object-in-heap? x)
           (or (pair? x)
               (vector? x)
-              (stencil-vector? x)
+              ($stencil-vector? x)
               (box? x)
               (and ($record? x) (not (eq? x #!base-rtd)))
               (fxvector? x)
@@ -162,13 +162,13 @@
                         (unless (or (fx> i m) (limit? veclen))
                           (find-dupls (vector-ref x i) lev len)
                           (f (fx+ i 1) (decr veclen))))))]
-                 [(stencil-vector? x)
-                  (unless (fx= (stencil-vector-length x) 0)
-                    (let ([m (fx- (stencil-vector-length x) 1)]
+                 [($stencil-vector? x)
+                  (unless (fx= ($stencil-vector-length x) 0)
+                    (let ([m (fx- ($stencil-vector-length x) 1)]
                           [lev (decr lev)])
                       (let f ([i 0] [veclen len])
                         (unless (or (fx> i m) (limit? veclen))
-                          (find-dupls (stencil-vector-ref x i) lev len)
+                          (find-dupls ($stencil-vector-ref x i) lev len)
                           (f (fx+ i 1) (decr veclen))))))]
                  [(and ($record? x) (not (eq? x #!base-rtd)))
                   (when (print-record)
@@ -209,7 +209,7 @@
                (cond
                  [(pair? x) (cyclic-structure? x curlev lstlen cyclic-pair?)]
                  [(vector? x) (cyclic-structure? x curlev 0 cyclic-vector?)]
-                 [(stencil-vector? x) (cyclic-structure? x curlev 0 cyclic-stencil-vector?)]
+                 [($stencil-vector? x) (cyclic-structure? x curlev 0 cyclic-stencil-vector?)]
                  [(and ($record? x) (not (eq? x #!base-rtd)))
                   (and (print-record)
                        (cyclic-structure? x curlev lstlen
@@ -255,10 +255,10 @@
 
    (define cyclic-stencil-vector?
       (lambda (x curlev lstlen)
-         (let ([n (stencil-vector-length x)] [curlev (fx+ curlev 1)])
+         (let ([n ($stencil-vector-length x)] [curlev (fx+ curlev 1)])
             (let across ([i (fx- (if len (fxmin len n) n) 1)])
                (and (fx>= i 0)
-                    (or (cyclic? (stencil-vector-ref x i) curlev 0)
+                    (or (cyclic? ($stencil-vector-ref x i) curlev 0)
                         (across (fx- i 1))))))))
 
    (define cyclic-box?
@@ -301,11 +301,11 @@
                      (and (fx>= i 0)
                           (or (down (vector-ref x i) (fx- xlev 1))
                               (across (fx- i 1))))))]
-                [(stencil-vector? x)
-                 (let ([n (stencil-vector-length x)])
+                [($stencil-vector? x)
+                 (let ([n ($stencil-vector-length x)])
                    (let across ([i (fx- (if len (fxmin len n) n) 1)])
                      (and (fx>= i 0)
-                          (or (down (stencil-vector-ref x i) (fx- xlev 1))
+                          (or (down ($stencil-vector-ref x i) (fx- xlev 1))
                               (across (fx- i 1))))))]
                 [(and ($record? x) (not (eq? x #!base-rtd)))
                  (and (print-record)
@@ -325,7 +325,7 @@
     (and (if (fixmediate? x)
              (eq? x black-hole)
              (and ($object-in-heap? x)
-                  (or (pair? x) (vector? x) (stencil-vector? x) (box? x) (and ($record? x) (not (eq? x #!base-rtd))))))
+                  (or (pair? x) (vector? x) ($stencil-vector? x) (box? x) (and ($record? x) (not (eq? x #!base-rtd))))))
          (or (print-graph)
              (and (not (and lev len))
                   (maybe-cyclic? x lev len)
@@ -357,7 +357,7 @@
     digits to be in
 <mode> is one of:
     'normal:  this is used for "free format" printing.  In normal
-        mode, the digits produced are the minumum number needed
+        mode, the digits produced are the minimum number needed
         to reproduce the internal representation.  In this case,
         <position> is ignored (pass in zero).
 
@@ -380,8 +380,8 @@ In any of the modes, you receive an infinite list consisting of
     * the sign represented by 1 for + and -1 for -
     * the exponent
     * the significant digits w/o trailing zeros
-    * a (posibly empty) sequence of -1's, and
-    * a (posibly empty) sequence of -2's.
+    * a (possibly empty) sequence of -1's, and
+    * a (possibly empty) sequence of -2's.
 
 The -1's should be printed as zeros if you need them; a -1 digit is
 equivalent to zero except that it is not necessary to print it to
@@ -395,7 +395,7 @@ digits.  For denormalized floats, -2 digits may appear much sooner
 (perhaps even starting with the second digit).
 
 Positive floating point zero returns with (1 0 -1 ...).  Negative
-floating point returns with (1 0 -1 ...).
+floating point returns with (-1 0 -1 ...).
 |#
 
 (define $flonum->digits)
@@ -681,13 +681,13 @@ floating point returns with (1 0 -1 ...).
              [else (wrsymbol (symbol->string x) p)])]
           [(pair?) (wrpair x r lev len d? env p)]
           [(string?) (if d? (display-string x p) (wrstring x p))]
-          [(vector?) (wrvector vector-length vector-ref #f x r lev len d? env p)]
-          [(stencil-vector?) (wrvector stencil-vector-length stencil-vector-ref
-                                       (string-append "stencil[" (number->string (stencil-vector-mask x) 16) "]")
-                                       x r lev len d? env p)]
-          [(fxvector?) (wrvector fxvector-length fxvector-ref "vfx" x r lev len d? env p)]
-          [(flvector?) (wrvector flvector-length flvector-ref "vfl" x r lev len d? env p)]
-          [(bytevector?) (wrvector bytevector-length bytevector-u8-ref "vu8" x r lev len d? env p)]
+          [(vector?) (wrvector vector-length vector-ref #t #f x r lev len d? env p)]
+          [($stencil-vector?) (wrvector $stencil-vector-length $stencil-vector-ref
+                                        #f (string-append (number->string ($stencil-vector-mask x)) "vs")
+                                        x r lev len d? env p)]
+          [(fxvector?) (wrvector fxvector-length fxvector-ref #t "vfx" x r lev len d? env p)]
+          [(flvector?) (wrvector flvector-length flvector-ref #t "vfl" x r lev len d? env p)]
+          [(bytevector?) (wrvector bytevector-length bytevector-u8-ref #t "vu8" x r lev len d? env p)]
           [(flonum?) (wrflonum #f x r d? p)]
           ; catch before record? case
           [($condition?)
@@ -872,8 +872,8 @@ floating point returns with (1 0 -1 ...).
        (write-char #\) p)])))
 
 (define wrvector
-   (lambda (vlen vref prefix x r lev len d? env p)
-      (let ([size (vlen x)] [pvl (and (not d?) (print-vector-length))])
+   (lambda (vlen vref pvl? prefix x r lev len d? env p)
+      (let ([size (vlen x)] [pvl (and (not d?) pvl? (print-vector-length))])
          (write-char #\# p)
          (when pvl (wrfixits size 10 p))
          (when prefix (display-string prefix p))
@@ -1067,7 +1067,8 @@ floating point returns with (1 0 -1 ...).
                         (write-char (flonum-digit->char u) p)
                         (loop (cdr s))))))
             (write-char #\e p)
-            (when (fxpositive? e) (write-char #\+ p))
+            (when (and (fxpositive? e) (print-positive-exponent-sign))
+              (write-char #\+ p))
             (wrfixnum e r #t p)))
 
       (define display-precision
@@ -1090,26 +1091,19 @@ floating point returns with (1 0 -1 ...).
                    (if (fx< s 0)
                        (write-char #\- p)
                        (when force-sign (write-char #\+ p)))
-                   (if (or (fx> r 10) (cond
-                                        [(fx< e -4) #f]
-                                        [(fx< e 14) #t]
-                                        [else
-                                         (let ([digits (let loop ([ls ls] [digits 0])
-                                                         (if (fx< (car ls) 0)
-                                                             digits
-                                                             (loop (cdr ls) (fx+ digits 1))))])
-                                           (fx< (fx- e digits) 3))]))
-                       (free-format e ls p)
-                       (free-format-exponential e ls r p))))
+                   (if ((print-select-flonum-exponential-format) r e (let loop ([ls ls] [digits 0])
+                                                                       (if (fx< (car ls) 0)
+                                                                           digits
+                                                                           (loop (cdr ls) (fx+ digits 1)))))
+                       (free-format-exponential e ls r p)
+                       (free-format e ls p))))
               (cond
                 [(print-precision) =>
                  (lambda (m)
                    (if (and (fixnum? m) (fx< m 53))
                        (display-precision (fxmax m (integer-length (vector-ref dx 0))) p)
                        (display-precision m p)))]
-                [else
-                 (void)
-                 #;
+                [(print-subnormal-precision)
                  (let ([m (integer-length (vector-ref dx 0))])
                    (when (fx< 0 m 53) (display-precision m p)))]))))))
 
@@ -1415,4 +1409,24 @@ floating point returns with (1 0 -1 ...).
       (unless (or (not x) (and (fixnum? x) (fx> x 0)) (and (bignum? x) ($bigpositive? x)))
         ($oops 'print-precision "~s is not a positive exact integer or #f" x))
       x)))
+
+(define print-subnormal-precision
+  ($make-thread-parameter
+    #t
+    (lambda (x) (and x #t))))
+
+(define print-positive-exponent-sign
+  ($make-thread-parameter
+    #f
+    (lambda (x) (and x #t))))
+
+(define-who print-select-flonum-exponential-format
+  ($make-thread-parameter
+   (lambda (r e n-digits)
+     (not (or (fx> r 10) (fx< -4 e 10))))
+   (lambda (x)
+     (unless (procedure? x)
+       ($oops who "~s is not a procedure" x))
+     x)))
+
 )

@@ -2,7 +2,7 @@
 
 (load-relative "loadtest.rktl")
 
-(require scheme/async-channel)
+(require racket/async-channel)
 
 (Section 'async-channel)
 

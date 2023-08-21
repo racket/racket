@@ -220,10 +220,175 @@
 (test #t 'stream (match '() [(stream) #t]))
 (test 1 'stream (match '(1) [(stream x) x]))
 (test 3 'stream (match '(1 2) [(stream x y) (+ x y)]))
+(test '(0 1 1 2) 'stream
+      (match (for/stream ([i 2])
+               (values i (add1 i)))
+        [(stream (values a b) (values c d)) (list a b c d)]))
 (test '(1 2) 'stream* (match '(1 2) [(stream* xs) xs]))
 (test 1 'stream* (match '(1 2) [(stream* hd _) hd]))
 (test '(2) 'stream* (match '(1 2) [(stream* _ tl) tl]))
 (test -1 'stream* (match '(1 2 3 4) [(stream* x y tl) (- x y)]))
 (test '(3 4) 'stream* (match '(1 2 3 4) [(stream* x y tl) tl]))
+(test '(0 1 1 2 #t) 'stream*
+      (match (for/stream ([i 2])
+               (values i (add1 i)))
+        [(stream* (values a b) (values c d) tl) (list a b c d (stream-empty? tl))]))
+
+;; constructors with multiple values
+(test '((1 2))
+      'stream-cons
+      (for/list ([(a b) (stream-cons (values 1 2) empty-stream)])
+        (list a b)))
+
+(test '((1 2))
+      'stream-cons
+      (for/list ([(a b) (stream-cons #:eager (values 1 2) empty-stream)])
+        (list a b)))
+
+(test '((1 2))
+      'stream-cons
+      (for/list ([(a b) (stream-cons (values 1 2) #:eager empty-stream)])
+        (list a b)))
+
+(test '((1 2))
+      'stream-cons
+      (for/list ([(a b) (stream-cons #:eager (values 1 2) #:eager empty-stream)])
+        (list a b)))
+
+(test '((1 2) (3 4))
+      'stream
+      (for/list ([(a b) (stream (values 1 2) (values 3 4))])
+        (list a b)))
+
+(test '((1 2) (3 4))
+      'stream*
+      (for/list ([(a b) (stream* (values 1 2) (stream (values 3 4)))])
+        (list a b)))
+
+(test '((0 1) (1 2))
+      'for/stream
+      (for/list ([(a b) (for/stream ([i 2]) (values i (add1 i)))])
+        (list a b)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; testing lazy operation
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; stream-map
+(let ()
+  (define t (stream-cons 0 t))
+  (define s (stream-filter negative? t))
+  (test #t stream? (stream-map add1 s)))
+
+;; stream-filter
+(let ()
+  (define t (stream-cons 0 t))
+  (define s (stream-filter negative? t))
+  (test #t stream? (stream-filter positive? s)))
+
+(let ()
+  (define val #f)
+  (define st
+    (stream-cons 1
+                 (begin
+                   (set! val #t)
+                   empty-stream)))
+
+  (stream-first st)
+  (test #f 'stream-cons val)
+
+  (define st* (stream-filter (lambda (x) #t) st))
+  (stream-first st*)
+  (test #f 'stream-filter val))
+
+
+;; stream-take
+(let ()
+  (define t (stream-cons 0 t))
+  (define s (stream-filter negative? t))
+  (test #t stream? (stream-take s 10)))
+
+;; stream-append
+(let ()
+  (define t (stream-cons 0 t))
+  (define s (stream-filter negative? t))
+  (test #t stream? (stream-append s s)))
+
+;; stream-add-between
+(let ()
+  (define t (stream-cons 0 t))
+  (define s (stream-filter negative? t))
+  (test #t stream? (stream-add-between s 1)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; testing memoizing operation
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; stream-map
+(let ()
+  (define acc 0)
+  (define (f x y)
+    (set! acc (add1 acc))
+    (values (+ 1 x) (+ 2 y)))
+  (define t (stream-cons (values 0 1) t))
+  (define s (stream-map f t))
+  (test '(1 3) call-with-values (λ () (stream-first s)) list)
+  (test '(1 3) call-with-values (λ () (stream-first s)) list)
+  (test 1 'stream-map acc)
+  (test '(1 3) call-with-values (λ () (stream-first (stream-rest s))) list)
+  (test '(1 3) call-with-values (λ () (stream-first (stream-rest s))) list)
+  (test 2 'stream-map acc))
+
+;; stream-filter
+(define-syntax-rule (terminate-quickly e)
+  (let ()
+    (define-values (xs cpu real gc) (time-apply (λ () e) '()))
+    (when (run-unreliable-tests? 'timing)
+      (test #t < real 50))
+    (apply values xs)))
+
+(let ()
+  (define st
+    (for/stream ([i (in-naturals)])
+      (modulo i 1000000)))
+  (define st* (terminate-quickly (stream-filter zero? st))) ; should be fast
+  (terminate-quickly (stream-rest st*)) ; should be fast
+  (time (test 0 stream-first (stream-rest st*))) ; should take time
+  (test 0 'stream-filter (terminate-quickly (stream-first (stream-rest st*)))) ; should be fast
+  )
+
+(let ()
+  (define s (stream-cons 0 s))
+  (define t (stream-filter (λ (x) (sleep 0.5) #t) s))
+  (test 0 stream-first t)
+  (test 0 'stream-filter (terminate-quickly (stream-first t))))
+
+;; constant space (adapted from an example by Jacob J. A. Koot)
+;; https://racket.discourse.group/t/stream-filter-not-in-constant-space/1643
+(let ()
+  (define boxes '())
+
+  (define (gc!)
+    (collect-garbage)
+    (collect-garbage)
+    (collect-garbage)
+    (set! boxes (filter weak-box-value boxes))
+    (test #t <= (length boxes) 1))
+
+  (define (pred x)
+    (zero? (remainder x 10)))
+
+  (define (make-nats n)
+    (stream-cons n
+                 (let ()
+                   (define s (make-nats (add1 n)))
+                   (set! boxes (cons (make-weak-box s) boxes))
+                   s)))
+
+  (for/fold ([nats (make-nats 0)])
+            ([i 5])
+    (gc!)
+    (stream-rest (stream-filter pred nats)))
+  (gc!))
 
 (report-errs)

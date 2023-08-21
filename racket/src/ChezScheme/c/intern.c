@@ -17,16 +17,16 @@
 #include "system.h"
 
 /* locally defined functions */
-static void oblist_insert PROTO((ptr sym, iptr idx, IGEN g));
-static iptr hash PROTO((const unsigned char *s, iptr n));
-static iptr hash_sc PROTO((const string_char *s, iptr n));
-static iptr hash_uname PROTO((const string_char *s, iptr n));
-static ptr mkstring PROTO((const string_char *s, iptr n));
+static void oblist_insert(ptr sym, iptr idx, IGEN g);
+static iptr hash(const unsigned char *s, iptr n);
+static iptr hash_sc(const string_char *s, iptr n);
+static iptr hash_uname(const string_char *s, iptr n);
+static ptr mkstring(const string_char *s, iptr n);
 
 #define OBINDEX(hc, len) ((hc) & ((len) - 1))
 #define MIN_OBLIST_LENGTH 4096
 
-void S_intern_init() {
+void S_intern_init(void) {
     IGEN g;
 
     if (!S_boot_time) return;
@@ -65,7 +65,7 @@ static void oblist_insert(ptr sym, iptr idx, IGEN g) {
 
 void S_resize_oblist(void) {
   bucket **new_oblist, *b, *oldb, **pb, *bnext;
-  iptr new_oblist_length, i, idx, inc = 0, dinc = 0;
+  iptr new_oblist_length, i, idx;
   ptr sym;
   IGEN g;
 
@@ -80,24 +80,20 @@ void S_resize_oblist(void) {
 
   for (i = 0; i < S_G.oblist_length; i += 1) {
     for (b = S_G.oblist[i]; b != NULL; b = bnext) {
-      int done = 0;
       bnext = b->next;
       sym = b->sym;
       idx = OBINDEX(UNFIX(SYMHASH(sym)), new_oblist_length);
       g = GENERATION(sym);
 
-      for (pb = &new_oblist[idx]; (oldb = *pb) != NULL && SegmentGeneration(addr_get_segment(TO_PTR(oldb))) < g; pb = &oldb->next) {
-        inc++;
-        if (done)
-          dinc++;
-        done = 1;
-      }
+      for (pb = &new_oblist[idx];
+           (oldb = *pb) != NULL && SegmentGeneration(addr_get_segment(TO_PTR(oldb))) < g;
+           pb = &oldb->next);
       b->next = oldb;
       *pb = b;
     }
   }
 
-  S_freemem(S_G.oblist, S_G.oblist_length * sizeof(bucket *));
+  S_freemem(S_G.oblist, S_G.oblist_length * sizeof(bucket *), 0);
   S_G.bytesof[static_generation][countof_oblist] += (new_oblist_length - S_G.oblist_length) * sizeof(bucket *);
 
   S_G.oblist_length = new_oblist_length;
@@ -140,11 +136,15 @@ I64 S_symbol_hash64(ptr str) {
 }
 
 static ptr mkstring(const string_char *s, iptr n) {
-  iptr i;
-  ptr str = S_string(NULL, n);
-  for (i = 0; i != n; i += 1) STRIT(str, i) = s[i];
-  STRTYPE(str) |= string_immutable_flag;
-  return str;
+  if (n == 0) {
+    return S_G.null_immutable_string;
+  } else {
+    iptr i;
+    ptr str = S_string(NULL, n);
+    for (i = 0; i != n; i += 1) STRIT(str, i) = s[i];
+    STRTYPE(str) |= string_immutable_flag;
+    return str;
+  }
 }
 
 ptr S_mkstring(const string_char *s, iptr n) {
@@ -268,8 +268,8 @@ ptr S_intern3(const string_char *pname, iptr plen, const string_char *uname, ipt
   return sym;
 }
 
-void S_intern_gensym(sym) ptr sym; {
-  ptr uname_str = Scar(SYMNAME(sym));
+void S_intern_gensym(ptr sym, ptr sym_name) {
+  ptr uname_str = Scar(sym_name);
   const string_char *uname = &STRIT(uname_str, 0);
   iptr ulen = Sstring_length(uname_str);
   iptr hc = hash_uname(uname, ulen);
@@ -297,6 +297,7 @@ void S_intern_gensym(sym) ptr sym; {
     b = b->next;
   }
 
+  SETSYMNAME(sym, sym_name);
   INITSYMHASH(sym) = FIX(hc);
   oblist_insert(sym, idx, GENERATION(sym));
 
@@ -304,7 +305,7 @@ void S_intern_gensym(sym) ptr sym; {
 }
 
 /* must hold mutex */
-ptr S_intern4(sym) ptr sym; {
+ptr S_intern4(ptr sym) {
   ptr name = SYMNAME(sym);
   ptr uname_str = (Sstringp(name) ? name : Scar(name));
   const string_char *uname = &STRIT(uname_str, 0);
@@ -338,7 +339,7 @@ ptr S_intern4(sym) ptr sym; {
 }
 
 /* retrofit existing symbols once nonprocedure_code is available */
-void S_retrofit_nonprocedure_code() {
+void S_retrofit_nonprocedure_code(void) {
   ptr npc, sym, val; bucket_list *bl;
 
   npc = S_G.nonprocedure_code;

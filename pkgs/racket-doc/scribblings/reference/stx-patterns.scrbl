@@ -419,7 +419,7 @@ A @racket[head-template] produces a sequence of syntax objects; that sequence is
   not occur at a depth less than its @tech{depth marker}; otherwise, an error is
   raised.}
 
- @specsubform[#:literals (~@) (~@ . template)]{
+ @defsubform[(~@ . template)]{
 
    Produces the sequence of elements in the syntax list produced by
    @racket[template]. If @racket[template] does not produce a proper syntax list,
@@ -433,7 +433,7 @@ A @racket[head-template] produces a sequence of syntax objects; that sequence is
      #'(list 1 (~@ . xs) 5))
    ]}
 
- @specsubform[#:literals (~?) (~? head-template1 head-template2)]{
+ @defsubform[(~? head-template1 head-template2)]{
 
    Produces the result of @racket[head-template1] if none of its pattern
    variables have ``missing values''; otherwise produces the result of
@@ -611,8 +611,8 @@ where it indicates a pattern that matches any syntax object. See
 @racket[syntax-case].}
 
 @deftogether[[
-@defidform[~?]
-@defidform[~@]
+@defidform[#:link-target? #f ~?]
+@defidform[#:link-target? #f ~@]
 ]]{
 
 The @racket[~?] and @racket[~@] transformer bindings prohibit these forms from

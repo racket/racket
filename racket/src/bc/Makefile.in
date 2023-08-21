@@ -1,10 +1,107 @@
-#
-# Makefile for racket
-#
+# This makefile template is instantiated in a build directory to
+# communicate configuration decisions from "configure" to "build.zuo".
+# See "../cs/c/Makefile.in" for more information; here we describe
+# only the parts that are specific to a BC build
+
+srcdir = @srcdir@
+
+CC = @CC@
+CPP = @CPP@
+XFORMFLAGS = @XFORMFLAGS@
+
+# Stays a plain compiler even if libtool is used for `CC`
+PLAIN_CC = @PLAIN_CC@
+
+# Liker for executables; usually the same as `CC`, but needs to be
+# different when using libtool
+MZLINKER = @MZLINKER@
+
+CFLAGS = @CFLAGS@
+CPPFLAGS = @PREFLAGS@
+LDFLAGS = @LDFLAGS@
+LIBS = @LIBS@
+AR = @AR@
+ARFLAGS = @ARFLAGS@
+RANLIB = @RANLIB@
+
+# More like `CPPFLAGS`, but some apply to subsets
+OPTIONS = @OPTIONS@
+GC2OPTIONS = @GC2OPTIONS@
+MZOPTIONS = @MZOPTIONS@
+DYN_CFLAGS = @DYN_CFLAGS@
+
+# Windows
+DLLTOOL = @DLLTOOL@
+WINDRES = @WINDRES@
+MACH = @MACH@
+
+STRIP_DEBUG = @STRIP_DEBUG@
+STRIP_LIB_DEBUG = @STRIP_LIB_DEBUG@
+
+POST_LINKER = @POST_LINKER@
+
+# To cooperate with libtool, parameterize over ".o" versus ".lo"
+# and ".a" versus ".la"
+LTO = @LTO@
+LTA = @LTA@
+
+LIBFFI_CONFIGURE_ARGS = @LIBFFI_CONFIGURE_ARGS@
+RKTIO_CONFIGURE_ARGS = @RKTIO_CONFIGURE_ARGS@
+
+FOREIGN_ENABLED = @FOREIGN_ENABLED@
+LIBFFI_BUILD_ENABLED = @LIBFFI_BUILD_ENABLED@
+FOREIGN_CONVENIENCE = @FOREIGN_CONVENIENCE@
+
+RACKET = @RACKET@
+
+ENABLE_CIFY = @ENABLE_CIFY@
+
+# for gmp assembly:
+EXTRA_GMP_NAME = @EXTRA_GMP_NAME@
+
+# Whether building for Mac OS ("t" or "f"), and how the framework is
+# configured and installed
+OSX=@OSX@
+MACLIBRKT_LINK_MODE = @MACLIBRKT_LINK_MODE@
+FRAMEWORK_INSTALL_DIR = @FRAMEWORK_INSTALL_DIR@
+FRAMEWORK_REL_INSTALL = @FRAMEWORK_REL_INSTALL@
+NEED_STRIP_SIGNATURE = @NEED_STRIP_SIGNATURE@
+
+# Building with MinGW? ("t" or "f")
+MINGW = @MINGW@
+
+# Suffixes for installed CGC and 3m, in case-folded
+# and (potentially) upcased variants
+CGC_INSTALLED = @CGC_INSTALLED@
+MMM_INSTALLED = @MMM_INSTALLED@
+CGC_CAP_INSTALLED = @CGC_CAP_INSTALLED@
+MMM_CAP_INSTALLED = @MMM_CAP_INSTALLED@
+
+INSTALL_LIBS_ENABLE = @INSTALL_LIBS_ENABLE@
+
+CROSS_COMPILE_TARGET_KIND = @CROSS_COMPILE_TARGET_KIND@
+
+SETUP_BOOT_MODE = @SETUP_BOOT_MODE@
+
+INSTALL_SETUP_FLAGS = @INSTALL_SETUP_FLAGS@
+# PLT_SETUP_OPTIONS =
+INSTALL_SETUP_RACKET_FLAGS = @INSTALL_SETUP_RACKET_FLAGS@
+SETUP_MACHINE_FLAGS = 
+
+COLLECTS_PATH = @COLLECTS_PATH@
+CONFIG_PATH = @CONFIG_PATH@
+
+# Whether to build GRacket ("gracket" or "no")
+MAKE_GRACKET = @MAKE_GRACKET@
+
+# GUI variant: `wx_xt`, `wx_mac`, or `wx_win`
+WXVARIANT = @WXVARIANT@
+
+# -------------------------------------------
+# Installation configuration
 
 PACKAGE = racket
 
-srcdir = @srcdir@
 prefix = @prefix@
 exec_prefix = @exec_prefix@
 datarootdir = @datarootdir@
@@ -15,663 +112,78 @@ libpltdir = @libpltdir@
 libpltdir_rel = @libpltdir_rel@
 etcpltdir = @etcpltdir@
 sharepltdir = @sharepltdir@
-configdir = @etcpltdir@
 collectsdir = @collectsdir@
-builddir = @builddir@
+configdir = @etcpltdir@
+pkgsdir = @pkgsdir@
+docdir = @docdir@
+appsdir = @appsdir@
+mandir = @mandir@
 
-# for version.mak:
-mainsrcdir = @srcdir@/..
-@INCLUDEDEP@ @srcdir@/../version/version.mak
+MAKE_COPYTREE = @MAKE_COPYTREE@
+INSTALL_ORIG_TREE = @INSTALL_ORIG_TREE@
 
-NOOP = :
+MAKE_INSTALL_PKGSCOPE = @MAKE_INSTALL_PKGSCOPE@
+INSTALL_PKGSCOPE = @INSTALL_PKGSCOPE@
 
-CC = @CC@
-CPP = @CPP@
+INSTALL_LIBZO = @INSTALL_LIBZO@
 
-# Although CFLAGS is defined via configure, the intent is that
-# CFLAGS and CPPFLAGS can be adjusted at `make' time.
-CFLAGS = @CFLAGS@ @COMPFLAGS@ @PROFFLAGS@
-CPPFLAGS =  @PREFLAGS@
-
-AR = @AR@
-ARFLAGS = @ARFLAGS@
-RANLIB = @RANLIB@
-
-STRIP_DEBUG = @STRIP_DEBUG@
-STRIP_LIB_DEBUG = @STRIP_LIB_DEBUG@
-
-STRIP_SIGNATURE = @STRIP_SIGNATURE@
-RESTORE_SIGNATURE = @RESTORE_SIGNATURE@ "${srcdir}/../mac/entitlements.plist"
-
-STRIP_SIGNATURE_VIA_RACKET = $(BOOTSTRAP_RACKET) "${srcdir}/../mac/codesign.rkt" --remove-signature
-RESTORE_SIGNATURE_VIA_RACKET = $(BOOTSTRAP_RACKET) "${srcdir}/../mac/codesign.rkt" -s - --entitlements
-
-ARLIBFLAGS = @LDFLAGS@ @LIBS@
-
-RACKET = racket
-
-# See ../../Makefile about RUN_RACKET_<X>, which 
-# typically redirects to RUN_THIS_RACKET_<X>:
-RUN_THIS_RACKET_CGC = ./racket@CGC@
-RUN_THIS_RACKET_MMM = ./racket@MMM@
-
-SETUP_BOOT = -O "info@compiler/cm" -l- setup @BOOT_MODE@ $(srcdir)/../setup-go.rkt ../compiled
-SETUP_BOOT_COLLECTS_PATH = $(SETUP_BOOT) collpath.inc collpath.d  "$(srcdir)/../start/collects-path.rkt" "${srcdir}/.."
-
-BOOTSTRAP_RACKET = @RUN_RACKET_CGC@ $(SETUP_BOOT) ignored ignored.d
-
-MZSRC = $(srcdir)/src
-
-FOREIGN_DIR = foreign
-FOREIGN_OBJ = $(FOREIGN_DIR)/foreign.@LTO@
-LIBFFI_OBJ_ON = $(FOREIGN_DIR)/libffi/src/*.@LTO@ $(FOREIGN_DIR)/libffi/src/*/*.@LTO@
-LIBFFI_OBJ_OFF = 
-FOREIGN_OBJS = $(FOREIGN_OBJ) $(LIBFFI_OBJ_@OWN_LIBFFI@)
-LIBFFI_LIB_ON = foreign/libffi/libffi@FOREIGN_CONVENIENCE@.la
-LIBFFI_LIB_OFF = 
-FOREIGN_LIB = $(FOREIGN_OBJ) $(LIBFFI_LIB_@OWN_LIBFFI@)
-FOREIGN_STUB_LIB = $(FOREIGN_OBJ)
-FOREIGN_OBJSLIB = @FOREIGN_OBJSLIB@
-# Dependency always uses FOREIGN_LIB, but linker uses FOREIGN_OBJSLIB. The
-#  FOREIGN_OBJSLIB expansion has too many "*"s to be a valid make target,
-#  while FOREIGN_LIB is not always acceptable to the linker.
-# The foreign build always uses libtool, so that's why we use .la instead of @LTA@
-#  in FOREIGN_LIB.
-
-# About EXE_SUFFIX:
-#  Cygwin offers the illusion that binaries have no ".exe" suffix by
-#  having the file-open syscall open an ".exe" file for reading when
-#  (1) the given filename has no suffix, and (2) there's not a suffixless
-#  file present. However, Cygwin doesn't do that when opening a file for
-#  output, even when the output mode is 'update. So we need to explicitly
-#  add EXE_SUFFIX in a few places.
-
-################################################################################
-
-bin: 
-	$(MAKE) @MZBINTARGET@
-
-normal-bin:
-	$(MAKE) @MAIN_VARIANT@-with-gracket
-
-common:
-	$(MAKE) g-c
-	$(MAKE) @FOREIGNTARGET@
-	$(MAKE) rktio-lib
-
-cgc:
-	$(MAKE) cgc-core
-	$(MAKE) sysinfer@CGC@
-
-cgc-core:
-	$(MAKE) common
-	$(MAKE) dynlib
-	$(MAKE) mzlibrary
-	$(MAKE) racket@CGC@@EXE_SUFFIX@
-	$(MAKE) cstartup
-	$(MAKE) mzlibrary
-	$(MAKE) racket@CGC@@EXE_SUFFIX@
-	$(MAKE) mzcom@CGC@@EXE_SUFFIX@
-
-3m:
-	$(MAKE) @CGC_IF_NEEDED_FOR_MMM@
-	$(MAKE) cstartup
-	cd gc2; $(MAKE) all
-	cd dynsrc; $(MAKE) dynlib3m
-	cd gc2; $(MAKE) ../racket@MMM@@EXE_SUFFIX@
-	cd gc2; $(MAKE) ../mzcom@MMM@@EXE_SUFFIX@
-	$(MAKE) sysinfer@MMM@
-
-3m-with-gracket:
-	$(MAKE) 3m
-	$(MAKE) @MAKE_GRACKET@-3m
-
-gracket-3m:
-	cd gracket && $(MAKE) 3m
-
-no-3m:
-	$(NOOP)
-
-cgc-with-gracket:
-	$(MAKE) cgc
-	$(MAKE) @MAKE_GRACKET@-cgc
-
-gracket-cgc:
-	cd gracket && $(MAKE) cgc
-
-no-cgc:
-	$(NOOP)
-
-both:
-	$(MAKE) cgc-core
-	$(MAKE) 3m
-
-racketlib:
-	$(MAKE) g-c
-	$(MAKE) @FOREIGNTARGET@
-	$(MAKE) mzlibrary 
-
-dynlib:
-	cd dynsrc; $(MAKE) dynlib 
-
-dynexample:
-	$(MAKE) dynlib
-	cd dynsrc; $(MAKE) dynexample 
-
-oe:
-	$(MAKE) dynlib
-	cd dynsrc; $(MAKE) oe
-
-g-c:
-	cd @GCDIR@; $(MAKE) ../libmzgc.@LIBSFX@
-
-exports:
-	cd src; $(MAKE) mzheaders
-
-sproc-extra-lib:
-	cd @GCDIR@; $(MAKE) sproc.@LTO@
-	$(MAKE) sproc.@LTO@
-
-gc.@LIBSFX@:
-	$(AR) $(ARFLAGS) @GCDIR@/gc.@LIBSFX@ @GCDIR@/*.@LTO@
-
-# Compilation of the foreign libraries (this compiles all of them)
-foreign-stuff:
-	cd $(FOREIGN_DIR); $(MAKE) all
-
-foreign-stub:
-	cd $(FOREIGN_DIR); $(MAKE) stub
-
-rktio-lib:
-	cd rktio; $(MAKE) CFLAGS="$(CFLAGS)" CPPFLAGS="$(CPPFLAGS)"
-
-mzlibrary:
-	cd src; $(MAKE) all 
-	$(MAKE) libracket.@LIBSFX@
-
-# For no-cgc-needed, we don't need to build the gc or link racketcgc, 
-# but gc2 depends on a few plain-src objects
-no-cgc-needed:
-	cd src; $(MAKE) plain-objs
-	$(MAKE) @FOREIGNTARGET@
-	$(MAKE) rktio-lib
-	$(MAKE) main.@LTO@
-	$(MAKE) mingw-other
-	cd dynsrc; $(MAKE) ../starter@EXE_SUFFIX@
-
-ALL_CPPFLAGS = -I$(builddir) -I$(srcdir)/include -I$(srcdir)/src -I$(srcdir)/../version $(CPPFLAGS) @OPTIONS@ @GC2OPTIONS@ @MZOPTIONS@ 
-MKSYSTEM_ARGS = -cqu $(srcdir)/mksystem.rkt system.rktd "$(CPP) $(ALL_CPPFLAGS) $(srcdir)/src/systype.c" "@MMM_INSTALLED@" @CROSS_COMPILE_TARGET_KIND@
-
-sysinfer@CGC@:
-	@RUN_RACKET_CGC@ $(MKSYSTEM_ARGS) "@RUN_RACKET_CGC@" "$(RUN_THIS_RACKET_CGC)"
-
-sysinfer@MMM@:
-	@RUN_RACKET_MMM@ $(MKSYSTEM_ARGS) "@RUN_RACKET_MMM@" "$(RUN_THIS_RACKET_MMM)"
-
-
-FOREIGN_USED_LIB = $(FOREIGN_OBJ) $(FOREIGN_LIB)
-FOREIGN_USED_OBJSLIB = $(FOREIGN_OBJSLIB)
-FOREIGN_NOT_USED_LIB = $(FOREIGN_OBJ)
-FOREIGN_NOT_USED_OBJSLIB = $(FOREIGN_OBJ)
-
-LIBRKTIO = rktio/librktio.@LTA@
-LIBRKTIO_FOR_DLL_la = $(LIBRKTIO)
-LIBRKTIO_FOR_DLL_a = 
-LIBRKTIO_FOR_LIB_la =
-LIBRKTIO_FOR_LIB_a = $(LIBRKTIO)
-LIBRKTIO_FOR_DLL = $(LIBRKTIO_FOR_DLL_@LIBSFX@)
-LIBRKTIO_FOR_LIB = $(LIBRKTIO_FOR_LIB_@LIBSFX@)
-
-libracket.@LIBSFX@: src/*.@LTO@ $(@FOREIGN_IF_USED@_LIB) $(LIBRKTIO_FOR_DLL)
-	$(AR) $(ARFLAGS) libracket.@LIBSFX@ src/*.@LTO@ $(@FOREIGN_IF_USED@_OBJSLIB) $(LIBRKTIO_FOR_DLL) @LIBRACKET_DEP@
-
-# Irix sproc, only
-sproc.@LTO@: @GCDIR@/sproc.@LTO@
-	cp @GCDIR@/sproc.@LTO@ sproc.@LTO@
-
-# Unix ----------------------------------------
-
-racket@CGC@@NOT_OSX@@NOT_MINGW@: libracket.@LIBSFX@ libmzgc.@LIBSFX@ main.@LTO@ $(LIBRKTIO_FOR_LIB) $(SPECIALIZINGOBJECTS)
-	@MZLINKER@ -o racket@CGC@ main.@LTO@ $(SPECIALIZINGOBJECTS) libracket.@LIBSFX@ libmzgc.@LIBSFX@ $(LIBRKTIO_FOR_LIB) @LDFLAGS@ @LIBS@
-	@POST_LINKER@ racket@CGC@
-
-mzcom@CGC@@NOT_MINGW@:
-	$(NOOP)
-
-# Mac OS ----------------------------------------
-
-MZFW = Racket.framework/Versions/$(FWVERSION)/Racket
-
-MACLIBRKT_LIBS = $(SPECIALIZINGOBJECTS) libracket.@LIBSFX@ libmzgc.@LIBSFX@ $(LIBRKTIO) -framework CoreFoundation
-
-$(MZFW): libracket.@LIBSFX@ libmzgc.@LIBSFX@ $(SPECIALIZINGOBJECTS) $(LIBRKTIO)
-	mkdir -p  Racket.framework/Versions/$(FWVERSION)
-	@MZLINKER@ -o $(MZFW) @LDFLAGS@ -dynamiclib -all_load $(MACLIBRKT_LIBS) @LIBS@
-	rm -f Racket.framework/Racket
-	ln -s Versions/$(FWVERSION)/Racket Racket.framework/Racket
-
-# Depending on MACLIBRKT_LINK_MODE, use Framework or statically link the framework's code:
-MACLIBRKT_LINK_fw = -F. -framework Racket
-MACLIBRKT_LINK_static = $(MACLIBRKT_LIBS)
-
-racket@CGC@@OSX@: $(MZFW) main.@LTO@
-	@MZLINKER@ -o racket@CGC@ @PROFFLAGS@ @LDFLAGS@ main.@LTO@ -Wl,-headerpad_max_install_names $(MACLIBRKT_LINK_@MACLIBRKT_LINK_MODE@) @LIBS@
-	/usr/bin/install_name_tool -change "Racket.framework/Versions/$(FWVERSION)/Racket" "@executable_path/Racket.framework/Versions/$(FWVERSION)/Racket" "racket@CGC@"
-
-# mingw ----------------------------------------
-
-lib/libmzgcxxxxxxx.dll: libmzgc.@LIBSFX@
-	mkdir -p lib
-	@MZLINKER@ -shared -o lib/libmzgcxxxxxxx.dll -Wl,--output-def -Wl,libmzgc.def -Wl,--whole-archive libmzgc.@LIBSFX@ -Wl,--no-whole-archive @LDFLAGS@ -static-libgcc @LIBS@
-
-mzsj86g.o: $(srcdir)/src/mzsj86g.S
-	$(CC) -c -o mzsj86g.o $(srcdir)/src/mzsj86g.S
-
-lib/libracketxxxxxxx.dll: lib/libmzgcxxxxxxx.dll libracket.@LIBSFX@ mzsj86g.o $(LIBRKTIO)
-	mkdir -p lib
-	@MZLINKER@ -shared -o lib/libracketxxxxxxx.dll mzsj86g.o -Wl,--output-def -Wl,libracket.def -Wl,--whole-archive libracket.@LIBSFX@ -Wl,--no-whole-archive $(LIBRKTIO) @LDFLAGS@ -lshell32 -luser32 -lws2_32 -lwinmm lib/libmzgcxxxxxxx.dll -static-libgcc @LIBS@
-
-libracket.dll.a: lib/libracketxxxxxxx.dll
-	@DLLTOOL@ --def libracket.def -D libracketxxxxxxx.dll --output-exp libracketxxxxxxx.exp --output-lib libracketxxxxxxx.lib --output-delaylib libracket.dll.a
-
-libmzgc.dll.a: lib/libmzgcxxxxxxx.dll
-	@DLLTOOL@ --def libmzgc.def -D libmzgcxxxxxxx.dll --output-lib libmzgcxxxxxxx.lib --output-exp libmzgcxxxxxxx.lib --output-delaylib libmzgc.dll.a
-
-rres.o: $(srcdir)/../worksp/racket/racket.rc
-	@WINDRES@ -i $(srcdir)/../worksp/racket/racket.rc -o rres.o
-
-MW_RACKET_LIBS = libracket.dll.a libmzgc.dll.a @LDFLAGS@ @LIBS@ -ldelayimp -static-libgcc
-
-racket@CGC@@EXE_SUFFIX@@MINGW@: libracket.dll.a libmzgc.dll.a main.@LTO@ MemoryModule.@LTO@ $(SPECIALIZINGOBJECTS) rres.o
-	@MZLINKER@ -o racket@CGC@@EXE_SUFFIX@ main.@LTO@ MemoryModule.@LTO@ rres.o $(SPECIALIZINGOBJECTS) $(MW_RACKET_LIBS)
-
-MemoryModule.@LTO@: $(srcdir)/../start/MemoryModule.c $(srcdir)/../start/MemoryModule.h
-	$(CC) -c -I $(srcdir)/../start -o MemoryModule.@LTO@ $(srcdir)/../start/MemoryModule.c
-
-mingw-other@MINGW@: mzsj86g.o MemoryModule.@LTO@ rres.o comres.o com_glue.@LTO@
-	$(NOOP)
-
-mingw-other@NOT_MINGW@:
-	$(NOOP)
-
-mzcom@CGC@@EXE_SUFFIX@@MINGW@: libracket.dll.a libmzgc.dll.a mzcom.@LTO@ mzobj.@LTO@ com_glue.@LTO@ $(SPECIALIZINGOBJECTS) comres.o
-	@MZLINKER@ -mwindows -o mzcom@CGC@@EXE_SUFFIX@ mzcom.@LTO@ mzobj.@LTO@ com_glue.@LTO@ comres.o $(SPECIALIZINGOBJECTS) -lole32 -loleaut32 -luuid $(MW_RACKET_LIBS)
-
-comres.o : $(srcdir)/../worksp/mzcom/mzcom.rc $(srcdir)/../mzcom/prebuilt/MzCOM.tlb
-	@WINDRES@ -I $(srcdir)/../mzcom -I $(srcdir)/../mzcom/prebuilt -i $(srcdir)/../worksp/mzcom/mzcom.rc -o comres.o
-
-# ----------------------------------------
-
-DEF_COLLECTS_DIR = -DINITIAL_COLLECTS_DIRECTORY='"'"`cd $(srcdir)/../../collects; @PWD@`"'"'
-DEF_CONFIG_DIR = -DINITIAL_CONFIG_DIRECTORY='"'"`cd $(srcdir)/../..; @PWD@`/etc"'"'
-DEF_C_DIRS = $(DEF_COLLECTS_DIR) $(DEF_CONFIG_DIR)
-
-MAIN_HEADER_DEPS = $(srcdir)/include/scheme.h $(srcdir)/include/schthread.h $(srcdir)/sconfig.h \
-                   $(srcdir)/src/stypes.h $(srcdir)/cmdline.inc $(srcdir)/../start/parse_cmdl.inc \
-                   $(srcdir)/../start/cmdl_to_argv.inc \
-	           $(srcdir)/../start/config.inc $(srcdir)/../start/self_exe.inc $(srcdir)/../start/delayed.inc \
-	           $(srcdir)/../start/embedded_dll.inc
-
-MAIN_INCLUDES = -I$(builddir) -I$(srcdir)/include -I$(srcdir)/../version
-
-main.@LTO@: $(srcdir)/main.c $(MAIN_HEADER_DEPS)
-	$(CC) $(MAIN_INCLUDES) $(CFLAGS) $(CPPFLAGS) @OPTIONS@ @MZOPTIONS@ $(DEF_C_DIRS) -c $(srcdir)/main.c -o main.@LTO@
-
-main_ee.@LTO@: main.@LTO@
-	$(CC) $(MAIN_INCLUDES) $(CFLAGS) $(CPPFLAGS) @OPTIONS@ @MZOPTIONS@ $(DEF_C_DIRS) -DSTANDALONE_WITH_EMBEDDED_EXTENSION -c $(srcdir)/main.c -o main_ee.@LTO@
-
-ee-main:
-	$(MAKE) main_ee.@LTO@
-
-ee-app: $(RACKET) main_ee.@LTO@
-	if [ "$(EEAPP)" = '' ] ; then echo "ERROR: You must specify EEAPP" ; else $(CC) $(MAIN_CFLAGS_NODBG) -o $(EEAPP) main_ee.@LTO@ $(EEOBJECTS) $(SPECIALIZINGOBJECTS) libracket.@LIBSFX@ libmzgc.@LIBSFX@ @LIBS@ ; fi
-
-MZCOM_DEPS = $(MAIN_HEADER_DEPS) $(srcdir)/../mzcom/com_glue.h $(srcdir)/../mzcom/resource.h
-
-mzcom.@LTO@: $(srcdir)/../mzcom/mzcom.cxx $(MZCOM_DEPS)
-	$(CC) -fno-exceptions $(MAIN_INCLUDES) $(CFLAGS) $(CPPFLAGS) @OPTIONS@ @MZOPTIONS@ $(DEF_C_DIRS) -c $(srcdir)/../mzcom/mzcom.cxx -o mzcom.@LTO@
-
-mzobj.@LTO@: $(srcdir)/../mzcom/mzobj.cxx $(MZCOM_DEPS)
-	$(CC) -fno-exceptions $(MAIN_INCLUDES) $(CFLAGS) $(CPPFLAGS) @OPTIONS@ @MZOPTIONS@ -c $(srcdir)/../mzcom/mzobj.cxx -o mzobj.@LTO@
-
-com_glue.@LTO@: $(srcdir)/../mzcom/com_glue.c $(MZCOM_DEPS)
-	$(CC) $(MAIN_INCLUDES) $(CFLAGS) $(CPPFLAGS) @OPTIONS@ @MZOPTIONS@ -c $(srcdir)/../mzcom/com_glue.c -o com_glue.@LTO@
-
-exn:
-	$(RACKET) -um $(srcdir)/src/makeexn > $(srcdir)/src/schexn.h
-	$(RACKET) -um $(srcdir)/src/makeexn kernstruct $(collectsdir)/racket/private/kernstruct.rkt
-
-CSTARTUPDEST = cstartup.inc
-
-MZCONFIGDIR@NOT_MINGW@ = .
-MZCONFIGDIR@MINGW@ = "$(srcdir)/../worksp"
-
-headers:
-	@RUN_RACKET_CGC@ -cqu $(srcdir)/mkincludes.rkt @DIRCVTPRE@"$(DESTDIR)$(includepltdir)"@DIRCVTPOST@ "$(srcdir)" $(MZCONFIGDIR)
-	cd ..; cp bc/system.rktd "$(DESTDIR)$(libpltdir)/system.rktd"
-
-# The `cstartup` target may update "cstartup.inc", either replacing a
-# stub "cstartup.inc" that redirects to "startup.inc" or rebuilding
-# because "startup.inc" or "racket_version.h" changed; so, during a CGC
-# build, we try again after building this target to potentially update
-# the CGC build to a compiled-startup build. A particular `cstartup`
-# target variant is selected by the `configure` script based on whether
-# `--{en,dis}able-cify` is specified; for example `STARTUP_AS_AUTO`
-# with be the empty string is neither is specified, in which case
-# of the the other targets is selected by a recursive `$(MAKE)`.
-
-cstartup@STARTUP_AS_AUTO@:
-	$(MAKE) cstartup_`@RUN_RACKET_CGC@ -cu $(srcdir)/src/startup-select.rkt`
-
-# For compiling the startup code to bytecode
-cstartup@STARTUP_AS_BYTECODE@:
-	@RUN_RACKET_CGC@ -cu $(srcdir)/src/compile-startup.rkt $(CSTARTUPDEST) cstartup.zo $(srcdir)/src/startup.inc $(srcdir)/../version/racket_version.h
-
-# For compiling the startup code to C
-cstartup@STARTUP_AS_C@:
-	@RUN_RACKET_CGC@ -cu $(srcdir)/src/cify-check.rkt $(CSTARTUPDEST)
-	$(MAKE) cstartup.inc
-
-cstartup_:
-	echo "Bad startup choice, probably an error running startup-select.rkt"
-	exit 1
-
-# Running "cify-startup.rkt" through "$(SETUP_BOOT)" generates more
-# dependencies in "cstartup.d" for `$(CSTARTUPDEST)`
-$(CSTARTUPDEST): $(srcdir)/src/startup.inc $(srcdir)/../version/racket_version.h
-	@RUN_RACKET_CGC@ $(SETUP_BOOT) cstartup.inc cstartup.d $(srcdir)/src/cify-startup.rkt $(srcdir)/src/startup.inc $(srcdir)/../version/racket_version.h
-@INCLUDEDEP@ cstartup.d
-
-mark:
-	racket -cu $(srcdir)/src/mkmark.rkt $(srcdir)/src < $(srcdir)/src/mzmarksrc.c
-
-clean@NOT_OSX@:
-	/bin/rm -rf tmp[123456789] tests/tmp[123456789] tests/sub[123]
-	/bin/rm -f tests/*~
-	/bin/rm -f *.@LTO@ core
-	/bin/rm -f mzdyn.o libmzgc.@LIBSFX@ libracket.@LIBSFX@ libracket3m.@LIBSFX@ libdl.a racket racket.multiboot
-	/bin/rm -f include/macosxpre
-	/bin/rm -f include/macosxpre.p
-	/bin/rm -f $(CSTARTUPDEST)
-	cd gc2; $(MAKE) clean
-	cd sgc; $(MAKE) clean
-	cd src; $(MAKE) clean
-	cd dynsrc; $(MAKE) clean
-	if [ -d ../foreign ] ; then cd ../foreign ; $(MAKE) clean ; fi
-
-clean@OSX@:
-	rm -rf Racket.framework
-	$(MAKE) clean@NOT_OSX@
-
-BUILDINFO=$(DESTDIR)$(libpltdir)/buildinfo
 ICP=@ICP@
 ICP_LIB=@ICP_LIB@
 ICP_STATIC_LIB=@ICP_STATIC_LIB@
 
-install:
-	$(MAKE) install-@MAIN_VARIANT@
+# ------------------------------------------------------------
 
-install-3m:
-	$(MAKE) headers
-	$(MAKE) @MZINSTALLTARGET@
-	$(MAKE) @MZINSTALLTARGET@-3m
-	$(MAKE) @MZINSTALLTARGET@-3m-final
-	$(MAKE) install-@MAKE_GRACKET@-3m
+CC_FOR_BUILD=@CC_FOR_BUILD@
+CFLAGS_FOR_BUILD=@CFLAGS_FOR_BUILD@
+upsrcdir=@upsrcdir@
 
-install-cgc:
-	$(MAKE) headers
-	$(MAKE) @MZINSTALLTARGET@
-	$(MAKE) @MZINSTALLTARGET@-cgc
-	$(MAKE) @MZINSTALLTARGET@-cgc-final
-	$(MAKE) install-@MAKE_GRACKET@-cgc
+ZUO=bin/zuo
 
-install-both:
-	$(MAKE) headers
-	$(MAKE) @MZINSTALLTARGET@
-	$(MAKE) @MZINSTALLTARGET@-3m
-	$(MAKE) @MZINSTALLTARGET@-cgc
-	$(MAKE) @MZINSTALLTARGET@-@MAIN_VARIANT@-final
-	$(MAKE) install-@MAKE_GRACKET@-3m
-	$(MAKE) install-@MAKE_GRACKET@-cgc
+build: $(ZUO)
+	$(ZUO) . build
 
-install-gracket-3m:
-	cd gracket; $(MAKE) install-3m
+3m: $(ZUO)
+	$(ZUO) . 3m
 
-install-gracket-cgc:
-	cd gracket; $(MAKE) install-cgc
+just-racket3m: $(ZUO)
+	$(ZUO) . racket3m
 
-install-no-3m:
-	$(NOOP)
+cgc: $(ZUO)
+	$(ZUO) . cgc
 
-install-no-cgc:
-	$(NOOP)
+cgc-core: $(ZUO)
+	$(ZUO) . cgc
 
-install-lib-finish:
-	if [ "$(DESTDIR)" = "" ]; then \
-	  @LIBFINISH@ "$(LIB_FINISH_DIR)"; \
-	fi
+just-racketcgc: $(ZUO)
+	$(ZUO) . racketcgc
 
-install-post-collects:
-	$(MAKE) install-@MAKE_GRACKET@-post-collects
+just-racketcgc1: $(ZUO)
+	$(ZUO) . racketcgc1
 
-install-gracket-post-collects:
-	cd gracket && $(MAKE) install-post-collects
+both: $(ZUO)
+	$(ZUO) . both
 
-install-no-post-collects:
-	$(NOOP)
+install: $(ZUO)
+	$(ZUO) . install
 
-# Intended for configuration by an external makefile that drives this one:
-SELF_ROOT_CONFIG_FLAG = -Z
-SELF_ROOT_CONFIG_DIR = ../../../../build/config
-SELF_ROOT_CONFIG = $(SELF_ROOT_CONFIG_FLAG) $(SELF_ROOT_CONFIG_DIR)
+plain-install: $(ZUO)
+	$(ZUO) . plain-install
 
-INST_CONFIG = -X @DIRCVTPRE@"$(DESTDIR)$(collectsdir)"@DIRCVTPOST@ -G @DIRCVTPRE@"$(DESTDIR)$(configdir)"@DIRCVTPOST@
-SETUP_RACKET_FLAGS = $(INST_CONFIG) $(SETUP_MACHINE_FLAGS) $(SELF_ROOT_CONFIG) @INSTALL_SETUP_RACKET_FLAGS@
-SETUP_SETUP_FLAGS = @INSTALL_SETUP_FLAGS@ $(PLT_SETUP_OPTIONS) $(PLT_ISO)
-SETUP_ARGS = $(SETUP_RACKET_FLAGS) -N "raco" -l- setup $(SETUP_SETUP_FLAGS)
+install-3m: $(ZUO)
+	$(ZUO) . install-3m
 
-install-setup-3m:
-	@RUN_RACKET_MMM@ $(SETUP_ARGS)
+plain-install-3m: $(ZUO)
+	$(ZUO) . plain-install-3m
 
-install-setup-cgc:
-	@RUN_RACKET_CGC@ $(SETUP_ARGS)
+install-cgc: $(ZUO)
+	$(ZUO) . install-cgc
 
-# Unix install ----------------------------------------
+plain-install-cgc: $(ZUO)
+	$(ZUO) . plain-install-cgc
 
-# Prefix might be relative to srcdir, or it might be absolute, so we
-# have to go up and install things from there.
+install-both: $(ZUO)
+	$(ZUO) . install-both
 
-unix-install:
-	cd ..; rm -f "$(DESTDIR)@MZINSTALLBINDIR@/racket@CGC_INSTALLED@"
-	cd ..; rm -f "$(DESTDIR)@MZINSTALLBINDIR@/racket@MMM_INSTALLED@"
-	cd ..; cp bc/starter@EXE_SUFFIX@ "$(DESTDIR)$(libpltdir)/starter@EXE_SUFFIX@"
-	cp $(srcdir)/../start/starter-sh .
-	cd ..; cp bc/starter-sh "$(DESTDIR)$(libpltdir)/starter-sh"
-	$(STRIP_SIGNATURE) "$(DESTDIR)$(libpltdir)/starter@EXE_SUFFIX@"
-	cd ..; $(STRIP_DEBUG) "$(DESTDIR)$(libpltdir)/starter@EXE_SUFFIX@"
-	@RUN_RACKET_CGC@ $(SETUP_BOOT_COLLECTS_PATH) "$(DESTDIR)$(libpltdir)/starter@EXE_SUFFIX@" $(DESTDIR)@COLLECTS_PATH@ $(DESTDIR)@CONFIG_PATH@
-	cd ..; echo 'CC=@CC@' > "$(BUILDINFO)"
-	cd ..; echo 'CFLAGS=$(CFLAGS) $(CPPFLAGS)' >> "$(BUILDINFO)"
-	cd ..; echo 'OPTIONS=@OPTIONS@' >> "$(BUILDINFO)"
-	cd ..; echo 'MZOPTIONS=@MZOPTIONS@' >> "$(BUILDINFO)"
-	cd ..; echo "LDFLAGS=@LDFLAGS@" >> "$(BUILDINFO)"
-	cd ..; echo 'LIBS=@LIBS@' >> "$(BUILDINFO)"
-
-unix-install-cgc:
-	$(MAKE) unix-@INSTALL_LIBS_ENABLE@-libs-cgc
-	cd ..; $(ICP) bc/racket@CGC@ "$(DESTDIR)$(bindir)/racket@CGC_INSTALLED@"
-	$(STRIP_SIGNATURE) "$(DESTDIR)$(bindir)/racket@CGC_INSTALLED@"
-	cd ..; $(STRIP_DEBUG) "$(DESTDIR)$(bindir)/racket@CGC_INSTALLED@"
-	cd ..; cp bc/mzdyn.o "$(DESTDIR)$(libpltdir)/mzdyn.o"
-	@RUN_RACKET_CGC@ $(SETUP_BOOT_COLLECTS_PATH) "$(DESTDIR)$(bindir)/racket@CGC_INSTALLED@@EXE_SUFFIX@" $(DESTDIR)@COLLECTS_PATH@ $(DESTDIR)@CONFIG_PATH@
-	$(RESTORE_SIGNATURE) "$(DESTDIR)$(bindir)/racket@CGC_INSTALLED@"
-
-unix-install-libs-cgc:
-	cd ..; $(ICP_LIB) bc/libmzgc.@LIBSFX@ "$(DESTDIR)$(libdir)/libmzgc.@LIBSFX@"
-	cd ..; $(ICP_LIB) bc/libracket.@LIBSFX@ "$(DESTDIR)$(libdir)/libracket.@LIBSFX@"
-	cd ..; $(ICP_STATIC_LIB) bc/rktio/librktio.@LIBSFX@ "$(DESTDIR)$(libdir)/librktio.@LIBSFX@"
-	cd ..; $(STRIP_LIB_DEBUG) "$(DESTDIR)$(libdir)/libmzgc.@LIBSFX@"
-	cd ..; $(STRIP_LIB_DEBUG) "$(DESTDIR)$(libdir)/libracket.@LIBSFX@"
-
-unix-no-install-libs-cgc:
-	$(NOOP)
-
-unix-install-cgc-final:
-	$(NOOP)
-
-unix-install-3m:
-	cd ..; $(ICP) bc/racket@MMM@ "$(DESTDIR)$(bindir)/racket@MMM_INSTALLED@"
-	$(STRIP_SIGNATURE) "$(DESTDIR)$(bindir)/racket@MMM_INSTALLED@"
-	cd ..; $(STRIP_DEBUG) "$(DESTDIR)$(bindir)/racket@MMM_INSTALLED@"
-	$(MAKE) unix-@INSTALL_LIBS_ENABLE@-libs-3m
-	cd ..; $(ICP) bc/mzdyn3m.o "$(DESTDIR)$(libpltdir)/mzdyn3m.o"
-	@RUN_RACKET_MMM@ $(SETUP_BOOT_COLLECTS_PATH) "$(DESTDIR)$(bindir)/racket@MMM_INSTALLED@@EXE_SUFFIX@" $(DESTDIR)@COLLECTS_PATH@ $(DESTDIR)@CONFIG_PATH@
-	$(RESTORE_SIGNATURE) "$(DESTDIR)$(bindir)/racket@MMM_INSTALLED@"
-
-unix-install-libs-3m:
-	cd ..; $(ICP_LIB) bc/libracket3m.@LIBSFX@ "$(DESTDIR)$(libdir)/libracket3m.@LIBSFX@"
-	cd ..; $(ICP_STATIC_LIB) bc/rktio/librktio.@LIBSFX@ "$(DESTDIR)$(libdir)/librktio.@LIBSFX@"
-	cd ..; $(STRIP_LIB_DEBUG) "$(DESTDIR)$(libdir)/libracket3m.@LIBSFX@"
-
-unix-no-install-libs-3m:
-	$(NOOP)
-
-unix-install-3m-final:
-	$(NOOP)
-
-# mingw install ----------------------------------------
-
-mingw-install:
-	cd ..; rm -f "$(DESTDIR)@MZINSTALLBINDIR@/racket@CGC_INSTALLED@"
-	cd ..; rm -f "$(DESTDIR)@MZINSTALLBINDIR@/racket@MMM_INSTALLED@"
-	cd ..; cp bc/starter@EXE_SUFFIX@ "$(DESTDIR)$(libpltdir)/MzStart@EXE_SUFFIX@"
-	cd ..; cp bc/mrstarter@EXE_SUFFIX@ "$(DESTDIR)$(libpltdir)/MrStart@EXE_SUFFIX@"
-	cd ..; $(STRIP_DEBUG) "$(DESTDIR)$(libpltdir)/MzStart@EXE_SUFFIX@"
-	cd ..; $(STRIP_DEBUG) "$(DESTDIR)$(libpltdir)/MrStart@EXE_SUFFIX@"
-	cp "$(srcdir)/../mzcom/prebuilt/MzCOM.tlb" MzCOM.tlb
-	cd ..; cp bc/MzCOM.tlb "$(DESTDIR)$(libpltdir)/MzCOM.tlb"
-
-mingw-install-cgc:
-	cd ..; mkdir -p "$(DESTDIR)$(libdir)/gcc"
-	cd ..; $(ICP) bc/libmzgcxxxxxxx.lib "$(DESTDIR)$(libdir)/gcc/libmzgcxxxxxxx.lib"
-	cd ..; $(ICP) bc/libmzgcxxxxxxx.exp "$(DESTDIR)$(libdir)/gcc/libmzgcxxxxxxx.exp"
-	cd ..; $(ICP) bc/libmzgc.def "$(DESTDIR)$(libdir)/libmzgcxxxxxxx.def"
-	cd ..; $(ICP) bc/libracketxxxxxxx.lib "$(DESTDIR)$(libdir)/gcc/libracketxxxxxxx.lib"
-	cd ..; $(ICP) bc/libracketxxxxxxx.exp "$(DESTDIR)$(libdir)/gcc/libracketxxxxxxx.exp"
-	cd ..; $(ICP) bc/libracket.def "$(DESTDIR)$(libdir)/libracketxxxxxxx.def"
-	cd ..; $(ICP) bc/mzdyncgc.o "$(DESTDIR)$(libdir)/gcc/mzdyn.obj"
-	cd ..; $(ICP) bc/mzdyncgc.exp "$(DESTDIR)$(libdir)/gcc/mzdyn.exp"
-	cd ..; $(ICP) bc/lib/libmzgcxxxxxxx.dll "$(DESTDIR)$(libdir)/libmzgcxxxxxxx.dll"
-	cd ..; $(ICP) bc/lib/libracketxxxxxxx.dll "$(DESTDIR)$(libdir)/libracketxxxxxxx.dll"
-	cd ..; $(ICP) bc/racket@CGC@@EXE_SUFFIX@ "$(DESTDIR)@MZINSTALLBINDIR@/Racket@CGC_INSTALLED@@EXE_SUFFIX@"
-	cd ..; $(ICP) bc/mzcom@CGC@@EXE_SUFFIX@ "$(DESTDIR)$(libdir)/MzCOM@CGC_INSTALLED@@EXE_SUFFIX@"
-	cd ..; $(STRIP_DEBUG) "$(DESTDIR)$(libdir)/libmzgcxxxxxxx.dll"
-	cd ..; $(STRIP_DEBUG) "$(DESTDIR)$(libdir)/libracketxxxxxxx.dll"
-	cd ..; $(STRIP_DEBUG) "$(DESTDIR)@MZINSTALLBINDIR@/Racket@CGC_INSTALLED@@EXE_SUFFIX@"
-	cd ..; $(STRIP_DEBUG) "$(DESTDIR)$(libdir)/MzCOM@CGC_INSTALLED@@EXE_SUFFIX@"
-	@RUN_RACKET_CGC@ $(SETUP_BOOT_COLLECTS_PATH) @DIRCVTPRE@"$(DESTDIR)@MZINSTALLBINDIR@/Racket@CGC_INSTALLED@@EXE_SUFFIX@"@DIRCVTPOST@ $(DESTDIR)@COLLECTS_PATH@ $(DESTDIR)@CONFIG_PATH@
-
-mingw-install-cgc-final:
-	$(NOOP)
-
-mingw-install-3m:
-	cd ..; mkdir -p "$(DESTDIR)$(libdir)/gcc"
-	cd ..; $(ICP) bc/gc2/libracket3mxxxxxxx.lib "$(DESTDIR)$(libdir)/gcc/libracket3mxxxxxxx.lib"
-	cd ..; $(ICP) bc/gc2/libracket3mxxxxxxx.exp "$(DESTDIR)$(libdir)/gcc/libracket3mxxxxxxx.exp"
-	cd ..; $(ICP) bc/gc2/libracket3m.def "$(DESTDIR)$(libdir)/libracket3mxxxxxxx.def"
-	cd ..; $(ICP) bc/mzdyn3m.o "$(DESTDIR)$(libdir)/gcc/mzdyn3m.obj"
-	cd ..; $(ICP) bc/mzdyn3m.exp "$(DESTDIR)$(libdir)/gcc/mzdyn3m.exp"
-	cd ..; $(ICP) bc/racket@MMM@@EXE_SUFFIX@ "$(DESTDIR)@MZINSTALLBINDIR@/Racket@MMM_INSTALLED@@EXE_SUFFIX@"
-	cd ..; $(ICP) bc/mzcom@MMM@@EXE_SUFFIX@ "$(DESTDIR)$(libdir)/MzCOM@MMM_INSTALLED@@EXE_SUFFIX@"
-	cd ..; $(ICP) bc/lib/libracket3mxxxxxxx.dll "$(DESTDIR)$(libdir)/libracket3mxxxxxxx.dll"
-	cd ..; $(STRIP_DEBUG) "$(DESTDIR)$(libdir)/libracket3mxxxxxxx.dll"
-	cd ..; $(STRIP_DEBUG) "$(DESTDIR)@MZINSTALLBINDIR@/Racket@MMM_INSTALLED@@EXE_SUFFIX@"
-	cd ..; $(STRIP_DEBUG) "$(DESTDIR)$(libdir)/MzCOM@MMM_INSTALLED@@EXE_SUFFIX@"
-	@RUN_RACKET_MMM@ $(SETUP_BOOT_COLLECTS_PATH) @DIRCVTPRE@"$(DESTDIR)@MZINSTALLBINDIR@/Racket@MMM_INSTALLED@@EXE_SUFFIX@"@DIRCVTPOST@ $(DESTDIR)@COLLECTS_PATH@ $(DESTDIR)@CONFIG_PATH@
-
-mingw-install-3m-final:
-	$(NOOP)
-
-# OS X install ----------------------------------------
-
-MZFWDIR = @FRAMEWORK_INSTALL_DIR@/Racket.framework
-MZFWMMM = Racket.framework/Versions/$(FWVERSION)_3m/Racket
-FRAMEWORK_REL_PREFIX = "@executable_path/../$(libpltdir_rel)/"
-FRAMEWORK_ABS_PREFIX = "$(libpltdir)/"
-
-osx-install:
-	$(MAKE) unix-install
-	rm -f $(DESTDIR)$(MZFWDIR)/Racket
-	rm -rf $(DESTDIR)$(MZFWDIR)/Versions/$(FWVERSION)
-	rm -rf $(DESTDIR)$(MZFWDIR)/Versions/$(FWVERSION)_3m
-	if [ @FRAMEWORK_REL_INSTALL@ = yes ] ; then @RUN_RACKET_CGC@ -cu "$(srcdir)/../mac/clean-fw.rkt" $(DESTDIR)$(MZFWDIR) ; fi
-	mkdir -p $(DESTDIR)@FRAMEWORK_INSTALL_DIR@
-
-osx-install-cgc:
-	$(MAKE) unix-install-cgc
-	mkdir -p $(DESTDIR)$(MZFWDIR)/Versions/$(FWVERSION)
-	cp $(MZFW) $(DESTDIR)$(MZFWDIR)/Versions/$(FWVERSION)/
-	$(STRIP_SIGNATURE) $(DESTDIR)"$(bindir)/racket@CGC_INSTALLED@"
-	/usr/bin/install_name_tool -change "@executable_path/Racket.framework/Versions/$(FWVERSION)/Racket" "@FRAMEWORK_PREFIX@Racket.framework/Versions/$(FWVERSION)/Racket" $(DESTDIR)"$(bindir)/racket@CGC_INSTALLED@"
-	$(RESTORE_SIGNATURE) $(DESTDIR)"$(bindir)/racket@CGC_INSTALLED@"
-
-osx-install-cgc-final:
-	$(MAKE) unix-install-cgc-final
-	ln -s Versions/$(FWVERSION)/Racket $(DESTDIR)$(MZFWDIR)/
-
-osx-install-3m:
-	$(MAKE) unix-install-3m
-	mkdir -p $(DESTDIR)"$(MZFWDIR)/Versions/$(FWVERSION)_3m"
-	cp $(MZFWMMM) $(DESTDIR)$(MZFWDIR)/Versions/$(FWVERSION)_3m/
-	$(STRIP_SIGNATURE) $(DESTDIR)"$(bindir)/racket@MMM_INSTALLED@"
-	/usr/bin/install_name_tool -change "@executable_path/Racket.framework/Versions/$(FWVERSION)_3m/Racket" "@FRAMEWORK_PREFIX@Racket.framework/Versions/$(FWVERSION)_3m/Racket" $(DESTDIR)"$(bindir)/racket@MMM_INSTALLED@"
-	$(RESTORE_SIGNATURE) $(DESTDIR)"$(bindir)/racket@MMM_INSTALLED@"
-
-osx-install-3m-final:
-	$(MAKE) unix-install-3m-final
-	ln -s Versions/$(FWVERSION)_3m/Racket $(DESTDIR)$(MZFWDIR)/
-
-
-# Cygwin install ----------------------------------------
-
-unix-cygwin-install:
-	$(MAKE) unix-install
-	cd dynsrc; $(MAKE) cygwin-install-core
-
-unix-cygwin-install-cgc:
-	$(MAKE) unix-install-cgc
-	cd dynsrc; $(MAKE) cygwin-install-cgc
-
-unix-cygwin-install-cgc-final:
-	$(MAKE) unix-install-cgc-final
-
-unix-cygwin-install-3m:
-	$(MAKE) unix-install-3m
-	cd dynsrc; $(MAKE) cygwin-install-3m
-
-unix-cygwin-install-3m-final:
-	$(MAKE) unix-install-3m-final
-
-# Generate plt-gdbinit ----------------------------------------
-
-mz-gdbinit: $(srcdir)/mk-gdbinit.rkt $(srcdir)/src/stypes.h
-	$(RACKET) $(srcdir)/mk-gdbinit.rkt
-
-
-# Reconfigure ----------------------------------------
-
-SRC_MAKEFILES = $(srcdir)/Makefile.in \
-                $(srcdir)/src/Makefile.in $(srcdir)/gracket/Makefile.in \
-                $(srcdir)/gc2/Makefile.in $(srcdir)/gracket/gc2/Makefile.in \
-                $(srcdir)/../rktio/Makefile.in $(srcdir)/dynsrc/Makefile.in \
-                $(srcdir)/foreign/Makefile.in $(srcdir)/foreign/libffi/Makefile.in
-
-# Only fire the `Makefile` rule explicitly via `reconfigure`
-NO_RECONFIG =
-ON_RECONFIG = no
-
-reconfigure:
-	$(MAKE) Makefile NO_RECONFIG=no ON_RECONFIG=
-
-Makefile$(ON_RECONFIG): $(srcdir)/configure $(SRC_MAKEFILES)
-	$(srcdir)/configure $(CONFIGURE_ARGS_qq) $(MORE_CONFIGURE_ARGS)
+$(ZUO): $(srcdir)/../zuo/zuo.c
+	mkdir -p bin
+	$(CC_FOR_BUILD) $(CFLAGS_FOR_BUILD) -DZUO_LIB_PATH='"'"$(upsrcdir)/../zuo/lib"'"' -o $(ZUO) $(srcdir)/../zuo/zuo.c

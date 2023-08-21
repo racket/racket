@@ -54,8 +54,8 @@
 #endif /* PTHREADS */
 
 /* locally defined functions */
-static ptr new_open_output_fd_helper PROTO((const char *filename, INT mode, INT flags, INT options));
-static INT lockfile PROTO((INT fd));
+static ptr new_open_output_fd_helper(const char *filename, INT mode, INT flags, INT options);
+static INT lockfile(INT fd);
 static int is_valid_zlib_length(iptr count);
 static int is_valid_lz4_length(iptr count);
 
@@ -794,7 +794,7 @@ ptr S_set_fd_length(ptr file, ptr length, IBOOL gzflag) {
   return flag ? S_strerror(errno) : Strue;
 }
 
-void S_new_io_init() {
+void S_new_io_init(void) {
   if (S_boot_time) {
     S_set_symbol_value(S_intern((const unsigned char *)"$c-bufsiz"), Sinteger(SBUFSIZ));
   }
@@ -942,6 +942,6 @@ ptr S_bytevector_uncompress(ptr dest_bv, iptr d_start, iptr d_count,
           return Sstring("internal error uncompressing ~s");
       }
     default:
-      return Sstring("unepxected compress format ~s");
+      return Sstring("unexpected compress format ~s");
   }
 }

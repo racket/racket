@@ -11,7 +11,7 @@
          (struct-out known-struct-op)
          lookup-defn)
 
-;; Known locals and defined variables map to one of he following:
+;; Known locals and defined variables map to one of the following:
 
 (struct known-defined () #:prefab)
 ;; all we know is that it's defined and can be referenced now
@@ -30,7 +30,7 @@
 ;; function of known arity and maybe known pure (at least, no side effect), where
 ;; pure must return 1 value
 
-(struct known-function-of-satisfying (arg-predicate-keys) #:prefab)
+(struct known-function-of-satisfying (arg-predicate-keys result-key) #:prefab)
 ;; function that is known to be pure as long as its arguments
 ;; are known to satisfy certain predicates
 
@@ -48,7 +48,8 @@
 ;;                        or 'general-mutator  (needs field index)
 ;; and the 'constructor mode can be used for things that
 ;; construct built-in datatypes; for 'general-accessor or
-;; 'general-mutator, the field count doesn't include inherited
+;; 'general-mutator, the field count doesn't include inherited;
+;; for 'constructor, the field count can be #t for "any number"
 
 ;; Supports `known-defined/delay`:
 (define (lookup-defn defns sym)

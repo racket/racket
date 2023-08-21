@@ -67,14 +67,27 @@ For @tech{fixnums}: Unchecked versions of @racket[fx+], @racket[fx-],
 @defproc[(unsafe-fxnot [a fixnum?]) fixnum?]
 @defproc[(unsafe-fxlshift [a fixnum?] [b fixnum?]) fixnum?]
 @defproc[(unsafe-fxrshift [a fixnum?] [b fixnum?]) fixnum?]
+@defproc[(unsafe-fxrshift/logical [a fixnum?] [b fixnum?]) fixnum?]
 )]{
 
 For @tech{fixnums}: Unchecked versions of @racket[fxand], @racket[fxior], @racket[fxxor],
-@racket[fxnot], @racket[fxlshift], and @racket[fxrshift].
+@racket[fxnot], @racket[fxlshift], @racket[fxrshift], and @racket[fxrshift/logical].
 
 @history[#:changed "7.0.0.13" @elem{Allow zero or more arguments for
                                     @racket[unsafe-fxand], @racket[unsafe-fxior],
-                                    and @racket[unsafe-fxxor].}]}
+                                    and @racket[unsafe-fxxor].}
+        #:changed "8.8.0.5" @elem{Added @racket[unsafe-fxrshift/logical].}]}
+
+@deftogether[(
+@defproc[(unsafe-fxpopcount [a (and/c fixnum? (not/c negative?))]) fixnum?]
+@defproc[(unsafe-fxpopcount32 [a (and/c fixnum? (integer-in 0 @#,racketvalfont{#xFFFFFFFF}))]) fixnum?]
+@defproc[(unsafe-fxpopcount16 [a (and/c fixnum? (integer-in 0 @#,racketvalfont{#xFFFF})) ]) fixnum?]
+)]{
+
+For @tech{fixnums}: Unchecked versions of @racket[fxpopcount],
+@racket[fxpopcount32], and @racket[fxpopcount16].
+
+@history[#:added "8.5.0.6"]}
 
 
 @deftogether[(
@@ -454,6 +467,37 @@ Unsafe versions of @racket[u16vector-ref] and
 
 
 @deftogether[(
+@defproc[(unsafe-stencil-vector [mask (integer-in 0 (sub1 (expt 2 (stencil-vector-mask-width))))]
+                                [v any/c]
+                                ...)
+         stencil-vector?]
+@defproc[(unsafe-stencil-vector-mask [vec stencil-vector?])
+         (integer-in 0 (sub1 (expt 2 (stencil-vector-mask-width))))]
+@defproc[(unsafe-stencil-vector-length [vec stencil-vector?])
+         (integer-in 0 (sub1 (stencil-vector-mask-width)))]
+@defproc[(unsafe-stencil-vector-ref [vec stencil-vector?]
+                                    [pos exact-nonnegative-integer?])
+         any/c]
+@defproc[(unsafe-stencil-vector-set! [vec stencil-vector?]
+                                     [pos exact-nonnegative-integer?]
+                                     [v any/c])
+         void?]
+@defproc[(unsafe-stencil-vector-update [vec stencil-vector?]
+                                       [remove-mask (integer-in 0 (sub1 (expt 2 (stencil-vector-mask-width))))]
+                                       [add-mask (integer-in 0 (sub1 (expt 2 (stencil-vector-mask-width))))]
+                                       [v any/c]
+                                       ...)
+         stencil-vector?]
+)]{
+
+Unsafe variants of @racket[stencil-vector], @racket[stencil-vector-mask], @racket[stencil-vector-length],
+@racket[stencil-vector-ref], @racket[stencil-vector-set!],
+and @racket[stencil-vector-update].
+
+@history[#:added "8.5.0.7"]}
+
+
+@deftogether[(
 @defproc[(unsafe-struct-ref [v any/c] [k fixnum?]) any/c]
 @defproc[(unsafe-struct-set! [v any/c] [k fixnum?] [val any/c]) void?]
 @defproc[(unsafe-struct*-ref [v (not/c impersonator?)] [k fixnum?]) any/c]
@@ -471,6 +515,16 @@ field must be mutable. The @racket[unsafe-struct*-cas!] operation
 is analogous to @racket[box-cas!] to perform an atomic compare-and-set.
 
 @history[#:changed "6.11.0.2" @elem{Added @racket[unsafe-struct*-cas!].}]}
+
+
+@defproc[(unsafe-struct*-type [v any/c]) struct-type?]{
+
+Similar to @racket[struct-info], but without an inspector check,
+returning only the first result, and without support for
+@tech{impersonators}.
+
+@history[#:added "8.8.0.3"]}
+
 
 @deftogether[(
 @defproc[(unsafe-mutable-hash-iterate-first

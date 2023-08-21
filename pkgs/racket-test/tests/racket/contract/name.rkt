@@ -243,6 +243,7 @@
   (test-name '(and/c real? (not/c positive?)) (and/c real? (not/c positive?)))
   (test-name '(and/c real? negative?) (and/c real? negative?))
   (test-name '(and/c real? (not/c negative?)) (and/c real? (not/c negative?)))
+  (test-name 'and/c and/c) ;; technically, this tests the `object-name` of `and/c`
   (test-name '(>/c 0) (>/c 0))
   (test-name '(<=/c 0) (<=/c 0))
   (test-name '(</c 0) (</c 0))
@@ -440,6 +441,10 @@
   (test-name '(set/c char? #:cmp 'eq) (set/c char? #:cmp 'eq))
   (test-name '(set/c (set/c char?) #:cmp 'eqv) (set/c (set/c char? #:cmp 'dont-care) #:cmp 'eqv))
   (test-name '(set/c (-> char? char?) #:cmp 'equal) (set/c (-> char? char?) #:cmp 'equal))
+  (test-name '(set/c (set/c string?) #:cmp 'equal-always)
+             (set/c (set/c string? #:cmp 'dont-care) #:cmp 'equal-always))
+  (test-name '(set/c (-> string? string?) #:cmp 'equal-always)
+             (set/c (-> string? string?) #:cmp 'equal-always))
   (test-name '(set/c (-> integer? boolean?)) (set/c (-> integer? boolean?)))
   
   (test-name 'α (let ([α (new-∀/c)]) α))

@@ -157,7 +157,8 @@
                (define to-delete (path-add-extension (get-compilation-path path->mode roots path) #".zo"))
                (when (file-exists? to-delete)
                  (trace-printf "deleting:  ~s" to-delete)
-                 (with-compiler-security-guard (delete-file* to-delete))))]
+                 (parameterize ([compiler-security-guard security-guard])
+                   (with-compiler-security-guard (delete-file* to-delete)))))]
             [(if cp->m
                  (not (equal? (current-path->mode) cp->m))
                  (let ([current-cfp (use-compiled-file-paths)])
@@ -590,7 +591,16 @@
                                (trace-printf "different dependency deps for ~a: ~a ~a"
                                              zo-name
                                              imports-sha1
-                                             (deps-imports-sha1 deps)))))
+                                             (deps-imports-sha1 deps))))
+                    (explain (or (file-exists? zo-name)
+                                 ;; See note above about how we cannot depend in general on
+                                 ;; whether the target ".zo" file exists, but that applies
+                                 ;; only when a SHA-1 to assume is recorded or is expected
+                                 ;; to be recorded
+                                 (or (deps-assume-compiled-sha1 deps)
+                                     (and (not (deps-machine deps))
+                                          (current-compile-target-machine))))
+                             (trace-printf "dep file exists without bytecode: ~a" zo-name)))
                ;; We need to recompile the file from machine-independent bytecode,
                ;; or maybe just update the file's modification date
                (trace-printf "hash-equivalent: ~a" zo-name)

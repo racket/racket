@@ -61,6 +61,7 @@
     (compiled-in-memory ld
                         #f ; self
                         #f ; requires
+                        #f ; recur-requires
                         #f ; provides
                         (vector-ref phase-to-link-modules-vector (vector-ref phase-to-link-modules-tree 0))
                         #f ; compile-time-inspector

@@ -1,0 +1,146 @@
+#lang zuo
+
+(require "harness.zuo")
+
+(alert "processes")
+
+(define zuo.exe (hash-ref (runtime-env) 'exe))
+(define answer.txt (build-path tmp-dir "answer.txt"))
+
+;; check process without redirection, inculding multiple processes
+(let ()
+  (define echo-to-file.zuo (build-path tmp-dir "echo-to-file.zuo"))
+  
+  (let ([out (fd-open-output echo-to-file.zuo :truncate)])
+    (fd-write out (~a "#lang zuo\n"
+                      (~s '(let* ([args (hash-ref (runtime-env) 'args)]
+                                  [out (fd-open-output (car args) :truncate)])
+                             (fd-write out (cadr args))))))
+    (fd-close out))
+  
+  (let ([ht (process zuo.exe
+                     echo-to-file.zuo
+                     (list answer.txt
+                           "anybody home?"))])
+    (check (hash? ht))
+    (check (= 1 (hash-count ht)))
+    (check (handle? (hash-ref ht 'process)))
+    (let ([p (hash-ref ht 'process)])
+      (check (handle? p))
+      (check (process-wait p) p)
+      (check (process-wait p p p) p)
+      (check (handle? p))
+      (check (process-status p) 0))
+    (let ([in (fd-open-input answer.txt)])
+      (check (fd-read in eof) "anybody home?")
+      (fd-close in)))
+
+  (define answer2.txt (build-path tmp-dir "answer2.txt"))
+  (let ([ht1 (process zuo.exe echo-to-file.zuo answer.txt "one")]
+        [ht2 (process zuo.exe (list echo-to-file.zuo answer2.txt) "two")])
+    (define p1 (hash-ref ht1 'process))
+    (define p2 (hash-ref ht2 'process))
+    (define pa (process-wait p1 p2))
+    (define pb (process-wait (if (eq? p1 pa) p2 p1)))
+    (check (or (and (eq? p1 pa) (eq? p2 pb))
+               (and (eq? p1 pb) (eq? p2 pa))))
+    (check (process-status p1) 0)
+    (check (process-status p2) 0)
+    (check (process-wait p1) p1)
+    (check (process-wait p2) p2)
+    (define pc (process-wait p1 p2))
+    (check (or (eq? pc p1) (eq? pc p2)))
+    (let ([in (fd-open-input answer.txt)])
+      (check (fd-read in eof) "one")
+      (fd-close in))
+    (let ([in (fd-open-input answer2.txt)])
+      (check (fd-read in eof) "two")
+      (fd-close in))))
+
+;; check setting the process directory and environment variables
+(let ([path->absolute-path (lambda (p) (if (relative-path? p)
+                                           (build-path (hash-ref (runtime-env) 'dir) p)
+                                           p))])
+  (define runtime-to-file
+    (~a "#lang zuo\n"
+        (~s `(let* ([out (fd-open-output ,(path->absolute-path answer.txt) :truncate)])
+               (fd-write out (~s (cons
+                                  (hash-ref (runtime-env) 'dir)
+                                  (hash-ref (runtime-env) 'env))))))))
+
+  (let ([ht (process zuo.exe "" (hash 'stdin 'pipe))])
+    (check (hash? ht))
+    (check (= 2 (hash-count ht)))
+    (check (handle? (hash-ref ht 'process)))
+    (check (handle? (hash-ref ht 'stdin)))
+    (fd-write (hash-ref ht 'stdin) runtime-to-file)
+    (fd-close (hash-ref ht 'stdin))
+    (process-wait (hash-ref ht 'process))
+    (check (process-status (hash-ref ht 'process)) 0)
+    (let ()
+      (define in (fd-open-input answer.txt))
+      (define dir+env (car (string-read (fd-read in eof))))
+      (fd-close in)
+      (check (car dir+env) (hash-ref (runtime-env) 'dir))
+      (check (andmap (lambda (p)
+                       (define p2 (assoc (car p) (cdr dir+env)))
+                       (and p2 (equal? (cdr p) (cdr p2))))
+                     (hash-ref (runtime-env) 'env)))))
+
+  (let* ([env (list (cons "HELLO" "there"))]
+         [ht (process zuo.exe "" (hash 'stdin 'pipe
+                                       'dir tmp-dir
+                                       'env env))])
+    (fd-write (hash-ref ht 'stdin) runtime-to-file)
+    (fd-close (hash-ref ht 'stdin))
+    (process-wait (hash-ref ht 'process))
+    (check (process-status (hash-ref ht 'process)) 0)
+    (let ()
+      (define in (fd-open-input answer.txt))
+      (define dir+env (car (string-read (fd-read in eof))))
+      (fd-close in)
+      (define (dir-identity d) (hash-ref (stat d #t) 'inode))
+      (check (dir-identity (car dir+env)) (dir-identity tmp-dir))
+      (check (andmap (lambda (p)
+                       (define p2 (assoc (car p) (cdr dir+env)))
+                       (and p2 (equal? (cdr p) (cdr p2))))
+                     env)))))
+
+;; make sure that the file descriptor for one process's pipe isn't
+;; kept open by a second process
+(let ()
+  (define ht1 (process zuo.exe "" (hash 'stdin 'pipe 'stdout 'pipe)))
+  (define ht2 (process zuo.exe "" (hash 'stdin 'pipe)))
+
+  (define in1 (hash-ref ht1 'stdin))
+  (fd-write in1 "#lang zuo 'hello")
+  (fd-close in1)
+  (check (fd-read (hash-ref ht1 'stdout) eof) "'hello\n")
+  (process-wait (hash-ref ht1 'process))
+  (fd-close (hash-ref ht1 'stdout))
+
+  (define in2 (hash-ref ht2 'stdin))
+  (fd-write in2 "#lang zuo")
+  (fd-close in2)
+  (process-wait (hash-ref ht2 'process))
+  (void))
+
+;; check transfer of UTF-8 arguments and related
+(define (check-process-arg arg)
+  (define p (process (hash-ref (runtime-env) 'exe)
+		     ""
+		     arg
+		     (hash 'stdin 'pipe 'stdout 'pipe)))
+  (define to (hash-ref p 'stdin))
+  (fd-write to "#lang zuo (displayln (hash-ref (runtime-env) 'args))")
+  (fd-close to)
+  (define from (hash-ref p 'stdout))
+  (define s (fd-read from eof))
+  (process-wait (hash-ref p 'process))
+  (check s (~a"(" arg ")\n")))
+
+(check-process-arg "\316\273")
+(check-process-arg "a b c")
+(check-process-arg "a \"b\" c")
+(check-process-arg "a \"b c")
+(check-process-arg "a \\b c")

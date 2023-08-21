@@ -13,6 +13,27 @@
 ;;; See the License for the specific language governing permissions and
 ;;; limitations under the License.
 
+(define interesting-numbers
+  (list 0 0.0 1 1.0 -1 -1.0 9007199254740992 9007199254740992.0 9007199254740993.0 9007199254740993 9007199254740992000 9007199254740992000.0 9007199254740993000.0 9007199254740993000 4.5035996273704996e-13 4.5035996273704994e-13 45035996273704996/100000000000000000000000000000 45035996273704994/100000000000000000000000000000))
+(define-syntax test-transitive
+  (syntax-rules ()
+    [(_ ?op ?x ?y ?z)
+     (let ([x ?x][y ?y][z ?z])
+       (let ([xy (?op x y)]
+             [yz (?op y z)])
+         (if (and xy yz)
+             (and (?op x z)
+                  (?op x y z))
+             #t)))]))
+(define (test-transitive-permutations op)
+  (andmap (lambda (x)
+            (andmap (lambda (y)
+                      (andmap (lambda (z)
+                                (test-transitive op x y z))
+                        interesting-numbers))
+              interesting-numbers))
+    interesting-numbers))
+
 (mat number-syntax
    (eqv? 0 (- (most-positive-fixnum) (most-positive-fixnum)))
    (eqv? 3 (1+ (1+ (1+ 0))))
@@ -256,14 +277,14 @@
    (eqv? (string->number "0/0") #f)
    (== (string->number "0/0#") +nan.0)
    (eqv? (string->number "0#/0") #f)
-   (eqv? (string->number "0/0e20") #f)
+   (== (string->number "0/0e20") +nan.0)
    (== (string->number "0/0#e20") +nan.0)
    (== (string->number "0#/0#") +nan.0)
    (== (string->number "#i0/0") +nan.0)
    (== (string->number "#i0/0#") +nan.0)
    (== (string->number "#i0#/0") +nan.0)
    (== (string->number "#i0#/0#") +nan.0)
-   (eqv? (string->number "#i0/0e20") #f)
+   (== (string->number "#i0/0e20") +nan.0)
    (== (string->number "#i0/0#e20") +nan.0)
    (eqv? (string->number "#e0/0") #f)
    (eqv? (string->number "#e0/0#") #f)
@@ -380,14 +401,14 @@
    (== (string->number "0/0###") +nan.0)
    (== (string->number "-0/0###") +nan.0)
 
-   (eqv? (string->number "0/0e10") #f)
-   (eqv? (string->number "#i0/0e10") #f)
+   (== (string->number "0/0e10") +nan.0)
+   (== (string->number "#i0/0e10") +nan.0)
    (== (string->number "0/0###e10") +nan.0)
-   (eqv? (string->number "1/0e10") #f)
-   (eqv? (string->number "#i1/0e10") #f)
+   (eqv? (string->number "1/0e10") +inf.0)
+   (eqv? (string->number "#i1/0e10") +inf.0)
    (eqv? (string->number "1/0###e10") +inf.0)
-   (eqv? (string->number "-1/0e10") #f)
-   (eqv? (string->number "#i-1/0e10") #f)
+   (eqv? (string->number "-1/0e10") -inf.0)
+   (eqv? (string->number "#i-1/0e10") -inf.0)
    (eqv? (string->number "-1/0###e10") -inf.0)
 
    (eqv? (string->number "-1/2e10000") -inf.0)
@@ -790,7 +811,7 @@
   (equal? (number->string 3.024) "3.024")
   (eqv? (string->number (number->string #i2/3)) #i2/3)
   (equal? (number->string 3.000) "3.0")
-  (equal? (number->string 3.2e20) "3.2e+20")
+  (equal? (number->string 3.2e20) "3.2e20")
   (equal? (number->string 3.2e2) "320.0")
   (equal? (number->string 3200000) "3200000")
   (equal? (number->string 320000) "320000")
@@ -856,7 +877,7 @@
   (equal? (r6rs:number->string 3.024) "3.024")
   (eqv? (string->number (r6rs:number->string #i2/3)) #i2/3)
   (equal? (r6rs:number->string 3.000) "3.0")
-  (equal? (r6rs:number->string 3.2e20) "3.2e+20")
+  (equal? (r6rs:number->string 3.2e20) "3.2e20")
   (equal? (r6rs:number->string 3.2e2) "320.0")
   (equal? (r6rs:number->string 3200000) "3200000")
   (equal? (r6rs:number->string 320000) "320000")
@@ -1061,6 +1082,13 @@
     (not (= 2.0+1.0i 2.0+1.1i))
     (= 2-1/2i 2-1/2i)
     (= 2-1/2i 2.0-0.5i)
+    (test-transitive = 1 1.0 1)
+    (test-transitive = 1 2 3)
+    (test-transitive = 1 2 1)
+    (test-transitive = (expt 2 66) (inexact (expt 2 66)) (expt 2 66))
+    (test-transitive = 9007199254740992 9007199254740993.0 9007199254740993)
+    (test-transitive = 9007199254740992000 9007199254740993000.0 9007199254740993000)
+    (test-transitive-permutations =)
  )
 
 (mat <
@@ -1114,6 +1142,13 @@
     (error? (< 2+i 3))
     (error? (< 2 3+i))
     (guard (c [#t #t]) (< (#3%length (error #f "oops")) 0))
+    (test-transitive < 1 1.0 1)
+    (test-transitive < 1 2 3)
+    (test-transitive < 1 2 1)
+    (test-transitive < (expt 2 66) (inexact (expt 2 66)) (expt 2 66))
+    (test-transitive < 9007199254740992 9007199254740993.0 9007199254740993)
+    (test-transitive < 9007199254740992000 9007199254740993000.0 9007199254740993000)
+    (test-transitive-permutations <)
  )
 
 (mat <=
@@ -1166,6 +1201,13 @@
     (error? (<= 2.0+1.0i 3.0))
     (error? (<= 2+i 3))
     (error? (<= 2 3+i))
+    (test-transitive <= 1 1.0 1)
+    (test-transitive <= 1 2 3)
+    (test-transitive <= 1 2 1)
+    (test-transitive <= (expt 2 66) (inexact (expt 2 66)) (expt 2 66))
+    (test-transitive <= 9007199254740992 9007199254740993.0 9007199254740993)
+    (test-transitive <= 9007199254740992000 9007199254740993000.0 9007199254740993000)
+    (test-transitive-permutations <=)
  )
 
 (mat >
@@ -1218,6 +1260,13 @@
     (error? (> 2.0+1.0i 3.0))
     (error? (> 2+i 3))
     (error? (> 2 3+i))
+    (test-transitive > 1 1.0 1)
+    (test-transitive > 1 2 3)
+    (test-transitive > 1 2 1)
+    (test-transitive > (expt 2 66) (inexact (expt 2 66)) (expt 2 66))
+    (test-transitive > 9007199254740992 9007199254740993.0 9007199254740993)
+    (test-transitive > 9007199254740992000 9007199254740993000.0 9007199254740993000)
+    (test-transitive-permutations >)
  )
 
 (mat >=
@@ -1267,11 +1316,18 @@
     (not (>= -99999999999999999999999999999 99999999999999999999999999999))
     (>= 99999999999999999999999999999 99999999999999999999999999998)
     (not (>= 99999999999999999999999999998 99999999999999999999999999999))
-    (<= 99999999999999999999999999999 99999999999999999999999999999)
+    (>= 99999999999999999999999999999 99999999999999999999999999999)
     (error? (>= 2.0+1.0i 3.0))
     (error? (>= 2+i 3))
     (error? (>= 2 3+i))
     (guard (c [#t #t]) (not (>= (#3%length (error #f "oops")) 0)))
+    (test-transitive >= 1 1.0 1)
+    (test-transitive >= 1 2 3)
+    (test-transitive >= 1 2 1)
+    (test-transitive >= (expt 2 66) (inexact (expt 2 66)) (expt 2 66))
+    (test-transitive >= 9007199254740992 9007199254740993.0 9007199254740993)
+    (test-transitive >= 9007199254740992000 9007199254740993000.0 9007199254740993000)
+    (test-transitive-permutations >=)
  )
 
 
@@ -1314,6 +1370,13 @@
     (not (r6rs:= 2.0+1.0i 2.0+1.1i))
     (r6rs:= 2-1/2i 2-1/2i)
     (r6rs:= 2-1/2i 2.0-0.5i)
+    (test-transitive r6rs:= 1 1.0 1)
+    (test-transitive r6rs:= 1 2 3)
+    (test-transitive r6rs:= 1 2 1)
+    (test-transitive r6rs:= (expt 2 66) (inexact (expt 2 66)) (expt 2 66))
+    (test-transitive r6rs:= 9007199254740992 9007199254740993.0 9007199254740993)
+    (test-transitive r6rs:= 9007199254740992000 9007199254740993000.0 9007199254740993000)
+    (test-transitive-permutations r6rs:=)
  )
 
 (mat r6rs:<
@@ -1357,6 +1420,13 @@
     (error? (r6rs:< 2.0+1.0i 3.0))
     (error? (r6rs:< 2+i 3))
     (error? (r6rs:< 2 3+i))
+    (test-transitive r6rs:< 1 1.0 1)
+    (test-transitive r6rs:< 1 2 3)
+    (test-transitive r6rs:< 1 2 1)
+    (test-transitive r6rs:< (expt 2 66) (inexact (expt 2 66)) (expt 2 66))
+    (test-transitive r6rs:< 9007199254740992 9007199254740993.0 9007199254740993)
+    (test-transitive r6rs:< 9007199254740992000 9007199254740993000.0 9007199254740993000)
+    (test-transitive-permutations r6rs:<)
  )
 
 (mat r6rs:<=
@@ -1400,6 +1470,13 @@
     (error? (r6rs:<= 2.0+1.0i 3.0))
     (error? (r6rs:<= 2+i 3))
     (error? (r6rs:<= 2 3+i))
+    (test-transitive r6rs:<= 1 1.0 1)
+    (test-transitive r6rs:<= 1 2 3)
+    (test-transitive r6rs:<= 1 2 1)
+    (test-transitive r6rs:<= (expt 2 66) (inexact (expt 2 66)) (expt 2 66))
+    (test-transitive r6rs:<= 9007199254740992 9007199254740993.0 9007199254740993)
+    (test-transitive r6rs:<= 9007199254740992000 9007199254740993000.0 9007199254740993000)
+    (test-transitive-permutations r6rs:<=)
  )
 
 (mat r6rs:>
@@ -1443,6 +1520,13 @@
     (error? (r6rs:> 2.0+1.0i 3.0))
     (error? (r6rs:> 2+i 3))
     (error? (r6rs:> 2 3+i))
+    (test-transitive r6rs:> 1 1.0 1)
+    (test-transitive r6rs:> 1 2 3)
+    (test-transitive r6rs:> 1 2 1)
+    (test-transitive r6rs:> (expt 2 66) (inexact (expt 2 66)) (expt 2 66))
+    (test-transitive r6rs:> 9007199254740992 9007199254740993.0 9007199254740993)
+    (test-transitive r6rs:> 9007199254740992000 9007199254740993000.0 9007199254740993000)
+    (test-transitive-permutations r6rs:>)
  )
 
 (mat r6rs:>=
@@ -1483,10 +1567,17 @@
     (not (r6rs:>= -99999999999999999999999999999 99999999999999999999999999999))
     (r6rs:>= 99999999999999999999999999999 99999999999999999999999999998)
     (not (r6rs:>= 99999999999999999999999999998 99999999999999999999999999999))
-    (r6rs:<= 99999999999999999999999999999 99999999999999999999999999999)
+    (r6rs:>= 99999999999999999999999999999 99999999999999999999999999999)
     (error? (r6rs:>= 2.0+1.0i 3.0))
     (error? (r6rs:>= 2+i 3))
     (error? (r6rs:>= 2 3+i))
+    (test-transitive r6rs:>= 1 1.0 1)
+    (test-transitive r6rs:>= 1 2 3)
+    (test-transitive r6rs:>= 1 2 1)
+    (test-transitive r6rs:>= (expt 2 66) (inexact (expt 2 66)) (expt 2 66))
+    (test-transitive r6rs:>= 9007199254740992 9007199254740993.0 9007199254740993)
+    (test-transitive r6rs:>= 9007199254740992000 9007199254740993000.0 9007199254740993000)
+    (test-transitive-permutations r6rs:>=)
  )
 
 (mat +
@@ -1762,6 +1853,15 @@
     (cfl~= (/ -8.0+6.0i +2.0i) 3.0+4.0i)
     (cfl~= (/ +26.0i 3.0+2.0i) 4.0+6.0i)
     (eqv? (/ 0 3.0+2.0i) 0)
+    (cfl~= (/ 1.0+0.0i +inf.0-1.0i) 0.0+0.0i)
+    (cfl~= (/ 1.0+0.0i 1.0-inf.0i) 0.0+0.0i)
+    (cfl~= (/ 1.0 +inf.0-1.0i) 0.0+0.0i)
+    (cfl~= (/ 1.0 1.0-inf.0i) 0.0+0.0i)
+    (cfl~= (/ +inf.0-1.0i) 0.0+0.0i)
+    (cfl~= (/ 1.0-inf.0i) 0.0+0.0i)
+    (eqv? (/ -5/2+5i 1/2+i) 3+4i)
+    (cfl~= (/ -5/2+5i 0.5+1.0i) 3.0+4.0i)
+    (cfl~= (/ -2.5+5.0i 1/2+i) 3.0+4.0i)
     (let ([v '#(100 32.23 22/33 44-79i 2.9+8.7i)])
        (let f ([i 0])
           (or (= i (vector-length v))
@@ -2378,6 +2478,7 @@
     (eqv? (gcd 0 0) 0)
     (eqv? (gcd 2 4 8 16) 2)
     (eqv? (gcd 12 6 15) 3)
+    (eqv? (gcd 5880287055120467478183936 1152921504606846976) 1152921504606846976)
     (let f ([n 5])
       (or (= n 0)
           (and (let ((gcd-test
@@ -2560,7 +2661,11 @@
     (cfl~= -0.0+0.0i (expt -0.1 1000000000000001/3)) ; inexact approx of second arg is non-integer
     (eqv? +inf.0+inf.0i (expt -0.1 -1000000000000001/3)) ; inexact approx of second arg is non-integer
     (cfl~= -0.0+0.0i (expt -0.1 100000000000000000001/3)) ;  inexact approx of second arg is integer
-    (eqv? -inf.0-inf.0i (expt -0.1 -100000000000000000001/3)) ; inexact approx of second arg is integer
+    (let ([v (expt -0.1 -100000000000000000001/3)]) ; inexact approx of second arg is integer
+      ;; expect -inf.0-inf.0i, but the calculation involves
+      ;; sin and cos of large numbes, which isn't so well defined
+      (and (eqv? +inf.0 (abs (real-part v)))
+	   (eqv? +inf.0 (abs (imag-part v)))))
    ; test cp0 handling of expt
     (begin
       (define $probably-should-not-use
@@ -3018,6 +3123,7 @@
     (fl~= (atan 10.0 -10.0) (angle -10.0+10.0i))
     (fl~= (atan 10 -10.0) (atan 10.0 -10.0))
     (fl~= (atan 10 -10.0) (atan 10.0 -10))
+    (cfl~= (atan +inf.0+0.0i) (atan +inf.0))
  )
 
 (mat sinh
@@ -3116,6 +3222,8 @@
     (let ([z 2.3-3.2i])
        (let ([c (cosh z)] [s (sinh z)])
           (cfl~= (- (* c c) (* s s)) 1.0)))
+    (cfl~= (atanh 0.0+inf.0i) (atanh +inf.0))
+    (nan? (real-part (atanh +inf.0+inf.0i)))
  )
 
 (mat ash

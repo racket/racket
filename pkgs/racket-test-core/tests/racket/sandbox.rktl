@@ -322,7 +322,7 @@
 
    ;; `for-syntax' is allowed in #:requires:
    --top--
-   (make-evaluator! 'scheme/base #:requires '((for-syntax racket/base)))
+   (make-evaluator! 'racket/base #:requires '((for-syntax racket/base)))
    --eval--
    (define-syntax (m stx) #'10)
    m => 10

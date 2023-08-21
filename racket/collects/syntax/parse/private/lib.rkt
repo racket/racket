@@ -2,7 +2,7 @@
 (require "sc.rkt"
          "keywords.rkt"
          (only-in "residual.rkt" state-cons!)
-         (for-syntax syntax/parse/private/residual-ct)
+         (for-syntax (submod "residual.rkt" ct))
          (for-syntax racket/base))
 
 (provide identifier

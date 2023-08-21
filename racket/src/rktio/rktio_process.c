@@ -1319,10 +1319,11 @@ rktio_process_result_t *rktio_process(rktio_t *rktio,
 #endif
   void *env;
   rktio_process_t *subproc;
-  int close_after_len;
-  rktio_const_string_t *new_argv;
 #if defined(RKTIO_SYSTEM_WINDOWS)
   intptr_t spawn_status;
+#else
+  rktio_const_string_t *new_argv;
+  int close_after_len;
 #endif
   int new_process_group = (flags & RKTIO_PROCESS_NEW_GROUP);
   int stderr_is_stdout = (flags & RKTIO_PROCESS_STDOUT_AS_STDERR);

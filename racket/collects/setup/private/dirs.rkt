@@ -1,6 +1,8 @@
 #lang racket/base
 (require racket/promise
          racket/private/config
+         (only-in '#%utils
+                  [get-installation-name utils:get-installation-name])
          (for-syntax racket/base))
 
 ;; ----------------------------------------
@@ -73,6 +75,7 @@
 (define config:gui-bin-search-dirs (delay/sync (or (force config:gui-bin-search-dirs/raw) (force config:bin-search-dirs))))
 (define-config config:config-tethered-console-bin-dir 'config-tethered-console-bin-dir to-path)
 (define-config config:config-tethered-gui-bin-dir 'config-tethered-gui-bin-dir to-path)
+(define-config config:config-tethered-apps-dir 'config-tethered-apps-dir to-path)
 (define-config config:man-dir 'man-dir to-path)
 (define-config config:man-search-dirs 'man-search-dirs to-path)
 (define-config config:links-file 'links-file to-path)
@@ -104,8 +107,11 @@
 (define (get-doc-search-url) (or (force config:doc-search-url)
                                  "http://docs.racket-lang.org/local-redirect/index.html"))
 (define (get-doc-open-url) (force config:doc-open-url))
-(define (get-installation-name) (or (force config:installation-name)
-                                    (version)))
+(define installation-name (delay/sync (utils:get-installation-name (force config-table))))
+(define get-installation-name
+  (case-lambda
+    [() (force installation-name)]
+    [(config) (utils:get-installation-name config)]))
 (define (get-build-stamp) (force config:build-stamp))
 
 ;; ----------------------------------------
@@ -289,6 +295,7 @@
          config:gui-bin-dir
          config:config-tethered-console-bin-dir
          config:config-tethered-gui-bin-dir
+         config:config-tethered-apps-dir
          config:bin-search-dirs
          config:gui-bin-search-dirs)
 

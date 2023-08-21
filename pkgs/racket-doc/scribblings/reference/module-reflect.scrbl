@@ -197,7 +197,7 @@ The @racket[current-module-name-resolver] binding is provided as
          @elem{Added special treatment of @racket[submod] forms with a
                nonexistent collection by the default module name
                resolver.}
-         #:changed "8.2.0.4" @elem{Changed binding to protected.}]}
+         #:changed "8.2.0.4" @elem{Changed binding to @tech{protected}.}]}
 
 
 @defparam[current-module-declare-name name (or/c resolved-module-path? #f)]{
@@ -313,6 +313,11 @@ the last argument to the @tech{module name resolver}, while the
 Beware that concurrent resolution in namespaces that share a module
 registry can create race conditions when loading modules. See also
 @racket[namespace-call-with-registry-lock].
+
+If @racket[mpi] represents a ``self'' (see above) module path that was
+not created by the expander as already resolved, then
+@racket[module-path-index-resolve] raises @racket[exn:fail:contract]
+without calling the module name resolver.
 
 See also @racket[resolve-module-path-index].
 
@@ -524,8 +529,17 @@ See also @racket[module->language-info] and
           [compiled-module-code compiled-module-expression?])
          boolean?]{
 
-Return @racket[#t] if @racket[compiled-module-code] represents a
+Returns @racket[#t] if @racket[compiled-module-code] represents a
 @tech{cross-phase persistent} module, @racket[#f] otherwise.}
+
+
+@defproc[(module-compiled-realm [compiled-module-code compiled-module-expression?])
+         symbol?]{
+
+Returns the @tech{realm} of the module represented by
+@racket[compiled-module-code].
+
+@history[#:added "8.4.0.2"]}
 
 @;------------------------------------------------------------------------
 @section[#:tag "dynreq"]{Dynamic Module Access}
@@ -656,7 +670,7 @@ more than the namespace's @tech{base phase}.}
          boolean?]{
 
 Returns @racket[#t] if the module indicated by @racket[mod] is
-declared (but not necessarily @tech{instantiate}d or @tech{visit}ed)
+@tech{declare}d (but not necessarily @tech{instantiate}d or @tech{visit}ed)
 in the current namespace, @racket[#f] otherwise.
 
 If @racket[load?] is @racket[#t] and @racket[mod] is not a
@@ -758,6 +772,20 @@ A module can be @tech{declare}d by using @racket[dynamic-require].
 
 @history[#:added "6.5.0.5"]}
 
+
+@defproc[(module->realm 
+          [mod (or/c module-path? module-path-index?
+                     resolved-module-path?)])
+         symbol?]{
+
+ Like @racket[module-compiled-realm], but produces the
+ exports of @racket[mod], which must be @tech{declare}d (but
+ not necessarily @tech{instantiate}d or @tech{visit}ed) in
+ the current namespace.
+
+@history[#:added "8.4.0.2"]}
+
+
 @defproc[(module-predefined?
           [mod (or/c module-path? module-path-index?
                      resolved-module-path?)])
@@ -770,3 +798,15 @@ specifically within a particular executable (such as one created by
 @exec{raco exe} or @racket[create-embedding-executable]).}
 
 @(close-eval mod-eval)
+
+@;------------------------------------------------------------------------
+@section[#:tag "modcache"]{Module Cache}
+
+The expander keeps a place-local module cache in order to save time
+while loading modules that have been previously declared.
+
+@defproc[(module-cache-clear!) void?]{
+  Clears the place-local module cache.
+
+  @history[#:added "8.4.0.5"]
+}

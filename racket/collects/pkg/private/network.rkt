@@ -43,7 +43,7 @@
 (define success-codes '(200))
 (define not-found-codes '(404 410))
 
-(define other-retry-codes '(408)) ; not counting 5xx
+(define other-retry-codes '(408 409)) ; not counting 5xx
 (define (retry-code? c)
   (or (and (integer? c) (<= 500 c 599))
       (memv c other-retry-codes)))

@@ -95,14 +95,14 @@ Threads created by foreign code using some means other than
 or calling any Scheme procedures.
 
 %----------------------------------------------------------------------------
-\noskipentryheader
+\entryheader
 \formdef{thread-join}{\categoryprocedure}{(thread-join \var{thread})}
 \returns unspecified
 \listlibraries
 \endnoskipentryheader
 
 \noindent
-Waits until \var{thread} has commpleted.
+Waits until \var{thread} has completed.
 
 %----------------------------------------------------------------------------
 \entryheader
@@ -133,7 +133,7 @@ relationship to the process id returned by
 in all threads.
 
 %----------------------------------------------------------------------------
-\noskipentryheader
+\entryheader
 \formdef{thread-preserve-ownership!}{\categoryprocedure}{(thread-preserve-ownership!)}
 \formdef{thread-preserve-ownership!}{\categoryprocedure}{(thread-preserve-ownership! \var{thread})}
 \returns unspecified
@@ -345,7 +345,7 @@ as long as the lock is allocated in memory shared by the processes.
 
 A lock is simply a word-sized integer, i.e., an \scheme{iptr} or
 \scheme{uptr} foreign type (Section~\ref{SECTFOREIGNDATA}) with the native
-endiannes of the target machine, possibly part of a larger structure
+endianness of the target machine, possibly part of a larger structure
 defined using \scheme{define-ftype} (page~\pageref{defn:define-ftype}).
 It must be explicitly allocated in memory that resides outside the Scheme
 heap and, when appropriate, explicitly deallocated.
@@ -592,7 +592,7 @@ of the containing object.
 \section{Memory Consistency\label{SECTSMGMTMEMMODEL}}
 
 Scheme threads can expose the memory-consistency model of the
-underlying processor, except to the degree that it would interefere
+underlying processor, except to the degree that it would interfere
 with the memory safety of Scheme programs. For example, if two threads
 share a vector, then a \scheme{vector-set!} in one thread will not
 allow the other thread to read the vector and see a partially

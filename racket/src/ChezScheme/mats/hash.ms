@@ -172,7 +172,7 @@
       (lambda (ls)
         (list-ref ls (random (length ls)))))
     (define ht (make-hash-table))
-    (let* ([ls (remq '|| (oblist))] [n 50000])
+    (let* ([ls (remq '|| (oblist))] [n (if (pb?) 5000 50000)])
       (let f ([i 0] [keep '()] [drop '()])
         (if (= i n)
             (and (= (length (hash-table-map ht (lambda (x y) x)))
@@ -208,7 +208,7 @@
       (lambda (ls)
         (list-ref ls (random (length ls)))))
     (define ht (make-hash-table #t))
-    (let* ([ls (remq '|| (oblist))] [n 50000])
+    (let* ([ls (remq '|| (oblist))] [n (if (pb?) 5000 50000)])
       (let f ([i 0] [keep '()] [drop '()])
         (if (= i n)
             (and (<= (length (hash-table-map ht (lambda (x y) x)))
@@ -305,7 +305,8 @@
      (same-elements? (hashtable-keys ht) keys)
      (same-elements? (hashtable-values ht) vals)
      (same-entries? (hashtable-entries ht) keys vals)
-     (same-elements? (hashtable-cells ht) (vector-map cons keys vals))
+     (or (not (hashtable-mutable? ht))
+         (same-elements? (hashtable-cells ht) (vector-map cons keys vals)))
 
      (same-elements? (r6rs:hashtable-keys ht) keys)
      (same-entries? (r6rs:hashtable-entries ht) keys vals)
@@ -316,7 +317,8 @@
                 (same-elements? (hashtable-keys ht size) keys)
                 (same-elements? (hashtable-values ht size) vals)
                 (same-entries? (hashtable-entries ht size) keys vals)
-                (same-elements? (hashtable-cells ht size) (vector-map cons keys vals))))
+                (or (not (hashtable-mutable? ht))
+                    (same-elements? (hashtable-cells ht size) (vector-map cons keys vals)))))
              (list (add1 (hashtable-size ht))
                    (expt 2 1000)))
 
@@ -324,7 +326,8 @@
      (same-elements? (hashtable-keys ht 0) '#())
      (same-elements? (hashtable-values ht 0) '#())
      (same-entries? (hashtable-entries ht 0) '#() '#())
-     (same-elements? (hashtable-cells ht 0) '#())
+     (or (not (hashtable-mutable? ht))
+         (same-elements? (hashtable-cells ht 0) '#()))
 
      (or
       (< (hashtable-size ht) 2)
@@ -358,10 +361,11 @@
                       (and (same-elements? got-keys keys)
                            (same-elements? got-vals vals)))
                     keyss valss))
-           (let ([got-cells (hashtable-cells ht 2)])
-             (ormap (lambda (keys vals)
-                      (same-elements? got-cells (vector-map cons keys vals)))
-                    keyss valss)))))))))
+           (or (not (hashtable-mutable? ht))
+               (let ([got-cells (hashtable-cells ht 2)])
+                 (ormap (lambda (keys vals)
+                          (same-elements? got-cells (vector-map cons keys vals)))
+                        keyss valss))))))))))
 
 (mat hashtable-arguments
  ; make-eq-hashtable
@@ -510,6 +514,8 @@
     (hashtable-cell $ht 'a 'b 'c))
   (error? ; not a hashtable
     (hashtable-cell '(hash . table) 'a 'b))
+  (error? ; immutable hash table
+    (hashtable-cell (hashtable-copy $ht #f) 'a 'b))
  ; hashtable-ref-cell
   (error? ; wrong argument count
     (hashtable-ref-cell))
@@ -518,7 +524,9 @@
   (error? ; wrong argument count
     (hashtable-ref-cell $ht 'a 'b))
   (error? ; not a hashtable
-    (hashtable-ref-cell '(hash . table) 'a 'b))
+    (hashtable-ref-cell '(hash . table) 'a))
+  (error? ; immutable hash table
+    (hashtable-ref-cell (hashtable-copy $ht #f) 'a))
  ; hashtable-delete!
   (error? ; wrong argument count
     (hashtable-delete!))
@@ -603,11 +611,17 @@
   (error? ; wrong argument count
     (hashtable-cells $ht 72 43))
   (error? ; not a hashtable
+    (hashtable-cells 5))
+  (error? ; not a hashtable
     (hashtable-cells '(hash . table)))
   (error? ; bad size
     (hashtable-cells $ht -79))
   (error? ; bad size
     (hashtable-cells $ht 'not-an-unsigned-integer))
+  (error? ; immutable hash table
+    (hashtable-cells (hashtable-copy $ht #f)))
+  (error? ; immutable hash table
+    (hashtable-cells (hashtable-copy $ht #f) 5))
  ; hashtable-hash-function
   (error? ; wrong argument count
     (hashtable-hash-function))
@@ -870,6 +884,8 @@
     (eq-hashtable-cell $wht 'a 'b 'c))
   (error? ; not a hashtable
     (eq-hashtable-cell '(hash . table) 'a 'b))
+  (error? ; immutable hash table
+    (eq-hashtable-cell (hashtable-copy $wht #f) 'a 'b))
  ; eq-hashtable-ref-cell
   (error? ; wrong argument count
     (eq-hashtable-ref-cell))
@@ -879,6 +895,8 @@
     (eq-hashtable-ref-cell $wht 'a 'b))
   (error? ; not a hashtable
     (eq-hashtable-ref-cell '(hash . table) 'a))
+  (error? ; immutable hash table
+    (eq-hashtable-ref-cell (hashtable-copy $wht #f) 'a))
  ; eq-hashtable-try-atomic-cell
   (error? ; wrong argument count
     (eq-hashtable-try-atomic-cell))
@@ -890,6 +908,8 @@
     (eq-hashtable-try-atomic-cell $wht 'a 'b 'c))
   (error? ; not a hashtable
     (eq-hashtable-try-atomic-cell '(hash . table) 'a 'b))
+  (error? ; immutable hash table
+    (eq-hashtable-try-atomic-cell (hashtable-copy $wht #f) 'a 'b))
  ; eq-hashtable-weak?
   (error? ; wrong argument count
     (eq-hashtable-weak?))
@@ -1016,7 +1036,11 @@
   (error? ; not a symbol
     (symbol-hashtable-cell $symht '(a) 'b))
   (error? ; not a symbol
+    (symbol-hashtable-cell $symht '(a) 'b))
+  (error? ; not a symbol
     (hashtable-cell $symht '(a) 'b))
+  (error? ; immutable hash table
+    (symbol-hashtable-cell (hashtable-copy $symht #f) 'a 'b))
  ; symbol-hashtable-ref-cell
   (error? ; wrong argument count
     (symbol-hashtable-ref-cell))
@@ -1032,6 +1056,8 @@
     (symbol-hashtable-ref-cell $symht '(a)))
   (error? ; not a symbol
     (hashtable-ref-cell $symht '(a)))
+  (error? ; immutable hash table
+    (symbol-hashtable-ref-cell (hashtable-copy $symht #f) 'a))
 )
 
 (mat eqv-hashtable-arguments
@@ -1713,16 +1739,17 @@
             (when (fx< (random 10) 5)
               (set-car! a1 #f)))
           ls1)
-        (let loop ([i (min (expt (collect-generation-radix) (collect-maximum-generation)) 1000)])
-          (unless (fx= i 0)
-            (collect)
-            (unless (andmap (lambda (a2 a3 a4) (and (eq? (car a2) (car a3)) (eq? (car a2) (car a4))))
-                            ls2 ls3 ls4)
-              (errorf #f "a2/a3/a4 keys not eq after collection"))
-            (unless (and (andmap (lambda (a3) (not (bwp-object? (car a3)))) ls3)
-                         (andmap (lambda (a4) (not (bwp-object? (car a4)))) ls4))
-              (errorf #f "keys have been bwp'd"))
-            (loop (fx- i 1))))
+        (parameterize ([collect-maximum-generation-threshold-factor 0])
+          (let loop ([i (min (expt (collect-generation-radix) (collect-maximum-generation)) 1000)])
+            (unless (fx= i 0)
+              (collect)
+              (unless (andmap (lambda (a2 a3 a4) (and (eq? (car a2) (car a3)) (eq? (car a2) (car a4))))
+                              ls2 ls3 ls4)
+                (errorf #f "a2/a3/a4 keys not eq after collection"))
+              (unless (and (andmap (lambda (a3) (not (bwp-object? (car a3)))) ls3)
+                           (andmap (lambda (a4) (not (bwp-object? (car a4)))) ls4))
+                (errorf #f "keys have been bwp'd"))
+              (loop (fx- i 1)))))
         (for-each
           (lambda (a2)
             (hashtable-delete! ht (car a2))
@@ -1732,16 +1759,17 @@
                      (equal? (hashtable-values ht) '#())
                      (zero? (hashtable-size ht)))
           (errorf #f "ht has not been cleared out"))
-        (let loop ([i (min (expt (collect-generation-radix) (collect-maximum-generation)) 1000)])
-          (unless (fx= i 0)
-            (collect)
-            (unless (andmap (lambda (a1 a3 a4)
-                              (or (not (car a1))
-                                  (and (eq? (car a1) (car a3))
-                                       (eq? (car a1) (car a4)))))
-                            ls1 ls3 ls4)
-              (errorf #f "a1/a3/a4 keys not eq after collection"))
-            (loop (fx- i 1))))
+        (parameterize ([collect-maximum-generation-threshold-factor 0])
+          (let loop ([i (min (expt (collect-generation-radix) (collect-maximum-generation)) 1000)])
+            (unless (fx= i 0)
+              (collect)
+              (unless (andmap (lambda (a1 a3 a4)
+                                (or (not (car a1))
+                                    (and (eq? (car a1) (car a3))
+                                         (eq? (car a1) (car a4)))))
+                              ls1 ls3 ls4)
+                (errorf #f "a1/a3/a4 keys not eq after collection"))
+              (loop (fx- i 1)))))
         (for-each
           (lambda (a1 a3 a4)
             (unless (or (car a1)
@@ -2316,7 +2344,7 @@
       (lambda (ls)
         (list-ref ls (random (length ls)))))
     (define ht (make-eq-hashtable 4))
-    (let ([ls (remq '|| (oblist))] [n 50000])
+    (let ([ls (remq '|| (oblist))] [n (if (pb?) 5000 50000)])
       (let f ([i 0] [keep '()] [drop '()])
         (if (= i n)
             (and (= (hashtable-size ht) (- n (length drop)))
@@ -2351,7 +2379,7 @@
       (lambda (ls)
         (list-ref ls (random (length ls)))))
     (define ht (make-weak-eq-hashtable 4))
-    (let ([ls (remq '|| (oblist))] [n 50000])
+    (let ([ls (remq '|| (oblist))] [n (if (pb?) 5000 50000)])
       (let f ([i 0] [keep '()] [drop '()])
         (if (= i n)
             (and (<= (hashtable-size ht) (- n (length drop)))
@@ -2389,7 +2417,7 @@
       (lambda (ls)
         (list-ref ls (random (length ls)))))
     (define ht (make-ephemeron-eq-hashtable 4))
-    (let ([ls (remq '|| (oblist))] [n 50000])
+    (let ([ls (remq '|| (oblist))] [n (if (pb?) 5000 50000)])
       (let f ([i 0] [keep '()] [drop '()])
         (if (= i n)
             (and (<= (hashtable-size ht) (- n (length drop)))
@@ -3084,16 +3112,17 @@
             (when (fx< (random 10) 5)
               (set-car! a1 #f)))
           ls1)
-        (let loop ([i (min (expt (collect-generation-radix) (collect-maximum-generation)) 1000)])
-          (unless (fx= i 0)
-            (collect)
-            (unless (andmap (lambda (a2 a3 a4) (and (eqv? (car a2) (car a3)) (eqv? (car a2) (car a4))))
-                            ls2 ls3 ls4)
-              (errorf #f "a2/a3/a4 keys not eqv after collection"))
-            (unless (and (andmap (lambda (a3) (not (bwp-object? (car a3)))) ls3)
-                         (andmap (lambda (a4) (not (bwp-object? (car a4)))) ls4))
-              (errorf #f "keys have been bwp'd"))
-            (loop (fx- i 1))))
+        (parameterize ([collect-maximum-generation-threshold-factor 0])
+          (let loop ([i (min (expt (collect-generation-radix) (collect-maximum-generation)) 1000)])
+            (unless (fx= i 0)
+              (collect)
+              (unless (andmap (lambda (a2 a3 a4) (and (eqv? (car a2) (car a3)) (eqv? (car a2) (car a4))))
+                              ls2 ls3 ls4)
+                (errorf #f "a2/a3/a4 keys not eqv after collection"))
+              (unless (and (andmap (lambda (a3) (not (bwp-object? (car a3)))) ls3)
+                           (andmap (lambda (a4) (not (bwp-object? (car a4)))) ls4))
+                (errorf #f "keys have been bwp'd"))
+              (loop (fx- i 1)))))
         (for-each
           (lambda (a2)
             (hashtable-delete! ht (car a2))
@@ -3103,16 +3132,17 @@
                      (equal? (hashtable-values ht) '#())
                      (zero? (hashtable-size ht)))
           (errorf #f "ht has not been cleared out"))
-        (let loop ([i (min (expt (collect-generation-radix) (collect-maximum-generation)) 1000)])
-          (unless (fx= i 0)
-            (collect)
-            (unless (andmap (lambda (a1 a3 a4)
-                              (or (not (car a1))
-                                  (and (eqv? (car a1) (car a3))
-                                       (eqv? (car a1) (car a4)))))
-                            ls1 ls3 ls4)
-              (errorf #f "a1/a3/a4 keys not eqv after collection"))
-            (loop (fx- i 1))))
+        (parameterize ([collect-maximum-generation-threshold-factor 0])
+          (let loop ([i (min (expt (collect-generation-radix) (collect-maximum-generation)) 1000)])
+            (unless (fx= i 0)
+              (collect)
+              (unless (andmap (lambda (a1 a3 a4)
+                                (or (not (car a1))
+                                    (and (eqv? (car a1) (car a3))
+                                         (eqv? (car a1) (car a4)))))
+                              ls1 ls3 ls4)
+                (errorf #f "a1/a3/a4 keys not eqv after collection"))
+              (loop (fx- i 1)))))
         (for-each
           (lambda (a1 a3 a4)
             (unless (or (car a1)
@@ -3187,7 +3217,7 @@
       (lambda (ls)
         (list-ref ls (random (length ls)))))
     (define ht (make-eqv-hashtable 4))
-    (let ([ls (remq '|| (oblist))] [n 50000])
+    (let ([ls (remq '|| (oblist))] [n (if (pb?) 5000 50000)])
       (let f ([i 0] [keep '()] [drop '()])
         (if (= i n)
             (and (= (hashtable-size ht) (- n (length drop)))
@@ -3222,7 +3252,7 @@
       (lambda (ls)
         (list-ref ls (random (length ls)))))
     (define ht (make-weak-eqv-hashtable 4))
-    (let ([ls (remq '|| (oblist))] [n 50000])
+    (let ([ls (remq '|| (oblist))] [n (if (pb?) 5000 50000)])
       (let f ([i 0] [keep '()] [drop '()])
         (if (= i n)
             (and (<= (hashtable-size ht) (- n (length drop)))
@@ -3260,7 +3290,7 @@
       (lambda (ls)
         (list-ref ls (random (length ls)))))
     (define ht (make-ephemeron-eqv-hashtable 4))
-    (let ([ls (remq '|| (oblist))] [n 50000])
+    (let ([ls (remq '|| (oblist))] [n (if (pb?) 5000 50000)])
       (let f ([i 0] [keep '()] [drop '()])
         (if (= i n)
             (and (<= (hashtable-size ht) (- n (length drop)))
@@ -3587,7 +3617,7 @@
       (lambda (ls)
         (list-ref ls (random (length ls)))))
     (define ht (make-hashtable symbol-hash eq? 4))
-    (let ([ls (remq '|| (oblist))] [n 50000])
+    (let ([ls (remq '|| (oblist))] [n (if (pb?) 5000 50000)])
       (let f ([i 0] [keep '()] [drop '()])
         (if (= i n)
             (and (= (hashtable-size ht) (- n (length drop)))
@@ -4595,10 +4625,8 @@
 (mat ht
   (begin
     (display-string (separate-eval `(parameterize ([source-directories
-                                                     (list
-                                                       ,*mats-dir*
-                                                       ,(format "~a/../s" *mats-dir*)
-                                                       ,(format "~a/../../s" *mats-dir*))])
-                                      (load "ht.ss"))))
+                                                    ',(source-directories)])
+                                      (set! pb? (lambda () ,(pb?)))
+                                      (load ,(find-source "ht.ss")))))
     #t)
 )

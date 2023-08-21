@@ -311,7 +311,7 @@
 ;;;   - copy-environment creates new top-level labels/locations for and only
 ;;;     for variables whose locations are the default ones for the old
 ;;;     environment.  All other mappings from symbol to label should be
-;;;     transfered from the old to the new environment.
+;;;     transferred from the old to the new environment.
 
 ;;; Bootstrapping:
 
@@ -1509,14 +1509,14 @@
   ;; environment.  top-id-bound-label directly extends the specified
   ;; top-level environment.
   ;;
-  ;; For top-id-bound-label, we extend the environment with a substition
+  ;; For top-id-bound-label, we extend the environment with a substitution
   ;; keyed by the given marks, so that top-level definitions introduced by
   ;; a macro are distinct from other top-level definitions for the same
   ;; name.  For example, if macros a and b both introduce definitions and
   ;; bound references to identifier x, the two x's should be different,
   ;; i.e., keyed by their own marks.
   ;;
-  ;; For top-id-free-label, we extend the environment with a substition
+  ;; For top-id-free-label, we extend the environment with a substitution
   ;; keyed by the top marks, since top-level free identifier references
   ;; should refer to the existing implicit (top-marked) substitution.  For
   ;; example, if macros a and b both introduce free references to identifier
@@ -4620,11 +4620,11 @@
     (module (make-root insert-path delete-path search-path list-paths)
       (define-record-type dir
         (fields (immutable name) (immutable dir*) (immutable file*))
-        (nongenerative)
+        (nongenerative #{dir htcavk0jv3uhhtakfluarlapg-0})
         (sealed #t))
       (define-record-type file
         (fields (immutable name) (immutable lib))
-        (nongenerative)
+        (nongenerative #{file htcavk0jv3uhhtakfluarlapg-1})
         (sealed #t))
       (define make-root (lambda () (make-dir "root" '() '())))
       (define insert-path
@@ -4710,7 +4710,12 @@
         [() (list-paths root)]
         [(root) (list-paths root)]))
     (define loaded-libraries-root
-      (lambda () root)))
+      (lambda () root))
+    ;; for bootstrapping via "reboot.ss":
+    (set! $loaded-libraries
+      (case-lambda
+        [() root]
+        [(r) (set! root r)])))
 
   (define install-library/ct-desc
     (lambda (path version uid outfn importer visible? ctdesc)
@@ -4798,12 +4803,8 @@
         (lambda (dir rpath ext)
           (if (or (string=? dir "") (string=? dir "."))
               (format "~a~a" rpath ext)
-              (format
-                (if (directory-separator? (string-ref dir (fx- (string-length dir) 1)))
-                    "~a~a~a"
-                    "~a/~a~a")
-                dir rpath ext))))
-      (let ([rpath (format "~a~{/~a~}" (car path) (cdr path))])
+              (path-build dir (format "~a~a" rpath ext)))))
+      (let ([rpath (fold-left (lambda (dir elem) (path-build dir (symbol->string elem))) (symbol->string (car path)) (cdr path))])
         (let dloop ([dir* (if (path-absolute? rpath)
                               (with-message (format "ignoring library-directories since ~s is absolute" rpath)
                                 '(("" . "")))
@@ -4965,8 +4966,8 @@
             (with-message "object file is out-of-date"
               (with-message (format "loading source file ~s" src-path)
                 (do-load-library src-path 'load))))
-          (let ([obj-path-mod-time (file-modification-time obj-path)])
-            (if (time>=? obj-path-mod-time (file-modification-time src-path))
+          (let ([obj-path-mod-time (library-modification-time obj-path)])
+            (if (time>=? obj-path-mod-time (library-modification-time src-path))
                 ; NB: combine with $maybe-compile-file
                 (let ([rcinfo (guard (c [else (with-message (with-output-to-string
                                                               (lambda ()
@@ -4987,7 +4988,7 @@
                                       (lambda (x)
                                         (lambda ()
                                           (and (file-exists? x)
-                                               (time<=? (file-modification-time x) obj-path-mod-time))))))))
+                                               (time<=? (library-modification-time x) obj-path-mod-time))))))))
                                (recompile-info-include-req* rcinfo))))
                       ; NB: calling load-deps insures that we'll reload obj-path if one of
                       ; the deps has to be reloaded, but it will miss other libraries that might have
@@ -5150,6 +5151,12 @@
          (do-lookup (datum (dir-id ... file-id)) #'file-id (datum version-ref))]
         [_ (syntax-error name "invalid library reference")])))
 
+  (define library-modification-time
+    (lambda (fn)
+      (if (eq? (library-timestamp-mode) 'modification-time)
+          (file-modification-time fn)
+          (make-time 'time-utc 0 0))))
+
   (set! import-notify
     ($make-thread-parameter #f
       (lambda (x) (and x #t))))
@@ -5180,7 +5187,14 @@
     (lambda ()
       (list-loaded-libraries)))
 
-
+  (set-who! library-timestamp-mode
+    ($make-thread-parameter 'modification-time
+      (lambda (x)
+        (unless (or (eq? x 'modification-time)
+                    (eq? x 'exists))
+          ($oops who "~s is not a timestamp mode" x))
+        x)))
+  
   (set! expand-omit-library-invocations
     ($make-thread-parameter #f
       (lambda (v) (and v #t))))
@@ -5556,8 +5570,8 @@
                  e1 e2 ...)]))
           (unless $compiler-is-loaded? ($oops '$maybe-compile-file "compiler is not loaded"))
           (if (file-exists? ofn)
-              (let ([ofn-mod-time (file-modification-time ofn)])
-                (if (time>=? ofn-mod-time (with-new-who who (lambda () (file-modification-time ifn))))
+              (let ([ofn-mod-time (library-modification-time ofn)])
+                (if (time>=? ofn-mod-time (with-new-who who (lambda () (library-modification-time ifn))))
                     (with-message "object file is not older"
                       (let ([rcinfo (guard (c [else (with-message (with-output-to-string
                                                                     (lambda ()
@@ -5577,7 +5591,7 @@
                                           (lambda (x)
                                             (lambda ()
                                               (and (file-exists? x)
-                                                   (time<=? (file-modification-time x) ofn-mod-time))))))))
+                                                   (time<=? (library-modification-time x) ofn-mod-time))))))))
                                    (recompile-info-include-req* rcinfo)))
                             (if (compile-imported-libraries)
                                 (guard (c [(and ($recompile-condition? c) (eq? ($recompile-importer-path c) #f))
@@ -5596,7 +5610,7 @@
                                             [else
                                               (let-values ([(src-path obj-path obj-exists?) (library-search who path (library-directories) (library-extensions))])
                                                 (and obj-exists?
-                                                     (time<=? (file-modification-time obj-path) ofn-mod-time)))])))
+                                                     (time<=? (library-modification-time obj-path) ofn-mod-time)))])))
                                       (recompile-info-import-req* rcinfo))
                                     #f
                                     (handler ifn ofn)))
@@ -5630,8 +5644,8 @@
    ; "stuff^...", ^ is ; under windows : otherwise
    ; stuff -> src-dir^^src-dir | src-dir
    ; ends with ^, tail is default-ls, otherwise ()
-    (define sep (if-feature windows #\; #\:))
-    (let ([n (string-length s)])
+    (let ([sep ($separator-character)]
+          [n (string-length s)])
       (define (s0 i)
         (if (fx= i n)
             '()
@@ -6392,7 +6406,7 @@
          (unless (source-object? src) (syntax-error src "profile subform is not a source object"))
          (build-input-profile src))])))
 
-(global-extend 'core 'begin-unsafe
+(global-extend 'core '$begin-unsafe
   (lambda (e r w ae)
     (syntax-case e ()
       ((_ e1 e2 ...)
@@ -7240,7 +7254,7 @@
   (define d->s
     (lambda (id datum who)
       (unless (nonsymbol-id? id) ($oops who "~s is not an identifier" id))
-     ; no longer transfering annotation, since this can produce
+     ; no longer transferring annotation, since this can produce
      ; misleading profile output
       (make-syntax-object datum (syntax-object-wrap id))))
   (set-who! datum->syntax
@@ -7249,6 +7263,13 @@
   (set-who! datum->syntax-object
     (lambda (id datum)
       (d->s id datum who))))
+
+;; for bootstrapping via "reboot.ss":
+(set! $datum->environment-syntax
+  (lambda (sym env)
+    (make-syntax-object sym (make-wrap (wrap-marks top-wrap)
+                                       (cons (env-top-ribcage env)
+                                             (wrap-subst top-wrap))))))
 
 (set! syntax->list
   (lambda (orig-ls)
@@ -7298,7 +7319,9 @@
                       (let ([slow (strip-outer slow)])
                         (if (eq? fast slow)
                             ($oops who "cyclic list structure ~s" x)
-                            (f (cdr fast) (cdr slow)))))]
+                            (if (pair? slow)
+                                (f (cdr fast) (cdr slow))
+                                ($oops who "improper list structure ~s" x)))))]
                    [else ($oops who "improper list structure ~s" x)])))]
             [else ($oops who "improper list structure ~s" x)]))))))
 
@@ -7635,7 +7658,7 @@
 ;; ========================================================================
 ;; The exclusive cond macro -- restricted cond, and clauses must be mutually exclusive.
 ;;
-;; Uses profiling information to rearrange clauses in most likley to succeed order.
+;; Uses profiling information to rearrange clauses in most likely to succeed order.
 ;; ========================================================================
 
 (define-syntax exclusive-cond
@@ -8324,6 +8347,19 @@
                              (set! y t) ...))])
                (dynamic-wind #t swap (lambda () e1 e2 ...) swap))))])))
 
+
+(define-syntax with-continuation-mark
+  (lambda (x)
+    (syntax-case x ()
+      [(_ key val body)
+       #'($call-consuming-continuation-attachment
+          '()
+          (lambda (marks)
+            ($call-setting-continuation-attachment
+             ($update-mark marks key val)
+             (lambda ()
+               body))))])))
+
 (define-syntax rec
   (lambda (x)
     (syntax-case x ()
@@ -8836,8 +8872,8 @@
         integer-8 unsigned-8 integer-16 unsigned-16 integer-24 unsigned-24
         integer-32 unsigned-32 integer-40 unsigned-40 integer-48 unsigned-48
         integer-56 unsigned-56 integer-64 unsigned-64
-        boolean fixnum char wchar u8* u16* u32* utf-8 utf-16le utf-16be
-        utf-32le utf-32be) type]
+        boolean fixnum char wchar u8* u16* u32* utf-8 utf-16le utf-16be utf-16
+        utf-32le utf-32be utf-32) type]
       [(void) (and void-okay? type)]
       [(ptr) 'scheme-object]
       [(iptr)
@@ -8903,11 +8939,13 @@
          [(16)
           (constant-case native-endianness
             [(little) 'utf-16le]
-            [(big) 'utf-16be])]
+            [(big) 'utf-16be]
+            [(unknown) 'utf-16])]
          [(32)
           (constant-case native-endianness
             [(little) 'utf-32le]
-            [(big) 'utf-32be])])]
+            [(big) 'utf-32be]
+            [(unknown) 'utf-32])])]
       [else
        (and (or ($ftd? type) ($ftd-as-box? type))
             type)])))
@@ -8928,7 +8966,7 @@
           (constant-case wchar-bits
             [(16) '(lambda (id) (and (char? id) (fx<= (char->integer id) #xffff)))]
             [(32) '(lambda (id) (char? id))])]
-         [(utf-8 utf-16le utf-16be utf32-le utf32-be)
+         [(utf-8 utf-16le utf-16be utf-16 utf32-le utf32-be utf-32)
           '(lambda (id) (or (not id) (string? id)))]
          [(u8* u16* u32*)
           '(lambda (id) (or (not id) (bytevector? id)))]
@@ -9075,6 +9113,17 @@
                                                         ($fp-string->utf16 x 'big)
                                                         (err ($moi) x)))))
                                        (u16*))]
+                                   [(utf-16)
+                                    (check-strings-allowed)
+                                    #`(()
+                                       ((if (eq? x #f)
+                                            x
+                                            #,(if unsafe?
+                                                  #'($fp-string->utf16 x (native-endianness))
+                                                  #'(if (string? x)
+                                                        ($fp-string->utf16 x (native-endianness))
+                                                        (err ($moi) x)))))
+                                       (u16*))]
                                    [(utf-32le)
                                     (check-strings-allowed)
                                     #`(()
@@ -9095,6 +9144,17 @@
                                                   #'($fp-string->utf32 x 'big)
                                                   #'(if (string? x)
                                                         ($fp-string->utf32 x 'big)
+                                                        (err ($moi) x)))))
+                                       (u32*))]
+                                   [(utf-32)
+                                    (check-strings-allowed)
+                                    #`(()
+                                       ((if (eq? x #f)
+                                            x
+                                            #,(if unsafe?
+                                                  #'($fp-string->utf32 x (native-endianness))
+                                                  #'(if (string? x)
+                                                        ($fp-string->utf32 x (native-endianness))
                                                         (err ($moi) x)))))
                                        (u32*))]
                                    [(single-float)
@@ -9127,8 +9187,10 @@
                          [(utf-8) #'((lambda (x) (and x (utf8->string x))) u8*)]
                          [(utf-16le) #'((lambda (x) (and x (utf16->string x 'little #t))) u16*)]
                          [(utf-16be) #'((lambda (x) (and x (utf16->string x 'big #t))) u16*)]
+                         [(utf-16) #'((lambda (x) (and x (utf16->string x (native-endianness) #t))) u16*)]
                          [(utf-32le) #'((lambda (x) (and x (utf32->string x 'little #t))) u32*)]
                          [(utf-32be) #'((lambda (x) (and x (utf32->string x 'big #t))) u32*)]
+                         [(utf-32) #'((lambda (x) (and x (utf32->string x (native-endianness) #t))) u32*)]
                          [(integer-24) #`((lambda (x) (#,(constant-case ptr-bits [(32) #'mod0] [(64) #'fxmod0]) x #x1000000)) integer-32)]
                          [(unsigned-24) #`((lambda (x) (#,(constant-case ptr-bits [(32) #'mod] [(64) #'fxmod]) x #x1000000)) unsigned-32)]
                          [(integer-40) #`((lambda (x) (mod0 x #x10000000000)) integer-64)]
@@ -9239,6 +9301,11 @@
                                     #`((and x (utf16->string x 'big #t))
                                        (x)
                                        (u16*)))]
+                                 [(utf-16)
+                                  (with-syntax ([(x) (generate-temporaries #'(*))])
+                                    #`((and x (utf16->string x (native-endianness) #t))
+                                       (x)
+                                       (u16*)))]
                                  [(utf-32le)
                                   (with-syntax ([(x) (generate-temporaries #'(*))])
                                     #`((and x (utf32->string x 'little #t))
@@ -9247,6 +9314,11 @@
                                  [(utf-32be)
                                   (with-syntax ([(x) (generate-temporaries #'(*))])
                                     #`((and x (utf32->string x 'big #t))
+                                       (x)
+                                       (u32*)))]
+                                 [(utf-32)
+                                  (with-syntax ([(x) (generate-temporaries #'(*))])
+                                    #`((and x (utf32->string x (native-endianness) #t))
                                        (x)
                                        (u32*)))]
                                  [(integer-24)
@@ -9368,6 +9440,18 @@
                                                (err x)))))
                              u16*
                              [] [])]
+                         [(utf-16)
+                          (check-strings-allowed)
+                          #`((lambda (x)
+                               (if (eq? x #f)
+                                   x
+                                   #,(if unsafe?
+                                         #'($fp-string->utf16 x (native-endianness))
+                                         #'(if (string? x)
+                                               ($fp-string->utf16 x (native-endianness))
+                                               (err x)))))
+                             u16*
+                             [] [])]
                          [(utf-32le)
                           (check-strings-allowed)
                           #`((lambda (x)
@@ -9389,6 +9473,18 @@
                                          #'($fp-string->utf32 x 'big)
                                          #'(if (string? x)
                                                ($fp-string->utf32 x 'big)
+                                               (err x)))))
+                             u32*
+                             [] [])]
+                         [(utf-32)
+                          (check-strings-allowed)
+                          #`((lambda (x)
+                               (if (eq? x #f)
+                                   x
+                                   #,(if unsafe?
+                                         #'($fp-string->utf32 x (native-endianness))
+                                         #'(if (string? x)
+                                               ($fp-string->utf32 x (native-endianness))
                                                (err x)))))
                              u32*
                              [] [])]

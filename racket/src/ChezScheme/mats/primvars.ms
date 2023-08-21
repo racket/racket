@@ -18,13 +18,13 @@
     (define (mat-id? x)
       (memq x
         '(equivalent-expansion? mat-run mat mat/cf
-           mat-file mat-output for-each-mat enable-cp0 windows? embedded?
-           *examples-directory* *scheme* *mats-dir*
+           mat-file mat-output enable-cp0 windows? embedded? pb?
+           *scheme* *mats-dir*
            *fuzz* ~= fl~= cfl~= == nan pi +pi +pi/2 +pi/4 -pi -pi/2 -pi/4 +e -e
            separate-eval-tools separate-compile separate-eval run-script patch-exec-path $record->vector
            $cat_flush
            test-cp0-expansion
-           mkfile rm-rf touch
+           mkfile rm-rf touch find-source path-build-normal path-equal?
            heap-check-interval
            preexisting-profile-dump-entry?
            coverage-table record-run-coverage load-coverage-files combine-coverage-files coverage-percent
@@ -168,7 +168,7 @@
                   (syntax-case x ()
                     [(k ?path)
                      (string? (datum ?path))
-                     (let ([s-path (format "~a/../s/~a" *mats-dir* (datum ?path))])
+                     (let ([s-path (find-source (datum ?path))])
                        (datum->syntax #'k `(include ,s-path)))])))
               (include-from-s "primref.ss"))
             (let ([primref2 (#%$sgetprop x '*prim2* #f)] [primref3 (#%$sgetprop x '*prim3* #f)])
@@ -263,8 +263,7 @@
         ;    warning conditions, non-violation conditions, and invalid memory references.
         (meta define feature*
           (call-with-port
-            (open-input-file (let ([fn (format "../s/~a.def" (machine-type))])
-                               (if (file-exists? fn) fn (format "../~a" fn))))
+            (open-input-file (find-source "machine.def"))
             (lambda (ip)
               (let loop ()
                 (let ([x (read ip)])
@@ -300,13 +299,14 @@
                        [((in ...) ...) #`(((in ...) #,outs) ...)])))
                  (define do-entry
                    (lambda (x)
-                     (syntax-case x (feature sig flags ->)
+                     (syntax-case x (feature sig pred flags ->)
                        [(prim [feature f] . more)
                         (if (memq (datum f) feature*)
                             (do-entry #'(prim . more))
                             #'(void))]
                        [(prim [flags flag ...]) (do-entry #'(prim [sig] [flags flag ...]))]
-                       [(prim [sig [(in ...) ... -> (out ...)] ...] [flags flag ...])
+                       [(prim [sig sigs ...] [flags flag ...]) (do-entry #'(prim [sig sigs ...] [pred #f] [flags flag ...]))]
+                       [(prim [sig [(in ...) ... -> (out ...)] ...] [pred p] [flags flag ...])
                         (with-syntax ([(unprefixed . prim) (prim-name #'prim)])
                           (with-syntax ([((((in ...) (out ...)) ...) ...)
                                          (map ins-and-outs #'(((in ...) ...) ...) #'((out ...) ...))])
@@ -341,11 +341,16 @@
             (def *cost-center (make-cost-center))
             (def *date (current-date))
             (def *phantom-bytevector (make-phantom-bytevector 10))
+            (def *pseudo-random-generator (make-pseudo-random-generator))
             (def *eq-hashtable (make-eq-hashtable))
             (def *ftype-pointer (make-ftype-pointer double 0))
             (def *symbol-hashtable (make-hashtable symbol-hash eq?))
             (def *genny (gensym))
             (def *old-hash-table (make-hash-table))
+            (def *immutable-bpx (box-immutable 'a))
+            (def *immutable-bytevector (bytevector->immutable-bytevector '#vu8(0)))
+            (def *immutable-string (string->immutable-string "a"))
+            (def *immutable-vector (vector->immutable-vector '#(a)))
             (let ()
               (define rtd (make-record-type-descriptor 'foo #f #f #f #f '#((mutable x))))
               (define rcd (make-record-constructor-descriptor rtd #f #f))
@@ -396,6 +401,7 @@
               [(compile-time-value) (make-compile-time-value 17) #f]
               [(condition) (make-who-condition 'me) 'the-who #f]
               [(continuation-condition) (call/cc make-continuation-condition) (make-who-condition 'who) #f]
+              [(continuation-marks) (current-continuation-marks) 8 #f]
               [(cost-center) *cost-center '(a) #f]
               [(source-table) (make-source-table) *time #f]
               [(date) *date *time #f]
@@ -419,6 +425,10 @@
               [(guardian) (make-guardian) values "oops" #f]
               [(hashtable) *eq-hashtable '((a . b)) #f]
               [(identifier) #'x 'x 17 #f]
+              [(immutable-box) *immutable-box &a '((a)) #f]
+              [(immutable-bytevector) *immutable-bytevector '#vu8(0) "a" #f]
+              [(immutable-string) *immutable-string "a" 'a #f]
+              [(immutable-vector) *immutable-vector '#(a) "a" #f]
               [(import-spec) '(chezscheme) 0 '(a . b) #f]
               [(input-port) (current-input-port) 0 *binary-output-port *textual-output-port #f]
               [(integer) 0.0 1/2 1.0+0.0i 'a #f]
@@ -450,6 +460,11 @@
               [(maybe-who) 'who 17]
               [(maybe-timeout) *time 371]
               [(message-condition) (make-message-condition 17) (make-who-condition 'who) 'q #f]
+              [(nonempty-bytevector) '#vu8(0) '#vu8() "a" #f]
+              [(nonempty-flvector) '#vfl(0.0) '#vfl() "a" #f]
+              [(nonempty-fxvector) '#vfx(0) '#vfx() "a" #f]
+              [(nonempty-string) "a" "" 'a #f]
+              [(nonempty-vector) '#(a) '#() "a" #f]
               [(number) 1+2i 'oops #f]
               [(nzuint) 1 0 'a #f]
               [(old-hash-table) *old-hash-table '((a . b)) #f]
@@ -483,7 +498,7 @@
               [(string) "a" 'a #f]
               [(string/bytevector) no-good]
               [(sub-ptr) no-good]
-              [(sub-uint sub-ufixnum sub-index sub-length sub-list sub-fixnum sub-flonum sub-integer sub-number sub-port sub-rtd sub-sint sub-string sub-symbol sub-textual-output-port sub-vector) no-good #!eof #f]
+              [(sub-uint sub-ufixnum sub-index sub-length sub-real sub-list sub-fixnum sub-flonum sub-integer sub-number sub-port sub-rtd sub-sint sub-string sub-symbol sub-textual-output-port sub-vector) no-good #!eof #f]
               [(maybe-sub-rcd maybe-sub-symbol) no-good #!eof]
               [(symbol) 'a 0 "a" #f]
               [(symbol-hashtable) *symbol-hashtable *eq-hashtable '() #f]
@@ -674,9 +689,14 @@
                             (car bad**)))
                         (loop (cdr good*) (cdr bad**) (cons (car good*) rgood*)))))))
               (map car in*/out**))))
-        (meta-cond
-          [(file-exists? "../s/primdata.ss") (include "../s/primdata.ss")]
-          [else (include "../../s/primdata.ss")])
+        (define-syntax include-from-s
+          (lambda (x)
+            (syntax-case x ()
+              [(k ?path)
+               (string? (datum ?path))
+               (let ([s-path (find-source (datum ?path))])
+                 (datum->syntax #'k `(include ,s-path)))])))
+        (include-from-s "primdata.ss")
         #t))
 )
 
@@ -787,6 +807,19 @@
    (error? (collect-generation-radix 'a))
    (error? (collect-generation-radix -1))
    (error? (collect-generation-radix 0))
+ )
+
+(mat collect-maximum-generation-threshold-factor
+   (real? (collect-maximum-generation-threshold-factor))
+   (not (negative? (collect-maximum-generation-threshold-factor)))
+   (ok collect-maximum-generation-threshold-factor 0)
+   (ok collect-maximum-generation-threshold-factor 1)
+   (ok collect-maximum-generation-threshold-factor 2)
+   (ok collect-maximum-generation-threshold-factor 0.5)
+   (ok collect-maximum-generation-threshold-factor 1/2)
+   (error? (collect-maximum-generation-threshold-factor 'a))
+   (error? (collect-maximum-generation-threshold-factor -1))
+   (error? (collect-maximum-generation-threshold-factor 1+2i))
  )
 
 (mat collect-notify

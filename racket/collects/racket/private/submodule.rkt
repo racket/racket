@@ -27,7 +27,10 @@
                 (set-box! stxs-box
                           (cons (append (reverse (syntax->list (syntax-local-introduce #'(e ...))))
                                         (car (unbox stxs-box)))
-                                (cons stx (cdr (unbox stxs-box))))))
+                                (cons (syntax-property (syntax-local-introduce stx)
+                                                       'origin-form-srcloc
+                                                       (syntax-srcloc stx))
+                                      (cdr (unbox stxs-box))))))
               (syntax/loc stx (begin)))])]
         [else
          (raise-syntax-error #f

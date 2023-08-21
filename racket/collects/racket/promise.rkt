@@ -1,11 +1,13 @@
 #lang racket/base
-(require "private/promise.rkt" (for-syntax racket/base))
+(require "private/promise.rkt" (for-syntax racket/base syntax/for-body))
 (provide delay lazy force promise? promise-forced? promise-running? promise/name?
          (rename-out [delay/name* delay/name]
                      [delay/strict* delay/strict]
                      [delay/sync* delay/sync]
                      [delay/thread* delay/thread]
-                     [delay/idle* delay/idle]))
+                     [delay/idle* delay/idle])
+         for/list/concurrent
+         for*/list/concurrent)
 
 ;; ----------------------------------------------------------------------------
 ;; More delay-like values, with different ways of deferring computations
@@ -33,7 +35,8 @@
   ;; We don't want to apply a `syncinfo`, but declaring the `syncinfo`
   ;; as a procedure tells `promise-forced?` when the promise is not
   ;; yet forced
-  #:property prop:procedure (case-lambda))
+  #:property prop:procedure (case-lambda)
+  #:property prop:running? (lambda (o) (running-thread? (syncinfo-thunk o))))
 
 (define-struct (promise/sync promise) ()
   #:property prop:custom-write
@@ -222,3 +225,31 @@
                               (cons '#:work-while #'(system-idle-evt))
                               (cons '#:tick       #'0.2)
                               (cons '#:use        #'0.12))))
+
+(define-syntaxes (for/list/concurrent for*/list/concurrent)
+  (let ()
+    (define ((make-transformer for/fold/derived-stx [orig-stx #f]) stx)
+      (syntax-case stx ()
+        [(_ #:group group-expr clauses body ...)
+         (let ([stx (or orig-stx stx)])
+           (with-syntax ([this-syntax stx]
+                         [for/fold/derived for/fold/derived-stx]
+                         [((pre-body ...)
+                           (post-body ...))
+                          (split-for-body stx #'(body ...))])
+             (syntax/loc stx
+               (let ([group group-expr])
+                 (for/fold/derived this-syntax
+                   ([promises null] #:result (map force (reverse promises)))
+                   clauses
+                   pre-body ...
+                   (cons (delay/thread*
+                          #:group group
+                          (let () post-body ...))
+                         promises))))))]
+        [(_ clauses body ...)
+         ((make-transformer for/fold/derived-stx stx)
+          #'(fc #:group (make-thread-group) clauses body ...))]))
+    (values
+     (make-transformer #'for/fold/derived)
+     (make-transformer #'for*/fold/derived))))

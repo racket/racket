@@ -1,67 +1,176 @@
+# This makefile template is instantiated in a build directory to
+# communicate configuration decisions from "configure" to "build.zuo".
+# Most variables here are optional, so a "Makefile" could be created
+# directly (such as by "winfig.bat"). The main required ones are
+# `srcdir` and `MACH`. For non-Windows, `bindir`, `libdir`, etc., are
+# also required. `OSX` is required for Mac OS (and not `--enable-xonx`).
+
+# How to reach the source directory from the build directory (can be
+# relative):
 srcdir = @srcdir@
-builddir = @builddir@
-upsrcdir = @upsrcdir@
 
-PACKAGE = racket
-
-SCHEME_DIR = $(srcdir)/../../ChezScheme
-UP_SCHEME_DIR = $(upsrcdir)/../../ChezScheme
-SCHEME_WORKAREA = ChezScheme
+# The host machine type:
 MACH = @MACH@
-CS_HOST_WORKAREA_PREFIX = @CS_HOST_WORKAREA_PREFIX@
-SCHEME_HOST_WORKAREA = $(CS_HOST_WORKAREA_PREFIX)$(SCHEME_WORKAREA)
-SCHEME_BIN = $(SCHEME_HOST_WORKAREA)/$(MACH)/bin/$(MACH)/scheme
-SCHEME_INC = $(SCHEME_HOST_WORKAREA)/$(MACH)/boot/$(MACH)
-SCHEME = $(SCHEME_BIN) -B $(SCHEME_INC)/petite.boot -B $(SCHEME_INC)/scheme.boot
 
+# The machine type to build, which is the same as `MACH` unless cross
+# building:
 TARGET_MACH = @TARGET_MACH@
-SCHEME_TARGET_INC = $(SCHEME_WORKAREA)/$(TARGET_MACH)/boot/$(TARGET_MACH)
 
+# Whether the build is intended as a cross build ("cross") or not
+# (empty):
+CROSS_MODE = @CROSS_MODE@
+
+# For a pb build, we want `system-type` to return information about
+# the specific machine, if possible, not just "pb"
+KERNEL_TARGET_MACH = @KERNEL_TARGET_MACH@
+
+# If `RACKET` is set to something different than empty or `auto`, it
+# must be a compatible Racket to the curent build in the sense that
+# `require`s here to collection-based modules will work; the Racket
+# built here will never be run, so it's suitable as a part of a
+# cross-compile setup
+RACKET = @RACKET@
+
+# If `BOOTFILE_RACKET` is set, then it needs only to be a Racket that
+# is recent enough to run "../../rktboot/main.rkt"; it
+# doesn't replace the Racket build here for other purposes
+BOOTFILE_RACKET = @BOOTFILE_RACKET@
+
+# If `SCHEME` is set, then it needs only to be a Scheme that
+# is recent enough to run "../../ChezScheme/s/reboot.ss";
+# if `SCHEME_DIR` is set and `SCHEME` is not, then `SCHEME_DIR` refers
+# to an existing build directory;
+# if `RACKET` is "auto", then an auto-generated Scheme is used and
+# both of these are ignored
+SCHEME = @SCHEME@
+SCHEME_DIR = @SCHEME_DIR@
+
+# C compiler, etc.
 CC = @CC@
-BASE_CFLAGS = @CFLAGS@ @CPPFLAGS@
-CFLAGS = $(BASE_CFLAGS) -I$(SCHEME_TARGET_INC) -I$(srcdir)/../../rktio -Irktio -I.
+CFLAGS = @CFLAGS@
+CPPFLAGS = @CPPFLAGS@
 LDFLAGS = @LDFLAGS@
 LIBS = @LIBS@
-LINK_DYNAMIC = @LINK_DYNAMIC@
 AR = @AR@
 ARFLAGS = @ARFLAGS@
 RANLIB = @RANLIB@
+
+# Extra `LDFLAGS` when linking a Racket executable
+LINK_DYNAMIC = @LINK_DYNAMIC@
+
+# Alternative to `CC` for an invocation that links a Racket executable
+RKTLINKER = @RKTLINKER@
+
+# Windows resource compiler
 WINDRES = @WINDRES@
 
+# Debugging-info stripping commands for executables and libraries
 STRIP_DEBUG = @STRIP_DEBUG@
 STRIP_LIB_DEBUG = @STRIP_LIB_DEBUG@
 
-STRIP_SIGNATURE = @STRIP_SIGNATURE@
-RESTORE_SIGNATURE = @RESTORE_SIGNATURE@ "${srcdir}/../../mac/entitlements.plist"
-
-STRIP_SIGNATURE_VIA_RACKET = $(BOOTSTRAP_RACKET) "${srcdir}/../../mac/codesign.rkt" --remove-signature
-RESTORE_SIGNATURE_VIA_RACKET = $(BOOTSTRAP_RACKET) "${srcdir}/../../mac/codesign.rkt" -s - --entitlements
-
+# Replacements for `cp` for installing executables and libraries;
+# if libtool is used, for example, these might be libtool installation
+# commands
 ICP=@ICP@
 ICP_LIB=@ICP_LIB@
 
-# If `RACKET` is set to something different than `DEFAULT_RACKET`, it
-# must be a compatible Racket to the curent build in the sense that
-# `require`s here to collection-based modules will work. The Racket
-# built here will never be run, so it's suitable as a part of a
-# cross-compile setup.
-#
-# If `BOOTFILE_RACKET` is different than `DEFAULT_RACKET`, then it
-# needs only to be a Racket that is recent enough to run
-# "../../ChezScheme/rktboot/main.rkt".
-#
-DEFAULT_RACKET = ./raw_racketcs
-RACKET = @RACKET@
-BOOTFILE_RACKET = @BOOTFILE_RACKET@
+# Arguments to pass along to "../../rktio/configure"
+RKTIO_CONFIGURE_ARGS = @RKTIO_CONFIGURE_ARGS@
 
-# Potentially supplied by makefile that calls this one, and
-# overrides `BOOTFILE_RACKET` if non-empty:
-RACKET_FOR_BOOTFILES =
+# For running a bootstraping Racket with "../../setup-go.rkt", use
+# `--boot` or `--chain` as the mode
+SETUP_BOOT_MODE = @SETUP_BOOT_MODE@
 
+# Configuration to record in the executable:
+COLLECTS_PATH = @COLLECTS_PATH@
+CONFIG_PATH = @CONFIG_PATH@
+
+# Communicate certain configuration choices to ".so" compilation via
+# environment variables:
+CONFIGURE_RACKET_SO_COMPILE = @CONFIGURE_RACKET_SO_COMPILE@
+
+# Configuration about how boot files are generated:
+BOOT_COMPRESS_COMP = @BOOT_COMPRESS_COMP@
+COMPRESS_COMP = @COMPRESS_COMP@
+DISABLE_WPO = @DISABLE_WPO@
+ENABLE_EXTRA_CHECKS = @ENABLE_EXTRA_CHECKS@
+
+# Potentially a suffix like "cs" to add to the end of installed
+# executables:
 CS_INSTALLED = @CS_INSTALLED@
 
-NOOP = :
+# Whether to configure the installation for machine-specific
+# bytecode ("machine") or machine-independent ("any"); this
+# configuration happens via "system.rktd"
+CROSS_COMPILE_TARGET_KIND = @CROSS_COMPILE_TARGET_KIND@
 
+# Suffix to add to `system-library-subpath` result
+PLT_CS_SLSP_SUFFIX = @PLT_CS_SLSP_SUFFIX@
+
+# Whether to install "libkernel.a", etc. ("install") or omit
+# them ("no-install")
+INSTALL_LIBS_ENABLE = @INSTALL_LIBS_ENABLE@
+
+# Whether building for Mac OS ("t" or "f")
+OSX=@OSX@
+# Link executable to framework ("fw") or everything in the
+# executable ("static")
+MACLIBRKT_LINK_MODE = @MACLIBRKT_LINK_MODE@
+# Install framework relative to executable ("yes") or at
+# an absolute path ("no")
+FRAMEWORK_REL_INSTALL = @FRAMEWORK_REL_INSTALL@
+# Supplies the path for install, using "${libpltdir}" for relative
+# or an absolute path otherwise
+FRAMEWORK_INSTALL_DIR = @FRAMEWORK_INSTALL_DIR@
+# Whether to sign executables (ad hoc) for Mac OS ("t" or "f")
+SIGNED_EXE=@SIGNED_EXE@
+
+# This might be set to a directory that narrows installation actions
+# to just the main collects (no packages), for example; when non-empty
+# this configuration is applied after a default that points at the
+# installation "etc" directory
+SELF_ROOT_CONFIG_DIR =
+
+# Flags supplied to `raco` when installing, typically "--no-user";
+# values of two variable are appended for historical reasons
+INSTALL_SETUP_FLAGS = @INSTALL_SETUP_FLAGS@
+PLT_SETUP_OPTIONS =
+
+# Flags supplied to `racket` when running `raco` to set up
+# packages and collections; the intent is to allow flags
+# like `-MRC` to compile machine-independent bytecode
+# while redirecting machine-specific bytecode to a separate
+# filesystem tree, and/or `--cross-compiler` to support
+# cross compilation; values of two variable are appended for
+# historical reasons
+SETUP_MACHINE_FLAGS = 
+INSTALL_SETUP_RACKET_FLAGS =
+
+# Shell command to run after building an executable, where the
+# just-built executable is added to the end of the command
+POST_LINKER = @POST_LINKER@
+
+# If these are empty, the corresponding libraries are built out of
+# sources that are with Chez Scheme:
+Z_LIB=@Z_LIB@
+LZ4_LIB=@LZ4_LIB@
+
+# Propagated to Chez Scheme build ("yes" or "no")
+DISABLE_ICONV=@DISABLE_ICONV@
+DISABLE_CURSES=@DISABLE_CURSES@
+
+# Whether pb Chez Scheme should link to libffi ("yes" or "no")
+SCHEME_LIBFFI = @SCHEME_LIBFFI@
+
+# Whether pb boot files should be "chunked" to C form ("pbchunk") or
+# not ("normal"); this needs to be "normal" for a non-pb build
+PBCHUNK_MODE = @PBCHUNK_MODE@
+
+# Installation destination configuration; these can expand to
+# references to each other, such as `${prefix}` or `${PACKAGE}`.
+# which in principle allows customization of the install step
+# in the style `zuo . install prefix=...`.
+PACKAGE = racket
 prefix = @prefix@
 exec_prefix = @exec_prefix@
 datarootdir = @datarootdir@
@@ -74,580 +183,49 @@ etcpltdir = @etcpltdir@
 sharepltdir = @sharepltdir@
 collectsdir = @collectsdir@
 configdir = @etcpltdir@
+pkgsdir = @pkgsdir@
+docdir = @docdir@
+appsdir = @appsdir@
+mandir = @mandir@
 
-ALLDIRINFO = "$(DESTDIR)$(bindir)" \
-             "$(DESTDIR)$(libpltdir)" \
-             "$(DESTDIR)$(includepltdir)"
+# Whether `setup/unixstyle-install.rkt copytree` is needed for
+# installation ("yes" or "no")
+MAKE_COPYTREE = @MAKE_COPYTREE@
 
-START_COLLECTS_PATH = "$(srcdir)/../../start/collects-path.rkt" "${srcdir}/../.."
+# Whether copytree should preserve the source shape ("yes")
+# or use a convential Unix filesystem structure ("no")
+INSTALL_ORIG_TREE = @INSTALL_ORIG_TREE@
 
-# Defines FWVERSION:
-mainsrcdir = @srcdir@/../..
-@INCLUDEDEP@ @srcdir@/../../version/version.mak
+# Whether the default package scope should be set on installation
+# ("adjust" or "preserve")
+MAKE_INSTALL_PKGSCOPE = @MAKE_INSTALL_PKGSCOPE@
 
-cs:
-	$(MAKE) scheme@T_CROSS_MODE@
-	$(MAKE) racket-so
-	cd rktio; $(MAKE)
-	$(MAKE) racketcs
-	$(MAKE) maybe-check-racketcs
-	$(MAKE) gracketcs
-	$(MAKE) starter
-	$(MAKE) repack-@INSTALL_LIBS_ENABLE@-libs
+# The value to install as the default installation scope
+# (e.g., "user")
+INSTALL_PKGSCOPE = @INSTALL_PKGSCOPE@
 
-clean:
-	cd $(SCHEME_WORKAREA); $(MAKE) clean
-	cd rktio; $(MAKE) clean
+# Whether ".zo" files should be moved to "lib" instead of "share"
+# for a Unix-style installation ("yes" or "no")
+INSTALL_LIBZO = @INSTALL_LIBZO@
 
-SETUP_BOOT_MODE = @SETUP_BOOT_MODE@
-BOOT_COMPILED_SUBDIR =
-SETUP_COMMON_BOOT = -l- setup $(SETUP_BOOT_MODE) $(srcdir)/../../setup-go.rkt $(builddir)/compiled$(BOOT_COMPILED_SUBDIR)
 
-ABS_SCHEME_WORKAREA = "`$(SCHEME) --script $(srcdir)/../absify.ss --no-trailing-sep $(SCHEME_WORKAREA)`"
-ABS_SCHEME_HOST_WORKAREA = "`$(SCHEME) --script $(srcdir)/../absify.ss --no-trailing-sep $(SCHEME_HOST_WORKAREA)`"
-ABS_BUILDDIR = "`$(SCHEME) --script $(srcdir)/../absify.ss --no-trailing-sep $(builddir)`"
+# ------------------------------------------------------------
 
-SETUP_BOOT = -O 'info@compiler/cm' $(SETUP_COMMON_BOOT)
+CC_FOR_BUILD=@CC_FOR_BUILD@
+CFLAGS_FOR_BUILD=@CFLAGS_FOR_BUILD@
+upsrcdir=@upsrcdir@
 
-# We don't try to track dependencies through makefiles for things
-# built with the expander extractor, hence "ignored"
-BOOTSTRAP_RACKET = $(RACKET) $(SETUP_BOOT) ignored $(builddir)/ignored.d
-BOOTSTRAP_BOOTFILE_RACKET = $(BOOTFILE_RACKET) $(SETUP_BOOT) ignored $(builddir)/ignored.d
+ZUO=bin/zuo
 
-racket-so:
-	$(MAKE) bounce TARGET=build-racket-so
+cs: $(ZUO)
+	$(ZUO) . build
 
-RACKET_SO_ENV = @CONFIGURE_RACKET_SO_COMPILE@
+install: $(ZUO)
+	$(ZUO) . install
 
-CS_PROGS = SCHEME="$(SCHEME)"
-CS_OPTS = COMPRESS_COMP=@COMPRESS_COMP@ @ENABLE_OR_DISABLE_WPO@
-CS_OPTScross = $(CS_OPTS) CSO=$(MACH) CROSS_COMP="--xpatch $(SCHEME_WORKAREA)/$(TARGET_MACH)/s/xpatch"
-PASS_COMPILE_DEPS = EXTRA_COMPILE_DEPS="$(SCHEME_INC)/petite.boot $(SCHEME_INC)/scheme.boot"
+plain-install: $(ZUO)
+	$(ZUO) . plain-install
 
-build-racket-so:
-	cd $(srcdir)/.. && $(RACKET_SO_ENV) $(MAKE) "$(builddir)/racket.so" $(CS_PROGS) $(CS_OPTS@CROSS_MODE@) BUILDDIR="$(builddir)/" BOOTSTRAPPED="done" $(PASS_COMPILE_DEPS)
-
-bounce:
-	$(MAKE) builddir="$(ABS_BUILDDIR)" SCHEME_WORKAREA="$(ABS_SCHEME_WORKAREA)" SCHEME_HOST_WORKAREA="$(ABS_SCHEME_HOST_WORKAREA)" $(TARGET)
-
-scheme:
-	mkdir -p $(SCHEME_WORKAREA)
-	if [ "$(RACKET_FOR_BOOTFILES)" != "" ] ; \
-          then $(MAKE) scheme-via-rktboot BOOTFILE_RACKET="$(RACKET_FOR_BOOTFILES)" SETUP_BOOT_MODE=--chain ; \
-	elif [ "$(BOOTFILE_RACKET)" != "$(DEFAULT_RACKET)" ] ; \
-          then $(MAKE) scheme-via-rktboot BOOTFILE_RACKET="$(BOOTFILE_RACKET)" ; \
-          else $(MAKE) scheme-via-pb ; fi
-
-scheme-via-rktboot:
-	if [ "$(BOOTFILE_RACKET)" != "$(RACKET)" ] ; \
-          then $(MAKE) scheme-via-rktboot-at BOOT_COMPILED_SUBDIR=/bf BOOTFILE_RACKET="$(BOOTFILE_RACKET)" ; \
-          else $(MAKE) scheme-via-rktboot-at ; fi
-
-scheme-via-rktboot-at:
-	SCHEME_SRC="$(SCHEME_DIR)" MACH="$(MACH)" SCHEME_WORKAREA=$(SCHEME_WORKAREA) $(BOOTSTRAP_BOOTFILE_RACKET) "$(SCHEME_DIR)"/rktboot/make-boot.rkt
-	$(SHELL) $(srcdir)/reset_boot.sh $(MACH) $(SCHEME_WORKAREA)
-	$(MAKE) mach-make
-
-scheme-via-pb:
-	$(SHELL) $(srcdir)/check_boot.sh $(MACH) "$(SCHEME_DIR)" $(SCHEME_WORKAREA)
-	if [ -f boot_pending ] ; then $(MAKE) pb-bootquick ; fi
-	$(MAKE) mach-make
-
-pb-bootquick:
-	$(MAKE) config-scheme MACH=pb CONFIG_SCHEME_MODE=--pb
-	cd $(SCHEME_WORKAREA) && $(MAKE) reset
-	cd $(SCHEME_WORKAREA) && $(MAKE) ${MACH}.bootquick
-	$(MAKE) config-scheme
-	cd $(SCHEME_WORKAREA) && $(MAKE) reset
-	$(SHELL) $(srcdir)/ready_boot.sh $(MACH) $(SCHEME_WORKAREA)
-
-mach-make:
-	$(MAKE) config-scheme
-	cd $(SCHEME_WORKAREA) && $(MAKE)
-
-# Makes cross compilation work more reliably for zlib, because
-# it causes zlib/configure to use given AR, etc.
-CHOST_HACK-cross = env "CHOST=hack-do-not-use"
-CHOST_HACK =
-
-SCHEME_CONFIG_VARS = CC="$(CC)" CFLAGS="$(BASE_CFLAGS)" LDFLAGS="$(LDFLAGS)" LIBS="$(LIBS)" \
-                     AR="$(AR)" ARFLAGS="$(ARFLAGS)" RANLIB="$(RANLIB)" \
-                     WINDRES="$(WINDRES)"
-CONFIG_SCHEME_MODE =
-
-config-scheme:
-	cd $(SCHEME_WORKAREA) && "$(UP_SCHEME_DIR)"/configure $(CONFIG_SCHEME_MODE) @SCHEME_CONFIG_ARGS@ $(SCHEME_CONFIG_VARS)
-
-scheme-cross:
-	env MAKE_BOOT_FOR_CROSS=yes SCHEME_SRC="$(SCHEME_DIR)" SCHEME_WORKAREA=$(SCHEME_WORKAREA) MACH="$(TARGET_MACH)" $(BOOTSTRAP_RACKET) "$(SCHEME_DIR)"/rktboot/make-boot.rkt
-	$(SHELL) $(srcdir)/reset_boot.sh $(TARGET_MACH) $(SCHEME_WORKAREA)
-	cd $(SCHEME_WORKAREA) && "$(UP_SCHEME_DIR)"/configure @SCHEME_CROSS_CONFIG_ARGS@ $(SCHEME_CONFIG_VARS)
-	cd $(SCHEME_WORKAREA)/$(TARGET_MACH)/c && $(CHOST_HACK@T_CROSS_MODE@) $(MAKE) o=o cross=t
-	$(MAKE) $(SCHEME_WORKAREA)/$(TARGET_MACH)/s/xpatch
-
-# Rebuild patch file and cross "petite.boot" and "scheme.boot" when older
-# than the build-host "scheme.boot" or when "make-boot.rkt" touchs dummy boot files
-XPATCH_DEPS = $(SCHEME_HOST_WORKAREA)/$(MACH)/boot/$(MACH)/scheme.boot \
-              $(SCHEME_WORKAREA)/boot/$(TARGET_MACH)/scheme.boot
-
-$(SCHEME_WORKAREA)/$(TARGET_MACH)/s/xpatch: $(XPATCH_DEPS)
-	$(MAKE) bounce TARGET=build-xpatch-using-host
-
-build-xpatch-using-host:
-	cd $(SCHEME_WORKAREA)/$(TARGET_MACH)/s && $(MAKE) -f Mf-cross m=$(MACH) xm=$(TARGET_MACH) Scheme="$(SCHEME_BIN)" SCHEMEHEAPDIRS="$(SCHEME_INC)"
-
-XPATCH =
-XPATCHcross = --xpatch $(SCHEME_WORKAREA)/$(TARGET_MACH)/s/xpatch
-
-racket.boot: racket.so
-	$(SCHEME) --script $(srcdir)/convert-to-boot.ss @BOOT_COMPRESS_COMP@ $(XPATCH@CROSS_MODE@) racket.so racket.boot $(TARGET_MACH)
-
-@INCLUDEDEP@ compiled/expander.d
-@INCLUDEDEP@ compiled/thread.d
-@INCLUDEDEP@ compiled/io.d
-@INCLUDEDEP@ compiled/regexp.d
-@INCLUDEDEP@ compiled/schemify.d
-@INCLUDEDEP@ compiled/known.d
-
-# ----------------------------------------
-# Unix
-
-EMBED_DEPS = $(srcdir)/embed-boot.rkt
-
-racketcs@NOT_OSX@@NOT_MINGW@: raw_racketcs petite-v.boot scheme-v.boot racket-v.boot $(EMBED_DEPS)
-	$(BOOTSTRAP_RACKET) $(srcdir)/embed-boot.rkt --target $(TARGET_MACH) @BOOT_COMPRESS_COMP@ raw_racketcs racketcs petite-v.boot scheme-v.boot racket-v.boot
-	@POST_LINKER@ racketcs
-	$(RESTORE_SIGNATURE) racketcs
-
-gracketcs@NOT_OSX@@NOT_MINGW@: raw_gracketcs petite-v.boot scheme-v.boot racket-v.boot $(EMBED_DEPS)
-	$(BOOTSTRAP_RACKET) $(srcdir)/embed-boot.rkt --target $(TARGET_MACH) @BOOT_COMPRESS_COMP@ raw_gracketcs gracketcs petite-v.boot scheme-v.boot racket-v.boot
-	@POST_LINKER@ gracketcs
-	$(RESTORE_SIGNATURE) gracketcs
-
-OWN_Z_LIB = $(SCHEME_TARGET_INC)/../../zlib/libz.a
-OWN_LZ4_LIB = $(SCHEME_TARGET_INC)/../../lz4/lib/liblz4.a
-SCHEME_LIB_DEPS = $(SCHEME_TARGET_INC)/libkernel.a @Z_LIB_DEP@ @LZ4_LIB_DEP@
-SCHEME_LIBS = $(SCHEME_TARGET_INC)/libkernel.a @Z_LIB@ @LZ4_LIB@
-
-BOOT_OBJ_DEPS = boot.o $(SCHEME_LIB_DEPS) rktio/librktio.a
-BOOT_OBJS = boot.o $(SCHEME_LIBS) rktio/librktio.a
-
-raw_racketcs@NOT_OSX@: main.o boot.o $(BOOT_OBJ_DEPS)
-	$(CC) $(CFLAGS) -o raw_racketcs main.o $(BOOT_OBJS) $(LDFLAGS) $(LIBS) $(LINK_DYNAMIC)
-	@POST_LINKER@ raw_racketcs
-
-raw_gracketcs: grmain.o boot.o $(BOOT_OBJ_DEPS)
-	$(CC) $(CFLAGS) -o raw_gracketcs grmain.o $(BOOT_OBJS) $(LDFLAGS) $(LIBS) $(LINK_DYNAMIC)
-	@POST_LINKER@ raw_gracketcs
-
-petite-v.boot: $(SCHEME_TARGET_INC)/petite.boot
-	$(SCHEME) --script $(srcdir)/to-vfasl.ss @BOOT_COMPRESS_COMP@ $(XPATCH@CROSS_MODE@) $(SCHEME_TARGET_INC)/petite.boot petite-v.boot
-
-scheme-v.boot: $(SCHEME_TARGET_INC)/scheme.boot
-	$(SCHEME) --script $(srcdir)/to-vfasl.ss @BOOT_COMPRESS_COMP@ $(XPATCH@CROSS_MODE@) $(SCHEME_TARGET_INC)/scheme.boot scheme-v.boot petite
-
-racket-v.boot: racket.boot
-	$(SCHEME) --script $(srcdir)/to-vfasl.ss @BOOT_COMPRESS_COMP@ $(XPATCH@CROSS_MODE@) racket.boot racket-v.boot petite scheme
-
-# ----------------------------------------
-# Mac OS
-
-RKTFWDIR = Racket.framework/Versions/$(FWVERSION)_CS
-RKTFW = $(RKTFWDIR)/Racket
-GRAPPSKEL = GRacketCS.app/Contents/Info.plist
-
-# Depending on MACLIBRKT_LINK_MODE, use Framework or statically link the framework's code:
-MACLIBRKT_LINK_fw = -F. -framework Racket $(LDFLAGS)
-MACLIBRKT_LINK_static = $(BOOT_OBJS) $(LDFLAGS) $(LIBS)
-
-racketcs@OSX@: raw_racketcs
-	$(MAKE) link-fw-bootfiles-@MACLIBRKT_LINK_MODE@
-	$(MAKE) adjust-framework-boot-compress
-	$(MAKE) mac-embed-boot-@MACLIBRKT_LINK_MODE@ EMBED_SRC=raw_racketcs EMBED_DEST=racketcs
-	/usr/bin/install_name_tool -change "Racket.framework/Versions/$(FWVERSION)_CS/Racket" "@executable_path/Racket.framework/Versions/$(FWVERSION)_CS/Racket" racketcs
-	$(RESTORE_SIGNATURE) racketcs
-
-raw_racketcs@OSX@: main.o $(RKTFW)
-	$(CC) $(CFLAGS) -o raw_racketcs main.o $(MACLIBRKT_LINK_@MACLIBRKT_LINK_MODE@)
-
-GRACKET_BIN = GRacketCS.app/Contents/MacOS/GRacketCS
-
-gracketcs@OSX@:
-	$(MAKE) $(GRACKET_BIN)
-
-$(GRACKET_BIN): grmain.o $(RKTFW) $(GRAPPSKEL)
-	$(CC) $(CFLAGS) -o $(GRACKET_BIN)_raw grmain.o $(MACLIBRKT_LINK_@MACLIBRKT_LINK_MODE@)
-	$(MAKE) mac-embed-boot-@MACLIBRKT_LINK_MODE@ EMBED_SRC=$(GRACKET_BIN)_raw EMBED_DEST=$(GRACKET_BIN)
-	/usr/bin/install_name_tool -change "Racket.framework/Versions/$(FWVERSION)_CS/Racket" "@executable_path/../../../Racket.framework/Versions/$(FWVERSION)_CS/Racket" $(GRACKET_BIN)
-	rm $(GRACKET_BIN)_raw
-	$(RESTORE_SIGNATURE) $(GRACKET_BIN)
-
-$(GRAPPSKEL): $(srcdir)/../../mac/osx_appl.rkt  $(srcdir)/../../version/racket_version.h $(srcdir)/../../mac/icon/GRacket.icns
-	$(BOOTSTRAP_RACKET) $(srcdir)/../../mac/osx_appl.rkt $(srcdir)/../.. "CS"
-
-BOOT_FILES = $(SCHEME_TARGET_INC)/petite.boot $(SCHEME_TARGET_INC)/scheme.boot racket.boot
-FW_BOOT_DEST = Racket.framework/Versions/$(FWVERSION)_CS/boot
-
-$(RKTFW): $(BOOT_OBJ_DEPS) $(BOOT_FILES)
-	mkdir -p  Racket.framework/Versions/$(FWVERSION)_CS
-	@RKTLINKER@ -o $(RKTFW) -dynamiclib -all_load $(BOOT_OBJS) $(LDFLAGS) $(LIBS)
-	rm -f Racket.framework/Racket
-	ln -s Versions/$(FWVERSION)_CS/Racket Racket.framework/Racket
-	mkdir -p Racket.framework/Versions/$(FWVERSION)_CS/boot
-	$(SCHEME) --script $(srcdir)/to-vfasl.ss @BOOT_COMPRESS_COMP@ $(XPATCH@CROSS_MODE@) $(SCHEME_TARGET_INC)/petite.boot $(FW_BOOT_DEST)/petite.boot
-	$(SCHEME) --script $(srcdir)/to-vfasl.ss @BOOT_COMPRESS_COMP@ $(XPATCH@CROSS_MODE@) $(SCHEME_TARGET_INC)/scheme.boot $(FW_BOOT_DEST)/scheme.boot petite
-	$(SCHEME) --script $(srcdir)/to-vfasl.ss @BOOT_COMPRESS_COMP@ $(XPATCH@CROSS_MODE@) racket.boot $(FW_BOOT_DEST)/racket.boot petite scheme
-
-adjust-framework-boot-compress:
-	$(BOOTSTRAP_RACKET) $(srcdir)/adjust-compress.rkt @BOOT_COMPRESS_COMP@ $(FW_BOOT_DEST)/petite.boot $(FW_BOOT_DEST)/scheme.boot $(FW_BOOT_DEST)/racket.boot
-
-mac-embed-boot-fw:
-	rm -f $(EMBED_DEST)
-	cp $(EMBED_SRC) $(EMBED_DEST)
-	$(STRIP_SIGNATURE) $(EMBED_DEST)
-
-FW_BOOT_DESTS = $(FW_BOOT_DEST)/petite.boot $(FW_BOOT_DEST)/scheme.boot $(FW_BOOT_DEST)/racket.boot
-
-mac-embed-boot-static:
-	rm -f $(EMBED_DEST)
-	cp $(EMBED_SRC) $(EMBED_DEST)
-	$(STRIP_SIGNATURE) $(EMBED_DEST)
-	$(BOOTSTRAP_RACKET) $(srcdir)/embed-boot.rkt @BOOT_COMPRESS_COMP@ $(EMBED_SRC) $(EMBED_DEST) $(FW_BOOT_DESTS)
-
-link-fw-bootfiles-fw:
-	$(NOOP)
-
-link-fw-bootfiles-static:
-	rm -f petite-v.boot
-	rm -f scheme-v.boot
-	rm -f racket-v.boot
-	ln -s $(FW_BOOT_DEST)/petite.boot petite-v.boot
-	ln -s $(FW_BOOT_DEST)/scheme.boot scheme-v.boot
-	ln -s $(FW_BOOT_DEST)/racket.boot racket-v.boot
-
-# ----------------------------------------
-# MinGW
-
-racketcs@MINGW@:
-	$(MAKE) RacketCS.exe
-
-gracketcs@MINGW@:
-	$(MAKE) GRacketCS.exe
-
-RKT_DLL = libracketcsxxxxxxx.dll
-RAW_RKT_DLL = libracketcsxxx_RAW.dll
-DLL_REWRITES = ++rewrite $(RAW_RKT_DLL) $(RKT_DLL)
-EXE_DESTS = ++exe raw_racketcs.exe RacketCS.exe ++exe raw_gracketcs.exe GRacketCS.exe
-V_BOOTS = petite-v.boot scheme-v.boot racket-v.boot
-
-RacketCS.exe GRacketCS.exe $(RKT_DLL): $(RAW_RKT_DLL) raw_gracketcs.exe raw_racketcs.exe $(EMBED_DEPS) $(V_BOOTS)
-	$(BOOTSTRAP_RACKET) $(srcdir)/embed-boot.rkt --target $(TARGET_MACH) $(DLL_REWRITES) @BOOT_COMPRESS_COMP@ $(EXE_DESTS) $(RAW_RKT_DLL) $(RKT_DLL) $(V_BOOTS)
-
-raw_racketcs.exe: main.o MemoryModule.o rres.o
-	$(CC) $(CFLAGS) -o raw_racketcs.exe main.o MemoryModule.o rres.o $(LDFLAGS)
-
-raw_gracketcs.exe: grmain.o MemoryModule.o grres.o
-	$(CC) $(CFLAGS) -mwindows -o raw_gracketcs.exe grmain.o MemoryModule.o grres.o $(LDFLAGS)
-
-$(RAW_RKT_DLL): boot.o $(BOOT_OBJ_DEPS) libres.o
-	$(CC) $(CFLAGS) --shared -o $(RAW_RKT_DLL) $(BOOT_OBJS) libres.o $(LDFLAGS) rktio/librktio.a -static-libgcc $(LIBS)
-
-MemoryModule.o: $(srcdir)/../../start/MemoryModule.c
-	$(CC) -c $(CFLAGS) -o MemoryModule.o $(srcdir)/../../start/MemoryModule.c
-
-rres.o: $(srcdir)/../../worksp/racket/racket.rc $(srcdir)/../../worksp/racket/racket.ico
-	@WINDRES@ -i $(srcdir)/../../worksp/racket/racket.rc -o rres.o
-
-grres.o: $(srcdir)/../../worksp/gracket/gracket.rc $(srcdir)/../../worksp/gracket/gracket.ico
-	@WINDRES@ -i $(srcdir)/../../worksp/gracket/gracket.rc -o grres.o
-
-libres.o: $(srcdir)/../../worksp/cs/libracket.rc
-	@WINDRES@ -i $(srcdir)/../../worksp/cs/libracket.rc -o libres.o
-
-starter@MINGW@:
-	$(MAKE) MzStart.exe
-	$(MAKE) MrStart.exe
-
-MzStart.exe: $(srcdir)/../../start/start.c start_rc.o
-	$(CC) $(CFLAGS) $(LDFLAGS) -o MzStart.exe -DMZSTART $(srcdir)/../../start/start.c start_rc.o
-
-MrStart.exe: $(srcdir)/../../start/start.c gstart_rc.o
-	$(CC) -mwindows $(CFLAGS) $(LDFLAGS) -o MrStart.exe -DMRSTART $(srcdir)/../../start/start.c gstart_rc.o
-
-start_rc.o: $(srcdir)/../../worksp/starters/start.rc
-	@WINDRES@ -DMZSTART -i $(srcdir)/../../worksp/starters/start.rc -o start_rc.o
-
-gstart_rc.o: $(srcdir)/../../worksp/starters/start.rc
-	@WINDRES@ -DMRSTART -i $(srcdir)/../../worksp/starters/start.rc -o gstart_rc.o
-
-install@MINGW@:
-	$(MAKE) plain-install
-
-plain-install@MINGW@:
-	$(MAKE) plain-install-upcased CS_INSTALLED=`echo $(CS_INSTALLED) | awk '{print toupper($0)}'`
-	$(MAKE) unix-install-boot-files
-
-plain-install-upcased:
-	$(ICP) libracketcsxxxxxxx.dll $(libdir)/libracketcsxxxxxxx.dll
-	$(ICP) RacketCS.exe $(prefix)/Racket$(CS_INSTALLED).exe
-	$(ICP) GRacketCS.exe $(libpltdir)/GRacket$(CS_INSTALLED).exe
-	$(ICP) MzStart.exe $(libpltdir)/MzStart.exe
-	$(ICP) MrStart.exe $(libpltdir)/MrStart.exe
-	$(STRIP_DEBUG) $(prefix)/Racket$(CS_INSTALLED).exe
-	$(STRIP_DEBUG) $(libpltdir)/GRacket$(CS_INSTALLED).exe
-	$(STRIP_DEBUG) $(libpltdir)/MzStart.exe
-	$(STRIP_DEBUG) $(libpltdir)/MrStart.exe
-	$(MAKE) system-install
-	$(MAKE) include-install
-	$(MAKE) install-cross
-
-# ----------------------------------------
-# Cross-compiled install
-
-install-cross:
-	$(MAKE) compile-xpatch.$(TARGET_MACH)
-	$(MAKE) library-xpatch.$(TARGET_MACH)
-
-SCHEME_XPATCH = $(SCHEME_WORKAREA)/$(TARGET_MACH)/s/xpatch
-
-CROSS_SERVE_DEPS = $(srcdir)/mk-cross-serve.ss $(srcdir)/cross-serve.ss \
-                   $(srcdir)/../expander/env.ss $(srcdir)/../linklet/config.ss
-
-compile-xpatch.$(TARGET_MACH): $(SCHEME_XPATCH) $(CROSS_SERVE_DEPS)
-	$(SCHEME) --script $(srcdir)/mk-cross-serve.ss $(srcdir) cross-serve.ss $(srcdir)/../expander/env.ss
-	cat cross-serve.so $(SCHEME_XPATCH) > compile-xpatch.$(TARGET_MACH)
-
-RACKET_XPATCH = chezpart.$(MACH) rumble.$(MACH)	thread.$(MACH) \
-                io.$(MACH) regexp.$(MACH) schemify.$(MACH) linklet.$(MACH) expander.$(MACH)
-
-library-xpatch.$(TARGET_MACH): $(RACKET_XPATCH)
-	cat $(RACKET_XPATCH) > library-xpatch.$(TARGET_MACH)
-
-# ----------------------------------------
-# Common
-
-DEF_COLLECTS_DIR@NOT_MINGW@ = -DINITIAL_COLLECTS_DIRECTORY='"'"`cd $(srcdir)/../../../collects; pwd`"'"'
-DEF_CONFIG_DIR@NOT_MINGW@ = -DINITIAL_CONFIG_DIRECTORY='"'"`cd $(srcdir)/../../..; pwd`/etc"'"'
-DEF_COLLECTS_DIR@MINGW@ =
-DEF_CONFIG_DIR@MINGW@ =
-DEF_C_DIRS = $(DEF_COLLECTS_DIR) $(DEF_CONFIG_DIR)
-
-MAIN_DEPS = $(srcdir)/main.c $(srcdir)/boot.h cs_config.h \
-            $(srcdir)/../../start/config.inc \
-            $(srcdir)/../../start/self_exe.inc
-
-main.o: $(MAIN_DEPS)
-	$(CC) $(CFLAGS) $(DEF_C_DIRS) -c -o main.o $(srcdir)/main.c
-
-grmain.o: $(srcdir)/grmain.c $(MAIN_DEPS) $(srcdir)/../../start/gui_filter.inc
-	$(CC) $(CFLAGS) $(DEF_C_DIRS) -c -o grmain.o $(srcdir)/grmain.c
-
-boot.o: $(srcdir)/boot.c $(srcdir)/../../rktio/rktio.inc $(srcdir)/boot.h
-	$(CC) $(CFLAGS) -c -o boot.o $(srcdir)/boot.c
-
-starter@NOT_MINGW@: $(srcdir)/../../start/ustart.c $(srcdir)/../../start/self_exe.inc
-	$(CC) $(CFLAGS) $(LDFLAGS) -o starter $(srcdir)/../../start/ustart.c
-
-
-repack-install-libs:
-	$(MAKE) libracketcs.a SCHEME_WORKAREA="$(ABS_SCHEME_WORKAREA)"
-
-libracketcs.a: $(SCHEME_LIB_DEPS) rktio/librktio.a boot.o
-	mkdir -p repack
-	rm -f repack/*
-	cd repack && @Z_LIB_UNPACK@
-	cd repack && @LZ4_LIB_UNPACK@
-	cd repack && $(AR) x ../rktio/librktio.a
-	cd repack && $(AR) x $(SCHEME_TARGET_INC)/libkernel.a
-	$(AR) $(ARFLAGS) libracketcs.a repack/*.o boot.o
-
-repack-no-install-libs:
-	$(NOOP)
-
-# ----------------------------------------
-# Install
-
-# RUN_RACKET typically redirects to RUN_THIS_RACKET, but it can also
-# redirect to a compatible existing Racket executable (e.g., for
-# cross-compilation)
-RUN_THIS_RACKET = $(DESTDIR)$(bindir)/racket$(CS_INSTALLED)
-
-# Intended for configuration by an external makefile that drives this one:
-SELF_ROOT_CONFIG_FLAG = -Z
-SELF_ROOT_CONFIG_DIR = ../../../../../build/config
-SELF_ROOT_CONFIG = $(SELF_ROOT_CONFIG_FLAG) $(SELF_ROOT_CONFIG_DIR)
-
-INST_CONFIG = -X "$(DESTDIR)$(collectsdir)" -G "$(DESTDIR)$(configdir)"
-SETUP_RACKET_FLAGS = $(INST_CONFIG) $(SETUP_MACHINE_FLAGS) $(SELF_ROOT_CONFIG) @INSTALL_SETUP_RACKET_FLAGS@
-SETUP_SETUP_FLAGS = @INSTALL_SETUP_FLAGS@ $(PLT_SETUP_OPTIONS) $(PLT_ISO)
-SETUP_ARGS = $(SETUP_RACKET_FLAGS) -N "raco" -l- setup $(SETUP_SETUP_FLAGS)
-
-# Needed for non-GNU makes:
-PROPAGATE_VARIABLES = SELF_ROOT_CONFIG_FLAG="$(SELF_ROOT_CONFIG_FLAG)" \
-                      PLT_SETUP_OPTIONS="$(PLT_SETUP_OPTIONS)" \
-                      SETUP_MACHINE_FLAGS="$(SETUP_MACHINE_FLAGS)"
-
-install@NOT_MINGW@:
-	$(MAKE) plain-install
-	$(MAKE) setup-install $(PROPAGATE_VARIABLES)
-
-setup-install:
-	$(MAKE) do-setup-install@T_CROSS_MODE@
-
-do-setup-install:
-	@RUN_RACKET@ $(SELF_ROOT_CONFIG) $(SETUP_ARGS)
-
-do-setup-install-cross:
-	@RUN_RACKET@ $(SELF_ROOT_CONFIG) -C -M -R `pwd`/compiled: --cross-compiler $(TARGET_MACH) `pwd` $(SETUP_ARGS)
-
-no-setup-install:
-	echo done
-
-plain-install@NOT_OSX@@NOT_MINGW@:
-	$(MAKE) unix-install@T_CROSS_MODE@
-
-plain-install@OSX@:
-	$(MAKE) macos-install@T_CROSS_MODE@
-
-common-install:
-	mkdir -p $(ALLDIRINFO)
-	rm -f "$(DESTDIR)$(bindir)/racket$(CS_INSTALLED)"
-	rm -f "$(DESTDIR)$(libpltdir)/starter"
-	rm -f "$(DESTDIR)$(libpltdir)/starter-sh"
-	$(ICP) racketcs "$(DESTDIR)$(bindir)/racket$(CS_INSTALLED)"
-	$(STRIP_SIGNATURE) "$(DESTDIR)$(bindir)/racket$(CS_INSTALLED)"
-	$(STRIP_DEBUG) "$(DESTDIR)$(bindir)/racket$(CS_INSTALLED)"
-	$(RESTORE_SIGNATURE) "$(DESTDIR)$(bindir)/racket$(CS_INSTALLED)"
-	$(ICP) $(srcdir)/../../start/starter-sh "$(DESTDIR)$(libpltdir)/starter-sh"
-	$(ICP) starter "$(DESTDIR)$(libpltdir)/starter"
-	$(STRIP_SIGNATURE) "$(DESTDIR)$(libpltdir)/starter"
-	$(STRIP_DEBUG) "$(DESTDIR)$(libpltdir)/starter"
-	$(BOOTSTRAP_RACKET) $(START_COLLECTS_PATH) "$(DESTDIR)$(libpltdir)/starter" $(DESTDIR)@COLLECTS_PATH@ $(DESTDIR)@CONFIG_PATH@
-	$(RESTORE_SIGNATURE) "$(DESTDIR)$(libpltdir)/starter"
-	$(MAKE) system-install
-	$(MAKE) include-install
-	$(MAKE) common-@INSTALL_LIBS_ENABLE@-libs
-
-SYSTEM_RKTD = $(DESTDIR)$(libpltdir)/system$(CS_INSTALLED).rktd
-
-system-install:
-	$(RACKET) -cu "$(srcdir)/gen-system.rkt" $(SYSTEM_RKTD) $(TARGET_MACH) @CROSS_COMPILE_TARGET_KIND@ "$(srcdir)" "@PLT_CS_SLSP_SUFFIX@"
-
-include-install:
-	$(ICP) $(srcdir)/api.h "$(DESTDIR)$(includepltdir)/racketcs.h"
-	$(ICP) $(srcdir)/boot.h "$(DESTDIR)$(includepltdir)/racketcsboot.h"
-	$(ICP) $(SCHEME_TARGET_INC)/scheme.h "$(DESTDIR)$(includepltdir)/chezscheme.h"
-
-common-install-libs:
-	$(ICP_LIB) libracketcs.a "$(DESTDIR)$(libdir)/libracketcs.a"
-	$(STRIP_LIB_DEBUG) "$(DESTDIR)$(libdir)/libracketcs.a"
-
-common-no-install-libs:
-	$(NOOP)
-
-unix-install:
-	$(MAKE) common-install
-	rm -f "$(DESTDIR)$(libpltdir)/gracket$(CS_INSTALLED)"
-	$(ICP) gracketcs "$(DESTDIR)$(libpltdir)/gracket$(CS_INSTALLED)"
-	$(STRIP_SIGNATURE) "$(DESTDIR)$(bindir)/racket$(CS_INSTALLED)"
-	$(STRIP_SIGNATURE) "$(DESTDIR)$(libpltdir)/gracket$(CS_INSTALLED)"
-	$(BOOTSTRAP_RACKET) $(START_COLLECTS_PATH) "$(DESTDIR)$(bindir)/racket$(CS_INSTALLED)" $(DESTDIR)@COLLECTS_PATH@ $(DESTDIR)@CONFIG_PATH@
-	$(BOOTSTRAP_RACKET) $(START_COLLECTS_PATH) "$(DESTDIR)$(libpltdir)/gracket$(CS_INSTALLED)" $(DESTDIR)@COLLECTS_PATH@ $(DESTDIR)@CONFIG_PATH@
-	$(RESTORE_SIGNATURE) "$(DESTDIR)$(bindir)/racket$(CS_INSTALLED)"
-	$(RESTORE_SIGNATURE) "$(DESTDIR)$(libpltdir)/gracket$(CS_INSTALLED)"
-	$(MAKE) unix-@INSTALL_LIBS_ENABLE@-libs
-
-unix-install-cross:
-	$(MAKE) unix-install
-	$(MAKE) install-cross
-
-unix-install-libs:
-	$(MAKE) unix-install-boot-files
-
-unix-install-boot-files:
-	$(BOOTSTRAP_RACKET) $(srcdir)/add-terminator.rkt petite-v.boot "$(DESTDIR)$(libpltdir)/petite.boot"
-	$(BOOTSTRAP_RACKET) $(srcdir)/add-terminator.rkt scheme-v.boot "$(DESTDIR)$(libpltdir)/scheme.boot"
-	$(BOOTSTRAP_RACKET) $(srcdir)/add-terminator.rkt racket-v.boot "$(DESTDIR)$(libpltdir)/racket.boot"
-
-unix-no-install-libs:
-	$(NOOP)
-
-RKTFWDEST = @FRAMEWORK_INSTALL_DIR@/Racket.framework
-FRAMEWORK_REL_PREFIX = "@executable_path/../$(libpltdir_rel)/"
-FRAMEWORK_ABS_PREFIX = "$(libpltdir)/"
-
-macos-install:
-	$(MAKE) common-install
-	rm -f $(DESTDIR)$(RKTFWDEST)/Racket
-	rm -rf $(DESTDIR)$(RKTFWDEST)/Versions/$(FWVERSION)_CS
-	if [ @FRAMEWORK_REL_INSTALL@ = yes ] ; then $(RACKET) -cu "$(srcdir)/../../mac/clean-fw.rkt" $(DESTDIR)$(RKTFWDEST) ; fi
-	mkdir -p $(DESTDIR)"$(RKTFWDEST)/Versions/$(FWVERSION)_CS"
-	cp $(RKTFW) $(DESTDIR)$(RKTFWDEST)/Versions/$(FWVERSION)_CS/
-	mkdir -p $(DESTDIR)"$(RKTFWDEST)/Versions/$(FWVERSION)_CS/boot"
-	rm -f $(DESTDIR)$(RKTFWDEST)/Versions/$(FWVERSION)_CS/boot/petite.boot
-	rm -f $(DESTDIR)$(RKTFWDEST)/Versions/$(FWVERSION)_CS/boot/scheme.boot
-	rm -f $(DESTDIR)$(RKTFWDEST)/Versions/$(FWVERSION)_CS/boot/racket.boot
-	cp $(RKTFWDIR)/boot/petite.boot $(DESTDIR)$(RKTFWDEST)/Versions/$(FWVERSION)_CS/boot/
-	cp $(RKTFWDIR)/boot/scheme.boot $(DESTDIR)$(RKTFWDEST)/Versions/$(FWVERSION)_CS/boot/
-	cp $(RKTFWDIR)/boot/racket.boot $(DESTDIR)$(RKTFWDEST)/Versions/$(FWVERSION)_CS/boot/
-	$(STRIP_SIGNATURE) "$(DESTDIR)$(bindir)/racket$(CS_INSTALLED)"
-	$(BOOTSTRAP_RACKET) $(START_COLLECTS_PATH) "$(DESTDIR)$(bindir)/racket$(CS_INSTALLED)" $(DESTDIR)@COLLECTS_PATH@ $(DESTDIR)@CONFIG_PATH@
-	/usr/bin/install_name_tool -change "@executable_path/Racket.framework/Versions/$(FWVERSION)_CS/Racket" "@FRAMEWORK_PREFIX@Racket.framework/Versions/$(FWVERSION)_CS/Racket" $(DESTDIR)"$(bindir)/racket$(CS_INSTALLED)"
-	$(RESTORE_SIGNATURE) "$(DESTDIR)$(bindir)/racket$(CS_INSTALLED)"
-	$(MAKE) macos-install-gracket CS_GR_INSTALLED="`echo $(CS_INSTALLED) | tr a-z A-Z`"
-	$(MAKE) macos-@INSTALL_LIBS_ENABLE@-libs
-
-macos-install-cross:
-	$(MAKE) macos-install
-	$(MAKE) install-cross
-
-GRACKET_INSTALLED = $(DESTDIR)"$(libpltdir)/GRacket$(CS_GR_INSTALLED).app/Contents/MacOS/GRacket$(CS_GR_INSTALLED)"
-
-macos-install-gracket:
-	rm -rf $(DESTDIR)"$(libpltdir)/GRacket$(CS_GR_INSTALLED).app"
-	$(ICP) -r "GRacketCS.app" $(DESTDIR)"$(libpltdir)/GRacket$(CS_GR_INSTALLED).app"
-	$(BOOTSTRAP_RACKET) "$(srcdir)/../../mac/rename-app.rkt" $(DESTDIR)"$(libpltdir)/GRacket$(CS_GR_INSTALLED).app" "GRacketCS" "GRacket$(CS_GR_INSTALLED)" no-up
-	/usr/bin/install_name_tool -change "@executable_path/../../../../bc/Racket.framework/Versions/$(FWVERSION)_CS/Racket" "@FRAMEWORK_PREFIX@Racket.framework/Versions/$(FWVERSION)_CS/Racket" $(GRACKET_INSTALLED)
-	$(STRIP_SIGNATURE) $(GRACKET_INSTALLED)
-	$(BOOTSTRAP_RACKET) $(START_COLLECTS_PATH) $(GRACKET_INSTALLED) ../../../../collects ../../../../etc
-	$(STRIP_DEBUG) $(GRACKET_INSTALLED)
-	$(RESTORE_SIGNATURE) $(GRACKET_INSTALLED)
-	rm -rf $(DESTDIR)"$(libpltdir)/Starter.app"
-	$(ICP) -r Starter.app $(DESTDIR)"$(libpltdir)/."
-
-macos-install-libs:
-	$(BOOTSTRAP_RACKET) $(srcdir)/add-terminator.rkt $(RKTFWDIR)/boot/petite.boot "$(DESTDIR)$(libpltdir)/petite.boot"
-	$(BOOTSTRAP_RACKET) $(srcdir)/add-terminator.rkt $(RKTFWDIR)/boot/scheme.boot "$(DESTDIR)$(libpltdir)/scheme.boot"
-	$(BOOTSTRAP_RACKET) $(srcdir)/add-terminator.rkt $(RKTFWDIR)/boot/racket.boot "$(DESTDIR)$(libpltdir)/racket.boot"
-
-macos-no-install-libs:
-	$(NOOP)
-
-# ----------------------------------------
-# Check
-
-maybe-check-racketcs:
-	if [ "$(RACKET)" = "$(DEFAULT_RACKET)" ] ; \
-         then $(MAKE) check-racketcs ; fi
-
-check-racketcs:
-	./racketcs $(SETUP_BOOT) ignored $(builddir)/ignored.d $(srcdir)/../known.rkt $(srcdir)/..
-
-# ----------------------------------------
-# Reconfigure
-
-CONFIGURE_SRCS = $(srcdir)/configure $(srcdir)/Makefile.in \
-                 $(srcdir)/../../rktio/Makefile.in $(srcdir)/../../rktio/configure
-
-# Only fire the `Makefile` rule explicitly via `reconfigure`
-NO_RECONFIG =
-ON_RECONFIG = no
-
-reconfigure:
-	$(MAKE) Makefile NO_RECONFIG=no ON_RECONFIG=
-
-Makefile$(ON_RECONFIG): $(CONFIGURE_SRCS)
-	$(srcdir)/configure $(CONFIGURE_ARGS_qq) $(MORE_CONFIGURE_ARGS)
-
-Makefile$(NO_RECONFIG):
-	$(NOOP)
+$(ZUO): $(srcdir)/../../zuo/zuo.c
+	mkdir -p bin
+	$(CC_FOR_BUILD) $(CFLAGS_FOR_BUILD) -DZUO_LIB_PATH='"'"$(upsrcdir)/../../zuo/lib"'"' -o $(ZUO) $(srcdir)/../../zuo/zuo.c

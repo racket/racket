@@ -1,7 +1,7 @@
 #lang racket/base
 (require (for-syntax racket/base
                      racket/stxparam
-                     syntax/parse)
+                     syntax/parse/pre)
          racket/stxparam
          racket/undefined
          "class-wrapped.rkt"
@@ -1393,20 +1393,29 @@
                       [next-ctcs (cdr all-new-ctcs)]
                       [this-proj (car all-new-projs)]
                       [next-projs (cdr all-new-projs)]
-                      [dropped-something? #f])
+                      [dropped-something? #f]
+                      [n 0])
              (cond
-               [(null? next-ctcs) (values (cons this-ctc prior-ctcs)
-                                          (cons this-proj prior-projs)
-                                          dropped-something?)]
+               [(null? next-ctcs)
+                (when (n . > . 10)
+                  (log-racket/contract-info
+                   "class-c-old.rkt: wrappers seem to be accumulating; found ~a; here is one of them:\n  ~.s"
+                   n
+                   this-ctc))
+                (values (cons this-ctc prior-ctcs)
+                        (cons this-proj prior-projs)
+                        dropped-something?)]
                [else
                 (if (and (ormap (λ (x) (stronger? x this-ctc)) prior-ctcs)
                          (ormap (λ (x) (stronger? this-ctc x)) next-ctcs))
                     (loop prior-ctcs prior-projs
                           (car next-ctcs) (cdr next-ctcs) (car next-projs) (cdr next-projs)
-                          #t)
+                          #t
+                          (+ n 1))
                     (loop (cons this-ctc prior-ctcs) (cons this-proj prior-projs)
                           (car next-ctcs) (cdr next-ctcs) (car next-projs) (cdr next-projs)
-                          dropped-something?))])))
+                          dropped-something?
+                          (+ n 1)))])))
 
          (define unwrapped-class
            (if (has-impersonator-prop:instanceof/c-unwrapped-class? val)
@@ -1434,6 +1443,8 @@
           impersonator-prop:instanceof/c-unwrapped-class unwrapped-class
           impersonator-prop:contracted ctc
           impersonator-prop:original-object original-obj)]))))
+
+(define-logger racket/contract)
 
 (define-values (impersonator-prop:instanceof/c-ctcs
                 has-impersonator-prop:instanceof/c-ctcs?

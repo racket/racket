@@ -62,9 +62,9 @@
       (values s1 (modulo (+ s2 s1) BASE))))
   (integer->integer-bytes (+ s1 (arithmetic-shift s2 16)) 4 #f #t))
 
-(define fasl-type-uncompressed 43)
-(define fasl-type-gzip         44)
-(define fasl-type-lz4          45)
+(define fasl-type-uncompressed 44)
+(define fasl-type-gzip         45)
+(define fasl-type-lz4          46)
 
 (define (read-byte/not-eof in)
   (define b (read-byte in))
@@ -128,7 +128,7 @@
                     [(eqv? compression fasl-type-gzip)
                      (if (and compress? (eq? compress-format 'gzip))
                          (values c-bstr 'gzip dest-size)
-                         (let ([c-bstr (subbytes c-bstr 2 (- (bytes-length c-bstr 4)))])
+                         (let ([c-bstr (subbytes c-bstr 2 (- (bytes-length c-bstr) 4))])
                            (values (reencode c-bstr inflate) #f #f)))]
                     [(eqv? compression fasl-type-lz4)
                      (if (and compress? (eq? compress-format 'lz4))

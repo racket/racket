@@ -3,6 +3,7 @@
   [terminal-init (known-procedure 4)]
   [terminal-read-char (known-procedure 2)]
   [terminal-write-char (known-procedure 2)]
+  [terminal-char-width (known-procedure 2)]
   [terminal-set-color (known-procedure 4)]
   [terminal-flush (known-procedure 1)]
   [terminal-get-screen-size (known-procedure 1)]

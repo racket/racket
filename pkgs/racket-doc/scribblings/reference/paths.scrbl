@@ -696,13 +696,13 @@ extension.
 
 @defproc[(path-has-extension? [path (or/c path-string? path-for-some-system?)]
                               [ext (or/c bytes? string?)])
-         (or/c bytes? #f)]{
+         boolean?]{
 
 Determines whether the last element of @racket[path] ends with
 @racket[ext] but is not exactly the same as @racket[ext].
 
 If @racket[ext] is a @tech{byte string} with the shape of an extension
-(i.e., starting with @litchar{.}), this check is equivalent to
+(i.e., starting with @litchar{.} and not including another @litchar{.}), this check is equivalent to
 checking whether @racket[(path-get-extension path)] produces @racket[ext].
 
 @examples[#:eval path-eval
@@ -747,13 +747,13 @@ If @racket[more-than-root?] is true, if @racket[base] and
 
 If @racket[path] is the same as @racket[base], then
 @racket[(build-path 'same)] is returned only if
-@racket[more-than-same?] is true. Otherwise, @racket[path] is
-returned when @racket[path] is the same as @racket[base].
+@racket[more-than-same?] is @racket[#f]. Otherwise, and by default,
+@racket[path] is returned when @racket[path] is the same as @racket[base].
 
 If @racket[normalize-case?] is true (the default), then pairs of path
 elements to be compared are first converted via
 @racket[normal-case-path], which means that path elements are
-comparsed case-insentively on Windows. If @racket[normalize-case?] is
+compared case-insentively on Windows. If @racket[normalize-case?] is
 @racket[#f], then path elements and the path roots match only if they
 have the same case.
 

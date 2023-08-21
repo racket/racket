@@ -343,4 +343,17 @@
 
   (void))
 
+;; make sure srcloc sharing is perserved in compiled code
+(let ()
+  (define s (srcloc (string->path "/Users/mflatt/plt/racket/collects/racket/private/kw.rkt") 636 69 28647 2))
+  (define o (open-output-bytes))
+  (write (compile #`(quote (#,s #,s)))
+         o)
+  
+  (define v
+    (parameterize ([read-accept-compiled #t])
+      (eval (read (open-input-bytes (get-output-bytes o))))))
+  
+  (test #t eq? (car v) (cadr v)))
+
 (report-errs)

@@ -557,6 +557,32 @@ Supported for any @racket[dict] that implements @racket[dict-iterate-first],
 ]}
 
 
+@defproc[(dict-map/copy [dict dict?]
+                        [proc (any/c any/c . -> . (values any/c any/c))])
+         dict?]{
+
+Applies the procedure @racket[proc] to each element in
+@racket[dict] in an unspecified order, accumulating the results
+into a dict of the same kind.
+The procedure @racket[proc] is called each time with a key
+and its value, and must return a corresponding key and
+value.
+
+Supported for any @racket[dict] that implements
+@racket[dict-iterate-first], @racket[dict-iterate-next],
+@racket[dict-iterate-key], and @racket[dict-iterate-value],
+and either @racket[dict-set] and @racket[dict-clear], or
+@racket[dict-set!], @racket[dict-copy], and
+@racket[dict-clear!].
+
+@examples[
+#:eval dict-eval
+(dict-map/copy #hash((a . "apple") (b . "banana")) (lambda (k v) (values k (string-upcase v))))
+]
+
+@history[#:added "8.5.0.2"]}
+
+
 @defproc[(dict-for-each [dict dict?]
                         [proc (any/c any/c . -> . any)])
          void?]{
@@ -982,7 +1008,7 @@ See @racket[define-custom-hash-types] for an example.
  in terms of a hash table where keys are compared with
  @racket[eql?], hashed with @racket[hash1] and
  @racket[hash2], and where the key predicate is
- @racket[key?]. See @racket[gen:equal+hash] for information
+ @racket[key?]. See @racket[gen:equal-mode+hash] and @racket[gen:equal+hash] for information
  on suitable equality and hashing functions.
 
 The @racket[make-custom-hash] and @racket[make-weak-custom-hash]
@@ -1015,7 +1041,7 @@ See also @racket[define-custom-hash-types].
 
 }
 
-@section{Passing keyword arguments in dictionaries}
+@section{Passing Keyword Arguments in Dictionaries}
 
 @defproc[
  (keyword-apply/dict [proc procedure?]

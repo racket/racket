@@ -261,6 +261,7 @@
     (un #t 'immutable? #hash())
     (un #t 'immutable? #hasheq())
     (un #t 'immutable? #hasheqv())
+    (un #t 'immutable? #hashalw())
     (un #t 'immutable? (chaperone-vector '#(1 2 3) (lambda (vec i val) val) (lambda (vec i val) val)))
     (un #f 'immutable? (chaperone-vector (vector 1 2 3) (lambda (vec i val) val) (lambda (vec i val) val)))
 
@@ -744,6 +745,11 @@
     (bin-exact 1 'fxrshift 2 1)
     (bin-exact 1 'fxrshift 2 1 #:bad-value -2 #:bad-as-second-only? #t)
     (bin-exact 1 'fxrshift 2 1 #:bad-value 100 #:bad-as-second-only? #t)
+    (bin-exact 1 'fxrshift/logical 2 1)
+    (bin-exact -1 'fxrshift/logical -1 0)
+    (bin-exact (most-positive-fixnum) 'fxrshift/logical -1 1)
+    (bin-exact 1 'fxrshift/logical 2 1 #:bad-value -2 #:bad-as-second-only? #t)
+    (bin-exact 1 'fxrshift/logical 2 1 #:bad-value 100 #:bad-as-second-only? #t)
 
     (bin-exact 4 'fxlshift/wraparound 2 1)
     (bin-exact 4 'fxlshift/wraparound 2 1 #:bad-value -2 #:bad-as-second-only? #t)

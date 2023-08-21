@@ -1,5 +1,5 @@
 #lang scribble/doc
-@(require scribble/manual)
+@(require scribble/manual scribblings/private/docname)
 
 @title{Getting Started}
 
@@ -36,8 +36,8 @@ through a textbook:
  @item{@italic{@link["https://htdp.org/"]{How to Design Programs, Second Edition}}
        is the best place to start.}
 
- @item{@other-manual['(lib "web-server/scribblings/tutorial/continue.scrbl")]
-       introduces you to modules and building web applications.}
+ @item{The @Continue[Continue-title] tutorial introduces you to modules and
+       building web applications.}
 
  @item{@other-manual['(lib "scribblings/guide/guide.scrbl")] describes
        the rest of the Racket language, which is much bigger than
@@ -52,7 +52,7 @@ If you're already a programmer and you're in more of a hurry:
 
 @itemize[
 
- @item{@other-manual['(lib "scribblings/quick/quick.scrbl")] gives you
+ @item{@Quick[Quick-title] gives you
        a taste of Racket.}
 
  @item{@other-manual['(lib "scribblings/more/more.scrbl")] dives much

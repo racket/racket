@@ -24,7 +24,7 @@
 ;; If <target-file> is `--tag`, then <dep-file/tag> specifies a tag to
 ;; get stripped form <arg>, there the target file is immediately after
 ;; the tag. In that case, the dependency file name is formed by using
-;; just the file name of the target, replacing the suffix with ".d".
+;; just the target, replacing the suffix with ".d".
 ;;
 ;; The point of going through `setup/main` is that the Racket module
 ;; gets compiled as needed, so that it doesn't have to be loaded from
@@ -49,8 +49,7 @@
                               [else (loop (cdr l))]))
                           target-file-spec))
   (define make-dep-file (if target-tag
-                            (let-values ([(base name dir?) (split-path target-file)])
-                              (path-replace-suffix name #".d"))
+                            (path-replace-suffix target-file #".d")
                             (vector-ref (current-command-line-arguments) 4)))
   (define mod-file (simplify-path (path->complete-path (vector-ref (current-command-line-arguments) 5))))
   (parameterize ([current-command-line-arguments
@@ -67,7 +66,7 @@
     (define lock-port (open-output-file #:exists 'truncate/replace lock-file))
     (let loop ([n 0])
       (when (= n 3)
-        (printf "Waiting on lock: ~a" lock-file))
+        (printf "Waiting on lock: ~a\n" lock-file))
       (unless (port-try-file-lock? lock-port 'exclusive)
         (sleep 0.1)
         (loop (add1 n))))

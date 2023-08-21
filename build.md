@@ -33,6 +33,10 @@ and how to contribute to Racket development.
 >> [3.2 Distribution-Package Contributions](#32-distribution-package-contributions)  
 >> [3.3 General Contribution Guidelines](#33-general-contribution-guidelines)  
 >> [3.4 More Resources](#34-more-resources)  
+  
+> [4 Zuo and the Racket Build System](#4-zuo-and-the-racket-build-system)  
+  
+> [5 Bootstrapping Racket](#5-bootstrapping-racket)  
 
 ## 1. Building Racket from Source
 
@@ -118,9 +122,15 @@ On Unix (including Linux) and Mac OS, `make` (or `make in-place`)
 creates a build in the `"racket"` directory.
 
 On Windows with Microsoft Visual Studio (any version between 2008/9.0
-and 2019/16.0), `nmake win` creates a build in the `"racket"` directory.
-For information on configuring your command-line environment for Visual
-Studio, see `"racket/src/worksp/README.txt"`.
+and 2022/17.0), `nmake` creates a build in the `"racket"` directory. If
+your command-prompt environment is not already configured for Visual
+Studio to run programs like `nmake.exe` and `cl.exe`, you run
+`"racket/src/worksp/msvcprep.bat"` \(PowerShell:
+`"racket/src/worksp/msvcprep.ps1"`} and provide an argument that selects
+a build mode: `x86` (32-bit Intel/AMD mode), `x64` or `x86_amd64`
+(64-bit Intel/AMD mode), or `x64_arm64` (64-bit Arm mode). Any use of
+`make` described in this build guide should also work with `nmake`,
+except as noted.
 
 In all cases, an in-place build includes (via links) a few packages that
 are in the `"pkgs"` directory. To get new versions of those packages, as
@@ -134,14 +144,13 @@ Racket](#15-more-instructions-building-racket) for more information.
 ### 1.4. Quick Instructions: Unix-Style Install
 
 On Unix (including Linux), `make unix-style PREFIX=<dir>` builds and
-installs into `"<dir>"` (which must be an absolute path) with binaries
-in `"<dir>/bin"`, packages in `"<dir>/share/racket/pkgs"`, documentation
-in `"<dir>/share/racket/doc"`, etc.
+installs into `"<dir>"` with binaries in `"<dir>/bin"`, packages in
+`"<dir>/share/racket/pkgs"`, documentation in
+`"<dir>/share/racket/doc"`, etc.
 
 On Mac OS, `make unix-style PREFIX=<dir>` builds and installs into
-`"<dir>"` (which must be an absolute path) with binaries in
-`"<dir>/bin"`, packages in `"<dir>/share/pkgs"`, documentation in
-`"<dir>/doc"`, etc.
+`"<dir>"` with binaries in `"<dir>/bin"`, packages in
+`"<dir>/share/pkgs"`, documentation in `"<dir>/doc"`, etc.
 
 On Windows, Unix-style install is not supported.
 
@@ -149,9 +158,9 @@ A Unix-style install leaves no reference to the source directory.
 
 To split the build and install steps of a Unix-style installation,
 supply `DESTDIR=<dest-dir>` with `make unix-style PREFIX=<dir>`, which
-assembles the installation in `"<dest-dir>"` (which must be an absolute
-path). Then, copy the content of `"<dest-dir>"` to the target root
-`"<dir>"`.
+assembles the installation in `"<dest-dir>"`. Then, copy or move the
+content of `"<dest-dir>"` to the target root `"<dir>"`; take care to
+preserve file timestamps.
 
 See [More Instructions: Building
 Racket](#15-more-instructions-building-racket) for more information.
@@ -159,9 +168,12 @@ Racket](#15-more-instructions-building-racket) for more information.
 ### 1.5. More Instructions: Building Racket
 
 The `"racket"` directory contains minimal Racket, which is just enough
-to run `raco pkg` to install everything else. The first step of `make
+to run `raco pkg` to install everything else. A first step of `make
 in-place` or `make unix-style` is to build minimal Racket, and you can
-read `"racket/src/README"` for more information.
+read `"racket/src/README.txt"` for more information, including
+information about dependencies. (The very first step of a build is to
+compile Zuo, which is a tiny variant of Racket that [drives the rest of
+the build system](#4-zuo-and-the-racket-build-system).)
 
 If you would like to provide arguments to `configure` for the minimal
 Racket build, then you can supply them with by adding
@@ -186,9 +198,10 @@ new packages are added. To uninstall previously selected package, use
 
 To build anything other than the latest sources in the repository
 \(e.g., when building from the `v6.2.1` tag), you need a catalog that’s
-compatible with those sources. Note that a release distribution is
-configured to use a catalog specific to that release, so you can extract
-the catalog’s URL from there.
+compatible with those sources. Release tags starting with `v7.1` include
+a default catalog that corresponds to the release. For earlier versions,
+the release distribution is configured to use a catalog specific to that
+release, so you can extract the catalog’s URL from there.
 
 Using `make` (or `make in-place`) sets the installation’s name to
 `development`, unless the installation has been previously configured
@@ -200,21 +213,21 @@ installed by default into the installation’s space instead of
 user-specific space. The name and/or default-scope configuration can be
 changed through `raco pkg config`.
 
-Note that `make -j <n>` controls parallelism for the makefile part of a
-build, but not for the `raco setup` part. To control both the makefile
-and the `raco setup` part, use
+When `make -j <n>` is used to specify parallelism, the build system may
+be able to propagate that choice to intermediate steps and the `raco
+setup` part. A more portable alternative is to supply the `JOBS`
+variable:
 
-  `make CPUS=<n>`
+  `make JOBS=<n>`
 
-which recurs with `make -j <n> JOB_OPTIONS="-j <n>"`. Setting `CPUS`
-also works with `make unix-style`.
+Setting `JOBS` works with other targets, including `make unix-style`.
+For backward compatibility, `CPUS` is recognized as an alias for `JOBS`.
 
-Use `make as-is` (or `nmake win-as-is`) to perform the same build
-actions as `make in-place`, but without consulting any package catalogs
-or package sources to install or update packages. In other words, use
-`make as-is` to rebuild after local changes that could include changes
-to the Racket core. (If you change only packages, then `raco setup`
-should suffice.)
+Use `make as-is` to perform the same build actions as `make in-place`,
+but without consulting any package catalogs or package sources to
+install or update packages. In other words, use `make as-is` to rebuild
+after local changes that could include changes to minimal Racket. (If
+you change only packages, then `raco setup` should suffice.)
 
 If you need even more control over the build, carry on to [Even More
 Instructions: Building Racket
@@ -233,13 +246,12 @@ downloaded from a separate Git repository by `make`. If you have Racket
 v7.1 or later, then you can choose instead to bootstrap using that
 Racket implementation with
 
-  `make cs RACKET_FOR_BOOTFILES=racket`
+  `make cs BOOTFILE_RACKET=racket`
 
-The `make bc` target (or `make bc-as-is` for a rebuild, or `nmake
-win-bc` on Windows with Visual Studio) builds an older variant of
-Racket, called Racket BC, which does not use Chez Scheme. By default,
-the executables for the Racket BC variant all have a `bc` or `BC`
-suffix, and they coexist with a Racket CS build by keeping compiled
+The `make bc` target (or `make bc-as-is` for a rebuild) builds an older
+variant of Racket, called Racket BC, which does not use Chez Scheme. By
+default, the executables for the Racket BC variant all have a `bc` or
+`BC` suffix, and they coexist with a Racket CS build by keeping compiled
 files in a `"bc"` subdirectory of the `"compiled"` directory. You can
 remove the `bc` suffix and the subdirectory in `"compiled"` by providing
 `RACKETBC_SUFFIX=""` to `make bc`.
@@ -255,7 +267,8 @@ are updated and documentation is built only once (using Racket CS).
 
 Instead of just using `make in-place` or `make unix-style`, you can take
 more control over the build by understanding how the pieces fit
-together.
+together. You can also read `"Makefile"`, which defines and describes
+many variables that can be supplied via `make`.
 
 #### 1.7.1. Building Minimal Racket
 
@@ -264,8 +277,7 @@ and follow the `"README.txt"` there, which gives you more configuration
 options.
 
 If you don’t want any special configuration and you just want the base
-build, you can use `make base` (or `nmake win-base`) with the top-level
-makefile.
+build, you can use `make base` with the top-level makefile.
 
 Minimal Racket does not require additional native libraries to run, but
 under Windows, encoding-conversion, extflonum, and SSL functionality is
@@ -281,13 +293,8 @@ passed on, but it is meant to be set by some makefile targets when
 
 For cross compilation, add configuration options to
 `CONFIGURE_ARGS="<options>"` as described in the `"README.txt"` of
-`"racket/src"`, but also add a `PLAIN_RACKET=...` argument for the
-top-level makefile to specify the same executable as in an
-`--enable-racket=...` for `configure`. In general, the `PLAIN_RACKET`
-setting should have the form `PLAIN_RACKET="<exec> -C"` to ensure that
-cross-compilation mode is used and that any foreign libraries needed for
-build time can be found, but many cross-compilation scenarios work
-without `-C`.
+`"racket/src"`, but also add a `RACKET=...` argument for the top-level
+makefile instead of using  `--enable-racket=...` for `configure`.
 
 Specify `SETUP_MACHINE_FLAGS=<options>` to set Racket flags that control
 the target machine of compiled bytecode for `raco setup` and `raco pkg
@@ -357,9 +364,6 @@ pre-built. Then, as described below, create platform-specific installers
 on some number of client machines, each of which contacts the server
 machine to obtain pre-built packages. The server can act as a client,
 naturally, to create an installer for the server’s platform.
-
-GNU `make` is required on the server and non-windows client machines,
-`nmake` is required on Windows client machines.
 
 The distribution-build process is a collaboration between the Racket Git
 repository’s top-level makefile and the `"distro-build"` package.
@@ -501,10 +505,6 @@ Roughly, the steps are as follows
 
     `make client SERVER=<address> PKGS="<pkgs>"`
 
-  or
-
-    `nmake win32-client SERVER=<address> PKGS="<pkgs>"`
-
   See 4 in the detailed steps below for more information on variables
   other than `SERVER` and `PKGS` that you can provide with `make`.
 
@@ -569,7 +569,7 @@ In more detail, the steps are as follows:
 
 * On each client, create an installer.
 
-  The `client` (or `win32-client`) target of the makefile will do that.
+  The `client` target of the makefile will do that.
 
   Provide `SERVER` as the hostname of the server machine, but a
   `localhost`-based tunnel back to the server is more secure and avoids
@@ -869,3 +869,88 @@ that process faster by keeping a few guidelines in mind:
 For additional pointers on how to contribute to Racket, see
 
 [https://github.com/racket/racket/wiki/Ways-to-contribute-to-Racket](https://github.com/racket/racket/wiki/Ways-to-contribute-to-Racket)
+
+## 4. Zuo and the Racket Build System
+
+Racket builds with many options, and the build needs to work in a
+variety of environments. That variability is difficult to manage through
+a traditional makefile. The Racket build is mostly driven instead with
+Zuo, which is a tiny, Racket-like scripting language with facilities
+inspired by `make` and [Shake](https://shakebuild.com/). When you build
+Racket with `make`, the makefile target ensures that `zuo` is built, and
+then it bounces the build request to a `"main.zuo"` script.
+
+Racket makefiles build `zuo` using the `CC_FOR_BUILD` makefile variable
+plus `CFLAGS_FOR_BUILD`. The `CC_FOR_BUILD` variable defaults to using
+the `CC` makefile variable plus `-O2`, while `CC` normally defaults to
+`cc`. If you need to specify a C compiler or options for building Zuo,
+supply `CC=<compiler>`, `CC_FOR_BUILD=<compiler>`, and/or
+`CFLAGS_FOR_BUILD=<flags>` to `make`.
+
+In you have `zuo` installed, you can generally substitute `zuo .` in
+place of `make` when building Racket components. You can even use just
+`zuo` in place of `make` if you’re not providing additional target or
+variable arguments to `make`, but otherwise `.` is needed after `zuo` to
+select the `main.zuo` script in the current directory. In most cases, it
+doesn’t matter whether you use `make` or `zuo .`, but if you move deep
+enough into the Racket build tree, there are only Zuo scripts. To
+install Zuo, you can use the usual `configure && make && make install`
+in `"racket/src/zuo"`.
+
+Even when you run `zuo` directly, configuration information is
+frequently read from `"Makefile"` or `"Mf-config"`. The latter name is
+used when the makefile exists only for recording a configuration and
+does not provide targets. When you run a `configure` script,
+configuration choices are recorded in a generated `"Makefile"` or
+`"Mf-config"`.
+
+By convention, a source file `"build.zuo"` is analogous to
+`"Makefile.in"`: it is meant to be instantiated in a build directory as
+`"main.zuo"`. Instead of copying and updating, as typically happens to
+convert `"Makefile.in"` to `"Makefile"`, a `"main.zuo"` is typically
+instantiated as a small module, possibly by copying a `"buildmain.zuo"`
+file to `"main.zuo"`. That `"main.zuo"` reaches `"build.zuo"` using a
+source directory that is recorded in an accompanying `"Makefile"` or
+`"Mf-config"`.
+
+## 5. Bootstrapping Racket
+
+Although Racket is implemented in Racket, you do not normally need an
+existing Racket installation to build Racket. Distribution archives
+include the needed bootstrapping artifacts in a portable form. The
+Racket Git repository similarly includes some of those artifacts checked
+in directly, and some are in a separate repository that is downloaded by
+`make`. Specifically:
+
+* `"racket/src/cs/schemified"` includes macro-expanded, schemified
+  versions of layers that are implemented in Racket for Racket CS, and
+  these are checked into the Git repository;
+
+* `"racket/src/bc/srcstartup.inc"` is the macro-expanded expander (as
+  implemented in Racket) for Racket BC, and it is checked into the Git
+  repository; and
+
+* `"racket/src/ChezScheme/boot/pb"` contains Chez Scheme pb (portable
+  bytecode) boot files, normally downloaded from a separate Git
+  repository in a branch that has a single commit \(i.e., no history of
+  old versions within the branch\).
+
+If you modify certain pieces of Racket, you will need an existing build
+of Racket to bootstrap. That includes the Chez Scheme implementation (at
+least for some kinds of modifications), the Racket macro expander, and
+in the case of Racket CS, the "thread", "io", "regexp", and "schemify"
+layers.
+
+For more information about modifying Chez Scheme, see
+`"racket/src/cs/README.txt"`. As explained there, you can create new
+boot files in `"racket/src/ChezScheme/boot/pb"` or platform-specific
+boot files using even a relatively old version of Chez Scheme or Racket.
+
+For information about modifying the macro expander for Racket CS and/or
+BC, see `"racket/src/expander/README.txt"`. Building the expander may
+require a relatively new version of Racket, perhaps even the very latest
+version before the change.
+
+Finally, for information about modifying the other layers for Racket CS,
+see `"racket/src/cs/README.txt"`. Rebuilding these layers requires a
+relatively new version of Racket, too.

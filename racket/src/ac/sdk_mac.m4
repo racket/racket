@@ -53,6 +53,16 @@
       fi
     fi
 
+    if test "${enable_sdk11}" != "" ; then 
+      PREFLAGS="$PREFLAGS -isysroot ${enable_sdk11} -mmacosx-version-min=11.0"
+      LDFLAGS="$LDFLAGS -isysroot ${enable_sdk11} -mmacosx-version-min=11.0"
+      if test "$PROPAGATE_SUB_CONFIGURE" != "no" ; then
+        SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} CFLAGS="'"'"${CFLAGS}"'"'
+        SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} CPPFLAGS="'"'"${PREFLAGS}"'"'
+        SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} LDFLAGS="'"'"${LDFLAGS}"'"'
+      fi
+    fi
+
     # Force 32-bit build unless mac64 is enabled:
     if test "${enable_mac64}" != "yes" ; then
       if test "$host_cpu" != "powerpc" ; then

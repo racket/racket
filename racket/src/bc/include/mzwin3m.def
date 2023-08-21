@@ -102,6 +102,7 @@ EXPORTS
  scheme_set_on_atomic_timeout
  scheme_signal_error
  scheme_raise_exn
+ scheme_raise_realm_exn
  scheme_warning
  scheme_raise
  scheme_log_level_p
@@ -121,6 +122,7 @@ EXPORTS
  scheme_case_lambda_wrong_count
  scheme_wrong_type
  scheme_wrong_contract
+ scheme_wrong_contract_for_realm
  scheme_wrong_field_type
  scheme_wrong_field_contract
  scheme_arg_mismatch
@@ -146,6 +148,7 @@ EXPORTS
  scheme_multiple_values
  scheme_uchar_table
  scheme_uchar_cases_table
+ scheme_uchar_graphbreaks_table
  scheme_uchar_cats_table
  scheme_uchar_ups
  scheme_uchar_downs
@@ -195,16 +198,10 @@ EXPORTS
  scheme_current_continuation_marks
  scheme_extract_one_cc_mark
  scheme_extract_one_cc_mark_to_tag
+ scheme_extract_cc_mark_list
  scheme_do_eval
  scheme_detach_multple_array
- GC_malloc
- GC_malloc_atomic
- GC_malloc_one_tagged
- GC_malloc_atomic_uncollectable
  scheme_malloc_uncollectable
- GC_malloc_allow_interior
- GC_malloc_atomic_allow_interior
- GC_malloc_tagged_allow_interior
  scheme_malloc_code
  scheme_malloc_permanent_code
  scheme_free_code
@@ -233,12 +230,6 @@ EXPORTS
  scheme_collect_garbage_minor
  scheme_enable_garbage_collection
  scheme_incremental_garbage_collection
- GC_variable_stack
- GC_register_traversers
- GC_resolve
- GC_mark
- GC_fixup
- GC_fixup_self
  scheme_malloc_immobile_box
  scheme_free_immobile_box
  scheme_add_gc_callback
@@ -256,6 +247,7 @@ EXPORTS
  scheme_bucket_table_next
  scheme_make_hash_table
  scheme_make_hash_table_equal
+ scheme_make_hash_table_equal_always
  scheme_make_hash_table_eqv
  scheme_hash_set
  scheme_hash_get
@@ -264,6 +256,7 @@ EXPORTS
  scheme_hash_get_atomic
  scheme_hash_table_equal
  scheme_is_hash_table_equal
+ scheme_is_hash_table_equal_always
  scheme_is_hash_table_eqv
  scheme_clone_hash_table
  scheme_clear_hash_table
@@ -277,6 +270,7 @@ EXPORTS
  scheme_hash_tree_index
  scheme_hash_tree_equal
  scheme_is_hash_tree_equal
+ scheme_is_hash_tree_equal_always
  scheme_is_hash_tree_eqv
  scheme_make_prim
  scheme_make_noneternal_prim
@@ -590,13 +584,18 @@ EXPORTS
  scheme_eq
  scheme_eqv
  scheme_equal
+ scheme_equal_always
  scheme_chaperone_of
  scheme_impersonator_of
  scheme_hash_key
  scheme_equal_hash_key
+ scheme_equal_hash_key_recur
  scheme_equal_hash_key2
  scheme_recur_equal_hash_key
  scheme_recur_equal_hash_key2
+ scheme_equal_always_hash_key
+ scheme_equal_always_hash_key_recur
+ scheme_equal_always_hash_key2
  scheme_eqv_hash_key
  scheme_eqv_hash_key2
  scheme_set_type_equality

@@ -41,17 +41,7 @@ through the following indices:
 @item{@cppdef{MZCONFIG_PRINT_HANDLER} --- @racket[current-print]}
 @item{@cppdef{MZCONFIG_PROMPT_READ_HANDLER} --- @racket[current-prompt-read]}
 
-@item{@cppdef{MZCONFIG_CAN_READ_GRAPH} --- @racket[read-accept-graph]}
-@item{@cppdef{MZCONFIG_CAN_READ_COMPILED} --- @racket[read-accept-compiled]}
-@item{@cppdef{MZCONFIG_CAN_READ_BOX} --- @racket[read-accept-box]}
 @item{@cppdef{MZCONFIG_CAN_READ_PIPE_QUOTE} --- @racket[read-accept-bar-quote]}
-@item{@cppdef{MZCONFIG_CAN_READ_DOT} --- @racket[read-accept-dot]}
-@item{@cppdef{MZCONFIG_CAN_READ_INFIX_DOT} --- @racket[read-accept-infix-dot]}
-@item{@cppdef{MZCONFIG_CAN_READ_QUASI} --- @racket[read-accept-quasiquote]}
-@item{@cppdef{MZCONFIG_CAN_READ_READER} --- @racket[read-accept-reader]}
-@item{@cppdef{MZCONFIG_CAN_READ_LANG} --- @racket[read-accept-lang]}
-@item{@cppdef{MZCONFIG_READ_DECIMAL_INEXACT} --- @racket[read-decimal-as-inexact]}
-@item{@cppdef{MZCONFIG_READ_CDOT} --- @racket[read-cdot]}
 
 @item{@cppdef{MZCONFIG_PRINT_GRAPH} --- @racket[print-graph]}
 @item{@cppdef{MZCONFIG_PRINT_STRUCT} --- @racket[print-struct]}

@@ -200,7 +200,7 @@ first element of a two-element list when printing output, in which
 case it uses @racketidfont{'} to print the output:
 
 @interaction[
-(eval:alts (@#,racketvalfont{quote} (@#,racketvalfont{quote} @#,racketvalfont{road})) ''road)
+(eval:alts (@#,racket[quote] (@#,racketvalfont{quote} @#,racketvalfont{road})) ''road)
 (eval:alts '(@#,racketvalfont{quote} @#,racketvalfont{road}) ''road)
 ''road
 ]

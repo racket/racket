@@ -18,7 +18,8 @@
          pkg/path
          setup/collects
          setup/getinfo
-         compiler/module-suffix)
+         compiler/module-suffix
+         compiler/private/cm-minimal)
 
 (define rx:default-suffixes (get-module-suffix-regexp))
 ;; For any other file suffix, a `test-command-line-arguments`
@@ -28,12 +29,14 @@
 (define configure-runtime 'default)
 (define first-avail? #f)
 (define run-anyways? #t)
+(define load-errortrace? #f)
 (define quiet? #f)
 (define quiet-program? #f)
 (define check-stderr? #f)
 (define table? #f)
 (define fresh-user? #f)
 (define empty-input? #f)
+(define make? #f)
 (define heartbeat-secs #f)
 (define ignore-stderr-patterns null)
 (define extra-command-line-args null)
@@ -55,11 +58,16 @@
                            (* 4 60 60))) ; default: wait at most 4 hours
 
 (define test-exe-name (string->symbol (short-program+command-name)))
+;; The *absolute* module path of errortrace
+;; Note: must be a value that can be passed to other places,
+;; i.e. must satisfy the predicate `place-message-allowed?`.
+(define errortrace-module-path 'errortrace/main)
 
 ;; Stub for running a test in a process:
 (module process racket/base
   (require rackunit/log
-           racket/file)
+           racket/file
+           compiler/private/cm-minimal)
   ;; Arguments are a temp file to hold test results, the module
   ;; path to run, and the `dynamic-require` second argument:
   (define argv (current-command-line-arguments))
@@ -67,7 +75,9 @@
   (define test-module (read (open-input-string (vector-ref argv 1))))
   (define rt-module (read (open-input-string (vector-ref argv 2))))
   (define d (read (open-input-string (vector-ref argv 3))))
-  (define args (list-tail (vector->list argv) 4))
+  (define make? (read (open-input-string (vector-ref argv 4))))
+  (define errortrace-path-or-false (read (open-input-string (vector-ref argv 5))))
+  (define args (list-tail (vector->list argv) 6))
 
   ;; In case PLTUSERHOME is set, make sure relevant
   ;; directories exist:
@@ -75,6 +85,10 @@
     (make-directory* d))
   (ready-dir (find-system-path 'doc-dir))
 
+  (when make?
+    (current-load/use-compiled (make-compilation-manager-load/use-compiled-handler)))
+  (when errortrace-path-or-false
+    (dynamic-require errortrace-path-or-false 0))
   (parameterize ([current-command-line-arguments (list->vector args)])
     (when rt-module (dynamic-require rt-module d))
     (dynamic-require test-module d)
@@ -90,14 +104,21 @@
 ;; Driver for running a test in a place:
 (module place racket/base
   (require racket/place
-           rackunit/log)
+           rackunit/log
+           compiler/private/cm-minimal)
   (provide go)
   (define (go pch)
     (define l (place-channel-get pch))
-    (define args (cadddr (cdr l)))
+    (define make? (list-ref l 3))
+    (define errortrace-path-or-false (list-ref l 4))
+    (define args (list-ref l 6))
+    (when make?
+      (current-load/use-compiled (make-compilation-manager-load/use-compiled-handler)))
+    (when errortrace-path-or-false
+      (dynamic-require errortrace-path-or-false 0))
     ;; Run the test:
     (parameterize ([current-command-line-arguments (list->vector args)]
-                   [current-directory (cadddr l)])
+                   [current-directory (list-ref l 5)])
       (when (cadr l) (dynamic-require (cadr l) (caddr l)))
       (dynamic-require (car l) (caddr l))
       ((executable-yield-handler) 0))
@@ -202,7 +223,12 @@
                                #:err stderr)))
            
            ;; Send the module path to test:
-           (place-channel-put pl (list p rt-p d (current-directory) args))
+           (place-channel-put pl
+                              (list p rt-p d
+                                    make?
+                                    (and load-errortrace? errortrace-module-path)
+                                    (current-directory)
+                                    args))
 
            ;; Wait for the place to finish:
            (unless (sync/timeout timeout (place-dead-evt pl))
@@ -246,6 +272,8 @@
                       (format "~s" (normalize-module-path p))
                       (format "~s" (normalize-module-path rt-p))
                       (format "~s" d)
+                      (format "~s" make?)
+                      (format "~s" (and load-errortrace? errortrace-module-path))
                       args)))
            (define proc (list-ref ps 4))
            
@@ -272,14 +300,20 @@
 
       ;; Check results:
       (when check-stderr?
-        (unless (let ([s (get-output-bytes e)])
-                  (or (equal? #"" s)
-                      (ormap (lambda (p) (regexp-match? p s))
-                             ignore-stderr-patterns)
-                      (and ignore-stderr
-                           (regexp-match? ignore-stderr s))))
-          (parameterize ([error-print-width 16384])
-            (error test-exe-name "non-empty stderr: ~e" (get-output-bytes e)))))
+        (define s (get-output-bytes e))
+        (unless (or (equal? #"" s)
+                    (ormap (lambda (p) (regexp-match? p s))
+                           ignore-stderr-patterns)
+                    (and ignore-stderr
+                         (regexp-match? ignore-stderr s)))
+          (parameterize ([error-print-width #x4000])
+            (define tag #"non-empty stderr")
+            (define n
+              (let ([s (~.a s)] [tag (~a #"\n" tag)])
+                (if (string-contains? s tag)
+                    (for/first ([i (in-naturals)] #:unless (string-contains? s (~a tag i))) i)
+                    #"")))
+            (error test-exe-name "#<<~a~a\n~.a\n~a~a" tag n s tag n))))
       (unless (zero? result-code)
         (error test-exe-name "non-zero exit: ~e" result-code))
       (cond
@@ -1090,6 +1124,13 @@
  [("--deps")
   "If treating arguments as packages, also test dependencies"
   (set! check-pkg-deps? #t)]
+ #:once-any
+ [("--errortrace")
+  "Load errortrace before testing"
+  (set! load-errortrace? #t)]
+ [("--make" "-y")
+  "Enable automatic update of compiled files"
+  (set! make? #t)]
  #:multi
  [("++ignore-stderr") pattern
   "Ignore stderr output that matches #px\"<pattern>\""
@@ -1120,6 +1161,31 @@
                        (not (memq default-mode '(process place))))
                   (not (null? submodules))))
      (set! configure-runtime #f))
+   (when (and make?
+              (eq? 'direct (or default-mode (and single-file? 'direct))))
+     (current-load/use-compiled (make-compilation-manager-load/use-compiled-handler)))
+   ;; Note 1: Must load errortrace before the test target is loaded.
+   ;; Moreover, checking module-declared? in test-files actually loads the module!
+   ;;
+   ;; Note 2: errortrace and bytecode compilation usually don't work together,
+   ;; so we disallow combining them in the options. If errortrace is loaded
+   ;; after make? sets current-load/use-compiled, the compilation won't
+   ;; take place; if errortrace (and racket/base) is loaded before make? sets
+   ;; current-load/use-compiled, raco test will end up compiling everything
+   ;; which is unlikely to be what the user wants.
+   (when load-errortrace?
+     (with-handlers ([exn:fail:filesystem:missing-module?
+                      (λ (e)
+                        (raise-user-error
+                         'raco
+                         (string-append
+                          "The flag --errortrace depends on errortrace,"
+                          " but errortrace-lib is not installed")))])
+       (module-declared? errortrace-module-path #t))
+     ;; If running the tests in the current namespace, install errortrace.
+     ;; Otherwise, the other places/processes will load errortrace.
+     (when (eq? 'direct (or default-mode (and single-file? 'direct)))
+       (dynamic-require errortrace-module-path 0)))
    (define sum
      ;; The #:sema argument everywhre makes tests start
      ;; in a deterministic order:

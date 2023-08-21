@@ -5,6 +5,7 @@
 #include "schuchar.inc"
 READ_ONLY Scheme_Object **scheme_char_constants;
 READ_ONLY static Scheme_Object *general_category_symbols[NUM_GENERAL_CATEGORIES];
+READ_ONLY static Scheme_Object *grapheme_break_property_symbols[NUM_GRAPHEME_BREAK_PROPERTIES];
 
 READ_ONLY Scheme_Object *scheme_char_p_proc;
 READ_ONLY Scheme_Object *scheme_interned_char_p_proc;
@@ -46,6 +47,8 @@ static Scheme_Object *char_punctuation (int argc, Scheme_Object *argv[]);
 static Scheme_Object *char_upper_case (int argc, Scheme_Object *argv[]);
 static Scheme_Object *char_lower_case (int argc, Scheme_Object *argv[]);
 static Scheme_Object *char_title_case (int argc, Scheme_Object *argv[]);
+static Scheme_Object *char_grapheme_break_property (int argc, Scheme_Object *argv[]);
+static Scheme_Object *char_ext_pict (int argc, Scheme_Object *argv[]);
 static Scheme_Object *char_upcase (int argc, Scheme_Object *argv[]);
 static Scheme_Object *char_downcase (int argc, Scheme_Object *argv[]);
 static Scheme_Object *char_titlecase (int argc, Scheme_Object *argv[]);
@@ -66,6 +69,7 @@ void scheme_init_char_constants(void)
 
   REGISTER_SO(scheme_char_constants);
   REGISTER_SO(general_category_symbols);
+  REGISTER_SO(grapheme_break_property_symbols);
 
   scheme_char_constants = 
     (Scheme_Object **)scheme_malloc_eternal(256 * sizeof(Scheme_Object*));
@@ -83,6 +87,12 @@ void scheme_init_char_constants(void)
     Scheme_Object *s;
     s = scheme_intern_symbol(general_category_names[i]);
     general_category_symbols[i] = s;
+  }
+
+  for (i = 0; i < NUM_GRAPHEME_BREAK_PROPERTIES; i++) {
+    Scheme_Object *s;
+    s = scheme_intern_symbol(grapheme_break_propoerty_names[i]);
+    grapheme_break_property_symbols[i] = s;    
   }
 }
 
@@ -157,6 +167,8 @@ void scheme_init_char (Scheme_Startup_Env *env)
   ADD_FOLDING_PRIM("char-upper-case?",      char_upper_case,       1, 1, 1, env);
   ADD_FOLDING_PRIM("char-lower-case?",      char_lower_case,       1, 1, 1, env);
   ADD_FOLDING_PRIM("char-title-case?",      char_title_case,       1, 1, 1, env);
+  ADD_FOLDING_PRIM("char-grapheme-break-property", char_grapheme_break_property, 1, 1, 1, env);
+  ADD_FOLDING_PRIM("char-extended-pictographic?", char_ext_pict,   1, 1, 1, env);
 
   p = scheme_make_folding_prim(scheme_checked_char_to_integer, "char->integer", 1, 1, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNARY_INLINED
@@ -337,6 +349,23 @@ GEN_CHAR_TEST(char_graphic, "char-graphic?", scheme_isgraphic)
 GEN_CHAR_TEST(char_upper_case, "char-upper-case?", scheme_isupper)
 GEN_CHAR_TEST(char_lower_case, "char-lower-case?", scheme_islower)
 GEN_CHAR_TEST(char_title_case, "char-title-case?", scheme_istitle)
+GEN_CHAR_TEST(char_ext_pict, "char-extended-pictographic?", scheme_isextpict)
+
+static Scheme_Object *
+char_grapheme_break_property (int argc, Scheme_Object *argv[])
+{
+  mzchar c;
+  
+  if (!SCHEME_CHARP(argv[0]))
+    scheme_wrong_contract("char-grapheme-break-property", "char?", 0, argc, argv);
+
+  c = SCHEME_CHAR_VAL(argv[0]);
+
+  return grapheme_break_property_symbols[scheme_grapheme_cluster_break(c)];
+}
+
+
+GEN_CHAR_TEST(char_extend, "char-extend?", scheme_isextend)
 
 Scheme_Object *
 scheme_checked_char_to_integer (int argc, Scheme_Object *argv[])

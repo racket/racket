@@ -49,6 +49,11 @@
    (extract-field #"Another" test-header/bytes)
    => #"zoo\r\n continued"
 
+   (extract-field "Tabbed" "x: x\r\nTabbed:\t\t \tTAB\r\ny: y\r\n\r\n")
+   => "TAB"
+   (extract-field #"Tabbed" #"x: x\r\nTabbed:\t\t \tTAB\r\ny: y\r\n\r\n")
+   => #"TAB"
+
    (replace-field "From" "def" test-header)
    => "From: def\r\nTo: field is\r\n continued\r\nAnother: zoo\r\n continued\r\n\r\n"
    (replace-field #"From" #"def" test-header/bytes)

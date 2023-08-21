@@ -8,16 +8,19 @@ on:
       - '.github/images/Dockerfile'
       - '.github/workflows/docker-racketci.yml'
 
+permissions:
+  contents: read
+
 jobs:
   build-image:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-22.04
 
     env:
       IMAGE_NAME: racket-ci
       VERSION: ${{ github.sha }}
       
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Build image
         working-directory: ./.github/images
         run: docker build --tag image .

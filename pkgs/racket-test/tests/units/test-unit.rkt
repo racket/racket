@@ -1,12 +1,13 @@
 #lang racket/load
 
-(require (for-syntax racket/private/unit-compiletime
-                     racket/private/unit-syntax))
+(require (for-syntax racket/syntax
+                     racket/private/unit/exptime/signature
+                     racket/private/unit/exptime/syntax))
 (require "test-harness.rkt"
          racket/unit)
 
 (define-syntax (lookup-sig-mac stx)
-  (parameterize ((error-syntax stx))
+  (parameterize ((current-syntax-context stx))
     (syntax-case stx ()
       ((_ id)
        #`#'#,(let ((s (lookup-signature #'id)))
@@ -107,34 +108,34 @@
 
 ;; define-signature syntax-errors
 (test-syntax-error 
- "expected syntax matching" 
+ "expected more terms" 
  (define-signature))
 (test-syntax-error 
- "expected syntax matching"
+ "expected more terms"
  (define-signature x))
 (test-syntax-error 
- "expected syntax matching"
+ "unexpected term"
  (define-signature x (a b) 1))
 (test-syntax-error 
- "not an identifier"
+ "expected identifier"
  (define-signature 1 (a b)))
 (test-syntax-error 
- "not an identifier"
+ "expected identifier"
  (define-signature x extends 1 (a b)))
 (test-syntax-error 
- "unknown signature"
+ "expected identifier bound to a signature"
  (define-signature x extends y12 (a b)))
 (test-syntax-error 
- "unknown signature"
+ "expected identifier bound to a signature"
  (let () (define-signature x extends x (a b))))
 (test-syntax-error 
- "not an identifier"
+ "expected identifier"
  (define-signature (a . b) (a b)))
 (test-syntax-error 
- "expected syntax matching"
+ "expected signature elements or expected the identifier `extends'"
  (define-signature b . (a b)))
 (test-syntax-error 
- "bad syntax (illegal use of `.')"
+ "expected the literal ()"
  (define-signature b (a b) . 2))
 (test-syntax-error 
  "set!: illegal use of signature name"
@@ -142,23 +143,23 @@
    (define-signature a (a))
    (set! a 1)))
 (test-syntax-error 
- "expected syntax matching"
+ "expected signature elements or expected the identifier `extends'"
  (define-signature x y))
 (test-syntax-error 
- "define-signature: expected either an identifier or signature form"
+ "define-signature: expected signature element"
  (define-signature x (1)))
 
 (test-syntax-error 
- "define-signature: bad syntax (illegal use of `.')"
+ "define-signature: expected signature element"
  (define-signature x (a . b)))
 (test-syntax-error 
- "define-signature: unknown signature form"
+ "define-signature: not a signature form"
  (define-signature x ((a))))
 (test-syntax-error 
  "define-signature: not a signature form"
  (define-signature x ((define-signature))))
 (test-syntax-error 
- "define-values: bad variable list"
+ "define-signature: expected signature element"
  (define-signature x ((define-values 1 2))))
 (test-syntax-error 
  "define-signature: expected list of results from signature form, got 1"
@@ -166,7 +167,7 @@
    (define-signature-form (a b) 1)
    (define-signature x ((a 1)))))
 (test-syntax-error 
- "define-signature: unknown signature form"
+ "define-signature: not a signature form"
  (let ()
    (define-signature-form a (lambda (b) (list #'(c d))))
    (define-signature x ((a 1)))
@@ -250,22 +251,22 @@
 
 ;; unit syntax errors (without sub-signatures)
 (test-syntax-error 
- "unit: bad import spec"
+ "unit: expected tagged import spec"
  (unit (import 1) (export)))
 (test-syntax-error 
- "unit: bad export spec"
+ "unit: expected tagged export spec"
  (unit (import) (export 1)))
 (test-syntax-error 
- "unit: unknown signature"
+ "unit: expected identifier bound to a signature"
  (unit (import a) (export)))
 (test-syntax-error 
- "unit: unknown signature"
+ "unit: expected identifier bound to a signature"
  (unit (import) (export a)))
 (test-syntax-error 
- "unit: tag must be a symbol"
+ "unit: expected identifier"
  (unit (import (tag 1 empty-sig)) (export)))
 (test-syntax-error 
- "unit: tag must be a symbol"
+ "unit: expected identifier"
  (unit (import) (export (tag 'a empty-sig))))
 (test-syntax-error 
  "define-values: bad syntax (has 0 parts after keyword)"
@@ -292,10 +293,10 @@
  "unit: definition for imported identifier"
  (unit (import x-sig) (export) (define x 1)))
 (test-syntax-error 
- "unit: cannot set! imported or exported variables"
+ "unit: cannot set! imported variable"
  (unit (import x-sig) (export) (set! x 1)))
 (test-syntax-error 
- "unit: cannot set! imported or exported variables"
+ "unit: cannot set! exported variable"
  (unit (import) (export x-sig) (define x 1) (set! x 1)))
 (test-syntax-error "unit: undefined export"
                    (unit (import) (export x-sig)))
@@ -331,31 +332,31 @@
 
 ;; compound-unit syntax errors (without sub-signatures)
 (test-syntax-error 
- "compound-unit: expected syntax matching (<identifier> : <identifier>) or (<identifier> : (tag <identifier> <identifier>))"
+ "compound-unit: expected the literal symbol `:'"
  (compound-unit (import (a empty-sig)) (export) (link)))
 (test-syntax-error 
- "compound-unit: expected syntax matching (<identifier> : <identifier>) or (<identifier> : (tag <identifier> <identifier>))"
+ "compound-unit: expected identifier"
  (compound-unit (import (1 : empty-sig)) (export) (link)))
 (test-syntax-error 
- "compound-unit: unknown signature"
+ "compound-unit: expected identifier bound to a signature"
  (compound-unit (import (a : empty-si)) (export) (link)))
 (test-syntax-error 
- "compound-unit: not an identifier"
+ "compound-unit: expected tagged link identifier"
  (compound-unit (import) (export a 1 b) (link)))
 (test-syntax-error 
- "compound-unit: not an identifier"
+ "compound-unit: expected tagged link identifier"
  (compound-unit (import) (export) (link (((a : empty-sig)) b 1))))
 (test-syntax-error 
- "compound-unit: not an identifier"
+ "compound-unit: expected identifier or expected more terms"
  (compound-unit (import (a : ())) (export) (link)))
 (test-syntax-error 
- "compound-unit: not an identifier"
+ "compound-unit: expected tagged signature identifier"
  (compound-unit (import) (export) (link (((a : "")) b))))
 (test-syntax-error 
- "compound-unit: expected syntax matching (<identifier> : <identifier>) or (<identifier> : (tag <identifier> <identifier>))"
+ "compound-unit: expected the literal symbol `:'"
  (compound-unit (import) (export) (link (((a empty-sig)) b))))
 (test-syntax-error 
- "compound-unit: unknown signature"
+ "compound-unit: expected identifier bound to a signature"
  (compound-unit (import) (export) (link (((a : b)) b))))
 (test-syntax-error 
  "compound-unit: duplicate linking identifier definition"
@@ -376,7 +377,7 @@
  "compound-unit: cannot directly export an import"
  (compound-unit (import (S : x-sig)) (export S) (link)))
 (test-syntax-error 
- "compound-unit: expected syntax matching (<identifier> : <identifier>) or (<identifier> : (tag <identifier> <identifier>))"
+ "compound-unit: expected the literal symbol `:'"
  (compound-unit (import (tag s (S : x-sig)))  (export (tag t S)) (link)))
 (test-syntax-error 
  "compound-unit: the signature of X1 extends this signature"
@@ -391,16 +392,16 @@
 
 ;; define-values/invoke-unit syntax errors
 (test-syntax-error 
- "define-values/invoke-unit: missing unit"
+ "define-values/invoke-unit: expected more terms"
  (define-values/invoke-unit))
 (test-syntax-error 
- "define-values/invoke-unit: expected syntax matching (define-values/invoke-unit <unit-expression> (import <sig-expr> ...) (export <sig-expr> ...))"
+ "define-values/invoke-unit: expected import clause\n  at: y"
  (define-values/invoke-unit x y . x))
 (test-syntax-error 
- "define-values/invoke-unit: expected syntax matching (define-values/invoke-unit <unit-expression> (import <sig-expr> ...) (export <sig-expr> ...))"
+ "define-values/invoke-unit: expected import clause\n  at: 1"
  (define-values/invoke-unit 1 1))
 (test-syntax-error 
- "define-values/invoke-unit: expected syntax matching (define-values/invoke-unit <unit-expression> (import <sig-expr> ...) (export <sig-expr> ...))"
+ "define-values/invoke-unit: expected import clause\n  at: x-sig"
  (define-values/invoke-unit (unit (import) (export (prefix x: x-sig) x-sig2)
                               (define x 1)
                               (define x:x 2))
@@ -1117,7 +1118,7 @@
 (let ()
   (define u (unit (import) (export x-sub) (define x 1) (define xx 1)))
   (test-syntax-error 
-   "compound-unit: unknown signature"
+   "compound-unit: expected identifier bound to a signature"
    (compound-unit (import) (export l1 l2)
                   (link (((l1 : s1)) u)
                         (((l2 : s2)) u)))))
@@ -1233,16 +1234,16 @@
 
 
 (test-syntax-error 
- "unit-from-context: missing export-spec"
+ "unit-from-context: expected more terms"
  (unit-from-context))
 (test-syntax-error 
- "unit-from-context: nothing is permitted after export-spec"
+ "unit-from-context: unexpected term\n  at: s2"
  (unit-from-context s1 s2))
 (test-syntax-error 
- "unit-from-context: nothing is permitted after export-spec"
+ "unit-from-context: expected the literal ()"
  (unit-from-context s1 . s2))
 (test-syntax-error 
- "unit-from-context: bad export spec"
+ "unit-from-context: expected tagged export spec"
  (unit-from-context 1))
 
 (test-syntax-error 
@@ -1261,7 +1262,7 @@
  "define-unit-from-context: nothing is permitted after export-spec"
  (define-unit-from-context n s1 . s2))
 (test-syntax-error 
- "define-unit-from-context: bad export spec"
+ "define-unit-from-context: expected tagged export spec"
  (define-unit-from-context n 1))
 
 
@@ -1536,10 +1537,10 @@
 (invoke-unit/infer (link u v))
 
 (test-syntax-error 
- "define-values/invoke-unit/infer: missing unit"
+ "define-values/invoke-unit/infer: expected more terms"
  (define-values/invoke-unit/infer))
 (test-syntax-error 
- "define-values/invoke-unit/infer: not an identifier"
+ "define-values/invoke-unit/infer: expected export clause or expected unit clause\n  at: 1"
  (define-values/invoke-unit/infer 1))
 (test-syntax-error 
  "define-values/invoke-unit/infer: unknown unit definition"
@@ -1549,7 +1550,7 @@
                    (let-syntax ((x 1))
                      (define-values/invoke-unit/infer x)))
 (test-syntax-error 
- "define-values/invoke-unit/infer: expected syntax matching (define-values/invoke-unit/infer [(export <define-signature-identifier>)] <define-unit-identifier>) or (define-values/invoke-unit/infer  [(export <define-signature-identifier>)] (link <define-unit-identifier> ...))"
+ "define-values/invoke-unit/infer: expected export clause or expected values clause"
  (define-values/invoke-unit/infer x y))
 
 (define-unit u (import x-sig) (export) x)
@@ -1558,7 +1559,7 @@
 (test-syntax-error "define-values/invoke-unit/infer: no unit"
                    (define-values/invoke-unit/infer (link)))
 (test-syntax-error 
- "define-values/invoke-unit/infer: not an identifier"
+ "define-values/invoke-unit/infer: expected identifier"
  (define-values/invoke-unit/infer (link 1 u)))
 (test-syntax-error 
  "define-values/invoke-unit/infer: unknown unit definition"
@@ -1584,7 +1585,7 @@
   (define-values/invoke-unit/infer (export x-sig) v)
   x)
 (test-syntax-error 
- "define-values/invoke-unit/infer: no subunit exports signature y-sig"
+ "define-values/invoke-unit/infer: no subunit exports signature\n  at: y-sig"
  (define-values/invoke-unit/infer (export y-sig) (link u v)))
 
 (test-runtime-error exn? "x: undefined"
@@ -1592,7 +1593,7 @@
                       (define-values/invoke-unit/infer (export) (link u v))
                       x))
 (test-syntax-error 
- "define-values/invoke-unit/infer: no subunit exports signature y-sig"
+ "define-values/invoke-unit/infer: no subunit exports signature\n  at: y-sig"
  (define-values/invoke-unit/infer (export y-sig) v))
 (test-runtime-error exn?
                     "x: undefined"
@@ -1899,18 +1900,26 @@
     (define y x))
 
   (test-syntax-error
-
    "unit/new-import-export: identifier x is not present in new imports"
    (module foo racket
      (define-signature x-sig (x))
      (define-signature y-sig (y))
      (define-unit u (import x-sig) (export y-sig)
        (define y x))
-     (unit/new-import-export (import) (export x-sig)
+     (unit/new-import-export (import) (export)
                              ((y-sig) u x-sig))))
 
   (test-syntax-error
+   "unit/new-import-export: identifier x is not present in old exports"
+   (module foo racket
+     (define-signature x-sig (x))
+     (define-signature y-sig (y))
+     (define-unit u (import) (export y-sig)
+       (define y #f))
+     (unit/new-import-export (import) (export x-sig)
+                             ((y-sig) u))))
 
+  (test-syntax-error
    "unit/new-import-export: identifier z is not present in old exports"
    (module foo racket
      (define-signature x-sig (x))
@@ -2232,3 +2241,153 @@
   (define a1 1)
   (define a2 2)
   (test 1 (invoke-unit v (import a2^))))
+
+;; Test `invoke-unit` that imports a signature containing `struct` form
+(let ()
+  (define-signature point-struct^
+    [(struct point (x y))])
+  (define-signature point-ops^
+    [points-add])
+
+  (define-unit point-ops@
+    (import point-struct^)
+    (export point-ops^)
+    (define (points-add a b)
+      (point (+ (point-x a) (point-x b))
+             (+ (point-y a) (point-y b)))))
+
+  (let ()
+    (struct point (x y) #:transparent)
+    (define-values/invoke-unit point-ops@
+      (import point-struct^)
+      (export point-ops^))
+    (test (point 4 6) (points-add (point 1 2) (point 3 4)))))
+
+;; Test that `define-values-for-export` definitions are not generated
+;; by `unit/new-import/export`.
+(let ()
+  (define-signature sig^
+    [value])
+  (define-signature sig*^ extends sig^
+    [(define-values-for-export [value] 42)])
+
+  (define-values/invoke-unit
+    (unit/new-import-export
+     (import) (export sig*^)
+     ([sig^] (unit (import) (export sig^)
+                   (define value 1))))
+    (import)
+    (export sig*^))
+
+  (test 1 value))
+
+;; Test the `values` clause on define-values/invoke-unit.
+(let ()
+  (define-unit u0@ (import) (export) (values))
+  (define-unit u1@ (import) (export) (values 'a))
+  (define-unit u2@ (import) (export) (values 'a 'b))
+
+  (test 'ok (let ()
+              (define-values/invoke-unit u0@ (import) (export) (values))
+              'ok))
+  (test '() (let ()
+              (define-values/invoke-unit u0@ (import) (export) (values . x))
+              x))
+  (test 'a (let ()
+             (define-values/invoke-unit u1@ (import) (export) (values x))
+             x))
+  (test '(a) (let ()
+               (define-values/invoke-unit u1@ (import) (export) (values . x))
+               x))
+  (test '(a b) (let ()
+                 (define-values/invoke-unit u2@ (import) (export) (values x y))
+                 (list x y)))
+  (test '(a b) (let ()
+                 (define-values/invoke-unit u2@ (import) (export) (values . x))
+                 x))
+  (test '(a (b)) (let ()
+                   (define-values/invoke-unit u2@ (import) (export) (values x . y))
+                   (list x y)))
+  (test '(a b ()) (let ()
+                    (define-values/invoke-unit u2@ (import) (export) (values x y . z))
+                    (list x y z)))
+
+  (test 'ok (let ()
+              (define-values/invoke-unit/infer u0@ (values))
+              'ok))
+  (test '() (let ()
+              (define-values/invoke-unit/infer u0@ (values . x))
+              x))
+  (test 'a (let ()
+             (define-values/invoke-unit/infer u1@ (values x))
+             x))
+  (test '(a) (let ()
+               (define-values/invoke-unit/infer u1@ (values . x))
+               x))
+  (test '(a b) (let ()
+                 (define-values/invoke-unit/infer u2@ (values x y))
+                 (list x y)))
+  (test '(a b) (let ()
+                 (define-values/invoke-unit/infer u2@ (values . x))
+                 x))
+  (test '(a (b)) (let ()
+                   (define-values/invoke-unit/infer u2@ (values x . y))
+                   (list x y)))
+  (test '(a b ()) (let ()
+                    (define-values/invoke-unit/infer u2@ (values x y . z))
+                    (list x y z))))
+
+;; Test that `unit/new-import-export` doesn’t cause imports to be evaluated too early.
+(let ()
+  (define-signature a^ [x])
+  (define-signature b1^ [get-x])
+  (define-signature b2^ [get-x])
+
+  (define-unit a@
+    (import)
+    (export a^)
+    (define x 1))
+
+  (define-unit b1@
+    (import a^)
+    (export b1^)
+    (define (get-x)
+      x))
+
+  (define-unit/s b2@
+    (import a^)
+    (export b2^)
+    b1@)
+
+  (test 1 (let ()
+            (define-values/invoke-unit/infer (link b2@ a@))
+            (get-x))))
+
+;; Test that `define-values/invoke-unit/infer` supports `only` in the exports clause.
+(let ()
+  (define-signature a^ [a b])
+  (define-signature b^ [x y])
+
+  (define-unit a@
+    (import)
+    (export a^)
+    (define a 1)
+    (define b 2))
+
+  (define-unit b@
+    (import a^)
+    (export b^)
+    (define x 3)
+    (define y (+ a b x)))
+
+  (let ()
+    (define-values/invoke-unit/infer a@
+      (export (only a^ a)))
+    (test 1 a))
+
+  (let ()
+    (define-values/invoke-unit/infer
+      (link a@ b@)
+      (export (only a^ b) (only b^ y)))
+    (test 2 b)
+    (test 6 y)))

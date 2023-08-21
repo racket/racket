@@ -34,6 +34,10 @@
       (float-type-case
          [(ieee) -1023]))
 
+   (define-constant float-mantissa-bits
+      (float-type-case
+         [(ieee) 53]))
+
 )
 
 (let ()
@@ -86,8 +90,8 @@
 (define schoolbook-intquotient (schemeop2 "(cs)ss_trunc"))
 (define schoolbook-intquotient-remainder (schemeop2 "(cs)ss_trunc_rem"))
 (define schoolbook-intremainder (schemeop2 "(cs)rem"))
+(define schoolbook-gcd (schemeop2 "(cs)gcd"))
 (define make-ratnum (schemeop2 "(cs)s_rational")) ; does not normalize, except detecting 1 as demoninator
-(define exgcd (schemeop2 "(cs)gcd"))
 
 (define $flsin (cflop1 "(cs)sin"))
 
@@ -233,22 +237,6 @@
        (fx>= ($bignum-length d) DIV-LIMIT)
        (fx>= (- ($bignum-length n) ($bignum-length d)) DIV-LIMIT)))
 
-(define integer/
-  (lambda (n d)
-    (cond
-      [(big-divide-bignums? n d)
-       (let* ([g (exgcd n d)]
-              [g (if ($bigpositive? d)
-                     g
-                     (- g))])
-         (if (or (fixnum? g)
-                 (fx< ($bignum-length g) DIV-LIMIT))
-             (make-ratnum (schoolbook-intquotient n g)
-                          (schoolbook-intquotient d g))
-             (make-ratnum (quotient&remainder/burnikel-ziegler n g #t #f)
-                          (quotient&remainder/burnikel-ziegler d g #t #f))))]
-      [else (schoolbook-integer/ n d)])))
-
 (define intquotient
   (lambda (n d)
     (cond
@@ -273,6 +261,43 @@
        (quotient&remainder/burnikel-ziegler n d #f #t)]
       [else
        (schoolbook-intremainder n d)])))
+
+(define integer-gcd
+  (let ([$bignum-trailing-zero-bits (foreign-procedure "(cs)s_big_trailing_zero_bits" (ptr) ptr)])
+    (lambda (n d)
+      (cond
+        [(and (bignum? n) (bignum? d))
+         (let* ([nz ($bignum-trailing-zero-bits n)]
+                [dz ($bignum-trailing-zero-bits d)]
+                [cz (fxmin nz dz)]
+                ;; The `$bignum-trailing-zero-bits` function is just counting trailing 0 bigits,
+                ;; so it returns an approximation to the number of trailing zero bits. We may need to
+                ;; keep one bigit of `n` or `d` to pair up with leftover trailing 0 bits in
+                ;; `d` or `n`.
+                [n (abs (bitwise-arithmetic-shift-right n (fxmax cz (fx- nz (constant bigit-bits)))))]
+                [d (abs (bitwise-arithmetic-shift-right d (fxmax cz (fx- dz (constant bigit-bits)))))])
+           (define (gcd n d)
+             (cond
+               [(= n 0) d]
+               [else (gcd (intremainder d n) n)]))
+           (let ([g (if (< (if (bignum? n) ($bignum-length n) 0)
+                           (if (bignum? d) ($bignum-length d) 0))
+                        (gcd n d)
+                        (gcd d n))])
+             (bitwise-arithmetic-shift-left g cz)))]
+        [else (schoolbook-gcd n d)]))))
+
+(define integer/
+  (lambda (n d)
+    (cond
+      [(and (bignum? n) (bignum? d))
+       (let* ([g (integer-gcd n d)]
+              [g (if ($bigpositive? d)
+                     g
+                     (- g))])
+         (make-ratnum (intquotient n g)
+                      (intquotient d g)))]
+      [else (schoolbook-integer/ n d)])))
 
 (let ()
 
@@ -371,7 +396,7 @@
 (define flatanh
    (or (op-if-entry? cflop1 "(cs)atanh")
        ; |x| <= 1
-       ; principle expression:
+       ; principal expression:
        ; (log(1+x)-log(1-x))/2
        ; should use "log1p" but it doesn't exist on the 88k
        (let ([f (lambda (x)
@@ -392,7 +417,7 @@
 (define flasinh
    ; scheme-coded version needs "log2"
    (or (op-if-entry? cflop1 "(cs)asinh")
-       ; prinicple expression:
+       ; principal expression:
        ; log(x + sqrt(xx + 1))
        ; avoids spurious overflows
        ; avoids underflow problems from negative x by using identity
@@ -409,7 +434,7 @@
    ; scheme-coded version needs "log2"
    (or (op-if-entry? cflop1 "(cs)acosh")
        ; x >= 1
-       ; prinicple expression:
+       ; principal expression:
        ; log(x + sqrt(xx - 1))
        ; avoids spurious overflows
        (lambda (x)
@@ -735,16 +760,15 @@
                (let ([rho (fl/ theta)] [-pi/2 (fl- pi/2)])
                   (lambda (x y)
                      ; x is positive
-                     (let ([ay (abs y)])
+                     (let ([ay (flabs y)])
                         (cond
                            [(or (fl> x theta) (fl> ay theta))
                             ; RP(1/z) +/- (pi/2)i
                             (fl-make-rectangular
-                               (cond
-                                  [(fl> x ay) (fl/ (fl+ x (fl* (fl/ y x) y)))]
-                                  [(fl< x ay) (let ([r (fl/ y x)])
-                                                 (fl/ r (fl+ (fl* x r) y)))]
-                                  [else (fl/ (fl+ x ay))])
+                               (if (fl>= x ay)
+                                   (fl/ (fl+ x (fl* (fl/ y x) y)))
+                                   (let ([r (fl/ x y)])
+                                     (fl/ r (fl+ y (fl* r x)))))
                                (if (negated-flonum? y) pi/2 -pi/2))]
                            [(fl= x 1.0)
                             (let ([k (fl+ ay rho)])
@@ -844,6 +868,14 @@
   (lambda (x)
     (<= (- (expt 2 53)) x (expt 2 53))))
 
+(define fixnum-floatable-wlop?
+  ;; floatable without loss of precision
+  (lambda (x)
+    (if (<= (- (fixnum-width) 1) (constant float-mantissa-bits))
+        #t
+        (let ([hi (expt 2 (constant float-mantissa-bits))])
+          (fx<= (- hi) x hi)))))
+
 (define exact-inexact-compare?
    ; e is an exact number, i is a flonum
    ; Preserve transitivity by making i exact,
@@ -880,7 +912,7 @@
       [(and (fixnum? p) (fixnum? q))
        (integer/ (* y p) q)]
       [else
-       (let* ((gcd-rq (exgcd y q))
+       (let* ((gcd-rq (integer-gcd y q))
               (num (* p (intquotient y gcd-rq)))
               (den (intquotient q gcd-rq)))
          (if (eqv? den 1)
@@ -1062,7 +1094,7 @@
           (let ([max-fx-shift (- (constant fixnum-bits) 1)])
             (if (fx> n max-fx-shift)
                 (integer-ash x n)
-                (let ([m (#3%fxsll x n)])
+                (let ([m (fxsll/wraparound x n)])
                   (if (fx= (fxsra m n) x)
                       m
                       (integer-ash x n)))))]
@@ -1139,7 +1171,9 @@
     (type-case x
       [(fixnum? bignum? ratnum?) #t]
       [(flonum?) (not (exceptional-flonum? x))]
-      [($inexactnum?) (fl= ($inexactnum-imag-part x) 0.0)]
+      [($inexactnum?)
+       (and (fl= ($inexactnum-imag-part x) 0.0)
+            (not (exceptional-flonum? ($inexactnum-real-part x))))]
       [else #f])))
 
 (set! real?
@@ -1349,7 +1383,7 @@
   (define (exlcm x1 x2)
     (if (or (eqv? x1 0) (eqv? x2 0))
         0
-        (* (abs x1) (/ (abs x2) (exgcd x1 x2)))))
+        (* (abs x1) (/ (abs x2) (integer-gcd x1 x2)))))
 
   (set-who! gcd
     (rec gcd
@@ -1359,11 +1393,11 @@
         [(x1 x2)
          (if (and (or (fixnum? x1) (bignum? x1))
                   (or (fixnum? x2) (bignum? x2)))
-             (exgcd x1 x2)
+             (integer-gcd x1 x2)
              (begin
                (unless (integer? x1) (noninteger-error who x1))
                (unless (integer? x2) (noninteger-error who x2))
-               (inexact (exgcd (exact x1) (exact x2)))))]
+               (inexact (integer-gcd (exact x1) (exact x2)))))]
         [(x1 x2 . xr)
          (let f ([x1 x1] [x2 x2] [xr xr])
            (let ([x1 (gcd x1 x2)])
@@ -2230,7 +2264,7 @@
           (type-case y
              [(fixnum?) (fx= x y)]
              [(bignum? ratnum? $exactnum?) #f]
-             [(cflonum?) (cfl= (fixnum->flonum x) y)]
+             [(cflonum?) (if (fixnum-floatable-wlop? x) (cfl= (fixnum->flonum x) y) (exact-inexact-compare? = x y))]
              [else (nonnumber-error who y)])]
          [(bignum?)
           (type-case y
@@ -2255,7 +2289,7 @@
          [(flonum?)
           (type-case y
              [(cflonum?) (cfl= x y)]
-             [(fixnum?) (fl= x (fixnum->flonum y))]
+             [(fixnum?) (if (fixnum-floatable-wlop? y) (fl= x (fixnum->flonum y)) (exact-inexact-compare? = y x))]
              [(bignum? ratnum?) (exact-inexact-compare? = y x)]
              [($exactnum?) #f]
              [else (nonnumber-error who y)])]
@@ -2269,7 +2303,7 @@
              [(fixnum?) (fx< x y)]
              [(bignum?) ($bigpositive? y)]
              [(ratnum?) (< (* ($ratio-denominator y) x) ($ratio-numerator y))]
-             [(flonum?) (< (fixnum->flonum x) y)]
+             [(flonum?) (if (fixnum-floatable-wlop? x) (< (fixnum->flonum x) y) (exact-inexact-compare? < x y))]
              [else (nonreal-error who y)])]
          [(bignum?)
           (type-case y
@@ -2290,7 +2324,7 @@
          [(flonum?)
           (type-case y
              [(flonum?) (fl< x y)]
-             [(fixnum?) (fl< x (fixnum->flonum y))]
+             [(fixnum?) (if (fixnum-floatable-wlop? y) (fl< x (fixnum->flonum y)) (exact-inexact-compare? > y x))]
              [(bignum? ratnum?) (exact-inexact-compare? > y x)]
              [else (nonreal-error who y)])]
          [else (nonreal-error who x)])))
@@ -2304,7 +2338,7 @@
              [(bignum?) ($bigpositive? y)]
              [(ratnum?)
               (<= (* ($ratio-denominator y) x) ($ratio-numerator y))]
-             [(flonum?) (<= (fixnum->flonum x) y)]
+             [(flonum?) (if (fixnum-floatable-wlop? x) (<= (fixnum->flonum x) y) (exact-inexact-compare? <= x y))]
              [else (nonreal-error who y)])]
          [(bignum?)
           (type-case y
@@ -2326,7 +2360,7 @@
          [(flonum?)
           (type-case y
              [(flonum?) (fl<= x y)]
-             [(fixnum?) (fl<= x (fixnum->flonum y))]
+             [(fixnum?) (if (fixnum-floatable-wlop? y) (fl<= x (fixnum->flonum y)) (exact-inexact-compare? >= y x))]
              [(bignum? ratnum?) (exact-inexact-compare? >= y x)]
              [else (nonreal-error who y)])]
          [else (nonreal-error who x)])))
@@ -2363,7 +2397,7 @@
 		    (q ($ratio-denominator x))
 		    (r ($ratio-numerator y))
 		    (s ($ratio-denominator y)))
-		(let ((d1 (exgcd q s)))
+		(let ((d1 (integer-gcd q s)))
 		  (if (eqv? d1 1)
 		      (make-ratnum (+ (* p s)
 				      (* r q))
@@ -2371,7 +2405,7 @@
 		      (let* ((s-prime (intquotient s d1))
 			     (t (+ (* p s-prime)
 				   (* r (intquotient q d1))))
-			     (d2 (exgcd d1 t))
+			     (d2 (integer-gcd d1 t))
 			     (num (intquotient t d2))
 			     (den (* (intquotient q d2)
 				     s-prime)))
@@ -2403,7 +2437,7 @@
   (let ([$bignum-trailing-zero-bits (foreign-procedure "(cs)s_big_trailing_zero_bits" (ptr) ptr)])
    (lambda (who x y)
     (cond
-      [(and (fixnum? y) ($fxu< (#3%fx+ y 1) 3))
+      [(and (fixnum? y) ($fxu< (fx+/wraparound y 1) 3))
        (cond
          [(fx= y 0) (unless (number? x) (nonnumber-error who x)) 0]
          [(fx= y 1) (unless (number? x) (nonnumber-error who x)) x]
@@ -2415,7 +2449,7 @@
              [(fixnum?) (integer* x y)]
             [(bignum?) (if (fixnum? x)
                            (cond
-                            [($fxu< (#3%fx+ x 1) 3)
+                            [($fxu< (fx+/wraparound x 1) 3)
                              (cond
                               [(fx= x 0) (unless (number? y) (nonnumber-error who y)) 0]
                               [(fx= x 1) (unless (number? y) (nonnumber-error who y)) y]
@@ -2574,8 +2608,8 @@
 		    (s ($ratio-denominator y)))
 		(if (eq? x y)
 		    (make-ratnum (magnitude-squared p) (magnitude-squared q))     ;; already in lowest form
-		    (let* ((gcd-ps (exgcd p s))
-			   (gcd-rq (exgcd r q))
+		    (let* ((gcd-ps (integer-gcd p s))
+			   (gcd-rq (integer-gcd r q))
 			   (num (* (intquotient p gcd-ps) (intquotient r gcd-rq)))
 			   (den (* (intquotient q gcd-rq) (intquotient s gcd-ps))))
 		      (if (eqv? den 1)
@@ -2643,7 +2677,7 @@
 		      (let* ((s-prime (intquotient s d1))
 			     (t (- (* p s-prime)
 				   (* r (intquotient q d1))))
-			     (d2 (exgcd d1 t))
+			     (d2 (integer-gcd d1 t))
 			     (num (intquotient t d2))
 			     (den (* (intquotient q d2)
 				     s-prime)))
@@ -2734,8 +2768,8 @@
 		    (s ($ratio-numerator y)))
 		(if (eq? x y)
 		    1
-		    (let* ((gcd-ps (exgcd p s))
-			   (gcd-rq (exgcd r q))
+		    (let* ((gcd-ps (integer-gcd p s))
+			   (gcd-rq (integer-gcd r q))
 			   (num (* (intquotient p gcd-ps) (intquotient r gcd-rq)))
 			   (den (* (intquotient q gcd-rq) (intquotient s gcd-ps))))
 		      (if (negative? den)
@@ -2757,51 +2791,27 @@
               (make-rectangular (/ (real-part x) y) (/ (imag-part x) y))]
              [else (nonnumber-error who x)])]
          [($exactnum? $inexactnum?)
+          ;; See "Algorithm 116: Complex Division" by Robert L. Smith,
+          ;; Communications of the ACM, Volume 5, Issue 8, Aug. 1962
+          ;; a+bi / c+di => (a+b(d/c))/(c+d(d/c)) + ((b-a(d/c))/(c+d(d/c)))i if |c| >= |d|
+          ;; a+bi / c+di => (b+a(c/d))/(d+c(c/d)) + ((a-b(c/d))/(d+c(c/d)))i if |c| < |d|
           (type-case x
-             [(fixnum? bignum? ratnum? flonum?)
-              ;; a / c+di => c(a/(cc+dd)) + (-d(a/cc+dd))i
-              (if (eq? x 0)
-                  0
-                  (let ([c (real-part y)] [d (imag-part y)])
-                    (let ([t (/ x (+ (* c c) (* d d)))])
-                      (make-rectangular (* c t) (- (* d t))))))]
-             [($exactnum? $inexactnum?)
-              (let ([a (real-part x)] [b (imag-part x)]
-                    [c (real-part y)] [d (imag-part y)])
-                ;; a+bi / c+di => (ac+bd)/(cc+dd) + ((bc-ad)/(cc+dd))i
-                (define (simpler-divide a b c d)
-                  ;; Direct calculuation does not work as well for complex numbers with
-                  ;; large parts, such as `(/ 1e+300+1e+300i 4e+300+4e+300i)`, but it
-                  ;; works better for small parts, as in `(/ 0.0+0.0i 1+1e-320i)`
-                  (let ([t (+ (* c c) (* d d))])
-                    (make-rectangular (/ (+ (* a c) (* b d)) t)
-                                      (/ (- (* b c) (* a d)) t))))
-                ;; Let r = c/d or d/c, depending on which is larger
-                (cond
-                 [(or (eq? c 0) (and ($exactnum? x) ($exactnum? y)))
-                  (simpler-divide a b c d)]
-                 [(< (abs c) (abs d))
-                  (let ([r (/ d c)])
-                    (if (infinite? r)
-                        ;; Too large; try form that works better with small c or d
-                        (simpler-divide a b c d)
-                        ;; a+bi / c+di => 
-                        (let ([x (+ c (* d r))]) ; x = c+dd/c = (cc+dd)/c
-                          ;; (a+br)/x + ((b-ar)/x)i = (a+bd/c)c/(cc+dd) + ((b-ad/c)c/(cc+dd))i
-                          ;; = (ac+bd)/(cc+dd) + ((bc-ad)/(cc+dd))i
-                          (make-rectangular (/ (+ a (* b r)) x)
-                                            (/ (- b (* a r)) x)))))]
-                 [else
-                  (let ([r (/ c d)])
-                    (if (infinite? r)
-                        ;; Too large; try form that works better with small c or d
-                        (simpler-divide a b c d)
-                        (let ([x (+ d (* c r))]) ; x = d+cc/d = (cc+dd)/d
-                          ;; (b+ar)/x + ((br-a)/x)i = (b+ac/d)d/(cc+dd) + ((bc/d-a)d/(cc+dd))i
-                          ;; = (bd+ac)/(cc+dd) + ((bc-ad)/(cc+dd))i
-                          (make-rectangular (/ (+ b (* a r)) x)
-                                            (/ (- (* b r) a) x)))))]))]
-             [else (nonnumber-error who x)])]
+            [(fixnum? bignum? ratnum? flonum?)
+             (let ([c (real-part y)] [d (imag-part y)])
+               (if (>= (abs c) (abs d))
+                   (let* ([r (/ d c)] [den (+ c (* r d))])
+                     (make-rectangular (/ x den) (/ (- (* x r)) den)))
+                   (let* ([r (/ c d)] [den (+ d (* r c))])
+                     (make-rectangular (/ (* x r) den) (/ (- x) den)))))]
+            [($exactnum? $inexactnum?)
+             (let ([a (real-part x)] [b (imag-part x)]
+                   [c (real-part y)] [d (imag-part y)])
+               (if (>= (abs c) (abs d))
+                   (let* ([r (/ d c)] [den (+ c (* r d))])
+                     (make-rectangular (/ (+ a (* b r)) den) (/ (- b (* a r)) den)))
+                   (let* ([r (/ c d)] [den (+ d (* r c))])
+                     (make-rectangular (/ (+ (* a r) b) den) (/ (- (* b r) a) den)))))]
+            [else (nonnumber-error who x)])]
          [else (nonnumber-error who y)])))
 
 (set! conjugate
@@ -2883,7 +2893,7 @@
                       (fxsra x (fx- n)))
                   (if (fx> n max-fx-shift)
                       (integer-ash x n)
-                      (let ([m (#3%fxsll x n)])
+                      (let ([m (fxsll/wraparound x n)])
                         (if (fx= (fxsra m n) x)
                             m
                             (integer-ash x n))))))]

@@ -188,6 +188,9 @@ typedef struct rktio_fd_t rktio_fd_t;
 #define RKTIO_OPEN_OWN         (1<<14)
 /* Make `rtkio_system_fd` record a socket for reliable clean up on pre-NT Windows. */
 
+/* Used for `rktio_open` with `RKTIO_OPEN_WRITE`: */
+#define RKTIO_OPEN_REPLACE_PERMS (1<<15)
+
 RKTIO_EXTERN rktio_fd_t *rktio_system_fd(rktio_t *rktio, intptr_t system_fd, int modes);
 /* A socket (as opposed to other file descriptors) registered this way
    should include include `RKTIO_OPEN_SOCKET` and be non-blocking or
@@ -474,6 +477,10 @@ RKTIO_EXTERN rktio_ok_t rktio_socket_shutdown(rktio_t *rktio, rktio_fd_t *rfd, i
    `mode` values: */
 #define RKTIO_SHUTDOWN_READ   0
 #define RKTIO_SHUTDOWN_WRITE  1
+
+RKTIO_EXTERN rktio_ok_t rktio_tcp_nodelay(rktio_t *rktio, rktio_fd_t *rfd, rktio_bool_t enable);
+/* Changes a connection to enable or disable "TCP_NODELAY" mode,
+   which diabled Nagle's algorithm for avoiding small packets. */
 
 RKTIO_EXTERN rktio_fd_t *rktio_udp_open(rktio_t *rktio, RKTIO_NULLABLE rktio_addrinfo_t *addr, int family);
 /* The `addr` argument can be NULL to create a socket without
@@ -952,6 +959,17 @@ RKTIO_EXTERN_STEP rktio_file_copy_t *rktio_copy_file_start(rktio_t *rktio, rktio
    whole copy, or it may just get started. Can report
    `RKTIO_ERROR_EXISTS`, and sets an error step as listed further below. */
 
+RKTIO_EXTERN_STEP rktio_file_copy_t *rktio_copy_file_start_permissions(rktio_t *rktio, rktio_const_string_t dest, rktio_const_string_t src,
+                                                                       rktio_bool_t exists_ok,
+                                                                       rktio_bool_t use_perm_bits, int perm_bits,
+                                                                       rktio_bool_t override_create_perms);
+/* Like `rktio_copy_file_start`, but accepts optional permissions to
+   apply to the copy, which are used only if `use_perm_bits` is set
+   (otherwise the source file's permissions are kept) and whether on
+   Unix to for the destination file's permissions as possibly modified
+   by `umask` on file create (whether supplied or taken from the `src`
+   file) or because the file already exists. */
+
 RKTIO_EXTERN rktio_bool_t rktio_copy_file_is_done(rktio_t *rktio, rktio_file_copy_t *fc);
 RKTIO_EXTERN_STEP rktio_ok_t rktio_copy_file_step(rktio_t *rktio, rktio_file_copy_t *fc);
 /* As long as the copy isn't done, call `rktio_copy_file_step` to make
@@ -1193,10 +1211,10 @@ intptr_t rktio_convert(rktio_t *rktio,
    increments `*out` and decrements `*out_left`. In case of an error,
    the result is `RKTIO_CONVERT_ERROR` and the last error is set to
    one of `RKTIO_ERROR_CONVERT_NOT_ENOUGH_SPACE`,
-   `RKTIO_ERROR_CONVERT_BAD_SEQUENCE`, or `RKTIO_ERROR_CONVERT_OTHER`
-   --- but an error indicates something within `in` or `out`,
-   and some bytes may have been successfully converted even if an
-   error is reported. */
+   `RKTIO_ERROR_CONVERT_BAD_SEQUENCE`, `RKTIO_ERROR_CONVERT_PREMATURE_END`,
+   or `RKTIO_ERROR_CONVERT_OTHER` --- but an error indicates something within
+   `in` or `out`, and some bytes may have been successfully converted even if
+   an error is reported. */
 
 #define RKTIO_CONVERT_ERROR (-1)
 

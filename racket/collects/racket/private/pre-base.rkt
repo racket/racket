@@ -207,6 +207,7 @@
              (rename new:procedure-reduce-arity-mask procedure-reduce-arity-mask)
              (rename new:procedure->method procedure->method)
              (rename new:procedure-rename procedure-rename)
+             (rename new:procedure-realm procedure-realm)
              (rename new:chaperone-procedure chaperone-procedure)
              (rename new:impersonate-procedure impersonate-procedure)
              (rename new:chaperone-procedure* chaperone-procedure*)
@@ -215,7 +216,7 @@
              (rename new:collection-file-path collection-file-path)
              (all-from-except '#%kernel lambda λ #%app #%module-begin apply prop:procedure 
                               procedure-reduce-arity procedure-reduce-arity-mask
-                              procedure->method procedure-rename
+                              procedure->method procedure-rename procedure-realm
                               chaperone-procedure impersonate-procedure
                               chaperone-procedure* impersonate-procedure*
                               assq assv assoc
@@ -225,6 +226,10 @@
                               collection-path collection-file-path
                               symbol->immutable-string
                               keyword->immutable-string
+                              immutable-string? immutable-bytes? immutable-vector?
+                              immutable-hash? immutable-box?
+                              mutable-string? mutable-bytes? mutable-vector?
+                              mutable-hash? mutable-box?
                               syntax-srcloc)
              (all-from "reqprov.rkt")
              (all-from-except "for.rkt"

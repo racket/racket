@@ -1,6 +1,6 @@
 #lang racket/base
 (require racket/stxparam
-         syntax/parse/private/residual ;; keep abs. path
+         "residual.rkt"
          (for-syntax racket/base
                      racket/list
                      syntax/kerncase
@@ -27,7 +27,10 @@
          check-literal
          no-shadow
          curried-stxclass-parser
-         app-argu)
+         app-argu
+
+         (for-syntax rewrite-formals
+                     make-this-context-syntax-transformer))
 
 #|
 TODO: rename file
@@ -158,7 +161,16 @@ residual.rkt.
 (define-syntax (check-literal stx)
   (syntax-case stx ()
     [(check-literal id used-phase-expr ctx)
-     (let* ([ok-phases/ct-rel
+     (let* ([ctx-for-error
+             ;; If context is not stripped, racket complains about
+             ;; being unable to restore bindings for compiled code;
+             ;; and all we want is the srcloc, etc.
+             (syntax-case #'ctx ()
+               [(id . _)
+                (identifier? #'id)
+                (datum->syntax #f (list (strip-context #'id) '....) #'ctx)]
+               [_ (strip-context #'ctx)])]
+            [ok-phases/ct-rel
              ;; id is bound at each of ok-phases/ct-rel
              ;; (phase relative to the compilation of the module in which the
              ;; 'syntax-parse' (or related) form occurs)
@@ -170,10 +182,7 @@ residual.rkt.
                            used-phase-expr
                            (phase-of-enclosing-module)
                            'ok-phases/ct-rel
-                           ;; If context is not stripped, racket complains about
-                           ;; being unable to restore bindings for compiled code;
-                           ;; and all we want is the srcloc, etc.
-                           (quote-syntax #,(strip-context #'ctx)))))]))
+                           (quote-syntax #,ctx-for-error))))]))
 
 ;; ====
 
@@ -229,3 +238,22 @@ residual.rkt.
      ;; For now, let #%app handle it.
      (with-syntax ([((kw-part ...) ...) #'((kw kwarg) ...)])
        #'(proc kw-part ... ... extra-parg ... parg ...))]))
+
+
+(begin-for-syntax
+  (define (rewrite-formals fstx x-id rl-id)
+    (with-syntax ([x x-id]
+                  [rl rl-id])
+      (let loop ([fstx fstx])
+        (syntax-case fstx ()
+          [([arg default] . more)
+           (cons #'(arg (with ([this-syntax x] [this-role rl]) default))
+                 (loop #'more))]
+          [(formal . more)
+           (cons #'formal (loop #'more))]
+          [_ fstx]))))
+
+  (define (make-this-context-syntax-transformer pr-var)
+    (with-syntax ([pr pr-var])
+      (syntax-rules ()
+        [(tbs) (ps-context-syntax pr)]))))

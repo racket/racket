@@ -1,0 +1,163 @@
+#lang zuo/base
+
+(provide run-cmdline
+         flag-parser)
+
+(define (run-cmdline program cmd args flags finish-handler finish-spec preamble usage help-specs)
+
+  (define (finish cmd args)
+    (define expected (+ (length (car finish-spec))
+                        (length (cdr finish-spec))))
+    (unless (if (null? (cddr finish-spec))
+                (and (>= (length args) (length (car finish-spec)))
+                     (<= (length args) (+ (length (car finish-spec))
+                                          (length (cadr finish-spec)))))
+                (>= (length args) (length (car finish-spec))))
+      (error (~a program
+                 ": expected "
+                 (let ([s (spec->expected-string finish-spec)])
+                   (if (string=? "" s)
+                       "no command-line arguments"
+                       (~a "arguments " s)))
+                 (if (null? args)
+                     ""
+                     (~a "\n  given arguments:\n   "
+                         (string-join (map ~a args) "\n   "))))))
+    (apply-cmd "arguments handler" (apply finish-handler args) cmd))
+
+  (let loop ([pend-flags '()] [args args] [saw (hash)] [cmd cmd])
+    (cond
+      [(and (null? args) (null? pend-flags)) (finish cmd args)]
+      [else
+       (let* ([arg (if (pair? pend-flags) (car pend-flags) (car args))]
+              [pend-flags (if (pair? pend-flags) (cdr pend-flags) '())]
+              [args (if (pair? pend-flags) args (cdr args))]
+              [a (assoc arg flags)])
+         (cond
+           [a ((cdr a) program pend-flags (cons arg args) cmd saw loop)]
+           [(string=? arg "--") (if (null? pend-flags)
+                                    (finish cmd args)
+                                    (loop (append pend-flags (list arg)) args saw cmd))]
+           [(or (string=? arg "--help")
+                (string=? arg "-h"))
+            (show-help program finish-spec preamble usage help-specs flags)
+            (exit 0)]
+           [(and (> (string-length arg) 2)
+                 (= (string-ref arg 0) (char "-"))
+                 (not (= (string-ref arg 1) (char "-"))))
+            (loop (split-flags arg) args saw cmd)]
+           [(and (> (string-length arg) 0)
+                 (or (= (string-ref arg 0) (char "-"))
+                     (= (string-ref arg 0) (char "+"))))
+            (error (~a program ": unrecognized flag " arg))]
+           [else (finish cmd (cons arg args))]))])))
+
+(define (split-flags s)
+  (let loop ([i 1])
+    (if (= i (string-length s))
+        '()
+        (cons (string (char "-") (string-ref s i))
+              (loop (+ i 1))))))
+
+(define (spec->expected-string spec)
+  (~a (string-join (car spec))
+      (let ([dots (if (null? (cddr spec)) "" " ...")])
+        (if (null? (cadr spec))
+            dots
+            (~a " [" (string-join (cadr spec)) dots "]")))))
+      
+(define (flag-parser key handler spec)
+  (lambda (program pend-flags flag+args cmd saw k)
+    (when key
+      (when (hash-ref saw key #f)
+        (error (~a program ": redundant or conflicting flag " (car flag+args)))))
+    (define new-saw (if key (hash-set saw key #t) saw))
+    (define args (cdr flag+args))
+    (unless (>= (length args) (length (car spec)))
+      (error (~a program
+                 ": expected more arguments for "
+                 (car flag+args)
+                 " "
+                 (spec->expected-string spec))))
+    (define consumed (if (= 3 (length spec))
+                         args
+                         (let loop ([args args] [need (length (car spec))] [allow (length (cadr spec))])
+                           (cond
+                             [(= (+ need allow) 0) '()]
+                             [(null? args) '()]
+                             [else (cons (car args)
+                                         (loop (cdr args)
+                                               (if (= need 0) 0 (- need 1))
+                                               (if (= need 0) (- allow 1) allow)))]))))
+    (define rest-args (list-tail args (length consumed)))
+    (k pend-flags rest-args new-saw (apply-cmd (~a "handler for " (car flag+args))
+                                               (apply handler consumed)
+                                               cmd))))
+
+(define (apply-cmd who handler cmd)
+  (if (procedure? handler)
+      (handler cmd)
+      (error (~a " did not produce a procedure to receive accumulated state"))))
+
+(define (show-help program finish-spec preamble usage help-specs flags)
+  (when preamble
+    (displayln preamble))
+  (displayln
+   (~a "usage: " program " "
+       (or usage
+           (~a "[<option> ...]"
+               (let ([s (spec->expected-string finish-spec)])
+                 (if (string=? s "")
+                     ""
+                     (~a " " s)))))))
+  (display "\n<option> is one of\n\n")
+  (let loop ([help-specs help-specs] [in-key #f])
+    (unless (null? help-specs)
+      (define next-key (and (pair? (cdr help-specs))
+                            (caar (cdr help-specs))))
+      (define help-spec (car help-specs))
+      (define key (car help-spec))
+      (define flags (list-ref help-spec 1))
+      (define spec (list-ref help-spec 2))
+      (define text (list-ref help-spec 3))
+      (displayln (~a (cond
+                       [(not key) "*"]
+                       [(eq? key in-key) "|"]
+                       [(eq? key next-key) "/"]
+                       [(eq? key next-key) "|"]
+                       [else " "])
+                     " "
+                     (string-join flags ", ")
+                     (if (null? (car spec)) "" " ")
+                     (string-join (car spec))))
+      (let loop ([text text])
+        (when (pair? text)
+          (displayln (~a (cond
+                           [(eq? key next-key) "|"]
+                           [(and key (eq? key in-key))
+                            (if (null? (cdr text))
+                                "\\"
+                                "|")]
+                           [else " "])
+                         "    "
+                         (car text)))
+          (loop (cdr text))))
+      (loop (cdr help-specs) key)))
+  (display (~a "  --help" (if (assoc "-h" flags) "" ", -h") "\n"
+               "     Show this help\n"
+               "  --\n"
+               "     Do not treat any remaining argument as a switch (at this level)\n"
+               "\n"))
+  (define any-mult? (ormap (lambda (help-spec) (not (car help-spec))) help-specs))
+  (define any-excl? (let loop ([help-specs help-specs] [key #f])
+                      (and (pair? help-specs)
+                           (or (and key (eq? key (caar help-specs)))
+                               (loop (cdr help-specs) (caar help-specs))))))
+  (when any-mult?
+    (display " *   Asterisks indicate options allowed multiple times.\n"))
+  (when any-excl?
+    (display " /|\\ Brackets indicate mutually exclusive options.\n"))
+  (when (or any-mult? any-excl?)
+    (display "\n"))
+  (display (~a " Multiple single-letter switches can be combined after\n"
+               " one `-`. For example, `-h-` is the same as `-h --`.\n")))

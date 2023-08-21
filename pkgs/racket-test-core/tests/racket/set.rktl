@@ -1,7 +1,7 @@
 (load-relative "loadtest.rktl")
 
 (Section 'sets)
-(require scheme/set)
+(require racket/set)
 
 ;; ----------------------------------------
 

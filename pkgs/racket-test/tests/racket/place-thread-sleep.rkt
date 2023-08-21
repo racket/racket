@@ -15,7 +15,7 @@
          (define th (thread (lambda ()
                               (let loop ()
                                 (loop)))))
-         (sync (alarm-evt (+ 100 (current-inexact-milliseconds))))
+         (sync (alarm-evt (+ 100 (current-inexact-monotonic-milliseconds)) #t))
          (thread-suspend th)
          (printf "fib...\n")
          (fib 30) ; takes long enough to exhaust quantum

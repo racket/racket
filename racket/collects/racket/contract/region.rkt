@@ -11,7 +11,7 @@
                      racket/struct-info
                      syntax/define
                      syntax/kerncase
-                     syntax/parse
+                     syntax/parse/pre
                      racket/syntax
                      (only-in racket/list partition)
                      (prefix-in a: "private/helpers.rkt"))

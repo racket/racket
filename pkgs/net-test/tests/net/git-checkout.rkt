@@ -99,7 +99,7 @@
                 (make-file-or-directory-link "../x" "abs-x")]
                [else
                 (make-file-or-directory-link "x" "also-x")]))
-           (git "init")
+           (git "init" "-b" "main")
            (git "add" ".")
            (git "commit" "-m" "initial commit")
            (git "update-server-info"))

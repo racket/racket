@@ -88,8 +88,9 @@ forms or adjust the way forms are displayed:
 @itemlist[
 
   @item{@envvar-indexed{PLT_LINKLET_SHOW_GENSYM} --- prints full
-        generated names, instead of abbreviations that may conflate
-        different symbols}
+        generated names, instead of abbreviations; the default behavior
+	corresponds to Chez Scheme's @tt{'pretty/suffix} mode for
+	@tt{print-gensym}}
 
    @item{@envvar-indexed{PLT_LINKLET_SHOW_PRE_JIT} --- shows a
          schemified forms before a transformation to JIT mode, which
@@ -109,15 +110,18 @@ forms or adjust the way forms are displayed:
          compilation of form that were previously prepared by
          compilation with @envvar{PLT_CS_JIT} set}
 
-   @item{@envvar-indexed{PLT_LINKLET_SHOW_PATHS} --- show lifted
-         path and serialization information alongside a schemified form}
-
    @item{@envvar-indexed{PLT_LINKLET_SHOW_KNOWN} --- show recorded
          known-binding information alongside a schemified form}
 
    @item{@envvar-indexed{PLT_LINKLET_SHOW_CP0} --- show a schemified
          form after transformation by Chez Scheme's front-end
          optimizer}
+
+   @item{@envvar-indexed{PLT_LINKLET_SHOW_PASSES} --- show the
+         intermediate form of a schemified linklet after the specified
+         passes (listed space-separated) in Chez Scheme's internal
+         representation; the special name @tt{all} will show the
+         intermediate form after all Chez Scheme passes}
 
    @item{@envvar-indexed{PLT_LINKLET_SHOW_ASSEMBLY} --- show the
          compiled form of a schemified linklet in Chez Scheme's
@@ -130,3 +134,6 @@ set on startup, then Racket prints cumulative timing information about
 compilation and evaluation times on exit. When the
 @envvar-indexed{PLT_EXPANDER_TIMES} environment variable is set,
 information about macro-expansion time is printed on exit.
+
+@history[#:changed "8.8.0.10" @elem{Added special pass name @tt{all}
+                                    to @envvar{PLT_LINKLET_SHOW_PASSES}}]

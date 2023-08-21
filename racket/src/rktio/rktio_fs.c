@@ -122,34 +122,49 @@ static void init_procs()
 # define GET_FF_MODDATE(fd) convert_date(&fd.ftLastWriteTime)
 # define GET_FF_NAME(fd) fd.cFileName
 
+# define RKTUS_NO_SET    -1
+# define RKTUS_SET_SECS  -2
+
 # define MKDIR_NO_MODE_FLAG
 
 #define is_drive_letter(c) (((unsigned char)c < 128) && isalpha((unsigned char)c))
 
+/* Whether to try to adjust for DST like CRT's _stat and _utime do: */
+# define USE_STAT_DST_ADJUST 0
+/* Historically, there has been some weirdness with file timestamps on
+   Windows. When daylight saving is in effect, the local time reported
+   for a file is shifted, even if the file's time is during a non-DST
+   period. It's not clear to me that modern Windows still behaves in a
+   strange way, but the C library's `_stat` and `_utime` still try to
+   counteract a DST effect. We can try to imitate the library's effect
+   if we want to interoperate with those functions directly, but it's
+   probably better to just avoid them. */
+
 static time_t convert_date(const FILETIME *ft)
 {
-  LONGLONG l, delta;
+  LONGLONG l, delta = 0;
+# if USE_STAT_DST_ADJUST
   FILETIME ft2;
   SYSTEMTIME st;
   TIME_ZONE_INFORMATION tz;
 
-  /* GetFileAttributes incorrectly shifts for daylight saving. It
-     subtracts an hour to get to UTC when daylight saving is in effect
-     now, even when daylight saving was not in effect when the file
-     was saved.  Counteract the difference. There's a race condition
-     here, because we might cross the daylight-saving boundary between
-     the time that GetFileAttributes runs and GetTimeZoneInformation
-     runs. Cross your fingers... */
+  /* There's a race condition here, because we might cross the
+     daylight-saving boundary between the time that GetFileAttributes
+     runs and GetTimeZoneInformation runs. Cross your fingers... */
+
   FileTimeToLocalFileTime(ft, &ft2);
   FileTimeToSystemTime(&ft2, &st);
   
-  delta = 0;
   if (GetTimeZoneInformation(&tz) == TIME_ZONE_ID_DAYLIGHT) {
-    /* Daylight saving is in effect now, so there may be a bad
-       shift. Check the file's date. */
+    /* Daylight saving is in effect now, so there may be an adjustment
+       to make. Check the file's date. */
     if (!rktio_system_time_is_dst(&st, NULL))
       delta = ((tz.StandardBias - tz.DaylightBias) * 60);
   }
+# endif
+
+  /* The difference between January 1, 1601 and January 1, 1970
+     is 0x019DB1DE_D53E8000 times 100 nanoseconds */
 
   l = ((((LONGLONG)ft->dwHighDateTime << 32) | ft->dwLowDateTime)
        - (((LONGLONG)0x019DB1DE << 32) | 0xD53E8000));
@@ -157,6 +172,31 @@ static time_t convert_date(const FILETIME *ft)
   l += delta;
 
   return (time_t)l;
+}
+
+static void unconvert_date(time_t l, FILETIME *ft)
+{
+  LONGLONG nsec;
+
+  nsec = (LONGLONG)l * 10000000;
+  nsec += (((LONGLONG)0x019DB1DE << 32) | 0xD53E8000);
+  ft->dwHighDateTime = (nsec >> 32);
+  ft->dwLowDateTime = (nsec & 0xFFFFFFFF);
+
+# if USE_STAT_DST_ADJUST
+  {
+    time_t l2;
+    /* check for DST correction */
+    l2 = convert_date(ft);
+    if (l != l2) {
+      /* need correction */
+      nsec = ((LONGLONG)l - (l2 - l)) * 10000000;
+      nsec += (((LONGLONG)0x019DB1DE << 32) | 0xD53E8000);
+      ft->dwHighDateTime = (nsec >> 32);
+      ft->dwLowDateTime = (nsec & 0xFFFFFFFF);
+    }
+  }
+# endif
 }
 
 typedef struct mz_REPARSE_DATA_BUFFER {
@@ -326,7 +366,7 @@ static int UNC_stat(rktio_t *rktio, const char *dirname, int *flags, int *isdir,
     *islink = 0;
   if (isdir)
     *isdir = 0;
-  if (date)
+  if (date && (set_flags != RKTUS_SET_SECS))
     *date = NULL;
 
   len = strlen(dirname);
@@ -381,6 +421,34 @@ static int UNC_stat(rktio_t *rktio, const char *dirname, int *flags, int *isdir,
     return 0;
   }
 
+  if (set_flags == RKTUS_SET_SECS) {
+    HANDLE h;
+    BOOL ok;
+    FILETIME ft;
+
+    h = CreateFileW(wp, FILE_WRITE_ATTRIBUTES,
+		    FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, NULL,
+		    OPEN_EXISTING,
+		    FILE_FLAG_BACKUP_SEMANTICS,
+		    NULL);
+    if (h == INVALID_HANDLE_VALUE) {
+      get_windows_error();
+      free(copy);
+      return 0;
+    }
+
+    unconvert_date(**date, &ft);
+
+    ok = SetFileTime(h, NULL, &ft, &ft);
+    if (!ok)
+      get_windows_error();
+
+    free(copy);
+    CloseHandle(h);
+
+    return ok;
+  }
+
   if (!GetFileAttributesExW(wp, GetFileExInfoStandard, &fad)) {
     get_windows_error();
     free(copy);
@@ -405,7 +473,7 @@ static int UNC_stat(rktio_t *rktio, const char *dirname, int *flags, int *isdir,
                         FILE_FLAG_BACKUP_SEMANTICS,
                         NULL);
 
-        if (!h) {
+        if (h == INVALID_HANDLE_VALUE) {
           get_windows_error();
           free(copy);
 	  return 0;
@@ -415,7 +483,7 @@ static int UNC_stat(rktio_t *rktio, const char *dirname, int *flags, int *isdir,
           init_procs();
           if (dest) free(dest);
           dest_len = len + 1;
-          dest = malloc(dest_len);
+          dest = malloc(dest_len * sizeof(wchar_t));
           len = GetFinalPathNameByHandleProc(h, dest, dest_len, rktioFILE_NAME_NORMALIZED);
         } while (len > dest_len);
 
@@ -442,7 +510,7 @@ static int UNC_stat(rktio_t *rktio, const char *dirname, int *flags, int *isdir,
       }
     }
 
-    if (set_flags != -1) {
+    if (set_flags != RKTUS_NO_SET) {
       DWORD attrs = GET_FF_ATTRIBS(fad);
 
       if (!(set_flags & RKTIO_UNC_WRITE))
@@ -500,7 +568,7 @@ int rktio_file_exists(rktio_t *rktio, const char *filename)
 #  ifdef RKTIO_SYSTEM_WINDOWS
   {
     int isdir;
-    return (UNC_stat(rktio, filename, NULL, &isdir, NULL, NULL, NULL, NULL, -1)
+    return (UNC_stat(rktio, filename, NULL, &isdir, NULL, NULL, NULL, NULL, RKTUS_NO_SET)
 	    && !isdir);
   }
 #  else
@@ -524,7 +592,7 @@ int rktio_directory_exists(rktio_t *rktio, const char *dirname)
 #  ifdef RKTIO_SYSTEM_WINDOWS
   int isdir;
 
-  return (UNC_stat(rktio, dirname, NULL, &isdir, NULL, NULL, NULL, NULL, -1)
+  return (UNC_stat(rktio, dirname, NULL, &isdir, NULL, NULL, NULL, NULL, RKTUS_NO_SET)
 	  && isdir);
 #  else
   struct MSC_IZE(stat) buf;
@@ -569,7 +637,7 @@ int rktio_link_exists(rktio_t *rktio, const char *filename)
 #ifdef RKTIO_SYSTEM_WINDOWS
   {
     int islink;
-    if (UNC_stat(rktio, filename, NULL, NULL, &islink, NULL, NULL, NULL, -1)
+    if (UNC_stat(rktio, filename, NULL, NULL, &islink, NULL, NULL, NULL, RKTUS_NO_SET)
 	&& islink)
       return 1;
     else
@@ -599,7 +667,7 @@ int rktio_file_type(rktio_t *rktio, rktio_const_string_t filename)
 #ifdef RKTIO_SYSTEM_WINDOWS
   {
     int islink, isdir;
-    if (UNC_stat(rktio, filename, NULL, &isdir, &islink, NULL, NULL, NULL, -1)) {
+    if (UNC_stat(rktio, filename, NULL, &isdir, &islink, NULL, NULL, NULL, RKTUS_NO_SET)) {
       if (islink) {
         if (isdir)
           return RKTIO_FILE_TYPE_DIRECTORY_LINK;
@@ -1016,7 +1084,7 @@ char *rktio_readlink(rktio_t *rktio, const char *fullfilename)
 {
 #ifdef RKTIO_SYSTEM_WINDOWS
   int is_link;
-  if (UNC_stat(rktio, fullfilename, NULL, NULL, &is_link, NULL, NULL, NULL, -1)
+  if (UNC_stat(rktio, fullfilename, NULL, NULL, &is_link, NULL, NULL, NULL, RKTUS_NO_SET)
       && is_link) {
     return UNC_readlink(rktio, fullfilename);
   } else {
@@ -1195,7 +1263,7 @@ rktio_timestamp_t *rktio_get_file_modify_seconds(rktio_t *rktio, const char *fil
 #ifdef RKTIO_SYSTEM_WINDOWS
   rktio_timestamp_t *secs;
   
-  if (UNC_stat(rktio, file, NULL, NULL, NULL, &secs, NULL, NULL, -1))
+  if (UNC_stat(rktio, file, NULL, NULL, NULL, &secs, NULL, NULL, RKTUS_NO_SET))
     return secs;
   return NULL;
 #else
@@ -1218,6 +1286,10 @@ rktio_timestamp_t *rktio_get_file_modify_seconds(rktio_t *rktio, const char *fil
 
 int rktio_set_file_modify_seconds(rktio_t *rktio, const char *file, rktio_timestamp_t secs)
 {
+#ifdef RKTIO_SYSTEM_WINDOWS
+  rktio_timestamp_t *secs_p  = &secs;
+  return UNC_stat(rktio, file, NULL, NULL, NULL, &secs_p, NULL, NULL, RKTUS_SET_SECS);
+#else
   while (1) {
     struct MSC_IZE(utimbuf) ut;
     const WIDE_PATH_t *wp;
@@ -1233,6 +1305,7 @@ int rktio_set_file_modify_seconds(rktio_t *rktio, const char *file, rktio_timest
 
   get_posix_error();
   return 0;
+#endif
 }
 
 #if defined(RKTIO_SYSTEM_UNIX) && !defined(NO_UNIX_USERS)
@@ -1404,7 +1477,7 @@ int rktio_get_file_or_directory_permissions(rktio_t *rktio, const char *filename
   {
     int flags;
 
-    if (UNC_stat(rktio, filename, &flags, NULL, NULL, NULL, NULL, NULL, -1)) {
+    if (UNC_stat(rktio, filename, &flags, NULL, NULL, NULL, NULL, NULL, RKTUS_NO_SET)) {
       if (all_bits)
         return (flags | (flags << 3) | (flags << 6));
       else
@@ -1465,7 +1538,7 @@ rktio_filesize_t *rktio_file_size(rktio_t *rktio, const char *filename)
 #ifdef RKTIO_SYSTEM_WINDOWS
  {
    rktio_filesize_t sz_v;
-   if (UNC_stat(rktio, filename, NULL, NULL, NULL, NULL, &sz_v, NULL, -1)) {
+   if (UNC_stat(rktio, filename, NULL, NULL, NULL, NULL, &sz_v, NULL, RKTUS_NO_SET)) {
      sz = malloc(sizeof(rktio_filesize_t));
      *sz = sz_v;
      return sz;
@@ -1572,7 +1645,7 @@ rktio_directory_list_t *rktio_directory_list_start(rktio_t *rktio, const char *f
     if ((err_val == ERROR_DIRECTORY) && CreateSymbolicLinkProc) {
       /* check for symbolic link */
       const char *resolved;
-      if (UNC_stat(rktio, filename, NULL, NULL, NULL, NULL, NULL, &resolved, -1)) {
+      if (UNC_stat(rktio, filename, NULL, NULL, NULL, NULL, NULL, &resolved, RKTUS_NO_SET)) {
 	if (resolved) {
 	  filename = (char *)resolved;
 	  goto retry;
@@ -1704,11 +1777,28 @@ struct rktio_file_copy_t {
   int done;
   rktio_fd_t *src_fd, *dest_fd;
 #ifdef RKTIO_SYSTEM_UNIX
+  int override_create_perms;
   intptr_t mode;
+#endif
+#ifdef RKTIO_SYSTEM_WINDOWS
+  wchar_t *dest_w;
+  int read_only;
 #endif
 };
 
-rktio_file_copy_t *rktio_copy_file_start(rktio_t *rktio, const char *dest, const char *src, int exists_ok)
+rktio_file_copy_t *rktio_copy_file_start(rktio_t *rktio, const char *dest, const char *src,
+                                         int exists_ok)
+{
+  return rktio_copy_file_start_permissions(rktio, dest, src,
+                                           exists_ok,
+                                           0, 0,
+                                           1);
+}
+
+rktio_file_copy_t *rktio_copy_file_start_permissions(rktio_t *rktio, const char *dest, const char *src,
+                                                     int exists_ok,
+                                                     rktio_bool_t use_perm_bits, int perm_bits,
+                                                     rktio_bool_t override_create_perms)
 {
 #ifdef RKTIO_SYSTEM_UNIX
   {
@@ -1737,8 +1827,17 @@ rktio_file_copy_t *rktio_copy_file_start(rktio_t *rktio, const char *dest, const
       return NULL;
     }
 
-    dest_fd = rktio_open(rktio, dest, (RKTIO_OPEN_WRITE
-                                       | (exists_ok ? RKTIO_OPEN_TRUNCATE : 0)));
+    if (!use_perm_bits)
+      perm_bits = buf.st_mode;
+
+    dest_fd = rktio_open_with_create_permissions(rktio, dest, (RKTIO_OPEN_WRITE
+                                                               | (exists_ok ? RKTIO_OPEN_TRUNCATE : 0)),
+                                                 /* Permissions may be reduced by umask, but even if
+                                                    `override_create_perms`, the intent here is to make
+                                                    sure the file doesn't have more permissions than
+                                                    it will end up with. If `override_create_perms`, we
+                                                    install final permissions after the copy. */
+                                                 perm_bits);
     if (!dest_fd) {
       rktio_close(rktio, src_fd);
       rktio_set_last_error_step(rktio, RKTIO_COPY_STEP_OPEN_DEST);
@@ -1753,7 +1852,8 @@ rktio_file_copy_t *rktio_copy_file_start(rktio_t *rktio, const char *dest, const
       fc->done = 0;
       fc->src_fd = src_fd;
       fc->dest_fd = dest_fd;
-      fc->mode = buf.st_mode;
+      fc->override_create_perms = override_create_perms;
+      fc->mode = perm_bits;
 
       return fc;
     }
@@ -1769,18 +1869,29 @@ rktio_file_copy_t *rktio_copy_file_start(rktio_t *rktio, const char *dest, const
     rktio_set_last_error_step(rktio, RKTIO_COPY_STEP_OPEN_SRC);
     return NULL;
   }
-  dest_w = WIDE_PATH_temp(dest);
+  if (use_perm_bits)
+    dest_w = WIDE_PATH_copy(dest);
+  else
+    dest_w = WIDE_PATH_temp(dest);
   if (!dest_w) {
     rktio_set_last_error_step(rktio, RKTIO_COPY_STEP_OPEN_DEST);
     return NULL;
   }
 
+  /* Note: if the requested permission is read-only and the source
+     is writable, the destination will be temporarily writable; even
+     if the destination file exists, though, we impose a requested
+     read-only mode after copying.*/
+
   if (CopyFileW(src_w, dest_w, !exists_ok)) {
     rktio_file_copy_t *fc;
     free(src_w);
+
     /* Return a pointer to indicate success: */
     fc = malloc(sizeof(rktio_file_copy_t));
     fc->done = 1;
+    fc->dest_w = (use_perm_bits ? (wchar_t *)dest_w : NULL);
+    fc->read_only = !(perm_bits & RKTIO_PERMISSION_WRITE);
     return fc;
   }
   
@@ -1793,6 +1904,8 @@ rktio_file_copy_t *rktio_copy_file_start(rktio_t *rktio, const char *dest, const
   rktio_set_last_error_step(rktio, RKTIO_COPY_STEP_UNKNOWN);
 
   free(src_w);
+  if (use_perm_bits)
+    free((void *)dest_w);
 
   return NULL;
 #endif
@@ -1841,18 +1954,53 @@ rktio_ok_t rktio_copy_file_step(rktio_t *rktio, rktio_file_copy_t *fc)
 rktio_ok_t rktio_copy_file_finish_permissions(rktio_t *rktio, rktio_file_copy_t *fc)
 {
 #ifdef RKTIO_SYSTEM_UNIX
-  int err;
-  
-  do {
-    err = fchmod(rktio_fd_system_fd(rktio, fc->dest_fd), fc->mode);
-  } while ((err == -1) && (errno != EINTR));
+  if (fc->override_create_perms) {
+    int err;
 
-  if (err) {
-    get_posix_error();
-    rktio_set_last_error_step(rktio, RKTIO_COPY_STEP_WRITE_DEST_METADATA);
-    return 0;
+    do {
+      /* We could skip this step if we know that the creation mode
+         wasn't reduced by umask, that the file didn't already exist,
+         and that the mode wasn't changed while the copy is in
+         progress. Instead of trying to get umask (without setting it,
+         but the obvious get-and-set trick is no good for a
+         process-wide value in a multithreaded context) or getting the
+         current mode (although it turns out that creating `dest_fd`
+         already used `fstat`, but the mode is forgotten by here), we
+         just always set it. */
+      err = fchmod(rktio_fd_system_fd(rktio, fc->dest_fd), fc->mode);
+    } while ((err == -1) && (errno != EINTR));
+
+    if (err) {
+      get_posix_error();
+      rktio_set_last_error_step(rktio, RKTIO_COPY_STEP_WRITE_DEST_METADATA);
+      return 0;
+    }
   }
 #endif
+#ifdef RKTIO_SYSTEM_WINDOWS
+  if (fc->dest_w) {
+    int ok;
+    DWORD attrs = GetFileAttributesW(fc->dest_w);
+    if (attrs != INVALID_FILE_ATTRIBUTES) {
+      if (!!(attrs & FILE_ATTRIBUTE_READONLY) != fc->read_only) {
+        if (fc->read_only)
+          attrs |= FILE_ATTRIBUTE_READONLY;
+        else
+          attrs -= FILE_ATTRIBUTE_READONLY;
+        ok = SetFileAttributesW(fc->dest_w, attrs);
+      } else
+        ok = 1;
+    } else
+      ok = 0;
+
+    if (!ok) {
+      get_windows_error();
+      rktio_set_last_error_step(rktio, RKTIO_COPY_STEP_WRITE_DEST_METADATA);
+      return 0;
+    }
+  }
+#endif
+  
   return 1;
 }
 
@@ -1861,6 +2009,9 @@ void rktio_copy_file_stop(rktio_t *rktio, rktio_file_copy_t *fc)
 #ifdef RKTIO_SYSTEM_UNIX
   rktio_close(rktio, fc->src_fd);
   rktio_close(rktio, fc->dest_fd);
+#endif
+#ifdef RKTIO_SYSTEM_WINDOWS
+  if (fc->dest_w) free(fc->dest_w);
 #endif
   free(fc);
 }

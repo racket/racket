@@ -116,36 +116,13 @@
 
   (define rcd?
     (lambda (x)
-      (or (record-constructor-descriptor? x) #t))) ; rcd should be retricted to rcd or ctrcd
+      (or (record-constructor-descriptor? x) #t))) ; rcd should be restricted to rcd or ctrcd
 
   (define exact-integer?
     (lambda (x)
       (and (integer? x) (exact? x))))
 
-  (meta-cond
-    [(= (constant fixnum-bits) (fixnum-width))
-     (define target-fixnum? fixnum?)
-     (define target-bignum? bignum?)]
-    [(< (constant fixnum-bits) (fixnum-width))
-     (define target-fixnum?
-       (lambda (x)
-         (and (fixnum? x)
-              (fx<= (constant most-negative-fixnum) x (constant most-positive-fixnum)))))
-     (define target-bignum?
-       (lambda (x)
-         (or (bignum? x)
-             (and (fixnum? x)
-                  (not (fx<= (constant most-negative-fixnum) x (constant most-positive-fixnum)))))))]
-    [else
-     (define target-fixnum?
-       (lambda (x)
-         (or (fixnum? x)
-             (and (bignum? x)
-                  (<= (constant most-negative-fixnum) x (constant most-positive-fixnum))))))
-     (define target-bignum?
-       (lambda (x)
-         (and (bignum? x)
-              (not (<= (constant most-negative-fixnum) x (constant most-positive-fixnum))))))])
+  (include "target-fixnum.ss")
 
   (define $prelex?
     (lambda (x)
@@ -240,7 +217,7 @@
 
   ; source language used by the passes leading up to the compiler or interpreter
   (define-language Lsrc
-    (nongenerative-id #{Lsrc czsa1fcfzdeh493n-3})
+    (nongenerative-id #{Lsrc e9hk42fhc9m126ci6byqksp4h-0})
     (terminals
       (preinfo (preinfo))
       ($prelex (x))

@@ -1,4 +1,5 @@
 #include "schpriv.h"
+#include "schrktio.h"
 
 #ifndef NO_SCHEME_THREADS
 
@@ -52,6 +53,7 @@ static void register_traversers(void);
 typedef struct {
   Scheme_Object so;
   double sleep_end;
+  int is_monotonic;
 } Scheme_Alarm;
 
 /* For object-sync: */
@@ -176,7 +178,7 @@ void scheme_init_sema(Scheme_Startup_Env *env)
   scheme_addto_prim_instance("alarm-evt", 
 			     scheme_make_prim_w_arity(make_alarm,
 						      "alarm-evt",
-						      1, 1), 
+						      1, 2),
 			     env);
 
   scheme_addto_prim_instance("system-idle-evt", 
@@ -308,14 +310,13 @@ void did_post_sema(Scheme_Sema *t)
         w->syncing->result = w->syncing_i + 1;
         if (w->syncing->disable_break)
           w->syncing->disable_break->suspend_break++;
+        scheme_conclude_sync(w->syncing, w->syncing_i);
         scheme_post_syncing_nacks(w->syncing);
         if (!w->syncing->reposts || !w->syncing->reposts[w->syncing_i]) {
           t->value -= 1;
           consumed = 1;
         } else
           consumed = 0;
-        if (w->syncing->accepts && w->syncing->accepts[w->syncing_i])
-          scheme_accept_sync(w->syncing, w->syncing_i);
       } else {
         /* In this case, we will remove the syncer from line, but
            someone else might grab the post. This is unfair, but it
@@ -697,8 +698,7 @@ int scheme_wait_semas_chs(int n, Scheme_Object **o, int just_try, Syncing *synci
               --semas[i]->value;
             if (syncing) {
 	      syncing->result = i + 1;
-	      if (syncing->accepts && syncing->accepts[i])
-		scheme_accept_sync(syncing, i);
+              scheme_conclude_sync(syncing, i);
 	    }
             break;
           }
@@ -893,8 +893,7 @@ int scheme_wait_semas_chs(int n, Scheme_Object **o, int just_try, Syncing *synci
 		--semas[i]->value;
               if (syncing) {
                 syncing->result = i + 1;
-                if (syncing->accepts && syncing->accepts[i])
-                  scheme_accept_sync(syncing, i);
+                scheme_conclude_sync(syncing, i);
               }
 	      break;
 	    }
@@ -1400,6 +1399,7 @@ static Scheme_Object *make_alarm(int argc, Scheme_Object **argv)
 {
   Scheme_Alarm *a;
   double sleep_end;
+  int is_monotonic = 0;
 
   if (!SCHEME_REALP(argv[0])) {
     scheme_wrong_contract("alarm-evt", "real?", 0, argc, argv);
@@ -1407,9 +1407,14 @@ static Scheme_Object *make_alarm(int argc, Scheme_Object **argv)
 
   sleep_end = scheme_get_val_as_double(argv[0]);
 
+  if((argc > 1) && SCHEME_TRUEP(argv[1])) {
+    is_monotonic = 1;
+  }
+
   a = MALLOC_ONE_TAGGED(Scheme_Alarm);
   a->so.type = scheme_alarm_type;
   a->sleep_end = sleep_end;
+  a->is_monotonic = is_monotonic;
 
   return (Scheme_Object *)a;
 }
@@ -1418,11 +1423,17 @@ static int alarm_ready(Scheme_Object *_a, Scheme_Schedule_Info *sinfo)
 {
   Scheme_Alarm *a = (Scheme_Alarm *)_a;
 
-  if (!sinfo->sleep_end
-      || (sinfo->sleep_end > a->sleep_end))
-    sinfo->sleep_end = a->sleep_end;
+  double sleep_end_monotonic = a->sleep_end;
+  if(!a->is_monotonic) {
+    sleep_end_monotonic = rktio_get_inexact_monotonic_milliseconds(scheme_rktio)
+                          + a->sleep_end - scheme_get_inexact_milliseconds();
+  }
 
-  if (a->sleep_end <= scheme_get_inexact_milliseconds())
+  if (!sinfo->sleep_end
+      || (sinfo->sleep_end > sleep_end_monotonic))
+    sinfo->sleep_end = sleep_end_monotonic;
+
+  if (sleep_end_monotonic <= rktio_get_inexact_monotonic_milliseconds(scheme_rktio))
     return 1;
 
   return 0;

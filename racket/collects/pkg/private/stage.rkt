@@ -32,7 +32,8 @@
          "git.rkt"
          "prefetch.rkt"
          "checkout-credentials.rkt"
-         "network.rkt")
+         "network.rkt"
+         "github-url.rkt")
 
 (provide (struct-out install-info)
          remote-package-checksum
@@ -300,7 +301,7 @@
          ['git
           (when (equal? checksum "")
             (pkg-error 
-             (~a "cannot use empty checksum for Git repostory package source\n"
+             (~a "cannot use empty checksum for Git repository package source\n"
                  "  source: ~a")
              pkg))
           (define-values (transport host port repo branch path)
@@ -573,7 +574,7 @@
               (remove-extra-directory-layer pkg-dir)]
              [#"zip"
               (unzip pkg-path (make-filesystem-entry-reader #:dest pkg-dir)
-                     #:preserve-timestamps? #t
+                     #:preserve-attributes? #t
                      #:utc-timestamps? #t)
               (remove-extra-directory-layer pkg-dir)]
              [#"plt"
@@ -751,7 +752,7 @@
   (define pkg-url
     (string->url pkg-url-str))
   (define type (if (eq? given-type 'clone)
-                   (if (equal? "github" (url-scheme (string->url pkg-url-str)))
+                   (if (github-url? (string->url pkg-url-str))
                        'github
                        'git)
                    (or given-type

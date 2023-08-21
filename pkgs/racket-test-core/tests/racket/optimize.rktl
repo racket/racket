@@ -78,13 +78,13 @@
         (error 'compile/optimize "compiled content does not have expected shape: ~s"
                s-exp))
 
-      (define-values (mpi-vector requires provides phase-to-link-modules)
+      (define-values (mpi-vector requires recur-requires provides phase-to-link-modules)
           (deserialize-requires-and-provides bundle))
       (define link-modules (hash-ref phase-to-link-modules 0 '()))
 
       ;; Support cross-module inlining
       (define (bundle->keys+uses bundle)
-        (define-values (mpi-vector requires provides phase-to-link-modules)
+        (define-values (mpi-vector requires recur-requires provides phase-to-link-modules)
           (deserialize-requires-and-provides bundle))
         (define link-modules (hash-ref phase-to-link-modules 0 '()))
         (define keys (for/list ([r (in-list link-modules)])
@@ -654,8 +654,7 @@
               (let ([x (list* w z)])
                 (car x)))
            '(lambda (w z) w))
-(test-comp #:except 'chez-scheme ; cadr not specialized
-           '(lambda (w z)
+(test-comp '(lambda (w z)
               (let ([x (list w z)])
                 (cadr x)))
            '(lambda (w z) z))
@@ -723,14 +722,13 @@
 (test-comp '(lambda (u v) (cdr (unsafe-cons-list u v)))
            '(lambda (u v) v))
 
-(test-comp #:except 'chez-scheme ; cp0 needs unbox specialization
+(test-comp #:except 'chez-scheme ; cp0 needs a third pass
            '(lambda (v) (unbox (box v)))
            '(lambda (v) v))
-(test-comp #:except 'chez-scheme ; cp0 needs unbox specialization
+(test-comp #:except 'chez-scheme ; cp0 needs a third pass
            '(lambda (v) (unsafe-unbox (box v)))
            '(lambda (v) v))
-(test-comp #:except 'chez-scheme ; cp0 needs unbox specialization
-           '(lambda (v) (unsafe-unbox* (box v)))
+(test-comp '(lambda (v) (unsafe-unbox* (box v)))
            '(lambda (v) v))
 
 (test-comp '(lambda () (car (cons (random 2) (random 3))))
@@ -1029,19 +1027,18 @@
                       #f
                       v v v2 v2))))
 
-(test-comp #:except 'chez-scheme ; unsafe car does not assume immutable
-           '(lambda (w z)
+(test-comp '(lambda (w z)
               (if (list w z (random 7))
                   (let ([l (list (random))])
                     (if l
-                        (list (car l) (cdr l))
+                        (if z (car l) (cdr l))
                         'oops))
                   "bad"))
            '(lambda (w z)
               (begin
                 (list w z (random 7))
                 (let ([l (list (random))])
-                  (list (unsafe-car l) (unsafe-cdr l))))))
+                  (if z (unsafe-car l) (unsafe-cdr l))))))
 
 (test-comp '(lambda (w z)
               (let ([l (if w
@@ -1072,36 +1069,31 @@
                     (unsafe-cdr w)))
            #f)
 
-(test-comp #:except 'chez-scheme
-           '(lambda (w z)
+(test-comp '(lambda (w z)
               (list (if (pair? w) (car z) (car w))
                     (cdr w)))
            '(lambda (w z)
               (list (if (pair? w) (car z) (car w))
                     (unsafe-cdr w))))
 
-(test-comp #:except 'chez-scheme
-           '(lambda (w z)
+(test-comp '(lambda (w z)
               (list (if z (car w) (cdr w))
                     (cdr w)))
            '(lambda (w z)
               (list (if z (car w) (cdr w))
                     (unsafe-cdr w))))
 
-(test-comp #:except 'chez-scheme
-           '(lambda (w z x)
+(test-comp '(lambda (w z x)
               (list (car x) (if z (car w) (cdr w)) (car x)))
            '(lambda (w z x)
               (list (car x) (if z (car w) (cdr w)) (unsafe-car x))))
 
-(test-comp #:except 'chez-scheme
-           '(lambda (w z x)
+(test-comp '(lambda (w z x)
               (list (car x) (if z (car w) 2) (car x)))
            '(lambda (w z x)
               (list (car x) (if z (car w) 2) (unsafe-car x))))
 
-(test-comp #:except 'chez-scheme
-           '(lambda (w z x)
+(test-comp '(lambda (w z x)
               (list (car x) (if z 1 (cdr w)) (car x)))
            '(lambda (w z x)
               (list (car x) (if z 1 (cdr w)) (unsafe-car x))))
@@ -1110,6 +1102,11 @@
               (list (car x) (if z 1 2) (car x)))
            '(lambda (w z x)
               (list (car x) (if z 1 2) (unsafe-car x))))
+
+(test-comp '(lambda (w z x)
+              (list (car x) z (car x)))
+           '(lambda (w z x)
+              (list (car x) z (unsafe-car x))))
 
 (test-comp #:except 'chez-scheme
            '(lambda (w)
@@ -1521,11 +1518,9 @@
            '(lambda () (void (random 2))))
 (test-comp '(lambda (x) (void (if (eq? (random 2) 0) (box x) (list x))))
            '(lambda (x) (void (random 2))))
-(test-comp #:except 'chez-scheme
-           '(lambda (x) (void (if x (random) 1)))
+(test-comp '(lambda (x) (void (if x (random) 1)))
            '(lambda (x) (void (if x (random) 2))))
-(test-comp #:except 'chez-scheme
-           '(lambda (x) (void (if x 1 (random))))
+(test-comp '(lambda (x) (void (if x 1 (random))))
            '(lambda (x) (void (if x 2 (random)))))
 (test-comp '(lambda (x) (void (if x (random) 1)))
            '(lambda (x) (void))
@@ -2744,8 +2739,7 @@
               (when (and (list? z)
                          (pair? z))
                 #t)))
-(test-comp #:except 'chez-scheme 
-           '(lambda (z)
+(test-comp '(lambda (z)
               (when (and (list? z)
                          (not (null? z)))
                 (k:list-pair? z)))
@@ -2753,8 +2747,7 @@
               (when (and (list? z)
                          (not (null? z)))
                 #t)))
-(test-comp #:except 'chez-scheme
-           '(lambda (z)
+(test-comp '(lambda (z)
               (when (and (list? z)
                          (not (pair? z)))
                 (null? z)))
@@ -2762,8 +2755,7 @@
               (when (and (list? z)
                          (not (pair? z)))
                 #t)))
-(test-comp #:except 'chez-scheme
-           '(lambda (z)
+(test-comp '(lambda (z)
               (when (and (list? z)
                          (not (k:list-pair? z)))
                 (null? z)))
@@ -2771,8 +2763,7 @@
               (when (and (list? z)
                          (not (k:list-pair? z)))
                 #t)))
-(test-comp #:except 'chez-scheme
-           '(lambda (z)
+(test-comp '(lambda (z)
               (when (and (boolean? z)
                          (not (k:true-object? z)))
                 (not z)))
@@ -2857,25 +2848,24 @@
     (test-reduce 'k:list-pair? '(cdr (list 1)) #f))
 )
 
-(unless (eq? 'chez-scheme (system-type 'vm)) ; cptypes doesn't yet specialize `list?`
-  (test-comp '(lambda (z)
-                (when (and (list? z) (pair? z))
-                  (list? (cdr z))))
-             '(lambda (z)
-                (when (and (list? z) (pair? z))
-                  #t)))
-  (test-comp '(lambda (z)
-                (when (list? z)
-                  (list? (unsafe-cdr z))))
-             '(lambda (z)
-                (when (list? z)
-                  #t)))
-  (test-comp '(lambda (z)
-                (when (list? z)
-                  (list? (cdr z))))
-             '(lambda (z)
-                (when (list? z)
-                  (begin (cdr z) #t)))))
+(test-comp '(lambda (z)
+              (when (and (list? z) (pair? z))
+                (list? (cdr z))))
+           '(lambda (z)
+              (when (and (list? z) (pair? z))
+                #t)))
+(test-comp '(lambda (z)
+              (when (list? z)
+                (list? (unsafe-cdr z))))
+           '(lambda (z)
+              (when (list? z)
+                #t)))
+(test-comp '(lambda (z)
+              (when (list? z)
+                (list? (cdr z))))
+           '(lambda (z)
+              (when (list? z)
+                (begin (cdr z) #t))))
 
 (let ([test-bin
        (lambda (bin-name)
@@ -3016,14 +3006,13 @@
   (test-use-unsafe-fxbinary 'fxior 'unsafe-fxior)
   (test-use-unsafe-fxbinary 'fxxor 'unsafe-fxxor)
 
-  (unless (eq? 'chez-scheme (system-type 'vm)) ; cptypes doesn't currently convert to fixnum ops
-    (test-use-unsafe-fxbinary '= 'unsafe-fx=)
-    (test-use-unsafe-fxbinary '< 'unsafe-fx<)
-    (test-use-unsafe-fxbinary '> 'unsafe-fx>)
-    (test-use-unsafe-fxbinary '<= 'unsafe-fx<=)
-    (test-use-unsafe-fxbinary '>= 'unsafe-fx>=)
-    (test-use-unsafe-fxbinary 'min 'unsafe-fxmin)
-    (test-use-unsafe-fxbinary 'max 'unsafe-fxmax))
+  (test-use-unsafe-fxbinary '= 'unsafe-fx=)
+  (test-use-unsafe-fxbinary '< 'unsafe-fx<)
+  (test-use-unsafe-fxbinary '> 'unsafe-fx>)
+  (test-use-unsafe-fxbinary '<= 'unsafe-fx<=)
+  (test-use-unsafe-fxbinary '>= 'unsafe-fx>=)
+  (test-use-unsafe-fxbinary 'min 'unsafe-fxmin)
+  (test-use-unsafe-fxbinary 'max 'unsafe-fxmax)
 
   (test-use-unsafe-fxbinary 'fx= 'unsafe-fx=)
   (test-use-unsafe-fxbinary 'fx< 'unsafe-fx<)
@@ -3033,7 +3022,7 @@
   (test-use-unsafe-fxbinary 'fxmin 'unsafe-fxmin)
   (test-use-unsafe-fxbinary 'fxmax 'unsafe-fxmax))
 
-(unless (eq? 'chez-scheme (system-type 'vm)) ; cptypes doesn't currently convert to fixnum ops
+(unless (eq? 'chez-scheme (system-type 'vm)) ; in these cases, cptypes converts zero? to fxzero?
   (test-comp '(lambda (vx)
                 (let ([x (string-length vx)])
                   (zero? x)))
@@ -3053,36 +3042,81 @@
                 (when (and (fixnum? x) (zero? (random 2)))
                   (unsafe-fx= x 0)))))
 
-(unless (eq? 'chez-scheme (system-type 'vm)) ; cptypes doesn't currently convert to fixnum ops
-  ;test special case for bitwise-and and fixnum?
-  (test-comp '(lambda (x)
-                (let ([y (bitwise-and x 2)])
-                  (list y y (fixnum? y))))
-             '(lambda (x)
-                (let ([y (bitwise-and x 2)])
-                  (list y y #t))))
-  (test-comp '(lambda (x)
-                (let ([y (bitwise-and x 2)])
-                  (fixnum? x)))
-             '(lambda (x)
-                (let ([y (bitwise-and x 2)])
-                  #t))
-             #f))
+;test special case for bitwise-and and fixnum?
+(test-comp '(lambda (x)
+              (let ([y (bitwise-and x 2)])
+                (list y y (fixnum? y))))
+           '(lambda (x)
+              (let ([y (bitwise-and x 2)])
+                (list y y #t))))
+(test-comp '(lambda (x)
+              (let ([y (bitwise-and x 2)])
+                (fixnum? x)))
+           '(lambda (x)
+              (let ([y (bitwise-and x 2)])
+                #t))
+           #f)
+(test-comp #:except 'racket
+           '(lambda (x)
+              (let ([y (bitwise-ior x -2)])
+                (list y y (fixnum? y))))
+           '(lambda (x)
+              (let ([y (bitwise-ior x -2)])
+                (list y y #t))))
+(test-comp '(lambda (x)
+              (let ([y (bitwise-ior x -2)])
+                (fixnum? x)))
+           '(lambda (x)
+              (let ([y (bitwise-ior x -2)])
+                #t))
+           #f)
 
-(unless (eq? 'chez-scheme (system-type 'vm)) ; no literal specializations right now
-  ;; Make sure that `bitwise-and` is known to return a fixnum for non-negative
-  ;; fixnum arguments but not for a negative one
+;; Make sure that `bitwise-and` is known to return a fixnum for non-negative
+;; fixnum arguments but not for a negative one or a large positive big-integer
 
-  (test-comp '(lambda (x)
-                (bitwise-ior (bitwise-and x 7) 1))
-             '(lambda (x)
-                (unsafe-fxior (bitwise-and x 7) 1)))
-  (test-comp '(lambda (x)
-                (bitwise-ior (bitwise-and x -7) 1))
-             '(lambda (x)
-                (unsafe-fxior (bitwise-and x -7) 1))
-             #f))
+(test-comp '(lambda (x)
+              (bitwise-ior (bitwise-and x 7) 1))
+           '(lambda (x)
+              (unsafe-fxior (bitwise-and x 7) 1)))
+(test-comp #:except 'racket
+           '(lambda (x)
+              (bitwise-ior (bitwise-and x (most-positive-fixnum)) 1))
+           '(lambda (x)
+              (unsafe-fxior (bitwise-and x (most-positive-fixnum)) 1)))
+(test-comp '(lambda (x)
+              (bitwise-ior (bitwise-and x -7) 1))
+           '(lambda (x)
+              (unsafe-fxior (bitwise-and x -7) 1))
+           #f)
+(test-comp '(lambda (x)
+              (bitwise-ior (bitwise-and x (add1 (most-positive-fixnum))) 1))
+           '(lambda (x)
+              (unsafe-fxior (bitwise-and x (add1 (most-positive-fixnum))) 1))
+           #f)
 
+;; Make sure `bitwise-ior` is known to return a fixnum for negative fixnum
+;; arguments but not for a zero or positive one, or large negative big-integer
+
+(test-comp #:except 'racket
+           '(lambda (x)
+              (bitwise-ior (bitwise-ior x -7) 1))
+           '(lambda (x)
+              (unsafe-fxior (bitwise-ior x -7) 1)))
+(test-comp #:except 'racket
+           '(lambda (x)
+              (bitwise-ior (bitwise-ior x (most-negative-fixnum)) 1))
+           '(lambda (x)
+              (unsafe-fxior (bitwise-ior x (most-negative-fixnum)) 1)))
+(test-comp '(lambda (x)
+              (bitwise-ior (bitwise-ior x 7) 1))
+           '(lambda (x)
+              (unsafe-fxior (bitwise-ior x 7) 1))
+           #f)
+(test-comp '(lambda (x)
+              (bitwise-ior (bitwise-ior x (sub1 (most-negative-fixnum))) 1))
+           '(lambda (x)
+              (unsafe-fxior (bitwise-ior x (sub1 (most-negative-fixnum))) 1))
+           #f)
 
 (test-comp `(lambda (x)
               (thread (lambda () (set! x 5)))
@@ -3648,19 +3682,26 @@
                '(lambda (x) 5)
                #f))
   (check-empty-allocation 'hash)
+  (check-empty-allocation 'hashalw)
   (check-empty-allocation 'hasheqv)
   (check-empty-allocation 'hasheq)
   (check-empty-allocation 'make-hash)
+  (check-empty-allocation 'make-hashalw)
   (check-empty-allocation 'make-hasheqv)
   (check-empty-allocation 'make-hasheq)
   (check-empty-allocation 'make-weak-hash)
+  (check-empty-allocation 'make-weak-hashalw)
   (check-empty-allocation 'make-weak-hasheqv)
   (check-empty-allocation 'make-weak-hasheq)
   (check-empty-allocation 'make-immutable-hash)
+  (check-empty-allocation 'make-immutable-hashalw)
   (check-empty-allocation 'make-immutable-hasheqv)
   (check-empty-allocation 'make-immutable-hasheq)
 
   (test-comp `(lambda (x y) (hash x y) 5) ; can trigger equal callbacks
+             '(lambda () 5)
+             #f)
+  (test-comp `(lambda (x y) (hashalw x y) 5) ; can trigger equal-always callbacks
              '(lambda () 5)
              #f)
   (test-comp `(lambda (x y) (hasheqv x y) 5)
@@ -3670,6 +3711,9 @@
 
   ;; Wrong arity
   (test-comp `(lambda (x y) (hash x) 5)
+             '(lambda (x) 5)
+             #f)
+  (test-comp `(lambda (x y) (hashalw x) 5)
              '(lambda (x) 5)
              #f)
   (test-comp `(lambda (x) (hasheqv x) 5)
@@ -6593,6 +6637,52 @@
 
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Try to check that struct optimizations are ok
+;; with various forms of `struct` declaration
+
+(when (run-unreliable-tests? 'timing)
+  (let ([pies (list
+               '(struct pie (type))
+               '(begin
+                  (require racket/serialize)
+                  (serializable-struct pie (type)))
+               '(struct pie (type)
+                  #:property prop:equal+hash (list (lambda (a b eql?) pie-type #t)
+                                                   (lambda (a hc) 0)
+                                                   (lambda (a hc) 0)))
+               '(struct pie (type)
+                  #:methods gen:equal+hash
+                  [(define (equal-proc x y recursive-equal?) pie-type #t)
+                   (define (hash-code x hc) 1)
+                   (define hash-proc  hash-code)
+                   (define hash2-proc hash-code)]))])
+    (test #t
+          list?
+          (let loop ([tries 3])
+            (define msecs
+              (for/list ([pie (in-list pies)])
+                (define go
+                  (parameterize ([current-namespace (make-base-namespace)])
+                    (eval `(module pie racket/base
+                             (provide go)
+                             ,pie
+                             (define p (pie 'a))
+                             (define (go)
+                               (for ([i 10000000])
+                                 (pie-type p)))))
+                    (dynamic-require ''pie 'go)))
+                (define-values (r cpu-msec real-msec gc-msec) (time-apply go '()))
+                cpu-msec))
+            (or
+             (and (for*/and ([msec (in-list msecs)]
+                             [other-msec (in-list msecs)])
+                    (<= (/ other-msec 1.2) msec (* other-msec 1.2)))
+                  (cons 'pie-timing-test msecs))
+             (if (> tries 0)
+                 (loop (sub1 tries))
+                 (vector 'pie-timing-test-failed msecs)))))))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Regression test to check that the optimizer doesn't
 ;; get confused in handling a single-use function that
 ;; is too large to be inlined into multiple uses.
@@ -7180,6 +7270,39 @@
 
   (unless (a? val)
     (+ "unreachable 2")))
+
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; regression test for schemify inliner
+
+(let ()
+  (define (comp f g)
+    (lambda (x)
+      (f (g x))))
+
+  (define (double f)
+    (comp f f))
+
+  (define quad (double double))
+
+  (define f (quad add1))
+
+  (f 0))
+
+(let ()
+  (define (comp f g)
+    (case-lambda
+      [(x) (f (g x))]
+      [(x y) #f]))
+
+  (define (double f)
+    (comp f f))
+
+  (define quad (double double))
+
+  (define f (quad add1))
+
+  (f 0))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

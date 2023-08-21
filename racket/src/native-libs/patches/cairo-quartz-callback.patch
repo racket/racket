@@ -1,0 +1,19 @@
+diff -r -u old/cairo-1.16.0/src/cairo-quartz-surface.c new/cairo-1.16.0/src/cairo-quartz-surface.c
+--- old/cairo-1.16.0/src/cairo-quartz-surface.c	2018-08-16 19:10:53
++++ new/cairo-1.16.0/src/cairo-quartz-surface.c	2023-08-07 11:35:03
+@@ -791,6 +791,7 @@
+ {
+     quartz_source_image_t *source_img = info;
+     _cairo_surface_release_source_image (source_img->surface, source_img->image_out, source_img->image_extra);
++    cairo_surface_destroy(source_img->surface);
+     free (source_img);
+ }
+ 
+@@ -867,6 +868,7 @@
+ 	}
+     }
+ 
++    cairo_surface_reference(source_img->surface);
+     if (source_img->image_out->width == 0 || source_img->image_out->height == 0) {
+ 	*image_out = NULL;
+ 	DataProviderReleaseCallback (source_img,

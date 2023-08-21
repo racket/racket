@@ -1,0 +1,63 @@
+name: Scribble License Files
+
+on:
+  push:
+    paths:
+      - "LICENSE.txt"
+      - "racket/src/LICENSE.txt"
+      - ".github/workflows/scribble_license.yml"
+      - "pkgs/racket-index/scribblings/main/*"
+  pull_request:
+    paths:
+      - "LICENSE.txt"
+      - "racket/src/LICENSE.txt"
+      - ".github/workflows/scribble_license.yml"
+      - "pkgs/racket-index/scribblings/main/*"
+
+jobs:
+  scribble:
+    runs-on: ubuntu-22.04
+
+    steps:
+    - uses: actions/checkout@v3
+    - uses: Bogdanp/setup-racket@v1.9.1
+      with:
+        architecture: 'x64'
+        distribution: 'full'
+        variant: 'CS'
+        version: 'current'
+    - name: Update racket-index
+      run: sudo raco pkg update -j $(nproc) --batch --auto pkgs/racket-index
+
+  generation-check:
+    runs-on: ubuntu-22.04
+
+    steps:
+    - uses: actions/checkout@v3
+    - uses: Bogdanp/setup-racket@v1.9.1
+      with:
+        architecture: 'x64'
+        distribution: 'full'
+        variant: 'CS'
+        version: 'current'
+    - name: Move original root LICENSE.txt
+      run: mv LICENSE.txt LICENSE.txt.orig
+    - name: Move original racket/src/LICENSE.txt
+      working-directory: racket/src
+      run: mv LICENSE.txt LICENSE.txt.orig
+    - name: Generate new LICENSE.txt files
+      working-directory: pkgs/racket-index
+      run: make
+    - name: Check differences
+      shell: bash
+      run: |
+        diff LICENSE.txt LICENSE.txt.orig
+        root_status=$?
+        diff racket/src/LICENSE.txt racket/src/LICENSE.txt.orig
+        src_status=$?
+        if [ $root_status -eq 0 ] && [ $src_status -eq 0 ]; then
+            exit 0
+        else
+            echo "License files differ." 1>&2
+            exit 1
+        fi

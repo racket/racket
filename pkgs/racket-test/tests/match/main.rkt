@@ -2,7 +2,9 @@
 
 (require (for-syntax scheme/base)
          "match-tests.rkt" "match-exn-tests.rkt" "other-plt-tests.rkt" "other-tests.rkt"
+         "legacy-match-tests.rkt"
          "examples.rkt"
+         "case-tests.rkt"
          rackunit rackunit/text-ui
          (only-in racket/base local-require))
 
@@ -240,7 +242,18 @@
               (parameterize ([match-equality-test eq?])
                 (check = 5 (match '((3) (3)) [(list a a) a] [_ 5]))))
    (test-case "Nonlinear patterns use equal?"
-              (check equal? '(3) (match '((3) (3)) [(list a a) a] [_ 5])))))
+              (check equal? '(3) (match '((3) (3)) [(list a a) a] [_ 5])))
+   (test-case "Nonlinear patterns under ellipses"
+     (check-equal? (match '((1 1) (2 2) (3 3))
+                     [(list (list a a) ...) a]
+                     [_ #f])
+                   '(1 2 3))
+     (check-false (match '((1 1) (2 3) (3 3))
+                    [(list (list a a) ...) a]
+                    [_ #f]))
+     (check-equal? (match '((1 1 2 3) (2 1 2 3) (3 1 2 3))
+                     [(list (cons a (list pre ... a post ...)) ...) (list a pre post)])
+                   '((1 2 3) (() (1) (1 2)) ((2 3) (3) ()))))))
 
 
 (define doc-tests
@@ -445,10 +458,12 @@
                             plt-match-tests
                             match-tests
                             match-exn-tests
+                            legacy-match-tests
                             new-tests
                             ;; from bruce
                             other-tests 
-                            other-plt-tests)
+                            other-plt-tests
+                            case-tests)
              'verbose))
 
 (module+ main

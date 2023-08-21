@@ -66,6 +66,12 @@
   (test 'val syntax-property s 'key)
   (test #f syntax-property (syntax-property-remove s 'key) 'key))
 
+(let ([s (syntax-property #'s 'key #f)])
+  (test #f syntax-property s 'key)
+  (test #f syntax-property (syntax-property-remove s 'key) 'key)
+  (test '(key) syntax-property-symbol-keys s)
+  (test '() syntax-property-symbol-keys (syntax-property-remove s 'key)))
+
 (test #t immutable? (syntax-e (datum->syntax #f (string #\a))))
 (test #t immutable? (syntax-e (syntax-case (datum->syntax #f (list (string #\a))) ()
                                 [(a) #'a])))
@@ -175,9 +181,9 @@
 
 (syntax-test #'(syntax-case (syntax x) [x (define x 1)]))
 (syntax-test #'(syntax-case (syntax x) () [x (define x 1)])
-             #rx"stx.rktl:.*no expression after a sequence of internal definitions")
+             #rx"stx.rktl:.*the last form is not an expression")
 (syntax-test #'(syntax-case* (syntax x) () eq? [x (define x 1)])
-             #rx"stx.rktl:.*no expression after a sequence of internal definitions")
+             #rx"stx.rktl:.*the last form is not an expression")
 
 
 ;; ----------------------------------------
@@ -798,6 +804,9 @@
 (test #t pair? sym-list-for-x)
 (test #t symbol? (car sym-list-for-x))
 (test #f eq? 'x (car sym-list-for-x)) ; since macro-introduced
+
+(test #t pair? (identifier-binding #'car 0 #f #;exact: #t))
+(test #f pair? (identifier-binding ((make-syntax-introducer) #'car) 0 #f #;exact: #t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; identifier-binding and (nominal) phase reporting
@@ -2411,6 +2420,17 @@
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(let ()
+  (err/rt-test (raise-syntax-error 'something "" #:exn exn:fail:syntax:unbound)
+               exn:fail:syntax:unbound?
+               #rx"^something:")
+
+  (err/rt-test (raise-syntax-error 'something "" #:exn (λ (a b c) 1))
+               exn:fail:contract?
+               #rx"raise-syntax-error: contract violation"))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (test #t procedure? error-syntax->string-handler)
 (test "(lambda (x) x)" (error-syntax->string-handler) #'(lambda (x) x) #f)
 (test "(lambda (x) x)" (error-syntax->string-handler) '(lambda (x) x) #f)
@@ -2826,6 +2846,56 @@
   (test '(source 1)  'quasisyntax/loc (f (quasisyntax/loc (list 'source #f #f 1 4) (x))))
   (test '(source 1)  'quasisyntax/loc (f (quasisyntax/loc (vector 'source #f #f 1 4) (x))))
   (test #t 'quasisyntax/loc (same-src? (quasisyntax/loc #f (x)) (syntax (x)))))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; syntax-bound-symbols
+
+(let ([check-bound
+       (lambda (s stx [bound? #t] #:exactly? [exactly? #f])
+         (test (and bound? s) 'is-bound
+               (ormap (lambda (s2)
+                        (and (eq? s2 s) s))
+                      (syntax-bound-symbols stx (syntax-local-phase-level) exactly?))))])
+  (check-bound 'ormap #'stx)
+  (check-bound 'test #'stx)
+  (check-bound 'test #'stx #:exactly? #t)
+  (check-bound 'test ((make-syntax-introducer) #'stx) #f #:exactly? #t)
+  (define-syntax (gen stx)
+    (let ([gs (datum->syntax #f (gensym))])
+      #`(let ([locally-bound-only 5]
+              [#,gs 6])
+          (test 6 values #,gs)
+          (define-syntax (check-bind stx)
+            (syntax-case stx ()
+              [(_ id)
+               #`(quote #,(ormap (lambda (s2)
+                                   (eq? s2 (syntax-e #'id)))
+                                 (syntax-bound-symbols stx)))]))
+          (test #t 'locally-bound (check-bind locally-bound-only))
+          (test #f 'locally-bound (check-bind #,gs))
+          (check-bound 'locally-bound-only #'stx #f))))
+  (gen))
+
+(test '() syntax-bound-symbols #'anything 100)
+(test '() syntax-bound-symbols (datum->syntax #f 'nothing))
+(test '() syntax-bound-symbols ((make-syntax-introducer) (datum->syntax #f 'nothing)))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; syntax-bound-phases
+
+(let ([check (lambda (reqs phase shift)
+               (parameterize ([current-namespace (make-base-namespace)])
+                 (define stx (syntax-shift-phase-level
+                              (namespace-syntax-introduce (datum->syntax #f 'a))
+                              shift))
+                 (for-each eval reqs)
+                 (define (memv? e l) (and (memv e l) #t))
+                 (test #t memv? phase (syntax-bound-phases stx))))])
+  (check '() 0 0)
+  (check '((require (for-syntax racket/base))) 1 0)
+  (check '((require (for-label racket/base))) #f 0)
+  (check '() 1 1)
+  (check '() #f  #f))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

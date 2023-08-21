@@ -285,7 +285,10 @@
 
     (test f f f2)
     (test f2 f2 f2)
-    (test f2 f f)))
+    (test f2 f f))
+
+  (close-input-port f)
+  (close-output-port f2))
 
 ;; system* ------------------------------------------------------
 
@@ -342,6 +345,7 @@
 ;; empty strings and nul checks ------------------------------------------------------
 
 (err/rt-test (subprocess #f #f #f ""))
+(err/rt-test (subprocess #f #f #f 42) exn:fail:contract? #rx"42")
 (err/rt-test (process* ""))
 (err/rt-test (system* ""))
 
@@ -678,6 +682,14 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; check file-descriptor sharing
 
+;; This test includes the questionable action of creating a bad file
+;; descriptor and expecting the OS to tell us that it's bad (implicit
+;; in `read-char`). As of Mac OS 13.2 Ventura, the select() system
+;; call only complains about bad file descriptors up to number 24; if
+;; a bad 25 or up is supplied, it select() seems to ignore bad
+;; descriptors. So, take care that this test is not run with too many
+;; unclosed ports.
+
 (define (check-sharing keep-mode)
   (define fn (make-temporary-file))
   (call-with-output-file*
@@ -755,6 +767,24 @@
   (test #"bye\n" read-bytes 1024 e)
   (close-input-port e)
   (subprocess-wait sp))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check that `--eval` and similar can set the namespace
+
+(let ()
+    (define-values (sp o i e) (subprocess #f #f #f self
+                                          "-e" (format "~s"
+                                                       '(let ([ns (make-base-namespace)])
+                                                          (eval '(define here "yes") ns)
+                                                          (current-namespace ns)))
+                                          "-e" "(displayln here)"))
+    (close-output-port i)
+    (test "yes" read-line o)
+    (read-bytes 1024 o)
+    (read-bytes 1024 e)
+    (sync sp)
+    (close-input-port e)
+    (close-input-port o))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -98,10 +98,12 @@
    (define enclosing-self (compile-context-module-self cctx))
    (define self (parsed-module-self p))
    (define requires (parsed-module-requires p))
+   (define recur-requires (parsed-module-recur-requires p))
    (define provides (parsed-module-provides p))
    (define encoded-root-expand-ctx-box (box (parsed-module-encoded-root-ctx p))) ; for `module->namespace`
    (define body-context-simple? (parsed-module-root-ctx-simple? p))
    (define language-info (filter-language-info (syntax-property (parsed-s p) 'module-language)))
+   (define realm (parsed-module-realm p))
    (define bodys (parsed-module-body p))
    (define portal-syntaxes (parsed-module-portal-syntaxes p))
    
@@ -177,7 +179,8 @@
                     #:serializable? serializable?
                     #:module-prompt? #t
                     #:to-correlated-linklet? to-correlated-linklet?
-                    #:unsafe?-box unsafe?-box))
+                    #:unsafe?-box unsafe?-box
+                    #:realm realm))
 
    ;; register any portal syntax objects:
    (define-values (portal-stxes max-phase min-phase)
@@ -210,7 +213,7 @@
                  (performance-region
                   ['compile 'module 'linklet]
                   (compile-linklet s 'decl))))
-           (generate-module-declaration-linklet mpis self requires provides
+           (generate-module-declaration-linklet mpis self requires recur-requires provides
                                                 phase-to-link-module-uses-expr
                                                 portal-stxes))))
    
@@ -330,6 +333,9 @@
             [bundle (if language-info
                         (hash-set bundle 'language-info language-info)
                         bundle)]
+            [bundle (if (not (eq? realm 'racket))
+                        (hash-set bundle 'realm realm)
+                        bundle)]
             [bundle (if (zero? min-phase)
                         bundle
                         (hash-set bundle 'min-phase min-phase))]
@@ -368,6 +374,7 @@
   (compiled-in-memory ld
                       self
                       requires
+                      recur-requires
                       provides
                       phase-to-link-module-uses
                       (current-code-inspector)

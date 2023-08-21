@@ -231,7 +231,10 @@ marker is @racket["..."].
                 (or/c #f string? (-> exact-integer? string?))
                 #f]
                [#:min-width min-width exact-positive-integer? 1]
-               [#:pad-string pad-string non-empty-string? " "])
+               [#:pad-string pad-string non-empty-string? " "]
+               [#:groups groups (non-empty-listof exact-positive-integer?) '(3)]
+               [#:group-sep group-sep string? ""]
+               [#:decimal-sep decimal-sep string? "."])
          string?]{
 
 Converts the rational number @racket[x] to a string in either
@@ -281,6 +284,26 @@ decimal point are used, and the decimal point is never dropped.
 (~r 50 #:precision 2)
 (~r 50 #:precision '(= 2))
 (~r 50 #:precision '(= 0))
+]}
+
+@item{@racket[decimal-sep] specifies what decimal separator is printed.
+
+@examples[#:eval the-eval
+(~r 123.456)
+(~r 123.456 #:decimal-sep ",")
+]}
+
+@item{@racket[groups] controls how digits of the integral part of the number 
+   are separated into groups.
+   Rightmost numbers of @racket[groups] are used to group rightmost digits of the integral part.
+   The leftmost number of @racket[groups] is used repeatedly to group leftmost digits.
+   The @racket[group-sep] argument specifies which separator to use between digit groups.
+       
+
+   @examples[#:eval the-eval
+(~r 1234567890 #:groups '(3) #:group-sep ",")
+(~r 1234567890 #:groups '(3 2) #:group-sep ",")
+(~r 1234567890 #:groups '(1 3 2) #:group-sep "_")
 ]}
 
 @item{@racket[min-width] --- if @racket[x] would normally be printed
@@ -402,6 +425,8 @@ the resulting string is appended to the significand:
 ]}
 
 ]
+@history[#:changed "8.5.0.5"
+         @elem{Added @racket[#:groups], @racket[#:group-sep] and @racket[#:decimal-sep].}]
 }
 
 @; ----------------------------------------

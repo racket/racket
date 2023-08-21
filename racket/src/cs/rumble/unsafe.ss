@@ -33,8 +33,12 @@
 (define unsafe-fxxor (unsafe-primitive fxxor))
 (define unsafe-fxnot (unsafe-primitive fxnot))
 (define unsafe-fxrshift (unsafe-primitive fxarithmetic-shift-right))
+(define unsafe-fxrshift/logical (unsafe-primitive fxsrl))
 (define unsafe-fxlshift (unsafe-primitive fxarithmetic-shift-left))
 (define unsafe-fxlshift/wraparound (unsafe-primitive fxsll/wraparound))
+(define unsafe-fxpopcount (unsafe-primitive fxpopcount))
+(define unsafe-fxpopcount32 (unsafe-primitive fxpopcount32))
+(define unsafe-fxpopcount16 (unsafe-primitive fxpopcount16))
 
 (define unsafe-fx= (unsafe-primitive fx=))
 (define unsafe-fx< (unsafe-primitive fx<))
@@ -176,6 +180,13 @@
         (bytevector-ieee-double-native-set! mem k v)
         (foreign-set! 'double mem k v))))
 
+(define unsafe-stencil-vector (unsafe-primitive stencil-vector))
+(define unsafe-stencil-vector-length (unsafe-primitive stencil-vector-length))
+(define unsafe-stencil-vector-mask (unsafe-primitive stencil-vector-mask))
+(define unsafe-stencil-vector-ref (unsafe-primitive stencil-vector-ref))
+(define unsafe-stencil-vector-set! (unsafe-primitive stencil-vector-set!))
+(define unsafe-stencil-vector-update (unsafe-primitive stencil-vector-update))
+
 (define (unsafe-make-flrectangular r i)
   (#3%make-rectangular r i))
 (define (unsafe-flreal-part c)
@@ -230,8 +241,10 @@
   (when (eq? v unsafe-undefined)
     (raise (|#%app|
             exn:fail:contract:variable
-            (string-append (symbol->string sym)
-                           ": undefined;\n cannot use before initialization")
+            (error-message->adjusted-string
+             sym 'local
+             "undefined;\n cannot use before initialization"
+             primitive-realm)
             (current-continuation-marks)
             sym)))
   v)
@@ -240,8 +253,10 @@
   (when (eq? v unsafe-undefined)
     (raise (|#%app|
             exn:fail:contract:variable
-            (string-append (symbol->string sym)
-                           ": assignment disallowed;\n cannot assign before initialization")
+            (error-message->adjusted-string
+             sym 'local
+             "assignment disallowed;\n cannot assign before initialization"
+             primitive-realm)
             (current-continuation-marks)
             sym)))
   v)

@@ -222,17 +222,20 @@ Returns @racket[#t] if @racket[v] is a mark set created by
 @racket[#f] otherwise.}
 
 
-@defproc[(continuation-mark-set->context [mark-set continuation-mark-set?])
+@defproc[(continuation-mark-set->context [mark-set continuation-mark-set?]
+                                         [realms? any/c #f])
           list?]{
 
 Returns a list representing an approximate ``@index["stack
-dump"]{@as-index{stack trace}}'' for @racket[mark-set]'s
-continuation. The list contains pairs, where the @racket[car] of each
-pair contains either @racket[#f] or a symbol for a procedure name, and
-the @racket[cdr] of each pair contains either @racket[#f] or a
-@racket[srcloc] value for the procedure's source location (see
-@secref["linecol"]); the @racket[car] and @racket[cdr] are never both
-@racket[#f].
+dump"]{@as-index{stack trace}}'' for @racket[mark-set]'s continuation.
+The list contains pairs if @racket[realms?] is @racket[#f], where the
+@racket[car] of each pair contains either @racket[#f] or a symbol for
+a procedure name, and the @racket[cdr] of each pair contains either
+@racket[#f] or a @racket[srcloc] value for the procedure's source
+location (see @secref["linecol"]); the @racket[car] and @racket[cdr]
+are never both @racket[#f]. If @racket[realms?] is true, the list
+contains 3-element vectors, where the first two elements are like the
+values for a pair, and the third element is a realm symbol.
 
 Conceptually, the stack-trace list is the result of
 @racket[continuation-mark-set->list] with @racket[mark-set] and
@@ -246,7 +249,7 @@ A stack trace is extracted from an exception and displayed by the
 default error display handler (see
 @racket[error-display-handler]) for exceptions other than
 @racket[exn:fail:user] (see @racket[raise-user-error] in
-@secref["errorproc"]).}
+@secref["errorproc"]).
 
 @examples[
 (define (extract-current-continuation-marks key)
@@ -278,3 +281,5 @@ default error display handler (see
       (with-continuation-mark 'key n
         (loop (sub1 n)))))
 ]
+
+@history[#:changed "8.4.0.2" @elem{Added the @racket[realms?] argument.}]}

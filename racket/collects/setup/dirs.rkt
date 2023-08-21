@@ -14,6 +14,7 @@
                      config:gui-bin-search-dirs
                      config:config-tethered-console-bin-dir
                      config:config-tethered-gui-bin-dir
+                     config:config-tethered-apps-dir
                      config:lib-search-dirs
                      config:share-search-dirs
                      config:man-search-dirs
@@ -45,7 +46,8 @@
     [(unix) "bin"]))
 
 (provide find-config-tethered-console-bin-dir
-         find-config-tethered-gui-bin-dir)
+         find-config-tethered-gui-bin-dir
+         find-config-tethered-apps-dir)
 
 (define (find-config-tethered-console-bin-dir)
   (force config:config-tethered-console-bin-dir))
@@ -53,8 +55,12 @@
 (define (find-config-tethered-gui-bin-dir)
   (force config:config-tethered-gui-bin-dir))
 
+(define (find-config-tethered-apps-dir)
+  (force config:config-tethered-apps-dir))
+
 (provide find-addon-tethered-console-bin-dir
-         find-addon-tethered-gui-bin-dir)
+         find-addon-tethered-gui-bin-dir
+         find-addon-tethered-apps-dir)
 
 (define addon-bin-table
   (delay/sync
@@ -86,6 +92,9 @@
 
 (define (find-addon-tethered-gui-bin-dir)
   (find-addon-bin-dir 'addon-tethered-gui-bin-dir))
+
+(define (find-addon-tethered-apps-dir)
+  (find-addon-bin-dir 'addon-tethered-apps-dir))
 
 ;; ----------------------------------------
 ;; Extra search paths
@@ -245,16 +254,14 @@
     (force host-lib-search-dirs)]))
 
 (define host-config
-  (get-config-table
-   (lambda () (exe-relative-path->complete-path (find-system-path 'host-config-dir)))))
+  (get-config-table find-host-main-config))
 
 (define host-lib-search-dirs
   (delay/sync
    (combine-search
     (to-path (hash-ref (force host-config) 'lib-search-dirs #f))
     (list (find-user-lib-dir)
-          (let ([coll-dir (exe-relative-path->complete-path
-                           (find-system-path 'host-collects-dir))])
+          (let ([coll-dir (find-host-main-collects)])
             (or (let ([p (hash-ref (force host-config) 'lib-dir #f)])
                   (and p
                        (path->complete-path p coll-dir)))

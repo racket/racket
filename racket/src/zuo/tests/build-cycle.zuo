@@ -1,0 +1,43 @@
+#lang zuo
+(require "harness.zuo")
+
+;; This script is run by the "build.zuo" test
+
+(define (pause)
+  (thread-process-wait
+   (hash-ref
+    (process (hash-ref (runtime-env) 'exe)
+             "-c"
+             "#lang zuo/kernel (hash)")
+    'process)))
+
+(define (touch fn)
+  (error "shouldn't get to touch")
+  (fd-close (fd-open-output fn :truncate)))
+
+(define (tmp fn)
+  (build-path tmp-dir fn))
+
+(define x (target (tmp "cycle-x")
+                  (lambda (path token)
+                    (pause)
+                    (rule (list z)
+                          (lambda ()
+                            (touch path))))))
+
+(define y (target (tmp "cycle-y")
+                  (lambda (path token)
+                    (pause)
+                    (rule (list x)
+                          (lambda ()
+                            (touch path))))))
+
+(define z (target (tmp "cycle-z")
+                  (lambda (path token)
+                    (pause)
+                    (rule (list y)
+                          (lambda ()
+                            (touch path))))))
+
+;; should fail with cycle error:
+(build (list x y z) #f (hash 'jobs 3))

@@ -19,7 +19,8 @@
                      syntax/define
                      syntax/flatten-begin
                      syntax/private/boundmap
-                     syntax/parse
+                     syntax/parse/pre
+                     syntax/transformer
                      "classidmap.rkt"
                      "intdef-util.rkt"))
 
@@ -43,7 +44,7 @@
               interface interface* interface?
               object% object? externalizable<%> printable<%> writable<%> equal<%>
               object=? object-or-false=? object=-hash-code
-              new make-object instantiate
+              new make-object instantiate dynamic-instantiate
               send send/apply send/keyword-apply send* send+ dynamic-send
               class-field-accessor class-field-mutator with-method
               get-field set-field! field-bound? field-names
@@ -268,8 +269,8 @@
 ;;  local member name lookup
 ;;--------------------------------------------------------------------
 
-(define-for-syntax (localize orig-id)
-  (do-localize orig-id #'validate-local-member))
+(define-for-syntax (localize orig-id [def-ctx #f])
+  (do-localize orig-id #'validate-local-member def-ctx))
 
 (define (validate-local-member orig s)
   (if (symbol? s)
@@ -365,7 +366,7 @@
              [expand
               (lambda (defn-or-expr)
                 (local-expand
-                 defn-or-expr
+                 (syntax-property defn-or-expr 'class-body #true)
                  expand-context
                  stop-forms
                  def-ctx))]
@@ -631,6 +632,7 @@
                                                       (quote-syntax the-finder)
                                                       (quote the-obj)
                                                       (quote-syntax old-id)
+                                                      #f
                                                       (quote-syntax old-id-localized)
                                                       (quote new-id))))))
                                  ids new-ids)
@@ -696,7 +698,7 @@
                [localized-map (make-bound-identifier-mapping)]
                [any-localized? #f]
                [localize/set-flag (lambda (id)
-                                    (let ([id2 (localize id)])
+                                    (let ([id2 (localize id def-ctx)])
                                       (unless (eq? id id2)
                                         (set! any-localized? #t))
                                       id2))]
@@ -715,7 +717,7 @@
                                    (lambda ()
                                      ;; If internal & external names are distinguished,
                                      ;; we need to fall back to localize:
-                                     (localize id))))])
+                                     (localize id def-ctx))))])
           
           ;; ----- Expand definitions -----
           (let ([defn-and-exprs (expand-all-forms stx defn-and-exprs def-ctx bind-local-id)]
@@ -1318,14 +1320,23 @@
                                     [(rename-inner-temp ...) (generate-temporaries (map car rename-inners))]
                                     [(rename-inner-extra-temp ...) (generate-temporaries (map car rename-inner-extras))]
                                     [(private-name ...) (map car privates)]
+                                    [(private-name-without-def-ctx ...)
+                                     (map (λ (x) (internal-definition-context-introduce def-ctx (car x) 'remove))
+                                          privates)]
                                     [(private-name-localized ...) (map lookup-localize (map car privates))]
                                     [(private-temp ...) (map mk-method-temp (map car privates))]
                                     [(pubment-name ...) (map car pubments)]
+                                    [(pubment-name-without-def-ctx ...)
+                                     (map (λ (x) (internal-definition-context-introduce def-ctx (car x) 'remove))
+                                          pubments)]
                                     [(pubment-name-localized ...) (map lookup-localize (map car pubments))]
                                     [(pubment-temp ...) (map
                                                          mk-method-temp
                                                          (map car pubments))]
                                     [(public-final-name ...) (map car public-finals)]
+                                    [(public-final-name-without-def-ctx ...)
+                                     (map (λ (x) (internal-definition-context-introduce def-ctx (car x) 'remove))
+                                          public-finals)]
                                     [(public-final-name-localized ...) (map lookup-localize (map car public-finals))]
                                     [(public-final-temp ...) (map
                                                               mk-method-temp
@@ -1335,6 +1346,10 @@
                                     [(method-name-localized ...) (map lookup-localize
                                                                       (append local-public-dynamic-names
                                                                               (map car all-inherits)))]
+                                    [(method-name-without-def-ctx ...)
+                                     (map (λ (x) (internal-definition-context-introduce def-ctx x 'remove))
+                                          (append local-public-dynamic-names
+                                                  (map car all-inherits)))]
                                     [(method-accessor ...) (generate-temporaries
                                                             (append local-public-dynamic-names
                                                                     (map car all-inherits)))]
@@ -1350,10 +1365,17 @@
                                                                        inherit-field-names))]
                                     [(inherit-name ...) (definify (map car all-inherits))]
                                     [(inherit-field-name ...) (definify inherit-field-names)]
+                                    [(inherit-field-name-without-def-ctx ...)
+                                     (map (λ (x) (internal-definition-context-introduce def-ctx x 'remove))
+                                          inherit-field-names)]
                                     [(inherit-field-name-localized ...) (map lookup-localize inherit-field-names)]
                                     [(local-field ...) (definify
                                                          (append field-names
                                                                  private-field-names))]
+                                    [(local-field-without-def-ctx ...)
+                                     (map (λ (x) (internal-definition-context-introduce def-ctx x 'remove))
+                                          (append field-names
+                                                  private-field-names))]
                                     [(local-field-localized ...) (map lookup-localize
                                                                       (append field-names
                                                                               private-field-names))]
@@ -1365,6 +1387,9 @@
                                     [(local-field-accessor ...) (generate-temporaries (append field-names private-field-names))]
                                     [(local-field-mutator ...) (generate-temporaries (append field-names private-field-names))]
                                     [(plain-init-name ...) (definify plain-init-names)]
+                                    [(plain-init-name-without-def-ctx ...)
+                                     (map (λ (x) (internal-definition-context-introduce def-ctx x 'remove))
+                                          plain-init-names)]
                                     [(plain-init-name-localized ...) (map lookup-localize plain-init-names)]
                                     [(local-plain-init-name ...) (generate-temporaries plain-init-names)])
                         (let ([mappings
@@ -1386,6 +1411,7 @@
                                                      (quote-syntax the-finder)
                                                      (quote the-obj)
                                                      (quote-syntax inherit-field-name)
+                                                     (quote-syntax inherit-field-name-without-def-ctx)
                                                      (quote-syntax inherit-field-name-localized)
                                                      (quote-syntax inherit-field-accessor)
                                                      (quote-syntax inherit-field-mutator))
@@ -1394,6 +1420,7 @@
                                                      (quote-syntax the-finder)
                                                      (quote the-obj)
                                                      (quote-syntax local-field)
+                                                     (quote-syntax local-field-without-def-ctx)
                                                      (quote-syntax local-field-localized)
                                                      (quote-syntax local-field-accessor)
                                                      (quote-syntax local-field-mutator))
@@ -1413,24 +1440,28 @@
                                      (make-method-map (quote-syntax the-finder)
                                                       (quote the-obj)
                                                       (quote-syntax method-name)
+                                                      (quote-syntax method-name-without-def-ctx)
                                                       (quote-syntax method-name-localized)
                                                       (quote-syntax method-accessor))
                                      ...
                                      (make-direct-method-map (quote-syntax the-finder)
                                                              (quote the-obj)
                                                              (quote-syntax private-name)
+                                                             (quote-syntax private-name-without-def-ctx)
                                                              (quote-syntax private-name-localized)
                                                              (quote private-temp))
                                      ...
                                      (make-direct-method-map (quote-syntax the-finder)
                                                              (quote the-obj)
                                                              (quote-syntax public-final-name)
+                                                             (quote-syntax public-final-name-without-def-ctx)
                                                              (quote-syntax public-final-name-localized)
                                                              (quote public-final-temp))
                                      ...
                                      (make-direct-method-map (quote-syntax the-finder)
                                                              (quote the-obj)
                                                              (quote-syntax pubment-name)
+                                                             (quote-syntax pubment-name-without-def-ctx)
                                                              (quote-syntax pubment-name-localized)
                                                              (quote pubment-temp))
                                      ...)])))]
@@ -1698,6 +1729,7 @@
                                                       (letrec-syntaxes+values
                                                           ([(plain-init-name) (make-init-redirect 
                                                                                (quote-syntax local-plain-init-name)
+                                                                               (quote-syntax plain-init-name-without-def-ctx)
                                                                                (quote-syntax plain-init-name-localized))] ...)
                                                         ([(local-plain-init-name) unsafe-undefined] ...)
                                                         (void) ; in case the body is empty
@@ -2214,7 +2246,8 @@ last few projections.
          [augonly-names (append pubment-names overment-names augment-names)]
          ;; Misc utilities
          [no-new-methods? (null? public-names)]
-         [no-method-changes? (and (null? public-names)
+         [no-method-changes? (and (null? interfaces)
+                                  (null? public-names)
                                   (null? override-names)
                                   (null? augride-names)
                                   (null? final-names))]
@@ -3434,6 +3467,20 @@ An example
                        (syntax orig-stx)
                        kwarg)]))
                  (syntax->list (syntax (kwarg ...))))])))
+
+(define-syntax dynamic-instantiate
+  (make-variable-like-transformer #'(make-dynamic-instantiate (current-contract-region))))
+(define ((make-dynamic-instantiate blame) class pos-args named-args)
+  (unless (class? class)
+    (raise-argument-error 'dynamic-instantiate "class?" class))
+  (unless (list? pos-args)
+    (raise-argument-error 'dynamic-instantiate "list?" pos-args))
+  (unless (and (list? named-args)
+               (for/and ([named-arg (in-list named-args)])
+                 (and (pair? named-arg)
+                      (symbol? (car named-arg)))))
+    (raise-argument-error 'dynamic-instantiate "(listof (cons/c symbol? any/c))" named-args))
+  (do-make-object blame class pos-args named-args))
 
 (define (alist->sexp alist)
   (map (lambda (pair) (list (car pair) (cdr pair))) alist))
@@ -4911,7 +4958,7 @@ An example
          (rename-out [_interface interface]) interface* interface?
          object% object? object=? object-or-false=? object=-hash-code
          externalizable<%> printable<%> writable<%> equal<%>
-         new make-object instantiate
+         new make-object instantiate dynamic-instantiate
          get-field set-field! field-bound? field-names
          dynamic-get-field dynamic-set-field!
          send send/apply send/keyword-apply send* send+ dynamic-send

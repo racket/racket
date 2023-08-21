@@ -7,23 +7,29 @@
 
 @defproc[(get-module-code [path path-string?]
                           [#:submodule-path submodule-path (listof symbol?) '()]
-                          [#:sub-path compiled-subdir0 (and/c path-string? relative-path?) (default-compiled-sub-path)]
-                          [compiled-subdir (and/c path-string? relative-path?) compiled-subdir0]
+                          [#:sub-path compiled-subdir0
+                           (or/c (and/c path-string? relative-path?)
+                                 (listof (and/c path-string? relative-path?)))
+                           (use-compiled-file-paths)]
+                          [compiled-subdir
+                           (or/c (and/c path-string? relative-path?)
+                                 (listof (and/c path-string? relative-path?)))
+                           compiled-subdir0]
                           [#:roots roots (listof (or/c path-string? 'same)) (current-compiled-file-roots)]
                           [#:compile compile-proc0 (any/c . -> . any) compile] 
                           [compile-proc (any/c . -> . any) compile-proc0] 
                           [#:extension-handler ext-proc0 (or/c false/c (path? boolean? . -> . any)) #f]
                           [ext-proc (or/c false/c (path? boolean? . -> . any)) ext-proc0]
-                          [#:choose choose-proc 
-                           (path? path? path? 
-                            . -> . 
-                            (or/c (symbols 'src 'zo 'so) false/c))
-                           (lambda (src zo so) #f)]
                           [#:notify notify-proc (any/c . -> . any) void]
                           [#:source-reader read-syntax-proc 
                                         (any/c input-port? . -> . (or/c syntax? eof-object?)) 
                                         read-syntax]
-                          [#:rkt-try-ss? rkt-try-ss? boolean? #t])
+                          [#:rkt-try-ss? rkt-try-ss? boolean? #t]
+                          [#:choose choose-proc
+                           (or/c (-> path? path? path?
+                                     (or/c 'src 'zo 'so #f))
+                                 #f)
+                           #f])
          any]{
 
 Returns a compiled expression for the declaration of the module
@@ -31,10 +37,37 @@ specified by @racket[path] and @racket[submodule-path], where
 @racket[submodule-path] is empty for a root module or a list for a
 submodule.
 
-The @racket[compiled-subdir] argument defaults to @racket[(default-compiled-sub-path)];
-it specifies the sub-directory to search for a compiled version of the
-module. The @racket[roots] list specifies a compiled-file search path
-in the same way as the @racket[current-compiled-file-roots] parameter.
+The @racket[roots], @racket[compiled-subdir], @racket[choose-proc], and
+@racket[rkt-try-ss?] and @racket[submodule-path] arguments determine which file is consulted
+to find the compiled code. If the default values are provided,
+then this function uses the same logic as the default
+value of @racket[current-load/use-compiled]. In more detail:
+ @itemlist[
+ @item{If @racket[submodule-path] is not the empty list, then the compiled code
+   will never be located in a @tech[#:doc '(lib "scribblings/reference/reference.scrbl")]{dynamic extension};
+   instead the original source or a @filepath{zo} file will be used.}
+ @item{The @racket[rkt-try-ss?] argument defaults to @racket[#t].  If it is not
+   @racket[#f], then if @racket[path] ends in @filepath{.rkt}, then the
+   corresponding file ending in @filepath{.ss} will be tried as well.}
+ @item{The @racket[choose-proc] argument is called with the
+   original source file (which might have had its ending
+   changed, c.f. the @racket[rkt-try-ss?] argument) and two
+   other paths that end with @filepath{zo} and @filepath{so}
+   (but they are not necessarily the paths that
+   @racket[get-module-code] uses). If the @racket[choose-proc]
+   returns @racket['src], then compiled files are not used. If
+   it returns any other result, the result is ignored. In
+   previous versions of this function, the @racket[choose-proc] offered more control over
+   which file was used but it no longer does;
+   the current interface is kept for backwards compatibility.}
+ @item{
+   The @racket[compiled-subdir] argument defaults to @racket[(use-compiled-file-paths)];
+   it specifies the sub-directories to search for a compiled version of the
+   module. If @racket[compiled-subdir] is a list, then the first directory
+   that contains a file with an appropriate name is used as the compiled file.}
+ @item{The @racket[roots] list specifies a compiled-file search path
+   in the same way as the @racket[current-compiled-file-roots] parameter;
+   it defaults to the current value of @racket[current-compiled-file-roots].}]
 
 The @racket[compile-proc] argument defaults to @racket[compile]. This
 procedure is used to compile module source if an already-compiled
@@ -45,54 +78,43 @@ The @racket[ext-proc] argument defaults to @racket[#f]. If it is not
 @racket[#f], it must be a procedure of two arguments that is called
 when a native-code version of @racket[path] should be used. In that
 case, the arguments to @racket[ext-proc] are the path for the
-extension, and a boolean indicating whether the extension is a @tt{_loader}
+@tech[#:doc '(lib "scribblings/reference/reference.scrbl")]{dynamic extension},
+and a boolean indicating whether the extension is a @tt{_loader}
 file (@racket[#t]) or not (@racket[#f]).
 
-The @racket[rkt-try-ss?] argument defaults to @racket[#t].  If it is not
-@racket[#f], then if @racket[path] ends in @filepath{.rkt}, then the
-corresponding file ending in @filepath{.ss} will be tried as well.
-
-The @racket[choose-proc] argument is a procedure that takes three
-paths: a source path, a @filepath{.zo} file path, and an extension path
-(for a non-@tt{_loader} extension). Some of the paths may not
-exist. The result should be either @racket['src], @racket['zo],
-@racket['so], or @racket[#f], indicating which variant should be used
-or (in the case of @racket[#f]) that the default choice should be
-used.
-
-The default choice is computed as follows: if a @filepath{.zo} version
-of @racket[path] is available and newer than @racket[path] itself (in
-one of the directories specified by @racket[compiled-subdir]), then it
-is used instead of the source. Native-code versions of @racket[path]
-are ignored, unless only a native-code non-@tt{_loader} version exists
-(i.e., @racket[path] itself does not exist). A @tt{_loader} extension
-is selected a last resort.
-
-If an extension is preferred or is the only file that exists, it is
+If a @tech[#:doc '(lib "scribblings/reference/reference.scrbl")]{dynamic extension}
+is preferred or is the only file that exists, it is
 supplied to @racket[ext-proc] when @racket[ext-proc] is @racket[#f],
 or an exception is raised (to report that an extension file cannot be
 used) when @racket[ext-proc] is @racket[#f].
 
 If @racket[notify-proc] is supplied, it is called for the file
-(source, @filepath{.zo} or extension) that is chosen.
+(source, @filepath{.zo} or
+@tech[#:doc '(lib "scribblings/reference/reference.scrbl")]{dynamic extension})
+that is chosen.
 
 If @racket[read-syntax-proc] is provided, it is used to read the
 module from a source file (but not from a bytecode file).
 
 @history[#:changed "6.90.0.7" @elem{Use @racket[(default-compiled-sub-path)]
-                                    for the default value of @racket[compiled-subdir].}]}
+                                    for the default value of @racket[compiled-subdir].}
+         #:changed "8.6.0.12" @list{Generalize the @racket[#:sub-path] argument,
+           change @racket[#:sub-path]'s default to @racket[(use-compiled-file-paths)],
+           and pay less attention to the @racket[#:choose] argument.}]}
 
 @defproc[(get-module-path [path path-string?]
                           [#:submodule? submodule? boolean?]
-                          [#:sub-path compiled-subdir0 (and/c path-string? relative-path?) (default-compiled-sub-path)]
-                          [compiled-subdir (and/c path-string? relative-path?) compiled-subdir0]
+                          [#:sub-path compiled-subdir0
+                           (or/c (and/c path-string? relative-path?)
+                                 (listof (and/c path-string? relative-path?)))
+                           (use-compiled-file-paths)]
+                          [compiled-subdir
+                           (or/c (and/c path-string? relative-path?)
+                                 (listof (and/c path-string? relative-path?)))
+                           compiled-subdir0]
                           [#:roots roots (listof (or/c path-string? 'same)) (current-compiled-file-roots)]
-                          [#:choose choose-proc 
-                           (path? path? path? 
-                            . -> . 
-                            (or/c (symbols 'src 'zo 'so) false/c))
-                           (lambda (src zo so) #f)]
-                          [#:rkt-try-ss? rkt-try-ss? boolean? #t])
+                          [#:rkt-try-ss? rkt-try-ss? boolean? #t]
+                          [#:choose choose-proc any/c #f])
          (values path? (or/c 'src 'zo 'so))]{
 
 Produces two values.  The first is the path of the latest source or compiled
@@ -103,22 +125,31 @@ depending on whether the first value represents a Racket source file, a
 compiled bytecode file, or a native library file.
 
 The @racket[compiled-subdir], @racket[roots], @racket[choose-proc], and
-@racket[rkt-try-ss?] arguments are interpreted the same as by
-@racket[get-module-code].
+@racket[rkt-try-ss?] arguments are interpreted the
+same as by @racket[get-module-code].
 
 The @racket[submodule?] argument represents whether the desired module is a
 submodule of the one specified by @racket[path].  When @racket[submodule?] is
-true, the result is never a @racket['so] path, as native libraries cannot
+true, the result path never refers to a
+@tech[#:doc '(lib "scribblings/reference/reference.scrbl")]{dynamic extension}
+and the result symbol is never @racket['so], as native libraries cannot
 provide submodules.
 
 @history[#:changed "6.90.0.7" @elem{Use @racket[(default-compiled-sub-path)]
-                                    for the default value of @racket[compiled-subdir].}]}
+                                    for the default value of @racket[compiled-subdir].}
+         #:changed "8.6.0.12" @list{Generalize the @racket[#:sub-path] argument,
+           change @racket[#:sub-path]'s default to @racket[(use-compiled-file-paths)],
+           and pay less attention to the @racket[#:choose] argument.}]}
 
 
 @defproc[(default-compiled-sub-path) path-string?]{
 
 If @racket[(use-compiled-file-paths)] is not @racket['()], returns the
-first element of the list. Otherwise, results @racket["compiled"].
+first element of the list. Otherwise, returns @racket["compiled"].
+
+This function used to provide the default for the @racket[#:sub-path]
+argument to @racket[get-module-code] and @racket[get-module-path], but
+it is no longer used by this library.
 
 @history[#:added "6.90.0.7"]}
 

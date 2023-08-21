@@ -3,7 +3,7 @@
 ;; adapted from code by mflatt
 
 (require syntax/kerncase
-         syntax/boundmap
+         syntax/private/boundmap
          (for-template racket/base))
 
 (provide free-vars)

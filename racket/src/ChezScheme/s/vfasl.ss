@@ -1,31 +1,9 @@
-;; vfasl conversion uses the 
-
+;; vfasl conversion uses the fasl parser from "strip.ss"; it creates
+;; an image of the memory that fasl_in from "fasl.c" would create
 
 (let ()
 
 (include "strip-types.ss")
-
-;; cooperates better with auto-indent than `fasl-case`:
-(define-syntax (fasl-case* stx)
-  (syntax-case stx (else)
-    [(_ target [(op fld ...) body ...] ... [else e-body ...])
-     #'(fasl-case target [op (fld ...) body ...] ... [else e-body ...])]
-    [(_ target [(op fld ...) body ...] ...)
-     #'(fasl-case target [op (fld ...) body ...] ...)]))
-
-;; reverse quoting convention compared to `constant-case`:
-(define-syntax (constant-case* stx)
-  (syntax-case stx (else)
-    [(_ target [(const ...) body ...] ... [else e-body ...])
-     (with-syntax ([((val ...) ...)
-                    (map (lambda (consts)
-                           (map (lambda (const)
-                                  (lookup-constant const))
-                                consts))
-                         (datum ((const ...) ...)))])
-       #'(case target [(val ...) body ...] ... [else e-body ...]))]
-    [(_ target [(const ...) body ...] ...)
-     #'(constant-case* target [(const ...) body ...] ... [else ($oops 'constant-case* "no matching case ~s" 'target)])]))
 
 ;; ************************************************************
 ;; Encode-time data structures                              */
@@ -100,8 +78,12 @@
 
                    #f)) ; installs-library-entry?
 
-;; Creates a vfasl image for the fasl content `v` (as read by "strip.ss")
+;; Creates a vfasl image for the fasl content `v` (as read by "strip.ss").
+;; The target endianness must be statically known.
 (define (to-vfasl v)
+  (constant-case native-endianness
+    [(unknown) ($oops 'vfasl "cannot vfasl with unknown endianness")]
+    [else (void)])
   (let ([v (ensure-reference v)]
         [vfi (new-vfasl-info)])
     ;; First pass: determine sizes
@@ -205,6 +187,9 @@
 ;; This is an expensive test, since we perform half of a vfasl
 ;; encoding to look for `$install-library-entry`. */
 (define (fasl-can-combine? v)
+  (constant-case native-endianness
+    [(unknown) ($oops 'vfasl "cannot vfasl with unknown endianness")]
+    [else (void)])
   (let ([vfi (new-vfasl-info)])
     ;; Run a "first pass"
     (copy v vfi)
@@ -387,6 +372,15 @@
    [(p delta dbl vfi)
     (let-values ([(bv offset) (vptr->bytevector+offset p delta vfi)])
       (set-double! bv offset dbl))]))
+
+;; Overloaded in the same way as `set-uptr!`
+(define set-int32!
+  (case-lambda
+   [(bv i uptr)
+    (bytevector-s32-set! bv i uptr (constant native-endianness))]
+   [(p delta uptr vfi)
+    (let-values ([(bv offset) (vptr->bytevector+offset p delta vfi)])
+      (set-int32! bv offset uptr))]))
 
 ;; Overloaded in the same way as `set-uptr!`
 (define set-char!
@@ -631,6 +625,13 @@
         (symbol-copy v
                      (string-copy string vfi)
                      (string->symbol string)
+                     string
+                     vfi)]
+       [(fasl-type-uninterned-symbol)
+        (symbol-copy v
+                     (pair-copy (string-copy string vfi) (constant sfalse) vfi)
+                     #f
+                     string
                      vfi)]
        [else
         (let ([immutable? (eqv? ty (constant fasl-type-immutable-string))])
@@ -654,7 +655,7 @@
                           set-char!
                           string-ref)]))])]
     [(gensym pname uname)
-     (symbol-copy v (pair-copy (string-copy uname vfi) (string-copy pname vfi) vfi) (gensym pname uname) vfi)]
+     (symbol-copy v (pair-copy (string-copy uname vfi) (string-copy pname vfi) vfi) (gensym pname uname) uname vfi)]
     [(vector ty vec)
      (cond
        [(fx= 0 (vector-length vec))
@@ -727,14 +728,16 @@
                      bytevector-type-disp
                      set-u8!
                      bytevector-u8-ref)])]
-    [(stencil-vector mask vec)
+    [(stencil-vector mask vec sys?)
      (vector-copy v vec vfi
                   vector-length
                   vspace-impure
                   header-size-stencil-vector stencil-vector-data-disp
                   ptr-bytes
                   (bitwise-ior (bitwise-arithmetic-shift-left mask (constant stencil-vector-mask-offset))
-                               (constant type-stencil-vector))
+                               (if sys?
+                                   (constant type-sys-stencil-vector)
+                                   (constant type-stencil-vector)))
                   stencil-vector-type-disp
                   set-ptr!
                   (lambda (v i) (copy (vector-ref v i) vfi)))]
@@ -757,12 +760,14 @@
             (let ([ancestry (car fld*)])
               (field-case ancestry
                           [ptr (elem)
-                               (fasl-case* elem
-                                 [(vector ty vec)
-                                  (let ([parent (vector-ref vec (fx- (vector-length vec)
-                                                                     (constant ancestry-parent-offset)))])
-                                    (copy parent vfi))]
-                                 [else (safe-assert (not 'vector)) (void)])]
+                               (let loop ([elem elem])
+                                 (fasl-case* elem
+                                   [(vector ty vec)
+                                    (let ([parent (vector-ref vec (fx- (vector-length vec)
+                                                                       (constant ancestry-parent-offset)))])
+                                      (copy parent vfi))]
+                                   [(indirect g i) (loop (vector-ref g i))]
+                                   [else ($oops 'vfasl "parent type not recognized ~s" elem)]))]
                           [else (safe-assert (not 'ptr)) (void)])))
           (let* ([vspc (cond
                          [maybe-uid
@@ -882,9 +887,9 @@
                                    [hc (or (fasl-case* (car p)
                                              [(string ty string)
                                               (and (eqv? ty (constant fasl-type-symbol))
-                                                   (target-symbol-hash (string->symbol string)))]
+                                                   (target-symbol-hash string))]
                                              [(gensym pname uname)
-                                              (target-symbol-hash (gensym pname uname))]
+                                              (target-symbol-hash uname)]
                                              [else #f])
                                            ($oops 'vfasl "symbol table key not a symbol ~s" (car p)))]
                                    [i (fxand hc (fx- veclen 1))])
@@ -928,13 +933,14 @@
              (loop (fx+ i 1))))
          new-p)]))
 
-(define (symbol-copy v name sym vfi)
+(define (symbol-copy v name sym hash-name vfi)
   (let ([v2 (eq-hashtable-ref (vfasl-info-symbols vfi) sym v)])
     (cond
       [(not (eq? v v2))
        (copy v2 vfi)]
       [else
-       (eq-hashtable-set! (vfasl-info-symbols vfi) sym v)
+       (when sym
+         (eq-hashtable-set! (vfasl-info-symbols vfi) sym v))
        (let ([new-p (find-room 'symbol vfi
                                (constant vspace-symbol)
                                (constant size-symbol)
@@ -944,21 +950,22 @@
                     ;; use value slot to store symbol index
                     (fix (symbol-vptr->index new-p vfi))
                     vfi)
-         (set-uptr! new-p (constant symbol-pvalue-disp) (constant snil) vfi)
+         (set-uptr! new-p (constant symbol-pvalue-disp)
+                    ;; use pvalue slot to record interned or not
+                    (if sym (constant strue) (constant sfalse))
+                    vfi)
          (set-uptr! new-p (constant symbol-plist-disp) (constant snil) vfi)
          (set-ptr! new-p (constant symbol-name-disp) name vfi)
          (set-uptr! new-p (constant symbol-splist-disp) (constant snil) vfi)
-         (set-iptr! new-p (constant symbol-hash-disp) (fix (target-symbol-hash sym)) vfi)
+         (set-iptr! new-p (constant symbol-hash-disp) (fix (target-symbol-hash hash-name)) vfi)
          new-p)])))
 
 (define target-symbol-hash
   (let ([symbol-hashX (constant-case ptr-bits
                         [(32) (foreign-procedure "(cs)symbol_hash32" (ptr) integer-32)]
                         [(64) (foreign-procedure "(cs)symbol_hash64" (ptr) integer-64)])])
-    (lambda (s)
-      (bitwise-and (symbol-hashX (if (gensym? s)
-                                     (gensym->unique-string s)
-                                     (symbol->string s)))
+    (lambda (name)
+      (bitwise-and (symbol-hashX (if (pair? name) (car name) name))
                    (constant most-positive-fixnum)))))
 
 (define (string-copy name vfi)
@@ -1089,7 +1096,7 @@
              ;; overwrites constant-loading instructions in the code, so the
              ;; linking protocol needs to be able to deal with that, possibly using
              ;; later instructions to infer the right repair:
-             (set-iptr! code-p a new-elem vfi)
+             (set-int32! code-p a new-elem vfi)
              (loop n a (fx+ i 1)))]
           [else ($oops 'vfasl "expected a relocation")])))
     new-p))

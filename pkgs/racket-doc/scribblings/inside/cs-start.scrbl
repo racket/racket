@@ -32,7 +32,10 @@ Fields in @cppdef{racket_boot_arguments_t}:
        containing a Chez Scheme image file with base functionality.
        Normally, the file is called @filepath{petite.boot}. The path
        should contain a directory separator, otherwise Chez Scheme
-       will consult its own search path.}
+       will consult its own search path. The
+       @cpp{racket_get_self_exe_path} and/or
+       @cpp{racket_path_replace_filename} functions may be helpful to
+       construct the path.}
 
  @item{@cpp{long} @cppdef{boot1_offset} --- an offset into
        @cpp{boot1_path} to read for the first boot image, which allows
@@ -130,3 +133,32 @@ place, too.
 These functions are not meant to be called in C code that was called
 from Racket. See also @secref["cs-procs"] for a discussion of
 @emph{entry} points versus @emph{re-entry} points.}
+
+@; ----------------------------------------------------------------------
+
+@section[#:tag "cs-self-exe"]{Startup Path Helpers}
+
+@function[(char* racket_get_self_exe_path [const-char* argv0])]{
+
+Returns a path to the current process's executable. The @var{arg0}
+argument should be the executable name delivered to @cpp{main}, which
+may or may not be used depending on the operating system and
+environment. The result is a string that is freshly allocated with
+@cpp{malloc}, and it will be an absolute path unless all attempts to
+find an absolute path fail.
+
+On Windows, the @var{argv0} argument is always ignored, and the result
+path is UTF-8 encoded.
+
+@history[#:added "8.7.0.11"]}
+
+
+@function[(char* racket_path_replace_filename [const-char* path] [const-char* new_filename])]{
+
+Returns a path like @var{path}, but with the filename path replaced by
+@var{new_filename}. The @var{new_filename} argument does not have to
+be an immediate filename; it can be relative path that ends in a
+filename. The result is a string that is freshly allocated with
+@cpp{malloc}.
+
+@history[#:added "8.7.0.11"]}

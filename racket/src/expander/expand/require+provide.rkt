@@ -24,6 +24,11 @@
          
          requires+provides-all-bindings-simple?
          set-requires+provides-all-bindings-simple?!
+
+         requires+provides-definitions-shadow-imports?
+         disable-definitions-shadow-imports!
+
+         requires+provides-transitive-requires
          
          (struct-out required)
          add-required-space!
@@ -53,13 +58,15 @@
                            require-mpis ; intern table
                            require-mpis-in-order ; require-phase -> list of module-path-index
                            requires   ; mpi [interned] -> require-phase+space-shift -> sym -> list-ish of [bulk-]required
+                           transitive-requires ; resolved-module-path -> pahse-level -> #t ; used to prune instantiates in generate modules
                            provides   ; phase+space -> sym -> binding or protected
                            phase-to-defined-syms ; phase -> sym -> (or/c 'variable 'transformer)
                            also-required ; sym -> binding
                            spaces     ; sym -> #t to track all relevant spaces from requires
                            portal-syntaxes ; phase -> sym -> syntax
                            [can-cross-phase-persistent? #:mutable]
-                           [all-bindings-simple? #:mutable]) ; tracks whether bindings are easily reconstructed
+                           [all-bindings-simple? #:mutable] ; tracks whether bindings are easily reconstructed
+                           [definitions-shadow-imports? #:mutable])
   #:authentic)
 
 ;; A `required` represents an identifier required into a module
@@ -89,18 +96,21 @@
                          (hash-copy (requires+provides-require-mpis-in-order copy-r+p))
                          (make-hasheqv))
                      (make-hasheq)  ; requires
+                     (make-hasheq)  ; transitive-requires
                      (make-hasheqv) ; provides
                      (make-hasheqv) ; phase-to-defined-syms
                      (make-hasheq)  ; also-required
                      (make-hasheq)  ; spaces
                      portal-syntaxes
-                     #t
-                     #t))
+                     #t   ; can-cross-phase-persistent?
+                     #t   ; all-bindings-simple?
+                     #t)) ; definitions-shadow-imports?
 
 (define (requires+provides-reset! r+p)
   ;; Don't clear `require-mpis-in-order`, since we want to accumulate
   ;; all previously required modules
   (hash-clear! (requires+provides-requires r+p))
+  (hash-clear! (requires+provides-transitive-requires r+p)) ; conservative, and may reduce effectiveness
   (hash-clear! (requires+provides-provides r+p))
   (hash-clear! (requires+provides-phase-to-defined-syms r+p))
   (hash-clear! (requires+provides-also-required r+p))
@@ -211,7 +221,7 @@
             (define id (datum->syntax s-at-space sym s-at-space))
             (adjust-shadow-requires! r+p id phase space)
             (check-not-defined #:check-not-required? #t
-                               #:allow-defined? #t
+                               #:allow-defined? (requires+provides-definitions-shadow-imports? r+p)
                                r+p id phase space #:in orig-s
                                #:unless-matches
                                (lambda ()
@@ -305,7 +315,7 @@
   (for ([space (in-hash-keys (requires+provides-spaces r+p))])
     (remove! (add-space-scope id space) #:bind-as-ambiguous? #t)))
 
-;; Prune a list of `required`s t remove any with a different binding
+;; Prune a list of `required`s to remove any with a different binding
 (define (remove-non-matching-requireds reqds id phase mpi nominal-phase+space-shift sym)
   ;; Ok to produce a list-ish instead of a list, but we don't have `for*/list-ish`:
   (for*/list ([r (in-list-ish reqds)]
@@ -317,8 +327,8 @@
 ;; Check whether an identifier has a binding that is from a non-shadowable
 ;; require; if something is found but it will be replaced, then record that
 ;; bindings are not simple. Returns a status to indicate whether/how the binding
-;; is defined or required already, since `allow-defined?` and ok-binding/delated`
-;; allows that possibilify; the possible results are #f, 'defined, or 'required.
+;; is defined or required already, since `allow-defined?` and `ok-binding/delated`
+;; allow that possibilify; the possible results are #f, 'defined, or 'required.
 (define (check-not-defined #:check-not-required? [check-not-required? #f]
                            #:allow-defined? [allow-defined? #f]
                            r+p id phase space #:in orig-s
@@ -345,7 +355,18 @@
   (cond
    [(not b) (check-default-space)]
    [(not (module-binding? b))
-    (raise-syntax-error #f "identifier out of context" id)]
+    (cond
+      [allow-defined?
+       ;; A local binding shadows this would-be `require`, which is
+       ;; possible and sensible if a require is lifted without a new
+       ;; scope. This is not sensible if some scope has been put onto a
+       ;; `require` form out-of-context, but it seems that we can't help
+       ;; report the non-sensible configuration without disallowing the
+       ;; sensible one.
+       (set-requires+provides-all-bindings-simple?! r+p #f)
+       'defined]
+      [else
+       (raise-syntax-error #f "identifier out of context" id)])]
    [else
     (define defined? (and b (eq? (requires+provides-self r+p)
                                  (module-binding-module b))))
@@ -361,7 +382,9 @@
        ;; Doesn't count as previously defined
        (check-default-space)]
       [else
-       (define define-shadowing-require? (and (not defined?) (not check-not-required?)))
+       (define define-shadowing-require? (and (not defined?)
+                                              (requires+provides-definitions-shadow-imports? r+p)
+                                              (not check-not-required?)))
        (define mpi (intern-mpi r+p (module-binding-nominal-module b)))
        (define at-mod (hash-ref (requires+provides-requires r+p) mpi #f))
        (define ok-binding (and (not define-shadowing-require?)
@@ -370,7 +393,14 @@
                                    ok-binding/delayed)))
        (define (raise-already-bound defined? where)
          (raise-syntax-error who
-                             (string-append "identifier already "
+                             (string-append "identifier"
+                                            (cond
+                                              [(and (not defined?) (not check-not-required?))
+                                               " for definition"]
+                                              [(and defined? check-not-required?)
+                                               " for require"]
+                                              [else ""])
+                                            " already "
                                             (if defined? "defined" "required")
                                             (cond
                                               [(zero-phase? phase) ""]
@@ -535,6 +565,9 @@
                 [reqd (in-list-ish reqds)])
       (normalize-required reqd mod-name phase+space-shift sym))))
 
+(define (disable-definitions-shadow-imports! r+p)
+  (set-requires+provides-definitions-shadow-imports?! r+p #f))
+
 ;; ----------------------------------------
 
 ;; Register that a binding is provided as a given symbol; report an
@@ -574,20 +607,32 @@
 ;; ----------------------------------------
 
 (define (extract-requires-and-provides r+p old-self new-self)
-  (define (extract-requires)
+  (define (extract-requires #:recurs? [recurs? #f])
     ;; Extract from the in-order record, so that instantiation can use the original order
     (define phase-to-mpis-in-order (requires+provides-require-mpis-in-order r+p))
     (define phases-in-order (sort (hash-keys phase-to-mpis-in-order) phase<?))
+    ;; If a resolved module path is in `transitive-requires`, then it's required by
+    ;; one of the modules that is required, so we won't need to redundantly check
+    ;; instantiation at run time
+    (define transitive-requires (requires+provides-transitive-requires r+p))
     (for/list ([phase (in-list phases-in-order)])
-      (cons phase
-            (for/list ([mpi (in-list (reverse (hash-ref phase-to-mpis-in-order phase)))]
-                       #:unless (eq? mpi old-self))
-              (module-path-index-shift mpi old-self new-self)))))
+      (define elems (for/list ([mpi (in-list (reverse (hash-ref phase-to-mpis-in-order phase)))]
+                               #:unless (eq? mpi old-self))
+                      (if recurs?
+                          (not (hash-ref (hash-ref transitive-requires
+                                                   (module-path-index-resolved mpi)
+                                                   #hasheqv())
+                                         phase
+                                         #f))
+                          (module-path-index-shift mpi old-self new-self))))
+      (if recurs?
+          elems
+          (cons phase elems))))
   (define (extract-provides)
     (shift-provides-module-path-index (requires+provides-provides r+p)
                                       old-self
                                       new-self))
-  (values (extract-requires) (extract-provides)))
+  (values (extract-requires) (extract-requires #:recurs? #t) (extract-provides)))
 
 ;; ----------------------------------------
 

@@ -1,0 +1,60 @@
+#lang zuo
+(require "../makefiles/lib.zuo")
+
+(provide-targets targets-at)
+
+(define (targets-at at-dir [vars (hash)])
+  (define config (config-file->hash (at-dir "../Mf-config") vars))
+  (define lookup (make-lookup config))
+
+  (define mf (config-file->hash (at-source "Makefile")))
+
+  (define m (lookup 'm))
+  (define host-m (or (lookup 'hostm) m))
+  (define host-workarea (let ([host-workarea (lookup 'hostworkarea)])
+                          (if (equal? host-workarea "")
+                              ""
+                              ((make-at-dir (at-dir "..")) (or host-workarea ".")))))
+  (define host-scheme (lookup 'hostscheme))
+
+  (define src-names (string-split (hash-ref mf 'src)))
+  (define srcs (map at-source src-names))
+  (define objs (map (lambda (name) (at-dir (path-replace-extension name ".so")))
+                    src-names))
+
+  (define-values (call-with-scheme run-scheme/status run-scheme)
+    (make-run-scheme at-source at-dir lookup
+                     host-scheme host-workarea host-m))
+
+  (define (add-patchfile l)
+    (if (and (string=? m host-m)
+             (not (equal? (lookup 'cross) "t")))
+        l
+        (append l (list (at-dir ".." "s" "xpatch")))))
+
+  (make-targets
+   `([:target needed ,objs ,void]
+     
+     ,@(map (lambda (src obj)
+              `[:target ,obj (,src ,(input-data-target 'version (source-version)))
+                        ,(lambda (path token)
+                           (run-scheme obj
+                                       `((time (compile-file ,src ,obj)))
+                                       (add-patchfile '())))])
+            srcs
+            objs)
+
+     [:target all ()
+              ,(lambda (token)
+                 (run-scheme "all"
+                             `((time (begin
+                                       ,@(map (lambda (src obj)
+                                                `(compile-file ,src ,obj))
+                                              srcs
+                                              objs))))
+                             (add-patchfile '())))]
+
+     [:target clean ()
+              ,(lambda (token)
+                 (map rm* objs)
+                 (rm* "expr.md"))])))

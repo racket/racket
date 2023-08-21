@@ -1,0 +1,422 @@
+#lang zuo/private/base
+
+(require "base/and-or.zuo"
+         "base/let.zuo"
+         "base/define.zuo"
+         "list.zuo"
+         "base/more-syntax.zuo")
+
+(provide void?
+         boolean?
+         string-tree?
+
+         equal?
+         assoc
+         member
+         remove
+         sort
+
+         file-exists?
+         directory-exists?
+         link-exists?
+
+         explode-path
+         simple-form-path
+         find-relative-path
+         path-replace-extension
+         path-only
+         file-name-from-path
+         path->complete-path
+
+         ls*
+         mkdir-p
+         rm*
+         cp*
+
+         :no-replace-mode
+         :error :truncate :must-truncate :append :update :can-update
+
+         display
+         displayln
+         file->string
+         display-to-file
+
+         string<?
+         string->integer
+
+         string-join
+         string-trim
+
+         find-executable-path
+         system-type)
+
+(define (void? v) (eq? v (void)))
+
+(define (boolean? v) (or (eq? v #t) (eq? v #f)))
+
+(define (string-tree? v)
+  (or (string? v)
+      (and (list? v)
+           (andmap string-tree? v))))
+
+(define (equal? a b)
+  (or (eq? a b)
+      (cond
+        [(pair? a)
+         (and (pair? b)
+              (equal? (car a) (car b))
+              (equal? (cdr a) (cdr b)))]
+        [(string? a) (and (string? b)
+                          (string=? a b))]
+        [(integer? a) (and (integer? b)
+                           (= a b))]
+        [(hash? a) (and (hash? b)
+                        (= (hash-count a) (hash-count b))
+                        (hash-keys-subset? a b)
+                        (andmap (lambda (k)
+                                  (equal? (hash-ref a k #f)
+                                          (hash-ref b k #f)))
+                                (hash-keys a)))]
+        [else #f])))
+
+(define (assoc k lst)
+  (unless (list? lst) (arg-error 'assoc "list" lst))
+  (letrec ([assoc (lambda (lst)
+                    (cond
+                      [(null? lst) #f]
+                      [else
+                       (let ([a (car lst)])
+                         (unless (pair? a)
+                           (error "assoc: non-pair found in list" a))
+                         (if (equal? (car a) k)
+                             a
+                             (assoc (cdr lst))))]))])
+    (assoc lst)))
+
+(define (member k lst)
+  (unless (list? lst) (arg-error 'member "list" lst))
+  (letrec ([member (lambda (lst)
+                     (cond
+                       [(null? lst) #f]
+                       [else
+                        (if (equal? k (car lst))
+                            lst
+                            (member (cdr lst)))]))])
+    (member lst)))
+
+(define (remove k lst)
+  (unless (list? lst) (arg-error 'remove "list" lst))
+  (letrec ([remove (lambda (lst)
+                     (cond
+                       [(null? lst) '()]
+                       [else
+                        (if (equal? k (car lst))
+                            (cdr lst)
+                            (cons (car lst) (remove (cdr lst))))]))])
+    (remove lst)))
+
+(define (sort ls less-than?)
+  (unless (list? ls) (arg-error 'sort "list" ls))
+  (unless (procedure? less-than?) (arg-error 'sort "procedure" less-than?))
+  (let sort ([ls ls] [len (length ls)])
+    (cond
+      [(< len 2) ls]
+      [else (let ([half (quotient len 2)])
+              (let merge ([a (sort (list-tail ls half) (- len half))]
+                          [b (sort (list-tail (reverse ls) (- len half)) half)])
+                (cond
+                  [(null? a) b]
+                  [(null? b) a]
+                  [(less-than? (car b) (car a)) (cons (car b) (merge a (cdr b)))]
+                  [else (cons (car a) (merge (cdr a) b))])))])))
+
+(define (file-exists? p)
+  (unless (path-string? p) (arg-error 'file-exists? "path string" p))
+  (let ([s (stat p #t #t)])
+    (and s (eq? (hash-ref s 'type) 'file))))
+
+(define (directory-exists? p)
+  (unless (path-string? p) (arg-error 'directory-exists?: "path string" p))
+  (let ([s (stat p #t #t)])
+    (and s (eq? (hash-ref s 'type) 'dir))))
+
+(define (link-exists? p)
+  (unless (path-string? p) (arg-error 'link-exists? "path string" p))
+  (let ([s (stat p #f #t)])
+    (and s (eq? (hash-ref s 'type) 'link))))
+
+(define (explode-path p)
+  (unless (path-string? p) (arg-error 'explode-path "path string" p))
+  (define l (split-path p))
+  (if (not (car l))
+      (list (cdr l))
+      (append (explode-path (car l)) (list (cdr l)))))
+
+(define (simple-form-path p)
+  (apply build-path (explode-path p)))
+
+(define (convert-wrt wrts wrt ups)
+  (cond
+    [(equal? (car wrts) "..")
+     (let ([here (let loop ([here (hash-ref (runtime-env) 'dir)] [ups ups])
+                   (cond
+                     [(= ups 0) here]
+                     [else
+                      (let ([l (split-path here)])
+                        (if (not (car l))
+                            (error "find-relative-path: too many ups" wrt)
+                            (loop (car l) (- ups 1))))]))])
+       (let loop ([wrts wrts] [here here] [accum '()])
+         (cond
+           [(and (pair? wrts)
+                 (equal? (car wrts) ".."))
+            (let ([l (split-path here)])
+              (if (not (car l))
+                  (error "find-relative-path: too many ups" wrt)
+                  (loop (cdr wrts) (car l) (cons (cdr l) accum))))]
+           [else (append (map (lambda (p) "..") wrts) accum)])))]
+    [else (map (lambda (p) "..") wrts)]))
+
+(define (find-relative-path wrt p)
+  (unless (path-string? wrt)
+    (arg-error 'find-relative-path "path string" wrt))
+  (unless (path-string? p)
+    (arg-error 'find-relative-path "path string" p))
+  (cond
+    [(relative-path? wrt)
+     (if (relative-path? p)
+         (do-find-relative-path wrt p #t)
+         p)]
+    [else
+     (if (relative-path? p)
+         (do-find-relative-path wrt (path->complete-path p) #t)
+         (do-find-relative-path wrt p #f))]))
+
+(define (do-find-relative-path wrt p rel?)
+  (define wrts (explode-path wrt))
+  (cond
+    [(string=? (car wrts) ".") p]
+    [else
+     (define ps (explode-path p))
+     (if (or rel? (equal? (car ps) (car wrts)))
+         ;; The `ups` accumulator effectively counts shared ".."s at the front of `wrts`
+         ;; and `ps`, which is needed if `wrts` has more ".."s
+         (let loop ([ps (if (string=? (car ps) ".") (cdr ps) ps)] [wrts wrts] [ups 0])
+           (cond
+             [(null? wrts) (if (null? ps) "." (apply build-path ps))]
+             [(null? ps) (apply build-path (convert-wrt wrts wrt ups))]
+             [(equal? (car ps) (car wrts)) (loop (cdr ps) (cdr wrts) (+ ups 1))]
+             [else (apply build-path (append (convert-wrt wrts wrt ups) ps))]))
+         p)]))
+
+(define (path-replace-extension path-in suffix)
+  (unless (path-string? path-in) (arg-error 'path-replace-extension "path string" path-in))
+  (unless (string? suffix) (arg-error 'path-replace-extension "string" suffix))
+  (define l (split-path path-in))
+  (define path (cdr l))
+  (define new-path
+    (let loop ([i (string-length path)])
+      (cond
+        [(<= i 1) (~a path suffix)]
+        [else
+         (let ([i (- i 1)])
+           (if (= (string-ref path i) (char "."))
+               (~a (substring path 0 i) suffix)
+               (loop i)))])))
+  (if (car l)
+      (build-path (car l) new-path)
+      new-path))
+
+(define (split-file-path who p dir-k dir-file-k)
+  (unless (path-string? p) (arg-error who "path string" p))
+  (let ([c (string-ref p (- (string-length p) 1))])
+    (cond
+      [(or (= c (char "/"))
+           (and (= c (char "\\"))
+                (eq? 'windows (hash-ref (runtime-env) 'system-type))))
+       (dir-k p)]
+      [else
+       (define l (split-path p))
+       (if (or (and (not (car l))
+                    (not (relative-path? p)))
+               (string=? (cdr l) ".")
+               (string=? (cdr l) ".."))
+           (dir-k p)
+           (dir-file-k l))])))
+
+(define (path-only p)
+  (split-file-path 'path-only p (lambda (d) d) (lambda (l) (or (car l) "."))))
+
+(define (file-name-from-path p)
+  (split-file-path 'file-name-from-path p (lambda (d) #f) (lambda (l) (cdr l))))
+
+(define (path->complete-path p)
+  (unless (path-string? p) (arg-error 'path->complete-path "path string" p))
+  (if (relative-path? p)
+      (build-path (hash-ref (runtime-env) 'dir) p)
+      p))
+
+(define (ls* dir)
+  (unless (path-string? dir) (arg-error 'ls* "path string" dir))
+  (map (lambda (p) (build-path dir p)) (ls dir)))
+
+(define (mkdir-p p)
+  (unless (path-string? p) (arg-error 'mkdir-p "path string" p))
+  (unless (directory-exists? p)
+    (let ([l (split-path p)])
+      (when (car l) (mkdir-p (car l)))
+      (mkdir p))))
+
+(define (rm* p)
+  (unless (path-string? p) (arg-error 'rm* "path string" p))
+  (define info (stat p #f))
+  (when info
+    (define type (hash-ref info 'type))
+    (cond
+      [(eq? type 'file) (rm p)]
+      [(eq? type 'link) (rm p)]
+      [else
+       (for-each (lambda (e)
+                   (rm* (build-path p e)))
+                 (ls p))
+       (rmdir p)])))
+
+(define (cp* src dest [options (hash)])
+  (unless (path-string? src) (arg-error 'cp* "path string" src))
+  (unless (path-string? dest) (arg-error 'cp* "path string" dest))
+  (unless (hash? options) (arg-error 'cp* "hash table" options))
+  (define info (stat src #f))
+  (when info
+    (define type (hash-ref info 'type))
+    (cond
+      [(eq? type 'file) (cp src dest options)]
+      [(eq? type 'link)
+       (when (stat dest #f) (rm dest))
+       (symlink (readlink src) dest)]
+      [else
+       (unless (directory-exists? dest) (mkdir dest))
+       (for-each (lambda (e)
+                   (cp* (build-path src e) (build-path dest e) options))
+                 (ls src))])))
+
+(define :no-replace-mode (hash 'replace-mode #false))
+
+(define :error (hash 'exists 'error))
+(define :truncate (hash 'exists 'truncate))
+(define :must-truncate (hash 'exists 'must-truncate))
+(define :append (hash 'exists 'append))
+(define :update (hash 'exists 'update))
+(define :can-update (hash 'exists 'can-update))
+
+(define (display v)
+  (fd-write (fd-open-output 'stdout) (~a v)))
+
+(define (displayln v)
+  (fd-write (fd-open-output 'stdout) (~a v "\n")))
+
+(define (file->string path)
+  (unless (path-string? path) (arg-error 'file->string "path string" path))
+  (define fd (fd-open-input path))
+  (define content (fd-read fd eof))
+  (fd-close fd)
+  content)
+
+(define (display-to-file str path [options (hash)])
+  (unless (string? str) (arg-error 'display-to-file "string" str))
+  (unless (path-string? path) (arg-error 'display-to-file "path string" path))
+  (define fd (fd-open-output path options))
+  (fd-write fd str)
+  (fd-close fd))
+
+(define (string<? a b)
+  (unless (string? a) (arg-error 'string<? "string" a))
+  (unless (string? b) (arg-error 'string<? "string" b))
+  (let string<? ([i 0])
+    (cond
+      [(= i (string-length a)) (< i (string-length b))]
+      [(= i (string-length b)) #t]
+      [(< (string-ref a i) (string-ref b i)) #t]
+      [(> (string-ref a i) (string-ref b i)) #f]
+      [else (string<? (+ i 1))])))
+
+(define (string->integer s)
+  (unless (string? s) (arg-error 'string->integer "string" s))
+  (let ([len (string-length s)])
+    (and (not (= len 0))
+         (let ([neg? (= (string-ref s 0) (char "-"))])
+           (and (not (and neg? (= len 1)))
+                (let string->integer ([n 0] [i (if neg? 1 0)])
+                  (cond
+                    [(= i (string-length s))
+                     (if neg? (- n) n)]
+                    [else
+                     (let ([c (string-ref s i)])
+                       (cond
+                         [(and (>= c 48) (<= c 57))
+                          (let ([n (+ (* n 10) (- c 48))])
+                            (if (< n 0)
+                                ;; overflow has one edge care where it's ok
+                                (and neg? (= (+ i 1) (string-length s)) (= n -9223372036854775808) n)
+                                (string->integer n (+ i 1))))]
+                         [else #f]))])))))))
+
+(define (string-join strs [sep " "])
+  (unless (and (list? strs) (andmap string? strs))
+    (arg-error 'string-join "list of strings" strs))
+  (unless (string? sep) (arg-error 'string-join "string" strs))
+  (apply ~a (let loop ([strs strs])
+              (cond
+                [(null? strs) '()]
+                [(null? (cdr strs)) strs]
+                [else (list* (car strs) sep (loop (cdr strs)))]))))
+
+(define (string-trim str [sep-str " "])
+  (unless (string? str) (arg-error 'string-trim "string" str))
+  (unless (and (string? sep-str) (> (string-length sep-str) 0))
+    (arg-error 'string-trim "nonempty string" sep-str))
+  (let* ([len (string-length str)]
+         [sep-len (string-length sep-str)]
+         [match-at? (lambda (i)
+                      (and (= (string-ref str i) (string-ref sep-str 0))
+                           (string=? (substring str i (+ i sep-len)) sep-str)))])
+    (if (< len sep-len)
+        str
+        (let ([start (let loop ([i 0])
+                       (cond
+                         [(> i (- len sep-len)) i]
+                         [(match-at? i) (loop (+ i sep-len))]
+                         [else i]))]
+              [end (let loop ([i len])
+                     (cond
+                       [(< i sep-len) i]
+                       [(match-at? (- i sep-len)) (loop (- i sep-len))]
+                       [else i]))])
+          (if (> end start)
+              (substring str start end)
+              "")))))
+
+(define (find-executable-path exe)
+  (unless (path-string? exe) (arg-error 'find-executable-path "path string" exe))
+  (define windows? (eq? (hash-ref (runtime-env) 'system-type) 'windows))
+  (define (try-exe p)
+    (or (and (file-exists? p) p)
+        (and windows?
+             (let ([p (~a p ".exe")])
+               (and (file-exists? p) p)))))
+  (cond
+    [(and (relative-path? exe)
+          (not (car (split-path exe))))
+     (define PATH (ormap (lambda (p)
+                           (and ((if windows? string-ci=? string=?) (car p) "PATH")
+                                (cdr p)))
+                         (hash-ref (runtime-env) 'env '())))
+     (and PATH
+          (ormap (lambda (dir)
+                   (and (path-string? dir)
+                        (try-exe (build-path dir exe))))
+                 (cons (hash-ref (runtime-env) 'dir)
+                       (string-split PATH (if windows? ";" ":")))))]
+    [else (try-exe exe)]))
+
+(define (system-type)
+  (hash-ref (runtime-env) 'system-type))

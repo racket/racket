@@ -1,0 +1,5 @@
+#lang zuo
+;; @configure_input@
+;; `configure` modifies the following line:
+(require "@srcdir@/build.zuo")
+(build/command-line* targets-at at-source)

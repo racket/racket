@@ -285,6 +285,7 @@ ptr S_vfasl(ptr bv, void *stream, iptr offset, iptr input_len)
 
       while (sym < end_syms) {
         ptr isym;
+        IBOOL uninterned;
 
         /* Make sure we don't try to claim a symbol that crosses
            a segment boundary */
@@ -299,23 +300,27 @@ ptr S_vfasl(ptr bv, void *stream, iptr offset, iptr input_len)
           }
         }
 
+        uninterned = (SYMPVAL(sym) == Sfalse);
+
         INITSYMVAL(sym) = sunbound;
-        INITSYMCODE(sym,S_G.nonprocedure_code);
+        INITSYMCODE(sym, S_G.nonprocedure_code);
 
 #if 0
         S_prin1(sym); printf("\n");
 #endif
 
-        isym = S_intern4(sym);
-        if (isym != sym) {
-          /* The symbol was already interned, so point to the existing one */
-          INITSYMVAL(sym) = isym;
-          if (S_vfasl_boot_mode > 0) {
-            IGEN gen = SegInfo(ptr_get_segment(isym))->generation;
-            if (gen < static_generation) {
-              printf("WARNING: vfasl symbol already interned, but at generation %d: %p ", gen, TO_VOIDP(isym));
-              S_prin1(isym);
-              printf("\n");
+        if (!uninterned) {
+          isym = S_intern4(sym);
+          if (isym != sym) {
+            /* The symbol was already interned, so point to the existing one */
+            INITSYMVAL(sym) = isym;
+            if (S_vfasl_boot_mode > 0) {
+              IGEN gen = SegInfo(ptr_get_segment(isym))->generation;
+              if (gen < static_generation) {
+                printf("WARNING: vfasl symbol already interned, but at generation %d: %p ", gen, TO_VOIDP(isym));
+                S_prin1(isym);
+                printf("\n");
+              }
             }
           }
         }
@@ -504,7 +509,7 @@ static void relink_code(ptr co, ptr sym_base, ptr *vspaces, uptr *vspace_offsets
     a = 0;
     n = 0;
     while (n < m) {
-      uptr entry, item_off, code_off; ptr obj;
+      uptr entry, item_off, code_off; ptr obj; I32 saved_off;
 
         entry = RELOCIT(t, n); n += 1;
         if (RELOC_EXTENDED_FORMAT(entry)) {
@@ -517,7 +522,8 @@ static void relink_code(ptr co, ptr sym_base, ptr *vspaces, uptr *vspace_offsets
         a += code_off;
 
         /* offset is stored in place of constant-loading code: */
-        memcpy(&obj, TO_VOIDP((ptr)((uptr)co + a)), sizeof(ptr));
+        memcpy(&saved_off, TO_VOIDP((ptr)((uptr)co + a)), sizeof(I32));
+        obj = (ptr)(iptr)saved_off;
 
         if (FIXMEDIATE(obj)) {
           if (Sfixnump(obj)) {

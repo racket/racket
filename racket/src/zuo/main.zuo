@@ -1,0 +1,24 @@
+#lang zuo
+
+(for-each
+ alert
+ (append
+  (list ""
+        "Welcome to Zuo!"
+        ""
+        "This message is from \"main.zuo\"."
+        ""
+        "Probably, you're seeing this message because you ran Zuo with no arguments,"
+        "in which case \"main.zuo\" in the current directory is loaded by default."
+        "It's possible that you meant to run Zuo with \"build.zuo\" to (re)build or"
+        "install Zuo."
+        ""
+        "If you want to run your own program, supply the program's path as an argument."
+        "A program file will start with `#lang`, and most likely it starts `#lang zuo`."
+        "Additional arguments are made available to the target program through the"
+        "`command-line-arguments` procedure (in languages like `#lang zuo`, at least)."
+        ""
+        "If you want to type in a program directly, supply the empty string \"\" in"
+        "place of a file path. You'll still need to start the program with something"
+        "like `#lang zuo`."
+        "")))

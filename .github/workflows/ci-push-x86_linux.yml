@@ -9,7 +9,7 @@ jobs:
 # component finishes building.
 
   build-racketcgc:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-22.04
     container:
       image: racket/racket-ci:latest
 
@@ -19,7 +19,7 @@ jobs:
         cify: [nocify]
     
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
       with:
         fetch-depth: 100
     - name: Setup cify if enabled
@@ -54,13 +54,13 @@ jobs:
     - name: Tarballing
       working-directory: /usr/local
       run: tar -cvjf /tmp/racketcgc-debian10-${{ matrix.cify }}-x64_git${{ github.sha }}.tar.bz2 racketcgc
-    - uses: actions/upload-artifact@v2
+    - uses: actions/upload-artifact@v3
       with:
         name: racketcgc-debian10-${{ matrix.cify }}-x64_git${{ github.sha }}
         path: /tmp/racketcgc-debian10-${{ matrix.cify }}-x64_git${{ github.sha }}.tar.bz2
 
   build-racket3m:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-22.04
     container:
       image: racket/racket-ci:latest
                 
@@ -84,7 +84,7 @@ jobs:
             cc: gcc # clang has a problem with future tests timing out
   
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
       with:
         fetch-depth: 100
     - name: Setup cify if enabled
@@ -105,7 +105,7 @@ jobs:
     - name: Setup efp if disabled
       if: matrix.efp == 'noefp'
       run: echo "EFP_OPTIONS=--disable-extflonums --disable-places --disable-futures" >> $GITHUB_ENV
-    - uses: actions/download-artifact@v2
+    - uses: actions/download-artifact@v3
       with:
         name: racketcgc-debian10-nocify-x64_git${{ github.sha }}
         path: /tmp
@@ -141,13 +141,13 @@ jobs:
     - name: Tarballing
       working-directory: /usr/local
       run: tar -cvjf /tmp/racket3m-debian10-${{ matrix.cify }}-${{ matrix.jit }}-${{ matrix.efp }}-x64_git${{ github.sha}}.tar.bz2 racket3m
-    - uses: actions/upload-artifact@v2
+    - uses: actions/upload-artifact@v3
       with:
         name: racket3m-debian10-${{ matrix.cify }}-${{ matrix.jit }}-${{ matrix.efp }}-x64_git${{ github.sha }}
         path: /tmp/racket3m-debian10-${{ matrix.cify }}-${{ matrix.jit }}-${{ matrix.efp }}-x64_git${{ github.sha }}.tar.bz2
 
   build-racketcs:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-22.04
     container:
       image: racket/racket-ci:latest
 
@@ -158,16 +158,16 @@ jobs:
       matrix:
         cc: [gcc, clang]
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
       with:
         fetch-depth: 100
-    - uses: actions/download-artifact@v2
+    - uses: actions/download-artifact@v3
       with:
         name: racketcgc-debian10-nocify-x64_git${{ github.sha }}
         path: /tmp
     - name: Untar
       working-directory: /usr/local
-      run: tar -xvjf /tmp/racketcgc-debian10-nocify-x64_git${{ github.sha}}.tar.bz2
+      run: tar -xvjf /tmp/racketcgc-debian10-nocify-x64_git${{ github.sha }}.tar.bz2
     - name: Configuring Racket CS
       working-directory: ./racket/src
       env:
@@ -192,11 +192,11 @@ jobs:
       run: make -j  $((cpus+1)) install
     - name: Tarballing
       working-directory: /usr/local
-      run: tar -cvjf /tmp/racketcs-debian10-x64_git${{ github.sha}}.tar.bz2 racketcs
-    - uses: actions/upload-artifact@v2
+      run: tar -cvjf /tmp/racketcs-debian10-x64-${{ matrix.cc }}_git${{ github.sha }}.tar.bz2 racketcs
+    - uses: actions/upload-artifact@v3
       with:
-        name: racketcs-debian10-x64_git${{ github.sha }}
-        path: /tmp/racketcs-debian10-x64_git${{ github.sha }}.tar.bz2
+        name: racketcs-debian10-x64-${{ matrix.cc }}_git${{ github.sha }}
+        path: /tmp/racketcs-debian10-x64-${{ matrix.cc }}_git${{ github.sha }}.tar.bz2
 
   # Tests
   # Unfortunately Actions does not support atm yaml anchors
@@ -204,7 +204,7 @@ jobs:
   # Note: the reason we cannot transform this into a matrix
   # build is because we cannot use variables in the needs keyword.
   test-cgc:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-22.04
     container:
       image: racket/racket-ci:latest
       options: --init
@@ -217,8 +217,8 @@ jobs:
         cify: [nocify]
 
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions/download-artifact@v2
+      - uses: actions/checkout@v3
+      - uses: actions/download-artifact@v3
         with:
           name: racketcgc-debian10-${{ matrix.cify }}-x64_git${{ github.sha }}
           path: /tmp
@@ -264,7 +264,7 @@ jobs:
       - name: Run tests/xml
         run: raco test -c tests/xml
       - name: Run tests/future
-        run: raco test -c tests/future
+        run: raco test --timeout 300 -c tests/future
       - name: Run tests/stxparse
         run: raco test -c tests/stxparse
       - name: Install db tests dependency
@@ -275,7 +275,7 @@ jobs:
         run: raco test -c tests/syntax
 
   test-3m:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-22.04
     container:
       image: racket/racket-ci:latest
       options: --init
@@ -300,8 +300,8 @@ jobs:
             cc: gcc
 
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions/download-artifact@v2
+      - uses: actions/checkout@v3
+      - uses: actions/download-artifact@v3
         with:
           name: racket3m-debian10-${{ matrix.cify }}-${{ matrix.jit }}-${{ matrix.efp }}-x64_git${{ github.sha }}
           path: /tmp
@@ -347,7 +347,7 @@ jobs:
       - name: Run tests/xml
         run: raco test -c tests/xml
       - name: Run tests/future
-        run: raco test -c tests/future
+        run: raco test --timeout 300 -c tests/future
       - name: Run tests/stxparse
         run: raco test -c tests/stxparse
       - name: Install db tests dependency
@@ -358,22 +358,27 @@ jobs:
         run: raco test -c tests/syntax
 
   test-cs:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-22.04
     container:
       image: racket/racket-ci:latest
       options: --init
 
     needs: build-racketcs
 
+    strategy:
+      fail-fast: false
+      matrix:
+        cc: [gcc]
+
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions/download-artifact@v2
+      - uses: actions/checkout@v3
+      - uses: actions/download-artifact@v3
         with:
-          name: racketcs-debian10-x64_git${{ github.sha }}
+          name: racketcs-debian10-x64-${{ matrix.cc }}_git${{ github.sha }}
           path: /tmp
       - name: Untar
         working-directory: /usr/local
-        run: tar -xvjf /tmp/racketcs-debian10-x64_git${{ github.sha }}.tar.bz2
+        run: tar -xvjf /tmp/racketcs-debian10-x64-${{ matrix.cc }}_git${{ github.sha }}.tar.bz2
       - name: Extend PATH with Racket executable
         run: echo "/usr/local/racketcs/bin" >> $GITHUB_PATH
       - name: Check for Racket
@@ -413,7 +418,7 @@ jobs:
       - name: Run tests/xml
         run: raco test -c tests/xml
       - name: Run tests/future
-        run: raco test -c tests/future
+        run: raco test --timeout 300 -c tests/future
       - name: Run tests/stxparse
         run: raco test -c tests/stxparse
       - name: Install db tests dependency

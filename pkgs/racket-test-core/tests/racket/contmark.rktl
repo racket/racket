@@ -138,7 +138,7 @@
 
 (require (prefix-in unit: racket/unit))
 
-;; ;; Hide keywords from scheme/unit.rkt:
+;; Hide keywords from racket/unit:
 (define import #f)
 (define export #f)
 (define link #f)
@@ -758,6 +758,8 @@
                     (with-continuation-mark 'x 14
                       (call-with-immediate-continuation-mark 'x (lambda (v) v))))))
 
+(test 'nope call/cc (λ (k) (call-with-immediate-continuation-mark 'key k 'nope)))
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Check a wcm in tail position of a wcm that is not in tail position,
@@ -847,6 +849,9 @@
     (random-seed s)
     (test (list s #t)
           list s (for/and ([i (in-range 100)]) (go)))))
+
+(test #t andmap (lambda (p) (pair? p)) (continuation-mark-set->context (current-continuation-marks)))
+(test #t andmap (lambda (v) (vector? v)) (continuation-mark-set->context (current-continuation-marks) #t))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Test interaction of prompts and `continuation-mark-set-first'

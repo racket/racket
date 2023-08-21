@@ -1,3 +1,61 @@
+Version 8.10, July 2023
+Improve Check Syntax binding arrows from `define-local-member-name`
+Change `syntax-parse` to use interpreted mode for patterns outside
+ syntax classes
+Allow fxvectors and flvectors in fasl and compiled code
+Add `[im]mutable-string?`, `[im]mutable-bytes?`, `[im]mutable-vector?`,
+ `[im]mutable-box?`, and `[im]mutable-hash?`
+
+Version 8.9, April 2023
+Use Unicode 15.0 for character and string operations
+Add `racket/hash-code`
+Add `fxrshift/logical`
+Add support for `configure-expand` submodules
+Add support for multiple values to `stream-cons`
+Improve `unit/c` to see more bindings and to enforce contracts
+ within `constract` forms
+Add an optipnal results clause to `define-values/invoke-unit`
+Change TCP output port block buffering to imply TCP_NODELAY
+
+Version 8.8, January 2023
+Add `#:param` option to `->i`
+Extend `copy-file` with permission-management arguments
+Fix CS `[:word:]` regexp pattern to include ASCII digits
+Other bug repairs and other changes noted in the documentation
+
+Version 8.7, October 2022
+Use Unicode 14.0 for character and string operations
+Add grapheme operations, such as `string-grapheme-count`
+CS: Add support for RV64G (RISC-V)
+Add `(#%declare #:require=define)` to disable shadowing by definitions
+Other bug repairs and other changes noted in the documentation
+
+Version 8.6, July 2022
+Change build to use Zuo
+Add `equal-always?`
+Add stencil vectors
+Add support for Arm64 Windows
+Other bug repairs and other changes noted in the documentation
+
+Version 8.5, April 2022
+Add a `-y`/`--make` flag to automatically create/update ".zo"s
+Add error-message realms
+Add `read-syntax-accept-graph`
+Change `make-temporary-file` to have keyword arguments
+Change `for` to support `#:splice` clauses
+Enable user-specific adjustment of an installation name
+Racket CS: support pb backend
+Other bug repairs and other changes noted in the documentation
+
+Version 8.4, January 2022
+Add `file-or-directory-stat`
+Expander: add "portal" syntax
+Add `#%terminal` primitive module for editor support; using this,
+ "xrepl" and "expeditor" provide an improved REPL by default
+Change `set/c` to support random generation
+CS: faster multiplication and division for some numbers
+Other bug repairs and other changes noted in the documentation
+
 Version 8.3, October 2021
 Expander: remove syntax arming and disarming in favor of a simpler
  system of protected syntax operations

@@ -1,7 +1,7 @@
 
 (printf "Stream Tests (current dir must be startup dir)\n")
 
-(require scheme/system)
+(require racket/system)
 
 (define (log . args)
   '(begin

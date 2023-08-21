@@ -216,11 +216,12 @@
 
 (define (parse-identifier! spec orig-s sym at-phase at-space-level ns rp protected?)
   (define at-space (space+ #f at-space-level))
-  (define b (resolve+shift/extra-inspector (add-space-scope spec at-space) at-phase ns))
+  (define spec-at-space (add-space-scope spec at-space))
+  (define b (resolve+shift/extra-inspector spec-at-space at-phase ns))
   (unless (module-binding? b)
     (raise-syntax-error provide-form-name "provided identifier is not defined or required" orig-s spec))
   (when at-space
-    (when (same-binding? b (resolve+shift/extra-inspector (remove-space-scope spec at-space) at-phase ns))
+    (unless (identifier-binding-uses-scope? spec-at-space (make-interned-scope at-space) at-phase)
       (raise-syntax-error provide-form-name "provided identifier is defined only outside the space" orig-s spec)))
   (define as-transformer? (binding-for-transformer? b spec at-phase ns))
   (define immed-b (resolve+shift spec at-phase #:immediate? #t))

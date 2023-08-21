@@ -22,6 +22,7 @@
 #  include <Windows.h>
 #  define SCHEME_IMPORT
 #  include "scheme.h"
+#  include <process.h>
 # else
 #  include <pthread.h>
 #  include "scheme.h"
@@ -123,7 +124,7 @@ void *in_thread(void *_proc_and_arg)
 
 #if defined(_WIN32)
 # define os_thread_t unsigned
-# define os_thread_create(addr, proc, arg) (((*(addr)) = _beginthread(proc, 0, arg)) == -1)
+# define os_thread_create(addr, proc, arg) (((*(addr)) = _beginthread((void(*)(void*))proc, 0, arg)) == -1)
 # define os_thread_join(t) WaitForSingleObject((HANDLE)(intptr_t)(t), INFINITE)
 #else
 # define os_thread_t pthread_t
@@ -142,13 +143,11 @@ EXPORT double call_in_unknown_thread(double (*proc)(double arg), double arg, int
   proc_and_arg->n_times = n_times;
 
   if (do_fork) {
+    if (do_deactivate) Sdeactivate_thread();
     if (!os_thread_create(&t, in_thread, proc_and_arg)) {
-      if (do_deactivate)
-        Sdeactivate_thread();
       os_thread_join(t);
-      if (do_deactivate)
-        Sactivate_thread();
     }
+    if (do_deactivate) Sactivate_thread();
   } else {
     in_thread(proc_and_arg);
   }
@@ -167,7 +166,7 @@ EXPORT unsigned spin_a_while(int amt, unsigned a, unsigned b)
 
   /* A loop that the compiler is unlikely to optimize away */
   for (i = 0; i < amt; i++) {
-    a = a + 1;
+    a = a + b;
     b = b + a;
   }
 
@@ -397,3 +396,13 @@ GEN_U2(int, int, 48)
 GEN_U2(i64, int, 43)
 GEN_U2(float, int, 58.0)
 GEN_U2(double, int, 68.0)
+
+typedef struct struct_uniondoubledouble_double {
+  union { double d1; double d2; } ds;
+  double d3;
+} struct_uniondoubledouble_double;
+static double _f4_sum_struct_uniondoubledouble_double (struct_uniondoubledouble_double v) {
+  return v.ds.d1 + v.d3;
+}
+static struct_uniondoubledouble_double init_struct_uniondoubledouble_double = { { 99.0 }, -12.5};
+GEN(struct_uniondoubledouble_double, init_struct_uniondoubledouble_double, _f4_sum_struct_uniondoubledouble_double)

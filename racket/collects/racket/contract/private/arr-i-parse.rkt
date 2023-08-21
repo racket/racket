@@ -23,9 +23,10 @@ code does the parsing and validation of the syntax.
 ;; args : (listof arg?)
 ;; rst  : (or/c #f arg/res?)
 ;; pre  : (listof pre/post?)
+;; params : (listof param?)
 ;; ress : (or/c #f (listof eres?) (listof lres?))
 ;; post : (listof pre/post?)
-(struct istx (is-chaperone-contract? args rst pre ress post) #:transparent)
+(struct istx (is-chaperone-contract? args rst pre params ress post) #:transparent)
 ;; NOTE: the ress field may contain a mixture of eres and lres structs
 ;;       but only temporarily; in that case, a syntax error
 ;;       is signaled and the istx struct is not used afterwards
@@ -58,12 +59,19 @@ code does the parsing and validation of the syntax.
 (struct pre/post-pre pre/post () #:transparent)
 (struct pre/post-post pre/post () #:transparent)
 
+;; vars : (listof identifier?)
+;; pexp : syntax[expr]
+;; vexp : syntax[expr]
+;; quoted-pexp : sexpr
+;; quoted-vexp : sexpr
+(struct param (vars pexp vexp quoted-pexp quoted-vexp) #:transparent)
+
 (define (parse-->i stx)
   (if (identifier? stx)
       (raise-syntax-error #f "expected ->i to follow an open parenthesis" stx)
       (let-values ([(is-chaperone-contract?
                      raw-mandatory-doms raw-optional-doms
-                     id/rest-id pre-cond range post-cond)
+                     id/rest-id pre-cond params range post-cond)
                     (pull-out-pieces stx)])
         (let ([candidate
                (istx is-chaperone-contract?
@@ -71,6 +79,7 @@ code does the parsing and validation of the syntax.
                              (parse-doms stx #t raw-optional-doms))
                      id/rest-id
                      pre-cond
+                     params
                      (parse-range stx range)
                      post-cond)])
           (ensure-wf-names stx candidate)
@@ -539,6 +548,41 @@ code does the parsing and validation of the syntax.
                        stx
                        (car (syntax->list leftover)))]
                      [_ (values (reverse conditions) leftover)]))]
+                [(params leftover)
+                 (let loop ([leftover leftover]
+                            [params '()])
+                   (syntax-case leftover ()
+                     [(kwd (id ...) pexp vexp . param-leftover)
+                      (equal? (syntax-e #'kwd) '#:param)
+                      (begin
+                        (syntax-case #'param-leftover ()
+                          [() (raise-syntax-error
+                               #f
+                               (format
+                                (string-append
+                                 "expected ~a to be followed by at least four subterms"
+                                 " (a sequence of identifiers, the parameter, the parameter value"
+                                 " and the range contract), but found only three")
+                                (syntax-e #'kwd))
+                               stx
+                               (car (syntax->list leftover)))]
+                          [x (void)])
+                        (for-each (λ (x) (check-id stx x)) (syntax->list #'(id ...)))
+                        (loop #'param-leftover
+                              (cons (param (syntax->list #'(id ...))
+                                           #'pexp #'vexp
+                                           (compute-quoted-src-expression #'pexp)
+                                           (compute-quoted-src-expression #'vexp))
+                                    params)))]
+                     [(kwd . rest)
+                      (equal? (syntax-e #'kwd) '#:param)
+                      (raise-syntax-error
+                       #f
+                       (format "expected a sequence of identifiers and two expressions to follow ~a"
+                               (syntax-e #'kwd))
+                       stx
+                       (car (syntax->list leftover)))]
+                     [_ (values (reverse params) leftover)]))]
                 [(range leftover) 
                  (begin
                    (syntax-case leftover ()
@@ -625,7 +669,7 @@ code does the parsing and validation of the syntax.
     (syntax-case leftover ()
       [() 
        (values is-chaperone-contract?
-               raw-mandatory-doms raw-optional-doms id/rest-id pre-conds
+               raw-mandatory-doms raw-optional-doms id/rest-id pre-conds params
                range post-conds)]
       [(a . b)
        (raise-syntax-error #f "bad syntax" stx #'a)]
@@ -641,4 +685,5 @@ code does the parsing and validation of the syntax.
  (struct-out eres)
  (struct-out pre/post)
  (struct-out pre/post-pre)
- (struct-out pre/post-post))
+ (struct-out pre/post-post)
+ (struct-out param))

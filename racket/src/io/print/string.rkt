@@ -40,8 +40,9 @@
                  [max-length (write-bytes/max escaped o max-length)]
                  [i (add1 i)])
             (loop i i max-length))]
-         [(or (char-graphic? c)
-              (char-blank? c))
+         [(char-graphic? c)
+          (loop start-i (+ i (string-grapheme-span str i)) max-length)]
+         [(char-blank? c)
           (loop start-i (add1 i) max-length)]
          [else
           (define n (char->integer c))

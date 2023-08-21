@@ -3,7 +3,10 @@
                      racket/local
                      racket/syntax
                      syntax/stx
-                     syntax/boundmap)
+                     (only-in syntax/private/boundmap
+                              [make-module-identifier-mapping make-free-identifier-mapping]
+                              [module-identifier-mapping-get free-identifier-mapping-get]
+                              [module-identifier-mapping-put! free-identifier-mapping-put!]))
          "generic-methods.rkt"
          (only-in racket/private/arity arity-includes?))
 
@@ -20,16 +23,26 @@
 
   (define (check-identifier! stx)
     (unless (identifier? stx)
-      (wrong-syntax stx "expected an identifier")))
-
-  (define (free-id-table) (make-free-identifier-mapping))
-  (define (free-id-ref table id default)
-    (free-identifier-mapping-get table id (lambda () default)))
-  (define (free-id-set! table id value)
-    (free-identifier-mapping-put! table id value)))
-
+      (wrong-syntax stx "expected an identifier"))))
 (define-syntax (define-primitive-generics/derived stx)
   (syntax-case stx ()
+    [(_ original
+        names
+        #:fast-defaults fast-defaults
+        #:defaults defaults
+        #:fallbacks fallbacks
+        #:derive-properties derive-props
+        [method-name . method-signature]
+        ...)
+     #'(define-primitive-generics/derived original
+         names
+         #:fast-defaults fast-defaults
+         #:defaults defaults
+         #:fallbacks fallbacks
+         #:derive-properties derive-props
+         #:requires []
+         [method-name . method-signature]
+         ...)]
     [(_ original
         (self-name generic-name
                    property-name
@@ -40,6 +53,7 @@
         #:defaults ([default-pred default-disp default-defn ...] ...)
         #:fallbacks [fallback-defn ...]
         #:derive-properties ([derived-prop derived-impl] ...)
+        #:requires [required-meth ...]
         [method-name . method-signature]
         ...)
      (parameterize ([current-syntax-context #'original])
@@ -110,6 +124,17 @@
                  (values))
              #'(begin)))
 
+       (define required-meths (make-free-identifier-mapping))
+
+       (for ([m (in-list (syntax->list #'(required-meth ...)))])
+         (free-identifier-mapping-put! required-meths m #t))
+
+       (define/with-syntax (filled-required-meth ...)
+         (for/list ([m (in-list (syntax->list #'(method-name ...)))])
+           (if (free-identifier-mapping-get required-meths m (λ () #f))
+               #'#t
+               #'#f)))
+
        #'(begin
            (define-syntax generic-name
              (make-generic-info (quote-syntax generic-name)
@@ -117,7 +142,8 @@
                                 (quote-syntax prop:pred)
                                 (quote-syntax accessor-name)
                                 (list (quote-syntax method-name) ...)
-                                (list (quote-syntax method-name) ...)))
+                                (list (quote-syntax method-name) ...)
+                                (list filled-required-meth ...)))
            (define (prop:guard x info)
              (unless (and (vector? x) (= (vector-length x) 'size))
                (raise-argument-error 'generic-name
@@ -200,13 +226,13 @@
            (define default-pred-name default-pred) ...
            (define default-disp-name default-disp-expr) ...
            (define-values (fast-by-type ...)
-             (generic-methods generic-name fast-defn ...))
+             (generic-methods generic-name values fast-defn ...))
            ...
            (define-values (default-by-type ...)
-             (generic-methods generic-name default-defn ...))
+             (generic-methods generic-name values default-defn ...))
            ...
            (define-values (fallback ...)
-             (generic-methods generic-name fallback-defn ...))))]))
+             (generic-methods generic-name values fallback-defn ...))))]))
 
 (define-syntax (define-primitive-generics stx)
   (syntax-case stx ()

@@ -8,7 +8,8 @@
 
 (provide print-list)
 
-(define (print-list p who v mode o max-length graph config alt-list-prefix alt-list-constructor)
+(define (print-list p who v mode o max-length graph config
+                    alt-list-prefix alt-list-constructor [alt-closer #f])
   (define unquoted-pairs?
     (and (eq? mode PRINT-MODE/UNQUOTED)
          (not alt-list-constructor)
@@ -59,11 +60,11 @@
        (let loop ([v v] [max-length max-length])
          (cond
            [(eq? max-length 'full) 'full]
-           [(null? v) (write-string/max (if curly? "}" ")") o max-length)]
+           [(null? v) (write-string/max (or alt-closer (if curly? "}" ")")) o max-length)]
            [(and (null? (cdr v))
                  (not unquoted-pairs?))
             (let ([max-length (p who (car v) mode o max-length graph config)])
-              (write-string/max (if curly? "}" ")") o max-length))]
+              (write-string/max (or alt-closer (if curly? "}" ")")) o max-length))]
            [(and (pair? (cdr v))
                  (or (not graph) (non-graph? (hash-ref graph (cdr v) #f)))
                  (not (abbreviation (cdr v))))
@@ -79,7 +80,7 @@
                                    (write-string/max " " o max-length)
                                    (write-string/max " . " o max-length))]
                    [max-length (p who (cdr v) mode o max-length graph config)])
-              (write-string/max (if curly? "}" ")") o max-length))])))]))
+              (write-string/max (or alt-closer (if curly? "}" ")")) o max-length))])))]))
 
 (define (uninterrupted-list? v graph)
   (and (list? v)

@@ -546,8 +546,12 @@ function pointer and vice versa.
 A type created with @racket[_cprocedure] can also be used for passing
 Racket procedures to foreign functions, which will generate a foreign
 function pointer that calls to the given Racket @deftech{callback}
-procedure.  There are no restrictions on the Racket procedure; in
-particular, its lexical context is properly preserved.
+procedure. There are no restrictions on the representation of the
+Racket procedure; in particular, the procedure can have free variables
+that refer to bindings in its environment. Callbacks are subject to
+run-time constraints, however, such as running in atomic mode or not
+raising exceptions; see @elemref["callbacks"]{more information on
+callbacks} below.
 
 The optional @racket[abi] keyword argument determines the foreign ABI
 that is used. Supplying @racket[#f] or @racket['default] indicates the
@@ -558,14 +562,20 @@ platforms raises an exception. See also @racketmodname[ffi/winapi].
 
 The optional @racket[varargs-after] argument indicates whether some
 function-type arguments should be considered ``varargs,'' which are
-argument represented by an ellipsis @litchar{...} in the C
-declaration. A @racket[#f] value indicates that the C function type
-does not have varargs. If @racket[varargs-after] is a number, then
-arguments after the first @racket[varargs-after] arguments are
-varargs. Note that @racket[#f] is different from @racket[(length
-input-types)] on some platforms; the possibility of varargs for a
-function may imply a different calling convention even for non-vararg
-arguments.
+argument represented by an ellipsis @litchar{...} in the C declaration
+(but by explicit arguments in @racket[input-types]). A @racket[#f]
+value indicates that the C function type does not have varargs. If
+@racket[varargs-after] is a number, then arguments after the first
+@racket[varargs-after] arguments in @racket[input-types] are varargs.
+Note that @racket[#f] is different from @racket[(length input-types)]
+on some platforms; the possibility of varargs for a function may imply
+a different calling convention even for non-vararg arguments. Note
+also that a non-@racket[#f] @racket[varargs-after] does @emph{not}
+mean that you can supply any number of arguments to a @tech{callout}
+or receive any number of arguments to a @tech{callback} using the
+procedure type; to work with different argument counts and argument
+types, use @racket[_cprocedure] (or @racket[_fun]) separately for each
+combination.
 
 For @tech{callouts} to foreign functions with the generated type:
 
@@ -662,7 +672,8 @@ For @tech{callouts} to foreign functions with the generated type:
 
 ]
 
-For @tech{callbacks} to Racket functions with the generated type:
+For @elemtag["callbacks"]{@tech{callbacks}} to Racket functions with
+the generated type:
 
 @itemize[
 
@@ -799,6 +810,13 @@ For @tech{callbacks} to Racket functions with the generated type:
        @racket[async-apply] is called from foreign code in the same
        OS-level thread that runs Racket, then @racket[async-apply]
        is not used.}
+
+ @item{A callback normally should not escape by raising an exception
+       or invoking a continuation. An atomic callback can potentially
+       raise an exception, but only if it is called during the
+       invocation of a @tech{callout} created with
+       @racket[callback-exns?] as true. A non-atomic callback must
+       never raise an exception.}
 
 ]
 

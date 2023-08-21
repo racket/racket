@@ -1,0 +1,52 @@
+#lang zuo/datum
+
+;; Used by "../jobserver.zuo"
+
+"#lang zuo/base"
+(require zuo/thread)
+
+(define args (hash-ref (runtime-env) 'args))
+
+(define stdin (fd-open-input 'stdin))
+(define stdout (fd-open-output 'stdout))
+
+(define in (fd-open-input (string->integer (list-ref args 0))))
+(define out (fd-open-output (string->integer (list-ref args 1))))
+
+;; jobserver-manager's job is to reliably clean up on exit,
+;; so disable signals
+(suspend-signal)
+
+(let loop ([held 0] [waiting 0])
+  (define ready (fd-poll (if (= 0 waiting)
+                             (list stdin)
+                             (list stdin in))))
+  (cond
+    [(eq? ready stdin)
+     (define b (fd-read stdin 1))
+     (cond
+       [(eq? b eof)
+        ;; parent has exited, so release all resources
+        (let done-loop ([held held])
+          (when (> held 1)
+            (fd-write out "x")
+            (done-loop (- held 1))))]
+       [(equal? b "+")
+        ;; acquire request
+        (cond
+          [(> held 0)
+           (loop held (+ waiting 1))]
+          [else
+           ;; acquired initial
+           (fd-write stdout "x")
+           (loop (+ held 1) waiting)])]
+       [else
+        ;; release
+        (when (> held 1)
+          (fd-write out "x"))
+        (loop (- held 1) waiting)])]
+    [else
+     (fd-read in 1)
+     ;; acquired
+     (fd-write stdout "x")
+     (loop (+ held 1) (- waiting 1))]))

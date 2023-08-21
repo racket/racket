@@ -154,6 +154,7 @@
 ;;  - _tf_              : type word
 ;;  - _tg_              : target generation
 ;;  - _backreferences?_ : dynamic flag indicating whether backreferences are on
+;;  - _bytevector-pad?_ : whether a bytevector has a pad word in its header
 ;;
 ;; Stylistically, prefer constants and fields using the hyphenated
 ;; names from cmacros instead of the corresponding C name. Use C names
@@ -404,7 +405,7 @@
              (set! (vector-data _copy_ len) (FIX 0))))
       (count countof-vector)]
 
-     [stencil-vector
+     [any-stencil-vector ; stencil-vector or $stencil-vector
       ;; Assumes stencil-vector tags look like immediates or fixnums;
       ;; if not, stencil vectors will need their own space
       (space
@@ -455,7 +456,9 @@
         (copy-type bytevector-type)
         (define len : uptr (Sbytevector_reference_length _))
         (trace-reference-ptrs bytevector-data len)
-        (pad (when (== (& len 1) 0)
+        (pad (when _bytevector-pad?_
+               (set! (* (cast ptr* (TO_VOIDP (+ (cast uptr _copy_) bytevector_pad_disp)))) (FIX 0))))
+        (pad (when (== (& len 1) (if _bytevector-pad?_ 1 0))
                (set! (INITBVREFIT _copy_ len) (FIX 0))))
         (count countof-bytevector)]
        [else
@@ -1023,47 +1026,47 @@
    (when (< fp base)
      (S_error_abort "sweep_stack(gc): malformed stack"))
    (set! fp (- fp (ENTRYFRAMESIZE ret)))
-   (let* ([pp : ptr* (cast ptr* (TO_VOIDP fp))]
-          [oldret : iptr ret])
+   (let* ([oldret : iptr ret]
+          [num : ptr (ENTRYLIVEMASK oldret)] ; keep close to `ENTRYFRAMESIZE`
+          [pp : ptr* (cast ptr* (TO_VOIDP fp))])
      (set! ret (cast iptr (* pp)))
      (trace-return NO-COPY-MODE (* pp))
-     (let* ([num : ptr (ENTRYLIVEMASK oldret)])
-       (cond
-         [(Sfixnump num)
-          (let* ([mask : uptr (UNFIX num)])
-            (while
-             :? (!= mask 0)
-             (set! pp += 1)
-             (when (& mask #x0001)
-               (trace-pure (* pp)))
-             (set! mask >>= 1)))]
+     (cond
+       [(Sfixnump num)
+        (let* ([mask : uptr (UNFIX num)])
+          (while
+           :? (!= mask 0)
+           (set! pp += 1)
+           (when (& mask #x0001)
+             (trace-pure (* pp)))
+           (set! mask >>= 1)))]
+       [else
+        (case-mode
+         [(check) (check-bignum num)]
          [else
-          (case-mode
-           [(check) (check-bignum num)]
-           [else
-            (define n_si : seginfo* (SegInfo (ptr_get_segment num)))
-            (cond
-              [(! (-> n_si old_space))]
-              [(SEGMENT_IS_LOCAL n_si num)
-               (trace-pure (* (ENTRYNONCOMPACTLIVEMASKADDR oldret)))
-               (set! num  (ENTRYLIVEMASK oldret))]
-              [else
-               (case-mode
-                [(measure)]
-                [else (RECORD_REMOTE n_si)])
-               (set! num S_G.zero_length_bignum)])])
-          (let* ([index : iptr (BIGLEN num)])
-            (while
-             :? (!= index 0)
-             (set! index -= 1)
-             (let* ([bits : INT bigit_bits]
-                    [mask : bigit (bignum-data num index)])
-               (while
-                :? (> bits 0)
-                (set! bits -= 1)
-                (set! pp += 1)
-                (when (& mask 1) (trace-pure (* pp)))
-                (set! mask >>= 1)))))])))))
+          (define n_si : seginfo* (SegInfo (ptr_get_segment num)))
+          (cond
+            [(! (-> n_si old_space))]
+            [(SEGMENT_IS_LOCAL n_si num)
+             (trace-pure (* (ENTRYNONCOMPACTLIVEMASKADDR oldret)))
+             (set! num  (ENTRYLIVEMASK oldret))]
+            [else
+             (case-mode
+              [(measure)]
+              [else (RECORD_REMOTE n_si)])
+             (set! num S_G.zero_length_bignum)])])
+        (let* ([index : iptr (BIGLEN num)])
+          (while
+           :? (!= index 0)
+           (set! index -= 1)
+           (let* ([bits : INT bigit_bits]
+                  [mask : bigit (bignum-data num index)])
+             (while
+              :? (> bits 0)
+              (set! bits -= 1)
+              (set! pp += 1)
+              (when (& mask 1) (trace-pure (* pp)))
+              (set! mask >>= 1)))))]))))
 
 (define-trace-macro (trace-return copy-field field)
   (case-mode
@@ -1869,6 +1872,13 @@
                      (statements body config))
                     (format "while (~a);"  (expression tst config))
                     (statements (cdr l) config)))]
+           [`(when _bytevector-pad?_ . ,body)
+            (statements (append
+                         (if (getprop 'bytevector-pad-disp '*constant* #f)
+                             body
+                             '())
+                         (cdr l))
+                        config)]
            [`(when ,tst . ,body)
             (statements (cons `(cond [,tst . ,body][else]) (cdr l))
                         config)]
@@ -1935,6 +1945,11 @@
          (if (lookup 'maybe-backreferences? config #f)
              "BACKREFERENCES_ENABLED"
              "0")]
+        [`(if _bytevector-pad?_ ,tru ,fls)
+         (let ([e (if (getprop 'bytevector-pad-disp '*constant* #f)
+                      tru
+                      fls)])
+           (expression e config protect? multiline?))]
         [`(just ,id)
          (hashtable-set! (lookup 'used config) id #t)
          (symbol->string id)]

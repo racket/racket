@@ -39,6 +39,7 @@ TO DO:
          racket/include
          "libcrypto.rkt"
          "libssl.rkt"
+         "private/ffi.rkt"
          (for-syntax racket/base))
 (lazy-require
  ["private/win32.rkt" (load-win32-store)]
@@ -46,8 +47,11 @@ TO DO:
 
 (define-logger openssl)
 
+(when (and libssl (not v1.0.2/later?))
+  (log-openssl-error "OpenSSL library too old, version 1.0.2 or later required."))
+
 (define protocol-symbol/c
-  (or/c 'secure 'auto 'sslv2-or-v3 'sslv2 'sslv3 'tls 'tls11 'tls12))
+  (or/c 'secure 'auto 'sslv2-or-v3 'sslv2 'sslv3 'tls 'tls11 'tls12 'tls13))
 
 (define (alpn-protocol-bytes/c v)
   (and (bytes? v) (< 0 (bytes-length v) 256)))
@@ -85,10 +89,11 @@ TO DO:
   (or/c path-string?
         (list/c 'directory path-string?)
         (list/c 'win32-store string?)
-        (list/c 'macosx-keychain path-string?)))
+        (list/c 'macosx-keychain (or/c #f path-string?))))
 
 (provide
  ssl-dh4096-param-bytes
+ (rename-out [protocol-symbol/c ssl-protocol-symbol/c])
  (contract-out
   [ssl-available? boolean?]
   [ssl-load-fail-reason (or/c #f string?)]
@@ -138,6 +143,8 @@ TO DO:
    (c-> ssl-context? string? void?)]
   [ssl-set-server-name-identification-callback!
    (c-> ssl-server-context? (c-> string? (or/c ssl-server-context? #f)) void?)]
+  [ssl-set-server-alpn!
+   (->* [ssl-server-context? (listof alpn-protocol-bytes/c)] [boolean?] void?)]
   [ssl-seal-context!
    (c-> ssl-context? void?)]
   [ssl-default-verify-sources
@@ -154,6 +161,8 @@ TO DO:
         void?)]
   [ssl-set-verify-hostname!
    (c-> ssl-context? any/c void?)]
+  [ssl-set-keylogger!
+   (c-> ssl-context? (or/c #f logger?) void?)]
   [ssl-peer-verified?
    (c-> ssl-port? boolean?)]
   [ssl-peer-certificate-hostnames
@@ -165,7 +174,11 @@ TO DO:
   [ssl-peer-issuer-name
    (c-> ssl-port? (or/c bytes? #f))]
   [ssl-channel-binding
-   (c-> ssl-port? (or/c 'tls-unique 'tls-server-end-point) bytes?)]
+   (c-> ssl-port? (or/c 'tls-exporter 'tls-unique 'tls-server-end-point) bytes?)]
+  [ssl-default-channel-binding
+   (c-> ssl-port? (list/c symbol? bytes?))]
+  [ssl-protocol-version
+   (c-> ssl-port? (or/c symbol? #f))]
   [ssl-get-alpn-selected
    (c-> ssl-port? (or/c bytes? #f))]
   [ports->ssl-ports
@@ -226,199 +239,7 @@ TO DO:
   (or libssl-load-fail-reason
       libcrypto-load-fail-reason))
 
-;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; SSL bindings and constants
-
-(define-ffi-definer define-crypto libcrypto
-  #:default-make-fail make-not-available)
-(define-ffi-definer define-ssl libssl
-  #:default-make-fail make-not-available)
-
-(define-cpointer-type _BIO_METHOD*)
-(define-cpointer-type _BIO*)
-(define-cpointer-type _SSL_METHOD*)
-(define-cpointer-type _SSL_CTX*)
-(define-cpointer-type _SSL*)
-(define-cpointer-type _X509_NAME*)
-(define-cpointer-type _X509_NAME_ENTRY*)
-(define-cpointer-type _X509*)
-(define-cpointer-type _ASN1_STRING*)
-(define-cpointer-type _STACK*)
-(define-cpointer-type _DH*)
-(define-cpointer-type _EC_KEY*)
-(define-cstruct _GENERAL_NAME ([type _int] [d _ASN1_STRING*]))
-
-(define-ssl SSLv2_client_method (_fun -> _SSL_METHOD*) #:fail (lambda () #f))
-(define-ssl SSLv2_server_method (_fun -> _SSL_METHOD*) #:fail (lambda () #f))
-(define-ssl SSLv3_client_method (_fun -> _SSL_METHOD*) #:fail (lambda () #f))
-(define-ssl SSLv3_server_method (_fun -> _SSL_METHOD*) #:fail (lambda () #f))
-(define-ssl SSLv23_client_method (_fun -> _SSL_METHOD*) #:fail (lambda () #f))
-(define-ssl SSLv23_server_method (_fun -> _SSL_METHOD*) #:fail (lambda () #f))
-(define-ssl TLSv1_client_method (_fun -> _SSL_METHOD*) #:fail (lambda () #f))
-(define-ssl TLSv1_server_method (_fun -> _SSL_METHOD*) #:fail (lambda () #f))
-(define-ssl TLSv1_1_client_method (_fun -> _SSL_METHOD*) #:fail (lambda () #f))
-(define-ssl TLSv1_1_server_method (_fun -> _SSL_METHOD*) #:fail (lambda () #f))
-(define-ssl TLSv1_2_client_method (_fun -> _SSL_METHOD*) #:fail (lambda () #f))
-(define-ssl TLSv1_2_server_method (_fun -> _SSL_METHOD*) #:fail (lambda () #f))
-
-;; OpenSSL 1.1 defines TLS_client_method(), instead of making SSLv23_client_method()
-;; actually select the the latest
-(define-ssl TLS_client_method (_fun -> _SSL_METHOD*) #:fail (lambda () SSLv23_client_method))
-(define-ssl TLS_server_method (_fun -> _SSL_METHOD*) #:fail (lambda () SSLv23_server_method))
-
-(define-crypto DH_free (_fun _DH* -> _void) #:wrap (deallocator))
-(define-crypto EC_KEY_free (_fun _EC_KEY* -> _void) #:wrap (deallocator))
-
-(define-crypto EC_KEY_new_by_curve_name (_fun _int -> _EC_KEY*) #:wrap (allocator EC_KEY_free))
-
-(define-crypto BIO_s_mem (_fun -> _BIO_METHOD*))
-(define-crypto BIO_new (_fun _BIO_METHOD* -> _BIO*/null))
-(define-crypto BIO_new_mem_buf (_fun _pointer _int -> _BIO*))
-(define-crypto BIO_free (_fun _BIO* -> _void))
-
-(define-crypto BIO_read (_fun _BIO* _bytes _int -> _int))
-(define-crypto BIO_write (_fun _BIO* _bytes _int -> _int))
-(define-crypto BIO_ctrl (_fun _BIO* _int _long _long -> _long))
-(define (BIO_set_mem_eof_return b v)
-  (BIO_ctrl b BIO_C_SET_BUF_MEM_EOF_RETURN v 0))
-
-(define-ssl SSL_CTX_free (_fun _SSL_CTX* -> _void)
-  #:wrap (deallocator))
-(define-ssl SSL_CTX_new (_fun _SSL_METHOD* -> _SSL_CTX*/null)
-  #:wrap (allocator SSL_CTX_free))
-(define-ssl SSL_CTX_callback_ctrl
-  (_fun _SSL_CTX* _int
-        (_fun #:in-original-place? #t _SSL* _pointer _pointer -> _int)
-        -> _long))
-(define-ssl SSL_CTX_ctrl (_fun _SSL_CTX* _int _long _pointer -> _long))
-(define (SSL_CTX_set_mode ctx m)
-  (SSL_CTX_ctrl ctx SSL_CTRL_MODE m #f))
-(define (SSL_CTX_set_options ctx opts)
-  (SSL_CTX_ctrl ctx SSL_CTRL_OPTIONS opts #f))
-
-(define-ssl SSL_CTX_set_verify (_fun _SSL_CTX* _int _pointer -> _void))
-(define-ssl SSL_CTX_use_certificate_chain_file (_fun _SSL_CTX* _path -> _int))
-(define-ssl SSL_CTX_load_verify_locations (_fun _SSL_CTX* _path _path -> _int))
-(define-ssl SSL_CTX_set_client_CA_list (_fun _SSL_CTX* _X509_NAME* -> _int))
-(define-ssl SSL_CTX_set_session_id_context (_fun _SSL_CTX* _bytes _int -> _int))
-(define-ssl SSL_CTX_use_RSAPrivateKey_file (_fun _SSL_CTX* _path _int -> _int))
-(define-ssl SSL_CTX_use_PrivateKey_file (_fun _SSL_CTX* _path _int -> _int))
-(define-ssl SSL_load_client_CA_file (_fun _path -> _X509_NAME*/null))
-(define-ssl SSL_CTX_set_cipher_list (_fun _SSL_CTX* _string -> _int))
-
-(define-ssl SSL_free (_fun _SSL* -> _void)
-  #:wrap (deallocator))
-(define-ssl SSL_new (_fun _SSL_CTX* -> _SSL*)
-  #:wrap (allocator SSL_free))
-(define-ssl SSL_set_bio (_fun _SSL* _BIO* _BIO* -> _void))
-(define-ssl SSL_connect (_fun _SSL* -> _int))
-(define-ssl SSL_accept (_fun _SSL* -> _int))
-(define-ssl SSL_read (_fun _SSL* _bytes _int -> _int))
-(define-ssl SSL_peek (_fun _SSL* _bytes _int -> _int))
-(define-ssl SSL_write (_fun _SSL* _bytes _int -> _int))
-(define-ssl SSL_shutdown (_fun _SSL* -> _int))
-(define-ssl SSL_get_verify_result (_fun _SSL* -> _long))
-(define-ssl SSL_get_servername (_fun _SSL* _int -> _string))
-(define-ssl SSL_set_verify (_fun _SSL* _int _pointer -> _void))
-(define-ssl SSL_set_session_id_context (_fun _SSL* _bytes _int -> _int))
-(define-ssl SSL_renegotiate (_fun _SSL* -> _int))
-(define-ssl SSL_renegotiate_pending (_fun _SSL* -> _int))
-(define-ssl SSL_do_handshake (_fun _SSL* -> _int))
-(define-ssl SSL_ctrl/bytes (_fun _SSL* _int _long _bytes/nul-terminated -> _long)
-  #:c-id SSL_ctrl)
-(define-ssl SSL_set_SSL_CTX (_fun _SSL* _SSL_CTX* -> _SSL_CTX*))
-
-(define-crypto X509_free (_fun _X509* -> _void)
-  #:wrap (deallocator))
-(define-ssl SSL_get_peer_certificate (_fun _SSL* -> _X509*/null)
-  #:wrap (allocator X509_free))
-(define-ssl SSL_get_certificate (_fun _SSL* -> _X509*/null)
-  #:wrap (allocator X509_free))
-
-(define-crypto X509_get_subject_name (_fun _X509* -> _X509_NAME*))
-(define-crypto X509_get_issuer_name (_fun _X509* -> _X509_NAME*))
-(define-crypto X509_NAME_oneline (_fun _X509_NAME* _bytes _int -> _bytes))
-
-(define-ssl SSL_get_error (_fun _SSL* _int -> _int))
-
-(define-crypto ERR_get_error (_fun -> _long))
-(define-crypto ERR_error_string_n (_fun _long _bytes _long -> _void))
-
-(define-ssl SSL_library_init (_fun -> _void)
-  ;; No SSL_library_init for 1.1 or later:
-  #:fail (lambda () void))
-(define-ssl SSL_load_error_strings (_fun -> _void)
-  ;; No SSL_load_error_strings for 1.1 or later:
-  #:fail (lambda () void))
-
-(define-crypto GENERAL_NAME_free _fpointer)
-(define-crypto PEM_read_bio_DHparams (_fun _BIO* _pointer _pointer _pointer -> _DH*) #:wrap (allocator DH_free))
-(define-crypto ASN1_STRING_length (_fun _ASN1_STRING* -> _int))
-(define-crypto ASN1_STRING_data (_fun _ASN1_STRING* -> _pointer))
-(define-crypto X509_NAME_get_index_by_NID (_fun _X509_NAME* _int _int -> _int))
-(define-crypto X509_NAME_get_entry (_fun _X509_NAME* _int -> _X509_NAME_ENTRY*/null))
-(define-crypto X509_NAME_ENTRY_get_data (_fun _X509_NAME_ENTRY* -> _ASN1_STRING*))
-(define-crypto X509_get_ext_d2i (_fun _X509* _int _pointer _pointer -> _STACK*/null))
-(define-crypto sk_num (_fun _STACK* -> _int)
-  #:fail (lambda ()
-           (define-crypto OPENSSL_sk_num (_fun _STACK* -> _int))
-           OPENSSL_sk_num))
-(define-crypto sk_GENERAL_NAME_value (_fun _STACK* _int -> _GENERAL_NAME-pointer)
-  #:c-id sk_value
-  #:fail (lambda ()
-           (define-crypto OPENSSL_sk_value (_fun _STACK* _int -> _GENERAL_NAME-pointer))
-           OPENSSL_sk_value))
-(define-crypto sk_pop_free (_fun _STACK* _fpointer -> _void)
-  #:fail (lambda ()
-           (define-crypto OPENSSL_sk_pop_free (_fun _STACK* _fpointer -> _void))
-           OPENSSL_sk_pop_free))
-
-;; (define-crypto X509_get_default_cert_area (_fun -> _string))
-(define-crypto X509_get_default_cert_dir  (_fun -> _string))
-(define-crypto X509_get_default_cert_file (_fun -> _string))
-(define-crypto X509_get_default_cert_dir_env (_fun -> _string))
-(define-crypto X509_get_default_cert_file_env (_fun -> _string))
-
-(define-ssl SSL_get_peer_finished (_fun _SSL* _pointer _size -> _size))
-(define-ssl SSL_get_finished (_fun _SSL* _pointer _size -> _size))
-
-(define-ssl SSL_CTX_set_alpn_protos
-  (_fun _SSL_CTX*
-        (bs : _bytes)
-        (_uint = (bytes-length bs))
-        -> _int)) ;; Note: 0 means success, other means failure!
-(define-ssl SSL_set_alpn_protos
-  (_fun _SSL*
-        (bs : _bytes)
-        (_uint = (bytes-length bs))
-        -> _int)) ;; Note: 0 means success, other means failure!
-(define-ssl SSL_get0_alpn_selected
-  (_fun _SSL*
-        (p : (_ptr o _pointer))
-        (len : (_ptr o _uint))
-        -> _void
-        -> (cond [(and p (> len 0))
-                  (let ([bs (make-bytes len)])
-                    (memcpy bs p len)
-                    bs)]
-                 [else #f])))
-
-(define-cpointer-type _EVP_MD*)
-(define-crypto EVP_sha224 (_fun -> _EVP_MD*/null))
-(define-crypto EVP_sha256 (_fun -> _EVP_MD*/null))
-(define-crypto EVP_sha384 (_fun -> _EVP_MD*/null))
-(define-crypto EVP_sha512 (_fun -> _EVP_MD*/null))
-(define-crypto EVP_MD_size (_fun _EVP_MD* -> _int))
-
-(define-ssl OBJ_find_sigid_algs
-  (_fun _int (alg : (_ptr o _int)) (_pointer = #f) -> (r : _int)
-        -> (if (> r 0) alg 0)))
-
-(define-ssl X509_get_signature_nid
-  (_fun _X509* -> _int))
-
-(define-ssl X509_digest
-  (_fun _X509* _EVP_MD* _pointer (_ptr i _uint) -> _int))
+;; ----------------------------------------
 
 (define (x509-root-sources)
   (cond
@@ -482,61 +303,9 @@ TO DO:
       ;; aren't useful. So just skip them.
       '((win32-store "ROOT"))]
      [(macosx darwin)
-      '((macosx-keychain "/System/Library/Keychains/SystemRootCertificates.keychain"))]
+      '((macosx-keychain #f))]
      [else
       (x509-root-sources)])))
-
-(define X509_V_OK 0)
-
-(define SSL_ERROR_SSL 1)
-(define SSL_ERROR_WANT_READ 2)
-(define SSL_ERROR_WANT_WRITE 3)
-(define SSL_ERROR_SYSCALL 5)
-(define SSL_ERROR_ZERO_RETURN 6)
-
-(define BIO_C_SET_BUF_MEM_EOF_RETURN 130)
-
-(define SSL_FILETYPE_PEM 1)
-(define SSL_FILETYPE_ASN1 2)
-
-(define SSL_VERIFY_NONE #x00)
-(define SSL_VERIFY_PEER #x01)
-(define SSL_VERIFY_FAIL_IF_NO_PEER_CERT #x02)
-
-(define SSL_MODE_ENABLE_PARTIAL_WRITE #x01)
-(define SSL_MODE_ACCEPT_MOVING_WRITE_BUFFER #x02)
-(define SSL_CTRL_MODE 33)
-
-(define NID_subject_alt_name 85)
-(define NID_commonName 13)
-(define GEN_DNS 2)
-
-(define SSL_CTRL_OPTIONS 32)
-(define SSL_CTRL_SET_TLSEXT_SERVERNAME_CB 53)
-(define SSL_CTRL_SET_TLSEXT_HOSTNAME 55)
-(define SSL_CTRL_SET_TMP_DH 3)
-(define SSL_CTRL_SET_TMP_ECDH 4)
-
-(define SSL_OP_NO_SSLv2    #x01000000)
-(define SSL_OP_NO_SSLv3    #x02000000)
-(define SSL_OP_NO_TLSv1    #x04000000)
-(define SSL_OP_NO_TLSv1_2  #x08000000)
-(define SSL_OP_NO_TLSv1_1  #x10000000)
-
-(define SSL_OP_SINGLE_ECDH_USE #x00080000)
-(define SSL_OP_SINGLE_DH_USE #x00100000)
-
-(define TLSEXT_NAMETYPE_host_name 0)
-
-(define SSL_TLSEXT_ERR_OK 0)
-(define SSL_TLSEXT_ERR_NOACK 3)
-
-(define NID_md5 4)
-(define NID_sha1 64)
-(define NID_sha224 675)
-(define NID_sha256 672)
-(define NID_sha384 673)
-(define NID_sha512 674)
 
 (define ssl-dh4096-param-bytes
   (include/reader "dh4096.pem" (lambda (src port)
@@ -579,8 +348,6 @@ TO DO:
                              ;; ...
                              ))
 
-(define SSL_ST_ACCEPT #x2000)
-
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Error handling
 
@@ -614,16 +381,24 @@ TO DO:
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Structs
 
-(define-struct ssl-context (ctx [verify-hostname? #:mutable] [sealed? #:mutable]))
+(define-struct ssl-context
+  (ctx
+   [verify-hostname? #:mutable]
+   [sealed? #:mutable]
+   [keylog-cb #:mutable]))
 (define-struct (ssl-client-context ssl-context) ())
-(define-struct (ssl-server-context ssl-context) ([servername-callback #:mutable #:auto]))
+(define-struct (ssl-server-context ssl-context)
+  ([sni-cb #:mutable #:auto]
+   [alpn-cb #:mutable #:auto]))
 
 (define-struct ssl-listener (l mzctx)
   #:property prop:evt (lambda (lst) (wrap-evt (ssl-listener-l lst) 
                                               (lambda (x) lst))))
 
 ;; internal:
-(define-struct mzssl (ssl i o r-bio w-bio pipe-r pipe-w 
+;; mzctx: (or/c #f ssl-context?) - retained to prevent early garbage
+;;        collection of its associated `keylog-cb`, if any.
+(define-struct mzssl (ssl mzctx i o r-bio w-bio pipe-r pipe-w
                           buffer lock
                           w-closed? r-closed?
                           flushing? must-write must-read
@@ -666,61 +441,27 @@ TO DO:
 
 (define default-encrypt 'auto)
 
-(define (encrypt->method who e client?)
-  (define f
-    (case e
-      [(secure auto sslv2-or-v3)
-       (if client? TLS_client_method TLS_server_method)]
-      [(sslv2)
-       (if client? SSLv2_client_method SSLv2_server_method)]
-      [(sslv3)
-       (if client? SSLv3_client_method SSLv3_server_method)]
-      [(tls)
-       (if client? TLSv1_client_method TLSv1_server_method)]
-      [(tls11)
-       (if client? TLSv1_1_client_method TLSv1_1_server_method)]
-      [(tls12)
-       (if client? TLSv1_2_client_method TLSv1_2_server_method)]
-      [else
-       (error 'encrypt->method "internal error, unknown encrypt: ~e" e)]))
-  (unless f
-    (raise (exn:fail:unsupported
-            (format "~a: requested protocol not supported~a\n  requested: ~e"
-                    who
-                    (if ssl-available?
-                        ""
-                        ";\n SSL not available; check `ssl-load-fail-reason'")
-                    e)
-            (current-continuation-marks))))
-  (f))
+;; In v1.1.0 and later, there does not seem to be a reliable way of testing
+;; dynamically whether a protocol version is supported. So use version tests.
+;; FIXME: Drop 'sslv3, 'tls1, and 'tls11 (deprecated by RFC 8996).
 
-(define (filter-available l)
-  (cond
-   [(null? l) null]
-   [(cadr l) (cons (car l) (filter-available (cddr l)))]
-   [else (filter-available (cddr l))]))
+(define protocol-versions
+  ;; (protocol security-level min-proto max-proto supported?)
+  `((secure 2 ,TLS1_2_VERSION  0                #t)
+    (auto   2 0                0                #t)
+    (sslv3  1 ,SSL3_VERSION    ,SSL3_VERSION    ,(and SSLv3_client_method #t))
+    (tls    2 ,TLS1_VERSION    ,TLS1_VERSION    ,(and TLSv1_client_method #t))
+    (tls11  2 ,TLS1_1_VERSION  ,TLS1_1_VERSION  ,(and TLSv1_1_client_method #t))
+    (tls12  2 ,TLS1_2_VERSION  ,TLS1_2_VERSION  ,(or v1.0.1/later? (and TLSv1_2_client_method #t)))
+    (tls13  2 ,TLS1_3_VERSION  ,TLS1_3_VERSION  ,(or v1.1.1/later?))))
 
 ;; Keep symbols in best-last order for ssl-max-{client,server}-protocol.
-(define (supported-client-protocols)
-  (filter-available
-   (list 'secure TLS_client_method
-         'auto TLS_client_method
-         'sslv2-or-v3 TLS_client_method
-         ;; 'sslv2 SSLv2_client_method --- always fails in modern OpenSSL
-         'sslv3 SSLv3_client_method
-         'tls TLSv1_client_method
-         'tls11 TLSv1_1_client_method
-         'tls12 TLSv1_2_client_method)))
-(define (supported-server-protocols)
-  (filter-available
-   (list 'secure TLS_server_method
-         'auto TLS_server_method
-         'sslv2-or-v3 TLS_server_method
-         ;; 'sslv2 SSLv2_server_method --- always fails in modern OpenSSL
-         'sslv3 SSLv3_server_method
-         'tls TLSv1_server_method
-         'tls11 TLSv1_1_server_method
-         'tls12 TLSv1_2_server_method)))
+(define the-supported-protocols
+  (for/list ([pinfo (in-list protocol-versions)] #:when (list-ref pinfo 4))
+    (car pinfo)))
+
+(define (supported-client-protocols) the-supported-protocols)
+(define (supported-server-protocols) the-supported-protocols)
 
 (define (ssl-max-client-protocol)
   (let ([protocols (supported-client-protocols)])
@@ -732,7 +473,7 @@ TO DO:
 
 (define (make-context who protocol-symbol client? priv-key cert-chain)
   (define ctx (make-raw-context who protocol-symbol client?))
-  (define mzctx ((if client? make-ssl-client-context make-ssl-server-context) ctx #f #f))
+  (define mzctx ((if client? make-ssl-client-context make-ssl-server-context) ctx #f #f #f))
   (when cert-chain (ssl-load-certificate-chain! mzctx cert-chain))
   (cond [(and (pair? priv-key) (eq? (car priv-key) 'pem))
          (ssl-load-private-key! mzctx (cadr priv-key) #f #f)]
@@ -748,11 +489,45 @@ TO DO:
      (let ([ctx (SSL_CTX_new meth)])
        (check-valid ctx who "context creation")
        ctx)))
-  (unless (memq protocol-symbol '(sslv2 sslv3))
-    (SSL_CTX_set_options ctx (bitwise-ior SSL_OP_NO_SSLv2 SSL_OP_NO_SSLv3)))
   (SSL_CTX_set_mode ctx (bitwise-ior SSL_MODE_ENABLE_PARTIAL_WRITE
                                      SSL_MODE_ACCEPT_MOVING_WRITE_BUFFER))
+  (when v1.1.0/later?
+    (define proto-info (assq protocol-symbol protocol-versions))
+    (let ([security-level (max (cadr proto-info) (SSL_CTX_get_security_level ctx))]
+          [min-proto (caddr proto-info)]
+          [max-proto (cadddr proto-info)])
+      (SSL_CTX_set_security_level ctx security-level)
+      (unless (and (= 1 (SSL_CTX_set_min_proto_version ctx min-proto))
+                   (= 1 (SSL_CTX_set_max_proto_version ctx max-proto)))
+        (error who "failed setting min/max protocol versions: ~e" protocol-symbol))))
   ctx)
+
+(define (encrypt->method who e client?)
+  (unless (memq e (if client? (supported-client-protocols) (supported-server-protocols)))
+    (raise-protocol-not-supported who e))
+  (define f
+    (if v1.1.0/later?
+        (if client? TLS_client_method TLS_server_method)
+        (case e
+          [(secure auto sslv2-or-v3) (if client? TLS_client_method TLS_server_method)]
+          [(sslv2) (if client? SSLv2_client_method SSLv2_server_method)]
+          [(sslv3) (if client? SSLv3_client_method SSLv3_server_method)]
+          [(tls) (if client? TLSv1_client_method TLSv1_server_method)]
+          [(tls11) (if client? TLSv1_1_client_method TLSv1_1_server_method)]
+          [(tls12) (if client? TLSv1_2_client_method TLSv1_2_server_method)]
+          [else #f])))
+  (unless f (raise-protocol-not-supported who e))
+  (f))
+
+(define (raise-protocol-not-supported who e)
+  (raise (exn:fail:unsupported
+          (format "~a: requested protocol not supported~a\n  requested: ~e"
+                  who
+                  (if ssl-available?
+                      ""
+                      ";\n SSL not available; check `ssl-load-fail-reason'")
+                  e)
+          (current-continuation-marks))))
 
 (define (need-ctx-free? context-or-encrypt-method)
   (and (symbol? context-or-encrypt-method)
@@ -763,10 +538,12 @@ TO DO:
                                  #:certificate-chain [cert-chain #f])
   (cond [(and (eq? protocol-symbol 'secure) (not priv-key) (not cert-chain))
          (ssl-secure-client-context)]
-        [else
-         (define ctx (make-context 'ssl-make-client-context protocol-symbol #t priv-key cert-chain))
-         (when (eq? protocol-symbol 'secure) (secure-client-context! ctx))
-         ctx]))
+        [else (make-client-context* protocol-symbol priv-key cert-chain)]))
+
+(define (make-client-context* protocol-symbol priv-key cert-chain)
+  (define ctx (make-context 'ssl-make-client-context protocol-symbol #t priv-key cert-chain))
+  (when (eq? protocol-symbol 'secure) (secure-client-context! ctx))
+  ctx)
 
 (define (ssl-make-server-context [protocol-symbol default-encrypt]
                                  #:private-key [priv-key #f]
@@ -775,11 +552,14 @@ TO DO:
 
 (define (get-context who context-or-encrypt-method client?
                      #:need-unsealed? [need-unsealed? #f])
-  (if (ssl-context? context-or-encrypt-method)
-      (extract-ctx who need-unsealed? context-or-encrypt-method)
-      (if (and client? (eq? context-or-encrypt-method 'secure))
-          (ssl-context-ctx (ssl-secure-client-context))
-          (make-raw-context who context-or-encrypt-method client?))))
+  (cond
+    [(ssl-context? context-or-encrypt-method)
+     (values context-or-encrypt-method (extract-ctx who need-unsealed? context-or-encrypt-method))]
+    [(and client? (eq? context-or-encrypt-method 'secure))
+     (define mzctx (ssl-secure-client-context))
+     (values mzctx (ssl-context-ctx mzctx))]
+    [else
+     (values #f (make-raw-context who context-or-encrypt-method client?))]))
 
 (define (get-context/listener who ssl-context-or-listener [fail? #t]
                               #:need-unsealed? [need-unsealed? #f])
@@ -933,13 +713,46 @@ TO DO:
 
     ; hold onto cb so that the garbage collector doesn't reclaim
     ; the function that openssl is holding onto.
-    (set-ssl-server-context-servername-callback! ssl-context cb)
+    (set-ssl-server-context-sni-cb! ssl-context cb)
 
     (unless (= (SSL_CTX_callback_ctrl
 		(extract-ctx 'ssl-set-server-name-identification-callback! #t ssl-context)
 		SSL_CTRL_SET_TLSEXT_SERVERNAME_CB
 		cb) 1)
 	    (error 'ssl-set-server-name-identification-callback! "setting server name identification callback failed"))))
+
+(define (ssl-set-server-alpn! ssl-context alpn-protos [allow-no-match? #t])
+  (define server-alpns ;; Hash[Bytes => Nat], lower value is more preferred
+    (for/hash ([alpn (in-list alpn-protos)] [priority (in-naturals)])
+      (values (bytes->immutable-bytes alpn) priority)))
+  (define (cb ssl out outlen in inlen0 arg)
+    (define inlen (max 0 inlen0))
+    (define inbuf (make-bytes inlen))
+    (memcpy inbuf in inlen)
+    (define chosen-offset
+      (let loop ([offset 0] [best-offset #f] [best-priority +inf.0])
+        (cond [(< offset inlen)
+               (define plen (bytes-ref inbuf offset))
+               (cond [(<= (+ offset 1 plen) inlen)
+                      (define alpn (subbytes inbuf (+ offset 1) (+ offset 1 plen)))
+                      (define priority (hash-ref server-alpns alpn #f))
+                      (if (and priority (< priority best-priority))
+                          (loop (+ offset 1 plen) offset priority)
+                          (loop (+ offset 1 plen) best-offset best-priority))]
+                     [else best-offset])]
+              [else best-offset])))
+    (cond [chosen-offset
+           (ptr-set! out _pointer (ptr-add in (+ chosen-offset 1)))
+           (ptr-set! outlen _byte (bytes-ref inbuf chosen-offset))
+           SSL_TLSEXT_ERR_OK]
+          [allow-no-match?
+           SSL_TLSEXT_ERR_NOACK]
+          [else
+           SSL_TLSEXT_ERR_ALERT_FATAL]))
+  (set-ssl-server-context-alpn-cb! ssl-context cb)
+  (let ([ctx (extract-ctx 'ssl-set-server-alpn! #t ssl-context)])
+    (unless (zero? (SSL_CTX_set_alpn_select_cb ctx cb #f))
+      (error 'ssl-set-server-alpn! "setting server ALPN selection callback failed"))))
 
 (define (ssl-set-verify-hostname! ssl-context on?)
   ;; to check not sealed:
@@ -1060,8 +873,7 @@ TO DO:
   (let ([locs (ssl-default-verify-sources)])
     (define (reset)
       (let* ([now (current-seconds)]
-             [ctx (ssl-make-client-context 'auto)])
-        (secure-client-context! ctx)
+             [ctx (make-client-context* 'secure #f #f)])
         (set! context-cache (list (make-weak-box ctx) locs now))
         ctx))
     (let* ([cached context-cache]
@@ -1076,6 +888,19 @@ TO DO:
              (cond [(equal? locs c-locs) c-ctx]
                    [else (reset)])]
             [else (reset)]))))
+
+(define (ssl-set-keylogger! ssl-context logger)
+  (define ctx
+    (extract-ctx 'ssl-set-keylogger! #t ssl-context))
+  (cond
+    [logger
+     (define (cb _ssl line)
+       (log-message logger 'debug 'openssl-keylogger "callback" line))
+     (set-ssl-context-keylog-cb! ssl-context cb)
+     (SSL_CTX_set_keylog_callback ctx cb)]
+    [else
+     (set-ssl-context-keylog-cb! ssl-context #f)
+     (SSL_CTX_set_keylog_callback ctx #f)]))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; SSL ports
@@ -1326,7 +1151,7 @@ TO DO:
   ;; Use xfer-buffer so we have a consistent buffer to use with
   ;;  SSL_write across calls to the port's write function.
   (let ([xfer-buffer (make-bytes BUFFER-SIZE)]
-        [buffer-mode (or (file-stream-buffer-mode (mzssl-o mzssl)) 'bloack)]
+        [buffer-mode (or (file-stream-buffer-mode (mzssl-o mzssl)) 'block)]
         [flush-ch (make-channel)]
         [must-write-len #f])
     ;; This thread mkoves data from the SLL stream to the underlying
@@ -1527,7 +1352,11 @@ TO DO:
      ;; Buffer mode proc:
      (case-lambda
       [() buffer-mode]
-      [(mode) (set! buffer-mode mode)]))))
+      [(mode)
+       (set! buffer-mode mode)
+       (define o (mzssl-o mzssl))
+       (when (tcp-port? o)
+         (file-stream-buffer-mode o mode))]))))
 
 (define (ports->ssl-ports i o 
                           #:context [context #f]
@@ -1558,7 +1387,7 @@ TO DO:
            (if connect? "client" "server")
            context-or-encrypt-method))
   (atomically ;; connect functions to subsequent check-valid (ie, ERR_get_error)
-   (let ([ctx (get-context who context-or-encrypt-method connect?)])
+   (let-values ([(mzctx ctx) (get-context who context-or-encrypt-method connect?)])
      (check-valid ctx who "context creation")
      (with-failure
       (lambda () (when (and ctx
@@ -1582,24 +1411,33 @@ TO DO:
             (SSL_set_bio ssl r-bio w-bio)
             ;; ssl has r-bio & w-bio (no ref count?), so drop it:
             (set! free-bio? #f)
-            (values ssl r-bio w-bio connect?)))))))))
+            (values ssl mzctx r-bio w-bio connect?)))))))))
 
 (define (wrap-ports who i o context-or-encrypt-method connect/accept
                     close? shutdown-on-close? error/ssl
                     hostname alpn)
   ;; Create the SSL connection:
-  (let-values ([(ssl r-bio w-bio connect?)
+  (let-values ([(ssl mzctx r-bio w-bio connect?)
                 (create-ssl who context-or-encrypt-method connect/accept error/ssl)]
                [(verify-hostname?)
                 (cond [(ssl-context? context-or-encrypt-method)
                        (ssl-context-verify-hostname? context-or-encrypt-method)]
-                      [else #f])])
+                      [else (eq? context-or-encrypt-method 'secure)])])
+    (define verify? (not (zero? (bitwise-and (SSL_get_verify_mode ssl) SSL_VERIFY_PEER))))
+    (when verify-hostname?
+      (unless hostname
+        (error/ssl who "~a failed (hostname not provided for verification)"
+                   (if connect? "connect" "accept"))))
     (when (string? hostname)
-      (SSL_ctrl/bytes ssl SSL_CTRL_SET_TLSEXT_HOSTNAME
-                      TLSEXT_NAMETYPE_host_name (string->bytes/latin-1 hostname)))
+      (SSL_set_tlsext_host_name ssl hostname)
+      (when (and verify? verify-hostname?)
+        ;; If verify? and verify-hostname? are true, then let OpenSSL
+        ;; do hostname verification automatically during negotiation.
+        (SSL_set1_host ssl hostname)))
     (when (pair? alpn)
       (unless (eq? connect/accept 'connect)
-        (error who "ALPN is currently supported only in connect mode"))
+        (error who "#:alpn argument is supported only in connect mode~a"
+               ";\n for accept mode, use `ssl-set-server-alpn!`"))
       (define proto-list
         (apply bytes-append (for/list ([proto (in-list alpn)])
                               (bytes-append (bytes (bytes-length proto)) proto))))
@@ -1609,7 +1447,7 @@ TO DO:
     ;; connect/accept:
     (let-values ([(buffer) (make-bytes BUFFER-SIZE)]
            [(pipe-r pipe-w) (make-pipe)])
-      (let ([mzssl (make-mzssl ssl i o r-bio w-bio pipe-r pipe-w 
+      (let ([mzssl (make-mzssl ssl mzctx i o r-bio w-bio pipe-r pipe-w
                                buffer (make-semaphore 1)
                                #f #f
                                #f #f #f 2
@@ -1640,12 +1478,13 @@ TO DO:
                                (if connect? "connect" "accept")
                                estr)]))))))
         (when verify-hostname?
-          (unless hostname
-            (error/ssl who "~a failed (hostname not provided for verification)"
-                       (if connect? "connect" "accept")))
-          (unless (hostname-in-cert? hostname (SSL_get_peer_certificate ssl))
-            (error/ssl who "~a failed (certificate not valid for hostname)"
-                       (if connect? "connect" "accept"))))
+          ;; If verify? is true, then hostname already verified via SSL_set1_host.
+          ;; Otherwise, check now.
+          (unless verify?
+            (unless (hostname-in-cert? hostname (SSL_get_peer_certificate ssl))
+              (SSL_shutdown ssl) ;; FIXME: peer doesn't get failure alert
+              (error/ssl who "~a failed (certificate not valid for hostname)"
+                         (if connect? "connect" "accept")))))
         ;; Connection complete; make ports
         (values (register (make-ssl-input-port mzssl) mzssl #t)
           (register (make-ssl-output-port mzssl) mzssl #f))))))
@@ -1723,8 +1562,7 @@ TO DO:
 
 ;; hostname-in-cert? : string Cert -> boolean
 (define (hostname-in-cert? hostname cert)
-  (for/or ([cert-hostname (in-list (cert->names cert))])
-    (check-hostname hostname cert-hostname)))
+  (= 1 (X509_check_host cert (string->bytes/latin-1 hostname) 0)))
 
 (define (cert->names cert)
   ;; RFC 2818 (section 3.1) says use subjectAltName dNSName extensions
@@ -1774,32 +1612,40 @@ TO DO:
     (when namestack (sk_pop_free namestack GENERAL_NAME_free))
     names))
 
-(define (check-hostname cx-name cert-name-pattern)
-  (let* ([cx-parts (string-split cx-name "." #:trim? #f)]
-         [cert-parts (string-split cert-name-pattern "." #:trim? #f)])
-    (and (equal? (length cx-parts)
-                 (length cert-parts))
-         (andmap check-hostname-part cx-parts cert-parts))))
-
-(define (check-hostname-part cx-part cert-part)
-  (cond [(equal? cert-part "*")
-         #t]
-        [(for/or ([c (in-string cert-part)]) (eqv? c #\*))
-         (regexp-match? (glob->regexp cert-part) cx-part)]
-        [else (string-ci=? cx-part cert-part)]))
-
-(define (glob->regexp glob)
-  (let* ([lit-parts (string-split glob #rx"[*]" #:trim? #f)]
-         [lit-rxs (for/list ([part (in-list lit-parts)]) (regexp-quote part #f))])
-    (regexp (string-join lit-rxs ".*"))))
+(define (ssl-default-channel-binding p)
+  ;; Reference: RFC 9266 (https://datatracker.ietf.org/doc/html/rfc9266), Section 3
+  (define who 'ssl-channel-binding)
+  (define-values (mzssl _in?) (lookup 'ssl-channel-binding p))
+  (define ssl (mzssl-ssl mzssl))
+  (define tlsver (SSL_version ssl))
+  (cond [(>= tlsver TLS1_3_VERSION)
+         (list 'tls-exporter (ssl-channel-binding p 'tls-exporter))]
+        [else
+         (list 'tls-unique (ssl-channel-binding p 'tls-unique))]))
 
 (define (ssl-channel-binding p type)
   ;; Reference: https://tools.ietf.org/html/rfc5929
   (define who 'ssl-channel-binding)
   (define-values (mzssl _in?) (lookup 'ssl-channel-binding p))
   (define ssl (mzssl-ssl mzssl))
+  (define tlsver (SSL_version ssl))
   (case type
+    [(tls-exporter)
+     ;; Reference: RFC 9266 (https://datatracker.ietf.org/doc/html/rfc9266)
+     ;; Only ok for TLS 1.3 and older TLS with Extended Master Secret extension!
+     (unless (or (>= tlsver TLS1_3_VERSION)
+                 (= (SSL_get_extms_support ssl) 1))
+       (error who "tls-exporter channel binding undefined~a"
+              ";\n requires TLS 1.3 or Extended Master Secret extension"))
+     (define buf (make-bytes 32))
+     (define label #"EXPORTER-Channel-Binding")
+     (define context #"")
+     (define r (SSL_export_keying_material ssl buf label context))
+     (cond [(= r 1) buf]
+           [else (error who "failed getting Exported Keying Material")])]
     [(tls-unique)
+     (unless (< tlsver TLS1_3_VERSION)
+       (error who "tls-unique channel binding is undefined for TLS 1.3"))
      (define MAX_FINISH_LEN 50) ;; usually 12 bytes, but be cautious (see RFC 5246 7.4.9)
      (define get-finished ;; assumes no session resumption
        (cond [(mzssl-server? mzssl) SSL_get_peer_finished]
@@ -1810,7 +1656,7 @@ TO DO:
            [(< 0 r MAX_FINISH_LEN) (subbytes buf 0 r)]
            [else (error who "internal error: TLS Finished message too large")])]
     [(tls-server-end-point)
-     (define x509
+     (define x509 ;; ownership varies, don't free
        (cond [(mzssl-server? mzssl) (SSL_get_certificate ssl)]
              [else (SSL_get_peer_certificate ssl)]))
      (unless x509 (error who "failed to get server certificate"))
@@ -1827,8 +1673,18 @@ TO DO:
      (unless (> buflen 0) (error who "internal error: bad digest length"))
      (define buf (make-bytes buflen))
      (define r (X509_digest x509 hash-evp buf buflen))
-     (X509_free x509)
      (if (> r 0) buf (error who "internal error: certificate digest failed"))]))
+
+(define (ssl-protocol-version p)
+  (define-values (mzssl _in?) (lookup 'ssl-protocol-version p))
+  (define ssl (mzssl-ssl mzssl))
+  (define tlsver (SSL_version ssl))
+  (cond [(= tlsver TLS1_3_VERSION) 'tls13]
+        [(= tlsver TLS1_2_VERSION) 'tls12]
+        [(= tlsver TLS1_1_VERSION) 'tls11]
+        [(= tlsver TLS1_VERSION) 'tls]
+        [(= tlsver SSL3_VERSION) 'sslv3]
+        [else #f]))
 
 (define (ssl-get-alpn-selected p)
   (define-values (mzssl _in?) (lookup 'ssl-get-alpn-selected p))

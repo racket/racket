@@ -1,5 +1,8 @@
 (import (rumble)
-        (linklet))
+        (linklet)
+        (expander))
+
+(expander-place-init!)
 
 (define l1 (compile-linklet
             '(linklet 

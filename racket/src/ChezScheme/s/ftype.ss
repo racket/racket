@@ -389,11 +389,7 @@ ftype operators:
       [(r ftype) (expand-ftype-name r ftype #t)]
       [(r ftype error?)
        (cond
-         [(r ftype) =>
-          (lambda (ftd)
-            (if (ftd? ftd)
-                ftd
-                (and error? (syntax-error ftype "unrecognized ftype name"))))]
+         [(let ([maybe-ftd (r ftype)]) (and maybe-ftd (ftd? maybe-ftd) maybe-ftd)) => (lambda (ftd) ftd)]
          [(find (let ([x (syntax->datum ftype)])
                   (lambda (ftd) (eq? (ftd-base-type ftd) x)))
             native-base-ftds)]
@@ -411,33 +407,41 @@ ftype operators:
        (check-size
          (let f/flags ([ftype ftype] [defid defid] [stype (syntax->datum ftype)] [packed? #f] [eness 'native] [funok? #t])
            (define (pad n k) (if packed? n (logand (+ n (- k 1)) (- k))))
+           (define (native-ftds)
+             (case eness
+               [(native) native-base-ftds]
+               [(swapped) swap-base-ftds]
+               [(big) big-base-ftds]
+               [(little) little-base-ftds]
+               [else (error 'eness "unexpected ~s" eness)]))
            (let f ([ftype ftype] [defid defid] [stype stype] [funok? funok?])
              (if (identifier? ftype)
                  (cond
                    [(assp (lambda (x) (bound-identifier=? ftype x)) def-alist) =>
                     (lambda (a)
-                      (let ([ftd (cdr a)])
+                      (let ([ftd (let ([ftd (cdr a)])
+                                   (if (ftd? ftd)
+                                       ftd
+                                       (or (find (let ([x (syntax->datum ftype)])
+                                                   (lambda (ftd)
+                                                     (eq? (ftd-base-type ftd) x)))
+                                             (native-ftds))
+                                           ftd)))])
                         (unless (ftd? ftd)
                           (syntax-error ftype "recursive or forward reference outside pointer field"))
                         (unless funok?
                           (when (ftd-function? ftd)
                             (syntax-error ftype "unexpected function ftype name outside pointer field")))
                         ftd))]
-                   [(r ftype) =>
+                   [(let ([maybe-ftd (r ftype)]) (and maybe-ftd (ftd? maybe-ftd) maybe-ftd)) =>
                     (lambda (ftd)
-                      (unless (ftd? ftd) (syntax-error ftype "unrecognized ftype name"))
                       (unless funok?
                         (when (ftd-function? ftd)
                           (syntax-error ftype "unexpected function ftype name outside pointer field")))
                       ftd)]
                    [(find (let ([x (syntax->datum ftype)])
                             (lambda (ftd) (eq? (ftd-base-type ftd) x)))
-                          (case eness
-                            [(native) native-base-ftds]
-                            [(swapped) swap-base-ftds]
-                            [(big) big-base-ftds]
-                            [(little) little-base-ftds]
-                            [else (error 'eness "unexpected ~s" eness)]))]
+                          (native-ftds))]
                    [else (syntax-error ftype "unrecognized ftype name")])
                  (syntax-case ftype ()
                    [(struct-kwd (field-name ftype) ...)
@@ -1048,7 +1052,12 @@ ftype operators:
           (ftd-array? x))))
   (set! $ftd-union?
     (lambda (x)
-      (ftd-union? x)))
+      (or (ftd-union? x)
+          (and (ftd-struct? x)
+               (ormap (lambda (f) ($ftd-union? (caddr f)))
+                      (ftd-struct-field* x)))
+          (and (ftd-array? x)
+               ($ftd-union? (ftd-array-ftd x))))))
   (set! $ftd-unsigned?
     (lambda (x)
       (and (ftd-base? x)
@@ -1059,42 +1068,43 @@ ftype operators:
     (lambda (x)
       ;; Currently used for x86_64 and arm32 ABI: Returns a list of
       ;;  (list 'integer/'float size offset)
-      (let loop ([x x] [offset 0] [accum '()])
-        (cond
-         [(ftd-base? x)
-          (cons (list (case (ftd-base-type x)
-                        [(double double-float float single-float)
-                         'float]
-                        [else 'integer])
-                      (ftd-size x)
-                      offset)
-                accum)]
-         [(ftd-struct? x)
-          (let struct-loop ([field* (ftd-struct-field* x)] [accum accum])
-            (cond
-             [(null? field*) accum]
-             [else (let* ([fld (car field*)]
-                          [sub-ftd (caddr fld)]
-                          [sub-offset (cadr fld)])
-                     (struct-loop (cdr field*)
-                                  (loop sub-ftd (+ offset sub-offset) accum)))]))]
-         [(ftd-union? x)
-          (let union-loop ([field* (ftd-union-field* x)] [accum accum])
-            (cond
-             [(null? field*) accum]
-             [else (let* ([fld (car field*)]
-                          [sub-ftd (cdr fld)])
-                     (union-loop (cdr field*)
-                                 (loop sub-ftd offset accum)))]))]
-         [(ftd-array? x)
-          (let ([elem-ftd (ftd-array-ftd x)])
-            (let array-loop ([len (ftd-array-length x)] [offset offset] [accum accum])
+      (reverse
+       (let loop ([x x] [offset 0] [accum '()])
+         (cond
+           [(ftd-base? x)
+            (cons (list (case (ftd-base-type x)
+                          [(double double-float float single-float)
+                           'float]
+                          [else 'integer])
+                        (ftd-size x)
+                        offset)
+                  accum)]
+           [(ftd-struct? x)
+            (let struct-loop ([field* (ftd-struct-field* x)] [accum accum])
               (cond
-               [(fx= len 0) accum]
-               [else (array-loop (fx- len 1)
-                                 (+ offset (ftd-size elem-ftd))
-                                 (loop elem-ftd offset accum))])))]
-         [else (cons (list 'integer (ftd-size x) offset) accum)]))))
+                [(null? field*) accum]
+                [else (let* ([fld (car field*)]
+                             [sub-ftd (caddr fld)]
+                             [sub-offset (cadr fld)])
+                        (struct-loop (cdr field*)
+                                     (loop sub-ftd (+ offset sub-offset) accum)))]))]
+           [(ftd-union? x)
+            (let union-loop ([field* (ftd-union-field* x)] [accum accum])
+              (cond
+                [(null? field*) accum]
+                [else (let* ([fld (car field*)]
+                             [sub-ftd (cdr fld)])
+                        (union-loop (cdr field*)
+                                    (loop sub-ftd offset accum)))]))]
+           [(ftd-array? x)
+            (let ([elem-ftd (ftd-array-ftd x)])
+              (let array-loop ([len (ftd-array-length x)] [offset offset] [accum accum])
+                (cond
+                  [(fx= len 0) accum]
+                  [else (array-loop (fx- len 1)
+                                    (+ offset (ftd-size elem-ftd))
+                                    (loop elem-ftd offset accum))])))]
+           [else (cons (list 'integer (ftd-size x) offset) accum)])))))
   (set! $ftd-atomic-category
     (lambda (x)
       ;; Currently used for PowerPC32 ABI
@@ -1109,6 +1119,44 @@ ftype operators:
 	   'unsigned]
 	  [else 'integer])]
        [else 'integer])))
+  (set! $ftd-ffi-encode ;; for pb libffi binding
+    (lambda (x)
+      (cond
+        [(ftd-base? x)
+	 (case (ftd-base-type x)
+	   [(double double-float) (constant ffi-typerep-double)]
+	   [(float single-float) (constant ffi-typerep-float)]
+           [(integer-8) (constant ffi-typerep-sint8)]
+           [(unsigned-8) (constant ffi-typerep-uint8)]
+           [(integer-16 short) (constant ffi-typerep-sint16)]
+           [(unsigned-16 unsigned-short) (constant ffi-typerep-uint16)]
+           [(integer-32 int) (constant ffi-typerep-sint32)]
+           [(unsigned-32 unsigned-int) (constant ffi-typerep-uint32)]
+           [(integer-64) (constant ffi-typerep-sint64)]
+           [(unsigned-64) (constant ffi-typerep-uint64)]
+           [else (constant ffi-typerep-pointer)])]
+        [(ftd-struct? x)
+         (list->vector
+          (let struct-loop ([field* (ftd-struct-field* x)])
+            (cond
+              [(null? field*) '()]
+              [else (let* ([fld (car field*)]
+                           [sub-ftd (caddr fld)])
+                      (cons ($ftd-ffi-encode sub-ftd)
+                            (struct-loop (cdr field*))))])))]
+        [(ftd-union? x)
+         (let union-loop ([field* (ftd-union-field* x)])
+           (cond
+             [(null? field*) '()]
+             [else (let* ([fld (car field*)]
+                          [sub-ftd (cdr fld)])
+                     (cons ($ftd-ffi-encode sub-ftd)
+                           (union-loop (cdr field*))))]))]
+        [(ftd-array? x)
+         (let ([elem-ftd (ftd-array-ftd x)])
+           (cons ($ftd-ffi-encode elem-ftd)
+                 (ftd-array-length x)))]
+        [else (constant ffi-typerep-pointer)])))
   (set! $expand-fp-ftype ; for foreign-procedure, foreign-callable
     (lambda (who what r ftype)
       (indirect-ftd-pointer

@@ -14,10 +14,10 @@
   (syntax-arm stx insp #t))
 
 (define-values (struct:s!t make-s!t s!t? s!t-ref s!t-set!)
-  (make-struct-type 'set!-transformer #f 2 0 #f null (current-inspector) 0))
+  (make-struct-type 'set!-transformer #f 3 0 #f null (current-inspector) 0))
 
-(define (mk-set!-trans old-id proc)
-  (make-set!-transformer (make-s!t proc old-id)))
+(define (mk-set!-trans localizing-binding-id localized-id proc)
+  (make-set!-transformer (make-s!t proc localized-id localizing-binding-id)))
 
 (define (make-method-apply id this orig-args)
   (let loop ([args orig-args][accum null])
@@ -33,28 +33,54 @@
   (let ([this-id (syntax-parameter-value the-finder)])
     (datum->syntax this-id name src)))
 
+;; : (->* (syntax?) () #:rest (listof (or/c identifier? #f)) syntax?)
+;; adds all of the `ids` to `stx` via 'disappeared-use,
+;; without losing any that might already be on `stx`
+;; and without adding the property if there end up
+;; not being any identifiers
+(define (maybe-add-disappeared-use stx . ids)
+  (define prop-val
+    (for/fold ([prop-val (syntax-property stx 'disappeared-use)])
+              ([id (in-list ids)])
+      (cond
+        [id (if prop-val (cons id prop-val) id)]
+        [prop-val])))
+  (cond
+    [prop-val (syntax-property stx 'disappeared-use prop-val)]
+    [else stx]))
+
 ;; Check Syntax binding info:
-(define (binding from to stx)
-  stx)
+(define (binding from to stx [def-ctx #f])
+  (maybe-add-disappeared-use
+   stx
+   (let ([id (syntax-local-introduce to)])
+     (if def-ctx
+         (internal-definition-context-introduce def-ctx id 'remove)
+         id))))
 
 ;; Declarations used to determine whether a chaperone is
 ;; needed to protect against unsafe-undefined access
 (define (add-declare-this-escapes src-stx stx)
   (quasisyntax/loc src-stx (begin '(declare-this-escapes) #,stx)))
 (define (add-declare-field-use id inherited? src-stx stx)
-  (if inherited?
-      (quasisyntax/loc src-stx (begin '(declare-inherit-use #,id) #,stx))
-      (quasisyntax/loc src-stx (begin '(declare-field-use #,id) #,stx))))
+  (maybe-add-disappeared-use
+   (if inherited?
+       (quasisyntax/loc src-stx (begin '(declare-inherit-use #,id) #,stx))
+       (quasisyntax/loc src-stx (begin '(declare-field-use #,id) #,stx)))
+   (build-disappeared-use-of-local-member-name id)))
 (define (add-declare-field-assignment id inherited? src-stx stx)
-  (if inherited?
-      stx
-      (quasisyntax/loc src-stx (begin '(declare-field-assignment #,id) #,stx))))
+  (maybe-add-disappeared-use
+   (if inherited?
+       stx
+       (quasisyntax/loc src-stx (begin '(declare-field-assignment #,id) #,stx)))
+   (build-disappeared-use-of-local-member-name id)))
 (define (add-declare-field-initialization id src-stx stx)
   (quasisyntax/loc src-stx (begin '(declare-field-initialization #,id) #,stx)))
 
 (define (make-this-map orig-id the-finder the-obj)
   (let ()
     (mk-set!-trans
+     #f
      orig-id
      (lambda (stx)
        (syntax-case stx (set!)
@@ -82,11 +108,13 @@
          [(f . args)
           (quasisyntax/loc stx (#,replace-stx . args))])))))
 
-(define (make-field-map inherited? the-finder the-obj the-binder the-binder-localized
+(define (make-field-map inherited? the-finder the-obj
+                        the-binder the-binder-without-def-ctxt the-binder-localized
                         field-accessor field-mutator)
   (let ()
     (define (choose-src a b) (if (syntax-source a) a b))
     (mk-set!-trans
+     the-binder-without-def-ctxt
      the-binder-localized
      (lambda (stx)
        (class-syntax-protect
@@ -132,9 +160,10 @@
                                    ((unsyntax field-accessor) obj))])
                 (syntax/loc (choose-src stx #'id) (let* bindings get))))])))))))
 
-(define (make-method-map the-finder the-obj the-binder the-binder-localized method-accessor)
+(define (make-method-map the-finder the-obj the-binder the-binder-without-def-ctx the-binder-localized method-accessor)
   (let ()
     (mk-set!-trans
+     the-binder-without-def-ctx
      the-binder-localized
      (lambda (stx)
        (class-syntax-protect
@@ -142,17 +171,19 @@
           [(set! id expr)
            (raise-syntax-error 'class "cannot mutate method" stx)]
           [(id . args)
-           (add-declare-this-escapes
-            stx
-            (binding
-             the-binder (syntax id)
-             (datum->syntax 
-              (quote-syntax here)
-              (make-method-apply
-               (list method-accessor (find the-finder the-obj stx))
-               (find the-finder the-obj stx)
-               (syntax args))
-              stx)))]
+           (maybe-add-disappeared-use
+            (add-declare-this-escapes
+             stx
+             (binding
+              the-binder (syntax id)
+              (datum->syntax
+               (quote-syntax here)
+               (make-method-apply
+                (list method-accessor (find the-finder the-obj stx))
+                (find the-finder the-obj stx)
+                (syntax args))
+               stx)))
+            (build-disappeared-use-of-local-member-name #'id))]
           [_else
            (raise-syntax-error 
             'class 
@@ -161,9 +192,10 @@
 
 ;; For methods that are dirrectly available via their names
 ;;  (e.g., private methods)
-(define (make-direct-method-map the-finder the-obj the-binder the-binder-localized new-name)
+(define (make-direct-method-map the-finder the-obj the-binder the-binder-without-def-ctx the-binder-localized new-name)
   (let ()
     (mk-set!-trans
+     the-binder-without-def-ctx
      the-binder-localized
      (lambda (stx)
        (class-syntax-protect
@@ -188,6 +220,7 @@
 (define (make-rename-super-map the-finder the-obj the-binder the-binder-localized rename-temp)
   (let ()
     (mk-set!-trans
+     #f
      the-binder-localized
      (lambda (stx)
        (class-syntax-protect
@@ -212,6 +245,7 @@
 (define (make-rename-inner-map the-finder the-obj the-binder the-binder-localized rename-temp)
   (let ()
     (mk-set!-trans
+     #f
      the-binder-localized
      (lambda (stx)
        (class-syntax-protect
@@ -251,34 +285,40 @@
             stx)]))))))
 
 (define (generate-super-call stx the-finder the-obj rename-temp args)
-  (add-declare-this-escapes
-   stx
-   (class-syntax-protect
-    (datum->syntax 
-     (quote-syntax here)
-     (make-method-apply (find the-finder rename-temp stx) 
-                        (find the-finder the-obj stx) 
-                        args)
-     stx))))
+  (define mtd-id (syntax-case stx () [(_ method . args) #'method]))
+  (maybe-add-disappeared-use
+   (add-declare-this-escapes
+    stx
+    (class-syntax-protect
+     (datum->syntax
+      (quote-syntax here)
+      (make-method-apply (find the-finder rename-temp stx)
+                         (find the-finder the-obj stx)
+                         args)
+      stx)))
+   (build-disappeared-use-of-local-member-name mtd-id)
+   (syntax-local-introduce mtd-id)))
 
 (define (generate-inner-call stx the-finder the-obj default-expr rename-temp args)
-  (add-declare-this-escapes
-   stx
-   (class-syntax-protect
-    (datum->syntax 
-     (quote-syntax here)
+  (define mtd-id (syntax-case stx () [(_ _default-expr method . args) #'method]))
+  (maybe-add-disappeared-use
+   (add-declare-this-escapes
+    stx
+    (class-syntax-protect
      (let ([target (find the-finder the-obj stx)])
-       (datum->syntax 
+       (datum->syntax
         (quote-syntax here)
         `(let ([i (,(find the-finder rename-temp stx) ,target)])
            (if i
                ,(make-method-apply 'i target args)
                ,default-expr))
-        stx))
-     stx))))
+        stx))))
+   (build-disappeared-use-of-local-member-name mtd-id)
+   (syntax-local-introduce mtd-id)))
 
 (define (make-init-error-map localized-id)
   (mk-set!-trans
+   #f
    localized-id
    (lambda (stx)
      (raise-syntax-error 
@@ -286,31 +326,44 @@
       "cannot use non-field init variable in a method"
       stx))))
 
-(define (make-init-redirect local-id localized-id)
+(define (make-init-redirect local-id local-id-no-def-ctx localized-id)
+  ;; the calls to `build-disappeared-use-of-local-member-name` in this
+  ;; function might be going the long way around the block as they
+  ;; might be able to start by using `local-id-no-def-ctx` directly
+  ;; instead of finding it inside the s!t struct, but since the
+  ;; abstraction is already set up, let's just go with it ...
   (mk-set!-trans
+   local-id-no-def-ctx
    localized-id
    (lambda (stx)
      (class-syntax-protect
       (syntax-case stx (set!)
         [(set! id expr)
          (with-syntax ([local-id local-id])
-           (syntax/loc stx (set! local-id expr)))]
+           (maybe-add-disappeared-use
+            (syntax/loc stx (set! local-id expr))
+            (build-disappeared-use-of-local-member-name #'id)))]
         [(id . args)
          (with-syntax ([local-id (datum->syntax
                                   local-id
                                   (syntax-e local-id)
                                   #'id
                                   #'id)])
-           (syntax/loc stx (#%plain-app (#%plain-app check-not-unsafe-undefined local-id 'id) . args)))]
-        [id (quasisyntax/loc stx
-              (#%plain-app
-               check-not-unsafe-undefined
-               #,(datum->syntax
-                  local-id
-                  (syntax-e local-id)
-                  stx
-                  stx)
-               'id))])))))
+           (maybe-add-disappeared-use
+            (syntax/loc stx (#%plain-app (#%plain-app check-not-unsafe-undefined local-id 'id) . args))
+            (build-disappeared-use-of-local-member-name #'id)))]
+        [id
+         (maybe-add-disappeared-use
+          (quasisyntax/loc stx
+            (#%plain-app
+             check-not-unsafe-undefined
+             #,(datum->syntax
+                local-id
+                (syntax-e local-id)
+                stx
+                stx)
+             'id))
+          (build-disappeared-use-of-local-member-name #'id))])))))
 
 (define super-error-map
   (lambda (stx)
@@ -362,21 +415,60 @@
                                    "unbound local member name"
                                    stx))))
 
-(define (do-localize orig-id validate-local-member-stx)
-  (let loop ([id orig-id])
-    (let ([v (syntax-local-value id (lambda () #f))])
+(define (do-localize id validate-local-member-stx def-ctx)
+  (define v (syntax-local-value id (lambda () #f)))
+  (cond
+    [(and v (private-name? v))
+     ;; this syntax object result ends up coming back
+     ;; into this function and being pulled apart in the
+     ;; next case to add another 'disappeared-use
+     (list 'unquote
+           (list validate-local-member-stx
+                 (list 'quote id)
+                 (binding (private-name-orig-id v)
+                          id
+                          (private-name-gen-id v)
+                          def-ctx)))]
+    [(and (set!-transformer? v)
+          (s!t? (set!-transformer-procedure v)))
+     (define an-s!t (set!-transformer-procedure v))
+     (define localized (s!t-ref an-s!t 1))
+     (define disappeared-use (build-disappeared-use-of-local-member-name id))
+     (cond
+       [disappeared-use
+        (syntax-case localized ()
+          [(unquote- (validate-local-member-stx- quote-orig-id- id-))
+           ;; this is pulling apart the syntax object created
+           ;; in the previous case of this function to add
+           ;; another 'disappeared-use to it
+           #`(unquote-
+              (validate-local-member-stx-
+               quote-orig-id-
+               #,(maybe-add-disappeared-use
+                  #'id-
+                  disappeared-use)))])]
+       [else localized])]
+    [else id]))
+
+(define (build-disappeared-use-of-local-member-name id)
+  (let/ec escape
+    (define (fail) (escape #f))
+    (define v (syntax-local-value id (λ () #f)))
+    (unless (set!-transformer? v) (fail))
+    (let loop ([v v])
+      (define an-s!t (set!-transformer-procedure v))
+      (unless (s!t? an-s!t) (fail))
+      (define binder-no-def-ctx (s!t-ref an-s!t 2))
+      (unless binder-no-def-ctx (fail))
+      (define private-name
+        (syntax-local-value binder-no-def-ctx (λ () #f)))
       (cond
-        [(and v (private-name? v))
-         (list 'unquote 
-               (list validate-local-member-stx
-                     (list 'quote orig-id)
-                     (binding (private-name-orig-id v)
-                              id
-                              (private-name-gen-id v))))]
-        [(and (set!-transformer? v)
-              (s!t? (set!-transformer-procedure v)))
-         (s!t-ref (set!-transformer-procedure v) 1)]
-        [else orig-id]))))
+        [(set!-transformer? private-name)
+         (loop private-name)]
+        [(private-name? private-name)
+         (datum->syntax (private-name-orig-id private-name)
+                        (syntax-e id) id id)]
+        [else (fail)]))))
 
 (define-struct class-context ())
 

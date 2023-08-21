@@ -1,0 +1,16 @@
+#lang zuo
+
+(provide replace
+         glob-split)
+
+(define (replace a alist)
+  (define old-a (assoc (car a) alist))
+  (cons a (if old-a (remove old-a alist) alist)))
+
+(define (glob-split glob str)
+  (define match? (glob->matcher glob))
+  (let loop ([i 0])
+    (cond
+      [(= i (string-length str)) #f]
+      [(match? (substring str i)) (cons (substring str 0 i) (substring str i))]
+      [else (loop (+ i 1))])))

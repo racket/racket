@@ -5,7 +5,8 @@
          "import.rkt"
          "mutated-state.rkt"
          "simple.rkt"
-         "find-known.rkt")
+         "find-known.rkt"
+         "lambda.rkt")
 
 (provide (struct-out struct-type-info)
          struct-type-info-rest-properties-list-pos
@@ -66,6 +67,7 @@
                 (cond
                   [(not proc-spec) imms]
                   [(exact-nonnegative-integer? proc-spec) (cons proc-spec imms)]
+                  [(lambda? proc-spec) imms]
                   [else
                    (let ([proc-spec (unwrap proc-spec)])
                      (and
@@ -131,7 +133,9 @@
               (and (symbol? u-prop)
                    (or (known-struct-type-property/immediate-guard?
                         (find-known u-prop prim-knowns knowns imports mutated)))
-                   (simple? val prim-knowns knowns imports mutated simples #f))))
+                   (simple? val prim-knowns knowns imports mutated simples #f
+                            #:ordered? #t
+                            #:succeeds? #t))))
           vals)]
     [`null null]
     [`'() null]

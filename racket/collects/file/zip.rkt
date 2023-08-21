@@ -16,8 +16,8 @@
   (define-struct metadata
     (path name directory? time date compression attributes))
 
-  ;; header : metadata * exact-integer * nat * nat * nat
-  (define-struct header (metadata crc compressed uncompressed size))
+  ;; header : metadata * exact-integer * nat * nat * nat * integer
+  (define-struct header (metadata crc compressed uncompressed size bits))
 
   ;; ===========================================================================
   ;; CONSTANTS etc
@@ -43,8 +43,8 @@
     (case type
       [(windows)    0]
       [(macos)      7]
-      [(macosx)    19]
-      [else        3]))
+      [(macosx)     3] ; although Mac OS X = 19, it's not recognized by unzip on macOS
+      [else         3]))
   (define *os-specific-separator-regexp*
     (case (system-type)
       [(unix macosx oskit) #rx"/"]
@@ -110,7 +110,7 @@
       (write-int 0                      2)  ; extra-length
       (write-bytes filename)                ; filename
       (if directory?
-        (make-header metadata 0 0 0 (+ filename-length 30))
+        (make-header metadata 0 0 0 (+ filename-length 30) bits)
         (let-values ([(uncompressed compressed crc)
                       (with-input-from-file path
                         (lambda ()
@@ -128,7 +128,8 @@
           ;; return the header information
           (make-header metadata crc compressed uncompressed
                        (+ filename-length compressed
-                          (if seekable? 30 46)))))))
+                          (if seekable? 30 46))
+                       bits)))))
 
   ;; write-end-of-central-directory : nat nat nat ->
   (define (write-end-of-central-directory count start size)
@@ -151,6 +152,7 @@
           ;; no digital signature (why?)
           (write-end-of-central-directory count offset size)
           (let* ([header (car headers)]
+                 [bits (header-bits header)]
                  [metadata (header-metadata header)]
                  [filename-length (bytes-length (metadata-name metadata))]
                  [attributes (metadata-attributes metadata)]
@@ -161,7 +163,7 @@
             (write-int #x02014b50                   4)
             (write-int version                      2)
             (write-int *required-version*           2)
-            (write-int 0                            2)
+            (write-int bits                         2)
             (write-int compression                  2)
             (write-int (metadata-time metadata)     2)
             (write-int (metadata-date metadata)     2)
@@ -208,8 +210,19 @@
   ;; (define *unix:other-write* #o00002)
   ;; (define *unix:other-exe*   #o00001)
   (define (path-attributes path dir? permissions)
-    (let ([dos  (if dir? #x10 0)]
-          [unix (apply bitwise-ior (if dir? #o40000 0)
+    (define syms (and (not permissions)
+                      (file-or-directory-permissions path)))
+    (let ([dos (if dir?
+                   #x10
+                   (let ([read-only?
+                          (if permissions
+                              (zero? (bitwise-and #o200 permissions))
+                              (not (memq 'write syms)))])
+                     (if read-only? #x01 0)))]
+          [unix (apply bitwise-ior (if dir?
+                                       #o40000
+                                       ;; pkzip sets this bit:
+                                       #x8000)
                        (or (and permissions
                                 (list permissions))
                            (map (lambda (p)
@@ -217,7 +230,7 @@
                                     [(read)    #o444]
                                     [(write)   #o200] ; mask out write bits
                                     [(execute) #o111]))
-                                (file-or-directory-permissions path))))])
+                                syms)))])
       (bitwise-ior dos (arithmetic-shift unix 16))))
 
   ;; with-trailing-slash : bytes -> bytes

@@ -78,6 +78,7 @@
    (define min-phase (hash-ref h 'min-phase 0))
    (define max-phase (hash-ref h 'max-phase 0))
    (define language-info (hash-ref h 'language-info #f))
+   (define realm (hash-ref h 'realm 'racket))
 
    ;; Evaluate linklets, so that they're JITted just once (on demand).
    ;; Also, filter the bundle hash to just the phase-specific linklets, so that
@@ -97,6 +98,7 @@
          #hasheqv()))
 
    (define requires (decl 'requires))
+   (define recur-requires (decl 'recur-requires))
    (define provides (decl 'provides))
    (define original-self (decl 'self-mpi))
    (define phase-to-link-modules (decl 'phase-to-link-modules))
@@ -134,8 +136,10 @@
        (define m (make-module #:source-name (current-module-declare-source)
                               #:self original-self
                               #:requires requires
+                              #:recur-requires recur-requires
                               #:provides provides
                               #:language-info language-info
+                              #:realm realm
                               #:min-phase-level min-phase
                               #:max-phase-level max-phase
                               #:cross-phase-persistent? cross-phase-persistent?
@@ -416,6 +420,7 @@
   (make-instance 'decl #f 'constant
                  'self-mpi (compiled-in-memory-original-self cim)
                  'requires (compiled-in-memory-requires cim)
+                 'recur-requires (compiled-in-memory-recur-requires cim)
                  'provides (compiled-in-memory-provides cim)
                  'phase-to-link-modules (compiled-in-memory-phase-to-link-module-uses cim)
                  'portal-stxes (compiled-in-memory-portal-stxes cim)))

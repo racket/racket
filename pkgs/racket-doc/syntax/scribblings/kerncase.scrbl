@@ -1,12 +1,6 @@
 #lang scribble/doc
 @(require "common.rkt" (for-label syntax/kerncase))
 
-@(define-syntax-rule (intro id)
-   (begin
-     (require (for-label mzscheme))
-     (define id (racket if))))
-@(intro mzscheme-if)
-
 @; ----------------------------------------------------------------------
 
 @title[#:tag "kerncase"]{Matching Fully-Expanded Expressions}
@@ -29,8 +23,10 @@ or transformer-phase comparisons. The @racket[clause]s are the same as in
 The primitive syntactic forms must have their normal bindings in the
 context of the @racket[kernel-syntax-case] expression. Beware that
 @racket[kernel-syntax-case] does not work in a module whose language
-is @racketmodname[mzscheme], since the binding of @mzscheme-if from
-@racketmodname[mzscheme] is different than the primitive @racket[if].}
+provides different bindings for these primitive syntactic forms, such
+as @racketmodname[mzscheme #:indirect] which does not provide the
+primitive @racket[if] and @racketmodname[typed/racket #:indirect] which does not
+provide the primitive @racket[let-values] among others.}
 
 
 @defform[(kernel-syntax-case* stx-expr trans?-expr (extra-id ...) clause ...)]{

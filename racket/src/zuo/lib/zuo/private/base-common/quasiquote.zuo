@@ -1,0 +1,63 @@
+#lang zuo/datum
+
+(require "../pair.zuo"
+         "and-or.zuo"
+         "syntax-error.zuo"
+         "../list.zuo"
+         "let.zuo")
+
+(provide quasiquote
+         unquote
+         unquote-splicing)
+
+(define-syntax quasiquote
+  (context-consumer
+   (lambda (stx free-id=? name)
+     (unless (and (list? stx) (= (length stx) 2))
+       (bad-syntax stx))
+     (let ([quot (quote-syntax quote)])
+       (let loop ([s (cadr stx)] [depth 0])
+         (let ([loop-pair (lambda (combine combine-name a d depth)
+                            (let ([a (loop a depth)]
+                                  [d (loop d depth)])
+                              (if (and (pair? a)
+                                       (eq? (car a) quot)
+                                       (pair? d)
+                                       (eq? (car d) quot))
+                                  (list quot (combine (cadr a) (cadr d)))
+                                  (list combine-name a d))))])
+           (cond
+             [(pair? s)
+              (let ([a (car s)])
+                (cond
+                  [(and (identifier? a)
+                        (free-id=? (syntax-e a) 'unquote))
+                   (unless (= (length s) 2)
+                     (bad-syntax s))
+                   (if (= depth 0)
+                       (cadr s)
+                       (loop-pair list (quote-syntax list) a (cadr s) (- depth 1)))]
+                  [(and (identifier? a)
+                        (free-id=? (syntax-e a) 'unquote-splicing))
+                   (syntax-error "misplaced splicing unquote" s)]
+                  [(and (pair? a)
+                        (identifier? (car a))
+                        (free-id=? (syntax-e (car a)) 'unquote-splicing))
+                   (unless (= (length a) 2)
+                     (bad-syntax a))
+                   (if (= depth 0)
+                       (if (null? (cdr s))
+                           (cadr a)
+                           (list (quote-syntax append) (cadr a) (loop (cdr s) depth)))
+                       (loop-pair cons (quote-syntax cons) a (cdr s) depth))]
+                  [(and (identifier? a)
+                        (free-id=? (syntax-e a) 'quasiquote))
+                   (unless (= (length s) 2)
+                     (bad-syntax s))
+                   (loop-pair list (quote-syntax list) a (cadr s) (+ depth 1))]
+                  [else
+                   (loop-pair cons (quote-syntax cons) a (cdr s) depth)]))]
+             [else (list quot s)])))))))
+
+(define-syntax unquote misplaced-syntax)
+(define-syntax unquote-splicing misplaced-syntax)

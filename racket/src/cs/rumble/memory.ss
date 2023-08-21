@@ -49,9 +49,9 @@
 ;; pages in the allocator), so we need to detect that and force a GC.
 ;; Other patterns don't have as much overhead, so triggering only
 ;; on total size with overhead can increase peak memory use too much.
-;; Trigger a GC is either the non-overhead or with-overhead counts
-;; group enough.
-(define GC-TRIGGER-FACTOR 2)
+;; Trigger a GC when either the non-overhead or with-overhead counts
+;; grows enough.
+(define GC-TRIGGER-FACTOR (* 8 1024)) ; this times the square root of memory use is added to memory use
 (define trigger-major-gc-allocated (* 32 1024 1024))
 (define trigger-major-gc-allocated+overhead (* 64 1024 1024))
 (define non-full-gc-counter 0)
@@ -61,10 +61,15 @@
 ;; and control layer may be in uninterrupted mode, so don't
 ;; do anything that might use "control.ss" (especially in logging).
 (define (collect/report g)
+  ;; If you get "$collect-rendezvous: cannot return to the collect-request-handler", then
+  ;; probably something here is trying to raise an exception. To get more information try
+  ;; uncommenting the exception-handler line below, and then move its last close parenthesis
+  ;; to the end of the enclosing function.
+  #;(guard (x [else (if (condition? x) (display-condition x) (#%write x)) (#%newline) (#%flush-output-port)]))
   (let ([this-counter (if g (bitwise-arithmetic-shift-left 1 (* log-collect-generation-radix g)) gc-counter)]
         [pre-allocated (bytes-allocated)]
         [pre-allocated+overhead (current-memory-bytes)]
-        [pre-time (real-time)] 
+        [pre-time (current-inexact-milliseconds)]
         [pre-cpu-time (cpu-time)])
     (if (> (add1 this-counter) (bitwise-arithmetic-shift-left 1 (* log-collect-generation-radix (sub1 (collect-maximum-generation)))))
         (set! gc-counter 1)
@@ -108,7 +113,8 @@
                       (let ([domains (weaken-accounting-domains domains)])
                         ;; Accounting collection:
                         (let ([counts (collect gen 1 gen (weaken-accounting-roots roots))])
-                          (lambda () (k counts domains))))])))]
+                          (lambda ()
+                            (call-with-accounting-domains k counts domains))))])))]
                [(and request-incremental?
                      (fx= gen (sub1 (collect-maximum-generation))))
                 ;; "Incremental" mode by not promoting to the maximum generation
@@ -130,37 +136,47 @@
           (set! request-incremental? #f))
         (let ([post-allocated (bytes-allocated)]
               [post-allocated+overhead (current-memory-bytes)]
-              [post-time (real-time)]
+              [post-time (current-inexact-milliseconds)]
               [post-cpu-time (cpu-time)])
           (when (= gen (collect-maximum-generation))
-          ;; Trigger a major GC when twice as much memory is used. Twice
-          ;; `post-allocated+overhead` seems to be too long a wait, because
-          ;; that value may include underused pages that have locked objects.
-          ;; Using just `post-allocated` is too small, because it may force an
-            ;; immediate major GC too soon. Split the difference.
-          (set! trigger-major-gc-allocated (* GC-TRIGGER-FACTOR (- post-allocated (bytes-finalized))))
-          (set! trigger-major-gc-allocated+overhead (* GC-TRIGGER-FACTOR post-allocated+overhead)))
-        (update-eq-hash-code-table-size!)
-        (update-struct-procs-table-sizes!)
-        (poll-foreign-guardian)
-        (when maybe-finish-accounting
-          (maybe-finish-accounting))
-        (run-collect-callbacks cdr)
-        (garbage-collect-notify gen
-                                pre-allocated pre-allocated+overhead pre-time pre-cpu-time
-                                post-allocated post-allocated+overhead post-time post-cpu-time
-                                (real-time) (cpu-time)))
-      (when (and (= req-gen (collect-maximum-generation))
-                 (currently-in-engine?))
-        ;; This `set-timer` doesn't necessarily penalize the right thread,
-        ;; but it's likely to penalize a thread that is allocating quickly:
-        (set-timer 1))
-      (cond
-       [(= gen (collect-maximum-generation))
-        (set! non-full-gc-counter 0)]
-       [else
-        (set! non-full-gc-counter (add1 non-full-gc-counter))])
-      (void)))))
+            ;; Trigger a major GC when memory use is a certain factor of current use.
+            ;;
+            ;; The factor is based on the square root of current memory use, which is intended
+            ;;  to make Racket a good citizen in its environment and maximize cooperation among
+            ;;  different processes.[1] We do not attempt to measure allocation and collection
+            ;;  rates, as in the paper describing this rule. Instead, we simplify by assuming
+            ;;  that that ratio of rates is relatively constant.
+            ;;   [1] Kirisame, Shenoy, and Panchekha (2022) https://arxiv.org/abs/2204.10455
+            ;;
+            ;; A factor on `post-allocated+overhead` seems to be too long a wait, because
+            ;;  that value may include underused pages that have locked objects.
+            ;;  Using just `post-allocated` is too small, because it may force an
+            ;;  immediate major GC too soon. So, watch both.
+            (let ([scale (lambda (n)
+                           (+ n (inexact->exact (floor (* (sqrt (max 0 n)) GC-TRIGGER-FACTOR)))))])
+              (set! trigger-major-gc-allocated (scale (- post-allocated (bytes-finalized))))
+              (set! trigger-major-gc-allocated+overhead (scale post-allocated+overhead))))
+          (update-eq-hash-code-table-size!)
+          (update-struct-procs-table-sizes!)
+          (poll-foreign-guardian)
+          (when maybe-finish-accounting
+            (maybe-finish-accounting))
+          (run-collect-callbacks cdr)
+          (garbage-collect-notify gen
+                                  pre-allocated pre-allocated+overhead pre-time pre-cpu-time
+                                  post-allocated post-allocated+overhead post-time post-cpu-time
+                                  (current-inexact-milliseconds) (cpu-time)))
+        (when (and (= req-gen (collect-maximum-generation))
+                   (currently-in-engine?))
+          ;; This `set-timer` doesn't necessarily penalize the right thread,
+          ;; but it's likely to penalize a thread that is allocating quickly:
+          (set-timer 1))
+        (cond
+          [(= gen (collect-maximum-generation))
+           (set! non-full-gc-counter 0)]
+          [else
+           (set! non-full-gc-counter (add1 non-full-gc-counter))])
+        (void)))))
 
 (define collect-garbage
   (case-lambda
@@ -210,7 +226,13 @@
                 (#%format "out of memory making ~a\n  length: ~a"
                           what len)
                 (current-continuation-marks))))
-      (immediate-allocation-check n))))
+      (immediate-allocation-check n)
+      ;; Watch out for radiply growing memory use that isn't captured
+      ;; fast enough by regularly scheduled event checking because it's
+      ;; allocated in large chunks
+      (when (>= (bytes-allocated 0) trigger-major-gc-allocated)
+        (when (eqv? (place-thread-category) PLACE-MAIN-THREAD)
+          (set-timer 1))))))
 
 (define (set-incremental-collection-enabled! on?)
   (set! disable-incremental? (not on?)))
@@ -236,6 +258,15 @@
     (if (null? domains)
         '()
         (weak-cons (car domains) (loop (cdr domains))))))
+
+;; Filter any domain (and associated count) that went to `#!bwp` during collection
+(define (call-with-accounting-domains k counts domains)
+  (let loop ([counts counts] [domains domains] [r-counts '()] [r-domains '()])
+    (cond
+      [(null? counts) (k (reverse r-counts) (reverse r-domains))]
+      [(eq? #!bwp (car domains)) (loop (cdr counts) (cdr domains) r-counts r-domains)]
+      [else (loop (cdr counts) (cdr domains)
+                  (cons (car counts) r-counts) (cons (car domains) r-domains))])))
 
 ;; ----------------------------------------
 
@@ -506,11 +537,7 @@
 (define/who (make-phantom-bytes k)
   (check who exact-nonnegative-integer? k)
   (guard-large-allocation who "byte string" k 1)
-  (let ([ph (create-phantom-bytes (make-phantom-bytevector k))])
-    (when (or (>= (bytes-allocated) trigger-major-gc-allocated)
-              (>= (current-memory-bytes) trigger-major-gc-allocated+overhead))
-      (collect-garbage))
-    ph))
+  (create-phantom-bytes (make-phantom-bytevector k)))
 
 (define/who (set-phantom-bytes! phantom-bstr k)
   (check who phantom-bytes? phantom-bstr)

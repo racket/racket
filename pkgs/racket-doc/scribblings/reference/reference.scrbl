@@ -84,6 +84,13 @@ The @racketmodname[racket] library combines
 
 @(bibliography
 
+  (bib-entry #:key "Baker93"
+             #:author "Henry G. Baker"
+             #:title "Equal Rights for Functional Objects or, the More Things Change, the More They are the Same"
+             #:date "1993"
+             #:location "SIGPLAN OOPS Messenger"
+             #:url "https://doi.org/10.1145/165593.165596")
+
   (bib-entry #:key "C99"
              #:author "ISO/IEC"
              #:title "ISO/IEC 9899:1999 Cor. 3:2007(E)"
@@ -128,8 +135,22 @@ The @racketmodname[racket] library combines
              #:author "Matthew Flatt"
              #:title "Composable and Compilable Macros: You Want it When?"
              #:location "International Conference on Functional Programming (ICFP)"
-             #:url "http://www.cs.utah.edu/plt/publications/gpce13-f-color.pdf"
+             #:url "https://www.cs.utah.edu/plt/publications/macromod.pdf"
              #:date "2002")
+
+  (bib-entry #:key "Flatt07"
+             #:author "Matthew Flatt, Gang Yu, Robert Bruce Findler, and Matthias Felleisen"
+             #:title "Adding Delimited and Composable Control to a Production Programming Environment"
+             #:location "International Conference on Functional Programming (ICFP)"
+             #:url "http://www.cs.utah.edu/plt/publications/icfp07-fyff.pdf"
+             #:date "2007")
+
+  (bib-entry #:key "Flatt13"
+             #:author "Matthew Flatt"
+             #:title "Submodules in Racket: You Want It When, Again?"
+             #:location "International Conference on Generative Programming: Concepts & Experiences (GPCE'13)"
+             #:url "https://www.cs.utah.edu/plt/publications/gpce13-f-color.pdf"
+             #:date "2013")
 
   (bib-entry #:key "Friedman95"
              #:title "Exception system proposal"
@@ -261,6 +282,13 @@ The @racketmodname[racket] library combines
              #:location "Object-Oriented Programming, Systems, and Languages (OOPSLA)"
              #:url "http://www.eecs.northwestern.edu/~robby/pubs/papers/oopsla2012-stff.pdf"
              #:date "2012")
+
+  (bib-entry #:key "Torosyan21"
+             #:title "Runtime and Compiler Support for HAMTs"
+             #:author "Son Torosyan, Jon Zeppieri, and Matthew Flatt"
+             #:location "Dynamic Languages Symposium (DLS)"
+             #:url "https://www.cs.utah.edu/plt/publications/dls21-tzf.pdf"
+             #:date "2021")
   )
 
 @;------------------------------------------------------------------------

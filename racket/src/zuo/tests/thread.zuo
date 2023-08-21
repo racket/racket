@@ -1,0 +1,164 @@
+#lang zuo
+
+(require "harness.zuo")
+
+(alert "threads")
+
+(check (call-in-main-thread
+        (lambda ()
+          (define ch (channel))
+          (define msgs (channel))
+          (thread (lambda () (channel-put msgs (list "read" (channel-get ch)))))
+          (thread (lambda () (channel-put msgs "write") (channel-put ch 'hello)))
+          (list (channel-get msgs)
+                (channel-get msgs))))
+       '("write" ("read" hello)))
+
+(check (call-in-main-thread
+        (lambda ()
+          (define ch (channel))
+          (define go (channel))
+          (for-each (lambda (i) (channel-put ch i)) '(a b c d))
+          (thread (lambda ()
+                    (for-each (lambda (v) (channel-put ch (list v (channel-get ch))))
+                              '(1 2 3 4))
+                    (channel-put go 'ok)))
+          (channel-get go)
+          (map (lambda (i) (channel-get ch)) '(_ _ _ _))))
+       '((1 a) (2 b) (3 c) (4 d)))
+
+(check (call-in-main-thread
+        (lambda ()
+          (define ch (channel))
+          (define go (channel))
+          (define ls '(a b c d))
+          (for-each (lambda (i) (channel-put ch i)) ls)
+          (for-each (lambda (v)
+                      (thread (lambda ()
+                                (channel-put ch (list v (channel-get ch)))
+                                (channel-put go 'ok))))
+                    (map symbol->string ls))
+          (for-each (lambda (i) (channel-get go)) ls)
+          (map (lambda (i) (channel-get ch)) '(_ _ _ _))))
+       ;; this is the result for now, at least, since everything is deterministic
+       ;; and the scheduler's enquring strategy adds a new thread to the front
+       '(("d" a) ("c" b) ("b" c) ("a" d)))
+
+;; Each thread starts a process, but the wait might immediately succeed every time
+(check (let ([r (call-in-main-thread
+                 (lambda ()
+                   (define ch (channel))
+                   (define ls '(a b c d))
+                   (for-each (lambda (id)
+                               (thread
+                                (lambda ()
+                                  (define p (process (hash-ref (runtime-env) 'exe)
+                                                     ""
+                                                     (~a id)
+                                                     (hash 'stdin 'pipe 'stdout 'pipe)))
+                                  (define to (hash-ref p 'stdin))
+                                  (fd-write to (~a "#lang zuo\n"
+                                                   (~s '(alert (hash-ref (runtime-env) 'args)))))
+                                  (fd-close to)
+                                  (define from (hash-ref p 'stdout))
+                                  (define str (fd-read from eof))
+                                  (fd-close from)
+                                  (thread-process-wait (hash-ref p 'process))
+                                  (channel-put ch str))))
+                             ls)
+                   (map (lambda (i) (channel-get ch)) ls)))])
+         (and (= (length r) 4)
+              (andmap (lambda (s) (member s r))
+                      '("(list \"a\")\n" "(list \"b\")\n" "(list \"c\")\n" "(list \"d\")\n"))
+              #t)))
+
+;; Each thread starts a process, relies on the main thread to finish it
+(check (let ([r (call-in-main-thread
+                 (lambda ()
+                   (define ch (channel))
+                   (define done (channel))
+                   (define ls '(a b c d))
+                   (for-each (lambda (id)
+                               (thread
+                                (lambda ()
+                                  (define p (process (hash-ref (runtime-env) 'exe)
+                                                     ""
+                                                     (~a id)
+                                                     (hash 'stdin 'pipe 'stdout 'pipe)))
+                                  (channel-put ch p)
+                                  (thread-process-wait (hash-ref p 'process))
+                                  (channel-put done 'ok))))
+                             ls)
+                   (define results
+                     (map (lambda (i)
+                            (define p (channel-get ch))
+                            (define to (hash-ref p 'stdin))
+                            (define from (hash-ref p 'stdout))
+                            (fd-write to (~a "#lang zuo\n"
+                                             (~s '(alert (hash-ref (runtime-env) 'args)))))
+                            (fd-close to)
+                            (define str (fd-read from eof))
+                            (fd-close from)
+                            str)
+                          ls))
+                   (for-each (lambda (id) (channel-get done)) ls)
+                   results))])
+         (and (= (length r) 4)
+              (andmap (lambda (s) (member s r))
+                      '("(list \"a\")\n" "(list \"b\")\n" "(list \"c\")\n" "(list \"d\")\n"))
+              #t)))
+
+;; Each thread starts a process, main thread waits on all
+(check (let ([r (call-in-main-thread
+                 (lambda ()
+                   (define ch (channel))
+                   (define go (channel))
+                   (define ls '(a b c d))
+                   (for-each (lambda (id)
+                               (thread
+                                (lambda ()
+                                  (define p (process (hash-ref (runtime-env) 'exe)
+                                                     ""
+                                                     (~a id)
+                                                     (hash 'stdin 'pipe 'stdout 'pipe)))
+                                  (channel-put ch (hash-ref p 'process))
+                                  (channel-get go)
+                                  (define to (hash-ref p 'stdin))
+                                  (fd-write to (~a "#lang zuo\n"
+                                                   (~s '(alert (hash-ref (runtime-env) 'args)))))
+                                  (fd-close to)
+                                  (define from (hash-ref p 'stdout))
+                                  (define str (fd-read from eof))
+                                  (fd-close from)
+                                  (channel-put ch str))))
+                             ls)
+                   (define ps (map (lambda (i) (channel-get ch)) ls))
+                   (for-each (lambda (i) (channel-put go i)) ls)
+                   (let loop ([ps ps])
+                     (unless (null? ps)
+                       (define p (apply thread-process-wait ps))
+                       (loop (remove p ps))))
+                   (map (lambda (i) (channel-get ch)) ls)))])
+         (and (= (length r) 4)
+              (andmap (lambda (s) (member s r))
+                      '("(list \"a\")\n" "(list \"b\")\n" "(list \"c\")\n" "(list \"d\")\n"))
+              #t)))
+
+(check-fail (begin
+              (require zuo/thread)
+              (call-in-main-thread
+               (lambda () (channel-get (channel)))))
+            "main thread is stuck")
+
+(check-fail (begin
+              (require zuo/thread)
+              (call-in-main-thread
+               (lambda ()
+                 ((call/prompt (lambda () (call/cc (lambda (k) k)))) 0))))
+            "main thread is stuck")
+
+(check (channel-try-get (channel)) #f)
+(check (let ([ch (channel)])
+         (channel-put ch "x")
+         (channel-try-get ch))
+       "x")

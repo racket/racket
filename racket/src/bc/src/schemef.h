@@ -199,6 +199,9 @@ MZ_EXTERN Scheme_On_Atomic_Timeout_Proc scheme_set_on_atomic_timeout(Scheme_On_A
 
 MZ_EXTERN MZ_NORETURN void scheme_signal_error(const char *msg, ...);
 MZ_EXTERN MZ_NORETURN void scheme_raise_exn(int exnid, ...);
+MZ_EXTERN MZ_NORETURN void scheme_raise_realm_exn(int exnid,
+                                                  intptr_t name_len, Scheme_Object *name_realm, Scheme_Object *msg_realm,
+                                                  ...);
 MZ_EXTERN void scheme_warning(char *msg, ...);
 
 MZ_EXTERN void scheme_raise(Scheme_Object *exn);
@@ -227,6 +230,7 @@ MZ_EXTERN MZ_NORETURN void scheme_wrong_count_m(const char *name, int minc, int 
 MZ_EXTERN MZ_NORETURN void scheme_case_lambda_wrong_count(const char *name, int argc, Scheme_Object **argv, int is_method, int count, ...);
 MZ_EXTERN MZ_NORETURN void scheme_wrong_type(const char *name, const char *expected, int which, int argc, Scheme_Object **argv);
 MZ_EXTERN MZ_NORETURN void scheme_wrong_contract(const char *name, const char *expected, int which, int argc, Scheme_Object **argv);
+MZ_EXTERN MZ_NORETURN void scheme_wrong_contract_for_realm(const char *name, Scheme_Object *realm, const char *expected, int which, int argc, Scheme_Object **argv);
 MZ_EXTERN MZ_NORETURN void scheme_wrong_field_type(Scheme_Object *c_name, const char *expected, Scheme_Object *o);
 MZ_EXTERN MZ_NORETURN void scheme_wrong_field_contract(Scheme_Object *c_name, const char *expected, Scheme_Object *o);
 MZ_EXTERN MZ_NORETURN void scheme_arg_mismatch(const char *name, const char *msg, Scheme_Object *o);
@@ -269,6 +273,7 @@ MZ_EXTERN Scheme_Object *scheme_multiple_values;
 
 MZ_EXTERN unsigned short *scheme_uchar_table[];
 MZ_EXTERN unsigned char *scheme_uchar_cases_table[];
+MZ_EXTERN unsigned char *scheme_uchar_graphbreaks_table[];
 MZ_EXTERN unsigned char *scheme_uchar_cats_table[];
 MZ_EXTERN int scheme_uchar_ups[];
 MZ_EXTERN int scheme_uchar_downs[];
@@ -355,6 +360,9 @@ MZ_EXTERN Scheme_Object *scheme_extract_one_cc_mark(Scheme_Object *mark_set,
 MZ_EXTERN Scheme_Object *scheme_extract_one_cc_mark_to_tag(Scheme_Object *mark_set, 
                                                            Scheme_Object *key,
                                                            Scheme_Object *prompt_tag);
+MZ_EXTERN Scheme_Object *scheme_extract_cc_mark_list(Scheme_Object *mark_set, 
+                                                     Scheme_Object *key,
+                                                     Scheme_Object *prompt_tag);
 
 /* Internal */
 MZ_EXTERN Scheme_Object *scheme_do_eval(Scheme_Object *obj, int _num_rands, Scheme_Object **rands, int val);
@@ -466,6 +474,7 @@ XFORM_NONGCING Scheme_Object *scheme_bucket_table_next(Scheme_Bucket_Table *hash
 
 MZ_EXTERN Scheme_Hash_Table *scheme_make_hash_table(int type);
 MZ_EXTERN Scheme_Hash_Table *scheme_make_hash_table_equal();
+MZ_EXTERN Scheme_Hash_Table *scheme_make_hash_table_equal_always();
 MZ_EXTERN Scheme_Hash_Table *scheme_make_hash_table_eqv();
 MZ_EXTERN void scheme_hash_set(Scheme_Hash_Table *table, Scheme_Object *key, Scheme_Object *val);
 MZ_EXTERN Scheme_Object *scheme_hash_get(Scheme_Hash_Table *table, Scheme_Object *key);
@@ -474,6 +483,7 @@ MZ_EXTERN void scheme_hash_set_atomic(Scheme_Hash_Table *table, Scheme_Object *k
 MZ_EXTERN Scheme_Object *scheme_hash_get_atomic(Scheme_Hash_Table *table, Scheme_Object *key);
 MZ_EXTERN int scheme_hash_table_equal(Scheme_Hash_Table *t1, Scheme_Hash_Table *t2);
 MZ_EXTERN int scheme_is_hash_table_equal(Scheme_Object *o);
+MZ_EXTERN int scheme_is_hash_table_equal_always(Scheme_Object *o);
 MZ_EXTERN int scheme_is_hash_table_eqv(Scheme_Object *o);
 MZ_EXTERN Scheme_Hash_Table *scheme_clone_hash_table(Scheme_Hash_Table *ht);
 MZ_EXTERN void scheme_clear_hash_table(Scheme_Hash_Table *ht);
@@ -488,6 +498,7 @@ XFORM_NONGCING MZ_EXTERN mzlonglong scheme_hash_tree_next(Scheme_Hash_Tree *tree
 XFORM_NONGCING_NONALIASING MZ_EXTERN int scheme_hash_tree_index(Scheme_Hash_Tree *tree, mzlonglong pos, Scheme_Object **_key, Scheme_Object **_val);
 MZ_EXTERN int scheme_hash_tree_equal(Scheme_Hash_Tree *t1, Scheme_Hash_Tree *t2);
 MZ_EXTERN int scheme_is_hash_tree_equal(Scheme_Object *o);
+MZ_EXTERN int scheme_is_hash_tree_equal_always(Scheme_Object *o);
 MZ_EXTERN int scheme_is_hash_tree_eqv(Scheme_Object *o);
 
 /*========================================================================*/
@@ -631,6 +642,7 @@ MZ_EXTERN Scheme_Object *scheme_make_offset_external_cptr(void *cptr, intptr_t o
 MZ_EXTERN int scheme_is_cpointer(Scheme_Object *cp);
 
 MZ_EXTERN const char *scheme_get_proc_name(Scheme_Object *p, int *len, int for_error);
+MZ_EXTERN Scheme_Object*scheme_get_proc_realm(Scheme_Object *p);
 
 /*========================================================================*/
 /*                               strings                                  */
@@ -1092,6 +1104,7 @@ XFORM_NONGCING MZ_EXTERN int scheme_is_subinspector(Scheme_Object *i, Scheme_Obj
 XFORM_NONGCING MZ_EXTERN int scheme_eq(Scheme_Object *obj1, Scheme_Object *obj2);
 XFORM_NONGCING MZ_EXTERN int scheme_eqv(Scheme_Object *obj1, Scheme_Object *obj2);
 MZ_EXTERN int scheme_equal(Scheme_Object *obj1, Scheme_Object *obj2);
+MZ_EXTERN int scheme_equal_always(Scheme_Object *obj1, Scheme_Object *obj2);
 MZ_EXTERN int scheme_chaperone_of(Scheme_Object *obj1, Scheme_Object *obj2);
 MZ_EXTERN int scheme_impersonator_of(Scheme_Object *obj1, Scheme_Object *obj2);
 
@@ -1099,9 +1112,13 @@ MZ_EXTERN int scheme_impersonator_of(Scheme_Object *obj1, Scheme_Object *obj2);
 XFORM_NONGCING MZ_EXTERN intptr_t scheme_hash_key(Scheme_Object *o);
 #endif
 MZ_EXTERN intptr_t scheme_equal_hash_key(Scheme_Object *o);
+MZ_EXTERN intptr_t scheme_equal_hash_key_recur(Scheme_Object *o, Scheme_Object *r);
 MZ_EXTERN intptr_t scheme_equal_hash_key2(Scheme_Object *o);
 MZ_EXTERN intptr_t scheme_recur_equal_hash_key(Scheme_Object *o, void *cycle_data);
 MZ_EXTERN intptr_t scheme_recur_equal_hash_key2(Scheme_Object *o, void *cycle_data);
+MZ_EXTERN intptr_t scheme_equal_always_hash_key(Scheme_Object *o);
+MZ_EXTERN intptr_t scheme_equal_always_hash_key_recur(Scheme_Object *o, Scheme_Object *r);
+MZ_EXTERN intptr_t scheme_equal_always_hash_key2(Scheme_Object *o);
 XFORM_NONGCING MZ_EXTERN intptr_t scheme_eqv_hash_key(Scheme_Object *o);
 XFORM_NONGCING MZ_EXTERN intptr_t scheme_eqv_hash_key2(Scheme_Object *o);
 

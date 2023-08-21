@@ -165,21 +165,21 @@
 ;; ----------------------------------------
 
 (define (check rx in N [M (max 1 (quotient N 10))])
-  (define c-start (current-inexact-milliseconds))
+  (define c-start (current-inexact-monotonic-milliseconds))
   (define orig-rx
     (if (bytes? rx)
         (for/fold ([r #f]) ([i (in-range M)])
           (byte-pregexp rx))
         (for/fold ([r #f]) ([i (in-range M)])
           (pregexp rx))))
-  (define c-after-orig (current-inexact-milliseconds))
+  (define c-after-orig (current-inexact-monotonic-milliseconds))
   (define new-rx
     (if (bytes? rx)
         (for/fold ([r #f]) ([i (in-range M)])
           (rx:byte-pregexp rx))
         (for/fold ([r #f]) ([i (in-range M)])
           (rx:pregexp rx))))
-  (define c-after-new (current-inexact-milliseconds))
+  (define c-after-new (current-inexact-monotonic-milliseconds))
 
   (define orig-v (regexp-match orig-rx in))
   (define new-v (rx:regexp-match new-rx in))
@@ -188,14 +188,14 @@
            "failed\n  pattern: ~s\n  input: ~s\n  expected: ~s\n  got: ~s"
            rx in orig-v new-v))
 
-  (define start (current-inexact-milliseconds))
+  (define start (current-inexact-monotonic-milliseconds))
   (for/fold ([r #f]) ([i (in-range N)])
     (regexp-match? orig-rx in))
-  (define after-orig (current-inexact-milliseconds))
+  (define after-orig (current-inexact-monotonic-milliseconds))
   (for/fold ([r #f]) ([i (in-range N)])
     (rx:regexp-match? new-rx in))
-  (define after-new (current-inexact-milliseconds))
-  
+  (define after-new (current-inexact-monotonic-milliseconds))
+
   (define orig-c-msec (- c-after-orig c-start))
   (define new-c-msec (- c-after-new c-after-orig))
   (define orig-msec (- after-orig start))
@@ -310,3 +310,40 @@
 (check #"a*b"
        (make-bytes 1024 (char->integer #\a))
        100000)
+
+;; regression tests where string is long enough to trigger lazy decoding:
+(let ([xstr (string-append "#lang racket\n"
+                           "\n"
+                           ";; Case insensitive words:\n"
+                           "(define ci-word%\n"
+                           "  (class* object% (equal<%>)\n"
+                           "\n"
+                           "    ;; Initialization\n"
+                           "    (init-field word)\n"
+                           "    (super-new)\n"
+                           "\n"
+                           "    ;; We define equality to ignore case:\n"
+                           "    (define/public (equal-to? other recur)\n"
+                           "      (string-ci=? word (get-field word other)))\n"
+                           "\n"
+                           "    ;; The hash codes need to be insensitive to casing as well.\n"
+                           "    ;; We'll just downcase the word and get its hash code.\n"
+                           "    (define/public (equal-hash-code-of hash-code)\n"
+                           "      (hash-code (string-downcase word)))\n"
+                           "\n"
+                           "    (define/public (equal-secondary-hash-code-of hash-code)\n"
+                           "      (hash-code (string-downcase word)))))\n"
+                           "\n"
+                           ";; We can create a hash with a single word:\n"
+                           "(define h (make-hash))\n"
+                           "(hash-set! h (new ci-word% [word \"inconceivable!\"]) 'value)\n"
+                           "\n"
+                           ";; Lookup into the hash should be case-insensitive, so that\n"
+                           ";; both of these should return 'value.\n"
+                           "(hash-ref h (new ci-word% [word \"inconceivable!\"]))\n"
+                           "(hash-ref h (new ci-word% [word \"INCONCEIVABLE!\"]))\n"
+                           "\n"
+                           ";; Comparison fails if we use a non-ci-word%:\n"
+                           "(hash-ref h \"inconceivable!\" 'i-dont-think-it-means-what-you-think-it-means)")])
+  (void (rx:regexp-replace* (rx:regexp "(?m:^$)") xstr "\xA0"))
+  (void (rx:regexp-replace* (rx:pregexp "\\b") xstr "\xA0")))

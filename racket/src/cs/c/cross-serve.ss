@@ -37,12 +37,15 @@
                        [(#\c #\u)
                         (call-with-fasled
                          in
-                         (lambda (v pred)
-                           (parameterize ([optimize-level (if (fx= cmd (char->integer #\u))
-                                                              3
-                                                              (optimize-level))]
-                                          [fasl-compressed compress?])
-                             (compile-to-port (list v) o #f #f #f (string->symbol target) #f pred 'omit-rtds))))]
+                         (lambda (v+realm pred)
+                           (let ([v (car v+realm)]
+                                 [realm (cdr v+realm)])
+                             (parameterize ([optimize-level (if (fx= cmd (char->integer #\u))
+                                                                3
+                                                                (optimize-level))]
+                                            [fasl-compressed compress?]
+                                            [compile-procedure-realm realm])
+                               (compile-to-port (list v) o #f #f #f (string->symbol target) #f pred 'omit-rtds)))))]
                        [(#\f #\d)
                         ;; Reads host fasl format, then writes target fasl format
                         (call-with-fasled

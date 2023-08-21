@@ -114,6 +114,7 @@
     [`(eq? ,e1 ,e2) (simple "c_same_obj(~a)" e1 e2)]
     [`(eqv? ,e1 ,e2) (simple "scheme_eqv(~a)" e1 e2)]
     [`(equal? ,e1 ,e2) (simple #:can-gc? #t "scheme_equal(~a)"e1 e2)]
+    [`(equal-always? ,e1 ,e2) (simple #:can-gc? #t "scheme_equal_always(~a)"e1 e2)]
     [`(char=? ,e1 ,e2) (simple "c_scheme_char_eq(~a)" e1 e2)]
     [`(unsafe-char=? ,e1 ,e2) (simple "c_scheme_char_eq(~a)" e1 e2)]
     [`(char-whitespace? ,e) (simple "c_scheme_char_whitespacep(~a)" e)]

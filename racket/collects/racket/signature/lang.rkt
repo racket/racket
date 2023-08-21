@@ -4,8 +4,8 @@
          racket/contract
          (submod racket/unit compat)
          (for-syntax racket/base
-                     racket/private/unit-compiletime
-                     racket/private/unit-syntax))
+                     racket/syntax
+                     racket/private/unit/exptime/util))
 
 (provide (rename-out [module-begin #%module-begin]
                      [struct~s struct])
@@ -25,7 +25,7 @@
   (split-requires* (list #'require #'#%require)))
 
 (define-syntax (module-begin stx)
-  (parameterize ((error-syntax stx))
+  (parameterize ((current-syntax-context stx))
     (with-syntax ((name (datum->syntax stx
                                        (make-name (syntax-property stx 'enclosing-module-name)))))
       (syntax-case stx ()

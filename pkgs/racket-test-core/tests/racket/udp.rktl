@@ -271,8 +271,11 @@
 (let ()
   (define (q)
     (define s (udp-open-socket #f #f))
-    (udp-bind! s "127.0.0.1" 5999)
-    s)
+    (with-handlers ([exn? (lambda (exn)
+                            (udp-close s)
+                            (raise exn))])
+      (udp-bind! s "127.0.0.1" 5999)
+      s))
   
   (define s (q))
   (err/rt-test (q) exn:fail:network:errno?)

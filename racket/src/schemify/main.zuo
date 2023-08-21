@@ -1,0 +1,52 @@
+#lang zuo
+(require "../lib.zuo"
+         (only-in "../expander/main.zuo"
+                  expander-target
+                  expander-main
+                  register-expansion-dependencies))
+
+(provide-targets targets-at)
+
+(define (targets-at at-dir
+                    [vars (hash)]
+                    [expander (expander-target (make-at-dir (at-dir "../expander")) vars)])
+  (define schemify.rktl (at-dir "compiled/schemify.rktl"))
+  (define schemify-dep.rktd (at-dir "compiled/schemify-dep.rktd"))
+  
+  (define known.rktl (at-dir "compiled/known.rktl"))
+  (define known-dep.rktd (at-dir "compiled/known-dep.rktd"))
+
+  (define ignore-args
+    `(;; Ignoring functions from `#%read` works because they won't appear in
+      ;; the simplified expansion. Make annotation references direct to
+      ;; improve performance. Declaring "collect.rkt" pure works around a
+      ;; limitation of the flattener.
+      "++knot" "read" "-"
+      "++direct" "kernel"
+      "++pure" ,(at-source "../../collects/racket/private/collect.rkt")))
+
+  (define (build src path dep.rktd token)
+    (racket vars
+            (expander-main)
+            "-t" src
+            "-c" (at-dir "compiled/cache-src")
+            "-k" (at-source "../..")
+            "-s" "-x"
+            ignore-args
+            "--depends" dep.rktd
+            "-o" path)
+    (register-expansion-dependencies dep.rktd token))
+  
+  (make-targets
+   `([:target schemify-src (,schemify.rktl) ,void]
+     [:target known-src (,known.rktl) ,void]
+
+     [:target ,schemify.rktl (,expander)
+              ,(lambda (path token)
+                 (build (at-source "main.rkt") path schemify-dep.rktd token))]
+
+     [:target ,known.rktl (,expander)
+              ,(lambda (path token)
+                 (build (at-source "known.rkt") path known-dep.rktd token))]
+
+     [:db-dir ,(at-dir "compiled")])))

@@ -1,0 +1,290 @@
+diff -r -u old/libffi-3.3/Makefile.in new/libffi-3.3/Makefile.in
+--- old/libffi-3.3/Makefile.in	2019-11-23 06:59:04.000000000 -0700
++++ new/libffi-3.3/Makefile.in	2022-04-17 17:54:55.000000000 -0600
+@@ -608,7 +608,7 @@
+ LTLDFLAGS = $(shell $(SHELL) $(top_srcdir)/libtool-ldflags $(LDFLAGS))
+ AM_CFLAGS = $(am__append_3)
+ @LIBFFI_BUILD_VERSIONED_SHLIB_FALSE@libffi_version_script = 
+-@LIBFFI_BUILD_VERSIONED_SHLIB_GNU_TRUE@@LIBFFI_BUILD_VERSIONED_SHLIB_TRUE@libffi_version_script = -Wl,--version-script,libffi.map
++@LIBFFI_BUILD_VERSIONED_SHLIB_GNU_TRUE@@LIBFFI_BUILD_VERSIONED_SHLIB_TRUE@libffi_version_script = 
+ @LIBFFI_BUILD_VERSIONED_SHLIB_SUN_TRUE@@LIBFFI_BUILD_VERSIONED_SHLIB_TRUE@libffi_version_script = -Wl,-M,libffi.map-sun
+ @LIBFFI_BUILD_VERSIONED_SHLIB_FALSE@libffi_version_dep = 
+ @LIBFFI_BUILD_VERSIONED_SHLIB_GNU_TRUE@@LIBFFI_BUILD_VERSIONED_SHLIB_TRUE@libffi_version_dep = libffi.map
+Only in new/libffi-3.3: Makefile.in~
+diff -r -u old/libffi-3.3/src/aarch64/win64_armasm.S new/libffi-3.3/src/aarch64/win64_armasm.S
+--- old/libffi-3.3/src/aarch64/win64_armasm.S	2019-10-31 08:49:54.000000000 -0600
++++ new/libffi-3.3/src/aarch64/win64_armasm.S	2022-04-17 19:09:09.000000000 -0600
+@@ -22,27 +22,30 @@
+ #include <ffi_cfi.h>
+ #include "internal.h"
+ 
+-	OPT	2 /*disable listing */
++//	OPT	2 /*disable listing */
+ /* For some macros to add unwind information */
+-#include "ksarm64.h"
+-	OPT	1 /*re-enable listing */
++//#include "ksarm64.h"
++//	OPT	1 /*re-enable listing */
+ 
+ #define BE(X)	0
+ #define PTR_REG(n)      x##n
+ #define PTR_SIZE	8
+ 
+-	IMPORT ffi_closure_SYSV_inner
+-	EXPORT	ffi_call_SYSV
+-	EXPORT	ffi_closure_SYSV_V
+-	EXPORT	ffi_closure_SYSV
+-	EXPORT	extend_hfa_type
+-	EXPORT	compress_hfa_type
++
++        .text
++        .align 8
++	.globl ffi_closure_SYSV_inner
++	.globl	ffi_call_SYSV
++	.globl	ffi_closure_SYSV_V
++	.globl	ffi_closure_SYSV
++	.globl	extend_hfa_type
++	.globl	compress_hfa_type
+ #ifdef FFI_GO_CLOSURES
+-	EXPORT	ffi_go_closure_SYSV_V
+-	EXPORT	ffi_go_closure_SYSV
++	.globl	ffi_go_closure_SYSV_V
++	.globl	ffi_go_closure_SYSV
+ #endif
+ 
+-	TEXTAREA, ALLIGN=8
++//	TEXTAREA, ALLIGN=8
+ 
+ /* ffi_call_SYSV
+    extern void ffi_call_SYSV (void *stack, void *frame,
+@@ -57,12 +60,12 @@
+    x5 closure
+ */
+ 
+-	NESTED_ENTRY ffi_call_SYSV_fake
++//	NESTED_ENTRY ffi_call_SYSV_fake
+ 
+ 	/* For unwind information, Windows has to store fp and lr  */
+-	PROLOG_SAVE_REG_PAIR	x29, x30, #-32!
++//	PROLOG_SAVE_REG_PAIR	x29, x30, #-32!
+ 
+-	ALTERNATE_ENTRY ffi_call_SYSV
++ffi_call_SYSV:
+ 	/* Use a stack frame allocated by our caller. */
+ 	stp	x29, x30, [x1]
+ 	mov	x29, x1
+@@ -82,7 +85,7 @@
+ 	ldp	q4, q5, [sp, #64]
+ 	ldp	q6, q7, [sp, #96]
+ 
+-ffi_call_SYSV_L1
++ffi_call_SYSV_L1:
+ 	/* Load the core argument passing registers, including
+ 	   the structure return pointer.  */
+ 	ldp     x0, x1, [sp, #16*N_V_ARG_REG + 0]
+@@ -111,8 +114,8 @@
+ 	   For integer data, note that we're storing into ffi_arg
+ 	   and therefore we want to extend to 64 bits; these types
+ 	   have two consecutive entries allocated for them.  */
+-	ALIGN 4
+-ffi_call_SYSV_return
++	.align 4
++ffi_call_SYSV_return:
+ 	ret				/* VOID */
+ 	nop
+ 	str	x0, [x3]		/* INT64 */
+@@ -179,7 +182,7 @@
+ 	nop
+ 	
+ 	
+-	NESTED_END ffi_call_SYSV_fake
++//	NESTED_END ffi_call_SYSV_fake
+ 	
+ 
+ /* ffi_closure_SYSV
+@@ -195,8 +198,8 @@
+ 
+ #define ffi_closure_SYSV_FS (8*2 + CALL_CONTEXT_SIZE + 64)
+ 
+-	NESTED_ENTRY	ffi_closure_SYSV_V
+-	PROLOG_SAVE_REG_PAIR	x29, x30, #-ffi_closure_SYSV_FS!
++ffi_closure_SYSV_V:
++//	PROLOG_SAVE_REG_PAIR	x29, x30, #-ffi_closure_SYSV_FS!
+ 
+ 	/* Save the argument passing vector registers.  */
+ 	stp	q0, q1, [sp, #16 + 0]
+@@ -205,12 +208,12 @@
+ 	stp	q6, q7, [sp, #16 + 96]
+ 
+ 	b	ffi_closure_SYSV_save_argument
+-	NESTED_END	ffi_closure_SYSV_V
++//	NESTED_END	ffi_closure_SYSV_V
+ 
+-	NESTED_ENTRY	ffi_closure_SYSV
+-	PROLOG_SAVE_REG_PAIR	x29, x30, #-ffi_closure_SYSV_FS!
++ffi_closure_SYSV:
++//	PROLOG_SAVE_REG_PAIR	x29, x30, #-ffi_closure_SYSV_FS!
+ 
+-ffi_closure_SYSV_save_argument
++ffi_closure_SYSV_save_argument: 
+ 	/* Save the argument passing core registers.  */
+ 	stp     x0, x1, [sp, #16 + 16*N_V_ARG_REG + 0]
+ 	stp     x2, x3, [sp, #16 + 16*N_V_ARG_REG + 16]
+@@ -221,7 +224,7 @@
+ 	ldp	PTR_REG(0), PTR_REG(1), [x17, #FFI_TRAMPOLINE_CLOSURE_OFFSET]	/* load cif, fn */
+ 	ldr	PTR_REG(2), [x17, #FFI_TRAMPOLINE_CLOSURE_OFFSET+PTR_SIZE*2]	/* load user_data */
+ 
+-do_closure
++do_closure:     
+ 	add	x3, sp, #16							/* load context */
+ 	add	x4, sp, #ffi_closure_SYSV_FS		/* load stack */
+ 	add	x5, sp, #16+CALL_CONTEXT_SIZE		/* load rvalue */
+@@ -237,8 +240,8 @@
+ 	br	x1
+ 
+ 	/* Note that each table entry is 2 insns, and thus 8 bytes.  */
+-	ALIGN	8
+-ffi_closure_SYSV_return_base
++	.align	8
++ffi_closure_SYSV_return_base:   
+ 	b	ffi_closure_SYSV_epilog			/* VOID */
+ 	nop
+ 	ldr	x0, [x3]		/* INT64 */
+@@ -303,15 +306,15 @@
+ 	nop
+ 					/* reserved */
+ 
+-ffi_closure_SYSV_epilog
+-	EPILOG_RESTORE_REG_PAIR	x29, x30, #ffi_closure_SYSV_FS!
+-	EPILOG_RETURN
+-	NESTED_END	ffi_closure_SYSV
++ffi_closure_SYSV_epilog:        
++//	EPILOG_RESTORE_REG_PAIR	x29, x30, #ffi_closure_SYSV_FS!
++//	EPILOG_RETURN
++//	NESTED_END	ffi_closure_SYSV
+ 
+ 
+ #ifdef FFI_GO_CLOSURES
+-	NESTED_ENTRY	ffi_go_closure_SYSV_V
+-	PROLOG_SAVE_REG_PAIR	x29, x30, #-ffi_closure_SYSV_FS!
++ffi_go_closure_SYSV_V:
++//	PROLOG_SAVE_REG_PAIR	x29, x30, #-ffi_closure_SYSV_FS!
+ 
+ 	/* Save the argument passing vector registers.  */
+ 	stp	q0, q1, [sp, #16 + 0]
+@@ -319,12 +322,12 @@
+ 	stp	q4, q5, [sp, #16 + 64]
+ 	stp	q6, q7, [sp, #16 + 96]
+ 	b	ffi_go_closure_SYSV_save_argument
+-	NESTED_END	ffi_go_closure_SYSV_V
++//	NESTED_END	ffi_go_closure_SYSV_V
+ 
+-	NESTED_ENTRY	ffi_go_closure_SYSV
+-	PROLOG_SAVE_REG_PAIR	x29, x30, #-ffi_closure_SYSV_FS!
++ffi_go_closure_SYSV:
++//	PROLOG_SAVE_REG_PAIR	x29, x30, #-ffi_closure_SYSV_FS!
+ 
+-ffi_go_closure_SYSV_save_argument
++ffi_go_closure_SYSV_save_argument:      
+ 	/* Save the argument passing core registers.  */
+ 	stp     x0, x1, [sp, #16 + 16*N_V_ARG_REG + 0]
+ 	stp     x2, x3, [sp, #16 + 16*N_V_ARG_REG + 16]
+@@ -335,14 +338,14 @@
+ 	ldp	PTR_REG(0), PTR_REG(1), [x18, #PTR_SIZE]/* load cif, fn */
+ 	mov	x2, x18					/* load user_data */
+ 	b	do_closure
+-	NESTED_END	ffi_go_closure_SYSV
++//	NESTED_END	ffi_go_closure_SYSV
+ 
+ #endif /* FFI_GO_CLOSURES */
+ 
+ 
+ /* void extend_hfa_type (void *dest, void *src, int h) */
+ 
+-	LEAF_ENTRY	extend_hfa_type
++extend_hfa_type:
+ 
+ 	adr	x3, extend_hfa_type_jump_base
+ 	and	w2, w2, #AARCH64_RET_MASK
+@@ -350,8 +353,8 @@
+ 	add	x3, x3, x2, lsl #4
+ 	br	x3
+ 
+-	ALIGN	4
+-extend_hfa_type_jump_base
++	.align	4
++extend_hfa_type_jump_base:      
+ 	ldp	s16, s17, [x1]		/* S4 */
+ 	ldp	s18, s19, [x1, #8]
+ 	b	extend_hfa_type_store_4
+@@ -410,22 +413,22 @@
+ 	ldr	q16, [x1]		/* Q1 */
+ 	b	extend_hfa_type_store_1
+ 
+-extend_hfa_type_store_4
++extend_hfa_type_store_4:        
+ 	str	q19, [x0, #48]
+-extend_hfa_type_store_3
++extend_hfa_type_store_3:        
+ 	str	q18, [x0, #32]
+-extend_hfa_type_store_2
++extend_hfa_type_store_2:        
+ 	str	q17, [x0, #16]
+-extend_hfa_type_store_1
++extend_hfa_type_store_1:        
+ 	str	q16, [x0]
+ 	ret
+ 
+-	LEAF_END	extend_hfa_type
++//	LEAF_END	extend_hfa_type
+ 
+ 
+ /* void compress_hfa_type (void *dest, void *reg, int h) */
+ 
+-	LEAF_ENTRY	compress_hfa_type
++compress_hfa_type:
+ 
+ 	adr	x3, compress_hfa_type_jump_base
+ 	and	w2, w2, #AARCH64_RET_MASK
+@@ -433,8 +436,8 @@
+ 	add	x3, x3, x2, lsl #4
+ 	br	x3
+ 
+-	ALIGN	4
+-compress_hfa_type_jump_base
++	.align	4
++compress_hfa_type_jump_base:    
+ 	ldp	q16, q17, [x1]		/* S4 */
+ 	ldp	q18, q19, [x1, #32]
+ 	st4	{ v16.s, v17.s, v18.s, v19.s }[0], [x0]
+@@ -494,13 +497,9 @@
+ 	str	q16, [x0]
+ 	ret
+ 
+-compress_hfa_type_store_q4
++compress_hfa_type_store_q4:     
+ 	str	q19, [x0, #48]
+-compress_hfa_type_store_q3
++compress_hfa_type_store_q3:     
+ 	str	q18, [x0, #32]
+ 	stp	q16, q17, [x0]
+ 	ret
+-
+-	LEAF_END	compress_hfa_type
+-
+-	END
+\ No newline at end of file
+Only in new/libffi-3.3/src/aarch64: win64_armasm.S~
+diff -r -u old/libffi-3.3/src/closures.c new/libffi-3.3/src/closures.c
+--- old/libffi-3.3/src/closures.c	2019-11-20 04:15:41.000000000 -0700
++++ new/libffi-3.3/src/closures.c	2022-04-17 19:10:52.000000000 -0600
+@@ -355,7 +355,7 @@
+ 
+ #define USE_LOCKS 1
+ #define USE_DL_PREFIX 1
+-#ifdef __GNUC__
++#if 0
+ #ifndef USE_BUILTIN_FFS
+ #define USE_BUILTIN_FFS 1
+ #endif
+Only in new/libffi-3.3/src: closures.c~

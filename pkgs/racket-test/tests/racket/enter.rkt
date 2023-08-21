@@ -14,3 +14,6 @@
 (enter! #f)
 (dynamic-enter! 'pict)
 (dynamic-enter! #f)
+
+;; Make sure that a `#lang`/`#reader` search fallback works:
+(dynamic-enter! (collection-file-path "use-s-exp-lang.rkt" "tests/racket/enter"))

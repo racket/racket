@@ -193,6 +193,8 @@
           [(fasl-type-gensym)
            (let* ([pname (read-string p)] [uname (read-string p)])
              (fasl-gensym pname uname))]
+          [(fasl-type-uninterned-symbol)
+           (fasl-string ty (read-string p))]
           [(fasl-type-ratnum fasl-type-exactnum fasl-type-inexactnum
                              fasl-type-weak-pair fasl-type-ephemeron)
            (let ([first (read-fasl p g)])
@@ -210,7 +212,10 @@
            (fasl-bytevector ty (read-bytevector p (read-uptr p)))]
           [(fasl-type-stencil-vector)
            (let ([mask (read-uptr p)])
-             (fasl-stencil-vector mask (read-vfasl p g (bitwise-bit-count mask))))]
+             (fasl-stencil-vector mask (read-vfasl p g (bitwise-bit-count mask)) #f))]
+          [(fasl-type-system-stencil-vector)
+           (let ([mask (read-uptr p)])
+             (fasl-stencil-vector mask (read-vfasl p g (bitwise-bit-count mask)) #t))]
           [(fasl-type-base-rtd) (fasl-tuple ty '#())]
           [(fasl-type-rtd) (let* ([uid (read-fasl p g)]
                                   [size (read-uptr p)])
@@ -277,6 +282,9 @@
           [(fasl-type-immediate fasl-type-entry fasl-type-library fasl-type-library-code)
            (fasl-atom ty (read-uptr p))]
           [(fasl-type-graph) (read-fasl p (let ([new-g (make-vector (read-uptr p) #f)])
+                                            (let ([n (read-uptr p)])
+                                              (unless (or (zero? n) (and g (>= (vector-length g) n)))
+                                                (bogus "incompatible external vector in ~a" (port-name p))))
                                             (when g
                                               (let ([delta (fx- (vector-length new-g) (vector-length g))])
                                                 (let loop ([i 0])
@@ -423,7 +431,7 @@
           [vector (ty vfasl) (build-graph! x t (build-vfasl! vfasl))]
           [fxvector (viptr) (build-graph! x t void)]
           [bytevector (ty viptr) (build-graph! x t void)]
-          [stencil-vector (mask vfasl) (build-graph! x t (build-vfasl! vfasl))]
+          [stencil-vector (mask vfasl sys?) (build-graph! x t (build-vfasl! vfasl))]
           [record (maybe-uid size nflds rtd pad-ty* fld*)
            (if (and strip-source-annotations? (fasl-annotation? x))
                (build! (fasl-annotation-stripped x) t)
@@ -439,7 +447,7 @@
           [rtd-ref (uid) (build-graph! x t (lambda () (build! uid #t)))]
           [closure (offset c) (build-graph! x t (lambda () (build! c t)))]
           [flonum (high low) (build-graph! x t void)]
-          [small-integer (iptr) (void)]
+          [small-integer (iptr) (build-graph! x t void)]
           [large-integer (sign vuptr) (build-graph! x t void)]
           [eq-hashtable (mutable? subtype minlen veclen vpfasl)
            (build-graph! x t
@@ -489,7 +497,8 @@
                         (let ([n (table-count t)])
                           (unless (fx= n 0)
                             (put-u8 p (constant fasl-type-graph))
-                            (put-uptr p n)))
+                            (put-uptr p n)
+                            (put-uptr p 0)))
                         (write-fasl p t fasl)
                         (extractor))])
           ($write-fasl-bytevectors p bv* size situation (constant fasl-type-fasl)))))
@@ -560,10 +569,12 @@
                (put-u8 p ty)
                (put-uptr p (bytevector-length bv))
                (put-bytevector p bv)))]
-          [stencil-vector (mask vfasl)
+          [stencil-vector (mask vfasl sys?)
            (write-graph p t x
              (lambda ()
-               (put-u8 p (constant fasl-type-stencil-vector))
+               (put-u8 p (if sys?
+                             (constant fasl-type-system-stencil-vector)
+                             (constant fasl-type-stencil-vector)))
                (put-uptr p mask)
                (vector-for-each (lambda (fasl) (write-fasl p t fasl)) vfasl)))]
           [record (maybe-uid size nflds rtd pad-ty* fld*)
@@ -780,7 +791,7 @@
               [vector (ty vfasl) (vector-map describe vfasl)]
               [fxvector (viptr) viptr]
               [bytevector (ty bv) bv]
-              [stencil-vector (ty vfasl) (vector-map describe vfasl)]
+              [stencil-vector (ty vfasl sys?) (vector-map describe vfasl)]
               [record (maybe-uid size nflds rtd pad-ty* fld*)
                (vector 'RECORD
                        (and maybe-uid (describe maybe-uid))
@@ -898,9 +909,10 @@
               (let ([op ($open-file-output-port who ofn (file-options replace))])
                 (on-reset (delete-file ofn #f)
                   (on-reset (close-port op)
-                    (write script-header mode entry* op)
-                    (close-port op)
-                    (unless-feature windows (when mode (chmod ofn mode))))))))))
+                    (let ([result (write script-header mode entry* op)])
+                      (close-port op)
+                      (unless-feature windows (when mode (chmod ofn mode)))
+                      result))))))))
       (set-who! $describe-fasl-from-port
         (rec $describe-fasl-from-port
           (case-lambda
@@ -922,6 +934,32 @@
                              (lambda (script-header mode entry* op)
                                (when script-header (put-bytevector op script-header))
                                (for-each (lambda (entry) (write-entry op entry)) entry*)))))
+      (set-who! pbchunk-convert-file
+        (lambda (ifn ofn c-ofns reg-proc-names start-index)
+          (unless (string? ifn) ($oops who "~s is not a string" ifn))
+          (unless (string? ofn) ($oops who "~s is not a string" ofn))
+          (unless (and (pair? c-ofns) (list? c-ofns) (andmap string? c-ofns))
+            ($oops who "~s is not a nonempty list of strings" c-ofns))
+          (unless (and (pair? reg-proc-names) (list? reg-proc-names) (andmap string? reg-proc-names))
+            ($oops who "~s is not a nonempty list of strings" reg-proc-names))
+          (unless (and (fixnum? start-index) (fx>= start-index 0))
+            ($oops who "~s is not a nonnegative fixnum" start-index))
+          (unless (fx= (length c-ofns) (length reg-proc-names))
+            ($oops who "length of file-name list ~s does not match the length of function-name list ~s"
+                   c-ofns
+                   reg-proc-names))
+          (convert-fasl-file who ifn ofn (fasl-strip-options)
+                             (lambda (script-header mode entry* op)
+                               ($fasl-pbchunk!
+                                who
+                                c-ofns
+                                reg-proc-names
+                                start-index
+                                entry*
+                                handle-entry
+                                (lambda ()
+                                  (when script-header (put-bytevector op script-header))
+                                  (for-each (lambda (entry) (write-entry op entry)) entry*)))))))
       (set-who! vfasl-convert-file
         (lambda (ifn ofn bootfile*)
           (convert-fasl-file who ifn ofn (fasl-strip-options)
@@ -982,24 +1020,25 @@
 
     (define-syntax cmp-case
       (lambda (x)
-        (define (make-clause t x-case)
+        (define (make-clause t x-case top-e)
           (lambda (variant arg* e)
             (with-syntax ([(arg1 ...) (map (lambda (x) (construct-name x x "1")) arg*)]
                           [(arg2 ...) (map (lambda (x) (construct-name x x "2")) arg*)]
                           [variant variant]
                           [e e]
                           [t t]
-                          [x-case x-case])
+                          [x-case x-case]
+                          [top-e top-e])
               #'[variant (arg1 ...)
                  (or (x-case t
                        [variant (arg2 ...) e]
                        [else #f])
-                     (fail 'variant))])))
+                     (fail 'variant top-e))])))
         (syntax-case x ()
           [(_ x-case e1 e2 [variant (arg ...) e] ...)
            #`(let ([t2 e2])
                (x-case e1
-                 #,@(map (make-clause #'t2 #'x-case) #'(variant ...) #'((arg ...) ...) #'(e ...))))])))
+                 #,@(map (make-clause #'t2 #'x-case #'e1) #'(variant ...) #'((arg ...) ...) #'(e ...))))])))
 
     (define-who vandmap
       (lambda (p v1 v2)
@@ -1023,11 +1062,15 @@
 
     (define (fasl=? entry1 entry2)
       (let ([entry1 (follow-indirect entry1)] [entry2 (follow-indirect entry2)])
-        (let ([a (eq-hashtable-cell cmp-ht entry1 #f)])
-          (or (eq? entry2 (cdr a))
-              (and (not (cdr a))
+        (let ([a (eq-hashtable-cell cmp-ht entry1 #f)]
+              [b (eq-hashtable-cell cmp-ht entry2 #f)])
+          (or (and (eq? entry2 (cdr a))
+                   (eq? entry1 (cdr b)))
+              (and (or (not (cdr a)) (fail 'sharing1 entry1))
+                   (or (not (cdr b)) (fail 'sharing2 entry2))
                    (begin
                      (set-cdr! a entry2)
+                     (set-cdr! b entry1)
                      (cmp-case fasl-case entry1 entry2
                        [entry (situation fasl) (and (= situation1 situation2) (fasl=? fasl1 fasl2))]
                        [header (version machine dependencies)
@@ -1046,7 +1089,9 @@
                        [vector (ty vfasl) (and (eqv? ty1 ty2) (vandmap fasl=? vfasl1 vfasl2))]
                        [fxvector (viptr) (vandmap = viptr1 viptr2)]
                        [bytevector (ty bv) (and (eqv? ty1 ty2) (bytevector=? bv1 bv2))]
-                       [stencil-vector (mask vfasl) (and (eqv? mask1 mask2) (vandmap fasl=? vfasl1 vfasl2))]
+                       [stencil-vector (mask vfasl sys?) (and (eqv? mask1 mask2)
+                                                              (eqv? sys?1 sys?2)
+                                                              (vandmap fasl=? vfasl1 vfasl2))]
                        [record (maybe-uid size nflds rtd pad-ty* fld*)
                         (and (if maybe-uid1
                                  (and maybe-uid2 (fasl=? maybe-uid1 maybe-uid2))
@@ -1123,12 +1168,18 @@
       (rec fasl-file-equal?
         (case-lambda
           [(ifn1 ifn2) (fasl-file-equal? ifn1 ifn2 #f)]
-          [(ifn1 ifn2 error?)
+          [(ifn1 ifn2 error?) (fasl-file-equal? ifn1 ifn2 error? #f)]
+          [(ifn1 ifn2 error? detail?)
            (unless (string? ifn1) ($oops who "~s is not a string" ifn1))
            (unless (string? ifn2) ($oops who "~s is not a string" ifn2))
            (fluid-let ([fasl-who who]
                        [fasl-count 0]
-                       [fail (if error? (lambda (what) (bogus "~s comparison failed while comparing ~a and ~a" what ifn1 ifn2)) (lambda (what) #f))]
+                       [fail (if error?
+                                 (lambda (what where) (bogus "~s comparison failed while comparing ~a and ~a~a" what ifn1 ifn2
+                                                             (if detail?
+                                                                 (format " at ~s" where)
+                                                                 "")))
+                                 (lambda (what where) #f))]
                        [eq-hashtable-warning-issued? #f])
              (call-with-port ($open-file-input-port who ifn1)
                (lambda (ip1)

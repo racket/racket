@@ -1,0 +1,126 @@
+#lang zuo/base
+(require zuo/thread
+         zuo/glob)
+
+(provide maybe-jobserver-jobs
+         maybe-jobserver-client)
+
+(define (maybe-jobserver-jobs)
+  (try-jobserver-client poll-jobserver-client))
+
+(define (maybe-jobserver-client)
+  (try-jobserver-client create-jobserver-client))
+
+(define (try-jobserver-client create-jobserver-client)
+  (define a (and (eq? 'unix (system-type))
+                 (assoc "MAKEFLAGS" (hash-ref (runtime-env) 'env))))
+  (and a
+       (let ([args (shell->strings (cdr a))])
+         (and (ormap (lambda (arg) (string=? "-j" arg)) args)
+              (ormap (let ([match? (let ([fds? (glob->matcher "--jobserver-fds=*")]
+                                         [auth? (glob->matcher "--jobserver-auth=*")])
+                                     (lambda (s) (or (fds? s) (auth? s))))])
+                       (lambda (arg)
+                         (and (match? arg)
+                              (let ([fds (map string->integer
+                                              (string-split (cadr (string-split arg "=")) ","))])
+                                (and (= (length fds) 2)
+                                     (andmap integer? fds)
+                                     ;; read in all available job tokens, then give them back up,
+                                     ;; just so we can infer the number of tokens that would be available
+                                     (let ([in-no (car fds)]
+                                           [out-no (cadr fds)])
+                                       (let ([in (fd-open-input in-no)]
+                                             [out (fd-open-output out-no)])
+                                         (and (fd-valid? in)
+                                              (fd-valid? out)
+                                              (create-jobserver-client in out in-no out-no)))))))))
+                     args)))))
+
+(define (poll-jobserver-client in out in-no/ignored out-no/ignored)
+  (let ([s (fd-read in 'avail)])
+    (and (string? s)
+         (begin
+           (fd-write out s)
+           (+ 1 (string-length s))))))
+
+(define (create-jobserver-client in/ignored out/ignored in-no out-no)
+  (define msg-ch (channel))
+  (define manager-in+out (launch-manager in-no out-no))
+  (thread (lambda ()
+            (let loop ([reader? #f]
+                       [held 0]
+                       [queue '()])
+              (cond
+                [(and (pair? queue)
+                      (not reader?))
+                 (launch-reader manager-in+out msg-ch)
+                 (loop #t held queue)]
+                [else
+                 (define msg+ (channel-get msg-ch))
+                 (define msg (car msg+))
+                 (cond
+                   [(eq? msg 'get)
+                    (define reply-ch (cdr msg+))
+                    (loop reader? held (append queue (list reply-ch)))]
+                   [(eq? msg 'avail)
+                    (cond
+                      [(pair? queue)
+                       (channel-put (car queue) 'go)
+                       (loop #f (+ 1 held) (cdr queue))]
+                      [else
+                       ;; no one is waiting anymore, so release back to the jobserver
+                       (fd-write (cdr manager-in+out) "-")
+                       (loop #f held queue)])]
+                   [(eq? msg 'put)
+                    (define reply-ch (cdr msg+))
+                    (cond
+                      [(pair? queue)
+                       (channel-put (car queue) 'go)
+                       (channel-put reply-ch 'done)
+                       (loop reader? held (cdr queue))]
+                      [else
+                       (fd-write (cdr manager-in+out) "-")
+                       (channel-put reply-ch 'done)
+                       (loop reader? (- held 1) queue)])]
+                   [else
+                    (error "unrecognized jobserver-manager message" msg)])]))))
+  (lambda (msg)
+    (unless (or (eq? msg 'get) (eq? msg 'put))
+       (error "jobserver-client: bad message" msg))
+    (define reply-ch (channel))
+    (channel-put msg-ch (cons msg reply-ch))
+    (channel-get reply-ch)
+    (void)))
+
+(define jobserver-manager
+  (hash-ref (module->hash 'zuo/private/jobserver-manager) 'datums))
+
+(define (launch-manager in-no out-no)
+  ;; The job of the manager process is just to survive at a point where
+  ;; the enclosing process is trying to exit, possibly due to an error.
+  ;; It will notice that the stdin pipe is closed and clean up.
+  (define p (process (hash-ref (runtime-env) 'exe)
+                     "-c"
+                     (~a (car jobserver-manager) "\n"
+                         (string-join (map ~s (cdr jobserver-manager))))
+                     (~a in-no)
+                     (~a out-no)
+                     (hash 'stdin 'pipe
+                           'stdout 'pipe)))
+  (cons (hash-ref p 'stdout)
+        (hash-ref p 'stdin)))
+
+(define (launch-reader in+out msg-ch)
+  ;; The job of a reader process is to read one byte of input and
+  ;; then exit, because we can wait on process exiting.
+  (define p (process (hash-ref (runtime-env) 'exe)
+                     "-c"
+                     (~a "#lang zuo/kernel\n"
+                         "(exit (if (eq? eof (fd-read (fd-open-input 'stdin) 1)) 1 0))")
+                     (hash 'stdin (car in+out)
+                           'cleanable? #f)))
+  (fd-write (cdr in+out) "+")
+  (thread (lambda ()
+            (thread-process-wait (hash-ref p 'process))
+            (channel-put msg-ch '(avail)))))

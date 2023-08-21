@@ -30,7 +30,7 @@
          (define id (car ids))
          (define rhs (car rhss))
          (if (and all-simple?
-                  (simple? rhs prim-knowns knowns imports mutated simples unsafe-mode?))
+                  (simple? rhs prim-knowns knowns imports mutated simples unsafe-mode? #:ordered? #t))
              `(let ([,id ,rhs])
                 . ,bodys)
              `(let ([,id ,rhs])
@@ -43,7 +43,7 @@
            ,(loop (cdr ids)
                   (cdr rhss)
                   (and all-simple?
-                       (simple? rhs prim-knowns knowns imports mutated simples unsafe-mode?))
+                       (simple? rhs prim-knowns knowns imports mutated simples unsafe-mode? #:ordered? #t))
                   (cons `[,id ,id] binds)))]))]))
 
 ;; Convert a `let-values` to nested `let-values`es to
@@ -83,23 +83,33 @@
      (define l (cons rator rands))
      (define modes
        ;; If an argument is pure, we don't have to order it explicitly.
+       ;; If an argument is almost pure (e.g., unsafe), we don't have to order it explicitly
+       ;; if nothing before or after required ordering.
        ;; If an argument is pure except for allocation, then we only have to
        ;; order it if a later argument is non-pure.
-       (let loop ([l l])
+       (let loop ([l l] [saw-ordered? #f])
          (cond
            [(null? l) 'pure]
            [else
-            (define modes (loop (cdr l)))
             (cond
               [(simple? (car l) prim-knowns knowns imports mutated simples unsafe-mode? #:no-alloc? #t)
+               (define modes (loop (cdr l) #f))
                (if (symbol? modes)
                    modes
                    (cons 'pure modes))]
-              [(simple? (car l) prim-knowns knowns imports mutated simples unsafe-mode?) ; allocates
+              [(and (not saw-ordered?)
+                    (simple? (car l) prim-knowns knowns imports mutated simples unsafe-mode? #:ordered? #t #:no-alloc? #t))
+               (define modes (loop (cdr l) #f))
                (if (symbol? modes)
-                   'alloc
+                   'ordered
+                   (cons (if saw-ordered? 'bind 'pure) modes))]
+              [(simple? (car l) prim-knowns knowns imports mutated simples unsafe-mode?) ; allocates
+               (define modes (loop (cdr l) #f))
+               (if (symbol? modes)
+                   'ordered
                    (cons 'bind modes))]
               [else
+               (define modes (loop (cdr l) #t))
                (if (eq? modes 'pure)
                    (cons 'non-simple modes)
                    (cons 'bind modes))])])))

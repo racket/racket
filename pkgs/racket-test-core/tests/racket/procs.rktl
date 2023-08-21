@@ -192,6 +192,30 @@
                     (test 0-ok? procedure-arity-includes? (car p) 0 #t)
                     ;; While we're here test renaming, etc.:
                     (test 'other object-name (procedure-rename (car p) 'other))
+                    (test 'racket procedure-realm (procedure-rename (car p) 'other))
+                    (test 'elsewhere procedure-realm (procedure-rename (car p) 'other 'elsewhere))
+                    (test 'racket procedure-realm (procedure-rename (procedure-rename (car p) 'other 'elsewhere) 'again))
+                    (test 'home procedure-realm (procedure-rename (procedure-rename (car p) 'other 'elsewhere) 'again 'home))
+                    (let-values ([(required allowed) (procedure-keywords (car p))])
+                      (when (null? required)
+                        (test 'elsewhere procedure-realm (procedure-reduce-arity (procedure-rename (car p) 'other 'elsewhere)
+                                                                                 (procedure-arity (car p))))
+                        (test 'elsewhere procedure-realm (procedure-reduce-arity (car p)
+                                                                                 (procedure-arity (car p))
+                                                                                 'other
+                                                                                 'elsewhere)))
+                      (test 'elsewhere procedure-realm (procedure-reduce-keyword-arity
+                                                        (procedure-rename (car p) 'other 'elsewhere)
+                                                        (procedure-arity (car p))
+                                                        required
+                                                        allowed))
+                      (test 'elsewhere procedure-realm (procedure-reduce-keyword-arity
+                                                        (car p)
+                                                        (procedure-arity (car p))
+                                                        required
+                                                        allowed
+                                                        'other
+                                                        'elsewhere)))
                     (test (procedure-arity (car p)) procedure-arity (procedure-rename (car p) 'other))
                     (test (procedure-arity (car p)) procedure-arity (procedure->method (car p)))
                     (check-arity-error (car p) 10 (if method? 9 10))
@@ -407,7 +431,9 @@
 
 (run-procedure-tests procedure-arity procedure-reduce-arity)
 (run-procedure-tests (lambda (p) (mask->arity (procedure-arity-mask p)))
-                     (lambda (p a [name #f]) (procedure-reduce-arity-mask p (arity->mask a) name)))
+                     (lambda (p a [name #f] [realm 'racket]) (procedure-reduce-arity-mask p (arity->mask a) name realm)))
+
+(test -4 procedure-arity-mask apply)
 
 ;; ------------------------------------------------------------
 ;; Check arity reporting for methods.
@@ -784,6 +810,29 @@
           (hello 1 #:key 'hi))))
 
 ;; ----------------------------------------
+;; Regression test to make sure an internal chaperone is not disallowed
+;; due to a `prop:procedure` method whose implementation accepts 0 arguments
+;; (but it can never get called that way)
+
+(let ()
+  (struct function ()
+    #:property prop:procedure
+    (make-keyword-procedure
+     ;; will only be called with at least 1 argument for "self"
+     (λ (kws kw-vs . vs)
+       'whatever)))
+
+  (define (chap proc)
+    (chaperone-procedure proc
+                         (make-keyword-procedure
+                          (lambda (kw kw-vs . xs)
+                            xs))))
+
+  (test #t procedure? (function))
+  (test #t procedure? (chap (function)))
+  (test #t procedure? (chap (chap (function)))))
+
+;; ----------------------------------------
 
 (module kw-defns racket/base
   (provide (all-defined-out))
@@ -836,6 +885,60 @@
          (func-name/kw.opt.2 (lambda (z) z)))
 (test #t (proc-has-name? #rx"procs.rktl:")
          (func-name/kw.opt.2 (lambda (z) z) #:kw.opt.2 (lambda (w) w)))
+
+;; ----------------------------------------
+
+(test (arity-at-least 1)
+      procedure-arity (make-keyword-procedure (lambda (ks vs x . r) void)))
+(test 'foo
+      object-name
+      (procedure-rename (make-keyword-procedure (lambda (ks vs x . r) void)) 'foo))
+(test 'example
+      object-name
+      (procedure-rename apply 'example))
+
+;; ----------------------------------------
+
+(test #t 'primitive-arity
+      (for/and ([v (in-list (list cons car make-struct-type eval values call/cc))])
+        (or (not (primitive? v))
+            (let ([a (primitive-result-arity v)])
+              (or (exact-nonnegative-integer? a)
+                  (arity-at-least? a))))))
+
+;; ----------------------------------------
+;; Make sure literal keyword-argument and optional-argument defaults
+;; are preserved with source locations in a direct call
+
+(let ()
+  (define ten #'10)
+  (define eleven #'11)
+
+  (define e
+    (parameterize ([current-namespace (make-base-namespace)])
+      (expand #`(let ()
+                  (define (f #:x [x #,ten] [y #,eleven])
+                    x)
+                  (f)))))
+
+  (test #t
+        'keyword-optional-srclocs
+        (let loop ([e e])
+          (cond
+            [(syntax? e)
+             (syntax-case e (#%plain-app quote)
+               [(#%plain-app f (quote also-ten) (quote also-eleven))
+                (let ()
+                  (define (same-srcloc? a b)
+                    (and (equal? (syntax-source a)
+                                 (syntax-source b))
+                         (equal? (syntax-position a)
+                                 (syntax-position b))))
+                  (and (same-srcloc? ten #'also-ten)
+                       (same-srcloc? eleven #'also-eleven)))]
+               [_ (and (pair? (syntax-e e))
+                       (ormap loop (syntax->list e)))])]
+            [else #f]))))
 
 ;; ----------------------------------------
 

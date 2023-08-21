@@ -5,6 +5,10 @@
 #include "rktio_platform.h"
 
 #ifdef RKTIO_SYSTEM_WINDOWS
+# if _WIN32_WINNT < 0x602
+#  undef _WIN32_WINNT
+#  define _WIN32_WINNT 0x602
+# endif
 # include <winsock2.h>
 # include <windows.h>
 #endif

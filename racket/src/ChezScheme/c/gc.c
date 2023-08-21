@@ -196,49 +196,49 @@
 */
 
 /* locally defined functions */
-static IGEN copy PROTO((thread_gc *tgc, ptr pp, seginfo *si, ptr *dest));
-static IGEN mark_object PROTO((thread_gc *tgc, ptr pp, seginfo *si));
-static void sweep PROTO((thread_gc *tgc, ptr p, IGEN from_g));
-static void sweep_in_old PROTO((thread_gc *tgc, ptr p));
-static void sweep_object_in_old PROTO((thread_gc *tgc, ptr p));
-static IBOOL object_directly_refers_to_self PROTO((ptr p));
-static ptr copy_stack PROTO((thread_gc *tgc, ptr old, iptr *length, iptr clength));
-static void resweep_weak_pairs PROTO((seginfo *oldweakspacesegments));
-static void forward_or_bwp PROTO((ptr *pp, ptr p));
-static void sweep_generation PROTO((thread_gc *tgc));
-static iptr sweep_from_stack PROTO((thread_gc *tgc));
-static void enlarge_stack PROTO((thread_gc *tgc, ptr *stack, ptr *stack_start, ptr *stack_limit, uptr grow_at_least));
-static uptr size_object PROTO((ptr p));
-static iptr sweep_typed_object PROTO((thread_gc *tgc, ptr p, IGEN from_g));
-static void sweep_symbol PROTO((thread_gc *tgc, ptr p, IGEN from_g));
-static void sweep_port PROTO((thread_gc *tgc, ptr p, IGEN from_g));
-static void sweep_thread PROTO((thread_gc *tgc, ptr p));
-static void sweep_continuation PROTO((thread_gc *tgc, ptr p, IGEN from_g));
-static void sweep_record PROTO((thread_gc *tgc, ptr x, IGEN from_g));
-static IGEN sweep_dirty_record PROTO((thread_gc *tgc, ptr x, IGEN youngest));
-static IGEN sweep_dirty_port PROTO((thread_gc *tgc, ptr x, IGEN youngest));
-static IGEN sweep_dirty_symbol PROTO((thread_gc *tgc, ptr x, IGEN youngest));
-static void sweep_code_object PROTO((thread_gc *tgc, ptr co, IGEN from_g));
-static void record_dirty_segment PROTO((IGEN from_g, IGEN to_g, seginfo *si));
-static void setup_sweep_dirty PROTO((thread_gc *tgc));
-static uptr sweep_dirty_segments PROTO((thread_gc *tgc, seginfo **dirty_segments));
-static void resweep_dirty_weak_pairs PROTO((thread_gc *tgc));
-static void mark_untyped_data_object PROTO((thread_gc *tgc, ptr p, uptr len, seginfo *si));
-static void add_pending_guardian PROTO((ptr gdn, ptr tconc));
-static void add_trigger_guardians_to_recheck PROTO((ptr ls));
-static void add_ephemeron_to_pending PROTO((thread_gc *tgc, ptr p));
-static void add_trigger_ephemerons_to_pending PROTO((thread_gc *tgc, ptr p));
-static void check_triggers PROTO((thread_gc *tgc, seginfo *si));
-static void check_ephemeron PROTO((thread_gc *tgc, ptr pe));
-static void check_pending_ephemerons PROTO((thread_gc *tgc));
-static int check_dirty_ephemeron PROTO((thread_gc *tgc, ptr pe, int youngest));
-static void finish_pending_ephemerons PROTO((thread_gc *tgc, seginfo *si));
+static IGEN copy(thread_gc *tgc, ptr pp, seginfo *si, ptr *dest);
+static IGEN mark_object(thread_gc *tgc, ptr pp, seginfo *si);
+static void sweep(thread_gc *tgc, ptr p, IGEN from_g);
+static void sweep_in_old(thread_gc *tgc, ptr p);
+static void sweep_object_in_old(thread_gc *tgc, ptr p);
+static IBOOL object_directly_refers_to_self(ptr p);
+static ptr copy_stack(thread_gc *tgc, ptr old, iptr *length, iptr clength);
+static void resweep_weak_pairs(seginfo *oldweakspacesegments);
+static void forward_or_bwp(ptr *pp, ptr p);
+static void sweep_generation(thread_gc *tgc);
+static iptr sweep_from_stack(thread_gc *tgc);
+static void enlarge_stack(thread_gc *tgc, ptr *stack, ptr *stack_start, ptr *stack_limit, uptr grow_at_least);
+static uptr size_object(ptr p);
+static iptr sweep_typed_object(thread_gc *tgc, ptr p, IGEN from_g);
+static void sweep_symbol(thread_gc *tgc, ptr p, IGEN from_g);
+static void sweep_port(thread_gc *tgc, ptr p, IGEN from_g);
+static void sweep_thread(thread_gc *tgc, ptr p);
+static void sweep_continuation(thread_gc *tgc, ptr p, IGEN from_g);
+static void sweep_record(thread_gc *tgc, ptr x, IGEN from_g);
+static IGEN sweep_dirty_record(thread_gc *tgc, ptr x, IGEN youngest);
+static IGEN sweep_dirty_port(thread_gc *tgc, ptr x, IGEN youngest);
+static IGEN sweep_dirty_symbol(thread_gc *tgc, ptr x, IGEN youngest);
+static void sweep_code_object(thread_gc *tgc, ptr co, IGEN from_g);
+static void record_dirty_segment(IGEN from_g, IGEN to_g, seginfo *si);
+static void setup_sweep_dirty(thread_gc *tgc);
+static uptr sweep_dirty_segments(thread_gc *tgc, seginfo **dirty_segments);
+static void resweep_dirty_weak_pairs(thread_gc *tgc);
+static void mark_untyped_data_object(thread_gc *tgc, ptr p, uptr len, seginfo *si);
+static void add_pending_guardian(ptr gdn, ptr tconc);
+static void add_trigger_guardians_to_recheck(ptr ls);
+static void add_ephemeron_to_pending(thread_gc *tgc, ptr p);
+static void add_trigger_ephemerons_to_pending(thread_gc *tgc, ptr p);
+static void check_triggers(thread_gc *tgc, seginfo *si);
+static void check_ephemeron(thread_gc *tgc, ptr pe);
+static void check_pending_ephemerons(thread_gc *tgc);
+static int check_dirty_ephemeron(thread_gc *tgc, ptr pe, int youngest);
+static void finish_pending_ephemerons(thread_gc *tgc, seginfo *si);
 static void init_fully_marked_mask(thread_gc *tgc, IGEN g);
 static void copy_and_clear_list_bits(thread_gc *tgc, seginfo *oldspacesegments);
 
 #ifdef ENABLE_OBJECT_COUNTS
 static uptr total_size_so_far();
-static uptr list_length PROTO((ptr ls));
+static uptr list_length(ptr ls);
 #endif
 static uptr target_generation_space_so_far(thread_gc *tgc);
 
@@ -456,7 +456,7 @@ static int num_sweepers;
 # define parallel_sweep_dirty_and_generation(tgc) do { sweep_dirty(tgc); sweep_generation(tgc); } while (0)
 # define send_and_receive_remote_sweeps(tgc) do { } while (0)
 # define teardown_sweepers() do { } while (0)
-static void sweep_dirty PROTO((thread_gc *tgc));
+static void sweep_dirty(thread_gc *tgc);
 
 # define PARALLEL_UNUSED    /* empty */
 # define NO_PARALLEL_UNUSED UNUSED
@@ -1137,27 +1137,31 @@ ptr GCENTRY(ptr tc, ptr count_roots_ls) {
          } else {
            seginfo *si = SegInfo(ptr_get_segment(p));
 
-           si->counting_mask[segment_bitmap_byte(p)] -= segment_bitmap_bit(p);
+           if (si->counting_mask[segment_bitmap_byte(p)] & segment_bitmap_bit(p)) {
+             si->counting_mask[segment_bitmap_byte(p)] -= segment_bitmap_bit(p);
 
-           if (!si->old_space || FORWARDEDP(p, si) || marked(si, p)
-               || !count_roots[i].weak) {
-             /* reached or older; sweep transitively */
+             if (!si->old_space || FORWARDEDP(p, si) || marked(si, p)
+                 || !count_roots[i].weak) {
+               /* reached or older; sweep transitively */
 #ifdef ENABLE_PARALLEL
-             if (si->creator->tc == 0) si->creator = tgc;
+               if (si->creator->tc == 0) si->creator = tgc;
 #endif
-             {
-               BLOCK_SET_THREAD(si->creator);
-               relocate_pure_now(&p);
-               push_sweep(p);
+               {
+                 BLOCK_SET_THREAD(si->creator);
+                 relocate_pure_now(&p);
+                 push_sweep(p);
+               }
+               ADD_BACKREFERENCE(p, si->generation);
+
+               parallel_sweep_generation(tgc);
+
+               /* now count this object's size, if we have deferred it before */
+               si = SegInfo(ptr_get_segment(p));
+               if ((si->space == space_count_pure) || (si->space == space_count_impure))
+                 count_root_bytes -= size_object(p);
              }
-             ADD_BACKREFERENCE(p, si->generation);
-
-             parallel_sweep_generation(tgc);
-
-             /* now count this object's size, if we have deferred it before */
-             si = SegInfo(ptr_get_segment(p));
-             if ((si->space == space_count_pure) || (si->space == space_count_impure))
-               count_root_bytes -= size_object(p);
+           } else {
+             /* must have been already counted by being earlier in the list */
            }
          }
 
@@ -1600,10 +1604,8 @@ ptr GCENTRY(ptr tc, ptr count_roots_ls) {
 
   /* rebuild rtds_with_counts lists, dropping otherwise inaccessible rtds */
     { IGEN g, newg; ptr ls, p; seginfo *si;
-      int count = 0;
       for (g = MAX_CG; g >= 0; g -= 1) {
         for (ls = S_G.rtds_with_counts[g], S_G.rtds_with_counts[g] = Snil; ls != Snil; ls = Scdr(ls)) {
-          count++;
           p = Scar(ls);
           si = SegInfo(ptr_get_segment(p));
           if (!si->old_space || new_marked(si, p)) {
@@ -1677,7 +1679,8 @@ ptr GCENTRY(ptr tc, ptr count_roots_ls) {
         si->forwarded_flonums = 0;
 #endif
       } else {
-        chunkinfo *chunk = si->chunk, **chunks = ((si->space == space_code) ? S_code_chunks : S_chunks);
+        IBOOL for_code = (si->space == space_code);
+        chunkinfo *chunk = si->chunk, **chunks = (for_code ? S_code_chunks : S_chunks);
         S_G.number_of_nonstatic_segments -= 1;
         S_G.number_of_empty_segments += 1;
         si->space = space_empty;
@@ -1690,7 +1693,7 @@ ptr GCENTRY(ptr tc, ptr count_roots_ls) {
           if (chunk->bytes != (minimum_segment_request + 1) * bytes_per_segment) {
             /* release oversize chunks back to the O/S immediately to avoid allocating
              * small stuff into them and thereby invite fragmentation */
-            S_free_chunk(chunk);
+            S_free_chunk(chunk, for_code);
           } else {
             S_move_to_chunk_list(chunk, &chunks[PARTIAL_CHUNK_POOLS]);
           }
@@ -1908,7 +1911,7 @@ static void resweep_weak_pairs(seginfo *oldweakspacesegments) {
    }
 }
 
-static void forward_or_bwp(pp, p) ptr *pp; ptr p; {
+static void forward_or_bwp(ptr *pp, ptr p) {
   seginfo *si;
  /* adapted from relocate */
   if (!FIXMEDIATE(p) && (si = MaybeSegInfo(ptr_get_segment(p))) != NULL && si->old_space && !new_marked(si, p)) {
@@ -2034,7 +2037,7 @@ static iptr sweep_generation_pass(thread_gc *tgc) {
     send_and_receive_remote_sweeps(tgc);
 
     /* Waiting until sweeping doesn't trigger a change reduces the
-       chance that an ephemeron must be reigistered as a
+       chance that an ephemeron must be registered as a
        segment-specific trigger or gets triggered for recheck, but
        it doesn't change the worst-case complexity. */
     if (tgc->sweep_change == SWEEP_NO_CHANGE)
@@ -3226,7 +3229,7 @@ static void send_and_receive_remote_sweeps(thread_gc *tgc) {
     if (((uptr)tgc->sweep_stack + len) > (uptr)tgc->sweep_stack_limit)
       enlarge_stack(tgc, &tgc->sweep_stack, &tgc->sweep_stack_start, &tgc->sweep_stack_limit, len);
 
-    memcpy(tgc->sweep_stack, tgc->receive_remote_sweep_stack_start, len);
+    memcpy(TO_VOIDP(tgc->sweep_stack), TO_VOIDP(tgc->receive_remote_sweep_stack_start), len);
     tgc->sweep_stack = (ptr)((uptr)tgc->sweep_stack + len);
     if ((uptr)tgc->sweep_stack > (uptr)tgc->sweep_stack_limit)
       abort();
@@ -3291,10 +3294,12 @@ static void init_measure_mask(thread_gc *tgc, seginfo *si) {
   (!si->measured_mask \
    || !(si->measured_mask[segment_bitmap_byte(p)] & segment_bitmap_bit(p)))
 
+#define measure_mask_is_set(mm, si, p) \
+  (mm[segment_bitmap_byte(p)] & segment_bitmap_bit(p))
 #define measure_mask_set(mm, si, p) \
-  mm[segment_bitmap_byte(p)] |= segment_bitmap_bit(p)
+  do { mm[segment_bitmap_byte(p)] |= segment_bitmap_bit(p); } while (0)
 #define measure_mask_unset(mm, si, p) \
-  mm[segment_bitmap_byte(p)] -= segment_bitmap_bit(p)
+  do { mm[segment_bitmap_byte(p)] -= segment_bitmap_bit(p); } while (0)
 
 static void push_measure(thread_gc *tgc, ptr p)
 {
@@ -3451,7 +3456,7 @@ ptr S_count_size_increments(ptr ls, IGEN generation) {
   ptr tc = get_thread_context();
   thread_gc *tgc = THREAD_GC(tc);
 
-  tc_mutex_acquire();
+  /* caller acquires mutex and ensures that this is the only thread */
 
   init_measure(tgc, 0, generation);
 
@@ -3477,8 +3482,10 @@ ptr S_count_size_increments(ptr ls, IGEN generation) {
 
     if (!FIXMEDIATE(p)) {
       seginfo *si = SegInfo(ptr_get_segment(p));
-      measure_mask_unset(si->counting_mask, si, p);
-      gc_measure_one(tgc, p);
+      if (measure_mask_is_set(si->counting_mask, si, p)) {
+        measure_mask_unset(si->counting_mask, si, p);
+        gc_measure_one(tgc, p);
+      }
     }
 
     p = Scons(FIX(measure_total), Snil);
@@ -3498,8 +3505,6 @@ ptr S_count_size_increments(ptr ls, IGEN generation) {
   }
 
   finish_measure();
-
-  tc_mutex_release();
 
   return totals;
 }

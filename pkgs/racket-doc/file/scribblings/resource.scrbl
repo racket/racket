@@ -128,8 +128,12 @@ Write a value to the Windows registry or an @filepath{.ini}
 The resource value is keyed on the combination of @racket[section] and
  @racket[entry]. If @racket[create-key?] is false when writing to the
  registry, the resource entry must already exist, otherwise the write
- fails. The result is @racket[#f] if the write fails or @racket[#t] if
- it succeeds.
+ fails. If writing to the registry fails (due to a permissions issue or
+ when the entry does not exist and @racket[create-key?] is false), then
+ @racket[(build-path (find-system-path 'home-dir) "mred.ini")] is written
+ to instead. The result is @racket[#f] if the @filepath{.ini} write fails
+ or @racket[#t] if either the registry write or the @filepath{.ini} write
+ succeeds.
 
 The @racket[type] argument determines both the format of the value
  written to the registry and its conversion of the to bytes:

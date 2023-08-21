@@ -43,13 +43,15 @@
        ...))))
 
 (define-syntax quote-core
-  (syntax-rules (protect)
+  (syntax-rules (protect rename)
     [(_ (protect id)) 'id]
+    [(_ (rename int-id ext-id)) 'ext-id]
     [(_ id) 'id]))
 
 (define-syntax add-a-core-primitive!
-  (syntax-rules (protect)
+  (syntax-rules (protect rename)
     [(_ (protect id)) (add-core-primitive! 'id id #:protected? #t)]
+    [(_ (rename int-id ext-id)) (add-core-primitive! 'ext-id int-id)]
     [(_ id) (add-core-primitive! 'id id)]))
 
 (add-core-primitives! #:table primitive-ids
@@ -77,6 +79,8 @@
                       syntax-shift-phase-level
                       syntax-source-module
                       identifier-prune-to-source-module
+                      syntax-bound-symbols
+                      syntax-bound-phases
 
                       syntax-srcloc
                       syntax-source
@@ -105,6 +109,7 @@
                       syntax-serialize
                       syntax-deserialize
 
+                      do-raise-syntax-error
                       raise-syntax-error
                       struct:exn:fail:syntax
                       exn:fail:syntax
@@ -209,7 +214,7 @@
 
                       resolved-module-path?
                       make-resolved-module-path
-                      resolved-module-path-name
+                      (rename safe-resolved-module-path-name resolved-module-path-name)
                       
                       module-path-index?
                       module-path-index-resolve

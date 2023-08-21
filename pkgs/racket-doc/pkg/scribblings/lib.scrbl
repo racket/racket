@@ -393,13 +393,20 @@ Implements @racket[pkg-remove-command]. The result is the same as for
 @racket[pkg-install], indicating collects that should be setup via
 @exec{raco setup}.
 
-If @racket[from-command-line?]  is true, error messages may suggest
+If @racket[from-command-line?] is true, the function @racket[pkg-remove]
+may recommend additional instructions for removing automatically installed
+packages in the standard output.
+The error messages can also suggest
 specific command-line flags for @command-ref{remove}.
+
+When @racket[quiet?] is true, the messages in the standard output are suppressed.
 
 The package lock must be held; see @racket[with-pkg-lock].
 
 @history[#:changed "6.1.1.6" @elem{Added the @racket[#:use-trash?] argument.}
-         #:changed "6.4.0.14" @elem{Added the @racket[#:dry-run] argument.}]}
+         #:changed "6.4.0.14" @elem{Added the @racket[#:dry-run] argument.}
+         #:changed "8.6.0.7" @elem{Added the suggestion for removing automatically
+                             installed packages.}]}
 
 
 @defproc[(pkg-new [name path-string?])

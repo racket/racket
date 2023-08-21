@@ -1,0 +1,174 @@
+#lang zuo
+(require "../lib.zuo")
+
+(provide-targets targets-at)
+
+(define (targets-at at-dir [vars (hash)])
+  (define msvc? (eq? 'windows (hash-ref (runtime-env) 'toolchain-type)))
+  
+  (define config (let ([Makefile (at-dir "Makefile")])
+                   (if (file-exists? Makefile)
+                       (config-file->hash Makefile vars)
+                       vars)))
+  (define (lookup key) (hash-ref config key #f))
+
+  (define lto (or (lookup 'LTO) (if msvc?
+                                    "obj"
+                                    "o")))
+  (define lta (or (lookup 'LTA) (if msvc?
+                                    "lib"
+                                    "a")))
+  (define libsfx (or (lookup 'LIBSFX) "so"))
+  
+  (define standalone? (equal? (lookup 'AS_STANDALONE) "t"))
+  
+  (define headers
+    (list (at-source "rktio.h")
+          (at-source "rktio_private.h")
+          (at-source "rktio_platform.h")
+          (at-dir "rktio_config.h")))
+  (define rktio.h (car headers))
+
+  (define src-names
+    '("rktio_fs.c"
+      "rktio_fd.c"
+      "rktio_file.c"
+      "rktio_poll_set.c"
+      "rktio_ltps.c"
+      "rktio_sleep.c"
+      "rktio_network.c"
+      "rktio_pipe.c"
+      "rktio_process.c"
+      "rktio_signal.c"
+      "rktio_envvars.c"
+      "rktio_fs_change.c"
+      "rktio_flock.c"
+      "rktio_shellex.c"
+      "rktio_time.c"
+      "rktio_cpu.c"
+      "rktio_syslog.c"
+      "rktio_convert.c"
+      "rktio_sha1.c"
+      "rktio_sha2.c"
+      "rktio_dll.c"
+      "rktio_error.c"
+      "rktio_hash.c"
+      "rktio_wide.c"
+      "rktio_console.c"
+      "rktio_main.c"))
+  (define objs
+    (map (lambda (name) (at-dir (path-replace-extension name (~a "." lto))))
+         src-names))
+
+  (define librktio.a (at-dir (~a "librktio." (if standalone?
+                                                 libsfx
+                                                 lta))))
+  
+  (define demo.c (at-source "demo.c"))
+  (define demo.obj (at-dir (~a "demo." lto)))
+  (define rktio_demo (at-dir (.exe "rktio_demo")))
+
+  (define rktio.rktl (at-source "rktio.rktl"))
+  (define rktio.inc (at-source "rktio.inc"))
+  (define rktio.def (at-source "rktio.def"))
+
+  (define parse.rkt (at-source "parse.rkt"))
+
+  (define libdir/librktio.so
+    (let* ([lib-dir (shell-subst (or (hash-ref config 'libdir #f) "/usr/local/lib")
+                                 config)]
+           [p (or (lookup 'DESTDIR) "")])
+      (build-path (if (equal? p "")
+                      lib-dir
+                      (apply build-path (cons p (cdr (explode-path (path->complete-path lib-dir))))))
+                  (file-name-from-path librktio.a))))
+
+  (define (install-shared-object)
+    (mkdir-p (path-only libdir/librktio.so))
+    (rm* libdir/librktio.so)
+    (shell/wait (build-shell (hash-ref config 'ICP_LIB)
+                             (string->shell librktio.a)
+                             (string->shell libdir/librktio.so))))
+
+  (make-targets
+   `([:target default_rktio (,librktio.a) ,void]
+
+     [:target ,librktio.a ,objs
+              ,(lambda (path token)
+                 (c-ar path
+                       (if standalone?
+                           ;; we expect `ar` to be libtool in this case:
+                           (append objs
+                                   (map string->shell (shell->strings (or (lookup 'LDFLAGS) "")))
+                                   (map string->shell (shell->strings (or (lookup 'LIBS) ""))))
+                           ;; normal library:
+                           objs)
+                       (let ([ar (and (not standalone?)
+                                      (hash-ref config 'STATIC_AR #f))])
+                         (if ar
+                             (hash-set config 'AR (shell-subst ar config))
+                             (shell-subst-value config 'AR)))))]
+
+     ,@(map (lambda (name obj)
+              (let ([src (at-source name)])
+                `[:target ,obj (,src ,@headers)
+                          ,(lambda (path token)
+                             (c-compile obj src (config-include config
+                                                                (at-dir ".")
+                                                                (at-source "."))))]))
+            src-names
+            objs)
+
+     [:target demo (,rktio_demo) ,void]
+
+     [:target ,rktio_demo (,demo.obj ,librktio.a)
+              ,(lambda (path token)
+                 (c-link path (list demo.obj librktio.a)
+                         (hash-set config 'CC
+                                   (or (hash-ref config 'RKTLINKER #f)
+                                       (hash-ref config 'CC #f)))))]
+                                       
+
+     [:target ,demo.obj (,demo.c ,@headers)
+              ,(lambda (path token)
+                 (c-compile path demo.c (config-include config
+                                                        (at-dir ".")
+                                                        (at-source "."))))]
+
+     [:target clean ()
+              ,(lambda (token)
+                 (map rm* objs)
+                 (rm* librktio.a)
+                 (rm* demo.obj)
+                 (rm* rktio_demo))]
+
+     [:target rktio-rktl (,rktio.rktl ,rktio.inc ,rktio.def) ,void]
+     [:target rktio-inc (rktio-rktl) ,void]
+     [:target rktio-def (rktio-rktl) ,void]
+
+     [:target ,rktio.rktl (,rktio.h ,parse.rkt)
+              ,(lambda (path token)
+                 (racket config parse.rkt "-o" rktio.rktl rktio.h))]
+     [:target ,rktio.inc (,rktio.h ,parse.rkt)
+              ,(lambda (path token)
+                 (racket config parse.rkt "-c" "-o" rktio.inc rktio.h))]
+     [:target ,rktio.def (,rktio.h ,parse.rkt)
+              ,(lambda (path token)
+                 (racket config parse.rkt "-d" "-o" rktio.def rktio.h))]
+    
+     [:target install-shared-object (,librktio.a)
+              ,(lambda (token)
+                 (install-shared-object))]
+
+     [:target installed-shared-object (,libdir/librktio.so) ,void :quiet]
+     [:target ,libdir/librktio.so (,librktio.a)
+              ,(lambda (path token)
+                 (install-shared-object))]
+
+     ,@(if (eq? 'windows (system-type))
+           `([:target ,(at-dir "rktio_config.h") (,(at-source "../worksp/librktio/rktio_config.h"))
+                      ,(lambda (path target)
+                         (cp (at-source "../worksp/librktio/rktio_config.h") path))])
+           '())
+
+     [:db-dir ,(at-dir ".")])))

@@ -1,5 +1,6 @@
 #lang scribble/doc
 @(require "mz.rkt"
+          scribble/core
           (for-label framework/preferences
                      racket/runtime-path
                      launcher/launcher
@@ -570,7 +571,10 @@ precision) and in another environment @racket[1234567891000000000] (seconds
 precision).
 
 Values that aren't available for a platform/filesystem combination may be set
-to @racket[0].
+to @racket[0]. For example, this applies to the @racket['user-id] and
+@racket['group-id] keys on Windows. Also, Posix platforms provide the status
+change timestamp, but not the creation timestamp; for Windows it's the
+opposite.
 
 If @racket[as-link?] is @racket[#f] and @racket[path] isn't accessible,
 the @exnraise[exn:fail:filesystem]. This exception is also raised if
@@ -602,18 +606,55 @@ OS, this size excludes the resource-fork size. On error (e.g., if no
 such file exists), the @exnraise[exn:fail:filesystem].}
 
 
-@defproc[(copy-file [src path-string?] [dest path-string?] [exists-ok? any/c #f]) void?]{
+@defproc[(copy-file [src path-string?] 
+                    [dest path-string?]
+                    [exists-ok?/pos any/c #f]
+                    [#:exists-ok? exists-ok? any/c exists-ok?/pos]
+                    [#:permissions permissions (or/c #f (integer-in 0 65535)) #f]
+                    [#:replace-permissions? replace-permissions? any/c #t])
+         void?]{
 
 Creates the file @racket[dest] as a copy of @racket[src], if
 @racket[dest] does not already exist. If @racket[dest] already exists
-and @racket[exists-ok?] is @racket[#f], the copy fails with
+and @racket[exists-ok?] is @racket[#f], the copy fails and the
 @exnraise[exn:fail:filesystem:exists?]; otherwise, if @racket[dest]
-exists, its content is replaced with the content of @racket[src]. File
-permissions are transferred from @racket[src] to @racket[dest]; on Windows,
-the modification time of @racket[src] is also transferred to @racket[dest]. If
-@racket[src] refers to a link, the target of the link is copied,
-rather than the link itself; if @racket[dest] refers to a link and
-@racket[exists-ok?] is true, the target of the link is updated.}
+exists, its content is replaced with the content of @racket[src]. 
+
+If @racket[src] refers to a link, the target of the link is copied,
+rather than the link itself. If @racket[dest] refers to a link and
+@racket[exists-ok?] is true, the target of the link is updated.
+
+File permissions are transferred from @racket[src] to @racket[dest],
+unless @racket[permissions] is supplied as non-@racket[#f] on Unix and
+Mac OS, in which case @racket[permissions] is used for @racket[dest].
+Beware that permissions are transferred without regard for the
+process's umask setting by default, but see
+@racket[replace-permissions?] below. On Windows, the modification time
+of @racket[src] is also transferred to @racket[dest]; if
+@racket[permissions] is supplied as non-@racket[#f], then after
+copying, @racket[dest] is set to read-only or not depending on whether
+the @racketvalfont{#o2} bit is present in @racket[permissions].
+
+The @racket[replace-permissions?] argument is used only on Unix and
+Mac OS. When @racket[dest]s is created, it is created with
+@racket[permissions] or the permissions of @racket[src]; however, the
+process's umask may unset bits in the requested permissions. When
+@racket[dest] already exists (and @racket[exists-ok?] is true), then
+the permissions of @racket[dest] are initially left as-is. Finally,
+when @racket[replace-permissions?] is a true value, then the
+permissions of @racket[dest] are set after the file content is copied
+to @racket[permissions] or the permissions of @racket[src], without
+modification by umask.
+
+The @racket[exists-ok?/pos] by-position argument is for backward
+compatibility. That by-position argument can be supplied, or the
+@racket[exists-ok?] keyword argument can be supplied, but the
+@exnraise[exn:fail:contract] if both are supplied.
+
+@history[#:changed "8.7.0.9" @elem{Added @racket[#:exists-ok?],
+                                   @racket[#:permissions], and
+                                   @racket[#:replace-permissions?]
+                                   arguments.}]}
 
 
 @defproc[(make-file-or-directory-link [to path-string?] [path path-string?]) 
@@ -640,7 +681,7 @@ link. Beware that directory links must be deleted using
 @history[#:changed "6.0.1.12" @elem{Added support for links on Windows.}]}
 
 
-@defparam[current-force-delete-permissions any/c boolean?]{
+@defboolparam[current-force-delete-permissions force? #:value #t]{
 
 A @tech{parameter} that determines on Windows whether
 @racket[delete-file] and @racket[delete-directory] attempt to change a
@@ -677,7 +718,7 @@ directory.}
 
 @defparam*[current-directory-for-user path path-string? (and/c path? complete-path?)]{
 
-Like @racket[current-directory], but use only by
+Like @racket[current-directory], but for use only by
 @racket[srcloc->string] for reporting paths relative to a
 directory.
 
@@ -1172,8 +1213,8 @@ Displays each element of @racket[lst] to @racket[path], adding
 @racket[open-output-file].}
 
 @defproc[(copy-directory/files [src path-string?] [dest path-string?]
-                               [#:keep-modify-seconds? keep-modify-seconds? #f]
-                               [#:preserve-links? preserve-links? #f])
+                               [#:keep-modify-seconds? keep-modify-seconds? any/c #f]
+                               [#:preserve-links? preserve-links? any/c #f])
          void?]{
 
 Copies the file or directory @racket[src] to @racket[dest], raising
@@ -1193,7 +1234,7 @@ the modification date of the original.
 
 
 @defproc[(delete-directory/files [path path-string?]
-                                 [#:must-exist? must-exist? #t])
+                                 [#:must-exist? must-exist? any/c #t])
          void?]{
 
 Deletes the file or directory specified by @racket[path], raising
@@ -1222,8 +1263,8 @@ than the file), then the file is deleted directly with
 
 @defproc[(find-files [predicate (path? . -> . any/c)]
                      [start-path (or/c path-string? #f) #f]
-                     [#:skip-filtered-directory? skip-filtered-directory? #f]
-                     [#:follow-links? follow-links? #f])
+                     [#:skip-filtered-directory? skip-filtered-directory? any/c #f]
+                     [#:follow-links? follow-links? any/c #f])
          (listof path?)]{
 
 Traverses the filesystem starting at @racket[start-path] and creates a
@@ -1387,48 +1428,130 @@ will not create it.
 
 
 @defproc[(make-temporary-file [template string? "rkttmp~a"]
-                              [copy-from-filename (or/c path-string? #f 'directory) #f]
-                              [directory (or/c path-string? #f) #f])
-         path?]{
+                              [#:copy-from copy-from (or/c path-string? #f 'directory) #f]
+                              [#:base-dir base-dir (or/c path-string? #f) #f]
+                              [compat-copy-from (or/c path-string? #f 'directory) copy-from]
+                              [compat-base-dir (or/c path-string? #f) base-dir])
+         (and/c path? complete-path?)]{
 
-Creates a new temporary file and returns a pathname string for the
-file.  Instead of merely generating a fresh file name, the file is
+Creates a new temporary file and returns its path.
+Instead of merely generating a fresh file name, the file is
 actually created; this prevents other threads or processes from
 picking the same temporary name.
 
-The @racket[template] argument must be a format string suitable
-for use with @racket[format] and one additional string argument (where
-the string contains only digits). If the resulting string is a
-relative path, it is combined with the result of
-@racket[(find-system-path 'temp-dir)], unless @racket[directory] is
-provided and non-@racket[#f], in which case the
-file name generated from @racket[template] is combined with
-@racket[directory] to obtain a full path.
+The @racket[template] argument must be a format string
+suitable for use with @racket[format] and one additional
+string argument (which will contain only digits). By
+default, if @racket[template] produces a relative path, it
+is combined with the result of
+@racket[(find-system-path 'temp-dir)] using
+@racket[build-path]; alternatively, @racket[template] may
+produce an absolute path, in which case
+@racket[(find-system-path 'temp-dir)] is not consulted. If
+@racket[base-dir] is provided and non-@racket[#false],
+@racket[template] must not produce a @tech{complete} path,
+and @racket[base-dir] will be used instead of
+@racket[(find-system-path 'temp-dir)]. Using
+@racket[base-dir] is generally more reliable than including
+directory components in @racket[template]: it avoids subtle
+bugs from manipulating paths as string and eleminates the
+need to sanitize @racket[format] escape sequences.
 
-The @racket[template] argument's default is only the string @racket["rkttmp~a"]
-when there is no source location information for the callsite of
-@racket[make-temporary-file] (or if @racket[make-temporary-file] is
-used in a higher-order position). If there is such information, then the template
-string is based on the source location.
+On Windows, @racket[template] may produce an absolute path
+which is not a complete path (see @secref["windowspaths"])
+when @racket[base-dir] is absent or @racket[#f] (in which
+case it will be resolved relative to
+@racket[(current-directory)]) or if @racket[base-dir] is a
+drive specification (in which case it will be used as with
+@racket[build-path]). If @racket[base-dir] is any other kind
+of path, it is an error for @racket[template] to produce an
+absolute path.
 
-If @racket[copy-from-filename] is provided as path, the temporary file
+When the @racket[template] argument is not provided, if
+there is source location information for the callsite of
+@racket[make-temporary-file], a template string is generated
+based on the source location: the default is
+@racket["rkttmp~a"] only when no source location information
+is available (e.g@._ if @racket[make-temporary-file] is used
+in a higher-order position).
+
+If @racket[copy-from] is provided as path, the temporary file
 is created as a copy of the named file (using @racket[copy-file]). If
-@racket[copy-from-filename] is @racket[#f], the temporary file is
-created as empty. If @racket[copy-from-filename] is
-@racket['directory], then the temporary ``file'' is created as a
-directory.
+@racket[copy-from] is @racket[#f], the temporary file is
+created as empty. As a special case, for backwards compatibility,
+if @racket[copy-from] is @racket['directory],
+then the temporary ``file'' is created as a directory:
+for clarity, prefer @racket[make-temporary-directory] for creating
+temporary directories.
 
 When a temporary file is created, it is not opened for reading or
-writing when the pathname is returned. The client program calling
+writing when the path is returned. The client program calling
 @racket[make-temporary-file] is expected to open the file with the
 desired access and flags (probably using the @racket['truncate] flag;
 see @racket[open-output-file]) and to delete it when it is no longer
-needed.}
+needed.
+
+The by-position arguments @racket[compat-copy-from] and
+@racket[compat-base-dir] are for backwards compatibility:
+if provided, they take precedence over the @racket[#:copy-from] and
+@racket[#:base-dir] keyword variants.
+Supplying by-position arguments prevents @racket[make-temporary-file]
+from generating a @racket[template] using the source location.
+
+@history[
+ #:changed "8.4.0.3"
+ @elem{Added the @racket[#:copy-from] and @racket[#:base-dir] arguments.}
+ ]}
+
+@defproc[(make-temporary-directory [template string? "rkttmp~a"]
+                                   [#:base-dir base-dir (or/c path-string? #f) #f])
+         (and/c path? complete-path?)]{
+
+ Like @racket[make-temporary-file], but
+ creates a directory, rather than a regular file.
+
+ As with @racket[make-temporary-file], if the
+ @racket[template] argument is not provided, a template
+ string is generated from the source location of the call to
+ @racket[make-temporary-directory] when possible: the default
+ is @racket["rkttmp~a"] only when no source location
+ information is available.
+
+@history[
+ #:added "8.4.0.3"
+ ]}
+
+@deftogether[
+ (@defproc[(make-temporary-file* [prefix bytes?]
+                                 [suffix bytes?]
+                                 [#:copy-from copy-from (or/c path-string? #f) #f]
+                                 [#:base-dir base-dir (or/c path-string? #f) #f])
+           (and/c path? complete-path?)]
+   @defproc[(make-temporary-directory* [prefix bytes?]
+                                       [suffix bytes?]
+                                       [#:base-dir base-dir (or/c path-string? #f) #f])
+            (and/c path? complete-path?)])]{
+
+ Like @racket[make-temporary-file] and
+ @racket[make-temporary-directory], respectively, but, rather
+ than using a template for @racket[format], the path is based
+ on @racket[(bytes-append prefix generated suffix)], where
+ @racket[generated] is a byte string chosen by the
+ implementation to produce a unique path. If there is source
+ location information for the callsite of
+ @racket[make-temporary-file*] or
+ @racket[make-temporary-directory*], @racket[generated] will
+ incorporate that information. The resulting path is combined
+ with @racket[base-dir] as with @racket[make-temorary-file].
+
+ @history[
+ #:added "8.4.0.3"
+ ]}
 
 @defproc[(call-with-atomic-output-file [file path-string?] 
-                                       [proc ([port output-port?] [tmp-path path?]  . -> . any)]
+                                       [proc (output-port? path? . -> . any)]
                                        [#:security-guard security-guard (or/c #f security-guard?) #f]
-                                       [#:rename-fail-handler rename-fail-handler (or/c #f (exn:fail:filesystem? path> . -> . any)) #f])
+                                       [#:rename-fail-handler rename-fail-handler (or/c #f (exn:fail:filesystem? path? . -> . any)) #f])
          any]{
 
 Opens a temporary file for writing in the same directory as
@@ -1472,15 +1595,15 @@ file path to be moved to @racket[path]. The
 @defproc[(get-preference [name symbol?]
                          [failure-thunk (-> any) (lambda () #f)]
                          [flush-mode any/c 'timestamp]
-                         [filename (or/c string-path? #f) #f]
+                         [filename (or/c path-string? #f) #f]
                          [#:use-lock? use-lock? any/c #t]
-                         [#:timeout-lock-there timeout-lock-there 
+                         [#:timeout-lock-there timeout-lock-there
                                                (or/c (path? . -> . any) #f)
                                                #f]
-                         [#:lock-there 
+                         [#:lock-there
                           lock-there
                           (or/c (path? . -> . any) #f)
-                          (make-handle-get-preference-locked 
+                          (make-handle-get-preference-locked
                            0.01 name failure-thunk flush-mode filename
                            #:lock-there timeout-lock-there)])
          any]{
@@ -1676,9 +1799,9 @@ in the sense of @racket[port-try-file-lock?].
     #:lock-file (make-lock-file-name filename))]
 
 
-@defproc*[([(make-lock-file-name [path (or path-string? path-for-some-system?)]) 
+@defproc*[([(make-lock-file-name [path (or/c path-string? path-for-some-system?)])
             path?]
-           [(make-lock-file-name [dir (or path-string? path-for-some-system?)] 
+           [(make-lock-file-name [dir (or/c path-string? path-for-some-system?)]
                                  [name path-element?]) 
             path?])]{
 

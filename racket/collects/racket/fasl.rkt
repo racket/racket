@@ -3,6 +3,7 @@
          racket/linklet
          racket/unsafe/undefined
          racket/fixnum
+         racket/flonum
          (for-syntax racket/base)
          "private/truncate-path.rkt"
          "private/relative-path.rkt"
@@ -100,6 +101,10 @@
   (fasl-extflonum-type 39)
   (fasl-correlated-type 40)
   (fasl-undefined-type 41)
+  (fasl-prefab-type-type 42)
+
+  (fasl-fxvector-type 43)
+  (fasl-flvector-type 44)
 
   ;; Unallocated numbers here are for future extensions
 
@@ -114,7 +119,8 @@
 (define-constants
   (fasl-hash-eq-variant    0)
   (fasl-hash-equal-variant 1)
-  (fasl-hash-eqv-variant   2))
+  (fasl-hash-eqv-variant   2)
+  (fasl-hash-equal-always-variant 3))
 
 ;; ----------------------------------------
 
@@ -153,6 +159,8 @@
            (keyword? v)
            (string? v)
            (bytes? v)
+           (fxvector? v)
+           (flvector? v)
            (path? v))
        (hash-update! shared v add1 0)]
       [(pair? v)
@@ -173,7 +181,7 @@
        => (lambda (k)
             (loop k)
             (for ([e (in-vector (struct->vector v) 1)])
-              (loop e)))]
+              (loop e)))]      
       [(srcloc? v)
        (loop (srcloc-source v))]
       [(correlated? v)
@@ -182,6 +190,11 @@
        (for ([k (in-list (correlated-property-symbol-keys v))])
          (loop k)
          (loop (correlated-property v k)))]
+      [(and (struct-type? v)
+            (prefab-struct-type-key+field-count v))
+       => (lambda (k+c)
+            (loop (car k+c))
+            (loop (cdr k+c)))]
       [else (void)]))
   (define (treat-immutable? v) (or (not keep-mutable?) (immutable? v)))
   (define path->relative-path-elements (make-path->relative-path-elements))
@@ -226,11 +239,7 @@
               (write-fasl-integer v o)])]
           [(flonum? v)
            (write-byte fasl-flonum-type o)
-           (write-bytes (if (eqv? v +nan.0)
-                            ;; use a canonical NaN (0 mantissa)
-                            #"\0\0\0\0\0\0\370\177"
-                            (real->floating-point-bytes v 8 #f))
-                        o)]
+           (write-fasl-flonum v o)]
           [(single-flonum? v)
            (write-byte fasl-single-flonum-type o)
            (write-bytes (if (eqv? v (real->single-flonum +nan.0))
@@ -334,6 +343,16 @@
            (write-fasl-integer (vector-length v) o)
            (for ([e (in-vector v)])
              (loop e))]
+          [(flvector? v)
+           (write-byte fasl-flvector-type o)
+           (write-fasl-integer (flvector-length v) o)
+           (for ([e (in-flvector v)])
+             (write-fasl-flonum e o))]
+          [(fxvector? v)
+           (write-byte fasl-fxvector-type o)
+           (write-fasl-integer (fxvector-length v) o)
+           (for ([e (in-fxvector v)])
+             (write-fasl-integer e o))]
           [(box? v)
            (write-byte (if (treat-immutable? v) fasl-immutable-box-type fasl-box-type) o)
            (loop (unbox v))]
@@ -350,6 +369,7 @@
            (write-byte (cond
                          [(hash-eq? v) fasl-hash-eq-variant]
                          [(hash-eqv? v) fasl-hash-eqv-variant]
+                         [(hash-equal-always? v) fasl-hash-equal-always-variant]
                          [else fasl-hash-equal-variant])
                        o)
            (write-fasl-integer (hash-count v) o)
@@ -372,6 +392,12 @@
                    (cons k (correlated-property v k))))]
           [(eq? v unsafe-undefined)
            (write-byte fasl-undefined-type o)]
+          [(and (struct-type? v)
+                (prefab-struct-type-key+field-count v))
+           => (lambda (k+c)
+                (write-byte fasl-prefab-type-type o)
+                (loop (car k+c))
+                (loop (cdr k+c)))]
           [else
            (if handle-fail
                (loop (handle-fail v))
@@ -394,7 +420,6 @@
 
 ;; For input parsing internally, in place of an input port, use a
 ;; mutable pair containing a byte string and position
-
 (define (fasl->s-exp orig-i
                      #:datum-intern? [intern? #t]
                      #:external-lifts [external-lifts '#()]
@@ -446,7 +471,7 @@
      [(fasl-void-type) (void)]
      [(fasl-eof-type) eof]
      [(fasl-integer-type) (intern (read-fasl-integer i))]
-     [(fasl-flonum-type) (floating-point-bytes->real (read-bytes/exactly 8 i) #f)]
+     [(fasl-flonum-type) (read-fasl-flonum i)]
      [(fasl-single-flonum-type) (real->single-flonum (floating-point-bytes->real (read-bytes/exactly 4 i) #f))]
      [(fasl-extflonum-type)
       (define bstr (read-bytes/exactly (read-fasl-integer i) i))
@@ -496,6 +521,14 @@
       (if (eqv? type fasl-immutable-vector-type)
           (vector->immutable-vector vec)
           vec)]
+     [(fasl-flvector-type)
+      (define len (read-fasl-integer i))
+      (for/flvector #:length len ([j (in-range len)])
+        (read-fasl-flonum i))]
+     [(fasl-fxvector-type)
+      (define len (read-fasl-integer i))
+      (for/fxvector #:length len ([j (in-range len)])
+        (read-fasl-integer i))]
      [(fasl-box-type) (box (loop))]
      [(fasl-immutable-box-type) (box-immutable (loop))]
      [(fasl-prefab-type)
@@ -510,6 +543,7 @@
                   (read-byte/no-eof i)
                   [(fasl-hash-eq-variant) (make-hasheq)]
                   [(fasl-hash-eqv-variant) (make-hasheqv)]
+                  [(fasl-hash-equal-always-variant) (make-hashalw)]
                   [else (make-hash)]))
       (define len (read-fasl-integer i))
       (for ([j (in-range len)])
@@ -520,6 +554,7 @@
                   (read-byte/no-eof i)
                   [(fasl-hash-eq-variant) #hasheq()]
                   [(fasl-hash-eqv-variant) #hasheqv()]
+                  [(fasl-hash-equal-always-variant) (hashalw)]
                   [else #hash()]))
       (define len (read-fasl-integer i))
       (for/fold ([ht ht]) ([j (in-range len)])
@@ -538,6 +573,8 @@
         (correlated-property c (car p) (cdr p)))]
      [(fasl-undefined-type)
       unsafe-undefined]
+     [(fasl-prefab-type-type)
+      (prefab-key->struct-type (loop) (loop))]
      [else
       (cond
         [(type . >= . fasl-small-integer-start)
@@ -583,6 +620,13 @@
 (define (write-fasl-bytes v o)
   (write-fasl-integer (bytes-length v) o)
   (write-bytes v o))
+
+(define (write-fasl-flonum v o)
+  (write-bytes (if (eqv? v +nan.0)
+                   ;; use a canonical NaN (0 mantissa)
+                   #"\0\0\0\0\0\0\370\177"
+                   (real->floating-point-bytes v 8 #f))
+               o))
 
 ;; ----------------------------------------
 
@@ -702,3 +746,6 @@
 (define (read-fasl-bytes i)
   (define len (read-fasl-integer i))
   (read-bytes/exactly len i))
+
+(define (read-fasl-flonum i)
+  (floating-point-bytes->real (read-bytes/exactly 8 i) #f))

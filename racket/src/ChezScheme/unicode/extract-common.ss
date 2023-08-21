@@ -131,16 +131,17 @@
        (commonize x)]
       [else x])))
 
-(define (sizeof ls)
-  (apply +
-    (map (lambda (x)
-           (cond
-             [(vector? x) (* (vector-length x) ptr-bytes)]
-             [(bytevector? x) (bytevector-length x)]
-             [(pair? x) (* ptr-bytes 2)]
-             [(fixnum? x) 0]
-             [(char? x) 0]
-             [else (error 'sizeof "unexpected ~s" x)]))
-         ls)))
+(define (sizeof ls) (compute-size ls))
 
 (define (hex->num x) (string->number x 16))
+
+(define (hex-range->nums x)
+  (let loop ([i 0])
+    (cond
+      [(= i (string-length x))
+       (let ([n (string->number x 16)])
+         (values n n))]
+      [(char=? #\. (string-ref x i))
+       (values (string->number (substring x 0 i) 16)
+               (string->number (substring x (+ i 2) (string-length x)) 16))]
+      [else (loop (add1 i))])))

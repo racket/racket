@@ -4,7 +4,8 @@
           (for-label racket/pretty
                      racket/gui/base
                      setup/dirs
-                     racket/interaction-info))
+                     racket/interaction-info
+                     compiler/cm))
 
 @(define (FlagFirst n) (as-index (Flag n)))
 @(define (DFlagFirst n) (as-index (DFlag n)))
@@ -183,7 +184,7 @@ flags:
        @margin-note*{Despite its name, @DFlag{script} is not usually
        used for Unix scripts. See @guidesecref["scripts"] for more
        information on scripts.}
-        as a script. This flag is like @Flag{t} @nonterm{file} plus
+        as a script. This flag is like @Flag{f} @nonterm{file} plus
         @Flag{N} @nonterm{file} to set the program name and @Flag{-}
         to cause all further command-line elements to be treated as
         non-flag arguments.}
@@ -265,8 +266,22 @@ flags:
 
  @itemize[
 
+  @item{@FlagFirst{y} or @DFlagFirst{make} : Enables automatic
+        generation and update of compiled @filepath{.zo} files for
+        modules loaded in the initial namespace. Specifically, the
+        result of
+        @racket[(make-compilation-manager-load/use-compiled-handler)]
+        is installed as the @tech{compiled-load handler} before other
+        module-loading actions. @bold{Caution:} This flag is intended
+        for use in interactive settings; using it in a script is
+        probably a bad idea, because concurrent invocations of the
+        script may collide attempting to update compiled files, or
+        there may be filesystem-permission issues. Using
+        @FlagFirst{c}/@DFlagFirst{no-compiled} cancels the effect of
+        @FlagFirst{y}/@DFlagFirst{make}.}
+
   @item{@FlagFirst{c} or @DFlagFirst{no-compiled} : Disables loading
-        of compiled byte-code @filepath{.zo} files, by initializing
+        of compiled @filepath{.zo} files, by initializing
         @racket[use-compiled-file-paths] to @racket[null].
         Use judiciously: this effectively ignores the content of all
         @filepath{compiled} subdirectories, so that any used modules are
@@ -486,7 +501,8 @@ Extra arguments following the last option are available from the
          #:changed "7.1.0.5" @elem{Added @Flag{M}/@DFlag{compile-any}.}
          #:changed "7.8.0.6" @elem{Added @Flag{Z}.}
          #:changed "8.0.0.10" @elem{Added @Flag{E}.}
-         #:changed "8.0.0.11" @elem{Added @Flag{Y}.}]
+         #:changed "8.0.0.11" @elem{Added @Flag{Y}.}
+         #:changed "8.4.0.1" @elem{Added @Flag{y}/@DFlag{make}.}]
 
 @; ----------------------------------------------------------------------
 
@@ -494,7 +510,7 @@ Extra arguments following the last option are available from the
 
 @guidealso["module-runtime-config"]
 
-A module can have a @racket[configure-runtime] submodule that is
+A module can have a @as-index[@racket[configure-runtime]] submodule that is
 @racket[dynamic-require]d before the module itself when a module is
 the main module of a program. Normally, a @racket[configure-runtime]
 submodule is added to a module by the module's language (i.e., by the
@@ -537,3 +553,62 @@ see @secref[#:doc raco-doc "exe"] in
 
 For information on defining a new @hash-lang[] language, see
 @racketmodname[syntax/module-reader].
+
+@; ----------------------------------------------------------------------
+
+@section[#:tag "configure-expand"]{Language Expand Configuration}
+
+A module @racket[_lang] can have a @as-index[@racket[configure-expand]] submodule
+that is @racket[dynamic-require]d before the expansion of another
+module that is implemented as @racket[(module _name _lang ....)]. The
+submodule is loaded in a @tech{root namespace}, the same as a
+reader module. The submodule should provide
+@racketidfont{enter-parameterization} and
+@racketidfont{exit-parameterization} as procedures that each take no
+arguments and return a @tech{parameterization}:
+
+@itemlist[
+
+ @item{@racketidfont{enter-parameterization} for @racket[_lang] is
+  called at the start of an expansion of a module @racket[(module
+  _name _lang ....)], and the parameterization wraps the module
+  expansion via @racket[call-with-parameterization].}
+
+ @item{@racketidfont{exit-parameterization} is called for
+   @racket[_lang] if the expansion of @racket[(module _name _lang
+   ....)] triggers expansion of other modules, typically because they
+   are @racket[require]d by the module being expanded. In that case,
+   @racketidfont{exit-parameterization} is called to obtain a
+   parameterization that is put in place around a call to
+   @racketidfont{enter-parameterization} for the language of the
+   module newly being expanded.}
+
+]
+
+The @racket[current-parameterization] procedure works as a default for
+both @racketidfont{enter-parameterization} and
+@racketidfont{exit-parameterization}.
+
+The parameterization produced by a
+@racketidfont{enter-parameterization} typically sets parameters that
+affect error reporting during expansion, such as
+@racket[error-syntax->string-handler]. The parameterization produced
+by @racketidfont{exit-parameterization} should generally revert any
+changes made by @racketidfont{enter-parameterization} while keeping
+other parameter values intact (such as
+@racket[current-load-relative-directory]). To communicate from a use
+of @racketidfont{enter-parameterization} to a nested use of
+@racketidfont{exit-parameterization}, use a private @tech{parameter}.
+
+The @racketidfont{enter-parameterization} and
+@racketidfont{exit-parameterization} procedures are expected to build
+on the current parameterization, but they should generally not mutate
+current parameters, since that mutation would extend beyond the use of
+the returned parameterization. Instead, use @racket[parameterize] to
+create a new parameterization with updated parameter values. The
+@racketidfont{enter-parameterization} and
+@racketidfont{exit-parameterization} should also not operate on the
+current @tech{namespace}, since that can interfere with module
+expansion.
+
+@history[#:added "8.8.0.6"]

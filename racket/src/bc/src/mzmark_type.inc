@@ -2440,6 +2440,60 @@ static int extflvector_obj_FIXUP(void *p, struct NewGC *gc) {
 
 #endif
 
+static int stencil_vector_obj_SIZE(void *p, struct NewGC *gc) {
+#ifndef GC_NO_SIZE_NEEDED_FROM_PROCS
+  Scheme_Stencil_Vector *vec = (Scheme_Stencil_Vector *)p;
+  intptr_t size = scheme_stencil_vector_popcount(vec->mask);
+
+  gcBYTES_TO_WORDS((sizeof(Scheme_Stencil_Vector) 
+		    + ((size - mzFLEX_DELTA) * sizeof(Scheme_Object *))));
+#else
+  return 0;
+#endif
+}
+
+static int stencil_vector_obj_MARK(void *p, struct NewGC *gc) {
+#ifndef GC_NO_MARK_PROCEDURE_NEEDED
+  Scheme_Stencil_Vector *vec = (Scheme_Stencil_Vector *)p;
+  intptr_t size = scheme_stencil_vector_popcount(vec->mask);
+
+  int i;
+  for (i = size; i--; )
+    gcMARK2(vec->els[i], gc);
+
+# ifdef GC_NO_SIZE_NEEDED_FROM_PROCS
+  return 0;
+# else
+  return
+  gcBYTES_TO_WORDS((sizeof(Scheme_Stencil_Vector) 
+		    + ((size - mzFLEX_DELTA) * sizeof(Scheme_Object *))));
+# endif
+#endif
+}
+
+static int stencil_vector_obj_FIXUP(void *p, struct NewGC *gc) {
+#ifndef GC_NO_FIXUP_PROCEDURE_NEEDED
+  Scheme_Stencil_Vector *vec = (Scheme_Stencil_Vector *)p;
+  intptr_t size = scheme_stencil_vector_popcount(vec->mask);
+
+  int i;
+  for (i = size; i--; )
+    gcFIXUP2(vec->els[i], gc);
+
+# ifdef GC_NO_SIZE_NEEDED_FROM_PROCS
+  return 0;
+# else
+  return
+  gcBYTES_TO_WORDS((sizeof(Scheme_Stencil_Vector) 
+		    + ((size - mzFLEX_DELTA) * sizeof(Scheme_Object *))));
+# endif
+#endif
+}
+
+#define stencil_vector_obj_IS_ATOMIC 0
+#define stencil_vector_obj_IS_CONST_SIZE 0
+
+
 static int input_port_SIZE(void *p, struct NewGC *gc) {
 #ifndef GC_NO_SIZE_NEEDED_FROM_PROCS
   gcBYTES_TO_WORDS(sizeof(Scheme_Input_Port));
@@ -2681,8 +2735,6 @@ static int thread_val_MARK(void *p, struct NewGC *gc) {
   gcMARK2(pr->gmp_tls_data, gc);
   
   gcMARK2(pr->mr_hop, gc);
-  gcMARK2(pr->mref, gc);
-  gcMARK2(pr->extra_mrefs, gc);
 
   gcMARK2(pr->name, gc);
 
@@ -2690,7 +2742,6 @@ static int thread_val_MARK(void *p, struct NewGC *gc) {
 
   gcMARK2(pr->suspended_box, gc);
   gcMARK2(pr->resumed_box, gc);
-  gcMARK2(pr->dead_box, gc);
   gcMARK2(pr->running_box, gc);
   gcMARK2(pr->sync_box, gc);
 
@@ -2805,8 +2856,6 @@ static int thread_val_FIXUP(void *p, struct NewGC *gc) {
   gcFIXUP2(pr->gmp_tls_data, gc);
   
   gcFIXUP2(pr->mr_hop, gc);
-  gcFIXUP2(pr->mref, gc);
-  gcFIXUP2(pr->extra_mrefs, gc);
 
   gcFIXUP2(pr->name, gc);
 
@@ -2814,7 +2863,6 @@ static int thread_val_FIXUP(void *p, struct NewGC *gc) {
 
   gcFIXUP2(pr->suspended_box, gc);
   gcFIXUP2(pr->resumed_box, gc);
-  gcFIXUP2(pr->dead_box, gc);
   gcFIXUP2(pr->running_box, gc);
   gcFIXUP2(pr->sync_box, gc);
 

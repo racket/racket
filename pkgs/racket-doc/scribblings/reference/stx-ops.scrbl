@@ -1,6 +1,7 @@
 #lang scribble/doc
 @(require "mz.rkt"
-          (for-label racket/syntax-srcloc))
+          (for-label racket/syntax-srcloc
+                     (only-in syntax/stx stx-list?)))
 
 @(define stx-eval (make-base-eval))
 @(stx-eval '(require (for-syntax racket/base)))
@@ -76,19 +77,23 @@ column is unknown. See also @secref["linecol"].
 @defproc[(syntax-position [stx syntax?])
          (or/c exact-positive-integer? #f)]{
 
-Returns the character position (positive exact integer)
+Returns the position (positive exact integer)
 of the @tech{source location} for the start
 of the @tech{syntax object} in its source, or @racket[#f] if the source
-position is unknown. See also @secref["linecol"].}
+position is unknown. The position is intended to be a character position,
+but reading from a port without line counting enabled will produce
+a position as a byte offset. See also @secref["linecol"].}
 
 
 @defproc[(syntax-span [stx syntax?])
          (or/c exact-nonnegative-integer? #f)]{
 
-Returns the span (non-negative exact integer) in characters
+Returns the span (non-negative exact integer)
 of the @tech{source location} for
 @tech{syntax object} in its source, or @racket[#f] if the span is
-unknown.}
+unknown. The span is intended to count in characters,
+but reading from a port without line counting enabled will produce
+a span in bytes. See also @secref["linecol"]. }
 
 
 @defproc[(syntax-original? [stx syntax?]) boolean?]{
@@ -370,14 +375,13 @@ at @tech{phase level} 0 are shifted to the @tech{label phase level}.
 If @racket[shift] is @racket[0], then the result is @racket[stx].}
 
 
-@defproc[(generate-temporaries [stx-pair (or syntax? list?)]) 
+@defproc[(generate-temporaries [v stx-list?])
          (listof identifier?)]{
 
 Returns a list of identifiers that are distinct from all other
 identifiers. The list contains as many identifiers as
-@racket[stx-pair] contains elements. The @racket[stx-pair] argument
-must be a syntax pair that can be flattened into a list. The elements
-of @racket[stx-pair] can be anything, but string, symbol, keyword
+@racket[v] contains elements.
+The elements of @racket[v] can be anything, but string, symbol, keyword
 (possibly wrapped as syntax), and identifier elements will be embedded
 in the corresponding generated name, which is useful for debugging
 purposes.

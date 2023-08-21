@@ -31,7 +31,8 @@
 ;; A "cnode" collision node is an association list. It's never a root
 ;; node, but it can be a child at any non-root depth.
 
-(define (intmap? x) (stencil-vector? x))
+;; authentic immutable hash
+(define (intmap? x) (#%$system-stencil-vector? x))
 
 ;; log of node size:
 (define BNODE-BITS (if (fx> (stencil-vector-mask-width) 26)
@@ -53,7 +54,8 @@
 (define HAMT-EQTYPE-EQ 0)
 (define HAMT-EQTYPE-EQV 1)
 (define HAMT-EQTYPE-EQUAL 2)
-(define HAMT-EQTYPE-MASK (fx- (fxsll 1 (integer-length HAMT-EQTYPE-EQUAL)) 1))
+(define HAMT-EQTYPE-EQUAL-ALWAYS 3)
+(define HAMT-EQTYPE-MASK (fx- (fxsll 1 (integer-length HAMT-EQTYPE-EQUAL-ALWAYS)) 1))
 
 (define HAMT-COUNT-OFFSET (integer-length HAMT-EQTYPE-MASK))
 (define ONE-COUNT-IN-COUNT+EQTYPE (fxsll 1 HAMT-COUNT-OFFSET))
@@ -66,7 +68,7 @@
   (fxsrl x HAMT-COUNT-OFFSET))
 
 (define (hamt-count+eqtype h)
-  (stencil-vector-ref h HAMT-COUNT+EQTYPE-INDEX))
+  (#%$stencil-vector-ref h HAMT-COUNT+EQTYPE-INDEX))
 (define (hamt-eqtype h)
   (count+eqtype-eqtype (hamt-count+eqtype h)))
 (define (hamt-count h)
@@ -74,13 +76,14 @@
 
 ;; to dispatch on a bnode's equality type:
 (define-syntax eqtype-case
-  (syntax-rules (eq eqv else)
-    [(_ h [(eq) a] [(eqv) b] [else c])
+  (syntax-rules (eq eqv equal-always else)
+    [(_ h [(eq) a] [(eqv) b] [(equal-always) c] [else d])
      (let ([eqt (hamt-eqtype h)])
        (cond
         [(fx= eqt HAMT-EQTYPE-EQ) a]
         [(fx= eqt HAMT-EQTYPE-EQV) b]
-        [else c]))]))
+        [(fx= eqt HAMT-EQTYPE-EQUAL-ALWAYS) c]
+        [else d]))]))
 
 ;; Child, key, and value bits in the stencil-vector mask:
 (define HAMT-CHILD-OFFSET HAMT-STATIC-FIELD-COUNT)
@@ -98,7 +101,7 @@
 (define (hamt-mask->val-count mask)
   (fxpopcount16 (fxsrl (fxand HAMT-VAL-MASK mask) HAMT-VAL-OFFSET)))
 
-(define (bnode? x) (stencil-vector? x))
+(define (bnode? x) (#%$system-stencil-vector? x))
 
 (define-record-type cnode
   [fields (immutable hash)
@@ -113,53 +116,53 @@
   (fxand (fxsrl hash shift) BNODE-MASK))
 
 (define (bnode-maps-key? node bit)
-  (fxbit-set? (stencil-vector-mask node) (fx+ bit HAMT-KEY-OFFSET)))
+  (fxbit-set? (#%$stencil-vector-mask node) (fx+ bit HAMT-KEY-OFFSET)))
 
 (define (bnode-maps-child? node bit)
-  (fxbit-set? (stencil-vector-mask node) (fx+ bit HAMT-CHILD-OFFSET)))
+  (fxbit-set? (#%$stencil-vector-mask node) (fx+ bit HAMT-CHILD-OFFSET)))
 
 (define (bnode-down shift)
   (fx+ shift BNODE-BITS))
 
 (define (bnode-child-ref n bit)
-  (stencil-vector-ref n (fxpopcount32
-                         (fxand (stencil-vector-mask n)
-                                (fx- (fxsll 1 (fx+ bit HAMT-CHILD-OFFSET)) 1)))))
+  (#%$stencil-vector-ref n (fxpopcount32
+                            (fxand (#%$stencil-vector-mask n)
+                                   (fx- (fxsll 1 (fx+ bit HAMT-CHILD-OFFSET)) 1)))))
 
 (define (bnode-key-ref n bit)
-  (stencil-vector-ref n (fxpopcount32
-                         (fxand (stencil-vector-mask n)
-                                (fx- (fxsll 1 (fx+ bit HAMT-KEY-OFFSET)) 1)))))
+  (#%$stencil-vector-ref n (fxpopcount32
+                            (fxand (#%$stencil-vector-mask n)
+                                   (fx- (fxsll 1 (fx+ bit HAMT-KEY-OFFSET)) 1)))))
 
 (define (bnode-val-ref n bit)
   (let ([mask-bit (fxsll 1 (fx+ bit HAMT-VAL-OFFSET))]
-        [mask (stencil-vector-mask n)])
+        [mask (#%$stencil-vector-mask n)])
     (if (not (fxlogtest mask-bit mask))
         #t ; not stored => #t
-        (stencil-vector-ref n (fxpopcount
-                               (fxand mask (fx- mask-bit 1)))))))
+        (#%$stencil-vector-ref n (fxpopcount
+                                  (fxand mask (fx- mask-bit 1)))))))
 
 ;; assumes no children
 (define (bnode-only-key-ref n)
-  (stencil-vector-ref n HAMT-STATIC-FIELD-COUNT))
+  (#%$stencil-vector-ref n HAMT-STATIC-FIELD-COUNT))
 
 ;; assumes no children
 (define (bnode-only-val-ref n)
-  (if (not (fxlogtest (stencil-vector-mask n) HAMT-VAL-MASK))
+  (if (not (fxlogtest (#%$stencil-vector-mask n) HAMT-VAL-MASK))
       #t ; not stored => #t
-      (stencil-vector-ref n (fx+ 1 HAMT-STATIC-FIELD-COUNT))))
+      (#%$stencil-vector-ref n (fx+ 1 HAMT-STATIC-FIELD-COUNT))))
 
 ;; i counts from 0 through children + keys
 (define (bnode-child-index-ref n i)
-  (stencil-vector-ref n (fx+ HAMT-CHILD-OFFSET i)))
+  (#%$stencil-vector-ref n (fx+ HAMT-CHILD-OFFSET i)))
 
 ;; i counts from 0 through children + keys, so it encodes the number of preceding children
 (define (bnode-key-index-ref n i)
-  (stencil-vector-ref n (fx+ HAMT-CHILD-OFFSET i)))
+  (#%$stencil-vector-ref n (fx+ HAMT-CHILD-OFFSET i)))
 
 ;; i counts from 0 through children + keys
 (define (bnode-val-index-ref n i)
-  (let* ([mask (stencil-vector-mask n)]
+  (let* ([mask (#%$stencil-vector-mask n)]
          [val-mask (fxand mask HAMT-VAL-MASK)])
     (cond
      [(fx= 0 val-mask)
@@ -197,110 +200,110 @@
             (loop i val-i (fx+ bit 1))])))])))
 
 (define (bnode-val-local-index-ref n child-count key-count val-i)
-  (stencil-vector-ref n (fx+ val-i
-                             HAMT-STATIC-FIELD-COUNT
-                             child-count
-                             key-count)))
+  (#%$stencil-vector-ref n (fx+ val-i
+                                HAMT-STATIC-FIELD-COUNT
+                                child-count
+                                key-count)))
 
 (define (bnode-add-key node wrapped-key val bit)
   (if (eq? val #t)
-      (stencil-vector-update node
-                             HAMT-COUNT+EQTYPE-BIT
-                             (fxior HAMT-COUNT+EQTYPE-BIT
-                                    (fxsll 1 (fx+ bit HAMT-KEY-OFFSET)))
-                             (fx+ (stencil-vector-ref node HAMT-COUNT+EQTYPE-INDEX)
-                                  ONE-COUNT-IN-COUNT+EQTYPE)
-                             wrapped-key)
-      (stencil-vector-update node
-                             HAMT-COUNT+EQTYPE-BIT
-                             (fxior HAMT-COUNT+EQTYPE-BIT
-                                    (fxsll 1 (fx+ bit HAMT-KEY-OFFSET))
-                                    (fxsll 1 (fx+ bit HAMT-VAL-OFFSET)))
-                             (fx+ (stencil-vector-ref node HAMT-COUNT+EQTYPE-INDEX)
-                                  ONE-COUNT-IN-COUNT+EQTYPE)
-                             wrapped-key
-                             val)))
+      (#%$system-stencil-vector-update node
+                                       HAMT-COUNT+EQTYPE-BIT
+                                       (fxior HAMT-COUNT+EQTYPE-BIT
+                                              (fxsll 1 (fx+ bit HAMT-KEY-OFFSET)))
+                                       (fx+ (#%$stencil-vector-ref node HAMT-COUNT+EQTYPE-INDEX)
+                                            ONE-COUNT-IN-COUNT+EQTYPE)
+                                       wrapped-key)
+      (#%$system-stencil-vector-update node
+                                       HAMT-COUNT+EQTYPE-BIT
+                                       (fxior HAMT-COUNT+EQTYPE-BIT
+                                              (fxsll 1 (fx+ bit HAMT-KEY-OFFSET))
+                                              (fxsll 1 (fx+ bit HAMT-VAL-OFFSET)))
+                                       (fx+ (#%$stencil-vector-ref node HAMT-COUNT+EQTYPE-INDEX)
+                                            ONE-COUNT-IN-COUNT+EQTYPE)
+                                       wrapped-key
+                                       val)))
 
 (define (bnode-remove-key node bit)
   (let ([val-bit (fxsll 1 (fx+ bit HAMT-VAL-OFFSET))])
-    (stencil-vector-update node
-                           (fxior HAMT-COUNT+EQTYPE-BIT
-                                  (fxsll 1 (fx+ bit HAMT-KEY-OFFSET))
-                                  (fxand (stencil-vector-mask node) val-bit))
-                           HAMT-COUNT+EQTYPE-BIT
-                           (fx- (stencil-vector-ref node HAMT-COUNT+EQTYPE-INDEX)
-                                ONE-COUNT-IN-COUNT+EQTYPE))))
+    (#%$system-stencil-vector-update node
+                                     (fxior HAMT-COUNT+EQTYPE-BIT
+                                            (fxsll 1 (fx+ bit HAMT-KEY-OFFSET))
+                                            (fxand (#%$stencil-vector-mask node) val-bit))
+                                     HAMT-COUNT+EQTYPE-BIT
+                                     (fx- (#%$stencil-vector-ref node HAMT-COUNT+EQTYPE-INDEX)
+                                          ONE-COUNT-IN-COUNT+EQTYPE))))
 
 (define (bnode-replace-val node bit val)
   (let ([val-bit (fxsll 1 (fx+ bit HAMT-VAL-OFFSET))])
      (cond
-      [(not (fxlogtest (stencil-vector-mask node) val-bit))
+      [(not (fxlogtest (#%$stencil-vector-mask node) val-bit))
        ;; old value was #t
        (cond
         [(eq? val #t)
          node]
         [else
-         (stencil-vector-update node 0 val-bit val)])]
+         (#%$system-stencil-vector-update node 0 val-bit val)])]
       [else
        (cond
         [(eq? val #t)
-         (stencil-vector-update node val-bit 0)]
+         (#%$system-stencil-vector-update node val-bit 0)]
         [else
-         (stencil-vector-update node val-bit val-bit val)])])))
+         (#%$system-stencil-vector-update node val-bit val-bit val)])])))
 
 (define (bnode-replace-key+val node bit wrapped-key val)
   (let* ([key-bit (fxsll 1 (fx+ bit HAMT-KEY-OFFSET))]
          [val-bit (fxsll 1 (fx+ bit HAMT-VAL-OFFSET))]
          [key+val-bits (fxior key-bit val-bit)])
     (cond
-     [(not (fxlogtest (stencil-vector-mask node) val-bit))
+     [(not (fxlogtest (#%$stencil-vector-mask node) val-bit))
       ;; old value was #t
       (cond
        [(eq? val #t)
-        (stencil-vector-update node key-bit key-bit wrapped-key)]
+        (#%$system-stencil-vector-update node key-bit key-bit wrapped-key)]
        [else
-        (stencil-vector-update node key-bit key+val-bits wrapped-key val)])]
+        (#%$system-stencil-vector-update node key-bit key+val-bits wrapped-key val)])]
      [else
       (cond
        [(eq? val #t)
-        (stencil-vector-update node key+val-bits key-bit wrapped-key)]
+        (#%$system-stencil-vector-update node key+val-bits key-bit wrapped-key)]
        [else
-        (stencil-vector-update node key+val-bits key+val-bits wrapped-key val)])])))
+        (#%$system-stencil-vector-update node key+val-bits key+val-bits wrapped-key val)])])))
 
 (define (bnode-remove-key-add-child node child bit)
   (let ([val-bit (fxsll 1 (fx+ bit HAMT-VAL-OFFSET))])
-    (stencil-vector-update node
-                           (fxior HAMT-COUNT+EQTYPE-BIT
-                                  (fxsll 1 (fx+ bit HAMT-KEY-OFFSET))
-                                  (fxand (stencil-vector-mask node) val-bit))
-                           (fxior HAMT-COUNT+EQTYPE-BIT
-                                  (fxsll 1 (fx+ bit HAMT-CHILD-OFFSET)))
-                           (fx+ (stencil-vector-ref node HAMT-COUNT+EQTYPE-INDEX)
-                                ONE-COUNT-IN-COUNT+EQTYPE)
-                           child)))
+    (#%$system-stencil-vector-update node
+                                     (fxior HAMT-COUNT+EQTYPE-BIT
+                                            (fxsll 1 (fx+ bit HAMT-KEY-OFFSET))
+                                            (fxand (#%$stencil-vector-mask node) val-bit))
+                                     (fxior HAMT-COUNT+EQTYPE-BIT
+                                            (fxsll 1 (fx+ bit HAMT-CHILD-OFFSET)))
+                                     (fx+ (#%$stencil-vector-ref node HAMT-COUNT+EQTYPE-INDEX)
+                                          ONE-COUNT-IN-COUNT+EQTYPE)
+                                     child)))
 
 (define (bnode-remove-child-add-key node wrapped-key val bit)
   (cond
    [(eq? val #t)
-    (stencil-vector-update node
-                           (fxior HAMT-COUNT+EQTYPE-BIT
-                                  (fxsll 1 (fx+ bit HAMT-CHILD-OFFSET)))
-                           (fxior HAMT-COUNT+EQTYPE-BIT
-                                  (fxsll 1 (fx+ bit HAMT-KEY-OFFSET)))
-                           (fx- (stencil-vector-ref node HAMT-COUNT+EQTYPE-INDEX)
-                                ONE-COUNT-IN-COUNT+EQTYPE)
-                           wrapped-key)]
+    (#%$system-stencil-vector-update node
+                                     (fxior HAMT-COUNT+EQTYPE-BIT
+                                            (fxsll 1 (fx+ bit HAMT-CHILD-OFFSET)))
+                                     (fxior HAMT-COUNT+EQTYPE-BIT
+                                            (fxsll 1 (fx+ bit HAMT-KEY-OFFSET)))
+                                     (fx- (#%$stencil-vector-ref node HAMT-COUNT+EQTYPE-INDEX)
+                                          ONE-COUNT-IN-COUNT+EQTYPE)
+                                     wrapped-key)]
    [else
-    (stencil-vector-update node
-                           (fxior HAMT-COUNT+EQTYPE-BIT
-                                  (fxsll 1 (fx+ bit HAMT-CHILD-OFFSET)))
-                           (fxior HAMT-COUNT+EQTYPE-BIT
-                                  (fxsll 1 (fx+ bit HAMT-KEY-OFFSET))
-                                  (fxsll 1 (fx+ bit HAMT-VAL-OFFSET)))
-                           (fx- (stencil-vector-ref node HAMT-COUNT+EQTYPE-INDEX)
-                                ONE-COUNT-IN-COUNT+EQTYPE)
-                           wrapped-key
-                           val)]))
+    (#%$system-stencil-vector-update node
+                                     (fxior HAMT-COUNT+EQTYPE-BIT
+                                            (fxsll 1 (fx+ bit HAMT-CHILD-OFFSET)))
+                                     (fxior HAMT-COUNT+EQTYPE-BIT
+                                            (fxsll 1 (fx+ bit HAMT-KEY-OFFSET))
+                                            (fxsll 1 (fx+ bit HAMT-VAL-OFFSET)))
+                                     (fx- (#%$stencil-vector-ref node HAMT-COUNT+EQTYPE-INDEX)
+                                          ONE-COUNT-IN-COUNT+EQTYPE)
+                                     wrapped-key
+                                     val)]))
 
 (define (bnode-replace-child node old-child new-child bit)
   (let ([child-bit (fxsll 1 (fx+ bit HAMT-CHILD-OFFSET))]
@@ -315,16 +318,16 @@
                         HAMT-COUNT-OFFSET)])])
     (cond
      [(fx= 0 delta)
-      (stencil-vector-update node child-bit child-bit new-child)]
+      (#%$system-stencil-vector-update node child-bit child-bit new-child)]
      [else
       (let ([bits (fxior child-bit
                          HAMT-COUNT+EQTYPE-BIT)])
-        (stencil-vector-update node
-                               bits
-                               bits
-                               (fx+ (stencil-vector-ref node HAMT-COUNT+EQTYPE-INDEX)
-                                    delta)
-                               new-child))])))
+        (#%$system-stencil-vector-update node
+                                         bits
+                                         bits
+                                         (fx+ (#%$stencil-vector-ref node HAMT-COUNT+EQTYPE-INDEX)
+                                              delta)
+                                         new-child))])))
 
 (define HASHCODE-BITS (fxbit-count (most-positive-fixnum)))
 
@@ -349,10 +352,10 @@
         ;; partial collision: descend
         (let* ([child (node-merge eqtype wrapped-k1 k1 v1 h1 wrapped-k2 k2 v2 h2 (bnode-down shift))]
                [cm (bnode-bit-pos h1 shift)])
-          (stencil-vector (fxior HAMT-COUNT+EQTYPE-BIT
-                                 (fxsll 1 (fx+ cm HAMT-CHILD-OFFSET)))
-                          (count+eqtype 2 eqtype)
-                          child))]
+          (#%$system-stencil-vector (fxior HAMT-COUNT+EQTYPE-BIT
+                                           (fxsll 1 (fx+ cm HAMT-CHILD-OFFSET)))
+                                    (count+eqtype 2 eqtype)
+                                    child))]
 
        [else
         ;; no collision, make a bnode
@@ -368,34 +371,34 @@
                       [(eq? v1 #t)
                        (cond
                         [(eq? v2 #t)
-                         (stencil-vector (fxior HAMT-COUNT+EQTYPE-BIT
-                                                key-bits)
-                                         (count+eqtype 2 eqtype)
-                                         k1 k2)]
+                         (#%$system-stencil-vector (fxior HAMT-COUNT+EQTYPE-BIT
+                                                          key-bits)
+                                                   (count+eqtype 2 eqtype)
+                                                   k1 k2)]
                         [else
-                         (stencil-vector (fxior HAMT-COUNT+EQTYPE-BIT
-                                                key-bits
-                                                (fxsll 1 (fx+ bit2 HAMT-VAL-OFFSET)))
-                                         (count+eqtype 2 eqtype)
-                                         k1 k2
-                                         v2)])]
+                         (#%$system-stencil-vector (fxior HAMT-COUNT+EQTYPE-BIT
+                                                          key-bits
+                                                          (fxsll 1 (fx+ bit2 HAMT-VAL-OFFSET)))
+                                                   (count+eqtype 2 eqtype)
+                                                   k1 k2
+                                                   v2)])]
                       [else
                        (cond
                         [(eq? v2 #t)
-                         (stencil-vector (fxior HAMT-COUNT+EQTYPE-BIT
-                                                key-bits
-                                                (fxsll 1 (fx+ bit1 HAMT-VAL-OFFSET)))
-                                         (count+eqtype 2 eqtype)
-                                         k1 k2
-                                         v1)]
+                         (#%$system-stencil-vector (fxior HAMT-COUNT+EQTYPE-BIT
+                                                          key-bits
+                                                          (fxsll 1 (fx+ bit1 HAMT-VAL-OFFSET)))
+                                                   (count+eqtype 2 eqtype)
+                                                   k1 k2
+                                                   v1)]
                         [else
-                         (stencil-vector (fxior HAMT-COUNT+EQTYPE-BIT
-                                                key-bits
-                                                (fxsll 1 (fx+ bit1 HAMT-VAL-OFFSET))
-                                                (fxsll 1 (fx+ bit2 HAMT-VAL-OFFSET)))
-                                         (count+eqtype 2 eqtype)
-                                         k1 k2
-                                         v1 v2)])])))])
+                         (#%$system-stencil-vector (fxior HAMT-COUNT+EQTYPE-BIT
+                                                          key-bits
+                                                          (fxsll 1 (fx+ bit1 HAMT-VAL-OFFSET))
+                                                          (fxsll 1 (fx+ bit2 HAMT-VAL-OFFSET)))
+                                                   (count+eqtype 2 eqtype)
+                                                   k1 k2
+                                                   v1 v2)])])))])
             (if (fx<= bit1 bit2)
                 (finish k1 v1 bit1 k2 v2 bit2)
                 (finish k2 v2 bit2 k1 v1 bit1))))]))]))
@@ -403,14 +406,16 @@
 ;; Should only be called three times to create the canonical empty
 ;; hashes:
 (define (make-empty-bnode eqtype)
-  (stencil-vector HAMT-COUNT+EQTYPE-BIT
-                  (count+eqtype 0 eqtype)))
+  (#%$system-stencil-vector HAMT-COUNT+EQTYPE-BIT
+                            (count+eqtype 0 eqtype)))
 
 ;; intmap interface
 
 (define empty-hasheq (make-empty-bnode HAMT-EQTYPE-EQ))
 (define empty-hasheqv (make-empty-bnode HAMT-EQTYPE-EQV))
 (define empty-hash (make-empty-bnode HAMT-EQTYPE-EQUAL))
+;; hashalw is for equal ALWays, first 3 letters of "always" since "equal" is implicit
+(define empty-hashalw (make-empty-bnode HAMT-EQTYPE-EQUAL-ALWAYS))
 
 (define intmap-shell-falses (let loop ([n (fx* 2 HAMT-WIDTH)])
                               (if (fx= n 0)
@@ -425,14 +430,15 @@
         [eqtype (case eqtype-sym
                   [(eq)  HAMT-EQTYPE-EQ]
                   [(eqv) HAMT-EQTYPE-EQV]
+                  [(equal-always) HAMT-EQTYPE-EQUAL-ALWAYS]
                   [else  HAMT-EQTYPE-EQUAL])])
-    (#%apply stencil-vector mask eqtype intmap-shell-falses)))
+    (#%apply #%$system-stencil-vector mask eqtype intmap-shell-falses)))
 
 (define (intmap-shell-sync! dest src)
-  (let ([mask (stencil-vector-mask src)])
-    (stencil-vector-truncate! dest mask)
+  (let ([mask (#%$stencil-vector-mask src)])
+    (#%$system-stencil-vector-truncate! dest mask)
     (let loop ([i (fx- (fxpopcount mask) 1)])
-      (stencil-vector-set! dest i (stencil-vector-ref src i))
+      (#%$stencil-vector-set! dest i (#%$stencil-vector-ref src i))
       (unless (fx= i 0)
         (loop (fx- i 1))))))
 
@@ -444,6 +450,9 @@
 
 (define (intmap-equal? h)
   (eq? (hamt-eqtype h) HAMT-EQTYPE-EQUAL))
+
+(define (intmap-equal-always? h)
+  (eq? (hamt-eqtype h) HAMT-EQTYPE-EQUAL-ALWAYS))
 
 (define (intmap-count h)
   (hamt-count h))
@@ -476,13 +485,16 @@
                            [_ e])])))])
        (with-syntax ([eq:e (prefix 'eq: #'e)]
                      [eqv:e (prefix 'eqv: #'e)]
-                     [equal:e (prefix 'equal: #'e)])
+                     [equal:e (prefix 'equal: #'e)]
+                     [equal-always:e (prefix 'equal-always: #'e)])
          #'(let ([et (hamt-eqtype h)])
              (cond
               [(fx= et HAMT-EQTYPE-EQ)
                eq:e]
               [(fx= et HAMT-EQTYPE-EQV)
                eqv:e]
+              [(fx= et HAMT-EQTYPE-EQUAL-ALWAYS)
+               equal-always:e]
               [else
                equal:e]))))]
     [(_ h (f arg ...))
@@ -506,6 +518,8 @@
           (eq:bnode-ref h key (eq:bnode-key-hash-code key) 0 default)]
          [(fx= eqtype HAMT-EQTYPE-EQV)
           (eqv:bnode-ref h key (eqv:bnode-key-hash-code key) 0 default)]
+         [(fx= eqtype HAMT-EQTYPE-EQUAL-ALWAYS)
+          (equal-always:bnode-ref h key (equal-always:bnode-key-hash-code key) 0 default)]
          [else
           (equal:bnode-ref h key (equal:bnode-key-hash-code key) 0 default)]))])))
 
@@ -574,7 +588,7 @@
 (define (unsafe-node-iterate-first n stack)
   (cond
    [(bnode? n)
-    (let ([mask (stencil-vector-mask n)])
+    (let ([mask (#%$stencil-vector-mask n)])
       (let ([child-count (hamt-mask->child-count mask)]
             [key-count (hamt-mask->key-count mask)])
         (let ([stack (cons (fx+ key-count child-count -1) (cons n stack))])
@@ -606,7 +620,7 @@
            [else
             ;; Move to next (lower) index in the current node
             (let ([i (fx1- i)])
-              (let ([child-count (hamt-mask->child-count (stencil-vector-mask n))]
+              (let ([child-count (hamt-mask->child-count (#%$stencil-vector-mask n))]
                     [stack (cons i stack)])
                 (if (fx< i child-count)
                     (unsafe-node-iterate-first (bnode-child-index-ref n i) stack)
@@ -811,7 +825,7 @@
           (let* ([k (bnode-key-ref node bit)])
             (cond
              [(hamt-key=? key keyhash k)
-              (let ([mask (stencil-vector-mask node)])
+              (let ([mask (#%$stencil-vector-mask node)])
                 (cond
                  [(and (fx= (fxand mask HAMT-KEY-MASK) (fxsll 1 (fx+ bit HAMT-KEY-OFFSET)))
                        (fxzero? (fxand mask HAMT-CHILD-MASK)))
@@ -820,6 +834,7 @@
                    node
                    [(eq)  empty-hasheq]
                    [(eqv) empty-hasheqv]
+                   [(equal-always) empty-hashalw]
                    [else  empty-hash])]
                  [else
                   (bnode-remove-key node bit)]))]
@@ -929,7 +944,7 @@
                      (loop (cdr ac))))]))))))
 
     (define (bnode-entry-at-position n pos mode fail)
-      (let* ([mask (stencil-vector-mask n)]
+      (let* ([mask (#%$stencil-vector-mask n)]
              [child-count (hamt-mask->child-count mask)]
              [key-count (hamt-mask->key-count mask)])
         (cond
@@ -1013,8 +1028,8 @@
        (eq? a b)
        (and
         (fx= (hamt-count a) (hamt-count b))
-        (let ([a-mask (stencil-vector-mask a)]
-              [b-mask (stencil-vector-mask b)]) 
+        (let ([a-mask (#%$stencil-vector-mask a)]
+              [b-mask (#%$stencil-vector-mask b)]) 
           (and
            (fx= a-mask b-mask)
            (let ([child-count (hamt-mask->child-count a-mask)])
@@ -1052,11 +1067,11 @@
        [(eq? a b) #t]
        [(fx> (hamt-count a) (hamt-count b)) #f]
        [else
-        (let* ([a-mask (stencil-vector-mask a)]
+        (let* ([a-mask (#%$stencil-vector-mask a)]
                [akm (fxand (fxsrl a-mask HAMT-KEY-OFFSET) HAMT-GROUP-MASK)]
                [acm (fxand (fxsrl a-mask HAMT-CHILD-OFFSET) HAMT-GROUP-MASK)]
                [abm (fxior acm akm)]
-               [b-mask (stencil-vector-mask b)]
+               [b-mask (#%$stencil-vector-mask b)]
                [bcm (fxand (fxsrl b-mask HAMT-CHILD-OFFSET) HAMT-GROUP-MASK)]
                [bkm (fxand (fxsrl b-mask HAMT-KEY-OFFSET) HAMT-GROUP-MASK)]
                [bbm (fxior bcm bkm)])
@@ -1119,7 +1134,7 @@
                           (loop (fx- bm bm-bit) aki bki (fx1+ aci) (fx1+ bci)))])]))]))))]))
 
     (define (bnode-hash-code n hash hc)
-      (let* ([mask (stencil-vector-mask n)]
+      (let* ([mask (#%$stencil-vector-mask n)]
              [hc (hash-code-combine hc mask)]
              [child-count (hamt-mask->child-count mask)]
              [key-count (hamt-mask->key-count mask)]
@@ -1144,11 +1159,11 @@
                 (cond
                   [(fx< i val-count)
                    (loop (fx1+ i)
-                         (hash-code-combine hc (hash (stencil-vector-ref n offset))))]
+                         (hash-code-combine hc (hash (#%$stencil-vector-ref n (fx+ offset i)))))]
                   [else hc])))]))))
 
     (define (bnode-fold n f nil)
-      (let* ([mask (stencil-vector-mask n)]
+      (let* ([mask (#%$stencil-vector-mask n)]
              [child-count (hamt-mask->child-count mask)]
              [key-count (hamt-mask->key-count mask)])
         (let loop ([i 0] [nil nil])
@@ -1319,3 +1334,49 @@
   hamt-wrapped-key=? equal:hamt-wrapped-key=?
   hamt-key-hash-code equal:hamt-key-hash-code
   hamt-wrapped-key-hash-code equal:hamt-wrapped-key-hash-code)
+
+(define equal-always:hamt-wrap-key equal:hamt-wrap-key)
+(define equal-always:hamt-unwrap-key equal:hamt-unwrap-key)
+
+;; second key is wrapped
+(define (equal-always:hamt-key=? k1 k1-hash wrapped-k2)
+  (if (pair? wrapped-k2)
+      (and (fx= k1-hash (car wrapped-k2))
+           (key-equal-always? k1 (cdr wrapped-k2)))
+      (key-equal-always? k1 wrapped-k2)))
+
+(define (equal-always:hamt-unwrapped-key=? k1 k2)
+  (key-equal-always? k1 k2))
+
+(define (equal-always:hamt-wrapped-key=? k1 k2)
+  (cond
+   [(pair? k1)
+    (cond
+     [(pair? k2)
+      (and (fx= (car k1) (car k2))
+           (key-equal-always? (cdr k1) (cdr k2)))]
+     [else (key-equal-always? (cdr k1) k2)])]
+   [else
+    (cond
+     [(pair? k2)
+      (key-equal-always? k1 (cdr k2))]
+     [else (key-equal-always? k1 k2)])]))
+
+(define (equal-always:hamt-key-hash-code k)
+  (key-equal-always-hash-code k))
+
+(define (equal-always:hamt-wrapped-key-hash-code n k)
+  (if (pair? k)
+      (car k)
+      (key-equal-always-hash-code k)))
+
+(define-prefixed-bnode-for-eqtype
+  equal-always:
+  hamt-key-eqtype HAMT-EQTYPE-EQUAL-ALWAYS
+  hamt-wrap-key equal-always:hamt-wrap-key
+  hamt-unwrap-key equal-always:hamt-unwrap-key
+  hamt-key=? equal-always:hamt-key=?
+  hamt-unwrapped-key=? equal-always:hamt-unwrapped-key=?
+  hamt-wrapped-key=? equal-always:hamt-wrapped-key=?
+  hamt-key-hash-code equal-always:hamt-key-hash-code
+  hamt-wrapped-key-hash-code equal-always:hamt-wrapped-key-hash-code)

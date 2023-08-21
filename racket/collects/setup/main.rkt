@@ -182,7 +182,7 @@
   (define-values (print-bootstrapping)
     (lambda (why)
       (fprintf (current-output-port)
-               "~a: bootstrapping from source...\n ~a\n"
+               "~a: ignoring compiled files, rebuilding from source...\n ~a\n"
                short-name
                why)))
 

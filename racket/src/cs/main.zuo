@@ -1,0 +1,390 @@
+#lang zuo
+(require "../lib.zuo"
+         (only-in "../expander/main.zuo"
+                  expander-target
+                  [targets-at expander-targets-at])
+         (only-in "../thread/main.zuo"
+                  [targets-at thread-targets-at])
+         (only-in "../io/main.zuo"
+                  [targets-at io-targets-at])
+         (only-in "../regexp/main.zuo"
+                  [targets-at regexp-targets-at])
+         (only-in "../schemify/main.zuo"
+                  [targets-at schemify-targets-at]))
+
+(provide-targets targets-at)
+
+(define (targets-at at-dir [vars (hash)] [extra-compile-file-deps '()])
+  (define config vars)
+  (define lookup (lambda (k) (hash-ref config k #f)))
+
+  (define scheme (or (lookup 'SCHEME)
+                     (find-executable-path (.exe "scheme"))))
+  (define scheme-args (or (lookup 'scheme-args) '()))
+  (define unsafe? (not (equal? (lookup 'UNSAFE_COMP) "no")))
+  (define debug?  (equal? (lookup 'DEBUG_COMP) "yes"))
+  (define compress? (equal? (lookup 'COMPRESS_COMP) "--compress"))
+  (define xpatch (lookup 'xpatch))
+  (define wpo? (not (equal? (lookup 'DISABLE_WPO) "t")))
+  (define schemify? (not (equal? (lookup 'schemify) "f")))
+
+  (define cso (or (lookup 'cso) ".so"))
+  
+  (define compile-file-deps
+    (append
+     (list (input-data-target 'compile-config (list unsafe? debug? compress?)))
+     extra-compile-file-deps
+     (map at-source '("compile-file.ss" "include.ss" "place-register.ss"))))
+
+  (define chezpart.so
+    (at-dir (~a "chezpart" cso)))
+
+  (define rumble.so
+    (at-dir (~a "rumble" cso)))
+  (define rumble-deps
+    (list chezpart.so))
+
+  (define thread.so
+    (at-dir (~a "thread" cso)))
+  (define thread-deps
+    (append rumble-deps (list rumble.so)))
+
+  (define io.so
+    (at-dir (~a "io" cso)))
+  (define io-deps
+    (append thread-deps (list thread.so)))
+
+  (define regexp.so
+    (at-dir (~a "regexp" cso)))
+  (define regexp-deps
+    (append io-deps (list io.so)))
+
+  (define schemify.so
+    (at-dir (~a "schemify" cso)))
+  (define schemify-deps
+    (append regexp-deps (list regexp.so)))
+
+  (define linklet.so
+    (at-dir (~a "linklet" cso)))
+  (define linklet-deps
+    (append schemify-deps (list schemify.so)))
+
+  (define expander.so
+    (at-dir (~a "expander" cso)))
+  (define expander-deps
+    (append linklet-deps (list linklet.so)))
+
+  (define main.so
+    (at-dir (~a "main" cso)))
+  (define main-deps
+    (append expander-deps (list expander.so)))
+
+  (define racket.so (at-dir "racket.so"))
+
+  (define racket-init-args
+    (list "false" (at-source "../../bin/racket") (at-source "../../bin/racket")
+          "../collects" "../etc" "" "0" "false" "false" "0" ""))
+
+  (define expander
+    (and schemify?
+         (expander-target (make-at-dir (at-dir "../expander")) vars)))
+
+  (define rumble-srcs
+    (cons
+     (at-source "../version/racket_version.h")
+     (map (lambda (name) (at-source "rumble" name))
+          '("virtual-register.ss"
+            "check.ss"
+            "syntax-rule.ss"
+            "name.ss"
+            "constant.ss"
+            "hash-code.ss"
+            "struct.ss"
+            "prefab.ss"
+            "procedure.ss"
+            "impersonator.ss"
+            "equal.ss"
+            "object-name.ss"
+            "arity.ss"
+            "intmap.ss"
+            "patricia.ss"
+            "hamt-stencil.ss"
+            "hamt-vector.ss"
+            "hash.ss"
+            "datum.ss"
+            "lock.ss"
+            "thread-local.ss"
+            "thread-cell.ss"
+            "parameter.ss"
+            "begin0.ss"
+            "value.ss"
+            "pthread.ss"
+            "control.ss"
+            "interrupt.ss"
+            "engine.ss"
+            "source.ss"
+            "error.ss"
+            "error-adjuster.ss"
+            "error-rewrite.ss"
+            "srcloc.ss"
+            "boolean.ss"
+            "bytes.ss"
+            "string.ss"
+            "char.ss"
+            "char-range.ss"
+            "symbol.ss"
+            "list.ss"
+            "vector.ss"
+            "box.ss"
+            "immutable.ss"
+            "keyword.ss"
+            "mpair.ss"
+            "number.ss"
+            "random.ss"
+            "flvector.ss"
+            "correlated.ss"
+            "graph.ss"
+            "time.ss"
+            "memory.ss"
+            "ephemeron.ss"
+            "will-executor.ss"
+            "system.ss"
+            "unsafe.ss"
+            "extfl.ss"
+            "place.ss"
+            "errno-data.ss"
+            "foreign.ss"
+            "async-callback.ss"
+            "future.ss"
+            "version.ss"
+            "inline.ss"))))
+
+  (define primitive-tables
+    (map (lambda (name) (at-source "primitive" name))
+         '("kernel.ss"
+           "unsafe.ss"
+           "flfxnum.ss"
+           "paramz.ss"
+           "extfl.ss"
+           "network.ss"
+           "futures.ss"
+           "foreign.ss"
+           "place.ss"
+           "linklet.ss"
+           "terminal.ss"
+           "internal.ss")))
+
+  (define linklet-srcs
+    (map (lambda (name) (at-source "linklet" name))
+         '("version.ss"
+           "read.ss"
+           "write.ss"
+           "check.ss"
+           "performance.ss"
+           "annotation.ss"
+           "compress.ss"
+           "config.ss"
+           "cross-compile.ss")))
+
+  (define thread.scm (at-source "schemified/thread.scm"))
+  (define io.scm (at-source "schemified/io.scm"))
+  (define regexp.scm (at-source "schemified/regexp.scm"))
+  (define schemify.scm (at-source "schemified/schemify.scm"))
+  (define known.scm (at-source "schemified/known.scm"))
+  (define expander.scm (at-source "schemified/expander.scm"))
+
+  (define rktio.so
+    (find-target "rktio-so" (io-targets-at (make-at-dir (at-dir "../io")) vars)))
+    
+  (define (cat srcs dest)
+    (define s (apply ~a (map file->string srcs)))
+    (display-to-file s dest :truncate))
+
+  (define (run-racket main.so . args)
+    (process/wait scheme
+                  scheme-args
+                  "--disable-library-timestamps"
+                  "--libdirs" (at-dir ".")
+                  "--script" main.so
+                  racket-init-args
+                  args
+                  (hash 'env (cons (cons "RACKET_IO_SOURCE_DIR" (at-source "."))
+                                   (hash-ref (runtime-env) 'env))
+                        'exec? (hash-ref (runtime-env) 'can-exec?))))
+
+  (define (compile-file src dest loads [whole-program? #f])
+    (define args (append scheme-args
+                         (list "--script"
+                               (at-source "compile-file.ss"))
+                         (if unsafe?
+                             (list "--unsafe")
+                             '())
+                         (if debug?
+                             (list "--debug")
+                             '())
+                         (if compress?
+                             (list "--compress")
+                             '())
+                         (if xpatch
+                             (list "--xpatch" xpatch)
+                             '())
+                         (if whole-program?
+                             (list "--whole-program")
+                             '())
+                         (list "--src"
+                               (at-source ".")
+                               "--dest"
+                               (at-dir ".")
+                               src
+                               dest)
+                         loads))
+    (define config-env-vars
+      (map (lambda (s)
+             (define l (string-split s "="))
+             (cons (car l) (cadr l)))
+           (string-split (or (lookup 'CONFIGURE_RACKET_SO_COMPILE) ""))))
+    (process/wait scheme args (hash
+                               'env (append
+                                     config-env-vars
+                                     (hash-ref (runtime-env) 'env)))))
+
+  (define (library-target dest src import-deps more-srcs)
+    `[:target ,dest (,src ,@more-srcs ,@import-deps ,@compile-file-deps)
+              ,(lambda (path token)
+                 (compile-file src dest import-deps))])
+
+  (define (demo-target name name.so name-deps name.ss . more-deps)
+    `[:target ,name (,name.so ,@more-deps)
+              ,(lambda (token)
+                 (process/wait scheme name-deps name.so (at-source "demo" name.ss)))])
+
+  (define (converter src-target [skip-export? #f])
+    (lambda (path token)
+      ;; to temporarily use a modified ".scm" instead of syncing
+      ;; with the source, put ";; KEEP" as a first line
+      (cond
+        [(and (file-exists? path)
+              (equal? ";; KEEP\n"
+                      (let ([fd (fd-open-input path)])
+                        (define s (fd-read fd 8))
+                        (fd-close fd)
+                        s)))
+         (alert "keeping modified file" path)]
+        [else
+         (racket vars
+                (at-source "convert.rkt")
+                (if unsafe?
+                    "--unsafe"
+                    '())
+                (if skip-export?
+                    "--skip-export"
+                    '())
+                (target-path src-target)
+                path)])))
+
+  (mkdir-p (at-dir "compiled"))
+
+  (make-targets
+   `([:target ,racket.so (,main.so ,@compile-file-deps)
+              ,(lambda (path token)
+                 (if wpo?
+                     (compile-file main.so path (list (at-dir "main.wpo")) #t)
+                     (cat (append main-deps (list main.so)) path)))]
+
+     ,(library-target main.so (at-source "main.sps") main-deps
+                      (list (at-source "main/help.ss")))
+
+     ,(library-target expander.so (at-source "expander.sls") expander-deps
+                      (list* expander.scm (at-source "expander/env.ss")
+                             primitive-tables))
+
+     ,(library-target linklet.so (at-source "linklet.sls") linklet-deps
+                      linklet-srcs)
+
+     ,(library-target schemify.so (at-source "schemify.sls") schemify-deps
+                      (list* schemify.scm known.scm
+                             primitive-tables))
+
+     ,(library-target regexp.so (at-source "regexp.sls") regexp-deps
+                      (list regexp.scm))
+
+     ,(library-target io.so (at-source "io.sls") io-deps
+                      (list io.scm (at-source "io/terminal.ss")))
+
+     ,(library-target thread.so (at-source "thread.sls") thread-deps
+                      (list thread.scm))
+
+     ,(library-target rumble.so (at-source "rumble.sls") rumble-deps
+                      rumble-srcs)
+
+     ,(library-target chezpart.so (at-source "chezpart.sls") '()
+                      '())
+
+     [:target run (,main.so ,rktio.so)
+              ,(lambda (token . args)
+                 (run-racket main.so args))
+              :quiet
+              :command]
+
+     [:target run-wpo (,racket.so ,rktio.so)
+              ,(lambda (token . args)
+                 (run-racket racket.so args))
+              :quiet
+              :command]
+
+     ,@(if schemify?
+           (let* ([thread.rktl (find-target "thread.rktl"
+                                            (thread-targets-at (make-at-dir (at-dir "../thread")) vars expander))]
+                  [io.rktl (find-target "io.rktl"
+                                        (io-targets-at (make-at-dir (at-dir "../io")) vars expander))]
+                  [regexp.rktl (find-target "regexp.rktl"
+                                            (regexp-targets-at (make-at-dir (at-dir "../regexp")) vars expander))]
+                  [schemify-targets (schemify-targets-at (make-at-dir (at-dir "../schemify")) vars expander)]
+                  [schemify.rktl (find-target "schemify.rktl" schemify-targets)]
+                  [known.rktl (find-target "known.rktl" schemify-targets)]
+                  [expander.rktl (find-target "expander.rktl"
+                                              (expander-targets-at (make-at-dir (at-dir "../expander")) vars expander))]
+                  [convert-deps (cons schemify.rktl ; proxy for schemify change
+                                      primitive-tables)])
+             `([:target schemified (,thread.scm ,io.scm ,regexp.scm
+                                                ,schemify.scm ,known.scm
+                                                ,expander.scm)
+                        ,void]
+               [:target ,expander.scm (,expander.rktl ,@convert-deps) ,(converter expander.rktl) :precious]
+               [:target ,known.scm (,known.rktl ,@convert-deps) ,(converter known.rktl 'skip-export) :precious]
+               [:target ,schemify.scm (,schemify.rktl ,@convert-deps) ,(converter schemify.rktl 'skip-export) :precious]
+               [:target ,regexp.scm (,regexp.rktl ,@convert-deps) ,(converter regexp.rktl) :precious]
+               [:target ,io.scm (,io.rktl ,@convert-deps) ,(converter io.rktl) :precious]
+               [:target ,thread.scm (,thread.rktl ,@convert-deps) ,(converter thread.rktl) :precious]))
+           '())
+
+     [:target setup (,main.so ,rktio.so)
+              ,(lambda (token . args)
+                 (run-racket main.so "-l-" "setup" args))
+              :command]
+     [:target setup-v (,main.so ,rktio.so)
+              ,(lambda (token . args)
+                 (run-racket main.so "-W" "info@compiler/cm info@linklet debug@GC:major error"
+                             "-l-" "setup" "-j" "1" args))
+              :command]
+
+     [:target strip ()
+              ,(lambda (token)
+                 (process/wait scheme "--script" "strip.ss" main-deps racket.so))]
+
+     ,(demo-target 'expander-demo expander.so expander-deps "expander.ss" rktio.so)
+     ,(demo-target 'linklet-demo linklet.so linklet-deps "linklet.ss" rktio.so)
+     ,(demo-target 'regexp-demo regexp.so regexp-deps "regexp.ss" rktio.so)
+     ,(demo-target 'io-demo io.so io-deps "io.ss" rktio.so)
+     ,(demo-target 'thread-demo thread.so thread-deps "thread.ss")
+
+     ,(demo-target 'chaperone-demo rumble.so rumble-deps "chaperone.ss")
+     ,(demo-target 'hash-demo rumble.so rumble-deps "hash.ss")
+     ,(demo-target 'struct-demo rumble.so rumble-deps "struct.ss")
+     ,(demo-target 'control-demo rumble.so rumble-deps "control.ss")
+     ,(demo-target 'foreign-demo rumble.so rumble-deps "foreign.ss")
+     ,(demo-target 'will-demo rumble.so rumble-deps "will.ss")
+
+     [:db-dir ,(at-dir "compiled")]
+
+     #;(end-of-make-targets))))

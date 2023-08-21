@@ -2,7 +2,8 @@
 
 (require racket/generic
          racket/private/generic-methods
-         rackunit)
+         rackunit
+         syntax/macro-testing)
 
 ;; ---------------------------
 ;; Without #:scope argument
@@ -13,18 +14,22 @@
                 (define hash2-proc 'c))
               '#(a b c))
 
-;; missing implementation for hash2-proc filled in with false
-(check-equal? (generic-method-table gen:equal+hash
-                (define equal-proc 'd)
-                (define hash-proc 'e))
-              '#(d e #f))
+;; missing implementation for hash2-proc is invalid
+(check-exn #rx"hash2-proc: required method is not implemented"
+           (lambda ()
+             (convert-syntax-error
+              (generic-method-table gen:equal+hash
+                                    (define equal-proc 'd)
+                                    (define hash-proc 'e)))))
 
-;; missing implementation for equal-proc filled in with false
+;; missing implementation for equal-proc is invalid
 ;; changing the order doesn't affect it
-(check-equal? (generic-method-table gen:equal+hash
-                (define hash2-proc 'f)
-                (define hash-proc 'g))
-              '#(#f g f))
+(check-exn #rx"equal-proc: required method is not implemented"
+           (lambda ()
+             (convert-syntax-error
+              (generic-method-table gen:equal+hash
+                                    (define hash2-proc 'f)
+                                    (define hash-proc 'g)))))
 
 ;; ---------------------------
 ;; With #:scope argument
@@ -32,18 +37,22 @@
 (check-equal? (generic-method-table gen:equal+hash
                 #:scope here
                 (define equal-proc 'a)
-                (define hash-proc 'b))
-              '#(a b #f))
+                (define hash-proc 'b)
+                (define hash2-proc 'c))
+              '#(a b c))
 
 (test-case "macro introducing generic-interface identifier"
   ;; This messes with scope and prevents it from implementing the methods
   (define-syntax-rule (equal+hash-method-table def ...)
     (generic-method-table gen:equal+hash def ...))
 
-  (check-equal? (equal+hash-method-table
+  (check-exn #rx"required method is not implemented"
+             (lambda ()
+               (convert-syntax-error
+                (equal+hash-method-table
                  (define equal-proc 'a)
-                 (define hash-proc 'b))
-                '#(#f #f #f))
+                 (define hash-proc 'b)
+                 (define hash2-proc 'c)))))
 
   ;; But the scope argument can specify the scope for capturing methods
   (define-syntax-rule (equal+hash-method-table/scope scope def ...)
@@ -52,8 +61,9 @@
   (check-equal? (equal+hash-method-table/scope
                  here
                  (define equal-proc 'a)
-                 (define hash-proc 'b))
-                '#(a b #f)))
+                 (define hash-proc 'b)
+                 (define hash2-proc 'c))
+                '#(a b c)))
 
 ;; ---------------------------
 ;; With define/generic

@@ -6,7 +6,8 @@
                      racket/base
                      launcher/launcher
                      rackunit/log
-                     compiler/module-suffix))
+                     compiler/module-suffix
+                     compiler/cm))
 
 @title[#:tag "test"]{@exec{raco test}: Run tests}
 
@@ -130,7 +131,7 @@ The @exec{raco test} command accepts several flags:
       operating-system process.}
 
  @item{@Flag{j} @nonterm{n} or @DFlag{jobs} @nonterm{n}
-      --- Runs up to @nonterm{n} tests in parallel.}
+      --- Runs up to @nonterm{n} test files in parallel.}
 
  @item{@DFlag{timeout} @nonterm{seconds}
       --- Sets the default timeout (after which a test counts as failed)
@@ -166,6 +167,19 @@ The @exec{raco test} command accepts several flags:
        @nonterm{pattern}.  This flag can be used multiple times, and
        stderr output is treated as success as long as it matches any
        one @nonterm{pattern}.}
+
+ @item{@DFlag{errortrace}
+       --- Dynamically loads @racketmodname[errortrace #:indirect]
+       before running the tests. Note that already-compiled files will not
+       include the tracing information.}
+ @item{@Flag{y} or @DFlag{make}
+       --- Enable automatic
+        generation and update of compiled @filepath{.zo} files.
+        Specifically, the
+        result of
+        @racket[(make-compilation-manager-load/use-compiled-handler)]
+        is installed as the value of @racket[current-load/use-compiled]
+        before module-loading actions.}
 
  @item{@Flag{q} or @DFlag{quiet}
        --- Suppresses output of progress information, responsible
@@ -207,7 +221,9 @@ The @exec{raco test} command accepts several flags:
                                which implies recognizing @filepath{.ss} and @filepath{.rkt}.}
          #:changed "1.5" @elem{Added @DPFlag{ignore-stderr}.}
          #:changed "1.6" @elem{Added @DPFlag{arg} and @DPFlag{args}.}
-         #:changed "1.8" @elem{Added @DFlag{output} and @Flag{o}.}]
+         #:changed "1.8" @elem{Added @DFlag{output} and @Flag{o}.}
+         #:changed "1.11" @elem{Added @DFlag{make}/@Flag{y}.}
+         #:changed "1.12" @elem{Added @DFlag{errortrace}.}]
 
 @section[#:tag "test-config"]{Test Configuration by Submodule}
 
@@ -219,7 +235,7 @@ identifiers:
 
 @itemlist[
 
- @item{@racket[timeout] --- a real number to override the default
+ @item{@racket[timeout] --- a real number in seconds to override the default
        timeout for the test, which applies only when timeouts are
        enabled.}
 
@@ -307,7 +323,7 @@ The following @filepath{info.rkt} fields are recognized:
 
  @item{@racket[test-timeouts] --- a list of @racket[(list
        _module-path-string _real-number)] to override the default
-       timeout for @racket[_module-path-string].}
+       timeout in seconds for @racket[_module-path-string].}
 
  @item{@racket[test-responsibles] --- a list of @racket[(list
        _module-path-string _party)] or @racket[(list 'all _party)] to

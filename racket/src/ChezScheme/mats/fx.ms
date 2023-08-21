@@ -13,6 +13,15 @@
 ;;; See the License for the specific language governing permissions and
 ;;; limitations under the License.
 
+(mat fixnum?
+   (fixnum? (bitwise-and (- (random 1) 1) 7))
+   (fixnum? (bitwise-and (- (random 1) 1) (most-positive-fixnum)))
+   (not (fixnum? (bitwise-and (- (random 1) 1) (add1 (most-positive-fixnum)))))
+   (fixnum? (bitwise-ior -7 (random 1)))
+   (fixnum? (bitwise-ior (most-negative-fixnum) (random 1)))
+   (not (fixnum? (bitwise-ior (sub1 (most-negative-fixnum)) (random 1))))
+ )
+
 (mat fx=
    (not (fx= 3 4))
    (not (fx= 4 3))
@@ -599,6 +608,16 @@
    (test-cp0-expansion eqv? '(fx*) 1)
    (test-cp0-expansion eqv? '(fx* 3) 3)
    (test-cp0-expansion eqv? '(fx* 3 4 5) 60)
+
+   ;; regression test for stack overflow checking and `raw` wrapper
+   (equal? 0
+           (call/cc
+            (lambda (esc)
+              (let loop ([i 100000])
+                (if (fx= i 0)
+                    (esc 0)
+                    (fx* i (loop (fx- i 1))))))))
+
  )
 
 (mat r6rs:fx*

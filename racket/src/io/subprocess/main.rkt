@@ -70,7 +70,7 @@
           [(path-string? group/command)
            (values (and (subprocess-group-enabled) 'new) group/command command/args)]
           [(null? command/args)
-           (raise-argument-error who "path-string?" command)]
+           (raise-argument-error who "path-string?" group/command)]
           [(or (not group/command)
                (eq? group/command 'new)
                (subprocess? group/command))

@@ -2,7 +2,8 @@
 
 (module trace-et-al racket/base
   (require racket/pretty
-           (for-syntax racket/base))
+           (for-syntax racket/base
+                       racket/match))
 
   (provide trace untrace
            current-trace-print-results
@@ -266,10 +267,16 @@
                                                                 (apply values results))))))))))
 
   (define-for-syntax (check-ids stx ids)
-                    (for ([id (in-list (syntax->list ids))])
-                      (unless (identifier? id)
-                        (raise-syntax-error #f "not an identifier" stx id)))
-                    #t)
+    (for ([id (in-list (syntax->list ids))])
+      (unless (identifier? id)
+        (raise-syntax-error #f "not an identifier" stx id))
+      (match (identifier-binding id)
+        [(list from-mod _ _ _ _ _ _)
+         (define-values (mp _base) (module-path-index-split from-mod))
+         (when mp
+           (raise-syntax-error #f "cannot trace an imported identifier" stx id))]
+        [_ (void)]))
+    #t)
 
   (define-syntax (trace stx)
     (syntax-case stx ()
@@ -320,7 +327,7 @@
     (syntax-case stx ()
       [(_ e ...)
       (let-values ([(name def) (normalize-definition stx #'lambda)])
-        #`(begin #,(quasisyntax/loc stx (define #,name #,def)) (trace #,name)))]))
+        #`(begin #,(quasisyntax/loc stx (define #,name #,def)) (define _ (trace #,name))))]))
 
   (define-syntax trace-let
     (syntax-rules ()

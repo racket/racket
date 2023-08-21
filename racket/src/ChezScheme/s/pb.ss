@@ -11,8 +11,7 @@
 ;; platform.
 
 ;; The pb machine can be configured (through ".def") for 32-bit Scheme
-;; object representations and a specific endianness, but that's not
-;; the main intended use.
+;; object representations and a specific endianness.
 
 ;; In all configurations, the pb machine uses 32-bit instructions. The
 ;; fasl format of instructuctions is always little-endian, and the
@@ -24,23 +23,25 @@
 ;; signalling arithemtic, bitwise, and comparison operations set the
 ;; flag for a specific condition, such as "overflow" or "equal", and
 ;; the branch variants are "branch if true" or "branch if false".
+;; The intent is that a test is always immediately followed by a
+;; branch, and a branch is always immediately preceded by a test.
 
-;; Each 32-bit instruction has one of these formats, shown in byte
-;; order for a little-endian machine:
+;; Each 32-bit instruction has one of these formats, shown with low
+;; bit on the left (like byte order for a little-endian machine):
 ;;
 ;;     low byte                        high byte
 ;;        8          8          8          8 
 ;;  -----------------------------------------------
-;;  |    op    |      reg |      immed/reg        |
+;;  |    op    |    reg    |     immed/reg        |
 ;;  -----------------------------------------------
 ;;  -----------------------------------------------
-;;  |    op    | reg  reg |      immed/reg        |
+;;  |    op    | reg | reg |     immed/reg        |
 ;;  -----------------------------------------------
 ;;  -----------------------------------------------
-;;  |    op    | reg |          immed             | 
+;;  |    op    | reg |          immed             |
 ;;  -----------------------------------------------
 ;;  -----------------------------------------------
-;;  |    op    |              immed               |
+;;  |    op    |             immed                |
 ;;  -----------------------------------------------
 ;;
 ;; Integer and floating-point registers (up to 16 of each) are
@@ -49,11 +50,22 @@
 ;; be the destination register. The long `immed` form is mainly for
 ;; branches. See "cmacros.ss" for the `op` constructions.
 
-;; Foreign-procedure calls are supported only for specific prototypes,
+;; Foreign-procedure calls always supported for specific prototypes,
 ;; which are generally the ones for functions implemented the Chez
 ;; Scheme kernel. Supported prototypes are specified in "cmacros.ss".
-;; Foreign callables are not supported. All foreign-call arguments and
-;; results are passed in registers.
+;; Foreign callables are not always supported. All foreign-call
+;; arguments and results are passed in registers for the
+;; always-supported set of protypoes.
+
+;; Foreign-call procedures and callables may be supported for other
+;; prototypes (e.g., depending on whether libffi is available). Those
+;; calls pass arguments and receive results in a special "arena"
+;; space, analogous to page-sized call stack.
+
+;; The `pb-literal` instruction could be considered variable-width, in
+;; that its is followed by the literal data to load into a register.
+;; Or `pb-literal` could be considered a combination load and jump to
+;; skip over the data.
 
 ;;; SECTION 1: registers
 
@@ -95,7 +107,7 @@
   (import asm-module)
 
   (define imm-signed16?
-    (lambda (x)
+    (lambda (x)<
       (nanopass-case (L15c Triv) x
         [(immediate ,imm) (signed16? imm)]
         [else #f])))
@@ -483,6 +495,18 @@
            `(set! ,(make-live-info) ,tmp (asm ,null-info ,(asm-logical 'logand) ,x ,mask)))
          `(asm ,info-cc-eq ,asm-eq ,tmp ,type)))])
 
+  (define-instruction effect (call-arena-in)
+    [(op (x ur) (off signed16)) `(asm ,info ,(asm-call-arena (constant pb-call-arena-in)) ,x ,off)])
+  (define-instruction effect (fp-call-arena-in)
+    [(op (x fpur) (off signed16)) `(asm ,info ,(asm-call-arena (constant pb-fp-call-arena-in)) ,x ,off)])
+
+  (define-instruction value (call-arena-out)
+    [(op (x ur) (off signed16))
+     `(set! ,(make-live-info) ,x (asm ,info ,(asm-call-arena (constant pb-call-arena-out)) ,off))])
+  (define-instruction value (fp-call-arena-out)
+    [(op (x fpur) (off signed16))
+     `(set! ,(make-live-info) ,x (asm ,info ,(asm-call-arena (constant pb-fp-call-arena-out)) ,off))])
+
   (let ()
     (define (addr-reg x y w k)
       (with-output-language (L15d Effect)
@@ -529,12 +553,27 @@
                          ;; signals on successful swap
                          `(asm ,info ,asm-cas! ,u ,old ,new)))]))
 
+  (define-instruction effect (store-store-fence)
+    [(op)
+     `(asm ,info ,(asm-fence (constant pb-fence-store-store)))])
+    
+  (define-instruction effect (acquire-fence)
+    [(op)
+     `(asm ,info ,(asm-fence (constant pb-fence-acquire)))])
+
+  (define-instruction effect (release-fence)
+    [(op)
+     `(asm ,info ,(asm-fence (constant pb-fence-release)))])
+
   (define-instruction effect (pause)
     ;; NB: use sqrt or something like that?
     [(op) '()])
 
   (define-instruction effect (c-call)
     [(op (x ur) (y signed16)) `(asm ,info ,asm-indirect-call ,x ,y ,(info-kill*-live*-live* info) ...)])
+
+  (define-instruction effect (c-stack-call)
+    [(op (x ur) (y ur)) `(asm ,info ,asm-stack-call ,x ,y)])
 
   (define-instruction effect save-flrv
     [(op) '()])
@@ -556,9 +595,10 @@
                      asm-indirect-call asm-condition-code
                      asm-fpmove-single asm-fl-cvt asm-fpt asm-fpmove asm-fpcastto asm-fpcastfrom
                      asm-fptrunc asm-fpsingle
-                     asm-inc! asm-lock! asm-cas!
+                     asm-call-arena asm-stack-call
+                     asm-inc! asm-lock! asm-cas! asm-fence
                      asm-fpop-2 asm-fpsqrt asm-c-simple-call
-                     asm-return asm-c-return asm-size
+                     asm-return asm-c-return asm-size asm-nop
                      asm-enter asm-foreign-call asm-foreign-callable
                      asm-kill
                      signed16?)
@@ -610,6 +650,9 @@
         [(k op x ...)
          (with-syntax ([emit-op (construct-name #'k "asmop-" #'op)])
            #'(emit-op op x ...))])))
+
+  (define-op nop     nop-op)
+  (define-op literal literal-op)
 
   (define-op mov   mov-op (constant pb-i->i))
   (define-op fpmov mov-op (constant pb-d->d))
@@ -686,10 +729,26 @@
   (define-op cas   cas-op)
   (define-op inc   inc-op)
 
+  (define-op fence fence-op)
+
+  (define-op call-arena call-arena-op)
+  (define-op stack-call stack-call-op)
+
   (define-op call   call-op)
   (define-op interp interp-op)
   (define-op ret    ret-op)
   (define-op adr    adr-op) ; use only for an address after an rpheader (or compact)
+
+  (define nop-op
+    (lambda (op code*)
+      (emit-code (op code*)
+        (constant pb-nop))))
+  
+  (define literal-op
+    (lambda (op dest code*)
+      (emit-code (op dest code*)
+        (constant pb-literal)
+        (ax-ea-reg-code dest))))
 
   (define movi-op
     (lambda (op keep? dest imm shift code*)
@@ -947,7 +1006,22 @@
       (emit-code (op dest offset code*)
         (constant pb-adr)
         (bitwise-ior (ax-ea-reg-code dest)
-                     (bitwise-arithmetic-shift offset 4)))))
+                     ;; offset is in instructions:
+                     (bitwise-arithmetic-shift offset (fx- 4 2))))))
+
+  (define call-arena-op
+    (lambda (op opcode reg delta code*)
+      (emit-code (op reg delta code*)
+        opcode
+        (ax-ea-reg-code reg)
+        (ax-imm-data delta))))
+
+  (define stack-call-op
+    (lambda (op dest proto code*)
+      (emit-code (op dest proto code*)
+        (constant pb-stack-call)
+        (ax-ea-reg-code dest)
+        (ax-ea-reg-code proto))))
 
   (define inc-op
     (lambda (op dest src code*)
@@ -979,6 +1053,12 @@
         (ax-ea-reg-code dest)
         (ax-ea-reg-code src0)
         (ax-ea-reg-code src1))))
+
+  (define fence-op
+    (lambda (op kind code*)
+      (emit-code (op kind code*)
+        (fx+ (constant pb-fence)
+             kind))))
 
   (define-syntax emit-code
     (lambda (x)
@@ -1020,7 +1100,9 @@
           (bitwise-arithmetic-shift-left (fxand r/i #xFFFF) 16))]
       [(byte-fields op i)
        (+ op
-          (bitwise-arithmetic-shift-left (fxand i #xFFFFFF) 8))]))
+          (bitwise-arithmetic-shift-left (fxand i #xFFFFFF) 8))]
+      [(byte-fields op)
+       op]))
 
   (define signed16?
     (lambda (imm)
@@ -1039,13 +1121,13 @@
                 [(64) 8]
                 [(32) 4])])))
 
-  (define ax-mov64
-    (lambda (dest n code*)
-      (emit movzi dest (logand n #xffff) 0
-        (emit movki dest (logand (bitwise-arithmetic-shift-right n 16) #xffff) 1
-          (emit movki dest (logand (bitwise-arithmetic-shift-right n 32) #xffff) 2
-            (emit movki dest (logand (bitwise-arithmetic-shift-right n 48) #xffff) 3
-               code*))))))
+  (define ax-reloc
+    (lambda (dest code*)
+      (emit literal dest
+        (emit nop
+          (constant-case ptr-bits
+            [(64) (emit nop code*)]
+            [else code*])))))
 
   (define ax-movi
     (lambda (dest n code*) 
@@ -1081,7 +1163,7 @@
              [(imm) (n)
               (ax-movi dest n code*)]
              [(literal) stuff
-              (ax-mov64 dest 0
+              (ax-reloc dest
                 (asm-helper-relocation code* (cons 'pb-abs stuff)))]
              [(disp) (n breg)
               (safe-assert (signed16? n))
@@ -1284,6 +1366,16 @@
             [(unsigned-16) (emit rev (constant pb-uint16) dest src code*)]
             [else (sorry! who "unexpected asm-swap type argument ~s" type)])))))
 
+  (define (asm-call-arena opcode)
+    (lambda (code* reg off)
+      (Trivit (reg off)
+        (emit call-arena opcode reg off code*))))
+
+  (define asm-stack-call
+    (lambda (code* dest proto)
+      (Trivit (dest proto)
+        (emit stack-call dest proto code*))))
+
   (define asm-inc!
     (lambda (code* dest src)
       (Trivit (dest src)
@@ -1301,6 +1393,11 @@
     (lambda (code* dest old new)
       (Trivit (dest old new)
         (emit cas dest old new code*))))
+
+  (define-who asm-fence
+    (lambda (kind)
+      (lambda (code*)
+        (emit fence kind code*))))
 
   (define-who asm-relop
     (lambda (info)
@@ -1404,8 +1501,10 @@
            (lambda (offset)
              (let ([incr-offset (adjust-return-point-offset incr-offset l)])
                (let ([disp (fx- next-addr (fx- offset incr-offset))])
-                 (unless (<= (- (expt 2 19)) disp (sub1 (expt 2 19)))
-                   (sorry! who "displacement to large for adr ~s" disp))
+                 (unless (zero? (bitwise-and disp #b11))
+                   (sorry! who "displacement is not a multiple of the instruction size" disp))
+                 (unless (<= (- (expt 2 21)) disp (sub1 (expt 2 21)))
+                   (sorry! who "displacement too large for adr ~s" disp))
                  (emit adr `(reg . ,dest) disp '()))))]
           [else
            (asm-move '() dest (with-output-language (L16 Triv) `(label-ref ,l ,incr-offset)))]))))
@@ -1458,13 +1557,13 @@
   (define asm-helper-jump
     (lambda (code* reloc)
       (let ([jmptmp (cons 'reg %ts)])
-        (ax-mov64 jmptmp 0
+        (ax-reloc jmptmp
           (emit b jmptmp
             (asm-helper-relocation code* reloc))))))
 
   (define asm-helper-call
     (lambda (code* jmptmp interp? reloc)
-      (ax-mov64 `(reg . ,jmptmp) 0
+      (ax-reloc `(reg . ,jmptmp)
         (let ([code* (asm-helper-relocation code* reloc)])
           (if interp?
               (emit interp `(reg . ,jmptmp) code*)
@@ -1484,11 +1583,192 @@
     (lambda (code* dest)
       code*))
 
+  (define asm-nop
+    (lambda ()
+      (make-chunk (emit nop '()))))
+
   (module (asm-foreign-call asm-foreign-callable)
     (define int-argument-regs (lambda () (list %Carg1 %Carg2 %Carg3 %Carg4 %Carg5 %Carg6 %Carg7)))
     (define fp-argument-regs (lambda () (list %Cfparg1 %Cfparg2 %Cfparg3 %Cfparg4 %Cfparg5 %Cfparg6)))
 
     (define prototypes (constant pb-prototype-table))
+
+    (define (is-result-as-arg? info)
+      (nanopass-case (Ltype Type) (info-foreign-result-type info)
+        [(fp-ftd& ,ftd) #t]
+        [else #f]))
+
+    (define (adjust-active? info)
+      (if-feature pthreads
+        (memq 'adjust-active (info-foreign-conv* info))
+        #f))
+
+    (define (make-type-desc-literal info args-enc res-enc)
+      (let ([result-as-arg? (is-result-as-arg? info)]
+            [varargs-after (ormap (lambda (conv)
+                                    (and (pair? conv) (eq? (car conv) 'varargs) (cdr conv)))
+                                  (info-foreign-conv* info))])
+        (make-info-literal #f 'object
+                           (list->vector
+                            (cons* #f
+                                   (constant ffi-default-abi)
+                                   (or varargs-after 0)
+                                   (adjust-active? info)
+                                   (car res-enc)
+                                   result-as-arg?
+                                   (if result-as-arg?
+                                       (cdr args-enc)
+                                       args-enc)))
+                           0)))
+
+    (define 64-bit-type-on-32-bit?
+      (lambda (type)
+        (nanopass-case (Ltype Type) type
+          [(fp-integer ,bits)
+           (constant-case ptr-bits
+             [(64) #f]
+             [(32) (fx= bits 64)])]
+          [(fp-unsigned ,bits)
+           (constant-case ptr-bits
+             [(64) #f]
+             [(32) (fx= bits 64)])]
+          [else #f])))
+
+    (define do-types/arena
+      (with-output-language (L13 Effect)
+        (let ()
+          (define load-double/unboxed
+            (lambda (off)
+              (lambda (x) ; unboxed
+                `(seq
+                  (set! ,%Cfparg1 ,x)
+                  ,(%inline fp-call-arena-in ,%Cfparg1 (immediate ,off))))))
+          (define load-double/boxed
+            (lambda (off)
+              (lambda (x) ; requires var
+                `(seq
+                  (set! ,%Cfparg1 ,(%mref ,x ,%zero ,(constant flonum-data-disp) fp))
+                  ,(%inline fp-call-arena-in ,%Cfparg1 (immediate ,off))))))
+          (define load-int
+            (lambda (off)
+              (lambda (x)
+                `(seq
+                  (set! ,%Carg1 ,x)
+                  ,(%inline call-arena-in ,%Carg1 (immediate ,off))))))
+          (define load-two-int
+            (lambda (off)
+              (lambda (lo hi)
+                (%seq
+                 (set! ,%Carg1 ,lo)
+                 ,(%inline call-arena-in ,%Carg1 (immediate ,off))
+                 (set! ,%Carg1 ,lo)
+                 ,(%inline call-arena-in ,%Carg1 (immediate ,(fx+ off 4)))))))
+          (define save-double/unboxed
+            (lambda (off)
+              (lambda (lvalue) ; unboxed
+                `(set! ,lvalue ,(%inline fp-call-arena-out (immediate ,off))))))
+          (define save-double/boxed
+            (lambda (off)
+              (lambda (x) ; requires var
+                `(seq
+                  (set! ,%Cfparg1 ,(%inline fp-call-arena-out (immediate ,off)))
+                  (set! ,(%mref ,x ,%zero ,(constant flonum-data-disp) fp) ,%Cfparg1)))))
+          (define save-int
+            (lambda (off)
+              (lambda (lvalue)
+                `(set! ,lvalue ,(%inline call-arena-out (immediate ,off))))))
+          (define save-two-int
+            (lambda (off)
+              (lambda (lo hi)
+                `(seq
+                  (set! ,lo ,(%inline call-arena-out (immediate ,off)))
+                  (set! ,hi ,(%inline call-arena-out (immediate ,(fx+ off 4))))))))
+
+          (lambda (types in? unboxed-fp?)
+            (let loop ([types types] [locs '()] [encs '()] [off 0])
+              (if (null? types)
+                  (values (reverse locs) (reverse encs))
+                  (let ([type (car types)]
+                        [types (cdr types)])
+                    (nanopass-case (Ltype Type) type
+                      [(fp-double-float)
+                       (loop types
+                             (cons (if in?
+                                       (if unboxed-fp?
+                                           (load-double/unboxed off)
+                                           (load-double/boxed off))
+                                       (if unboxed-fp?
+                                           (save-double/unboxed off)
+                                           (save-double/boxed off)))
+                                   locs)
+                             (cons (constant ffi-typerep-double) encs)
+                             (fx+ off 8))]
+                      [(fp-single-float)
+                       (loop types
+                             (cons (if in?
+                                       (if unboxed-fp?
+                                           (load-double/unboxed off)
+                                           (load-double/boxed off))
+                                       (if unboxed-fp?
+                                           (save-double/unboxed off)
+                                           (save-double/boxed off)))
+                                   locs)
+                             (cons (constant ffi-typerep-float) encs)
+                             (fx+ off 8))]
+                      [(fp-ftd& ,ftd)
+                       (loop types
+                             (cons (if in?
+                                       (load-int off)
+                                       (save-int off))
+                                   locs)
+                             (cons (let ([e ($ftd-ffi-encode ftd)])
+                                     (if ($ftd-compound? ftd)
+                                         e
+                                         (box e)))
+                                   encs)
+                             (fx+ off (if ($ftd-compound? ftd)
+                                          (constant ptr-bytes)
+                                          (max (constant ptr-bytes)
+                                               ($ftd-size ftd)))))]
+                      [(fp-void)
+                       (loop types
+                             (cons (lambda () `(nop)) locs)
+                             (cons (constant ffi-typerep-void)
+                                   encs)
+                             off)]
+                      [else
+                       (cond
+                         [(64-bit-type-on-32-bit? type)
+                          (loop types
+                                (cons (if in?
+                                          (load-two-int off)
+                                          (save-two-int off))
+                                      locs)
+                                (nanopass-case (Ltype Type) type
+                                  [(fp-integer ,bits) (cons (constant ffi-typerep-sint64) encs)]
+                                  [else (cons (constant ffi-typerep-uint64) encs)])
+                                (fx+ off 8))]
+                         [else
+                          (loop types
+                                (cons (if in?
+                                          (load-int off)
+                                          (save-int off))
+                                      locs)
+                                (nanopass-case (Ltype Type) type
+                                  [(fp-integer ,bits)
+                                   (case bits
+                                     [(64) (cons (constant ffi-typerep-sint64) encs)]
+                                     [(32) (cons (constant ffi-typerep-sint32) encs)]
+                                     [(16) (cons (constant ffi-typerep-sint16) encs)]
+                                     [else (cons (constant ffi-typerep-sint8) encs)])]
+                                  [(fp-unsigned ,bits)
+                                   (case bits
+                                     [(64) (cons (constant ffi-typerep-uint64) encs)]
+                                     [(32) (cons (constant ffi-typerep-uint32) encs)]
+                                     [(16) (cons (constant ffi-typerep-uint16) encs)]
+                                     [else (cons (constant ffi-typerep-uint8) encs)])]
+                                  [else (cons (constant ffi-typerep-pointer) encs)])
+                                (fx+ off (constant ptr-bytes)))])]))))))))
 
     (define-who asm-foreign-call
       (with-output-language (L13 Effect)
@@ -1506,19 +1786,7 @@
                       `(seq
                         (set! ,lo-ireg ,lo)
                         (set! ,hi-ireg ,hi))))]
-                 [64-bit-type-on-32-bit?
-                  (lambda (type)
-                    (nanopass-case (Ltype Type) type
-                      [(fp-integer ,bits)
-                       (constant-case ptr-bits
-                         [(64) #f]
-                         [(32) (fx= bits 64)])]
-                      [(fp-integer ,bits)
-                       (constant-case ptr-bits
-                         [(64) #f]
-                         [(32) (fx= bits 64)])]
-                      [else #f]))]
-                 [do-args
+                 [do-args/reg
                   (lambda (in-types)
                     (let loop ([types in-types] [locs '()] [live* '()] [int* (int-argument-regs)] [fp* (fp-argument-regs)])
                       (if (null? types)
@@ -1539,7 +1807,7 @@
                                      (cons (car fp*) live*)
                                      int* (cdr fp*))]
                               [(fp-ftd& ,ftd)
-                               (sorry! who "indirect arguments no supported")]
+                               (sorry! who "indirect arguments not supported")]
                               [else
                                (when (null? int*) (sorry! who "too many integer/pointer arguments: ~s" (length in-types)))
                                (cond
@@ -1554,7 +1822,7 @@
                                         (cons (load-int-reg (car int*)) locs)
                                         (cons (car int*) live*)
                                         (cdr int*) fp*)])])))))]
-                 [do-result
+                 [do-result/reg
                   (lambda (type)
                     (nanopass-case (Ltype Type) type
                       [(fp-double-float)
@@ -1606,29 +1874,70 @@
                                      [(fp-scheme-object) 'uptr]
                                      [(fp-fixnum) 'uptr]
                                      [(fp-u8*) 'void*]
+                                     [(fp-ftd ,ftd) 'void*]
                                      [(fp-void) 'void]
-                                     [else (sorry! who "unhandled type in prototype ~s" type)]))
+                                     [else (if (eq? (subset-mode) 'system)
+                                               (sorry! who "unhandled type in prototype ~s" type)
+                                               #f)]))
                                  type*)]
                            [a (assoc prototype prototypes)])
-                      (unless a
-                        (sorry! who "unsupported prototype ~a" prototype))
-                      (cdr a)))])
+                      (cond
+                        [(not a)
+                         (when (eq? (subset-mode) 'system)
+                           (sorry! who "unsupported prototype ~a" prototype))
+                         #f]
+                        [else (cdr a)])))])
           (lambda (info)
             (let* ([arg-type* (info-foreign-arg-type* info)]
                    [result-type (info-foreign-result-type info)])
-              (let-values ([(locs arg-live*) (do-args arg-type*)]
-                           [(get-result result-live*) (do-result result-type)])
-              (values
-               (lambda () `(nop))
-               (reverse locs)
-               (lambda (t0 not-varargs?)
-                 (let ([info (make-info-kill*-live* (add-caller-save-registers result-live*) arg-live*)])
-                   `(inline ,info ,%c-call ,t0 (immediate ,(get-prototype (cons result-type arg-type*))))))
-               get-result
-               (lambda () `(nop)))))))))
+              (let ([prototype (and (not (adjust-active? info))
+                                    (not (ormap (lambda (conv)
+                                                  (and (pair? conv) (eq? (car conv) 'varargs) (cdr conv)))
+                                                (info-foreign-conv* info)))
+                                    (get-prototype (cons result-type arg-type*)))])
+                (cond
+                  [prototype
+                   (let-values ([(locs arg-live*) (do-args/reg arg-type*)]
+                                [(get-result result-live*) (do-result/reg result-type)])
+                     (values
+                      (lambda () `(nop))
+                      (reverse locs)
+                      (lambda (t0 not-varargs?)
+                        (let ([info (make-info-kill*-live* (add-caller-save-registers result-live*) arg-live*)])
+                          `(inline ,info ,%c-call ,t0 (immediate ,prototype))))
+                      get-result
+                      (lambda () `(nop))))]
+                  [else
+                   (let-values ([(locs args-enc) (do-types/arena arg-type* #t #t)]
+                                [(res-locs res-enc) (do-types/arena (list result-type) #f #t)])
+                     (values
+                      (lambda () `(nop))
+                      locs
+                      (lambda (t0 not-varargs?)
+                        `(seq
+                          (set! ,%Carg1 (literal ,(make-type-desc-literal info args-enc res-enc)))
+                            (inline ,null-info ,%c-stack-call ,t0 ,%Carg1)))
+                      (car res-locs)
+                      (lambda () `(nop))))])))))))
 
     (define-who asm-foreign-callable
-      (lambda (info)
-        (sorry! who "callables are not supported")
-        (values 'c-init 'c-args 'c-result 'c-return))))
+      (with-output-language (L13 Effect)
+        (lambda (info)
+          (let-values ([(locs args-enc) (do-types/arena (info-foreign-arg-type* info) #f #f)]
+                       [(res-locs res-enc) (do-types/arena (list (info-foreign-result-type info)) #t #f)])
+            (values
+             (lambda () `(nop))
+             locs
+             (let ([c-result (if (is-result-as-arg? info)
+                                 (lambda () `(nop))
+                                 (car res-locs))])
+               (lambda args
+                 `(seq
+                   ;; this literal is recognized by `$instiate-code-object`, similar to how the
+                   ;; procedure cookie is recognized
+                   (set! ,%Carg7 (literal ,(make-type-desc-literal info args-enc res-enc)))
+                   ,(apply c-result args))))
+             (lambda ()
+               ;; Keeping %Carg7 live so the type-description load can't be optimized way
+               (in-context Tail `(asm-c-return ,null-info ,%Carg7)))))))))
 )

@@ -112,11 +112,11 @@ collection name if the package is a single-collection package,
                  (or/c string? #f)
                  (or/c 'installation 'user (and/c path? complete-path?) #f))]{
 
-Like @racket[path->pkg+subpath+collects], but returns a fourth value for
+Like @racket[path->pkg+subpath+collect], but returns a fourth value for
 the package's installation scope.}
 
 
-@defproc[(get-pkgs-dir [scope (or/c 'installation 'user 'shared
+@defproc[(get-pkgs-dir [scope (or/c 'installation 'user
                                      (and/c path? complete-path?))]
                        [user-version string? (version)])
          path?]{
@@ -126,7 +126,7 @@ given scope. The @racket[user-version] argument is used to generate
 the result for @racket['user] scope.}
 
 
-@defproc[(read-pkgs-db [scope (or/c 'installation 'user 'shared
+@defproc[(read-pkgs-db [scope (or/c 'installation 'user
                                      (and/c path? complete-path?))])
          (hash/c string? pkg-info?)]{
 

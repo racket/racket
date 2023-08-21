@@ -25,7 +25,7 @@
             |  Atom{}             Match Atom 0 or more times                      #px
   Atom     ::= (Regexp)           Match sub-expression Regexp and report          #co 11
             |  [Rng]              Match any character in Rng                      #co 2
-            |  [^Rng]             Match any character not in Rng                  #co 12
+            |  [^Crng]            Match any character not in Crng                 #co 12
             |  .                  Match any (except newline in multi mode)        #co 13
             |  ^                  Match start (or after newline in multi mode)    #co 14
             |  $                  Match end (or before newline in multi mode)     #co 15
@@ -48,6 +48,8 @@
             |  \Aliteral                Match Aliteral                            #ot 21
   Aliteral :== Any character                                                      #rx
   Aliteral :== Any character except _a_-_z_, _A_-_Z_, _0_-_9_                     #px
+  Crng     ::= Rng                Crng contains everything in Rng                 #co
+            |  ^Crng              Crng contains _^_ and everything in Crng        #co 37
   Rng      ::= ]                  Rng contains _]_ only                           #co 27
             |  -                  Rng contains _-_ only                           #co 28
             |  Mrng               Rng contains everything in Mrng                 #co

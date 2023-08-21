@@ -586,7 +586,7 @@
   (unless ans (error 'flat-rec-contract "attempted to access the contract too early"))
   ans)
 
-(struct flat-rec-contract ([me #:mutable] name)
+(struct flat-rec-contract ([me #:mutable] [predicate #:mutable] name)
   #:property prop:custom-write custom-write-property-proc
   #:property prop:flat-contract
   (build-flat-contract-property
@@ -612,9 +612,9 @@
             (contract-struct-equivalent? (get-flat-rec-me this) that))]
          [else #f])))
    #:first-order
-   (λ (ctc) 
+   (λ (ctc)
      (λ (v)
-       ((contract-first-order (get-flat-rec-me ctc)) v)))
+       ((flat-rec-contract-predicate ctc) v)))
    #:generate 
    (λ (ctc) 
      (λ (fuel)
@@ -622,38 +622,51 @@
            #f
            (contract-random-generate/choose (get-flat-rec-me ctc) (- fuel 1)))))))
 
+(define (flat-rec-contract-too-early murec? who)
+  (λ (x)
+    (error (if murec? 'flat-murec-contract 'flat-rec-contract)
+           "attempted to check the contract too early\n  ctc: ~a\n  accessed via: contract-first-order" who)))
+
 (define-syntax (_flat-rec-contract stx)
   (syntax-case stx  ()
     [(_ name ctc ...)
      (identifier? (syntax name))
+     (with-syntax ([(x ...) (generate-temporaries #'(ctc ...))])
      (syntax
-      (let ([name (flat-rec-contract #f 'name)])
-        (set-flat-rec-contract-me!
-         name
-         (or/c (coerce-flat-contract 'flat-rec-contract ctc) 
-               ...))
-        name))]
+      (let ([name (flat-rec-contract #f (flat-rec-contract-too-early #f 'name) 'name)])
+        (let ([x (coerce-flat-contract 'flat-rec-contract ctc)] ...)
+          (set-flat-rec-contract-me! name (or/c x ...))
+          (set-flat-rec-contract-predicate!
+           name
+           (let ([x (flat-contract-predicate x)] ...)
+             (λ (v)
+               (or (x v) ...)))))
+        name)))]
     [(_ name ctc ...)
      (raise-syntax-error 'flat-rec-contract
                          "expected first argument to be an identifier"
                          stx
                          (syntax name))]))
 
-(define (flat-rec-contract/init x) 
-  (error 'flat-rec-contract "applied too soon"))
-
 (define-syntax (_flat-murec-contract stx)
   (syntax-case stx  ()
     [(_ ([name ctc ...] ...) body1 body ...)
      (andmap identifier? (syntax->list (syntax (name ...))))
-     (syntax
-      (let ([name (flat-rec-contract #f 'name)] ...)
-        (set-flat-rec-contract-me!
-         name
-         (or/c (coerce-flat-contract 'flat-murec-contract ctc)
-               ...)) ...
-        body1
-        body ...))]
+     (with-syntax ([((x ...) ...)
+                    (for/list ([names (in-list (syntax->list #'((ctc ...) ...)))])
+                      (generate-temporaries names))])
+       (syntax
+        (let ([name (flat-rec-contract #f (flat-rec-contract-too-early #t 'name) 'name)] ...)
+          (let ([x (coerce-flat-contract 'flat-murec-contract ctc)] ...)
+            (set-flat-rec-contract-me! name (or/c x ...))
+            (set-flat-rec-contract-predicate!
+             name
+             (let ([x (flat-contract-predicate x)] ...)
+               (λ (v)
+                 (or (x v) ...)))))
+          ...
+          body1
+          body ...)))]
     [(_ ([name ctc ...] ...) body1 body ...)
      (for-each (λ (name)
                  (unless (identifier? name)

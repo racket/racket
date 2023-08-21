@@ -14,11 +14,14 @@
 
 (define (bytes? x) (#2%bytevector? x))
 
+(define (mutable-bytes? x) (#%mutable-bytevector? x))
+(define (immutable-bytes? x) (#%immutable-bytevector? x))
+
 (define (bytes-length bstr) (#2%bytevector-length bstr))
 
 (define/who make-bytes
   (case-lambda
-   [(n) (#2%make-bytevector n 0)]
+   [(n) (make-bytes n 0)]
    [(n b)
     (check who exact-nonnegative-integer? n)
     (check who byte? b)

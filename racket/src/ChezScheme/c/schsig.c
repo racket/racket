@@ -18,28 +18,28 @@
 #include <setjmp.h>
 
 /* locally defined functions */
-static void split PROTO((ptr k, ptr *s));
-static void reset_scheme PROTO((void));
-static NORETURN void do_error PROTO((iptr type, const char *who, const char *s, ptr args));
-static void handle_call_error PROTO((ptr tc, iptr type, ptr x));
-static void init_signal_handlers PROTO((void));
-static void keyboard_interrupt PROTO((ptr tc));
+static void split(ptr k, ptr *s);
+static void reset_scheme(void);
+static NORETURN void do_error(iptr type, const char *who, const char *s, ptr args);
+static void handle_call_error(ptr tc, iptr type, ptr x);
+static void init_signal_handlers(void);
+static void keyboard_interrupt(ptr tc);
 
 static void (*register_modified_signal)(int);
 
-ptr S_get_scheme_arg(tc, n) ptr tc; iptr n; {
+ptr S_get_scheme_arg(ptr tc, iptr n) {
 
     if (n <= asm_arg_reg_cnt) return REGARG(tc, n);
     else return FRAME(tc, n - asm_arg_reg_cnt);
 }
 
-void S_put_scheme_arg(tc, n, x) ptr tc; iptr n; ptr x; {
+void S_put_scheme_arg(ptr tc, iptr n, ptr x) {
 
     if (n <= asm_arg_reg_cnt) REGARG(tc, n) = x;
     else FRAME(tc, n - asm_arg_reg_cnt) = x;
 }
 
-void S_promote_to_multishot(k) ptr k; {
+void S_promote_to_multishot(ptr k) {
     while (CONTLENGTH(k) != CONTCLENGTH(k)) {
         CONTLENGTH(k) = CONTCLENGTH(k);
         k = CONTLINK(k);
@@ -48,7 +48,7 @@ void S_promote_to_multishot(k) ptr k; {
 
 /* k must be is a multi-shot continuation, and s (the split point)
  * must be strictly between the base and end of k's stack segment. */
-static void split(k, s) ptr k; ptr *s; {
+static void split(ptr k, ptr *s) {
     iptr m, n;
     seginfo *si;
     ISPC spc;
@@ -76,14 +76,14 @@ static void split(k, s) ptr k; ptr *s; {
     *s = TO_PTR(DOUNDERFLOW);
 }
 
-/* We may come in to S_split_and_resize with a multi-shot contination whose
+/* We may come in to S_split_and_resize with a multi-shot continuation whose
  * stack segment exceeds the copy bound or is too large to fit along
  * with the return values in the current stack.  We may also come in to
  * S_split_and_resize with a one-shot continuation for which all of the
  * above is true and for which there is insufficient space between the
  * top frame and the end of the stack.  If we have to split a 1-shot, we
  * promote it to multi-shot; doing otherwise is too much trouble.  */
-void S_split_and_resize() {
+void S_split_and_resize(void) {
     ptr tc = get_thread_context();
     ptr k; iptr value_count; iptr n;
 
@@ -133,7 +133,7 @@ void S_split_and_resize() {
        S_reset_scheme_stack(tc, n);
 }
 
-iptr S_continuation_depth(k) ptr k; {
+iptr S_continuation_depth(ptr k) {
     iptr n, frame_size; ptr *stack_base, *stack_ptr;
 
     n = 0;
@@ -153,7 +153,7 @@ iptr S_continuation_depth(k) ptr k; {
     return n;
 }
 
-ptr S_single_continuation(k, n) ptr k; iptr n; {
+ptr S_single_continuation(ptr k, iptr n) {
     iptr frame_size; ptr *stack_base, *stack_top, *stack_ptr;
 
   /* bug out on shot 1-shots, which could be null_continuation */
@@ -221,7 +221,7 @@ void S_handle_apply_overflood() {
  * --scheme registers are preserved or reset
  * frame_request is how much (in bytes) to increase the default frame size
  */
-void S_overflow(tc, frame_request) ptr tc; iptr frame_request; {
+void S_overflow(ptr tc, iptr frame_request) {
     ptr *sfp;
     iptr above_split_size, sfp_offset;
     ptr *split_point, *guard, *other_guard;
@@ -305,7 +305,7 @@ void S_overflow(tc, frame_request) ptr tc; iptr frame_request; {
     }
 }
 
-void S_error_abort(s) const char *s; {
+void S_error_abort(const char *s) {
     fprintf(stderr, "%s\n", s);
     S_abnormal_exit();
 }
@@ -334,25 +334,25 @@ static void reset_scheme() {
  * thus we must reset with no opportunity for debugging
  */
 
-void S_error_reset(s) const char *s; {
+void S_error_reset(const char *s) {
 
     if (!S_errors_to_console) reset_scheme();
     do_error(ERROR_RESET, "", s, Snil);
 }
 
-void S_error(who, s) const char *who, *s; {
+void S_error(const char *who, const char *s) {
     do_error(ERROR_OTHER, who, s, Snil);
 }
 
-void S_error1(who, s, x) const char *who, *s; ptr x; {
+void S_error1(const char *who, const char *s, ptr x) {
     do_error(ERROR_OTHER, who, s, LIST1(x));
 }
 
-void S_error2(who, s, x, y) const char *who, *s; ptr x, y; {
+void S_error2(const char *who, const char *s, ptr x, ptr y) {
     do_error(ERROR_OTHER, who, s, LIST2(x,y));
 }
 
-void S_error3(who, s, x, y, z) const char *who, *s; ptr x, y, z; {
+void S_error3(const char *who, const char *s, ptr x, ptr y, ptr z) {
     do_error(ERROR_OTHER, who, s, LIST3(x,y,z));
 }
 
@@ -369,7 +369,7 @@ void S_boot_error(ptr who, ptr msg, ptr args) {
   S_abnormal_exit();
 }
 
-static void do_error(type, who, s, args) iptr type; const char *who, *s; ptr args; {
+static void do_error(iptr type, const char *who, const char *s, ptr args) {
     ptr tc = get_thread_context();
 
     if (S_errors_to_console || tc == (ptr)0 || CCHAIN(tc) == Snil) {
@@ -387,10 +387,14 @@ static void do_error(type, who, s, args) iptr type; const char *who, *s; ptr arg
                        Scons(Sstring_utf8(s, -1), args)));
 
 #ifdef PTHREADS
-    while (S_mutex_is_owner(&S_alloc_mutex))
+    while (S_mutex_is_owner(&S_alloc_mutex) && (S_alloc_mutex_depth > 0)) {
+      S_alloc_mutex_depth -= 1;
       S_mutex_release(&S_alloc_mutex);
-    while (S_mutex_is_owner(&S_tc_mutex))
+    }
+    while (S_mutex_is_owner(&S_tc_mutex) && (S_tc_mutex_depth > 0)) {
+      S_tc_mutex_depth -= 1;
       S_mutex_release(&S_tc_mutex);
+    }
 #endif /* PTHREADS */
 
     /* in case error is during fasl read: */
@@ -403,7 +407,7 @@ static void do_error(type, who, s, args) iptr type; const char *who, *s; ptr arg
     LONGJMP(TO_VOIDP(CAAR(CCHAIN(tc))), -1);
 }
 
-static void handle_call_error(tc, type, x) ptr tc; iptr type; ptr x; {
+static void handle_call_error(ptr tc, iptr type, ptr x) {
     ptr p, arg1;
     iptr argcnt;
 
@@ -448,13 +452,13 @@ void S_handle_nonprocedure_symbol() {
                       s);
 }
 
-void S_handle_values_error() {
+void S_handle_values_error(void) {
     ptr tc = get_thread_context();
 
     handle_call_error(tc, ERROR_VALUES, Sfalse);
 }
 
-void S_handle_mvlet_error() {
+void S_handle_mvlet_error(void) {
     ptr tc = get_thread_context();
 
     handle_call_error(tc, ERROR_MVLET, Sfalse);
@@ -498,14 +502,14 @@ static void keyboard_interrupt(ptr tc) {
 }
 
 /* used in printf below
-static uptr list_length(ls) ptr ls; {
+static uptr list_length(ptr ls) {
   uptr i = 0;
   while (ls != Snil) { ls = Scdr(ls); i += 1; }
   return i;
 }
 */
 
-void S_fire_collector() {
+void S_fire_collector(void) {
   ptr crp_id = S_G.collect_request_pending_id;
 
 /*  printf("firing collector!\n"); fflush(stdout); */
@@ -527,7 +531,7 @@ void S_fire_collector() {
   }
 }
 
-void S_noncontinuable_interrupt() {
+void S_noncontinuable_interrupt(void) {
   ptr tc = get_thread_context();
 
   reset_scheme();
@@ -577,17 +581,35 @@ static BOOL WINAPI handle_signal(DWORD dwCtrlType) {
   return(FALSE);
 }
 
-static void init_signal_handlers() {
+#if defined(_M_ARM64) && !defined(PORTABLE_BYTECODE)
+static LONG WINAPI fault_handler(LPEXCEPTION_POINTERS e) {
+  if (e->ExceptionRecord->ExceptionCode == EXCEPTION_ACCESS_VIOLATION) {
+    ptr tc = get_thread_context();
+    if (THREAD_GC(tc)->during_alloc)
+      S_error_abort("nonrecoverable invalid memory reference");
+    else
+      S_error_reset("invalid memory reference");
+  }
+  return EXCEPTION_CONTINUE_SEARCH;
+}
+#endif
+
+static void init_signal_handlers(void) {
   SetConsoleCtrlHandler(handle_signal, TRUE);
+#if defined(_M_ARM64) && !defined(PORTABLE_BYTECODE)
+  /* On Arm64, the absence of unwind info means that the `__try`...`__catch`
+     in "scheme.c" doesn't get a chance to handle exceptions. */
+  AddVectoredExceptionHandler(TRUE, fault_handler);
+#endif
 }
 #else /* WIN32 */
 
 #include <signal.h>
 
-static void handle_signal PROTO((INT sig, siginfo_t *si, void *data));
-static IBOOL enqueue_scheme_signal PROTO((ptr tc, INT sig));
-static ptr allocate_scheme_signal_queue PROTO((void));
-static void forward_signal_to_scheme PROTO((INT sig));
+static void handle_signal(INT sig, siginfo_t *si, void *data);
+static IBOOL enqueue_scheme_signal(ptr tc, INT sig);
+static ptr allocate_scheme_signal_queue(void);
+static void forward_signal_to_scheme(INT sig);
 
 #define RESET_SIGNAL {\
     sigset_t set;\
@@ -641,7 +663,7 @@ ptr S_dequeue_scheme_signals(ptr tc) {
   return ls;
 }
 
-static void forward_signal_to_scheme(sig) INT sig; {
+static void forward_signal_to_scheme(INT sig) {
   ptr tc = get_thread_context();
 
   if (enqueue_scheme_signal(tc, sig)) {
@@ -651,7 +673,7 @@ static void forward_signal_to_scheme(sig) INT sig; {
   RESET_SIGNAL
 }
 
-static ptr allocate_scheme_signal_queue() {
+static ptr allocate_scheme_signal_queue(void) {
   /* silently fail to allocate space for signals if malloc returns NULL */
   struct signal_queue *queue = malloc(sizeof(struct signal_queue));
   if (queue != (struct signal_queue *)0) {
@@ -660,11 +682,11 @@ static ptr allocate_scheme_signal_queue() {
   return TO_PTR(queue);
 }
 
-ptr S_allocate_scheme_signal_queue() {
+ptr S_allocate_scheme_signal_queue(void) {
   return scheme_signals_registered ? allocate_scheme_signal_queue() : (ptr)0;
 }
 
-void S_register_scheme_signal(sig) iptr sig; {
+void S_register_scheme_signal(iptr sig) {
     struct sigaction act;
 
     tc_mutex_acquire();
@@ -707,13 +729,16 @@ static void handle_signal(INT sig, UNUSED siginfo_t *si, UNUSED void *data) {
         case SIGQUIT:
             RESET_SIGNAL
             S_abnormal_exit();
+	    break;	/* Pacify compilers treating fallthrough warnings as errors */
 #endif /* SIGQUIT */
         case SIGILL:
             RESET_SIGNAL
             S_error_reset("illegal instruction");
+	    break;	/* Pacify compilers treating fallthrough warnings as errors */
         case SIGFPE:
             RESET_SIGNAL
             S_error_reset("arithmetic overflow");
+	    break;	/* Pacify compilers treating fallthrough warnings as errors */
 #ifdef SIGBUS
         case SIGBUS:
 #endif /* SIGBUS */
@@ -726,9 +751,11 @@ static void handle_signal(INT sig, UNUSED siginfo_t *si, UNUSED void *data) {
             else
                 S_error_reset("invalid memory reference");
           }
+	    break;
         default:
             RESET_SIGNAL
             S_error_reset("unexpected signal");
+	    break;
     }
 }
 
@@ -737,7 +764,7 @@ static void no_op_register(UNUSED int sigid) {
 
 #define SIGACTION(id, act_p, old_p) (register_modified_signal(id), sigaction(id, act_p, old_p))
 
-static void init_signal_handlers() {
+static void init_signal_handlers(void) {
     struct sigaction act;
 
     if (register_modified_signal == NULL)
@@ -786,7 +813,7 @@ static void init_signal_handlers() {
 
 #endif /* WIN32 */
 
-void S_schsig_init() {
+void S_schsig_init(void) {
     if (S_boot_time) {
         ptr p;
         ptr tc = get_thread_context();

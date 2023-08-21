@@ -5,90 +5,136 @@
    the containing executable. At worst, on Unix, uses `PATH` to
    convert `exec_file` into a path.
 
-   On Mac (even XonX), `find_mach_o_segment` is also defined.
+   On Mac (even XonX), `find_mach_o_segment` is also defined,
+   unless `SELF_EXE_NO_EXTRAS` is defined.
 
    On Unix (not Mac OS, not even XonX), `find_elf_section`
    is also defined. 
 
    If USE_EXE_LOOKUP_VIA_PATH, also: `lookup_exe_via_path`,
    `path_append`, and `do_path_append`.
+
+   Parts of the implementaiton here are from the LLVM Project under
+   the Apache License v2.0 with LLVM Exceptions.
 */
 
 #define USE_GENERIC_GET_SELF_PATH
 
-#ifdef DOS_FILE_SYSTEM
+#if defined(DOS_FILE_SYSTEM) && !defined(SELF_EXE_WINDOWS_AS_UTF8)
 typedef wchar_t *self_exe_t;
 #else
 typedef char *self_exe_t;
 #endif
 
-#if defined(__linux__)
+#if defined(__linux__) || defined(__GNU__)
+# define USE_PROC_SELF_EXE_FILESYSTEM_PATH "/proc/self/exe"
+#endif
+
+/* From LLVM: (but removed OpenBSD, which doesn't have "/proc") */
+#if defined(__NetBSD__) || defined(__minix) || \
+    defined(__DragonFly__) || defined(__FreeBSD_kernel__) || defined(_AIX)
+# define USE_PROC_SELF_EXE_FILESYSTEM_PATH "/proc/curproc/file"
+#endif
+
+#if defined(USE_PROC_SELF_EXE_FILESYSTEM_PATH)
 # include <errno.h>
 # include <unistd.h>
-static char *get_self_path(char *exec_file)
+# define GENERIC_GET_SELF_PATH_NAME generic_get_self_path
+static char *GENERIC_GET_SELF_PATH_NAME(const char *exec_file);
+static char *get_self_path(const char *exec_file)
 {
-  char buf[256], *s = buf;
-  ssize_t len, blen = sizeof(buf);
+  char *s;
+  ssize_t len, blen = 256;
+
+  s = malloc(blen);
 
   while (1) {
-    len = readlink("/proc/self/exe", s, blen-1);
+    len = readlink(USE_PROC_SELF_EXE_FILESYSTEM_PATH, s, blen-1);
     if (len == (blen-1)) {
-      if (s != buf) free(s);
+      free(s);
       blen *= 2;
       s = malloc(blen);
     } else if (len < 0) {
-      fprintf(stderr, "failed to get self (%d)\n", errno);
-      exit(1);
+      /* possibly in a chroot environment where "/proc" is not
+         available, so fall back to generic approach: */
+      free(s);
+      return generic_get_self_path(exec_file);
     } else
       break;
   }
-  buf[len] = 0;
-  return strdup(buf);
-}
-# undef USE_GENERIC_GET_SELF_PATH
+  s[len] = 0;
+
+#if defined(__GNU__)
+  /* From LLVM comments: */
+  /* [...] on GNU/Hurd, /proc/self/exe is a symlink to the path that was used to start
+     the program, and not the eventual binary file. Therefore, call realpath [...] */
+  {
+    char *link_path;
+    link_path = realpath(s, NULL);
+    if (link_path) {
+      free(s);
+      return link_path;
+    }
+  }
 #endif
 
-#if defined(__FreeBSD__) || defined(__NetBSD__)
-# include <sys/sysctl.h>
-# include <errno.h>
-static char *get_self_path(char *exec_file)
-{
-  int mib[4];
-  char *s;
-  size_t len;
-  int r;
-
-  mib[0] = CTL_KERN;
-#if defined(__NetBSD__)
-  mib[1] = KERN_PROC_ARGS;
-  mib[2] = getpid();
-  mib[3] = KERN_PROC_PATHNAME;
-#else
-  mib[1] = KERN_PROC;
-  mib[2] = KERN_PROC_PATHNAME;
-  mib[3] = -1;
-#endif
-
-  r = sysctl(mib, 4, NULL, &len, NULL, 0);
-  if (r < 0) {
-      fprintf(stderr, "failed to get self (%d)\n", errno);
-      exit(1);
-  }
-  s = malloc(len);
-  r = sysctl(mib, 4, s, &len, NULL, 0);
-  if (r < 0) {
-      fprintf(stderr, "failed to get self (%d)\n", errno);
-      exit(1);
-  }
   return s;
 }
-# undef USE_GENERIC_GET_SELF_PATH
+#endif
+
+#if defined(__FreeBSD__)
+# include <osreldate.h>
+# if __FreeBSD_version >= 1300057
+#  include <sys/auxv.h>
+#  include <limits.h>
+# else
+#  include <machine/elf.h>
+extern char **environ;
+# endif
+# define GENERIC_GET_SELF_PATH_NAME generic_get_self_path
+static char *GENERIC_GET_SELF_PATH_NAME(const char *exec_file);
+static char *get_self_path(const char *exec_file)
+{
+  /* From LLVM, including most comments: */
+
+  /* On FreeBSD if the exec path specified in ELF auxiliary vectors is
+     preferred, if available.  /proc/curproc/file and the KERN_PROC_PATHNAME
+     sysctl may not return the desired path if there are multiple hardlinks
+     to the file. */
+#if __FreeBSD_version >= 1300057
+  char exe_path[PATH_MAX];
+  if (elf_aux_info(AT_EXECPATH, exe_path, sizeof(exe_path)) == 0) {
+    char *link_path;
+    link_path = realpath(exe_path, NULL);
+    if (link_path)
+      return link_path;
+  }
+#else
+  /* elf_aux_info(AT_EXECPATH, ... is not available in all supported versions,
+     fall back to finding the ELF auxiliary vectors after the process's
+     environment. */
+  char **p = environ;
+  while (*p++ != 0)
+    ;
+  /* Iterate through auxiliary vectors for AT_EXECPATH. */
+  for (Elf_Auxinfo *aux = (Elf_Auxinfo *)p; aux->a_type != AT_NULL; aux++) {
+    if (aux->a_type == AT_EXECPATH) {
+      char *link_path;
+      link_path = realpath((char *)aux->a_un.a_ptr, NULL);
+      if (link_path)
+        return link_path;
+    }
+  }
+#endif
+  /* Fallback: */
+  return generic_get_self_path(exec_file);
+}
 #endif
 
 #if defined(__APPLE__) && defined(__MACH__)
 # include <mach-o/getsect.h>
 # include <mach-o/dyld.h>
-static char *get_self_path(char *exec_file)
+static char *get_self_path(const char *exec_file)
 {
   char buf[1024], *s;
   uint32_t size = sizeof(buf);
@@ -102,19 +148,19 @@ static char *get_self_path(char *exec_file)
     r = _NSGetExecutablePath(s, &size);
     if (!r)
       return s;
-    fprintf(stderr, "failed to get self\n");
-    exit(1);
+    return strdup(exec_file);
   }
 }
 # undef USE_GENERIC_GET_SELF_PATH
 
+# ifndef SELF_EXE_NO_EXTRAS
 static long find_mach_o_segment(const char *name, long *_len)
 {
-# if defined(__x86_64__) || defined(__arm64__)
+#  if defined(__x86_64__) || defined(__arm64__)
   const struct segment_command_64 *seg;
-# else
+#  else
   const struct segment_command *seg;
-#endif
+#  endif
   seg = getsegbyname(name);
   if (seg) {
     if (_len)
@@ -123,11 +169,11 @@ static long find_mach_o_segment(const char *name, long *_len)
   } else
     return 0;
 }
+# endif
 #endif
 
 #ifdef DOS_FILE_SYSTEM
-/* used outside this file: */
-wchar_t *get_self_path(char *exec_file) XFORM_SKIP_PROC
+self_exe_t get_self_path(const char *exec_file) XFORM_SKIP_PROC
 {
   wchar_t *path;
   DWORD r, sz = 1024;
@@ -143,7 +189,19 @@ wchar_t *get_self_path(char *exec_file) XFORM_SKIP_PROC
       break;
   }
 
+#ifdef SELF_EXE_WINDOWS_AS_UTF8
+  {
+    char *r;
+    int len;
+    len = WideCharToMultiByte(CP_UTF8, 0, path, -1, NULL, 0, NULL, NULL);
+    r = malloc(len);
+    len = WideCharToMultiByte(CP_UTF8, 0, path, -1, r, len, NULL, NULL);
+    free(path);
+    return r;
+  }
+#else
   return path;
+#endif
 }
 # undef USE_GENERIC_GET_SELF_PATH
 #endif
@@ -152,7 +210,7 @@ wchar_t *get_self_path(char *exec_file) XFORM_SKIP_PROC
 
 /* Get executable path via argv[0] and the `PATH` environment variable */
 
-static int has_slash(char *s) XFORM_SKIP_PROC
+static int has_slash(const char *s) XFORM_SKIP_PROC
 {
   while (*s) {
     if (s[0] == '/')
@@ -162,7 +220,7 @@ static int has_slash(char *s) XFORM_SKIP_PROC
   return 0;
 }
 
-static char *do_path_append(char *s1, int l1, char *s2) XFORM_SKIP_PROC
+static char *do_path_append(const char *s1, int l1, const char *s2) XFORM_SKIP_PROC
 {
   int l2;
   char *s;
@@ -182,12 +240,12 @@ static char *do_path_append(char *s1, int l1, char *s2) XFORM_SKIP_PROC
   return s;
 }
 
-static char *path_append(char *s1, char *s2) XFORM_SKIP_PROC
+static char *path_append(const char *s1, const char *s2) XFORM_SKIP_PROC
 {
   return do_path_append(s1, strlen(s1), s2);
 }
 
-static char *copy_string(char *s1) XFORM_SKIP_PROC
+static char *copy_string(const char *s1) XFORM_SKIP_PROC
 {
   int l1;
   char *s;
@@ -203,25 +261,61 @@ static char *copy_string(char *s1) XFORM_SKIP_PROC
   return s;
 }
 
-static int executable_exists(char *path) XFORM_SKIP_PROC
+static int executable_exists(const char *path) XFORM_SKIP_PROC
 {
   return (access(path, X_OK) == 0);
 }
 
-static char *lookup_exe_via_path(char *exec_file) XFORM_SKIP_PROC
+static char *get_current_directory() XFORM_SKIP_PROC
+{
+  char *dir;
+
+  dir = getcwd(NULL, 0);
+
+  if (dir == NULL) {
+    /* Probably an old system where you have to allocate space yourself */
+    char *s;
+    int len = 256;
+
+    s = malloc(len);
+    while (1) {
+      dir = getcwd(s, len);
+      if (dir != NULL)
+        break;
+      if (errno == ERANGE) {
+        free(s);
+        len *= 2;
+        s = malloc(len);
+      } else
+        break;
+    }
+
+    if (dir == NULL) {
+      /* Still failed, so give up with "." as the path */
+      s[0] = '.';
+      s[1] = 0;
+      dir = s;
+    }
+  }
+
+  return dir;
+}
+
+static char *lookup_exe_via_path(const char *exec_file) XFORM_SKIP_PROC
 {
   if (exec_file[0] == '/') {
     /* Absolute path */
-    return exec_file;
+    return copy_string(exec_file);
   } else if (has_slash(exec_file)) {
     /* Relative path with a directory: */
-    char *buf;
-    long buflen = 4096;
-    buf = (char *)malloc(buflen);
-    return path_append(getcwd(buf, buflen), exec_file);
+    char *dir, *r;
+    dir = get_current_directory();
+    r = path_append(dir, exec_file);
+    free(dir);
+    return r;
   } else {
     /* We have to find the executable by searching PATH: */
-    char *path = copy_string(getenv("PATH")), *p, *m;
+    char *path = copy_string(getenv("PATH")), *p, *m, *saved_path = path;
     int more;
 
     if (!path) {
@@ -243,8 +337,12 @@ static char *lookup_exe_via_path(char *exec_file) XFORM_SKIP_PROC
       m = path_append(path, exec_file);
 
       if (executable_exists(m)) {
-	if (m[0] != '/')
-	  m = path_append(getcwd(NULL, 0), m);
+	if (m[0] != '/') {
+          char *old_m = m;
+	  m = path_append(get_current_directory(), m);
+          free(old_m);
+        }
+        if (saved_path) free(saved_path);
 	return m;
       }
       free(m);
@@ -255,19 +353,24 @@ static char *lookup_exe_via_path(char *exec_file) XFORM_SKIP_PROC
 	break;
     }
 
-    return exec_file;
+    if (saved_path) free(saved_path);
+
+    return copy_string(exec_file);
   }
 }
 #endif
 
 #ifdef USE_GENERIC_GET_SELF_PATH
-static char *get_self_path(char *exec_file)
+# ifndef GENERIC_GET_SELF_PATH_NAME
+#  define GENERIC_GET_SELF_PATH_NAME get_self_path
+# endif
+static char *GENERIC_GET_SELF_PATH_NAME(const char *exec_file)
 {
   return lookup_exe_via_path(exec_file);
 }
 #endif
 
-#if !defined(OS_X) && !defined(DOS_FILE_SYSTEM)
+#if !defined(OS_X) && !defined(DOS_FILE_SYSTEM) && !defined(SELF_EXE_NO_EXTRAS)
 
 #include <sys/types.h>
 #include <sys/stat.h>

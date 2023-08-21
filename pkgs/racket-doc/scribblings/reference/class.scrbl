@@ -2,7 +2,8 @@
 @(require "mz.rkt"
           racket/class
           (for-syntax racket/base racket/serialize racket/trait)
-          (for-label racket/serialize))
+          (for-label racket/serialize
+                     racket/trait))
 
 @(begin
 
@@ -372,7 +373,9 @@ Each @racket[class-clause] is (partially) macro-expanded to reveal its
 shapes. If a @racket[class-clause] is a @racket[begin] expression, its
 sub-expressions are lifted out of the @racket[begin] and treated as
 @racket[class-clause]s, in the same way that @racket[begin] is
-flattened for top-level and embedded definitions.
+flattened for top-level and embedded definitions. Each @racket[class-clause]
+has the @tech{syntax property} @racket['class-body] set to true before
+expansion.
 
 Within a @racket[class*] form for instances of the new class,
 @racket[this] is bound to the object itself;
@@ -384,6 +387,10 @@ available for calling superclass methods (see
 @secref["clmethoddefs"]); and @racket[inner] is available for
 calling subclass augmentations of methods (see
 @secref["clmethoddefs"]).}
+
+@history[#:changed "8.8.0.10"
+         @elem{Added the @racket['class-body] syntax property
+          to class body forms.}]
 
 @defform[(class superclass-expr class-clause ...)]{
 
@@ -1252,6 +1259,26 @@ provided as by-position initialization arguments. In addition,
 the value of each @racket[by-name-expr] is provided as a by-name
 argument for the corresponding @racket[id].}
 
+@defproc[(dynamic-instantiate [cls class?]
+                              [pos-vs list?]
+                              [named-vs (listof (cons/c symbol? any/c))])
+         object?]{
+
+Like @racket[(apply make-object cls pos-vs)], but @racket[named-vs]
+supplies named arguments in addition to the by-position arguments
+supplied by @racket[pos-vs].
+
+@(examples
+  #:eval class-eval
+  (define point% (class object%
+                   (super-new)
+                   (init-field x y)))
+  (define p (dynamic-instantiate point% '(1) '([y . 2])))
+  (eval:check (get-field x p) 1)
+  (eval:check (get-field y p) 2))
+
+@history[#:added "8.8.0.1"]}
+
 @defidform[super-make-object]{
 
 Produces a procedure that takes by-position arguments an invokes
@@ -1385,17 +1412,20 @@ This is the functional analogue of @racket[send*].
      (super-new)
      (init-field [x 0] [y 0])
      (define/public (move-x dx)
-       (new this% [x (+ x dx)]))
+       (new this% [x (+ x dx)] [y y]))
      (define/public (move-y dy)
-       (new this% [y (+ y dy)])))))
+       (new this% [y (+ y dy)] [x x]))
+     (define/public (get-pair)
+       (cons x y)))))
 
 (send+ (new point%)
        (move-x 5)
        (move-y 7)
-       (move-x 12))
+       (move-x 12)
+       (get-pair))
 ]}
 
-@defform[(with-method ((id (obj-expr method-id)) ...)
+@defform[(with-method ([id (obj-expr method-id)] ...)
            body ...+)]{
 
 Extracts methods from an object and binds a local name that can be

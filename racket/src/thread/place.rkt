@@ -41,6 +41,10 @@
 ;; ----------------------------------------
 
 (define/who (dynamic-place path sym in out err)
+  ;; Normally, we'd check argument here, but the relevant
+  ;; predicates on ports are from a later layer, and the
+  ;; `racket/place` export is a wrapper with its own checking.
+  ;; So, we just leave this layer as unsafe.
   (when (eq? initial-place current-place)
     ;; needed by custodian GC callback for memory limits:
     (atomically (ensure-wakeup-handle!)))

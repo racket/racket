@@ -118,12 +118,19 @@
    [(regexp-match? #rx"^[a-zA-Z]*://" s) (string->url s)]
    [else (path->url (path->complete-path s))]))
 
-(define-syntax-rule (with-catalogs body ...)
-  (let ([catalogs (catalog-list)])
-    (parameterize ([current-pkg-catalogs
-                    (and (cons? catalogs)
-                         (map catalog->url (reverse catalogs)))])
-      body ...)))
+(define-syntax-rule (with-catalogs catalogs body ...)
+  (parameterize ([current-pkg-catalogs (let ([l (as-list-or-false catalogs)])
+                                         (and l (map catalog->url l)))])
+    body ...))
+
+(define (as-list-or-false v)
+  (cond
+    [(not v) #f]
+    [(list? v) v]
+    [else (list v)]))
+
+(define (as-list v)
+  (or (as-list-or-false v) '()))
 
 (define (clone-to-package-name clone cmd)
   ;; Use directory name as sole package name, if possible
@@ -231,7 +238,7 @@
                         (values pkg-source a-type)))
                   (define setup-collects
                     (with-pkg-lock
-                      (with-catalogs
+                      (with-catalogs catalog
                           (pkg-install #:from-command-line? #t
                                        #:dep-behavior (or (and auto 'search-auto)
                                                           deps
@@ -324,7 +331,7 @@
                   (define lookup? (or lookup unclone))
                   (define setup-collects
                     (with-pkg-lock
-                      (with-catalogs
+                      (with-catalogs catalog
                           (pkg-update (for/list ([pkg-source (in-list pkg-source)])
                                         (cond
                                          [lookup?
@@ -479,7 +486,7 @@
               (lambda ()
                 (define setup-collects
                   (with-pkg-lock
-                    (with-catalogs
+                    (with-catalogs catalog
                      (pkg-migrate from-version
                                   #:from-command-line? #t
                                   #:dep-behavior deps
@@ -572,7 +579,7 @@
              #:args pkg-name
              (when (and all (pair? pkg-name))
                ((pkg-error 'catalog-show) "both `--all' and package names provided"))
-             (with-catalogs
+             (with-catalogs catalog
                (parameterize ([current-pkg-error (pkg-error 'catalog-show)]
                               [current-pkg-lookup-version (or version
                                                               (current-pkg-lookup-version))])
@@ -608,7 +615,6 @@
             ;; ----------------------------------------
             [catalog-archive
              "Copy catalog plus packages"
-             (define include-list (make-parameter #f))
              #:once-each
              [#:bool from-config () "Include currently configured catalogs last"]
              [(#:str state-database #f) state () "Read/write <state-database> as state of <dest-dir>"]
@@ -618,14 +624,12 @@
               ("Select handling of package-download failure;"
                "<mode>s: fail (the default), skip, continue (but with exit status of 5)")]
              #:multi
-             [(#:str pkg #f) include () "Include <pkg> in new catalog"
-              (include-list (cons pkg (or (include-list) '())))]
+             [(#:str pkg #f) include () "Include <pkg> in new catalog"]
              #:once-each
              [#:bool include-deps () "Include dependencies of specified packages"]
              [(#:strs sys subpath #f) include-deps-platform () "Include one platform's dependencies"]
              #:multi
-             [(#:str pkg #f) exclude () "Exclude <pkg> from new catalog"
-              (exclude-list (cons pkg (exclude-list)))]
+             [(#:str pkg '()) exclude () "Exclude <pkg> from new catalog"]
              #:once-each
              [#:bool fast-file-copy () "Copy a local file package as-is"]
              #:args (dest-dir . src-catalog)
@@ -638,12 +642,12 @@
                                       #:from-config? from-config
                                       #:state-catalog state
                                       #:relative-sources? relative
-                                      #:include (include-list)
+                                      #:include (as-list-or-false include)
                                       #:include-deps? include-deps
                                       #:include-deps-sys+subpath (and include-deps-platform
                                                                       (cons (string->symbol (car include-deps-platform))
                                                                             (string->path (cadr include-deps-platform))))
-                                      #:exclude (exclude-list)
+                                      #:exclude (as-list exclude)
                                       #:fast-file-copy? fast-file-copy
                                       #:package-exn-handler (case pkg-fail
                                                               [(fail) (lambda (name exn) (raise exn))]
@@ -666,12 +670,10 @@
             ;; ----------------------------------------
             [archive
              "Create catalog from installed packages"
-             (define exclude-list (make-parameter null))
              #:once-each
              [#:bool include-deps () "Include dependencies of specified packages"]
              #:multi
-             [(#:str pkg #f) exclude () "Exclude <pkg> from new catalog"
-              (exclude-list (cons pkg (exclude-list)))]
+             [(#:str pkg '()) exclude () "Exclude <pkg> from new catalog"]
              #:once-each
              [#:bool relative () "Make source paths relative when possible"]
              #:args (dest-dir pkg . pkgs)
@@ -679,7 +681,7 @@
                (pkg-archive-pkgs dest-dir
                                  (cons pkg pkgs)
                                  #:include-deps? include-deps
-                                 #:exclude (exclude-list)
+                                 #:exclude (as-list exclude)
                                  #:relative-sources? relative))]
             ;; ----------------------------------------
             [empty-trash
@@ -696,7 +698,6 @@
                 (pkg-empty-trash #:list? list
                                  #:quiet? #f)))]))]))
 
-  (define catalog-list (make-parameter null))
   (make-commands
    #:scope-flags
    ([(#:sym scope [installation user] #f) scope ()
@@ -717,8 +718,7 @@
    #:trash-flags
    ([#:bool no-trash () ("Delete uninstalled/updated, instead of moving to a trash folder")])
    #:catalog-flags
-   ([(#:str catalog #f) catalog () "Use <catalog>s instead of configured catalogs"
-                        (catalog-list (cons catalog (catalog-list)))])
+   ([(#:str catalog #f) catalog () "Use <catalog>s instead of configured catalogs"])
    #:install-type-flags
    ([(#:sym type [file dir file-url dir-url git git-url github name] #f) type ("-t")
      ("Specify type of <pkg-source>, instead of inferred;"

@@ -3,7 +3,7 @@
 
 (Section 'numbers)
 
-(require racket/extflonum racket/random racket/list)
+(require racket/fixnum racket/extflonum racket/random racket/list)
 
 (define has-single-flonum? (single-flonum-available?))
 (define has-exact-zero-inexact-complex? (not (eq? 'chez-scheme (system-type 'vm))))
@@ -346,6 +346,39 @@
 (test-trans #f >= < 1237940039285380274899124223 1.2379400392853803e+27 1237940039285380274899124225)
 (test-trans #f >= < 3713820117856140824697372668/3 1.2379400392853803e+27 3713820117856140824697372676/3)
 
+(test #t = 9007199254740992 (exact->inexact 9007199254740993))
+
+(test #f < 9007199254740992 9007199254740992.0)
+(test #f < 9007199254740993 9007199254740992.0)
+
+(test #t <= 9007199254740992 9007199254740992.0)
+(test #f <= 9007199254740993 9007199254740992.0)
+
+(test #t = 9007199254740992 9007199254740992.0)
+(test #f = 9007199254740993 9007199254740992.0)
+
+(test #t >= 9007199254740992 9007199254740992.0)
+(test #t >= 9007199254740993 9007199254740992.0)
+
+(test #f > 9007199254740992 9007199254740992.0)
+(test #t > 9007199254740993 9007199254740992.0)
+
+
+(test #f < 9007199254740992.0 9007199254740992)
+(test #t < 9007199254740992.0 9007199254740993)
+
+(test #t <= 9007199254740992.0 9007199254740992)
+(test #t <= 9007199254740992.0 9007199254740993)
+
+(test #t = 9007199254740992.0 9007199254740992)
+(test #f = 9007199254740992.0 9007199254740993)
+
+(test #t >= 9007199254740992.0 9007199254740992)
+(test #f >= 9007199254740992.0 9007199254740993)
+
+(test #f > 9007199254740992.0 9007199254740992)
+(test #f > 9007199254740992.0 9007199254740993)
+
 (define (test-nan.0 f . args)
   (apply test +nan.0 f args))
 
@@ -609,6 +642,18 @@
 (test  5.540619075645279e+34 expt   1.000000000000001 (expt 2 56))
 (test  5.540619075645279e+34 expt  -1.000000000000001 (expt 2 56))
 (test -5.5406190756452855e+34 expt -1.000000000000001 (add1 (expt 2 56)))
+
+(err/rt-test (eval '(expt 2 (expt 2 80))) exn:fail:out-of-memory?)
+(err/rt-test (eval '(expt 1+1i (expt 2 80))) exn:fail:out-of-memory?)
+(err/rt-test (eval '(expt 1/2 (expt 2 80))) exn:fail:out-of-memory?)
+(test 1 expt 1 (expt 2 80))
+(test 1 expt -1 (expt 2 80))
+(test -1 expt -1 (add1 (expt 2 80)))
+(test 1 expt -1 (sub1 (most-positive-fixnum)))
+(test -1 expt -1 (most-positive-fixnum))
+(test 0 expt 0 (expt 2 80))
+(test 0 expt 0 (add1 (expt 2 80)))
+(test 0.0 expt 0.5 (expt 2 80))
 
 (let ()
   (define nrs (list -inf.0 -2.0 -1.0 -0.5 -0.0 0.0 0.5 1.0 2.0 +inf.0))
@@ -892,13 +937,13 @@
 (test 0.4+0.2i / 2.0-1.0i)
 (test 0.0+0.0i / 0.0+0.0i 1+1e-320i)
 (test 0.0+0.0i / 0.0+0.0i #e1+1e-320i)
-(test -0.0+0.0i / -1.0e-9-1.0e+300i)
-(test -0.0+0.0i / 1.0+0.0i -1.0e-9-1.0e+300i)
-(test -0.0-0.0i / 0.0+1.0i -1.0e+300-1.0e-9i)
-(test -0.0-0.0i / +1i -1.0e+300-1.0e-9i)
+(test -0.0+1e-300i / -1.0e-9-1.0e+300i)
+(test -0.0+1e-300i / 1.0+0.0i -1.0e-9-1.0e+300i)
+(test -0.0-1e-300i / 0.0+1.0i -1.0e+300-1.0e-9i)
+(test -0.0-1e-300i / +1i -1.0e+300-1.0e-9i)
 (test +nan.0+nan.0i / 0.0+0.0i)
-(test 0.0-0.0i / 9.18e+55 4.0+1.79e+308i)
-(test 0.0+nan.0i / 9.18e+55+0.0i 4.0+1.79e+308i)
+(test 0.0-5.1284916201117317e-253i / 9.18e+55 4.0+1.79e+308i)
+(test 0.0-5.1284916201117317e-253i / 9.18e+55+0.0i 4.0+1.79e+308i)
 
 (test 3 / 1 1/3)
 (test -3 / 1 -1/3)
@@ -1444,6 +1489,7 @@
 (test (expt 3 37) gcd (expt 9 35) (- (expt 6 37)))
 (test (expt 3 75) gcd (expt 3 75))
 (test (expt 3 75) gcd (- (expt 3 75)))
+(test 1152921504606846976 gcd 5880287055120467478183936 1152921504606846976)
 (test 201 gcd (* 67 (expt 3 20)) (* 67 3))
 (test 201 gcd (* 67 3) (* 67 (expt 3 20)))
 (test 6 gcd (* 3 (expt 2 100)) 66)
@@ -1471,6 +1517,14 @@
 (test (* (expt 2 37) (expt 9 35)) lcm (expt 9 35) (expt 6 37))
 (test (* (expt 2 37) (expt 9 35)) lcm (- (expt 9 35)) (expt 6 37))
 (test (* (expt 2 37) (expt 9 35)) lcm (expt 9 35) (- (expt 6 37)))
+
+(test #t
+      'gcd-shifts
+      (for*/and ([i (in-range (* 64 3))]
+                 [j (in-range i)])
+        (let ([x (arithmetic-shift 2 i)]
+              [y (arithmetic-shift 2 j)])
+          (= y (gcd x y)))))
 
 (test 1/2 gcd 1/2)
 (test 1/2 gcd 3 1/2)
@@ -2211,7 +2265,7 @@
 (test -2.5e-154 imag-part (atan 1.0-4e153i))
 (test +2.5e-154 imag-part (atan 1.0+4e153i))
 (test 157.0+0.0i z-round (* 100 (atan 5e153+4e153i)))
-(test 125.0 round (* 1e156 (imag-part (atan 5e153+4e153i))))
+(test 98.0 round (* 1e156 (imag-part (atan 5e153+4e153i))))
 (test 157.0+0.0i z-round (* 100 (atan 4e153+4e153i)))
 (test 125.0 round (* 1e156 (imag-part (atan 4e153+4e153i))))
 
@@ -2592,6 +2646,12 @@
 (test #t inexact? (string->number "4@5"))
 (test #f inexact? (string->number "#e4@5"))
 (test #f inexact? (string->number "#e4.0@5.0"))
+
+(test 0.0+0.0i string->number ".0@.0")
+(test 1.0+0.0i string->number "1@.0")
+(test 0.0 string->number ".0@0")
+(test 0 string->number "0@0")
+(test 0.1+0.0i string->number ".1@.0")
 
 (arity-test string->number 1 5)
 (arity-test number->string 1 2)

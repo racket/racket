@@ -16,6 +16,7 @@
                          generic-info-accessor
                          generic-info-method-names
                          generic-info-methods
+                         generic-info-required-methods
                          find-generic-method-index
                          make-method-delta))
 
@@ -25,20 +26,22 @@
                     generic-info?
                     generic-info-get
                     generic-info-set!)
-      (make-struct-type 'generic-info #f 6 0))
+      (make-struct-type 'generic-info #f 7 0))
 
     (define-values (generic-info-name
                     generic-info-property
                     generic-info-predicate
                     generic-info-accessor
                     generic-info-method-names
-                    generic-info-methods)
+                    generic-info-methods
+                    generic-info-required-methods)
       (values (make-struct-field-accessor generic-info-get 0 'name)
               (make-struct-field-accessor generic-info-get 1 'property)
               (make-struct-field-accessor generic-info-get 2 'predicate)
               (make-struct-field-accessor generic-info-get 3 'accessor)
               (make-struct-field-accessor generic-info-get 4 'method-names)
-              (make-struct-field-accessor generic-info-get 5 'methods)))
+              (make-struct-field-accessor generic-info-get 5 'methods)
+              (make-struct-field-accessor generic-info-get 6 'required-methods)))
 
     (define (check-identifier! name ctx stx)
       (unless (identifier? stx)
@@ -62,7 +65,7 @@
                     unimplemented-set!)
       (make-struct-type 'unimplemented
                         #f
-                        1
+                        3
                         0
                         #f
                         (list (cons prop:set!-transformer
@@ -70,6 +73,12 @@
 
     (define unimplemented-method
       (make-struct-field-accessor unimplemented-get 0 'method))
+
+    (define unimplemented-required?
+      (make-struct-field-accessor unimplemented-get 1 'required?))
+
+    (define unimplemented-orig-src
+      (make-struct-field-accessor unimplemented-get 2 'orig-src))
 
     (define (find-generic-method who ctx gen-id delta gen-info method-id proc)
 
@@ -162,7 +171,16 @@
       [(_ method)
        (let ([val (syntax-local-value #'method (lambda () #f))])
          (cond
-           [(unimplemented? val) #'(quote #f)]
+           [(unimplemented? val)
+            (cond
+              [(unimplemented-required? val)
+               (raise-syntax-error
+                (unimplemented-method val)
+                "required method is not implemented"
+                #f
+                #f
+                (unimplemented-orig-src val))]
+              [else #'(quote #f)])]
            [else #'method]))]))
 
   (define-syntax (generic-property stx)
@@ -172,28 +190,48 @@
 
   (define-syntax (generic-methods stx)
     (syntax-case stx ()
-      [(_ gen #:scope scope def ...)
+      [(_ gen combine #:scope scope #:check? check? def ...)
        (let ()
+         (unless (boolean? (syntax-e #'check?))
+           (raise-syntax-error
+            'generic-methods
+            "check? must be a boolean literal"
+            #'check?))
+
          (define info (get-info 'generic-methods stx #'gen))
          (define orig-id (generic-info-name info))
          (define methods (map (make-method-delta #'scope orig-id)
                               (generic-info-method-names info)))
-         (with-syntax ([(method ...) methods])
+         (define checking? (syntax-e #'check?))
+         (define req-methods (map (λ (m)
+                                    (if (and m checking?)
+                                        #'#t
+                                        #'#f))
+                                  (generic-info-required-methods info)))
+         (with-syntax ([(method ...) methods]
+                       [(req-method ...) req-methods])
            (syntax/loc stx
              (syntax-parameterize ([generic-method-outer-context #'gen])
                (letrec-syntaxes+values
-                ([(method) (make-unimplemented 'method)] ...)
-                ()
-                (syntax-parameterize ([generic-method-inner-context #'gen])
-                  def ...
-                  (values (implementation method) ...)))))))]
-      [(_ gen def ...)
-       #'(generic-methods gen #:scope gen def ...)]))
+                   ([(method ...)
+                     (let ([defs (list (quote-syntax def) ...)])
+                       (values (make-unimplemented 'method
+                                                   req-method
+                                                   defs)
+                               ...))])
+                   ()
+                 (syntax-parameterize ([generic-method-inner-context #'gen])
+                   def ...
+                   (combine (implementation method) ...)))))))]
+      [(_ gen combine #:scope scope def ...)
+       #'(generic-methods gen combine #:scope scope #:check? #f def ...)]
+      [(_ gen combine def ...)
+       #'(generic-methods gen combine #:scope gen #:check? #f def ...)]))
 
   (define-syntax (generic-method-table stx)
     (syntax-case stx ()
       [(_ gen #:scope scope def ...)
-       #'(call-with-values (lambda () (generic-methods gen #:scope scope def ...)) vector)]
+       #'(generic-methods gen vector #:scope scope #:check? #t def ...)]
       [(_ gen def ...)
        #'(generic-method-table gen #:scope gen def ...)]))
 

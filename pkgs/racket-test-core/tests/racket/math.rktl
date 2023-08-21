@@ -1,6 +1,6 @@
 (load-relative "loadtest.rktl")
 (Section 'math)
-(require scheme/math
+(require racket/math
          racket/flonum
          racket/unsafe/ops)
 

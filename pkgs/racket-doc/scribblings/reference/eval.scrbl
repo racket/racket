@@ -37,15 +37,16 @@ evaluates each spliced form before continuing to expand, compile, and
 evaluate later forms.}
 
 
-@defproc[(eval [top-level-form any/c]
-               [namespace namespace? (current-namespace)])
-         any]{
+@defproc*[([(eval [top-level-form any/c]) any]
+           [(eval [top-level-form any/c] [namespace namespace?]) any])]{
 
 @guidealso["namespaces"]
 
 Calls the current @tech{evaluation handler} to evaluate
-@racket[top-level-form]. The @tech{evaluation handler} is called in
-tail position with respect to the @racket[eval] call, and
+@racket[top-level-form]. The evaluation handler is called in
+tail position with respect to the @racket[eval] call. An evaluation
+handler uses the @tech{current namespace}; in the two-argument case of
+@racket[eval], the call to the evaluation handler is
 @racket[parameterize]d to set @racket[current-namespace] to
 @racket[namespace].
 
@@ -74,10 +75,8 @@ For interactive evaluation in the style of
 with @racketidfont{#%top-interaction}, which is normally bound to
 @racket[#%top-interaction], before passing it to @racket[eval].}
 
-
-@defproc[(eval-syntax [stx syntax?]
-                      [namespace namespace? (current-namespace)])
-         any]{
+@defproc*[([(eval-syntax [stx syntax?]) any]
+           [(eval-syntax [stx syntax?] [namespace namespace?]) any])]{
 
 Like @racket[eval], except that @racket[stx] must be a syntax object,
 and its lexical context is not enriched before it is passed to the
@@ -151,6 +150,7 @@ If the second argument to the load handler is a symbol, then:
        (read-accept-compiled #t)
        (read-accept-bar-quote #t)
        (read-accept-graph #t)
+       (read-syntax-accept-graph #f)
        (read-decimal-as-inexact #t)
        (read-accept-dot #t)
        (read-accept-infix-dot #t)
@@ -392,7 +392,7 @@ use for the initial parameter value.
 
 @defparam*[current-compiled-file-roots paths (listof (or/c path-string? 'same)) (listof (or/c path? 'same))]{
 
-A list of paths and @racket['same]s that is is used by the default
+A list of paths and @racket['same]s that is used by the default
 @tech{compiled-load handler} (see @racket[current-load/use-compiled]).
 
 The parameter is normally initialized to @racket[(list 'same)], but
@@ -581,7 +581,7 @@ when compiled bytecode is loaded).
 The @racket[current-compile] binding is provided as @tech{protected}
 in the sense of @racket[protect-out].
 
-@history[#:changed "8.2.0.4" @elem{Changed binding to protected.}]}
+@history[#:changed "8.2.0.4" @elem{Changed binding to @tech{protected}.}]}
 
 
 @defproc[(compile [top-level-form any/c]) compiled-expression?]{
@@ -687,6 +687,14 @@ supported. The @racket['target-machine] mode of @racket[system-type]
 reports the running Racket's native target machine.
 
 @history[#:added "7.1.0.6"]}
+
+
+@defparam[current-compile-realm realm symbol?]{
+
+Determines the @tech{realm} that is assigned to modules and procedures
+when they are compiled.
+
+@history[#:added "8.4.0.2"]}
 
 
 @defboolparam[eval-jit-enabled on?]{

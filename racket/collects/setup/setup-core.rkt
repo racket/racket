@@ -107,13 +107,15 @@
 
   (define (setup-fprintf p task s . args)
     (let ([task (if task (string-append task ": ") "")])
-      (apply fprintf p
-             (string-append name-str ": " task s
-                            (if timestamp-output?
-                                (format " @ ~a" (current-process-milliseconds))
-                                "")
-                            "\n")
-             args)
+      (define st
+        (string-append name-str ": " task s
+                       (if timestamp-output?
+                           (format " @ ~a" (current-process-milliseconds))
+                           "")
+                       "\n"))
+      (if (null? args)
+          (write-string st p)
+          (apply fprintf p st args))
       (flush-output p)))
 
   (define (setup-printf task s . args)
@@ -1354,27 +1356,28 @@
       ;; already there, if the collection has an "info.ss" file:
       (when (or (file-exists? (build-path (cc-path cc) "info.rkt"))
                 (file-exists? (build-path (cc-path cc) "info.ss")))
-        (hash-set! t
-                   (case (cc-info-path-mode cc)
-                     [(relative)
-                       ;; Use relative path:
-                      (path->info-relative (apply build-path
-                                                  (cc-info-root cc)
-                                                  (cc-collection cc)))]
-                     [(abs-in-relative) 
-                      ;; Try relative to `lib':
-                      (let ([p (path->main-lib-relative (cc-path cc))])
-                        (if (path? p)
-                            ;; Fall back to relative (with ".."s) to info root:
-                            (let ([rp (find-relative-path (cc-info-root cc)
-                                                          p
-                                                          #:more-than-root? #t)])
-                              (if (relative-path? rp)
-                                  (encode-relative-path rp)
-                                  (path->bytes rp)))
-                            p))]
-                     [else (path->bytes (cc-path cc))])
-                   (cons (domain) (cc-shadowing-policy cc)))))
+        (unless (eq? 'all (omitted-paths (cc-path cc) getinfo/log-failure (cc-omit-root cc)))
+          (hash-set! t
+                     (case (cc-info-path-mode cc)
+                       [(relative)
+                        ;; Use relative path:
+                        (path->info-relative (apply build-path
+                                                    (cc-info-root cc)
+                                                    (cc-collection cc)))]
+                       [(abs-in-relative)
+                        ;; Try relative to `lib':
+                        (let ([p (path->main-lib-relative (cc-path cc))])
+                          (if (path? p)
+                              ;; Fall back to relative (with ".."s) to info root:
+                              (let ([rp (find-relative-path (cc-info-root cc)
+                                                            p
+                                                            #:more-than-root? #t)])
+                                (if (relative-path? rp)
+                                    (encode-relative-path rp)
+                                    (path->bytes rp)))
+                              p))]
+                       [else (path->bytes (cc-path cc))])
+                     (cons (domain) (cc-shadowing-policy cc))))))
     ;; In "tidy" mode, make sure we check each "cache.rktd":
     (when (or (make-tidy)
               no-specific-collections?)

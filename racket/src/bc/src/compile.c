@@ -282,53 +282,63 @@ Scheme_Object *scheme_source_to_name(Scheme_Object *code)
   return NULL;
 }
 
-Scheme_Object *combine_name_with_srcloc(Scheme_Object *name, Scheme_Object *code, int src_based_name)
+Scheme_Object *combine_name_with_srcloc(Scheme_Object *name, Scheme_Object *code, int src_based_name,
+                                        Scheme_Object *realm)
 {
   Scheme_Stx *cstx = (Scheme_Stx *)code;
+  int keep_realm = !SAME_OBJ(realm, scheme_default_realm);
 
-  if (!SCHEME_STXP(code))
-    return name;
-
-  if (((cstx->srcloc->col >= 0) || (cstx->srcloc->pos >= 0))
-      && cstx->srcloc->src) {
-    Scheme_Object *vec;
-    vec = scheme_make_vector(7, NULL);
-    SCHEME_VEC_ELS(vec)[0] = name;
-    SCHEME_VEC_ELS(vec)[1] = cstx->srcloc->src;
-    if (cstx->srcloc->line >= 0) {
-      SCHEME_VEC_ELS(vec)[2] = scheme_make_integer(cstx->srcloc->line);
-      SCHEME_VEC_ELS(vec)[3] = scheme_make_integer(cstx->srcloc->col-1);
-    } else {
-      SCHEME_VEC_ELS(vec)[2] = scheme_false;
-      SCHEME_VEC_ELS(vec)[3] = scheme_false;
+  if (SCHEME_STXP(code)) {
+    if (((cstx->srcloc->col >= 0) || (cstx->srcloc->pos >= 0))
+        && cstx->srcloc->src) {
+      Scheme_Object *vec;
+      vec = scheme_make_vector(keep_realm ? 8 : 7, NULL);
+      SCHEME_VEC_ELS(vec)[0] = name;
+      SCHEME_VEC_ELS(vec)[1] = cstx->srcloc->src;
+      if (cstx->srcloc->line >= 0) {
+        SCHEME_VEC_ELS(vec)[2] = scheme_make_integer(cstx->srcloc->line);
+        SCHEME_VEC_ELS(vec)[3] = scheme_make_integer(cstx->srcloc->col-1);
+      } else {
+        SCHEME_VEC_ELS(vec)[2] = scheme_false;
+        SCHEME_VEC_ELS(vec)[3] = scheme_false;
+      }
+      if (cstx->srcloc->pos >= 0)
+        SCHEME_VEC_ELS(vec)[4] = scheme_make_integer(cstx->srcloc->pos);
+      else
+        SCHEME_VEC_ELS(vec)[4] = scheme_false;
+      if (cstx->srcloc->span >= 0)
+        SCHEME_VEC_ELS(vec)[5] = scheme_make_integer(cstx->srcloc->span);
+      else
+        SCHEME_VEC_ELS(vec)[5] = scheme_false;
+      SCHEME_VEC_ELS(vec)[6] = (src_based_name ? scheme_true : scheme_false);
+      if (keep_realm)
+        SCHEME_VEC_ELS(vec)[7] = realm;
+      return vec;
     }
-    if (cstx->srcloc->pos >= 0)
-      SCHEME_VEC_ELS(vec)[4] = scheme_make_integer(cstx->srcloc->pos);
-    else
-      SCHEME_VEC_ELS(vec)[4] = scheme_false;
-    if (cstx->srcloc->span >= 0)
-      SCHEME_VEC_ELS(vec)[5] = scheme_make_integer(cstx->srcloc->span);
-    else
-      SCHEME_VEC_ELS(vec)[5] = scheme_false;
-    SCHEME_VEC_ELS(vec)[6] = (src_based_name ? scheme_true : scheme_false);
-    
+  }
+
+  if (keep_realm) {
+    Scheme_Object *vec;
+    vec = scheme_make_vector(8, scheme_false);
+    SCHEME_VEC_ELS(vec)[0] = name;
+    SCHEME_VEC_ELS(vec)[7] = realm;
     return vec;
   }
 
   return name;
 }
 
-Scheme_Object *scheme_build_closure_name(Scheme_Object *code, Scheme_Comp_Env *env)
+static Scheme_Object *build_closure_name(Scheme_Object *code, Scheme_Comp_Env *env)
 {
   Scheme_Object *name;
 
   name = scheme_stx_property(code, inferred_name_symbol, NULL);
   if (name && SCHEME_SYMBOLP(name)) {
-    name = combine_name_with_srcloc(name, code, 0);
+    name = combine_name_with_srcloc(name, code, 0, env->realm);
   } else if (name && SCHEME_VOIDP(name)) {
     name = scheme_source_to_name(code);
     if (name)
-      name = combine_name_with_srcloc(name, code, 1);
+      name = combine_name_with_srcloc(name, code, 1, env->realm);
   } else {
     name = env->value_name;
     if (name)
@@ -336,9 +346,14 @@ Scheme_Object *scheme_build_closure_name(Scheme_Object *code, Scheme_Comp_Env *e
     if (!name || SCHEME_FALSEP(name)) {
       name = scheme_source_to_name(code);
       if (name)
-	name = combine_name_with_srcloc(name, code, 1);
+	name = combine_name_with_srcloc(name, code, 1, env->realm);
+      else {
+        name = combine_name_with_srcloc(scheme_false, scheme_false, 0, env->realm);
+        if (SCHEME_FALSEP(name))
+          name = NULL;
+      }
     } else {
-      name = combine_name_with_srcloc(name, code, 0);
+      name = combine_name_with_srcloc(name, code, 0, env->realm);
     }
   }
 
@@ -393,7 +408,7 @@ static Scheme_Object *make_lambda(Scheme_Comp_Env *env, Scheme_Object *code)
   forms = SCHEME_STX_CDR(forms);
 
   env = check_name_property(code, env);
-  name = scheme_build_closure_name(code, env);  
+  name = build_closure_name(code, env);
   lam->name = name;
 
   env = scheme_set_comp_env_name(env, NULL);
@@ -786,7 +801,7 @@ static Scheme_Object *case_lambda_compile (Scheme_Object *form, Scheme_Comp_Env 
   form = SCHEME_STX_CDR(form);
 
   env = check_name_property(orig_form, env);
-  name = scheme_build_closure_name(orig_form, env);
+  name = build_closure_name(orig_form, env);
   
   if (SCHEME_STX_NULLP(form)) {
     /* Case where there are no cases... */
@@ -2006,7 +2021,7 @@ static Scheme_Object *extract_source_name(Scheme_Object *e, int no_default)
   return a;
 }
 
-Scheme_Linklet *scheme_compile_linklet(Scheme_Object *form, int set_undef, Scheme_Object *import_keys)
+Scheme_Linklet *scheme_compile_linklet(Scheme_Object *form, int set_undef, Scheme_Object *import_keys, Scheme_Object *realm)
 {
   Scheme_Linklet *linklet;
   Scheme_Object *orig_form = form, *imports, *exports;
@@ -2025,7 +2040,7 @@ Scheme_Linklet *scheme_compile_linklet(Scheme_Object *form, int set_undef, Schem
   linklet = MALLOC_ONE_TAGGED(Scheme_Linklet);
   linklet->so.type = scheme_linklet_type;
 
-  env = scheme_new_comp_env(linklet, set_undef ? COMP_ENV_ALLOW_SET_UNDEFINED : 0);
+  env = scheme_new_comp_env(linklet, set_undef ? COMP_ENV_ALLOW_SET_UNDEFINED : 0, realm);
 
   form = SCHEME_STX_CDR(form);
   imports = SCHEME_STX_CAR(form);

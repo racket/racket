@@ -21,6 +21,19 @@
 #include "boot.h"
 #include "api.h"
 
+#define SELF_EXE_WINDOWS_AS_UTF8
+#define SELF_EXE_NO_EXTRAS
+#define XFORM_SKIP_PROC /* empty */
+#ifdef WIN32
+# define DOS_FILE_SYSTEM
+#endif
+#include "../../start/self_exe.inc"
+#include "path_replace.inc"
+
+#ifdef PBCHUNK_REGISTER
+static void register_pbchunks();
+#endif
+
 #define RACKET_AS_BOOT
 
 #if defined(_MSC_VER) || defined(__MINGW32__)
@@ -102,7 +115,7 @@ static void run_cross_server(char **argv)
   (void)Scall1(c, a);
 }
 
-static void init_foreign()
+static void init_foreign(void)
 {
 # include "rktio.inc"
 }
@@ -122,6 +135,10 @@ void racket_boot(racket_boot_arguments_t *ba)
 
   Sscheme_init(NULL);
 
+#ifdef PBCHUNK_REGISTER
+  register_pbchunks();
+#endif
+  
   if ((ba->argc == 4) && !strcmp(ba->argv[0], "--cross-server"))
     cross_server = 1;
 
@@ -230,6 +247,74 @@ void racket_boot(racket_boot_arguments_t *ba)
   }
 #endif
 }
+
+/* **************************************** */
+
+#ifdef PBCHUNK_REGISTER
+extern void register_petite0_pbchunks();
+extern void register_petite1_pbchunks();
+extern void register_petite2_pbchunks();
+extern void register_petite3_pbchunks();
+extern void register_petite4_pbchunks();
+extern void register_petite5_pbchunks();
+extern void register_petite6_pbchunks();
+extern void register_petite7_pbchunks();
+extern void register_petite8_pbchunks();
+extern void register_petite9_pbchunks();
+extern void register_scheme0_pbchunks();
+extern void register_scheme1_pbchunks();
+extern void register_scheme2_pbchunks();
+extern void register_scheme3_pbchunks();
+extern void register_scheme4_pbchunks();
+extern void register_scheme5_pbchunks();
+extern void register_scheme6_pbchunks();
+extern void register_scheme7_pbchunks();
+extern void register_scheme8_pbchunks();
+extern void register_scheme9_pbchunks();
+extern void register_racket0_pbchunks();
+extern void register_racket1_pbchunks();
+extern void register_racket2_pbchunks();
+extern void register_racket3_pbchunks();
+extern void register_racket4_pbchunks();
+extern void register_racket5_pbchunks();
+extern void register_racket6_pbchunks();
+extern void register_racket7_pbchunks();
+extern void register_racket8_pbchunks();
+extern void register_racket9_pbchunks();
+
+static void register_pbchunks() {
+  register_petite0_pbchunks();
+  register_petite1_pbchunks();
+  register_petite2_pbchunks();
+  register_petite3_pbchunks();
+  register_petite4_pbchunks();
+  register_petite5_pbchunks();
+  register_petite6_pbchunks();
+  register_petite7_pbchunks();
+  register_petite8_pbchunks();
+  register_petite9_pbchunks();
+  register_scheme0_pbchunks();
+  register_scheme1_pbchunks();
+  register_scheme2_pbchunks();
+  register_scheme3_pbchunks();
+  register_scheme4_pbchunks();
+  register_scheme5_pbchunks();
+  register_scheme6_pbchunks();
+  register_scheme7_pbchunks();
+  register_scheme8_pbchunks();
+  register_scheme9_pbchunks();
+  register_racket0_pbchunks();
+  register_racket1_pbchunks();
+  register_racket2_pbchunks();
+  register_racket3_pbchunks();
+  register_racket4_pbchunks();
+  register_racket5_pbchunks();
+  register_racket6_pbchunks();
+  register_racket7_pbchunks();
+  register_racket8_pbchunks();
+  register_racket9_pbchunks();
+}
+#endif
 
 /* **************************************** */
 
@@ -343,4 +428,12 @@ iptr racket_cpointer_offset(ptr cptr) {
   }
 
   return 0;
+}
+
+char *racket_get_self_exe_path(const char *exec_file) {
+  return get_self_path(exec_file);
+}
+
+char *racket_path_replace_filename(const char *path, const char *new_filename) {
+  return path_replace_filename(path, new_filename);
 }

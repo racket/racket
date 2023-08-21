@@ -1,0 +1,43 @@
+#lang zuo
+
+(provide same-scheme-version?)
+
+(define (same-scheme-version? exe)
+  (define base-vers (get-scheme-version exe #f))
+  (let* ([cmacros (file->string (at-source "../../ChezScheme/s/cmacros.ss"))])
+    (define l (string-split cmacros "define-constant scheme-version #x"))
+    (unless (and (= 2 (length l))
+                 (>= (string-length (cadr l)) 8))
+      (error "could not parse version out of \"cmacros.ss\""))
+    (define r (cadr l))
+    (define (digit n)
+      (cond
+        [(and (>= n (char "0")) (<= n (char "9"))) (- n (char "0"))]
+        [(and (>= n (char "a")) (<= n (char "f"))) (- n (char "a"))]
+        [else (+ (- n (char "A")) 10)]))
+    (let ([hex (lambda (offset)
+                 (+ (* 16 (digit (string-ref r offset)))
+                    (digit (string-ref r (+ offset 1)))))])
+      (define x (hex 0))
+      (define y (hex 2))
+      (define z (hex 4))
+      (define w (hex 6))
+      (define base-expect (~a "Chez Scheme Version " x "." y "." z))
+      (and (equal? base-vers
+                   base-expect)
+           (equal? (get-scheme-version exe #t)
+                   (if (= w 0)
+                       base-expect
+                       (~a base-expect "-pre-release." w)))))))
+
+(define (get-scheme-version exe pre?)
+  (define p (process exe "-q" (hash 'stdin 'pipe 'stdout 'pipe)))
+  (fd-write (hash-ref p 'stdin) (~a "(display (scheme-version" (if pre? " #t" "") "))\n"))
+  (fd-close (hash-ref p 'stdin))
+  (process-wait (hash-ref p 'process))
+  (define vers (fd-read (hash-ref p 'stdout) eof))
+  (fd-close (hash-ref p 'stdout))
+  (unless (and (equal? 0 (process-status (hash-ref p 'process)))
+               (string? vers))
+    (error "failed querying version form executable" exe))
+  vers)

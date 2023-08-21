@@ -20,9 +20,14 @@
 
   (cond
    [(not (eqv? c #\#))
-    (if fail-k
-        (fail-k)
-        (lang-error in l-config "" c))]
+    (cond
+      [(special-comment-via-readtable? c read-one in config)
+       ;; Try again
+       (read-language/get-info read-one in config fail-k)]
+      [else
+       (if fail-k
+           (fail-k)
+           (lang-error in l-config "" c))])]
    [else
     (define c2 (read-char/special in l-config))
     (cond

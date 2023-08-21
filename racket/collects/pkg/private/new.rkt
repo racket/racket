@@ -66,7 +66,7 @@
       (displayln "Initializing license (Apache-2.0 OR MIT). You are free to change the license.")
       (with-output-to-file "LICENSE-MIT"
         (lambda () (expand/display #<<EOS
-<<name>> 
+<<name>>
 
 MIT License
 
@@ -145,8 +145,8 @@ jobs:
           - racket-version: current
             experimental: true
     steps:
-      - uses: actions/checkout@v2
-      - uses: Bogdanp/setup-racket@v1.7
+      - uses: actions/checkout@v3.1.0
+      - uses: Bogdanp/setup-racket@v1.9.1
         with:
           architecture: x64
           distribution: full

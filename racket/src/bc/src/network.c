@@ -279,7 +279,6 @@ static void tcp_write_needs_wakeup(Scheme_Object *port, void *fds)
   rktio_poll_add(scheme_rktio, s, fds, RKTIO_POLL_WRITE);
 }
 
-
 static Scheme_Tcp *make_tcp_port_data(rktio_fd_t *tcp, int refcount)
 {
   Scheme_Tcp *data;
@@ -658,6 +657,7 @@ tcp_out_buffer_mode(Scheme_Port *p, int mode)
     data->b.out_bufmode = mode;
     if (go)
       tcp_flush((Scheme_Output_Port *)p, 0, 0);
+    rktio_tcp_nodelay(scheme_rktio, data->tcp, mode == 0);
     return mode;
   }
 }
@@ -1037,7 +1037,9 @@ static Scheme_Object *tcp_connect(int argc, Scheme_Object *argv[])
     
     if (tcp_connect_src)
       rktio_addrinfo_free(scheme_rktio, tcp_connect_src);
-    
+
+    rktio_tcp_nodelay(scheme_rktio, s, 1); /* initially block-buffered: */
+
     tcp = make_tcp_port_data(s, 2);
     
     v[0] = make_tcp_input_port(tcp, address, NULL);
@@ -1261,7 +1263,9 @@ do_tcp_accept(int argc, Scheme_Object *argv[], Scheme_Object *cust, char **_fail
   if (s) {
     Scheme_Object *v[2];
     Scheme_Tcp *tcp;
-    
+
+    rktio_tcp_nodelay(scheme_rktio, s, 1); /* initially block-buffered: */
+
     tcp = make_tcp_port_data(s, 2);
 
     v[0] = make_tcp_input_port(tcp, "tcp-accepted", cust);

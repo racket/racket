@@ -11,6 +11,7 @@
          "../port/bytes-output.rkt"
          "../port/bytes-port.rkt"
          "../port/parameter.rkt"
+         "../error/message.rkt"
          "custom-write.rkt"
          "write-with-max.rkt"
          "string.rkt"
@@ -267,6 +268,21 @@
      (print-vector p who v mode o max-length graph config "fl" flvector-length flvector-ref equal?)]
     [(fxvector? v)
      (print-vector p who v mode o max-length graph config "fx" fxvector-length fxvector-ref eq?)]
+    [(stencil-vector? v)
+     (define lst (let loop ([i 0])
+                   (if (= i (stencil-vector-length v))
+                       '()
+                       (cons (stencil-vector-ref v i) (loop (add1 i))))))
+     (print-list p who lst
+                 (if (eq? mode DISPLAY-MODE) DISPLAY-MODE WRITE-MODE)
+                 o max-length graph config
+                 (string-append "#<stencil "
+                                (number->string (stencil-vector-mask v))
+                                (if (eqv? 0 (stencil-vector-mask v))
+                                    ""
+                                    ": "))
+                 #f
+                 ">")]
     [(box? v)
      (cond
        [(config-get config print-box)
@@ -290,6 +306,7 @@
            (define prefix (cond
                             [(hash-eq? v) "(hasheq"]
                             [(hash-eqv? v) "(hasheqv"]
+                            [(hash-equal-always? v) "(hashalw"]
                             [else "(hash"]))
            (print-list p who l mode o max-length graph config #f prefix)]
           [else
@@ -355,11 +372,12 @@
 
 (define (fail-unreadable who v)
   (raise (exn:fail
-          (string-append (symbol->immutable-string who)
-                         ": printing disabled for unreadable value"
-                         "\n  value: "
-                         (parameterize ([print-unreadable #t])
-                           ((error-value->string-handler) v (error-print-width))))
+          (error-message->string
+           who
+           (string-append "printing disabled for unreadable value"
+                          "\n  value: "
+                          (parameterize ([print-unreadable #t])
+                            ((error-value->string-handler) v (error-print-width)))))
           (current-continuation-marks))))
 
 (define (check-unreadable who config mode v)

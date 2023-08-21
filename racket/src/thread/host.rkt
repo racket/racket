@@ -71,7 +71,7 @@
         [disable-interrupts host:disable-interrupts]
         [enable-interrupts host:enable-interrupts]
 
-        ;; Support for the thre scheduler and interrupts
+        ;; Support for the thread scheduler and interrupts
         ;; across places
         [sleep host:sleep]
         [get-wakeup-handle host:get-wakeup-handle]

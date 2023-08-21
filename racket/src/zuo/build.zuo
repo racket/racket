@@ -1,0 +1,134 @@
+#lang zuo
+(require "local/image.zuo")
+
+;; Exports `targets` and also defines a `main` submodule
+;; that handles command-line arguments and builds a target
+;; in a `make`-like way
+(provide-targets targets-at)
+
+;; The `targets-at` function generates targets, and `to-dir` determines
+;; the build directory --- so these targets could be used by another
+;; build script that wants the output in a subdirectory, for example
+(define (targets-at at-dir [vars (hash)])
+  ;; The `configure` script writes configuration info to "Makefile", so
+  ;; use that if it's available, or use defaults otherwise
+  (define Makefile (at-dir "Makefile"))
+  (define config-in
+    (cond
+      [(file-exists? Makefile) (config-file->hash Makefile)]
+      ;; no `configure`-generated `Makefile`, so use defaults
+      [(eq? (system-type) 'unix)
+       (hash 'prefix "/usr/local"
+             'CC "cc"
+             'CFLAGS "-O2")]
+      [else
+       (hash 'prefix "C:\\Program Files\\Zuo"
+             'CC "cl.exe"
+             'CFLAGS "/O2")]))
+  (define config (foldl (lambda (key config)
+                          (hash-set config key (hash-ref vars key)))
+                        config-in
+                        (hash-keys vars)))
+
+  (define install-prefix (hash-ref config 'prefix))
+  (define pkgdatadir (shell-subst (hash-ref config 'pkgdatadir (build-path install-prefix "lib" "zuo"))
+                                  config))
+
+  ;; Get a target for "image_zuo.c" from `image.zuo`
+  (define image_zuo.c
+    (image-target (hash 'output (at-dir "image_zuo.c")
+                        'libs (map string->symbol (string-split (hash-ref config 'EMBED_LIBS "zuo")))
+                        'keep-collects? #t)))
+
+  ;; We'll build two executables; they are the same except for the
+  ;; embedded libary path, so we have a target maker parameterized
+  ;; over that choice
+  (define (exe-target name lib-path)
+    (target (at-dir (add-exe name))
+            (lambda (path token)
+              (rule (list image_zuo.c
+                          (input-data-target 'config (cons
+                                                      lib-path
+                                                      (map (lambda (key) (hash-ref config key #f))
+                                                           '(CC CPPFLAGS CFLAGS LDFLAGS LIBS))))
+                          (quote-module-path))
+                    (lambda ()
+                      (define l (split-path path))
+                      (when (car l) (mkdir-p (car l)))
+                      (c-compile path
+                                 (list (target-path image_zuo.c))
+                                 (config-merge config
+                                               'CPPFLAGS
+                                               (string->shell (~a "-DZUO_LIB_PATH=" lib-path)))))))))
+
+  (define (add-exe name)
+    (if (eq? (hash-ref (runtime-env) 'system-type) 'windows)
+        (~a name ".exe")
+        name))
+
+  ;; The library path gets used as a C string constant, which isn't
+  ;; trivial because there are likely to be backslashes on Windows
+  (define (as-c-string path) (~s path)) ; probably a good enough approximation
+
+  ;; The two executable targets
+  (define zuo-to-run (exe-target "to-run/zuo" (as-c-string (find-relative-path "to-run"
+                                                                               (at-source "lib")))))
+  (define zuo-to-install (exe-target "to-install/zuo" (as-c-string (build-path pkgdatadir ".."))))
+
+  ;; A phony target to build both executables, which we'll list first
+  ;; so it's used as the default target
+  (define zuos-to-run-and-install
+    (target 'zuos-to-run-and-install
+            (lambda (token)
+              (phony-rule (list zuo-to-run zuo-to-install)
+                          void))))
+
+  ;; A phony target to run the test suite
+  (define check
+    (target 'check
+            (lambda (token)
+              (phony-rule (list zuo-to-run)
+                          (lambda ()
+                            (unless (= 0 (process-status
+                                          (thread-process-wait
+                                           (hash-ref (process "to-run/zuo"
+                                                              (at-source "tests/main.zuo"))
+                                                     'process))))
+                              (error "check failed")))))))
+
+  ;; A phony target to install
+  (define install
+    (target 'install
+            (lambda (token)
+              (phony-rule (list zuo-to-install)
+                          (lambda ()
+                            (define (at-destdir p)
+                              (define destdir (hash-ref config 'DESTDIR ""))
+                              (if (equal? destdir "")
+                                  p
+                                  (apply build-path
+                                         (cons destdir
+                                               (cdr (explode-path (path->complete-path p)))))))
+                            (define (say-copy cp a b)
+                              (displayln (~a "copying " a " to " b))
+                              (cp a b))
+                            (define bindir (at-destdir
+                                            (shell-subst (hash-ref config 'bindir (build-path install-prefix "bin"))
+                                                         config)))
+                            (mkdir-p (at-destdir install-prefix))
+                            (mkdir-p bindir)
+                            (define dest-exe (build-path bindir "zuo"))
+                            (when (file-exists? dest-exe) (rm dest-exe)) ; needed for macOS
+                            (say-copy cp (target-name zuo-to-install) dest-exe)
+                            (mkdir-p (at-destdir pkgdatadir))
+                            (say-copy cp*
+                                      (at-source "lib" "zuo")
+                                      (at-destdir (build-path pkgdatadir))))))))
+
+  ;; Return all the targets
+  (list zuos-to-run-and-install
+        image_zuo.c
+        zuo-to-run
+        zuo-to-install
+        check
+        install))

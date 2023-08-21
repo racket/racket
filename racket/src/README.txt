@@ -41,17 +41,12 @@ implemented in Chez Scheme and Racket (compiled to Chez Scheme).
 Racket CS
 ---------
 
-By default, `configure` and the Windows scripts build the CS
-implementation of Racket.
+By default, `configure` (for Unix) or `winfig.bat` (for Windows)
+prepares a build for the CS implementation of Racket. Chez Scheme is
+included in Racket source distributions and the source repository, and
+it will be compiled as part of the build.
 
-Chez Scheme is included in Racket source distributions and the source
-repository.
-
-To build Racket CS on Windows, see See "worksp\README.txt" for
-information.
-
-If you need more information specific to Racket CS, see
-"cs/README.txt".
+For more information specific to Racket CS, see "cs/README.txt".
 
 Racket BC
 ---------
@@ -59,18 +54,16 @@ Racket BC
 To build Racket BC on Unix variants or Mac OS:
 
  * ... in addition to Racket CS: supply `--enable-cs --enable-bc` to
-   `configure`.
+   `configure` or supply `/both` to `winfig.bat`.
 
    The generated Racket BC executables will have a "bc" suffix. A
    plain `make` will still build Racket CS; use `make bc` to build and
    `make install-bc` to install.
 
- * ... by itself: supply `--enable-bcdefault` to `configure`.
+ * ... by itself: supply `--enable-bcdefault` to `configure` or
+   `/bconly` to `winfig.bat`.
  
    The generated Racket BC executables will *not* have a "bc" suffix.
-
-To build Racket BC on Windows, see See "worksp\README.txt" for
-information.
 
 If you need more information specific to Racket BC, see
 "bc/README.txt".
@@ -100,11 +93,8 @@ Quick instructions:
  you don't anticipate updating/rebuilding, but it will be harder to
  restart from scratch should you need to.
 
- Some build modes may require GNU Make. For example, when building the
- Racket CS implementation, GNU Make is required. When building the
- Racket BC implementation, the content of the "foreign" subdirectory
- requires GNU Make if no installed "libffi" is detected. If the build
- fails with another variant of `make`, please try using GNU Make.
+ Some build modes may require GNU Make. See "Dependency details" below
+ for more information about dependencies.
 
  When building from a Git clone, after `make install`, the Racket
  installation is still more "minimal" than a "Minimal Racket"
@@ -118,15 +108,6 @@ Detailed instructions:
  0. If you have an old Racket installation in the target directory,
     remove it (unless you are using an "in-place" build from a
     repository as described below).
-
-    On Unix variants other than Mac OS, to run `racket/draw` and
-    `racket/gui` programs, you will not only need the packages that
-    supply those libraries, you'll need Cairo, Pango, and GTk
-    installed. These libraries are not distributed with Racket, and
-    they are not needed for compilation, except for building
-    documentation that uses `racket/draw`. More info about required
-    libs is available at http://docs.racket-lang.org/draw/libs.html
-    and http://docs.racket-lang.org/gui/libs.html.
 
  1. Select (or create) a build directory.
 
@@ -185,10 +166,10 @@ Detailed instructions:
     The `configure` script accepts many other flags that adjust the
     build process. Run `configure --help` for more information. In
     addition, a specific compiler can be selected through environment
-    variables. For example, to select the SGI compilers for Irix
+    variables. For example, to select the SGI compiler for Irix
     instead of gcc, run configure as
 
-         env CC=cc CXX=CC [here]configure
+         env CC=cc [here]configure
 
     To add an include path, be sure to use CPPFLAGS="-I..." instead of
     CFLAGS="-I...". The CPPFLAGS variable controls C pre-processing,
@@ -217,6 +198,11 @@ Detailed instructions:
     haven't yet built ".zo" bytecode files from Racket sources in
     "../collects", startup will be very slow.
 
+    The first step of `make` is to build `bin/zuo` to run build
+    scripts. If you need to select the C compiler to build `bin/zuo`
+    (which is a single C file that needs only system headers), then
+    supply `CC_FOR_BUILD=<compiler>` as an argument to `make`.
+
  4. Run `make install`.
 
     This step copies executables and libraries into place within the
@@ -229,22 +215,26 @@ Detailed instructions:
     libraries can find the installation directories. At this stage, in
     case you are packaging an installation instead of installing
     directly, you can redirect the installation by setting the
-    "DESTDIR" makefile variable to an absolute path for the
+    `DESTDIR` makefile variable to an absolute path for the
     packaging area. For example, `make DESTDIR=/tmp/racket-build
     install` places the installation into "/tmp/racket-build" instead
     of the location originally specified with `--prefix`. The
     resulting installation will not work, however, until it is moved
-    to the location originally specified with `--prefix`.
+    to the location originally specified with `--prefix`. When using
+    `make` instead of `zuo`, `DESTDIR` can be set as an environment
+    variable.
 
     Finally, the `make install` step compiles ".zo" bytecode files for
     installed Racket source, generates launcher programs like DrRacket
     (if it's already installed as a package), and builds documentation
     (again, if installed). Use `make plain-install` to install without
     compiling ".zo" files, creating launchers, or building
-    documentation.
+    documentation. Supplying `PLT_SETUP_OPTIONS` (allowed as an
+    environment variable with `make`) sets flags that are passed on to
+    `raco setup` by `make install`.
 
     For a `--prefix` build, unless `--enable-sharezo` is specified,
-    "compiled" directories containin ".zo" files are moved from
+    "compiled" directories containing ".zo" files are moved from
     "share" to "lib" as the last step of installation. (The
     "config.rktd" file is updated so that `current-compile-file-roots`
     is initialized to find the relocated ".zo" files.) For Racket BC,
@@ -274,14 +264,54 @@ Detailed instructions:
     `--enabled-shared` for Racket BC, you may accumulate many unused
     versions of the dynamic libraries in your installation target.
 
-After an "in-place" install from a source distribution, the
-"racket/src" directory is no longer needed, and it can be safely
-deleted. Build information is recorded in a "buildinfo" file in the
-installation.
+ 5. After an "in-place" install from a source distribution, the
+   "racket/src" directory is no longer needed, and it can be safely
+   deleted. Build information is recorded in a "buildinfo" file in the
+   installation.
 
-For a build without `--prefix` (or with `--enable-origtree`) and
-without `--enable-shared`, you can safely move the install tree,
-because all file references within the installation are relative.
+   For a build without `--prefix` (or with `--enable-origtree`) and
+   without `--enable-shared`, you can safely move the install tree,
+   because all file references within the installation are relative.
+
+Dependency details:
+
+ Mostly, you need a C compiler and `make`.
+
+ Some build modes may require GNU Make. For example, when building the
+ Racket CS implementation, GNU Make is required when the bundled
+ liblz4 is built. When building the Racket BC implementation, the
+ content of the "foreign" subdirectory requires GNU Make if no
+ installed libffi is detected. If the build fails with another variant
+ of `make`, please try using GNU Make.
+
+ To build Racket CS on a platform where Chez Scheme does not have a
+ native-code backend, libffi must be installed. (The bundled version
+ that is used by Racket BC is not currently built for Racket CS.)
+
+ Additional recommended libraries for Unix (not Mac OS) platforms:
+
+  * libffi (Racket BC): optional, and a version of libffi is bundled
+    with Racket sources, but an installed libffi is preferred.
+
+  * libncurses (Racket BC and CS): optional, but expeditor support in
+    command-line Racket is enabled only when libncurses is present at
+    compile time.
+
+  * libiconv (Racket BC and CS): optional, but without iconv,
+    `open-bytes-converter` support is limited, and UTF-8 is assumed as
+    the locale's encoding.
+
+  * libz and liblz4 (Racket CS): optional, and built from bundled
+    versions if not present.
+
+ On Unix variants other than Mac OS, to run `racket/draw` and
+ `racket/gui` programs, you will not only need the packages that
+ supply those libraries, you'll need Cairo, Pango, and GTk installed.
+ These libraries are not distributed with Racket, and they are not
+ needed for compilation, except for building documentation that uses
+ `racket/draw`. More info about required libs is available at
+ http://docs.racket-lang.org/draw/libs.html and
+ http://docs.racket-lang.org/gui/libs.html.
 
 
 ========================================================================
@@ -294,10 +324,22 @@ After installing developer tools, follow the Unix instructions above,
 but note the following:
 
  * If you are building from a source distribution (as opposed to a Git
-   repository checkout), then most likely "racket-lib" is already
-   included and installed as part of the the distribution, but without
-   dependencies of "racket-lib" that are specific to Mac OS. In that
-   case, use
+   repository checkout), then beware that a regular/full Racket
+   distribution will not build correctly. A regular source
+   distribution is intended for Unix platforms, and it does not
+   include native libraries that are needed on Mac OS. You should
+   start with a source distribution that is labelled "Minimal Racket",
+   instead, and then finish with
+
+     raco pkg update --auto racket-lib
+     raco pkg install -i main-distribution
+
+ * If you are building from a minimal Racket source distribution (as
+   opposed to a Git repository checkout or a regular/full Racket
+   source distribution for Unix), then "racket-lib" is already
+   included and installed as part of the the distribution, but still
+   without dependencies of "racket-lib" that are specific to Mac OS.
+   In that case, after following build steps for Unix, use
 
       raco pkg update --auto racket-lib
 
@@ -306,7 +348,8 @@ but note the following:
 
  * The Racket build creates a framework, "Racket.framework", which is
    installed into "racket/lib".  This framework is used by the `racket`
-   executable that goes into "racket/bin".
+   executable that goes into "racket/bin" unless the `--enable-embedfw`
+   flag is used.
 
  * The GRacket build creates a GUI-executable variant of the Racket
    executable. The GRacket build process also downloads (from github)
@@ -339,11 +382,22 @@ but note the following:
  Compiling for Windows
 ========================================================================
 
-To compile with Microsoft Visual C, see the instructions in
-"worksp\README.txt".
+First, see "Building from a Source Distribution" in "worksp\README.txt".
 
-To compile with MinGW tools, follow the Unix instructions above; do
-not use `--enable-shared`, because DLLs will be generated
+For information on setting up a command-line build environment with
+Microsoft Visual Studio, see detailed instructions in
+"worksp\README.txt". With the command-line environment set up, the
+build steps are essentially the same as for Unix, but with
+`winfig.bat` in place of `configure` and `nmake` in place of `make`:
+
+   mkdir build
+   cd build
+   ..\winfig.bat
+   nmake
+   nmake install
+
+To compile with MinGW tools using MSYS2, follow the Unix instructions
+above; do not use `--enable-shared`, because DLLs will be generated
 automatically. The result is a Windows-style build. If you are using a
 variant of MinGW without "libdelayimp.a", get the implementation of
 "delayimp.c" from MinGW-w64 and compile it to "libdelayimp.a".
@@ -374,11 +428,33 @@ Cross-compilation requires at least two flags to `configure`:
    run `configure` again (with no arguments) in a "local" subdirectory
    to create a build for the current platform.
 
-An additional flag is needed for building Racket CS, unless the flag
-`--enable-racket=auto` is used:
+For Racket CS, an additional flag is required:
 
- * `--enable-scheme=DIR`, where DIR is a path that has a "ChezScheme"
-   directory where Chez Scheme is built for the host system.
+ * `--enable-scheme=SCHEME`, where SCHEME is a Chez Scheme (v9.5.3 and
+   up) executable that runs on the build platform; it does not need to
+   match the Chez Scheme version as used in the Racket being built; a
+   "reboot" bootstrapping path is able to reconstruct boot files across
+   versions.
+ 
+   Supplying `--enable-scheme=DIR` is also supported, where DIR is a
+   path that has a "ChezScheme" directory where Chez Scheme is built
+   for the build system (but not necessarily installed).
+
+The `--enable-racket=RACKET` and `--enable-scheme=SCHEME` flags are
+allowed for non-cross builds, too:
+
+ * For Racket CS, supplying either selects a Racket or Chez Scheme
+   implementation used to create boot files to the build platform.
+   Supplying Chez Scheme is a much more direct path. These executables
+   do not need to match the versions being built, as there are
+   bootstrapping paths that can handle differences where needed. If
+   you supply both Racket and Chez Scheme, then Racket is used
+   (despite being less direct).
+
+ * For Racket BC, `--enable-racket=RACKET` selects a Racket for
+   prepare C sources to cooperate with garbage collection. Its version
+   needs to be close to the one being built, and potentially exactly
+   the same version.
 
 Some less commonly needed `configure` flags are for Racket BC:
 
@@ -388,7 +464,7 @@ Some less commonly needed `configure` flags are for Racket BC:
 
  * `--enable-cify` or `--disable-cify` if the JIT availability on the
     target platform is different than the build platform; use
-    `--enable-cify` if the JIT is not abailable on the target
+    `--enable-cify` if the JIT is not available on the target
     platform.
 
 
@@ -477,6 +553,58 @@ inheriting the build machine's disposition.
 
 
 ========================================================================
+ Compiling without run-time code generation
+========================================================================
+
+Racket programs and expressions are normally compiled to machine code
+either at run time (when `eval` is used or when Racket BC JIT-compiles
+bytecode) or in advance (when compiling to ".zo" files using Racket
+CS). Interpreted modes are available --- but slower, of course:
+
+ * Racket CS: configure with `--enable-pb`, which uses a bytecode
+   virtual machine instead of native code. By default, core functions
+   are compiled to some extent via C; use `--disable-pbchunk` to
+   disable even that compilation. The configure script tries to infer
+   the machine's word size, endianness, and threading support; to
+   override or avoid inference, supply `--enable-mach=<machine>` with
+   a <machine> that is one of `tpb64l`, `tpb64b`, `tpb32l`, `tpb32b`,
+   `pb64l`, `pb64b`, `pb32l`, or `pb32b`; the presence of absence of a
+   leading "t" determines whether threads are enabled, and the
+   trailing letter indicates endianness.
+
+ * Racket BC: configure with `--disable-jit`, or run Racket with the
+   `-j` flag. On some supported platforms (such as AArch64), Racket BC
+   lacks JIT support and always uses interpreted mode.
+
+
+========================================================================
+ Make versus Zuo
+========================================================================
+
+When you run `configure` or `winfig.bat`, a makefile is generated, but
+most of the build work is described by ".zuo" files. The generated
+makefiles ensure that `bin/zuo` or `zuo.exe` is built and then bounces
+the target request to `zuo`. When working on Racket's sources, it's
+often worthwhile to build and install `zuo` to make running it easier;
+see "zuo/README.md".
+
+To build `bin/zuo` via `make`, the makefile uses the default C
+compiler via `$(CC) -O2`. If a different compiler is needed, supply
+`CC_FOR_BUILD=<executable>` as an argument to either `make` or
+`configure` to select a compiler that builds executables for the
+current machine.
+
+A file named "build.zuo" is analogous to "Makefile.in": it's in a
+source directory but meant to be used from a build directory. A file
+named "main.zuo" is analogous to "Makefile", where the directory
+containing "main.zuo" is the build directory. The `configure` and
+`winfig.bat` scripts generate a "main.zuo" in a build directory that
+bounces to "build.zuo" in the source directiry. A file named
+"buildmain.zuo" is even more like "Makefile.in" in the sense that
+"buildmain.zuo" is instantiated in a build directory as "main.zuo".
+
+
+========================================================================
  Modifying Racket
 ========================================================================
 
@@ -529,9 +657,11 @@ Sources for the Racket CS implementation
 
  * "io" --- I/O
 
-    This layer uses the "racketio" library to access OS facilties.
+    This layer uses the "racketio" library to access OS facilities.
 
  * "regexp" --- regexp matcher
+
+ * "rktboot" --- create Chez Scheme boot files using Racket
 
 See also the shared sources below, which includes rktio, the macro
 expander, and schemify.
@@ -543,11 +673,11 @@ Sources for the Racket BC implementation
 
    This implementation can build from "scratch" with a C compiler, but
    first by building a CGC variant of Racket to transform the C
-   sourses to build a (normal) 3m variant.
+   sources to build a (normal) 3m variant.
 
  * "mzcom" --- MzCOM executable (for Windows)
 
- * "mysink" --- `ffi/unsafe/com` helper DLL (for Windows)
+ * "myssink" --- `ffi/unsafe/com` helper DLL (for Windows)
 
  * "cify" --- a Racket-to-C compiler
 
@@ -569,10 +699,11 @@ Sources shared by both Racket implementations
    already-expanded versions are included with source in
    "cs/schemified".
 
-   If you change the expander, run `make` in its directory to generate
+   If you change the expander, run `zuo` in its directory to generate
    the "startup.inc" file that holds the expander's implementation for
-   Racket BC. Also, run `make` in "cs" to rebuild expanded libraries
-   for Racket CS.
+   Racket BC. Also, run `zuo` in "cs" to rebuild expanded libraries
+   for Racket CS. (See "Make vesus Zuo" above for information on
+   running `zuo`.)
 
  * "rktio" --- portability layer for low-level I/O
 
@@ -590,13 +721,13 @@ Sources shared by both Racket implementations
 
    Startup wrappers used by both the Racket CS and BC implementations.
 
- * "worksp" --- Windows projects and build scripts
+ * "worksp" --- Windows scripts, icons, etc.
 
  * "mac" --- scripts for generating Mac OS ".app"s
 
- * "setup-go.rkt" --- helper script
+ * "setup-go.rkt" and other ".rkt" files --- helper scripts
 
-   The "setup-go.rkt" script is a bootstrapping too that is used by
+   The "setup-go.rkt" script is a bootstrapping tool that is used by
    parts of the build that need to run Racket programs in the process
    of building Racket.
 

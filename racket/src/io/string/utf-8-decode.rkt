@@ -81,6 +81,7 @@
       (cond
        [error-ch
         (when out-str (string-set! out-str j error-ch))
+
         (define next-j (fx+ j 1))
         (define next-i (fx+ base-i 1))
         (cond

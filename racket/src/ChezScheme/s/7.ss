@@ -114,13 +114,7 @@
                 (let ([path (let ([dir (car ls)])
                               (if (or (string=? dir "") (string=? dir "."))
                                   fn
-                                  (format
-                                    (if (directory-separator?
-                                          (string-ref dir
-                                            (fx- (string-length dir) 1)))
-                                        "~a~a"
-                                        "~a/~a")
-                                    dir fn)))])
+                                  (path-build dir fn)))])
                   (if (guard (c [#t #f]) (close-input-port (open-input-file path)) #t)
                       (p path)
                       (loop (cdr ls))))))))))
@@ -615,6 +609,14 @@
             ($oops 'collect-generation-radix "~s is not a positive fixnum" v))
          v)))
 
+(define collect-maximum-generation-threshold-factor
+  (make-parameter
+   2
+   (lambda (v)
+     (unless (and (real? v) (not (negative? v)))
+       ($oops 'collect-maximum-generation-threshold-factor "~s is not a nonnegative real" v))
+     v)))
+  
 (define $reset-protect
   (lambda (body out)
     ((call/cc
@@ -707,20 +709,14 @@
 
 (define $format-scheme-version
   (lambda (n)
-    (if (= (logand n 255) 0)
-        (if (= (logand n 255) 0)
-            (format "~d.~d"
-              (ash n -24)
-              (logand (ash n -16) 255))
-            (format "~d.~d.~d"
-              (ash n -24)
-              (logand (ash n -16) 255)
-              (logand (ash n -8) 255)))
-        (format "~d.~d.~d.~d"
+    (if (= (logand (ash n -8) 255) 0)
+        (format "~d.~d"
+          (ash n -24)
+          (logand (ash n -16) 255))
+        (format "~d.~d.~d"
           (ash n -24)
           (logand (ash n -16) 255)
-          (logand (ash n -8) 255)
-          (logand n 255)))))
+          (logand (ash n -8) 255)))))
 
 ; set in back.ss
 (define $scheme-version)
@@ -733,24 +729,36 @@
         (logand (ash n -16) 255)
         (logand (ash n -8) 255)))))
 
-(define scheme-fork-version-number
+(define scheme-pre-release
   (lambda ()
-    (let ([n (constant scheme-version)])
-      (values
-        (ash n -24)
-        (logand (ash n -16) 255)
-        (logand (ash n -8) 255)
-        (logand n 255)))))
+    (let ([n (logand (constant scheme-version) 255)])
+      (and (fx> n 0)
+           n))))
 
 (define scheme-version
-  (let ([s #f])
-    (lambda ()
-      (unless s
-        (set! s
-          (format "~:[Petite ~;~]Chez Scheme Version ~a"
-            $compiler-is-loaded?
-            $scheme-version)))
-      s)))
+  (let ([s #f]
+        [s+pre #f])
+    (rec scheme-version
+      (case-lambda
+       [() (scheme-version #f)]
+       [(show-pre-release?)
+        (or (if show-pre-release? s+pre s)
+            (let* ([pre-n (scheme-pre-release)]
+                   [str (format "~:[Petite ~;~]Chez Scheme Version ~a~a"
+                                $compiler-is-loaded?
+                                $scheme-version
+                                (if show-pre-release?
+                                    (if pre-n (format "-pre-release.~a" pre-n) "")
+                                    ""))])
+              (cond
+                [(not pre-n)
+                 (set! s str)
+                 (set! s+pre str)]
+                [show-pre-release?
+                 (set! s+pre str)]
+                [else
+                 (set! s str)])
+              str))]))))
 
 (define petite?
   (lambda ()
@@ -777,8 +785,8 @@
 
 (define $scheme-greeting
   (lambda ()
-    (format "~a\nCopyright 1984-2020 Cisco Systems, Inc.\n"
-      (scheme-version))))
+    (format "~a\nCopyright 1984-2022 Cisco Systems, Inc.\n"
+      (scheme-version #t))))
 
 (define $session-key #f)
 (define $scheme-init)
@@ -800,13 +808,15 @@
   (define gc-bytes 0)
   (define gc-count 0)
   (define start-bytes 0)
+  (define allocated-after-max 0)
   (define docollect
     (let ([do-gc (foreign-procedure "(cs)do_gc" (int int int ptr) ptr)])
       (lambda (p)
         (with-tc-mutex
           (unless (= $active-threads 1)
             ($oops 'collect "cannot collect when multiple threads are active"))
-          (let-values ([(trip g gmintarget gmaxtarget count-roots) (p gc-trip)])
+          (let-values ([(trip g gmintarget gmaxtarget count-roots reset-alloc-after?)
+                        (p gc-trip allocated-after-max)])
             (set! gc-trip trip)
             (let ([cpu (current-time 'time-process)] [real (current-time 'time-monotonic)])
               (set! gc-bytes (+ gc-bytes (bytes-allocated)))
@@ -824,10 +834,13 @@
                 (when (collect-notify)
                   (fprintf (console-output-port) "done]~%")
                   (flush-output-port (console-output-port)))
-                (set! gc-bytes (- gc-bytes (bytes-allocated)))
-                (set! gc-cpu (add-duration gc-cpu (time-difference (current-time 'time-process) cpu)))
-                (set! gc-real (add-duration gc-real (time-difference (current-time 'time-monotonic) real)))
-                (set! gc-count (1+ gc-count))
+                (let ([allocated (bytes-allocated)])
+                  (when reset-alloc-after?
+                    (set! allocated-after-max allocated))
+                  (set! gc-bytes (- gc-bytes allocated))
+                  (set! gc-cpu (add-duration gc-cpu (time-difference (current-time 'time-process) cpu)))
+                  (set! gc-real (add-duration gc-real (time-difference (current-time 'time-monotonic) real)))
+                  (set! gc-count (1+ gc-count)))
                 gc-result)))))))
   (define collect-init
     (lambda ()
@@ -836,7 +849,8 @@
       (set! gc-real (make-time 'time-collector-real 0 0))
       (set! gc-count 0)
       (set! gc-bytes 0)
-      (set! start-bytes (bytes-allocated))))
+      (set! start-bytes (bytes-allocated))
+      (set! allocated-after-max start-bytes)))
   (set! $gc-real-time (lambda () gc-real))
   (set! $gc-cpu-time (lambda () gc-cpu))
   (set! initial-bytes-allocated (lambda () start-bytes))
@@ -858,31 +872,40 @@
     (define collect0
       (lambda ()
         (docollect
-          (lambda (gct)
+          (lambda (gct prev-allocated-after-max)
             (let ([gct (+ gct 1)])
               (let ([cmg (collect-maximum-generation)])
                 (let loop ([g cmg])
                   (if (= (modulo gct (expt (collect-generation-radix) g)) 0)
                       (if (fx= g cmg)
-                          (values 0 g (fxmin g 1) g #f)
-                          (values gct g 1 (fx+ g 1) #f))
+                          (let ([allocated (bytes-allocated)])
+                            (if (>= allocated (* prev-allocated-after-max
+                                                 (collect-maximum-generation-threshold-factor)))
+                                (values 0 g g g #f #t)
+                                ;; GC the next-to-max collection this time, but arrange to
+                                ;; check the max for the next time that we'd collect the
+                                ;; next-to-max generation:
+                                (let ([gct (- gct (expt (collect-generation-radix) (- cmg 1)))])
+                                  (values gct (fx- g 1) 1 g #f #f))))
+                          (values gct g 1 (fx+ g 1) #f #f))
                       (loop (fx- g 1))))))))))
     (define collect2
       (lambda (g gmintarget gmaxtarget count-roots)
         (docollect
-          (lambda (gct)
-            (values 
-             ; make gc-trip to look like we've just collected generation g
-             ; w/o also having collected generation g+1
-              (if (fx= g (collect-maximum-generation))
-                  0
-                  (let ([gct (+ gct 1)])
-                    (define (trip g)
-                      (let ([n (expt (collect-generation-radix) g)])
-                        (+ gct (modulo (- n gct) n))))
-                    (let ([next (trip g)] [limit (trip (fx+ g 1))])
-                      (if (< next limit) next (- limit 1)))))
-              g gmintarget gmaxtarget count-roots)))))
+          (lambda (gct prev-allocated-after-max)
+            (let ([max-gen? (fx= g (collect-maximum-generation))])
+              (values 
+               ; make gc-trip to look like we've just collected generation g
+               ; w/o also having collected generation g+1
+               (if max-gen?
+                   0
+                   (let ([gct (+ gct 1)])
+                     (define (trip g)
+                       (let ([n (expt (collect-generation-radix) g)])
+                         (+ gct (modulo (- n gct) n))))
+                     (let ([next (trip g)] [limit (trip (fx+ g 1))])
+                       (if (< next limit) next (- limit 1)))))
+               g gmintarget gmaxtarget count-roots max-gen?))))))
     (case-lambda
       [() (collect0)]
       [(g)
@@ -1210,7 +1233,7 @@
                       (waiter))]
                    [(and (integer? x) (nonnegative? x))
                     (fprintf (console-output-port)
-                       "No saved error continution for thread ~s.~%"
+                       "No saved error continuation for thread ~s.~%"
                        x)
                     (flush-output-port (console-output-port))
                     (waiter)]

@@ -1,14 +1,12 @@
 #lang racket/base
 (require (for-syntax racket/base)
-         (for-syntax "private/count-bits-in-fixnum.rkt")
          racket/private/vector-wraps
          racket/match
          racket/dict
          racket/contract/base
          racket/fixnum
          racket/unsafe/ops
-         racket/serialize
-         "private/count-bits-in-fixnum.rkt")
+         racket/serialize)
 
 (define bits-in-a-word 8)
 (define bits-in-a-word-log2 3)
@@ -25,7 +23,8 @@
   (define-values (q r) (quotient/remainder size bits-in-a-word))
   (define word-size (+ q (if (zero? r) 0 1)))
   (define words (make-bytes word-size (if fill largest-word 0)))  
-  (when (and fill (not (zero? r))) 
+  (when (and fill (not (zero? r)))
+    ;; Unused bits are set to 0
     (bytes-set! words q (- (expt 2 r) 1)))
   (bit-vector words size))
 
@@ -38,27 +37,34 @@
 (define not-given (gensym))
 
 (define (bit-vector-ref bv n [default not-given])
+  ;; use "natural?" here to be compatible with the previously used contract
   (unless (exact-nonnegative-integer? n)
-    (raise-argument-error 'bit-vector-ref "exact-nonnegative-integer?" n))
-  (cond [(< n (bit-vector-size bv))
-         (unsafe-bit-vector-ref bv n)]
-        [else
-         (cond [(eq? default not-given)
-                (raise-range-error 'bit-vector-ref
-                                   "bit-vector"
-                                   "" n bv 0 (sub1 (bit-vector-size bv)))]
-               [(procedure? default)
-                (default)]
-               [else default])]))
-
-(define (unsafe-bit-vector-ref bv n)
-  (define wi (word-index n))
-  (define bi (bit-index n))
+    (raise-argument-error 'bit-vector-ref "natural?" n))
   (match bv
     [(struct bit-vector (words size))
-     (define word (bytes-ref words wi))
-     (define bit  (bitwise-bit-set? word bi))
-     bit]))
+     (cond
+       [(< n size) (unsafe-words-ref words n)]
+       [else
+        (cond
+          [(eq? default not-given)
+           (raise-range-error 'bit-vector-ref
+                              "bit-vector"
+                              "" n bv 0 (sub1 size))]
+          [(procedure? default) (default)]
+          [else default])])]
+    [_ (raise-argument-error 'bit-vector-ref "bit-vector?" bv)]))
+
+(define (unsafe-bit-vector-ref bv n)
+  (unsafe-words-ref (bit-vector-words bv) n))
+
+;; precondition:
+;; - words is a bytestring
+;; - n is a fixnum less than words's length (as a bitvector)
+(define (unsafe-words-ref words n)
+  (define wi (word-index n))
+  (define bi (bit-index n))
+  (define word (unsafe-bytes-ref words wi))
+  (unsafe-bitwise-bit-set? word bi))
 
 (define (bit-vector-iterate-first bv)
   (if (zero? (bit-vector-size bv)) #f 0))
@@ -74,16 +80,36 @@
 (define (bit-vector-iterate-value bv key)
   (bit-vector-ref bv key))
 
-(define (bit-vector-set! bv n b)
+(define (unsafe-bitwise-bit-set? n m)
+  (not (eq? 0 (unsafe-fxand n (unsafe-fxlshift 1 m)))))
+
+;; precondition:
+;; - words is a bytestring
+;; - n is a fixnum less than words's length (as a bitvector)
+;; - b is a boolean
+(define (unsafe-words-set! words n b)
   (define wi (word-index n))
   (define bi (bit-index n))
+  (define word (unsafe-bytes-ref words wi))
+  (define bit  (unsafe-bitwise-bit-set? word bi))
+  (unless (eq? bit b)
+    (define new-word (unsafe-fxxor word (unsafe-fxlshift 1 bi)))
+    (unsafe-bytes-set! words wi new-word)))
+
+(define (bit-vector-set! bv n b)
+  ;; use "natural?" here to be compatible with the previously used contract
+  (unless (exact-nonnegative-integer? n)
+    (raise-argument-error 'bit-vector-set! "natural?" n))
+  (unless (boolean? b)
+    (raise-argument-error 'bit-vector-set! "boolean?" b))
   (match bv
     [(struct bit-vector (words size))
-     (define word (bytes-ref words wi))
-     (define bit  (bitwise-bit-set? word bi))
-     (unless (eq? bit b)
-       (define new-word (bitwise-xor word (arithmetic-shift 1 bi)))
-       (bytes-set! words wi new-word))]))
+     (cond
+       [(< n size) (unsafe-words-set! words n b)]
+       [else (raise-range-error 'bit-vector-set!
+                                "bit-vector"
+                                "" n bv 0 (sub1 size))])]
+    [_ (raise-argument-error 'bit-vector-set! "bit-vector?" bv)]))
 
 (define (bit-vector-length bv)
   (bit-vector-size bv))
@@ -100,49 +126,42 @@
            (bit-vector-copy bv start end)])])
     bit-vector-copy))
 
-(define popcount-table
-  (let ()
-    (define-syntax (make-table stx)
-      (with-syntax ([(elt ...)
-                     (for/list ([i (in-range 256)])
-                       (fxpopcount i))])
-        ;; Literal immutable vector allocated once (?)
-        #'(quote #(elt ...))))
-    (make-table)))
-
 (define (bit-vector-popcount bv)
   (for/sum ([b (in-bytes (bit-vector-words bv))])
-    #| (unsafe-fxpopcount* b 8) |#
-    (unsafe-vector-ref popcount-table b)))
+    (fxpopcount16 b)))
 
 (define (bit-vector->list bv)
   (define len (bit-vector-size bv))
+  (define words (bit-vector-words bv))
   (let loop ([i 0])
     (cond [(< i len)
-           (cons (unsafe-bit-vector-ref bv i)
+           (cons (unsafe-words-ref words i)
                  (loop (add1 i)))]
           [else null])))
 
 (define (list->bit-vector init-bits)
   (define len (length init-bits))
   (define bv (make-bit-vector len))
+  (define words (bit-vector-words bv))
   (for ([i (in-range len)]
         [b (in-list init-bits)])
-    (bit-vector-set! bv i b))
+    (unsafe-words-set! words i b))
   bv)
 
 (define (bit-vector->string bv)
   (let* ([l (bit-vector-size bv)]
+         [words (bit-vector-words bv)]
          [s (make-string l)])
     (for ([i (in-range l)])
-      (string-set! s i (if (unsafe-bit-vector-ref bv i) #\1 #\0)))
+      (string-set! s i (if (unsafe-words-ref words i) #\1 #\0)))
     s))
 
 (define (string->bit-vector s)
-  (let* ([bv (make-bit-vector (string-length s) #f)])
+  (let* ([bv (make-bit-vector (string-length s) #f)]
+         [words (bit-vector-words bv)])
     (for ([i (in-range (string-length s))])
       (when (eqv? (string-ref s i) #\1)
-        (bit-vector-set! bv i #t)))
+        (unsafe-words-set! words i #t)))
     bv))
 
 
@@ -191,37 +210,22 @@
                           #f #f #f))
   #:methods gen:equal+hash
   [(define (equal-proc x y recursive-equal?)
+     ;; The unused bits are all set to 0, so comparison
+     ;; can be deferred to bytes=?
      (let ([vx (bit-vector-words x)]
            [vy (bit-vector-words y)]
-           [nx (bit-vector-size x)]
-           [ny (bit-vector-size y)])
+           [nx (bit-vector-length x)]
+           [ny (bit-vector-length y)])
        (and (= nx ny)
-            (or (zero? nx) ;zero-length bit-vectors are equal
-                (let ([last-index (sub1 (bytes-length vx))])
-                  (and
-                   ;; Check all but last byte.
-                   ;; These use all bits, therefore simple eq?.
-                   (for/and ([index (in-range (sub1 last-index))])
-                     (eq? (bytes-ref vx index)
-                          (bytes-ref vy index)))
-                   ;; Check the used bits of the last byte.
-                   (let ([used-bits (min 8 (remainder nx 256))])
-                     (eq? (bitwise-bit-field (bytes-ref vx last-index)
-                                             0
-                                             used-bits)
-                          (bitwise-bit-field (bytes-ref vy last-index)
-                                             0
-                                             used-bits)))))))))
-   (define (hash-code x hc)
-     (let ([v (bit-vector-words x)]
-           [n (bit-vector-size x)])
-       (bitwise-xor
-        (hc n)
-        (for/fold ([h 1]) ([i (in-range (bytes-length v))])
-          (bitwise-xor h (hc (bytes-ref v i)))))))
+            (bytes=? vx vy))))
+   (define (hash-code self rec)
+     (rec (bit-vector-words self)))
    (define hash-proc  hash-code)
    (define hash2-proc hash-code)]
   #:property prop:sequence in-bit-vector)
+
+(provide bit-vector-ref
+         bit-vector-set!)
 
 (provide/contract
  [bit-vector?
@@ -230,10 +234,6 @@
          (->* () () #:rest (listof boolean?) bit-vector?)]
  [make-bit-vector
   (->* (exact-nonnegative-integer?) (boolean?)   bit-vector?)]
- [bit-vector-ref
-  (->* (bit-vector? exact-nonnegative-integer?) (any/c) any)]
- [bit-vector-set!
-  (-> bit-vector? exact-nonnegative-integer? boolean? any)] 
  [bit-vector-length
   (-> bit-vector? any)]
  [bit-vector-popcount

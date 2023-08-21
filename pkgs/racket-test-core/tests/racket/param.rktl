@@ -79,6 +79,13 @@
                        (struct s (x)
                          #:property prop:procedure 0)
                        (s (lambda (x) x)))))
+(define test-param6 (let ()
+                      (struct s (x)
+                         #:property prop:procedure 0)
+                      (make-derived-parameter
+                       test-param5
+                       (s (lambda (x) x))
+                       (s (lambda (x) x)))))
 
 (test 'one test-param1)
 (test 'two test-param2) 
@@ -137,6 +144,10 @@
 (test (void) test-param5 5)
 (test 5 test-param5)
 
+(test 5 test-param6)
+(test (void) test-param6 6)
+(test 6 test-param6)
+
 (let ([cd (make-derived-parameter current-directory values values)])
   (test (current-directory) cd)
   (let* ([v (current-directory)]
@@ -180,7 +191,7 @@
 
 (test 'this-one object-name (make-parameter 7 #f 'this-one))
 
-(arity-test make-parameter 1 3)
+(arity-test make-parameter 1 4)
 (err/rt-test (make-parameter 0 zero-arg-proc))
 (err/rt-test (make-parameter 0 two-arg-proc))
 (err/rt-test (make-parameter 0 #f 7))
@@ -215,6 +226,11 @@
 		(list read-accept-graph
 		      (list #t #f)
 		      '(read (open-input-string "#0=(1 . #0#)"))
+		      exn:fail:read?
+		      #f)
+                (list read-syntax-accept-graph
+		      (list #t #f)
+		      '(read-syntax #f (open-input-string "#0=(1 . #0#)"))
 		      exn:fail:read?
 		      #f)
 		(list read-accept-compiled

@@ -1,0 +1,23 @@
+#lang zuo
+
+(require "harness.zuo")
+
+(alert "variables")
+
+(check (variable? (variable 'alice)))
+(check (not (variable? 'alice)))
+
+(check-fail (variable-ref (variable 'alice)) "undefined: alice")
+(check-fail (variable-ref 'alice) "not a variable")
+
+(check (let ([a (variable 'alice)])
+         (variable-set! a 'home)
+         (list (variable-ref a) (variable-ref a)))
+       '(home home))
+(check-fail (let ([a (variable 'alice)])
+              (variable-set! a 'home)
+              (variable-set! a 'home))
+            "variable already has a value")
+(check-fail (variable-set! 'alice 'home) "not a variable")
+
+(check-arg-fail (variable 10) "not a symbol")

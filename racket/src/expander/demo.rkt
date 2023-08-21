@@ -1740,3 +1740,49 @@ bread-and-butter2
 (eval-expression '(#%require (portal doorway1 hallway1)))
 (parameterize ([current-namespace demo-ns])
   (eval-expression '(identifier-binding-portal-syntax (quote-syntax doorway1))))
+
+;; ----------------------------------------
+
+(define ci (make-inspector (current-code-inspector)))
+
+(define ns (make-namespace))
+(namespace-attach-module (current-namespace) ''#%kernel ns)
+(namespace-require ''#%kernel ns)
+
+(eval-module-declaration
+ '(module protector '#%kernel
+    (#%provide (protect secret))
+    (define-values (secret) 5))
+ #:namespace ns)
+
+(eval-module-declaration
+ '(module m '#%kernel
+    (#%require 'protector
+               (for-syntax '#%kernel))
+    (#%provide m)
+    (define-syntaxes (m)
+      (lambda (stx)
+        (datum->syntax (quote-syntax here)
+                       (list (quote-syntax define-syntaxes)
+                             (list (cadr (syntax-e stx)))
+                             (list (quote-syntax lambda)
+                                   (list (quote-syntax sstx))
+                                   (quote-syntax (quote-syntax secret))
+                                   #;
+                                   (quote-syntax (datum->syntax
+                                                  (quote-syntax secret)
+                                                  'secret))))))))
+ #:namespace ns)
+(eval-expression '(#%require 'm) #:namespace ns)
+
+(parameterize ([current-code-inspector ci])
+  (let ([ns2 (make-namespace)])
+    (namespace-attach-module (current-namespace) ''#%kernel ns2)
+    (namespace-attach-module ns ''m ns2)
+    (namespace-require ''#%kernel ns2)
+    (eval-module-declaration
+     '(module test '#%kernel
+        (#%require 'm)
+        (m n)
+        (n))
+     #:namespace ns2)))

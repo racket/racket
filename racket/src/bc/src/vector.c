@@ -31,6 +31,8 @@ READ_ONLY Scheme_Object *scheme_unsafe_struct_star_set_proc;
 
 /* locals */
 static Scheme_Object *vector_p (int argc, Scheme_Object *argv[]);
+static Scheme_Object *immutable_vector_p (int argc, Scheme_Object *argv[]);
+static Scheme_Object *mutable_vector_p (int argc, Scheme_Object *argv[]);
 static Scheme_Object *vector (int argc, Scheme_Object *argv[]);
 static Scheme_Object *vector_immutable (int argc, Scheme_Object *argv[]);
 static Scheme_Object *vector_length (int argc, Scheme_Object *argv[]);
@@ -60,6 +62,8 @@ static Scheme_Object *unsafe_struct_set (int argc, Scheme_Object *argv[]);
 static Scheme_Object *unsafe_struct_star_ref (int argc, Scheme_Object *argv[]);
 static Scheme_Object *unsafe_struct_star_set (int argc, Scheme_Object *argv[]);
 static Scheme_Object *unsafe_struct_star_cas (int argc, Scheme_Object *argv[]);
+static Scheme_Object *unsafe_struct_star_type (int argc, Scheme_Object *argv[]);
+static Scheme_Object *unsafe_struct_type (int argc, Scheme_Object *argv[]);
 static Scheme_Object *unsafe_string_len (int argc, Scheme_Object *argv[]);
 static Scheme_Object *unsafe_string_ref (int argc, Scheme_Object *argv[]);
 static Scheme_Object *unsafe_string_set (int argc, Scheme_Object *argv[]);
@@ -70,6 +74,15 @@ static Scheme_Object *unsafe_bytes_copy_bang (int argc, Scheme_Object *argv[]);
 static Scheme_Object *unsafe_bytes_immutable_bang (int argc, Scheme_Object *argv[]);
 static Scheme_Object *unsafe_string_immutable_bang (int argc, Scheme_Object *argv[]);
 static Scheme_Object *unsafe_vector_immutable_bang (int argc, Scheme_Object *argv[]);
+
+static Scheme_Object *stencil_vector_p(int argc, Scheme_Object **argv);
+static Scheme_Object *stencil_vector(int argc, Scheme_Object **argv);
+static Scheme_Object *stencil_vector_mask(int argc, Scheme_Object **argv);
+static Scheme_Object *stencil_vector_length(int argc, Scheme_Object **argv);
+static Scheme_Object *stencil_vector_ref(int argc, Scheme_Object **argv);
+static Scheme_Object *stencil_vector_set(int argc, Scheme_Object **argv);
+static Scheme_Object *stencil_vector_update(int argc, Scheme_Object **argv);
+static Scheme_Object *stencil_vector_mask_width(int argc, Scheme_Object **argv);
 
 void
 scheme_init_vector (Scheme_Startup_Env *env)
@@ -83,6 +96,16 @@ scheme_init_vector (Scheme_Startup_Env *env)
                                                             | SCHEME_PRIM_PRODUCES_BOOL);
   scheme_addto_prim_instance("vector?", p, env);
   scheme_vector_p_proc = p;
+
+  p = scheme_make_folding_prim(immutable_vector_p, "immutable-vector?", 1, 1, 1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_OMITABLE
+                                                            | SCHEME_PRIM_PRODUCES_BOOL);
+  scheme_addto_prim_instance("immutable-vector?", p, env);
+
+  p = scheme_make_folding_prim(mutable_vector_p, "mutable-vector?", 1, 1, 1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_OMITABLE
+                                                            | SCHEME_PRIM_PRODUCES_BOOL);
+  scheme_addto_prim_instance("mutable-vector?", p, env);
 
   REGISTER_SO(scheme_make_vector_proc);
   p = scheme_make_immed_prim(scheme_checked_make_vector, "make-vector", 1, 2);
@@ -226,6 +249,47 @@ scheme_init_vector (Scheme_Startup_Env *env)
 						      "impersonate-vector*",
 						      3, -1),
 			     env);
+
+  scheme_addto_prim_instance("stencil-vector?",
+                             scheme_make_folding_prim(stencil_vector_p,
+                                                      "stencil-vector?",
+                                                      1, 1, 1),
+                             env);
+  scheme_addto_prim_instance("stencil-vector",
+                             scheme_make_prim_w_arity(stencil_vector,
+                                                      "stencil-vector",
+                                                      1, -1),
+                             env);
+  scheme_addto_prim_instance("stencil-vector-length",
+                             scheme_make_folding_prim(stencil_vector_length,
+                                                      "stencil-vector-length",
+                                                      1, 1, 1),
+                             env);
+  scheme_addto_prim_instance("stencil-vector-mask",
+                             scheme_make_folding_prim(stencil_vector_mask,
+                                                      "stencil-vector-mask",
+                                                      1, 1, 1),
+                             env);
+  scheme_addto_prim_instance("stencil-vector-ref",
+                             scheme_make_prim_w_arity(stencil_vector_ref,
+                                                      "stencil-vector-ref",
+                                                      2, 2),
+                             env);
+  scheme_addto_prim_instance("stencil-vector-set!",
+                             scheme_make_prim_w_arity(stencil_vector_set,
+                                                      "stencil-vector-set!",
+                                                      3, 3),
+                             env);
+  scheme_addto_prim_instance("stencil-vector-update",
+                             scheme_make_prim_w_arity(stencil_vector_update,
+                                                      "stencil-vector-update",
+                                                      3, -1),
+                             env);
+  scheme_addto_prim_instance("stencil-vector-mask-width",
+                             scheme_make_prim_w_arity(stencil_vector_mask_width,
+                                                      "stencil-vector-mask-width",
+                                                      0, 0),
+                             env);
 }
 
 void
@@ -304,6 +368,9 @@ scheme_init_unsafe_vector (Scheme_Startup_Env *env)
   p = scheme_make_immed_prim(unsafe_struct_star_cas, "unsafe-struct*-cas!", 4, 4);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_NARY_INLINED);
   scheme_addto_prim_instance("unsafe-struct*-cas!", p, env);
+
+  p = scheme_make_immed_prim(unsafe_struct_star_type, "unsafe-struct*-type", 1, 1);
+  scheme_addto_prim_instance("unsafe-struct*-type", p, env);
 
   REGISTER_SO(scheme_unsafe_string_length_proc);
   p = scheme_make_immed_prim(unsafe_string_len, "unsafe-string-length", 1, 1);
@@ -385,6 +452,37 @@ scheme_init_unsafe_vector (Scheme_Startup_Env *env)
 						      "unsafe-chaperone-vector",
 						      2, -1),
 			     env);
+
+  scheme_addto_prim_instance("unsafe-stencil-vector",
+                             scheme_make_prim_w_arity(stencil_vector,
+                                                      "unsafe-stencil-vector",
+                                                      1, -1),
+                             env);
+  scheme_addto_prim_instance("unsafe-stencil-vector-length",
+                             scheme_make_folding_prim(stencil_vector_length,
+                                                      "unsafe-stencil-vector-length",
+                                                      1, 1, 1),
+                             env);
+  scheme_addto_prim_instance("unsafe-stencil-vector-mask",
+                             scheme_make_folding_prim(stencil_vector_mask,
+                                                      "unsafe-stencil-vector-mask",
+                                                      1, 1, 1),
+                             env);
+  scheme_addto_prim_instance("unsafe-stencil-vector-ref",
+                             scheme_make_prim_w_arity(stencil_vector_ref,
+                                                      "unsafe-stencil-vector-ref",
+                                                      2, 2),
+                             env);
+  scheme_addto_prim_instance("unsafe-stencil-vector-set!",
+                             scheme_make_prim_w_arity(stencil_vector_set,
+                                                      "unsafe-stencil-vector-set!",
+                                                      3, 3),
+                             env);
+  scheme_addto_prim_instance("unsafe-stencil-vector-update",
+                             scheme_make_prim_w_arity(stencil_vector_update,
+                                                      "unsafe-stencil-vector-update",
+                                                      3, -1),
+                             env);
 }
 
 #define VECTOR_BYTES(size) (sizeof(Scheme_Vector) + ((size) - mzFLEX_DELTA) * sizeof(Scheme_Object *))
@@ -431,6 +529,22 @@ static Scheme_Object *
 vector_p (int argc, Scheme_Object *argv[])
 {
   return (SCHEME_CHAPERONE_VECTORP(argv[0]) ? scheme_true : scheme_false);
+}
+
+static Scheme_Object *
+immutable_vector_p (int argc, Scheme_Object *argv[])
+{
+  Scheme_Object *obj = argv[0];
+  if SCHEME_NP_CHAPERONEP(obj) obj = SCHEME_CHAPERONE_VAL(obj);
+  return ((SCHEME_VECTORP(obj) && SCHEME_IMMUTABLEP(obj)) ? scheme_true : scheme_false);
+}
+
+static Scheme_Object *
+mutable_vector_p (int argc, Scheme_Object *argv[])
+{
+  Scheme_Object *obj = argv[0];
+  if SCHEME_NP_CHAPERONEP(obj) obj = SCHEME_CHAPERONE_VAL(obj);
+  return ((SCHEME_VECTORP(obj) && !SCHEME_IMMUTABLEP(obj)) ? scheme_true : scheme_false);
 }
 
 Scheme_Object *
@@ -539,9 +653,10 @@ void scheme_bad_vec_index(char *name, Scheme_Object *i, const char *which, Schem
              ? "flvector"
              : (SCHEME_FXVECTORP(vec)
                 ? "fxvector"
-                : BAD_EXTFLVEC_INDEX
-                )));
-
+                : (SCHEME_STENCIL_VECTORP(vec)
+                   ? "stencil vector"
+                   : BAD_EXTFLVEC_INDEX
+                   ))));
 
   scheme_out_of_range(name, type, which, i, vec, bottom, len-1);
 }
@@ -549,10 +664,15 @@ void scheme_bad_vec_index(char *name, Scheme_Object *i, const char *which, Schem
 static Scheme_Object *
 bad_index(char *name, const char *which, Scheme_Object *i, Scheme_Object *vec, int bottom)
 {
-  scheme_bad_vec_index(name, i, which, vec, bottom, 
-                       (SCHEME_NP_CHAPERONEP(vec)
-                        ? SCHEME_VEC_SIZE(SCHEME_CHAPERONE_VAL(vec))
-                        : SCHEME_VEC_SIZE(vec)));
+  intptr_t len;
+
+  len = (SCHEME_STENCIL_VECTORP(vec)
+         ? scheme_stencil_vector_popcount(((Scheme_Stencil_Vector *)vec)->mask)
+         : (SCHEME_NP_CHAPERONEP(vec)
+            ? SCHEME_VEC_SIZE(SCHEME_CHAPERONE_VAL(vec))
+            : SCHEME_VEC_SIZE(vec)));
+
+  scheme_bad_vec_index(name, i, which, vec, bottom, len);
   return NULL;
 }
 
@@ -1318,6 +1438,11 @@ static Scheme_Object *unsafe_struct_star_cas (int argc, Scheme_Object *argv[])
 #endif
 }
 
+static Scheme_Object *unsafe_struct_star_type (int argc, Scheme_Object *argv[])
+{
+  return (Scheme_Object *)((Scheme_Structure *)argv[0])->stype;
+}
+
 static Scheme_Object *unsafe_string_len (int argc, Scheme_Object *argv[])
 {
   intptr_t n = SCHEME_CHAR_STRLEN_VAL(argv[0]);
@@ -1402,6 +1527,10 @@ static Scheme_Object *unsafe_string_immutable_bang (int argc, Scheme_Object *arg
   if (!SCHEME_CHAR_STRINGP(o))
     scheme_wrong_contract("unsafe-string->immutable-string!", "string?", 0, argc, argv);
 
+  if (!SCHEME_CHAR_STRLEN_VAL(o)) {
+    return scheme_zero_length_char_immutable_string;
+  }
+
   SCHEME_SET_IMMUTABLE(o);
 
   return o;
@@ -1418,4 +1547,186 @@ static Scheme_Object *unsafe_vector_immutable_bang (int argc, Scheme_Object *arg
   SCHEME_SET_IMMUTABLE(o);
 
   return o;
+}
+
+/************************************************************/
+/*                    stencil vectors                       */
+/************************************************************/
+
+#ifdef SIXTY_FOUR_BIT_INTEGERS
+# define STENCIL_VECTOR_MASK_WIDTH 58
+#else
+# define STENCIL_VECTOR_MASK_WIDTH 26
+#endif
+
+#define MAX_STENCIL_VECTOR_MASK (((intptr_t)1 << STENCIL_VECTOR_MASK_WIDTH)-1)
+
+#define STENCIL_VECTOR_BYTES(size) (sizeof(Scheme_Stencil_Vector) + ((size) - mzFLEX_DELTA) * sizeof(Scheme_Object *))
+
+int scheme_stencil_vector_popcount(intptr_t x) {
+#ifdef SIXTY_FOUR_BIT_INTEGERS
+  return (scheme_hamt_popcount((hash_tree_bitmap_t)(x & 0xFFFFFFFF))
+          + scheme_hamt_popcount((hash_tree_bitmap_t)((uintptr_t)x >> 32)));
+#else
+  return scheme_hamt_popcount((hash_tree_bitmap_t)x);
+#endif
+}
+
+static Scheme_Object *stencil_vector_p(int argc, Scheme_Object **argv) {
+  return (SCHEME_STENCIL_VECTORP(argv[0]) ? scheme_true : scheme_false);
+}
+
+static Scheme_Object *stencil_vector(int argc, Scheme_Object **argv) {
+  Scheme_Stencil_Vector *sv;
+  Scheme_Object *mask = argv[0];
+  intptr_t size, i;
+
+  if (!SCHEME_INTP(mask)
+      || (SCHEME_INT_VAL(mask) < 0)
+      || (SCHEME_INT_VAL(mask) > MAX_STENCIL_VECTOR_MASK))
+    scheme_wrong_contract("stencil-vector", "(integer-in 0 (sub1 (expt 2 (stencil-vector-mask-width))))", 0, argc, argv);
+
+  size = scheme_stencil_vector_popcount(SCHEME_INT_VAL(mask));
+
+  if (size + 1 != argc)
+    scheme_contract_error("stencil-vector",
+                          "mask does not match given number of items",
+                          "mask", 1, mask,
+                          "given items", 1, scheme_make_integer(argc-1),
+                          NULL);
+
+  sv = (Scheme_Stencil_Vector *)scheme_malloc_tagged(STENCIL_VECTOR_BYTES(size));
+  sv->so.type = scheme_stencil_vector_type;
+  sv->mask = SCHEME_INT_VAL(mask);
+  for (i = 0; i < size; i++) {
+    sv->els[i] = argv[i+1];
+  }
+
+  return (Scheme_Object *)sv;
+}
+
+static Scheme_Object *stencil_vector_mask(int argc, Scheme_Object **argv) {
+  Scheme_Stencil_Vector *sv;
+
+  if (!SCHEME_STENCIL_VECTORP(argv[0]))
+    scheme_wrong_contract("stencil-vector-mask", "stencil-vector?", 0, argc, argv);
+  sv = (Scheme_Stencil_Vector *)argv[0];
+  
+  return scheme_make_integer(sv->mask);
+}
+
+static Scheme_Object *stencil_vector_length(int argc, Scheme_Object **argv) {
+  Scheme_Stencil_Vector *sv;
+
+  if (!SCHEME_STENCIL_VECTORP(argv[0]))
+    scheme_wrong_contract("stencil-vector-length", "stencil-vector?", 0, argc, argv);
+  sv = (Scheme_Stencil_Vector *)argv[0];
+  
+  return scheme_make_integer(scheme_stencil_vector_popcount(sv->mask));
+}
+
+static Scheme_Object *stencil_vector_ref(int argc, Scheme_Object **argv) {
+  Scheme_Stencil_Vector *sv;
+  intptr_t len, i;
+
+  if (!SCHEME_STENCIL_VECTORP(argv[0]))
+    scheme_wrong_contract("stencil-vector-ref", "stencil-vector?", 0, argc, argv);
+  sv = (Scheme_Stencil_Vector *)argv[0];
+
+  len = scheme_stencil_vector_popcount(sv->mask);
+
+  i = scheme_extract_index("stencil-vector-ref", 1, argc, argv, len, 0);
+
+  if (i >= len)
+    return bad_index("stencil-vector-ref", "", argv[1], argv[0], 0);
+  
+  return sv->els[i];
+}
+
+static Scheme_Object *stencil_vector_set(int argc, Scheme_Object **argv) {
+  Scheme_Stencil_Vector *sv;
+  intptr_t len, i;
+
+  if (!SCHEME_STENCIL_VECTORP(argv[0]))
+    scheme_wrong_contract("stencil-vector-set!", "stencil-vector?", 0, argc, argv);
+  sv = (Scheme_Stencil_Vector *)argv[0];
+
+  len = scheme_stencil_vector_popcount(sv->mask);
+
+  i = scheme_extract_index("stencil-vector-set!", 1, argc, argv, len, 0);
+
+  if (i >= len)
+    return bad_index("stencil-vector-ref", "", argv[1], argv[0], 0);
+  
+  sv->els[i] = argv[2];
+
+  return scheme_void;
+}
+
+static Scheme_Object *stencil_vector_update(int argc, Scheme_Object **argv) {
+  Scheme_Stencil_Vector *sv, *new_sv;
+  Scheme_Object *r_mask = argv[1], *a_mask = argv[2];
+  intptr_t am, rm, m, size, old_i, new_i, arg_i;
+
+  if (!SCHEME_STENCIL_VECTORP(argv[0]))
+    scheme_wrong_contract("stencil-vector-update", "stencil-vector?", 0, argc, argv);
+  sv = (Scheme_Stencil_Vector *)argv[0];
+
+  if (!SCHEME_INTP(r_mask)
+      || (SCHEME_INT_VAL(r_mask) < 0)
+      || (SCHEME_INT_VAL(r_mask) > MAX_STENCIL_VECTOR_MASK))
+    scheme_wrong_contract("stencil-vector-update", "(integer-in 0 (sub1 (expt 2 (stencil-vector-mask-width))))", 1, argc, argv);
+  if (!SCHEME_INTP(a_mask)
+      || (SCHEME_INT_VAL(a_mask) < 0)
+      || (SCHEME_INT_VAL(a_mask) > MAX_STENCIL_VECTOR_MASK))
+    scheme_wrong_contract("stencil-vector-update", "(integer-in 0 (sub1 (expt 2 (stencil-vector-mask-width))))", 2, argc, argv);
+
+  rm = SCHEME_INT_VAL(r_mask);
+  am = SCHEME_INT_VAL(a_mask);
+
+  if ((sv->mask & rm) != rm)
+    scheme_contract_error("stencil-vector",
+                          "mask of stencil vector does not have all bits in removal mask",
+                          "stencil vector", 1, (Scheme_Object *)sv,
+                          "removal mask", 1, r_mask,
+                          NULL);
+  if (((sv->mask & ~rm) & am) != 0)
+    scheme_contract_error("stencil-vector",
+                          "mask of stencil vector already has bits in addition mask",
+                          "stencil vector", 1, (Scheme_Object *)sv,
+                          "addition mask", 1, a_mask,
+                          NULL);
+
+  size = scheme_stencil_vector_popcount(am);
+  if (size + 3 != argc)
+    scheme_contract_error("stencil-vector",
+                          "mask does not match given number of items",
+                          "mask", 1, a_mask,
+                          "given items", 1, scheme_make_integer(argc-3),
+                          NULL);
+
+  m = ((sv->mask & ~rm) | am);
+  size = scheme_stencil_vector_popcount(m);
+
+  new_sv = (Scheme_Stencil_Vector *)scheme_malloc_tagged(STENCIL_VECTOR_BYTES(size));
+  new_sv->so.type = scheme_stencil_vector_type;
+  new_sv->mask = m;
+
+  for (old_i = 0, new_i = 0, arg_i = 3; m; m = m >> 1, am = am >> 1, rm = rm >> 1) {
+    if (m & 0x1) {
+      if (am & 0x1) {
+        if (rm & 0x1)
+          old_i++;
+        new_sv->els[new_i++] = argv[arg_i++];
+      } else
+        new_sv->els[new_i++] = sv->els[old_i++];
+    } else if (rm & 0x1)
+      old_i++;
+  }
+
+  return (Scheme_Object *)new_sv;
+}
+
+static Scheme_Object *stencil_vector_mask_width(int argc, Scheme_Object **argv) {
+  return scheme_make_integer(STENCIL_VECTOR_MASK_WIDTH);
 }

@@ -28,7 +28,7 @@ static ptr s_GetRegistry(wchar_t *s);
 static void s_PutRegistry(wchar_t *s, wchar_t *val);
 static void s_RemoveRegistry(wchar_t *s);
 
-void S_machine_init() {
+void S_machine_init(void) {
     Sregister_symbol("(com)CreateInstance", (void *)s_CreateInstance);
     Sregister_symbol("(windows)GetRegistry", (void *)s_GetRegistry);
     Sregister_symbol("(windows)PutRegistry", (void *)s_PutRegistry);
@@ -36,7 +36,7 @@ void S_machine_init() {
     Sregister_symbol("(windows)ErrorString", (void *)s_ErrorString);
 }
 
-INT S_getpagesize() {
+INT S_getpagesize(void) {
   SYSTEM_INFO si;
   GetSystemInfo(&si);
   return si.dwPageSize;
@@ -60,8 +60,14 @@ ptr S_ntdlerror(void) {
 }
 
 #ifdef FLUSHCACHE
-oops, no S_flushcache_max_gap or S_doflush
-#endif /* FLUSHCACHE */
+void S_doflush(uptr start, uptr end) {
+  FlushInstructionCache(GetCurrentProcess(), TO_VOIDP(start), end - start);
+}
+
+INT S_flushcache_max_gap(void) {
+  return 32;
+}
+#endif
 
 static void SplitRegistryKey(char *who, wchar_t *wholekey, HKEY *key, wchar_t **subkey, wchar_t **last) {
   wchar_t c, *s;
@@ -406,7 +412,20 @@ int S_windows_rmdir(const char *pathname) {
 
 int S_windows_stat64(const char *pathname, struct STATBUF *buffer) {
   wchar_t wpathname[PATH_MAX];
-  if (MultiByteToWideChar(CP_UTF8,0,pathname,-1,wpathname,PATH_MAX) == 0)
+  int len = MultiByteToWideChar(CP_UTF8,0,pathname,-1,wpathname,PATH_MAX);
+
+# ifdef __MINGW32__
+  /* MinGW _wstat64 does not want path separators at the end, except for 
+     a drive: */
+  while ((len > 2)
+	 && ((wpathname[len-2] == '/')
+	     || (wpathname[len-2] == '\\'))
+	 && (wpathname[len-3] != ':')) {
+    wpathname[(--len)-1] = 0;
+  }
+# endif
+
+  if (len == 0)
     return _stat64(pathname, buffer);
   else
     return _wstat64(wpathname, buffer);

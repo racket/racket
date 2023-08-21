@@ -6,7 +6,7 @@
          "../sandman/main.rkt"
          "../string/convert.rkt"
          "../string/integer.rkt"
-         "../format/main.rkt"
+         "../error/message.rkt"
          "port-number.rkt"
          "check.rkt"
          "address.rkt"
@@ -178,8 +178,8 @@
 
 (define (raise-non-fixnum who size)
   (raise (exn:fail:network
-          (format (string-append "~a: given size is too large\n"
-                                 "  given size: ~e")
-                  who
-                  size)
+          (error-message->string
+           who
+           (string-append "given size is too large\n"
+                          "  given size: " (number->string size)))
           (current-continuation-marks))))

@@ -13,7 +13,7 @@
 ;; hasn't returned by the time of an escape or thread kill and only if
 ;; the resource `r` is not a rktio error or a boxed rktio error. So,
 ;; at the point where `r` is destoyed by `handle`, `handle` must
-;; return still in atomic mode to ensure that `destroy` is note
+;; return still in atomic mode to ensure that `destroy` is not
 ;; triggered.
 ;;
 (define (call-with-resource r destroy handle)

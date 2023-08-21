@@ -114,7 +114,7 @@
    s pos
    [(#\? #\* #\+) 
     (parse-error s pos config
-                 "nested `~a` in patten"
+                 "nested `~a` in pattern"
                  (integer->char (chytes-ref s pos)))]
    [(#\{)
     (when (parse-config-px? config)

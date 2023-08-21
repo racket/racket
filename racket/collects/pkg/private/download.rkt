@@ -119,16 +119,20 @@
                         #:strict-links? #t
                         #:depth 1)))))
     (set! unpacked? #t)
-    ;; package directory as ".tgz" so it can be cached:
-    (parameterize ([current-directory dest-dir])
-      (apply tar-gzip tmp.tgz
-             #:exists-ok? #t
-             (directory-list))))
+    ;; if use-cache? is true, package directory as ".tgz" so it can be cached:
+    (when use-cache?
+      (parameterize ([current-directory dest-dir])
+        (apply tar-gzip tmp.tgz
+               #:exists-ok? #t
+               (directory-list)))))
   
   (do-cache-file tmp.tgz url (vector transport host port repo) checksum 
                  use-cache? download-printf download!)
 
-  (unless unpacked?
+  ;; if use-cache? is true and it's a cache hit (i.e. do-cache-file does not
+  ;; call download!), then files are not already unpacked (unpacked? is false),
+  ;; so we need to unpack them.
+  (when (and use-cache? (not unpacked?))
     (untgz tmp.tgz #:dest dest-dir))
   
   (delete-file tmp.tgz))

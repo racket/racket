@@ -111,7 +111,11 @@
            (make-local-expand-context (struct*-copy expand-context ctx
                                                     [env tmp-env])
                                       #:context 'expression
-                                      #:intdefs all-intdefs))))
+                                      #:intdefs all-intdefs
+                                      ;; we're going to evaluate the expansion right away,
+                                      ;; so it's not really "local" in that sense, and we
+                                      ;; want out-of-context identifiers to be flagged
+                                      #:in-local-expand? #f))))
   (define vals
     (cond
      [s
@@ -281,7 +285,8 @@
                                    #:stop-ids [stop-ids #f]
                                    #:to-parsed-ok? [to-parsed-ok? #f]
                                    #:track-to-be-defined? [track-to-be-defined? #f]
-                                   #:keep-#%expression? [keep-#%expression? #t])
+                                   #:keep-#%expression? [keep-#%expression? #t]
+                                   #:in-local-expand? [in-local-expand? #t])
   (define same-kind? (or (eq? context
                               (expand-context-context ctx))
                          (and (list? context)
@@ -340,7 +345,7 @@
                                 (expand-context-to-parsed? ctx)
                                 #f)]
                 [just-once? #f]
-                [in-local-expand? #t]
+                [in-local-expand? in-local-expand?]
                 [keep-#%expression? keep-#%expression?]
                 [stops (free-id-set phase (or all-stop-ids null))]
                 [current-introduction-scopes null]

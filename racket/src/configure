@@ -8,8 +8,11 @@ pb_dir="$dir/ChezScheme/boot/pb"
 
 use_cs=maybe
 use_bc=maybe
+default_vm=cs
 supplied_racket=no
+supplied_scheme=no
 enable_boothelp=
+CC_FOR_BUILD='$(CC) -O2'
 
 # We don't have to detect conflicts like `--enable-csdefault --enable-bcdefault`,
 # since the `configure` scripts will do that, but  we have to figure out which
@@ -17,22 +20,35 @@ enable_boothelp=
 
 for arg in $*; do 
     case "$arg" in
-        --enable-cs | --enable-csdefault)
+        --enable-cs)
             use_cs=yes
             ;;
-        --enable-bc | --enable-bcdefault | --enable-cgcdefault)
+        --enable-csdefault)
+            use_cs=yes
+            default_vm=cs
+            ;;
+        --enable-bc)
             use_bc=yes
+            ;;
+        --enable-bcdefault | --enable-cgcdefault)
+            use_bc=yes
+            default_vm=bc
             ;;
         --enable-csonly)
             use_cs=yes
             use_bc=no
+            default_vm=cs
             ;;
         --enable-bconly)
             use_cs=no
             use_bc=yes
+            default_vm=bc
             ;;
         --enable-racket=*)
             supplied_racket=yes
+            ;;
+        --enable-scheme=*)
+            supplied_scheme=yes
             ;;
         --help | -h)
             echo $0:
@@ -48,6 +64,9 @@ for arg in $*; do
         --help-cs)
             exec "$dir/cs/c/configure" --help
             ;;
+        CC_FOR_BUILD=*)
+            CC_FOR_BUILD=`echo $1 | sed -e 's/^CC_FOR_BUILD=//'`
+            ;;
     esac
 done
 
@@ -56,6 +75,7 @@ if test "$use_bc" = maybe ; then
     if test "$use_cs" = maybe ; then
         use_cs=yes
         use_bc=no
+        default_vm=cs
     elif test "$use_cs" = no ; then
         use_bc=yes
     elif test -d "$pb_dir" -o $supplied_racket = yes ; then
@@ -67,11 +87,12 @@ if test "$use_bc" = maybe ; then
     fi
 elif test "$use_cs" = "maybe" ; then
     use_cs=no
+    default_vm=bc
 fi
 
 if test "$use_cs" = "yes" ; then
-    if test $use_bc = no  -a $supplied_racket = no -a ! -d "$pb_dir" ; then
-        echo $0: must have $pb_dir or --enable-racket=... for --enable-csonly
+    if test $use_bc = no  -a $supplied_racket = no  -a $supplied_scheme = no  -a ! -d "$pb_dir" ; then
+        echo $0: must have $pb_dir, --enable-racket=... or --enable-scheme=... for --enable-csonly
         exit 1
     fi
 
@@ -102,8 +123,21 @@ if test "$use_bc" = "yes" ; then
     esac
 fi
 
-if test "$use_bc" = "no" ; then
-    exec "$dir/cfg-cs" $enable_boothelp ${1+"$@"}
-else
-    exec "$dir/cfg-bc" $enable_boothelp ${1+"$@"}
-fi
+case "$dir" in
+    /*)
+        upsrcdir="$dir"
+        ;;
+    *)
+        upsrcdir="../$dir"
+        ;;
+esac
+
+echo "srcdir=$dir" > Makefile
+echo "upsrcdir=$upsrcdir" >> Makefile
+echo "default_vm=${default_vm}" >> Makefile
+echo "use_cs=${use_cs}" >> Makefile
+echo "use_bc=${use_bc}" >> Makefile
+echo "CC_FOR_BUILD=${CC_FOR_BUILD}" >> Makefile
+cat "$dir/Makefile.in" >> Makefile
+
+cp "$dir/buildmain.zuo" main.zuo

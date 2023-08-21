@@ -26,9 +26,11 @@
              (convert (rx:alts-rx2 rx))
              255)]
    [(rx:sequence? rx)
+    (define new-rxs (for/list ([rx (in-list (rx:sequence-rxs rx))])
+                      (convert rx)))
     (struct-copy rx:sequence rx
-                 [rxs (for/list ([rx (in-list (rx:sequence-rxs rx))])
-                        (convert rx))])]
+                 [rxs new-rxs]
+                 [needs-backtrack? (ormap needs-backtrack? new-rxs)])]
    [(rx:group? rx)
     (struct-copy rx:group rx
                  [rx (convert (rx:group-rx rx))])]
@@ -39,10 +41,14 @@
     (struct-copy rx:maybe rx
                  [rx (convert (rx:maybe-rx rx))])]
    [(rx:conditional? rx)
+    (define new-rx1 (convert (rx:conditional-rx1 rx)))
+    (define new-rx2 (convert (rx:conditional-rx2 rx)))
     (struct-copy rx:conditional rx
                  [tst (convert (rx:conditional-tst rx))]
-                 [rx1 (convert (rx:conditional-rx1 rx))]
-                 [rx2 (convert (rx:conditional-rx2 rx))])]
+                 [rx1 new-rx1]
+                 [rx2 new-rx2]
+                 [needs-backtrack? (or (needs-backtrack? new-rx1)
+                                       (needs-backtrack? new-rx2))])]
    [(rx:lookahead? rx)
     (struct-copy rx:lookahead rx
                  [rx (convert (rx:lookahead-rx rx))])]
@@ -50,8 +56,10 @@
     (struct-copy rx:lookbehind rx
                  [rx (convert (rx:lookbehind-rx rx))])]
    [(rx:cut? rx)
+    (define new-rx (convert (rx:cut-rx rx)))
     (struct-copy rx:cut rx
-                 [rx (convert (rx:cut-rx rx))])]
+                 [rx new-rx]
+                 [needs-backtrack? (needs-backtrack? rx)])]
    [else rx]))
 
 (define (range->alts args)

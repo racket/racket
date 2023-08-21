@@ -11,20 +11,15 @@
          kw->string
          diff/sorted/eq)
 
-#|
-An Arguments is
-  #s(arguments (listof stx) (listof keyword) (listof stx))
-|#
+;; An Arguments is (arguments (Listof Expr) (Listof Keyword) (Listof Expr))
+;; Note: keyword args are *not* sorted, because that would change the order
+;; of evaluation of the keyword argument expressions.
 (define-struct arguments (pargs kws kwargs) #:prefab)
 
 (define no-arguments (arguments null null null))
 
-#|
-An Arity is
-  #s(arity nat nat/+inf.0 (listof keyword) (listof keyword))
-|#
-(define-struct arity (minpos maxpos minkws maxkws)
-  #:prefab)
+;; An Arity is (arity Nat Nat/+inf.0 (Listof Keyword) (Listof Keyword))
+(define-struct arity (minpos maxpos minkws maxkws) #:prefab)
 
 (define no-arity (arity 0 0 null null))
 

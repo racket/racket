@@ -34,7 +34,7 @@
  (let loop ([j 10])
    (unless (zero? j)
      (let ()
-       (define p (open-input-file "compiled/io.scm"))
+       (define p (open-input-file "schemified/io.scm"))
        (port-count-lines! p)
        (let loop ([total 0])
          (define s (read-string 100 p))
@@ -46,7 +46,7 @@
  (let loop ([j 10])
    (unless (zero? j)
      (let ()
-       (define p (open-input-file "compiled/io.scm"))
+       (define p (open-input-file "schemified/io.scm"))
        (port-count-lines! p)
        (let loop ()
          (unless (eof-object? (read-char p))
@@ -69,7 +69,7 @@
       parameterization-key
       (extend-parameterization (continuation-mark-set-first #f parameterization-key) current-custodian c)
     (let ()
-      (define p (open-input-file "compiled/io.scm"))
+      (define p (open-input-file "schemified/io.scm"))
       (define wb (make-weak-box p))
       (define we (make-will-executor))
       (will-register we p values)
@@ -150,7 +150,7 @@
             ((hash-ref place-symbols sym) pch))))
 
        ;; Check file port passed across places
-       (let ([f (open-input-file "compiled/io.scm")])
+       (let ([f (open-input-file "schemified/io.scm")])
          (file-stream-buffer-mode f 'none)
          (let ([content (read-bytes 5 f)])
            (file-position f 0)

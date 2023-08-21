@@ -19,7 +19,7 @@
 ;; function takes an argument to access other converted functions.
 ;; That way, the converted functions are completely independent.
 
-;; An environment maps a variables that needs to be passed into the
+;; An environment maps a variable that needs to be passed into the
 ;; closed code:
 ;;
 ;;   * id -> '#:direct --- ready by the time it's needed and immutable
@@ -28,7 +28,9 @@
 ;;
 ;;   * id -> `(self ,m) --- a reference to the enclosing function; can
 ;;                          use directly in rator position, otherwise
-;;                          use m
+;;                          use m (which can be '#:direct or an id)
+;;
+;;   * id -> `(self ,m ,orig-id) --- use `orig-id` for self call
 
 (provide jitify-schemified-linklet)
 
@@ -388,6 +390,7 @@
                (match dest
                  [`#f var]
                  [`#:direct var]
+                 [`(self #:direct . ,_) var]
                  [`(self ,u . ,_) (reannotate v u)]
                  [`,u (reannotate v u)]))
              (define new-free

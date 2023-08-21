@@ -228,7 +228,7 @@
     (define-values (,mpi-vector-id)
       ,(generate-module-path-index-deserialize mpis))))
 
-(define (generate-module-declaration-linklet mpis self requires provides
+(define (generate-module-declaration-linklet mpis self requires recur-requires provides
                                              phase-to-link-module-uses-expr
                                              portal-stxes)
   `(linklet
@@ -238,12 +238,14 @@
     ;; exports
     (self-mpi
      requires
+     recur-requires 
      provides
      phase-to-link-modules
      portal-stxes)
     ;; body
     (define-values (self-mpi) ,(add-module-path-index! mpis self))
     (define-values (requires) ,(generate-deserialize requires #:mpis mpis #:syntax-support? #f))
+    (define-values (recur-requires) (quote ,recur-requires))
     (define-values (provides) ,(generate-deserialize provides #:mpis mpis #:syntax-support? #f
                                                      #:phase+space-hasheqv provides))
     (define-values (phase-to-link-modules) ,phase-to-link-module-uses-expr)

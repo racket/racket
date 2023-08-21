@@ -206,7 +206,7 @@
           (annotation-expression x)
           x)))
 
-  (define rtd-ancestors (csv7:record-field-accessor #!base-rtd 'ancestors))
+  (define rtd-ancestry (csv7:record-field-accessor #!base-rtd 'ancestry))
 
   (let ()
     (import (nanopass) np-languages)
@@ -1200,7 +1200,7 @@
          `(letrec ([,x* ,le*] ...) ,body)]
         [(call ,info ,mdcl ,pr ,[e1 'non/none -> e1]
                (case-lambda ,info2 (clause () ,interface ,[body (->in-set mode) -> body])))
-         (guard (and (eq? (primref-name pr) 'call-setting-continuation-attachment)
+         (guard (and (eq? (primref-name pr) '$call-setting-continuation-attachment)
                      (= interface 0)))
          (case mode
            [(non/some tail/some)
@@ -1220,11 +1220,11 @@
             `(seq (attachment-set push ,e1) ,body)])]
         [(call ,info ,mdcl ,pr ,[e1 'non/none -> e1]
                (case-lambda ,info2 (clause (,x) ,interface ,[body])))
-         (guard (and (eq? (primref-name pr) 'call-getting-continuation-attachment)
+         (guard (and (eq? (primref-name pr) '$call-getting-continuation-attachment)
                      (= interface 1)))
          (case mode
            [(non/none tail/none)
-            ;; No surrounding `call-setting-continuation-attachment`
+            ;; No surrounding `$call-setting-continuation-attachment`
             `(let ([,x ,e1]) ,body)]
            [(non/some tail/some)
             ;; Definitely an attachment in place
@@ -1234,15 +1234,15 @@
             `(let ([,x (attachment-get ,(eq? mode 'tail/reified) ,e1)]) ,body)])]
         [(call ,info ,mdcl ,pr ,[e1 'non/none -> e1]
                (case-lambda ,info2 (clause (,x) ,interface ,[body (->in-consume mode) -> body])))
-         (guard (and (eq? (primref-name pr) 'call-consuming-continuation-attachment)
+         (guard (and (eq? (primref-name pr) '$call-consuming-continuation-attachment)
                      (= interface 1)))
-         ;; Currently, `call-consuming-continuation-attachment` in tail position
+         ;; Currently, `$call-consuming-continuation-attachment` in tail position
          ;; reifies the continuation, because we expect it to be combined with
-         ;; `call-setting-continuation-attachment` in `body`. Since the continuation
-         ;; is reified here, `call-setting-continuation-attachment` can simply push.
+         ;; `$call-setting-continuation-attachment` in `body`. Since the continuation
+         ;; is reified here, `$call-setting-continuation-attachment` can simply push.
          (case mode
            [(non/none tail/none)
-            ;; No surrounding `call-setting-continuation-attachment`, but reified if tail
+            ;; No surrounding `$call-setting-continuation-attachment`, but reified if tail
             `(let ([,x ,e1]) ,body)]
            [(non/some tail/some)
             ;; Definitely an attachment in place
@@ -1263,7 +1263,7 @@
                ,[e1 'non/none -> e1]
                (case-lambda ,info2 (clause () ,interface ,[body (->in-set-cont mode #f) -> body])))
          (guard (and (memq mode '(tail tail/none tail/some tail/reified))
-                     (eq? (primref-name pr) 'call-in-continuation)
+                     (memq (primref-name pr) '($call-in-continuation call-in-continuation))
                      (= interface 0)))
          (let ([tmp (make-tmp 'c)])
            `(let ([,tmp ,e1])
@@ -1273,7 +1273,7 @@
                ,[e2 'non/none -> e2] ; new attachments, which must extend continuation's
                (case-lambda ,info2 (clause () ,interface ,[body (->in-set-cont mode #t) -> body])))
          (guard (and (memq mode '(tail tail/none tail/some tail/reified))
-                     (eq? (primref-name pr) 'call-in-continuation)
+                     (eq? (primref-name pr) '$call-in-continuation)
                      (= interface 0)))
          (let ([tmp (make-tmp 'c)]
                [tmp2 (make-tmp 'as)])
@@ -2834,13 +2834,15 @@
         [(call ,info ,mdcl ,pr ,e1 ,[e2 #f -> * fp?2] ,[e3 #f -> * fp?3] ,e4)
          (guard (and (eq? '$object-set! (primref-name pr))
                      (nanopass-case (L7 Expr) e1
-                       [(quote ,d) (eq? d 'double)])))
+                       [(quote ,d) (eq? d 'double)]
+                       [else #f])))
          (Expr e4 #t)
          #f]
         [(call ,info ,mdcl ,pr ,e1 ,[e2 #f -> * fp?2] ,[e3 #f -> * fp?3])
          (guard (and (eq? '$object-ref (primref-name pr))
                      (nanopass-case (L7 Expr) e1
-                       [(quote ,d) (eq? d 'double)])))
+                       [(quote ,d) (eq? d 'double)]
+                       [else #f])))
          #t]
         [(call ,info ,mdcl ,pr ,[e1 #f -> * fp?1] ,[e2 #f -> * fp?2] ,e3)
          (guard (eq? 'bytevector-ieee-double-native-set! (primref-name pr)))
@@ -2895,6 +2897,7 @@
         [(continuation-set ,cop ,[e1 #f -> * fp?1] ,[e2 #f -> * fp?2]) #f]
         [(foreign-call ,info ,[e #f -> * fp?] ,[e* #f -> * fp?*] ...) #f]
         [(profile ,src) #f]
+        [(raw ,e) #f]
         [(pariah) #f])
       (Lvalue : Lvalue (ir [lhs #f]) -> * (#f)
         [,x
@@ -3069,6 +3072,7 @@
            (values
              `(if ,e0 ,(wrap-oc oc1 (wrap-tc tc1 e1)) ,(wrap-oc oc2 (wrap-tc tc2 e2)))
              oc tc))]
+        [(raw ,[e #f -> e oc tc]) (values `(raw ,e) oc tc)]
         [(seq ,[e0 #f -> e0 oc0 tc0] ,[e1 oc1 tc1])
          (values `(seq ,e0 ,e1) (combine-seq oc0 oc1) (combine-seq tc0 tc1))])
       (CaseLambdaClause : CaseLambdaClause (ir force-overflow?) -> CaseLambdaClause ()
@@ -3088,7 +3092,7 @@
                  ; misbehaved gotos, i.e., paths ending in a goto that don't do an overflow
                  ; or trap check where the target label expects it to have been done.  if we
                  ; ever violate this assumption on a regular basis, might want to revisit and
-                 ; do somthing better.
+                 ; do something better.
                  ; ... test punt case by commenting out above for all but library.ss
                  `(overflow-check (trap-check #f ,(insert-loop-traps body)))))])
       (CaseLambdaExpr : CaseLambdaExpr (ir) -> CaseLambdaExpr ()
@@ -3236,16 +3240,20 @@
       (definitions
         (define local*)
         (define make-tmp
-          (lambda (x type)
-            (import (only np-languages make-tmp))
-            (let ([x (make-tmp x type)])
-              (set! local* (cons x local*))
-              x)))
+          (lambda (x use-type ir)
+            (define (mktmp type)
+              (import (only np-languages make-tmp))
+              (let ([x (make-tmp x (or use-type type))])
+                (set! local* (cons x local*))
+                x))
+            (nanopass-case (L9.75 Expr) ir
+              [(raw ,e) (values (mktmp 'uptr) e)]
+              [else (values (mktmp 'ptr) ir)])))
         (define Ref
           (lambda (ir setup*)
             (if (var? ir)
                 (values ir setup*)
-                (let ([tmp (make-tmp 't 'ptr)])
+                (let-values ([(tmp ir) (make-tmp 't #f ir)])
                   (values tmp (cons (Rhs ir tmp) setup*))))))
         (define Lvalue?
           (lambda (x)
@@ -3331,7 +3339,7 @@
          (values t (cons e0 setup*))]
         [(pariah) (values (%constant svoid) (list (with-output-language (L10 Expr) `(pariah))))]
         [else
-         (let ([tmp (make-tmp 't (if fp? 'fp 'ptr))])
+         (let-values ([(tmp ir) (make-tmp 't (and fp? 'fp) ir)])
            (values tmp (list (Rhs ir tmp))))])
       (Expr : Expr (ir fp? k) -> Expr ()
         [(inline ,info ,prim ,e1* ...)
@@ -4500,7 +4508,7 @@
                    (Scheme->C type toC t #f #f)])))
             (define C->Scheme
               ; ASSUMPTIONS: ac0, ac1, and xp are not C argument registers
-              (lambda (type fromC lvalue expects-unboxed? is-unboxed?)
+              (lambda (type fromC lvalue expects-unboxed? is-unboxed? for-return?)
                 (define integer->ptr
                  ; ac0 holds low 32-bits, ac1 holds high 32 bits, if needed
                   (lambda (width lvalue)
@@ -4578,7 +4586,7 @@
                   (if is-unboxed?
                       (fromC lvalue)
                       (%seq
-                       (set! ,%xp ,(%constant-alloc type-flonum (constant size-flonum) #t))
+                       (set! ,%xp ,(%constant-alloc type-flonum (constant size-flonum) for-return?))
                        ,(fromC (if expects-unboxed?
                                    (with-output-language (L13 Lvalue)
                                      (%mref ,%xp ,%zero ,(constant flonum-data-disp) fp))
@@ -4667,7 +4675,7 @@
                                          ;; was instead installed in the first argument.
                                          `(seq (set! ,maybe-lvalue ,(%constant svoid)) ,e)]
                                         [else
-                                         `(seq ,(C->Scheme result-type c-res maybe-lvalue #t unboxed?) ,e)])
+                                         `(seq ,(C->Scheme result-type c-res maybe-lvalue #t unboxed? #t) ,e)])
                                       e))))])
                     e
                     #;
@@ -4718,7 +4726,7 @@
                               [(real-register? '%cp) `(set! ,cp-save ,%cp)]
                               [else `(nop)])
                             ; convert arguments
-                            ,(fold-left (lambda (e x arg-type c-arg) `(seq ,(C->Scheme arg-type c-arg x #f #f) ,e))
+                            ,(fold-left (lambda (e x arg-type c-arg) `(seq ,(C->Scheme arg-type c-arg x #f #f #f) ,e))
                                (set-locs fv* frame-x*
                                  (set-locs (map (lambda (reg) (in-context Lvalue (%mref ,%tc ,(reg-tc-disp reg)))) reg*) reg-x*
                                    `(set! ,%ac0 (immediate ,(length arg-type*)))))
@@ -5341,10 +5349,9 @@
                                                                (fx+ (constant code-data-disp) (constant size-rp-header)))))])
                                        ,(do-call 1)))))))))]
            [(dounderflow)
-            (let ([Lret (make-local-label 'Lret)] [Lmvreturn (make-local-label 'Lmvreturn)])
+            (let ([Lret (make-aligned-label 'Lret)] [Lmvreturn (make-local-label 'Lmvreturn)])
               `(lambda ,(make-named-info-lambda 'winder-dummy '()) 0 ()
                  ,(%seq
-                    ; (asm align)
                     (label ,Lret)
                     (rp-header ,Lmvreturn 0 0)
                     (set! ,(make-arg-opnd 1) ,%ac0)
@@ -6581,13 +6588,11 @@
                      [else `(nop)])
                   ,(do-call)))]
            [(invoke)
-            (let ([Lret (make-local-label 'Lret)]
+            (let ([Lret (make-aligned-label 'Lret)]
                   [Lexit (make-local-label 'Lexit)]
                   [Lmvreturn (make-local-label 'Lmvreturn)])
               `(lambda ,(make-info "invoke" '()) 0 ()
                  ,(%seq
-                    ; TODO: add alignment
-                    #;(asm align) ; must start aligned or align below may fail
                     ,(%inline invoke-prelude)
                     ,(restore-scheme-state
                        (in %ac0 %cp scheme-args)
@@ -6599,7 +6604,6 @@
                                                                 [(1) (constant ptr-bytes)]))))
                     (set! ,%ref-ret (label-ref ,Lret ,(constant size-rp-header)))
                     (tail ,(do-call)) ; argcnt already in ac0
-                    #;(asm align)
                     (label ,Lret)
                     (rp-header ,Lmvreturn ,(* 2 (constant ptr-bytes)) 1) ; cchain is live at sfp[ptr-bytes]
                     (set! ,(ref-reg %ac1) (immediate 1)) ; single-value as expected
@@ -7976,6 +7980,15 @@
           (let ([stuff (list offset l)])
             (set! funcrel* (cons stuff funcrel*))
             (cons reloc stuff))))
+
+      ;; If unaligned integer access is not allowed, then we may need to
+      ;; add nops to ensure that return-address data is word-aligned
+      (define aligned?
+        (constant-case align-rpheader
+          [(#f) (lambda (n) #t)]
+          [else (lambda (n)
+                  (fx= 0 (fxand n (fx- (constant ptr-bytes) 1))))]))
+
      ; TODO: generate code forward => backward and thread through a machine-state
      ; record that says what each register contains, including the condition-code
      ; register, so that we can avoid redundant loads and tests.  For example,
@@ -8073,48 +8086,89 @@
           ;; to a larger encoding, and so on.
           (define-who munge
             (lambda (c* size)
+              (define align-chunk
+                (constant-case align-rpheader
+                  [(#f) #f]
+                  [else
+                   ;; We're assuming that a single nop instruction is enough to
+                   ;; bring things into alignment, since the issue is normally
+                   ;; on a 64-bit RISC machine with 32-bit instructions
+                   (asm-nop)]))
               (define (munge-pass c* iteration)
                 (define get-local-label-offset
                   (lambda (l)
                     (local-label-iteration-set! l iteration)
                     (local-label-offset l)))
-                (let f ([rc* (reverse c*)] [c* '()] [offset 0])
+                (let f ([rc* (reverse c*)] [c* '()] [offset 0] [align 'none])
                   (if (null? rc*)
-                      (values c* offset)
+                      (constant-case align-rpheader
+                        [(#f) (values c* offset)]
+                        [else (cond
+                                [(or munge-recur?
+                                     (eq? align 'none)
+                                     (if (eq? align 'even)
+                                         (aligned? offset)
+                                         (not (aligned? offset))))
+                                 (values c* offset)]
+                                [else
+                                 ;; add no-op chunk for alignment:
+                                 (values (cons align-chunk c*) (fx+ offset (chunk-size align-chunk)))])])
                       (let ([c (car rc*)] [rc* (cdr rc*)])
                         (cond
+                          [(eq? c align-chunk)
+                           ;; drop alignment chunk created by an earlier pass
+                           (f rc* c* offset align)]
                           [(lchunk? c)
                            (let ([l (lchunk-l c)] [offset (fx+ offset (chunk-size c))])
-                             (when l
-                               (unless (eq? (get-local-label-offset l) offset)
-                                 (local-label-offset-set! l offset)
-                                 (when (fx= (local-label-iteration l) iteration)
-                                   (set! munge-recur? #t))))
-                             (f rc* (cons c c*) offset))]
+                             (let* ([need-align? (constant-case align-rpheader
+                                                   [(#f) #f]
+                                                   [else (cond
+                                                           [(not (aligned-label? l)) #f]
+                                                           [(eq? align 'none) #f]
+                                                           [(eq? align 'even) (not (aligned? offset))]
+                                                           [else (aligned? offset)])])]
+                                    [offset (if need-align?
+                                                (fx+ offset (chunk-size align-chunk))
+                                                offset)])
+                               (when l
+                                 (unless (eq? (get-local-label-offset l) offset)
+                                   (local-label-offset-set! l offset)
+                                   (when (fx= (local-label-iteration l) iteration)
+                                     (set! munge-recur? #t))))
+                               (f rc*
+                                  (if need-align? (list* c align-chunk c*) (cons c c*))
+                                  offset
+                                  (constant-case align-rpheader
+                                    [(#f) 'none]
+                                    [else
+                                     (cond
+                                       [(or need-align? (not (aligned-label? l))) align]
+                                       [(aligned? offset) 'even]
+                                       [else 'odd])]))))]
                           [(gchunk? c)
                            (let ([l (gchunk-l c)])
-                             (if (and (eq? (get-local-label-offset l) (gchunk-laddr c))
-                                      (eq? (gchunk-next-offset c) offset))
-                                 (f rc* (cons c c*) (fx+ offset (chunk-size c)))
-                                 (let ([c (asm-jump l offset)])
-                                   (f rc* (cons c c*) (fx+ offset (chunk-size c))))))]
+                             (let ([c (if (and (eq? (get-local-label-offset l) (gchunk-laddr c))
+                                               (eq? (gchunk-next-offset c) offset))
+                                          c
+                                          (asm-jump l offset))])
+                               (f rc* (cons c c*) (fx+ offset (chunk-size c)) align)))]
                           [(cgchunk? c)
                            (let ([l1 (cgchunk-l1 c)] [l2 (cgchunk-l2 c)])
-                             (if (and (or (libspec-label? l1) (eq? (get-local-label-offset l1) (cgchunk-laddr1 c)))
-                                      (or (libspec-label? l2) (eq? (get-local-label-offset l2) (cgchunk-laddr2 c)))
-                                      (eq? (cgchunk-next-offset c) offset))
-                                 (f rc* (cons c c*) (fx+ offset (chunk-size c)))
-                                 (let ([c (asm-conditional-jump (cgchunk-info c) l1 l2 offset)])
-                                   (f rc* (cons c c*) (fx+ offset (chunk-size c))))))]
+                             (let ([c (if (and (or (libspec-label? l1) (eq? (get-local-label-offset l1) (cgchunk-laddr1 c)))
+                                               (or (libspec-label? l2) (eq? (get-local-label-offset l2) (cgchunk-laddr2 c)))
+                                               (eq? (cgchunk-next-offset c) offset))
+                                          c
+                                          (asm-conditional-jump (cgchunk-info c) l1 l2 offset))])
+                               (f rc* (cons c c*) (fx+ offset (chunk-size c)) align)))]
                           [(rachunk? c)
                            (let ([c (let ([l (rachunk-l c)])
                                       (if (and (eq? (get-local-label-offset l) (rachunk-laddr c))
                                                (eq? (rachunk-next-offset c) offset))
                                           c
                                           (asm-return-address (rachunk-dest c) l (rachunk-incr-offset c) offset)))])
-                             (f rc* (cons c c*) (fx+ offset (chunk-size c))))]
+                             (f rc* (cons c c*) (fx+ offset (chunk-size c)) align))]
                           ; NB: generic test, so must be last!
-                          [(chunk? c) (f rc* (cons c c*) (fx+ offset (chunk-size c)))]
+                          [(chunk? c) (f rc* (cons c c*) (fx+ offset (chunk-size c)) align)]
                           [else (sorry! who "unexpected chunk ~s" c)])))))
               (define (asm-fixup-opnd x)
                 (define-syntax tc-offset-map
@@ -8162,15 +8216,25 @@
                                           [else (values trace* (fx+ (asm-size code) offset))])))))])
                   trace*))
               (define (extract-code c*)
+                (define orig-c* c*)
                 (let f ([c* c*])
                   (if (null? c*)
                       '()
-                      (let ([c (car c*)])
-                        (let ([code (append (chunk-code* (car c*)) (f (cdr c*)))])
-                          (if (and aop (lchunk? c))
-                              (let ([l (lchunk-l c)])
-                                (if l (cons `(label ,l) code) code))
-                              code))))))
+                      (let* ([c (car c*)]
+                             [size (chunk-size c)]
+                             [code (append (chunk-code* c) (f (cdr c*)))])
+                        (if (and aop (lchunk? c))
+                            (let ([l (lchunk-l c)])
+                              (if l (cons `(label ,l) code) code))
+                            code)))))
+              (constant-case align-rpheader
+                [(#t) (unless munge-recur?
+                        ;; munge at least once if needed for alignment
+                        (when (ormap (lambda (c) (and (lchunk? c)
+                                                      (aligned-label? (lchunk-l c))))
+                                     c*)
+                          (set! munge-recur? #t)))]
+                [else (void)])
               (let f ([c* c*] [size size] [iteration 2])
                 (if munge-recur?
                     (begin
@@ -8306,6 +8370,7 @@
                     (include "types.ss")
                     (make-code-info
                       (info-lambda-src info)
+                      (compile-procedure-realm)
                       (info-lambda-sexpr info)
                       (and (eq? (info-lambda-closure-rep info) 'closure)
                            (let f ([fv* (info-lambda-fv* info)] [n 0])
@@ -8333,7 +8398,11 @@
                        (info-lambda-src info)) =>
                   (lambda (src)
                     (include "types.ss")
-                    (make-code-info src #f #f #f #f))]
+                    (make-code-info src (compile-procedure-realm) #f #f #f #f))]
+                 [(compile-procedure-realm)
+                  => (lambda (r)
+                       (include "types.ss")
+                       (make-code-info #f r #f #f #f #f))]
                  [else #f])
                (info-lambda-pinfo* info))
              (lambda (p) (c-trace (info-lambda-name info) code-size trace* p)))])
@@ -8426,6 +8495,10 @@
               (let* ([code* (cons* `(,size . ,fs)
                                    (aop-cons* `(asm "frame size:" ,fs)
                                               code*))]
+                     [code* (cons*
+                             '(code-top-link)
+                             (aop-cons* `(asm code-top-link)
+                                        code*))]
                      [code* (cons* (if (target-fixnum? lpm)
                                        `(,size . ,(fix lpm))
                                        `(abs 0 (object ,lpm)))
@@ -8436,11 +8509,7 @@
                                 (cons*
                                  mrv-error
                                  (aop-cons* `(asm "mrv point:" ,mrv-error)
-                                            code*)))]
-                     [code* (cons*
-                             '(code-top-link)
-                             (aop-cons* `(asm code-top-link)
-                                        code*))])
+                                            code*)))])
                 code*)))))
 
       (define asm-rp-compact-header
@@ -8794,7 +8863,7 @@
         ; as ordinary lambda expressions, there shouldn't be anything but ac0, cp, and argument
         ; registers, which we weed out here.  for library routines, there are often additional
         ; registers, sometimes for good reason and sometimes because we are lazy and didn't give
-        ; outselves a mechanism to prune out unneeded saves and restores.  for foreign-callable
+        ; ourselves a mechanism to prune out unneeded saves and restores.  for foreign-callable
         ; procedures, C argument registers and callee-save registers might show up live.
         ; we could enable a variant of this always that just checks normal procedures.  also,
         ; it might be nice to make it a bit more efficient, though it probably doesn't matter.
@@ -10023,6 +10092,7 @@
                        (let ([spillable-live (live-info-live live-info)])
                          (if (unspillable? x)
                              (let ([unspillable* (remq x unspillable*)])
+                               (unless (uvar-seen? x) (printf "!! ~s\n" x))
                                (safe-assert (uvar-seen? x))
                                (uvar-seen! x #f)
                                (if (and (var? rhs) (var-index rhs reg-spillinfo))

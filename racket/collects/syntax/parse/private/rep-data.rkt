@@ -1,9 +1,8 @@
 #lang racket/base
 (require racket/contract/base
-         racket/dict
          syntax/private/id-table
          racket/syntax
-         syntax/parse/private/residual-ct ;; keep abs. path
+         (submod "residual.rkt" ct)
          "minimatch.rkt"
          "kws.rkt")
 ;; from residual.rkt
@@ -23,18 +22,18 @@
 (define (stxclass/h? x)
   (and (stxclass? x) (stxclass-splicing? x)))
 
-;; An RHS is #s(rhs SAttrs Bool Stx/#f Variants Stxs Bool Bool)
+;; An RHS is (rhs SAttrs Bool Expr[String/#f] Variants (Listof Defn) Bool Bool)
 (define-struct rhs
-  (attrs        ;; (Listof Sattr)
+  (attrs        ;; (Listof SAttr)
    transparent? ;; Bool
-   description  ;; Syntax/#f
+   description  ;; Expr[String/#f]
    variants     ;; (Listof Variant)
-   definitions  ;; (Listof Stx), aux definitions from txlifts, local conventions?, etc
+   definitions  ;; (Listof Defn), aux definitions from txlifts, local conventions?, etc
    commit?      ;; Bool
    delimit-cut? ;; Bool
    ) #:prefab)
 
-;; A Variant is (variant Stx SAttrs Pattern Stxs)
+;; A Variant is (variant Stx SAttrs Pattern (Listof Defn))
 (define-struct variant
   (ostx         ;; Stx
    attrs        ;; (Listof SAttr)
@@ -46,11 +45,11 @@
 
 #|
 DeclEnv =
-  (make-declenv immutable-bound-id-mapping[id => DeclEntry]
-                (listof ConventionRule))
+  (make-declenv immutable-bound-id-table[Id => DeclEntry]
+                (Listof ConventionRule))
 
 DeclEntry =
-- (den:lit Id Id Stx Stx)
+- (den:lit Id Id Expr Expr)
 - (den:datum-lit Id Symbol)
 - (den:class Id Id Arguments)
 - (den:magic-class Id Id Arguments Stx)
@@ -146,7 +145,7 @@ expressions are duplicated, and may be evaluated in different scopes.
         (values acc (cons (list (car rule) val) newrules)))))
   (define-values (acc2 table2)
     (for/fold ([acc acc1] [table (make-immutable-bound-id-table)])
-        ([(k v) (in-dict (declenv-table env0))])
+        ([(k v) (in-bound-id-table (declenv-table env0))])
       (let-values ([(val acc) (f k v acc)])
         (values acc (bound-id-table-set table k val)))))
   (values (make-declenv table2 (reverse rules1))
@@ -156,7 +155,7 @@ expressions are duplicated, and may be evaluated in different scopes.
 (define (declenv-domain-difference env ids)
   (define idbm (make-bound-id-table))
   (for ([id (in-list ids)]) (bound-id-table-set! idbm id #t))
-  (for/list ([(k v) (in-dict (declenv-table env))]
+  (for/list ([(k v) (in-bound-id-table (declenv-table env))]
              #:when (or (den:class? v) (den:magic-class? v))
              #:unless (bound-id-table-ref idbm k #f))
     k))

@@ -92,13 +92,14 @@ Running:
    Expands and extracts <file-path> as a single linklet, compiles it
    and then writes the bytecode into <outfile-path>.
 
- % make demo
- % make run ARGS="<arg> ..."
+ % zuo . demo
+ % zuo . run ARGS="<arg> ..."
 
-   More shortcuts. Use `make run ARGS="<arg> ..."` as a shorthand for `racket
+   More shortcuts. Use `zuo . run <arg> ...` as a shorthand for `racket
    run.rkt -c compiled/cache <arg> ...`.
 
-   See "Makefile" for more information and other shortcuts.
+   See "main.zuo" for more information and other shortcuts, and see
+   also "Running zuo" below.
 
 ----------------------------------------
 
@@ -115,25 +116,26 @@ can build CS or BC as usual.
 
 Otherwise:
 
- * For Racket CS, go to "racket/src/cs" in the repo and run `make`.
-   That will update files in "racket/src/cs/schemified", including
-   using the new expander to rebuild the Racket-implemented parts of
-   Racket CS that are in "../thread", "../io", etc.
+ * For Racket CS, go to "racket/src/cs" in the repo and run `zuo`.
+   (See also "Running zuo" below.) That will update files in
+   "racket/src/cs/schemified", including using the new expander to
+   rebuild the Racket-implemented parts of Racket CS that are in
+   "../thread", "../io", etc.
 
    After this step, a `make cs` in the top level of the Racket repo
    will build Racket CS using the new expander.
 
- * For Racket BC, run `make` here, which will update the file
+ * For Racket BC, run `zuo` here, which will update the file
    "racket/src/bc/src/startup.inc". Then, when you build Racket BC,
    "startup.inc" will be automatically compiled to bytecode for
    embedding into the Racket BC executable.
 
    After this step, a `make bc` in the top level of the Racket repo
-   will build Racket CS using the new expander.
+   will build Racket BC using the new expander.
 
-For either of these steps, the makefile will assume that Racket is
+For either of these steps, "main.zuo" will assume that Racket is
 already built in the surrounding checkout, so Racket can be run as
-`../../bin/racket`. Use `make RACKET=....` to use a different Racket
+`../../bin/racket`. Use `zuo . RACKET=....` to use a different Racket
 build, but beware that the version of Racket must be essentially the
 same version as the target build.
 
@@ -141,12 +143,18 @@ Before building new CS and BC executables, increment the target Racket
 version in "../version/racket_version.h" if you change the
 serialization of syntax objects or the linklet protocol. Updating
 "racket_version.h" is important both for bytecode files and the
-makefile/preprocessor dance that generates the bytecode version of the
-expander itself.
+build step that generates the bytecode version of the expander itself.
 
-The `make` step for Racket BC generates source files in
+The `zuo` step for Racket BC generates source files in
 "compiled/cache-src". In some cases (hopefully rare), you may have to
 manually discard "compiled/cache-src" when things change.
+
+----------------------------------------
+
+Running zuo:
+
+If you don't have `zuo` installed, it may already be built as
+"../build/bin/zuo", or you can build it from the sources in "../zuo".
 
 ----------------------------------------
 
@@ -242,7 +250,7 @@ procedures when built into Racket. For example,
    (struct-predicate-procedure? syntax?) ; => #f
 
 If a structure type's representation is exported, such as
-`exn:fail:syntax`, then operations do claim to be strcuture operations
+`exn:fail:syntax`, then operations do claim to be structure operations
 
    (struct-predicate-procedure? exn:fail:syntax?) ; => #t
 

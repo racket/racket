@@ -26,7 +26,13 @@ it should generally be a path for the source file.
 
 See @secref["reader"] for information on the default reader in
 @racket[read-syntax] mode and @secref["parse-reader"] for
-the protocol of @racket[read-syntax].}
+the protocol of @racket[read-syntax].
+
+Typically, line counting should be enabled for @racket[in] so that
+source locations in syntax objects are in characters, instead of
+bytes. See also @secref["linecol"].}
+
+@guidealso["stx-obj"]
 
 @defproc[(read/recursive [in input-port? (current-input-port)]
                          [start (or/c char? #f) #f]
@@ -251,8 +257,15 @@ more information.}
 
 @defboolparam[read-accept-graph on?]{
 
-A parameter value that controls parsing input with sharing. See
-@secref["parse-graph"] for more information.}
+A parameter value that controls parsing input with sharing in
+@racket[read] mode. See @secref["parse-graph"] for more information.}
+
+@defboolparam[read-syntax-accept-graph on?]{
+
+A parameter value that controls parsing input with sharing in
+@racket[read-syntax] mode. See @secref["parse-graph"] for more information.
+
+@history[#:added "8.4.0.8"]}
 
 @defboolparam[read-decimal-as-inexact on?]{
 
@@ -387,7 +400,7 @@ arguments:
 The default port read handler reads standard Racket expressions with
 Racket's built-in parser (see @secref["reader"]). It handles a
 special result from a custom input port (see
-@racket[make-custom-input-port]) by treating it as a single expression,
+@racket[make-input-port]) by treating it as a single expression,
 except that special-comment values (see
 @secref["special-comments"]) are treated as whitespace.
 

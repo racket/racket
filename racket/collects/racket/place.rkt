@@ -7,7 +7,7 @@
                   start-place*)
          (for-syntax racket/base
                      racket/syntax
-                     syntax/parse
+                     syntax/parse/pre
                      syntax/free-vars))
 
 (provide (all-from-out racket/place/dynamic)

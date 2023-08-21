@@ -140,6 +140,9 @@ Scheme_On_Atomic_Timeout_Proc (*scheme_set_on_atomic_timeout)(Scheme_On_Atomic_T
 /*========================================================================*/
 void (*scheme_signal_error)(const char *msg, ...);
 void (*scheme_raise_exn)(int exnid, ...);
+void (*scheme_raise_realm_exn)(int exnid,
+                                                  intptr_t name_len, Scheme_Object *name_realm, Scheme_Object *msg_realm,
+                                                  ...);
 void (*scheme_warning)(char *msg, ...);
 void (*scheme_raise)(Scheme_Object *exn);
 int (*scheme_log_level_p)(Scheme_Logger *logger, int level);
@@ -165,6 +168,7 @@ void (*scheme_wrong_count_m)(const char *name, int minc, int maxc, int argc, Sch
 void (*scheme_case_lambda_wrong_count)(const char *name, int argc, Scheme_Object **argv, int is_method, int count, ...);
 void (*scheme_wrong_type)(const char *name, const char *expected, int which, int argc, Scheme_Object **argv);
 void (*scheme_wrong_contract)(const char *name, const char *expected, int which, int argc, Scheme_Object **argv);
+void (*scheme_wrong_contract_for_realm)(const char *name, Scheme_Object *realm, const char *expected, int which, int argc, Scheme_Object **argv);
 void (*scheme_wrong_field_type)(Scheme_Object *c_name, const char *expected, Scheme_Object *o);
 void (*scheme_wrong_field_contract)(Scheme_Object *c_name, const char *expected, Scheme_Object *o);
 void (*scheme_arg_mismatch)(const char *name, const char *msg, Scheme_Object *o);
@@ -200,6 +204,7 @@ Scheme_Object *scheme_tail_call_waiting;
 Scheme_Object *scheme_multiple_values;
 unsigned short **scheme_uchar_table;
 unsigned char **scheme_uchar_cases_table;
+unsigned char **scheme_uchar_graphbreaks_table;
 unsigned char **scheme_uchar_cats_table;
 int *scheme_uchar_ups;
 int *scheme_uchar_downs;
@@ -270,6 +275,9 @@ Scheme_Object *(*scheme_extract_one_cc_mark)(Scheme_Object *mark_set,
 Scheme_Object *(*scheme_extract_one_cc_mark_to_tag)(Scheme_Object *mark_set, 
                                                            Scheme_Object *key,
                                                            Scheme_Object *prompt_tag);
+Scheme_Object *(*scheme_extract_cc_mark_list)(Scheme_Object *mark_set, 
+                                                     Scheme_Object *key,
+                                                     Scheme_Object *prompt_tag);
 /* Internal */
 Scheme_Object *(*scheme_do_eval)(Scheme_Object *obj, int _num_rands, Scheme_Object **rands, int val);
 void (*scheme_detach_multple_array)(Scheme_Object **a);
@@ -361,6 +369,7 @@ int (*scheme_bucket_table_index)(Scheme_Bucket_Table *hash, mzlonglong pos, Sche
 Scheme_Object *(*scheme_bucket_table_next)(Scheme_Bucket_Table *hash, mzlonglong start);
 Scheme_Hash_Table *(*scheme_make_hash_table)(int type);
 Scheme_Hash_Table *(*scheme_make_hash_table_equal)();
+Scheme_Hash_Table *(*scheme_make_hash_table_equal_always)();
 Scheme_Hash_Table *(*scheme_make_hash_table_eqv)();
 void (*scheme_hash_set)(Scheme_Hash_Table *table, Scheme_Object *key, Scheme_Object *val);
 Scheme_Object *(*scheme_hash_get)(Scheme_Hash_Table *table, Scheme_Object *key);
@@ -369,6 +378,7 @@ void (*scheme_hash_set_atomic)(Scheme_Hash_Table *table, Scheme_Object *key, Sch
 Scheme_Object *(*scheme_hash_get_atomic)(Scheme_Hash_Table *table, Scheme_Object *key);
 int (*scheme_hash_table_equal)(Scheme_Hash_Table *t1, Scheme_Hash_Table *t2);
 int (*scheme_is_hash_table_equal)(Scheme_Object *o);
+int (*scheme_is_hash_table_equal_always)(Scheme_Object *o);
 int (*scheme_is_hash_table_eqv)(Scheme_Object *o);
 Scheme_Hash_Table *(*scheme_clone_hash_table)(Scheme_Hash_Table *ht);
 void (*scheme_clear_hash_table)(Scheme_Hash_Table *ht);
@@ -382,6 +392,7 @@ mzlonglong (*scheme_hash_tree_next)(Scheme_Hash_Tree *tree, mzlonglong pos);
 int (*scheme_hash_tree_index)(Scheme_Hash_Tree *tree, mzlonglong pos, Scheme_Object **_key, Scheme_Object **_val);
 int (*scheme_hash_tree_equal)(Scheme_Hash_Tree *t1, Scheme_Hash_Tree *t2);
 int (*scheme_is_hash_tree_equal)(Scheme_Object *o);
+int (*scheme_is_hash_tree_equal_always)(Scheme_Object *o);
 int (*scheme_is_hash_tree_eqv)(Scheme_Object *o);
 /*========================================================================*/
 /*                   basic Scheme value constructors                      */
@@ -505,6 +516,7 @@ Scheme_Object *(*scheme_make_external_cptr)(void *cptr, Scheme_Object *typetag);
 Scheme_Object *(*scheme_make_offset_external_cptr)(void *cptr, intptr_t offset, Scheme_Object *typetag);
 int (*scheme_is_cpointer)(Scheme_Object *cp);
 const char *(*scheme_get_proc_name)(Scheme_Object *p, int *len, int for_error);
+Scheme_Object *p;
 /*========================================================================*/
 /*                               strings                                  */
 /*========================================================================*/
@@ -895,15 +907,20 @@ int (*scheme_is_subinspector)(Scheme_Object *i, Scheme_Object *sup);
 int (*scheme_eq)(Scheme_Object *obj1, Scheme_Object *obj2);
 int (*scheme_eqv)(Scheme_Object *obj1, Scheme_Object *obj2);
 int (*scheme_equal)(Scheme_Object *obj1, Scheme_Object *obj2);
+int (*scheme_equal_always)(Scheme_Object *obj1, Scheme_Object *obj2);
 int (*scheme_chaperone_of)(Scheme_Object *obj1, Scheme_Object *obj2);
 int (*scheme_impersonator_of)(Scheme_Object *obj1, Scheme_Object *obj2);
 #ifdef MZ_PRECISE_GC
 intptr_t (*scheme_hash_key)(Scheme_Object *o);
 #endif
 intptr_t (*scheme_equal_hash_key)(Scheme_Object *o);
+intptr_t (*scheme_equal_hash_key_recur)(Scheme_Object *o, Scheme_Object *r);
 intptr_t (*scheme_equal_hash_key2)(Scheme_Object *o);
 intptr_t (*scheme_recur_equal_hash_key)(Scheme_Object *o, void *cycle_data);
 intptr_t (*scheme_recur_equal_hash_key2)(Scheme_Object *o, void *cycle_data);
+intptr_t (*scheme_equal_always_hash_key)(Scheme_Object *o);
+intptr_t (*scheme_equal_always_hash_key_recur)(Scheme_Object *o, Scheme_Object *r);
+intptr_t (*scheme_equal_always_hash_key2)(Scheme_Object *o);
 intptr_t (*scheme_eqv_hash_key)(Scheme_Object *o);
 intptr_t (*scheme_eqv_hash_key2)(Scheme_Object *o);
 void (*scheme_set_type_equality)(Scheme_Type type, 

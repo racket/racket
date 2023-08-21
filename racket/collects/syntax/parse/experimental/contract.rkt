@@ -2,7 +2,7 @@
 (require syntax/parse/pre
          "provide.rkt"
          syntax/contract
-         (only-in syntax/parse/private/residual ;; keep abs. path
+         (only-in "../private/residual.rkt"
                   this-context-syntax
                   this-role)
          racket/contract/base)

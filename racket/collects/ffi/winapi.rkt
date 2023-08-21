@@ -4,7 +4,7 @@
 
 (define win64? 
   (and (eq? 'windows (system-type))
-       (equal? "win32\\x86_64" (path->string (system-library-subpath #f)))))
+       (eqv? 64 (system-type 'word))))
 
 (define winapi (if (or win64?
                        (not (eq? 'windows (system-type))))

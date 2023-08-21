@@ -103,7 +103,7 @@
         (loop #f pipe-quote-c foldcase-from)]))
     
     (define str (accum-string-get! accum-str config))
-    
+
     ;; Disallow "." as a symbol
     (when (and (= 1 (string-length str))
                (not quoted-ever?)

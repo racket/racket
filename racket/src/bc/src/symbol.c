@@ -585,7 +585,6 @@ const char *scheme_symbol_name_and_size(Scheme_Object *sym, uintptr_t *length, i
   int dz;
   uintptr_t i, len = SCHEME_SYM_LEN(sym), total_length;
   int pipe_quote;
-  char buf[100];
   char *s, *result;
 
   if ((flags & SCHEME_SNF_PIPE_QUOTE) || (flags & SCHEME_SNF_FOR_TS))
@@ -596,12 +595,7 @@ const char *scheme_symbol_name_and_size(Scheme_Object *sym, uintptr_t *length, i
     pipe_quote = SCHEME_TRUEP(scheme_get_param(scheme_current_config(), MZCONFIG_CAN_READ_PIPE_QUOTE));
   }
 
-  if (len < 100) {
-    s = buf;
-    memcpy(buf, SCHEME_SYM_VAL(sym), len + 1);
-  } else
-    s = scheme_symbol_val(sym);
-  
+  s = scheme_symbol_val(sym);
 
 #define isSpecial(ch) ((ch == '(') || (ch == '[') || (ch == '{')       \
 		       || (ch == ')') || (ch == ']') || (ch == '}')    \
@@ -737,7 +731,7 @@ const char *scheme_symbol_name_and_size(Scheme_Object *sym, uintptr_t *length, i
   if (length)
     *length = total_length;
 
-  return (result == buf) ? scheme_symbol_val (sym) : result;
+  return result;
 }
 
 const char *scheme_symbol_name(Scheme_Object *sym)

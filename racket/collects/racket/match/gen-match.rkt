@@ -1,7 +1,7 @@
 #lang racket/base
 
 (require "patterns.rkt" "compiler.rkt"
-         syntax/stx syntax/parse racket/syntax
+         syntax/stx syntax/parse/pre racket/syntax
          (for-template racket/base (only-in "runtime.rkt" match:error fail syntax-srclocs)))
 
 (provide go go/one)
@@ -14,6 +14,7 @@
     (pattern [p . rhs]
              #:with res (syntax/loc this-syntax [(p) . rhs])))
   (syntax-parse clauses
+    #:context stx
     [(c:cl ...)
      (go parse stx (quasisyntax/loc expr (#,expr))
          #'(c.res ...))]))
@@ -23,6 +24,7 @@
 (define (go parse stx es clauses)
   (with-disappeared-uses
     (syntax-parse clauses
+      #:context stx
       [([pats . rhs] ...)
        (unless (syntax->list es)
          (raise-syntax-error 'match* "expected a sequence of expressions to match" es))
@@ -53,29 +55,49 @@
            (define (mk unm rhs)
              (make-Row (for/list ([p (syntax->list pats)]) (parse p))
                        (syntax-property
-                        (quasisyntax/loc stx
-                          (let () . #,rhs))
+                        (datum->syntax rhs (syntax-e rhs) stx rhs)
                         'feature-profile:pattern-matching 'antimark)
                        unm null))
+           ;; NOTE: parse-options must generate code at a tail-position,
+           ;; so that (fail) works correctly.
+           (define (parse-options rhs #:after [after #f])
+             (syntax-parse rhs
+               [()
+                (raise-syntax-error
+                 'match
+                 (string-append
+                  "expected at least one expression for the match clause body"
+                  (if after
+                      (string-append " after " after)
+                      ""))
+                 clause)]
+
+               [(#:when e rest ...)
+                #`(if e
+                      #,(parse-options #'(rest ...) #:after "#:when option")
+                      (fail))]
+               [(#:when . _)
+                (raise-syntax-error 'match "expected a cond-expr after #:when" clause)]
+
+               [(#:do [do-body ...] rest ...)
+                #`(let ()
+                    do-body ...
+                    #,(parse-options #'(rest ...) #:after "#:do option"))]
+               [(#:do . _)
+                (raise-syntax-error 'match "expected a sequence of do-bodys after #:do" clause)]
+
+               [(rest ...) #'(let () rest ...)]))
+
            (syntax-parse rhs
-             [()
-              (raise-syntax-error 
-               'match
-               "expected at least one expression on the right-hand side"
-               clause)]
-             [(#:when e)
-              (raise-syntax-error 
-               'match
-               "expected at least one expression on the right-hand side after #:when clause"
-               clause)]
-             [(#:when e rest ...) (mk #f #'((if e (let () rest ...) (fail))))]
-             [(((~datum =>) unm:id) . rhs) (mk #'unm #'rhs)]
-             [(((~datum =>) unm) . rhs)
-              (raise-syntax-error 'match
-                                  "expected an identifier after `=>`"
-                                  #'unm)]
-             [_ (mk #f rhs)])))
-       (define/with-syntax body 
+             [(((~datum =>) unm) rest ...)
+              (unless (identifier? #'unm)
+                (raise-syntax-error 'match
+                                    "expected an identifier after `=>`"
+                                    #'unm))
+              (mk #'unm (parse-options #'(rest ...) #:after "=> option"))]
+             [(rest ...)
+              (mk #f (parse-options #'(rest ...)))])))
+       (define/with-syntax body
          (compile* (syntax->list #'(xs ...)) parsed-clauses #'outer-fail))
        (define/with-syntax (exprs* ...)
          (for/list ([e (in-list (syntax->list #'(exprs ...)))])

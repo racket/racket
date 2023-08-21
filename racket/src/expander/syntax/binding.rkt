@@ -28,6 +28,7 @@
  identifier-binding
  identifier-binding-symbol
  identifier-distinct-binding
+ identifier-binding-uses-scope?
  
  maybe-install-free=id!
  binding-set-free=id
@@ -99,8 +100,9 @@
     (local-binding-key b)]
    [else (syntax-e id)]))
 
-(define (identifier-binding id phase [top-level-symbol? #f])
-  (define b (resolve+shift id phase))
+(define (identifier-binding id phase [top-level-symbol? #f]
+                            #:exactly? [exactly? #f])
+  (define b (resolve+shift id phase #:exactly? exactly?))
   (cond
    [(module-binding? b)
     (if (top-level-module-path-index? (module-binding-module b))
@@ -118,14 +120,18 @@
     'lexical]
    [else #f]))
 
-(define (identifier-distinct-binding id other-id phase)
+(define (identifier-distinct-binding id other-id phase [top-level-symbol? #f])
   (define scs (resolve id phase #:get-scopes? #t))
   (cond
     [(not scs) #f]
     [else
      (define other-scs (syntax-scope-set other-id phase))
      (and (not (subset? scs other-scs))
-          (identifier-binding id phase))]))
+          (identifier-binding id phase top-level-symbol?))]))
+
+(define (identifier-binding-uses-scope? id scope phase)
+  (define scs (resolve id phase #:get-scopes? #t))
+  (and scs (set-member? scs scope)))
 
 ;; ----------------------------------------
 

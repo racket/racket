@@ -52,7 +52,9 @@
             [(eq? kw 'submod)
              (syntax-case stx ()
                [(_ mp . rest)
-                (let ([new-mp (xlate-path #'mp)])
+                (let ([new-mp (case (syntax-e #'mp)
+                                [("." "..") #'mp]
+                                [else (xlate-path #'mp)])])
                   (if (and (eq? new-mp #'mp)
                            (eq? (car d) 'submod))
                       stx
@@ -247,7 +249,7 @@
                   "space must be #f or an identifier"
                   stx
                   mode))
-               (cons 0 base-mode)))])
+               (phase+space 0 base-mode)))])
       (make-for-mode extract-space)))
   
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -313,6 +315,7 @@
                        [(submod . s)
                         (check-lib-form in)
                         (list (mode-wrap base-mode (xlate-path in)))]
+                       ;; See `prefix-in` function comment.
                        [(prefix-in pfx path)
                         (simple-path? #'path)
                         (list (mode-wrap
@@ -727,7 +730,17 @@
                   (map car new+olds)
                   leftover-imports)
                  sources))))]))))
-  
+
+  ;; In simple cases (require (prefix-in)) expands to a single
+  ;; (#%require [prefix pre mod]) clause. Such simple cases bypass
+  ;; this `prefix-in` transformer. That's fine because the prefix
+  ;; identifier is distinct in the prefix clause. Analyzers like
+  ;; drracket/check-syntax already see/use this.
+  ;;
+  ;; Whereas this handles the general cases, including nested
+  ;; prefix-in. These expand to (#%require [rename new old]). Here we
+  ;; do need a syntax property on `new` to recover the component
+  ;; identifiers.
   (define-syntax prefix-in
     (make-require-transformer
      (lambda (stx)
@@ -744,14 +757,7 @@
             (values
              (map (lambda (import)
                     (let ([id (import-local-id import)])
-                      (make-import (datum->syntax
-                                    id
-                                    (string->symbol
-                                     (format "~a~a" 
-                                             (syntax-e pfx)
-                                             (syntax-e id)))
-                                    id
-                                    id)
+                      (make-import (prefix-identifier id pfx id)
                                    (import-src-sym import)
                                    (import-src-mod-path import)
                                    (import-mode import)
@@ -814,13 +820,7 @@
                                        (export-local-id export)
                                        (quasisyntax/loc out
                                          (rename #,(export-local-id export)
-                                                 #,(if (eq? (syntax-e (export-orig-stx export))
-                                                            (export-out-sym export))
-                                                       (export-orig-stx export)
-                                                       (datum->syntax
-                                                        #f
-                                                        (export-out-sym export)
-                                                        (export-orig-stx export))))))]
+                                                 #,(export-out-id export))))]
                                   [mode (export-mode export)])
                               (let ([moded
                                      (let ([spaced (let ([space (phase+space-space mode)])
@@ -916,11 +916,19 @@
                               [(eq? mode 0) free-identifier=?]
                               [(eq? mode 1) free-transformer-identifier=?]
                               [else (lambda (a b)
-                                      (free-identifier=?/mode a b abs-mode))]))])
+                                      (free-identifier=?/mode a b abs-mode))]))]
+                           [right-space?
+                            (let ([space (phase+space-space mode)])
+                              (if space
+                                  (let ([intro (make-interned-syntax-introducer space)])
+                                    (lambda (id)
+                                      (not (free-identifier=? (intro id 'add) (intro id 'remove)))))
+                                  (lambda (id) #t)))])
                       (map (lambda (id)
-                             (make-export id (syntax-e id) mode #f stx))
+                             (make-export id id mode #f stx))
                            (filter (lambda (id)
                                      (and (same-ctx-in-phase? id)
+                                          (right-space? id)
                                           (let-values ([(v id) (syntax-local-value/immediate
                                                                 id
                                                                 (lambda () (values #f #f)))])
@@ -929,7 +937,7 @@
                                                   (syntax-property 
                                                    (rename-transformer-target v)
                                                    'not-provide-all-defined))))))
-                                   (hash-ref ht abs-mode null)))))
+                                   (hash-ref ht (phase+space-phase abs-mode) null)))))
                   modes)))]))))
 
   (define-syntax all-from-out
@@ -983,7 +991,7 @@
                            (map (lambda (id)
                                   (and (free-identifier=?/mode id (datum->syntax mp (syntax-e id))
                                                                mode)
-                                       (make-export id (syntax-e id) mode #f stx)))
+                                       (make-export id id mode #f stx)))
                                 (cdr ids))))
                        idss)))))
             (syntax->list #'(mp ...))))]))))
@@ -1025,7 +1033,7 @@
                                 stx
                                 orig-id))
                              (make-export orig-id
-                                          (syntax-e bind-id)
+                                          bind-id
                                           mode
                                           #f
                                           bind-id))
@@ -1174,7 +1182,7 @@
                                                   (syntax-property
                                                    id
                                                    'disappeared-use)))
-                                                (syntax-e id)
+                                                id
                                                 0
                                                 #f
                                                 id))))
@@ -1221,7 +1229,7 @@
             (map (lambda (e)
                    (make-export
                     (export-local-id e)
-                    (export-out-sym e)
+                    (export-out-id e)
                     (export-mode e)
                     #t
                     (export-orig-stx e)))
@@ -1241,15 +1249,13 @@
       (make-provide-transformer
        (lambda (stx modes)
          (syntax-case stx ()
-           [(_ pfx out)
-            (check-prefix stx #'pfx)
+           [(_ pre-id out)
+            (check-prefix stx #'pre-id)
             (let ([exports (expand-export #'out modes)])
               (map (lambda (e)
                      (make-export
                       (export-local-id e)
-                      (string->symbol (format "~a~a"
-                                              (syntax-e #'pfx)
-                                              (export-out-sym e)))
+                      (prefix-identifier #'pre-id #'pre-id (export-out-id e))
                       (export-mode e)
                       (export-protect? e)
                       (export-orig-stx e)))
@@ -1260,7 +1266,6 @@
             (check-prefix stx #'pfx)
             (with-syntax ([out (pre-expand-export #'out modes)])
               (syntax/loc stx (prefix-out pfx out)))])))))
-           
 
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1338,4 +1343,105 @@
                                (values (make-rename-transformer (quote-syntax lifted)) ...)))))])))
 
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-  )
+
+  ;; Combine prefix and suffix identifiers into a new identifier.
+  ;;
+  ;; When at least the prefix-id has syntax-position and syntax-span
+  ;; add a syntax property to show what ranges of the new identifier
+  ;; correspond to the original pieces.
+  ;;
+  ;; The value of the property is:
+  ;;
+  ;;   (vector/c
+  ;;    ;; An identifier ^1 composed from two or more other identifiers
+  ;;    identifier?
+  ;;    ;; The ranges and other identifiers are...
+  ;;    (listof
+  ;;     (vector/c natural?       ;from this *offset* in the full id
+  ;;               natural?       ;and up to this *span* from the offset
+  ;;               identifier?))) ;originates from this identifier ^2
+  ;;
+  ;; ^1: The full identifier syntax has no useful srcloc because it
+  ;; does not appear in the original source.
+  ;;
+  ;; ^2: Generally the only meaningful values to take from this sub
+  ;; identifier syntax are syntax-e and syntax-position (syntax-span
+  ;; is the same as the other span value). However note that
+  ;; syntax-position can be #f when the identifier is not original in
+  ;; the source. This can occur when suffix-id is from all-from-out.
+  ;;
+  ;; When there already exists a property on the suffix-id -- as is
+  ;; the case with nested prefix-{in out} -- its ranges are retained
+  ;; and the old offsets shifted by the new prefix length. As a result
+  ;; the value is always a flat list of one or more prefixes and a
+  ;; final suffix.
+  ;;
+  ;; Example: The value for #'foobarbang formed from #'foo at
+  ;; syntax-position 42, #'bar at syntax-position 99, and #'bang at
+  ;; syntax-position 777, would be:
+  ;;
+  ;;   (vector
+  ;;    #'foobarbang
+  ;;    (list (vector 0 3 #'foo)    ;syntax-position  42
+  ;;          (vector 3 3 #'bar)    ;                 99
+  ;;          (vector 6 4 #'bang))) ;                777
+  ;;
+  ;; Note: Although this may sound similar to the sub-range-binders
+  ;; property, that is intended as a directive to drracket
+  ;; check-syntax to draw arrows between identifiers present in the
+  ;; original user program. Which isn't necessarily possible here; the
+  ;; new id might be present only in the fully-expanded `rename`
+  ;; clause and have no references in the original.
+  ;;
+  (define-for-syntax (prefix-identifier lctx prefix-id suffix-id)
+    (for-each (lambda (stx)
+                (unless (identifier? stx)
+                  (raise-syntax-error #f "expected identifier" stx)))
+              (list lctx prefix-id suffix-id))
+    (let ([full-id (datum->syntax lctx
+                                  (string->symbol
+                                   (format "~a~a"
+                                           (syntax-e prefix-id)
+                                           (syntax-e suffix-id)))
+                                  #f ;not in original file
+                                  ;; REVIEW: Need to combine props here?
+                                  #f)])
+      ;; To add the prop we need at least prefix-id to have srcloc.
+      ;; (Not the case for e.g. module.rktl tests.)
+      (cond
+        [(and (syntax-position prefix-id)
+              (syntax-span prefix-id))
+         (let* ([prop-key     'import-or-export-prefix-ranges]
+                [prefix-vec   (vector 0
+                                      (syntax-span prefix-id)
+                                      (syntax-local-introduce prefix-id))]
+                [suffix-vecs  (cond
+                                ;; When suffix-id has the prop, retain
+                                ;; its list of range vectors; shift
+                                ;; their offsets by new prefix len.
+                                [(syntax-property suffix-id prop-key)
+                                 =>
+                                 (lambda (old-val)
+                                   (let ([old-vecs (vector-ref old-val 1)])
+                                     (map (lambda (v)
+                                            (vector-set! v 0
+                                                         (+ (vector-ref v 0)
+                                                            (syntax-span prefix-id)))
+                                            v)
+                                          old-vecs)))]
+                                ;; Base case. We include suffix-id
+                                ;; even when it lacks srcloc, because
+                                ;; the offset/span into the full id
+                                ;; are still useful.
+                                [else
+                                 (list
+                                  (vector (syntax-span prefix-id)
+                                          (string-length
+                                           (symbol->string
+                                            (syntax-e suffix-id)))
+                                          (syntax-local-introduce suffix-id)))])]
+                [new-vecs     (cons prefix-vec suffix-vecs)]
+                [new-prop-val (vector (syntax-local-introduce full-id)
+                                      new-vecs)])
+           (syntax-property full-id prop-key new-prop-val))]
+        [else full-id]))))

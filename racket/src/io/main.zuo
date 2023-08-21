@@ -1,0 +1,87 @@
+#lang zuo
+(require "../lib.zuo"
+         (only-in "../expander/main.zuo"
+                  expander-target
+                  expander-main
+                  register-expansion-dependencies)
+         (only-in "../rktio/build.zuo"
+                  [targets-at rktio-targets-at]))
+
+(provide targets-at)
+
+(module+ main
+  (build/command-line* (lambda (at-dir vars)
+                         (targets-at at-dir (hash-set vars 'sync-rktio #t)))
+                       build-path))
+
+(define (targets-at at-dir
+                    [vars (hash)]
+                    [expander (expander-target (make-at-dir (at-dir "../expander")) vars)])
+  (define io.rktl (at-dir "compiled/io.rktl"))
+  (define io-dep.rktd (at-dir "compiled/io-dep.rktd"))
+
+  (define rktio.rktl
+    (cond
+      [(hash-ref vars 'sync-rktio #f)
+       (define rktio-dir (at-source "../build/so-rktio"))
+       (mkdir-p rktio-dir)
+       (find-target "rktio.rktl" (rktio-targets-at (make-at-dir rktio-dir)
+                                                   vars))]
+      [else
+       (at-source "../rktio/rktio.rktl")]))
+
+  (make-targets
+   `([:target io-src (,io.rktl) ,void]
+
+     [:target ,io.rktl (,expander ,rktio.rktl)
+              ,(lambda (path token)
+                 (racket vars (expander-main)
+                         "-t" (at-source "main.rkt")
+                         "-c" (at-dir "compiled/cache-src")
+                         "-k" (at-source "../..")
+                         "-s" "-x"
+                         "--depends" io-dep.rktd
+                         ;; When flattening, replace a dynamic lookup from a primitive table to
+                         ;; a direct use of the primitive name:
+                         "++direct" "thread" "++direct" "pthread"
+                         ;; Enable the sanity check for global state (to be avoided in
+                         ;; favor of place-local state), but declare some initialized-once
+                         ;; global state to be ok:
+                         "--no-global"
+                         "++global-ok" "installed-read"
+                         "++global-ok" "installed-read-syntax"
+                         "++global-ok" "installed-read-accept-reader"
+                         "++global-ok" "installed-read-accept-lang"
+                         "++global-ok" "maybe-raise-missing-module"
+                         "++global-ok" "string->number?"
+                         "++global-ok" "printable-regexp?"
+                         "++global-ok" "do-global-print"
+                         "++global-ok" "simplify-path/dl"
+                         "++global-ok" "exec-file"
+                         "++global-ok" "run-file"
+                         "++global-ok" "collects-dir"
+                         "++global-ok" "config-dir"
+                         "++global-ok" "addon-dir"
+                         "++global-ok" "host-collects-dir"
+                         "++global-ok" "host-config-dir"
+                         "-o" path)
+                 (register-expansion-dependencies io-dep.rktd token))]
+
+     [:target demo (rktio-so)
+              ,(lambda (token)
+                 (raco vars "make" (at-source "demo.rkt"))
+                 (racket vars (at-source "demo.rkt")))]
+
+     ;; this target is also used by "../cs/main.zuo":
+     [:target rktio-so ()
+              ,(lambda (token)
+                 (build (find-target "installed-shared-object"
+                                     (configured-targets-at (hash 'configure (at-source "../rktio/configure")
+                                                                  'configure-args
+                                                                  (list "--enable-standalone"
+                                                                        (~a "--prefix=" (path->complete-path (at-source "../.."))))
+                                                                  'inputs (list (at-source "../rktio/Makefile.in"))
+                                                                  'outputs (list (at-source "../build/so-rktio/Makefile"))
+                                                                  'vars vars)))))]
+
+     [:db-dir ,(at-dir "compiled")])))

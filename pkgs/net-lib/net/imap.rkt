@@ -336,7 +336,7 @@
     (values imap init-count init-recent)))
 
 (define (ports->tls-ports r w)  
-  (ports->ssl-ports r w #:close-original? #t #:encrypt 'tls))
+  (ports->ssl-ports r w #:close-original? #t #:encrypt 'auto))
 
 (define (imap-connect* r w username password inbox
                        #:tls? [tls? #f]

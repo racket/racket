@@ -1,0 +1,31 @@
+diff -u -r old/pango-1.42.0/pango/Makefile.in new/pango-1.42.0/pango/Makefile.in
+--- old/pango-1.42.0/pango/Makefile.in	2023-01-25 06:59:54.000000000 +0800
++++ new/pango-1.42.0/pango/Makefile.in	2023-01-25 08:19:08.000000000 +0800
+@@ -183,7 +183,7 @@
+ @HAVE_CAIRO_TRUE@am__append_16 = PangoCairo-1.0.gir
+ @HAVE_CAIRO_WIN32_TRUE@@PLATFORM_WIN32_TRUE@am__append_17 = -Wl,pangocairo-win32-res.o
+ @HAVE_CAIRO_WIN32_TRUE@@PLATFORM_WIN32_TRUE@am__append_18 = pangocairo-win32-res.o
+-@HAVE_CAIRO_WIN32_TRUE@am__append_19 = libpangowin32-$(PANGO_API_VERSION).la -lgdi32
++@HAVE_CAIRO_WIN32_TRUE@am__append_19 = libpangowin32-$(PANGO_API_VERSION).la -lusp10 -lgdi32
+ @HAVE_CAIRO_WIN32_TRUE@am__append_20 = libpangowin32-$(PANGO_API_VERSION).la
+ @HAVE_CAIRO_WIN32_TRUE@am__append_21 = pangocairo-win32font.c pangocairo-win32fontmap.c pangocairo-win32.h
+ @HAVE_CAIRO_FREETYPE_TRUE@am__append_22 = libpangoft2-$(PANGO_API_VERSION).la $(FREETYPE_LIBS)
+@@ -885,7 +885,7 @@
+ libpangowin32_1_0_la_LIBADD = \
+ 	libpango-$(PANGO_API_VERSION).la	\
+ 	$(GLIB_LIBS)				\
+-	-lgdi32 -lusp10
++	-lusp10 -lgdi32
+ 
+ libpangowin32_1_0_la_DEPENDENCIES = libpango-$(PANGO_API_VERSION).la \
+ 	$(am__append_33)
+diff -u -r old/pango-1.42.0/pangowin32.pc.in new/pango-1.42.0/pangowin32.pc.in
+--- old/pango-1.42.0/pangowin32.pc.in	2023-01-25 06:59:54.000000000 +0800
++++ new/pango-1.42.0/pangowin32.pc.in	2023-01-25 07:57:12.000000000 +0800
+@@ -8,5 +8,5 @@
+ Version: @VERSION@
+ Requires: pango
+ Libs: -L${libdir} -lpangowin32-@PANGO_API_VERSION@
+-Libs.private: -lgdi32 -lusp10
++Libs.private: -lusp10 -lgdi32
+ Cflags: -I${includedir}/pango-1.0

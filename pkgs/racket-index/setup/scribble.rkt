@@ -252,7 +252,17 @@
     (unless (file-exists? db-file)
       (define-values (base name dir?) (split-path db-file))
       (make-directory* base)
-      (when copy-from (copy-file copy-from db-file))
+      (when copy-from
+        (copy-file copy-from db-file)
+        ;; we might not have write permissions for the previous layer:
+        ;; ensure that we do for the new file
+        (define orig-mode (file-or-directory-permissions db-file 'bits))
+        (define writeable-mode
+          (if (eq? (system-type) 'windows)
+              (bitwise-ior orig-mode user-write-bit group-write-bit other-write-bit)
+              (bitwise-ior orig-mode user-write-bit)))
+        (unless (= writeable-mode orig-mode)
+          (file-or-directory-permissions db-file writeable-mode)))
       (doc-db-disconnect
        (doc-db-file->connection db-file #t))))
   (when (or (ormap can-build*? main-docs)

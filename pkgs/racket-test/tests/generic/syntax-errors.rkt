@@ -192,3 +192,66 @@
      (struct thing []
        #:methods gen:foo
        [(define/generic gbar bar)]))))
+
+(check-good-syntax
+ (begin
+   (define-generics foo
+     #:requires (bar)
+     (bar foo)
+     (baz foo))
+
+   (struct thing []
+     #:methods gen:foo
+     [(define (bar self) 1)])
+
+   (struct thing2 []
+     #:methods gen:foo
+     [(define (bar self) 1)
+      (define (baz self) 2)])
+
+   (struct thing3 []
+     #:methods gen:foo
+     [(define (bar self) 1)
+      (define (baz self) 2)
+      (define (bam self) 3)])))
+
+
+(check-bad-syntax
+ (begin
+   (define-generics foo
+     #:requires (bar)
+     (bar foo)
+     (baz foo))
+
+   (struct thing []
+     #:methods gen:foo
+     [(define (baz self) 1)])))
+
+(check-good-syntax
+ (begin
+   (define-generics foo
+     #:requires ()
+     (bar foo)
+     (baz foo))
+
+   (struct thing []
+     #:methods gen:foo
+     [(define (baz self) 1)])))
+
+;; tests from https://github.com/racket/racket/issues/1554
+
+(check-bad-syntax
+ (struct wuznub (x)
+   #:transparent
+   #:methods gen:equal+hash
+   [(define (equal-proc a b _) (= (wuznub-x a) (wuznub-x b)))
+    (define (hash-proc a _) (wuznub-x a))
+    (define (hash-proc2 a _) (wuznub-x a))]))
+
+(check-good-syntax
+ (struct wuznub (x)
+   #:transparent
+   #:methods gen:equal+hash
+   [(define (equal-proc a b _) (= (wuznub-x a) (wuznub-x b)))
+    (define (hash-proc a _) (wuznub-x a))
+    (define (hash2-proc a _) (wuznub-x a))]))

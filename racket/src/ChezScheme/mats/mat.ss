@@ -75,7 +75,8 @@
                     (fprintf (mat-output) "Error reading mat input: ")
                     (display-condition c (mat-output))
                     (reset))))
-            (lambda () (load in))))))))
+            (lambda () (load in))))
+        (fprintf (mat-output) "Finished loading mat\n")))))
 
 (define mat-one-exp
   (lambda (expect th sanitize-all?)
@@ -222,18 +223,6 @@
 
 (set! coverage-table (make-parameter #f))
 
-(set! for-each-mat
-  (lambda (proc mats)
-    ;; this imperative variant of `for-each` is meant to avoid running
-    ;; forever if a continuation somehow gets captured part-way
-    ;; through one mat and restored during a later mat
-    (let loop ()
-      (unless (null? mats)
-        (let ([mat (car mats)])
-          (set! mats (cdr mats))
-          (proc mat)
-          (loop))))))
-
 (set! mat-file
   (lambda (dir)
     (unless (string? dir)
@@ -243,9 +232,22 @@
       (unless (string? mat)
         (errorf 'mat-file "~s is not a string" mat))
       (let ([ifn (format "~a.ms" mat)] [ofn (format "~a.mo" mat)])
+        (define add-here
+          (let ([orig-dir (current-directory)])
+            (lambda (l)
+              (if (or (equal? dir ".")
+                      (equal? dir orig-dir))
+                  l
+                  (cons "." (map (lambda (p)
+                                   (define (convert p)
+                                     (path-build-normal orig-dir p))
+                                   (if (pair? p)
+                                       (cons (convert (car p)) (convert (cdr p)))
+                                       (convert p)))
+                                   l))))))
         (parameterize ([current-directory dir]
-                       [source-directories (cons ".." (source-directories))]
-                       [library-directories (cons ".." (library-directories))])
+                       [source-directories (add-here (source-directories))]
+                       [library-directories (add-here (library-directories))])
           (printf "matting ~a with output to ~a/~a~%" ifn dir ofn)
           (delete-file ofn #f)
           (parameterize ([mat-output (open-output-file ofn)])
@@ -378,6 +380,13 @@
                           (or (fx< i 0)
                               (and (fx= (fxvector-ref x i) (fxvector-ref y i))
                                    (f (fx1- i))))))]
+                  [(flvector? x)
+                   (and (flvector? y)
+                        (fx= (flvector-length x) (flvector-length y))
+                        (let f ([i (fx- (flvector-length x) 1)])
+                          (or (fx< i 0)
+                              (and (eqv? (flvector-ref x i) (flvector-ref y i))
+                                   (f (fx1- i))))))]
                   [(box? x) (and (box? y) (e? (unbox x) (unbox y)))]
                   [else #f])
                 (begin
@@ -439,7 +448,7 @@
 (define patch-exec-path
   (lambda (p)
     (if (windows?)
-        (list->string (subst #\\ #\/ (string->list p)))
+        (string-append "\"" (list->string (subst #\\ #\/ (string->list p))) "\"")
         p)))
 
 (module separate-eval-tools (separate-eval run-script separate-compile)
@@ -462,7 +471,7 @@
       (let* ([stdout-stuff (slurp from-stdout)]
              [stderr-stuff (slurp from-stderr)])
         (when (string=? stderr-stuff "")
-          (printf "$separate-eval command succeeeded with\nSTDERR:\n~a\nSTDOUT:\n~a\nEND\n" stderr-stuff stdout-stuff))
+          (printf "$separate-eval command succeeded with\nSTDERR:\n~a\nSTDOUT:\n~a\nEND\n" stderr-stuff stdout-stuff))
         (unless (string=? stderr-stuff "")
           (printf "$separate-eval command failed with\nSTDERR:\n~a\nSTDOUT:\n~a\nEND\n" stderr-stuff stdout-stuff)
           (errorf who "~a" stderr-stuff))
@@ -502,12 +511,17 @@
         (collect-maximum-generation (+ (random 254) 1))))))
 
 (define windows?
-  (if (memq (machine-type) '(i3nt ti3nt a6nt ta6nt))
+  (if (memq (machine-type) '(i3nt ti3nt a6nt ta6nt arm64nt tarm64nt))
       (lambda () #t)
       (lambda () #f)))
 
 (define embedded?
   (lambda () #f))
+
+(define pb?
+  (if (memq (machine-type) '(pb pb32l pb32b pb64l pb64b tpb tpb32l tpb32b tpb64l tpb64b))
+      (lambda () #t)
+      (lambda () #f)))
 
 (define ($record->vector x)
   (let* ([rtd (#%$record-type-descriptor x)]
@@ -558,6 +572,31 @@
           (sleep (make-time 'time-duration 1000000 1))
           (loop))))
     #t))
+
+(define path-build-normal
+  (lambda (dir fn)
+    (cond
+      [(path-absolute? fn) fn]
+      [(equal? dir ".") fn]
+      [(and (equal? ".." (path-first fn))
+            (not (equal? dir (path-parent dir))))
+       (path-build-normal (path-parent dir) (path-rest fn))]
+      [else
+       (path-build dir fn)])))
+
+(define path-equal?
+  (lambda (a b)
+    (or (equal? a b)
+        (equal? (path-build-normal (current-directory) a)
+                (path-build-normal (current-directory) b)))))
+
+(define find-source
+  (lambda (fn)
+    (or (ormap (lambda (dir)
+                 (let ([fn (path-build-normal dir fn)])
+                   (and (file-exists? fn) fn)))
+               (source-directories))
+        (format (path-build *mats-dir* fn)))))
 
 (define preexisting-profile-dump-entry?
   (let ([ht (make-eq-hashtable)])

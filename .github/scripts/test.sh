@@ -2,8 +2,8 @@
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 
 runmats() {
-  echo make allxhelp "$@"
-  make -C ${MACH}/mats allxhelp "$@" 2>&1 | tee -a Make.out | grep '^matting '
+  echo zuo . all "$@"
+  bin/zuo ${MACH}/mats all "$@" noisy=t 2>&1 | tee -a Make.out | grep '^matting '
 }
 
 # Split these out so that we get output every 10 minutes on Windows builds.

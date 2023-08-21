@@ -1,0 +1,1075 @@
+#lang zuo/base
+(require "cmdline.zuo"
+         "thread.zuo"
+         "config.zuo"
+         "jobserver.zuo"
+         "private/build-db.zuo")
+
+(provide (rename-out [make-target target]
+                     [make-rule rule]
+                     [make-phony-rule phony-rule])
+         input-file-target
+         input-data-target
+
+         target-name
+         target-path
+         target-shell
+
+         target?
+         token?
+         rule?
+         phony-rule?
+
+         sha256?
+         file-sha256
+         no-sha256
+         sha256-length
+
+         build
+         build/command-line
+         build/command-line*
+         build/dep
+         build/no-dep
+
+         find-target
+         make-at-dir
+         provide-targets
+         bounce-to-targets
+
+         command-target?
+         command-target->target
+
+         make-targets)
+
+;; ------------------------------------------------------------
+;; Targets and rules
+
+;; A token represents a build in progress, used by a target's `get-rule` or `build`
+;; function to make recursive call or get SHA-256s (possibly cached)
+(struct token (target      ; the target that received this token
+               ch          ; a channel to access the build state
+               seen        ; to detect dependency cycles
+               resourcer   ; build state's resource manager
+               uni?))      ; build state's `uni?` flag
+
+(struct target (key       ; shortcut: `string->symbol` of the path
+                name      ; a symbol or path relative to the current directory
+                get-rule  ; (name token -> rule), where `name` is relative to current directory
+                kind      ; 'normal, 'input, or 'phony
+                options)) ; keys include 'precious?, 'command?, and 'co-outputs
+
+;; A rule is a result from `get-rule`:
+(struct rule (deps        ; list of targets
+              build       ; (-> any), called when deps SHA-256s different than recorded
+              sha256))      ; #f => computed via `file-sha256`
+
+;; A phony target returns a phony-rule, instead:
+(struct phony-rule (deps
+                    build))
+
+;; During a target's `get-rule` or `build`, calls to `build/dep`
+;; trigger recording of additional dependencies
+
+(define no-sha256 "")
+(define phony-sha256 (string->uninterned-symbol "x")) ; internal use
+(define (sha256? s)
+  (or (and (string? s)
+           (or (= (string-length s) sha256-length)
+               (string=? s no-sha256)
+               ;; also allow a concatenation of SHA-256s for multi-file targets
+               (and (>= (string-length s) sha256-length)
+                    (= 0 (modulo (string-length s) sha256-length)))))
+      (eq? s phony-sha256)))
+
+;; public constructor
+(define make-target
+  (let ([target
+         (lambda (name get-rule [options (hash)])
+           (unless (or (symbol? name) (path-string? name))
+             (arg-error 'target "path string or symbol" name))
+           (unless (procedure? get-rule) (arg-error 'target "procedure" get-rule))
+           (unless (hash? options) (arg-error 'target "hash table" options))
+           (cond
+             [(symbol? name)
+              (let ([key (string->uninterned-symbol (symbol->string name))]
+                    [get-rule (get-phony-rule->get-rule get-rule)])
+                (target key name get-rule 'phony options))]
+             [else
+              (let ([key (string->symbol name)])
+                (target key name get-rule 'normal options))]))])
+    target))
+
+;; public constructor
+(define make-rule
+  (let ([rule
+         (lambda (deps [build #f] [sha256 #f])
+           (let ([norm-deps (and (list? deps) (map coerce-to-target deps))])
+             (unless (and norm-deps (andmap target? norm-deps))
+               (arg-error 'rule "list of targets" deps))
+             (unless (or (not build)
+                         (procedure? build))
+               (arg-error 'rule "procedure or #f" build))
+             (unless (or (not sha256) (sha256? sha256))
+               (arg-error 'rule "sha256 or #f" sha256))
+             (rule norm-deps build sha256)))])
+    rule))
+
+;; An input-file target has no dependencies
+(define (input-file-target path)
+  (unless (path-string? path) (arg-error 'input-file-target "path string" path))
+  (target (string->symbol path)
+          path
+          (lambda (path token)
+            (rule '()
+                  (lambda () (error "missing input file" path))
+                  #f))
+          'input
+          (hash)))
+
+(define (coerce-to-target t)
+  (if (path-string? t)
+      (input-file-target t)
+      t))
+
+(define (coerce-to-target* t)
+  (if (list? t)
+      (let ([l (map coerce-to-target t)])
+        (if (andmap target? l)
+            (make-target (string->uninterned-symbol "multi")
+                         (lambda (token)
+                           (phony-rule l void)))
+            t))
+      (coerce-to-target t)))
+
+;; An input-data target supplies its SHA-256 up front
+(define (input-data-target name v)
+  (unless (symbol? name) (arg-error 'input-data-target "symbol" name))
+  (target (symbol->key name)
+          name
+          (lambda (path token) (make-rule '() #f (string-sha256 (~s v))))
+          'input
+          (hash)))
+
+(define make-phony-rule
+  (let ([phony-rule
+         (lambda (deps build)
+           (let ([deps (map coerce-to-target deps)])
+             (unless (and (list? deps)
+                          (andmap target? deps))
+               (arg-error 'phony-rule "list of targets" deps))
+             (unless (procedure? build)
+               (arg-error 'phony-rule "procedure" build)))
+           (phony-rule deps build))])
+    phony-rule))
+
+(define (get-phony-rule->get-rule get-phony-rule)
+  (lambda (path token . args) ; extra args possible with 'command option
+    (define r (apply get-phony-rule (cons token args)))
+    (unless (phony-rule? r)
+      (error "build: target result is not a phony rule" r))
+    (rule (phony-rule-deps r)
+          (lambda ()
+            ((phony-rule-build r))
+            phony-sha256)
+          phony-sha256)))
+
+(define (target-path t)
+  (unless (target? t) (arg-error 'target-path "target" t))
+  (let ([n (target-name t)])
+    (if (symbol? n)
+        (error "target-path: target does not have a path name" t)
+        n)))
+
+(define (target-shell t)
+  (unless (target? t) (arg-error 'target-path "target" t))
+  (let ([n (target-name t)])
+    (if (symbol? n)
+        (error "target-shell: target does not have a path name" t)
+        (string->shell n))))
+
+(define (target-db-dir t)
+  (hash-ref (target-options t) 'db-dir #f))
+
+;; ------------------------------------------------------------
+;; Build state and loop
+
+;; When a target is built, the build result is recorded as
+;;
+;;   (list sha256 (list dep-sym-or-path-rel-to-target sha256) ...)
+;;
+;; This result is in the `target-state` field of a build state, while
+;; `db` holds the same-shaped information from the previous build.
+;;
+;; The `time-cache` field of a build state is a shortcut for getting
+;; input-file SHA-256s on the assumption that a SHA-256 recorded last time
+;; is still right if the file's timestamp hasn't changed.
+
+;; Where the contracts below say "dep-sha256s", that's a hash table
+;; mapping a dependency's key to a SHA-256.
+
+(struct build-state (ch            ; channel to hold the state while target is running
+                     target-state  ; key -> (cons sha256 dep-sha256s) | 'pending | channel
+                     target-accum  ; key -> dep-sha256s
+                     db            ; key -> (cons sha256 dep-sha256s) | #t [for db file itself]
+                     time-cache    ; key -> (cons timestamp sha256)
+                     saw-targets   ; key -> target [to detect multiple for same output]
+                     thread-count  ; channel to hold thread-scheduler state
+                     thread-seens  ; sym -> hash [to detect cycles when count goes to 0]
+                     resourcer     ; build stat's resource manager
+                     log?          ; logging enabled?
+                     uni?))        ; just one job?
+
+;; Main entry point to build a target `t`
+(define (build t-in [token #f] [options (hash)])
+  (let ([t (coerce-to-target* t-in)])
+    (unless (target? t) (arg-error 'build "target or list of targets" t-in))
+    (unless (hash? options) (arg-error 'build "hash table" options))
+    (unless (or (not token) (token? token)) (arg-error 'build "build token or #f" token))
+    (let* ([resourcer (and token (token-resourcer token))]
+           [given-num-jobs (if token
+                               ;; we only need whether it's 1 job or more:
+                               (if (token-uni? token) 1 2)
+                               (hash-ref options 'jobs #f))]
+           [seen (hash)])
+      ;; Start a threading context, so we can have parallel build tasks
+      ((if token (lambda (th) (th)) call-in-main-thread)
+       (lambda ()
+         (define jobserver-resourcer (and (not resourcer)
+                                          (not given-num-jobs)
+                                          (maybe-jobserver-client)))
+         (define num-jobs (or given-num-jobs
+                              (and jobserver-resourcer
+                                   ;; assume jobserver allows more than 1:
+                                   2)
+                              (default-jobs)))
+         (define state (build-state (channel)
+                                    (hash)
+                                    (hash)
+                                    (hash)
+                                    (hash)
+                                    (hash)
+                                    1
+                                    (hash)
+                                    (or resourcer
+                                        jobserver-resourcer
+                                        (make-resourcer num-jobs))
+                                    (or (hash-ref options 'log? #f)
+                                        (assoc "ZUO_BUILD_LOG" (hash-ref (runtime-env) 'env)))
+                                    (= num-jobs 1)))
+         (when resourcer
+           (release-resource state "nested"))
+         (do-build t state seen #t)
+         (when resourcer
+           (acquire-resource state "continue from nested")))))))
+
+(define (build/maybe-dep t-in token add-dep?)
+  (unless (token? token) (arg-error 'build/dep "build token" token))
+  (let ([t (coerce-to-target t-in)])
+    (unless (target? t) (arg-error 'build/dep "target" t-in))
+    (when (and (symbol? (target-name t))
+               (not (symbol? (target-name (token-target token)))))
+      (error "build/dep: cannot recur with a phony or data target"))
+    (let* ([state (get-state (token-ch token) "dep")]
+           [acquire? (cond
+                       [(eq? 'input (target-kind t))
+                        ;; This shortcut avoids release a resource that may
+                        ;; be needed to complete a target and having other
+                        ;; targets run (and potentially fail) meanwhile
+                        #f]
+                       [else
+                        (release-resource state "dep")
+                        #t])]
+           [state (do-build t state (token-seen token) #t)]
+           [state (if add-dep?
+                      (record-target-accumulated state (token-target token) t)
+                      state)])
+      (put-state (token-ch token) state "dep")
+      (when acquire?
+        (acquire-resource state "continue from dep")))))
+
+(define (build/dep t-in token)
+  (build/maybe-dep t-in token #t))
+
+(define (build/no-dep t-in token)
+  (build/maybe-dep t-in token #f))
+
+;; Detects already built or cycles, and waits for in-progress (as
+;; represented by a channel) to complete
+(define (do-build t state seen top?)
+  (cond
+    [(hash-ref seen (target-key t) #f)
+     (error "build: dependency cycle" (target-name t))]
+    [else
+     (let ([state (ensure-consistent state t)])
+       (define current (target-state state t))
+       (cond
+         [(not current) (force-build t (build-input-or-unbuilt t state seen top?) seen)]
+         [(channel? current) (force-build t state seen)]
+         [else state]))]))
+
+;; Blocks until an in-progress target completes
+(define (force-build t state seen)
+  (define current (target-state state t))
+  (cond
+    [(channel? current)
+     (define (ready-again)
+       ;; Put value back to potentially satisfy some other waiting thread:
+       (channel-put current 'still-done))
+     (cond
+       [(channel-try-get current)
+        (ready-again)
+        state]
+       [else
+        ;; Waiting on the channel might block, so relinquish state
+        (define th-key (string->uninterned-symbol "thread"))
+        (define new-state (check/add-blocking-dependency state seen t th-key))
+        (put-state (build-state-ch new-state) new-state "force")
+        (channel-get current)
+        (ready-again)
+        (remove-blocking-dependency (get-state (build-state-ch new-state) "force") th-key)])]
+    [else state]))
+
+;; Shortcut for plain inputs, otherwise starts a build
+(define (build-input-or-unbuilt t state seen top?)
+  (when (build-state-log? state) (alert (~a "checking " (target-name t))))
+  (cond
+    [(eq? (target-kind t) 'input)
+     ;; no dependencies, not need for a thread to build, etc.
+     (define r ((target-get-rule t) (target-name t) #f))
+     (define sha256 (or (rule-sha256 r) (file-sha256/state (target-path t) state)))
+     (when (equal? sha256 no-sha256) ((rule-build r)))
+     (update-target-state state t (list sha256))]
+    [else (call-with-name+stack
+           (target-name t)
+           seen
+           (lambda ()
+             (build-unbuilt t state seen top?)))]))
+
+;; Starts a build for a specific target
+(define (build-unbuilt t state seen top?)
+  (define path (target-name t))
+  (define co-outputs (if (string? path)
+                         (hash-ref (target-options t) 'co-outputs '())
+                         '()))
+  (define alert-top? (and top? (not (hash-ref (target-options t) 'quiet? #f))))
+  (define dep-top? (and alert-top? (symbol? path)))
+  (define new-seen (hash-set (hash-set seen (target-key t) #t)
+                             stack-key
+                             (cons path (hash-ref seen stack-key '()))))
+
+  ;; delete a target file if we don't finish:
+  (define path-handle (and (path-string? path)
+                           (not (hash-ref (target-options t) 'precious? #f))
+                           (cleanable-file path)))
+
+  ;; get previously recorded result, possibly loading from a file
+  ;; that is cached in the build state
+  (define loaded-state (load-sha256s state t path))
+  (define prev-ts (previous-target-state loaded-state (target-key t)))
+  (define prev-sha256 (car prev-ts))
+  (define prev-dep-sha256s/raw-symbols (cdr prev-ts))
+
+  ;; record a channel as the start's current build state
+  (define result-ch (channel))
+  (define queued-state (update-target-state loaded-state t result-ch))
+
+  (define tok (token t
+                     (build-state-ch state)
+                     new-seen
+                     (build-state-resourcer state)
+                     (build-state-uni? state)))
+  (put-state (token-ch tok) queued-state "rule")
+
+  ;; first phase of the target: get a rule
+  (define r ((target-get-rule t) (target-name t) tok))
+  (unless (rule? r)
+    (error "build: target result is not a rule" r))
+  (define deps (rule-deps r))
+  (define sha256 (or (rule-sha256 r) (if (pair? co-outputs)
+                                         (files-sha256 (cons path co-outputs) tok)
+                                         (file-sha256 path tok))))
+  (define to-build (rule-build r))
+  (define build-to-sha256? (and (rule-sha256 r) #t))
+
+  ;; if we recorded any data targets, we need to fix up the keys
+  (define prev-dep-sha256s (foldl (lambda (dep-key dep-sha256s)
+                                    (cond
+                                      [(symbol-key? dep-key)
+                                       (let ([actual-key (translate-key dep-key deps t)])
+                                         (hash-set (hash-remove dep-sha256s dep-key)
+                                                   actual-key
+                                                   (hash-ref dep-sha256s dep-key)))]
+                                      [else dep-sha256s]))
+                                  prev-dep-sha256s/raw-symbols
+                                  (hash-keys prev-dep-sha256s/raw-symbols)))
+
+  (define rule-state (get-state (token-ch tok) "rule"))
+
+  ;; trigger builds of dependencies, but don't want for them to complete
+  (define fetch-state
+    (foldl (make-fetch-dep rule-state new-seen dep-top?) rule-state deps))
+
+  ;; now that they're all potentially started, wait for completions
+  (define new-state
+    (foldl (lambda (dep state) (do-build dep state new-seen dep-top?))
+           fetch-state
+           deps))
+
+  ;; extract results, assemble in a hash table: <rel-path> -> <sha256>
+  (define dep-reported-sha256s
+    (foldl (lambda (dep dep-sha256s)
+             (add-dependent-target-state dep dep-sha256s new-state))
+           (hash)
+           deps))
+  (define dep-sha256s
+    (cdr (merge-target-accumulated new-state t (cons #f dep-reported-sha256s))))
+
+  ;; calling the build step for `t` might generate more dependencies, but those
+  ;; extra dependencies are supposed to be determined only by the ones declared
+  ;; so far; so, if the dependencies declares so far are consistent with recorded
+  ;; dependencies, and if the target's current hash matches the prvious result,
+  ;; then we can assume that the extra dependencies generated previously are still
+  ;; the extra dependencies this time
+  (define same-so-far?
+    (and (log-changed (and (equal? sha256 prev-sha256) (not (equal? sha256 no-sha256))) path state)
+         (andmap (lambda (dep-key)
+                   (log-changed (equal? (hash-ref dep-sha256s dep-key)
+                                        (hash-ref prev-dep-sha256s dep-key #f))
+                                dep-key
+                                state))
+                 (hash-keys dep-sha256s))))
+
+  (define more-deps
+    (if same-so-far?
+        (foldl (lambda (dep-key more-sha256s)
+                 ;; currently, we assume that any additional dependencies
+                 ;; added in the build phase were and would be inputs
+                 (if (or (hash-ref dep-sha256s dep-key #f)
+                         (symbol-key? dep-key))
+                     more-sha256s
+                     (cons (input-file-target (symbol->string dep-key))
+                           more-sha256s)))
+               '()
+               (hash-keys prev-dep-sha256s))
+        '()))
+  (define fetch-again-state
+    (foldl (make-fetch-dep new-state new-seen dep-top?) new-state more-deps))
+  (define newer-state
+    (foldl (lambda (dep state) (do-build dep state new-seen dep-top?))
+           fetch-again-state
+           more-deps))
+  (define all-dep-sha256s
+    (foldl (lambda (dep dep-sha256s)
+             (add-dependent-target-state dep dep-sha256s newer-state))
+           dep-sha256s
+           more-deps))
+
+  ;; compare to recorded result, and rebuild if different
+  (cond
+    [(and same-so-far?
+          (andmap (lambda (dep-key)
+                    (log-changed (equal? (hash-ref all-dep-sha256s dep-key #f)
+                                         (hash-ref prev-dep-sha256s dep-key #f))
+                                 dep-key
+                                 state))
+                  (hash-keys all-dep-sha256s)))
+     ;; no need to rebuild
+     (when path-handle (cleanable-cancel path-handle))
+     (when (and (or alert-top? (hash-ref (target-options t) 'noisy? #f))
+                (equal? prev-sha256 sha256)
+                (not (equal? sha256 phony-sha256)))
+       (alert (~a (target-name t) " is up to date")))
+     (define done-state (update-target-state newer-state t (cons sha256 all-dep-sha256s)))
+     (channel-put result-ch 'done)
+     done-state]
+    [else
+     (unless to-build
+       (error "build: out-of-date target has no build procedure" (target-name t)))
+     (define (build-one finish)
+       (let* ([maybe-sha256 (to-build)] ; build!
+              [sha256 (if build-to-sha256?
+                          maybe-sha256
+                          (if (pair? co-outputs)
+                              (files-sha256 (cons path co-outputs) tok)
+                              (file-sha256 path tok)))])
+         (unless (sha256? sha256)
+           (error "build: target-build result is not a sha256" sha256))
+         (when (equal? sha256 no-sha256)
+           (error "rule for target did not create it" (if (pair? co-outputs)
+                                                          (cons path co-outputs)
+                                                          path)))
+         (when path-handle (cleanable-cancel path-handle))
+         (finish
+          (lambda (state)
+            ;; record result:
+            (let* ([ts (if (eq? sha256 phony-sha256)
+                           (cons no-sha256 (hash))
+                           (cons sha256 dep-sha256s))]
+                   [ts (merge-target-accumulated state t ts)]
+                   [state (update-target-state/record-sha256s state t ts co-outputs)])
+              (channel-put result-ch 'done)
+              state)))))
+     (let ([state-ch (build-state-ch newer-state)])
+       (cond
+         [(hash-ref (target-options t) 'eager? #f)
+          ;; run build in this thread
+          (put-state state-ch newer-state "build")
+          (build-one (lambda (proc) (proc (get-state state-ch "build"))))]
+         [else
+          ;; run build in its own thread
+          (thread* newer-state
+                   (lambda ()
+                     (acquire-resource newer-state path) ; limits process parallelism
+                     (build-one
+                      (lambda (proc)
+                        (release-resource newer-state path)
+                        (let* ([state (get-state state-ch "tbuild")]
+                               [state (proc state)])
+                          (put-state state-ch (thread-done state) "tbuild"))))))]))]))
+
+(define (make-fetch-dep state seen top?)
+  (if (build-state-uni? state)
+      (lambda (dep state)
+        state)
+      (let ([state-ch (build-state-ch state)])
+        (lambda (dep state)
+          ;; No one waits for the this thread's work, and it doesn't
+          ;; actually use the build result. It just creates a demand for
+          ;; the build result, so the demand exists concurrent to waiting
+          ;; on dependencies.
+          (thread* state
+                   (lambda ()
+                     (let* ([state (get-state state-ch "fetch")]
+                            [state (do-build dep state seen top?)])
+                       (put-state state-ch (thread-done state) "fetch"))))))))
+
+;; Alternative entry point suitable for use from a script's `main`
+(define (build/command-line targets [opts (hash)])
+  (unless (and (list? targets) (andmap target? targets))
+    (arg-error 'build/command-line "list of targets" targets))
+  (unless (hash? opts)
+    (arg-error 'build/command-line "hash table" opts))
+  (command-line
+   :args-in (or (hash-ref opts 'args #f) (hash-ref (runtime-env) 'args))
+   :usage (or (hash-ref opts 'usage #f)
+              "[<option> ...] <target> ...")
+   :init opts
+   :once-each
+   [opts ("-j" "--jobs") n "Use <n> parallel jobs"
+         (let ([v (string->integer n)])
+           (if (and v (> v 0))
+               (hash-set opts 'jobs v)
+               (error "not a positive integer" n)))]
+   :args
+   args
+   (lambda (opts)
+     (cond
+       [(null? args) (if (null? targets)
+                         (error "no targets to build")
+                         (build (car targets) #f opts))]
+       [else
+        (let ([target1 (find-target (car args) targets (lambda () #f))])
+          (cond
+            [(and target1 (hash-ref (target-options target1) 'command? #f))
+             ;; provide extra arguments to the target:
+             (build (command-target->target target1 (cdr args)) #f opts)]
+            [else
+             ;; treat all arguments as targets:
+             (let ([run-targets (map (lambda (arg)
+                                       (or (find-target arg targets (lambda () #f))
+                                           (error (~a "unknown target: " arg))))
+                                     args)])
+               (build (if (= (length run-targets) 1)
+                          (car run-targets)
+                          (make-target (string->uninterned-symbol "multi")
+                                       (lambda (token)
+                                         (make-phony-rule run-targets void))))
+                      #f
+                      opts))]))]))))
+
+(define (build/command-line* targets-at [at-dir (make-at-dir ".")] [opts (hash)])
+  (let* ([args (or (hash-ref opts 'args #f) (hash-ref (runtime-env) 'args))])
+    (define (var-split str)
+      (let* ([alpha? (lambda (c) (or (and (>= c (char "a")) (<= c (char "z")))
+                                     (and (>= c (char "A")) (<= c (char "Z")))
+                                     (= c (char "_"))))]
+             [alphanum? (lambda (c) (or (alpha? c)
+                                        (and (>= c (char "0")) (<= c (char "9")))))])
+        (and (> (string-length str) 1)
+             (alpha? (string-ref str 0))
+             (let loop ([i 0])
+               (cond
+                 [(= i (string-length str)) #f]
+                 [(= (char "=") (string-ref str i))
+                  (cons (string->symbol (substring str 0 i)) (substring str (+ i 1)))]
+                 [(alphanum? (string-ref str i)) (loop (+ i 1))]
+                 [else #f])))))
+    (let loop ([args args] [accum-args '()] [vars (hash)])
+      (cond
+        [(null? args) (build/command-line
+                       (targets-at at-dir vars)
+                       (let* ([opts (hash-set opts 'args (reverse accum-args))]
+                              [opts (hash-set opts 'usage
+                                              "[<option> | <var>=<val>] ... [<target> | <var>=<val>] ...")])
+                         opts))]
+        [(string=? (car args) "--") (loop '() (append (reverse args) accum-args) vars)]
+        [else
+         (let ([var+val (var-split (car args))])
+           (if var+val
+               (loop (cdr args) accum-args (hash-set vars (car var+val) (cdr var+val)))
+               (loop (cdr args) (cons (car args) accum-args) vars)))]))))
+
+(define (find-target name targets [fail-k (lambda () (error "target not found" name))])
+  (unless (path-string? name) (arg-error 'find-target "path string" name))
+  (unless (and (list? targets) (andmap target? targets))
+    (arg-error 'find-target "list of targets" targets))
+  (unless (procedure? fail-k) (arg-error 'find-target "procedure" fail-k))
+  (define len (string-length name))
+  (define (matches? t-name)
+    (let* ([t-name (~a t-name)]
+           [t-len (string-length t-name)])
+      (and (>= t-len len)
+           (let ([start (- t-len len)])
+             (and (string=? name (substring t-name start))
+                  (or (= t-len len)
+                      (= (char "/") (string-ref t-name (- start 1)))
+                      (= (char "\\") (string-ref t-name (- start 1)))))))))
+  (or (ormap (lambda (t) (and (or (matches? (target-name t))
+                                  (ormap matches? (hash-ref (target-options t) 'co-outputs '())))
+                              t))
+             targets)
+      (fail-k)))
+
+(define (command-target? t)
+  (and (target? t)
+       (and (hash-ref (target-options t) 'command? #f) #t)))
+
+(define (command-target->target t args)
+  (unless (command-target? t) (arg-error 'command-target->target "command target" t))
+  (unless (list? args) (arg-error 'command-target->target "list" args))
+  (let ([new-get-rule (let ([get-rule (target-get-rule t)])
+                        (lambda (path token)
+                          (apply get-rule (list* path token args))))])
+    (target-set-options (target-set-get-rule t new-get-rule)
+                        (hash-remove (target-options t) 'command?))))
+
+(define (make-at-dir s)
+  (lambda paths
+    (unless (null? paths)
+      (unless (path-string? (car paths))
+	(arg-error 'at-dir "path string" (car paths))))
+    (for-each (lambda (path)
+                (unless (and (path-string? path)
+                             (relative-path? path))
+                  (arg-error 'at-dir "relative path string" path)))
+              (if (null? paths) '() (cdr paths)))
+    (if (and (pair? paths)
+	     (not (relative-path? (car paths))))
+	(apply build-path paths)
+	(apply build-path (cons s paths)))))
+
+;; Exports `targets`, which is a function that takes an `at-dir`
+;; function, while also setting up a `main` submodule to call
+;; `build/command-line`
+(define-syntax (provide-targets stx)
+  (unless (and (list? stx) (= 2 (length stx)))
+    (bad-syntax stx))
+  (define targets-at-id (cadr stx))
+  (unless (identifier? targets-at-id) (bad-syntax stx))
+  (define args-id (string->uninterned-symbol "args"))
+  (list (quote-syntax begin)
+        `(,(quote-syntax provide) (,(quote-syntax rename-out)
+                                   [,targets-at-id targets-at]))
+        `(,(quote-syntax module+)
+          main
+          (,(quote-syntax build/command-line*)
+           ,targets-at-id
+           ;; builds to current directory by default:
+           build-path))))
+
+(define-syntax (bounce-to-targets stx)
+  (unless (and (list? stx) (= 4 (length stx)))
+    (bad-syntax stx))
+  `(,(quote-syntax do-bounce-to-targets)
+    ,(quote-syntax at-source)
+    ,(list-ref stx 1)
+    ,(list-ref stx 2)
+    ,(list-ref stx 3)))
+
+(define (do-bounce-to-targets at-source config-file config-key script-file)
+  (unless (path-string? config-file) (arg-error 'bounce-to-targets "path string" config-file))
+  (unless (symbol? config-key) (arg-error 'bounce-to-targets "symbol" config-key))
+  (unless (path-string? script-file) (arg-error 'bounce-to-targets "path string" script-file))
+  (define config (config-file->hash (at-source config-file)))
+  (build/command-line* (dynamic-require ((make-at-dir (or (car (split-path config-file)) "."))
+                                         (hash-ref config 'srcdir)
+                                         script-file)
+                                        'targets-at)
+                       at-source))
+
+;; ------------------------------------------------------------
+;; Helpers for reading and updating build state
+
+(define (target-state state t)
+  (hash-ref (build-state-target-state state) (target-key t) #f))
+
+(define (add-dependent-target-state dep dep-sha256s state)
+  (define ts (target-state state dep))
+  (define sha256 (car ts))
+  (hash-set dep-sha256s (target-key dep) (if (eq? sha256 phony-sha256) no-sha256 sha256)))
+
+(define (record-target-accumulated state for-t t)
+  (let* ([accum-key (target-key for-t)]
+         [dep-sha256s (hash-ref (build-state-target-accum state) accum-key (hash))]
+         [dep-sha256s (add-dependent-target-state t dep-sha256s state)])
+    (build-state-set-target-accum state (hash-set (build-state-target-accum state) accum-key dep-sha256s))))
+
+(define (merge-target-accumulated state t ts)
+  (let ([more-dep-sha256s (hash-ref (build-state-target-accum state) (target-key t) #f)])
+    (if more-dep-sha256s
+        (cons (car ts)
+              (foldl (lambda (dep-key dep-sha256s)
+                       (hash-set dep-sha256s dep-key (hash-ref more-dep-sha256s dep-key)))
+                     (cdr ts)
+                     (hash-keys more-dep-sha256s)))
+        ts)))
+
+(define (update-target-state state t ts)
+  (build-state-set-target-state state
+                                (hash-set (build-state-target-state state)
+                                          (target-key t)
+                                          ts)))
+
+(define (update-target-state/record-sha256s state t ts co-outputs)
+  (unless (eq? 'phony (target-kind t))
+    (db-record-target-sha256s (target-db-dir t) (target-name t) ts co-outputs))
+  (update-target-state state t ts))
+
+(define (load-sha256s state t path)
+  (cond
+    [(symbol? path) state]
+    [else
+     (define db+tc (db-load-sha256s (target-db-dir t)
+                                    path
+                                    (build-state-db state)
+                                    (build-state-time-cache state)))
+     (if db+tc
+         (let ([state (build-state-set-db state (car db+tc))])
+           (build-state-set-time-cache state (cdr db+tc)))
+         state)]))
+
+(define (previous-target-state state key)
+  (or (hash-ref (build-state-db state) key #f)
+      (cons no-sha256 (hash))))
+
+(define (ensure-consistent state t)
+  (let* ([saw (build-state-saw-targets state)]
+         [old-t (hash-ref saw (target-key t) #f)])
+    (cond
+      [old-t
+       (unless (or (eq? t old-t)
+                   (eq? (target-kind t) 'input)
+                   (eq? (target-kind old-t) 'input))
+         (error "build: multiple targets for same output" (target-name t)))
+       state]
+      [else
+       (build-state-set-saw-targets state (hash-set saw (target-key t) t))])))
+
+(define (file-sha256 path token)
+  (unless (path-string? path) (arg-error 'file-sha256 "path string" path))
+  (unless (or (not token) (token? token)) (error 'file-sha256 "build-token" token))
+  (let ([state (and token (get-state (token-ch token) "sha256"))])
+    (when state (put-state (token-ch token) state "sha256"))
+    (file-sha256/state path state)))
+
+(define (files-sha256 paths token)
+  (let ([sha256s (map (lambda (path) (file-sha256 path token)) paths)])
+    (if (ormap (lambda (s) (string=? s no-sha256)) sha256s)
+        no-sha256
+        (apply ~a sha256s))))
+
+(define (file-sha256/state path state)
+  (or (file-sha256/cached path (and state (build-state-time-cache state)))
+      no-sha256))
+
+;; translate a data key as loaded from a previous-run to a key as
+;; instantiated for this run
+(define (translate-key key deps t)
+  (let ([sym (symbol-key->symbol key)])
+    (or (ormap (lambda (dep)
+                 (and (eq? (target-name dep) sym)
+                      (target-key dep)))
+               deps)
+        key)))
+
+;; see also "private/build-db.zuo"
+
+;; ------------------------------------------------------------
+;; Cross-thread dependency-cycle checking
+
+;; Within a single thread, a `seen` table detects cycles, but that's
+;; not good enough for cycles across threads. To detect those cycles,
+;; record the `seen` chain plus `t` for a thread while it is blocking
+;; on `t`. If we run out of threads (i.e., deadlock), then we can
+;; construct a graph based on `seen` -> `t` dependendies and look for
+;; a cycle in the graph.
+
+(define (thread* state thunk)
+  (thread thunk)
+  (build-state-set-thread-count state (+ (build-state-thread-count state) 1)))
+
+(define (thread-done state)
+  (build-state-set-thread-count state (- (build-state-thread-count state) 1)))
+
+(define (check/add-blocking-dependency state seen t th-key)
+  (define new-seens (hash-set (build-state-thread-seens state) th-key (cons seen t)))
+  (define new-state (build-state-set-thread-seens state new-seens))
+  (define count (build-state-thread-count state))
+  (when (= count 1)
+    ;; potential deadlock, so look for cycle
+    (define edges
+      (foldl (lambda (k edges)
+               (define seen+t (hash-ref new-seens k))
+               (define t (cdr seen+t))
+               (foldl (lambda (k edges)
+                        (hash-set edges k (cons t (hash-ref edges k '()))))
+                      edges
+                      (hash-keys (car seen+t))))
+             (hash)
+             (hash-keys new-seens)))
+    (foldl (lambda (k done)
+             (foldl (lambda (t done)
+                      (let loop ([t t] [seen (hash)])
+                        (define t-k (target-key t))
+                        (cond
+                          [(hash-ref done t-k #f) done]
+                          [else
+                           (when (hash-ref seen t-k #f)
+                             (error "build: dependency cycle" (target-name t)))
+                           (define new-seen (hash-set seen (target-key t) #t))
+                           (define new-done
+                             (foldl (lambda (t done)
+                                      (loop t new-seen))
+                                    done
+                                    (hash-ref edges (target-key t) '())))
+                           ;; didn't detect cycle, so this token is ok
+                           (hash-set new-done t-k #t)])))
+                    done
+                    (hash-ref edges k)))
+           (hash)
+           (hash-keys edges)))
+  (build-state-set-thread-count new-state (- count 1)))
+
+(define (remove-blocking-dependency state th-key)
+  (build-state-set-thread-seens (build-state-set-thread-count state (+ (build-state-thread-count state) 1))
+                                (hash-remove (build-state-thread-seens state) th-key)))
+
+;; ------------------------------------------------------------
+;; Generic helpers
+
+(define (get-state ch who)
+  (channel-get ch))
+
+(define (put-state ch state who)
+  (channel-put ch state))
+
+(define (make-resourcer n)
+  (define ch (channel))
+  (let loop ([n n])
+    (unless (= n 0)
+      (channel-put ch 'go)
+      (loop (- n 1))))
+  (lambda (msg)
+    (cond
+      [(eq? msg 'get)
+       (channel-get ch)
+       (void)]
+      [(eq? msg 'put)
+       (channel-put ch 'go)]
+      [else
+       (error "bad resourcer msg" msg)])))
+
+(define (acquire-resource state who)
+  ((build-state-resourcer state) 'get))
+
+(define (release-resource state who)
+  ((build-state-resourcer state) 'put))
+
+(define (log-changed same? who state)
+  (unless same?
+    (when (build-state-log? state)
+      (let ([who (if (and (symbol? who) (symbol-key? who))
+                     (~a "'" who)
+                     who)])
+        (alert (~a who " changed")))))
+  same?)
+
+(define (default-jobs)
+  (let ([a (assoc "ZUO_JOBS" (hash-ref (runtime-env) 'env '()))])
+    (or (and a (string->integer (cdr a)))
+        1)))
+
+;; creates a non-tail call labelled "target <name>" so that
+;; it shows up in a stack trace
+(define (call-with-name name thunk)
+  ((kernel-eval `(lambda (proc)
+                   ,(~a "target " name)
+                   (let ([result (proc)])
+                     result)))
+   thunk))
+
+(define stack-key (string->uninterned-symbol "stack"))
+
+(define (call-with-name+stack name seen thunk)
+  (let loop ([stack (if (> (hash-count seen) 16)
+                        ;; avoid quadratic behavior in the unlikely
+                        ;; event that dependencies get deep:
+                        '()
+                        (reverse (hash-ref seen stack-key '())))])
+    (if (null? stack)
+        (call-with-name name thunk)
+        (call-with-name (car stack)
+                        (lambda ()
+                          (loop (cdr stack)))))))
+
+;; ------------------------------------------------------------
+;; `make`-like target and dependency declaration
+
+(define (make-targets specs)
+  (unless (list? specs) (arg-error 'make-targets "list" specs) specs)
+  (for-each (lambda (spec)
+              (unless (and (list? spec)
+                           (pair? spec)
+                           (or (and (eq? (car spec) ':db-dir)
+                                    (= 2 (length spec))
+                                    (path-string? (list-ref spec 1)))
+                               (and
+                                (or (and (eq? (car spec) ':target)
+                                         (>= (length spec) 4)
+                                         (procedure? (list-ref spec 3))
+                                         (or (path-string? (list-ref spec 1))
+                                             (symbol? (list-ref spec 1))
+                                             (and (pair? (list-ref spec 1))
+                                                  (list? (list-ref spec 1))
+                                                  (andmap path-string? (list-ref spec 1))))
+                                         (andmap (lambda (t) (hash-ref keyword-to-option t #f))
+                                                 (list-tail spec 4)))
+                                    (and (eq? (car spec) ':depend)
+                                         (= 3 (length spec))
+                                         (or (path-string? (list-ref spec 1))
+                                             (and (list? (list-ref spec 1))
+                                                  (andmap path-string? (list-ref spec 1))))))
+                                (list? (list-ref spec 2))
+                                (andmap (lambda (dep) (or (path-string? dep) (symbol? dep) (target? dep)))
+                                        (list-ref spec 2)))))
+                (error "make-targets: bad specification line" spec)))
+            specs)
+  (define target-specs (filter (lambda (spec) (eq? ':target (car spec))) specs))
+  (define phony-keys (foldl (lambda (spec phony-keys)
+                              (let ([name (list-ref spec 1)])
+                                (if (symbol? name)
+                                    (hash-set phony-keys name (string->uninterned-symbol (symbol->string name)))
+                                    phony-keys)))
+                            (hash)
+                            target-specs))
+  (define (name->key name) (if (symbol? name)
+                               (or (hash-ref phony-keys name #f)
+                                   (error "make-targets: missing phony target for dependency" name))
+                               (string->symbol name)))
+  (define deps (foldl (lambda (spec deps)
+                        (cond
+                          [(eq? (car spec) ':db-dir)
+                           (when (hash-ref deps ':db-dir #f)
+                             (error "make-targets: multiple `:db-dir` lines"))
+                           (hash-set deps ':db-dir (list-ref spec 1))]
+                          [else
+                           (foldl (lambda (path deps)
+                                    (let ([key (name->key path)])
+                                      (hash-set deps key
+                                                (append (reverse (list-ref spec 2))
+                                                        (hash-ref deps key '())))))
+                                  deps
+                                  (let ([ps (list-ref spec 1)])
+                                    (if (list? ps)
+                                        ps
+                                        (list ps))))]))
+                      (hash)
+                      specs))
+  (define target-vars (foldl (lambda (spec target-vars)
+                               (let* ([names (list-ref spec 1)]
+                                      [name (if (pair? names) (car names) names)]
+                                      [key (name->key name)]
+                                      [var (variable key)])
+                                 (cond
+                                   [(pair? names)
+                                    (foldl (lambda (name target-vars)
+                                             (let ([key (name->key name)])
+                                               (when (hash-ref target-vars key #f)
+                                                 (error "make-targets: duplicate target" name))
+                                               (hash-set target-vars key var)))
+                                           target-vars
+                                           (if (pair? names)
+                                               names
+                                               (list name)))]
+                                   [else
+                                    (when (hash-ref target-vars key #f)
+                                      (error "make-targets: duplicate target" name))
+                                    (hash-set target-vars key var)])))
+                             (hash)
+                             target-specs))
+  (define dep->target (lambda (dep)
+                        (if (target? dep)
+                            dep
+                            (let ([var (hash-ref target-vars (name->key dep) #f)])
+                              (if var
+                                  (variable-ref var)
+                                  (input-file-target dep))))))
+  (define shared-options (let ([db-dir (hash-ref deps ':db-dir #f)])
+                           (if db-dir
+                               (hash 'db-dir db-dir)
+                               (hash))))
+  (define targets (foldl (lambda (spec targets)
+                           (let* ([names (list-ref spec 1)]
+                                  [name (if (pair? names) (car names) names)]
+                                  [key (name->key name)]
+                                  [var (hash-ref target-vars key)]
+                                  [get-deps (lambda ()
+                                              (if (pair? names)
+                                                  (apply append
+                                                         (map (lambda (name)
+                                                                (let ([key (name->key name)])
+                                                                  (map dep->target (reverse (hash-ref deps key '())))))
+                                                              names))
+                                                  (map dep->target (reverse (hash-ref deps key '())))))]
+                                  [t (make-target name
+                                                  (if (symbol? name)
+                                                      (lambda (token . args)
+                                                        (make-phony-rule (get-deps)
+                                                                         (lambda ()
+                                                                           (apply (list-ref spec 3) (cons token args)))))
+                                                      (lambda (path token)
+                                                        (make-rule (get-deps)
+                                                                   (lambda ()
+                                                                     ((list-ref spec 3) path token)))))
+                                                  (foldl (lambda (tag options)
+                                                           (hash-set options (hash-ref keyword-to-option tag) #t))
+                                                         (let* ([options shared-options]
+                                                                [options (if (pair? names)
+                                                                             (hash-set options 'co-outputs (cdr names))
+                                                                             options)])
+                                                           options)
+                                                         (if (eq? (car spec) ':target)
+                                                             (list-tail spec 4)
+                                                             '())))])
+                             (variable-set! var t)
+                             (cons t targets)))
+                         '()
+                         target-specs))
+  (reverse targets))
+
+(define keyword-to-option
+  (hash ':precious 'precious?
+        ':command 'command?
+        ':noisy 'noisy?
+        ':quiet 'quiet?
+        ':eager 'eager?))

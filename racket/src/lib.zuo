@@ -1,0 +1,525 @@
+#lang zuo
+
+(provide hash-set*
+         hash-maybe-set*
+         string-downcase
+         string-upcase
+         target->path
+
+         string-tree->shell
+
+         process/wait
+
+         racket
+         racket/process
+         raco
+         raco/process
+         
+         make-raco-driver
+         make-zo-target
+
+         shell-subst*
+         shell-subst-value
+         shell-subst-pwd
+
+         configured-targets-at
+
+         executable->path
+
+         windres
+
+         adjust-linking-config
+
+         setup-rktio
+         setup-boot
+         racket-version
+         check-destdir
+         at-destdir
+         icp
+         icp-r
+         icp-lib
+         strip-debug
+         strip-lib-debug
+         run-raco-setup
+
+         install-license-files
+         maybe-copytree
+         maybe-libzo-move
+         maybe-destdir-fix
+         maybe-set-install-scope
+
+         infer-gnu-make-jobs)
+
+(define (hash-set* ht . keys+vals)
+  (let loop ([ht ht] [keys+vals keys+vals])
+    (if (null? keys+vals)
+        ht
+        (loop (hash-set ht (car keys+vals) (cadr keys+vals))
+              (cddr keys+vals)))))
+
+(define (hash-maybe-set* ht . keys+vals)
+  (let loop ([ht ht] [keys+vals keys+vals])
+    (if (null? keys+vals)
+        ht
+        (loop (let ([val (cadr keys+vals)])
+                (if (equal? val "")
+                    ht
+                    (hash-set ht (car keys+vals) val)))
+              (cddr keys+vals)))))
+
+(define (string-downcase s)
+  (let loop ([i 0] [start 0])
+    (cond
+      [(= i (string-length s)) (substring s start)]
+      [(and (>= (string-ref s i) (char "A"))
+            (<= (string-ref s i) (char "Z")))
+       (~a (substring s start i) (string (+ (string-ref s i) (- (char "a") (char "A"))))
+           (loop (+ i 1) (+ i 1)))]
+      [else (loop (+ i 1) start)])))
+
+(define (string-upcase s)
+  (let loop ([i 0] [start 0])
+    (cond
+      [(= i (string-length s)) (substring s start)]
+      [(and (>= (string-ref s i) (char "a"))
+            (<= (string-ref s i) (char "z")))
+       (~a (substring s start i) (string (+ (string-ref s i) (- (char "A") (char "a"))))
+           (loop (+ i 1) (+ i 1)))]
+      [else (loop (+ i 1) start)])))
+
+(define (target->path t) (if (target? t) (target-path t) t))
+
+(define (process/wait command . args)
+  (fd-write (fd-open-output 'stdout)
+            (~a (string-tree->shell (cons command args)) "\n"))
+  (define p (apply process (cons command args)))
+  (process-wait (hash-ref p 'process))
+  (unless (= 0 (process-status (hash-ref p 'process)))
+    (error "failed")))
+
+(struct raco-driver (vars target config-getter))
+
+(define (find-racket vars)
+  (or (hash-ref vars 'racket #f)
+      (at-source "../bin" (.exe "racket"))))
+
+(define (string-tree->shell . args)
+  (build-shell (let loop ([args args])
+                 (cond
+                   [(string? args)
+                    (string->shell args)]
+                   [(list? args)
+                    (map loop args)]
+                   [(hash? args)
+                    ;; assume last and intended as options
+                    ""]
+                   [else (~s args)]))))
+
+(define (racket/process vars . args-in)
+  (define racket-exe (find-racket vars))
+  (define args (append (hash-ref vars 'racket-args '()) args-in))
+  (fd-write (fd-open-output 'stdout)
+            (~a (string-tree->shell (cons racket-exe args)) "\n"))
+  (apply process (list* racket-exe args)))
+
+(define (racket vars . args)
+  (define p (apply racket/process (cons vars args)))
+  (define pid (hash-ref p 'process))
+  (if (equal? "yes" (hash-ref vars 'racketConcurrent "no"))
+      (thread-process-wait pid)
+      (process-wait pid))
+  (unless (= 0 (process-status pid))
+    (error "failed")))
+
+(define (raco/process vars . args)
+  (apply racket/process (list* vars
+                               "-N" "raco" "-l-" "raco"
+                               args)))
+
+(define (raco vars . args)
+  (define p (apply raco/process (cons vars args)))
+  (process-wait (hash-ref p 'process))
+  (unless (= 0 (process-status (hash-ref p 'process)))
+    (error "failed")))
+
+(define (make-zo-target stamp-file src raco-driver)
+  (target stamp-file
+          (lambda (path token)
+            (rule (list (raco-driver-target raco-driver))
+                  (lambda ()
+                    (define vars (raco-driver-vars raco-driver))
+                    (raco vars "make" src)
+                    (define paths (get-dependencies vars src))
+                    (define out (fd-open-output stamp-file :truncate))
+                    (for-each
+                     (lambda (path)
+                       (build/dep path token)
+                       ;; writing the hash of every file to "stamp-file" means that
+                       ;; we expect any change to effect the way that the compiled
+                       ;; file runs:
+                       (fd-write out (file-sha256 path token)))
+                     paths)
+                    (fd-close out))))))
+
+(define (get-dependencies vars file)
+  (define p (racket/process vars
+                            (at-source "read-deps.rkt")
+                            file
+                            (hash 'stdout 'pipe)))
+  (define config-str (fd-read (hash-ref p 'stdout) eof))
+  (process-wait (hash-ref p 'process))
+  (unless (= 0 (process-status (hash-ref p 'process)))
+    (error "failed"))
+  (string-read config-str))
+
+(define (make-raco-driver vars racket-config.db)
+  (unless (hash? vars) (arg-error 'make-raco-driver "hash" vars))
+  (raco-driver
+   vars
+   (target racket-config.db
+           (lambda (path token)
+             (rule (list (find-racket vars))
+                   (lambda ()
+                     (save-racket-configuration (extract-racket-configuration vars) path)))))
+   (lambda ()
+     (load-racket-configuration racket-config.db))))
+
+(define (extract-racket-configuration vars)
+  (define p (racket/process vars
+                            (at-source "get-config.rkt")
+                            (hash 'stdout 'pipe)))
+  (define config-str (fd-read (hash-ref p 'stdout) eof))
+  (process-wait (hash-ref p 'process))
+  (unless (= 0 (process-status (hash-ref p 'process)))
+    (error "failed"))
+  (define l (string-read config-str))
+  (foldl (lambda (a config)
+           (hash-set config (car a) (cadr a)))
+         (hash)
+         l))
+
+(define (save-racket-configuration config path)
+  (mkdir-p (path-only path))
+  (display-to-file (apply ~a
+                          (map (lambda (key)
+                                 (~a (~s (cons key (hash-ref config key))) "\n"))
+                               (hash-keys config)))
+                   path
+                   :truncate))
+
+(define (load-racket-configuration path)
+  (define h (cleanable-file path))
+  (define l (string-read (file->string path)))
+  (cleanable-cancel h)
+  (foldl (lambda (p config)
+           (hash-set config (car p) (cdr p)))
+         (hash)
+         l))
+
+(define (shell-subst* str config)
+  (and str
+       (shell-subst str config)))
+
+(define (shell-subst-value config key)
+  (let ([v (hash-ref config key #f)])
+    (if v
+        (hash-set config key (shell-subst v config))
+        config)))
+
+(define (shell-subst-pwd str wrt)
+  (string-join (string-split str "`pwd`")
+               (string->shell wrt)))
+
+(define (configured-targets-at options)
+  (define who 'configured-targets-at)
+  (define configure (hash-ref options 'configure))
+  (define configure-args (hash-ref options 'configure-args '()))
+  (define inputs (hash-ref options 'inputs '()))
+  (unless (list? inputs) (arg-error who "list" inputs))
+  (define outputs (hash-ref options 'outputs))
+  (unless (list? outputs) (arg-error who "list" outputs))
+  (define dir (or (hash-ref options 'dir #f)
+                  (and (pair? outputs)
+                       (path-only (car outputs)))
+                  (error "need 'dir or non-empty 'outputs")))
+  (define script (or (hash-ref options 'script #f)
+                     (build-path (path-only configure) "build.zuo")))
+  (define vars (hash-ref options 'vars))
+  (mkdir-p dir)
+  (build (target (car outputs)
+                 (lambda (name token)
+                   (rule (list* configure
+                                (input-data-target 'configure-args configure-args)
+                                inputs)
+                         (lambda ()
+                           (shell/wait (map string->shell
+                                            (cons (ensure-path
+                                                   (if (relative-path? configure)
+                                                       (find-relative-path dir configure)
+                                                       configure))
+                                                  configure-args))
+                                       (hash 'dir dir)))))
+                 (hash 'quiet? #t
+                       'co-outputs (cdr outputs))))
+  ((dynamic-require script 'targets-at) (make-at-dir dir) vars))
+
+;; in a shell, we need to have "./" when running something in the same directory
+(define (ensure-path path)
+  (if (not (car (split-path path)))
+      (~a "./" path)
+      path))
+
+(define (executable->path exe at-dir)
+  (if (relative-path? exe)
+      (if (not (car (split-path exe)))
+          (find-executable-path exe)
+          (at-dir exe))
+      exe))
+
+(define (windres in out config msvc? [flags ""])
+  (if msvc?
+      (shell/wait "rc" "-r" flags
+                  "/l 0x409"
+                  "/fo" (string->shell out)
+                  (string->shell in))
+      (shell/wait (hash-ref config 'WINDRES) flags
+                  "-i" (string->shell in)
+                  "-o" (string->shell out))))
+
+(define (adjust-linking-config config)
+  ;; For historical reasons, merge 'CPPFLAGS into 'CFLAGS so that
+  ;; 'CPPFLAGS is used for linking. The historical reason was that
+  ;; 'CPPFLAGS but not 'CFLAGS was used for xform expansion; while
+  ;; that has now changed, existing build scripts might use
+  ;; 'CPPFLAGS to hold things that belong in 'CFLAGS to make sure
+  ;; that they reach the C preprocessor for xform.
+  (config-merge config 'CFLAGS (hash-ref config 'CPPFLAGS "")))
+
+(define (setup-rktio rktio-src-dir rktio-dir config)
+  (define msvc? (eq? 'windows (hash-ref (runtime-env) 'toolchain-type))) 
+  (define windows? (eq? 'windows (system-type))) ; not just 'windows toolchain
+  (define rktio_config.h (build-path rktio-dir "rktio_config.h"))
+  (define rktio-targets
+    (cond
+      [windows?
+       (mkdir-p rktio-dir)
+       ((dynamic-require (build-path rktio-src-dir "build.zuo")
+                         'targets-at)
+        (make-at-dir rktio-dir)
+        config)]
+      [else
+       (configured-targets-at (hash
+                               'configure (build-path rktio-src-dir "configure")
+                               'configure-args (shell->strings (hash-ref config 'RKTIO_CONFIGURE_ARGS ""))
+                               'inputs (list (build-path rktio-src-dir "Makefile.in")
+                                             (build-path rktio-src-dir "rktio_config.h.in"))
+                               'outputs (list (build-path rktio-dir "Makefile")
+                                              rktio_config.h)
+                               'script (build-path rktio-src-dir "build.zuo")
+                               'vars config))]))
+  (define librktio.a (find-target (~a "librktio." (if msvc? "lib" (hash-ref config 'LTA "a"))) rktio-targets))
+
+  (list librktio.a
+        (if windows?
+            (find-target "rktio_config.h" rktio-targets)
+            rktio_config.h)))
+
+(define (setup-boot at-dir config
+                    [options (hash)])
+  (list "-O" "info@compiler/cm"
+        "-l-" "setup" (or (hash-ref options 'mode #f)
+                          (hash-ref config 'SETUP_BOOT_MODE #f)
+                          "--boot")
+        (at-source "setup-go.rkt")
+        (at-dir (or (hash-ref options 'compiled-subdir #f)
+                    "compiled"))
+        (if (hash-ref options 'tag #f)
+            "--tag"
+            "ignored")
+        (or (hash-ref options 'tag #f)
+            (at-dir (or (hash-ref options 'dep-file #f)
+                        "ignored.d")))))
+
+(define (racket-version)
+  (let* ([lines (string-split (file->string (at-source "version/racket_version.h"))
+                              "\n")]
+         [prefix "#define MZSCHEME_VERSION_"]
+         [match? (glob->matcher (~a prefix "*"))]
+         [len (string-length prefix)])
+    (define (get-version part)
+      (ormap (lambda (line)
+               (and (match? line)
+                    (string=? part (substring line len (+ 1 len)))
+                    (string->integer (string-trim (car (string-split (substring line (+ len 2)) "\r"))))))
+             lines))
+    (let ([X (get-version "X")]
+          [Y (get-version "Y")]
+          [Z (get-version "Z")]
+          [W (get-version "W")])
+      (if (= W 0)
+          (if (= Z 0)
+              (~a X "." Y)
+              (~a X "." Y "." Z))
+          (~a X "." Y "." Z "." W)))))
+
+(define (check-destdir config)
+  (unless (equal? "" (hash-ref config 'DESTDIR ""))
+    (unless (equal? (hash-ref config 'MAKE_COPYTREE #f) "copytree")
+      (error "`DESTDIR` cannot be set when `--prefix=...` wasn't supplied to `configure`"))))
+
+;; Adds `DESTDIR` on the front, and also ensures that the path
+;; is absolute
+(define (at-destdir config p)
+  (define destdir (hash-ref config 'DESTDIR ""))
+  (path->complete-path
+   (if (equal? destdir "")
+       p
+       (apply build-path
+              (cons destdir
+                    (cdr (explode-path (path->complete-path p))))))))
+
+(define (icp config src dest)
+  (if (eq? 'windows (system-type))
+      (cp src dest)
+      (shell/wait (hash-ref config 'ICP) (string->shell src) (string->shell dest))))
+
+(define (icp-r config src dest)
+  (if (eq? 'windows (system-type))
+      (cp* src dest)
+      (shell/wait (hash-ref config 'ICP) "-r" (string->shell src) (string->shell dest))))
+
+(define (icp-lib config src dest)
+  (if (eq? 'windows (system-type))
+      (cp src dest)
+      (shell/wait (hash-ref config 'ICP_LIB) (string->shell src) (string->shell dest))))
+
+(define (do-strip config key path)
+  (unless (eq? 'windows (hash-ref (runtime-env) 'toolchain-type))
+    (define strip (hash-ref config key ""))
+    (when (equal? strip "")
+      (error (~a "`" key "` variable is empty; use \":\" to skip stripping")))
+    (unless (equal? strip ":")
+      (shell/wait strip (string->shell path)))))
+
+(define (strip-debug config path)
+  (do-strip config 'STRIP_DEBUG path))
+
+(define (strip-lib-debug config path)
+  (do-strip config 'STRIP_LIB_DEBUG path))
+
+(define (run-raco-setup config dest-racket cross-bootstrap-racket cross-compiler-args)
+  (define windows? (eq? 'windows (system-type)))
+  
+  (define collectsdir (if windows?
+                          (at-source "../collects")
+                          (at-destdir config (shell-subst (hash-ref config 'collectsdir) config))))
+  (define configdir (if windows?
+                        (at-source "../etc")
+                        (at-destdir config (shell-subst (hash-ref config 'configdir) config))))
+  
+  (define (extras key) (shell->strings (hash-ref config key "")))
+  ;; A top-level build script can set `SELF_ROOT_CONFIG_DIR` to make the
+  ;; setup config different from the result distribution's config, etc.
+  (define self-root-config-dir (or (hash-ref config 'SELF_ROOT_CONFIG_DIR #f) ""))
+  (define self-root-config-flags (if (equal? self-root-config-dir "")
+                                     '()
+                                     (list "-G" self-root-config-dir)))
+  (define setup-args (list
+                      (extras 'INSTALL_SETUP_RACKET_FLAGS)
+                      (extras 'SETUP_MACHINE_FLAGS)
+                      "-N" "raco" "-l-" "setup"
+                      (extras 'INSTALL_SETUP_FLAGS)
+                      (extras 'PLT_SETUP_OPTIONS)))
+  (cond
+    [(not cross-bootstrap-racket)
+     (process/wait dest-racket
+                   "-X" collectsdir
+                   "-G" configdir
+                   self-root-config-flags
+                   setup-args)]
+    [else
+     (racket (hash 'racket cross-bootstrap-racket)
+             self-root-config-flags
+             cross-compiler-args
+             "-X" collectsdir
+             "-G" configdir
+             setup-args)]))
+
+(define (install-license-files sharepltdir)
+  (mkdir-p sharepltdir)
+  (for-each (lambda (path)
+              (cp (at-source path) (build-path sharepltdir path)))
+            '("LICENSE-libscheme.txt"
+              "LICENSE-MIT.txt"
+              "LICENSE-APACHE.txt"
+              "LICENSE-LGPL.txt"
+              "LICENSE-GPL.txt"
+              "LICENSE.txt")))
+
+(define (unixstyle-install-run config dest-racket cross-racket at-dir command . args)
+    (define dirs
+      (map (lambda (dir)
+             (at-destdir config (shell-subst (hash-ref config dir) config)))
+           '(bindir
+             collectsdir
+             pkgsdir
+             docdir
+             libdir
+             includepltdir
+             libpltdir
+             sharepltdir
+             configdir
+             appsdir
+             mandir)))
+  (for-each mkdir-p dirs)
+  (process/wait (or cross-racket dest-racket)
+                (if cross-racket
+                    '()
+                    (list "-X" (at-source "../collects")
+                          "-G" (at-source "../etc")))
+                (setup-boot at-dir config)
+                (at-source "../collects/setup/unixstyle-install.rkt")
+                command (at-source "..")
+                dirs
+                args
+                ;; some `unixstyle-install` commands need `DESTDIR` provided
+                ;; as an environment variable
+                (let ([destdir (hash-ref config 'DESTDIR "")])
+                  (if (equal? destdir "")
+                      (hash)
+                      (hash 'env (cons
+                                  (cons "DESTDIR" destdir)
+                                  (hash-ref (runtime-env) 'env)))))))
+
+(define (maybe-copytree config dest-racket cross-racket at-dir)
+  (when (equal? (hash-ref config 'MAKE_COPYTREE #f) "copytree")
+    (unixstyle-install-run config dest-racket cross-racket at-dir
+                           "make-install-copytree"
+                           (hash-ref config 'INSTALL_ORIG_TREE "no"))))
+
+(define (maybe-libzo-move config dest-racket cross-racket at-dir)
+  (when (equal? (hash-ref config 'INSTALL_LIBZO #f) "libzo")
+    (when (equal? (hash-ref config 'SKIP_DESTDIR_FIX "") "")
+      (unixstyle-install-run config dest-racket cross-racket at-dir
+                             "make-install-libzo-move"))))
+
+(define (maybe-destdir-fix config dest-racket cross-racket at-dir)
+  (when (not (equal? (hash-ref config 'DESTDIR "") ""))
+    (when (equal? (hash-ref config 'SKIP_DESTDIR_FIX "") "")
+      (unixstyle-install-run config dest-racket cross-racket at-dir
+                             "make-install-destdir-fix"
+                             (hash-ref config 'INSTALL_ORIG_TREE "")
+                             (hash-ref config 'INSTALL_LIBZO "")))))
+
+(define (maybe-set-install-scope config dest-racket cross-racket at-dir)
+  (when (equal? (hash-ref config 'MAKE_INSTALL_PKGSCOPE "") "adjust")
+    (process/wait (or cross-racket dest-racket)
+                  (if cross-racket
+                      '()
+                      (list "-X" (at-source "../collects")
+                            "-G" (at-source "../etc")))
+                  "-l-" "raco" "pkg" "config" "-i" "--set" "default-scope"
+                  (hash-ref config 'INSTALL_PKGSCOPE))))
+
+(define (infer-gnu-make-jobs)
+  (maybe-jobserver-jobs))

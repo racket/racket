@@ -511,7 +511,7 @@
     (define C-test-code
       (lambda (ftype-defn* path* ndefs npaths i* j*)
         (let ([ndefs (length ftype-defn*)])
-          (printf "#include \"~a/ftype.h\"\n\
+          (printf "#include \"~a\"\n\
                    #define offset(x, y) (int)((char *)&y - (char *)&x)\n\
                    EXPORT int *foo() {\n\
                      ~{~a\n~}\
@@ -520,7 +520,7 @@
                      ~{~a\n~}\
                      return a;\
                    }\n"
-            *mats-dir*
+            (find-source "ftype.h")
             (map
               (lambda (ftype-defn)
                 (format "typedef ~a typedef_~a ~a;"
@@ -552,23 +552,15 @@
               [testfile.so (format "testfile-~a.~:[so~;dll~]" testfile
                              (windows?))])
           (with-output-to-file testfile.c thunk 'replace)
-          (unless (= (case (machine-type)
-                       [(i3osx ti3osx ppc32osx tppc32osx)
-                        (system (format "cc -m32 -dynamiclib -o ~a ~a" testfile.so testfile.c))]
-                       [(a6osx a6osx)
-                        (system (format "cc -m64 -dynamiclib -o ~a ~a" testfile.so testfile.c))]
-                       [(a6nt ta6nt)
-                        (system (format "set cl= && ~a\\..\\c\\vs.bat amd64 && cl /DWIN32 /Fe~a /LD /MD /nologo ~a"
-                                  (patch-exec-path *mats-dir*) testfile.so testfile.c))]
-                       [(i3nt ti3nt)
-                        (system (format "set cl= && ~a\\..\\c\\vs.bat x86 && cl /DWIN32 /Fe~a /LD /MD /nologo ~a"
-                                  (patch-exec-path *mats-dir*) testfile.so testfile.c))]
-                       [(arm32le tarm32le arm64le tarm64le)
-                        (system (format "cc -fPIC -shared -o ~a ~a" testfile.so testfile.c))]
-                       [else ; this should work for most intel-based systems that use gcc...
-                        (if (> (fixnum-width) 32)
-                            (system (format "cc -m64 -fPIC -shared -o ~a ~a" testfile.so testfile.c))
-                            (system (format "cc -m32 -fPIC -shared -o ~a ~a" testfile.so testfile.c)))])
+          (unless (= (system (format "~a ~a  ~a ~a  ~a ~a"
+                                     (getenv "FTYPE_CC")
+                                     (or (getenv "FTYPE_CFLAGS") "")
+                                     (if (equal? (getenv "FTYPE_TOOLCHAIN") "windows")
+                                         "/Fe:"
+                                         "-o")
+                                     testfile.so
+                                     testfile.c
+                                     (or (getenv "FTYPE_LDFLAGS") "")))
                      0)
             (errorf 'ftype-test "C compilation failed"))
           (load-shared-object (format "./~a" testfile.so)))))
@@ -1030,7 +1022,7 @@
  ; ----------------
   (begin
     (meta-cond
-     [(eq? (machine-type) 'pb)
+     [(pb?)
       (define-ftype A (endian little (bits [x unsigned 3] [y unsigned 5])))]
      [else
       (define-ftype A (bits [x unsigned 3] [y unsigned 5]))])
@@ -1284,6 +1276,35 @@
   (begin
     (fptr-free b)
     #t)
+
+ ; ----------------
+ (begin
+   ;; Bind a native built-in type as a normal ftype (note this fixes the endianness).
+   (define-ftype integer-8 integer-8)
+   (define-ftype float float)
+   (define-ftype S (struct [i integer-8] [f float]))
+   #t)
+ (let ([int-fptr (make-ftype-pointer integer-8 (foreign-alloc (ftype-sizeof integer-8)))]
+       [flo-fptr (make-ftype-pointer float (foreign-alloc (ftype-sizeof float)))]
+       [s-fptr (make-ftype-pointer S (foreign-alloc (ftype-sizeof S)))])
+   (ftype-set! integer-8 () int-fptr 42)
+   (ftype-set! float () flo-fptr 7.125)
+   (ftype-set! S (i) s-fptr 75)
+   (ftype-set! S (f) s-fptr 8.25)
+   (let ([a (ftype-ref integer-8 () int-fptr)]
+         [b (ftype-ref float () flo-fptr)]
+         [c (ftype-ref S (i) s-fptr)]
+         [d (ftype-ref S (f) s-fptr)])
+     (foreign-free (ftype-pointer-address int-fptr))
+     (foreign-free (ftype-pointer-address flo-fptr))
+     (foreign-free (ftype-pointer-address s-fptr))
+     (equal? (list a b c d) (list 42 7.125 75 8.25))))
+
+ (begin
+   ;; Show that binding does not interfere with native types.
+   (define-syntax unsigned-16 (make-compile-time-value "Non-interfering binding"))
+   (let ([fptr (make-ftype-pointer unsigned-16 0)])
+     (= (ftype-pointer-address fptr) 0)))
 )
 
 (mat ftype-pointer-address-optimizations
@@ -1460,6 +1481,7 @@
     (define $not-much-alloc?
       (lambda (require-cp0? p)
         (or (eq? (current-eval) interpret)
+            (pb?)
             (#%$suppress-primitive-inlining)
             (eq? (compile-profile) 'source)
             (not (= (optimize-level) 3))
@@ -1477,7 +1499,7 @@
         (syntax-case stx ()
           [(_ (define-ftype id t))
            (cond
-             [(eq? (machine-type) 'pb)
+             [(pb?)
               #'(define-ftype id (endian little t))]
              [else
               #'(define-ftype id t)])])))
@@ -2423,22 +2445,22 @@
 
   (eqv? (ftype-ref Bl (a) bl) -3.14)
   (or (not (eq? (native-endianness) 'little))
-      (eq? (machine-type) 'pb)
+      (pb?)
       (eqv? (ftype-ref D () bl) -3.14))
   (eqv? (ftype-ref Dl () bl) -3.14)
   (or (not (eq? (native-endianness) 'little))
-      (eq? (machine-type) 'pb)
+      (pb?)
       (eqv? (ftype-ref double () bl) -3.14))
   (error? ; invalid syntax
     (ftype-ref (endian little double) () bl))
 
   (eqv? (ftype-ref Bb (a) bb) -3.14)
   (or (not (eq? (native-endianness) 'big))
-      (eq? (machine-type) 'pb)
+      (pb?)
       (eqv? (ftype-ref D () bb) -3.14))
   (eqv? (ftype-ref Db () bb) -3.14)
   (or (not (eq? (native-endianness) 'big))
-      (eq? (machine-type) 'pb)
+      (pb?)
       (eqv? (ftype-ref double () bb) -3.14))
   (error? ; invalid syntax
     (ftype-ref (endian big double) () bb))
@@ -5530,6 +5552,8 @@
 
     #t)
 
+  ;; works on most machines, but we can't really guarantee anything about a fault:
+  #;
   (if (memq (machine-type) '(ti3ob ta6ob)) ; avoid openbsd/pthreads signal bugs
       (error #f "openbsd pthreads + signals is fubar")
       (equal?
@@ -5546,6 +5570,8 @@
            [i null]
            [j (* invalid)])))
 
+  ;; works on most machines, but we can't really guarantee anything about a fault:
+  #;
   (if (memq (machine-type) '(ti3ob ta6ob)) ; avoid openbsd/pthreads signal bugs
       (error #f "openbsd pthreads + signals is fubar")
       (equal?
@@ -5579,8 +5605,8 @@
 
   (equal?
     (ftype-pointer-ftype (make-ftype-pointer A 0))
-    (cond
-      [(eq? (machine-type) 'pb) '(endian little double)]
+    (case (machine-type)
+      [(pb tpb) '(endian little double)]
       [else
        (case (native-endianness)
          [(big) '(endian swapped double)]
@@ -5589,8 +5615,8 @@
 
   (equal?
     (ftype-pointer-ftype (make-ftype-pointer B 0))
-    (cond
-      [(eq? (machine-type) 'pb) '(endian big double)]
+    (case (machine-type)
+      [(pb tpb) '(endian big double)]
       [else
        (case (native-endianness)
          [(big) 'double]
@@ -5874,3 +5900,176 @@
            x)))
     '(lambda (x) x))
 )
+
+(mat live-pointer-mask
+  (begin
+    (define-syntax run-with-scissors
+      (lambda (x)
+        (syntax-case x ()
+          [(k ([opnd expr] ...) body)
+           (with-implicit (k poison)
+             #`(let ()
+                 (define bait (list -1 -1))
+                 (define addr (#%$object-address bait 0))
+                 (define typemod #x8) ;; TODO is there a clean way to get this?
+                 (define type-mask (- typemod 1))
+                 (define wrong-tag-bits (logand type-mask (#%$object-address values 0)))
+                 (define poison ;; mix metaphors
+                   (logand (most-positive-fixnum)
+                           (bitwise-copy-bit-field addr 0 (integer-length type-mask) wrong-tag-bits)))
+                 (define opnd) ...
+                 (call/cc
+                  (lambda (bail)
+                    (define mark-evaluated!
+                      (let ([operands-to-evaluate (length '(opnd ...))])
+                        (lambda (get-return)
+                          (set! operands-to-evaluate (- operands-to-evaluate 1))
+                          (when (zero? operands-to-evaluate)
+                            ;; collect, but don't go through with the call since
+                            ;;  1. the argument values may be bogus
+                            ;;  2. we're checking errors in the way expand-primitives
+                            ;;     cheats on applicative order, not playing at unsafe
+                            ;;     calls to unchecked primitives
+                            (collect 0)
+                            (bail))
+                          (get-return poison))))
+                    ;; prevent cp0 from simplifying the primitive call operands
+                    (set! opnd (lambda () (mark-evaluated! (lambda (poison) expr)))) ...
+                    body))))])))
+    (define-syntax test-when
+      (syntax-rules (o >=)
+        [(_ ([o >= lvl]) expr)
+         (or (not #%$compiler-is-loaded?)
+             (#%$suppress-primitive-inlining)
+             (< (optimize-level) lvl)
+             (let () expr #t))]))
+    #t)
+  (test-when ([o >= 3])
+    ;; poison the offset since original evaluation order has raw
+    ;; OFFSET value on the stack when we evaluate the call to FPTR.
+    ;; (crashes if raw value from OFFSET is marked as a live pointer)
+    (run-with-scissors
+     ([INFO "bogus info"]
+      [FPTR "bogus fptr"]
+      [OFFSET
+       ;; When we return the poison fixnum here, the code generated by
+       ;; build-swap-object-set! calls offset-expr->index+offset which
+       ;; shifts it right and (if there are other operands to evaluate)
+       ;; stores the resulting raw value on the stack where it is live
+       ;; across a call to mark-evaluate!. If expand-primitives marks the
+       ;; expression as raw then we omit it from the live-pointer mask and
+       ;; the collector will leave it alone. If not, we've arranged for the
+       ;; raw value to look like a closure though it actually points to a
+       ;; list.
+       ;;
+       ;; This catches the issue on a6le since the object address is a
+       ;; fixnum and we can construct a value that passes the in-heap
+       ;; check. It does not catch the issue on i3le since the object
+       ;; address is not a fixnum and the result we construct here does not
+       ;; fool the in-heap check.
+       poison]
+      [VAL 3.14159])
+     ;; build-swap-object-set! supports double-float only on 64-bit machines
+     (or (< (ftype-sizeof uptr) 8)
+         (#3%$fptr-set-swap-double-float! (INFO) (FPTR) (OFFSET) (VAL)))))
+  (test-when ([o >= 3])
+    ;; poison VAL since new evaluation order can have raw mref of VAL
+    ;; live across the call to FPTR.
+    (run-with-scissors
+     ([INFO "bogus info"]
+      [FPTR "bogus fptr"]
+      [OFFSET 0]
+      [VAL
+       (let ()
+         (define-ftype Mix (union [u uptr] [d double-float]))
+         (let ([x (make-ftype-pointer Mix (foreign-alloc (ftype-sizeof Mix)))])
+           ;; Disguise poison fixnum within double-float where mref within
+           ;; build-swap-object-set! may leave the raw value live across the
+           ;; call to FPTR. That can go badly unless expand-primitives marked
+           ;; the temporary as raw.
+           (ftype-set! Mix (u) x poison)
+           (let ([disguised (ftype-ref Mix (d) x)])
+             (foreign-free (ftype-pointer-address x))
+             (set! x #f)
+             disguised)))])
+     ;; build-swap-object-set! supports double-float only on 64-bit machines
+     (or (< (ftype-sizeof uptr) 8)
+         (#3%$fptr-set-swap-double-float! (INFO) (FPTR) (OFFSET) (VAL)))))
+  (test-when ([o >= 3])
+    ;; poison the offset since original evaluation order has raw
+    ;; OFFSET value on the stack when we evaluate the call to FPTR.
+    ;; (crashes if raw value from OFFSET is marked as a live pointer)
+    (run-with-scissors
+     ([FPTR "bogus fptr"]
+      [OFFSET
+       ;; The inline handler creates a temporary for the offset, but
+       ;; build-fx+raw generates a raw value from this offset that
+       ;; expand-primitives should mark as such. Otherwise, the value
+       ;; can look like a raw pointer live across the call to FPTR.
+       poison])
+     (#3%$fptr-offset-addr (FPTR) (OFFSET))))
+  (test-when ([o >= 2])
+    ;; poison the offset since original evaluation order has raw
+    ;; OFFSET value on the stack when we evaluate the call to BASE.
+    ;; (crashes if raw value from OFFSET is marked as a live pointer)
+    (run-with-scissors
+     ([BASE "off base"]
+      [OFFSET
+       ;; When we return the poison fixnum here, the code generated by
+       ;; build-object-set! calls offset-expr->index+offset which
+       ;; shifts it right and (if there are other operands to evaluate)
+       ;; stores the resulting raw value on the stack where it is live
+       ;; across a call to mark-evaluate!. If expand-primitives marks the
+       ;; expression as raw then we omit it from the live-pointer mask and
+       ;; the collector will leave it alone. If not, we've arranged for the
+       ;; raw value to look like a closure though it actually points to a
+       ;; list.
+       ;;
+       ;; This catches the issue on a6le since the object address is a
+       ;; fixnum and we can construct a value that passes the in-heap
+       ;; check. It does not catch the issue on i3le since the object
+       ;; address is not a fixnum and the result we construct here does not
+       ;; fool the in-heap check.
+       (logand (most-positive-fixnum) poison)]
+      [VAL
+       ;; using a safe value here so that, if the test fails, it is due to
+       ;; poison offset rather that a rogue value; zero doesn't look like a
+       ;; pointer
+       0])
+     (#%$object-set! 'fixnum (BASE) (OFFSET) (VAL))))
+  (test-when ([o >= 2])
+    (run-with-scissors
+     ([BASE "off base"]
+      [OFFSET
+       ;; using a safe offset here so that, if the test fails, it is due to
+       ;; poison value rather that a rogue offset; zero doesn't look like a
+       ;; pointer
+       0]
+      [VAL
+       ;; This is like the case above except that offset-expr->index+offset
+       ;; isn't the culprit. Instead the the build-unfix in build-object-set!
+       ;; causes problems if expand-primitives does not mark it raw.
+       (logand (most-positive-fixnum) poison)])
+     (#%$object-set! 'fixnum (BASE) (OFFSET) (VAL))))
+  (test-when ([o >= 3])
+    (run-with-scissors
+     ([STR '(bogus)]
+      [INDEX
+       ;; We shift the poison value by 2 here so that the srl 1 in the code
+       ;; generated by the call to translate in the inline handler makes our
+       ;; poison fixnum look like a raw pointer, causing trouble if it is not
+       ;; marked as such.
+       (fxsra (logand (most-positive-fixnum) poison) 2)])
+     (#3%string-ref (STR) (INDEX))))
+  (test-when ([o >= 3])
+    (run-with-scissors
+     ([STR '(bogus)]
+      [INDEX
+       ;; We shift the poison value by 2 here so that the srl 1 in the code
+       ;; generated by the call to translate in the inline handler makes our
+       ;; poison fixnum look like a raw pointer, causing trouble if it is not
+       ;; marked as such.
+       (fxsra (logand (most-positive-fixnum) poison) 2)]
+      [CHAR 'bogus])
+     (#3%string-set! (STR) (INDEX) (CHAR))))
+  )

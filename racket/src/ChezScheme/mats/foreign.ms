@@ -23,8 +23,10 @@
       [(_ [else e ...]) #'(begin (void) e ...)]
       [(_) #'(void)])))
 
-(machine-case
- [(pb)]
+(meta-cond
+ [(and (pb?)
+       (not (guard (x [#t #f]) (eval '(foreign-callable void () void)))))
+  (void)]
  [else
 
 #;(define-syntax foreign-struct-mat
@@ -179,7 +181,14 @@
                         (x v ...))
                       (+ v ...)))))))))
 
-(define foreign1.so (format "~a/foreign1.so" *mats-dir*))
+(define foreign1.so (let ([p (find-source "foreign1.so")])
+                      p
+                      (if (or (path-absolute? p)
+                              (not (equal? "" (path-parent p))))
+                          p
+                          ;; specify relative to current directory:
+                          (path-build "." p))))
+(printf "found ~s in ~s\n" foreign1.so (source-directories))
 
 (machine-case
   [(i3ob ti3ob a6ob ta6ob a6s2 ta6s2 i3s2 ti3s2 i3qnx ti3qnx)
@@ -190,7 +199,7 @@
       (error? (load-shared-object 3))
     )
    ]
-  [(i3le ti3le a6le ta6le arm32le tarm32le arm64le tarm64le ppc32le tppc32le)
+  [(i3le ti3le a6le ta6le arm32le tarm32le arm64le tarm64le ppc32le tppc32le rv64le trv64le)
    (mat load-shared-object
       (file-exists? foreign1.so)
       (begin (load-shared-object foreign1.so) #t)
@@ -214,7 +223,7 @@
       (error? (load-shared-object 3))
     )
    ]
-  [(i3nt ti3nt a6nt ta6nt)
+  [(i3nt ti3nt a6nt ta6nt arm64nt tarm64nt)
    (mat load-shared-object
       (file-exists? foreign1.so)
       (begin (load-shared-object foreign1.so) #t)
@@ -225,13 +234,25 @@
    ]
   [(i3osx ti3osx a6osx ta6osx ppc32osx tppc32osx arm64osx tarm64osx)
    (mat load-shared-object
-      (file-exists? foreign1.so)
+     (file-exists? foreign1.so)
       (begin (load-shared-object foreign1.so) #t)
       (begin (load-shared-object "libc.dylib") #t)
       #t
       (error? (load-shared-object 3))
     )
    ]
+  [(pb pb32l pb32b pb64l pb64b tpb tpb32l tpb32b tpb64l tpb64b)
+   (mat load-shared-object
+     (file-exists? foreign1.so)
+     (begin (load-shared-object foreign1.so) #t)
+     (let ([try-load (lambda (path)
+                       (guard (x [#t #f])
+                              (load-shared-object path)
+                              #t))])
+       (or (try-load "libc.so.7")
+           (try-load "libc.so.6")
+           (try-load "libc.dylib")))
+     (error? (load-shared-object 3)))]
   [else
    (mat foreign-procedure
       (error? (foreign-procedure "foo" () scheme-object))
@@ -1813,7 +1834,7 @@
   (let ([bv1 (string->utf8 "hello")] [bv2 (make-bytevector 5)])
     ($fp-bvcopy bv2 bv1 5)
     (and (bytevector=? bv1 bv2) (bytevector=? bv1 (string->utf8 "hello"))))
-  ;; No longer an error since make-ftype-pointer also serves to make foriegn-pointers
+  ;; No longer an error since make-ftype-pointer also serves to make foreign-pointers
   #;(error? ; "memcpy" is not a procedure
       (make-ftype-pointer memcpy_t "memcpy"))
   (error? ; unrecognized ftype
@@ -1996,6 +2017,11 @@
   (eqv? (ftype-ref A (y) a) 0)
   (not (ff-locked-decr (ftype-&ref A (y) a)))
   (ff-locked-incr (ftype-&ref A (y) a))
+  (not (ftype-locked-incr! A (y) a))
+  (ftype-locked-decr! A (y) a)
+  (not (ftype-locked-decr! A (y) a))
+  (ftype-locked-incr! A (y) a)
+  (not (ftype-locked-incr! A (y) a))
 )
 
 (mat foreign-anonymous
@@ -2041,6 +2067,52 @@
             single-float single-float single-float single-float)
            single-float)
          args)))
+
+  (let ([many_ints_and_floats
+         (foreign-procedure "many_ints_and_floats" (int int int int int int float (* float)  int (* float) int float (* float) int)
+                            iptr)])
+    (= (many_ints_and_floats -1 -2 -3 1 2 3 4.0 (make-ftype-pointer float 5) 6 (make-ftype-pointer float 7) 8 9.0 (make-ftype-pointer float 4) 11)
+       (+ -1 -2 -3 1 2 3 4 5 6 7 8 9 4 11)))
+
+  (begin
+    (define-ftype three_floats
+      (struct (a float) (b float) (c float)))
+    (define three-floats
+      (let ([p (make-ftype-pointer three_floats (foreign-alloc (ftype-sizeof three_floats)))])
+        (ftype-set! three_floats (a) p 10.0)
+        (ftype-set! three_floats (b) p 11.0)
+        (ftype-set! three_floats (c) p 12.0)
+        p))
+    #t)
+
+  (let ([proc
+         (foreign-procedure "many_doubles_and_three_floats_and_float" (double double double double double double double double (& three_floats) float)
+                            double)])
+    (= (proc 1.0 2.0 3.0 4.0 5.0 6.0 7.0 8.0 three-floats 9.0)
+       (+ 1.0 2.0 3.0 4.0 5.0 6.0 7.0 8.0 10.0 11.0 12.0 9.0)))
+
+  (let ([proc
+         (foreign-procedure "many_doubles_and_float_and_three_floats" (double double double double double double double double float (& three_floats))
+                            double)])
+    (= (proc 1.0 2.0 3.0 4.0 5.0 6.0 7.0 8.0 9.0 three-floats)
+       (+ 1.0 2.0 3.0 4.0 5.0 6.0 7.0 8.0 9.0 10.0 11.0 12.0)))
+
+  (let ([proc
+         (foreign-procedure "many_doubles_and_float_and_three_floats" (double double double double double double double double float (& three_floats))
+                            double)])
+    (= (proc 1.0 2.0 3.0 4.0 5.0 6.0 7.0 8.0 91.0 three-floats)
+       (+ 1.0 2.0 3.0 4.0 5.0 6.0 7.0 8.0 91.0 10.0 11.0 12.0)))
+
+  (let ([proc
+         (foreign-procedure "many_doubles_and_three_floats_and_three_floats" (double double double double double double double double (& three_floats) (& three_floats))
+                            double)])
+    (= (proc 1.0 2.0 3.0 4.0 5.0 6.0 7.0 8.0 three-floats (let ([p (make-ftype-pointer three_floats (foreign-alloc (ftype-sizeof three_floats)))])
+                                                            (ftype-set! three_floats (a) p 34.0)
+                                                            (ftype-set! three_floats (b) p 35.0)
+                                                            (ftype-set! three_floats (c) p 36.0)
+                                                            p))
+       (+ 1.0 2.0 3.0 4.0 5.0 6.0 7.0 8.0 10.0 11.0 12.0 34.0 35.0 36.0)))
+
  )
 
 (mat auto-mat-icks
@@ -2389,7 +2461,9 @@
         (list (locked-object? cb) ans)))
     '(#f 13))
   (begin
-    (define $stack-depth 8000)
+    (define $stack-depth (cond
+                           [(pb?) 1000] ; interpreter frames are big
+                           [else 8000]))
     (define $base-value 37)
     #t)
   (eqv? ; make sure foreign-callable does it's overflow checks
@@ -2493,7 +2567,7 @@
         (+ $stack-depth $base-value)))
   (or (= (optimize-level) 3)
       ; similarly, but with a ptr return value so the values error is signaled
-      ; by S_call_help wrather than the foreign-procedure wrapper
+      ; by S_call_help rather than the foreign-procedure wrapper
       (eqv?
         ($with-exit-proc
           (lambda (ignore)
@@ -2533,7 +2607,7 @@
         (let ()
           (define *m*)
           (define *k*)
-          (define ip (open-file-input-port (format "~a/mat.ss" *mats-dir*)))
+          (define ip (open-file-input-port (find-source "mat.ss")))
           (define-ftype foo (function (fixnum fixnum) fixnum))
           (define f
             (lambda (n m)
@@ -2748,7 +2822,7 @@
           (fprintf to-stdin "'hello\n") ; should cause exception, then abort (via reset)
           (flush-output-port to-stdin)
           (let ([pid^ (machine-case
-                        [(i3nt ti3nt a6nt ta6nt) pid]
+                        [(i3nt ti3nt a6nt ta6nt arm64nt tarm64nt) pid]
                         [else ((foreign-procedure "waitpid" (int (* int) int) int) pid (make-ftype-pointer int 0) 0)])])
             (and
               (equal? s1 "Exception: oops 1")
@@ -2763,14 +2837,22 @@
       (machine-case
         [(i3ob ti3ob a6ob ta6ob a6s2 ta6s2 i3s2 ti3s2 i3qnx ti3qnx i3nb ti3nb a6nb ta6nb)
          '(load-shared-object "libc.so")]
-        [(i3le ti3le a6le ta6le arm32le tarm32le arm64le tarm64le ppc32le tppc32le)
+        [(i3le ti3le a6le ta6le arm32le tarm32le arm64le tarm64le ppc32le tppc32le rv64le trv64le)
          '(load-shared-object "libc.so.6")]
         [(i3fb ti3fb a6fb ta6fb)
          '(load-shared-object "libc.so.7")]
-        [(i3nt ti3nt a6nt ta6nt)
+        [(i3nt ti3nt a6nt ta6nt arm64nt tarm64nt)
          '(load-shared-object "msvcrt.dll")]
         [(i3osx ti3osx a6osx ta6osx ppc32osx tppc32osx arm64osx tarm64osx)
          '(load-shared-object "libc.dylib")]
+        [(pb pb32l pb32b pb64l pb64b tpb tpb32l tpb32b tpb64l tpb64b)
+         '(let ([try-load (lambda (path)
+                            (guard (x [#t #f])
+                                   (load-shared-object path)
+                                   #t))])
+            (or (try-load "libc.so.7")
+                (try-load "libc.so.6")
+                (try-load "libc.dylib")))]
         [else (error 'load-libc "unrecognized machine type ~s" (machine-type))]))
     (define varargs_df (foreign-procedure (__varargs_after 1) "varargs_df" (double int int) double))
     (define varargs_dfii (foreign-procedure (__varargs_after 2) "varargs_dfii" (double int int) double))
@@ -3106,6 +3188,24 @@
   (check-union [x float 58.0] [y int 0])
   (check-union [x double 68.0] [y int 0])
 
+  (let ()
+    (define-ftype T (struct
+                        [ds (union [d1 double]
+                                   [d2 double])]
+                        [d3 double]))
+    (define s (apply string-append
+                     "_union"
+                     (let loop ([l '(t0 ti ...)])
+                       (cond
+                         [(null? l) '()]
+                         [else (cons (format "_~a" (car l))
+                                     (loop (cdr l)))]))))
+    (check*t T
+             "_struct_uniondoubledouble_double"
+             [99.0 -12.5]
+             [(lambda (a) (ftype-ref T (ds d1) a)) (lambda (a) (ftype-ref T (d3) a))]
+             [(lambda (a) (ftype-set! T (ds d1) a 99.0)) (lambda (a) (ftype-set! T (d3) a -12.5))]))
+
   ;; Check that `__collect_safe` saves argument and result floating-point registers
   ;; while activating and deactivating a thread
   (let ()
@@ -3170,12 +3270,18 @@
   (begin
     (define-ftype thread-callback-T (function __collect_safe (double) double))
     (define (call-with-thread-callback cb-proc proc)
-      (let ([callback (make-ftype-pointer thread-callback-T cb-proc)])
-        (let ([r (proc callback)])
-          (unlock-object
-           (foreign-callable-code-object
-            (ftype-pointer-address callback)))
-          r)))
+      (let* ([exception #f]
+             [callback (make-ftype-pointer thread-callback-T
+                         (lambda (arg)
+                           ;; Don't let an exception reset this tread.
+                           (guard [c (else (set! exception c) 0.0)]
+                             (cb-proc arg))))]
+             [r (proc callback)])
+        (unlock-object
+         (foreign-callable-code-object
+          (ftype-pointer-address callback)))
+        (when exception (raise exception))
+        r))
     (define (call-in-unknown-thread-1 proc arg n-times)
       ;; Baseline implementation that uses the current thread
       (let loop ([i 0] [arg arg])
@@ -3246,14 +3352,17 @@
   ;; current code object.
   (or (not (threaded?))
       (let ([m (make-mutex)]
+            [exception #f]
             [done? #f]
             [ok? #t])
         (fork-thread (lambda ()
-                       (let loop ([i 10])
-                         (unless (zero? i)
-                           (let ([spin (eval '(foreign-procedure __collect_safe "spin_a_while" (int unsigned unsigned) unsigned))])
-                             (spin 1000000 0 1))
-                           (loop (sub1 i))))
+                       ;; Don't let an exception reset this thread.
+                       (guard [c (else (set! exception c))]
+                         (let loop ([i 10])
+                           (unless (zero? i)
+                             (let ([spin (eval '(foreign-procedure __collect_safe "spin_a_while" (int unsigned unsigned) unsigned))])
+                               (spin 100000000 0 1))
+                             (loop (sub1 i)))))
                        (mutex-acquire m)
                        (set! done? #t)
                        (mutex-release m)))
@@ -3267,6 +3376,7 @@
                   (eval '(foreign-procedure "spin_a_while" () void))
                   (loop (sub1 i))))
               (loop))))
+        (when exception (raise exception))
         ok?))
 )
 
@@ -3315,14 +3425,19 @@
   (not (reference-bytevector? 7))
   (begin
     (define $reftest-bv (make-reference-bytevector (* 2 (foreign-sizeof 'ptr))))
+    (define $reftest-bv-odd (make-reference-bytevector (* 3 (foreign-sizeof 'ptr))))
     (reference-bytevector? $reftest-bv))
   (eqv? (* 2 (foreign-sizeof 'ptr)) (bytevector-length $reftest-bv))
+  (eqv? (* 3 (foreign-sizeof 'ptr)) (bytevector-length $reftest-bv-odd))
   (eq? #f (bytevector-reference-ref $reftest-bv 0))
+  (eq? #f (bytevector-reference-ref $reftest-bv-odd 0))
   (begin
     (define $reftest-bv2 (bytevector 1 2 3 4 5 6))
     (bytevector-reference-set! $reftest-bv 0 $reftest-bv2)
+    (bytevector-reference-set! $reftest-bv-odd 0 $reftest-bv2)
     (collect)
     (eq? $reftest-bv2 (bytevector-reference-ref $reftest-bv 0)))
+  (eq? $reftest-bv2 (bytevector-reference-ref $reftest-bv-odd 0))
   (with-interrupts-disabled
    (eqv? (if (= (foreign-sizeof 'ptr) 8)
              (bytevector-u64-native-ref $reftest-bv 0)
@@ -3336,10 +3451,14 @@
   (begin
     (define $reftest-bv3 (bytevector 5 6 7 8))
     (bytevector-reference-set! $reftest-bv (foreign-sizeof 'ptr) $reftest-bv3)
+    (bytevector-reference-set! $reftest-bv-odd (foreign-sizeof 'ptr) $reftest-bv3)
     (collect)
     (eq? $reftest-bv2 (bytevector-reference-ref $reftest-bv 0)))
+  (eq? $reftest-bv2 (bytevector-reference-ref $reftest-bv-odd 0))
   (eq? $reftest-bv3 (bytevector-reference-ref $reftest-bv (foreign-sizeof 'ptr)))
   (eq? $reftest-bv3 (bytevector-reference*-ref $reftest-bv (foreign-sizeof 'ptr)))
+  (eq? $reftest-bv3 (bytevector-reference-ref $reftest-bv-odd (foreign-sizeof 'ptr)))
+  (eq? $reftest-bv3 (bytevector-reference*-ref $reftest-bv-odd (foreign-sizeof 'ptr)))
 
   (let ()
     (lock-object $reftest-bv3)
@@ -3355,14 +3474,27 @@
     (if (= (foreign-sizeof 'ptr) 8)
         (bytevector-u64-native-set! $reftest-bv 8 $reftest-mem4)
         (bytevector-u32-native-set! $reftest-bv 4 $reftest-mem4))
+    (if (= (foreign-sizeof 'ptr) 8)
+        (bytevector-u64-native-set! $reftest-bv-odd 8 $reftest-mem4)
+        (bytevector-u32-native-set! $reftest-bv-odd 4 $reftest-mem4))
     (eqv? $reftest-mem4 (bytevector-reference*-ref $reftest-bv (foreign-sizeof 'ptr))))
+  (eqv? $reftest-mem4 (bytevector-reference*-ref $reftest-bv-odd (foreign-sizeof 'ptr)))
 
   (begin
+    ;; clear reference to `$reftest-mem4` before we free it:
+    (if (= (foreign-sizeof 'ptr) 8)
+        (bytevector-u64-native-set! $reftest-bv 8 0)
+        (bytevector-u32-native-set! $reftest-bv 4 0))
+    (if (= (foreign-sizeof 'ptr) 8)
+        (bytevector-u64-native-set! $reftest-bv-odd 8 0)
+        (bytevector-u32-native-set! $reftest-bv-odd 4 0))
     (foreign-free $reftest-mem4)
     (define $reftest-flv (flvector 3.0 6.0 7.0))
     (bytevector-reference-set! $reftest-bv 0 $reftest-flv)
+    (bytevector-reference-set! $reftest-bv-odd 0 $reftest-flv)
     (collect)
     (eq? $reftest-flv (bytevector-reference-ref $reftest-bv 0)))
+  (eq? $reftest-flv (bytevector-reference-ref $reftest-bv-odd 0))
   (with-interrupts-disabled
    (eqv? (if (= (foreign-sizeof 'ptr) 8)
              (bytevector-u64-native-ref $reftest-bv 0)
@@ -3400,5 +3532,7 @@
   (begin
     (bytevector-reference-set! $reftest-bv 0 #f)
     (eq? #f (bytevector-reference-ref $reftest-bv 0)))
+  (begin
+    (bytevector-reference-set! $reftest-bv-odd 0 #f)
+    (eq? #f (bytevector-reference-ref $reftest-bv-odd 0)))
 )
-

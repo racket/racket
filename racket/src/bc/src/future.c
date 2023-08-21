@@ -1279,8 +1279,8 @@ static Scheme_Object *make_future(Scheme_Object *lambda, int enqueue, future_t *
   ft->orig_lambda = lambda;
   ft->status = PENDING;
 
-  if (scheme_current_thread->mref)
-    c = scheme_custodian_extract_reference(scheme_current_thread->mref);
+  if (scheme_current_thread->mr_hop->mref)
+    c = scheme_custodian_extract_reference(scheme_current_thread->mr_hop->mref);
   else {
     /* must be in a future thread (if futures can be created in future threads) */
     c = scheme_current_thread->current_ft->cust;

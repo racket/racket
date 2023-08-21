@@ -1,5 +1,7 @@
-(module match-tests mzscheme
-  (require mzlib/match rackunit)
+(module match-exn-tests racket/base
+  (require racket/match
+           rackunit
+           syntax/macro-testing)
   (provide match-exn-tests)
 
   (define simple-fail-tests
@@ -63,8 +65,38 @@
        (check-exn #rx"match-define-values: no matching clause for \\(6 7\\)"
                   (lambda () (match-define-values (3 x) (values 6 7)) x)))))
 
+  (define exn-message-tests-3
+    (test-suite "Empty clause"
+      (test-case "match"
+        (check-exn #rx"match: expected more terms starting with any term"
+                   (lambda () (convert-syntax-error (match 1 [])))))
+      (test-case "match*"
+        (check-exn #rx"match\\*: expected more terms starting with any term"
+                   (lambda () (convert-syntax-error (match* 1 [])))))
+
+      (test-case "ill-formed =>"
+        (check-exn #rx"expected an identifier"
+                   (lambda () (convert-syntax-error (match 1 [1 (=> 1) 2]))))
+        (check-exn #rx"after => option"
+                   (lambda () (convert-syntax-error (match 1 [1 (=> x)])))))
+
+      (test-case "ill-formed #:when"
+        (check-exn #rx"cond-expr"
+                   (lambda () (convert-syntax-error (match 1 [1 #:when]))))
+        (check-exn #rx"after #:when option"
+                   (lambda () (convert-syntax-error (match 1 [1 #:when #t])))))
+
+      (test-case "ill-formed #:do"
+        (check-exn #rx"sequence of do-bodys"
+                   (lambda () (convert-syntax-error (match 1 [1 #:do]))))
+        (check-exn #rx"sequence of do-bodys"
+                   (lambda () (convert-syntax-error (match 1 [1 #:do #t 1]))))
+        (check-exn #rx"after #:do option"
+                   (lambda () (convert-syntax-error (match 1 [1 #:do []])))))))
+
   (define match-exn-tests
     (test-suite "Tests for exceptions raised by match.rkt"
                 simple-fail-tests
                 exn-message-tests-1
-                exn-message-tests-2)))
+                exn-message-tests-2
+                exn-message-tests-3)))

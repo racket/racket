@@ -108,6 +108,7 @@
   scheme_extension_table->scheme_set_on_atomic_timeout = scheme_set_on_atomic_timeout;
   scheme_extension_table->scheme_signal_error = scheme_signal_error;
   scheme_extension_table->scheme_raise_exn = scheme_raise_exn;
+  scheme_extension_table->scheme_raise_realm_exn = scheme_raise_realm_exn;
   scheme_extension_table->scheme_warning = scheme_warning;
   scheme_extension_table->scheme_raise = scheme_raise;
   scheme_extension_table->scheme_log_level_p = scheme_log_level_p;
@@ -127,6 +128,7 @@
   scheme_extension_table->scheme_case_lambda_wrong_count = scheme_case_lambda_wrong_count;
   scheme_extension_table->scheme_wrong_type = scheme_wrong_type;
   scheme_extension_table->scheme_wrong_contract = scheme_wrong_contract;
+  scheme_extension_table->scheme_wrong_contract_for_realm = scheme_wrong_contract_for_realm;
   scheme_extension_table->scheme_wrong_field_type = scheme_wrong_field_type;
   scheme_extension_table->scheme_wrong_field_contract = scheme_wrong_field_contract;
   scheme_extension_table->scheme_arg_mismatch = scheme_arg_mismatch;
@@ -152,6 +154,7 @@
   scheme_extension_table->scheme_multiple_values = scheme_multiple_values;
   scheme_extension_table->scheme_uchar_table = scheme_uchar_table;
   scheme_extension_table->scheme_uchar_cases_table = scheme_uchar_cases_table;
+  scheme_extension_table->scheme_uchar_graphbreaks_table = scheme_uchar_graphbreaks_table;
   scheme_extension_table->scheme_uchar_cats_table = scheme_uchar_cats_table;
   scheme_extension_table->scheme_uchar_ups = scheme_uchar_ups;
   scheme_extension_table->scheme_uchar_downs = scheme_uchar_downs;
@@ -211,6 +214,7 @@
   scheme_extension_table->scheme_current_continuation_marks = scheme_current_continuation_marks;
   scheme_extension_table->scheme_extract_one_cc_mark = scheme_extract_one_cc_mark;
   scheme_extension_table->scheme_extract_one_cc_mark_to_tag = scheme_extract_one_cc_mark_to_tag;
+  scheme_extension_table->scheme_extract_cc_mark_list = scheme_extract_cc_mark_list;
   scheme_extension_table->scheme_do_eval = scheme_do_eval;
   scheme_extension_table->scheme_detach_multple_array = scheme_detach_multple_array;
 #ifndef SCHEME_NO_GC
@@ -289,6 +293,7 @@
   scheme_extension_table->scheme_bucket_table_next = scheme_bucket_table_next;
   scheme_extension_table->scheme_make_hash_table = scheme_make_hash_table;
   scheme_extension_table->scheme_make_hash_table_equal = scheme_make_hash_table_equal;
+  scheme_extension_table->scheme_make_hash_table_equal_always = scheme_make_hash_table_equal_always;
   scheme_extension_table->scheme_make_hash_table_eqv = scheme_make_hash_table_eqv;
   scheme_extension_table->scheme_hash_set = scheme_hash_set;
   scheme_extension_table->scheme_hash_get = scheme_hash_get;
@@ -297,6 +302,7 @@
   scheme_extension_table->scheme_hash_get_atomic = scheme_hash_get_atomic;
   scheme_extension_table->scheme_hash_table_equal = scheme_hash_table_equal;
   scheme_extension_table->scheme_is_hash_table_equal = scheme_is_hash_table_equal;
+  scheme_extension_table->scheme_is_hash_table_equal_always = scheme_is_hash_table_equal_always;
   scheme_extension_table->scheme_is_hash_table_eqv = scheme_is_hash_table_eqv;
   scheme_extension_table->scheme_clone_hash_table = scheme_clone_hash_table;
   scheme_extension_table->scheme_clear_hash_table = scheme_clear_hash_table;
@@ -310,6 +316,7 @@
   scheme_extension_table->scheme_hash_tree_index = scheme_hash_tree_index;
   scheme_extension_table->scheme_hash_tree_equal = scheme_hash_tree_equal;
   scheme_extension_table->scheme_is_hash_tree_equal = scheme_is_hash_tree_equal;
+  scheme_extension_table->scheme_is_hash_tree_equal_always = scheme_is_hash_tree_equal_always;
   scheme_extension_table->scheme_is_hash_tree_eqv = scheme_is_hash_tree_eqv;
   scheme_extension_table->scheme_make_prim = scheme_make_prim;
   scheme_extension_table->scheme_make_noneternal_prim = scheme_make_noneternal_prim;
@@ -399,6 +406,7 @@
   scheme_extension_table->scheme_make_offset_external_cptr = scheme_make_offset_external_cptr;
   scheme_extension_table->scheme_is_cpointer = scheme_is_cpointer;
   scheme_extension_table->scheme_get_proc_name = scheme_get_proc_name;
+  scheme_extension_table->p = p;
   scheme_extension_table->scheme_utf8_decode = scheme_utf8_decode;
   scheme_extension_table->scheme_utf8_decode_offset_prefix = scheme_utf8_decode_offset_prefix;
   scheme_extension_table->scheme_utf8_decode_as_prefix = scheme_utf8_decode_as_prefix;
@@ -657,15 +665,20 @@
   scheme_extension_table->scheme_eq = scheme_eq;
   scheme_extension_table->scheme_eqv = scheme_eqv;
   scheme_extension_table->scheme_equal = scheme_equal;
+  scheme_extension_table->scheme_equal_always = scheme_equal_always;
   scheme_extension_table->scheme_chaperone_of = scheme_chaperone_of;
   scheme_extension_table->scheme_impersonator_of = scheme_impersonator_of;
 #ifdef MZ_PRECISE_GC
   scheme_extension_table->scheme_hash_key = scheme_hash_key;
 #endif
   scheme_extension_table->scheme_equal_hash_key = scheme_equal_hash_key;
+  scheme_extension_table->scheme_equal_hash_key_recur = scheme_equal_hash_key_recur;
   scheme_extension_table->scheme_equal_hash_key2 = scheme_equal_hash_key2;
   scheme_extension_table->scheme_recur_equal_hash_key = scheme_recur_equal_hash_key;
   scheme_extension_table->scheme_recur_equal_hash_key2 = scheme_recur_equal_hash_key2;
+  scheme_extension_table->scheme_equal_always_hash_key = scheme_equal_always_hash_key;
+  scheme_extension_table->scheme_equal_always_hash_key_recur = scheme_equal_always_hash_key_recur;
+  scheme_extension_table->scheme_equal_always_hash_key2 = scheme_equal_always_hash_key2;
   scheme_extension_table->scheme_eqv_hash_key = scheme_eqv_hash_key;
   scheme_extension_table->scheme_eqv_hash_key2 = scheme_eqv_hash_key2;
   scheme_extension_table->scheme_set_type_equality = scheme_set_type_equality;

@@ -1,0 +1,169 @@
+#lang zuo
+
+(require "harness.zuo")
+
+(alert "filesystem")
+
+(check (hash? (stat tmp-dir #f)))
+(check (stat (build-path tmp-dir "nonesuch.txt") #f) #f)
+
+(let ([s (stat tmp-dir #f)])
+  (check (hash-ref s 'type) 'dir))
+(check (directory-exists? tmp-dir))
+(check (file-exists? tmp-dir) #f)
+(check (link-exists? tmp-dir) #f)
+(check-arg-fail (stat 10) not-path)
+
+(define now (current-time))
+
+(define exists.txt (build-path tmp-dir "exists.txt"))
+(let ([fd (fd-open-output exists.txt :truncate)])
+  (fd-write fd "xyz")
+  (fd-close fd))
+
+(define exists2.txt (build-path tmp-dir "exists2.txt"))
+(fd-close (fd-open-output exists2.txt :can-update))
+
+(check (file-exists? exists.txt))
+(check (file-exists? exists2.txt))
+(check (directory-exists? exists2.txt) #f)
+(check (link-exists? exists2.txt) #f)
+
+(check-arg-fail (file-exists? 10) not-path)
+(check-arg-fail (directory-exists? 10) not-path)
+(check-arg-fail (link-exists? 10) not-path)
+
+(let ([s (stat exists.txt #f)])
+  (check (hash? s))
+  (check (hash-ref s 'type) 'file)
+  (check (hash-ref s 'size) 3)
+  ;; Seems to be too precise for some Linux configurations:
+  #;
+  (check (or (> (hash-ref s 'modify-time-seconds) (car now))
+	     (and (= (hash-ref s 'modify-time-seconds) (car now))
+		  (>= (hash-ref s 'modify-time-nanoseconds) (cdr now)))))
+  (check (>= (hash-ref s 'modify-time-seconds) (car now)))
+  (let ([s2 (stat exists.txt #t)])
+    (check s s2))
+  (let ([s2 (stat exists2.txt #t)])
+    (check (hash? s2))
+    (check (not (equal? (hash-ref s 'inode) (hash-ref s2 'inode))))
+    (check (equal? (hash-ref s 'device-id) (hash-ref s2 'device-id)))))
+
+(let ([l (ls tmp-dir)])
+  (check (pair? (member "exists.txt" l)))
+  (check (pair? (member "exists2.txt" l))))
+(check-arg-fail (ls 10) not-path)
+
+(rm exists2.txt)
+(check (stat exists2.txt #t) #f)
+(check (member "exists2.txt" (ls tmp-dir)) #f)
+
+(define sub-dir (build-path tmp-dir "sub"))
+(rm* sub-dir)
+
+(check (directory-exists? sub-dir) #f)
+(check (mkdir sub-dir) (void))
+(check (directory-exists? sub-dir))
+(check-arg-fail (mkdir 10) not-path)
+
+(define sub-sub-dir (build-path sub-dir "subsub"))
+(check (directory-exists? sub-sub-dir) #f)
+(check (mkdir sub-sub-dir) (void))
+(check (directory-exists? sub-sub-dir))
+(check (rmdir sub-sub-dir) (void))
+(check (directory-exists? sub-sub-dir) #f)
+(check (mkdir sub-sub-dir) (void))
+
+(fd-close (fd-open-output (build-path sub-sub-dir "apple") :can-update))
+(fd-close (fd-open-output (build-path sub-sub-dir "banana") :can-update))
+(fd-close (fd-open-output (build-path sub-sub-dir "cherry") :can-update))
+(fd-close (fd-open-output (build-path sub-dir "donut") :can-update))
+
+(check (length (ls sub-dir)) 2)
+(check (length (ls sub-sub-dir)) 3)
+
+(check (void? (mv (build-path sub-sub-dir "banana")
+                  (build-path sub-dir "banana"))))
+(check (length (ls sub-dir)) 3)
+(check (length (ls sub-sub-dir)) 2)
+(check (void? (mv (build-path sub-dir "banana")
+                  (build-path sub-sub-dir "eclair"))))
+(let ([l (ls sub-sub-dir)])
+  (check (pair? (member "apple" l)))
+  (check (pair? (member "cherry" l)))
+  (check (pair? (member "eclair" l)))
+  (check (not (member "banana" l))))
+(check-arg-fail (mv 10 "x") not-path)
+(check-arg-fail (mv "x" 10) not-path)
+
+(check-fail (rm ,sub-dir) "failed")
+(check-arg-fail (rm 10) not-path)
+
+(rm* sub-dir)
+(check (directory-exists? sub-sub-dir) #f)
+(check (directory-exists? sub-dir) #f)
+(check-arg-fail (rm* 10) not-path)
+
+(mkdir-p sub-sub-dir)
+(check (directory-exists? sub-sub-dir))
+(check (directory-exists? sub-dir))
+(check-arg-fail (mkdir-p 10) not-path)
+
+(when (eq? 'unix (hash-ref (runtime-env) 'system-type))
+  (let ([fd (fd-open-output (build-path sub-dir "high") :can-update)])
+    (fd-write fd "HIGH")
+    (fd-close fd))
+  (let ([fd (fd-open-output (build-path sub-sub-dir "low") :can-update)])
+    (fd-write fd "LOW")
+    (fd-close fd))
+  (define (get path)
+    (let ([fd (fd-open-input path)])
+      (define v (fd-read fd eof))
+      (fd-close fd)
+      v))
+  (symlink "low" (build-path sub-sub-dir "below"))
+  (check (get (build-path sub-sub-dir "below")) "LOW")
+  (check (readlink (build-path sub-sub-dir "below")) "low")
+  (check (hash-ref (stat (build-path sub-sub-dir "below") #f) 'type) 'link)
+  (check (hash-ref (stat (build-path sub-sub-dir "below") #t) 'type) 'file)
+  (check (link-exists? (build-path sub-sub-dir "below")))
+  (check (rm (build-path sub-sub-dir "below")) (void))
+  (check (get (build-path sub-sub-dir "low")) "LOW")
+
+  (symlink "../high" (build-path sub-sub-dir "above"))
+  (check (get (build-path sub-sub-dir "above")) "HIGH")
+  (check (readlink (build-path sub-sub-dir "above")) "../high")
+  (check (rm (build-path sub-sub-dir "above")) (void))
+  (check (get (build-path sub-dir "high")) "HIGH")
+
+  (symlink ".." (build-path sub-sub-dir "again"))
+  (check (link-exists? (build-path sub-sub-dir "again")))
+  (check (hash-ref (stat (build-path sub-sub-dir "again") #f) 'type) 'link)
+  (check (hash-ref (stat (build-path sub-sub-dir "again") #t) 'type) 'dir)
+  (check (get (build-path sub-sub-dir "again" "high")) "HIGH")
+  (check (get (build-path sub-sub-dir "again" "subsub" "low")) "LOW")
+  (check (ls sub-dir) (ls (build-path sub-sub-dir "again")))
+
+  (rm* sub-sub-dir)
+  (check (get (build-path sub-dir "high")) "HIGH")
+  
+  (void))
+
+(check-arg-fail (readlink 10) not-path)
+(check-arg-fail (symlink 10 "a") not-path)
+(check-arg-fail (symlink "a" 10) not-path)
+
+(rm* sub-dir)
+
+(check (cp exists.txt exists2.txt) (void))
+(check (equal? (hash-ref (stat exists.txt) 'mode)
+               (hash-ref (stat exists2.txt) 'mode)))
+(check (file-exists? exists.txt))
+(check (file-exists? exists2.txt))
+(check (cp exists.txt exists2.txt (hash 'replace-mode #f)) (void))
+(check (cp exists.txt exists2.txt :no-replace-mode) (void))
+
+(check-arg-fail (cp "exists.txt" "exists2.txt" 'oops) "not a hash")
+(check-arg-fail (cp "exists.txt" "exists2.txt" (hash 'mode 'oops)) "not an integer")
+(check-arg-fail (cp "exists.txt" "exists2.txt" (hash 'other 0)) "unrecognized or unused option")

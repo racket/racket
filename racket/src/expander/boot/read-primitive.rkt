@@ -28,6 +28,7 @@
                 read-curly-brace-with-tag
                 read-cdot
                 read-accept-graph
+                read-syntax-accept-graph
                 read-accept-compiled
                 read-accept-box
                 ;; read-accept-bar-quote - shared with printer

@@ -38,6 +38,16 @@
                             "(and/c box? (not impersonator?))")
                         b))
 
+(define (immutable-box? v)
+  (or (#%immutable-box? v)
+      (and (impersonator? v)
+           (#%immutable-box? (impersonator-val v)))))
+
+(define (mutable-box? v)
+  (or (#%mutable-box? v)
+      (and (impersonator? v)
+           (#%mutable-box? (impersonator-val v)))))
+
 (define (set-box! b v)
   (if (#%mutable-box? b)
       (#3%set-box! b v)
@@ -70,7 +80,11 @@
                          make-props-chaperone props))
 
 (define/who (impersonate-box b ref set . props)
-  (check who mutable-box? :contract "(and/c box? (not/c immutable?))" b)
+  (check who (lambda (b) (or (mutable-box? b)
+                             (and (impersonator? b)
+                                  (mutable-box? (impersonator-val b)))))
+         :contract "(and/c box? (not/c immutable?))"
+         b)
   (do-impersonate-box 'impersonate-box make-box-impersonator b ref set
                       make-props-chaperone props))
 
@@ -136,12 +150,14 @@
            [else (loop next val)]))]))]))
 
 (define (set-box-impersonator-hash!)
-  (record-type-hash-procedure (record-type-descriptor box-chaperone)
-                              (lambda (c hash-code)
-                                (hash-code (box (unbox c)))))
-  (record-type-hash-procedure (record-type-descriptor box-impersonator)
-                              (lambda (i hash-code)
-                                (hash-code (box (unbox i))))))
+  (struct-set-equal+hash! (record-type-descriptor box-chaperone)
+                          #f
+                          (lambda (i hash-code)
+                            (hash-code (box (unbox i)))))
+  (struct-set-equal+hash! (record-type-descriptor box-impersonator)
+                          #f
+                          (lambda (i hash-code)
+                            (hash-code (box (unbox i))))))
 
 ;; ----------------------------------------
 

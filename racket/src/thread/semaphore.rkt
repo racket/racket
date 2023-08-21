@@ -8,7 +8,9 @@
          "parameter.rkt"
          "waiter.rkt"
          "evt.rkt"
-         "pre-poll.rkt")
+         "pre-poll.rkt"
+         "error.rkt"
+         "place-local.rkt")
 
 (provide make-semaphore
          semaphore?
@@ -29,6 +31,11 @@
          unsafe-semaphore-post
          unsafe-semaphore-wait)
 
+(module+ for-thread
+  ;; for creating subtypes in "thread.rkt"
+  (provide (struct-out custodian-accessible-semaphore)
+           semaphore))
+
 (struct semaphore queue ([count #:mutable]) ; -1 => non-empty queue
   #:authentic
   #:property host:prop:unsafe-authentic-override #t ; allow evt chaperone
@@ -37,6 +44,13 @@
   (poller (lambda (s poll-ctx)
             (semaphore-wait/poll s s poll-ctx))))
 (define count-field-pos 2) ; used with `unsafe-struct*-cas!`
+
+;; When a thread is blocked on a custodian-accessible semaphore,
+;; the the semaphore needs to be explicitly retained to ensure
+;; that the blocking thread doesn't get GCed, since the custodian
+;; might trigger it but holds a weak reference.
+(struct custodian-accessible-semaphore semaphore ()
+  #:authentic)
 
 (struct semaphore-peek-evt (sema)
   #:property
@@ -54,12 +68,29 @@
   (check who exact-nonnegative-integer? init)
   (unless (fixnum? init)
     (raise
-     (exn:fail (string-append
-                "make-semaphore: starting value "
-                (number->string init)
-                " is too large")
+     (exn:fail (error-message->string
+                who
+                (string-append "starting value "
+                               (number->string init)
+                               " is too large"))
                (current-continuation-marks))))
   (semaphore #f #f init))
+
+;; ----------------------------------------
+
+(define-place-local accessible-semaphores (hasheq))
+
+(define (ready-nonempty-queue s)
+  (when (queue-empty? s)
+    (set-semaphore-count! s -1) ; so CAS not tried for `semaphore-post`
+    (when (custodian-accessible-semaphore? s)
+      (set! accessible-semaphores (hash-set accessible-semaphores s #t)))))
+
+(define (ready-empty-queue s)
+  (when (queue-empty? s)
+    (set-semaphore-count! s 0) ; allow CAS again
+    (when (custodian-accessible-semaphore? s)
+      (set! accessible-semaphores (hash-remove accessible-semaphores s)))))
 
 ;; ----------------------------------------
 
@@ -89,8 +120,7 @@
        (set-semaphore-count! s (add1 (semaphore-count s)))]
       [else
        (waiter-resume! w s)
-       (when (queue-empty? s)
-         (set-semaphore-count! s 0)) ; allow CAS again
+       (ready-empty-queue s)
        (when (semaphore-peek-select-waiter? w)
          ;; Don't consume a post for a peek waiter
          (loop))])))
@@ -101,7 +131,9 @@
   (set-semaphore-count! s +inf.0)
   (queue-remove-all!
    s
-   (lambda (w) (waiter-resume! w s))))
+   (lambda (w) (waiter-resume! w s)))
+  (when (custodian-accessible-semaphore? s)
+    (set! accessible-semaphores (hash-remove accessible-semaphores s))))
 
 (define (semaphore-post-all s)
   (atomically
@@ -145,16 +177,15 @@
           (set-semaphore-count! s (sub1 c))
           void]
          [else
+          (ready-nonempty-queue s)
           (define w (current-thread/in-atomic))
           (define n (queue-add! s w))
-          (set-semaphore-count! s -1) ; so CAS not tried for `semaphore-post`
           (waiter-suspend!
            w
            ;; On break/kill/suspend:
            (lambda ()
              (queue-remove-node! s n)
-             (when (queue-empty? s)
-               (set-semaphore-count! s 0)) ; allow CAS again
+             (ready-empty-queue s)
              ;; This callback is used if the thread receives a break
              ;; signal but doesn't escape (either because breaks are
              ;; disabled or the handler continues), or if the
@@ -177,11 +208,11 @@
    [(poll-ctx-poll? poll-ctx)
     (values #f self)]
    [else
+    (ready-nonempty-queue s)
     (define w (if peek?
                   (semaphore-peek-select-waiter (poll-ctx-select-proc poll-ctx))
                   (select-waiter (poll-ctx-select-proc poll-ctx))))
     (define n (queue-add! s w))
-    (set-semaphore-count! s -1) ; so CAS not tried for `semaphore-post`
     ;; Replace with `async-evt`, but the `sema-waiter` can select the
     ;; event through a callback. Pair the event with a nack callback
     ;; to get back out of line.
@@ -191,8 +222,7 @@
                                (lambda ()
                                  (assert-atomic-mode)
                                  (queue-remove-node! s n)
-                                 (when (queue-empty? s)
-                                   (set-semaphore-count! s 0))) ; allow CAS again
+                                 (ready-empty-queue s))
                                void
                                (lambda ()
                                  ;; Retry: decrement or requeue
@@ -204,8 +234,8 @@
                                       (set-semaphore-count! s (sub1 c)))
                                     (values result #t)]
                                    [else
+                                    (ready-nonempty-queue s)
                                     (set! n (queue-add! s w))
-                                    (set-semaphore-count! s -1) ; so CAS not tried for `semaphore-post`
                                     (values #f #f)]))))]))
 
 ;; Called only when it should immediately succeed:

@@ -51,13 +51,23 @@
         "0.9.8e" "0.9.8b" "0.9.8" "0.9.7"
 
         ;; Known versions for *BSD variants
-        "111")])
+        "111"
+
+        ;; OpenSSL 3 works for most functionality:
+        "3")])
     ;; Don't use the versionless dylib on macOS, as it aborts on 10.15
     (case (system-type)
-      [(macosx) versions]
+      [(macosx)
+       ;; Don't use the versionless dylib on macOS, as it aborts on 10.15.
+       ;; Also don't look for older versions, because that can log an error
+       ;; in "mzssl.rkt". Just recognize the version that's provided by
+       ;; the "racket-lib" package.
+       '("1.1")]
       [else
        (case (path->string (system-library-subpath #f))
-         [("x86_64-darwin" "i386-darwin" "aarch64-darwin") versions]
+         [("x86_64-darwin" "i386-darwin" "aarch64-darwin")
+          ;; Even in Unix mode, avoid trying versionless on Mac OS
+          versions]
          [else
           (cons "" ; versionless (eg from devel pkg)
                 versions)])])))

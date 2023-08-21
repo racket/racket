@@ -107,14 +107,20 @@
      (let-values ([(prefix suffix ddk-size) (split-one-wildcard-ddk (syntax->list #'(es ...)))])
        (define prefix-len (length prefix))
        (define suffix-len (length suffix))
-       (trans-match
-        #`(λ (e) (and (vector? e) (>= (vector-length e) #,(+ prefix-len suffix-len ddk-size))))
-        #`(λ (e)
-            (define vec-len (vector-length e))
-            (for/list ([idx (in-sequences (in-range #,prefix-len)
-                                          (in-range (- vec-len #,suffix-len) vec-len))])
-              (unsafe-vector-ref e idx)))
-        (rearm+parse (quasisyntax/loc stx (list #,@prefix #,@suffix)))))]
+       (define pre+suf-len (+ prefix-len suffix-len))
+       (trans-match*
+        (list #`(λ (e)
+                  (and (vector? e)
+                       (>= (vector-length e) #,(+ pre+suf-len ddk-size)))))
+        (for/list ([idx (in-range pre+suf-len)])
+          #`(λ (e)
+              (define vec-len (vector-length e))
+              (unsafe-vector-ref
+               e
+               #,(if (< idx prefix-len)
+                     idx
+                     #`(+ vec-len #,(- idx pre+suf-len))))))
+        (map parse (append prefix suffix))))]
     [(vector es ...)
      (ormap ddk? (syntax->list #'(es ...)))
      (trans-match #'vector?

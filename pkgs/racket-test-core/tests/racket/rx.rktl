@@ -205,6 +205,28 @@
              (cons "alnum" (lambda (x)
                              (or (char-alphabetic? x)
                                  (char-numeric? x))))
+             (cons "word" (lambda (x)
+                             (or (char-alphabetic? x)
+                                 (char-numeric? x)
+                                 (eqv? x #\_))))
+             (cons "lower" (lambda (x)
+                             (and (char-alphabetic? x)
+                                  (eqv? x (char-downcase x)))))
+             (cons "upper" (lambda (x)
+                             (and (char-alphabetic? x)
+                                  (eqv? x (char-upcase x)))))
+             (cons "digit" (lambda (x)
+                             (char-numeric? x)))
+             (cons "xdigit" (lambda (x)
+                              (or (char-numeric? x)
+                                  (and (char>=? (char-downcase x) #\a)
+                                       (char<=? (char-downcase x) #\f)))))
+             (cons "blank" (lambda (x) (or (eqv? x #\space) (eqv? x #\tab))))
+             (cons "space" (lambda (x) (memv x '(#\space #\tab #\newline #\page #\return))))
+             (cons "graph" (lambda (x) (char-graphic? x)))
+             (cons "print" (lambda (x) (or (char-graphic? x) (eqv? x #\space) (eqv? x #\tab))))
+             (cons "cntrl" (lambda (x) (<= 0 (char->integer x) 31)))
+             (cons "ascii" (lambda (x) (<= 0 (char->integer x) 127)))
              )))
      '(#f #t))
 
@@ -2087,6 +2109,21 @@
 
 (test #"" regexp-replace* #"[a-z]" #"abc" #"")
 (test "" regexp-replace* "[a-z]" "abc" "")
+
+;; check that backtrack requirement is updated when text `.` is converted to
+;; an any-UTF-8 pattern
+(test '("theorem abc" #f)
+      regexp-match (pregexp "theorem ((?!theorem).)*abc") "theorem abc {α : Type}")
+(test '("theorem abc" #f)
+      regexp-match (pregexp "theorem ((?!theorem).)*abc") "theorem abc {a : Type}")
+(test '("theorem abc" #f)
+      regexp-match (pregexp "theorem ((?<!theorem).)*abc") "theorem abc {α : Type}")
+(test '("theorem abc" #f)
+      regexp-match (pregexp "theorem ((?<!theorem).)*abc") "theorem abc {a : Type}")
+(test '("theorem abc")
+      regexp-match (pregexp "theorem (?(?<!theorem).|.)*abc") "theorem abc {α : Type}")
+(test '("theorem abc")
+      regexp-match (pregexp "theorem (?(?<!theorem).|.)*abc") "theorem abc {a : Type}")
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

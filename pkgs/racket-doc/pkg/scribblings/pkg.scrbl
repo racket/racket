@@ -3,7 +3,7 @@
           scribble/core
           "common.rkt"
           (for-label pkg
-                     (except-in racket/base remove)
+                     (except-in racket/base remove version)
                      setup/dirs
                      setup/matching-platform))
 
@@ -418,7 +418,7 @@ in its search path for installed packages (see @secref["config-file"
 scope}, operations such as dependency checking will use all paths in
 the configured search path starting with the one that is designed as a
 @tech{package scope}; if the designated path is not in the configured
-search path, then the dierctory by itself is used as the search path.
+search path, then the directory by itself is used as the search path.
 
 Conflict checking disallows installation of the same or conflicting
 package in different scopes, but if such a configuration is forced,
@@ -1215,7 +1215,7 @@ For example, a basic @filepath{info.rkt} file might be
 @codeblock{
 #lang info
 (define version "1.0")
-(define deps (list _package-source-string ...))
+(define deps (list "base"))
 }
 
 The following @filepath{info.rkt} fields are used by the package manager:
@@ -1313,8 +1313,8 @@ The following @filepath{info.rkt} fields are used by the package manager:
        @racketidfont{build-deps} when converting a package for
        @DFlag{binary} mode.}
 
- @item{@definfofield{implies} --- a list of strings and
-       @racket['core]. Each string refers to a package listed in
+ @item{@definfofield{implies} --- a list where each element is either
+       a string or @racket['core]. Each string refers to a package listed in
        @racketidfont{deps} and indicates that a dependency on the
        current package counts as a dependency on the named package;
        for example, the @pkgname{gui} package is defined to ensure
@@ -1356,14 +1356,14 @@ The following @filepath{info.rkt} fields are used by the package manager:
   @margin-note{See @elemref["spdx-plus-operator"]{further details below}
    about @racket[_license-id] and the @litchar{+} operator.}
 
-  where a:
+  where:
 
   @itemize[
- @item{@racket[_license-id] is a short-form identifier from the
+ @item{a @racket[_license-id] is a short-form identifier from the
     @hyperlink["https://spdx.org/licenses/index.html"]{SPDX License List},
     e.g@._ @racketvalfont{LGPL-3.0-or-later}, @racketvalfont{Apache-2.0},
-    or @racket[BSD-3-Clause]; and an}
- @item{@racket[_exception-id] is an identifier from the
+    or @racketvalfont{BSD-3-Clause}; and}
+ @item{an @racket[_exception-id] is an identifier from the
     @hyperlink["https://spdx.org/licenses/exceptions-index.html"]{
      SPDX License Exceptions} list, e.g@._ @racketvalfont{Classpath-exception-2.0}.}]
 
@@ -1374,11 +1374,11 @@ The following @filepath{info.rkt} fields are used by the package manager:
 
   The grammar of @tech{license S-expressions} is designed so that
   @racket[(format "~s" license)] produces a string conforming to the grammar in
-  @hyperlink["https://spdx.github.io/spdx-spec/appendix-IV-SPDX-license-expressions/"]{
-  Appendix IV} and
-  @hyperlink["https://spdx.github.io/spdx-spec/appendix-V-using-SPDX-short-identifiers-in-source-files/"]{
-  Appendix V}
-  of the SPDX Specification v2.2.0,
+  @hyperlink["https://spdx.github.io/spdx-spec/SPDX-license-expressions/"]{
+  Annex D} and
+  @hyperlink["https://spdx.github.io/spdx-spec/using-SPDX-short-identifiers-in-source-files/"]{
+  Annex E}
+  of the SPDX Specification v2.2.2,
   which is specified in terms of character sequences.
 
   @elemtag["spdx-plus-operator"]{If the @litchar{+} operator is used,}

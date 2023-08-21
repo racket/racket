@@ -1,0 +1,139 @@
+#lang zuo
+(require "../lib.zuo")
+
+(provide expander-target
+         expander-main
+         register-expansion-dependencies)
+(provide-targets targets-at)
+
+(define (expander-main)
+  (at-source "bootstrap-run.rkt"))
+
+(define (expander-target at-dir [vars (hash)]) 
+  (define racket-config.db (at-dir "compiled" "racket-config.db"))
+
+  (make-zo-target (at-dir "compiled" "expander-stamp")
+                  (expander-main)
+                  (make-raco-driver vars racket-config.db)))
+
+(define (register-expansion-dependencies dep.rktd token)
+  ;; register each dependency as a "source"
+  (map (lambda (s) (build/dep s token))
+       (cdr (car (string-read (file->string dep.rktd))))))
+
+(define (targets-at at-dir
+                    [vars (hash)]
+                    [expander (expander-target at-dir vars)])
+
+  (define startup.inc (at-source "../bc/src/startup.inc"))
+  (define startup.inc-dep.rktd (at-dir "compiled/startup-inc-dep.rktd"))
+
+  (define expander.rktl (at-dir "compiled/expander.rktl"))
+  (define expander-dep.rktd (at-dir "compiled/expander-dep.rktd"))
+
+  (define knot-args
+    `(;; See "boot/read-primitive.rkt" for more info:
+      "++knot" "read" ,(path->complete-path (at-source "read/api.rkt"))
+      "++knot" "read" ,(path->complete-path (at-source "read/primitive-parameter.rkt"))
+      "++knot" "read" ,(path->complete-path (at-source "read/readtable-parameter.rkt"))
+      "++knot" "read" ,(path->complete-path (at-source "read/readtable.rkt"))
+      "++knot" "read" ,(path->complete-path (at-source "read/number.rkt"))))
+  
+  (define (expand-expander path startup.inc? expander-dep.rktd token)
+    (define tree (at-source "../.."))
+    (racket vars
+            (expander-main)
+            "-t" (at-source "main.rkt")
+            "-c" (at-dir "compiled/cache-src")
+            "--depends" expander-dep.rktd
+            knot-args
+            ;; When flattening, replace a dynamic lookup from a primitive table to
+            ;; a direct use of the primitive name:
+            "++direct" "linklet" "++direct" "kernel"
+            ;; Make sure that the flattened form doesn't use `make-optional-keyword-procedure`:
+            "++disallow" "make-optional-keyword-procedure"
+            ;; Enable the sanity check for global state (to be avoided in
+            ;; favor of place-local state), but declare some initialized-once
+            ;; global state to be ok:
+            "--no-global"
+            "++global-ok" "core-forms"
+            "++global-ok" "core-primitives"
+            "++global-ok" "built-in-symbols"
+            "++global-ok" "default-read-handler"
+            "++global-ok" "current-previously-unbound"
+            "++global-ok" "keep-source-locations?"
+            "++global-ok" "rx:path-list"
+            "++global-ok" "load-configure-expand"
+            (if startup.inc?
+                `(;; generate BC "startup.inc"
+                  "--local-rename"
+                  "-O" ,tree)
+                `(;; generate standalone
+                  "-k" ,tree
+                  "-s" "-x"
+                  "-o" ,path)))
+    (register-expansion-dependencies expander-dep.rktd token))
+
+  (make-targets
+   `([:target expander (,startup.inc) ,void]
+     [:target expander-src (,expander.rktl) ,void]
+
+     [:target ,startup.inc (,expander)
+              ,(lambda (path token)
+                 (expand-expander path #t startup.inc-dep.rktd token))]
+
+     [:target ,expander.rktl (,expander)
+              ,(lambda (path token)
+                 (expand-expander path #f expander-dep.rktd token))]
+
+     [:target demo ()
+              ,(lambda (token)
+                 (raco vars "make" (at-source "demo.rkt"))
+                 (racket vars (at-source "demo.rkt")))]
+
+     [:target run ()
+              ,(lambda (token . args)
+                 (raco vars "make" (at-source "run.rkt"))
+                 (racket vars (at-source "run.rkt")
+                         "-c" (at-dir "compiled/cache")
+                         args))
+              :command]
+
+     ;; Like `run`, but with source as compiled (as used for flattening)
+     [:target run-src ()
+              ,(lambda (token . args)
+                 (raco vars "make" (at-source "bootstrap-run.rkt"))
+                 (racket vars (at-source "bootstrap-run.rkt")
+                         "-s" "-c" (at-dir "compiled/cache-src")
+                         args))
+              :command]
+
+     ;; Like `run`, but without using a cache for expanded and compiled linklets
+     [:target run-no-cache ()
+              ,(lambda (token . args)
+                 (raco vars "make" (at-source "run.rkt"))
+                 (racket vars (at-source "run.rkt")
+                         args))
+              :command]
+
+     ;; Writes the extracted, compiled, decompiled expander to compiled/exp.rkt
+     [:target decompile ()
+              ,(lambda (token)
+                 (raco vars "make" (at-source "bootstrap-run.rkt"))
+                 (racket vars (at-source "bootstrap-run.rkt")
+                         "-c" "compiled/cache-src"
+                         knot-args
+                         "-s" "-x" "-D"
+                         "-o" "compiled/exp.rkt"))]
+
+     ;; Writes the extracted, compiled expander to compiled/exp.zo
+     [:target bytecode ()
+              ,(lambda (token)
+                 (raco vars "make" (at-source "bootstrap-run.rkt"))
+                 (racket vars (at-source "bootstrap-run.rkt")
+                         "-c" "compiled/cache-src"
+                         knot-args
+                         "-s" "-x" "-B"
+                         "-o" "compiled/exp.zo"))]
+
+     [:db-dir ,(at-dir "compiled")])))

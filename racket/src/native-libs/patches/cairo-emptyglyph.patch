@@ -1,27 +1,34 @@
-diff -u -r old/cairo-1.14.12/src/cairo-quartz-font.c new/cairo-1.14.12/src/cairo-quartz-font.c
---- old/cairo-1.14.12/src/cairo-quartz-font.c	2018-09-22 20:14:51.000000000 -0600
-+++ new/cairo-1.14.12/src/cairo-quartz-font.c	2018-09-22 20:17:24.000000000 -0600
-@@ -589,6 +589,7 @@
+diff -u -r old/cairo-1.16.0/src/cairo-quartz-font.c new/cairo-1.16.0/src/cairo-quartz-font.c
+--- old/cairo-1.16.0/src/cairo-quartz-font.c	2022-06-08 13:56:00.000000000 -0600
++++ new/cairo-1.16.0/src/cairo-quartz-font.c	2022-06-08 13:59:58.000000000 -0600
+@@ -559,6 +559,7 @@
+     CGGlyph glyph = _cairo_quartz_scaled_glyph_index (scaled_glyph);
      CGAffineTransform textMatrix;
      CGPathRef glyphPath;
-     CTFontRef ctFont;
 +    int empty_path;
      cairo_path_fixed_t *path;
  
-     if (glyph == INVALID_GLYPH) {
-@@ -605,19 +606,30 @@
+     if (unlikely (glyph == CGGLYPH_INVALID)) {
+@@ -573,26 +574,37 @@
+ 					-font->base.scale.yy,
+ 					0, 0);
  
-     ctFont = CTFontCreateWithGraphicsFont (font_face->cgFont, 1.0, NULL, NULL);
-     glyphPath = CTFontCreatePathForGlyph (ctFont, glyph, &textMatrix);
 +    empty_path = 0;
-+    if (!glyphPath) {
-+	/* an empty glyph path may just reflect whitespace; check bounding rects */
-+	CGRect r;
-+	r = CTFontGetBoundingRectsForGlyphs(ctFont, kCTFontHorizontalOrientation, &glyph, NULL, 1);
-+	if (memcmp(&CGRectNull, &r, sizeof(CGRect)))
-+	    empty_path = 1;
-+    }
-     CFRelease (ctFont);
+     if (CTFontCreateWithGraphicsFontPtr && CTFontCreatePathForGlyphPtr) {
+ 	CTFontRef ctFont = CTFontCreateWithGraphicsFontPtr (font_face->cgFont, 1.0, NULL, NULL);
+ 	glyphPath = CTFontCreatePathForGlyphPtr (ctFont, glyph, &textMatrix);
++	if (!glyphPath) {
++	    /* an empty glyph path may just reflect whitespace; check bounding rects */
++	    CGRect r;
++	    r = CTFontGetBoundingRectsForGlyphs(ctFont, kCTFontHorizontalOrientation, &glyph, NULL, 1);
++	    if (memcmp(&CGRectNull, &r, sizeof(CGRect)))
++		empty_path = 1;
++	}
+ 	CFRelease (ctFont);
+     } else {
+ 	glyphPath = CGFontGetGlyphPathPtr (font_face->cgFont, &textMatrix, 0, glyph);
+     }
+ 
 -    if (!glyphPath)
 +    if (!glyphPath && !empty_path)
  	return CAIRO_INT_STATUS_UNSUPPORTED;
@@ -44,4 +51,3 @@ diff -u -r old/cairo-1.14.12/src/cairo-quartz-font.c new/cairo-1.14.12/src/cairo
  
      _cairo_scaled_glyph_set_path (scaled_glyph, &font->base, path);
  
-Only in new/cairo-1.14.12/src: cairo-quartz-font.c~

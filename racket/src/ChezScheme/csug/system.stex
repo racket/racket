@@ -55,8 +55,7 @@ not \scheme{#f}, a \scheme{&message} condition whose message field is
 is \scheme{(\var{irritant} \dots)}.
 
 \var{who} must be a string, a symbol, or \scheme{#f} identifying the procedure
-or syntactic form reporting the warning upon whose behalf the warning is being
-reported.
+or syntactic form reporting the warning.
 It is usually best to identify a procedure the programmer has called rather
 than some other procedure the programmer may not be aware is involved in
 carrying out the operation.
@@ -254,7 +253,7 @@ When called with a single argument, which must be an exception state,
 %----------------------------------------------------------------------------
 \entryheader
 \formdef{create-exception-state}{\categoryprocedure}{(create-exception-state)}
-\formdef{create-exception-state}{\categoryprocedure}{(create-exception-state \var{procedure})}
+\formdef{create-exception-state}{\categoryprocedure}{(create-exception-state \var{handler})}
 \listlibraries
 \endentryheader
 
@@ -276,33 +275,33 @@ to the value of the following expression.
 \listlibraries
 \endentryheader
 
-\scheme{assert-unreachable} is used an assertion and optimization hint
-in an expression that must not be reached.
+\scheme{assert-unreachable} is an assertion with the special property that
+at optimize-level 3 the optimizer can assume that the any application of
+\scheme{assert-unreachable} is, in fact, not reachable.
 
-When a safe reference to the procedure is applied, it acts as an
-assertion. In that case, an exception is raised if control reaches the
-application.
+In code expanded or compiled at optimize-levels less than 3, invoking
+\scheme{assert-unreachable} raises a non-continuable exception with
+condition type \scheme{&assertion}.
 
-When an unsafe reference to the procedure is applied, the behavior of
-the application is undefined, which gives the compiler liberty to pick
-convenient or efficient behavior. For example, the expression
-
-\schemedisplay
-(lambda (x)
-  (if (pair? x)
-      (car x)
-      (#3%assert-unreachable)))
-\endschemedisplay
-
-is compiled to code equivalent to
+In code expanded or compiled at optimize-level 3, the behavior of invoking
+\scheme{assert-unreachable} is undefined, which gives the compiler liberty to pick
+convenient or efficient behavior. For example:
 
 \schemedisplay
-(lambda (x) (#3%car x))
+(print-gensym #f)
+(optimize-level 3)
+(expand/optimize
+  '(lambda (x)
+     (if (pair? x)
+         (car x)
+         (assert-unreachable)))))
+;=> (lambda (x) (#3%car x))
 \endschemedisplay
 
 because choosing to make \scheme{(assert-unreachable)} behave the same
 as \scheme{(#3%car x)} makes both branches of the \scheme{if} the
-same, and then \scheme{pair?} test can be eliminated.
+same, and then \scheme{pair?} test can be eliminated (since it has no side
+effects).
 
 \section{Interrupts\label{SECTSYSTEMINTERRUPTS}}
 
@@ -858,7 +857,7 @@ procedures \index{\scheme{eval}}\scheme{eval}, \scheme{load}, and
 \index{\scheme{compile}}\scheme{compile}.
 (In {\PetiteChezScheme}, it is initially bound to the value of
 \index{\scheme{interpret}}\scheme{interpret}.)
-The evaluation procedureshould expect one or two arguments: an object
+The evaluation procedure should expect one or two arguments: an object
 to evaluate and an optional environment.
 The second argument might be an annotation
 (Section~\ref{SECTSYNTAXANNOTATIONS}).
@@ -969,7 +968,8 @@ pretty-prints each expression before evaluating it.
 \index{\scheme{source-directories}}%
 The parameter \scheme{source-directories} (Section~\ref{SECTSYSTEMSOURCE})
 determines the set of directories searched for source files not identified
-by absolute path names.
+by absolute path names or paths that start with \scheme{./} (or \scheme{.\}
+under Windows) or \scheme{../} (or \scheme{..\} under Windows).
 
 %----------------------------------------------------------------------------
 \entryheader
@@ -1013,7 +1013,8 @@ The expression passed to \var{eval-proc} might be an annotation
 \index{\scheme{source-directories}}%
 The parameter \scheme{source-directories} (Section~\ref{SECTSYSTEMSOURCE})
 determines the set of directories searched for source files not identified
-by absolute path names.
+by absolute path names or paths that start with \scheme{./} (or \scheme{.\}
+under Windows) or \scheme{../} (or \scheme{..\} under Windows).
 
 %----------------------------------------------------------------------------
 
@@ -1037,7 +1038,7 @@ A library search path must be a suitable argument for
 \index{\scheme{library-directories}}\scheme{library-directories}.
 
 \scheme{verify-loadability} verifies, without actually loading any
-code or definining any libraries, whether the object files named
+code or defining any libraries, whether the object files named
 by the specified pathnames and their library dependencies, direct
 or indirect, are present, readable, and mutually compatible.
 The type of dependencies for each named object file is determined
@@ -1051,7 +1052,7 @@ library search path during the recursive search for dependencies
 of the programs and libraries found in the object file named by the
 pathname.
 
-If \scheme{verify-loadabilty} finds a problem, such as a missing
+If \scheme{verify-loadability} finds a problem, such as a missing
 library dependency or compilation-instance mismatch, it raises an
 exception with an appropriate condition.
 Otherwise, it returns an unspecified value.
@@ -1077,7 +1078,7 @@ of \var{input-port} as previously created by functions like \scheme{compile-file
 \scheme{compile-to-port}.
 
 The \var{externals} argument, if supplied, must be a vector. It should
-cooperate with an \var{external-pred} procedure passed to
+cooperate with an \var{ext-pred} procedure passed to
 \scheme{compile-to-port}, analogous to the way a procedure and vector
 cooperate with \scheme{fasl-write} and \scheme{fasl-read}.
 
@@ -1163,7 +1164,8 @@ the code in the supporting file.
 \index{\scheme{source-directories}}%
 The parameter \scheme{source-directories} (Section~\ref{SECTSYSTEMSOURCE})
 determines the set of directories searched for source files not identified
-by absolute path names.
+by absolute path names or paths that start with \scheme{./} (or \scheme{.\}
+under Windows) or \scheme{../} (or \scheme{..\} under Windows).
 
 %----------------------------------------------------------------------------
 \entryheader
@@ -1198,7 +1200,8 @@ information to resolve top-level bindings.
 \index{\scheme{source-directories}}%
 The parameter \scheme{source-directories} (Section~\ref{SECTSYSTEMSOURCE})
 determines the set of directories searched for source files not identified
-by absolute path names.
+by absolute path names or paths that start with \scheme{./} (or \scheme{.\}
+under Windows) or \scheme{../} (or \scheme{..\} under Windows).
 
 %----------------------------------------------------------------------------
 \entryheader
@@ -1556,55 +1559,67 @@ will take care of closing the ports.
 
 %----------------------------------------------------------------------------
 \entryheader
-\formdef{compile-to-port}{\categoryprocedure}{(compile-to-port \var{obj-list} \var{output-port})}
-\formdef{compile-to-port}{\categoryprocedure}{(compile-to-port \var{obj-list} \var{output-port} \var{sfd})}
-\formdef{compile-to-port}{\categoryprocedure}{(compile-to-port \var{obj-list} \var{output-port} \var{sfd} \var{wpo-port})}
-\formdef{compile-to-port}{\categoryprocedure}{(compile-to-port \var{obj-list} \var{output-port} \var{sfd} \var{wpo-port} \var{covop})}
-\formdef{compile-to-port}{\categoryprocedure}{(compile-to-port \var{obj-list} \var{output-port} \var{sfd} \var{wpo-port} \var{covop} \var{external-pred})}
-\formdef{compile-to-port}{\categoryprocedure}{(compile-to-port \var{obj-list} \var{output-port} \var{sfd} \var{wpo-port} \var{covop} \var{external-pred} \var{omit-rtds?})}
+\formdef{compile-to-port}{\categoryprocedure}{(compile-to-port \var{objs} \var{op})}
+\formdef{compile-to-port}{\categoryprocedure}{(compile-to-port \var{objs} \var{op} \var{sfd})}
+\formdef{compile-to-port}{\categoryprocedure}{(compile-to-port \var{objs} \var{op} \var{sfd} \var{wpoop})}
+\formdef{compile-to-port}{\categoryprocedure}{(compile-to-port \var{objs} \var{op} \var{sfd} \var{wpoop} \var{covop})}
+\formdef{compile-to-port}{\categoryprocedure}{(compile-to-port \var{objs} \var{op} \var{sfd} \var{wpoop} \var{covop} \var{mach})}
+\formdef{compile-to-port}{\categoryprocedure}{(compile-to-port \var{objs} \var{op} \var{sfd} \var{wpoop} \var{covop} \var{mach} \var{hostop})}
+\formdef{compile-to-port}{\categoryprocedure}{(compile-to-port \var{objs} \var{op} \var{sfd} \var{wpoop} \var{covop} \var{mach} \var{hostop} \var{ext})}
+\formdef{compile-to-port}{\categoryprocedure}{(compile-to-port \var{objs} \var{op} \var{sfd} \var{wpoop} \var{covop} \var{mach} \var{hostop} \var{ext} \var{nortds?})}
 \returns see below
 \listlibraries
 \endentryheader
 
 \noindent
-\var{obj-list} must be a list containing a sequence of
+\var{objs} must be a list containing a sequence of
 objects that represent syntactically valid expressions, each possibly
 annotated (Section~\ref{SECTSYNTAXANNOTATIONS}).
 If any of the objects does not represent a syntactically valid
 expression, \scheme{compile-to-port} raises an exception with
 condition type \scheme{&syntax}.
-\var{output-port} and, if present, \var{wpo-port} must be binary output ports.
-If present, \var{sfd} must be a source-file descriptor.
-If present, \var{external-pred} must be \scheme{#f} or a procedure,
-and it must be \scheme{#f} if \var{obj-list} does not have exactlty one element.
+\var{op} and, if present and non-false, \var{wpoop}, \var{covop}, and \var{hostop} must be binary output ports.
+If present and non-false, \var{sfd} must be a source-file descriptor.
+If present and non-false, \var{mach} must be a symbol.
+If present and non-false, \var{ext} must be or a procedure,
+but it must be \scheme{#f} if \var{objs} does not have exactlty one element.
 
 \scheme{compile-to-port} is like \scheme{compile-file} except that it takes
 input from a list of objects and sends output to an arbitrary binary
 output port.
 \var{sfd} is used to associate block-profiling information with the
 input file name encapsulated within \var{sfd}.
-If \var{wpo-port} is present, \var{compile-to-port} sends whole-program optimization information
-to \var{wpo-port} for use by \scheme{compile-whole-program}, as if
+If \var{wpoop} is present and not \scheme{#f}, \scheme{compile-to-port} sends whole-program optimization information
+to \var{wpoop} for use by \scheme{compile-whole-program}, as if
 (and regardless of whether) \scheme{generate-wpo-files} is set.
-If \var{covop} is present, \var{compile-to-port} sends coverage information to
+If \var{covop} is present and not \scheme{#f}, \scheme{compile-to-port} sends coverage information to
 \var{covop}, as if (and regardless of whether) \scheme{generate-covin-files} is set.
+If \var{mach} is present, \scheme{compile-to-port} compiles for the specified machine type.
+If \var{hostop} is present, \scheme{compile-to-port} compiles for the host machine type
+to \var{hostp} (in addition to writing for \var{machine} to \var{op}, whether or not
+the machine types are the same).
 
 The ports are not closed automatically after compilation under the assumption
 the program that opens the port and invokes \scheme{compile-to-port}
 will take care of closing the port.
 
-If \var{external-pred} is present and not \scheme{#f}, it is used like
-the predicate supplied to \scheme{fasl-write}. In that case, a
-corresponding vector must be provided to
+If \var{ext} is present and not \scheme{#f}, it is used like
+the \var{externals-pred} predicate supplied to \scheme{fasl-write}. In that case, a
+corresponding vector must be provided to\\
 \scheme{load-compiled-from-port} to load the compiled code, analogous
 to the vector supplied to \scheme{fasl-read}.
 
-If \var{omit-rtds?} is present and true, then any record types
-relevant to the compiled code must be declared in the loading context,
-and the loading context is assumed to have compatible registrations
-using the same unique ID.
+Similarly, if \var{nortds?} is present and true, it is used like the
+\var{omit-rtds?} argument supplied to \scheme{fasl-write}:  Any record types
+relevant to the compiled code are not written to the output port.  When
+the compiled code is later loaded, these record types must already
+be declared in the loading context, and the
+loading context is assumed to have compatible record-type
+registrations using the same unique ID.  Behavior if the loading context
+has an \emph{incompatible} record-type registration using the same
+(ostensibly unique) ID is undefined.
 
-When \var{obj-list} contains a single list-structured element whose
+When \var{objs} contains a single list-structured element whose
 first-element is the symbol \scheme{top-level-program},
 \scheme{compile-to-port} returns a list of the libraries the top-level
 program requires at run time, as with \scheme{compile-program}.
@@ -1782,15 +1797,49 @@ as part of a binary-only package.
 
 %----------------------------------------------------------------------------
 \entryheader
+\formdef{compile-procedure-realm}{\categorythreadparameter}{compile-procedure-realm}
+\listlibraries
+\endentryheader
+
+\noindent
+This parameter can be set to \scheme{#f} or to a symbol. The realm of
+a procedure (or, more precisely, a procedure's code object) is
+accessible though the inspector.
+
+%----------------------------------------------------------------------------
+\entryheader
 \formdef{vfasl-convert-file}{\categoryprocedure}{(vfasl-convert-file \var{input-path} \var{output-path} \var{base-boots})}
 \returns unspecified
 \listlibraries
 \endentryheader
 
+\noindent
 Converts a compiled file to one that may load more quickly, especially
 in the case of a boot file. The converted file is a boot file if
 \var{base-boots} is a list of strings, otherwise \var{base-boots} must
 be \scheme{#f} to create a non-boot file.
+
+%----------------------------------------------------------------------------
+\entryheader
+\formdef{pbchunk-convert-file}{\categoryprocedure}{(pbchunk-convert-file \var{in-path} \var{out-path} \var{c-paths} \var{c-names} \var{start-index})}
+\returns ending index as a nonnegative exact integer
+\listlibraries
+\endentryheader
+
+\noindent
+Converts a compiled file \var{in-path} for a \scheme{pb} machine
+variant to a compiled file \var{out-path} that uses C chunk
+functions written to the files in \var{c-paths}, where \var{c-paths}
+is a nonempty list of file names. Chunk code is distributed across the
+files to avoid making a single, over-large source C file. The
+\var{c-names} list provides a list of function names, one for each
+output file in \var{c-paths}, where each function name is defined as a
+function of no arguments to register the file's chunks with the
+system. This registration must be performed before the converted
+compiled code is run. Every set of chunks registered in this way must
+use a distinct index range, where \var{start-index} provides the
+starting index for this set, and the result value is one more than the
+index of the last chunk written to the \var{c-paths} sources.
 
 
 %----------------------------------------------------------------------------
@@ -2339,9 +2388,9 @@ or \scheme{visit}.
 \endentryheader
 
 \noindent
-This parameter determines a procedure that is called by the macro
-expander. The procedure receives a symbol and returns a fresh symbol
-that the expander uses for a top-level binding, as a record uid,
+This parameter must be set to a procedure that accepts one argument, a
+symbol, and returns a fresh symbol.  This procedure is called by the macro
+expander to get symbols to use for a top-level binding, as a record uid,
 or to identify a library compilation. The default procedure converts the
 symbol to a string and passes it to \scheme{gensym}.
 
@@ -2360,7 +2409,7 @@ For example, while expanding the following \scheme{library}, the
   (def))
 \endschemedisplay
 
-The \scheme{current-generate-id} procedure is called on \scheme{a-lib}
+The procedure held by the \scheme{current-generate-id} parameter is called on \scheme{a-lib}
 to generate a symbol that identifies this particular library
 compilation, as opposed to the compilation of a different library
 named \scheme{(a-lib)}. It is called on \scheme{a-var} the first time
@@ -2437,7 +2486,7 @@ deletes the definition of \scheme{x} or introduces a macro-generated
 definition of \scheme{x} before the direct definition, then the
 previously compiled \scheme{y.ss} is unlikely to refer to the correct
 definition of \scheme{x} in the new compilation of \scheme{x.ss}.
-Configure \scheme{make-x-generator} this way only in situations where
+Configure \scheme{current-generate-id} this way only in situations where
 the potential for unspecified failure is more tolerable than
 recompilation.
 
@@ -2494,7 +2543,8 @@ file is opened in the interactive inspector.
 
 The default value is the list \scheme{(".")}, which means source files
 will be found only in or relative to the current directory, unless named
-with an absolute path.
+with an absolute path or a path that starts with \scheme{./} (or \scheme{.\}
+under Windows) or \scheme{../} (or \scheme{..\} under Windows).
 
 This parameter is never altered by the system, with one exception.
 The expander temporarily adds (via \scheme{parameterize}) the directory
@@ -2879,8 +2929,8 @@ The algorithm used by the optimizer is described in detail in the paper
 
 \scheme{cptypes} performs additional optimizations based on type
 information about primitives, such as the fact that \scheme{+} always
-returns a number; since it primarily removes unneecssary run-time
-checks, \scheme{cptypes} primarly benefits compilation in safe mode.
+returns a number; since it primarily removes unnecessary run-time
+checks, \scheme{cptypes} primarily benefits compilation in safe mode.
 The \scheme{cptypes} pass can be independently disabled through the
 \scheme{enable-type-recovery} parameter.
 
@@ -3045,7 +3095,7 @@ reach this decision if the effort and outer unroll limits are large.
 \listlibraries
 \endentryheader
 
-A parameter that controls whether the compiler attempts to improve
+A parameter that controls whether the compiler attempts to optimize
 programs by performing a pass similar to type inference, which can
 avoid more checks and statically resolve more predicates than
 \scheme{cp0} by itself, but at the cost of extra compile time. The
@@ -4901,7 +4951,7 @@ reserved but not currently occupied memory, and is thus an accurate
 measure of the amount of heap memory currently reserved from the
 operating system for the current process. The result is only for
 Scheme's storage management, however, so it does not include sizes
-for externally allocated objects that are represented by phantom bytevectors.
+for externally allocated objects (even those that are represented by phantom bytevectors).
 
 %----------------------------------------------------------------------------
 \entryheader
@@ -5142,7 +5192,7 @@ hence whether the backreferences reported by the procedure
 The parameter is set to \scheme{#f} by default, since backreference recording
 adds overhead to collection.
 
-Beware that backreference recording can have small performance affects
+Beware that backreference recording can have small performance effects
 even after it is disabled---at least until the next collection over
 the same generations---since backreference records constrain the way
 that the collector stores some objects.
@@ -5540,6 +5590,7 @@ threaded versions of the system).
 %----------------------------------------------------------------------------
 \noskipentryheader
 \formdef{scheme-version}{\categoryprocedure}{(scheme-version)}
+\formdef{scheme-version}{\categoryprocedure}{(scheme-version \var{show-pre-release?})}
 \returns a version string
 \listlibraries
 \endentryheader
@@ -5558,21 +5609,59 @@ for {\ChezScheme}, and
 
 for {\PetiteChezScheme}.
 
+\var{version} includes the major, minor, and patch version numbers
+separated by \scheme{.}.  If \var{show-pre-release?} is provided and is a
+true value, and the current version is a pre-release version (i.e.,
+\scheme{(scheme-pre-release)} is a number), then \var{version}
+additionally has \scheme{-pre-release.} and the pre-release number
+appended.
+
+\schemedisplay
+(scheme-version) ;=> "Chez Scheme Version 9.9.9"
+(scheme-version #t) ;=> "Chez Scheme Version 9.9.9-pre-release.11"
+\endschemedisplay
+
 %----------------------------------------------------------------------------
 \entryheader
 \formdef{scheme-version-number}{\categoryprocedure}{(scheme-version-number)}
-\returns three values: the major, minor, and sub-minor version numbers
+\returns three values: the major, minor, and patch version numbers
 \listlibraries
 \endentryheader
 
 Each of the three return values is a nonnegative fixnum.
 
-In {\ChezScheme} Version 7.9.4:
+In {\ChezScheme} Version 9.7.3 or 9.7.3-pre-release.3:
 
 \schemedisplay
-(scheme-version-number) ;=> 7
-                        ;== 9
-                        ;== 4
+(scheme-version-number) ;=> 9
+                        ;== 7
+                        ;== 3
+\endschemedisplay
+
+
+%----------------------------------------------------------------------------
+\entryheader
+\formdef{scheme-pre-release}{\categoryprocedure}{(scheme-pre-release)}
+\returns a pre-release number or \scheme{#f}
+\listlibraries
+\endentryheader
+
+The return value is a positive fixnum for a pre-release version, or it
+is \scheme{#f} for a release version (which is \emph{after} any
+version that has a pre-release number and the same major, minor, and
+patch number).
+
+In {\ChezScheme} Version 9.7.3:
+
+\schemedisplay
+(scheme-pre-release) ;=> #f
+\endschemedisplay
+
+
+In {\ChezScheme} Version 9.7.3-pre-release.3:
+
+\schemedisplay
+(scheme-pre-release) ;=> 3
 \endschemedisplay
 
 

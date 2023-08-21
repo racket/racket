@@ -39,6 +39,7 @@
           compile-context-preservation-enabled
           compile-allow-set!-undefined
           current-compile-target-machine
+          current-compile-realm
           compile-target-machine?
           eval-jit-enabled
           load-on-demand-enabled
@@ -70,7 +71,13 @@
           call-with-module-prompt)
   (import (chezpart)
           (only (chezscheme) printf)
-          (rumble)
+          (rename (rumble)
+                  [raise-argument-error raise-argument-error/primitive]
+                  [raise-argument-error/user raise-argument-error]
+                  [raise-arguments-error raise-arguments-error/primitive]
+                  [raise-arguments-error/user raise-arguments-error]
+                  [raise-range-error raise-range-error/primitive]
+                  [raise-range-error/user raise-range-error])
           (only (io)
                 path?
                 complete-path?
@@ -185,7 +192,8 @@
                              [(getenv "PLT_CS_MAKE_COMPRESSED_DATA") #t]
                              [else #f])]))
 
-  (define gensym-on? (getenv "PLT_LINKLET_SHOW_GENSYM"))
+  (define gensym-mode (cond [(getenv "PLT_LINKLET_SHOW_GENSYM") #t]
+			    [else 'pretty/suffix]))
   (define pre-jit-on? (getenv "PLT_LINKLET_SHOW_PRE_JIT"))
   (define lambda-on? (getenv "PLT_LINKLET_SHOW_LAMBDA"))
   (define post-lambda-on? (getenv "PLT_LINKLET_SHOW_POST_LAMBDA"))
@@ -193,16 +201,28 @@
   (define jit-demand-on? (getenv "PLT_LINKLET_SHOW_JIT_DEMAND"))
   (define literals-on? (getenv "PLT_LINKLET_SHOW_LITERALS"))
   (define known-on? (getenv "PLT_LINKLET_SHOW_KNOWN"))
+  (define passes-on (cond [(getenv "PLT_LINKLET_SHOW_PASSES")
+                           =>
+                           (lambda (e)
+                             (let lp ([p (open-string-input-port e)])
+                               (define pass (read p))
+                               (cond
+                                 [(eq? pass 'all) '(#t)]
+                                 [(symbol? pass) (cons pass (lp p))]
+                                 [else '()])))]
+                          [else '()]))
   (define cp0-on? (getenv "PLT_LINKLET_SHOW_CP0"))
   (define assembly-on? (getenv "PLT_LINKLET_SHOW_ASSEMBLY"))
-  (define show-on? (or gensym-on?
+  (define show-on? (or (eq? #t gensym-mode)
                        pre-jit-on?
+                       lambda-on?
                        post-lambda-on?
                        post-interp-on?
                        jit-demand-on?
                        literals-on?
                        known-on?
                        cp0-on?
+                       (pair? passes-on)
                        assembly-on?
                        (getenv "PLT_LINKLET_SHOW")))
   (define show
@@ -213,7 +233,7 @@
         (printf ";; ~a ---------------------\n" what)
         (call-with-system-wind
          (lambda ()
-           (parameterize ([print-gensym gensym-on?]
+           (parameterize ([print-gensym gensym-mode]
                           [print-extended-identifiers #t])
              (pretty-print (strip-jit-wrapper
                             (strip-nested-annotations
@@ -232,17 +252,36 @@
   ;; engines/threads.
   (define compile*
     (case-lambda
-     [(e unsafe?)
+     [(e realm unsafe?)
       (call-with-system-wind (lambda ()
                                (parameterize ([optimize-level (if unsafe?
                                                                   3
-                                                                  (optimize-level))])
-                                 (if assembly-on?
-                                     (parameterize ([#%$assembly-output (#%current-output-port)])
-                                       (printf ";; assembly ---------------------\n")
-                                       (compile e))
-                                     (compile e)))))]
-     [(e) (compile* e #f)]))
+                                                                  (optimize-level))]
+                                              [compile-procedure-realm realm])
+                                 (let* ([print-header (lambda ()
+                                                        (printf ";;")
+                                                        (for-each (lambda (p)
+                                                                    (define pass
+                                                                      (if (eq? p #t) 'all p))
+                                                                    (printf " ~a" pass))
+                                                                  (if assembly-on?
+                                                                      (append passes-on '(assembly))
+                                                                      passes-on))
+                                                        (printf " ---------------------\n"))]
+                                        [-compile (lambda (e)
+                                                    (if (not (null? passes-on))
+                                                        (parameterize ([print-gensym gensym-mode]
+                                                                       [print-extended-identifiers #t]
+                                                                       [#%$np-tracer passes-on])
+                                                            (compile e))
+                                                        (compile e)))])
+                                   (when (or (not (null? passes-on)) assembly-on?)
+                                     (print-header))
+                                   (if assembly-on?
+                                       (parameterize ([#%$assembly-output (#%current-output-port)])
+                                        (-compile e))
+                                       (-compile e))))))]
+     [(e) (compile* e #f #f)]))
   (define (interpret* e) ; result is not safe for space
     (call-with-system-wind (lambda () (interpret e))))
   (define (fasl-write* s o)
@@ -262,12 +301,13 @@
                                 quoteds
                                 (lambda (pred)
                                   (fasl-write s o pred 'omit-rtds)))))))
-  (define (compile-to-port* s quoteds o unsafe?)
+  (define (compile-to-port* s quoteds o realm unsafe?)
     (call-with-system-wind (lambda ()
                              (parameterize ([fasl-compressed compress-code?]
                                             [optimize-level (if unsafe?
                                                                 3
-                                                                (optimize-level))])
+                                                                (optimize-level))]
+                                            [compile-procedure-realm realm])
                                (call-getting-literals
                                 quoteds
                                 (lambda (pred)
@@ -297,7 +337,7 @@
   (define (eval/foreign e mode)
     (performance-region
      mode
-     (compile* e #t)))
+     (compile* e #f #t)))
 
   (define primitives (make-hasheq)) ; hash of sym -> known
   (define primitive-tables '())     ; list of (cons sym hash)
@@ -324,31 +364,31 @@
     ;; linklet, it's better to create all of the closures on instantiation
     (cons '$lambda/lift-barrier (cdr s)))
 
-  (define (compile-to-proc s format unsafe?)
+  (define (compile-to-proc s format realm unsafe?)
     (if (eq? format 'interpret)
         (run-interpret s)
-        (compile* (lambda->linklet-lambda s) unsafe?)))
+        (compile* (lambda->linklet-lambda s) realm unsafe?)))
 
   ;; returns code bytevector and literals vector
-  (define (compile*-to-bytevector s quoteds unsafe?)
+  (define (compile*-to-bytevector s quoteds realm unsafe?)
     (let-values ([(o get) (open-bytevector-output-port)])
-      (let ([literals (compile-to-port* (list s) quoteds o unsafe?)])
+      (let ([literals (compile-to-port* (list s) quoteds o realm unsafe?)])
         (values (get) literals))))
 
   ;; returns code bytevector and literals vector
-  (define (compile-to-bytevector s quoteds format unsafe?)
+  (define (compile-to-bytevector s quoteds format realm unsafe?)
     (cond
       [(eq? format 'interpret)
        (let-values ([(o get) (open-bytevector-output-port)])
          (let ([literals (fasl-write-code* s quoteds o)])
            (values (get) literals)))]
-      [else (compile*-to-bytevector (lambda->linklet-lambda s) quoteds unsafe?)]))
+      [else (compile*-to-bytevector (lambda->linklet-lambda s) quoteds realm unsafe?)]))
 
   ;; returns code bytevector and literals vector
-  (define (cross-compile-to-bytevector machine s quoteds format unsafe?)
+  (define (cross-compile-to-bytevector machine s quoteds format realm unsafe?)
     (cond
       [(eq? format 'interpret) (cross-fasl-to-string machine s quoteds 'code)]
-      [else (cross-compile machine (lambda->linklet-lambda s) quoteds unsafe?)]))
+      [else (cross-compile machine (lambda->linklet-lambda s) quoteds realm unsafe?)]))
 
   (define (eval-from-bytevector bv literals format)
     (add-performance-memory! 'faslin-code (bytevector-length bv))
@@ -376,8 +416,9 @@
     (fields (mutable content) ; bytevector for 'lambda mode; annotation or (vector hash annotation) for 'jit mode
             literals
             arity-mask
-            name)
-    (nongenerative #{wrapped-code p6o2m72rgmi36pm8vy559b-1}))
+            name
+            realm)
+    (nongenerative #{wrapped-code ca80s538oixlhvqqyokefc87g-0}))
 
   (define (force-wrapped-code wc)
     (let ([f (wrapped-code-content wc)])
@@ -406,7 +447,8 @@
           ;; and that compiles/extracts when called:
           (make-jit-procedure (lambda () (force-wrapped-code wc))
                               (wrapped-code-arity-mask wc)
-                              (wrapped-code-name wc)))))
+                              (wrapped-code-name wc)
+                              (wrapped-code-realm wc)))))
 
   (define (jitified-extract wc)
     (let ([f (wrapped-code-content wc)])
@@ -420,14 +462,16 @@
                                   (apply (force-wrapped-code wc)
                                          free-vars))
                                 (wrapped-code-arity-mask wc)
-                                (wrapped-code-name wc))))))
+                                (wrapped-code-name wc)
+                                (wrapped-code-realm wc))))))
 
   (define (strip-jit-wrapper p)
     (cond
      [(wrapped-code? p)
       (vector (strip-jit-wrapper (strip-nested-annotations (wrapped-code-content p)))
               (wrapped-code-arity-mask p)
-              (wrapped-code-name p))]
+              (wrapped-code-name p)
+              (wrapped-code-realm p))]
      [(pair? p)
       (cons (strip-jit-wrapper (car p)) (strip-jit-wrapper (cdr p)))]
      [else p]))
@@ -532,6 +576,8 @@
                                  (let ([m  (|#%app| current-compile-target-machine)])
                                    (and (not (eq? m (machine-type)))
                                         m))))
+      (define realm (let ([v (|#%app| current-compile-realm)])
+                      (if (eq? v 'racket) #f v)))
       (define enforce-constant? (|#%app| compile-enforce-module-constants))
       (define inline? (not (|#%app| compile-context-preservation-enabled)))
       (define quick-mode? (and (not just-expand?)
@@ -604,7 +650,8 @@
                                                (make-wrapped-code a
                                                                   #f
                                                                   arity-mask
-                                                                  (extract-inferred-name expr name))))]
+                                                                  (extract-inferred-name expr name)
+                                                                  realm)))]
                                           [else
                                            ;; Compile an individual `lambda`:
                                            (lambda (expr arity-mask name)
@@ -614,17 +661,17 @@
                                                 (if serializable?
                                                     (let ([quoteds (unbox serializable?-box)])
                                                       (let-values ([(code literals) (if cross-machine
-                                                                                        (cross-compile cross-machine expr quoteds unsafe?)
-                                                                                        (compile*-to-bytevector expr quoteds unsafe?))])
-                                                        (make-wrapped-code code literals arity-mask (extract-inferred-name expr name))))
-                                                    (compile* expr unsafe?)))))])))]))
+                                                                                        (cross-compile cross-machine expr quoteds realm unsafe?)
+                                                                                        (compile*-to-bytevector expr quoteds realm unsafe?))])
+                                                        (make-wrapped-code code literals arity-mask (extract-inferred-name expr name) realm)))
+                                                    (compile* expr realm unsafe?)))))])))]))
        (define impl-lam/interpable
          (let ([impl-lam (case (and jitify-mode?
                                     linklet-compilation-mode)
                            [(mach) (show post-lambda-on? "post-lambda" impl-lam/jitified)]
                            [else (show "schemified" impl-lam/jitified)])])
            (if (eq? format 'interpret)
-               (interpretable-jitified-linklet impl-lam serializable?)
+               (interpretable-jitified-linklet impl-lam serializable? realm)
                (correlated->annotation impl-lam serializable? sfd-cache))))
        (when known-on?
          (show "known" (hash-map exports-info (lambda (k v) (list k v)))))
@@ -641,9 +688,9 @@
                            (if serializable?
                                (let ([quoteds (unbox serializable?-box)])
                                  (if cross-machine
-                                     (cross-compile-to-bytevector cross-machine impl quoteds format unsafe?)
-                                     (compile-to-bytevector impl quoteds format unsafe?)))
-                               (values (compile-to-proc impl format unsafe?) '#()))])
+                                     (cross-compile-to-bytevector cross-machine impl quoteds format realm unsafe?)
+                                     (compile-to-bytevector impl quoteds format realm unsafe?)))
+                               (values (compile-to-proc impl format realm unsafe?) '#()))])
                (when literals-on?
                  (show "literals" literals))
                (let ([lk (make-linklet code
@@ -915,11 +962,14 @@
   (define (raise-linking-failure why target-inst inst sym)
     (raise-arguments-error 'instantiate-linklet
                            (string-append "mismatch;\n"
-                                          " reference to a variable that " why ";\n"
-                                          " possibly, bytecode file needs re-compile because dependencies changed")
+                                          " reference to a variable that " why "")
                            "name" (unquoted-printing-string (symbol->string sym))
                            "exporting instance" (unquoted-printing-string (format "~a" (instance-name inst)))
-                           "importing instance" (unquoted-printing-string (format "~a" (instance-name target-inst)))))
+                           "importing instance" (unquoted-printing-string (format "~a" (instance-name target-inst)))
+                           "possible reason" (unquoted-printing-string
+                                              "modules need to be recompiled because dependencies changed")
+                           "possible solution" (unquoted-printing-string
+                                                "running `racket -y`, `raco make`, or `raco setup`")))
 
   (define (identify-module var)
     (cond
@@ -1239,6 +1289,13 @@
     (or (eq? v (machine-type))
         (and (#%assq v cross-machine-types)
              #t)))
+
+  (define current-compile-realm
+    (make-parameter 'racket (lambda (v)
+                              (unless (symbol? v)
+                                (raise-argument-error 'current-compile-realm "symbol?" v))
+                              v)
+                    'current-compile-realm))
 
   (define eval-jit-enabled
     (make-parameter #t (lambda (v) (and v #t)) 'eval-jit-enabled))

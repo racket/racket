@@ -2,6 +2,9 @@ name: CI Win
 
 on: [push, pull_request]
 
+permissions:
+  contents: read
+
 jobs:
   
 # Build jobs
@@ -21,22 +24,19 @@ jobs:
     #   Version: VisualStudio/16.3.6+29418.71
     #   Location: C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
     - name: Build 3m
-      working-directory: .\racket\src\worksp
       if: matrix.mode == '3m'
       shell: cmd
       run: |
-        call msvcprep.bat x86_amd64
-        set UNDERSCORE_BC_SUFFIX=_
-        call build.bat
+        call racket\src\worksp\msvcprep.bat x86_amd64
+        nmake bc-base RACKETBC_SUFFIX=
     - name: Build CS
-      working-directory: .\racket\src\worksp
       if: matrix.mode == 'CS'
       shell: cmd
       run: |
-        call msvcprep.bat x86_amd64
-        call build-cs.bat
+        call racket\src\worksp\msvcprep.bat x86_amd64
+        nmake cs-base RACKETCS_SUFFIX=
     - name: Check reported racket version
       shell: cmd
       run: |

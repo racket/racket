@@ -3,6 +3,7 @@
  terminal-init
  terminal-read-char
  terminal-write-char
+ terminal-char-width
  terminal-set-color
  terminal-flush
  terminal-get-screen-size
@@ -22,7 +23,8 @@
 
 (define terminal-init (foreign-procedure "(cs)ee_init_term" (iptr iptr) boolean))
 (define terminal-read-char (foreign-procedure "(cs)ee_read_char" (boolean) scheme-object))
-(define terminal-write-char (foreign-procedure "(cs)ee_write_char" (wchar_t) void))
+(define terminal-write-char (foreign-procedure "(cs)ee_write_char" (wchar_t) int))
+(define terminal-char-width (foreign-procedure "(cs)ee_char_width" (wchar_t) int))
 (define terminal-set-color (foreign-procedure "(cs)ee_set_color" (int boolean) void))
 (define terminal-flush (foreign-procedure "(cs)ee_flush" () void))
 (define terminal-get-screen-size (foreign-procedure "(cs)ee_get_screen_size" () scheme-object))

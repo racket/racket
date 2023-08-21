@@ -16,7 +16,7 @@
 
 (define (get-test-file)
   (define name "NormalizationTest.txt")
-  (define base "http://www.unicode.org/Public/7.0.0/ucd/")
+  (define base "http://www.unicode.org/Public/15.0.0/ucd/")
   (define here (current-load-relative-directory))
   (or (for/or ([dir (list here (current-directory))])
         (define path (build-path dir name))

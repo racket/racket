@@ -173,6 +173,8 @@ mismatches due to local bindings that shadow only in some spaces.
 @;------------------------------------------------------------------------
 @section[#:tag "stxobj-model"]{Syntax Objects}
 
+@guideintro["stx-obj"]{the use of syntax objects}
+
 A @deftech{syntax object} combines a simpler Racket value, such as a symbol or pair, with
 @tech{lexical information}, @tech{source-location} information, @tech{syntax properties}, and
 whether the syntax object is
@@ -449,7 +451,7 @@ things:
        identifier (third case in the previous enumeration), and
        parsing continues.}
 
- @item{A core @deftech{syntactic form}, which is parsed as described
+ @item{A core @deftech{syntactic form} (often abbreviated as @deftech{core form}), which is parsed as described
        for each form in @secref["syntax"]. Parsing a core syntactic
        form typically involves recursive parsing of sub-forms, and may
        introduce @tech{bindings} that determine the parsing of

@@ -24,9 +24,10 @@
 take advantage of machines with multiple processors, cores, or
 hardware threads.
 
-@margin-note{Currently, parallel support for places is enabled
-  only for the @tech{CS} and @tech{3m} implementations of Racket, and for @tech{3m}, only
-  by default for Windows, Linux x86/x86_64, and Mac OS x86/x86_64. To
+@margin-note{Currently, parallel support for places is enabled 
+  on all platforms that support Racket @tech{CS}, the default implementation of Racket.
+  The @tech{3m} implementation also supports parallel execution of places
+  by default on Windows, Linux x86/x86_64, and Mac OS x86/x86_64. To
   enable support for other platforms with @tech{3m}, use @DFlag{enable-places} with
   @exec{configure} when building Racket. The @racket[place-enabled?]
   function reports whether places run in parallel.
@@ -352,10 +353,11 @@ messages:
 
  @item{@tech{paths} (for any platform);}
 
- @item{@tech{pairs}, @tech{lists}, @tech{vectors}, and immutable
+ @item{@tech{pairs}, @tech{lists}, @tech{box}es, @tech{vectors}, and immutable
        @tech{prefab} structures containing message-allowed values,
-       where a mutable vector is automatically replaced by an
-       immutable vector and where @tech{impersonators} of vectors and
+       where a mutable box is automatically replaced by an
+       immutable box, a mutable vector is automatically replaced by an
+       immutable vector and where @tech{impersonators} of boxes, vectors and
        @tech{prefab} structures are copied;}
 
  @item{@tech{hash tables} where mutable hash tables are automatically
@@ -367,8 +369,8 @@ messages:
 
  @item{@tech{file-stream ports} and @tech{TCP ports}, where the
        underlying representation (such as a file descriptor, socket,
-       or handle) is duplicated and attached to a fresh port in the
-       receiving place;}
+       or handle) is duplicated in the sending place and attached to
+       a fresh port in the receiving place;}
 
  @item{@tech[#:doc '(lib "scribblings/foreign/foreign.scrbl")]{C
        pointers} as created or accessed via @racketmodname[ffi/unsafe]; and}
@@ -376,9 +378,9 @@ messages:
  @item{values produced by @racket[shared-flvector],
        @racket[make-shared-flvector], @racket[shared-fxvector],
        @racket[make-shared-fxvector], @racket[shared-bytes], and
-       @racket[make-shared-bytes].}
+       @racket[make-shared-bytes].}]
 
-]}
+@history[#:changed "8.4.0.7" @elem{Include boxes in allowed messages.}]}
 
 @deftogether[(
 @defthing[prop:place-location struct-type-property?]

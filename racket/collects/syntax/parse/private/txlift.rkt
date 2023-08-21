@@ -21,17 +21,15 @@
       (set-box! liftbox (cons (list var expr) (unbox liftbox)))
       var)))
 
-(define (get-txlifts)
+(define (get-txlifts [who 'gex-txlifts])
   (let ([liftbox (current-liftbox)])
-    (check 'get-txlifts liftbox)
-    (reverse (unbox liftbox))))
+    (check who liftbox)
+    (begin0 (reverse (unbox liftbox))
+      (set-box! liftbox null))))
 
 (define (get-txlifts-as-definitions)
-  (let ([liftbox (current-liftbox)])
-    (check 'get-txlifts-as-definitions liftbox)
-    (map (lambda (p)
-           #`(define #,@p))
-         (reverse (unbox liftbox)))))
+  (define lifts (get-txlifts 'get-txlifts-as-definitions))
+  (map (lambda (p) #`(define #,@p)) lifts))
 
 (define (check who lb)
   (unless (box? lb)

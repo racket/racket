@@ -73,6 +73,20 @@
      $ "racket -e '(require pkg-test2)'" =exit> 1))
    (with-fake-root 
     (shelly-case
+     "remove two leaves no autoremove suggestions"
+     $ "raco pkg config --set catalogs http://localhost:9990"
+     $ "racket -e '(require pkg-test1)'" =exit> 1
+     $ "racket -e '(require pkg-test2)'" =exit> 1
+     $ "raco pkg install --deps search-auto test-pkgs/pkg-test2.zip" =exit> 0
+     $ "raco pkg show -l -u -a" =stdout> #rx"Package\\[\\*=auto\\] +Checksum +Source\npkg-test1\\* +[a-f0-9.]+ +\\(catalog \"pkg-test1\"\\)\npkg-test2 +[a-f0-9.]+ +\\(file .+/test-pkgs/pkg-test2.zip\"\\)\n"
+     $ "racket -e '(require pkg-test1)'" =exit> 0
+     $ "racket -e '(require pkg-test2)'" =exit> 0
+     $ "racket -e '(require pkg-test2/contains-dep)'" =exit> 0
+     $ "raco pkg remove pkg-test2 pkg-test1" =stdout> #rx"(?!no longer)"
+     $ "raco pkg show -l -u -a" =stdout> " [none]\n"
+     $ "racket -e '(require pkg-test1)'" =exit> 1
+     $ "racket -e '(require pkg-test2)'" =exit> 1)
+    (shelly-case
      "autoremove"
      $ "raco pkg config --set catalogs http://localhost:9990"
      $ "racket -e '(require pkg-test1)'" =exit> 1
@@ -82,7 +96,7 @@
      $ "racket -e '(require pkg-test1)'" =exit> 0
      $ "racket -e '(require pkg-test2)'" =exit> 0
      $ "racket -e '(require pkg-test2/contains-dep)'" =exit> 0
-     $ "raco pkg remove pkg-test2"
+     $ "raco pkg remove pkg-test2" =stdout> #px"automatically installed.*no longer[^:]+:\n\\s+pkg-test1\n[^\n]+raco pkg remove --auto"
      $ "raco pkg show -l -u -a" =stdout> #rx"Package\\[\\*=auto\\] +Checksum +Source\npkg-test1\\* +[a-f0-9.]+ +\\(catalog \"pkg-test1\"\\)\n"
      $ "racket -e '(require pkg-test1)'" =exit> 0
      $ "raco pkg remove --auto"
@@ -90,9 +104,40 @@
      $ "racket -e '(require pkg-test1)'" =exit> 1
      $ "racket -e '(require pkg-test2)'" =exit> 1)
     (shelly-case
+     "demote rather than remove"
+     $ "raco pkg config --set catalogs http://localhost:9990"
+     $ "racket -e '(require pkg-test1)'" =exit> 1
+     $ "racket -e '(require pkg-test2)'" =exit> 1
+     $ "raco pkg install --deps search-auto test-pkgs/pkg-test2.zip" =exit> 0
+     $ "raco pkg show -l -u -a" =stdout> #rx"Package\\[\\*=auto\\] +Checksum +Source\npkg-test1\\* +[a-f0-9.]+ +\\(catalog \"pkg-test1\"\\)\npkg-test2 +[a-f0-9.]+ +\\(file .+/test-pkgs/pkg-test2.zip\"\\)\n"
+     $ "raco pkg remove --demote pkg-test2" =stdout> #px"automatically installed.*no longer[^:]+:\n\\s+pkg-test1\\s+pkg-test2\n[^\n]+raco pkg remove --auto"
+     $ "raco pkg show -l -u -a" =stdout> #rx"Package\\[\\*=auto\\] +Checksum +Source\npkg-test1\\* +[a-f0-9.]+ +\\(catalog \"pkg-test1\"\\)\npkg-test2\\* +[a-f0-9.]+ +\\(file .+/test-pkgs/pkg-test2.zip\"\\)\n"
+     $ "racket -e '(require pkg-test1)'" =exit> 0
+     $ "racket -e '(require pkg-test2)'" =exit> 0
+     $ "racket -e '(require pkg-test2/contains-dep)'" =exit> 0
+     $ "raco pkg remove --auto"
+     $ "raco pkg show -l -u -a" =stdout> " [none]\n"
+     $ "racket -e '(require pkg-test1)'" =exit> 1
+     $ "racket -e '(require pkg-test2)'" =exit> 1)
+     (shelly-case
+     "demote, but cannot auto-remove"
+     $ "racket -e '(require pkg-test1)'" =exit> 1
+     $ "racket -e '(require pkg-test2)'" =exit> 1
+     $ "raco pkg install test-pkgs/pkg-test2.zip test-pkgs/pkg-test1.zip" =exit> 0
+     $ "raco pkg show -l -u -a" =stdout> #rx"Package +Checksum +Source\npkg-test1 +[a-f0-9.]+ +\\(file .+/test-pkgs/pkg-test1.zip\"\\)\npkg-test2 +[a-f0-9.]+ +\\(file .+/test-pkgs/pkg-test2.zip\"\\)\n"
+     $ "raco pkg remove --demote pkg-test1" =stdout> #rx"(?!no longer)"
+     $ "raco pkg show -l -u -a" =stdout> #rx"Package\\[\\*=auto\\] +Checksum +Source\npkg-test1\\* +[a-f0-9.]+ +\\(file .+/test-pkgs/pkg-test1.zip\"\\)\npkg-test2 +[a-f0-9.]+ +\\(file .+/test-pkgs/pkg-test2.zip\"\\)\n"
+     $ "racket -e '(require pkg-test1)'" =exit> 0
+     $ "racket -e '(require pkg-test2)'" =exit> 0
+     $ "racket -e '(require pkg-test2/contains-dep)'" =exit> 0
+     $ "raco pkg remove --auto pkg-test2"
+     $ "raco pkg show -l -u -a" =stdout> " [none]\n"
+     $ "racket -e '(require pkg-test1)'" =exit> 1
+     $ "racket -e '(require pkg-test2)'" =exit> 1)
+    (shelly-case
      "single-step autoremove"
      $ "raco pkg install --deps search-auto test-pkgs/pkg-test2.zip" =exit> 0
-     $ "raco pkg remove --auto pkg-test2"
+     $ "raco pkg remove --auto pkg-test2" =stdout> #rx"(?!no longer)"
      $ "raco pkg show -l -u -a" =stdout> " [none]\n"
      $ "racket -e '(require pkg-test1)'" =exit> 1
      $ "racket -e '(require pkg-test2)'" =exit> 1)

@@ -81,14 +81,14 @@
                                                              (cdr enclosing-path)
                                                              null)))))
                                        path)
-                                   (current-inexact-milliseconds)
+                                   (current-inexact-monotonic-milliseconds)
                                    (current-memory-use 'cumulative)
                                    0.0
                                    0)
                            region-stack)))
 
 (define (end-performance-region)
-  (define now (current-inexact-milliseconds))
+  (define now (current-inexact-monotonic-milliseconds))
   (define now-memory (current-memory-use 'cumulative))
   (define r (car region-stack))
   (set! region-stack (cdr region-stack))

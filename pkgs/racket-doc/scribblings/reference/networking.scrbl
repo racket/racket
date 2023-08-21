@@ -25,7 +25,7 @@ to an ephemeral port, which can be determined by calling
 @racket[tcp-addresses].  The @racket[max-allow-wait] argument
 determines the maximum number of client connections that can be
 waiting for acceptance. (When @racket[max-allow-wait] clients are
-waiting acceptance, no new client connections can be made.)
+awaiting acceptance, no new client connections can be made.)
 
 If the @racket[reuse?] argument is true, then @racket[tcp-listen] will
 create a listener even if the port is involved in a @tt{TIME_WAIT}
@@ -99,7 +99,10 @@ management of the current custodian (see @secref["custodians"]).
 
 Initially, the returned input port is block-buffered, and the returned
 output port is block-buffered. Change the buffer mode using
-@racket[file-stream-buffer-mode].
+@racket[file-stream-buffer-mode]. When a TCP output port is
+block-buffered, Nagle's algorithm is disabled for the port, which
+corresponds to setting the @as-index{@tt{TCP_NODELAY}} socket
+option.
 
 Both of the returned ports must be closed to terminate the TCP
 connection. When both ports are still open, closing the output port
@@ -118,7 +121,10 @@ still-open end may appear to succeed, though writes will eventually
 produce an error.
 
 If a connection cannot be established by @racket[tcp-connect], the
-@exnraise[exn:fail:network].}
+@exnraise[exn:fail:network].
+
+@history[#:changed "8.8.0.8" @elem{Changed block buffering to imply
+                                   @tt{TCP_NODELAY}.}]}
 
 @defproc[(tcp-connect/enable-break [hostname string?]
                       [port-no port-number?]

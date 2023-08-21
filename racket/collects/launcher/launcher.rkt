@@ -397,7 +397,7 @@
          [use-exe (or alt-exe
                       (case kind
                         [(mred) (if (eq? 'macosx (cross-system-type))
-                                    (format "GRacket~a.app/Contents/MacOS/Gracket~a"
+                                    (format "GRacket~a.app/Contents/MacOS/GRacket~a"
                                             (variant-suffix variant #t)
                                             (variant-suffix variant #t))
                                     (string-append "gracket" (variant-suffix variant #f)))]
@@ -530,18 +530,23 @@
                             (file-name-from-path dest))
                            (cdr m)))))))
 
-(define (installed-executable-path->desktop-path dest user?)
+(define (installed-executable-path->desktop-path dest user? [tethered? #f])
   (unless (path-string? dest)
     (raise-argument-error 'installed-executable-path->desktop-path
                           "path-string?"
                           dest))
-  (define dir (if user?
-                  (find-user-apps-dir)
-                  (or (find-apps-dir)
-                      (error 'installed-executable-path->desktop-path
-                             "no installation directory is available"))))
-  (path-replace-extension (build-path dir (file-name-from-path dest))
-                          #".desktop"))
+  (define dir (if tethered?
+                  (if user?
+                      (find-addon-tethered-apps-dir)
+                      (find-config-tethered-apps-dir))
+                  (if user?
+                      (find-user-apps-dir)
+                      (or (find-apps-dir)
+                          (error 'installed-executable-path->desktop-path
+                                 "no installation directory is available")))))
+  (and dir
+       (path-replace-extension (build-path dir (file-name-from-path dest))
+                               #".desktop")))
 
 (define (installed-desktop-path->icon-path dest user? extension)
   ;; We put icons files in "share" so that `setup/unixstyle-install'
@@ -566,13 +571,16 @@
 (define (check-desktop aux dest)
   (when (eq? 'unix (cross-system-type))
     (let ([im (assoc 'install-mode aux)])
-      (when (and im (member (cdr im) '(main user)))
-        (define user? (eq? (cdr im) 'user))
-        ;; create Unix ".desktop" files, if any
-        (let ([m (assoc 'desktop aux)])
-          (when (and m (cdr m))
-            (define file (installed-executable-path->desktop-path dest
-                                                                  user?))
+      (define addon? (and im (eq? (cdr im) 'addon-tethered)))
+      (define config? (and im (eq? (cdr im) 'config-tethered)))
+      (define user? (or addon? (and im (eq? (cdr im) 'user))))
+      ;; create Unix ".desktop" files, if any
+      (let ([m (assoc 'desktop aux)])
+        (when (and m (cdr m))
+          (define file (installed-executable-path->desktop-path dest
+                                                                user?
+                                                                (or addon? config?)))
+          (when file
             (make-directory* (path-only file))
             (define (adjust-path p)
               ;; A ".desktop" file is supposed to have absolute paths
@@ -582,6 +590,7 @@
               ;; and be patched up by `setup/unixstyle-install'.
               (let ([p (simple-form-path (path->complete-path p))])
                 (if (or user?
+                        config?
                         (get-absolute-installation?))
                     p
                     (find-relative-path (simple-form-path (path-only file)) p))))

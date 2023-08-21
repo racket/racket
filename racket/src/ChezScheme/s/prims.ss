@@ -226,7 +226,7 @@
 
 (define $intern-gensym
   (foreign-procedure "(cs)s_intern_gensym"
-    (scheme-object)
+    (scheme-object scheme-object)
     void))
 
 (define cpu-time
@@ -270,15 +270,28 @@
   (foreign-procedure "(cs)fxdiv" (fixnum fixnum)
     fixnum))
 
-(define $procedure-name
+(define-who $procedure-name
   (lambda (x)
     (unless (procedure? x)
-      ($oops '$procedure-name "~s is not a procedure" x))
+      ($oops who "~s is not a procedure" x))
     (let name ([x x])
       (let ([code ($closure-code x)])
         (if ($code-arity-in-closure? code)
             (name ($closure-ref x 0))
             ($code-name code))))))
+
+(define-who $procedure-realm
+  (lambda (x)
+    (unless (procedure? x)
+      ($oops who "~s is not a procedure" x))
+    (let realm ([x x])
+      (let ([code ($closure-code x)])
+        (if ($code-arity-in-closure? code)
+            (realm ($closure-ref x 0))
+            (let ([info ($code-info code)])
+              (include "types.ss")
+              (and (code-info? info)
+                   (code-info-realm info))))))))
 
 (define-who procedure-arity-mask
   (lambda (x)
@@ -549,16 +562,16 @@
 ;; attachments or the given attachments `as` that must be either
 ;; the same as the attachments saved by `c` or one immediate
 ;; attachment extending those attachments
-(define-who call-in-continuation
+(define-who $call-in-continuation
   (case-lambda
    [(c p)
     (unless (procedure? p)
       ($oops who "~s is not a procedure" p))
-    (#2%call-in-continuation c (lambda () (p)))]
+    (#2%$call-in-continuation c (lambda () (p)))]
    [(c as p)
     (unless (procedure? p)
       ($oops who "~s is not a procedure" p))
-    (#2%call-in-continuation c as (lambda () (p)))]))
+    (#2%$call-in-continuation c as (lambda () (p)))]))
 
 ;; checks `c` and consistency of `as` with `c`, and also runs any needed winders
 (define $assert-continuation
@@ -566,23 +579,23 @@
    [(c) (#2%$assert-continuation c)]
    [(c as) (#2%$assert-continuation c as)]))
 
-(define-who call-setting-continuation-attachment
+(define-who $call-setting-continuation-attachment
   (lambda (v p)
     (unless (procedure? p)
       ($oops who "~s is not a procedure" p))
-    (#3%call-setting-continuation-attachment v (lambda () (p)))))
+    (#3%$call-setting-continuation-attachment v (lambda () (p)))))
 
-(define-who call-getting-continuation-attachment
+(define-who $call-getting-continuation-attachment
   (lambda (default-val p)
     (unless (procedure? p)
       ($oops who "~s is not a procedure" p))
-    (#3%call-getting-continuation-attachment default-val (lambda (x) (p x)))))
+    (#3%$call-getting-continuation-attachment default-val (lambda (x) (p x)))))
 
-(define-who call-consuming-continuation-attachment
+(define-who $call-consuming-continuation-attachment
   (lambda (default-val p)
     (unless (procedure? p)
       ($oops who "~s is not a procedure" p))
-    (#3%call-consuming-continuation-attachment default-val (lambda (x) (p x)))))
+    (#3%$call-consuming-continuation-attachment default-val (lambda (x) (p x)))))
 
 (define $code? (lambda (x) ($code? x)))
 
@@ -648,15 +661,29 @@
 
 (define foreign-callable-entry-point
   (lambda (x)
-    (unless ($code? x)
-      ($oops 'foreign-callable-entry-point "~s is not a code object" x))
-    ($object-address x (constant code-data-disp))))
+    (constant-case architecture
+      [(pb)
+       (unless (vector? x)
+         ($oops 'foreign-callable-entry-point "~s is not a vector" x))
+       (bitwise-arithmetic-shift-left (vector-ref x 2) (constant fixnum-offset))]
+      [else
+       (unless ($code? x)
+         ($oops 'foreign-callable-entry-point "~s is not a code object" x))
+       ($object-address x (constant code-data-disp))])))
 
 (define-who foreign-callable-code-object
-  (lambda (x)
-    (unless (and (integer? x) (exact? x) ($address-in-heap? x))
-      ($oops who "~s is not an entry point" x))
-    ($address->object x (constant code-data-disp))))
+  (constant-case architecture
+    [(pb)
+     (let ([find-callable-code-object (foreign-procedure "(cs)find_callable_code_object" (uptr) ptr)])
+       (lambda (x)
+         (unless (and (integer? x) (exact? x))
+           ($oops who "~s is not an entry point" x))
+         (find-callable-code-object x)))]
+    [else
+     (lambda (x)
+       (unless (and (integer? x) (exact? x) ($address-in-heap? x))
+         ($oops who "~s is not an entry point" x))
+       ($address->object x (constant code-data-disp)))]))
 
 (define $closure-code
    (lambda (x)
@@ -1413,12 +1440,20 @@
    (lambda (v)
       (#2%stencil-vector-mask v)))
 
+(define $stencil-vector-mask
+   (lambda (v)
+      (#2%$stencil-vector-mask v)))
+
 (define-who $make-stencil-vector
   (lambda (len mask)
     ($oops who "should only be used as inlined with GC disabled")))
 
+(define-who $make-system-stencil-vector
+  (lambda (len mask)
+    ($oops who "should only be used as inlined with GC disabled")))
+
 ; not safe; assumes `val` is older than `v`
-(define $stencil-vector-set!
+(define $stencil-vector-fill-set!
   (lambda (v i val)
     ($stencil-vector-set! v i val)))
 
@@ -1512,6 +1547,10 @@
 (define flvector? (lambda (x) (flvector? x)))
 
 (define stencil-vector? (lambda (x) (stencil-vector? x)))
+
+(define $stencil-vector? (lambda (x) ($stencil-vector? x)))
+
+(define $system-stencil-vector? (lambda (x) ($system-stencil-vector? x)))
 
 (define procedure? (lambda (x) (procedure? x)))
 
@@ -1733,6 +1772,8 @@
     (case-lambda
       [() ($current-winders)]
       [(w)
+       ;; this check could be helpful, but it's not constant-time:
+       #;
        (unless (and (list? w) (andmap winder? w))
          ($oops who "malformed winders ~s" w))
        ($current-winders w)])))
@@ -1741,6 +1782,8 @@
   (case-lambda
     [() ($current-attachments)]
     [(w)
+     ;; this check could be helpful, but it's not constant-time:
+     #;
      (unless (list? w)
        ($oops '$current-attachments "malformed attachments ~s" w))
      ($current-attachments w)]))
@@ -1980,11 +2023,14 @@
   (lambda (t)
     (unless (thread? t)
       ($oops who "~a is not a thread" t))
-    (with-tc-mutex
-     (let f ()
-       (unless (eq? ($thread-tc t) 0)
-         (condition-wait $terminated-cond $tc-mutex)
-         (f))))))
+    ;; not using `with-tc-mutex` because we don't want to
+    ;; disable interrupts
+    (mutex-acquire $tc-mutex)
+    (let f ()
+      (unless (eq? ($thread-tc t) 0)
+        (condition-wait $terminated-cond $tc-mutex)
+        (f)))
+    (mutex-release $tc-mutex)))
 
 (set-who! thread-preserve-ownership!
   (let ([preserve! (foreign-procedure "(cs)thread_preserve_ownership" (ptr) void)])
@@ -2873,7 +2919,7 @@
     (unless (wrapper-procedure? x) ($oops who "~s is not a wrapper procedure" x))
     ($closure-ref x 0)))
 
-(define-who set-wrapper-procedure!
+(define-who set-wrapper-procedure-procedure!
   (lambda (x proc)
     (unless (wrapper-procedure? x) ($oops who "~s is not a wrapper procedure" x))
     (unless (procedure? proc)  ($oops who "~s is not a procedure" proc))

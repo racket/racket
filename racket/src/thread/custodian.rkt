@@ -10,7 +10,8 @@
          "semaphore.rkt"
          "parameter.rkt"
          "sink.rkt"
-         "exit.rkt")
+         "exit.rkt"
+         "error.rkt")
 
 (provide current-custodian
          make-custodian
@@ -33,6 +34,7 @@
          unsafe-custodian-unregister
          custodian-register-thread
          custodian-register-place
+         custodian-register-also
          custodian-shutdown-root-at-exit
          raise-custodian-is-shut-down
          unsafe-add-post-custodian-shutdown
@@ -54,7 +56,6 @@
 ;; For `(struct custodian ...)`, see "custodian-object.rkt"
 
 (struct custodian-box ([v #:mutable] sema)
-  #:authentic
   #:property prop:evt (lambda (cb)
                         (wrap-evt (custodian-box-sema cb) (lambda (v) cb))))
 
@@ -172,6 +173,12 @@
 (define (custodian-register-place cust obj callback)
   (do-custodian-register cust obj callback #:weak? #t #:gc-root? #t))
 
+(define (custodian-register-also cref obj callback at-exit? weak?)
+  (assert-atomic-mode)
+  (define c (custodian-reference->custodian cref))
+  (unless (hash-ref (custodian-children c) obj #f)
+    (unsafe-custodian-register c obj callback at-exit? weak?)))
+
 (define (unsafe-custodian-unregister obj cref)
   (when cref
     (atomically
@@ -272,7 +279,7 @@
                       #:unless (custodian-this-place? c))
              (when (eq? (custodian-need-shutdown c) 'needed)
                ;; Make sure custodian's place is polling for shutdowns:
-               (set-custodian-need-shutdown! c 'neeed/sent-wakeup)
+               (set-custodian-need-shutdown! c 'needed/sent-wakeup)
                (place-wakeup (custodian-place c)))
              c))
      (host:mutex-release memory-limit-lock)    
@@ -401,7 +408,7 @@
   (check who exact-nonnegative-integer? need-amt)
   (check who custodian? stop-cust)
   (raise (exn:fail:unsupported
-          "custodian-require-memory: unsupported"
+          (error-message->string 'custodian-require-memory "unsupported")
           (current-continuation-marks))))
 
 (define/who (custodian-limit-memory limit-cust need-amt [stop-cust limit-cust])
@@ -571,7 +578,7 @@
                          (loop (cdr roots) even-more-local-roots accum-roots accum-custs)]))))
                 (call-with-size-increments
                  roots custs
-                 (lambda (sizes custs)
+                 (lambda (sizes custs) ; received `custs` may be shorter than provided `custs`
                    (for ([size (in-list sizes)]
                          [c (in-list custs)])
                      (set-custodian-memory-use! c (+ size (custodian-memory-use c))))
@@ -647,13 +654,14 @@
             (custodian-memory-use c)]))))
 
 (define (custodian-check-immediate-limit mref n)
-  (let loop ([mref mref])
-    (when mref
-      (define c (custodian-reference->custodian mref))
-      (when c
-        (define limit (custodian-immediate-limit c))
-        (when (and limit (n . >= . limit))
-          (raise (exn:fail:out-of-memory
-                  "out of memory"
-                  (current-continuation-marks))))
-        (loop (custodian-parent-reference c))))))
+  (unless (in-atomic-mode?)
+    (let loop ([mref mref])
+      (when mref
+        (define c (custodian-reference->custodian mref))
+        (when c
+          (define limit (custodian-immediate-limit c))
+          (when (and limit (n . >= . limit))
+            (raise (exn:fail:out-of-memory
+                    (error-message->string #f "out of memory")
+                    (current-continuation-marks))))
+          (loop (custodian-parent-reference c)))))))

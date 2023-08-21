@@ -78,6 +78,7 @@
        [(and k
              (or (known-procedure/folding? k)
                  (known-procedure/pure/folding? k)
+                 (known-procedure/then-pure/folding-unsafe? k)
                  (known-procedure/has-unsafe/folding? k))
              (for/and ([rand (in-list rands)])
                (literal? rand))

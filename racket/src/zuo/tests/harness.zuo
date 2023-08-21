@@ -1,0 +1,5 @@
+#lang zuo
+
+(define language-name 'zuo/base)
+
+(include "harness-common.zuo")

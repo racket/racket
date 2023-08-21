@@ -1,5 +1,6 @@
 #lang scribble/doc
-@(require "mz.rkt")
+@(require "mz.rkt"
+          (for-label racket/phase+space))
 
 @(define stx-eval (make-base-eval))
 @examples[#:hidden #:eval stx-eval (require (for-syntax racket/base))]
@@ -96,7 +97,8 @@ is @racket[#f].}
 @defproc[(identifier-binding [id-stx identifier?]
                              [phase-level (or/c exact-integer? #f)
                                           (syntax-local-phase-level)]
-                             [top-level-symbol? any/c #f])
+                             [top-level-symbol? any/c #f]
+                             [exact-scopes? any/c #f])
          (or/c 'lexical
                #f
                (list/c module-path-index?
@@ -202,9 +204,16 @@ from @racket[identifier-binding] is for the identifier in the
 transformer, so that @racket[identifier-binding] is consistent with
 @racket[free-identifier=?].
 
+If @racket[exact-scopes?] is a true value, then the result is
+@racket[#f] unless the binding for @racket[id-stx] has exactly the
+@tech{scopes} of @racket[id-stx]. An exact-scopes check is useful for
+detecting whether an identifier is already bound in a specific
+definition context, for example.
+
 @history[#:changed "6.6.0.4" @elem{Added the @racket[top-level-symbol?] argument to report
                                    information on top-level bindings.}
-        #:changed "8.2.0.3" @elem{Generalized phase results to phase--space combinations.}]}
+        #:changed "8.2.0.3" @elem{Generalized phase results to phase--space combinations.}
+        #:changed "8.6.0.9" @elem{Added the @racket[exact-scopes?] argument.}]}
 
 
 @defproc[(identifier-transformer-binding [id-stx identifier?]
@@ -260,7 +269,8 @@ Same as @racket[(identifier-binding id-stx #f)].
 @defproc[(identifier-distinct-binding [id-stx identifier?]
                                       [wrt-id-stx identifier?]
                                       [phase-level (or/c exact-integer? #f)
-                                                   (syntax-local-phase-level)])
+                                                   (syntax-local-phase-level)]
+                                      [top-level-symbol? any/c #f])
          (or/c 'lexical
                #f
                (list/c module-path-index?
@@ -272,14 +282,15 @@ Same as @racket[(identifier-binding id-stx #f)].
                        phase+space?)
                (list/c symbol?))]{
 
-Like @racket[(identifier-binding id-stx phase-level)], but the result
+Like @racket[(identifier-binding id-stx phase-level top-level-symbol?)], but the result
 is @racket[#f] if the binding for @racket[id-stx] has scopes that are
 a subset of the scopes for @racket[wrt-id-stx]. That is, if
 @racket[id-stx] and @racket[wrt-id-stx] have the same symbolic name, a
 binding for @racket[id-stx] is returned only if the binding does not
 also apply to @racket[wrt-id-stx].
 
-@history[#:added "8.3.0.8"]}
+@history[#:added "8.3.0.8"
+         #:changed "8.8.0.2" @elem{Added the @racket[top-level-symbol?] argument.}]}
 
 
 @defproc[(identifier-binding-symbol [id-stx identifier?]
@@ -312,5 +323,36 @@ the relevant phase, and @racket[identifier-binding-portal-syntax] does
 not instantiate the module.
 
 @history[#:added "8.3.0.8"]}
+
+@defproc[(syntax-bound-symbols [stx stx?]
+                               [phase-level (or/c exact-integer? #f)
+                                            (syntax-local-phase-level)]
+                               [exact-scopes? any/c #f])
+         (listof symbol?)]{
+
+Returns a list of all @tech{interned} symbols for which
+@racket[(identifier-binding (datum->syntax stx _sym) phase-level #f exact-scopes?)]
+would produce a non-@racket[#f] value. This procedure takes time
+proportional to the number of scopes on @racket[stx] plus the length
+of the result list.
+
+@history[#:added "8.6.0.6"
+         #:changed "8.6.0.9" @elem{Added the @racket[exact-scopes?] argument.}]}
+
+@defproc[(syntax-bound-phases [stx stx?])
+         (listof (or/c exact-integer? #f))]{
+
+Returns a list that includes all @racket[_phase-level]s for which
+@racket[(syntax-bound-symbols stx _phase-level)] might produce a
+non-empty list.
+
+@examples[
+#:eval stx-eval
+(syntax-bound-phases #'anything)
+(require (for-meta 8 racket/base))
+(syntax-bound-phases #'anything)
+]
+
+@history[#:added "8.6.0.8"]}
 
 @close-eval[stx-eval]

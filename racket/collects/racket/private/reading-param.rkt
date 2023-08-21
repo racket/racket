@@ -19,6 +19,7 @@
          read-accept-compiled #f
          read-accept-bar-quote #t
          read-accept-graph #t
+         read-syntax-accept-graph #f
          read-decimal-as-inexact #t
          read-single-flonum #f
          read-cdot #f

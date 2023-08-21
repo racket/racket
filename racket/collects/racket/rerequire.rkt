@@ -42,13 +42,7 @@
              (not (and (pair? name)
                        (not (car name)))))
         ;; Module load:
-        (with-handlers ([(lambda (exn)
-                           (and (pair? name)
-                                (exn:get-module-code? exn)))
-                         (lambda (exn)
-                           ;; Load-handler protocol: quiet failure when a
-                           ;; submodule is not found
-                           (void))])
+        (let/ec escape
           (let* ([code (get-module-code
                         path (let ([l (use-compiled-file-paths)])
                                (if (pair? l) (car l) "compiled"))
@@ -56,7 +50,14 @@
                           (parameterize ([compile-enforce-module-constants #f])
                             (compile e)))
                         (lambda (ext loader?) (load-extension ext) #f)
-                        #:notify notify)]
+                        #:notify (if (pair? name)
+                                     (lambda (path)
+                                       ;; Load-handler protocol: quiet failure when a
+                                       ;; submodule is not found
+                                       (unless (file-exists? path)
+                                         (escape (void)))
+                                       (notify path))
+                                     notify))]
                  [dir  (or (current-load-relative-directory) (current-directory))]
                  [path (path->complete-path path dir)]
                  [path (normal-case-path (simplify-path path))])
@@ -65,25 +66,45 @@
             (define (code->dependencies code)
               (apply append
                      (map cdr (module-compiled-imports code))))
+            (define previously-loaded? (hash-ref loaded path #f))
             (let ([a-mod (mod name
                               ts
                               (if code
                                   (code->dependencies code)
                                   null))])
-              (hash-set! loaded path a-mod)
-              ;; Register all submodules, too; even though we load at the
-              ;; file granularity, we need submodules for dependencies
-              (when code
-                (let loop ([code code])
-                  (for ([submod-code (in-list (append (module-compiled-submodules code #t)
-                                                      (module-compiled-submodules code #f)))])
-                    (define name (module-compiled-name submod-code))
-                    (hash-set! loaded (cons path (cdr name))
-                               (mod name ts (code->dependencies submod-code)))
-                    (loop submod-code)))))
+              (hash-set! loaded path a-mod))
+            ;; Register all submodules, too; even though we load at the
+            ;; file granularity, we need submodules for dependencies. At the
+            ;; same time, remove submodules that are already declared if this
+            ;; module wasn't previously loaded via `rerequire`, because we
+            ;; can't redeclare those.
+            (define pruned-code
+              (cond
+                [code
+                 (let loop ([code code])
+                   (define-values (keep-non-star keep-star)
+                     (for*/fold ([keep-non-star null] [keep-star null])
+                                ([non-star? (in-list '(#t #f))]
+                                 [submod-code (in-list (module-compiled-submodules code non-star?))])
+                       (define name (module-compiled-name submod-code))
+                       (hash-set! loaded (cons path (cdr name))
+                                  (mod name ts (code->dependencies submod-code)))
+                       (define new-submod-code (loop submod-code))
+                       (cond
+                         [(and (not previously-loaded?)
+                               (module-declared? (make-resolved-module-path (cons path (cdr name))) #f))
+                          ;; drop it
+                          (values keep-non-star keep-star)]
+                         [non-star?
+                          (values (cons new-submod-code keep-non-star) keep-star)]
+                         [else
+                          (values keep-non-star (cons new-submod-code keep-star))])))
+                   (module-compiled-submodules (module-compiled-submodules code #t keep-non-star)
+                                               #f keep-star))]
+                [else code]))
             ;; Evaluate the module:
             (parameterize ([current-module-declare-source actual-path])
-              (eval code))))
+              (eval pruned-code))))
         ;; Not a module, or a submodule that we shouldn't load from source:
         (begin (notify path) (orig path name)))))
 

@@ -23,7 +23,6 @@
 
 (include "extract-common.ss")
 
-(define ptr-bytes 4)
 (define code-point-limit #x110000)
 (define-table (make-table table-ref table-set! table-ref-code)
   (make-vector vector-ref vector-set!)
@@ -107,6 +106,7 @@
   (flag alphabetic-property)
   (flag numeric-property)
   (flag whitespace-property)
+  (flag extended-pictographic-property)
   (enumeration category Lu-cat Ll-cat Lt-cat Lm-cat Lo-cat
     Mn-cat Mc-cat Me-cat Nd-cat Nl-cat No-cat Pc-cat Pd-cat
     Ps-cat Pe-cat Pi-cat Pf-cat Po-cat Sm-cat Sc-cat Sk-cat
@@ -121,7 +121,9 @@
     wb-newline-property
     ; UNICODE 7.0.0
     wb-double-quote-property wb-single-quote-property
-    wb-hebrew-letter-property wb-regional-indicator-property)
+    wb-hebrew-letter-property wb-regional-indicator-property
+    ; UNICODE 14.0
+    wb-zwj-property wb-wsegspace-property)
   (integer combining-class 8))
 
 ;;; Uppercase = Lu + Other_Uppercase
@@ -132,13 +134,13 @@
 ;;; White_Space = 
 
 ;;; cased property:
-;;;   D120: A character C is defined to be cased if and only if C has the
+;;;   D135: A character C is defined to be cased if and only if C has the
 ;;;   Lowercase or Uppercase property or has a General_Category value of
-;;;   Titlecase_Letter
+;;;   Titlecase_Letter.
 ;;;
 ;;; case-ignorable property:
-;;;   D121 A character C is defined to be case-ignorable if C has the
-;;;   value MidLetter or the value MidNumLet for the Word_Break property
+;;;   D136 A character C is defined to be case-ignorable if C has the
+;;;   value MidLetter, MidNumLet, or Single_Quote for the Word_Break property
 ;;;   or its General_Category is one of Nonspacing_Mark (Mn),
 ;;;   Enclosing_Mark (Me), Format (Cf), Modifier_Letter (Lm), or
 ;;;   Modifier_Symbol (Sk).
@@ -162,7 +164,9 @@
       [(Single_Quote) (fxior (fxsll wb-single-quote-property wbproperty-shift) case-ignorable-property)]
       [(Hebrew_Letter) (fxsll wb-hebrew-letter-property wbproperty-shift)]
       [(Regional_Indicator) (fxsll wb-regional-indicator-property wbproperty-shift)]
-      [else (error 'name->wbprop "unexpected property ~a" name)])))
+      [(ZWJ) (fxsll wb-zwj-property wbproperty-shift)]
+      [(WSegSpace) (fxsll wb-wsegspace-property wbproperty-shift)]
+      [else (errorf 'name->wbprop "unexpected property ~a" name)])))
 
 (define proplist-properties
   `(["Other_Uppercase"  ,uppercase-property]
@@ -207,7 +211,7 @@
 (define (category/flags x)
   (cond
     [(assq x categories) => cadr]
-    [else (error 'category/flags "invalid cat ~s" x)]))
+    [else (errorf 'category/flags "invalid cat ~s" x)]))
 
 (define (make-cats-table ls)
   (let f ([i 1] [st (car ls)] [ls (cdr ls)] [ac '()])
@@ -243,7 +247,7 @@
             (if (string-suffix? (list-ref x 1) "First>")
                 (let ([y (car ls)] [ls (cdr ls)])
                   (unless (string-suffix? (list-ref y 1) "Last>")
-                    (error #f "expected entry marked Last following entry marked First for ~x" n))
+                    (errorf #f "expected entry marked Last following entry marked First for ~x" n))
                   (let ([m (hex->num (list-ref y 0))])
                     (do ([n n (fx+ n 1)])
                         ((fx> n m))
@@ -260,7 +264,7 @@
           (unless (> i j)
             (let ([prop (getprop i)])
               (unless (fx= (fxand (fxsrl prop wbproperty-shift) wbproperty-mask) 0)
-                (error #f "multiple word break properties found for ~x" i))
+                (errorf #f "multiple word break properties found for ~x" i))
               (setprop i (fxior prop (name->wbprop (list-ref x 1))))
               (f (+ i 1) j))))))
     (get-unicode-data "UNIDATA/WordBreakProperty.txt"))
@@ -280,6 +284,17 @@
                    (setprop i (fxlogor (getprop i) n))
                    (f (+ i 1) j)))))])))
     (get-unicode-data "UNIDATA/PropList.txt"))
+  (for-each
+    (lambda (x)
+      (let ([range (extract-range (list-ref x 0))]
+            [name (list-ref x 1)])
+        (cond
+          [(equal? name "Extended_Pictographic")
+           (let f ([i (car range)] [j (cdr range)])
+             (unless (> i j) 
+               (setprop i (fxlogor (getprop i) extended-pictographic-property))
+               (f (+ i 1) j)))])))
+    (get-unicode-data "UNIDATA/emoji-data.txt"))
   ;;; clear constituent property for first 128 characters
   (do ([i 0 (fx+ i 1)])
       ((fx= i 128))
@@ -291,10 +306,13 @@
         (pretty-print
           `(module ($char-constituent? $char-subsequent? $char-upper-case? $char-lower-case? $char-title-case? $char-alphabetic?
                     $char-numeric? $char-whitespace? $char-cased? $char-case-ignorable? $char-category
+                    $char-extended-pictographic?
                     $wb-aletter? $wb-numeric? $wb-katakana? $wb-extend? $wb-format? $wb-midnum? $wb-midletter?
                     $wb-midnumlet? $wb-extendnumlet? $char-combining-class $char-dump
                     ; UNICODE 7.0.0
-                    $wb-hebrew-letter? $wb-single-quote? $wb-double-quote? $wb-regional-indicator?)
+                    $wb-hebrew-letter? $wb-single-quote? $wb-double-quote? $wb-regional-indicator?
+                    ; UNICODE 14.0
+                    $wb-zwj? $wb-wsegspace?)
              (define category-mask ,category-mask)
              (define unicode-category-table ',tbl)
              (define unicode-category-names
@@ -325,6 +343,9 @@
              (define $char-whitespace?
                (lambda (c)
                  (fxlogtest (getprop (char->integer c)) ,whitespace-property)))
+             (define $char-extended-pictographic?
+               (lambda (c)
+                 (fxlogtest (getprop (char->integer c)) ,extended-pictographic-property)))
              (define $char-cased?
                (lambda (c)
                  (fxlogtest (getprop (char->integer c)) ,cased-property)))
@@ -352,6 +373,8 @@
              (define $wb-double-quote? (wb ,wb-double-quote-property))
              (define $wb-single-quote? (wb ,wb-single-quote-property))
              (define $wb-regional-indicator? (wb ,wb-regional-indicator-property))
+             (define $wb-zwj? (wb ,wb-zwj-property))
+             (define $wb-wsegspace? (wb ,wb-wsegspace-property))
              (define $char-combining-class
                (lambda (c)
                  (fxand (fxsrl (getprop (char->integer c)) ,combining-class-shift)
@@ -388,6 +411,8 @@
                    (and ($wb-double-quote? c) 'double-quote)
                    (and ($wb-single-quote? c) 'single-quote)
                    (and ($wb-regional-indicator? c) 'regional-indicator)
+                   (and ($wb-zwj? c) 'zwj)
+                   (and ($wb-wsegspace? c) 'wsegspace)
                    `(combining-class ,($char-combining-class c))
                    ($char-category c))))))))))
 
