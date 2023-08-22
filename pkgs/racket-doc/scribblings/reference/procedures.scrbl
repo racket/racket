@@ -619,7 +619,7 @@ other low-level code.
 Returns @racket[#t] if @racket[v] is a primitive procedure,
 @racket[#f] otherwise.}
 
-@defproc[(primitive-closure? [v any/c]) boolean]{
+@defproc[(primitive-closure? [v any/c]) boolean?]{
 
 Returns @racket[#t] if @racket[v] is internally implemented as a
 primitive closure rather than a simple primitive procedure,
