@@ -596,8 +596,9 @@
                                  ;; See note above about how we cannot depend in general on
                                  ;; whether the target ".zo" file exists, but that applies
                                  ;; only when a SHA-1 to assume is recorded or is expected
-                                 ;; to be recorded
-                                 (or (deps-assume-compiled-sha1 deps)
+                                 ;; to be recorded, at least in non-cross mode
+                                 (or (cross-multi-compile? roots)
+                                     (deps-assume-compiled-sha1 deps)
                                      (and (not (deps-machine deps))
                                           (current-compile-target-machine))))
                              (trace-printf "dep file exists without bytecode: ~a" zo-name)))
