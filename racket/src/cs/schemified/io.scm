@@ -4675,7 +4675,7 @@
                  src-bstr_0
                  src-start_0
                  src-end_0
-                 #f
+                 #t
                  #f
                  #t)))
            (begin

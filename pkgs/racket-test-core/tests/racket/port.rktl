@@ -1,5 +1,6 @@
 
 (load-relative "loadtest.rktl")
+(require compiler/find-exe)
 
 (Section 'port)
 
@@ -503,6 +504,19 @@
   (test 5 write-bytes-avail/enable-break #"hello" /dev/null-out)
   (test #t write-special-avail* 'hello /dev/null-out)
   (test 5 write-bytes-avail #"hello" /dev/null-out))
+
+(for ([pre? (in-list '(#f #t))])
+  (let ()
+    (define exe (find-exe))
+    (define-values (sp stdout-in stdin-out stderr-in)
+      (subprocess #f #f #f exe "-q" "-n"))
+    (subprocess-wait sp)
+    (when pre?
+      ;; write some buffered bytes
+      (write-bytes #"ok" stdin-out))
+    ;; make sure `write-bytes-avail-evt` doesn't try to buffer
+    (err/rt-test/once (sync (write-bytes-avail-evt #"hello" stdin-out))
+                      exn:fail:filesystem?)))
 
 ;; A part that accumulates bytes as characters in a list,
 ;;  but not in a thread-safe way:

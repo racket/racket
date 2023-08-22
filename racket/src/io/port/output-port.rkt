@@ -104,7 +104,7 @@
     (write-evt
      ;; in atomic mode:
      (lambda (self-evt)
-       (define v (send core-output-port out write-out src-bstr src-start src-end #f #f #t))
+       (define v (send core-output-port out write-out src-bstr src-start src-end #t #f #t))
        (when (exact-integer? v)
          (count-write-evt-via-write-out out v src-bstr src-start))
        (if (evt? v)
