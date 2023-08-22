@@ -136,12 +136,25 @@
                 (and (not prev-was-slash?)
                      (loop (sub1 i) #t #t saw-dot?))]
                [(char=? c #\.)
-                (if (and ((add1 i) . < . len)
-                         (not (char=? (string-ref v (add1 i)) #\/))
-                         (not (char=? (string-ref v (add1 i)) #\.)))
+                (if (and dots-dir-ok?
+                         (let ([post-c (if ((add1 i) . < . len)
+                                           (cond
+                                             [(char=? (string-ref v (add1 i)) #\/) 0]
+                                             [(char=? (string-ref v (add1 i)) #\.) 1]
+                                             [else 2])
+                                           0)]
+                               [pre-c (if (i . > . 0)
+                                          (cond
+                                            [(char=? (string-ref v (sub1 i)) #\/) 0]
+                                            [(char=? (string-ref v (sub1 i)) #\.) 1]
+                                            [else 2])
+                                          0)])
+                           ((+ post-c pre-c) . <= . 1)))
+                    ;; delimited "." or ".."
+                    (loop (sub1 i) #f saw-slash? saw-dot?)
+                    ;; not "." or "..", so treat "." as starting a file suffix
                     (and (not saw-slash?) ; can't have suffix on a directory
-                         (loop (sub1 i) #f saw-slash? #t))
-                    (loop (sub1 i) #f saw-slash? saw-dot?))]
+                         (loop (sub1 i) #f saw-slash? #t)))]
                [(or (plain-char? c)
                     (and (char=? c #\%)
                          ((+ i 2) . < . len)
@@ -153,32 +166,10 @@
                [else #f])]
              [else
               ;; checked all characters
-              (and
-               ;; can't have a file name with no directory
-               (not (and (not just-file-ok?)
-                         saw-dot?
-                         (not saw-slash?)))
-               
-               (or dots-dir-ok?
-                   ;; double-check for delimited "." or ".."
-                   (let loop ([i 0])
-                     (cond
-                      [(= i len) #t]
-                      [(char=? (string-ref v i) #\.)
-                       (and
-                        ;; not "."
-                        (not (or (= len (add1 i))
-                                 (char=? (string-ref v (add1 i)) #\/)))
-                        ;; not ".."
-                        (not (and (char=? (string-ref v (add1 i)) #\.)
-                                  (or (= len (+ i 2))
-                                      (char=? (string-ref v (+ i 2)) #\/))))
-                        ;; Skip over "."s:
-                        (loop (let loop ([i i])
-                                (if (char=? #\. (string-ref v i))
-                                    (loop (add1 i))
-                                    i))))]
-                      [else (loop (add1 i))]))))]))))))
+              (or just-file-ok?
+                  ;; can't have a suffixed file name with no directory
+                  (not (and saw-dot?
+                            (not saw-slash?))))]))))))
 
 (define (planet-user/pkg-string? v)
   (and (string? v)
