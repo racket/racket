@@ -21,7 +21,7 @@ The name ``Zuo'' is derived from the Chinese word for ``make.''
 @section[#:tag "running"]{Building and Running Zuo}
 
 Compile @filepath{zuo.c} from the Zuo sources with a C compiler. No
-additional are files needed for compilation, other than system and
+additional files are needed for compilation, other than system and
 C-library headers. No compiler flags should be needed, although flags
 like @exec{-o zuo} or @exec{-O2} are a good idea.
 
@@ -104,7 +104,7 @@ other libraries after @exec{make install} or @exec{./zuo build.zuo
 install}.
 
 You can use images without embedding. The @racket[dump-image-and-exit]
-Zuo kernel permitive creates an image containing all loaded modules,
+Zuo kernel primitive creates an image containing all loaded modules,
 and a @Flag{B} or @DFlag{boot} command-line flag for Zuo uses the
 given boot image on startup. You can also embed an image created with
 @racket[dump-image-and-exit] by using @filepath{local/image.zuo} with
