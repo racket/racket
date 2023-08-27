@@ -345,7 +345,8 @@ However, if @filepath{death-list-5.rkt} is required by a
 @filepath{kiddo.rkt} that is implemented with @racketmodname[scheme #:indirect]
 instead of @racketmodname[racket]:
 
-@racketmod[#:file "kiddo.rkt" (racketmodname scheme #:indirect) (require "death-list-5.rkt")]
+@racketmod[#:file "kiddo.rkt" #,(racketmodname scheme #:indirect)
+           (require "death-list-5.rkt")]
 
 then, if you run @filepath{kiddo.rkt} file in DrRacket or if you run it
 directly with @exec{racket}, @filepath{kiddo.rkt} causes
