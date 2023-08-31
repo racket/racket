@@ -682,10 +682,9 @@
                                    [,targets-at-id targets-at]))
         `(,(quote-syntax module+)
           main
+          ;; builds to current directory by default:
           (,(quote-syntax build/command-line*)
-           ,targets-at-id
-           ;; builds to current directory by default:
-           build-path))))
+           ,targets-at-id))))
 
 (define-syntax (bounce-to-targets stx)
   (unless (and (list? stx) (= 4 (length stx)))

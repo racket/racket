@@ -572,9 +572,14 @@ be rebuilt.}
 
 Provides @racket[targets-at-id] as @racketidfont{targets-at}, and
 creates a @racketidfont{main} submodule that runs
-@racket[(build/command-line* targets-at-id build-path)]. A script
+@racket[(build/command-line* targets-at-id)]. A script
 using @racket[provide-targets] thus works as a makefile-like script or
-as an input to a larger build.}
+as an input to a larger build.
+
+@history[#:changed "1.7" @elem{Removed @racket[build-path] as a second
+                               argument to @racket[build/command-line*] so that
+                               the default @racket[(make-at-dir ".")]
+                               is used, instead.}]}
 
 @defform[(bounce-to-targets config-file-expr key-symbol-expr script-file-expr)]{
 
