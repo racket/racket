@@ -39,4 +39,7 @@
             (try-dynamic-require 'scribble/private/indentation 'determine-spaces)]
            [(drracket:keystrokes)
             (try-dynamic-require 'scribble/private/indentation 'keystrokes)]
+           ;; Note: Do /not/ supply drracket:comment-delimiters here;
+           ;; that would cause the at-exp meta-lang to overrule the
+           ;; main lang.
            [else (fallback)])))))
