@@ -19,7 +19,7 @@ expanded (see @secref[#:doc refman "fully-expanded"] and
 The inspector @racket[insp] is used to disarm @racket[expr-stx] and
 sub-expressions before extracting identifiers. The default
 @racket[insp] is the declaration-time inspector of the
-@racketmodname[syntax/free-vars] module.}
+@racketmodname[syntax/free-vars] module.
 
 If @racket[module-bound?] is non-false, the list of free variables also
 includes free module-bound identifiers.
@@ -38,4 +38,4 @@ includes free module-bound identifiers.
         expanded-body])]))
 
 (lambda (x) (print-body-free-vars (lambda (y) x)))
-]
+]}
