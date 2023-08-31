@@ -35,6 +35,8 @@
       [(drracket:keystrokes)
        (try-dynamic-require 'scribble/private/indentation 'keystrokes)]
       [(drracket:default-extension) "scrbl"]
+      [(drracket:comment-delimiters)
+       '((line "@;" " "))]
       [else (default key defval)])))
 
 ;; Settings that apply to Scribble-renderable docs:
