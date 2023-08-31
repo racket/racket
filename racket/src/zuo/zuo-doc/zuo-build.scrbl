@@ -497,7 +497,7 @@ string.}
 
 
 @defproc[(build/command-line* [targets-at (procedure? hash? . -> . (listof target?))]
-                              [at-dir (path-string? ... . -> . path-string?) build-path]
+                              [at-dir (path-string? ... . -> . path-string?) (make-at-dir ".")]
                               [options hash? (hash)])
          void?]{
 
