@@ -166,9 +166,12 @@ consumed or not consumed, and other threads can safely use the port.}
          void?]{
 
 @index['("threads" "breaking")]{Registers} a break with the specified
-thread, where @racket[kind] optionally indicates the kind of break to
-register. If breaking is disabled in @racket[thd], the break will be
-ignored until breaks are re-enabled (see @secref["breakhandler"]).}
+thread. The optional @racket[kind] value indicates the kind of break to
+register, where @racket[#f], @racket['hang-up], and @racket['terminate]
+correspond to interrupt, hang-up, and terminate breaks respectively.
+If breaking is disabled in @racket[thd], the break will be
+ignored until breaks are re-enabled.
+See @secref["breakhandler"] for details.}
 
 @defproc[(sleep [secs (>=/c 0) 0]) void?]{
 
