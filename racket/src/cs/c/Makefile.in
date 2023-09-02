@@ -217,14 +217,16 @@ upsrcdir=@upsrcdir@
 
 ZUO=bin/zuo
 
+BUILD_VARS = MAKE="$(MAKE)"
+
 cs: $(ZUO)
-	$(ZUO) . build
+	$(ZUO) . build $(BUILD_VARS)
 
 install: $(ZUO)
-	$(ZUO) . install
+	$(ZUO) . install $(BUILD_VARS)
 
 plain-install: $(ZUO)
-	$(ZUO) . plain-install
+	$(ZUO) . plain-install $(BUILD_VARS)
 
 $(ZUO): $(srcdir)/../../zuo/zuo.c
 	mkdir -p bin

@@ -5,11 +5,13 @@ ZUO=bin/zuo
 
 # A few variables have traditionally been supported as environment
 # variables, so propagate uses (without definitions) here:
-INSTALL_VARS_FROM_ENV = DESTDIR="$(DESTDIR)" \
+BUILD_VARS = MAKE="$(MAKE)"
+INSTALL_VARS_FROM_ENV = $(BUILD_VARS) \
+                        DESTDIR="$(DESTDIR)" \
                         PLT_SETUP_OPTIONS="$(PLT_SETUP_OPTIONS)"
 
 all: $(ZUO)
-	$(ZUO) . all
+	$(ZUO) . all $(BUILD_VARS)
 
 install: $(ZUO)
 	$(ZUO) . install $(INSTALL_VARS_FROM_ENV)
@@ -19,7 +21,7 @@ plain-install: $(ZUO)
 
 .PHONY: cs
 cs: $(ZUO)
-	$(ZUO) . cs
+	$(ZUO) . cs $(BUILD_VARS)
 
 install-cs: $(ZUO)
 	$(ZUO) . install-cs $(INSTALL_VARS_FROM_ENV)
@@ -29,7 +31,7 @@ plain-install-cs: $(ZUO)
 
 .PHONY: bc
 bc: $(ZUO)
-	$(ZUO) . bc
+	$(ZUO) . bc $(BUILD_VARS)
 
 install-bc: $(ZUO)
 	$(ZUO) . install-bc $(INSTALL_VARS_FROM_ENV)
@@ -38,7 +40,7 @@ plain-install-bc: $(ZUO)
 	$(ZUO) . plain-install-bc $(INSTALL_VARS_FROM_ENV)
 
 3m: $(ZUO)
-	$(ZUO) . 3m
+	$(ZUO) . 3m $(BUILD_VARS)
 
 install-3m: $(ZUO)
 	$(ZUO) . install-3m $(INSTALL_VARS_FROM_ENV)
@@ -47,7 +49,7 @@ plain-install-3m: $(ZUO)
 	$(ZUO) . plain-install-3m $(INSTALL_VARS_FROM_ENV)
 
 cgc: $(ZUO)
-	$(ZUO) . cgc
+	$(ZUO) . cgc $(BUILD_VARS)
 
 install-cgc: $(ZUO)
 	$(ZUO) . install-cgc $(INSTALL_VARS_FROM_ENV)

@@ -139,50 +139,52 @@ upsrcdir=@upsrcdir@
 
 ZUO=bin/zuo
 
+BUILD_VARS = MAKE="$(MAKE)"
+
 build: $(ZUO)
-	$(ZUO) . build
+	$(ZUO) . build $(BUILD_VARS)
 
 3m: $(ZUO)
-	$(ZUO) . 3m
+	$(ZUO) . 3m $(BUILD_VARS)
 
 just-racket3m: $(ZUO)
-	$(ZUO) . racket3m
+	$(ZUO) . racket3m $(BUILD_VARS)
 
 cgc: $(ZUO)
-	$(ZUO) . cgc
+	$(ZUO) . cgc $(BUILD_VARS)
 
 cgc-core: $(ZUO)
-	$(ZUO) . cgc
+	$(ZUO) . cgc $(BUILD_VARS)
 
 just-racketcgc: $(ZUO)
-	$(ZUO) . racketcgc
+	$(ZUO) . racketcgc $(BUILD_VARS)
 
 just-racketcgc1: $(ZUO)
-	$(ZUO) . racketcgc1
+	$(ZUO) . racketcgc1 $(BUILD_VARS)
 
 both: $(ZUO)
-	$(ZUO) . both
+	$(ZUO) . both $(BUILD_VARS)
 
 install: $(ZUO)
-	$(ZUO) . install
+	$(ZUO) . install $(BUILD_VARS)
 
 plain-install: $(ZUO)
-	$(ZUO) . plain-install
+	$(ZUO) . plain-install $(BUILD_VARS)
 
 install-3m: $(ZUO)
-	$(ZUO) . install-3m
+	$(ZUO) . install-3m $(BUILD_VARS)
 
 plain-install-3m: $(ZUO)
-	$(ZUO) . plain-install-3m
+	$(ZUO) . plain-install-3m $(BUILD_VARS)
 
 install-cgc: $(ZUO)
-	$(ZUO) . install-cgc
+	$(ZUO) . install-cgc $(BUILD_VARS)
 
 plain-install-cgc: $(ZUO)
-	$(ZUO) . plain-install-cgc
+	$(ZUO) . plain-install-cgc $(BUILD_VARS)
 
 install-both: $(ZUO)
-	$(ZUO) . install-both
+	$(ZUO) . install-both $(BUILD_VARS)
 
 $(ZUO): $(srcdir)/../zuo/zuo.c
 	mkdir -p bin
