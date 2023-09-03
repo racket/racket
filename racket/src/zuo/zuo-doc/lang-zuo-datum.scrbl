@@ -1,4 +1,5 @@
 #lang scribble/manual
+@(require (for-label zuo-doc/fake-zuo))
 
 @title{Zuo Data as Module}
 

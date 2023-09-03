@@ -18,6 +18,7 @@
     unless
     begin
     cond
+    else
     quote
     quasiquote
     unquote
@@ -26,6 +27,7 @@
 
     define
     define-syntax
+    struct
     include
     require
     provide
@@ -58,6 +60,7 @@
     car
     cdr
     list
+    list*
     append
     reverse
     length
@@ -66,11 +69,15 @@
     remove
     list-ref
     list-set
+    list-tail
+
+    caar cadr cdar cddr
 
     andmap
     ormap
     map
     filter
+    sort
     foldl
     for-each
 
@@ -100,6 +107,8 @@
     substring
     string=?
     string-ci=?
+    string<?
+    string->integer
     string->symbol
     string->uninterned-symbol
     symbol->string
@@ -148,6 +157,7 @@
     fd-poll
     eof
     fd-terminal?
+    fd-valid?
     file->string
     display-to-file
 
@@ -208,6 +218,7 @@
     input-file-target
     input-data-target
     target-path
+    target-shell
     target-name
     target?
     token?
@@ -230,9 +241,16 @@
     command-target->target
     bounce-to-targets
 
+    glob->matcher glob-match?
+
     shell
     shell/wait
     build-shell
+    shell-subst
+
+    c-compile c-link c-ar
+    .c->.o .exe .a
+    config-merge config-include config-define
 
     call-in-main-thread
     thread? thread channel? channel channel-put channel-get channel-try-get
