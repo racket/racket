@@ -3,11 +3,14 @@
          (for-syntax racket/base)
          (for-label racket/base
                     racket/contract/base
-                    racket/cmdline))
+                    racket/cmdline
+                    racket/format
+                    racket/list))
 
 (provide realracket
          realracket*
          (for-label any/c
+                    or/c
                     listof
                     ->))
 
