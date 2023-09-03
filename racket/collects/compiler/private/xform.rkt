@@ -1001,10 +1001,12 @@
           ;;  nested function calls because it takes more than one argument:
           (append
            '(memcpy memmove memcmp memset
-		    __builtin___memmove_chk __inline_memmove_chk
-		    __builtin___memcpy_chk __inline_memcpy_chk
-		    __builtin___memset_chk __inline_memset_chk
-		    __builtin___memcmp_chk __inline_memcmp_chk
+		    __builtin___memmove_chk __inline_memmove_chk __memmove_ichk
+		    __builtin___memcpy_chk __inline_memcpy_chk __memcpy_ichk
+		    __builtin___memset_chk __inline_memset_chk __memset_ichk
+		    __builtin___memcmp_chk __inline_memcmp_chk __memcmp_ichk
+		    __builtin___strcpy_chk __inline_strcpy_chk __strcpy_ichk
+		    __builtin___sprintf_chk __inline_sprintf_chk __sprintf_ichk
                     strcmp strcoll strcpy _mzstrcpy strcat
 		     __builtin_memset
                     printf sprintf vsprintf vprintf
