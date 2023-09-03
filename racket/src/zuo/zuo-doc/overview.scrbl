@@ -133,7 +133,7 @@ Zuo's kernel supports the following kinds of data:
 
  @item{booleans;}
 
- @item{integers as 64-bit two's complement with modular arithmetic}
+ @item{integers as 64-bit two's complement with modular arithmetic;}
 
  @item{strings as byte strings (optionally prefixed with @litchar{#}
        and with @litchar{\n}, @litchar{\r}, @litchar{\t},
@@ -257,7 +257,7 @@ under no obligation to use any of those.
 
 A call @racket[(module->hash _M)] primitive checks whether the module
 @racket[_M] is already loaded and returns its hash table if so. The
-@racket[zuo/kernel] module is always preloaded, but other modules may
+@racketmodname[zuo/kernel] module is always preloaded, but other modules may
 be preloaded in an image that was created by
 @racket[dump-image-and-exit]. If a module @racket[_M] is not already
 loaded, @racket[module->hash] reads the beginning of @racket[_M]'s
