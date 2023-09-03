@@ -441,7 +441,6 @@
      (config-include (hash-set* config
                                 'CFLAGS (build-shell
                                          (hash-ref config 'CFLAGS "")
-                                         (hash-ref config 'CPPFLAGS "")
                                          (hash-ref config 'COMPFLAGS "")
                                          (hash-ref config 'PROFFLAGS "")
                                          (hash-ref config 'OPTIONS "")
@@ -1132,7 +1131,6 @@
                                                                       "-DSGC_EXPORTS")
                                                            'CFLAGS (build-shell
                                                                     (hash-ref config 'CFLAGS "")
-                                                                    (hash-ref config 'CPPFLAGS "")
                                                                     (hash-ref config 'COMPFLAGS "")
                                                                     (hash-ref config 'PROFFLAGS "")
                                                                     (hash-ref config 'OPTIONS "")))
@@ -1195,7 +1193,6 @@
                                                                       "-DSGC_EXPORTS")
                                                            'CFLAGS (build-shell
                                                                     (hash-ref config 'CFLAGS "")
-                                                                    (hash-ref config 'CPPFLAGS "")
                                                                     (hash-ref config 'COMPFLAGS "")
                                                                     (hash-ref config 'PROFFLAGS "")
                                                                     (hash-ref config 'MZOPTIONS "")
