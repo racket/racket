@@ -44,6 +44,8 @@
 (define (get-arg)
   (when (null? args) (error "insufficient arguments"))
   (begin0 (car args) (set! args (cdr args))))
+(define (maybe-get-arg)
+  (and (pair? args) (get-arg)))
 
 (define op (string->symbol (get-arg)))
 (define adjust-mode
@@ -175,7 +177,7 @@
             [(link-exists? src)
              (make-file-or-directory-link (resolve-path src) dst)]
             [(directory-exists? src)
-             (make-directory dst)
+             (make-directory* dst) ; `*` to support merging instead of only replacing
              (if build-path?
                  (for-each (lambda (p) (loop (make-path src p) (make-path dst p)))
                            (parameterize ([current-directory src])
@@ -466,12 +468,13 @@
 
 (define ((move/copy-tree move?) src dst*
                                 #:missing [missing 'error]
-                                #:build-path? [build-path? #f])
+                                #:build-path? [build-path? #f]
+                                #:merge? [merge? #f])
   (define skip-filter (current-skip-filter))
   (define dst (if (symbol? dst*) (dir: dst*) dst*))
   (define src-exists?
     (or (directory-exists? src) (file-exists? src) (link-exists? src)))
-  (printf "~aing ~a -> ~a\n" (if move? "Mov" "Copy") src dst)
+  (printf "~aing~a ~a -> ~a\n" (if move? "Mov" "Copy") (if merge? " with merge" "") src dst)
   (cond
     [src-exists?
      (make-dir* (dirname dst))
@@ -485,11 +488,12 @@
              [dst-f? (file-exists? dst)])
          (unless (skip-filter src)
            (when (and src-d? (not lvl) (not dst-d?))
-             (when (or dst-l? dst-f?) (ask-overwrite "file or link" dst))
+             (unless merge?
+               (when (or dst-l? dst-f?) (ask-overwrite "file or link" dst)))
              (make-directory dst)
              (register-change! 'md dst)
              (set! dst-d? #t) (set! dst-l? #f) (set! dst-f? #f))
-           (cond [dst-l? (ask-overwrite "symlink" dst) (doit)]
+           (cond [dst-l? (unless merge? (ask-overwrite "symlink" dst)) (doit)]
                  [dst-d? (if (and src-d? (or (not lvl) (< 0 lvl)))
                            ;; recur only when source is dir, & not too deep
                            (for-each (lambda (name)
@@ -497,8 +501,8 @@
                                              (make-path dst name)
                                              (and lvl (sub1 lvl))))
                                      (ls src))
-                           (begin (ask-overwrite "dir" dst) (doit)))]
-                 [dst-f? (ask-overwrite "file" dst) (doit)]
+                           (begin (unless merge? (ask-overwrite "dir" dst)) (doit)))]
+                 [dst-f? (unless merge? (ask-overwrite "file" dst)) (doit)]
                  [else (doit)]))))
      (when move? (remove-empty-dirs src))]
     [(eq? missing 'error)
@@ -571,7 +575,9 @@
 
 (define (make-install-copytree)
   (define copytree (move/copy-tree #f))
+  (define (maybe-complete-path p) (and p (path->complete-path p)))
   (define origtree? (equal? "yes" (get-arg)))
+  (define prepared-dir (maybe-complete-path (maybe-get-arg))) ; "collects" root and "doc" parent
   (current-directory rktdir)
   (skip-dot-files!)
   (with-handlers ([exn? (lambda (e) (undo-changes) (raise e))])
@@ -584,6 +590,13 @@
     (copytree "etc"      'config   #:missing 'skip)
     (unless (equal-path? (dir: 'pkgs) (build-path (dir: 'sharerkt) "pkgs"))
       (fix-pkg-links (dir: 'sharerkt) (dir: 'pkgs)))
+    (when prepared-dir
+      (parameterize ([current-directory (reroot-path (current-directory)
+                                                     prepared-dir)])
+        (copytree "collects" 'collects #:missing 'skip #:merge? #t)
+        (copytree (make-path "share" "pkgs") 'pkgs #:missing 'skip #:merge? #t))
+      (parameterize ([current-directory prepared-dir])
+        (copytree "doc" 'doc #:missing 'skip #:merge? #t)))
     (unless origtree? (write-config))))
 
 (define (remove-dest destdir p)

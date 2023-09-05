@@ -82,6 +82,7 @@
 (define-config config:links-search-files 'links-search-files to-path)
 (define-config config:pkgs-dir 'pkgs-dir to-path)
 (define-config config:pkgs-search-dirs 'pkgs-search-dirs to-path)
+(define-config config:info-domain-root 'info-domain-root to-path)
 (define-config config:cgc-suffix 'cgc-suffix values)
 (define-config config:3m-suffix '3m-suffix values)
 (define-config config:cs-suffix 'cs-suffix values)
@@ -298,6 +299,11 @@
          config:config-tethered-apps-dir
          config:bin-search-dirs
          config:gui-bin-search-dirs)
+
+;; ----------------------------------------
+;; info-domain root
+
+(provide config:info-domain-root)
 
 ;; ----------------------------------------
 ;; DLLs

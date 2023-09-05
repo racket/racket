@@ -142,7 +142,7 @@ ZUO=bin/zuo
 BUILD_VARS = MAKE="$(MAKE)"
 
 build: $(ZUO)
-	$(ZUO) . build $(BUILD_VARS)
+	$(ZUO) . build-and-prepare $(BUILD_VARS)
 
 3m: $(ZUO)
 	$(ZUO) . 3m $(BUILD_VARS)

@@ -49,7 +49,7 @@
   (make-targets
    `([:target all ()
               ,(lambda (token)
-                 (build (find-target "build" (get-targets)) token))]
+                 (build (find-target "build-and-prepare" (get-targets)) token))]
 
      [:target bc () ,(lambda (token) (build-bc "build" token))]
      [:target 3m () ,(lambda (token) (build-bc "3m" token))]

@@ -1746,6 +1746,13 @@ current-system paths while @racket[get-cross-lib-search-dirs] and
 
   @history[#:added "8.1.0.6"]}
 
+@defproc[(get-info-domain-root) (or/c #false path?)]{
+  Returns @racket[#f] or a path to be used as a prefix to redirect the paths
+  used for recording and finding @filepath{info.rkt} information via
+  @racket[find-relevant-directories].
+
+  @history[#:added "8.10.0.4"]}
+
 @defproc[(get-doc-search-url) string?]{
   Returns a string that is used by the documentation system, augmented
   with a version and search-key query, for remote documentation links.
@@ -1959,7 +1966,9 @@ current-system paths while @racket[get-cross-lib-search-dirs] and
    the user-specific directory @racket[(build-path (find-system-path
    'addon-dir) "collects")] for all-version cases, and in @racket[(build-path
    (find-system-path 'addon-dir) (version) "collects")] for
-   version-specific cases.}
+   version-specific cases. These cache paths can be redirected
+   by an @racket['info-domain-root] entry in @filepath{config.rktd}
+   (see @secref["config-file"]).}
 
 @defproc[(find-relevant-directory-records
           [syms (listof symbol?)]

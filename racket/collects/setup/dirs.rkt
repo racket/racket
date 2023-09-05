@@ -19,11 +19,13 @@
                      config:share-search-dirs
                      config:man-search-dirs
                      config:doc-search-dirs
+                     config:info-domain-root
                      define-finder
                      get-config-table
                      to-path)
          find-cross-dll-dir
          find-dll-dir
+         get-info-domain-root
          get-lib-search-dirs)
 
 ;; ----------------------------------------
@@ -150,6 +152,12 @@
 
 (define (get-cross-lib-extra-search-dirs)
   (make-extra-search-list config:lib-search-dirs))
+
+;; ----------------------------------------
+;; info-domain root
+
+(define (get-info-domain-root)
+  (force config:info-domain-root))
 
 ;; ----------------------------------------
 ;; DLLs

@@ -3,7 +3,8 @@
           "common.rkt"
           (for-label racket/base
                      racket/contract
-                     setup/dirs))
+                     setup/dirs
+                     setup/getinfo))
 
 @title[#:tag "config-file"]{Installation Configuration and Search Paths}
 
@@ -196,6 +197,14 @@ directory}:
  @item{@indexed-racket['include-search-dirs] --- like
        @racket[doc-search-dirs], but for directories containing C
        header files.}
+
+ @item{@indexed-racket['info-domain-root] --- a path, string, byte
+       string, of @racket[#f]; used as a prefix to redirect the paths
+       used for recording and finding @filepath{info.rkt} information via
+       @racket[find-relevant-directories]. It defaults to @racket[#f], which
+       uses paths as-is.
+
+       @history[#:added "8.10.0.4"]}
 
  @item{@indexed-racket['catalogs] --- a list of URL strings used as the search
        path for resolving package names. An @racket[#f] in the list

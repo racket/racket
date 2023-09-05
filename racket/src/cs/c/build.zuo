@@ -371,6 +371,10 @@
         (list "--xpatch" xpatch)
         '()))
 
+  (define (setup-prepare-to-here?)
+    (and (not (equal? "" (lookup 'prefix)))
+         (not cross?)))
+
   (define the-targets
     (make-targets
      `([:target build ()
@@ -380,6 +384,13 @@
                    (build/dep (find-target "starter" starter-targets) token)
                    (when (and mac? (not mac-fw?))
                      (build/dep (find-target framework the-targets) token)))]
+
+       [:target build-and-prepare ()
+                ,(lambda (token)
+                   (build/dep (find-target "build" the-targets) token)
+                   (when (setup-prepare-to-here?)
+                     (raco-setup-prepare-to-here config racketcs at-dir (make-at-dir
+                                                                         (at-source "../../..")))))]
 
        [:target build-racketcs ()
                 ,(lambda (token)
@@ -1056,7 +1067,10 @@
     (call-with-dest-racket
      (lambda (bindir dest-racket)
        (define copytree-racket (and cross? (hash-ref (config-bootstrap-racket) 'racket)))
-       (maybe-copytree config dest-racket copytree-racket at-dir)
+       (define copytree-config (if (setup-prepare-to-here?)
+                                   (hash-set config 'copytree-prepared-setup-files #t)
+                                   config))
+       (maybe-copytree copytree-config dest-racket copytree-racket at-dir)
        (run-raco-setup config dest-racket copytree-racket
                        ;; this can be redundant if it's also supplied via `SETUP_MACHINE_FLAGS`,
                        ;; but redundant should be ok:

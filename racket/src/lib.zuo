@@ -41,6 +41,7 @@
          strip-debug
          strip-lib-debug
          run-raco-setup
+         raco-setup-prepare-to-here
 
          install-license-files
          maybe-copytree
@@ -445,6 +446,54 @@
              "-G" configdir
              setup-args)]))
 
+(define (raco-setup-prepare-to-here config built-racket at-dir at-root-dir)
+  (define collects-dir (at-root-dir "collects"))
+  ;; set up configuration that points to local "doc" and "info-domain" dirs,
+  ;; so that we don't write outside of a build directory
+  (define src-config (at-root-dir "etc/config.rktd"))
+  (define config-str
+    (cond
+      [(file-exists? src-config)
+       (define in (fd-open-input src-config))
+       (define str (fd-read in eof))
+       (fd-close in)
+       (let loop ([old-str str])
+         (let* ([str (string-trim old-str)]
+                [str (string-trim str "\n")]
+                [str (string-trim str "\r")])
+           (if (equal? old-str str)
+               str
+               (loop str))))]
+      [else "#hash()"]))
+  (let ()
+    (mkdir-p (at-dir "compiled/etc"))
+    (define out (fd-open-output (at-dir "compiled/etc/config.rktd") :truncate))
+    (fd-write out (substring config-str 0 (- (string-length config-str) 1)))
+    (fd-write out (~a "(doc-dir . "
+                      (~s (find-relative-path collects-dir (at-dir "compiled/doc")))
+                      ")"))
+    (fd-write out (~a "(info-domain-root . "
+                      (~s (find-relative-path collects-dir (at-dir "compiled/info-domain")))
+                      ")"))
+    (fd-write out ")")
+    (fd-close out))
+  (run-raco-setup (hash-set* config
+                             'DESTDIR ""
+                             'collectsdir collects-dir
+                             'configdir (at-dir "compiled/etc")
+                             'SETUP_MACHINE_FLAGS (build-shell
+                                                   (hash-ref config 'SETUP_MACHINE_FLAGS "")
+                                                   "-R" (path->complete-path (at-dir "compiled")))
+                             'PLT_SETUP_OPTIONS (build-shell
+                                                 (hash-ref config 'PLT_SETUP_OPTIONS "")
+                                                 "--no-launcher"
+                                                 "--no-foreign-libs"
+                                                 "--no-install"
+                                                 "--no-post-install"
+                                                 "--no-pkg-deps"))
+                  built-racket
+                  #f '()))
+
 (define (install-license-files sharepltdir)
   (mkdir-p sharepltdir)
   (for-each (lambda (path)
@@ -495,7 +544,10 @@
   (when (equal? (hash-ref config 'MAKE_COPYTREE #f) "copytree")
     (unixstyle-install-run config dest-racket cross-racket at-dir
                            "make-install-copytree"
-                           (hash-ref config 'INSTALL_ORIG_TREE "no"))))
+                           (hash-ref config 'INSTALL_ORIG_TREE "no")
+                           (if (hash-ref config 'copytree-prepared-setup-files #f)
+                               (list (at-dir "compiled"))
+                               '()))))
 
 (define (maybe-libzo-move config dest-racket cross-racket at-dir)
   (when (equal? (hash-ref config 'INSTALL_LIBZO #f) "libzo")

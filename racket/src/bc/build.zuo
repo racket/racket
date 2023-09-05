@@ -30,6 +30,7 @@
   (define provided-racket? (not (equal? (or (lookup 'RACKET) "") "")))
   (define cify-mode (or (lookup 'ENABLE_CIFY) "auto"))
   (define gracket? (not (equal? (lookup 'MAKE_GRACKET) "no")))
+  (define cross? provided-racket?)
 
   (define mac? (equal? (lookup 'OSX) "t"))
   (define macx? (or mac? (glob-match? "*-DXONX*" (lookup 'CPPFLAGS))))
@@ -634,11 +635,23 @@
       (rm* (at-dir "src/startup.o"))
       (rm* (at-dir "xsrc/startup.c"))))
 
+  (define (setup-prepare-to-here?)
+    (and (equal? (lookup 'MAKE_COPYTREE) "copytree")
+         (not cross?)))
+
   (define the-targets
     (append
      (make-targets
       `([:target build ,(if 3m-default? '(3m) '(cgc)) ,void]
-        
+
+        [:target build-and-prepare ()
+                 ,(lambda (token)
+                    (build/dep (find-target "build" the-targets) token)
+                    (when (setup-prepare-to-here?)
+                      (define racket (if 3m-default? racket3m racketcgc))
+                      (raco-setup-prepare-to-here config racket at-dir (make-at-dir
+                                                                        (at-source "../..")))))]
+
         [:target 3m (,racket3m ,@(if gracket? (list gracket3m) '())
                                ,@(if windows? (list mzcom3m.exe) '())
                                ,@(if mac? (list framework3m) '())
@@ -1791,7 +1804,10 @@
                            ;; Otherwise, prefer to use the installed executable:
                            (dest-racket-exe 3m?)]))
        (define copytree-racket (and provided-racket? (get-host-racket)))
-       (maybe-copytree config dest-exe copytree-racket at-dir)
+       (define copytree-config (if (setup-prepare-to-here?)
+                                   (hash-set config 'copytree-prepared-setup-files #t)
+                                   config))
+       (maybe-copytree copytree-config dest-exe copytree-racket at-dir)
        (run-raco-setup config dest-exe copytree-racket '())
        (maybe-libzo-move config dest-exe copytree-racket at-dir)
        (maybe-destdir-fix config dest-exe copytree-racket at-dir)

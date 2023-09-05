@@ -203,6 +203,14 @@ Detailed instructions:
     (which is a single C file that needs only system headers), then
     supply `CC_FOR_BUILD=<compiler>` as an argument to `make`.
 
+    For a `--prefix` build that is not a cross-compilation, this step
+    also compiles ".zo" bytecode files for collections and packages,
+    and it renders documentation; those prepared files are written in
+    the build directory and moved into place by `make install`. For a
+    build that does not use `--prefix` or is a cross compilation,
+    building collections and packages is deferred to the `make
+    install` step.
+
  4. Run `make install`.
 
     This step copies executables and libraries into place within the

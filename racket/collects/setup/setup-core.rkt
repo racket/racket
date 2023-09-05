@@ -180,6 +180,10 @@
   (define timestamp-output?
     (and (getenv "PLT_SETUP_SHOW_TIMESTAMPS") #t))
 
+  (define (maybe-reroot-info-domain p)
+    (define r (get-info-domain-root))
+    (if r (reroot-path p r) p))
+
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;;                   Errors                      ;;
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -407,7 +411,8 @@
                     omit-root) ; #f => `omitted-paths' can reconstruct it
                 info-root
                 (or info-path
-                    (build-path info-root "info-domain" "compiled" "cache.rktd"))
+                    (maybe-reroot-info-domain
+                     (build-path info-root "info-domain" "compiled" "cache.rktd")))
                 info-path-mode
                 ;; by convention, all collections have "version" 1 0. This
                 ;; forces them to conflict with each other.
@@ -488,7 +493,8 @@
   ;; links:
   (let ()
     (define info-root (find-share-dir))
-    (define info-path (build-path info-root "info-cache.rktd"))
+    (define info-path (maybe-reroot-info-domain
+                       (build-path info-root "info-cache.rktd")))
     (define (cc! col #:path path)
       (collection-cc! col
                       #:path path
@@ -514,7 +520,8 @@
   ;; links:
   (when (make-user)
     (define info-root (find-user-share-dir))
-    (define info-path (build-path info-root "info-cache.rktd"))
+    (define info-path (maybe-reroot-info-domain
+                       (build-path info-root "info-cache.rktd")))
     (define (cc! col #:path path)
       (collection-cc! col
                       #:path path
@@ -907,11 +914,14 @@
         (for ([p (current-library-collection-paths)])
           (unless (or (and (avoid-main-installation) (hash-ref main-collects-dirs p #f))
                       (and (not (make-user)) (not (hash-ref main-collects-dirs p #f))))
-            (check-one-info-domain (build-path p "info-domain" "compiled" "cache.rktd"))))
+            (check-one-info-domain (maybe-reroot-info-domain
+                                    (build-path p "info-domain" "compiled" "cache.rktd")))))
         (unless (avoid-main-installation)
-          (check-one-info-domain (build-path (find-share-dir) "info-cache.rktd")))
+          (check-one-info-domain (maybe-reroot-info-domain
+                                  (build-path (find-share-dir) "info-cache.rktd"))))
         (when (make-user)
-          (check-one-info-domain (build-path (find-user-share-dir) "info-cache.rktd"))))
+          (check-one-info-domain (maybe-reroot-info-domain
+                                  (build-path (find-user-share-dir) "info-cache.rktd")))))
       (when make-docs?
         (setup-printf #f "deleting documentation databases")
         (for ([d (in-list (append (if (avoid-main-installation)
@@ -1385,17 +1395,18 @@
         (when (and (directory-exists? c)
                    (not (and (avoid-main-installation)
                              (hash-ref main-collects-dirs c #f))))
-          (define info-path (build-path c "info-domain" "compiled" "cache.rktd"))
+          (define info-path (maybe-reroot-info-domain
+                             (build-path c "info-domain" "compiled" "cache.rktd")))
           (when (file-exists? info-path)
             (get-info-ht c info-path 'relative))))
       (unless (avoid-main-installation)
         (define info-root (find-share-dir))
-        (define info-path (build-path info-root "info-cache.rktd"))
+        (define info-path (maybe-reroot-info-domain (build-path info-root "info-cache.rktd")))
         (when (file-exists? info-path)
           (get-info-ht info-root info-path 'abs-in-relative)))
       (when (make-user)
         (define info-root (find-user-share-dir))
-        (define info-path (build-path info-root "info-cache.rktd"))
+        (define info-path (maybe-reroot-info-domain (build-path info-root "info-cache.rktd")))
         (when (file-exists? info-path)
           (get-info-ht info-root info-path 'abs-in-relative))
         (define planet-info-path (get-planet-cache-path))

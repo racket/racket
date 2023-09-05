@@ -300,6 +300,11 @@
           [(eq? key 'no-planet) no-planet-table]
           [(eq? key 'no-user) no-user-table]
           [else (error 'find-relevant-directories "Invalid key: ~s" key)]))
+  (define info-domain-root (get-info-domain-root))
+  (define (maybe-reroot p)
+    (if info-domain-root
+        (reroot-path p info-domain-root)
+        p))
   ;; A list of (cons cache.rktd-path root-dir-path)
   ;;  If root-dir-path is not #f, then paths in the cache.rktd
   ;;  file are relative to it. #f is used for the planet cache.rktd file.
@@ -311,13 +316,15 @@
      (cons user-infotable #f)
      (append
       (map (lambda (coll)
-             (cons (build-path coll "info-domain" "compiled" "cache.rktd")
+             (cons (maybe-reroot
+                    (build-path coll "info-domain" "compiled" "cache.rktd"))
                    coll))
            (if (eq? key 'no-user)
                (get-main-collects-search-dirs)
                (current-library-collection-paths)))
       (map (lambda (base)
-             (cons (build-path base "info-cache.rktd") 
+             (cons (maybe-reroot
+                    (build-path base "info-cache.rktd") )
                    base))
            (filter
             values
