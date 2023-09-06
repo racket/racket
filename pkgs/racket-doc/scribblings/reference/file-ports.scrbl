@@ -89,7 +89,7 @@ cases, the port is buffered by default.
 The port produced by @racket[open-input-file] should be explicitly
 closed, either though @racket[close-input-port] or indirectly via
 @racket[custodian-shutdown-all], to release the OS-level file
-handle. The input port will not be closed automatically if it is
+handle. The input port will not be closed automatically even if it is
 otherwise available for garbage collection (see
 @secref["gc-model"]); a @tech{will} could be associated with an input port
 to close it more automatically (see @secref["willexecutor"]).
@@ -213,7 +213,7 @@ until a reader for the fifo is available; see also
 The port produced by @racket[open-output-file] should be explicitly
 closed, either though @racket[close-output-port] or indirectly via
 @racket[custodian-shutdown-all], to release the OS-level file
-handle. The output port will not be closed automatically if it is
+handle. The output port will not be closed automatically even if it is
 otherwise available for garbage collection (see
 @secref["gc-model"]); a @tech{will} could be associated with an output port
 to close it more automatically (see @secref["willexecutor"]).
