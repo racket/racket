@@ -10,7 +10,8 @@
          (only-in racket/contract/private/prop
                   contract-struct-stronger?
                   contract-struct-equivalent?
-                  trust-me)
+                  trust-me
+                  prop:any/c?)
          syntax/stx)
 
 (provide empty-sequence
@@ -203,6 +204,32 @@
        [else (sequence? val)])))
 
 (define (sequence/c-late-neg-projection this)
+  (define ctcs (sequence/c-ctcs this))
+  (define n-cs (length ctcs))
+  (define min-count (sequence/c-min-count this))
+  (cond
+    [(and (= n-cs 1) (not min-count) (prop:any/c? (car ctcs)))
+     (sequence/c-any/c-late-neg-projection this)]
+    [else
+     (sequence/c-general-ctc-late-neg-projection this)]))
+
+(define (sequence/c-any/c-late-neg-projection this)
+  (define accepts-orig-blame (sequence/c-general-ctc-late-neg-projection this))
+  (λ (orig-blame)
+    (define late-neg (accepts-orig-blame orig-blame))
+    (λ (seq neg-party)
+      (cond
+        [(exact-nonnegative-integer? seq) seq]
+        [(string? seq) seq]
+        [(bytes? seq) seq]
+        [(list? seq) seq]
+        [(vector? seq) seq]
+        [(flvector? seq) seq]
+        [(fxvector? seq) seq]
+        [(input-port? seq) seq]
+        [else (late-neg seq neg-party)]))))
+
+(define (sequence/c-general-ctc-late-neg-projection this)
   (define ctcs (sequence/c-ctcs this))
   (define n-cs (length ctcs))
   (define min-count (sequence/c-min-count this))

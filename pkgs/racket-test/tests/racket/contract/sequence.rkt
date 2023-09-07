@@ -3,6 +3,7 @@
 (parameterize ([current-contract-namespace
                 (make-basic-contract-namespace
                  'racket/sequence 'racket/dict
+                 'racket/flonum 'racket/fixnum
                  'racket/stream)])
 
   (test/spec-passed
@@ -133,4 +134,64 @@
   (test/spec-passed/result
    'sequence-stream/c5
    '(stream->list (contract (sequence/c #:min-count 2 any/c) (stream 1 2 3) 'pos 'neg))
-   '(1 2 3)))
+   '(1 2 3))
+
+  (test/spec-passed/result
+   'sequence-any/c.1
+   '(let ([x (expt 2 66)])
+      (eq? (contract (sequence/c any/c) x 'pos 'neg) x))
+   #t)
+
+  (test/spec-passed/result
+   'sequence-any/c.2
+   '(let ([x (string #\a #\b #\c)])
+      (eq? (contract (sequence/c any/c) x 'pos 'neg) x))
+   #t)
+
+  (test/spec-passed/result
+   'sequence-any/c.3
+   '(let ([x (string->immutable-string (string #\a #\b #\c))])
+      (eq? (contract (sequence/c any/c) x 'pos 'neg) x))
+   #t)
+
+  (test/spec-passed/result
+   'sequence-any/c.4
+   '(let ([x (bytes 1 2 3 4)])
+      (eq? (contract (sequence/c any/c) x 'pos 'neg) x))
+   #t)
+
+  (test/spec-passed/result
+   'sequence-any/c.5
+   '(let ([x (list 1 2 3 4)])
+      (eq? (contract (sequence/c any/c) x 'pos 'neg) x))
+   #t)
+
+  (test/spec-passed/result
+   'sequence-any/c.6
+   '(let ([x (vector 1 2 3 4)])
+      (eq? (contract (sequence/c any/c) x 'pos 'neg) x))
+   #t)
+
+  (test/spec-passed/result
+   'sequence-any/c.7
+   '(let ([x (flvector 1.1 2.2 3.3 4.4)])
+      (eq? (contract (sequence/c any/c) x 'pos 'neg) x))
+   #t)
+
+  (test/spec-passed/result
+   'sequence-any/c.8
+   '(let ([x (fxvector 1 2 3 4)])
+      (eq? (contract (sequence/c any/c) x 'pos 'neg) x))
+   #t)
+
+  (test/spec-passed/result
+   'sequence-any/c.9
+   '(let ([x (open-input-string "1 2 3 4")])
+      (eq? (contract (sequence/c any/c) x 'pos 'neg) x))
+   #t)
+
+  (test/spec-passed/result
+   'sequence-any/c.10
+   '(stream->list (contract (sequence/c any/c) (stream 1 2 3) 'pos 'neg))
+   '(1 2 3))
+  )
