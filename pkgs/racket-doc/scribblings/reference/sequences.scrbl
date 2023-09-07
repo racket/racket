@@ -615,7 +615,7 @@ each element in the sequence.
   before subsequent paths within the directory.
 
   @examples[
-    (eval:alts (current-directory (collection-path "info"))
+    (eval:alts (current-directory (path-only (collection-file-path "main.rkt" "info")))
                (void))
     (eval:alts (for/list ([f (in-directory)])
                   f)
@@ -625,16 +625,12 @@ each element in the sequence.
                                    "main.rkt")))
     (eval:alts (for/list ([f (in-directory "compiled")])
                  f)
-               (map string->path '("main_rkt.dep"
-                                   "main_rkt.zo")))
-    (eval:alts (for/list ([f (in-directory "compiled")])
-                 f)
                (map string->path '("compiled/main_rkt.dep"
                                    "compiled/main_rkt.zo")))
     (eval:alts (for/list ([f (in-directory #f (lambda (p)
                                                 (not (regexp-match? #rx"compiled" p))))])
                   f)
-               (map string->path '("main.rkt" "compiled")))
+               (map string->path '("compiled" "main.rkt")))
   ]
 
 @history[#:changed "6.0.0.1" @elem{Added @racket[use-dir?] argument.}
