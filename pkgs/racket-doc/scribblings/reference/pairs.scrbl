@@ -624,7 +624,7 @@ effectively shuffles the list.}
 @section{List Searching}
 
 @defproc[(member [v any/c] [lst (or/c list? any/c)]
-                 [is-equal? (any/c any/c -> any/c) equal?])
+                 [is-equal? (any/c any/c . -> . any/c) equal?])
          (or/c #f list? any/c)]{
 
 Locates the first element of @racket[lst] that is @racket[equal?] to
@@ -709,7 +709,7 @@ tail of @racket[lst] or @racket[#f].
 
 @defproc[(assoc [v any/c]
                 [lst (or/c (listof pair?) any/c)]
-                [is-equal? (any/c any/c -> any/c) equal?])
+                [is-equal? (any/c any/c . -> . any/c) equal?])
          (or/c pair? #f)]{
 
 Locates the first element of @racket[lst] whose @racket[car] is equal to

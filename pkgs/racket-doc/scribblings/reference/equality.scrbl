@@ -131,7 +131,7 @@ preferred for most uses.
 
 
 @defproc[
- (equal?/recur [v1 any/c] [v2 any/c] [recur-proc (any/c any/c -> any/c)])
+ (equal?/recur [v1 any/c] [v2 any/c] [recur-proc (any/c any/c . -> . any/c)])
  boolean?]{
 
  Like @racket[equal?], but using @racket[recur-proc] for recursive
@@ -148,7 +148,7 @@ preferred for most uses.
 
 
 @defproc[
- (equal-always?/recur [v1 any/c] [v2 any/c] [recur-proc (any/c any/c -> any/c)])
+ (equal-always?/recur [v1 any/c] [v2 any/c] [recur-proc (any/c any/c . -> . any/c)])
  boolean?]{
 
  Like @racket[equal-always?], but using @racket[recur-proc] for recursive

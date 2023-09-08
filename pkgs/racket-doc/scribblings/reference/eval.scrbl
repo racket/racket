@@ -524,7 +524,7 @@ a procedure that yields to one or more available GUI events.
 @history[#:added "8.3.0.3"]}
 
 
-@defparam[current-read-interaction proc (any/c input-port? -> any)]{
+@defparam[current-read-interaction proc (any/c input-port? . -> . any)]{
 
 A @tech{parameter} that determines the current @deftech{read interaction
 handler}, which is procedure that takes an arbitrary value and an
@@ -540,7 +540,7 @@ The default read interaction handler accepts @racket[_src] and
 ]}
 
 
-@defparam[current-print proc (any/c -> any)]{
+@defparam[current-print proc (any/c . -> . any)]{
 
 A @tech{parameter} that determines the @deftech{print handler} that is called
  by @racket[read-eval-print-loop] to print the result of an evaluation
