@@ -77,8 +77,8 @@ is taken.}
                  [callback (any/c . -> . any)]
                  [custodian custodian? (current-custodian)]
                  [#:at-exit? at-exit? any/c #f]
-                 [#:custodian-available available-callback ((any/c -> void?) -> any) (lambda (_unreg) (void))]
-                 [#:custodian-unavailable unavailable-callback ((-> void?) -> any) (lambda (_reg-fnl) (_reg-fnl))])
+                 [#:custodian-available available-callback ((any/c . -> . void?) . -> . any) (lambda (_unreg) (void))]
+                 [#:custodian-unavailable unavailable-callback ((-> void?) . -> . any) (lambda (_reg-fnl) (_reg-fnl))])
          any]{
 
 Registers @racket[callback] to be applied (in atomic mode) to

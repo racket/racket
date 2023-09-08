@@ -205,8 +205,8 @@ interface, including Racket callbacks.}
                            [lib (or/c ffi-lib? path-string? #f)]
                            [type ctype?]
                            [failure-thunk (or/c (-> any) #f) #f])
-         (and/c (-> any)
-                (any/c -> void?))]{
+         (case-> (-> any)
+                 (any/c . -> . void?))]{
 
 Returns a parameter-like procedure that can either references the
 specified foreign value, or set it.  The arguments are handled as in

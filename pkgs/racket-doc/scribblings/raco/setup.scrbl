@@ -2465,7 +2465,7 @@ installation or in a user-specific location, respectively, if
 
 @history[#:added "1.1"]
 
-@defproc[(materialize-user-docs [on-setup ((-> boolean?) -> any) (lambda (setup) (setup))]
+@defproc[(materialize-user-docs [on-setup ((-> boolean?) . -> . any) (lambda (setup) (setup))]
                                 [#:skip-user-doc-check? skip-user-doc-check? any/c #f])
          void?]{
 

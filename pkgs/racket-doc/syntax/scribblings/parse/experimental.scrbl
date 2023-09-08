@@ -165,9 +165,9 @@ Like @racket[~reflect] but for reified splicing syntax classes.
            #:description description-expr
            #:attributes (attr-arity-decl ...)
            parser-expr)
-          #:contracts ([parser (-> syntax?
-                                   (->* () ((or/c string? #f) -> any))
-                                   (cons/c exact-positive-integer? list?))])]{
+          #:contracts ([parser-expr (-> syntax?
+                                        (->* () ((or/c string? #f)) any)
+                                        (cons/c exact-positive-integer? list?))])]{
 
 Defines a splicing syntax via a procedural parser.
 
