@@ -1315,6 +1315,8 @@
   (hash-ref (primitive-table '|#%engine|) 'continuation-current-primitive #f))
 (define host:prop:unsafe-authentic-override
   (hash-ref (primitive-table '|#%engine|) 'prop:unsafe-authentic-override #f))
+(define host:get-system-stats
+  (hash-ref (primitive-table '|#%engine|) 'get-system-stats #f))
 (define finish_2698
   (make-struct-type-install-properties
    '(node)
@@ -6465,7 +6467,7 @@
                              (set! computed-memory-sizes? #t)))))))
                    (args (raise-binding-result-arity-error 2 args))))))))))))
     (void)))
-(define effect_3119
+(define effect_2597
   (begin
     (void
      (|#%app|
@@ -6476,7 +6478,7 @@
             (void)
             (raise-argument-error
              'current-memory-use
-             "(or/c #f 'cumulative custodian?)"
+             "(or/c #f 'cumulative 'peak custodian?)"
              c_0))
           (if (eq? c_0 initial-place-root-custodian)
             all_0
@@ -13739,25 +13741,33 @@
                                 (vector-set! vec2_0 i_0 v_0)
                                 (void)))))))
                     (if (not thd1_0)
-                      (begin
-                        (maybe-set!_0 0 (1/current-process-milliseconds))
-                        (maybe-set!_0 1 (current-milliseconds))
-                        (maybe-set!_0 2 (current-gc-milliseconds))
-                        (maybe-set!_0 3 0)
-                        (maybe-set!_0 4 (unsafe-place-local-ref cell.3))
-                        (maybe-set!_0 5 0)
-                        (maybe-set!_0 6 0)
-                        (maybe-set!_0 7 0)
-                        (maybe-set!_0 8 0)
-                        (maybe-set!_0 9 0)
-                        (maybe-set!_0 10 0)
-                        (maybe-set!_0 11 0)
-                        (void))
+                      (let ((gc-count_0 (|#%app| host:get-system-stats)))
+                        (begin
+                          (maybe-set!_0 0 (1/current-process-milliseconds))
+                          (maybe-set!_0 1 (current-milliseconds))
+                          (maybe-set!_0 2 (current-gc-milliseconds))
+                          (maybe-set!_0 3 gc-count_0)
+                          (maybe-set!_0 4 (unsafe-place-local-ref cell.3))
+                          (maybe-set!_0 5 0)
+                          (maybe-set!_0 6 (unsafe-place-local-ref cell.2))
+                          (maybe-set!_0 7 0)
+                          (maybe-set!_0 8 0)
+                          (maybe-set!_0 9 0)
+                          (maybe-set!_0 10 0)
+                          (maybe-set!_0 11 (current-memory-use 'peak))
+                          (void)))
                       (begin
                         (maybe-set!_0 0 (1/thread-running? thd1_0))
                         (maybe-set!_0 1 (1/thread-dead? thd1_0))
-                        (maybe-set!_0 2 #f)
-                        (maybe-set!_0 3 #f)
+                        (maybe-set!_0
+                         2
+                         (if (not (1/thread-dead? thd1_0))
+                           (let ((or-part_0 (thread-descheduled? thd1_0)))
+                             (if or-part_0
+                               or-part_0
+                               (thread-sched-info thd1_0)))
+                           #f))
+                        (maybe-set!_0 3 0)
                         (void)))))))))))
     (|#%name|
      vector-set-performance-stats!

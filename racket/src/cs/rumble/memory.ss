@@ -44,6 +44,7 @@
 (define gc-counter 1)
 (define log-collect-generation-radix 2)
 (define collect-generation-radix-mask (sub1 (bitwise-arithmetic-shift 1 log-collect-generation-radix)))
+(define peak-mem (bytes-allocated))
 
 ;; Some allocation patterns create a lot of overhead (i.e., wasted
 ;; pages in the allocator), so we need to detect that and force a GC.
@@ -71,6 +72,7 @@
         [pre-allocated+overhead (current-memory-bytes)]
         [pre-time (current-inexact-milliseconds)]
         [pre-cpu-time (cpu-time)])
+    (set! peak-mem (max peak-mem pre-allocated))
     (if (> (add1 this-counter) (bitwise-arithmetic-shift-left 1 (* log-collect-generation-radix (sub1 (collect-maximum-generation)))))
         (set! gc-counter 1)
         (set! gc-counter (add1 this-counter)))
@@ -208,6 +210,7 @@
      [(not mode) (bytes-allocated)]
      [(eq? mode 'cumulative) (with-interrupts-disabled
                               (+ (bytes-deallocated) (bytes-allocated)))]
+     [(eq? mode 'peak) peak-mem]
      ;; must be a custodian; hook is reposnsible for complaining if not
      [else (custodian-memory-use mode (bytes-allocated))])]))
 

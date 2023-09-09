@@ -290,7 +290,8 @@
                   'call-as-asynchronous-callback (lambda (thunk) (thunk))
                   'post-as-asynchronous-callback (lambda (thunk) (thunk))
                   'continuation-current-primitive (lambda (k) #f)
-                  'prop:unsafe-authentic-override prop:unsafe-authentic-override))
+                  'prop:unsafe-authentic-override prop:unsafe-authentic-override
+                  'get-system-stats (lambda () (values 0))))
 
 ;; add dummy definitions that implement pthreads and conditions etc.
 ;; dummy definitions that error

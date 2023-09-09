@@ -2,6 +2,9 @@
 @(require "mz.rkt"
           (for-label setup/cross-system))
 
+@(define (bc-only cs)
+    @elem{(@tech{BC} only; @cs for @tech{CS})})
+ 
 @title[#:tag "runtime"]{Environment and Runtime Information}
 
 @defproc[(system-type [mode (or/c 'os 'os* 'arch 'word 'vm 'gc 'link 'machine 'target-machine
@@ -247,26 +250,26 @@ are as follows, in the order that they are set within
   start-up.}
 
   @item{@racket[5]: The number of internal stack overflows handled since
-  start-up.}
+  start-up @bc-only{0}.}
 
   @item{@racket[6]: The number of threads currently scheduled for
   execution (i.e., threads that are running, not suspended, and not
   unscheduled due to a synchronization).}
 
   @item{@racket[7]: The number of syntax objects read from compiled code
-  since start-up.}
+  since start-up @bc-only{0}.}
 
-  @item{@racket[8]: The number of hash-table searches performed. When
+  @item{@racket[8]: The number of hash-table searches performed @bc-only{0}. When
   this counter reaches the maximum value of a @tech{fixnum}, it
   overflows to the most negative @tech{fixnum}.}
 
   @item{@racket[9]: The number of additional hash slots searched to
-  complete hash searches (using double hashing).  When this counter
+  complete hash searches using double hashing @bc-only{0}.  When this counter
   reaches the maximum value of a @tech{fixnum}, it overflows to the
   most negative @tech{fixnum}.}
 
   @item{@racket[10]: The number of bytes allocated for machine code
-  that is not reported by @racket[current-memory-use].}
+  that is not reported by @racket[current-memory-use] @bc-only{0}.}
 
   @item{@racket[11]: The peak number of allocated bytes just
   before a garbage collection.}
@@ -289,7 +292,7 @@ vector:
   @racket[#f] otherwise.}
 
   @item{@racket[3]: The number of bytes currently in use for the
-  thread's continuation.}
+  thread's continuation @bc-only{0}.}
 
  ]
 

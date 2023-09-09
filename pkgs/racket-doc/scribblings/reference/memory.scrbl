@@ -377,7 +377,7 @@ garbage-collection mode, depending on @racket[request]:
                                    for Racket @tech{CS}.}]}
 
 
-@defproc[(current-memory-use [mode (or/c #f 'cumulative custodian?) #f])
+@defproc[(current-memory-use [mode (or/c #f 'cumulative 'peak custodian?) #f])
          exact-nonnegative-integer?]{
 
 Returns information about memory use:
@@ -391,6 +391,10 @@ Returns information about memory use:
        of the total number of bytes allocated since start up,
        including bytes that have since been reclaimed by garbage
        collection.}
+
+ @item{If @racket[mode] is @racket['peak], returns the maximum number
+       of allocated bytes just before any garbage collection in the
+       Racket process since its start.}
 
  @item{If @racket[mode] is a custodian, returns an estimate of the
        number of bytes of memory occupied by reachable data from
@@ -411,7 +415,8 @@ Returns information about memory use:
 
 See also @racket[vector-set-performance-stats!].
 
-@history[#:changed "6.6.0.3" @elem{Added @racket['cumulative] mode.}]}
+@history[#:changed "6.6.0.3" @elem{Added @racket['cumulative] mode.}
+         #:changed "8.10.0.3" @elem{Added @racket['peak] mode.}]}
 
 
 @defproc[(dump-memory-stats [v any/c] ...) any]{

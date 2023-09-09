@@ -114,6 +114,9 @@
   (define (wakeup b)
     (set-box! b #t))
 
+  (define (get-system-stats)
+    (values (collections)))
+
   (define (primitive-table key)
     (case key
       [(|#%pthread|)
@@ -183,7 +186,8 @@
         'mutex-release rumble:mutex-release
         'threaded? rumble:threaded?
         'continuation-current-primitive rumble:continuation-current-primitive
-        'prop:unsafe-authentic-override prop:unsafe-authentic-override)]
+        'prop:unsafe-authentic-override prop:unsafe-authentic-override
+        'get-system-stats get-system-stats)]
       [else #f]))
 
   ;; Tie knots:

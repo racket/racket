@@ -188,7 +188,7 @@ THREAD_LOCAL_DECL(struct Scheme_GC_Pre_Post_Callback_Desc *gc_prepost_callback_d
 ROSYM static Scheme_Object *read_symbol, *write_symbol, *execute_symbol, *delete_symbol, *exists_symbol;
 ROSYM static Scheme_Object *client_symbol, *server_symbol;
 ROSYM static Scheme_Object *major_symbol, *minor_symbol, *incremental_symbol;
-ROSYM static Scheme_Object *cumulative_symbol;
+ROSYM static Scheme_Object *cumulative_symbol, *peak_symbol;
 ROSYM static Scheme_Object *gc_symbol, *gc_major_symbol;
 ROSYM static Scheme_Object *racket_symbol;
 
@@ -510,7 +510,9 @@ void scheme_init_thread(Scheme_Startup_Env *env)
   incremental_symbol  = scheme_intern_symbol("incremental");
 
   REGISTER_SO(cumulative_symbol);
+  REGISTER_SO(peak_symbol);
   cumulative_symbol = scheme_intern_symbol("cumulative");
+  peak_symbol = scheme_intern_symbol("peak");
 
   REGISTER_SO(gc_symbol);
   REGISTER_SO(gc_major_symbol);
@@ -800,7 +802,7 @@ static Scheme_Object *collect_garbage(int argc, Scheme_Object *argv[])
 static Scheme_Object *current_memory_use(int argc, Scheme_Object *args[])
 {
   Scheme_Object *arg = NULL;
-  int cumulative = 0;
+  int cumulative = 0, peak = 0;
   uintptr_t retval = 0;
 
   if (argc) {
@@ -811,9 +813,12 @@ static Scheme_Object *current_memory_use(int argc, Scheme_Object *args[])
     } else if (SAME_OBJ(args[0], cumulative_symbol)) {
       cumulative = 1;
       arg = NULL;
+    } else if (SAME_OBJ(args[0], peak_symbol)) {
+      peak = 1;
+      arg = NULL;
     } else {
       scheme_wrong_contract("current-memory-use", 
-                            "(or/c custodian? 'cumulative #f)", 
+                            "(or/c custodian? 'cumulative 'peak #f)", 
                             0, argc, args);
     }
   }
@@ -824,6 +829,8 @@ static Scheme_Object *current_memory_use(int argc, Scheme_Object *args[])
 #else
     retval = GC_get_total_bytes();
 #endif
+  } else if (peak) {
+    retval = max_gc_pre_used_bytes;
   } else {
 #ifdef MZ_PRECISE_GC
     retval = GC_get_memory_use(arg);

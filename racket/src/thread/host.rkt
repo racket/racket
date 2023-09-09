@@ -102,4 +102,5 @@
 
         continuation-current-primitive
 
-        [prop:unsafe-authentic-override host:prop:unsafe-authentic-override])
+        [prop:unsafe-authentic-override host:prop:unsafe-authentic-override]
+        [get-system-stats host:get-system-stats])

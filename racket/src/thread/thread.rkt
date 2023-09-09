@@ -100,6 +100,10 @@
 (module* for-future #f
   (provide break-enabled-default-cell))
 
+(module* for-stats #f
+  (provide thread-descheduled?
+           thread-sched-info))
+
 ;; ----------------------------------------
 
 (struct thread node (name

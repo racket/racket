@@ -630,7 +630,7 @@
        ;; root custodian in the original place.
        (lambda (c all)
          (unless (custodian? c)
-           (raise-argument-error 'current-memory-use "(or/c #f 'cumulative custodian?)" c))
+           (raise-argument-error 'current-memory-use "(or/c #f 'cumulative 'peak custodian?)" c))
          (cond
            [(eq? c initial-place-root-custodian) all]
            [else

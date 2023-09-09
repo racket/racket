@@ -680,7 +680,6 @@
    (define minor-gcs 0)
    (define major-gcs 0)
    (define auto-gcs 0)
-   (define peak-mem 0)
    (seq
     (set-garbage-collect-notify!
      (let ([root-logger (current-logger)])
@@ -692,7 +691,6 @@
            (if minor?
                (set! minor-gcs (add1 minor-gcs))
                (set! major-gcs (add1 major-gcs)))
-           (set! peak-mem (max peak-mem pre-allocated))
            (let ([debug-GC? (log-level?* root-logger 'debug 'GC)]
                  [debug-GC:major? (and (not minor?)
                                        (log-level?* root-logger 'debug 'GC:major))])
@@ -734,15 +732,16 @@
           (let ([info-GC? (log-level?* root-logger 'info 'GC)]
                 [info-GC:major? (log-level?* root-logger 'info 'GC:major)])
             (when (or info-GC? info-GC:major?)
-              (let ([msg (chez:format "GC: 0:atexit peak ~a(~a); alloc ~a; major ~a; minor ~a; ~ams"
-                                      (K "" peak-mem)
-                                      (K "+" (- (maximum-memory-bytes) peak-mem))
-                                      (K "" (- (+ (bytes-deallocated) (bytes-allocated)) (initial-bytes-allocated)))
-                                      major-gcs
-                                      minor-gcs
-                                      (let ([t (sstats-gc-cpu (statistics))])
-                                        (+ (* (time-second t) 1000)
-                                           (quotient (time-nanosecond t) 1000000))))])
+              (let* ([peak-mem (current-memory-use 'peak)]
+                     [msg (chez:format "GC: 0:atexit peak ~a(~a); alloc ~a; major ~a; minor ~a; ~ams"
+                                       (K "" peak-mem)
+                                       (K "+" (- (maximum-memory-bytes) peak-mem))
+                                       (K "" (- (+ (bytes-deallocated) (bytes-allocated)) (initial-bytes-allocated)))
+                                       major-gcs
+                                       minor-gcs
+                                       (let ([t (sstats-gc-cpu (statistics))])
+                                         (+ (* (time-second t) 1000)
+                                            (quotient (time-nanosecond t) 1000000))))])
                 (when info-GC?
                   (log-message root-logger 'info 'GC msg #f #f))
                 (when info-GC:major?
