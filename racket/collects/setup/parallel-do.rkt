@@ -73,10 +73,19 @@
     (define/public (spawn _id _module-path _funcname [initialmsg #f])
       (set! module-path _module-path)
       (set! funcname _funcname)
+      (define (paths->string l)
+        (define (path-or-same->string p) (if (eq? p 'same) "" (path->string p)))
+        (cond
+          [(null? l) ""]
+          [(null? (cdr l)) (path-or-same->string (car l))]
+          [else (string-append (path-or-same->string (car l))
+                               (if (eq? 'windows (system-type)) ";" ":")
+                               (paths->string (cdr l)))]))
       (define worker-cmdline-list (list (current-executable-path)
                                         "-X" (path->string (current-collects-path))
                                         "-G" (path->string (find-config-dir))
                                         "-A" (path->string (find-system-path 'addon-dir))
+                                        "-R" (paths->string (current-compiled-file-roots))
                                         "-e" "(eval(read))"))
       (define dynamic-require-cmd `((dynamic-require (string->path ,module-path) (quote ,funcname)) #f))
       (let-values ([(_process-handle _out _in _err) (apply subprocess #f #f (current-error-port) worker-cmdline-list)])
