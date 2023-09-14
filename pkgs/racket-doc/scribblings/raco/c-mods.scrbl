@@ -25,7 +25,7 @@ load modules at run time.
 
 If the embedded modules refer to runtime files, the files can be
 gathered by supplying the @DFlag{runtime} argument to @exec{raco ctool
---cmods}, specifying a directory @nonterm{dir} to hold the files.
+--c-mods}, specifying a directory @nonterm{dir} to hold the files.
 Normally, @nonterm{dir} is a relative path, and files are found at run
 time in @nonterm{dir} relative to the executable, but a separate path
 (usually relative) for run time can be specified with
