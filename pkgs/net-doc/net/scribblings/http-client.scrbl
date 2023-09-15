@@ -15,7 +15,7 @@ utilities to use the HTTP protocol.}
          boolean?]{
 
 Identifies an HTTP connection.
-                   
+
 }
 
 @defproc[(http-conn-live? [x any/c])
@@ -169,7 +169,7 @@ Calls @racket[http-conn-send!] and @racket[http-conn-recv!] in sequence.
 @defproc[(http-sendrecv [host (or/c bytes? string?)] [uri (or/c bytes? string?)]
                         [#:ssl? ssl? base-ssl?-tnl/c #f]
                         [#:port port (between/c 1 65535) (if ssl? 443 80)]
-                        [#:version version (or/c bytes? string?) #"1.1"]                          
+                        [#:version version (or/c bytes? string?) #"1.1"]
                         [#:method method (or/c bytes? string? symbol?) #"GET"]
                         [#:headers headers (listof (or/c bytes? string?)) empty]
                         [#:data data (or/c false/c bytes? string? data-procedure/c) #f]
@@ -193,28 +193,35 @@ response, which is why there is no @racket[#:closed?] argument like
                                    [target-port (between/c 1 65535)]
                                    [#:ssl? ssl? base-ssl?/c #f])
          (values base-ssl?/c input-port? output-port? (-> port? void?))]{
-Creates an HTTP connection to @racket[proxy-host] (on port @racket[proxy-port])
- and invokes the HTTP ``CONNECT'' method to provide a tunnel to
- @racket[target-host] (on port @racket[target-port]).
+ Creates an HTTP connection to @racket[proxy-host] (on port
+ @racket[proxy-port]) and invokes the HTTP ``CONNECT'' method to provide
+ a tunnel to @racket[target-host] (on port @racket[target-port]).
 
- The SSL context or symbol, if any, provided in @racket[ssl?]
- is applied to the gateway ports using @racket[ports->ssl-ports] (or @racket[ports->win32-ssl-ports]).
+ The SSL context or symbol, if any, provided in @racket[ssl?] is
+ applied to the gateway ports using @racket[ports->ssl-ports] (or
+ @racket[ports->win32-ssl-ports]).
 
  The function returns four values:
+
  @itemize[
- @item{If @racket[ssl?] was @racket[#f] then @racket[#f]. Otherwise an @racket[ssl-client-context?]
-       that has been negotiated with the target.
-       
-   If @racket[ssl?] was a protocol symbol, then a new @racket[ssl-client-context?] is created,
-   otherwise the current value of @racket[ssl?] is used}
- @item{An @racket[input-port?] from the tunnelled service}
- @item{An @racket[output-port?] to the tunnelled service}
- @item{An abandon function, which when applied either returned port, will abandon it, in a manner
-   similar to @racket[tcp-abandon-port]}
+   @item{If @racket[ssl?] was @racket[#f] then @racket[#f]. Otherwise
+     an @racket[ssl-client-context?] that has been negotiated with the
+     target.
+
+     If @racket[ssl?] was a protocol symbol, then a new
+     @racket[ssl-client-context?] is created, otherwise the current
+     value of @racket[ssl?] is used.}
+   @item{An @racket[input-port?] from the tunnelled service.}
+   @item{An @racket[output-port?] to the tunnelled service.}
+   @item{An abandon function, which when applied to either returned
+     port, will abandon it, in a manner similar to
+     @racket[tcp-abandon-port].}
  ]
- The SSL context or symbol, if any, provided in @racket[ssl?]
- is applied to the gateway ports using @racket[ports->ssl-ports] (or @racket[ports->win32-ssl-ports])
- and the negotiated client context is returned
+
+ The SSL context or symbol, if any, provided in @racket[ssl?] is
+ applied to the gateway ports using @racket[ports->ssl-ports] (or
+ @racket[ports->win32-ssl-ports]) and the negotiated client context is
+ returned.
 }
 
 @defthing[data-procedure/c chaperone-contract?]{
@@ -228,7 +235,7 @@ argument, which is a string or byte string:
 @defthing[base-ssl?/c contract?]{
  Base contract for the definition of the SSL context (passed in @racket[ssl?]) of an
  @racket[http-conn-CONNECT-tunnel]:
- 
+
  @racket[(or/c boolean? ssl-client-context? symbol?)].
 
  If @racket[ssl?] is not @racket[#f] then @racket[ssl?] is used as an argument to
@@ -240,7 +247,7 @@ argument, which is a string or byte string:
  It is either a @racket[base-ssl?/c], or a @racket[base-ssl?/c] consed onto a list of an
  @racket[input-port?], @racket[output-port?], and an abandon function
  (e.g. @racket[tcp-abandon-port]):
- 
+
  @racket[(or/c base-ssl?/c (list/c base-ssl?/c input-port? output-port? (-> port? void?)))]
 }
 
@@ -262,5 +269,5 @@ formatted by @racketmodname[net/uri-codec]'s
    (alist->form-urlencoded
     (list (cons 'username "Ryu")
           (cons 'password "Sheng Long")))
-   #:headers (list "Content-Type: application/x-www-form-urlencoded"))             
+   #:headers (list "Content-Type: application/x-www-form-urlencoded"))
 ]
