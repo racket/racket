@@ -1073,6 +1073,7 @@
 
       ;; the actual result
       #`(let ([the-struct struct-expr])
+          #,(syntax-property #'(void) 'disappeared-use (syntax-local-introduce #'info))
           (if (#,pred the-struct)
               (let #,(map (lambda (new-field)
                             #`[#,(caddr new-field) #,(cadr new-field)])
