@@ -337,8 +337,12 @@ process if it becomes available during the peek attempt. Furthermore,
 @racket[progress] is checked even before determining whether the port
 is still open.
 
-The result of @racket[peek-bytes-avail!] is @racket[0] only in the
-case that @racket[progress] becomes ready before bytes are peeked.}
+The result of @racket[peek-bytes-avail!] is @racket[0] only
+
+@itemlist[
+  @item{when @racket[start-pos] is equal to @racket[end-pos], or}
+  @item{when @racket[progress] becomes ready before bytes are peeked.}
+]}
 
 @defproc[(peek-bytes-avail!* [bstr (and/c bytes? (not/c immutable?))]
                              [skip-bytes-amt exact-nonnegative-integer?]
