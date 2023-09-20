@@ -159,6 +159,12 @@
 (test #f equal-always? (mcons 'a '()) (mcons 'a '()))
 (test #f equal-always? (string #\a) (string #\a))
 
+(let ()
+  (struct s (x) #:property prop:procedure 0)
+  (test #t equal-always?/recur '(1 . 2) '(1 . 2) (s (lambda (x y) #t)))
+  (test #t equal-always?/recur '#(0) '#(0) (s (lambda (x y) #t)))
+  (test #t equal-always?/recur '#&0 '#&0 (s (lambda (x y) #t))))
+
 (arity-test eq? 2 2)
 (arity-test eqv? 2 2)
 (arity-test equal? 2 2)
@@ -3518,6 +3524,13 @@
   (struct a (x) #:transparent)
   (test #t equal?/recur (a 1) (a 2) (lambda (a b) 'yes))
   (test #f equal?/recur (a 1) (a 1) (lambda (a b) (not (eq? a 1)))))
+
+(let ()
+  (struct s (x) #:property prop:procedure 0)
+  (test #t equal?/recur (cons 1 2) (cons 1 2) (s (lambda (x y) #t)))
+  (test #t equal?/recur (vector 1) (vector 1) (s (lambda (x y) #t)))
+  (test #t equal?/recur (box 0) (box 0) (s (lambda (x y) #t)))
+  (test #t equal?/recur (mcons 3 4) (mcons 3 4) (s (lambda (x y) #t))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
