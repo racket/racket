@@ -186,11 +186,11 @@
 
 (define/who (equal?/recur a b eql?)
   (check who (procedure-arity-includes/c 2) eql?)
-  (do-equal? a b 'equal? eql?))
+  (do-equal? a b 'equal? (lambda (x y) (|#%app| eql? x y))))
 
 (define/who (equal-always?/recur a b eql?)
   (check who (procedure-arity-includes/c 2) eql?)
-  (do-equal? a b 'equal-always? eql?))
+  (do-equal? a b 'equal-always? (lambda (x y) (|#%app| eql? x y))))
 
 (define (struct-common-equal+hash a b)
   (let ([av (struct-property-ref prop:equal+hash (#%$record-type-descriptor a) #f)])
