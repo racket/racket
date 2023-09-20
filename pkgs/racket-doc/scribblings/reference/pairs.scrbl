@@ -627,8 +627,8 @@ effectively shuffles the list.}
                  [is-equal? (any/c any/c . -> . any/c) equal?])
          (or/c #f list? any/c)]{
 
-Locates the first element of @racket[lst] that is @racket[equal?] to
-@racket[v].  If such an element exists, the tail of @racket[lst]
+Locates the first element of @racket[lst] that is equal to
+@racket[v] according to @racket[is-equal?].  If such an element exists, the tail of @racket[lst]
 starting with that element is returned.  Otherwise, the result is
 @racket[#f].
 
