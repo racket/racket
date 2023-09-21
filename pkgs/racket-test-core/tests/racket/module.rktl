@@ -4175,5 +4175,79 @@ case of module-leve bindings; it doesn't cover local bindings.
   (eval '(ref x) (module->namespace ''m)))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; check that `namespace-require` detects conflicting import corerctly,
+;; and in particular that it isn't misled by bindings in different spaces
+;; or by existing bindings in a namespace
+
+(let ()
+  (define m '(module provides-at-multiple-phases-and-spaces racket/base
+               (require (for-syntax racket/base)
+                        (for-meta 2 racket/base))
+               (provide (for-space test/demo1 x)
+                        (for-space test/demo2 x)
+                        (for-syntax
+                         (for-space test/demo1 x)
+                         (for-space test/demo2 x)))
+               (define-syntax (def-at stx)
+                 (syntax-case stx ()
+                   [(_ space id rhs)
+                    #`(define #,((make-interned-syntax-introducer (syntax-e #'space)) #'id)
+                        rhs)]))
+               (def-at test/demo1 x 1)
+               (def-at test/demo2 x 2)
+               (begin-for-syntax
+                 (define-syntax (def-at stx)
+                   (syntax-case stx ()
+                     [(_ space id rhs)
+                      #`(define #,((make-interned-syntax-introducer (syntax-e #'space)) #'id)
+                          rhs)]))
+                 (def-at test/demo1 x 1)
+                 (def-at test/demo2 x 2))))
+
+    (let ([ns (make-base-namespace)])
+      (parameterize ([current-namespace ns])
+        (eval m)
+        (err/rt-test/once (namespace-require '(for-label 'provides-at-multiple-phases-and-spaces))
+                          exn:fail:syntax?
+                          #rx"identifier already required for label")))
+
+    (let ([ns (make-base-namespace)])
+      (parameterize ([current-namespace ns])
+        (eval m)
+        (namespace-require '(just-meta 0 (for-label 'provides-at-multiple-phases-and-spaces)))
+        ;; should replace existing with no error:
+        (namespace-require '(just-meta 1 (for-label 'provides-at-multiple-phases-and-spaces))))))
+
+(let ()
+  (define mx '(module provides-at-multiple-phases-and-spaces-mixed racket/base
+                (require (for-syntax racket/base)
+                         (for-meta 2 racket/base))
+                (provide (for-space test/demo1 x)
+                         (for-space test/demo2 y)
+                         (for-syntax
+                          (for-space test/demo1 y)
+                          (for-space test/demo2 x)))
+                (define-syntax (def-at stx)
+                  (syntax-case stx ()
+                    [(_ space id rhs)
+                     #`(define #,((make-interned-syntax-introducer (syntax-e #'space)) #'id)
+                         rhs)]))
+                (def-at test/demo1 x 1)
+                (def-at test/demo2 y 2)
+                (begin-for-syntax
+                  (define-syntax (def-at stx)
+                    (syntax-case stx ()
+                      [(_ space id rhs)
+                       #`(define #,((make-interned-syntax-introducer (syntax-e #'space)) #'id)
+                           rhs)]))
+                  (def-at test/demo1 y 1)
+                  (def-at test/demo2 x 2))))
+  (let ([ns (make-base-namespace)])
+    (parameterize ([current-namespace ns])
+      (eval mx)
+      ;; make sure `x`s and `y`s and different spaces are not mixed up
+      (namespace-require '(for-label 'provides-at-multiple-phases-and-spaces-mixed)))))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)

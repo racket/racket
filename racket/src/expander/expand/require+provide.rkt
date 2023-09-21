@@ -468,7 +468,11 @@
                  (set-requires+provides-all-bindings-simple?! r+p #f)
                  only-can-can-shadow-require?]
                 [define-shadowing-require? #f]
-                [else (raise-already-bound defined? r)])))
+                [else
+                 (define nr (normalize-required r mpi nominal-phase+space-shift (syntax-e id)))
+                 (if (eqv? (required-phase+space nr) (intern-phase+space phase space))
+                     (raise-already-bound defined? r)
+                     only-can-can-shadow-require?)])))
           (cond
             [define-shadowing-require?
               ;; Not defined, but defining now (shadowing all requires);
