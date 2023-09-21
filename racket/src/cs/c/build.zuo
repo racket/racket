@@ -372,7 +372,7 @@
         '()))
 
   (define (setup-prepare-to-here?)
-    (and (not (equal? "" (lookup 'prefix)))
+    (and (equal? (lookup 'MAKE_COPYTREE) "copytree")
          (not cross?)))
 
   (define the-targets
