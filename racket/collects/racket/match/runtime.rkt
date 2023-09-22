@@ -42,9 +42,10 @@
 (define ((pregexp-matcher rx who) e)
   (regexp-match
    (cond
-     [(pregexp? rx) rx]
+     [(or (pregexp? rx) (byte-pregexp? rx)) rx]
      [(string? rx) (pregexp rx)]
-     [else (raise-argument-error who "(or/c pregexp? string?)" rx)])
+     [(bytes? rx) (byte-pregexp rx)]
+     [else (raise-argument-error who "(or/c pregexp? byte-pregexp? string? bytes?)" rx)])
    e))
 
 ;; duplicated because we can't depend on `compatibility` here
