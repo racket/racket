@@ -13,8 +13,7 @@
 @title[#:tag "classes"]{Classes and Objects}
 
 @margin-note{This chapter is based on a paper @cite["Flatt06"].}
-
-@margin-note{@racket[(require racket/class)] is needed for the @racketmodname[racket/base] form.}
+@hash-lang-note[racket/class #:lang racket/base]
 
 A @racket[class] expression denotes a first-class value,
 just like a @racket[lambda] expression:
@@ -791,6 +790,8 @@ With this trait encoding, @racket[trait-alias] adds a new method with
 a new name, but it does not change any references to the old method.
 
 @subsection{The @racket[trait] Form}
+
+@hash-lang-note[racket/trait]
 
 The general-purpose trait pattern is clearly too complex for a
 programmer to use directly, but it is easily codified in a

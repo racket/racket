@@ -4,9 +4,11 @@
          scribble/struct
          scribble/decode
          scribble/eval
+         syntax/parse/define
          "../icons.rkt")
 
-(require (for-label racket/base))
+(require (for-label racket/base)
+         (for-syntax racket/base))
 (provide (for-label (all-from-out racket/base)))
 
 (provide Racket HtDP inside-doc
@@ -18,7 +20,8 @@
          refdetails/gory
          refsecref
          ext-refsecref
-         r5rs r6rs)
+         r5rs r6rs
+         hash-lang-note)
 
 (define HtDP
   (italic (link "https://htdp.org" "How to Design Programs")))
@@ -67,3 +70,6 @@
 
 (define r6rs @elem{R@superscript{6}RS})
 (define r5rs @elem{R@superscript{5}RS})
+
+(define-syntax-parse-rule (hash-lang-note what {~optional {~seq #:lang lang}})
+  @margin-note{@racket[(require what)] is needed@(~? @elem{ for @racket[@#,hash-lang[] @#,racketmodname[lang]]}).})

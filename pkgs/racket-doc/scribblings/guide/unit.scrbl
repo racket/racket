@@ -13,6 +13,8 @@
 
 @title[#:tag "units" #:style 'toc]{Units@aux-elem{ (Components)}}
 
+@hash-lang-note[racket/unit #:lang racket/base]
+
 @deftech{Units} organize a program into separately compilable and
 reusable @deftech{components}. A unit resembles a procedure in that
 both are first-class values that are used for abstraction. While

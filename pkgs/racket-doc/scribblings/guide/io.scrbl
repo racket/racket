@@ -403,6 +403,8 @@ instead of the original byte stream.
 @; ----------------------------------------------------------------------
 @section[#:tag "io-patterns"]{I/O Patterns}
 
+@hash-lang-note[racket/port #:lang racket/base]
+
 @(require (prefix-in ex: scribble/example))
 
 @(begin
