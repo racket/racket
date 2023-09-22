@@ -1918,6 +1918,9 @@
 (test 1155.0 round (* 1000 (real-part (sqrt 1-4/3i))))
 (test -577.0 round (* 1000 (imag-part (sqrt 1-4/3i))))
 
+(test 158.0 round (* 1000 (real-part (sqrt -10+1i))))
+(test 3166.0 round (* 1000 (imag-part (sqrt -10+1i))))
+
 (test (expt 5 13) sqrt (expt 5 26))
 (test 545915034.0 round (sqrt (expt 5 25)))
 (test (make-rectangular 0 (expt 5 13)) sqrt (- (expt 5 26)))
