@@ -322,8 +322,10 @@ In more detail, patterns match as follows:
 
  @item{@racket[(#,(match-kw "regexp") _rx-expr)] --- matches a
        string that matches the regexp pattern produced by @racket[_rx-expr],
-       where @racket[_rx-expr] can be a @racket[regexp] or @racket[pregexp] or a string.
-       A string value is converted to a pattern using @racket[regexp].
+       where @racket[_rx-expr] can be either a @racket[regexp], a @racket[pregexp],
+       a @racket[byte-regexp], a @racket[byte-pregexp], a string, or a byte string.
+       A string and byte string value is converted to a pattern using
+       @racket[regexp] and @racket[byte-regexp] respectively.
        See @secref["regexp"] for more information about regexps.
 
        @examples[
@@ -336,6 +338,15 @@ In more detail, patterns match as follows:
          [_ 'no])
        (match "banana"
          [(regexp "(na){2}") 'yes]
+         [_ 'no])
+       (match #"apple"
+         [(regexp #rx#"p+") 'yes]
+         [_ 'no])
+       (match #"banana"
+         [(regexp #px#"(na){2}") 'yes]
+         [_ 'no])
+       (match #"banana"
+         [(regexp #"(na){2}") 'yes]
          [_ 'no])
        ]}
 
@@ -357,9 +368,9 @@ In more detail, patterns match as follows:
  @item{@racket[(#,(match-kw "pregexp") _rx-expr)] or
        @racket[(#,(racketidfont "pregexp") _rx-expr _pat)] --- like the
        @racketidfont{regexp} patterns, but @racket[_rx-expr] must be either
-       a @racket[pregexp] or a string.
-       If @racket[_rx-expr] produces a string, it is converted to a pattern using
-       @racket[pregexp] instead of @racket[regexp].}
+       a @racket[pregexp], a @racket[byte-pregexp], a string, or a byte string.
+       A string and byte string value is converted to a pattern using
+       @racket[pregexp] and @racket[byte-pregexp] respectively.}
 
  @item{@racket[(#,(match-kw "and") _pat ...)] --- matches if all
        of the @racket[_pat]s match.  This pattern is often used as

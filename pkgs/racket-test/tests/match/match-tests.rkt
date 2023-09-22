@@ -21,6 +21,21 @@
         (check-true
          (match "banana"
            [(regexp #px"(na){2}") #t]
+           [_ #f]))
+        ;; byte string
+        (check-false
+         (match #"banana"
+           [(regexp #"(na){2}") #t]
+           [_ #f]))
+        ;; #rx#
+        (check-false
+         (match #"banana"
+           [(regexp #rx#"(na){2}") #t]
+           [_ #f]))
+        ;; #px#
+        (check-true
+         (match #"banana"
+           [(regexp #px#"(na){2}") #t]
            [_ #f])))
 
       (test-case "regexp side-effect"
@@ -54,6 +69,22 @@
         (check-true
          (match "banana"
            [(pregexp #px"(na){2}") #t]
+           [_ #f]))
+        ;; byte string
+        (check-true
+         (match #"banana"
+           [(pregexp #"(na){2}") #t]
+           [_ #f]))
+        ;; #rx#
+        (check-exn exn:fail:contract?
+                   (λ ()
+                     (match #"banana"
+                       [(pregexp #rx#"(na){2}") #t]
+                       [_ #f])))
+        ;; #px#
+        (check-true
+         (match #"banana"
+           [(pregexp #px#"(na){2}") #t]
            [_ #f])))
 
       (test-case "pregexp side-effect"
