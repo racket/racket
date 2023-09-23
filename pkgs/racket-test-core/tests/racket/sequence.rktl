@@ -279,4 +279,25 @@
 
 ;; ----------------------------------------
 
+;; initiate-sequence
+
+(define (in-alt-list xs)
+  (make-do-sequence
+   (λ ()
+     (initiate-sequence
+      #:pos->element car
+      #:next-pos (λ (xs) (cdr (cdr xs)))
+      #:init-pos xs
+      #:continue-with-pos? pair?
+      #:continue-after-pos+val? (λ (xs _) (pair? (cdr xs)))))))
+
+    (sequence->list (in-alt-list '(1 2 3 4 5 6 7)))
+
+(test '() 'initiate-sequence (sequence->list (in-alt-list '())))
+(test '(1) 'initiate-sequence (sequence->list (in-alt-list '(1))))
+(test '(1) 'initiate-sequence (sequence->list (in-alt-list '(1 2))))
+(test '(1 3) 'initiate-sequence (sequence->list (in-alt-list '(1 2 3))))
+(test '(1 3 5) 'initiate-sequence (sequence->list (in-alt-list '(1 2 3 4 5 6))))
+(test '(1 3 5 7) 'initiate-sequence (sequence->list (in-alt-list '(1 2 3 4 5 6 7))))
+
 (report-errs)

@@ -764,7 +764,10 @@ each element in the sequence.
   and the @defterm{element}, which may consist of multiple values.
 
   The @racket[thunk] procedure must return either six or seven values.
-  If it returns six values:
+  However, use @racket[initiate-sequence] to return these multiple values,
+  as opposed to listing the values directly.
+
+  If @racket[thunk] returns six values:
   @itemize[
     @item{The first result is a @racket[_pos->element] procedure that
       takes the current position and returns the value(s) for the
@@ -1104,7 +1107,7 @@ If @racket[min-count] is a number, the stream is required to have at least that 
 
 }
 
-@subsubsection{Additional Sequence Constructors}
+@subsubsection{Additional Sequence Constructors and Functions}
 
 @defproc[(in-syntax [stx syntax?]) sequence?]{
   Produces a sequence whose elements are the successive subparts of
@@ -1127,6 +1130,40 @@ If @racket[min-count] is a number, the stream is required to have at least that 
   (for/list ([e (in-slice 3 (in-range 8))]) e)
   ]
   @history[#:added "6.3"]
+}
+
+@defproc[(initiate-sequence
+          [#:pos->element pos->element (any/c . -> . any)]
+          [#:early-next-pos early-next-pos (or/c (any/c . -> . any) #f) #f]
+          [#:next-pos next-pos (any/c . -> . any/c)]
+          [#:init-pos init-pos any/c]
+          [#:continue-with-pos? continue-with-pos? (or/c (any/c . -> . any/c) #f) #f]
+          [#:continue-with-val? continue-with-val? (or/c (any/c ... . -> . any/c) #f) #f]
+          [#:continue-after-pos+val? continue-after-pos+val? (or/c (any/c any/c ... . -> . any/c) #f) #f])
+         (values (any/c . -> . any)
+                 (or/c (any/c . -> . any) #f)
+                 (any/c . -> . any/c)
+                 any/c
+                 (or/c (any/c . -> . any/c) #f)
+                 (or/c (any/c ... . -> . any/c) #f)
+                 (or/c (any/c any/c ... . -> . any/c) #f))]{
+  Returns values suitable for the thunk argument in @racket[make-do-sequence].
+  See @racket[make-do-sequence] for the meaning of each argument.
+
+  @examples[#:eval sequence-evaluator
+    (define (in-alt-list xs)
+      (make-do-sequence
+       (λ ()
+         (initiate-sequence
+          #:pos->element car
+          #:next-pos (λ (xs) (cdr (cdr xs)))
+          #:init-pos xs
+          #:continue-with-pos? pair?
+          #:continue-after-pos+val? (λ (xs _) (pair? (cdr xs)))))))
+    (sequence->list (in-alt-list '(1 2 3 4 5 6)))
+    (sequence->list (in-alt-list '(1 2 3 4 5 6 7)))
+  ]
+  @history[#:added "8.10.0.5"]
 }
 
 
