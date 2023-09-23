@@ -30,7 +30,8 @@
          sequence-count
          (rename-out [-sequence/c sequence/c])
          in-syntax
-         (contract-out [in-slice (exact-positive-integer? sequence? . -> . any)]))
+         (contract-out [in-slice (exact-positive-integer? sequence? . -> . any)])
+         initiate-sequence)
 
 (define empty-sequence
   (make-do-sequence
@@ -421,3 +422,18 @@
       #f
       (λ (val) (pair? val))
       #f))))
+
+(define (initiate-sequence #:pos->element pos->element
+                           #:early-next-pos [early-next-pos #f]
+                           #:next-pos next-pos
+                           #:init-pos init-pos
+                           #:continue-with-pos? [continue-with-pos? #f]
+                           #:continue-with-val? [continue-with-val? #f]
+                           #:continue-after-pos+val? [continue-after-pos+val? #f])
+  (values pos->element
+          early-next-pos
+          next-pos
+          init-pos
+          continue-with-pos?
+          continue-with-val?
+          continue-after-pos+val?))
