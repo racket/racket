@@ -5,7 +5,8 @@
 (define pkg-desc "Additional Racket test suites")
 
 (define pkg-authors '(eli jay matthias mflatt robby ryanc samth))
-(define build-deps '("base"
+(define build-deps '(["base" #:version "8.4"]
+                     "drracket-tool-text-lib"
                      "redex-lib"
                      "scheme-lib"
                      "rackunit-lib"
