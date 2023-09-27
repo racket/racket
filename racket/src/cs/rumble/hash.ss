@@ -786,8 +786,9 @@
                        (let loop ([i 0] [count 0])
                          (cond
                           [(fx= i new-vec-len)
-                           (values count (lambda (new-ht p) (not (hashtable-contains? new-ht p))))]
+                           (values count (lambda (_ p) (not (eq? p none))))]
                           [(hashtable-contains? new-ht (#%vector-ref new-vec i))
+                           (#%vector-set! new-vec i none)
                            (loop (fx+ i 1) (fx+ count 1))]
                           [else
                            (loop (fx+ i 1) count)]))]
