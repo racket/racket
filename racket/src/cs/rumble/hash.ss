@@ -774,25 +774,45 @@
     new-vec]
    [else
     ;; General case
-    (let ([new-ht (make-eq-hashtable)])
-      (vector-for-each (lambda (p) (hashtable-set! new-ht p #t)) new-vec)
-      (vector-for-each (lambda (p) (hashtable-delete! new-ht p)) vec)
-      (let ([merge-vec (#%make-vector (fx+ (#%vector-length vec) (hashtable-size new-ht)))])
-        (let loop ([i (#%vector-length vec)])
+    (let*-values ([(vec-len new-vec-len)
+                   (values (#%vector-length vec) (#%vector-length new-vec))]
+                  [(vec-is-smallest?) (fx<= vec-len new-vec-len)]
+                  [(new-ht) (make-eq-hashtable)])
+      (vector-for-each (lambda (p) (hashtable-set! new-ht p #t))
+                       (if vec-is-smallest? vec new-vec))
+      (let*-values ([(duplicate-count predicate)
+                     (cond
+                      [vec-is-smallest?
+                       (let loop ([i 0] [count 0])
+                         (cond
+                          [(fx= i new-vec-len)
+                           (values count (lambda (new-ht p) (not (hashtable-contains? new-ht p))))]
+                          [(hashtable-contains? new-ht (#%vector-ref new-vec i))
+                           (loop (fx+ i 1) (fx+ count 1))]
+                          [else
+                           (loop (fx+ i 1) count)]))]
+                      [else
+                       (vector-for-each (lambda (p) (hashtable-delete! new-ht p)) vec)
+                       (values (fx- new-vec-len (hashtable-size new-ht))
+                               hashtable-contains?)])]
+                    [(merge-vec-len)
+                     (fx+ vec-len (fx- new-vec-len duplicate-count))]
+                    [(merge-vec)
+                     (#%make-vector merge-vec-len)])
+        (let loop ([i vec-len])
           (unless (fx= i 0)
             (let ([i (fx- i 1)])
               (#%vector-set! merge-vec i (#%vector-ref vec i))
               (loop i))))
-        (let ([new-len (#%vector-length new-vec)])
-          (let loop ([i 0] [j (#%vector-length vec)])
-            (unless (fx= i new-len)
-              (let ([p (#%vector-ref new-vec i)])
-                (cond
-                 [(hashtable-contains? new-ht p)
-                  (#%vector-set! merge-vec j p)
-                  (loop (fx+ i 1) (fx+ j 1))]
-                 [else
-                  (loop (fx+ i 1) j)])))))
+        (let loop ([i 0] [j vec-len])
+          (unless (fx= i new-vec-len)
+            (let ([p (#%vector-ref new-vec i)])
+              (cond
+               [(predicate new-ht p)
+                (#%vector-set! merge-vec j p)
+                (loop (fx+ i 1) (fx+ j 1))]
+               [else
+                (loop (fx+ i 1) j)]))))
         merge-vec))]))
 
 (define/who (hash-iterate-first ht)
