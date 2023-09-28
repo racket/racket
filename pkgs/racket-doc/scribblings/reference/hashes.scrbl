@@ -906,9 +906,9 @@ key-comparison mode, and same key-holding strength as @racket[ht].}
 
 Computes the union of @racket[ht0] with each hash table @racket[ht] by functional
 update, adding each element of each @racket[ht] to @racket[ht0] in turn.  For each
-key @racket[k] and value @racket[v], if a mapping from @racket[k] to some value
-@racket[v0] already exists, it is replaced with a mapping from @racket[k] to
-@racket[(combine/key k v0 v)].
+key @racket[_k] and value @racket[_v], if a mapping from @racket[_k] to some value
+@racket[_v0] already exists, it is replaced with a mapping from @racket[_k] to
+@racket[(combine/key _k _v0 _v)].
 
 @examples[
 #:eval the-eval
@@ -934,9 +934,9 @@ key @racket[k] and value @racket[v], if a mapping from @racket[k] to some value
 
 Computes the union of @racket[ht0] with each hash table @racket[ht] by mutable
 update, adding each element of each @racket[ht] to @racket[ht0] in turn.  For each
-key @racket[k] and value @racket[v], if a mapping from @racket[k] to some value
-@racket[v0] already exists, it is replaced with a mapping from @racket[k] to
-@racket[(combine/key k v0 v)].
+key @racket[_k] and value @racket[_v], if a mapping from @racket[_k] to some value
+@racket[_v0] already exists, it is replaced with a mapping from @racket[_k] to
+@racket[(combine/key _k _v0 _v)].
 
 @examples[
 #:eval the-eval
@@ -964,13 +964,13 @@ h
 
 Constructs the hash table which is the intersection of @racket[ht0]
 with every hash table @racket[ht].  In the resulting hash table, a key
-@racket[k] is mapped to a combination of the values to which
-@racket[k] is mapped in each of the hash tables.  The final values are
+@racket[_k] is mapped to a combination of the values to which
+@racket[_k] is mapped in each of the hash tables.  The final values are
 computed by stepwise combination of the values appearing in each of
-the hash tables by applying @racket[(combine/key k v vi)] or
-@racket[(combine v vi)], where @racket[vi] is the value to which
-@racket[k] is mapped in the i-th hash table @racket[ht], and
-@racket[v] is the accumulation of the values from the previous steps.
+the hash tables by applying @racket[(combine/key _k _v _vi)],
+where @racket[_vi] is the value to which
+@racket[_k] is mapped in the @math{i}-th hash table @racket[ht], and
+@racket[_v] is the accumulation of the values from the previous steps.
 The comparison predicate of the first argument (@racket[eq?],
 @racket[eqv?], @racket[equal-always?], @racket[equal?]) determines the
 one for the result.
