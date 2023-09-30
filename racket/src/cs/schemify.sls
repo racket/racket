@@ -89,6 +89,7 @@
                       (include "primitive/place.ss")
                       (include "primitive/foreign.ss")
                       (include "primitive/linklet.ss")
+                      (include "primitive/internal.ss")
                       (let ([knowns (make-hashtable equal-hash equal?)])
                         (for-each (lambda (k)
                                     (hashtable-set! knowns (cdr k) (gensym)))

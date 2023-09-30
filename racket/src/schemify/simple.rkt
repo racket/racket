@@ -65,6 +65,36 @@
            [else
             (and (simple? (car es) #f)
                  (loop (cdr es)))]))))
+    (define (ok-to-call? v zero-args?)
+      (if pure?
+          (and (or (if no-alloc?
+                       (known-procedure/pure? v)
+                       (known-procedure/allocates? v))
+                   (and ordered?
+                        (or (known-procedure/then-pure? v)
+                            (and succeeds?
+                                 zero-args?
+                                 (known-procedure/parameter? v))
+                            ;; in unsafe mode, we can assume no contract error:
+                            (and unsafe-mode?
+                                 (known-field-accessor? v)
+                                 (known-field-accessor-authentic? v)
+                                 (known-field-accessor-known-immutable? v)))))
+               (returns 1))
+          (or (and (known-procedure/no-prompt? v)
+                   (returns 1))
+              (and succeeds?
+                   zero-args?
+                   (known-procedure/parameter? v)
+                   (returns 1))
+              (and (known-procedure/no-prompt/multi? v)
+                   (eqv? result-arity #f))
+              (and (known-field-accessor? v)
+                   (known-field-accessor-authentic? v)
+                   (returns 1))
+              (and (known-field-mutator? v)
+                   (known-field-mutator-authentic? v)
+                   (returns 1)))))
     (match e
       [`(lambda . ,_) (returns 1)]
       [`(case-lambda . ,_) (returns 1)]
@@ -115,41 +145,24 @@
         (and (returns (length es))
              (for/and ([e (in-list es)])
                (simple? e 1))))]
+      [`(apply ,proc ,es ...)
+       (cached
+        (and (not result-arity)
+             (not pure?) ; because we can't statically check arity
+             (let ([proc (unwrap proc)])
+               (and (symbol? proc)
+                    (let ([v (or (hash-ref-either knowns imports proc)
+                                 (hash-ref prim-knowns proc #f))])
+                      (ok-to-call? v #f))))
+             (for/and ([e (in-list es)])
+               (simple? e 1))))]
       [`(,proc . ,args)
        (cached
         (let ([proc (unwrap proc)])
           (and (symbol? proc)
                (let ([v (or (hash-ref-either knowns imports proc)
                             (hash-ref prim-knowns proc #f))])
-                 (and (if pure?
-                          (and (or (if no-alloc?
-                                       (known-procedure/pure? v)
-                                       (known-procedure/allocates? v))
-                                   (and ordered?
-                                        (or (known-procedure/then-pure? v)
-                                            (and succeeds?
-                                                 (null? args)
-                                                 (known-procedure/parameter? v))
-                                            ;; in unsafe mode, we can assume no contract error:
-                                            (and unsafe-mode?
-                                                 (known-field-accessor? v)
-                                                 (known-field-accessor-authentic? v)
-                                                 (known-field-accessor-known-immutable? v)))))
-                               (returns 1))
-                          (or (and (known-procedure/no-prompt? v)
-                                   (returns 1))
-                              (and succeeds?
-                                   (null? args)
-                                   (known-procedure/parameter? v)
-                                   (returns 1))
-                              (and (known-procedure/no-prompt/multi? v)
-                                   (eqv? result-arity #f))
-                              (and (known-field-accessor? v)
-                                   (known-field-accessor-authentic? v)
-                                   (returns 1))
-                              (and (known-field-mutator? v)
-                                   (known-field-mutator-authentic? v)
-                                   (returns 1))))
+                 (and (ok-to-call? v (null? args))
                       (bitwise-bit-set? (known-procedure-arity-mask v) (length args))))
                (simple-mutated-state? (hash-ref mutated proc #f))
                (for/and ([arg (in-list args)])

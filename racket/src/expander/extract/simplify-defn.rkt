@@ -113,6 +113,10 @@
     [`(variable-reference-constant? (#%variable-reference ,x))
      ;; UNSOUND --- assume that variables are defined before use
      (not (hash-ref vars x #f))]
+    [`(begin ,e)
+     (simp e)]
+    [`(begin (void) ,e ...)
+     (simp `(begin ,@e))]
     [`(,sym ,e ...)
      #:when (memq sym '(begin begin0 with-continuation-mark set!))
      `(,sym ,@(map simp e))]

@@ -1621,93 +1621,88 @@
                      (loop_0 app_0 (unsafe-fx+ start_0 1))))
                 (void)
                 (if (unsafe-fx<= n_0 3)
-                  (begin
-                    (if (unsafe-fx= n_0 1)
-                      (void)
-                      (if (unsafe-fx= n_0 2)
-                        (let ((tmp_0
+                  (if (unsafe-fx= n_0 1)
+                    (void)
+                    (if (unsafe-fx= n_0 2)
+                      (let ((tmp_0
+                             (unsafe-vector-ref vec_0 (unsafe-fx+ start_0 0))))
+                        (begin
+                          (unsafe-vector-set!
+                           vec_0
+                           (unsafe-fx+ start_0 0)
+                           (unsafe-vector-ref vec_0 (unsafe-fx+ start_0 1)))
+                          (unsafe-vector-set!
+                           vec_0
+                           (unsafe-fx+ start_0 1)
+                           tmp_0)))
+                      (let ((a_0
+                             (unsafe-vector-ref vec_0 (unsafe-fx+ start_0 0))))
+                        (let ((b_0
                                (unsafe-vector-ref
                                 vec_0
-                                (unsafe-fx+ start_0 0))))
-                          (begin
-                            (unsafe-vector-set!
-                             vec_0
-                             (unsafe-fx+ start_0 0)
-                             (unsafe-vector-ref vec_0 (unsafe-fx+ start_0 1)))
-                            (unsafe-vector-set!
-                             vec_0
-                             (unsafe-fx+ start_0 1)
-                             tmp_0)))
-                        (let ((a_0
-                               (unsafe-vector-ref
-                                vec_0
-                                (unsafe-fx+ start_0 0))))
-                          (let ((b_0
+                                (unsafe-fx+ start_0 1))))
+                          (let ((c_0
                                  (unsafe-vector-ref
                                   vec_0
-                                  (unsafe-fx+ start_0 1))))
-                            (let ((c_0
-                                   (unsafe-vector-ref
-                                    vec_0
-                                    (unsafe-fx+ start_0 2))))
-                              (let ((b_1 b_0) (a_1 a_0))
-                                (if (|#%app| less-than?_0 b_1 a_1)
-                                  (if (|#%app| less-than?_0 c_0 b_1)
-                                    (begin
-                                      (unsafe-vector-set!
-                                       vec_0
-                                       (unsafe-fx+ start_0 0)
-                                       c_0)
-                                      (unsafe-vector-set!
-                                       vec_0
-                                       (unsafe-fx+ start_0 2)
-                                       a_1))
-                                    (if (|#%app| less-than?_0 c_0 a_1)
-                                      (begin
-                                        (unsafe-vector-set!
-                                         vec_0
-                                         (unsafe-fx+ start_0 0)
-                                         b_1)
-                                        (unsafe-vector-set!
-                                         vec_0
-                                         (unsafe-fx+ start_0 1)
-                                         c_0)
-                                        (unsafe-vector-set!
-                                         vec_0
-                                         (unsafe-fx+ start_0 2)
-                                         a_1))
-                                      (begin
-                                        (unsafe-vector-set!
-                                         vec_0
-                                         (unsafe-fx+ start_0 0)
-                                         b_1)
-                                        (unsafe-vector-set!
-                                         vec_0
-                                         (unsafe-fx+ start_0 1)
-                                         a_1))))
+                                  (unsafe-fx+ start_0 2))))
+                            (let ((b_1 b_0) (a_1 a_0))
+                              (if (|#%app| less-than?_0 b_1 a_1)
+                                (if (|#%app| less-than?_0 c_0 b_1)
+                                  (begin
+                                    (unsafe-vector-set!
+                                     vec_0
+                                     (unsafe-fx+ start_0 0)
+                                     c_0)
+                                    (unsafe-vector-set!
+                                     vec_0
+                                     (unsafe-fx+ start_0 2)
+                                     a_1))
                                   (if (|#%app| less-than?_0 c_0 a_1)
                                     (begin
                                       (unsafe-vector-set!
                                        vec_0
                                        (unsafe-fx+ start_0 0)
-                                       c_0)
+                                       b_1)
                                       (unsafe-vector-set!
                                        vec_0
                                        (unsafe-fx+ start_0 1)
-                                       a_1)
+                                       c_0)
                                       (unsafe-vector-set!
                                        vec_0
                                        (unsafe-fx+ start_0 2)
-                                       b_1))
+                                       a_1))
                                     (begin
                                       (unsafe-vector-set!
                                        vec_0
-                                       (unsafe-fx+ start_0 1)
-                                       c_0)
+                                       (unsafe-fx+ start_0 0)
+                                       b_1)
                                       (unsafe-vector-set!
                                        vec_0
-                                       (unsafe-fx+ start_0 2)
-                                       b_1)))))))))))
+                                       (unsafe-fx+ start_0 1)
+                                       a_1))))
+                                (if (|#%app| less-than?_0 c_0 a_1)
+                                  (begin
+                                    (unsafe-vector-set!
+                                     vec_0
+                                     (unsafe-fx+ start_0 0)
+                                     c_0)
+                                    (unsafe-vector-set!
+                                     vec_0
+                                     (unsafe-fx+ start_0 1)
+                                     a_1)
+                                    (unsafe-vector-set!
+                                     vec_0
+                                     (unsafe-fx+ start_0 2)
+                                     b_1))
+                                  (begin
+                                    (unsafe-vector-set!
+                                     vec_0
+                                     (unsafe-fx+ start_0 1)
+                                     c_0)
+                                    (unsafe-vector-set!
+                                     vec_0
+                                     (unsafe-fx+ start_0 2)
+                                     b_1))))))))))
                   (let ((work-vec_0
                          (make-vector (+ n_0 (ceiling (/ n_0 2))) #f)))
                     (begin
@@ -1801,92 +1796,60 @@
                          (loop_0 app_0 (unsafe-fx+ start_0 1))))
                     (void)
                     (if (unsafe-fx<= n_0 3)
-                      (begin
-                        (if (unsafe-fx= n_0 1)
-                          (void)
-                          (if (unsafe-fx= n_0 2)
-                            (let ((tmp_0
-                                   (unsafe-vector-ref
-                                    vec_0
-                                    (unsafe-fx+ start_0 0))))
-                              (begin
-                                (unsafe-vector-set!
-                                 vec_0
-                                 (unsafe-fx+ start_0 0)
+                      (if (unsafe-fx= n_0 1)
+                        (void)
+                        (if (unsafe-fx= n_0 2)
+                          (let ((tmp_0
                                  (unsafe-vector-ref
                                   vec_0
-                                  (unsafe-fx+ start_0 1)))
-                                (unsafe-vector-set!
-                                 vec_0
-                                 (unsafe-fx+ start_0 1)
-                                 tmp_0)))
-                            (let ((a_0
+                                  (unsafe-fx+ start_0 0))))
+                            (begin
+                              (unsafe-vector-set!
+                               vec_0
+                               (unsafe-fx+ start_0 0)
+                               (unsafe-vector-ref
+                                vec_0
+                                (unsafe-fx+ start_0 1)))
+                              (unsafe-vector-set!
+                               vec_0
+                               (unsafe-fx+ start_0 1)
+                               tmp_0)))
+                          (let ((a_0
+                                 (unsafe-vector-ref
+                                  vec_0
+                                  (unsafe-fx+ start_0 0))))
+                            (let ((b_0
                                    (unsafe-vector-ref
                                     vec_0
-                                    (unsafe-fx+ start_0 0))))
-                              (let ((b_0
+                                    (unsafe-fx+ start_0 1))))
+                              (let ((c_0
                                      (unsafe-vector-ref
                                       vec_0
-                                      (unsafe-fx+ start_0 1))))
-                                (let ((c_0
-                                       (unsafe-vector-ref
-                                        vec_0
-                                        (unsafe-fx+ start_0 2))))
-                                  (let ((b_1 b_0) (a_1 a_0))
+                                      (unsafe-fx+ start_0 2))))
+                                (let ((b_1 b_0) (a_1 a_0))
+                                  (if (if getkey_0
+                                        (let ((app_0 (|#%app| getkey_0 b_1)))
+                                          (|#%app|
+                                           less-than?_0
+                                           app_0
+                                           (|#%app| getkey_0 a_1)))
+                                        (|#%app| less-than?_0 b_1 a_1))
                                     (if (if getkey_0
-                                          (let ((app_0 (|#%app| getkey_0 b_1)))
+                                          (let ((app_0 (|#%app| getkey_0 c_0)))
                                             (|#%app|
                                              less-than?_0
                                              app_0
-                                             (|#%app| getkey_0 a_1)))
-                                          (|#%app| less-than?_0 b_1 a_1))
-                                      (if (if getkey_0
-                                            (let ((app_0
-                                                   (|#%app| getkey_0 c_0)))
-                                              (|#%app|
-                                               less-than?_0
-                                               app_0
-                                               (|#%app| getkey_0 b_1)))
-                                            (|#%app| less-than?_0 c_0 b_1))
-                                        (begin
-                                          (unsafe-vector-set!
-                                           vec_0
-                                           (unsafe-fx+ start_0 0)
-                                           c_0)
-                                          (unsafe-vector-set!
-                                           vec_0
-                                           (unsafe-fx+ start_0 2)
-                                           a_1))
-                                        (if (if getkey_0
-                                              (let ((app_0
-                                                     (|#%app| getkey_0 c_0)))
-                                                (|#%app|
-                                                 less-than?_0
-                                                 app_0
-                                                 (|#%app| getkey_0 a_1)))
-                                              (|#%app| less-than?_0 c_0 a_1))
-                                          (begin
-                                            (unsafe-vector-set!
-                                             vec_0
-                                             (unsafe-fx+ start_0 0)
-                                             b_1)
-                                            (unsafe-vector-set!
-                                             vec_0
-                                             (unsafe-fx+ start_0 1)
-                                             c_0)
-                                            (unsafe-vector-set!
-                                             vec_0
-                                             (unsafe-fx+ start_0 2)
-                                             a_1))
-                                          (begin
-                                            (unsafe-vector-set!
-                                             vec_0
-                                             (unsafe-fx+ start_0 0)
-                                             b_1)
-                                            (unsafe-vector-set!
-                                             vec_0
-                                             (unsafe-fx+ start_0 1)
-                                             a_1))))
+                                             (|#%app| getkey_0 b_1)))
+                                          (|#%app| less-than?_0 c_0 b_1))
+                                      (begin
+                                        (unsafe-vector-set!
+                                         vec_0
+                                         (unsafe-fx+ start_0 0)
+                                         c_0)
+                                        (unsafe-vector-set!
+                                         vec_0
+                                         (unsafe-fx+ start_0 2)
+                                         a_1))
                                       (if (if getkey_0
                                             (let ((app_0
                                                    (|#%app| getkey_0 c_0)))
@@ -1899,24 +1862,53 @@
                                           (unsafe-vector-set!
                                            vec_0
                                            (unsafe-fx+ start_0 0)
-                                           c_0)
+                                           b_1)
                                           (unsafe-vector-set!
                                            vec_0
                                            (unsafe-fx+ start_0 1)
-                                           a_1)
+                                           c_0)
                                           (unsafe-vector-set!
                                            vec_0
                                            (unsafe-fx+ start_0 2)
-                                           b_1))
+                                           a_1))
                                         (begin
                                           (unsafe-vector-set!
                                            vec_0
-                                           (unsafe-fx+ start_0 1)
-                                           c_0)
+                                           (unsafe-fx+ start_0 0)
+                                           b_1)
                                           (unsafe-vector-set!
                                            vec_0
-                                           (unsafe-fx+ start_0 2)
-                                           b_1)))))))))))
+                                           (unsafe-fx+ start_0 1)
+                                           a_1))))
+                                    (if (if getkey_0
+                                          (let ((app_0 (|#%app| getkey_0 c_0)))
+                                            (|#%app|
+                                             less-than?_0
+                                             app_0
+                                             (|#%app| getkey_0 a_1)))
+                                          (|#%app| less-than?_0 c_0 a_1))
+                                      (begin
+                                        (unsafe-vector-set!
+                                         vec_0
+                                         (unsafe-fx+ start_0 0)
+                                         c_0)
+                                        (unsafe-vector-set!
+                                         vec_0
+                                         (unsafe-fx+ start_0 1)
+                                         a_1)
+                                        (unsafe-vector-set!
+                                         vec_0
+                                         (unsafe-fx+ start_0 2)
+                                         b_1))
+                                      (begin
+                                        (unsafe-vector-set!
+                                         vec_0
+                                         (unsafe-fx+ start_0 1)
+                                         c_0)
+                                        (unsafe-vector-set!
+                                         vec_0
+                                         (unsafe-fx+ start_0 2)
+                                         b_1))))))))))
                       (let ((work-vec_0
                              (make-vector (+ n_0 (ceiling (/ n_0 2))) #f)))
                         (begin
