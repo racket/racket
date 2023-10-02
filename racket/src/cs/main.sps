@@ -192,9 +192,9 @@
    (define (saw-something? saw)
      (positive? (hash-count saw)))
 
-   (define rx:logging-spec (pregexp "^[\\s]*(none|fatal|error|warning|info|debug)(?:@([^\\s @]+))?(.*)$"))
+   (define rx:logging-spec (pregexp "^[\\s]*(none|fatal|error|warning|info|debug)(?:@([^\\s @]+))?()"))
    (define rx:all-whitespace (pregexp "^[\\s]*$"))
-   (define (parse-logging-spec which str where exit-on-fail?)
+   (define (parse-logging-spec which str where exit-on-fail? default)
      (define (fail)
        (let ([msg (string-append
                    which " <levels> " where " must be one of the following\n"
@@ -207,19 +207,21 @@
           [exit-on-fail?
            (startup-error msg)]
           [else
-           (eprintf "~a\n" msg)])))
-     (let loop ([str str] [default #f])
-       (let ([m (regexp-match rx:logging-spec str)])
+           (eprintf "~a\n" msg)
+           default])))
+     (let loop ([start-pos 0] [default #f])
+       (let ([m (regexp-match-positions rx:logging-spec str start-pos)])
+         (define (extract p) (and p (substring str (car p) (cdr p))))
          (cond
           [m
-           (let ([level (string->symbol (cadr m))]
-                 [topic (caddr m)])
+           (let ([level (string->symbol (extract (cadr m)))]
+                 [topic (extract (caddr m))])
              (cond
               [topic
-               (cons level (cons (string->symbol topic) (loop (cadddr m) default)))]
+               (cons level (cons (string->symbol topic) (loop (cdr (cadddr m)) default)))]
               [default (fail)]
-              [else (loop (cadddr m) level)]))]
-          [(regexp-match? rx:all-whitespace str)
+              [else (loop (cdr (cadddr m)) level)]))]
+          [(regexp-match? rx:all-whitespace str start-pos)
            (if default (list default) null)]
           [else (fail)]))))
 
@@ -530,15 +532,15 @@
               (loop (cdr args))]
              [("-W" "--stderr")
               (let-values ([(spec rest-args) (next-arg "stderr level" arg within-arg args)])
-                (set! stderr-logging-arg (parse-logging-spec "stderr" spec (format "after ~a switch" (or within-arg arg)) #t))
+                (set! stderr-logging-arg (parse-logging-spec "stderr" spec (format "after ~a switch" (or within-arg arg)) #t #f))
                 (loop rest-args))]
              [("-O" "--stdout")
               (let-values ([(spec rest-args) (next-arg "stdout level" arg within-arg args)])
-                (set! stdout-logging-arg (parse-logging-spec "stdout" spec (format "after ~a switch" (or within-arg arg)) #t))
+                (set! stdout-logging-arg (parse-logging-spec "stdout" spec (format "after ~a switch" (or within-arg arg)) #t #f))
                 (loop rest-args))]
              [("-L" "--syslog")
               (let-values ([(spec rest-args) (next-arg "syslog level" arg within-arg args)])
-                (set! syslog-logging-arg (parse-logging-spec "syslog" spec (format "after ~a switch" (or within-arg arg)) #t))
+                (set! syslog-logging-arg (parse-logging-spec "syslog" spec (format "after ~a switch" (or within-arg arg)) #t #f))
                 (loop rest-args))]
              [("-N" "--name")
               (let-values ([(name rest-args) (next-arg "name" arg within-arg args)])
@@ -754,21 +756,21 @@
      (or stderr-logging-arg
          (let ([spec (getenv "PLTSTDERR")])
            (if spec
-               (parse-logging-spec "stderr" spec "in PLTSTDERR environment variable" #f)
+               (parse-logging-spec "stderr" spec "in PLTSTDERR environment variable" #f '(error))
                '(error)))))
 
    (define stdout-logging
      (or stdout-logging-arg
          (let ([spec (getenv "PLTSTDOUT")])
            (if spec
-               (parse-logging-spec "stdout" spec "in PLTSTDOUT environment variable" #f)
+               (parse-logging-spec "stdout" spec "in PLTSTDOUT environment variable" #f '())
                '()))))
 
    (define syslog-logging
      (or syslog-logging-arg
          (let ([spec (getenv "PLTSYSLOG")])
            (if spec
-               (parse-logging-spec "syslog" spec "in PLTSYSLOG environment variable" #f)
+               (parse-logging-spec "syslog" spec "in PLTSYSLOG environment variable" #f '())
                '()))))
 
    (define gcs-on-exit? (and (getenv "PLT_GCS_ON_EXIT") #t))

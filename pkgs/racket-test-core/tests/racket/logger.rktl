@@ -1,5 +1,6 @@
 
 (load-relative "loadtest.rktl")
+(require compiler/find-exe)
 
 (Section 'logger)
 
@@ -387,6 +388,21 @@
           [end-cpu (current-process-milliseconds)])
       (test #t <= start (gc-info-start-time (vector-ref msg 2)) (gc-info-end-time (vector-ref msg 2)) end)
       (test #t <= start-cpu (gc-info-start-process-time (vector-ref msg 2)) (gc-info-end-process-time (vector-ref msg 2)) end-cpu))))
+
+;; --------------------
+
+;; This shouldn't take long
+(parameterize ([current-environment-variables
+                (environment-variables-copy (current-environment-variables))])
+  (printf "Long PLTSTDERR...\n")
+  (putenv "PLTSTDERR" (string-join (for/list ([i 10000]) (format "none@~a" i)) " "))
+  (test #t system* (find-exe) "-e" "1"))
+
+(parameterize ([current-environment-variables
+                (environment-variables-copy (current-environment-variables))])
+  (printf "Bad PLTSTDERR...\n")
+  (putenv "PLTSTDERR" "oops")
+  (test #t system* (find-exe) "-e" "1"))
 
 ;; --------------------
 
