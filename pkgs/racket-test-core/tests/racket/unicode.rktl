@@ -1213,8 +1213,9 @@
     (test (if (and c? (not unicode?))  "A\uE2\0\uE2\0B" "A\uC2\0\uC2\0B") string-locale-upcase "a\uE2\0\uE2\0b"))
   (when known-locale?
     (go #f)
-    (parameterize ([current-locale "C"])
-      (go #t)))
+    (unless (eq? 'macosx (system-type)) ; as of macOS 14 Sonoma, the "C" locale recognizes characters outside 0-127
+      (parameterize ([current-locale "C"])
+        (go #t))))
   (parameterize ([current-locale #f])
     (go #t #t)))
 
