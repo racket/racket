@@ -3989,6 +3989,9 @@ static int get_want_level(Scheme_Logger *logger, Scheme_Object *name)
 
 int scheme_log_level_topic_p(Scheme_Logger *logger, int level, Scheme_Object *name)
 {
+  if (level == 0) /* never gets 'none messages */
+    return 0; 
+  
   if (!logger) {
     Scheme_Config *config;
     config = scheme_current_config();
@@ -4100,6 +4103,9 @@ void scheme_log_name_pfx_message(Scheme_Logger *logger, int level, Scheme_Object
      configuration of scheme_log_abort(). */
   Scheme_Object *queue, *q, *msg = NULL, *b;
   Scheme_Log_Reader *lr;
+
+  if (level == 0) /* 'none never logs */
+    return;
 
   if (!logger) {
     Scheme_Config *config;
@@ -4476,6 +4482,9 @@ log_level_p(int argc, Scheme_Object *argv[])
       scheme_wrong_contract("log-level?", "(or/c f? #symbol)", 2, argc, argv);
     name = argv[2];
   }
+
+  if (level == 0) /* never gets 'none messages */
+    return scheme_false; 
 
   want_level = get_want_level(logger, name);
 

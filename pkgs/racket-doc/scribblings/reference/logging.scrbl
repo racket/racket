@@ -12,7 +12,8 @@ event has a topic and level of detail, and a @tech{log receiver} subscribes to
 logging events at a certain level of detail (and lower) for a specific topic or for all topics. The
 levels, in increasing order of detail, are @racket['none], @racket['fatal],
 @racket['error], @racket['warning], @racket['info], and
-@racket['debug].
+@racket['debug]. The @racket['none] level is intended for specifying receivers,
+and messages logged at that level are never sent to subscribers.
 
 To help organize logged events, a @tech{logger} can have a default topic and/or
 a parent logger. Every event reported to a logger is propagated to
@@ -167,7 +168,8 @@ is evaluated.
 Reports an event to @racket[logger], which in turn distributes the
 information to any @tech{log receivers} attached to @racket[logger] or
 its ancestors that are interested in events at @racket[level] or
-higher.
+higher. If @racket[level] is @racket['none], the logged message is not
+sent to any receiver.
 
 @tech{Log receivers} can filter events based on @racket[topic].  In
 addition, if @racket[topic] and @racket[prefix-message?] are not
@@ -175,7 +177,8 @@ addition, if @racket[topic] and @racket[prefix-message?] are not
 by @racket[": "] before it is sent to receivers.
 
 @history[#:changed "6.0.1.10" @elem{Added the @racket[prefix-message?] argument.}
-         #:changed "7.2.0.7" @elem{Made the @racket[data] argument optional.}]}
+         #:changed "7.2.0.7" @elem{Made the @racket[data] argument optional.}
+         #:changed "8.10.0.5" @elem{Changed @racket['none] handling to consistently suppress the message.}]}
 
 
 @defproc[(log-level? [logger logger?]
@@ -187,7 +190,8 @@ Reports whether any @tech{log receiver} attached to @racket[logger] or
 one of its ancestors is interested in @racket[level] events (or
 potentially lower) for @racket[topic]. If @racket[topic] is @racket[#f],
 the result indicates whether a @tech{log receiver} is interested in
-events at @racket[level] for any topic.
+events at @racket[level] for any topic.  If @racket[level] is @racket['none],
+the result is always @racket[#f].
 
 Use this function to avoid work generating an
 event for @racket[log-message] if no receiver is interested in the
@@ -200,7 +204,8 @@ The result of this function can change if a garbage collection
 determines that a log receiver is no longer accessible (and therefore
 that any event information it receives will never become accessible).
 
-@history[#:changed "6.1.1.3" @elem{Added the @racket[topic] argument.}]}
+@history[#:changed "6.1.1.3" @elem{Added the @racket[topic] argument.}
+         #:changed "8.10.0.5" @elem{Changed the result for @racket['none] to be consistently @racket[#f].}]}
 
 @defproc[(log-max-level [logger logger?]
                         [topic (or/c symbol? #f) #f])

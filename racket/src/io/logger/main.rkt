@@ -67,8 +67,10 @@
   (check who logger? logger)
   (check-level who level)
   (check who #:or-false symbol? topic)
-  (atomically/no-interrupts/no-wind
-   (log-level?* logger level topic)))
+  (and
+   (not (eq? level 'none))
+   (atomically/no-interrupts/no-wind
+    (log-level?* logger level topic))))
 
 (define (logging-future-events?)
   (atomically/no-interrupts/no-wind
@@ -142,8 +144,9 @@
   (check-level who level)
   (check who #:or-false symbol? topic)
   (check who string? message)
-  (atomically/no-interrupts/no-wind
-   (log-message* logger level topic message data prefix? #f)))
+  (unless (eq? level 'none)
+    (atomically/no-interrupts/no-wind
+     (log-message* logger level topic message data prefix? #f))))
 
 (define (log-future-event message data)
   (atomically/no-interrupts/no-wind

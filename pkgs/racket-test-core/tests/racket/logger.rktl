@@ -108,6 +108,8 @@
   (test #t log-level? test-logger 'info 'test2)
   (test #f log-level? test-logger 'info 'not-test)
   (test #f log-level? test-logger 'debug 'test2)
+  (test #f log-level? test-logger 'none 'test2)
+  (test #f log-level? test-logger 'none)
   (test 'info log-max-level test-logger)
   (test 'info log-max-level test-logger 'test2)
   (test 'warning log-max-level test-logger 'not-test)
@@ -145,6 +147,8 @@
   (define (get)
     (define m (sync/timeout 0 r))
     (and m (vector-ref m 1)))
+  (log-message root 'none "message" 'data)
+  (test #f get)
   (log-message root 'debug "message" 'data)
   (test #f get)
   (log-message sub1 'info "message" 'data)
@@ -168,6 +172,7 @@
   (log-message sub4 'warning "message" 'data)
   (log-message sub4 'error "message" 'data)
   (log-message sub4 'fatal "message" 'data)
+  (log-message sub4 'none "message" 'data)
   (test #f get))
 
 ; --------------------

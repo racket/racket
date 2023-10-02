@@ -33927,10 +33927,13 @@
                    'log-level?
                    "(or/c #f symbol?)"
                    topic3_0))
-                (|#%app| start-atomic/no-interrupts)
-                (begin0
-                  (log-level?* logger4_0 level5_0 topic3_0)
-                  (|#%app| end-atomic/no-interrupts))))))))
+                (if (not (eq? level5_0 'none))
+                  (begin
+                    (|#%app| start-atomic/no-interrupts)
+                    (begin0
+                      (log-level?* logger4_0 level5_0 topic3_0)
+                      (|#%app| end-atomic/no-interrupts)))
+                  #f)))))))
     (|#%name|
      log-level?
      (case-lambda
@@ -34114,10 +34117,20 @@
       (if (string? message_0)
         (void)
         (raise-argument-error who_0 "string?" message_0))
-      (|#%app| start-atomic/no-interrupts)
-      (begin0
-        (log-message* logger_0 level_0 topic_0 message_0 data_0 prefix?_0 #f)
-        (|#%app| end-atomic/no-interrupts)))))
+      (if (eq? level_0 'none)
+        (void)
+        (begin
+          (|#%app| start-atomic/no-interrupts)
+          (begin0
+            (log-message*
+             logger_0
+             level_0
+             topic_0
+             message_0
+             data_0
+             prefix?_0
+             #f)
+            (|#%app| end-atomic/no-interrupts)))))))
 (define log-future-event
   (lambda (message_0 data_0)
     (begin
