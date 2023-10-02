@@ -85,6 +85,8 @@ additional arguments.
 
 A @racket[_rest-id] variable is sometimes called a @deftech{rest
 argument}, because it accepts the ``rest'' of the function arguments.
+A function with a rest argument is sometimes called a @deftech{variadic} function,
+with elements in the rest argument called variadic arguments.
 
 @;------------------------------------------------------------------------
 @section{Declaring Optional Arguments}
