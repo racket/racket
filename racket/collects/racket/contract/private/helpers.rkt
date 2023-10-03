@@ -197,7 +197,7 @@
              string<=?
              #:key symbol->string)))
 
--- also add empty? and cons? to the above
+-- also add not, <, <=, =, >, >=, empty? and cons? to the above
 
 |#
 
@@ -452,6 +452,13 @@
          (weak-box? . #t)
          (will-executor? . #t)
          (zero? . #t)
+         ;; special cases
+         (not . #t)
+         (< . #t)
+         (<= . #t)
+         (= . #t)
+         (> . #t)
+         (>= . #t)
          ;; from racket/private/list-predicates
          (empty? . #t)
          (cons? . #t)))
