@@ -1848,7 +1848,9 @@
           (regexp-match? #rx"blaming: bad1-client" (exn-message x)))))
 
   (contract-eval
-   '(define (find-p/c-prop stx)
+   '(define (find-p/c-prop stx [extract
+                                (lambda (e)
+                                  (syntax->datum (vector-ref e 1)))])
       (define the-props
         (flatten
          (let loop ([stx stx])
@@ -1862,7 +1864,7 @@
       (remove-duplicates
        (for/list ([e (in-list the-props)]
                   #:when e)
-         (syntax->datum (vector-ref e 1))))))
+         (extract e)))))
   
   (test/spec-passed/result
    'provide/contract.prop1
@@ -1886,6 +1888,42 @@
               [x (>/c 5)]))
             (define x 6)))))
    (list '(>/c 5)))
+
+  (test/spec-passed/result
+   'provide/contract.prop3
+   '(let ()
+      (find-p/c-prop
+       (expand
+        '(module test racket
+            (provide
+             (contract-out
+              [x (>/c 5)]
+              [y (list/c (or/c (</c 0) (>/c 0))
+                         (not/c (=/c 0)))]))
+            (define x 6)
+            (define y (list -1 1))))
+       (lambda (e)
+         (syntax->datum (vector-ref e 0)))))
+   (list 'x 'y))
+
+  (test/spec-passed/result
+   'provide/contract.prop4
+   '(let ()
+      (find-p/c-prop
+       (expand
+        '(module test racket
+            (provide
+             (contract-out
+              [x (>/c 5)]
+              [y (list/c (or/c (</c 0) (>/c 0))
+                         (not/c (=/c 0)))]))
+            (define x 6)
+            (define y (list -1 1))))
+       (lambda (e)
+         (map syntax->datum (vector->list e)))))
+   (list (list 'x '(>/c 5))
+         (list 'y '(list/c (or/c (</c 0) (>/c 0))
+                           (not/c (=/c 0))))))
 
   (test/spec-passed/result
    'struct-field-name-computed-correctly
