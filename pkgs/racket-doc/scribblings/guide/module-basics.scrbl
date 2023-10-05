@@ -378,7 +378,7 @@ some situations:
        confusion through multiple instantiations.}
 
  @item{When @seclink["exe" #:doc '(lib
-       "scribblings/raco/raco.scrbl")]{@exec{raco exec}} plus
+       "scribblings/raco/raco.scrbl")]{@exec{raco exe}} plus
        @seclink["exe-dist" #:doc '(lib
        "scribblings/raco/raco.scrbl")]{@exec{raco distribute}} are
        used to create an executable to run on a different machine, the
