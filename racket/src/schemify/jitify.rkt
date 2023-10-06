@@ -351,6 +351,11 @@
        (values (reannotate v `(call-with-module-prompt ,new-proc . ,var-info))
                new-free
                new-lifts)]
+      [`(ffi-static-call-and-callback-core ,_ ...)
+       ;; This form must be compiled, but it has no subexpressions
+       (if (convert-mode-within-conversion? convert-mode)
+           v
+           (jitify-expr `(#%app (lambda () ,v)) env mutables free lifts (convert-mode-always convert-mode) #f in-name))]
       [`(#%app ,_ ...)
        (define-values (new-vs new-free new-lifts)
          (jitify-body (wrap-cdr v) env mutables free lifts (convert-mode-non-tail convert-mode) #f in-name))
@@ -675,6 +680,7 @@
        (find-mutable env rhs (if (hash-ref env id #f)
                                  (hash-set accum id #t)
                                  accum))]
+      [`(ffi-static-call-and-callback-core ,_ ...) accum]
       [`(,_ ...) (body-find-mutable env v accum)]
       [`,_ accum]))
 
@@ -703,7 +709,7 @@
   ;;
   ;; If there's no size threshold for conversion, then convert mode is
   ;; a pair of 'called or 'not-called (where the former means "definitely
-  ;; called, so don't bother wrapper) and 'lift or 'no-lift.
+  ;; called, so don't bother with a wrapper) and 'lift or 'no-lift.
   ;;
   ;; If there's a size threshold, then a convert mode is a
   ;; `convert-mode` instance.
@@ -751,6 +757,13 @@
       [else (if (eq? 'no-lift (cdr cm))
                 '(called . no-lift)
                 '(called . lift))]))
+
+  (define (convert-mode-always cm)
+    (convert-mode 'not-needed #f need-lift? #t))
+
+  (define (convert-mode-within-conversion? cm)
+    (and (convert-mode? cm)
+         (convert-mode-no-more-conversions? cm)))
 
   (define (convert-mode-box-mutables? cm)
     (cond
@@ -820,6 +833,7 @@
       [`(quote ,_) 1]
       [`(set! ,_ ,rhs)
        (add1 (record-sizes! rhs sizes))]
+      [`(ffi-static-call-and-callback-core ,_ ...) 1]
       [`(,_ ...) (body-record-sizes! v sizes)]
       [`,_ 1]))
 

@@ -389,6 +389,8 @@
       [`(variable-ref/no-check ,id)
        (define var (hash-ref env (unwrap id)))
        (vector 'ref-variable (stack->pos var stk-i))]
+      [`(ffi-static-call-and-callback-core ,_ ...)
+       (error 'compile "unexpected ffi-static-call-and-callback-core in interpreter mode")]
       [`(#%app ,_ ...) (compile-apply (wrap-cdr e) env stack-depth stk-i tail? mutated)]
       [`(#%app/value ,_ ...) (compile-apply (wrap-cdr e) env stack-depth stk-i tail? mutated)]
       [`(#%app/no-return ,_ ...) (compile-apply (wrap-cdr e) env stack-depth stk-i tail? mutated)]
@@ -504,6 +506,8 @@
       [`(variable-ref ,id)
        mutated]
       [`(variable-ref/no-check ,id)
+       mutated]
+      [`(ffi-static-call-and-callback-core ,_ ...)
        mutated]
       [`(#%app ,es ...)
        (extract-list-mutated es mutated)]

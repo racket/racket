@@ -8,7 +8,8 @@
          "literal.rkt"
          "lambda.rkt"
          "simple.rkt"
-         "fold.rkt")
+         "fold.rkt"
+         "ffi-static-core.rkt")
 
 (provide optimize
          optimize*)
@@ -17,14 +18,14 @@
 ;; on each schemified form, which means that subexpressions of the
 ;; immediate expression have already been optimized.
 
-(define (optimize v prim-knowns primitives knowns imports mutated)
+(define (optimize v prim-knowns primitives knowns imports mutated target compiler-query)
   (match v
     [`(if ,t ,e1 ,e2)
      (if (literal? t)
          (if (unwrap t) e1 e2)
          v)]
     [`(begin (quote ,_) ,e . ,es) ; avoid `begin` that looks like it provides a name
-     (optimize (reannotate v `(begin ,e . ,es)) prim-knowns primitives knowns imports mutated)]
+     (optimize (reannotate v `(begin ,e . ,es)) prim-knowns primitives knowns imports mutated target compiler-query)]
     [`(not ,t)
      (if (literal? t)
          `,(not (unwrap t))
@@ -71,6 +72,61 @@
        [else v])]
     [`(procedure-specialize ,e)
      (if (lambda? e) e v)]
+    [`(ffi-maybe-call-and-callback-core ,must-at
+                                        ,abi
+                                        ,varargs-after
+                                        ,blocking?
+                                        ,async-apply
+                                        ,result-type
+                                        . ,arg-types)
+     ;; This case is aided by an ad hoc ffi-maybe-call-and-callback-core
+     (or (and (eq? target 'compile)
+              (or (make-ffi-static-core arg-types result-type
+                                        abi varargs-after blocking? async-apply
+                                        prim-knowns primitives knowns imports mutated)
+                  (and (unwrap must-at)
+                       (error 'compile "unable to generate foreign function statically: ~s"
+                              (match must-at
+                                [`(quote ,e) e]
+                                [`,_ must-at])))))
+         v)]
+    [`(system-type . ,_)
+     (match v
+       [`(system-type 'vm)
+        '(quote chez-scheme)]
+       [`(system-type) (let ([sym (compiler-query '(system-type))])
+                         (if sym
+                             `(quote ,sym)
+                             v))]
+       [`(system-type 'word) (let ([n (compiler-query '(foreign-sizeof 'void*))])
+                               (cond
+                                 [(eqv? n 8) 64]
+                                 [(eqv? n 4) 32]
+                                 [else v]))]
+       [`,_ v])]
+    [`(compiler-sizeof ',arg)
+     (define scheme-arg (let loop ([arg arg])
+                          (case (unwrap arg)
+                            [(int char wchar float double short long) arg]
+                            [else
+                             (define u (unwrap-list arg))
+                             (and (list? u)
+                                  (= 2 (length u))
+                                  (cond
+                                    [(and (eq? 'long (unwrap (car u)))
+                                          (eq? 'long (unwrap (cadr u))))
+                                     'long-long]
+                                    [(and (eq? (unwrap (cadr u)) '*)
+                                          (let ([a (unwrap (car u))])
+                                            (and (symbol? a)
+                                                 (or (eq? 'void a)
+                                                     (loop a)))))
+                                     'void*]
+                                    [else #f]))])))
+     (or (and scheme-arg
+              (let ([opt (compiler-query `(foreign-sizeof ',scheme-arg))])
+                (or (and (integer? opt) opt))))
+         v)]
     [`(,rator . ,rands)
      (define u-rator (unwrap rator))
      (define k (and (symbol? u-rator) (hash-ref prim-knowns u-rator #f)))
@@ -100,6 +156,12 @@
           [else v])]
        [else v])]))
 
+;; Functions where multiple arguments are inspected to optimize, and where the
+;; arguments can be complex, so it's worth tracking info in a left-to-right
+;; conversion of a function call
+(define optimize-inspects-arguments
+  '(ffi-maybe-call-and-callback-core))
+
 ;; ----------------------------------------
 
 ;; Recursive optimization on pre-schemified --- useful when not fused with
@@ -107,7 +169,7 @@
 ;; function that can be inlined (where converting away
 ;; `variable-reference-from-unsafe?` is particularly important)
 
-(define (optimize* v prim-knowns primitives knowns imports mutated unsafe-mode?)
+(define (optimize* v prim-knowns primitives knowns imports mutated unsafe-mode? target compiler-query)
   (define (optimize* v)
     (define new-v
       (reannotate
@@ -141,7 +203,7 @@
          [`(,rator ,exps ...)
           `(,(optimize* rator) ,@(optimize*-body exps))]
          [`,_ v])))
-    (optimize new-v prim-knowns primitives knowns imports mutated))
+    (optimize new-v prim-knowns primitives knowns imports mutated target (lambda (v) #f)))
 
   (define (optimize*-body body)
     (for/list ([v (in-wrap-list body)])

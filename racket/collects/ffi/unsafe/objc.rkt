@@ -1,5 +1,7 @@
 #lang racket/base
-(require ffi/unsafe
+(require ffi/unsafe/static
+         (only-in ffi/unsafe
+                  [_fun _fun/dynamic])
          racket/stxparam
          (for-syntax racket/base)
          "atomic.rkt"
@@ -880,10 +882,10 @@
                                                                        [super-tell do-super-tell])
                                                    body0 body ...
                                                    dealloc-body ...)))
-                                           (_fun #:atomic? atomic? 
-                                                 #:keep save-method! 
-                                                 #:async-apply async
-                                                 _id _id arg-type ... -> rt)
+                                           (_fun/dynamic #:atomic? atomic? 
+                                                         #:keep save-method! 
+                                                         #:async-apply async
+                                                         _id _id arg-type ... -> rt)
                                            (generate-layout rt (list arg-id ...)))))))))]
          [(kind result-type (id arg ...) body0 body ...)
           (loop stx 

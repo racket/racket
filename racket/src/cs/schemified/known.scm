@@ -407,6 +407,64 @@
          0
          s
          'value))))))
+(define finish_1929
+  (make-struct-type-install-properties
+   '(known-ctype)
+   1
+   0
+   (if (struct-type? struct:known-constant)
+     struct:known-constant
+     (check-struct-type 'struct struct:known-constant))
+   null
+   'prefab
+   #f
+   '(0)
+   #f
+   'known-ctype))
+(define struct:known-ctype
+  (make-record-type-descriptor
+   'known-ctype
+   (if (struct-type? struct:known-constant)
+     struct:known-constant
+     (check-struct-type 'struct struct:known-constant))
+   (structure-type-lookup-prefab-uid
+    'known-ctype
+    (if (struct-type? struct:known-constant)
+      struct:known-constant
+      (check-struct-type 'struct struct:known-constant))
+    1
+    0
+    #f
+    '(0))
+   #f
+   #f
+   '(1 . 1)))
+(define effect_2479 (finish_1929 struct:known-ctype))
+(define known-ctype
+  (|#%name|
+   known-ctype
+   (record-constructor
+    (make-record-constructor-descriptor struct:known-ctype #f #f))))
+(define known-ctype?_2499
+  (|#%name| known-ctype? (record-predicate struct:known-ctype)))
+(define known-ctype?
+  (|#%name|
+   known-ctype?
+   (lambda (v)
+     (if (known-ctype?_2499 v)
+       #t
+       ($value
+        (if (impersonator? v) (known-ctype?_2499 (impersonator-val v)) #f))))))
+(define known-ctype-rep_2319
+  (|#%name| known-ctype-rep (record-accessor struct:known-ctype 0)))
+(define known-ctype-rep
+  (|#%name|
+   known-ctype-rep
+   (lambda (s)
+     (if (known-ctype?_2499 s)
+       (known-ctype-rep_2319 s)
+       ($value
+        (impersonate-ref known-ctype-rep_2319 struct:known-ctype 0 s 'rep))))))
 (define finish_2897
   (make-struct-type-install-properties
    '(known-procedure)

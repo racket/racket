@@ -1,5 +1,5 @@
 #lang racket/base
-(require ffi/unsafe
+(require ffi/unsafe/static
          racket/runtime-path
          (for-syntax racket/base)
          (only-in file/sha1

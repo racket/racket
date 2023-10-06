@@ -675,6 +675,7 @@
           compiler-sizeof cpointer-gcable? cpointer-tag cpointer?
           ctype-alignof ctype-basetype ctype-c->scheme ctype-scheme->c ctype-sizeof ctype?
           end-stubborn-change extflvector->cpointer
+          assert-ctype-representation ffi-maybe-call-and-callback-core
           ffi-call ffi-call-maker ffi-callback ffi-callback-maker ffi-callback?
           ffi-lib-name ffi-lib? ffi-obj ffi-obj-lib ffi-lib-unload
           ffi-obj-name  ffi-obj? flvector->cpointer free free-immobile-cell lookup-errno
@@ -703,6 +704,8 @@
           ptr-ref/uint64 ptr-set!/uint64  ; not exported to Racket
           ptr-ref/double ptr-set!/double  ; not exported to Racket
           ptr-ref/float ptr-set!/float    ; not exported to Racket
+
+          ffi-static-call-and-callback-core ; not exported to Racket
 
           (rename [inline:unsafe-unbox unsafe-unbox]
                   [inline:unsafe-set-box! unsafe-set-box!])

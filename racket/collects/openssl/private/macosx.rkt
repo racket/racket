@@ -1,7 +1,7 @@
 ;; Support for loading root cerficates from Mac OS keychains.
 
 #lang racket/base
-(require ffi/unsafe
+(require ffi/unsafe/static
          ffi/unsafe/objc
          ffi/unsafe/define
          "add-cert.rkt")

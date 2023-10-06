@@ -5,6 +5,7 @@
          "import.rkt"
          "simple.rkt"
          "parameter-result.rkt"
+         "make-ctype.rkt"
          "constructed-procedure.rkt"
          "literal.rkt"
          "inline.rkt"
@@ -24,7 +25,8 @@
 (define (infer-known rhs defn id knowns prim-knowns imports mutated simples unsafe-mode? target
                      #:primitives [primitives #hasheq()] ; for `optimize-inline?` mode
                      #:optimize-inline? [optimize-inline? #f]
-                     #:post-schemify? [post-schemify? #f])
+                     #:post-schemify? [post-schemify? #f]
+                     #:compiler-query [compiler-query (lambda (v) #f)])
   (let loop ([rhs rhs])
     (cond
       [(lambda? rhs)
@@ -36,7 +38,7 @@
                (or (can-inline? lam)
                    (wrap-property defn 'compiler-hint:cross-module-inline)))
           (let ([lam (if optimize-inline?
-                         (optimize* lam prim-knowns primitives knowns imports mutated unsafe-mode?)
+                         (optimize* lam prim-knowns primitives knowns imports mutated unsafe-mode? target compiler-query)
                          lam)])
             (known-procedure/can-inline arity-mask (if (and unsafe-mode? (not (aim? target 'cify)))
                                                        (add-begin-unsafe lam)
@@ -86,6 +88,8 @@
          [else (known-copy rhs)])]
       [(parameter-result? rhs prim-knowns knowns mutated)
        (known-procedure 3)]
+      [(make-ctype?/rep rhs prim-knowns knowns imports mutated)
+       => (lambda (rep) (known-ctype rep))]
       [(constructed-procedure-arity-mask rhs)
        => (lambda (m) (known-procedure m))]
       [else
@@ -94,6 +98,23 @@
           (loop e)]
          [`(begin ,e)
           (loop e)]
+         [`(assert-ctype-representation ,type1 ,type2)
+          (define k (loop type1))
+          (cond
+            [(known-ctype? k) k]
+            [(known-copy? k)
+             (define u-rhs (unwrap (known-copy-id k)))
+             (cond
+               [(hash-ref prim-knowns u-rhs #f)
+                => (lambda (k)
+                     (and (known-ctype? k) k))]
+               [(not (simple-mutated-state? (hash-ref mutated u-rhs #f)))
+                #f]
+               [(hash-ref-either knowns imports u-rhs)
+                => (lambda (k)
+                     (and (known-ctype? k) k))]
+               [else #f])]
+            [else #f])]
          [`,_
           (cond
             [(and defn

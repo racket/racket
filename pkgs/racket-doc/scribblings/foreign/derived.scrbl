@@ -9,6 +9,7 @@
 @include-section["cvector.scrbl"]
 @include-section["cpointer.scrbl"]
 @include-section["serialize-cstruct.scrbl"]
+@include-section["static.scrbl"]
 @include-section["define.scrbl"]
 @include-section["alloc.scrbl"]
 @include-section["custodian.scrbl"]
@@ -25,3 +26,4 @@
 @include-section["file.scrbl"]
 @include-section["winapi.scrbl"]
 @include-section["vm.scrbl"]
+

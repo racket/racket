@@ -1786,6 +1786,45 @@
                        (cons app_0 (loop_0 r1_1 r2_0))))))))))))
       (loop_0 l1_0 l2_0)))
     ((f_0 l_0 . args_0) (gen-map f_0 (cons l_0 args_0))))))
+(define andmap_2344
+  (|#%name|
+   andmap
+   (case-lambda
+    ((f_0 l_0)
+     (begin
+       (if (null? l_0)
+         #t
+         (letrec*
+          ((loop_0
+            (|#%name|
+             loop
+             (lambda (l_1)
+               (begin
+                 (if (null? (cdr l_1))
+                   (|#%app| f_0 (car l_1))
+                   (let ((r_0 (cdr l_1)))
+                     (if (|#%app| f_0 (car l_1)) (loop_0 r_0) #f))))))))
+          (loop_0 l_0)))))
+    ((f_0 l1_0 l2_0)
+     (if (null? l1_0)
+       #t
+       (letrec*
+        ((loop_0
+          (|#%name|
+           loop
+           (lambda (l1_1 l2_1)
+             (begin
+               (if (null? (cdr l1_1))
+                 (let ((app_0 (car l1_1))) (|#%app| f_0 app_0 (car l2_1)))
+                 (let ((r1_0 (cdr l1_1)))
+                   (let ((r2_0 (cdr l2_1)))
+                     (let ((r1_1 r1_0))
+                       (if (let ((app_0 (car l1_1)))
+                             (|#%app| f_0 app_0 (car l2_1)))
+                         (loop_0 r1_1 r2_0)
+                         #f))))))))))
+        (loop_0 l1_0 l2_0))))
+    ((f_0 l_0 . args_0) (gen-andmap f_0 (cons l_0 args_0))))))
 (define check-args
   (lambda (who_0 f_0 ls_0)
     (begin
@@ -1945,6 +1984,25 @@
                 (let ((next-ls_0 (map_1346 cdr ls_1)))
                   (let ((app_0 (apply f_0 (map_1346 car ls_1))))
                     (cons app_0 (loop_0 next-ls_0))))))))))
+       (loop_0 ls_0)))))
+(define gen-andmap
+  (lambda (f_0 ls_0)
+    (begin
+      #t
+      (letrec*
+       ((loop_0
+         (|#%name|
+          loop
+          (lambda (ls_1)
+            (begin
+              (if (null? (car ls_1))
+                #t
+                (if (null? (cdar ls_1))
+                  (apply f_0 (map_1346 car ls_1))
+                  (let ((next-ls_0 (map_1346 cdr ls_1)))
+                    (if (apply f_0 (map_1346 car ls_1))
+                      (loop_0 next-ls_0)
+                      #f)))))))))
        (loop_0 ls_0)))))
 (define hash-keys
   (let ((hash-keys_0
@@ -2362,6 +2420,64 @@
          0
          s
          'value))))))
+(define finish_1929
+  (make-struct-type-install-properties
+   '(known-ctype)
+   1
+   0
+   (if (struct-type? struct:known-constant)
+     struct:known-constant
+     (check-struct-type 'struct struct:known-constant))
+   null
+   'prefab
+   #f
+   '(0)
+   #f
+   'known-ctype))
+(define struct:known-ctype
+  (make-record-type-descriptor
+   'known-ctype
+   (if (struct-type? struct:known-constant)
+     struct:known-constant
+     (check-struct-type 'struct struct:known-constant))
+   (structure-type-lookup-prefab-uid
+    'known-ctype
+    (if (struct-type? struct:known-constant)
+      struct:known-constant
+      (check-struct-type 'struct struct:known-constant))
+    1
+    0
+    #f
+    '(0))
+   #f
+   #f
+   '(1 . 1)))
+(define effect_2479 (finish_1929 struct:known-ctype))
+(define known-ctype
+  (|#%name|
+   known-ctype
+   (record-constructor
+    (make-record-constructor-descriptor struct:known-ctype #f #f))))
+(define known-ctype?_2499
+  (|#%name| known-ctype? (record-predicate struct:known-ctype)))
+(define known-ctype?
+  (|#%name|
+   known-ctype?
+   (lambda (v)
+     (if (known-ctype?_2499 v)
+       #t
+       ($value
+        (if (impersonator? v) (known-ctype?_2499 (impersonator-val v)) #f))))))
+(define known-ctype-rep_2319
+  (|#%name| known-ctype-rep (record-accessor struct:known-ctype 0)))
+(define known-ctype-rep
+  (|#%name|
+   known-ctype-rep
+   (lambda (s)
+     (if (known-ctype?_2499 s)
+       (known-ctype-rep_2319 s)
+       ($value
+        (impersonate-ref known-ctype-rep_2319 struct:known-ctype 0 s 'rep))))))
 (define finish_2897
   (make-struct-type-install-properties
    '(known-procedure)
@@ -11042,8 +11158,178 @@
                   (error "result is not a fixnum for every system")))
               #f)
             (error 'schemify:limited-ok? "unknown limit kind: ~a" k_0)))))))
+(define make-ffi-static-core
+  (lambda (arg-types_0
+           result-type_0
+           abi_0
+           varargs-after_0
+           blocking?_0
+           async-apply_0
+           prim-knowns_0
+           primitives_0
+           knowns_0
+           imports_0
+           mutated_0)
+    (letrec*
+     ((lookup_0
+       (|#%name|
+        lookup
+        (lambda (id_0)
+          (begin
+            (let ((u_0 (unwrap id_0)))
+              (if (symbol? u_0)
+                (begin-unsafe
+                 (call-with-values
+                  (lambda ()
+                    (find-known+import
+                     u_0
+                     prim-knowns_0
+                     knowns_0
+                     imports_0
+                     mutated_0))
+                  (case-lambda
+                   ((k_0 im_0) k_0)
+                   (args (raise-binding-result-arity-error 2 args)))))
+                (if (if (pair? u_0)
+                      (if (eq? 'assert-ctype-representation (unwrap (car u_0)))
+                        (pair? (unwrap (cdr u_0)))
+                        #f)
+                      #f)
+                  (lookup_0 (car (unwrap (cdr u_0))))
+                  #f))))))))
+     (let ((get-literal_0
+            (|#%name|
+             get-literal
+             (lambda (stx_0)
+               (begin
+                 (let ((hd_0
+                        (let ((p_0 (unwrap stx_0)))
+                          (if (pair? p_0) (unwrap (car p_0)) #f))))
+                   (if (if (eq? 'quote hd_0)
+                         (let ((a_0 (cdr (unwrap stx_0))))
+                           (let ((p_0 (unwrap a_0)))
+                             (if (pair? p_0)
+                               (let ((a_1 (cdr p_0)))
+                                 (begin-unsafe
+                                  (let ((app_0 (unwrap '())))
+                                    (eq? app_0 (unwrap a_1)))))
+                               #f)))
+                         #f)
+                     (let ((v_0
+                            (let ((d_0 (cdr (unwrap stx_0))))
+                              (let ((a_0 (car (unwrap d_0)))) a_0))))
+                       (known-literal (unwrap v_0)))
+                     (let ((u_0 (unwrap stx_0)))
+                       (if (if (not (symbol? u_0)) (not (pair? u_0)) #f)
+                         (known-literal u_0)
+                         (lookup_0 stx_0))))))))))
+       (let ((get-boolean-literal_0
+              (|#%name|
+               get-boolean-literal
+               (lambda (stx_0)
+                 (begin
+                   (let ((hd_0
+                          (let ((p_0 (unwrap stx_0)))
+                            (if (pair? p_0) (unwrap (car p_0)) #f))))
+                     (if (if (eq? 'lambda hd_0) #t #f)
+                       (known-literal #t)
+                       (if (if (eq? 'case-lambda hd_0) #t #f)
+                         (known-literal #t)
+                         (let ((k_0 (get-literal_0 stx_0)))
+                           (if (known-procedure? k_0)
+                             (known-literal #t)
+                             k_0))))))))))
+         (let ((arg-ks_0
+                (reverse$1
+                 (begin
+                   (letrec*
+                    ((for-loop_0
+                      (|#%name|
+                       for-loop
+                       (lambda (fold-var_0 lst_0)
+                         (begin
+                           (if (pair? lst_0)
+                             (let ((arg-type_0 (unsafe-car lst_0)))
+                               (let ((rest_0 (unsafe-cdr lst_0)))
+                                 (let ((fold-var_1
+                                        (let ((fold-var_1
+                                               (cons
+                                                (lookup_0 arg-type_0)
+                                                fold-var_0)))
+                                          (values fold-var_1))))
+                                   (for-loop_0 fold-var_1 rest_0))))
+                             fold-var_0))))))
+                    (for-loop_0 null arg-types_0))))))
+           (let ((result-k_0 (lookup_0 result-type_0)))
+             (if (andmap_2344 known-ctype? arg-ks_0)
+               (if (known-ctype? result-k_0)
+                 (let ((abi-k_0 (get-literal_0 abi_0)))
+                   (let ((varargs-after-k_0 (get-literal_0 varargs-after_0)))
+                     (let ((blocking?-k_0 (get-boolean-literal_0 blocking?_0)))
+                       (let ((async-apply-k_0
+                              (get-boolean-literal_0 async-apply_0)))
+                         (let ((blocking?-k_1 blocking?-k_0)
+                               (varargs-after-k_1 varargs-after-k_0)
+                               (abi-k_1 abi-k_0))
+                           (if (known-literal? abi-k_1)
+                             (if (known-literal? varargs-after-k_1)
+                               (if (known-literal? blocking?-k_1)
+                                 (if (known-literal? async-apply-k_0)
+                                   (let ((app_0
+                                          (let ((app_0
+                                                 (map_1346
+                                                  known-ctype-rep
+                                                  arg-ks_0)))
+                                            (let ((app_1
+                                                   (known-ctype-rep
+                                                    result-k_0)))
+                                              (let ((app_2
+                                                     (list
+                                                      'quote
+                                                      (known-literal-value
+                                                       abi-k_1))))
+                                                (let ((app_3
+                                                       (known-literal-value
+                                                        varargs-after-k_1)))
+                                                  (list
+                                                   'ffi-static-call-and-callback-core
+                                                   app_0
+                                                   app_1
+                                                   app_2
+                                                   app_3
+                                                   (if (let ((or-part_0
+                                                              (known-literal-value
+                                                               blocking?-k_1)))
+                                                         (if or-part_0
+                                                           or-part_0
+                                                           (known-literal-value
+                                                            async-apply-k_0)))
+                                                     #t
+                                                     #f))))))))
+                                     (list
+                                      'values
+                                      app_0
+                                      (list* 'list arg-types_0)
+                                      result-type_0
+                                      abi_0
+                                      varargs-after_0
+                                      blocking?_0
+                                      async-apply_0))
+                                   #f)
+                                 #f)
+                               #f)
+                             #f))))))
+                 #f)
+               #f))))))))
 (define optimize
-  (lambda (v_0 prim-knowns_0 primitives_0 knowns_0 imports_0 mutated_0)
+  (lambda (v_0
+           prim-knowns_0
+           primitives_0
+           knowns_0
+           imports_0
+           mutated_0
+           target_0
+           compiler-query_0)
     (let ((hd_0
            (let ((p_0 (unwrap v_0))) (if (pair? p_0) (unwrap (car p_0)) #f))))
       (if (if (eq? 'if hd_0)
@@ -11126,7 +11412,9 @@
               primitives_0
               knowns_0
               imports_0
-              mutated_0))
+              mutated_0
+              target_0
+              compiler-query_0))
             (args (raise-binding-result-arity-error 2 args))))
           (if (if (eq? 'not hd_0)
                 (let ((a_0 (cdr (unwrap v_0))))
@@ -11271,94 +11559,553 @@
                          (let ((d_0 (cdr (unwrap v_0))))
                            (let ((a_0 (car (unwrap d_0)))) a_0))))
                     (if (lambda?.1 #f e_0) e_0 v_0))
-                  (if (let ((p_0 (unwrap v_0))) (if (pair? p_0) #t #f))
+                  (if (if (eq? 'ffi-maybe-call-and-callback-core hd_0)
+                        (let ((a_0 (cdr (unwrap v_0))))
+                          (let ((p_0 (unwrap a_0)))
+                            (if (pair? p_0)
+                              (let ((a_1 (cdr p_0)))
+                                (let ((p_1 (unwrap a_1)))
+                                  (if (pair? p_1)
+                                    (let ((a_2 (cdr p_1)))
+                                      (let ((p_2 (unwrap a_2)))
+                                        (if (pair? p_2)
+                                          (let ((a_3 (cdr p_2)))
+                                            (let ((p_3 (unwrap a_3)))
+                                              (if (pair? p_3)
+                                                (let ((a_4 (cdr p_3)))
+                                                  (let ((p_4 (unwrap a_4)))
+                                                    (if (pair? p_4)
+                                                      (let ((a_5 (cdr p_4)))
+                                                        (let ((p_5
+                                                               (unwrap a_5)))
+                                                          (if (pair? p_5)
+                                                            #t
+                                                            #f)))
+                                                      #f)))
+                                                #f)))
+                                          #f)))
+                                    #f)))
+                              #f)))
+                        #f)
                     (call-with-values
                      (lambda ()
-                       (let ((p_0 (unwrap v_0)))
-                         (let ((rator_0 (let ((a_0 (car p_0))) a_0)))
-                           (let ((rands_0 (let ((d_0 (cdr p_0))) d_0)))
-                             (let ((rator_1 rator_0))
-                               (values rator_1 rands_0))))))
+                       (let ((d_0 (cdr (unwrap v_0))))
+                         (let ((p_0 (unwrap d_0)))
+                           (let ((must-at_0 (let ((a_0 (car p_0))) a_0)))
+                             (call-with-values
+                              (lambda ()
+                                (let ((d_1 (cdr p_0)))
+                                  (let ((p_1 (unwrap d_1)))
+                                    (let ((abi_0 (let ((a_0 (car p_1))) a_0)))
+                                      (call-with-values
+                                       (lambda ()
+                                         (let ((d_2 (cdr p_1)))
+                                           (let ((p_2 (unwrap d_2)))
+                                             (let ((varargs-after_0
+                                                    (let ((a_0 (car p_2)))
+                                                      a_0)))
+                                               (call-with-values
+                                                (lambda ()
+                                                  (let ((d_3 (cdr p_2)))
+                                                    (let ((p_3 (unwrap d_3)))
+                                                      (let ((blocking?_0
+                                                             (let ((a_0
+                                                                    (car p_3)))
+                                                               a_0)))
+                                                        (call-with-values
+                                                         (lambda ()
+                                                           (let ((d_4
+                                                                  (cdr p_3)))
+                                                             (let ((p_4
+                                                                    (unwrap
+                                                                     d_4)))
+                                                               (let ((async-apply_0
+                                                                      (let ((a_0
+                                                                             (car
+                                                                              p_4)))
+                                                                        a_0)))
+                                                                 (call-with-values
+                                                                  (lambda ()
+                                                                    (let ((d_5
+                                                                           (cdr
+                                                                            p_4)))
+                                                                      (let ((p_5
+                                                                             (unwrap
+                                                                              d_5)))
+                                                                        (let ((result-type_0
+                                                                               (let ((a_0
+                                                                                      (car
+                                                                                       p_5)))
+                                                                                 a_0)))
+                                                                          (let ((arg-types_0
+                                                                                 (let ((d_6
+                                                                                        (cdr
+                                                                                         p_5)))
+                                                                                   d_6)))
+                                                                            (let ((result-type_1
+                                                                                   result-type_0))
+                                                                              (values
+                                                                               result-type_1
+                                                                               arg-types_0)))))))
+                                                                  (case-lambda
+                                                                   ((result-type_0
+                                                                     arg-types_0)
+                                                                    (let ((async-apply_1
+                                                                           async-apply_0))
+                                                                      (values
+                                                                       async-apply_1
+                                                                       result-type_0
+                                                                       arg-types_0)))
+                                                                   (args
+                                                                    (raise-binding-result-arity-error
+                                                                     2
+                                                                     args))))))))
+                                                         (case-lambda
+                                                          ((async-apply_0
+                                                            result-type_0
+                                                            arg-types_0)
+                                                           (let ((blocking?_1
+                                                                  blocking?_0))
+                                                             (values
+                                                              blocking?_1
+                                                              async-apply_0
+                                                              result-type_0
+                                                              arg-types_0)))
+                                                          (args
+                                                           (raise-binding-result-arity-error
+                                                            3
+                                                            args))))))))
+                                                (case-lambda
+                                                 ((blocking?_0
+                                                   async-apply_0
+                                                   result-type_0
+                                                   arg-types_0)
+                                                  (let ((varargs-after_1
+                                                         varargs-after_0))
+                                                    (values
+                                                     varargs-after_1
+                                                     blocking?_0
+                                                     async-apply_0
+                                                     result-type_0
+                                                     arg-types_0)))
+                                                 (args
+                                                  (raise-binding-result-arity-error
+                                                   4
+                                                   args))))))))
+                                       (case-lambda
+                                        ((varargs-after_0
+                                          blocking?_0
+                                          async-apply_0
+                                          result-type_0
+                                          arg-types_0)
+                                         (let ((abi_1 abi_0))
+                                           (values
+                                            abi_1
+                                            varargs-after_0
+                                            blocking?_0
+                                            async-apply_0
+                                            result-type_0
+                                            arg-types_0)))
+                                        (args
+                                         (raise-binding-result-arity-error
+                                          5
+                                          args))))))))
+                              (case-lambda
+                               ((abi_0
+                                 varargs-after_0
+                                 blocking?_0
+                                 async-apply_0
+                                 result-type_0
+                                 arg-types_0)
+                                (let ((must-at_1 must-at_0))
+                                  (values
+                                   must-at_1
+                                   abi_0
+                                   varargs-after_0
+                                   blocking?_0
+                                   async-apply_0
+                                   result-type_0
+                                   arg-types_0)))
+                               (args
+                                (raise-binding-result-arity-error
+                                 6
+                                 args))))))))
                      (case-lambda
-                      ((rator_0 rands_0)
-                       (let ((u-rator_0 (unwrap rator_0)))
-                         (let ((k_0
-                                (if (symbol? u-rator_0)
-                                  (hash-ref prim-knowns_0 u-rator_0 #f)
-                                  #f)))
-                           (let ((c1_0
-                                  (if k_0
-                                    (if (let ((or-part_0
-                                               (known-procedure/folding? k_0)))
-                                          (if or-part_0
-                                            or-part_0
-                                            (let ((or-part_1
-                                                   (known-procedure/pure/folding?
-                                                    k_0)))
-                                              (if or-part_1
-                                                or-part_1
-                                                (let ((or-part_2
-                                                       (known-procedure/then-pure/folding-unsafe?
-                                                        k_0)))
-                                                  (if or-part_2
-                                                    or-part_2
-                                                    (known-procedure/has-unsafe/folding?
-                                                     k_0)))))))
-                                      (if (begin
-                                            (letrec*
-                                             ((for-loop_0
-                                               (|#%name|
-                                                for-loop
-                                                (lambda (result_0 lst_0)
-                                                  (begin
-                                                    (if (pair? lst_0)
-                                                      (let ((rand_0
-                                                             (unsafe-car
-                                                              lst_0)))
-                                                        (let ((rest_0
-                                                               (unsafe-cdr
-                                                                lst_0)))
-                                                          (let ((result_1
-                                                                 (let ((result_1
-                                                                        (literal?
-                                                                         rand_0)))
-                                                                   (values
-                                                                    result_1))))
-                                                            (if (if (not
-                                                                     (let ((x_0
-                                                                            (list
-                                                                             rand_0)))
-                                                                       (not
-                                                                        result_1)))
-                                                                  #t
-                                                                  #f)
-                                                              (for-loop_0
-                                                               result_1
-                                                               rest_0)
-                                                              result_1))))
-                                                      result_0))))))
-                                             (for-loop_0 #t rands_0)))
-                                        (try-fold-primitive
-                                         u-rator_0
-                                         k_0
-                                         rands_0
-                                         prim-knowns_0
-                                         primitives_0)
-                                        #f)
+                      ((must-at_0
+                        abi_0
+                        varargs-after_0
+                        blocking?_0
+                        async-apply_0
+                        result-type_0
+                        arg-types_0)
+                       (let ((or-part_0
+                              (if (eq? target_0 'compile)
+                                (let ((or-part_0
+                                       (make-ffi-static-core
+                                        arg-types_0
+                                        result-type_0
+                                        abi_0
+                                        varargs-after_0
+                                        blocking?_0
+                                        async-apply_0
+                                        prim-knowns_0
+                                        primitives_0
+                                        knowns_0
+                                        imports_0
+                                        mutated_0)))
+                                  (if or-part_0
+                                    or-part_0
+                                    (if (unwrap must-at_0)
+                                      (error
+                                       'compile
+                                       "unable to generate foreign function statically: ~s"
+                                       (let ((hd_1
+                                              (let ((p_0 (unwrap must-at_0)))
+                                                (if (pair? p_0)
+                                                  (unwrap (car p_0))
+                                                  #f))))
+                                         (if (if (eq? 'quote hd_1)
+                                               (let ((a_0
+                                                      (cdr
+                                                       (unwrap must-at_0))))
+                                                 (let ((p_0 (unwrap a_0)))
+                                                   (if (pair? p_0)
+                                                     (let ((a_1 (cdr p_0)))
+                                                       (begin-unsafe
+                                                        (let ((app_0
+                                                               (unwrap '())))
+                                                          (eq?
+                                                           app_0
+                                                           (unwrap a_1)))))
+                                                     #f)))
+                                               #f)
+                                           (let ((e_0
+                                                  (let ((d_0
+                                                         (cdr
+                                                          (unwrap must-at_0))))
+                                                    (let ((a_0
+                                                           (car (unwrap d_0))))
+                                                      a_0))))
+                                             e_0)
+                                           must-at_0)))
+                                      #f)))
+                                #f)))
+                         (if or-part_0 or-part_0 v_0)))
+                      (args (raise-binding-result-arity-error 7 args))))
+                    (if (if (eq? 'system-type hd_0) #t #f)
+                      (let ((hd_1
+                             (let ((p_0 (unwrap v_0)))
+                               (if (pair? p_0) (unwrap (car p_0)) #f))))
+                        (if (if (eq? 'system-type hd_1)
+                              (let ((a_0 (cdr (unwrap v_0))))
+                                (let ((p_0 (unwrap a_0)))
+                                  (if (pair? p_0)
+                                    (if (let ((a_1 (car p_0)))
+                                          (let ((p_1 (unwrap a_1)))
+                                            (if (pair? p_1)
+                                              (if (let ((a_2 (car p_1)))
+                                                    (begin-unsafe
+                                                     (let ((app_0
+                                                            (unwrap 'quote)))
+                                                       (eq?
+                                                        app_0
+                                                        (unwrap a_2)))))
+                                                (let ((a_2 (cdr p_1)))
+                                                  (let ((p_2 (unwrap a_2)))
+                                                    (if (pair? p_2)
+                                                      (if (let ((a_3
+                                                                 (car p_2)))
+                                                            (begin-unsafe
+                                                             (let ((app_0
+                                                                    (unwrap
+                                                                     'vm)))
+                                                               (eq?
+                                                                app_0
+                                                                (unwrap
+                                                                 a_3)))))
+                                                        (let ((a_3 (cdr p_2)))
+                                                          (begin-unsafe
+                                                           (let ((app_0
+                                                                  (unwrap
+                                                                   '())))
+                                                             (eq?
+                                                              app_0
+                                                              (unwrap a_3)))))
+                                                        #f)
+                                                      #f)))
+                                                #f)
+                                              #f)))
+                                      (let ((a_1 (cdr p_0)))
+                                        (begin-unsafe
+                                         (let ((app_0 (unwrap '())))
+                                           (eq? app_0 (unwrap a_1)))))
                                       #f)
                                     #f)))
-                             (if c1_0 (car c1_0) v_0)))))
-                      (args (raise-binding-result-arity-error 2 args))))
-                    (let ((u_0 (unwrap v_0)))
-                      (if (symbol? u_0)
-                        (let ((k_0 (hash-ref-either knowns_0 imports_0 u_0)))
-                          (if (if (known-literal? k_0)
-                                (simple-mutated-state?
-                                 (hash-ref mutated_0 u_0 #f))
+                              #f)
+                          ''chez-scheme
+                          (if (if (eq? 'system-type hd_1)
+                                (let ((a_0 (cdr (unwrap v_0))))
+                                  (begin-unsafe
+                                   (let ((app_0 (unwrap '())))
+                                     (eq? app_0 (unwrap a_0)))))
                                 #f)
-                            (wrap-literal (known-literal-value k_0))
-                            v_0))
-                        v_0))))))))))))
+                            (let ((sym_0
+                                   (|#%app| compiler-query_0 '(system-type))))
+                              (if sym_0 (list 'quote sym_0) v_0))
+                            (if (if (eq? 'system-type hd_1)
+                                  (let ((a_0 (cdr (unwrap v_0))))
+                                    (let ((p_0 (unwrap a_0)))
+                                      (if (pair? p_0)
+                                        (if (let ((a_1 (car p_0)))
+                                              (let ((p_1 (unwrap a_1)))
+                                                (if (pair? p_1)
+                                                  (if (let ((a_2 (car p_1)))
+                                                        (begin-unsafe
+                                                         (let ((app_0
+                                                                (unwrap
+                                                                 'quote)))
+                                                           (eq?
+                                                            app_0
+                                                            (unwrap a_2)))))
+                                                    (let ((a_2 (cdr p_1)))
+                                                      (let ((p_2 (unwrap a_2)))
+                                                        (if (pair? p_2)
+                                                          (if (let ((a_3
+                                                                     (car
+                                                                      p_2)))
+                                                                (begin-unsafe
+                                                                 (let ((app_0
+                                                                        (unwrap
+                                                                         'word)))
+                                                                   (eq?
+                                                                    app_0
+                                                                    (unwrap
+                                                                     a_3)))))
+                                                            (let ((a_3
+                                                                   (cdr p_2)))
+                                                              (begin-unsafe
+                                                               (let ((app_0
+                                                                      (unwrap
+                                                                       '())))
+                                                                 (eq?
+                                                                  app_0
+                                                                  (unwrap
+                                                                   a_3)))))
+                                                            #f)
+                                                          #f)))
+                                                    #f)
+                                                  #f)))
+                                          (let ((a_1 (cdr p_0)))
+                                            (begin-unsafe
+                                             (let ((app_0 (unwrap '())))
+                                               (eq? app_0 (unwrap a_1)))))
+                                          #f)
+                                        #f)))
+                                  #f)
+                              (let ((n_0
+                                     (|#%app|
+                                      compiler-query_0
+                                      '(foreign-sizeof 'void*))))
+                                (if (eqv? n_0 8) 64 (if (eqv? n_0 4) 32 v_0)))
+                              v_0))))
+                      (if (if (eq? 'compiler-sizeof hd_0)
+                            (let ((a_0 (cdr (unwrap v_0))))
+                              (let ((p_0 (unwrap a_0)))
+                                (if (pair? p_0)
+                                  (if (let ((a_1 (car p_0)))
+                                        (let ((p_1 (unwrap a_1)))
+                                          (if (pair? p_1)
+                                            (if (let ((a_2 (car p_1)))
+                                                  (begin-unsafe
+                                                   (let ((app_0
+                                                          (unwrap 'quote)))
+                                                     (eq?
+                                                      app_0
+                                                      (unwrap a_2)))))
+                                              (let ((a_2 (cdr p_1)))
+                                                (let ((p_2 (unwrap a_2)))
+                                                  (if (pair? p_2)
+                                                    (let ((a_3 (cdr p_2)))
+                                                      (begin-unsafe
+                                                       (let ((app_0
+                                                              (unwrap '())))
+                                                         (eq?
+                                                          app_0
+                                                          (unwrap a_3)))))
+                                                    #f)))
+                                              #f)
+                                            #f)))
+                                    (let ((a_1 (cdr p_0)))
+                                      (begin-unsafe
+                                       (let ((app_0 (unwrap '())))
+                                         (eq? app_0 (unwrap a_1)))))
+                                    #f)
+                                  #f)))
+                            #f)
+                        (let ((arg_0
+                               (let ((d_0 (cdr (unwrap v_0))))
+                                 (let ((a_0 (car (unwrap d_0))))
+                                   (let ((d_1 (cdr (unwrap a_0))))
+                                     (let ((a_1 (car (unwrap d_1)))) a_1))))))
+                          (let ((scheme-arg_0
+                                 (letrec*
+                                  ((loop_0
+                                    (|#%name|
+                                     loop
+                                     (lambda (arg_1)
+                                       (begin
+                                         (let ((tmp_0 (unwrap arg_1)))
+                                           (if (if (eq? tmp_0 'int)
+                                                 #t
+                                                 (if (eq? tmp_0 'char)
+                                                   #t
+                                                   (if (eq? tmp_0 'wchar)
+                                                     #t
+                                                     (if (eq? tmp_0 'float)
+                                                       #t
+                                                       (if (eq? tmp_0 'double)
+                                                         #t
+                                                         (if (eq? tmp_0 'short)
+                                                           #t
+                                                           (eq?
+                                                            tmp_0
+                                                            'long)))))))
+                                             arg_1
+                                             (let ((u_0 (unwrap-list arg_1)))
+                                               (if (list? u_0)
+                                                 (if (= 2 (length u_0))
+                                                   (if (if (eq?
+                                                            'long
+                                                            (unwrap (car u_0)))
+                                                         (eq?
+                                                          'long
+                                                          (unwrap (cadr u_0)))
+                                                         #f)
+                                                     'long-long
+                                                     (if (if (eq?
+                                                              (unwrap
+                                                               (cadr u_0))
+                                                              '*)
+                                                           (let ((a_0
+                                                                  (unwrap
+                                                                   (car u_0))))
+                                                             (if (symbol? a_0)
+                                                               (let ((or-part_0
+                                                                      (eq?
+                                                                       'void
+                                                                       a_0)))
+                                                                 (if or-part_0
+                                                                   or-part_0
+                                                                   (loop_0
+                                                                    a_0)))
+                                                               #f))
+                                                           #f)
+                                                       'void*
+                                                       #f))
+                                                   #f)
+                                                 #f)))))))))
+                                  (loop_0 arg_0))))
+                            (let ((or-part_0
+                                   (if scheme-arg_0
+                                     (let ((opt_0
+                                            (|#%app|
+                                             compiler-query_0
+                                             (list
+                                              'foreign-sizeof
+                                              (list 'quote scheme-arg_0)))))
+                                       (if (integer? opt_0) opt_0 #f))
+                                     #f)))
+                              (if or-part_0 or-part_0 v_0))))
+                        (if (let ((p_0 (unwrap v_0))) (if (pair? p_0) #t #f))
+                          (call-with-values
+                           (lambda ()
+                             (let ((p_0 (unwrap v_0)))
+                               (let ((rator_0 (let ((a_0 (car p_0))) a_0)))
+                                 (let ((rands_0 (let ((d_0 (cdr p_0))) d_0)))
+                                   (let ((rator_1 rator_0))
+                                     (values rator_1 rands_0))))))
+                           (case-lambda
+                            ((rator_0 rands_0)
+                             (let ((u-rator_0 (unwrap rator_0)))
+                               (let ((k_0
+                                      (if (symbol? u-rator_0)
+                                        (hash-ref prim-knowns_0 u-rator_0 #f)
+                                        #f)))
+                                 (let ((c1_0
+                                        (if k_0
+                                          (if (let ((or-part_0
+                                                     (known-procedure/folding?
+                                                      k_0)))
+                                                (if or-part_0
+                                                  or-part_0
+                                                  (let ((or-part_1
+                                                         (known-procedure/pure/folding?
+                                                          k_0)))
+                                                    (if or-part_1
+                                                      or-part_1
+                                                      (let ((or-part_2
+                                                             (known-procedure/then-pure/folding-unsafe?
+                                                              k_0)))
+                                                        (if or-part_2
+                                                          or-part_2
+                                                          (known-procedure/has-unsafe/folding?
+                                                           k_0)))))))
+                                            (if (begin
+                                                  (letrec*
+                                                   ((for-loop_0
+                                                     (|#%name|
+                                                      for-loop
+                                                      (lambda (result_0 lst_0)
+                                                        (begin
+                                                          (if (pair? lst_0)
+                                                            (let ((rand_0
+                                                                   (unsafe-car
+                                                                    lst_0)))
+                                                              (let ((rest_0
+                                                                     (unsafe-cdr
+                                                                      lst_0)))
+                                                                (let ((result_1
+                                                                       (let ((result_1
+                                                                              (literal?
+                                                                               rand_0)))
+                                                                         (values
+                                                                          result_1))))
+                                                                  (if (if (not
+                                                                           (let ((x_0
+                                                                                  (list
+                                                                                   rand_0)))
+                                                                             (not
+                                                                              result_1)))
+                                                                        #t
+                                                                        #f)
+                                                                    (for-loop_0
+                                                                     result_1
+                                                                     rest_0)
+                                                                    result_1))))
+                                                            result_0))))))
+                                                   (for-loop_0 #t rands_0)))
+                                              (try-fold-primitive
+                                               u-rator_0
+                                               k_0
+                                               rands_0
+                                               prim-knowns_0
+                                               primitives_0)
+                                              #f)
+                                            #f)
+                                          #f)))
+                                   (if c1_0 (car c1_0) v_0)))))
+                            (args (raise-binding-result-arity-error 2 args))))
+                          (let ((u_0 (unwrap v_0)))
+                            (if (symbol? u_0)
+                              (let ((k_0
+                                     (hash-ref-either knowns_0 imports_0 u_0)))
+                                (if (if (known-literal? k_0)
+                                      (simple-mutated-state?
+                                       (hash-ref mutated_0 u_0 #f))
+                                      #f)
+                                  (wrap-literal (known-literal-value k_0))
+                                  v_0))
+                              v_0)))))))))))))))
 (define optimize*
   (lambda (v_0
            prim-knowns_0
@@ -11366,7 +12113,9 @@
            knowns_0
            imports_0
            mutated_0
-           unsafe-mode?_0)
+           unsafe-mode?_0
+           target_0
+           compiler-query_0)
     (letrec*
      ((optimize*_0
        (|#%name|
@@ -11976,7 +12725,9 @@
                primitives_0
                knowns_0
                imports_0
-               mutated_0))))))
+               mutated_0
+               target_0
+               (lambda (v_2) #f)))))))
       (optimize*-body_0
        (|#%name|
         optimize*-body
@@ -12269,6 +13020,39 @@
                                     (eq? 'make-pthread-parameter id_0))))))
                           #f))
                       #f))))))))
+      #f)))
+(define make-ctype?/rep
+  (lambda (v_0 prim-knowns_0 knowns_0 imports_0 mutated_0)
+    (if (begin-unsafe (pair? (unwrap v_0)))
+      (let ((u-rator_0 (unwrap (wrap-car v_0))))
+        (if (let ((or-part_0 (eq? u-rator_0 'make-ctype)))
+              (if or-part_0 or-part_0 (eq? u-rator_0 'assert-ctype)))
+          (if (let ((v_1 (wrap-cdr v_0))) (begin-unsafe (pair? (unwrap v_1))))
+            (letrec*
+             ((loop_0
+               (|#%name|
+                loop
+                (lambda (u-arg_0)
+                  (begin
+                    (if (symbol? u-arg_0)
+                      (let ((k_0
+                             (let ((or-part_0
+                                    (hash-ref prim-knowns_0 u-arg_0 #f)))
+                               (if or-part_0
+                                 or-part_0
+                                 (hash-ref-either
+                                  knowns_0
+                                  imports_0
+                                  u-arg_0)))))
+                        (if (known-ctype? k_0)
+                          (known-ctype-rep k_0)
+                          (if (known-copy? k_0)
+                            (loop_0 (unwrap (known-copy-id k_0)))
+                            #f)))
+                      #f))))))
+             (loop_0 (unwrap (wrap-car (wrap-cdr v_0)))))
+            #f)
+          #f))
       #f)))
 (define constructed-procedure-arity-mask
   (lambda (v_0)
@@ -14861,205 +15645,310 @@
 (define infer-known.1
   (|#%name|
    infer-known
-   (lambda (optimize-inline?2_0
+   (lambda (compiler-query4_0
+            optimize-inline?2_0
             post-schemify?3_0
             primitives1_0
-            rhs7_0
-            defn8_0
-            id9_0
-            knowns10_0
-            prim-knowns11_0
-            imports12_0
-            mutated13_0
-            simples14_0
-            unsafe-mode?15_0
-            target16_0)
+            rhs9_0
+            defn10_0
+            id11_0
+            knowns12_0
+            prim-knowns13_0
+            imports14_0
+            mutated15_0
+            simples16_0
+            unsafe-mode?17_0
+            target18_0)
      (begin
-       (letrec*
-        ((loop_0
-          (|#%name|
-           loop
-           (lambda (rhs_0)
-             (begin
-               (if (lambda?.1 #f rhs_0)
-                 (call-with-values
-                  (lambda () (extract-lambda rhs_0))
-                  (case-lambda
-                   ((lam_0 inlinable?_0)
-                    (let ((arity-mask_0 (lambda-arity-mask lam_0)))
-                      (if (if inlinable?_0
-                            (if (not post-schemify?3_0)
-                              (let ((or-part_0 (can-inline? lam_0)))
-                                (if or-part_0
-                                  or-part_0
-                                  (wrap-property
-                                   defn8_0
-                                   'compiler-hint:cross-module-inline)))
+       (let ((compiler-query_0
+              (if (eq? compiler-query4_0 unsafe-undefined)
+                (|#%name| compiler-query (lambda (v_0) (begin #f)))
+                compiler-query4_0)))
+         (letrec*
+          ((loop_0
+            (|#%name|
+             loop
+             (lambda (rhs_0)
+               (begin
+                 (if (lambda?.1 #f rhs_0)
+                   (call-with-values
+                    (lambda () (extract-lambda rhs_0))
+                    (case-lambda
+                     ((lam_0 inlinable?_0)
+                      (let ((arity-mask_0 (lambda-arity-mask lam_0)))
+                        (if (if inlinable?_0
+                              (if (not post-schemify?3_0)
+                                (let ((or-part_0 (can-inline? lam_0)))
+                                  (if or-part_0
+                                    or-part_0
+                                    (wrap-property
+                                     defn10_0
+                                     'compiler-hint:cross-module-inline)))
+                                #f)
                               #f)
-                            #f)
-                        (let ((lam_1
-                               (if optimize-inline?2_0
-                                 (optimize*
-                                  lam_0
-                                  prim-knowns11_0
-                                  primitives1_0
-                                  knowns10_0
-                                  imports12_0
-                                  mutated13_0
-                                  unsafe-mode?15_0)
-                                 lam_0)))
-                          (known-procedure/can-inline
-                           arity-mask_0
-                           (if (if unsafe-mode?15_0
-                                 (not (eq? target16_0 'cify))
-                                 #f)
-                             (add-begin-unsafe lam_1)
-                             lam_1)))
-                        (if (single-valued-lambda?
-                             lam_0
-                             knowns10_0
-                             prim-knowns11_0
-                             imports12_0
-                             mutated13_0)
-                          (known-procedure/single-valued arity-mask_0)
-                          (known-procedure arity-mask_0)))))
-                   (args (raise-binding-result-arity-error 2 args))))
-                 (if (if (literal? rhs_0)
-                       (not (hash-ref mutated13_0 (unwrap id9_0) #f))
-                       #f)
-                   (known-literal (unwrap-literal rhs_0))
-                   (if (if (symbol? (unwrap rhs_0))
-                         (not (hash-ref mutated13_0 (unwrap id9_0) #f))
+                          (let ((lam_1
+                                 (if optimize-inline?2_0
+                                   (optimize*
+                                    lam_0
+                                    prim-knowns13_0
+                                    primitives1_0
+                                    knowns12_0
+                                    imports14_0
+                                    mutated15_0
+                                    unsafe-mode?17_0
+                                    target18_0
+                                    compiler-query_0)
+                                   lam_0)))
+                            (known-procedure/can-inline
+                             arity-mask_0
+                             (if (if unsafe-mode?17_0
+                                   (not (eq? target18_0 'cify))
+                                   #f)
+                               (add-begin-unsafe lam_1)
+                               lam_1)))
+                          (if (single-valued-lambda?
+                               lam_0
+                               knowns12_0
+                               prim-knowns13_0
+                               imports14_0
+                               mutated15_0)
+                            (known-procedure/single-valued arity-mask_0)
+                            (known-procedure arity-mask_0)))))
+                     (args (raise-binding-result-arity-error 2 args))))
+                   (if (if (literal? rhs_0)
+                         (not (hash-ref mutated15_0 (unwrap id11_0) #f))
                          #f)
-                     (let ((u-rhs_0 (unwrap rhs_0)))
-                       (let ((c3_0 (hash-ref prim-knowns11_0 u-rhs_0 #f)))
-                         (if c3_0
-                           (known-copy u-rhs_0)
-                           (if (not
-                                (simple-mutated-state?
-                                 (hash-ref mutated13_0 u-rhs_0 #f)))
-                             (if defn8_0 a-known-constant #f)
-                             (let ((c2_0
-                                    (hash-ref-either
-                                     knowns10_0
-                                     imports12_0
-                                     u-rhs_0)))
-                               (if c2_0
-                                 (if (known-procedure/can-inline/need-imports?
-                                      c2_0)
-                                   (known-procedure/can-inline
-                                    (known-procedure-arity-mask c2_0)
-                                    rhs_0)
-                                   (if (let ((or-part_0
-                                              (known-procedure/can-inline?
-                                               c2_0)))
-                                         (if or-part_0
-                                           or-part_0
-                                           (known-literal? c2_0)))
-                                     c2_0
-                                     (if (let ((or-part_0 (not defn8_0)))
+                     (known-literal (unwrap-literal rhs_0))
+                     (if (if (symbol? (unwrap rhs_0))
+                           (not (hash-ref mutated15_0 (unwrap id11_0) #f))
+                           #f)
+                       (let ((u-rhs_0 (unwrap rhs_0)))
+                         (let ((c4_0 (hash-ref prim-knowns13_0 u-rhs_0 #f)))
+                           (if c4_0
+                             (known-copy u-rhs_0)
+                             (if (not
+                                  (simple-mutated-state?
+                                   (hash-ref mutated15_0 u-rhs_0 #f)))
+                               (if defn10_0 a-known-constant #f)
+                               (let ((c3_0
+                                      (hash-ref-either
+                                       knowns12_0
+                                       imports14_0
+                                       u-rhs_0)))
+                                 (if c3_0
+                                   (if (known-procedure/can-inline/need-imports?
+                                        c3_0)
+                                     (known-procedure/can-inline
+                                      (known-procedure-arity-mask c3_0)
+                                      rhs_0)
+                                     (if (let ((or-part_0
+                                                (known-procedure/can-inline?
+                                                 c3_0)))
                                            (if or-part_0
                                              or-part_0
-                                             (let ((or-part_1
-                                                    (known-copy? c2_0)))
-                                               (if or-part_1
-                                                 or-part_1
-                                                 (let ((or-part_2
-                                                        (known-struct-constructor/need-imports?
-                                                         c2_0)))
-                                                   (if or-part_2
-                                                     or-part_2
-                                                     (let ((or-part_3
-                                                            (known-struct-predicate/need-imports?
-                                                             c2_0)))
-                                                       (if or-part_3
-                                                         or-part_3
-                                                         (let ((or-part_4
-                                                                (known-field-accessor/need-imports?
-                                                                 c2_0)))
-                                                           (if or-part_4
-                                                             or-part_4
-                                                             (known-field-mutator/need-imports?
-                                                              c2_0)))))))))))
-                                       (known-copy rhs_0)
-                                       c2_0)))
-                                 (if defn8_0
-                                   a-known-constant
-                                   (if (hash-ref imports12_0 u-rhs_0 #f)
+                                             (known-literal? c3_0)))
+                                       c3_0
+                                       (if (let ((or-part_0 (not defn10_0)))
+                                             (if or-part_0
+                                               or-part_0
+                                               (let ((or-part_1
+                                                      (known-copy? c3_0)))
+                                                 (if or-part_1
+                                                   or-part_1
+                                                   (let ((or-part_2
+                                                          (known-struct-constructor/need-imports?
+                                                           c3_0)))
+                                                     (if or-part_2
+                                                       or-part_2
+                                                       (let ((or-part_3
+                                                              (known-struct-predicate/need-imports?
+                                                               c3_0)))
+                                                         (if or-part_3
+                                                           or-part_3
+                                                           (let ((or-part_4
+                                                                  (known-field-accessor/need-imports?
+                                                                   c3_0)))
+                                                             (if or-part_4
+                                                               or-part_4
+                                                               (known-field-mutator/need-imports?
+                                                                c3_0)))))))))))
+                                         (known-copy rhs_0)
+                                         c3_0)))
+                                   (if defn10_0
                                      a-known-constant
-                                     (known-copy rhs_0)))))))))
-                     (if (parameter-result?
-                          rhs_0
-                          prim-knowns11_0
-                          knowns10_0
-                          mutated13_0)
-                       (known-procedure 3)
-                       (let ((c1_0 (constructed-procedure-arity-mask rhs_0)))
-                         (if c1_0
-                           (known-procedure c1_0)
-                           (let ((hd_0
-                                  (let ((p_0 (unwrap rhs_0)))
-                                    (if (pair? p_0) (unwrap (car p_0)) #f))))
-                             (if (if (eq? 'let-values hd_0)
-                                   (let ((a_0 (cdr (unwrap rhs_0))))
-                                     (let ((p_0 (unwrap a_0)))
-                                       (if (pair? p_0)
-                                         (if (let ((a_1 (car p_0)))
-                                               (begin-unsafe
-                                                (let ((app_0 (unwrap '())))
-                                                  (eq? app_0 (unwrap a_1)))))
-                                           (let ((a_1 (cdr p_0)))
-                                             (let ((p_1 (unwrap a_1)))
-                                               (if (pair? p_1)
-                                                 (let ((a_2 (cdr p_1)))
+                                     (if (hash-ref imports14_0 u-rhs_0 #f)
+                                       a-known-constant
+                                       (known-copy rhs_0)))))))))
+                       (if (parameter-result?
+                            rhs_0
+                            prim-knowns13_0
+                            knowns12_0
+                            mutated15_0)
+                         (known-procedure 3)
+                         (let ((c2_0
+                                (make-ctype?/rep
+                                 rhs_0
+                                 prim-knowns13_0
+                                 knowns12_0
+                                 imports14_0
+                                 mutated15_0)))
+                           (if c2_0
+                             (known-ctype c2_0)
+                             (let ((c1_0
+                                    (constructed-procedure-arity-mask rhs_0)))
+                               (if c1_0
+                                 (known-procedure c1_0)
+                                 (let ((hd_0
+                                        (let ((p_0 (unwrap rhs_0)))
+                                          (if (pair? p_0)
+                                            (unwrap (car p_0))
+                                            #f))))
+                                   (if (if (eq? 'let-values hd_0)
+                                         (let ((a_0 (cdr (unwrap rhs_0))))
+                                           (let ((p_0 (unwrap a_0)))
+                                             (if (pair? p_0)
+                                               (if (let ((a_1 (car p_0)))
+                                                     (begin-unsafe
+                                                      (let ((app_0
+                                                             (unwrap '())))
+                                                        (eq?
+                                                         app_0
+                                                         (unwrap a_1)))))
+                                                 (let ((a_1 (cdr p_0)))
+                                                   (let ((p_1 (unwrap a_1)))
+                                                     (if (pair? p_1)
+                                                       (let ((a_2 (cdr p_1)))
+                                                         (begin-unsafe
+                                                          (let ((app_0
+                                                                 (unwrap '())))
+                                                            (eq?
+                                                             app_0
+                                                             (unwrap a_2)))))
+                                                       #f)))
+                                                 #f)
+                                               #f)))
+                                         #f)
+                                     (let ((e_0
+                                            (let ((d_0 (cdr (unwrap rhs_0))))
+                                              (let ((d_1 (cdr (unwrap d_0))))
+                                                (let ((a_0 (car (unwrap d_1))))
+                                                  a_0)))))
+                                       (loop_0 e_0))
+                                     (if (if (eq? 'begin hd_0)
+                                           (let ((a_0 (cdr (unwrap rhs_0))))
+                                             (let ((p_0 (unwrap a_0)))
+                                               (if (pair? p_0)
+                                                 (let ((a_1 (cdr p_0)))
                                                    (begin-unsafe
                                                     (let ((app_0 (unwrap '())))
                                                       (eq?
                                                        app_0
-                                                       (unwrap a_2)))))
+                                                       (unwrap a_1)))))
                                                  #f)))
                                            #f)
-                                         #f)))
-                                   #f)
-                               (let ((e_0
-                                      (let ((d_0 (cdr (unwrap rhs_0))))
-                                        (let ((d_1 (cdr (unwrap d_0))))
-                                          (let ((a_0 (car (unwrap d_1))))
-                                            a_0)))))
-                                 (loop_0 e_0))
-                               (if (if (eq? 'begin hd_0)
-                                     (let ((a_0 (cdr (unwrap rhs_0))))
-                                       (let ((p_0 (unwrap a_0)))
-                                         (if (pair? p_0)
-                                           (let ((a_1 (cdr p_0)))
-                                             (begin-unsafe
-                                              (let ((app_0 (unwrap '())))
-                                                (eq? app_0 (unwrap a_1)))))
-                                           #f)))
-                                     #f)
-                                 (let ((e_0
-                                        (let ((d_0 (cdr (unwrap rhs_0))))
-                                          (let ((a_0 (car (unwrap d_0))))
-                                            a_0))))
-                                   (loop_0 e_0))
-                                 (if (if defn8_0
-                                       (simple?.1
-                                        #f
-                                        #t
-                                        #t
-                                        1
-                                        #f
-                                        rhs_0
-                                        prim-knowns11_0
-                                        knowns10_0
-                                        imports12_0
-                                        mutated13_0
-                                        simples14_0
-                                        unsafe-mode?15_0)
-                                       #f)
-                                   a-known-constant
-                                   #f)))))))))))))))
-        (loop_0 rhs7_0))))))
+                                       (let ((e_0
+                                              (let ((d_0 (cdr (unwrap rhs_0))))
+                                                (let ((a_0 (car (unwrap d_0))))
+                                                  a_0))))
+                                         (loop_0 e_0))
+                                       (if (if (eq?
+                                                'assert-ctype-representation
+                                                hd_0)
+                                             (let ((a_0 (cdr (unwrap rhs_0))))
+                                               (let ((p_0 (unwrap a_0)))
+                                                 (if (pair? p_0)
+                                                   (let ((a_1 (cdr p_0)))
+                                                     (let ((p_1 (unwrap a_1)))
+                                                       (if (pair? p_1)
+                                                         (let ((a_2 (cdr p_1)))
+                                                           (begin-unsafe
+                                                            (let ((app_0
+                                                                   (unwrap
+                                                                    '())))
+                                                              (eq?
+                                                               app_0
+                                                               (unwrap a_2)))))
+                                                         #f)))
+                                                   #f)))
+                                             #f)
+                                         (call-with-values
+                                          (lambda ()
+                                            (let ((d_0 (cdr (unwrap rhs_0))))
+                                              (let ((p_0 (unwrap d_0)))
+                                                (let ((type1_0
+                                                       (let ((a_0 (car p_0)))
+                                                         a_0)))
+                                                  (let ((type2_0
+                                                         (let ((d_1 (cdr p_0)))
+                                                           (let ((a_0
+                                                                  (car
+                                                                   (unwrap
+                                                                    d_1))))
+                                                             a_0))))
+                                                    (let ((type1_1 type1_0))
+                                                      (values
+                                                       type1_1
+                                                       type2_0)))))))
+                                          (case-lambda
+                                           ((type1_0 type2_0)
+                                            (let ((k_0 (loop_0 type1_0)))
+                                              (if (known-ctype? k_0)
+                                                k_0
+                                                (if (known-copy? k_0)
+                                                  (let ((u-rhs_0
+                                                         (unwrap
+                                                          (known-copy-id
+                                                           k_0))))
+                                                    (let ((c6_0
+                                                           (hash-ref
+                                                            prim-knowns13_0
+                                                            u-rhs_0
+                                                            #f)))
+                                                      (if c6_0
+                                                        (if (known-ctype? c6_0)
+                                                          c6_0
+                                                          #f)
+                                                        (if (not
+                                                             (simple-mutated-state?
+                                                              (hash-ref
+                                                               mutated15_0
+                                                               u-rhs_0
+                                                               #f)))
+                                                          #f
+                                                          (let ((c5_0
+                                                                 (hash-ref-either
+                                                                  knowns12_0
+                                                                  imports14_0
+                                                                  u-rhs_0)))
+                                                            (if c5_0
+                                                              (if (known-ctype?
+                                                                   c5_0)
+                                                                c5_0
+                                                                #f)
+                                                              #f))))))
+                                                  #f))))
+                                           (args
+                                            (raise-binding-result-arity-error
+                                             2
+                                             args))))
+                                         (if (if defn10_0
+                                               (simple?.1
+                                                #f
+                                                #t
+                                                #t
+                                                1
+                                                #f
+                                                rhs_0
+                                                prim-knowns13_0
+                                                knowns12_0
+                                                imports14_0
+                                                mutated15_0
+                                                simples16_0
+                                                unsafe-mode?17_0)
+                                               #f)
+                                           a-known-constant
+                                           #f))))))))))))))))))
+          (loop_0 rhs9_0)))))))
 (define can-improve-infer-known?
   (lambda (k_0)
     (let ((or-part_0 (not k_0)))
@@ -15159,10 +16048,10 @@
                                                      argss_2
                                                      bodys_1))))))
                                           (case-lambda
-                                           ((argss27_0 bodys28_0)
+                                           ((argss29_0 bodys30_0)
                                             (values
-                                             (cons argss27_0 argss_0)
-                                             (cons bodys28_0 bodys_0)))
+                                             (cons argss29_0 argss_0)
+                                             (cons bodys30_0 bodys_0)))
                                            (args
                                             (raise-binding-result-arity-error
                                              2
@@ -15223,25 +16112,38 @@
 (define find-definitions.1
   (|#%name|
    find-definitions
-   (lambda (optimize?2_0
+   (lambda (compiler-query3_0
+            optimize?2_0
             primitives1_0
-            v5_0
-            prim-knowns6_0
-            knowns7_0
-            imports8_0
-            mutated9_0
-            simples10_0
-            unsafe-mode?11_0
-            target12_0)
+            v7_0
+            prim-knowns8_0
+            knowns9_0
+            imports10_0
+            mutated11_0
+            simples12_0
+            unsafe-mode?13_0
+            target14_0)
      (begin
-       (let ((hd_0
-              (let ((p_0 (unwrap v5_0)))
-                (if (pair? p_0) (unwrap (car p_0)) #f))))
-         (if (if (eq? 'define-values hd_0)
-               (let ((a_0 (cdr (unwrap v5_0))))
-                 (let ((p_0 (unwrap a_0)))
-                   (if (pair? p_0)
-                     (if (let ((a_1 (car p_0)))
+       (let ((compiler-query_0
+              (if (eq? compiler-query3_0 unsafe-undefined)
+                (|#%name| compiler-query (lambda (v_0) (begin #f)))
+                compiler-query3_0)))
+         (let ((hd_0
+                (let ((p_0 (unwrap v7_0)))
+                  (if (pair? p_0) (unwrap (car p_0)) #f))))
+           (if (if (eq? 'define-values hd_0)
+                 (let ((a_0 (cdr (unwrap v7_0))))
+                   (let ((p_0 (unwrap a_0)))
+                     (if (pair? p_0)
+                       (if (let ((a_1 (car p_0)))
+                             (let ((p_1 (unwrap a_1)))
+                               (if (pair? p_1)
+                                 (let ((a_2 (cdr p_1)))
+                                   (begin-unsafe
+                                    (let ((app_0 (unwrap '())))
+                                      (eq? app_0 (unwrap a_2)))))
+                                 #f)))
+                         (let ((a_1 (cdr p_0)))
                            (let ((p_1 (unwrap a_1)))
                              (if (pair? p_1)
                                (let ((a_2 (cdr p_1)))
@@ -15249,92 +16151,190 @@
                                   (let ((app_0 (unwrap '())))
                                     (eq? app_0 (unwrap a_2)))))
                                #f)))
-                       (let ((a_1 (cdr p_0)))
-                         (let ((p_1 (unwrap a_1)))
-                           (if (pair? p_1)
-                             (let ((a_2 (cdr p_1)))
-                               (begin-unsafe
-                                (let ((app_0 (unwrap '())))
-                                  (eq? app_0 (unwrap a_2)))))
-                             #f)))
-                       #f)
-                     #f)))
-               #f)
-           (call-with-values
-            (lambda ()
-              (let ((d_0 (cdr (unwrap v5_0))))
-                (let ((p_0 (unwrap d_0)))
-                  (let ((id_0
-                         (let ((a_0 (car p_0)))
-                           (let ((a_1 (car (unwrap a_0)))) a_1))))
-                    (let ((orig-rhs_0
-                           (let ((d_1 (cdr p_0)))
-                             (let ((a_0 (car (unwrap d_1)))) a_0))))
-                      (let ((id_1 id_0)) (values id_1 orig-rhs_0)))))))
-            (case-lambda
-             ((id_0 orig-rhs_0)
-              (let ((rhs_0
-                     (if optimize?2_0
-                       (optimize
-                        orig-rhs_0
-                        prim-knowns6_0
-                        primitives1_0
-                        knowns7_0
-                        imports8_0
-                        mutated9_0)
-                       orig-rhs_0)))
-                (values
-                 (let ((k_0
-                        (infer-known.1
-                         optimize?2_0
-                         #f
-                         primitives1_0
-                         rhs_0
-                         v5_0
-                         id_0
-                         knowns7_0
-                         prim-knowns6_0
-                         imports8_0
-                         mutated9_0
-                         simples10_0
-                         unsafe-mode?11_0
-                         target12_0)))
-                   (if k_0 (hash-set knowns7_0 (unwrap id_0) k_0) knowns7_0))
-                 #f)))
-             (args (raise-binding-result-arity-error 2 args))))
-           (if (if (eq? 'define-values hd_0)
-                 (let ((a_0 (cdr (unwrap v5_0))))
-                   (let ((p_0 (unwrap a_0)))
-                     (if (pair? p_0)
-                       (if (let ((a_1 (car p_0)))
-                             (let ((p_1 (unwrap a_1)))
-                               (if (pair? p_1)
-                                 (let ((a_2 (cdr p_1)))
-                                   (let ((p_2 (unwrap a_2)))
-                                     (if (pair? p_2)
-                                       (let ((a_3 (cdr p_2)))
-                                         (let ((p_3 (unwrap a_3)))
-                                           (if (pair? p_3)
-                                             (let ((a_4 (cdr p_3)))
-                                               (wrap-list? a_4))
-                                             #f)))
-                                       #f)))
-                                 #f)))
-                         (let ((a_1 (cdr p_0)))
-                           (let ((p_1 (unwrap a_1)))
-                             (if (pair? p_1)
-                               (if (let ((a_2 (car p_1)))
+                         #f)
+                       #f)))
+                 #f)
+             (call-with-values
+              (lambda ()
+                (let ((d_0 (cdr (unwrap v7_0))))
+                  (let ((p_0 (unwrap d_0)))
+                    (let ((id_0
+                           (let ((a_0 (car p_0)))
+                             (let ((a_1 (car (unwrap a_0)))) a_1))))
+                      (let ((orig-rhs_0
+                             (let ((d_1 (cdr p_0)))
+                               (let ((a_0 (car (unwrap d_1)))) a_0))))
+                        (let ((id_1 id_0)) (values id_1 orig-rhs_0)))))))
+              (case-lambda
+               ((id_0 orig-rhs_0)
+                (let ((rhs_0
+                       (if optimize?2_0
+                         (optimize
+                          orig-rhs_0
+                          prim-knowns8_0
+                          primitives1_0
+                          knowns9_0
+                          imports10_0
+                          mutated11_0
+                          target14_0
+                          compiler-query_0)
+                         orig-rhs_0)))
+                  (values
+                   (let ((k_0
+                          (infer-known.1
+                           compiler-query_0
+                           optimize?2_0
+                           #f
+                           primitives1_0
+                           rhs_0
+                           v7_0
+                           id_0
+                           knowns9_0
+                           prim-knowns8_0
+                           imports10_0
+                           mutated11_0
+                           simples12_0
+                           unsafe-mode?13_0
+                           target14_0)))
+                     (if k_0 (hash-set knowns9_0 (unwrap id_0) k_0) knowns9_0))
+                   #f)))
+               (args (raise-binding-result-arity-error 2 args))))
+             (if (if (eq? 'define-values hd_0)
+                   (let ((a_0 (cdr (unwrap v7_0))))
+                     (let ((p_0 (unwrap a_0)))
+                       (if (pair? p_0)
+                         (if (let ((a_1 (car p_0)))
+                               (let ((p_1 (unwrap a_1)))
+                                 (if (pair? p_1)
+                                   (let ((a_2 (cdr p_1)))
                                      (let ((p_2 (unwrap a_2)))
                                        (if (pair? p_2)
-                                         (if (let ((a_3 (car p_2)))
-                                               (begin-unsafe
-                                                (let ((app_0
-                                                       (unwrap 'let-values)))
-                                                  (eq? app_0 (unwrap a_3)))))
-                                           (let ((a_3 (cdr p_2)))
-                                             (let ((p_3 (unwrap a_3)))
-                                               (if (pair? p_3)
-                                                 (if (let ((a_4 (car p_3)))
+                                         (let ((a_3 (cdr p_2)))
+                                           (let ((p_3 (unwrap a_3)))
+                                             (if (pair? p_3)
+                                               (let ((a_4 (cdr p_3)))
+                                                 (wrap-list? a_4))
+                                               #f)))
+                                         #f)))
+                                   #f)))
+                           (let ((a_1 (cdr p_0)))
+                             (let ((p_1 (unwrap a_1)))
+                               (if (pair? p_1)
+                                 (if (let ((a_2 (car p_1)))
+                                       (let ((p_2 (unwrap a_2)))
+                                         (if (pair? p_2)
+                                           (if (let ((a_3 (car p_2)))
+                                                 (begin-unsafe
+                                                  (let ((app_0
+                                                         (unwrap 'let-values)))
+                                                    (eq? app_0 (unwrap a_3)))))
+                                             (let ((a_3 (cdr p_2)))
+                                               (let ((p_3 (unwrap a_3)))
+                                                 (if (pair? p_3)
+                                                   (if (let ((a_4 (car p_3)))
+                                                         (let ((p_4
+                                                                (unwrap a_4)))
+                                                           (if (pair? p_4)
+                                                             (if (let ((a_5
+                                                                        (car
+                                                                         p_4)))
+                                                                   (let ((p_5
+                                                                          (unwrap
+                                                                           a_5)))
+                                                                     (if (pair?
+                                                                          p_5)
+                                                                       (if (let ((a_6
+                                                                                  (car
+                                                                                   p_5)))
+                                                                             (let ((p_6
+                                                                                    (unwrap
+                                                                                     a_6)))
+                                                                               (if (pair?
+                                                                                    p_6)
+                                                                                 (let ((a_7
+                                                                                        (cdr
+                                                                                         p_6)))
+                                                                                   (let ((p_7
+                                                                                          (unwrap
+                                                                                           a_7)))
+                                                                                     (if (pair?
+                                                                                          p_7)
+                                                                                       (let ((a_8
+                                                                                              (cdr
+                                                                                               p_7)))
+                                                                                         (let ((p_8
+                                                                                                (unwrap
+                                                                                                 a_8)))
+                                                                                           (if (pair?
+                                                                                                p_8)
+                                                                                             (let ((a_9
+                                                                                                    (cdr
+                                                                                                     p_8)))
+                                                                                               (let ((p_9
+                                                                                                      (unwrap
+                                                                                                       a_9)))
+                                                                                                 (if (pair?
+                                                                                                      p_9)
+                                                                                                   (let ((a_10
+                                                                                                          (cdr
+                                                                                                           p_9)))
+                                                                                                     (let ((p_10
+                                                                                                            (unwrap
+                                                                                                             a_10)))
+                                                                                                       (if (pair?
+                                                                                                            p_10)
+                                                                                                         (let ((a_11
+                                                                                                                (cdr
+                                                                                                                 p_10)))
+                                                                                                           (begin-unsafe
+                                                                                                            (let ((app_0
+                                                                                                                   (unwrap
+                                                                                                                    '())))
+                                                                                                              (eq?
+                                                                                                               app_0
+                                                                                                               (unwrap
+                                                                                                                a_11)))))
+                                                                                                         #f)))
+                                                                                                   #f)))
+                                                                                             #f)))
+                                                                                       #f)))
+                                                                                 #f)))
+                                                                         (let ((a_6
+                                                                                (cdr
+                                                                                 p_5)))
+                                                                           (let ((p_6
+                                                                                  (unwrap
+                                                                                   a_6)))
+                                                                             (if (pair?
+                                                                                  p_6)
+                                                                               (let ((a_7
+                                                                                      (cdr
+                                                                                       p_6)))
+                                                                                 (begin-unsafe
+                                                                                  (let ((app_0
+                                                                                         (unwrap
+                                                                                          '())))
+                                                                                    (eq?
+                                                                                     app_0
+                                                                                     (unwrap
+                                                                                      a_7)))))
+                                                                               #f)))
+                                                                         #f)
+                                                                       #f)))
+                                                               (let ((a_5
+                                                                      (cdr
+                                                                       p_4)))
+                                                                 (begin-unsafe
+                                                                  (let ((app_0
+                                                                         (unwrap
+                                                                          '())))
+                                                                    (eq?
+                                                                     app_0
+                                                                     (unwrap
+                                                                      a_5)))))
+                                                               #f)
+                                                             #f)))
+                                                     (let ((a_4 (cdr p_3)))
                                                        (let ((p_4
                                                               (unwrap a_4)))
                                                          (if (pair? p_4)
@@ -15349,59 +16349,14 @@
                                                                      (if (let ((a_6
                                                                                 (car
                                                                                  p_5)))
-                                                                           (let ((p_6
-                                                                                  (unwrap
-                                                                                   a_6)))
-                                                                             (if (pair?
-                                                                                  p_6)
-                                                                               (let ((a_7
-                                                                                      (cdr
-                                                                                       p_6)))
-                                                                                 (let ((p_7
-                                                                                        (unwrap
-                                                                                         a_7)))
-                                                                                   (if (pair?
-                                                                                        p_7)
-                                                                                     (let ((a_8
-                                                                                            (cdr
-                                                                                             p_7)))
-                                                                                       (let ((p_8
-                                                                                              (unwrap
-                                                                                               a_8)))
-                                                                                         (if (pair?
-                                                                                              p_8)
-                                                                                           (let ((a_9
-                                                                                                  (cdr
-                                                                                                   p_8)))
-                                                                                             (let ((p_9
-                                                                                                    (unwrap
-                                                                                                     a_9)))
-                                                                                               (if (pair?
-                                                                                                    p_9)
-                                                                                                 (let ((a_10
-                                                                                                        (cdr
-                                                                                                         p_9)))
-                                                                                                   (let ((p_10
-                                                                                                          (unwrap
-                                                                                                           a_10)))
-                                                                                                     (if (pair?
-                                                                                                          p_10)
-                                                                                                       (let ((a_11
-                                                                                                              (cdr
-                                                                                                               p_10)))
-                                                                                                         (begin-unsafe
-                                                                                                          (let ((app_0
-                                                                                                                 (unwrap
-                                                                                                                  '())))
-                                                                                                            (eq?
-                                                                                                             app_0
-                                                                                                             (unwrap
-                                                                                                              a_11)))))
-                                                                                                       #f)))
-                                                                                                 #f)))
-                                                                                           #f)))
-                                                                                     #f)))
-                                                                               #f)))
+                                                                           (begin-unsafe
+                                                                            (let ((app_0
+                                                                                   (unwrap
+                                                                                    'values)))
+                                                                              (eq?
+                                                                               app_0
+                                                                               (unwrap
+                                                                                a_6)))))
                                                                        (let ((a_6
                                                                               (cdr
                                                                                p_5)))
@@ -15413,14 +16368,26 @@
                                                                              (let ((a_7
                                                                                     (cdr
                                                                                      p_6)))
-                                                                               (begin-unsafe
-                                                                                (let ((app_0
-                                                                                       (unwrap
-                                                                                        '())))
-                                                                                  (eq?
-                                                                                   app_0
-                                                                                   (unwrap
-                                                                                    a_7)))))
+                                                                               (let ((p_7
+                                                                                      (unwrap
+                                                                                       a_7)))
+                                                                                 (if (pair?
+                                                                                      p_7)
+                                                                                   (let ((a_8
+                                                                                          (cdr
+                                                                                           p_7)))
+                                                                                     (let ((p_8
+                                                                                            (unwrap
+                                                                                             a_8)))
+                                                                                       (if (pair?
+                                                                                            p_8)
+                                                                                         (let ((a_9
+                                                                                                (cdr
+                                                                                                 p_8)))
+                                                                                           (wrap-list?
+                                                                                            a_9))
+                                                                                         #f)))
+                                                                                   #f)))
                                                                              #f)))
                                                                        #f)
                                                                      #f)))
@@ -15436,869 +16403,22 @@
                                                                     a_5)))))
                                                              #f)
                                                            #f)))
-                                                   (let ((a_4 (cdr p_3)))
-                                                     (let ((p_4 (unwrap a_4)))
-                                                       (if (pair? p_4)
-                                                         (if (let ((a_5
-                                                                    (car p_4)))
-                                                               (let ((p_5
-                                                                      (unwrap
-                                                                       a_5)))
-                                                                 (if (pair?
-                                                                      p_5)
-                                                                   (if (let ((a_6
-                                                                              (car
-                                                                               p_5)))
-                                                                         (begin-unsafe
-                                                                          (let ((app_0
-                                                                                 (unwrap
-                                                                                  'values)))
-                                                                            (eq?
-                                                                             app_0
-                                                                             (unwrap
-                                                                              a_6)))))
-                                                                     (let ((a_6
-                                                                            (cdr
-                                                                             p_5)))
-                                                                       (let ((p_6
-                                                                              (unwrap
-                                                                               a_6)))
-                                                                         (if (pair?
-                                                                              p_6)
-                                                                           (let ((a_7
-                                                                                  (cdr
-                                                                                   p_6)))
-                                                                             (let ((p_7
-                                                                                    (unwrap
-                                                                                     a_7)))
-                                                                               (if (pair?
-                                                                                    p_7)
-                                                                                 (let ((a_8
-                                                                                        (cdr
-                                                                                         p_7)))
-                                                                                   (let ((p_8
-                                                                                          (unwrap
-                                                                                           a_8)))
-                                                                                     (if (pair?
-                                                                                          p_8)
-                                                                                       (let ((a_9
-                                                                                              (cdr
-                                                                                               p_8)))
-                                                                                         (wrap-list?
-                                                                                          a_9))
-                                                                                       #f)))
-                                                                                 #f)))
-                                                                           #f)))
-                                                                     #f)
-                                                                   #f)))
-                                                           (let ((a_5
-                                                                  (cdr p_4)))
-                                                             (begin-unsafe
-                                                              (let ((app_0
-                                                                     (unwrap
-                                                                      '())))
-                                                                (eq?
-                                                                 app_0
-                                                                 (unwrap
-                                                                  a_5)))))
-                                                           #f)
-                                                         #f)))
-                                                   #f)
-                                                 #f)))
-                                           #f)
-                                         #f)))
-                                 (let ((a_2 (cdr p_1)))
-                                   (begin-unsafe
-                                    (let ((app_0 (unwrap '())))
-                                      (eq? app_0 (unwrap a_2)))))
-                                 #f)
-                               #f)))
-                         #f)
-                       #f)))
-                 #f)
-             (call-with-values
-              (lambda ()
-                (let ((d_0 (cdr (unwrap v5_0))))
-                  (let ((p_0 (unwrap d_0)))
-                    (call-with-values
-                     (lambda ()
-                       (let ((a_0 (car p_0)))
-                         (let ((p_1 (unwrap a_0)))
-                           (let ((struct:s_0 (let ((a_1 (car p_1))) a_1)))
-                             (call-with-values
-                              (lambda ()
-                                (let ((d_1 (cdr p_1)))
-                                  (let ((p_2 (unwrap d_1)))
-                                    (let ((make-s_0
-                                           (let ((a_1 (car p_2))) a_1)))
-                                      (call-with-values
-                                       (lambda ()
-                                         (let ((d_2 (cdr p_2)))
-                                           (let ((p_3 (unwrap d_2)))
-                                             (let ((s?_0
-                                                    (let ((a_1 (car p_3)))
-                                                      a_1)))
-                                               (let ((acc/muts_0
-                                                      (let ((d_3 (cdr p_3)))
-                                                        (unwrap-list d_3))))
-                                                 (let ((s?_1 s?_0))
-                                                   (values
-                                                    s?_1
-                                                    acc/muts_0)))))))
-                                       (case-lambda
-                                        ((s?_0 acc/muts_0)
-                                         (let ((make-s_1 make-s_0))
-                                           (values make-s_1 s?_0 acc/muts_0)))
-                                        (args
-                                         (raise-binding-result-arity-error
-                                          2
-                                          args))))))))
-                              (case-lambda
-                               ((make-s_0 s?_0 acc/muts_0)
-                                (let ((struct:s_1 struct:s_0))
-                                  (values
-                                   struct:s_1
-                                   make-s_0
-                                   s?_0
-                                   acc/muts_0)))
-                               (args
-                                (raise-binding-result-arity-error
-                                 3
-                                 args))))))))
-                     (case-lambda
-                      ((struct:s_0 make-s_0 s?_0 acc/muts_0)
-                       (call-with-values
-                        (lambda ()
-                          (let ((d_1 (cdr p_0)))
-                            (let ((a_0 (car (unwrap d_1))))
-                              (let ((d_2 (cdr (unwrap a_0))))
-                                (let ((p_1 (unwrap d_2)))
-                                  (call-with-values
-                                   (lambda ()
-                                     (let ((a_1 (car p_1)))
-                                       (let ((a_2 (car (unwrap a_1))))
-                                         (let ((p_2 (unwrap a_2)))
-                                           (call-with-values
-                                            (lambda ()
-                                              (let ((a_3 (car p_2)))
-                                                (let ((p_3 (unwrap a_3)))
-                                                  (let ((struct:_0
-                                                         (let ((a_4 (car p_3)))
-                                                           a_4)))
-                                                    (call-with-values
-                                                     (lambda ()
-                                                       (let ((d_3 (cdr p_3)))
-                                                         (let ((p_4
-                                                                (unwrap d_3)))
-                                                           (let ((make_0
-                                                                  (let ((a_4
-                                                                         (car
-                                                                          p_4)))
-                                                                    a_4)))
-                                                             (call-with-values
-                                                              (lambda ()
-                                                                (let ((d_4
-                                                                       (cdr
-                                                                        p_4)))
-                                                                  (let ((p_5
-                                                                         (unwrap
-                                                                          d_4)))
-                                                                    (let ((?_0
-                                                                           (let ((a_4
-                                                                                  (car
-                                                                                   p_5)))
-                                                                             a_4)))
-                                                                      (call-with-values
-                                                                       (lambda ()
-                                                                         (let ((d_5
-                                                                                (cdr
-                                                                                 p_5)))
-                                                                           (let ((p_6
-                                                                                  (unwrap
-                                                                                   d_5)))
-                                                                             (let ((-ref_0
-                                                                                    (let ((a_4
-                                                                                           (car
-                                                                                            p_6)))
-                                                                                      a_4)))
-                                                                               (let ((-set!_0
-                                                                                      (let ((d_6
-                                                                                             (cdr
-                                                                                              p_6)))
-                                                                                        (let ((a_4
-                                                                                               (car
-                                                                                                (unwrap
-                                                                                                 d_6))))
-                                                                                          a_4))))
-                                                                                 (let ((-ref_1
-                                                                                        -ref_0))
-                                                                                   (values
-                                                                                    -ref_1
-                                                                                    -set!_0)))))))
-                                                                       (case-lambda
-                                                                        ((-ref_0
-                                                                          -set!_0)
-                                                                         (let ((?_1
-                                                                                ?_0))
-                                                                           (values
-                                                                            ?_1
-                                                                            -ref_0
-                                                                            -set!_0)))
-                                                                        (args
-                                                                         (raise-binding-result-arity-error
-                                                                          2
-                                                                          args))))))))
-                                                              (case-lambda
-                                                               ((?_0
-                                                                 -ref_0
-                                                                 -set!_0)
-                                                                (let ((make_1
-                                                                       make_0))
-                                                                  (values
-                                                                   make_1
-                                                                   ?_0
-                                                                   -ref_0
-                                                                   -set!_0)))
-                                                               (args
-                                                                (raise-binding-result-arity-error
-                                                                 3
-                                                                 args))))))))
-                                                     (case-lambda
-                                                      ((make_0
-                                                        ?_0
-                                                        -ref_0
-                                                        -set!_0)
-                                                       (let ((struct:_1
-                                                              struct:_0))
-                                                         (values
-                                                          struct:_1
-                                                          make_0
-                                                          ?_0
-                                                          -ref_0
-                                                          -set!_0)))
-                                                      (args
-                                                       (raise-binding-result-arity-error
-                                                        4
-                                                        args))))))))
-                                            (case-lambda
-                                             ((struct:_0
-                                               make_0
-                                               ?_0
-                                               -ref_0
-                                               -set!_0)
-                                              (let ((rhs_0
-                                                     (let ((d_3 (cdr p_2)))
-                                                       (let ((a_3
-                                                              (car
-                                                               (unwrap d_3))))
-                                                         a_3))))
-                                                (let ((struct:_1 struct:_0)
-                                                      (make_1 make_0)
-                                                      (?_1 ?_0)
-                                                      (-ref_1 -ref_0)
-                                                      (-set!_1 -set!_0))
-                                                  (values
-                                                   struct:_1
-                                                   make_1
-                                                   ?_1
-                                                   -ref_1
-                                                   -set!_1
-                                                   rhs_0))))
-                                             (args
-                                              (raise-binding-result-arity-error
-                                               5
-                                               args))))))))
-                                   (case-lambda
-                                    ((struct:_0
-                                      make_0
-                                      ?_0
-                                      -ref_0
-                                      -set!_0
-                                      rhs_0)
-                                     (call-with-values
-                                      (lambda ()
-                                        (let ((d_3 (cdr p_1)))
-                                          (let ((a_1 (car (unwrap d_3))))
-                                            (let ((d_4 (cdr (unwrap a_1))))
-                                              (let ((p_2 (unwrap d_4)))
-                                                (let ((struct:2_0
-                                                       (let ((a_2 (car p_2)))
-                                                         a_2)))
-                                                  (call-with-values
-                                                   (lambda ()
-                                                     (let ((d_5 (cdr p_2)))
-                                                       (let ((p_3
-                                                              (unwrap d_5)))
-                                                         (let ((make2_0
-                                                                (let ((a_2
-                                                                       (car
-                                                                        p_3)))
-                                                                  a_2)))
-                                                           (call-with-values
-                                                            (lambda ()
-                                                              (let ((d_6
-                                                                     (cdr
-                                                                      p_3)))
-                                                                (let ((p_4
-                                                                       (unwrap
-                                                                        d_6)))
-                                                                  (let ((?2_0
-                                                                         (let ((a_2
-                                                                                (car
-                                                                                 p_4)))
-                                                                           a_2)))
-                                                                    (let ((make-acc/muts_0
-                                                                           (let ((d_7
-                                                                                  (cdr
-                                                                                   p_4)))
-                                                                             (unwrap-list
-                                                                              d_7))))
-                                                                      (let ((?2_1
-                                                                             ?2_0))
-                                                                        (values
-                                                                         ?2_1
-                                                                         make-acc/muts_0)))))))
-                                                            (case-lambda
-                                                             ((?2_0
-                                                               make-acc/muts_0)
-                                                              (let ((make2_1
-                                                                     make2_0))
-                                                                (values
-                                                                 make2_1
-                                                                 ?2_0
-                                                                 make-acc/muts_0)))
-                                                             (args
-                                                              (raise-binding-result-arity-error
-                                                               2
-                                                               args))))))))
-                                                   (case-lambda
-                                                    ((make2_0
-                                                      ?2_0
-                                                      make-acc/muts_0)
-                                                     (let ((struct:2_1
-                                                            struct:2_0))
-                                                       (values
-                                                        struct:2_1
-                                                        make2_0
-                                                        ?2_0
-                                                        make-acc/muts_0)))
-                                                    (args
-                                                     (raise-binding-result-arity-error
-                                                      3
-                                                      args))))))))))
-                                      (case-lambda
-                                       ((struct:2_0
-                                         make2_0
-                                         ?2_0
-                                         make-acc/muts_0)
-                                        (let ((struct:_1 struct:_0)
-                                              (make_1 make_0)
-                                              (?_1 ?_0)
-                                              (-ref_1 -ref_0)
-                                              (-set!_1 -set!_0)
-                                              (rhs_1 rhs_0))
-                                          (values
-                                           struct:_1
-                                           make_1
-                                           ?_1
-                                           -ref_1
-                                           -set!_1
-                                           rhs_1
-                                           struct:2_0
-                                           make2_0
-                                           ?2_0
-                                           make-acc/muts_0)))
-                                       (args
-                                        (raise-binding-result-arity-error
-                                         4
-                                         args)))))
-                                    (args
-                                     (raise-binding-result-arity-error
-                                      6
-                                      args)))))))))
-                        (case-lambda
-                         ((struct:_0
-                           make_0
-                           ?_0
-                           -ref_0
-                           -set!_0
-                           rhs_0
-                           struct:2_0
-                           make2_0
-                           ?2_0
-                           make-acc/muts_0)
-                          (let ((struct:s_1 struct:s_0)
-                                (make-s_1 make-s_0)
-                                (s?_1 s?_0)
-                                (acc/muts_1 acc/muts_0))
-                            (values
-                             struct:s_1
-                             make-s_1
-                             s?_1
-                             acc/muts_1
-                             struct:_0
-                             make_0
-                             ?_0
-                             -ref_0
-                             -set!_0
-                             rhs_0
-                             struct:2_0
-                             make2_0
-                             ?2_0
-                             make-acc/muts_0)))
-                         (args (raise-binding-result-arity-error 10 args)))))
-                      (args (raise-binding-result-arity-error 4 args)))))))
-              (case-lambda
-               ((struct:s_0
-                 make-s_0
-                 s?_0
-                 acc/muts_0
-                 struct:_0
-                 make_0
-                 ?_0
-                 -ref_0
-                 -set!_0
-                 rhs_0
-                 struct:2_0
-                 make2_0
-                 ?2_0
-                 make-acc/muts_0)
-                (let ((info_0
-                       (if (begin-unsafe
-                            (let ((app_0 (unwrap struct:_0)))
-                              (eq? app_0 (unwrap struct:2_0))))
-                         (if (begin-unsafe
-                              (let ((app_0 (unwrap make_0)))
-                                (eq? app_0 (unwrap make2_0))))
-                           (if (begin-unsafe
-                                (let ((app_0 (unwrap ?_0)))
-                                  (eq? app_0 (unwrap ?2_0))))
-                             (make-struct-type-info
-                              rhs_0
-                              prim-knowns6_0
-                              knowns7_0
-                              imports8_0
-                              mutated9_0)
-                             #f)
-                           #f)
-                         #f)))
-                  (if info_0
-                    (let ((type_0
-                           (string->uninterned-symbol
-                            (symbol->string (unwrap make-s_0)))))
-                      (let ((knowns_0
-                             (let ((app_0 (unwrap make-s_0)))
-                               (hash-set
-                                knowns7_0
-                                app_0
-                                (if (struct-type-info-pure-constructor? info_0)
-                                  (known-struct-constructor
-                                   (arithmetic-shift
-                                    1
-                                    (struct-type-info-field-count info_0))
-                                   type_0
-                                   struct:s_0)
-                                  a-known-constant)))))
-                        (let ((authentic?_0
-                               (struct-type-info-authentic? info_0)))
-                          (let ((sealed?_0 (struct-type-info-sealed? info_0)))
-                            (let ((knowns_1
-                                   (let ((app_0 (unwrap s?_0)))
-                                     (hash-set
-                                      knowns_0
-                                      app_0
-                                      (known-struct-predicate
-                                       2
-                                       type_0
-                                       struct:s_0
-                                       authentic?_0
-                                       sealed?_0)))))
-                              (let ((knowns_2
-                                     (let ((immediate-count_0
-                                            (struct-type-info-immediate-field-count
-                                             info_0)))
-                                       (let ((parent-count_0
-                                              (-
-                                               (struct-type-info-field-count
-                                                info_0)
-                                               immediate-count_0)))
-                                         (begin
-                                           (letrec*
-                                            ((for-loop_0
-                                              (|#%name|
-                                               for-loop
-                                               (lambda (knowns_2 lst_0 lst_1)
-                                                 (begin
-                                                   (if (if (pair? lst_0)
-                                                         (pair? lst_1)
-                                                         #f)
-                                                     (let ((id_0
-                                                            (unsafe-car
-                                                             lst_0)))
-                                                       (let ((rest_0
-                                                              (unsafe-cdr
-                                                               lst_0)))
-                                                         (let ((maker_0
-                                                                (unsafe-car
-                                                                 lst_1)))
-                                                           (let ((rest_1
-                                                                  (unsafe-cdr
-                                                                   lst_1)))
-                                                             (let ((knowns_3
-                                                                    (let ((knowns_3
-                                                                           (if (let ((p_0
-                                                                                      (unwrap
-                                                                                       maker_0)))
-                                                                                 (if (pair?
-                                                                                      p_0)
-                                                                                   (let ((a_0
-                                                                                          (cdr
-                                                                                           p_0)))
-                                                                                     (let ((p_1
-                                                                                            (unwrap
-                                                                                             a_0)))
-                                                                                       (if (pair?
-                                                                                            p_1)
-                                                                                         (let ((a_1
-                                                                                                (cdr
-                                                                                                 p_1)))
-                                                                                           (let ((p_2
-                                                                                                  (unwrap
-                                                                                                   a_1)))
-                                                                                             (if (pair?
-                                                                                                  p_2)
-                                                                                               (let ((a_2
-                                                                                                      (cdr
-                                                                                                       p_2)))
-                                                                                                 (let ((p_3
-                                                                                                        (unwrap
-                                                                                                         a_2)))
-                                                                                                   (if (pair?
-                                                                                                        p_3)
-                                                                                                     (if (let ((a_3
-                                                                                                                (car
-                                                                                                                 p_3)))
-                                                                                                           (let ((p_4
-                                                                                                                  (unwrap
-                                                                                                                   a_3)))
-                                                                                                             (if (pair?
-                                                                                                                  p_4)
-                                                                                                               (if (let ((a_4
-                                                                                                                          (car
-                                                                                                                           p_4)))
-                                                                                                                     (begin-unsafe
-                                                                                                                      (let ((app_0
-                                                                                                                             (unwrap
-                                                                                                                              'quote)))
-                                                                                                                        (eq?
-                                                                                                                         app_0
-                                                                                                                         (unwrap
-                                                                                                                          a_4)))))
-                                                                                                                 (let ((a_4
-                                                                                                                        (cdr
-                                                                                                                         p_4)))
-                                                                                                                   (let ((p_5
-                                                                                                                          (unwrap
-                                                                                                                           a_4)))
-                                                                                                                     (if (pair?
-                                                                                                                          p_5)
-                                                                                                                       (let ((a_5
-                                                                                                                              (cdr
-                                                                                                                               p_5)))
-                                                                                                                         (begin-unsafe
-                                                                                                                          (let ((app_0
-                                                                                                                                 (unwrap
-                                                                                                                                  '())))
-                                                                                                                            (eq?
-                                                                                                                             app_0
-                                                                                                                             (unwrap
-                                                                                                                              a_5)))))
-                                                                                                                       #f)))
-                                                                                                                 #f)
-                                                                                                               #f)))
-                                                                                                       (let ((a_3
-                                                                                                              (cdr
-                                                                                                               p_3)))
-                                                                                                         (begin-unsafe
-                                                                                                          (let ((app_0
-                                                                                                                 (unwrap
-                                                                                                                  '())))
-                                                                                                            (eq?
-                                                                                                             app_0
-                                                                                                             (unwrap
-                                                                                                              a_3)))))
-                                                                                                       #f)
-                                                                                                     #f)))
-                                                                                               #f)))
-                                                                                         #f)))
-                                                                                   #f))
-                                                                             (call-with-values
-                                                                              (lambda ()
-                                                                                (let ((p_0
-                                                                                       (unwrap
-                                                                                        maker_0)))
-                                                                                  (let ((make_1
-                                                                                         (let ((a_0
-                                                                                                (car
-                                                                                                 p_0)))
-                                                                                           a_0)))
-                                                                                    (call-with-values
-                                                                                     (lambda ()
-                                                                                       (let ((d_0
-                                                                                              (cdr
-                                                                                               p_0)))
-                                                                                         (let ((p_1
-                                                                                                (unwrap
-                                                                                                 d_0)))
-                                                                                           (let ((ref-or-set_0
-                                                                                                  (let ((a_0
-                                                                                                         (car
-                                                                                                          p_1)))
-                                                                                                    a_0)))
-                                                                                             (call-with-values
-                                                                                              (lambda ()
-                                                                                                (let ((d_1
-                                                                                                       (cdr
-                                                                                                        p_1)))
-                                                                                                  (let ((p_2
-                                                                                                         (unwrap
-                                                                                                          d_1)))
-                                                                                                    (let ((pos_0
-                                                                                                           (let ((a_0
-                                                                                                                  (car
-                                                                                                                   p_2)))
-                                                                                                             a_0)))
-                                                                                                      (let ((name_0
-                                                                                                             (let ((d_2
-                                                                                                                    (cdr
-                                                                                                                     p_2)))
-                                                                                                               (let ((a_0
-                                                                                                                      (car
-                                                                                                                       (unwrap
-                                                                                                                        d_2))))
-                                                                                                                 (let ((d_3
-                                                                                                                        (cdr
-                                                                                                                         (unwrap
-                                                                                                                          a_0))))
-                                                                                                                   (let ((a_1
-                                                                                                                          (car
-                                                                                                                           (unwrap
-                                                                                                                            d_3))))
-                                                                                                                     a_1))))))
-                                                                                                        (let ((pos_1
-                                                                                                               pos_0))
-                                                                                                          (values
-                                                                                                           pos_1
-                                                                                                           name_0)))))))
-                                                                                              (case-lambda
-                                                                                               ((pos_0
-                                                                                                 name_0)
-                                                                                                (let ((ref-or-set_1
-                                                                                                       ref-or-set_0))
-                                                                                                  (values
-                                                                                                   ref-or-set_1
-                                                                                                   pos_0
-                                                                                                   name_0)))
-                                                                                               (args
-                                                                                                (raise-binding-result-arity-error
-                                                                                                 2
-                                                                                                 args))))))))
-                                                                                     (case-lambda
-                                                                                      ((ref-or-set_0
-                                                                                        pos_0
-                                                                                        name_0)
-                                                                                       (let ((make_2
-                                                                                              make_1))
-                                                                                         (values
-                                                                                          make_2
-                                                                                          ref-or-set_0
-                                                                                          pos_0
-                                                                                          name_0)))
-                                                                                      (args
-                                                                                       (raise-binding-result-arity-error
-                                                                                        3
-                                                                                        args)))))))
-                                                                              (case-lambda
-                                                                               ((make_1
-                                                                                 ref-or-set_0
-                                                                                 pos_0
-                                                                                 name_0)
-                                                                                (let ((or-part_0
-                                                                                       (if (exact-nonnegative-integer?
-                                                                                            pos_0)
-                                                                                         (if (<
-                                                                                              pos_0
-                                                                                              immediate-count_0)
-                                                                                           (if (symbol?
-                                                                                                name_0)
-                                                                                             (if (if (begin-unsafe
-                                                                                                      (let ((app_0
-                                                                                                             (unwrap
-                                                                                                              make_1)))
-                                                                                                        (eq?
-                                                                                                         app_0
-                                                                                                         (unwrap
-                                                                                                          'make-struct-field-accessor))))
-                                                                                                   (begin-unsafe
-                                                                                                    (let ((app_0
-                                                                                                           (unwrap
-                                                                                                            ref-or-set_0)))
-                                                                                                      (eq?
-                                                                                                       app_0
-                                                                                                       (unwrap
-                                                                                                        -ref_0))))
-                                                                                                   #f)
-                                                                                               (let ((immutable?_0
-                                                                                                      (memv
-                                                                                                       pos_0
-                                                                                                       (let ((or-part_0
-                                                                                                              (struct-type-info-prefab-immutables
-                                                                                                               info_0)))
-                                                                                                         (if or-part_0
-                                                                                                           or-part_0
-                                                                                                           (let ((or-part_1
-                                                                                                                  (struct-type-info-non-prefab-immutables
-                                                                                                                   info_0)))
-                                                                                                             (if or-part_1
-                                                                                                               or-part_1
-                                                                                                               '())))))))
-                                                                                                 (let ((app_0
-                                                                                                        (unwrap
-                                                                                                         id_0)))
-                                                                                                   (hash-set
-                                                                                                    knowns_2
-                                                                                                    app_0
-                                                                                                    (known-field-accessor
-                                                                                                     2
-                                                                                                     type_0
-                                                                                                     struct:s_0
-                                                                                                     authentic?_0
-                                                                                                     (+
-                                                                                                      parent-count_0
-                                                                                                      pos_0)
-                                                                                                     immutable?_0))))
-                                                                                               (if (if (begin-unsafe
-                                                                                                        (let ((app_0
-                                                                                                               (unwrap
-                                                                                                                make_1)))
-                                                                                                          (eq?
-                                                                                                           app_0
-                                                                                                           (unwrap
-                                                                                                            'make-struct-field-mutator))))
-                                                                                                     (begin-unsafe
-                                                                                                      (let ((app_0
-                                                                                                             (unwrap
-                                                                                                              ref-or-set_0)))
-                                                                                                        (eq?
-                                                                                                         app_0
-                                                                                                         (unwrap
-                                                                                                          -set!_0))))
-                                                                                                     #f)
-                                                                                                 (let ((app_0
-                                                                                                        (unwrap
-                                                                                                         id_0)))
-                                                                                                   (hash-set
-                                                                                                    knowns_2
-                                                                                                    app_0
-                                                                                                    (known-field-mutator
-                                                                                                     4
-                                                                                                     type_0
-                                                                                                     struct:s_0
-                                                                                                     authentic?_0
-                                                                                                     (+
-                                                                                                      parent-count_0
-                                                                                                      pos_0))))
-                                                                                                 knowns_2))
-                                                                                             #f)
-                                                                                           #f)
-                                                                                         #f)))
-                                                                                  (if or-part_0
-                                                                                    or-part_0
-                                                                                    knowns_2)))
-                                                                               (args
-                                                                                (raise-binding-result-arity-error
-                                                                                 4
-                                                                                 args))))
-                                                                             knowns_2)))
-                                                                      (values
-                                                                       knowns_3))))
-                                                               (for-loop_0
-                                                                knowns_3
-                                                                rest_0
-                                                                rest_1))))))
-                                                     knowns_2))))))
-                                            (for-loop_0
-                                             knowns_1
-                                             acc/muts_0
-                                             make-acc/muts_0)))))))
-                                (values
-                                 (let ((app_0 (unwrap struct:s_0)))
-                                   (hash-set
-                                    knowns_2
-                                    app_0
-                                    (let ((app_1
-                                           (struct-type-info-field-count
-                                            info_0)))
-                                      (let ((app_2
-                                             (struct-type-info-pure-constructor?
-                                              info_0)))
-                                        (known-struct-type
-                                         type_0
-                                         app_1
-                                         app_2
-                                         (struct-type-info-sealed? info_0))))))
-                                 info_0)))))))
-                    (values knowns7_0 #f))))
-               (args (raise-binding-result-arity-error 14 args))))
-             (if (if (eq? 'define-values hd_0)
-                   (let ((a_0 (cdr (unwrap v5_0))))
-                     (let ((p_0 (unwrap a_0)))
-                       (if (pair? p_0)
-                         (if (let ((a_1 (car p_0)))
-                               (let ((p_1 (unwrap a_1)))
-                                 (if (pair? p_1)
+                                                     #f)
+                                                   #f)))
+                                             #f)
+                                           #f)))
                                    (let ((a_2 (cdr p_1)))
-                                     (let ((p_2 (unwrap a_2)))
-                                       (if (pair? p_2)
-                                         (let ((a_3 (cdr p_2)))
-                                           (let ((p_3 (unwrap a_3)))
-                                             (if (pair? p_3)
-                                               (let ((a_4 (cdr p_3)))
-                                                 (let ((p_4 (unwrap a_4)))
-                                                   (if (pair? p_4)
-                                                     (let ((a_5 (cdr p_4)))
-                                                       (let ((p_5
-                                                              (unwrap a_5)))
-                                                         (if (pair? p_5)
-                                                           (let ((a_6
-                                                                  (cdr p_5)))
-                                                             (begin-unsafe
-                                                              (let ((app_0
-                                                                     (unwrap
-                                                                      '())))
-                                                                (eq?
-                                                                 app_0
-                                                                 (unwrap
-                                                                  a_6)))))
-                                                           #f)))
-                                                     #f)))
-                                               #f)))
-                                         #f)))
-                                   #f)))
-                           (let ((a_1 (cdr p_0)))
-                             (let ((p_1 (unwrap a_1)))
-                               (if (pair? p_1)
-                                 (let ((a_2 (cdr p_1)))
-                                   (begin-unsafe
-                                    (let ((app_0 (unwrap '())))
-                                      (eq? app_0 (unwrap a_2)))))
+                                     (begin-unsafe
+                                      (let ((app_0 (unwrap '())))
+                                        (eq? app_0 (unwrap a_2)))))
+                                   #f)
                                  #f)))
                            #f)
                          #f)))
                    #f)
                (call-with-values
                 (lambda ()
-                  (let ((d_0 (cdr (unwrap v5_0))))
+                  (let ((d_0 (cdr (unwrap v7_0))))
                     (let ((p_0 (unwrap d_0)))
                       (call-with-values
                        (lambda ()
@@ -16318,143 +16438,729 @@
                                                (let ((s?_0
                                                       (let ((a_1 (car p_3)))
                                                         a_1)))
-                                                 (call-with-values
-                                                  (lambda ()
-                                                    (let ((d_3 (cdr p_3)))
-                                                      (let ((p_4 (unwrap d_3)))
-                                                        (let ((s-ref_0
-                                                               (let ((a_1
-                                                                      (car
-                                                                       p_4)))
-                                                                 a_1)))
-                                                          (let ((s-set!_0
-                                                                 (let ((d_4
-                                                                        (cdr
-                                                                         p_4)))
-                                                                   (let ((a_1
-                                                                          (car
-                                                                           (unwrap
-                                                                            d_4))))
-                                                                     a_1))))
-                                                            (let ((s-ref_1
-                                                                   s-ref_0))
-                                                              (values
-                                                               s-ref_1
-                                                               s-set!_0)))))))
-                                                  (case-lambda
-                                                   ((s-ref_0 s-set!_0)
-                                                    (let ((s?_1 s?_0))
-                                                      (values
-                                                       s?_1
-                                                       s-ref_0
-                                                       s-set!_0)))
-                                                   (args
-                                                    (raise-binding-result-arity-error
-                                                     2
-                                                     args))))))))
+                                                 (let ((acc/muts_0
+                                                        (let ((d_3 (cdr p_3)))
+                                                          (unwrap-list d_3))))
+                                                   (let ((s?_1 s?_0))
+                                                     (values
+                                                      s?_1
+                                                      acc/muts_0)))))))
                                          (case-lambda
-                                          ((s?_0 s-ref_0 s-set!_0)
+                                          ((s?_0 acc/muts_0)
                                            (let ((make-s_1 make-s_0))
                                              (values
                                               make-s_1
                                               s?_0
-                                              s-ref_0
-                                              s-set!_0)))
+                                              acc/muts_0)))
                                           (args
                                            (raise-binding-result-arity-error
-                                            3
+                                            2
                                             args))))))))
                                 (case-lambda
-                                 ((make-s_0 s?_0 s-ref_0 s-set!_0)
+                                 ((make-s_0 s?_0 acc/muts_0)
                                   (let ((struct:s_1 struct:s_0))
                                     (values
                                      struct:s_1
                                      make-s_0
                                      s?_0
-                                     s-ref_0
-                                     s-set!_0)))
+                                     acc/muts_0)))
                                  (args
                                   (raise-binding-result-arity-error
-                                   4
+                                   3
                                    args))))))))
                        (case-lambda
-                        ((struct:s_0 make-s_0 s?_0 s-ref_0 s-set!_0)
-                         (let ((rhs_0
-                                (let ((d_1 (cdr p_0)))
-                                  (let ((a_0 (car (unwrap d_1)))) a_0))))
-                           (let ((struct:s_1 struct:s_0)
-                                 (make-s_1 make-s_0)
-                                 (s?_1 s?_0)
-                                 (s-ref_1 s-ref_0)
-                                 (s-set!_1 s-set!_0))
-                             (values
-                              struct:s_1
-                              make-s_1
-                              s?_1
-                              s-ref_1
-                              s-set!_1
-                              rhs_0))))
-                        (args (raise-binding-result-arity-error 5 args)))))))
+                        ((struct:s_0 make-s_0 s?_0 acc/muts_0)
+                         (call-with-values
+                          (lambda ()
+                            (let ((d_1 (cdr p_0)))
+                              (let ((a_0 (car (unwrap d_1))))
+                                (let ((d_2 (cdr (unwrap a_0))))
+                                  (let ((p_1 (unwrap d_2)))
+                                    (call-with-values
+                                     (lambda ()
+                                       (let ((a_1 (car p_1)))
+                                         (let ((a_2 (car (unwrap a_1))))
+                                           (let ((p_2 (unwrap a_2)))
+                                             (call-with-values
+                                              (lambda ()
+                                                (let ((a_3 (car p_2)))
+                                                  (let ((p_3 (unwrap a_3)))
+                                                    (let ((struct:_0
+                                                           (let ((a_4
+                                                                  (car p_3)))
+                                                             a_4)))
+                                                      (call-with-values
+                                                       (lambda ()
+                                                         (let ((d_3 (cdr p_3)))
+                                                           (let ((p_4
+                                                                  (unwrap
+                                                                   d_3)))
+                                                             (let ((make_0
+                                                                    (let ((a_4
+                                                                           (car
+                                                                            p_4)))
+                                                                      a_4)))
+                                                               (call-with-values
+                                                                (lambda ()
+                                                                  (let ((d_4
+                                                                         (cdr
+                                                                          p_4)))
+                                                                    (let ((p_5
+                                                                           (unwrap
+                                                                            d_4)))
+                                                                      (let ((?_0
+                                                                             (let ((a_4
+                                                                                    (car
+                                                                                     p_5)))
+                                                                               a_4)))
+                                                                        (call-with-values
+                                                                         (lambda ()
+                                                                           (let ((d_5
+                                                                                  (cdr
+                                                                                   p_5)))
+                                                                             (let ((p_6
+                                                                                    (unwrap
+                                                                                     d_5)))
+                                                                               (let ((-ref_0
+                                                                                      (let ((a_4
+                                                                                             (car
+                                                                                              p_6)))
+                                                                                        a_4)))
+                                                                                 (let ((-set!_0
+                                                                                        (let ((d_6
+                                                                                               (cdr
+                                                                                                p_6)))
+                                                                                          (let ((a_4
+                                                                                                 (car
+                                                                                                  (unwrap
+                                                                                                   d_6))))
+                                                                                            a_4))))
+                                                                                   (let ((-ref_1
+                                                                                          -ref_0))
+                                                                                     (values
+                                                                                      -ref_1
+                                                                                      -set!_0)))))))
+                                                                         (case-lambda
+                                                                          ((-ref_0
+                                                                            -set!_0)
+                                                                           (let ((?_1
+                                                                                  ?_0))
+                                                                             (values
+                                                                              ?_1
+                                                                              -ref_0
+                                                                              -set!_0)))
+                                                                          (args
+                                                                           (raise-binding-result-arity-error
+                                                                            2
+                                                                            args))))))))
+                                                                (case-lambda
+                                                                 ((?_0
+                                                                   -ref_0
+                                                                   -set!_0)
+                                                                  (let ((make_1
+                                                                         make_0))
+                                                                    (values
+                                                                     make_1
+                                                                     ?_0
+                                                                     -ref_0
+                                                                     -set!_0)))
+                                                                 (args
+                                                                  (raise-binding-result-arity-error
+                                                                   3
+                                                                   args))))))))
+                                                       (case-lambda
+                                                        ((make_0
+                                                          ?_0
+                                                          -ref_0
+                                                          -set!_0)
+                                                         (let ((struct:_1
+                                                                struct:_0))
+                                                           (values
+                                                            struct:_1
+                                                            make_0
+                                                            ?_0
+                                                            -ref_0
+                                                            -set!_0)))
+                                                        (args
+                                                         (raise-binding-result-arity-error
+                                                          4
+                                                          args))))))))
+                                              (case-lambda
+                                               ((struct:_0
+                                                 make_0
+                                                 ?_0
+                                                 -ref_0
+                                                 -set!_0)
+                                                (let ((rhs_0
+                                                       (let ((d_3 (cdr p_2)))
+                                                         (let ((a_3
+                                                                (car
+                                                                 (unwrap
+                                                                  d_3))))
+                                                           a_3))))
+                                                  (let ((struct:_1 struct:_0)
+                                                        (make_1 make_0)
+                                                        (?_1 ?_0)
+                                                        (-ref_1 -ref_0)
+                                                        (-set!_1 -set!_0))
+                                                    (values
+                                                     struct:_1
+                                                     make_1
+                                                     ?_1
+                                                     -ref_1
+                                                     -set!_1
+                                                     rhs_0))))
+                                               (args
+                                                (raise-binding-result-arity-error
+                                                 5
+                                                 args))))))))
+                                     (case-lambda
+                                      ((struct:_0
+                                        make_0
+                                        ?_0
+                                        -ref_0
+                                        -set!_0
+                                        rhs_0)
+                                       (call-with-values
+                                        (lambda ()
+                                          (let ((d_3 (cdr p_1)))
+                                            (let ((a_1 (car (unwrap d_3))))
+                                              (let ((d_4 (cdr (unwrap a_1))))
+                                                (let ((p_2 (unwrap d_4)))
+                                                  (let ((struct:2_0
+                                                         (let ((a_2 (car p_2)))
+                                                           a_2)))
+                                                    (call-with-values
+                                                     (lambda ()
+                                                       (let ((d_5 (cdr p_2)))
+                                                         (let ((p_3
+                                                                (unwrap d_5)))
+                                                           (let ((make2_0
+                                                                  (let ((a_2
+                                                                         (car
+                                                                          p_3)))
+                                                                    a_2)))
+                                                             (call-with-values
+                                                              (lambda ()
+                                                                (let ((d_6
+                                                                       (cdr
+                                                                        p_3)))
+                                                                  (let ((p_4
+                                                                         (unwrap
+                                                                          d_6)))
+                                                                    (let ((?2_0
+                                                                           (let ((a_2
+                                                                                  (car
+                                                                                   p_4)))
+                                                                             a_2)))
+                                                                      (let ((make-acc/muts_0
+                                                                             (let ((d_7
+                                                                                    (cdr
+                                                                                     p_4)))
+                                                                               (unwrap-list
+                                                                                d_7))))
+                                                                        (let ((?2_1
+                                                                               ?2_0))
+                                                                          (values
+                                                                           ?2_1
+                                                                           make-acc/muts_0)))))))
+                                                              (case-lambda
+                                                               ((?2_0
+                                                                 make-acc/muts_0)
+                                                                (let ((make2_1
+                                                                       make2_0))
+                                                                  (values
+                                                                   make2_1
+                                                                   ?2_0
+                                                                   make-acc/muts_0)))
+                                                               (args
+                                                                (raise-binding-result-arity-error
+                                                                 2
+                                                                 args))))))))
+                                                     (case-lambda
+                                                      ((make2_0
+                                                        ?2_0
+                                                        make-acc/muts_0)
+                                                       (let ((struct:2_1
+                                                              struct:2_0))
+                                                         (values
+                                                          struct:2_1
+                                                          make2_0
+                                                          ?2_0
+                                                          make-acc/muts_0)))
+                                                      (args
+                                                       (raise-binding-result-arity-error
+                                                        3
+                                                        args))))))))))
+                                        (case-lambda
+                                         ((struct:2_0
+                                           make2_0
+                                           ?2_0
+                                           make-acc/muts_0)
+                                          (let ((struct:_1 struct:_0)
+                                                (make_1 make_0)
+                                                (?_1 ?_0)
+                                                (-ref_1 -ref_0)
+                                                (-set!_1 -set!_0)
+                                                (rhs_1 rhs_0))
+                                            (values
+                                             struct:_1
+                                             make_1
+                                             ?_1
+                                             -ref_1
+                                             -set!_1
+                                             rhs_1
+                                             struct:2_0
+                                             make2_0
+                                             ?2_0
+                                             make-acc/muts_0)))
+                                         (args
+                                          (raise-binding-result-arity-error
+                                           4
+                                           args)))))
+                                      (args
+                                       (raise-binding-result-arity-error
+                                        6
+                                        args)))))))))
+                          (case-lambda
+                           ((struct:_0
+                             make_0
+                             ?_0
+                             -ref_0
+                             -set!_0
+                             rhs_0
+                             struct:2_0
+                             make2_0
+                             ?2_0
+                             make-acc/muts_0)
+                            (let ((struct:s_1 struct:s_0)
+                                  (make-s_1 make-s_0)
+                                  (s?_1 s?_0)
+                                  (acc/muts_1 acc/muts_0))
+                              (values
+                               struct:s_1
+                               make-s_1
+                               s?_1
+                               acc/muts_1
+                               struct:_0
+                               make_0
+                               ?_0
+                               -ref_0
+                               -set!_0
+                               rhs_0
+                               struct:2_0
+                               make2_0
+                               ?2_0
+                               make-acc/muts_0)))
+                           (args (raise-binding-result-arity-error 10 args)))))
+                        (args (raise-binding-result-arity-error 4 args)))))))
                 (case-lambda
-                 ((struct:s_0 make-s_0 s?_0 s-ref_0 s-set!_0 rhs_0)
+                 ((struct:s_0
+                   make-s_0
+                   s?_0
+                   acc/muts_0
+                   struct:_0
+                   make_0
+                   ?_0
+                   -ref_0
+                   -set!_0
+                   rhs_0
+                   struct:2_0
+                   make2_0
+                   ?2_0
+                   make-acc/muts_0)
                   (let ((info_0
-                         (make-struct-type-info
-                          rhs_0
-                          prim-knowns6_0
-                          knowns7_0
-                          imports8_0
-                          mutated9_0)))
+                         (if (begin-unsafe
+                              (let ((app_0 (unwrap struct:_0)))
+                                (eq? app_0 (unwrap struct:2_0))))
+                           (if (begin-unsafe
+                                (let ((app_0 (unwrap make_0)))
+                                  (eq? app_0 (unwrap make2_0))))
+                             (if (begin-unsafe
+                                  (let ((app_0 (unwrap ?_0)))
+                                    (eq? app_0 (unwrap ?2_0))))
+                               (make-struct-type-info
+                                rhs_0
+                                prim-knowns8_0
+                                knowns9_0
+                                imports10_0
+                                mutated11_0)
+                               #f)
+                             #f)
+                           #f)))
                     (if info_0
                       (let ((type_0
                              (string->uninterned-symbol
                               (symbol->string (unwrap make-s_0)))))
-                        (values
-                         (let ((knowns_0
-                                (let ((app_0 (unwrap make-s_0)))
-                                  (hash-set
-                                   knowns7_0
-                                   app_0
-                                   (if (struct-type-info-pure-constructor?
-                                        info_0)
-                                     (known-constructor
-                                      (arithmetic-shift
-                                       1
-                                       (struct-type-info-field-count info_0))
-                                      type_0)
-                                     a-known-constant)))))
-                           (let ((knowns_1
-                                  (let ((app_0 (unwrap s?_0)))
-                                    (hash-set
-                                     knowns_0
-                                     app_0
-                                     (let ((app_1
-                                            (struct-type-info-authentic?
-                                             info_0)))
-                                       (known-struct-predicate
-                                        2
-                                        type_0
-                                        struct:s_0
-                                        app_1
-                                        (struct-type-info-sealed? info_0)))))))
-                             (let ((app_0 (unwrap struct:s_0)))
-                               (hash-set
-                                knowns_1
-                                app_0
-                                (let ((app_1
-                                       (struct-type-info-field-count info_0)))
-                                  (let ((app_2
-                                         (struct-type-info-pure-constructor?
-                                          info_0)))
-                                    (known-struct-type
+                        (let ((knowns_0
+                               (let ((app_0 (unwrap make-s_0)))
+                                 (hash-set
+                                  knowns9_0
+                                  app_0
+                                  (if (struct-type-info-pure-constructor?
+                                       info_0)
+                                    (known-struct-constructor
+                                     (arithmetic-shift
+                                      1
+                                      (struct-type-info-field-count info_0))
                                      type_0
-                                     app_1
-                                     app_2
-                                     (struct-type-info-sealed? info_0))))))))
-                         info_0))
-                      (values knowns7_0 #f))))
-                 (args (raise-binding-result-arity-error 6 args))))
+                                     struct:s_0)
+                                    a-known-constant)))))
+                          (let ((authentic?_0
+                                 (struct-type-info-authentic? info_0)))
+                            (let ((sealed?_0
+                                   (struct-type-info-sealed? info_0)))
+                              (let ((knowns_1
+                                     (let ((app_0 (unwrap s?_0)))
+                                       (hash-set
+                                        knowns_0
+                                        app_0
+                                        (known-struct-predicate
+                                         2
+                                         type_0
+                                         struct:s_0
+                                         authentic?_0
+                                         sealed?_0)))))
+                                (let ((knowns_2
+                                       (let ((immediate-count_0
+                                              (struct-type-info-immediate-field-count
+                                               info_0)))
+                                         (let ((parent-count_0
+                                                (-
+                                                 (struct-type-info-field-count
+                                                  info_0)
+                                                 immediate-count_0)))
+                                           (begin
+                                             (letrec*
+                                              ((for-loop_0
+                                                (|#%name|
+                                                 for-loop
+                                                 (lambda (knowns_2 lst_0 lst_1)
+                                                   (begin
+                                                     (if (if (pair? lst_0)
+                                                           (pair? lst_1)
+                                                           #f)
+                                                       (let ((id_0
+                                                              (unsafe-car
+                                                               lst_0)))
+                                                         (let ((rest_0
+                                                                (unsafe-cdr
+                                                                 lst_0)))
+                                                           (let ((maker_0
+                                                                  (unsafe-car
+                                                                   lst_1)))
+                                                             (let ((rest_1
+                                                                    (unsafe-cdr
+                                                                     lst_1)))
+                                                               (let ((knowns_3
+                                                                      (let ((knowns_3
+                                                                             (if (let ((p_0
+                                                                                        (unwrap
+                                                                                         maker_0)))
+                                                                                   (if (pair?
+                                                                                        p_0)
+                                                                                     (let ((a_0
+                                                                                            (cdr
+                                                                                             p_0)))
+                                                                                       (let ((p_1
+                                                                                              (unwrap
+                                                                                               a_0)))
+                                                                                         (if (pair?
+                                                                                              p_1)
+                                                                                           (let ((a_1
+                                                                                                  (cdr
+                                                                                                   p_1)))
+                                                                                             (let ((p_2
+                                                                                                    (unwrap
+                                                                                                     a_1)))
+                                                                                               (if (pair?
+                                                                                                    p_2)
+                                                                                                 (let ((a_2
+                                                                                                        (cdr
+                                                                                                         p_2)))
+                                                                                                   (let ((p_3
+                                                                                                          (unwrap
+                                                                                                           a_2)))
+                                                                                                     (if (pair?
+                                                                                                          p_3)
+                                                                                                       (if (let ((a_3
+                                                                                                                  (car
+                                                                                                                   p_3)))
+                                                                                                             (let ((p_4
+                                                                                                                    (unwrap
+                                                                                                                     a_3)))
+                                                                                                               (if (pair?
+                                                                                                                    p_4)
+                                                                                                                 (if (let ((a_4
+                                                                                                                            (car
+                                                                                                                             p_4)))
+                                                                                                                       (begin-unsafe
+                                                                                                                        (let ((app_0
+                                                                                                                               (unwrap
+                                                                                                                                'quote)))
+                                                                                                                          (eq?
+                                                                                                                           app_0
+                                                                                                                           (unwrap
+                                                                                                                            a_4)))))
+                                                                                                                   (let ((a_4
+                                                                                                                          (cdr
+                                                                                                                           p_4)))
+                                                                                                                     (let ((p_5
+                                                                                                                            (unwrap
+                                                                                                                             a_4)))
+                                                                                                                       (if (pair?
+                                                                                                                            p_5)
+                                                                                                                         (let ((a_5
+                                                                                                                                (cdr
+                                                                                                                                 p_5)))
+                                                                                                                           (begin-unsafe
+                                                                                                                            (let ((app_0
+                                                                                                                                   (unwrap
+                                                                                                                                    '())))
+                                                                                                                              (eq?
+                                                                                                                               app_0
+                                                                                                                               (unwrap
+                                                                                                                                a_5)))))
+                                                                                                                         #f)))
+                                                                                                                   #f)
+                                                                                                                 #f)))
+                                                                                                         (let ((a_3
+                                                                                                                (cdr
+                                                                                                                 p_3)))
+                                                                                                           (begin-unsafe
+                                                                                                            (let ((app_0
+                                                                                                                   (unwrap
+                                                                                                                    '())))
+                                                                                                              (eq?
+                                                                                                               app_0
+                                                                                                               (unwrap
+                                                                                                                a_3)))))
+                                                                                                         #f)
+                                                                                                       #f)))
+                                                                                                 #f)))
+                                                                                           #f)))
+                                                                                     #f))
+                                                                               (call-with-values
+                                                                                (lambda ()
+                                                                                  (let ((p_0
+                                                                                         (unwrap
+                                                                                          maker_0)))
+                                                                                    (let ((make_1
+                                                                                           (let ((a_0
+                                                                                                  (car
+                                                                                                   p_0)))
+                                                                                             a_0)))
+                                                                                      (call-with-values
+                                                                                       (lambda ()
+                                                                                         (let ((d_0
+                                                                                                (cdr
+                                                                                                 p_0)))
+                                                                                           (let ((p_1
+                                                                                                  (unwrap
+                                                                                                   d_0)))
+                                                                                             (let ((ref-or-set_0
+                                                                                                    (let ((a_0
+                                                                                                           (car
+                                                                                                            p_1)))
+                                                                                                      a_0)))
+                                                                                               (call-with-values
+                                                                                                (lambda ()
+                                                                                                  (let ((d_1
+                                                                                                         (cdr
+                                                                                                          p_1)))
+                                                                                                    (let ((p_2
+                                                                                                           (unwrap
+                                                                                                            d_1)))
+                                                                                                      (let ((pos_0
+                                                                                                             (let ((a_0
+                                                                                                                    (car
+                                                                                                                     p_2)))
+                                                                                                               a_0)))
+                                                                                                        (let ((name_0
+                                                                                                               (let ((d_2
+                                                                                                                      (cdr
+                                                                                                                       p_2)))
+                                                                                                                 (let ((a_0
+                                                                                                                        (car
+                                                                                                                         (unwrap
+                                                                                                                          d_2))))
+                                                                                                                   (let ((d_3
+                                                                                                                          (cdr
+                                                                                                                           (unwrap
+                                                                                                                            a_0))))
+                                                                                                                     (let ((a_1
+                                                                                                                            (car
+                                                                                                                             (unwrap
+                                                                                                                              d_3))))
+                                                                                                                       a_1))))))
+                                                                                                          (let ((pos_1
+                                                                                                                 pos_0))
+                                                                                                            (values
+                                                                                                             pos_1
+                                                                                                             name_0)))))))
+                                                                                                (case-lambda
+                                                                                                 ((pos_0
+                                                                                                   name_0)
+                                                                                                  (let ((ref-or-set_1
+                                                                                                         ref-or-set_0))
+                                                                                                    (values
+                                                                                                     ref-or-set_1
+                                                                                                     pos_0
+                                                                                                     name_0)))
+                                                                                                 (args
+                                                                                                  (raise-binding-result-arity-error
+                                                                                                   2
+                                                                                                   args))))))))
+                                                                                       (case-lambda
+                                                                                        ((ref-or-set_0
+                                                                                          pos_0
+                                                                                          name_0)
+                                                                                         (let ((make_2
+                                                                                                make_1))
+                                                                                           (values
+                                                                                            make_2
+                                                                                            ref-or-set_0
+                                                                                            pos_0
+                                                                                            name_0)))
+                                                                                        (args
+                                                                                         (raise-binding-result-arity-error
+                                                                                          3
+                                                                                          args)))))))
+                                                                                (case-lambda
+                                                                                 ((make_1
+                                                                                   ref-or-set_0
+                                                                                   pos_0
+                                                                                   name_0)
+                                                                                  (let ((or-part_0
+                                                                                         (if (exact-nonnegative-integer?
+                                                                                              pos_0)
+                                                                                           (if (<
+                                                                                                pos_0
+                                                                                                immediate-count_0)
+                                                                                             (if (symbol?
+                                                                                                  name_0)
+                                                                                               (if (if (begin-unsafe
+                                                                                                        (let ((app_0
+                                                                                                               (unwrap
+                                                                                                                make_1)))
+                                                                                                          (eq?
+                                                                                                           app_0
+                                                                                                           (unwrap
+                                                                                                            'make-struct-field-accessor))))
+                                                                                                     (begin-unsafe
+                                                                                                      (let ((app_0
+                                                                                                             (unwrap
+                                                                                                              ref-or-set_0)))
+                                                                                                        (eq?
+                                                                                                         app_0
+                                                                                                         (unwrap
+                                                                                                          -ref_0))))
+                                                                                                     #f)
+                                                                                                 (let ((immutable?_0
+                                                                                                        (memv
+                                                                                                         pos_0
+                                                                                                         (let ((or-part_0
+                                                                                                                (struct-type-info-prefab-immutables
+                                                                                                                 info_0)))
+                                                                                                           (if or-part_0
+                                                                                                             or-part_0
+                                                                                                             (let ((or-part_1
+                                                                                                                    (struct-type-info-non-prefab-immutables
+                                                                                                                     info_0)))
+                                                                                                               (if or-part_1
+                                                                                                                 or-part_1
+                                                                                                                 '())))))))
+                                                                                                   (let ((app_0
+                                                                                                          (unwrap
+                                                                                                           id_0)))
+                                                                                                     (hash-set
+                                                                                                      knowns_2
+                                                                                                      app_0
+                                                                                                      (known-field-accessor
+                                                                                                       2
+                                                                                                       type_0
+                                                                                                       struct:s_0
+                                                                                                       authentic?_0
+                                                                                                       (+
+                                                                                                        parent-count_0
+                                                                                                        pos_0)
+                                                                                                       immutable?_0))))
+                                                                                                 (if (if (begin-unsafe
+                                                                                                          (let ((app_0
+                                                                                                                 (unwrap
+                                                                                                                  make_1)))
+                                                                                                            (eq?
+                                                                                                             app_0
+                                                                                                             (unwrap
+                                                                                                              'make-struct-field-mutator))))
+                                                                                                       (begin-unsafe
+                                                                                                        (let ((app_0
+                                                                                                               (unwrap
+                                                                                                                ref-or-set_0)))
+                                                                                                          (eq?
+                                                                                                           app_0
+                                                                                                           (unwrap
+                                                                                                            -set!_0))))
+                                                                                                       #f)
+                                                                                                   (let ((app_0
+                                                                                                          (unwrap
+                                                                                                           id_0)))
+                                                                                                     (hash-set
+                                                                                                      knowns_2
+                                                                                                      app_0
+                                                                                                      (known-field-mutator
+                                                                                                       4
+                                                                                                       type_0
+                                                                                                       struct:s_0
+                                                                                                       authentic?_0
+                                                                                                       (+
+                                                                                                        parent-count_0
+                                                                                                        pos_0))))
+                                                                                                   knowns_2))
+                                                                                               #f)
+                                                                                             #f)
+                                                                                           #f)))
+                                                                                    (if or-part_0
+                                                                                      or-part_0
+                                                                                      knowns_2)))
+                                                                                 (args
+                                                                                  (raise-binding-result-arity-error
+                                                                                   4
+                                                                                   args))))
+                                                                               knowns_2)))
+                                                                        (values
+                                                                         knowns_3))))
+                                                                 (for-loop_0
+                                                                  knowns_3
+                                                                  rest_0
+                                                                  rest_1))))))
+                                                       knowns_2))))))
+                                              (for-loop_0
+                                               knowns_1
+                                               acc/muts_0
+                                               make-acc/muts_0)))))))
+                                  (values
+                                   (let ((app_0 (unwrap struct:s_0)))
+                                     (hash-set
+                                      knowns_2
+                                      app_0
+                                      (let ((app_1
+                                             (struct-type-info-field-count
+                                              info_0)))
+                                        (let ((app_2
+                                               (struct-type-info-pure-constructor?
+                                                info_0)))
+                                          (known-struct-type
+                                           type_0
+                                           app_1
+                                           app_2
+                                           (struct-type-info-sealed?
+                                            info_0))))))
+                                   info_0)))))))
+                      (values knowns9_0 #f))))
+                 (args (raise-binding-result-arity-error 14 args))))
                (if (if (eq? 'define-values hd_0)
-                     (let ((a_0 (cdr (unwrap v5_0))))
+                     (let ((a_0 (cdr (unwrap v7_0))))
                        (let ((p_0 (unwrap a_0)))
                          (if (pair? p_0)
                            (if (let ((a_1 (car p_0)))
@@ -16467,121 +17173,27 @@
                                              (let ((p_3 (unwrap a_3)))
                                                (if (pair? p_3)
                                                  (let ((a_4 (cdr p_3)))
-                                                   (begin-unsafe
-                                                    (let ((app_0 (unwrap '())))
-                                                      (eq?
-                                                       app_0
-                                                       (unwrap a_4)))))
+                                                   (let ((p_4 (unwrap a_4)))
+                                                     (if (pair? p_4)
+                                                       (let ((a_5 (cdr p_4)))
+                                                         (let ((p_5
+                                                                (unwrap a_5)))
+                                                           (if (pair? p_5)
+                                                             (let ((a_6
+                                                                    (cdr p_5)))
+                                                               (begin-unsafe
+                                                                (let ((app_0
+                                                                       (unwrap
+                                                                        '())))
+                                                                  (eq?
+                                                                   app_0
+                                                                   (unwrap
+                                                                    a_6)))))
+                                                             #f)))
+                                                       #f)))
                                                  #f)))
                                            #f)))
                                      #f)))
-                             (let ((a_1 (cdr p_0)))
-                               (let ((p_1 (unwrap a_1)))
-                                 (if (pair? p_1)
-                                   (if (let ((a_2 (car p_1)))
-                                         (let ((p_2 (unwrap a_2)))
-                                           (if (pair? p_2)
-                                             (if (let ((a_3 (car p_2)))
-                                                   (begin-unsafe
-                                                    (let ((app_0
-                                                           (unwrap
-                                                            'make-struct-type-property)))
-                                                      (eq?
-                                                       app_0
-                                                       (unwrap a_3)))))
-                                               (let ((a_3 (cdr p_2)))
-                                                 (let ((p_3 (unwrap a_3)))
-                                                   (if (pair? p_3) #t #f)))
-                                               #f)
-                                             #f)))
-                                     (let ((a_2 (cdr p_1)))
-                                       (begin-unsafe
-                                        (let ((app_0 (unwrap '())))
-                                          (eq? app_0 (unwrap a_2)))))
-                                     #f)
-                                   #f)))
-                             #f)
-                           #f)))
-                     #f)
-                 (call-with-values
-                  (lambda ()
-                    (let ((d_0 (cdr (unwrap v5_0))))
-                      (let ((p_0 (unwrap d_0)))
-                        (call-with-values
-                         (lambda ()
-                           (let ((a_0 (car p_0)))
-                             (let ((p_1 (unwrap a_0)))
-                               (let ((prop:s_0 (let ((a_1 (car p_1))) a_1)))
-                                 (call-with-values
-                                  (lambda ()
-                                    (let ((d_1 (cdr p_1)))
-                                      (let ((p_2 (unwrap d_1)))
-                                        (let ((s?_0
-                                               (let ((a_1 (car p_2))) a_1)))
-                                          (let ((s-ref_0
-                                                 (let ((d_2 (cdr p_2)))
-                                                   (let ((a_1
-                                                          (car (unwrap d_2))))
-                                                     a_1))))
-                                            (let ((s?_1 s?_0))
-                                              (values s?_1 s-ref_0)))))))
-                                  (case-lambda
-                                   ((s?_0 s-ref_0)
-                                    (let ((prop:s_1 prop:s_0))
-                                      (values prop:s_1 s?_0 s-ref_0)))
-                                   (args
-                                    (raise-binding-result-arity-error
-                                     2
-                                     args))))))))
-                         (case-lambda
-                          ((prop:s_0 s?_0 s-ref_0)
-                           (let ((rest_0
-                                  (let ((d_1 (cdr p_0)))
-                                    (let ((a_0 (car (unwrap d_1))))
-                                      (let ((d_2 (cdr (unwrap a_0))))
-                                        (let ((d_3 (cdr (unwrap d_2))))
-                                          d_3))))))
-                             (let ((prop:s_1 prop:s_0)
-                                   (s?_1 s?_0)
-                                   (s-ref_1 s-ref_0))
-                               (values prop:s_1 s?_1 s-ref_1 rest_0))))
-                          (args (raise-binding-result-arity-error 3 args)))))))
-                  (case-lambda
-                   ((prop:s_0 s?_0 s-ref_0 rest_0)
-                    (let ((type_0
-                           (string->uninterned-symbol
-                            (symbol->string (unwrap prop:s_0)))))
-                      (values
-                       (let ((knowns_0
-                              (let ((app_0 (unwrap s-ref_0)))
-                                (hash-set
-                                 knowns7_0
-                                 app_0
-                                 (known-accessor 2 type_0)))))
-                         (let ((knowns_1
-                                (let ((app_0 (unwrap s?_0)))
-                                  (hash-set
-                                   knowns_0
-                                   app_0
-                                   (known-predicate 2 type_0)))))
-                           (if (let ((or-part_0 (null? (unwrap rest_0))))
-                                 (if or-part_0
-                                   or-part_0
-                                   (if (not (wrap-car rest_0))
-                                     (null? (unwrap (wrap-cdr rest_0)))
-                                     #f)))
-                             (let ((app_0 (unwrap prop:s_0)))
-                               (hash-set
-                                knowns_1
-                                app_0
-                                (known-struct-type-property/immediate-guard)))
-                             knowns_1)))
-                       #f)))
-                   (args (raise-binding-result-arity-error 4 args))))
-                 (if (if (eq? 'define-values hd_0)
-                       (let ((a_0 (cdr (unwrap v5_0))))
-                         (let ((p_0 (unwrap a_0)))
-                           (if (pair? p_0)
                              (let ((a_1 (cdr p_0)))
                                (let ((p_1 (unwrap a_1)))
                                  (if (pair? p_1)
@@ -16590,140 +17202,445 @@
                                       (let ((app_0 (unwrap '())))
                                         (eq? app_0 (unwrap a_2)))))
                                    #f)))
+                             #f)
+                           #f)))
+                     #f)
+                 (call-with-values
+                  (lambda ()
+                    (let ((d_0 (cdr (unwrap v7_0))))
+                      (let ((p_0 (unwrap d_0)))
+                        (call-with-values
+                         (lambda ()
+                           (let ((a_0 (car p_0)))
+                             (let ((p_1 (unwrap a_0)))
+                               (let ((struct:s_0 (let ((a_1 (car p_1))) a_1)))
+                                 (call-with-values
+                                  (lambda ()
+                                    (let ((d_1 (cdr p_1)))
+                                      (let ((p_2 (unwrap d_1)))
+                                        (let ((make-s_0
+                                               (let ((a_1 (car p_2))) a_1)))
+                                          (call-with-values
+                                           (lambda ()
+                                             (let ((d_2 (cdr p_2)))
+                                               (let ((p_3 (unwrap d_2)))
+                                                 (let ((s?_0
+                                                        (let ((a_1 (car p_3)))
+                                                          a_1)))
+                                                   (call-with-values
+                                                    (lambda ()
+                                                      (let ((d_3 (cdr p_3)))
+                                                        (let ((p_4
+                                                               (unwrap d_3)))
+                                                          (let ((s-ref_0
+                                                                 (let ((a_1
+                                                                        (car
+                                                                         p_4)))
+                                                                   a_1)))
+                                                            (let ((s-set!_0
+                                                                   (let ((d_4
+                                                                          (cdr
+                                                                           p_4)))
+                                                                     (let ((a_1
+                                                                            (car
+                                                                             (unwrap
+                                                                              d_4))))
+                                                                       a_1))))
+                                                              (let ((s-ref_1
+                                                                     s-ref_0))
+                                                                (values
+                                                                 s-ref_1
+                                                                 s-set!_0)))))))
+                                                    (case-lambda
+                                                     ((s-ref_0 s-set!_0)
+                                                      (let ((s?_1 s?_0))
+                                                        (values
+                                                         s?_1
+                                                         s-ref_0
+                                                         s-set!_0)))
+                                                     (args
+                                                      (raise-binding-result-arity-error
+                                                       2
+                                                       args))))))))
+                                           (case-lambda
+                                            ((s?_0 s-ref_0 s-set!_0)
+                                             (let ((make-s_1 make-s_0))
+                                               (values
+                                                make-s_1
+                                                s?_0
+                                                s-ref_0
+                                                s-set!_0)))
+                                            (args
+                                             (raise-binding-result-arity-error
+                                              3
+                                              args))))))))
+                                  (case-lambda
+                                   ((make-s_0 s?_0 s-ref_0 s-set!_0)
+                                    (let ((struct:s_1 struct:s_0))
+                                      (values
+                                       struct:s_1
+                                       make-s_0
+                                       s?_0
+                                       s-ref_0
+                                       s-set!_0)))
+                                   (args
+                                    (raise-binding-result-arity-error
+                                     4
+                                     args))))))))
+                         (case-lambda
+                          ((struct:s_0 make-s_0 s?_0 s-ref_0 s-set!_0)
+                           (let ((rhs_0
+                                  (let ((d_1 (cdr p_0)))
+                                    (let ((a_0 (car (unwrap d_1)))) a_0))))
+                             (let ((struct:s_1 struct:s_0)
+                                   (make-s_1 make-s_0)
+                                   (s?_1 s?_0)
+                                   (s-ref_1 s-ref_0)
+                                   (s-set!_1 s-set!_0))
+                               (values
+                                struct:s_1
+                                make-s_1
+                                s?_1
+                                s-ref_1
+                                s-set!_1
+                                rhs_0))))
+                          (args (raise-binding-result-arity-error 5 args)))))))
+                  (case-lambda
+                   ((struct:s_0 make-s_0 s?_0 s-ref_0 s-set!_0 rhs_0)
+                    (let ((info_0
+                           (make-struct-type-info
+                            rhs_0
+                            prim-knowns8_0
+                            knowns9_0
+                            imports10_0
+                            mutated11_0)))
+                      (if info_0
+                        (let ((type_0
+                               (string->uninterned-symbol
+                                (symbol->string (unwrap make-s_0)))))
+                          (values
+                           (let ((knowns_0
+                                  (let ((app_0 (unwrap make-s_0)))
+                                    (hash-set
+                                     knowns9_0
+                                     app_0
+                                     (if (struct-type-info-pure-constructor?
+                                          info_0)
+                                       (known-constructor
+                                        (arithmetic-shift
+                                         1
+                                         (struct-type-info-field-count info_0))
+                                        type_0)
+                                       a-known-constant)))))
+                             (let ((knowns_1
+                                    (let ((app_0 (unwrap s?_0)))
+                                      (hash-set
+                                       knowns_0
+                                       app_0
+                                       (let ((app_1
+                                              (struct-type-info-authentic?
+                                               info_0)))
+                                         (known-struct-predicate
+                                          2
+                                          type_0
+                                          struct:s_0
+                                          app_1
+                                          (struct-type-info-sealed?
+                                           info_0)))))))
+                               (let ((app_0 (unwrap struct:s_0)))
+                                 (hash-set
+                                  knowns_1
+                                  app_0
+                                  (let ((app_1
+                                         (struct-type-info-field-count
+                                          info_0)))
+                                    (let ((app_2
+                                           (struct-type-info-pure-constructor?
+                                            info_0)))
+                                      (known-struct-type
+                                       type_0
+                                       app_1
+                                       app_2
+                                       (struct-type-info-sealed? info_0))))))))
+                           info_0))
+                        (values knowns9_0 #f))))
+                   (args (raise-binding-result-arity-error 6 args))))
+                 (if (if (eq? 'define-values hd_0)
+                       (let ((a_0 (cdr (unwrap v7_0))))
+                         (let ((p_0 (unwrap a_0)))
+                           (if (pair? p_0)
+                             (if (let ((a_1 (car p_0)))
+                                   (let ((p_1 (unwrap a_1)))
+                                     (if (pair? p_1)
+                                       (let ((a_2 (cdr p_1)))
+                                         (let ((p_2 (unwrap a_2)))
+                                           (if (pair? p_2)
+                                             (let ((a_3 (cdr p_2)))
+                                               (let ((p_3 (unwrap a_3)))
+                                                 (if (pair? p_3)
+                                                   (let ((a_4 (cdr p_3)))
+                                                     (begin-unsafe
+                                                      (let ((app_0
+                                                             (unwrap '())))
+                                                        (eq?
+                                                         app_0
+                                                         (unwrap a_4)))))
+                                                   #f)))
+                                             #f)))
+                                       #f)))
+                               (let ((a_1 (cdr p_0)))
+                                 (let ((p_1 (unwrap a_1)))
+                                   (if (pair? p_1)
+                                     (if (let ((a_2 (car p_1)))
+                                           (let ((p_2 (unwrap a_2)))
+                                             (if (pair? p_2)
+                                               (if (let ((a_3 (car p_2)))
+                                                     (begin-unsafe
+                                                      (let ((app_0
+                                                             (unwrap
+                                                              'make-struct-type-property)))
+                                                        (eq?
+                                                         app_0
+                                                         (unwrap a_3)))))
+                                                 (let ((a_3 (cdr p_2)))
+                                                   (let ((p_3 (unwrap a_3)))
+                                                     (if (pair? p_3) #t #f)))
+                                                 #f)
+                                               #f)))
+                                       (let ((a_2 (cdr p_1)))
+                                         (begin-unsafe
+                                          (let ((app_0 (unwrap '())))
+                                            (eq? app_0 (unwrap a_2)))))
+                                       #f)
+                                     #f)))
+                               #f)
                              #f)))
                        #f)
                    (call-with-values
                     (lambda ()
-                      (let ((d_0 (cdr (unwrap v5_0))))
+                      (let ((d_0 (cdr (unwrap v7_0))))
                         (let ((p_0 (unwrap d_0)))
-                          (let ((ids_0 (let ((a_0 (car p_0))) a_0)))
-                            (let ((rhs_0
-                                   (let ((d_1 (cdr p_0)))
-                                     (let ((a_0 (car (unwrap d_1)))) a_0))))
-                              (let ((ids_1 ids_0)) (values ids_1 rhs_0)))))))
+                          (call-with-values
+                           (lambda ()
+                             (let ((a_0 (car p_0)))
+                               (let ((p_1 (unwrap a_0)))
+                                 (let ((prop:s_0 (let ((a_1 (car p_1))) a_1)))
+                                   (call-with-values
+                                    (lambda ()
+                                      (let ((d_1 (cdr p_1)))
+                                        (let ((p_2 (unwrap d_1)))
+                                          (let ((s?_0
+                                                 (let ((a_1 (car p_2))) a_1)))
+                                            (let ((s-ref_0
+                                                   (let ((d_2 (cdr p_2)))
+                                                     (let ((a_1
+                                                            (car
+                                                             (unwrap d_2))))
+                                                       a_1))))
+                                              (let ((s?_1 s?_0))
+                                                (values s?_1 s-ref_0)))))))
+                                    (case-lambda
+                                     ((s?_0 s-ref_0)
+                                      (let ((prop:s_1 prop:s_0))
+                                        (values prop:s_1 s?_0 s-ref_0)))
+                                     (args
+                                      (raise-binding-result-arity-error
+                                       2
+                                       args))))))))
+                           (case-lambda
+                            ((prop:s_0 s?_0 s-ref_0)
+                             (let ((rest_0
+                                    (let ((d_1 (cdr p_0)))
+                                      (let ((a_0 (car (unwrap d_1))))
+                                        (let ((d_2 (cdr (unwrap a_0))))
+                                          (let ((d_3 (cdr (unwrap d_2))))
+                                            d_3))))))
+                               (let ((prop:s_1 prop:s_0)
+                                     (s?_1 s?_0)
+                                     (s-ref_1 s-ref_0))
+                                 (values prop:s_1 s?_1 s-ref_1 rest_0))))
+                            (args
+                             (raise-binding-result-arity-error 3 args)))))))
                     (case-lambda
-                     ((ids_0 rhs_0)
-                      (letrec*
-                       ((loop_0
-                         (|#%name|
-                          loop
-                          (lambda (rhs_1)
-                            (begin
-                              (let ((hd_1
-                                     (let ((p_0 (unwrap rhs_1)))
-                                       (if (pair? p_0)
-                                         (unwrap (car p_0))
-                                         #f))))
-                                (if (if (eq? 'let-values hd_1)
-                                      (let ((a_0 (cdr (unwrap rhs_1))))
-                                        (let ((p_0 (unwrap a_0)))
-                                          (if (pair? p_0)
-                                            (if (let ((a_1 (car p_0)))
-                                                  (begin-unsafe
-                                                   (let ((app_0 (unwrap '())))
-                                                     (eq?
-                                                      app_0
-                                                      (unwrap a_1)))))
-                                              (let ((a_1 (cdr p_0)))
-                                                (let ((p_1 (unwrap a_1)))
-                                                  (if (pair? p_1)
-                                                    (let ((a_2 (cdr p_1)))
-                                                      (begin-unsafe
-                                                       (let ((app_0
-                                                              (unwrap '())))
-                                                         (eq?
-                                                          app_0
-                                                          (unwrap a_2)))))
-                                                    #f)))
-                                              #f)
-                                            #f)))
-                                      #f)
-                                  (let ((rhs_2
-                                         (let ((d_0 (cdr (unwrap rhs_1))))
-                                           (let ((d_1 (cdr (unwrap d_0))))
-                                             (let ((a_0 (car (unwrap d_1))))
-                                               a_0)))))
-                                    (loop_0 rhs_2))
-                                  (if (if (eq? 'values hd_1)
+                     ((prop:s_0 s?_0 s-ref_0 rest_0)
+                      (let ((type_0
+                             (string->uninterned-symbol
+                              (symbol->string (unwrap prop:s_0)))))
+                        (values
+                         (let ((knowns_0
+                                (let ((app_0 (unwrap s-ref_0)))
+                                  (hash-set
+                                   knowns9_0
+                                   app_0
+                                   (known-accessor 2 type_0)))))
+                           (let ((knowns_1
+                                  (let ((app_0 (unwrap s?_0)))
+                                    (hash-set
+                                     knowns_0
+                                     app_0
+                                     (known-predicate 2 type_0)))))
+                             (if (let ((or-part_0 (null? (unwrap rest_0))))
+                                   (if or-part_0
+                                     or-part_0
+                                     (if (not (wrap-car rest_0))
+                                       (null? (unwrap (wrap-cdr rest_0)))
+                                       #f)))
+                               (let ((app_0 (unwrap prop:s_0)))
+                                 (hash-set
+                                  knowns_1
+                                  app_0
+                                  (known-struct-type-property/immediate-guard)))
+                               knowns_1)))
+                         #f)))
+                     (args (raise-binding-result-arity-error 4 args))))
+                   (if (if (eq? 'define-values hd_0)
+                         (let ((a_0 (cdr (unwrap v7_0))))
+                           (let ((p_0 (unwrap a_0)))
+                             (if (pair? p_0)
+                               (let ((a_1 (cdr p_0)))
+                                 (let ((p_1 (unwrap a_1)))
+                                   (if (pair? p_1)
+                                     (let ((a_2 (cdr p_1)))
+                                       (begin-unsafe
+                                        (let ((app_0 (unwrap '())))
+                                          (eq? app_0 (unwrap a_2)))))
+                                     #f)))
+                               #f)))
+                         #f)
+                     (call-with-values
+                      (lambda ()
+                        (let ((d_0 (cdr (unwrap v7_0))))
+                          (let ((p_0 (unwrap d_0)))
+                            (let ((ids_0 (let ((a_0 (car p_0))) a_0)))
+                              (let ((rhs_0
+                                     (let ((d_1 (cdr p_0)))
+                                       (let ((a_0 (car (unwrap d_1)))) a_0))))
+                                (let ((ids_1 ids_0)) (values ids_1 rhs_0)))))))
+                      (case-lambda
+                       ((ids_0 rhs_0)
+                        (letrec*
+                         ((loop_0
+                           (|#%name|
+                            loop
+                            (lambda (rhs_1)
+                              (begin
+                                (let ((hd_1
+                                       (let ((p_0 (unwrap rhs_1)))
+                                         (if (pair? p_0)
+                                           (unwrap (car p_0))
+                                           #f))))
+                                  (if (if (eq? 'let-values hd_1)
                                         (let ((a_0 (cdr (unwrap rhs_1))))
-                                          (wrap-list? a_0))
+                                          (let ((p_0 (unwrap a_0)))
+                                            (if (pair? p_0)
+                                              (if (let ((a_1 (car p_0)))
+                                                    (begin-unsafe
+                                                     (let ((app_0
+                                                            (unwrap '())))
+                                                       (eq?
+                                                        app_0
+                                                        (unwrap a_1)))))
+                                                (let ((a_1 (cdr p_0)))
+                                                  (let ((p_1 (unwrap a_1)))
+                                                    (if (pair? p_1)
+                                                      (let ((a_2 (cdr p_1)))
+                                                        (begin-unsafe
+                                                         (let ((app_0
+                                                                (unwrap '())))
+                                                           (eq?
+                                                            app_0
+                                                            (unwrap a_2)))))
+                                                      #f)))
+                                                #f)
+                                              #f)))
                                         #f)
-                                    (let ((rhss_0
+                                    (let ((rhs_2
                                            (let ((d_0 (cdr (unwrap rhs_1))))
-                                             (unwrap-list d_0))))
-                                      (if (let ((app_0 (length ids_0)))
-                                            (equal? app_0 (length rhss_0)))
-                                        (values
-                                         (begin
-                                           (letrec*
-                                            ((for-loop_0
-                                              (|#%name|
-                                               for-loop
-                                               (lambda (knowns_0 lst_0 lst_1)
-                                                 (begin
-                                                   (if (if (pair? lst_0)
-                                                         (pair? lst_1)
-                                                         #f)
-                                                     (let ((id_0
-                                                            (unsafe-car
-                                                             lst_0)))
-                                                       (let ((rest_0
-                                                              (unsafe-cdr
+                                             (let ((d_1 (cdr (unwrap d_0))))
+                                               (let ((a_0 (car (unwrap d_1))))
+                                                 a_0)))))
+                                      (loop_0 rhs_2))
+                                    (if (if (eq? 'values hd_1)
+                                          (let ((a_0 (cdr (unwrap rhs_1))))
+                                            (wrap-list? a_0))
+                                          #f)
+                                      (let ((rhss_0
+                                             (let ((d_0 (cdr (unwrap rhs_1))))
+                                               (unwrap-list d_0))))
+                                        (if (let ((app_0 (length ids_0)))
+                                              (equal? app_0 (length rhss_0)))
+                                          (values
+                                           (begin
+                                             (letrec*
+                                              ((for-loop_0
+                                                (|#%name|
+                                                 for-loop
+                                                 (lambda (knowns_0 lst_0 lst_1)
+                                                   (begin
+                                                     (if (if (pair? lst_0)
+                                                           (pair? lst_1)
+                                                           #f)
+                                                       (let ((id_0
+                                                              (unsafe-car
                                                                lst_0)))
-                                                         (let ((rhs_2
-                                                                (unsafe-car
-                                                                 lst_1)))
-                                                           (let ((rest_1
-                                                                  (unsafe-cdr
+                                                         (let ((rest_0
+                                                                (unsafe-cdr
+                                                                 lst_0)))
+                                                           (let ((rhs_2
+                                                                  (unsafe-car
                                                                    lst_1)))
-                                                             (let ((knowns_1
-                                                                    (let ((knowns_1
-                                                                           (call-with-values
-                                                                            (lambda ()
-                                                                              (let ((temp26_0
-                                                                                     (propagate-inline-hint
-                                                                                      v5_0
-                                                                                      (list
-                                                                                       'define-values
-                                                                                       (list
-                                                                                        id_0)
-                                                                                       rhs_2))))
-                                                                                (find-definitions.1
-                                                                                 optimize?2_0
-                                                                                 hash2610
-                                                                                 temp26_0
-                                                                                 prim-knowns6_0
-                                                                                 knowns_0
-                                                                                 imports8_0
-                                                                                 mutated9_0
-                                                                                 simples10_0
-                                                                                 unsafe-mode?11_0
-                                                                                 target12_0)))
-                                                                            (case-lambda
-                                                                             ((new-knowns_0
-                                                                               info_0)
-                                                                              new-knowns_0)
-                                                                             (args
-                                                                              (raise-binding-result-arity-error
-                                                                               2
-                                                                               args))))))
-                                                                      (values
-                                                                       knowns_1))))
-                                                               (for-loop_0
-                                                                knowns_1
-                                                                rest_0
-                                                                rest_1))))))
-                                                     knowns_0))))))
-                                            (for-loop_0
-                                             knowns7_0
-                                             ids_0
-                                             rhss_0)))
-                                         #f)
-                                        (values knowns7_0 #f)))
-                                    (values knowns7_0 #f)))))))))
-                       (loop_0 rhs_0)))
-                     (args (raise-binding-result-arity-error 2 args))))
-                   (values knowns7_0 #f)))))))))))
+                                                             (let ((rest_1
+                                                                    (unsafe-cdr
+                                                                     lst_1)))
+                                                               (let ((knowns_1
+                                                                      (let ((knowns_1
+                                                                             (call-with-values
+                                                                              (lambda ()
+                                                                                (let ((temp29_0
+                                                                                       (propagate-inline-hint
+                                                                                        v7_0
+                                                                                        (list
+                                                                                         'define-values
+                                                                                         (list
+                                                                                          id_0)
+                                                                                         rhs_2))))
+                                                                                  (find-definitions.1
+                                                                                   unsafe-undefined
+                                                                                   optimize?2_0
+                                                                                   hash2610
+                                                                                   temp29_0
+                                                                                   prim-knowns8_0
+                                                                                   knowns_0
+                                                                                   imports10_0
+                                                                                   mutated11_0
+                                                                                   simples12_0
+                                                                                   unsafe-mode?13_0
+                                                                                   target14_0)))
+                                                                              (case-lambda
+                                                                               ((new-knowns_0
+                                                                                 info_0)
+                                                                                new-knowns_0)
+                                                                               (args
+                                                                                (raise-binding-result-arity-error
+                                                                                 2
+                                                                                 args))))))
+                                                                        (values
+                                                                         knowns_1))))
+                                                                 (for-loop_0
+                                                                  knowns_1
+                                                                  rest_0
+                                                                  rest_1))))))
+                                                       knowns_0))))))
+                                              (for-loop_0
+                                               knowns9_0
+                                               ids_0
+                                               rhss_0)))
+                                           #f)
+                                          (values knowns9_0 #f)))
+                                      (values knowns9_0 #f)))))))))
+                         (loop_0 rhs_0)))
+                       (args (raise-binding-result-arity-error 2 args))))
+                     (values knowns9_0 #f))))))))))))
 (define propagate-inline-hint
   (lambda (defn_0 new-defn_0)
     (if (wrap-property defn_0 'compiler-hint:cross-module-inline)
@@ -20869,6 +21786,7 @@
                         (call-with-values
                          (lambda ()
                            (find-definitions.1
+                            unsafe-undefined
                             #f
                             hash2610
                             defn_0
@@ -21941,6 +22859,7 @@
                                             (call-with-values
                                              (lambda ()
                                                (find-definitions.1
+                                                unsafe-undefined
                                                 #f
                                                 hash2610
                                                 form_0
@@ -25321,6 +26240,7 @@
            no-prompt?_0
            prim-knowns_0
            primitives_0
+           compiler-query_0
            get-import-knowns_0
            import-keys_0)
     (with-continuation-mark*
@@ -25563,7 +26483,8 @@
                                     enforce-constant?_0
                                     allow-inline?_0
                                     no-prompt?_0
-                                    #t))
+                                    #t
+                                    compiler-query_0))
                                  (case-lambda
                                   ((new-body_0 defn-info_0 mutated_0)
                                    (let ((all-grps_0
@@ -26031,7 +26952,8 @@
          #t
          #t
          no-prompt?_0
-         explicit-unnamed?_0))
+         explicit-unnamed?_0
+         (lambda (v_0) #f)))
       (case-lambda
        ((new-body_0 defn-info_0 mutated_0) new-body_0)
        (args (raise-binding-result-arity-error 3 args)))))))
@@ -26050,7 +26972,8 @@
            enforce-constant?_0
            allow-inline?_0
            no-prompt?_0
-           explicit-unnamed?_0)
+           explicit-unnamed?_0
+           compiler-query_0)
     (let ((extra-variables_0 (make-hasheq)))
       (let ((add-extra-variables_0
              (|#%name|
@@ -26128,6 +27051,7 @@
                                                  (call-with-values
                                                   (lambda ()
                                                     (find-definitions.1
+                                                     compiler-query_0
                                                      #t
                                                      primitives_0
                                                      form_0
@@ -26379,6 +27303,7 @@
                                                  allow-inline?_0
                                                  no-prompt?_0
                                                  explicit-unnamed?_0
+                                                 compiler-query_0
                                                  (if (if no-prompt?_0
                                                        (null? (cdr l_1))
                                                        #f)
@@ -26387,55 +27312,55 @@
                                            (let ((finish-definition_0
                                                   (|#%name|
                                                    finish-definition
-                                                   (lambda (knowns16_0
-                                                            next-k18_0
-                                                            schemified17_0
-                                                            ids24_0
-                                                            accum-exprs22_0
-                                                            accum-ids23_0)
+                                                   (lambda (knowns17_0
+                                                            next-k19_0
+                                                            schemified18_0
+                                                            ids25_0
+                                                            accum-exprs23_0
+                                                            accum-ids24_0)
                                                      (begin
                                                        (let ((accum-exprs_1
                                                               (if (eq?
-                                                                   accum-exprs22_0
+                                                                   accum-exprs23_0
                                                                    unsafe-undefined)
                                                                 accum-exprs_0
-                                                                accum-exprs22_0)))
+                                                                accum-exprs23_0)))
                                                          (let ((accum-ids_1
                                                                 (if (eq?
-                                                                     accum-ids23_0
+                                                                     accum-ids24_0
                                                                      unsafe-undefined)
                                                                   accum-ids_0
-                                                                  accum-ids23_0)))
+                                                                  accum-ids24_0)))
                                                            (let ((knowns_2
                                                                   (if (eq?
-                                                                       knowns16_0
+                                                                       knowns17_0
                                                                        unsafe-undefined)
                                                                     knowns_1
-                                                                    knowns16_0)))
+                                                                    knowns17_0)))
                                                              (let ((schemified_1
                                                                     (if (eq?
-                                                                         schemified17_0
+                                                                         schemified18_0
                                                                          unsafe-undefined)
                                                                       schemified_0
-                                                                      schemified17_0)))
+                                                                      schemified18_0)))
                                                                (let ((next-knowns_0
                                                                       (if (if (pair?
-                                                                               ids24_0)
+                                                                               ids25_0)
                                                                             (if (null?
                                                                                  (cdr
-                                                                                  ids24_0))
+                                                                                  ids25_0))
                                                                               (can-improve-infer-known?
                                                                                (hash-ref
                                                                                 knowns_2
                                                                                 (unwrap
                                                                                  (car
-                                                                                  ids24_0))
+                                                                                  ids25_0))
                                                                                 #f))
                                                                               #f)
                                                                             #f)
                                                                         (let ((id_0
                                                                                (car
-                                                                                ids24_0)))
+                                                                                ids25_0)))
                                                                           (let ((k_0
                                                                                  (let ((hd_0
                                                                                         (let ((p_0
@@ -26513,6 +27438,7 @@
                                                                                        ((id_1
                                                                                          rhs_0)
                                                                                         (infer-known.1
+                                                                                         unsafe-undefined
                                                                                          #f
                                                                                          #t
                                                                                          hash2610
@@ -26559,9 +27485,9 @@
                                                                            (begin
                                                                              (if (null?
                                                                                   ids_0)
-                                                                               (if next-k18_0
+                                                                               (if next-k19_0
                                                                                  (|#%app|
-                                                                                  next-k18_0
+                                                                                  next-k19_0
                                                                                   accum-exprs_2
                                                                                   accum-ids_2
                                                                                   next-knowns_0)
@@ -26636,7 +27562,7 @@
                                                                                       ids_0)
                                                                                      accum-ids_2))))))))))
                                                                       (id-loop_0
-                                                                       ids24_0
+                                                                       ids25_0
                                                                        null
                                                                        accum-ids_1)))))))))))))))
                                              (let ((finish-wrapped-definition_0
@@ -26927,13 +27853,13 @@
                                                            mutated_0
                                                            simples_0
                                                            unsafe-mode?_0)
-                                                        (let ((temp45_0
+                                                        (let ((temp46_0
                                                                (list id_0)))
                                                           (finish-definition_0
                                                            unsafe-undefined
                                                            #f
                                                            unsafe-undefined
-                                                           temp45_0
+                                                           temp46_0
                                                            unsafe-undefined
                                                            unsafe-undefined))
                                                         (finish-wrapped-definition_0
@@ -27005,14 +27931,14 @@
                                                                    rhs_0)))))))
                                                       (case-lambda
                                                        ((ids_0 rhs_0)
-                                                        (if (let ((temp54_0
+                                                        (if (let ((temp55_0
                                                                    (length
                                                                     ids_0)))
                                                               (simple?.1
                                                                #f
                                                                #f
                                                                #f
-                                                               temp54_0
+                                                               temp55_0
                                                                #f
                                                                rhs_0
                                                                prim-knowns_0
@@ -27130,15 +28056,15 @@
                                                                               (let ((rhs_1
                                                                                      (car
                                                                                       rhss_1)))
-                                                                                (let ((temp63_0
+                                                                                (let ((temp64_0
                                                                                        (list
                                                                                         id_0)))
-                                                                                  (let ((temp67_0
+                                                                                  (let ((temp68_0
                                                                                          (list
                                                                                           'define
                                                                                           id_0
                                                                                           rhs_1)))
-                                                                                    (let ((temp68_0
+                                                                                    (let ((temp69_0
                                                                                            (lambda (accum-exprs_2
                                                                                                     accum-ids_2
                                                                                                     knowns_3)
@@ -27154,9 +28080,9 @@
                                                                                                 knowns_3)))))
                                                                                       (finish-definition_0
                                                                                        knowns_2
+                                                                                       temp69_0
                                                                                        temp68_0
-                                                                                       temp67_0
-                                                                                       temp63_0
+                                                                                       temp64_0
                                                                                        accum-exprs_1
                                                                                        accum-ids_1))))))))))))
                                                                    (values-loop_0
@@ -27279,7 +28205,7 @@
                                                                       a_0))))
                                                              (let ((set-vars_0
                                                                     (make-set-variables_0)))
-                                                               (let ((temp72_0
+                                                               (let ((temp73_0
                                                                       (append
                                                                        set-vars_0
                                                                        accum-exprs_0)))
@@ -27288,7 +28214,7 @@
                                                                   #f
                                                                   unsafe-undefined
                                                                   ids_0
-                                                                  temp72_0
+                                                                  temp73_0
                                                                   null))))
                                                            (if (simple?.1
                                                                 #f
@@ -27449,6 +28375,7 @@
            allow-inline?_0
            no-prompt?_0
            explicit-unnamed?_0
+           compiler-query_0
            wcm-state_0)
     (letrec*
      ((schemify/knowns_0
@@ -27615,14 +28542,14 @@
                                                                             formalss_2
                                                                             bodys_1))))))
                                                                  (case-lambda
-                                                                  ((formalss83_0
-                                                                    bodys84_0)
+                                                                  ((formalss84_0
+                                                                    bodys85_0)
                                                                    (values
                                                                     (cons
-                                                                     formalss83_0
+                                                                     formalss84_0
                                                                      formalss_0)
                                                                     (cons
-                                                                     bodys84_0
+                                                                     bodys85_0
                                                                      bodys_0)))
                                                                   (args
                                                                    (raise-binding-result-arity-error
@@ -28886,14 +29813,14 @@
                                                                                                  ids_2
                                                                                                  rhss_1))))))
                                                                                       (case-lambda
-                                                                                       ((ids85_0
-                                                                                         rhss86_0)
+                                                                                       ((ids86_0
+                                                                                         rhss87_0)
                                                                                         (values
                                                                                          (cons
-                                                                                          ids85_0
+                                                                                          ids86_0
                                                                                           ids_0)
                                                                                          (cons
-                                                                                          rhss86_0
+                                                                                          rhss87_0
                                                                                           rhss_0)))
                                                                                        (args
                                                                                         (raise-binding-result-arity-error
@@ -28977,12 +29904,12 @@
                                                                       (unwrap
                                                                        (car
                                                                         bodys_0))))
-                                                                 (let ((temp87_0
+                                                                 (let ((temp88_0
                                                                         (car
                                                                          rhss_0)))
                                                                    (lambda?.1
                                                                     #f
-                                                                    temp87_0))
+                                                                    temp88_0))
                                                                  #f)
                                                                #f)
                                                              #f)
@@ -28991,229 +29918,337 @@
                                                      (schemify_0
                                                       (car rhss_0)
                                                       wcm-state_2)
-                                                     (let ((new-knowns_0
-                                                            (begin
-                                                              (letrec*
-                                                               ((for-loop_0
-                                                                 (|#%name|
-                                                                  for-loop
-                                                                  (lambda (knowns_2
-                                                                           lst_0
-                                                                           lst_1)
-                                                                    (begin
-                                                                      (if (if (pair?
-                                                                               lst_0)
-                                                                            (pair?
-                                                                             lst_1)
-                                                                            #f)
-                                                                        (let ((id_0
-                                                                               (unsafe-car
-                                                                                lst_0)))
-                                                                          (let ((rest_0
-                                                                                 (unsafe-cdr
-                                                                                  lst_0)))
-                                                                            (let ((rhs_0
-                                                                                   (unsafe-car
-                                                                                    lst_1)))
-                                                                              (let ((rest_1
-                                                                                     (unsafe-cdr
-                                                                                      lst_1)))
-                                                                                (let ((knowns_3
-                                                                                       (let ((knowns_3
-                                                                                              (let ((k_0
-                                                                                                     (infer-known.1
-                                                                                                      #f
-                                                                                                      #f
-                                                                                                      hash2610
-                                                                                                      rhs_0
-                                                                                                      #f
-                                                                                                      id_0
-                                                                                                      knowns_2
-                                                                                                      prim-knowns_0
-                                                                                                      imports_0
-                                                                                                      mutated_0
-                                                                                                      simples_0
-                                                                                                      unsafe-mode?_0
-                                                                                                      target_0)))
-                                                                                                (if k_0
-                                                                                                  (hash-set
-                                                                                                   knowns_2
-                                                                                                   (unwrap
-                                                                                                    id_0)
-                                                                                                   k_0)
-                                                                                                  knowns_2))))
-                                                                                         (values
-                                                                                          knowns_3))))
-                                                                                  (for-loop_0
-                                                                                   knowns_3
-                                                                                   rest_0
-                                                                                   rest_1))))))
-                                                                        knowns_2))))))
-                                                               (for-loop_0
-                                                                knowns_1
-                                                                ids_0
-                                                                rhss_0)))))
-                                                       (let ((merely-a-copy?_0
-                                                              (|#%name|
-                                                               merely-a-copy?
-                                                               (lambda (id_0)
-                                                                 (begin
-                                                                   (let ((u-id_0
-                                                                          (unwrap
-                                                                           id_0)))
-                                                                     (let ((k_0
-                                                                            (hash-ref
-                                                                             new-knowns_0
-                                                                             u-id_0
-                                                                             #f)))
-                                                                       (if (let ((or-part_0
-                                                                                  (known-copy?
-                                                                                   k_0)))
-                                                                             (if or-part_0
-                                                                               or-part_0
-                                                                               (known-literal?
-                                                                                k_0)))
-                                                                         (simple-mutated-state?
-                                                                          (hash-ref
-                                                                           mutated_0
-                                                                           u-id_0
-                                                                           #f))
-                                                                         #f))))))))
-                                                         (unnest-let
-                                                          (let ((app_0
-                                                                 (reverse$1
-                                                                  (begin
-                                                                    (letrec*
-                                                                     ((for-loop_0
-                                                                       (|#%name|
-                                                                        for-loop
-                                                                        (lambda (fold-var_0
-                                                                                 lst_0)
-                                                                          (begin
-                                                                            (if (pair?
-                                                                                 lst_0)
-                                                                              (let ((id_0
-                                                                                     (unsafe-car
-                                                                                      lst_0)))
-                                                                                (let ((rest_0
-                                                                                       (unsafe-cdr
-                                                                                        lst_0)))
-                                                                                  (let ((fold-var_1
-                                                                                         (if (merely-a-copy?_0
-                                                                                              id_0)
-                                                                                           fold-var_0
-                                                                                           (let ((fold-var_1
-                                                                                                  (cons
-                                                                                                   id_0
-                                                                                                   fold-var_0)))
-                                                                                             (values
-                                                                                              fold-var_1)))))
-                                                                                    (for-loop_0
-                                                                                     fold-var_1
-                                                                                     rest_0))))
-                                                                              fold-var_0))))))
-                                                                     (for-loop_0
-                                                                      null
-                                                                      ids_0))))))
-                                                            (let ((app_1
-                                                                   (reverse$1
-                                                                    (begin
-                                                                      (letrec*
-                                                                       ((for-loop_0
-                                                                         (|#%name|
-                                                                          for-loop
-                                                                          (lambda (fold-var_0
-                                                                                   lst_0
-                                                                                   lst_1)
-                                                                            (begin
-                                                                              (if (if (pair?
-                                                                                       lst_0)
-                                                                                    (pair?
-                                                                                     lst_1)
-                                                                                    #f)
-                                                                                (let ((id_0
-                                                                                       (unsafe-car
-                                                                                        lst_0)))
-                                                                                  (let ((rest_0
-                                                                                         (unsafe-cdr
-                                                                                          lst_0)))
-                                                                                    (let ((rhs_0
-                                                                                           (unsafe-car
-                                                                                            lst_1)))
-                                                                                      (let ((rest_1
-                                                                                             (unsafe-cdr
-                                                                                              lst_1)))
-                                                                                        (let ((fold-var_1
-                                                                                               (if (merely-a-copy?_0
-                                                                                                    id_0)
-                                                                                                 fold-var_0
-                                                                                                 (let ((fold-var_1
-                                                                                                        (cons
-                                                                                                         (schemify_0
-                                                                                                          rhs_0
-                                                                                                          'fresh)
-                                                                                                         fold-var_0)))
-                                                                                                   (values
-                                                                                                    fold-var_1)))))
-                                                                                          (for-loop_0
-                                                                                           fold-var_1
-                                                                                           rest_0
-                                                                                           rest_1))))))
-                                                                                fold-var_0))))))
-                                                                       (for-loop_0
-                                                                        null
-                                                                        ids_0
-                                                                        rhss_0))))))
-                                                              (left-to-right/let
-                                                               app_0
-                                                               app_1
-                                                               (reverse$1
+                                                     (call-with-values
+                                                      (lambda ()
+                                                        (begin
+                                                          (letrec*
+                                                           ((for-loop_0
+                                                             (|#%name|
+                                                              for-loop
+                                                              (lambda (knowns_2
+                                                                       rev-s-rhss_0
+                                                                       lst_0
+                                                                       lst_1)
                                                                 (begin
-                                                                  (letrec*
-                                                                   ((for-loop_0
-                                                                     (|#%name|
-                                                                      for-loop
-                                                                      (lambda (fold-var_0
-                                                                               lst_0)
-                                                                        (begin
-                                                                          (if (pair?
-                                                                               lst_0)
-                                                                            (let ((body_0
-                                                                                   (unsafe-car
-                                                                                    lst_0)))
-                                                                              (let ((rest_0
-                                                                                     (unsafe-cdr
-                                                                                      lst_0)))
-                                                                                (let ((fold-var_1
+                                                                  (if (if (pair?
+                                                                           lst_0)
+                                                                        (pair?
+                                                                         lst_1)
+                                                                        #f)
+                                                                    (let ((id_0
+                                                                           (unsafe-car
+                                                                            lst_0)))
+                                                                      (let ((rest_0
+                                                                             (unsafe-cdr
+                                                                              lst_0)))
+                                                                        (let ((rhs_0
+                                                                               (unsafe-car
+                                                                                lst_1)))
+                                                                          (let ((rest_1
+                                                                                 (unsafe-cdr
+                                                                                  lst_1)))
+                                                                            (call-with-values
+                                                                             (lambda ()
+                                                                               (call-with-values
+                                                                                (lambda ()
+                                                                                  (let ((k_0
+                                                                                         (infer-known.1
+                                                                                          unsafe-undefined
+                                                                                          #f
+                                                                                          #f
+                                                                                          hash2610
+                                                                                          rhs_0
+                                                                                          #f
+                                                                                          id_0
+                                                                                          knowns_2
+                                                                                          prim-knowns_0
+                                                                                          imports_0
+                                                                                          mutated_0
+                                                                                          simples_0
+                                                                                          unsafe-mode?_0
+                                                                                          target_0)))
+                                                                                    (let ((merely-a-copy?_0
+                                                                                           (|#%name|
+                                                                                            merely-a-copy?
+                                                                                            (lambda (k_1)
+                                                                                              (begin
+                                                                                                (if (let ((or-part_0
+                                                                                                           (known-copy?
+                                                                                                            k_1)))
+                                                                                                      (if or-part_0
+                                                                                                        or-part_0
+                                                                                                        (known-literal?
+                                                                                                         k_1)))
+                                                                                                  (simple-mutated-state?
+                                                                                                   (hash-ref
+                                                                                                    mutated_0
+                                                                                                    (unwrap
+                                                                                                     id_0)
+                                                                                                    #f))
+                                                                                                  #f))))))
+                                                                                      (if (merely-a-copy?_0
+                                                                                           k_0)
+                                                                                        (let ((app_0
+                                                                                               (hash-set
+                                                                                                knowns_2
+                                                                                                (unwrap
+                                                                                                 id_0)
+                                                                                                k_0)))
+                                                                                          (values
+                                                                                           app_0
+                                                                                           (cons
+                                                                                            null
+                                                                                            rev-s-rhss_0)))
+                                                                                        (let ((s-rhs_0
+                                                                                               (schemify_0
+                                                                                                rhs_0
+                                                                                                'fresh)))
+                                                                                          (if (known-procedure/can-inline?
+                                                                                               k_0)
+                                                                                            (let ((app_0
+                                                                                                   (hash-set
+                                                                                                    knowns_2
+                                                                                                    (unwrap
+                                                                                                     id_0)
+                                                                                                    k_0)))
+                                                                                              (values
+                                                                                               app_0
+                                                                                               (cons
+                                                                                                s-rhs_0
+                                                                                                rev-s-rhss_0)))
+                                                                                            (let ((post-k_0
+                                                                                                   (infer-known.1
+                                                                                                    unsafe-undefined
+                                                                                                    #f
+                                                                                                    #t
+                                                                                                    hash2610
+                                                                                                    s-rhs_0
+                                                                                                    #f
+                                                                                                    id_0
+                                                                                                    knowns_2
+                                                                                                    prim-knowns_0
+                                                                                                    imports_0
+                                                                                                    mutated_0
+                                                                                                    simples_0
+                                                                                                    unsafe-mode?_0
+                                                                                                    target_0)))
+                                                                                              (if (merely-a-copy?_0
+                                                                                                   post-k_0)
+                                                                                                (let ((app_0
+                                                                                                       (hash-set
+                                                                                                        knowns_2
+                                                                                                        (unwrap
+                                                                                                         id_0)
+                                                                                                        post-k_0)))
+                                                                                                  (values
+                                                                                                   app_0
+                                                                                                   (cons
+                                                                                                    null
+                                                                                                    rev-s-rhss_0)))
+                                                                                                (if post-k_0
+                                                                                                  (let ((app_0
+                                                                                                         (hash-set
+                                                                                                          knowns_2
+                                                                                                          (unwrap
+                                                                                                           id_0)
+                                                                                                          post-k_0)))
+                                                                                                    (values
+                                                                                                     app_0
+                                                                                                     (cons
+                                                                                                      s-rhs_0
+                                                                                                      rev-s-rhss_0)))
+                                                                                                  (values
+                                                                                                   knowns_2
+                                                                                                   (cons
+                                                                                                    s-rhs_0
+                                                                                                    rev-s-rhss_0)))))))))))
+                                                                                (case-lambda
+                                                                                 ((knowns_3
+                                                                                   rev-s-rhss_1)
+                                                                                  (values
+                                                                                   knowns_3
+                                                                                   rev-s-rhss_1))
+                                                                                 (args
+                                                                                  (raise-binding-result-arity-error
+                                                                                   2
+                                                                                   args)))))
+                                                                             (case-lambda
+                                                                              ((knowns_3
+                                                                                rev-s-rhss_1)
+                                                                               (for-loop_0
+                                                                                knowns_3
+                                                                                rev-s-rhss_1
+                                                                                rest_0
+                                                                                rest_1))
+                                                                              (args
+                                                                               (raise-binding-result-arity-error
+                                                                                2
+                                                                                args))))))))
+                                                                    (values
+                                                                     knowns_2
+                                                                     rev-s-rhss_0)))))))
+                                                           (for-loop_0
+                                                            knowns_1
+                                                            '()
+                                                            ids_0
+                                                            rhss_0))))
+                                                      (case-lambda
+                                                       ((new-knowns_0
+                                                         rev-s-rhss_0)
+                                                        (let ((s-rhss_0
+                                                               (reverse$1
+                                                                rev-s-rhss_0)))
+                                                          (unnest-let
+                                                           (let ((app_0
+                                                                  (reverse$1
+                                                                   (begin
+                                                                     (letrec*
+                                                                      ((for-loop_0
+                                                                        (|#%name|
+                                                                         for-loop
+                                                                         (lambda (fold-var_0
+                                                                                  lst_0
+                                                                                  lst_1)
+                                                                           (begin
+                                                                             (if (if (pair?
+                                                                                      lst_0)
+                                                                                   (pair?
+                                                                                    lst_1)
+                                                                                   #f)
+                                                                               (let ((id_0
+                                                                                      (unsafe-car
+                                                                                       lst_0)))
+                                                                                 (let ((rest_0
+                                                                                        (unsafe-cdr
+                                                                                         lst_0)))
+                                                                                   (let ((rhs_0
+                                                                                          (unsafe-car
+                                                                                           lst_1)))
+                                                                                     (let ((rest_1
+                                                                                            (unsafe-cdr
+                                                                                             lst_1)))
                                                                                        (let ((fold-var_1
-                                                                                              (cons
-                                                                                               (schemify/knowns_0
-                                                                                                new-knowns_0
-                                                                                                inline-fuel_0
-                                                                                                wcm-state_2
-                                                                                                body_0)
-                                                                                               fold-var_0)))
-                                                                                         (values
-                                                                                          fold-var_1))))
-                                                                                  (for-loop_0
-                                                                                   fold-var_1
-                                                                                   rest_0))))
-                                                                            fold-var_0))))))
-                                                                   (for-loop_0
-                                                                    null
-                                                                    bodys_0))))
-                                                               prim-knowns_0
-                                                               knowns_1
-                                                               imports_0
-                                                               mutated_0
-                                                               simples_0
-                                                               unsafe-mode?_0)))
-                                                          prim-knowns_0
-                                                          knowns_1
-                                                          imports_0
-                                                          mutated_0
-                                                          simples_0
-                                                          unsafe-mode?_0)))))
+                                                                                              (if (eq?
+                                                                                                   null
+                                                                                                   rhs_0)
+                                                                                                fold-var_0
+                                                                                                (let ((fold-var_1
+                                                                                                       (cons
+                                                                                                        id_0
+                                                                                                        fold-var_0)))
+                                                                                                  (values
+                                                                                                   fold-var_1)))))
+                                                                                         (for-loop_0
+                                                                                          fold-var_1
+                                                                                          rest_0
+                                                                                          rest_1))))))
+                                                                               fold-var_0))))))
+                                                                      (for-loop_0
+                                                                       null
+                                                                       ids_0
+                                                                       s-rhss_0))))))
+                                                             (let ((app_1
+                                                                    (reverse$1
+                                                                     (begin
+                                                                       (letrec*
+                                                                        ((for-loop_0
+                                                                          (|#%name|
+                                                                           for-loop
+                                                                           (lambda (fold-var_0
+                                                                                    lst_0
+                                                                                    lst_1)
+                                                                             (begin
+                                                                               (if (if (pair?
+                                                                                        lst_0)
+                                                                                     (pair?
+                                                                                      lst_1)
+                                                                                     #f)
+                                                                                 (let ((id_0
+                                                                                        (unsafe-car
+                                                                                         lst_0)))
+                                                                                   (let ((rest_0
+                                                                                          (unsafe-cdr
+                                                                                           lst_0)))
+                                                                                     (let ((rhs_0
+                                                                                            (unsafe-car
+                                                                                             lst_1)))
+                                                                                       (let ((rest_1
+                                                                                              (unsafe-cdr
+                                                                                               lst_1)))
+                                                                                         (let ((fold-var_1
+                                                                                                (if (eq?
+                                                                                                     null
+                                                                                                     rhs_0)
+                                                                                                  fold-var_0
+                                                                                                  (let ((fold-var_1
+                                                                                                         (cons
+                                                                                                          rhs_0
+                                                                                                          fold-var_0)))
+                                                                                                    (values
+                                                                                                     fold-var_1)))))
+                                                                                           (for-loop_0
+                                                                                            fold-var_1
+                                                                                            rest_0
+                                                                                            rest_1))))))
+                                                                                 fold-var_0))))))
+                                                                        (for-loop_0
+                                                                         null
+                                                                         ids_0
+                                                                         s-rhss_0))))))
+                                                               (left-to-right/let
+                                                                app_0
+                                                                app_1
+                                                                (reverse$1
+                                                                 (begin
+                                                                   (letrec*
+                                                                    ((for-loop_0
+                                                                      (|#%name|
+                                                                       for-loop
+                                                                       (lambda (fold-var_0
+                                                                                lst_0)
+                                                                         (begin
+                                                                           (if (pair?
+                                                                                lst_0)
+                                                                             (let ((body_0
+                                                                                    (unsafe-car
+                                                                                     lst_0)))
+                                                                               (let ((rest_0
+                                                                                      (unsafe-cdr
+                                                                                       lst_0)))
+                                                                                 (let ((fold-var_1
+                                                                                        (let ((fold-var_1
+                                                                                               (cons
+                                                                                                (schemify/knowns_0
+                                                                                                 new-knowns_0
+                                                                                                 inline-fuel_0
+                                                                                                 wcm-state_2
+                                                                                                 body_0)
+                                                                                                fold-var_0)))
+                                                                                          (values
+                                                                                           fold-var_1))))
+                                                                                   (for-loop_0
+                                                                                    fold-var_1
+                                                                                    rest_0))))
+                                                                             fold-var_0))))))
+                                                                    (for-loop_0
+                                                                     null
+                                                                     bodys_0))))
+                                                                prim-knowns_0
+                                                                knowns_1
+                                                                imports_0
+                                                                mutated_0
+                                                                simples_0
+                                                                unsafe-mode?_0)))
+                                                           prim-knowns_0
+                                                           knowns_1
+                                                           imports_0
+                                                           mutated_0
+                                                           simples_0
+                                                           unsafe-mode?_0)))
+                                                       (args
+                                                        (raise-binding-result-arity-error
+                                                         2
+                                                         args))))))
                                                   (args
                                                    (raise-binding-result-arity-error
                                                     3
@@ -29611,14 +30646,14 @@
                                                                                                      idss_2
                                                                                                      rhss_1))))))
                                                                                           (case-lambda
-                                                                                           ((idss98_0
-                                                                                             rhss99_0)
+                                                                                           ((idss110_0
+                                                                                             rhss111_0)
                                                                                             (values
                                                                                              (cons
-                                                                                              idss98_0
+                                                                                              idss110_0
                                                                                               idss_0)
                                                                                              (cons
-                                                                                              rhss99_0
+                                                                                              rhss111_0
                                                                                               rhss_0)))
                                                                                            (args
                                                                                             (raise-binding-result-arity-error
@@ -29699,7 +30734,7 @@
                                                                        (eq?
                                                                         target_0
                                                                         'cify))))
-                                                                (let ((temp106_0
+                                                                (let ((temp118_0
                                                                        (lambda (v_3
                                                                                 knowns_2)
                                                                          (schemify/knowns_0
@@ -29717,7 +30752,7 @@
                                                                    imports_0
                                                                    mutated_0
                                                                    simples_0
-                                                                   temp106_0))
+                                                                   temp118_0))
                                                                 #f)))
                                                          (if or-part_0
                                                            or-part_0
@@ -30374,14 +31409,14 @@
                                                                                                              ids_2
                                                                                                              rhss_1))))))
                                                                                                   (case-lambda
-                                                                                                   ((ids109_0
-                                                                                                     rhss110_0)
+                                                                                                   ((ids121_0
+                                                                                                     rhss122_0)
                                                                                                     (values
                                                                                                      (cons
-                                                                                                      ids109_0
+                                                                                                      ids121_0
                                                                                                       ids_0)
                                                                                                      (cons
-                                                                                                      rhss110_0
+                                                                                                      rhss122_0
                                                                                                       rhss_0)))
                                                                                                    (args
                                                                                                     (raise-binding-result-arity-error
@@ -30489,6 +31524,7 @@
                                                                                           (lambda ()
                                                                                             (let ((k_0
                                                                                                    (infer-known.1
+                                                                                                    unsafe-undefined
                                                                                                     #f
                                                                                                     #f
                                                                                                     hash2610
@@ -30851,14 +31887,14 @@
                                                                                                                idss_2
                                                                                                                rhss_1))))))
                                                                                                     (case-lambda
-                                                                                                     ((idss121_0
-                                                                                                       rhss122_0)
+                                                                                                     ((idss133_0
+                                                                                                       rhss134_0)
                                                                                                       (values
                                                                                                        (cons
-                                                                                                        idss121_0
+                                                                                                        idss133_0
                                                                                                         idss_0)
                                                                                                        (cons
-                                                                                                        rhss122_0
+                                                                                                        rhss134_0
                                                                                                         rhss_0)))
                                                                                                      (args
                                                                                                       (raise-binding-result-arity-error
@@ -30931,7 +31967,7 @@
                                                                 ((idss_0
                                                                   rhss_0
                                                                   bodys_0)
-                                                                 (let ((temp130_0
+                                                                 (let ((temp142_0
                                                                         (lambda (v_3
                                                                                  knowns_2)
                                                                           (schemify/knowns_0
@@ -30950,7 +31986,7 @@
                                                                            imports_0
                                                                            mutated_0
                                                                            simples_0
-                                                                           temp130_0)))
+                                                                           temp142_0)))
                                                                      (if c1_0
                                                                        c1_0
                                                                        (if (letrec-splitable-values-binding?
@@ -33455,39 +34491,46 @@
                                                                                                                                                             mutated_0
                                                                                                                                                             simples_0
                                                                                                                                                             unsafe-mode?_0)
-                                                                                                                                                           (left-to-right/app
-                                                                                                                                                            s-rator_1
-                                                                                                                                                            args_1
-                                                                                                                                                            (if (if (not
-                                                                                                                                                                     (eq?
-                                                                                                                                                                      target_0
-                                                                                                                                                                      'system))
-                                                                                                                                                                  (known-procedure/no-return?
-                                                                                                                                                                   k_0)
-                                                                                                                                                                  #f)
-                                                                                                                                                              '|#%app/no-return|
-                                                                                                                                                              (if (if im_0
-                                                                                                                                                                    (known-procedure/single-valued?
+                                                                                                                                                           (if (eq?
+                                                                                                                                                                (unwrap
+                                                                                                                                                                 s-rator_1)
+                                                                                                                                                                'ffi-maybe-call-and-callback-core)
+                                                                                                                                                             (list*
+                                                                                                                                                              s-rator_1
+                                                                                                                                                              args_1)
+                                                                                                                                                             (left-to-right/app
+                                                                                                                                                              s-rator_1
+                                                                                                                                                              args_1
+                                                                                                                                                              (if (if (not
+                                                                                                                                                                       (eq?
+                                                                                                                                                                        target_0
+                                                                                                                                                                        'system))
+                                                                                                                                                                    (known-procedure/no-return?
                                                                                                                                                                      k_0)
                                                                                                                                                                     #f)
-                                                                                                                                                                '|#%app/value|
-                                                                                                                                                                (if (let ((or-part_2
-                                                                                                                                                                           (known-procedure?
-                                                                                                                                                                            k_0)))
-                                                                                                                                                                      (if or-part_2
-                                                                                                                                                                        or-part_2
-                                                                                                                                                                        (lambda?.1
-                                                                                                                                                                         #f
-                                                                                                                                                                         rator_0)))
-                                                                                                                                                                  #f
-                                                                                                                                                                  '|#%app|)))
-                                                                                                                                                            target_0
-                                                                                                                                                            prim-knowns_0
-                                                                                                                                                            knowns_1
-                                                                                                                                                            imports_0
-                                                                                                                                                            mutated_0
-                                                                                                                                                            simples_0
-                                                                                                                                                            unsafe-mode?_0)))))))))))))
+                                                                                                                                                                '|#%app/no-return|
+                                                                                                                                                                (if (if im_0
+                                                                                                                                                                      (known-procedure/single-valued?
+                                                                                                                                                                       k_0)
+                                                                                                                                                                      #f)
+                                                                                                                                                                  '|#%app/value|
+                                                                                                                                                                  (if (let ((or-part_2
+                                                                                                                                                                             (known-procedure?
+                                                                                                                                                                              k_0)))
+                                                                                                                                                                        (if or-part_2
+                                                                                                                                                                          or-part_2
+                                                                                                                                                                          (lambda?.1
+                                                                                                                                                                           #f
+                                                                                                                                                                           rator_0)))
+                                                                                                                                                                    #f
+                                                                                                                                                                    '|#%app|)))
+                                                                                                                                                              target_0
+                                                                                                                                                              prim-knowns_0
+                                                                                                                                                              knowns_1
+                                                                                                                                                              imports_0
+                                                                                                                                                              mutated_0
+                                                                                                                                                              simples_0
+                                                                                                                                                              unsafe-mode?_0))))))))))))))
                                                                                                                                     (args
                                                                                                                                      (raise-binding-result-arity-error
                                                                                                                                       2
@@ -33611,7 +34654,9 @@
                        primitives_0
                        knowns_1
                        imports_0
-                       mutated_0))))))
+                       mutated_0
+                       target_0
+                       compiler-query_0))))))
               (schemify-body_0
                (|#%name|
                 schemify-body
@@ -36495,127 +37540,186 @@
                                                (raise-binding-result-arity-error
                                                 2
                                                 args))))
-                                            (if (if (eq? '|#%app| hd_0)
+                                            (if (if (eq?
+                                                     'ffi-static-call-and-callback-core
+                                                     hd_0)
                                                   (let ((a_0
                                                          (cdr (unwrap v_1))))
                                                     (wrap-list? a_0))
                                                   #f)
-                                              (call-with-values
-                                               (lambda ()
-                                                 (let ((app_0 (wrap-cdr v_1)))
-                                                   (jitify-body_0
-                                                    app_0
-                                                    env_0
-                                                    mutables_0
-                                                    free_0
-                                                    lifts_0
-                                                    (convert-mode-non-tail_0
-                                                     convert-mode_0)
-                                                    #f
-                                                    in-name_0)))
-                                               (case-lambda
-                                                ((new-vs_0
-                                                  new-free_0
-                                                  new-lifts_0)
-                                                 (values
-                                                  (reannotate
-                                                   v_1
-                                                   (list* '|#%app| new-vs_0))
-                                                  new-free_0
-                                                  new-lifts_0))
-                                                (args
-                                                 (raise-binding-result-arity-error
-                                                  3
-                                                  args))))
-                                              (if (let ((p_0 (unwrap v_1)))
-                                                    (if (pair? p_0)
-                                                      (let ((a_0 (cdr p_0)))
-                                                        (wrap-list? a_0))
-                                                      #f))
-                                                (let ((rator_0
-                                                       (let ((a_0
-                                                              (car
-                                                               (unwrap v_1))))
-                                                         a_0)))
-                                                  (let ((u_0 (unwrap rator_0)))
-                                                    (let ((v_2
-                                                           (if (symbol? u_0)
-                                                             (hash-ref
-                                                              env_0
-                                                              u_0
-                                                              #f)
-                                                             #f)))
-                                                      (let ((hd_1
-                                                             (let ((p_0
-                                                                    (unwrap
-                                                                     v_2)))
-                                                               (if (pair? p_0)
+                                              (if (convert-mode-within-conversion?_0
+                                                   convert-mode_0)
+                                                v_1
+                                                (let ((app_0
+                                                       (list
+                                                        '|#%app|
+                                                        (list
+                                                         'lambda
+                                                         '()
+                                                         v_1))))
+                                                  (jitify-expr_0
+                                                   app_0
+                                                   env_0
+                                                   mutables_0
+                                                   free_0
+                                                   lifts_0
+                                                   (convert-mode-always_0
+                                                    convert-mode_0)
+                                                   #f
+                                                   in-name_0)))
+                                              (if (if (eq? '|#%app| hd_0)
+                                                    (let ((a_0
+                                                           (cdr (unwrap v_1))))
+                                                      (wrap-list? a_0))
+                                                    #f)
+                                                (call-with-values
+                                                 (lambda ()
+                                                   (let ((app_0
+                                                          (wrap-cdr v_1)))
+                                                     (jitify-body_0
+                                                      app_0
+                                                      env_0
+                                                      mutables_0
+                                                      free_0
+                                                      lifts_0
+                                                      (convert-mode-non-tail_0
+                                                       convert-mode_0)
+                                                      #f
+                                                      in-name_0)))
+                                                 (case-lambda
+                                                  ((new-vs_0
+                                                    new-free_0
+                                                    new-lifts_0)
+                                                   (values
+                                                    (reannotate
+                                                     v_1
+                                                     (list* '|#%app| new-vs_0))
+                                                    new-free_0
+                                                    new-lifts_0))
+                                                  (args
+                                                   (raise-binding-result-arity-error
+                                                    3
+                                                    args))))
+                                                (if (let ((p_0 (unwrap v_1)))
+                                                      (if (pair? p_0)
+                                                        (let ((a_0 (cdr p_0)))
+                                                          (wrap-list? a_0))
+                                                        #f))
+                                                  (let ((rator_0
+                                                         (let ((a_0
+                                                                (car
                                                                  (unwrap
-                                                                  (car p_0))
-                                                                 #f))))
-                                                        (if (if (eq?
-                                                                 'self
-                                                                 hd_1)
-                                                              (let ((a_0
-                                                                     (cdr
+                                                                  v_1))))
+                                                           a_0)))
+                                                    (let ((u_0
+                                                           (unwrap rator_0)))
+                                                      (let ((v_2
+                                                             (if (symbol? u_0)
+                                                               (hash-ref
+                                                                env_0
+                                                                u_0
+                                                                #f)
+                                                               #f)))
+                                                        (let ((hd_1
+                                                               (let ((p_0
                                                                       (unwrap
-                                                                       v_2))))
-                                                                (let ((p_0
-                                                                       (unwrap
-                                                                        a_0)))
-                                                                  (if (pair?
-                                                                       p_0)
-                                                                    (let ((a_1
-                                                                           (cdr
-                                                                            p_0)))
-                                                                      (let ((p_1
-                                                                             (unwrap
-                                                                              a_1)))
-                                                                        (if (pair?
-                                                                             p_1)
-                                                                          (let ((a_2
-                                                                                 (cdr
-                                                                                  p_1)))
-                                                                            (begin-unsafe
-                                                                             (let ((app_0
-                                                                                    (unwrap
-                                                                                     '())))
-                                                                               (eq?
-                                                                                app_0
-                                                                                (unwrap
-                                                                                 a_2)))))
-                                                                          #f)))
-                                                                    #f)))
-                                                              #f)
-                                                          (let ((orig-id_0
-                                                                 (let ((d_0
-                                                                        (cdr
+                                                                       v_2)))
+                                                                 (if (pair?
+                                                                      p_0)
+                                                                   (unwrap
+                                                                    (car p_0))
+                                                                   #f))))
+                                                          (if (if (eq?
+                                                                   'self
+                                                                   hd_1)
+                                                                (let ((a_0
+                                                                       (cdr
+                                                                        (unwrap
+                                                                         v_2))))
+                                                                  (let ((p_0
                                                                          (unwrap
-                                                                          v_2))))
-                                                                   (let ((d_1
+                                                                          a_0)))
+                                                                    (if (pair?
+                                                                         p_0)
+                                                                      (let ((a_1
+                                                                             (cdr
+                                                                              p_0)))
+                                                                        (let ((p_1
+                                                                               (unwrap
+                                                                                a_1)))
+                                                                          (if (pair?
+                                                                               p_1)
+                                                                            (let ((a_2
+                                                                                   (cdr
+                                                                                    p_1)))
+                                                                              (begin-unsafe
+                                                                               (let ((app_0
+                                                                                      (unwrap
+                                                                                       '())))
+                                                                                 (eq?
+                                                                                  app_0
+                                                                                  (unwrap
+                                                                                   a_2)))))
+                                                                            #f)))
+                                                                      #f)))
+                                                                #f)
+                                                            (let ((orig-id_0
+                                                                   (let ((d_0
                                                                           (cdr
                                                                            (unwrap
-                                                                            d_0))))
-                                                                     (let ((a_0
-                                                                            (car
+                                                                            v_2))))
+                                                                     (let ((d_1
+                                                                            (cdr
                                                                              (unwrap
-                                                                              d_1))))
-                                                                       a_0)))))
+                                                                              d_0))))
+                                                                       (let ((a_0
+                                                                              (car
+                                                                               (unwrap
+                                                                                d_1))))
+                                                                         a_0)))))
+                                                              (call-with-values
+                                                               (lambda ()
+                                                                 (let ((app_0
+                                                                        (wrap-cdr
+                                                                         v_1)))
+                                                                   (jitify-body_0
+                                                                    app_0
+                                                                    env_0
+                                                                    mutables_0
+                                                                    free_0
+                                                                    lifts_0
+                                                                    (convert-mode-non-tail_0
+                                                                     convert-mode_0)
+                                                                    #f
+                                                                    in-name_0)))
+                                                               (case-lambda
+                                                                ((new-vs_0
+                                                                  new-free_0
+                                                                  new-lifts_0)
+                                                                 (values
+                                                                  (reannotate
+                                                                   v_1
+                                                                   (list*
+                                                                    rator_0
+                                                                    new-vs_0))
+                                                                  new-free_0
+                                                                  new-lifts_0))
+                                                                (args
+                                                                 (raise-binding-result-arity-error
+                                                                  3
+                                                                  args)))))
                                                             (call-with-values
                                                              (lambda ()
-                                                               (let ((app_0
-                                                                      (wrap-cdr
-                                                                       v_1)))
-                                                                 (jitify-body_0
-                                                                  app_0
-                                                                  env_0
-                                                                  mutables_0
-                                                                  free_0
-                                                                  lifts_0
-                                                                  (convert-mode-non-tail_0
-                                                                   convert-mode_0)
-                                                                  #f
-                                                                  in-name_0)))
+                                                               (jitify-body_0
+                                                                v_1
+                                                                env_0
+                                                                mutables_0
+                                                                free_0
+                                                                lifts_0
+                                                                (convert-mode-non-tail_0
+                                                                 convert-mode_0)
+                                                                #f
+                                                                in-name_0))
                                                              (case-lambda
                                                               ((new-vs_0
                                                                 new-free_0
@@ -36623,154 +37727,83 @@
                                                                (values
                                                                 (reannotate
                                                                  v_1
-                                                                 (list*
-                                                                  rator_0
-                                                                  new-vs_0))
+                                                                 new-vs_0)
                                                                 new-free_0
                                                                 new-lifts_0))
                                                               (args
                                                                (raise-binding-result-arity-error
                                                                 3
-                                                                args)))))
-                                                          (call-with-values
-                                                           (lambda ()
-                                                             (jitify-body_0
-                                                              v_1
+                                                                args)))))))))
+                                                  (let ((id_0 (unwrap v_1)))
+                                                    (if (symbol? id_0)
+                                                      (let ((dest_0
+                                                             (hash-ref
                                                               env_0
-                                                              mutables_0
-                                                              free_0
-                                                              lifts_0
-                                                              (convert-mode-non-tail_0
-                                                               convert-mode_0)
-                                                              #f
-                                                              in-name_0))
-                                                           (case-lambda
-                                                            ((new-vs_0
-                                                              new-free_0
-                                                              new-lifts_0)
-                                                             (values
-                                                              (reannotate
-                                                               v_1
-                                                               new-vs_0)
-                                                              new-free_0
-                                                              new-lifts_0))
-                                                            (args
-                                                             (raise-binding-result-arity-error
-                                                              3
-                                                              args)))))))))
-                                                (let ((id_0 (unwrap v_1)))
-                                                  (if (symbol? id_0)
-                                                    (let ((dest_0
-                                                           (hash-ref
-                                                            env_0
-                                                            id_0
-                                                            #f)))
-                                                      (if (if (not in-name_0)
-                                                            (let ((hd_1
-                                                                   (let ((p_0
-                                                                          (unwrap
-                                                                           dest_0)))
-                                                                     (if (pair?
-                                                                          p_0)
-                                                                       (unwrap
-                                                                        (car
-                                                                         p_0))
-                                                                       #f))))
-                                                              (if (if (eq?
-                                                                       'variable-ref
-                                                                       hd_1)
-                                                                    (let ((a_0
-                                                                           (cdr
+                                                              id_0
+                                                              #f)))
+                                                        (if (if (not in-name_0)
+                                                              (let ((hd_1
+                                                                     (let ((p_0
                                                                             (unwrap
-                                                                             dest_0))))
-                                                                      (let ((p_0
-                                                                             (unwrap
-                                                                              a_0)))
-                                                                        (if (pair?
-                                                                             p_0)
-                                                                          (let ((a_1
-                                                                                 (cdr
-                                                                                  p_0)))
-                                                                            (begin-unsafe
-                                                                             (let ((app_0
-                                                                                    (unwrap
-                                                                                     '())))
-                                                                               (eq?
-                                                                                app_0
-                                                                                (unwrap
-                                                                                 a_1)))))
-                                                                          #f)))
-                                                                    #f)
-                                                                #t
-                                                                #f))
-                                                            #f)
-                                                        (values
-                                                         v_1
-                                                         free_0
-                                                         lifts_0)
-                                                        (let ((new-var_0
-                                                               (if (begin-unsafe
-                                                                    (let ((app_0
-                                                                           (unwrap
-                                                                            #f)))
-                                                                      (eq?
-                                                                       app_0
-                                                                       (unwrap
-                                                                        dest_0))))
-                                                                 v_1
-                                                                 (if (let ((a_0
-                                                                            kw2846))
-                                                                       (begin-unsafe
-                                                                        (let ((app_0
+                                                                             dest_0)))
+                                                                       (if (pair?
+                                                                            p_0)
+                                                                         (unwrap
+                                                                          (car
+                                                                           p_0))
+                                                                         #f))))
+                                                                (if (if (eq?
+                                                                         'variable-ref
+                                                                         hd_1)
+                                                                      (let ((a_0
+                                                                             (cdr
+                                                                              (unwrap
+                                                                               dest_0))))
+                                                                        (let ((p_0
                                                                                (unwrap
                                                                                 a_0)))
-                                                                          (eq?
-                                                                           app_0
-                                                                           (unwrap
-                                                                            dest_0)))))
-                                                                   v_1
-                                                                   (if (let ((p_0
-                                                                              (unwrap
-                                                                               dest_0)))
-                                                                         (if (pair?
-                                                                              p_0)
-                                                                           (if (let ((a_0
-                                                                                      (car
-                                                                                       p_0)))
-                                                                                 (begin-unsafe
-                                                                                  (let ((app_0
-                                                                                         (unwrap
-                                                                                          'self)))
-                                                                                    (eq?
-                                                                                     app_0
-                                                                                     (unwrap
-                                                                                      a_0)))))
-                                                                             (let ((a_0
-                                                                                    (cdr
-                                                                                     p_0)))
-                                                                               (let ((p_1
+                                                                          (if (pair?
+                                                                               p_0)
+                                                                            (let ((a_1
+                                                                                   (cdr
+                                                                                    p_0)))
+                                                                              (begin-unsafe
+                                                                               (let ((app_0
                                                                                       (unwrap
-                                                                                       a_0)))
-                                                                                 (if (pair?
-                                                                                      p_1)
-                                                                                   (if (let ((a_1
-                                                                                              (car
-                                                                                               p_1)))
-                                                                                         (let ((a_2
-                                                                                                kw2846))
-                                                                                           (begin-unsafe
-                                                                                            (let ((app_0
-                                                                                                   (unwrap
-                                                                                                    a_2)))
-                                                                                              (eq?
-                                                                                               app_0
-                                                                                               (unwrap
-                                                                                                a_1))))))
-                                                                                     #t
-                                                                                     #f)
-                                                                                   #f)))
-                                                                             #f)
-                                                                           #f))
+                                                                                       '())))
+                                                                                 (eq?
+                                                                                  app_0
+                                                                                  (unwrap
+                                                                                   a_1)))))
+                                                                            #f)))
+                                                                      #f)
+                                                                  #t
+                                                                  #f))
+                                                              #f)
+                                                          (values
+                                                           v_1
+                                                           free_0
+                                                           lifts_0)
+                                                          (let ((new-var_0
+                                                                 (if (begin-unsafe
+                                                                      (let ((app_0
+                                                                             (unwrap
+                                                                              #f)))
+                                                                        (eq?
+                                                                         app_0
+                                                                         (unwrap
+                                                                          dest_0))))
+                                                                   v_1
+                                                                   (if (let ((a_0
+                                                                              kw2846))
+                                                                         (begin-unsafe
+                                                                          (let ((app_0
+                                                                                 (unwrap
+                                                                                  a_0)))
+                                                                            (eq?
+                                                                             app_0
+                                                                             (unwrap
+                                                                              dest_0)))))
                                                                      v_1
                                                                      (if (let ((p_0
                                                                                 (unwrap
@@ -36796,41 +37829,84 @@
                                                                                          a_0)))
                                                                                    (if (pair?
                                                                                         p_1)
-                                                                                     #t
+                                                                                     (if (let ((a_1
+                                                                                                (car
+                                                                                                 p_1)))
+                                                                                           (let ((a_2
+                                                                                                  kw2846))
+                                                                                             (begin-unsafe
+                                                                                              (let ((app_0
+                                                                                                     (unwrap
+                                                                                                      a_2)))
+                                                                                                (eq?
+                                                                                                 app_0
+                                                                                                 (unwrap
+                                                                                                  a_1))))))
+                                                                                       #t
+                                                                                       #f)
                                                                                      #f)))
                                                                                #f)
                                                                              #f))
-                                                                       (let ((u_0
-                                                                              (let ((d_0
-                                                                                     (cdr
-                                                                                      (unwrap
-                                                                                       dest_0))))
-                                                                                (let ((a_0
-                                                                                       (car
+                                                                       v_1
+                                                                       (if (let ((p_0
+                                                                                  (unwrap
+                                                                                   dest_0)))
+                                                                             (if (pair?
+                                                                                  p_0)
+                                                                               (if (let ((a_0
+                                                                                          (car
+                                                                                           p_0)))
+                                                                                     (begin-unsafe
+                                                                                      (let ((app_0
+                                                                                             (unwrap
+                                                                                              'self)))
+                                                                                        (eq?
+                                                                                         app_0
+                                                                                         (unwrap
+                                                                                          a_0)))))
+                                                                                 (let ((a_0
+                                                                                        (cdr
+                                                                                         p_0)))
+                                                                                   (let ((p_1
+                                                                                          (unwrap
+                                                                                           a_0)))
+                                                                                     (if (pair?
+                                                                                          p_1)
+                                                                                       #t
+                                                                                       #f)))
+                                                                                 #f)
+                                                                               #f))
+                                                                         (let ((u_0
+                                                                                (let ((d_0
+                                                                                       (cdr
                                                                                         (unwrap
-                                                                                         d_0))))
-                                                                                  a_0))))
+                                                                                         dest_0))))
+                                                                                  (let ((a_0
+                                                                                         (car
+                                                                                          (unwrap
+                                                                                           d_0))))
+                                                                                    a_0))))
+                                                                           (reannotate
+                                                                            v_1
+                                                                            u_0))
                                                                          (reannotate
                                                                           v_1
-                                                                          u_0))
-                                                                       (reannotate
-                                                                        v_1
-                                                                        dest_0)))))))
-                                                          (let ((new-free_0
-                                                                 (if dest_0
-                                                                   (hash-set
-                                                                    free_0
-                                                                    id_0
-                                                                    dest_0)
-                                                                   free_0)))
-                                                            (values
-                                                             new-var_0
-                                                             new-free_0
-                                                             lifts_0)))))
-                                                    (values
-                                                     v_1
-                                                     free_0
-                                                     lifts_0)))))))))))))))))))))))))
+                                                                          dest_0)))))))
+                                                            (let ((new-free_0
+                                                                   (if dest_0
+                                                                     (hash-set
+                                                                      free_0
+                                                                      id_0
+                                                                      dest_0)
+                                                                     free_0)))
+                                                              (values
+                                                               new-var_0
+                                                               new-free_0
+                                                               lifts_0)))))
+                                                      (values
+                                                       v_1
+                                                       free_0
+                                                       lifts_0))))))))))))))))))))))))))
       (lambda?_0
        (|#%name|
         lambda?
@@ -38427,9 +39503,19 @@
                                          (raise-binding-result-arity-error
                                           2
                                           args))))
-                                      (if (wrap-list? v_1)
-                                        (body-find-mutable_0 env_0 v_1 accum_0)
-                                        accum_0))))))))))))))))))
+                                      (if (if (eq?
+                                               'ffi-static-call-and-callback-core
+                                               hd_0)
+                                            (let ((a_0 (cdr (unwrap v_1))))
+                                              (wrap-list? a_0))
+                                            #f)
+                                        accum_0
+                                        (if (wrap-list? v_1)
+                                          (body-find-mutable_0
+                                           env_0
+                                           v_1
+                                           accum_0)
+                                          accum_0)))))))))))))))))))
       (body-find-mutable_0
        (|#%name|
         body-find-mutable
@@ -38791,6 +39877,19 @@
               (if (eq? 'no-lift (cdr cm_0))
                 '(called . no-lift)
                 '(called . lift)))))))
+      (convert-mode-always_0
+       (|#%name|
+        convert-mode-always
+        (lambda (cm_0)
+          (begin (convert-mode1.1 'not-needed #f need-lift?_0 #t)))))
+      (convert-mode-within-conversion?_0
+       (|#%name|
+        convert-mode-within-conversion?
+        (lambda (cm_0)
+          (begin
+            (if (convert-mode? cm_0)
+              (convert-mode-no-more-conversions? cm_0)
+              #f)))))
       (convert-mode-box-mutables?_0
        (|#%name|
         convert-mode-box-mutables?
@@ -39193,9 +40292,16 @@
                                                         (car (unwrap d_1))))
                                                    a_0)))))
                                         (add1 (record-sizes!_0 rhs_0 sizes_0)))
-                                      (if (wrap-list? v_1)
-                                        (body-record-sizes!_0 v_1 sizes_0)
-                                        1))))))))))))))))))
+                                      (if (if (eq?
+                                               'ffi-static-call-and-callback-core
+                                               hd_0)
+                                            (let ((a_0 (cdr (unwrap v_1))))
+                                              (wrap-list? a_0))
+                                            #f)
+                                        1
+                                        (if (wrap-list? v_1)
+                                          (body-record-sizes!_0 v_1 sizes_0)
+                                          1)))))))))))))))))))
       (body-record-sizes!_0
        (|#%name|
         body-record-sizes!
@@ -47937,7 +49043,7 @@
                                                                     var_0
                                                                     stk-i_0))))
                                                               (if (if (eq?
-                                                                       '|#%app|
+                                                                       'ffi-static-call-and-callback-core
                                                                        hd_0)
                                                                     (let ((a_0
                                                                            (cdr
@@ -47946,15 +49052,11 @@
                                                                       (wrap-list?
                                                                        a_0))
                                                                     #f)
-                                                                (compile-apply_0
-                                                                 (wrap-cdr e_0)
-                                                                 env_0
-                                                                 stack-depth_0
-                                                                 stk-i_0
-                                                                 tail?_0
-                                                                 mutated_0)
+                                                                (error
+                                                                 'compile
+                                                                 "unexpected ffi-static-call-and-callback-core in interpreter mode")
                                                                 (if (if (eq?
-                                                                         '|#%app/value|
+                                                                         '|#%app|
                                                                          hd_0)
                                                                       (let ((a_0
                                                                              (cdr
@@ -47972,7 +49074,7 @@
                                                                    tail?_0
                                                                    mutated_0)
                                                                   (if (if (eq?
-                                                                           '|#%app/no-return|
+                                                                           '|#%app/value|
                                                                            hd_0)
                                                                         (let ((a_0
                                                                                (cdr
@@ -47989,103 +49091,121 @@
                                                                      stk-i_0
                                                                      tail?_0
                                                                      mutated_0)
-                                                                    (if (let ((p_0
+                                                                    (if (if (eq?
+                                                                             '|#%app/no-return|
+                                                                             hd_0)
+                                                                          (let ((a_0
+                                                                                 (cdr
+                                                                                  (unwrap
+                                                                                   e_0))))
+                                                                            (wrap-list?
+                                                                             a_0))
+                                                                          #f)
+                                                                      (compile-apply_0
+                                                                       (wrap-cdr
+                                                                        e_0)
+                                                                       env_0
+                                                                       stack-depth_0
+                                                                       stk-i_0
+                                                                       tail?_0
+                                                                       mutated_0)
+                                                                      (if (let ((p_0
+                                                                                 (unwrap
+                                                                                  e_0)))
+                                                                            (if (pair?
+                                                                                 p_0)
+                                                                              (let ((a_0
+                                                                                     (cdr
+                                                                                      p_0)))
+                                                                                (wrap-list?
+                                                                                 a_0))
+                                                                              #f))
+                                                                        (let ((rator_0
+                                                                               (let ((a_0
+                                                                                      (car
+                                                                                       (unwrap
+                                                                                        e_0))))
+                                                                                 a_0)))
+                                                                          (compile-apply_0
+                                                                           e_0
+                                                                           env_0
+                                                                           stack-depth_0
+                                                                           stk-i_0
+                                                                           tail?_0
+                                                                           mutated_0))
+                                                                        (let ((u_0
                                                                                (unwrap
                                                                                 e_0)))
-                                                                          (if (pair?
-                                                                               p_0)
-                                                                            (let ((a_0
-                                                                                   (cdr
-                                                                                    p_0)))
-                                                                              (wrap-list?
-                                                                               a_0))
-                                                                            #f))
-                                                                      (let ((rator_0
-                                                                             (let ((a_0
-                                                                                    (car
-                                                                                     (unwrap
-                                                                                      e_0))))
-                                                                               a_0)))
-                                                                        (compile-apply_0
-                                                                         e_0
-                                                                         env_0
-                                                                         stack-depth_0
-                                                                         stk-i_0
-                                                                         tail?_0
-                                                                         mutated_0))
-                                                                      (let ((u_0
-                                                                             (unwrap
-                                                                              e_0)))
-                                                                        (let ((var_0
-                                                                               (hash-ref
-                                                                                env_0
-                                                                                u_0
-                                                                                #f)))
-                                                                          (if (not
-                                                                               var_0)
-                                                                            (if (number?
-                                                                                 u_0)
-                                                                              (vector
-                                                                               'quote
-                                                                               u_0)
-                                                                              (let ((c1_0
-                                                                                     (if (symbol?
-                                                                                          u_0)
-                                                                                       (if (not
-                                                                                            serializable?_0)
-                                                                                         (hash-ref
-                                                                                          primitives
-                                                                                          u_0
-                                                                                          #f)
-                                                                                         #f)
-                                                                                       #f)))
-                                                                                (if c1_0
-                                                                                  (if (procedure?
-                                                                                       c1_0)
-                                                                                    c1_0
-                                                                                    (vector
-                                                                                     'quote
-                                                                                     c1_0))
-                                                                                  u_0)))
-                                                                            (if (indirect?
+                                                                          (let ((var_0
+                                                                                 (hash-ref
+                                                                                  env_0
+                                                                                  u_0
+                                                                                  #f)))
+                                                                            (if (not
                                                                                  var_0)
-                                                                              (let ((pos_0
-                                                                                     (let ((temp36_0
-                                                                                            (indirect-pos
-                                                                                             var_0)))
-                                                                                       (stack->pos.1
-                                                                                        #f
-                                                                                        temp36_0
-                                                                                        stk-i_0))))
-                                                                                (let ((elem_0
-                                                                                       (indirect-element
-                                                                                        var_0)))
-                                                                                  (cons
-                                                                                   pos_0
-                                                                                   elem_0)))
-                                                                              (if (boxed?
+                                                                              (if (number?
+                                                                                   u_0)
+                                                                                (vector
+                                                                                 'quote
+                                                                                 u_0)
+                                                                                (let ((c1_0
+                                                                                       (if (symbol?
+                                                                                            u_0)
+                                                                                         (if (not
+                                                                                              serializable?_0)
+                                                                                           (hash-ref
+                                                                                            primitives
+                                                                                            u_0
+                                                                                            #f)
+                                                                                           #f)
+                                                                                         #f)))
+                                                                                  (if c1_0
+                                                                                    (if (procedure?
+                                                                                         c1_0)
+                                                                                      c1_0
+                                                                                      (vector
+                                                                                       'quote
+                                                                                       c1_0))
+                                                                                    u_0)))
+                                                                              (if (indirect?
                                                                                    var_0)
                                                                                 (let ((pos_0
-                                                                                       (let ((temp38_0
-                                                                                              (boxed-pos
+                                                                                       (let ((temp36_0
+                                                                                              (indirect-pos
                                                                                                var_0)))
                                                                                          (stack->pos.1
                                                                                           #f
-                                                                                          temp38_0
+                                                                                          temp36_0
                                                                                           stk-i_0))))
-                                                                                  (if (boxed/check?
-                                                                                       var_0)
-                                                                                    (vector
-                                                                                     'unbox/checked
+                                                                                  (let ((elem_0
+                                                                                         (indirect-element
+                                                                                          var_0)))
+                                                                                    (cons
                                                                                      pos_0
-                                                                                     u_0)
-                                                                                    (vector
-                                                                                     'unbox
-                                                                                     pos_0)))
-                                                                                (stack->pos.1
-                                                                                 #f
-                                                                                 var_0
-                                                                                 stk-i_0)))))))))))))))))))))))))))))))))))))))
+                                                                                     elem_0)))
+                                                                                (if (boxed?
+                                                                                     var_0)
+                                                                                  (let ((pos_0
+                                                                                         (let ((temp38_0
+                                                                                                (boxed-pos
+                                                                                                 var_0)))
+                                                                                           (stack->pos.1
+                                                                                            #f
+                                                                                            temp38_0
+                                                                                            stk-i_0))))
+                                                                                    (if (boxed/check?
+                                                                                         var_0)
+                                                                                      (vector
+                                                                                       'unbox/checked
+                                                                                       pos_0
+                                                                                       u_0)
+                                                                                      (vector
+                                                                                       'unbox
+                                                                                       pos_0)))
+                                                                                  (stack->pos.1
+                                                                                   #f
+                                                                                   var_0
+                                                                                   stk-i_0))))))))))))))))))))))))))))))))))))))))
       (compile-letrec_0
        (|#%name|
         compile-letrec
@@ -49796,25 +50916,18 @@
                                                                       d_0))))
                                                                a_0))))
                                                       mutated_0)
-                                                    (if (if (eq? '|#%app| hd_0)
+                                                    (if (if (eq?
+                                                             'ffi-static-call-and-callback-core
+                                                             hd_0)
                                                           (let ((a_0
                                                                  (cdr
                                                                   (unwrap
                                                                    e_0))))
                                                             (wrap-list? a_0))
                                                           #f)
-                                                      (let ((es_0
-                                                             (let ((d_0
-                                                                    (cdr
-                                                                     (unwrap
-                                                                      e_0))))
-                                                               (unwrap-list
-                                                                d_0))))
-                                                        (extract-list-mutated_0
-                                                         es_0
-                                                         mutated_0))
+                                                      mutated_0
                                                       (if (if (eq?
-                                                               '|#%app/value|
+                                                               '|#%app|
                                                                hd_0)
                                                             (let ((a_0
                                                                    (cdr
@@ -49833,7 +50946,7 @@
                                                            es_0
                                                            mutated_0))
                                                         (if (if (eq?
-                                                                 '|#%app/no-return|
+                                                                 '|#%app/value|
                                                                  hd_0)
                                                               (let ((a_0
                                                                      (cdr
@@ -49852,14 +50965,35 @@
                                                             (extract-list-mutated_0
                                                              es_0
                                                              mutated_0))
-                                                          (if (wrap-list? e_0)
+                                                          (if (if (eq?
+                                                                   '|#%app/no-return|
+                                                                   hd_0)
+                                                                (let ((a_0
+                                                                       (cdr
+                                                                        (unwrap
+                                                                         e_0))))
+                                                                  (wrap-list?
+                                                                   a_0))
+                                                                #f)
                                                             (let ((es_0
-                                                                   (unwrap-list
-                                                                    e_0)))
+                                                                   (let ((d_0
+                                                                          (cdr
+                                                                           (unwrap
+                                                                            e_0))))
+                                                                     (unwrap-list
+                                                                      d_0))))
                                                               (extract-list-mutated_0
                                                                es_0
                                                                mutated_0))
-                                                            mutated_0))))))))))))))))))))))))))))
+                                                            (if (wrap-list?
+                                                                 e_0)
+                                                              (let ((es_0
+                                                                     (unwrap-list
+                                                                      e_0)))
+                                                                (extract-list-mutated_0
+                                                                 es_0
+                                                                 mutated_0))
+                                                              mutated_0)))))))))))))))))))))))))))))
       (extract-list-mutated_0
        (|#%name|
         extract-list-mutated

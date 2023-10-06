@@ -1423,30 +1423,34 @@
     (check-ffi-call who in-types out-type abi varargs-after save-errno lock-name)
     ((ffi-call/callable #t in-types out-type abi varargs-after
                         save-errno lock-name (and blocking? #t) (and orig-place? #t) #f (and exns? #t)
+                        #f
                         #f)
      p)]))
 
 (define/who ffi-call-maker
   (case-lambda
    [(in-types out-type)
-    (ffi-call-maker in-types out-type #f #f #f #f #f)]
+    (ffi-call-maker in-types out-type #f #f #f #f #f #f)]
    [(in-types out-type abi)
-    (ffi-call-maker in-types out-type abi #f #f #f #f)]
+    (ffi-call-maker in-types out-type abi #f #f #f #f #f)]
    [(in-types out-type abi save-errno)
-    (ffi-call-maker in-types out-type abi save-errno #f #f #f)]
+    (ffi-call-maker in-types out-type abi save-errno #f #f #f #f)]
    [(in-types out-type abi save-errno orig-place?)
-    (ffi-call-maker in-types out-type abi save-errno orig-place? #f #f #f)]
+    (ffi-call-maker in-types out-type abi save-errno orig-place? #f #f #f #f)]
    [(in-types out-type abi save-errno orig-place? lock-name)
-    (ffi-call-maker in-types out-type abi save-errno orig-place? lock-name #f #f #f)]
+    (ffi-call-maker in-types out-type abi save-errno orig-place? lock-name #f #f #f #f)]
    [(in-types out-type abi save-errno orig-place? lock-name blocking?)
-    (ffi-call-maker in-types out-type abi save-errno orig-place? lock-name blocking? #f #f)]
+    (ffi-call-maker in-types out-type abi save-errno orig-place? lock-name blocking? #f #f #f)]
    [(in-types out-type abi save-errno orig-place? lock-name blocking? varargs-after)
-    (ffi-call-maker in-types out-type abi save-errno orig-place? lock-name blocking? varargs-after #f)]
+    (ffi-call-maker in-types out-type abi save-errno orig-place? lock-name blocking? varargs-after #f #f)]
    [(in-types out-type abi save-errno orig-place? lock-name blocking? varargs-after exns?)
+    (ffi-call-maker in-types out-type abi save-errno orig-place? lock-name blocking? varargs-after exns? #f)]
+   [(in-types out-type abi save-errno orig-place? lock-name blocking? varargs-after exns? core)
     (check-ffi-call who in-types out-type abi varargs-after save-errno lock-name)
     (ffi-call/callable #t in-types out-type abi varargs-after
                        save-errno lock-name (and blocking? #t) (and orig-place? #t) #f (and exns? #t)
-                       #f)]))
+                       #f
+                       core)]))
 
 (define (check-ffi-call who in-types out-type abi varargs-after save-errno lock-name)
   (check-ffi who in-types out-type abi varargs-after)
@@ -1470,15 +1474,9 @@
 
 (define (ffi-call/callable call? in-types out-type abi varargs-after
                            save-errno lock-name blocking? orig-place? atomic? exns?
-                           async-apply)
-  (let* ([conv* (let ([conv* (case abi
-                               [(stdcall) '(__stdcall)]
-                               [(sysv) '(__cdecl)]
-                               [else '()])])
-                  (if varargs-after
-                      (cons `(__varargs_after ,varargs-after) conv*)
-                      conv*))]
-         [by-value? (lambda (type)
+                           async-apply
+                           maybe-core)
+  (let* ([by-value? (lambda (type)
                       ;; An 'array rep is compound, but should be
                       ;; passed as a pointer, so only pass 'struct and
                       ;; 'union "by value":
@@ -1487,76 +1485,88 @@
                                      (if (eq? host-rep 'array)
                                          'void*
                                          host-rep))]
-         [next!-id (let ([counter 0])
-                     ;; Like `gensym`, but deterministic --- and doesn't
-                     ;; have to be totally unique, as long as it doesn't
-                     ;; collide with other code that we generate
-                     (lambda ()
-                       (set! counter (add1 counter))
-                       (string->symbol (string-append "type_" (number->string counter)))))]
-         [ids (map (lambda (in-type)
-                     (and (by-value? in-type)
-                          (next!-id)))
-                   in-types)]
-         [ret-id (and (by-value? out-type)
-                      (next!-id))]
-         [decls (let loop ([in-types in-types] [ids ids] [decls '()])
-                  (cond
-                   [(null? in-types) decls]
-                   [(car ids)
-                    (let ([id-decls ((compound-ctype-get-decls (car in-types)) (car ids) next!-id)])
-                      (loop (cdr in-types) (cdr ids) (append decls id-decls)))]
-                   [else
-                    (loop (cdr in-types) (cdr ids) decls)]))]
-         [ret-decls (if ret-id
-                        ((compound-ctype-get-decls out-type) ret-id next!-id)
-                        '())]
-         [ret-size (and ret-id (ctype-sizeof out-type))]
-         [ret-malloc-mode (and ret-id (compound-ctype-malloc-mode out-type))]
-         [gen-proc+ret-maker+arg-makers
-          (let ([expr `(let ()
-                         ,@decls
-                         ,@ret-decls
-                         (list
-                          (lambda (to-wrap)
-                            (,(if call? 'foreign-procedure 'foreign-callable)
-                             ,@conv*
-                             ,@(if (or blocking? async-apply) '(__collect_safe) '())
-                             to-wrap
-                             ,(map (lambda (in-type id)
-                                     (if id
-                                         `(& ,id)
-                                         (array-rep-to-pointer-rep
-                                          (ctype-host-rep in-type))))
-                                   in-types ids)
-                             ,(if ret-id
-                                  `(& ,ret-id)
-                                  (array-rep-to-pointer-rep
-                                   (ctype-host-rep out-type)))))
-                          ,(and call?
-                                ret-id
-                                `(lambda (p)
-                                   (make-ftype-pointer ,ret-id p)))
-                          ,@(if call?
-                                (map (lambda (id)
-                                       (and id
-                                            `(lambda (p)
-                                               (make-ftype-pointer ,id p))))
-                                     ids)
-                                '())))])
-            (let* ([wb (with-interrupts-disabled*
-                        (hash-ref ffi-expr->code expr #f))]
-                   [code (if wb (car wb) #!bwp)])
-              (if (eq? code #!bwp)
-                  (let ([code (eval/foreign expr (if call? 'comp-ffi-call 'comp-ffi-back))])
-                    (hashtable-set! ffi-code->expr (car code) expr)
-                    (with-interrupts-disabled*
-                     (hash-set! ffi-expr->code expr (weak-cons code #f)))
-                    code)
-                  code)))]
-         [gen-proc (car gen-proc+ret-maker+arg-makers)]
-         [ret-maker (cadr gen-proc+ret-maker+arg-makers)]
-         [arg-makers (cddr gen-proc+ret-maker+arg-makers)]
+         [core ; = (list call-proc callback-proc ret-maker arg-makers)
+          (or maybe-core ; might be provided as statically generated
+              ;; There's a second, compile-time copy of this core-creation code in
+              ;; `ffi-static-call-and-callback-core`
+              (let* ([conv* (let ([conv* (case abi
+                                           [(stdcall) '(__stdcall)]
+                                           [(sysv) '(__cdecl)]
+                                           [else '()])])
+                              (if varargs-after
+                                  (cons `(__varargs_after ,varargs-after) conv*)
+                                  conv*))]
+                     [next!-id (let ([counter 0])
+                                 ;; Like `gensym`, but deterministic --- and doesn't
+                                 ;; have to be totally unique, as long as it doesn't
+                                 ;; collide with other code that we generate
+                                 (lambda ()
+                                   (set! counter (add1 counter))
+                                   (string->symbol (string-append "type_" (#%number->string counter)))))]
+                     [ids (map (lambda (in-type)
+                                 (and (by-value? in-type)
+                                      (next!-id)))
+                               in-types)]
+                     [ret-id (and (by-value? out-type)
+                                  (next!-id))]
+                     [decls (let loop ([in-types in-types] [ids ids] [decls '()])
+                              (cond
+                                [(null? in-types) decls]
+                                [(car ids)
+                                 (let ([id-decls ((compound-ctype-get-decls (car in-types)) (car ids) next!-id)])
+                                   (loop (cdr in-types) (cdr ids) (append decls id-decls)))]
+                                [else
+                                 (loop (cdr in-types) (cdr ids) decls)]))]
+                     [ret-decls (if ret-id
+                                    ((compound-ctype-get-decls out-type) ret-id next!-id)
+                                    '())])
+                (let ([expr `(let ()
+                               ,@decls
+                               ,@ret-decls
+                               (list
+                                ,@(if call? '() '(#f))
+                                (lambda (to-wrap)
+                                  (,(if call? 'foreign-procedure 'foreign-callable)
+                                   ,@conv*
+                                   ,@(if (or blocking? async-apply) '(__collect_safe) '())
+                                   to-wrap
+                                   ,(map (lambda (in-type id)
+                                           (if id
+                                               `(& ,id)
+                                               (array-rep-to-pointer-rep
+                                                (ctype-host-rep in-type))))
+                                         in-types ids)
+                                   ,(if ret-id
+                                        `(& ,ret-id)
+                                        (array-rep-to-pointer-rep
+                                         (ctype-host-rep out-type)))))
+                                ,@(if call? '(#f) '())
+                                ,(and call?
+                                      ret-id
+                                      `(lambda (p)
+                                         (make-ftype-pointer ,ret-id p)))
+                                ,@(if call?
+                                      (map (lambda (id)
+                                             (and id
+                                                  `(lambda (p)
+                                                     (make-ftype-pointer ,id p))))
+                                           ids)
+                                      '())))])
+                  (let* ([wb (with-interrupts-disabled*
+                              (hash-ref ffi-expr->code expr #f))]
+                         [code (if wb (car wb) #!bwp)])
+                    (if (eq? code #!bwp)
+                        (let ([code (eval/foreign expr (if call? 'comp-ffi-call 'comp-ffi-back))])
+                          (hashtable-set! ffi-code->expr (car code) expr)
+                          (with-interrupts-disabled*
+                           (hash-set! ffi-expr->code expr (weak-cons code #f)))
+                          code)
+                        code)))))]
+         [ret-size (and (by-value? out-type) (ctype-sizeof out-type))]
+         [ret-malloc-mode (and ret-size (compound-ctype-malloc-mode out-type))]
+         [gen-proc (if call? (car core) (cadr core))]
+         [ret-maker (caddr core)]
+         [arg-makers (cdddr core)]
          [async-callback-queue (and (procedure? async-apply) (current-async-callback-queue))]
          [lock (and lock-name
                     (with-global-lock
@@ -1567,7 +1577,7 @@
     (cond
      [call?
       (cond
-       [(and (not ret-id)
+       [(and (not ret-size)
              (not blocking?)
              (not orig-place?)
              (not exns?)
@@ -1660,7 +1670,7 @@
                                          (unwrap-cpointer 'ffi-call arg)
                                          arg)))
                                  orig-args in-types)]
-                      [r (let ([ret-ptr (and ret-id
+                      [r (let ([ret-ptr (and ret-size
                                              ;; result is a struct type; need to allocate space for it
                                              (normalized-malloc ret-size ret-malloc-mode))])
                            (let ([go (lambda ()
@@ -1714,7 +1724,7 @@
              default-realm)))])]
      [else ; callable
       (lambda (to-wrap)
-        (gen-proc (lambda args ; if ret-id, includes an extra initial argument to receive the result
+        (gen-proc (lambda args ; if ret-size, includes an extra initial argument to receive the result
                     (let ([v (call-as-atomic-callback
                               (lambda ()
                                 (unless async-apply
@@ -1726,7 +1736,7 @@
                                  'callback
                                  out-type
                                  (apply to-wrap
-                                        (let loop ([args (if ret-id (cdr args) args)] [in-types in-types])
+                                        (let loop ([args (if ret-size (cdr args) args)] [in-types in-types])
                                           (cond
                                            [(null? args) '()]
                                            [else
@@ -1752,13 +1762,104 @@
                               (or #t atomic?) ; force all callbacks to be atomic
                               async-apply
                               async-callback-queue)])
-                      (if ret-id
+                      (if ret-size
                           (let* ([size (compound-ctype-size out-type)]
                                  [addr (ftype-pointer-address (car args))])
                             (memcpy* addr 0 v 0 size #f))
                           (case (ctype-host-rep out-type)
                             [(void* uptr) (cpointer-address v)]
                             [else v]))))))])))
+
+(define-syntax (ffi-static-call-and-callback-core stx)
+  (syntax-case stx ()
+    [(_ (in-type ...) out-type abi varargs-after collect-safe?)
+     ;; There's a second, run-time copy of this core-creation code in `ffi-call/callable`
+     (let* ([conv* (let ([conv* (case (#%syntax->datum #'abi)
+                                  [(stdcall) '(__stdcall)]
+                                  [(sysv) '(__cdecl)]
+                                  [else '()])])
+                     (if (#%syntax->datum #'varargs-after)
+                         (cons `(__varargs_after ,(#%syntax->datum #'varargs-after)) conv*)
+                         conv*))]
+            [by-value? (lambda (type-stx)
+                         (syntax-case type-stx ()
+                           [(type . _)
+                            (#%memq (#%syntax->datum #'type) '(struct union))]
+                           [_ #false]))]
+            [in-types (syntax->list #'(in-type ...))]
+            [out-type #'out-type]
+            [array-rep-to-pointer-rep (lambda (host-rep-stx)
+                                        (syntax-case host-rep-stx (array)
+                                          [(array . _) #'void*]
+                                          [_ host-rep-stx]))]
+            [next!-id (let ([counter 0])
+                        (lambda ()
+                          (set! counter (add1 counter))
+                          (string->symbol (string-append "type_" (#%number->string counter)))))]
+            [get-decls (lambda (type-stx id)
+                         (#%error 'get-decls "not ready"))]
+            [ids (map (lambda (in-type)
+                        (and (by-value? in-type)
+                             (next!-id)))
+                      in-types)]
+            [ret-id (and (by-value? out-type)
+                         (next!-id))]
+            [decls (let loop ([in-types in-types] [ids ids] [decls '()])
+                     (cond
+                       [(null? in-types) decls]
+                       [(car ids)
+                        (let ([id-decls (get-decls (car in-types) (car ids))])
+                          (loop (cdr in-types) (cdr ids) (append decls id-decls)))]
+                       [else
+                        (loop (cdr in-types) (cdr ids) decls)]))]
+            [ret-decls (if ret-id
+                           (get-decls out-type ret-id)
+                           '())]
+            [mk-proc (lambda (call?)
+                       `(lambda (to-wrap)
+                          (,(if call? 'foreign-procedure 'foreign-callable)
+                           ,@conv*
+                           ,@(if (#%syntax->datum #'collect-safe?) '(__collect_safe) '())
+                           to-wrap
+                           ,(map (lambda (in-type id)
+                                   (if id
+                                       `(& ,id)
+                                       (array-rep-to-pointer-rep
+                                        in-type)))
+                                 in-types ids)
+                           ,(if ret-id
+                                `(& ,ret-id)
+                                (array-rep-to-pointer-rep
+                                 out-type)))))])
+       (#%datum->syntax
+        #'here
+        `(begin-unsafe
+          (let ()
+            ,@decls
+            ,@ret-decls
+            (list
+             ,(mk-proc #t)
+             ,(mk-proc #f)
+             ,(and ret-id
+                   `(lambda (p)
+                      (make-ftype-pointer ,ret-id p)))
+             ,@(map (lambda (id)
+                      (and id
+                           `(lambda (p)
+                              (make-ftype-pointer ,id p))))
+                    ids))))))]))
+
+(define (ffi-maybe-call-and-callback-core must? abi varags-after blocking? async-apply? out . ins)
+  (values #f ins out abi varags-after blocking? async-apply?))
+
+(define (assert-ctype-representation ctype1 ctype2)
+  (meta-cond
+   [(< (optimize-level) 3)
+    (unless (and (ctype? ctype1)
+                 (ctype? ctype2)
+                 (#%equal? (ctype-host-rep ctype1) (ctype-host-rep ctype2)))
+      (#%error 'assert-ctype-representation "mismatch between ~s vs. ~s" ctype1 ctype2))])
+  ctype2)
 
 (define (types->reps types next!-id)
   (let loop ([types types] [reps '()] [decls '()])
@@ -1904,26 +2005,29 @@
    [(proc in-types out-type abi atomic? async-apply varargs-after)
     (check who procedure? proc)
     (check-ffi-callback who in-types out-type abi varargs-after async-apply)
-    ((ffi-callback-maker* in-types out-type abi varargs-after atomic? async-apply) proc)]))
+    ((ffi-callback-maker* in-types out-type abi varargs-after atomic? async-apply #f) proc)]))
 
 (define/who ffi-callback-maker
   (case-lambda
    [(in-types out-type)
-    (ffi-callback-maker in-types out-type #f #f #f #f)]
+    (ffi-callback-maker in-types out-type #f #f #f #f #f)]
    [(in-types out-type abi)
-    (ffi-callback-maker in-types out-type abi #f #f #f)]
+    (ffi-callback-maker in-types out-type abi #f #f #f #f)]
    [(in-types out-type abi atomic?)
-    (ffi-callback-maker in-types out-type abi atomic? #f #f)]
+    (ffi-callback-maker in-types out-type abi atomic? #f #f #f)]
    [(in-types out-type abi atomic? async-apply)
-    (ffi-callback-maker in-types out-type abi atomic? async-apply #f)]
+    (ffi-callback-maker in-types out-type abi atomic? async-apply #f #f)]
    [(in-types out-type abi atomic? async-apply varargs-after)
+    (ffi-callback-maker in-types out-type abi atomic? async-apply varargs-after #f)]
+   [(in-types out-type abi atomic? async-apply varargs-after core)
     (check-ffi-callback who in-types out-type abi varargs-after async-apply)
-    (ffi-callback-maker* in-types out-type abi varargs-after atomic? async-apply)]))
+    (ffi-callback-maker* in-types out-type abi varargs-after atomic? async-apply core)]))
 
-(define (ffi-callback-maker* in-types out-type abi varargs-after atomic? async-apply)
+(define (ffi-callback-maker* in-types out-type abi varargs-after atomic? async-apply core)
   (let ([make-code (ffi-call/callable #f in-types out-type abi varargs-after
                                       #f #f #f #f (and atomic? #t) #f
-                                      async-apply)])
+                                      async-apply
+                                      core)])
     (lambda (proc)
       (check 'make-ffi-callback procedure? proc)
       (create-callback (make-code proc)))))

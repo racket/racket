@@ -1,5 +1,5 @@
 #lang racket/base
-(require ffi/unsafe
+(require ffi/unsafe/static
          ffi/unsafe/define
          ffi/unsafe/alloc
          "../libssl.rkt"

@@ -13,16 +13,18 @@
 ;;  (values knowns struct-type-info-or-#f)
 (define (find-definitions v prim-knowns knowns imports mutated simples unsafe-mode? target
                           #:primitives [primitives #hasheq()] ; for `optimize?` mode
-                          #:optimize? optimize?)
+                          #:optimize? optimize?
+                          #:compiler-query [compiler-query (lambda (v) #f)])
   (match v
     [`(define-values (,id) ,orig-rhs)
      (define rhs (if optimize?
-                     (optimize orig-rhs prim-knowns primitives knowns imports mutated)
+                     (optimize orig-rhs prim-knowns primitives knowns imports mutated target compiler-query)
                      orig-rhs))
      (values
       (let ([k (infer-known rhs v id knowns prim-knowns imports mutated simples unsafe-mode? target
                             #:primitives primitives
-                            #:optimize-inline? optimize?)])
+                            #:optimize-inline? optimize?
+                            #:compiler-query compiler-query)])
         (if k
             (hash-set knowns (unwrap id) k)
             knowns))

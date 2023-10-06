@@ -54,6 +54,21 @@
                            (parameterize ([#%$target-machine (string->symbol target)]
                                           [fasl-compressed compress?])
                              (fasl-write v o pred))))]
+                       [(#\q) ; uses `expand/optimize, intended to query the compiler about constants
+                        (call-with-fasled
+                         in
+                         (lambda (v pred)
+                           (cond
+                             [(equal? v '(system-type))
+                              (case (string->symbol target)
+                                [(a6osx ta6osx i3osx ti3osx arm64osx tarm64osx ppc32osx tppc32osx)
+                                 ;; Assuming nonUnix-style for cross compilation MacOS
+                                 'macosx]
+                                [(a6nt ta6nt i3nt ti3nt arm64nt tarm64nt) 'windows]
+                                [else 'unix])]
+                             [else
+                              (parameterize ([#%$target-machine (string->symbol target)])
+                                (fasl-write (expand/optimize v) o pred))])))]
                        [else
                         (error 'serve-cross-compile (format "unrecognized command: ~s" cmd))])])
                 (let ([result (get)])

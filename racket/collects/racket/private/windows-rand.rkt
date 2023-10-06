@@ -1,7 +1,7 @@
 #lang racket/base
 (provide crypto-random-windows-bytes)
 
-(require ffi/unsafe
+(require ffi/unsafe/static
          ffi/unsafe/define)
 
 (define-ffi-definer define-advapi (and (eq? (system-type) 'windows) (ffi-lib "Advapi32.dll"))

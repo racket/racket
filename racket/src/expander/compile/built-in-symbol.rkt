@@ -112,4 +112,5 @@
                ptr-ref/int64 ptr-set!/int64
                ptr-ref/uint64 ptr-set!/uint64
                ptr-ref/double ptr-set!/double
-               ptr-ref/float ptr-set!/float))))
+               ptr-ref/float ptr-set!/float
+               ffi-static-call-and-callback-core))))

@@ -18,6 +18,13 @@
 @(define ffi-eval (make-base-eval))
 @(ffi-eval '(require ffi/unsafe))
 
+@(begin
+   (define-syntax-rule (define-static_fun id)
+      (begin
+       (require (for-label ffi/unsafe/static))
+       (define id @racket[_fun])))
+    (define-static_fun static_fun))
+
 @title[#:tag "types" #:style 'toc]{C Types}
 
 @deftech{C types} are the main concept of the @tech{FFI}, either
@@ -320,7 +327,7 @@ strings), conversion for the foreign side creates a copy that is
 managed by the garbage collector.
 
 Beware that changing the current directory via
-@racket[current-directory] does not change the OS-level current
+@racket[current-directory] does n<ot change the OS-level current
 directory as seen by foreign library functions. Paths normally should
 be converted to absolute form using @racket[path->complete-path]
 (which uses the @racket[current-directory] parameter) before passing
@@ -534,7 +541,8 @@ the later case, the result is the @racket[ctype]).}
 A type constructor that creates a new function type, which is
 specified by the given @racket[input-types] list and @racket[output-type].
 Usually, the @racket[_fun] syntax (described below) should be used
-instead, since it manages a wide range of complicated cases.
+instead, since it manages a wide range of complicated cases and may enable
+static code generation.
 
 The resulting type can be used to reference foreign functions (usually
 @racket[ffi-obj]s, but any pointer object can be referenced with this type),
@@ -849,12 +857,13 @@ the generated type:
                               (code:line ->> output-expr)])]{
 
 Creates a new function type.  The @racket[_fun] form is a convenient
-syntax for the @racket[_cprocedure] type constructor. In its simplest
-form, only the input @racket[type-expr]s and the output @racket[type-expr] are
-specified, and each types is a simple expression, which creates a
-straightforward function type.
+syntax for the @racket[_cprocedure] type constructor, and it can enable
+more static generation of @tech{callout} and @tech{callback} code; see @static_fun from
+@racketmodname[ffi/unsafe/static] for more information.
 
-For example,
+In the simplest form of @racket[_fun], only the input @racket[type-expr]s and the output @racket[type-expr] are
+specified, and each types is a simple expression, which creates a
+straightforward function type. For example,
 
 @racketblock[
 (_fun _string _int ->> _int)

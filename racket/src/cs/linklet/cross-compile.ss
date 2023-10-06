@@ -70,6 +70,10 @@
 (define (cross-fasl-to-string machine v quoteds mode)
   (do-cross (if (eq? mode 'code) 'f 'd) machine v quoteds))
 
+(define (cross-compiler-query machine v)
+  (let-values ([(bv literals) (do-cross 'q machine v (hasheq))])
+    (fasl-read (open-bytevector-input-port bv))))
+
 ;; Start a compiler as a Racket thread under the root custodian.
 ;; Using Racket's scheduler lets us use the event and I/O system,
 ;; including support for running a process and managing resources

@@ -412,6 +412,13 @@
      'faslin-literals
      (force-unfasl-literals v)))
 
+  (define (compiler-query v)
+    (call-with-system-wind
+     (lambda ()
+       (cond
+         [(#%equal? v '(system-type)) (system-type)]
+         [else (expand/optimize v)]))))
+
   (define-record-type wrapped-code
     (fields (mutable content) ; bytevector for 'lambda mode; annotation or (vector hash annotation) for 'jit mode
             literals
@@ -619,6 +626,9 @@
                            (not use-prompt?)
                            prim-knowns
                            primitives
+                           (if cross-machine
+                               (lambda (v) (cross-compiler-query cross-machine v))
+                               compiler-query)
                            ;; Callback to get a specific linklet for a
                            ;; given import:
                            (if get-import

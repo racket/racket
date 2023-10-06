@@ -26,6 +26,9 @@
          make-late-weak-box make-late-weak-hasheq
          void/reference-sink)
 
+(module+ static
+  (provide _fun/static))
+
 (define-syntax define*
   (syntax-rules ()
     [(_ (name . args) body ...)
@@ -70,15 +73,6 @@
                   [(8) _uint64]
                   [else (error '_wchar "implausible 'wchar size")]))
 
-;; utility for the next few definitions
-(define (sizeof->3ints c-type)
-  (case (compiler-sizeof c-type)
-    [(2) (values _int16 _uint16 _int16)]
-    [(4) (values _int32 _uint32 _int32)]
-    [(8) (values _int64 _uint64 _int64)]
-    [else (error 'foreign "internal error: bad compiler size for `~s'"
-                 c-type)]))
-
 ;; _short etc is a convenient name for the compiler's `short',
 ;; which is always a 16-bit value for Racket:
 (provide _short _ushort _sshort)
@@ -96,18 +90,27 @@
 ;; _long etc is a convenient name for whatever is the compiler's `long',
 ;; which varies among platforms:
 (provide _long _ulong _slong)
-(define-values (_long _ulong _slong) (sizeof->3ints 'long))
+(define-values (_long _ulong _slong)
+  (case (compiler-sizeof 'long)
+    [(4) (values _int32 _uint32 _int32)]
+    [else (values _int64 _uint64 _int64)]))
 
 ;; _llong etc is a convenient name for whatever is the compiler's `long long'
 ;; which varies among platforms:
 (provide _llong _ullong _sllong)
-(define-values (_llong _ullong _sllong) (sizeof->3ints '(long long)))
+(define-values (_llong _ullong _sllong)
+  (case (compiler-sizeof '(long long))
+    [(4) (values _int32 _uint32 _int32)]
+    [else (values _int64 _uint64 _int64)]))
 
 ;; _intptr etc is a convenient name for whatever is the integer
 ;; equivalent of the compiler's pointer (see `intptr_t'),
 ;; which varies among platforms:
 (provide _intptr _uintptr _sintptr)
-(define-values (_intptr _uintptr _sintptr) (sizeof->3ints '(void *)))
+(define-values (_intptr _uintptr _sintptr)
+  (case (compiler-sizeof '(void *))
+    [(4) (values _int32 _uint32 _int32)]
+    [else (values _int64 _uint64 _int64)]))
 
 (define* _size _uintptr)
 (define* _ssize _intptr)
@@ -521,7 +524,8 @@
                       #:lock-name   [lock-name #f]
                       #:async-apply [async-apply #f]
                       #:save-errno  [errno   #f])
-  (_cprocedure* itypes otype abi varargs-after wrapper keep
+  (_cprocedure* #f
+                itypes otype abi varargs-after wrapper keep
                 atomic? orig-place? blocking? callback-exns?
                 async-apply errno lock-name))
 
@@ -544,12 +548,14 @@
 
 ;; for internal use
 (define held-callbacks (make-weak-hasheq))
-(define (_cprocedure* itypes otype abi varargs-after wrapper keep
+(define (_cprocedure* core itypes otype abi varargs-after wrapper keep
                       atomic? orig-place? blocking? callback-exns?
                       async-apply errno lock-name)
-  (define make-ffi-callback (delay/cas (ffi-callback-maker itypes otype abi atomic? async-apply varargs-after)))
+  (define make-ffi-callback (delay/cas (ffi-callback-maker itypes otype abi atomic? async-apply varargs-after
+                                                           core)))
   (define make-ffi-call (delay/cas (ffi-call-maker itypes otype abi errno
-                                                   orig-place? lock-name blocking? varargs-after callback-exns?)))
+                                                   orig-place? lock-name blocking? varargs-after callback-exns?
+                                                   core)))
   (define-syntax-rule (make-it wrap)
     (make-ctype _fpointer
       (lambda (x)
@@ -590,6 +596,10 @@
     [#:async-apply ,#'#f] [#:save-errno ,#'#f]
     [#:retry #f]))
 (define-syntax (_fun stx)
+  (_fun* stx #f))
+(define-syntax (_fun/static stx)
+  (_fun* stx #t))
+(define-for-syntax (_fun* stx static?)
   (define (err msg . sub) (apply raise-syntax-error '_fun msg stx sub))
   (define xs     #f)
   (define inputs #f)
@@ -742,19 +752,31 @@
               [type          (t-n-e #'type #f output-expr)])))
     (let ([make-cprocedure
            (lambda (wrapper)
-             #`(_cprocedure* (list #,@(filter-map car inputs))
-                             #,(car output)
-                             #,(kwd-ref '#:abi)
-                             #,(kwd-ref '#:varargs-after)
-                             #,wrapper
-                             #,(kwd-ref '#:keep)
-                             #,(kwd-ref '#:atomic?)
-                             #,(kwd-ref '#:in-original-place?)
-                             #,(kwd-ref '#:blocking?)
-                             #,(kwd-ref '#:callback-exns?)
-                             #,(kwd-ref '#:async-apply)
-                             #,(kwd-ref '#:save-errno)
-                             #,(kwd-ref '#:lock-name)))])
+             #`(assert-ctype-representation
+                _fpointer
+                (let-values ([(core ins out abi varargs-after blocking? async-apply)
+                              (ffi-maybe-call-and-callback-core
+                               #,(and static? #`(quote #,stx))
+                               #,(kwd-ref '#:abi)
+                               #,(kwd-ref '#:varargs-after)
+                               #,(kwd-ref '#:blocking?)
+                               #,(kwd-ref '#:async-apply)
+                               #,(car output)
+                               #,@(filter-map car inputs))])
+                  (_cprocedure* core
+                                ins
+                                out
+                                abi
+                                varargs-after
+                                #,wrapper
+                                #,(kwd-ref '#:keep)
+                                #,(kwd-ref '#:atomic?)
+                                #,(kwd-ref '#:in-original-place?)
+                                blocking?
+                                #,(kwd-ref '#:callback-exns?)
+                                async-apply
+                                #,(kwd-ref '#:save-errno)
+                                #,(kwd-ref '#:lock-name)))))])
       (if (or (caddr output) input-names (ormap caddr inputs)
               (ormap (lambda (x) (not (car x))) inputs)
               (pair? bind) (pair? pre) (pair? post))
@@ -881,14 +903,17 @@
 (define* default-_string-type
   (make-parameter _string*/utf-8
     (lambda (x)
-      (if (ctype? x)
-        x (error 'default-_string-type "expecting a C type, got ~e" x)))))
+      (if (and (ctype? x)
+               (eq? (ctype->layout x)
+                    (ctype->layout _bytes)))
+          x
+          (error 'default-_string-type "expecting a C type consistent with same layout as `_bytes`, got ~e" x)))))
 ;; The type looks like an identifier, but it's actually using the parameter
 (provide _string)
 (define-syntax _string
   (syntax-id-rules ()
     [(_ . xs) ((default-_string-type) . xs)]
-    [_ (default-_string-type)]))
+    [_ (assert-ctype-representation _bytes (default-_string-type))]))
 
 ;; _symbol is defined in C, since it uses simple C strings
 (provide _symbol)
@@ -1201,6 +1226,7 @@
 ;; be just like _bytes since the string carries its size information (so there
 ;; is no real need for the `o', but it's there for consistency with the above
 ;; macros).
+
 (provide (rename-out [_bytes* _bytes]))
 (define-fun-syntax _bytes*
   (syntax-id-rules (o)
@@ -1460,15 +1486,28 @@
               (if p (cpointer-push-tag! p tag) (error* p))
               p)))))]))
 
+(define-syntax-rule (define/assert-representation id _type proc-e)
+  (begin
+    (define proc (let ([id proc-e])
+                   id))
+    (define-syntax id
+      (syntax-id-rules ()
+        [(_ . xs) (assert-ctype-representation _type (proc . xs))]
+        [_ proc]))))
+
 ;; This is a kind of a pointer that gets a specific tag when converted to
 ;; Scheme, and accepts only such tagged pointers when going to C.  An optional
 ;; `ptr-type' can be given to be used as the base pointer type, instead of
 ;; _pointer, `scheme->c' and `c->scheme' can be used for adding conversion
 ;; hooks.
-(define* _cpointer (cpointer-maker #f))
+(provide _cpointer)
+(define/assert-representation _cpointer _pointer
+  (cpointer-maker #f))
 
 ;; Similar to the above, but can tolerate null pointers (#f).
-(define* _cpointer/null (cpointer-maker #t))
+(provide _cpointer/null)
+(define/assert-representation _cpointer/null _pointer
+  (cpointer-maker #t))
 
 (define (cast p from-type to-type)
   (unless (ctype? from-type)
@@ -1568,34 +1607,38 @@
                (eq? ct 'string/ucs-4)))
       (eq? ct 'scheme)))
 
-(define* (_or-null ctype)
-  (let ([coretype (ctype-coretype ctype)])
-    (unless (memq coretype '(pointer gcpointer fpointer))
-      (raise-argument-error '_or-null "(and/c ctype? (lambda (ct) (memq (ctype-coretype ct) '(pointer gcpointer fpointer))))" ctype))
-    (make-ctype
-     (case coretype
-       [(pointer) _pointer]
-       [(gcpointer) _gcpointer]
-       [(fpointer) _fpointer])
-     (lambda (v) (and v (cast v _pointer _pointer)))
-     (lambda (v) (and v (cast v _pointer ctype))))))
+(provide _or-null)
+(define/assert-representation _or-null  _pointer
+  (lambda (ctype)
+    (let ([coretype (ctype-coretype ctype)])
+      (unless (memq coretype '(pointer gcpointer fpointer))
+        (raise-argument-error '_or-null "(and/c ctype? (lambda (ct) (memq (ctype-coretype ct) '(pointer gcpointer fpointer))))" ctype))
+      (make-ctype
+       (case coretype
+         [(pointer) _pointer]
+         [(gcpointer) _gcpointer]
+         [(fpointer) _fpointer])
+       (lambda (v) (and v (cast v _pointer _pointer)))
+       (lambda (v) (and v (cast v _pointer ctype)))))))
 
-(define* (_gcable ctype)
-  (define t (ctype-coretype ctype))
-  (cond
-   [(eq? t 'gcpointer) ctype]
-   [(eq? t 'pointer)
-    (let loop ([ctype ctype])
-      (if (or (eq? ctype _pointer)
-              (eq? ctype 'pointer))
-          _gcpointer
-          (make-ctype
-           (loop (ctype-basetype ctype))
-           (ctype-scheme->c ctype)
-           (ctype-c->scheme ctype))))]
-   [else
-    (raise-argument-error '_gcable "(and/c ctype? (lambda (ct) (memq (ctype-coretype ct) '(pointer gcpointer))))"
-                          ctype)]))
+(provide _gcable)
+(define/assert-representation _gcable  _pointer
+  (lambda (ctype)
+    (define t (ctype-coretype ctype))
+    (cond
+      [(eq? t 'gcpointer) ctype]
+      [(eq? t 'pointer)
+       (let loop ([ctype ctype])
+         (if (or (eq? ctype _pointer)
+                 (eq? ctype 'pointer))
+             _gcpointer
+             (make-ctype
+              (loop (ctype-basetype ctype))
+              (ctype-scheme->c ctype)
+              (ctype-c->scheme ctype))))]
+      [else
+       (raise-argument-error '_gcable "(and/c ctype? (lambda (ct) (memq (ctype-coretype ct) '(pointer gcpointer))))"
+                             ctype)])))
 
 (define (ctype-coretype c)
   (let loop ([c (ctype-basetype c)])
@@ -1859,8 +1902,8 @@
             (define-cpointer-type _^TYPE super-pointer #:tag 'TYPE)
             define-wrap-type
             ;; these make it possible to use recursive pointer definitions
-            (define _TYPE-pointer      (wrap-TYPE-type _^TYPE))
-            (define _TYPE-pointer/null (wrap-TYPE-type _^TYPE/null))
+            (define _TYPE-pointer      (assert-ctype-representation _pointer (wrap-TYPE-type _^TYPE)))
+            (define _TYPE-pointer/null (assert-ctype-representation _pointer (wrap-TYPE-type _^TYPE/null)))
             (define-values (stype ...)  (values slot-type ...))
             (define types (list stype ...))
             (define alignment-v alignment)

@@ -4039,11 +4039,12 @@ static Scheme_Object *foreign_ffi_call(int argc, Scheme_Object *argv[])
 }
 #undef MYNAME
 
-/* (ffi-call-maker in-types out-type [abi save-errno? orig-place? lock-name blocking? varargs-after exns?]) -> (ffi->obj -> (in-types -> out-value)) */
+/* (ffi-call-maker in-types out-type [abi save-errno? orig-place? lock-name blocking? varargs-after exns? core]) -> (ffi->obj -> (in-types -> out-value)) */
 /* Curried version of `ffi-call` */
 #define MYNAME "ffi-call-maker"
 static Scheme_Object *foreign_ffi_call_maker(int argc, Scheme_Object *argv[])
 {
+  if (argc > 9) argc = 9; /* drop `core` */
   return ffi_call_or_curry(MYNAME, 1, argc, argv);
 }
 #undef MYNAME
@@ -4548,7 +4549,7 @@ static Scheme_Object *make_ffi_callback_from_curried(int argc, Scheme_Object *ar
   return ffi_callback_or_curry("make-ffi-callback", 0, c+1, a);
 }
 
-/* (ffi-callback-maker in-types out-type [abi atomic? sync]) -> (proc -> ffi-callback) */
+/* (ffi-callback-maker in-types out-type [abi atomic? sync varargs-after core]) -> (proc -> ffi-callback) */
 /* Curried version of `ffi-callback`. Check arguments eagerly, but we don't do anything
    otherwise until a function is available. */
 #define MYNAME "ffi-callback-maker"
@@ -4556,6 +4557,8 @@ static Scheme_Object *foreign_ffi_callback_maker(int argc, Scheme_Object *argv[]
 {
   int i;
   Scheme_Object *vec, *a[1];
+
+  if (argc > 6) argc = 6; /* drop `core` */
 
   (void)ffi_callback_or_curry(MYNAME, 1, argc, argv);
 
@@ -4569,6 +4572,34 @@ static Scheme_Object *foreign_ffi_callback_maker(int argc, Scheme_Object *argv[]
                                           1, a,
                                           "make-ffi-callback",
                                           1, 1);
+}
+#undef MYNAME
+
+/*****************************************************************************/
+
+/* static-callback support needed by CS */
+
+#define MYNAME "ffi-maybe-call-and-callback-core"
+static Scheme_Object *foreign_ffi_maybe_call_and_callback_core(int argc, Scheme_Object *argv[])
+{
+  Scheme_Object *v[7];
+
+  v[0] = scheme_false;
+  v[1] = scheme_build_list_offset(argc, argv, 6);
+  v[2] = argv[5];
+  v[3] = argv[1];
+  v[4] = argv[2];
+  v[5] = argv[3];
+  v[6] = argv[4];
+
+  return scheme_values(7, v);
+}
+#undef MYNAME
+
+#define MYNAME "assert-ctype-representation"
+static Scheme_Object *foreign_assert_ctype_representation(int argc, Scheme_Object *argv[])
+{
+  return argv[1];
 }
 #undef MYNAME
 
@@ -5211,11 +5242,15 @@ void scheme_init_foreign(Scheme_Startup_Env *env)
   scheme_addto_prim_instance("ffi-call",
     scheme_make_noncm_prim(foreign_ffi_call, "ffi-call", 3, 10), env);
   scheme_addto_prim_instance("ffi-call-maker",
-    scheme_make_noncm_prim(foreign_ffi_call_maker, "ffi-call-maker", 2, 9), env);
+    scheme_make_noncm_prim(foreign_ffi_call_maker, "ffi-call-maker", 2, 10), env);
   scheme_addto_prim_instance("ffi-callback",
     scheme_make_noncm_prim(foreign_ffi_callback, "ffi-callback", 3, 6), env);
   scheme_addto_prim_instance("ffi-callback-maker",
-    scheme_make_noncm_prim(foreign_ffi_callback_maker, "ffi-callback-maker", 2, 6), env);
+    scheme_make_noncm_prim(foreign_ffi_callback_maker, "ffi-callback-maker", 2, 7), env);
+  scheme_addto_prim_instance("ffi-maybe-call-and-callback-core",
+    scheme_make_noncm_prim(foreign_ffi_maybe_call_and_callback_core, "ffi-maybe-call-and-callback-core", 6, -1), env);
+  scheme_addto_prim_instance("assert-ctype-representation",
+    scheme_make_immed_prim(foreign_assert_ctype_representation, "assert-ctype-representation", 2, 2), env);
   scheme_addto_prim_instance("saved-errno",
     scheme_make_immed_prim(foreign_saved_errno, "saved-errno", 0, 1), env);
   scheme_addto_prim_instance("lookup-errno",
@@ -5578,11 +5613,15 @@ void scheme_init_foreign(Scheme_Env *env)
   scheme_addto_primitive_instance("ffi-call",
    scheme_make_noncm_prim((Scheme_Prim *)unimplemented, "ffi-call", 3, 10), env);
   scheme_addto_primitive_instance("ffi-call-maker",
-   scheme_make_noncm_prim((Scheme_Prim *)unimplemented, "ffi-call-maker", 2, 9), env);
+   scheme_make_noncm_prim((Scheme_Prim *)unimplemented, "ffi-call-maker", 2, 10), env);
   scheme_addto_primitive_instance("ffi-callback",
    scheme_make_noncm_prim((Scheme_Prim *)unimplemented, "ffi-callback", 3, 6), env);
   scheme_addto_primitive_instance("ffi-callback-maker",
-   scheme_make_noncm_prim((Scheme_Prim *)unimplemented, "ffi-callback-maker", 2, 6), env);
+   scheme_make_noncm_prim((Scheme_Prim *)unimplemented, "ffi-callback-maker", 2, 7), env);
+  scheme_addto_primitive_instance("ffi-maybe-call-and-callback-core",
+   scheme_make_noncm_prim((Scheme_Prim *)unimplemented, "ffi-maybe-call-and-callback-core", 6, -1), env);
+  scheme_addto_primitive_instance("assert-ctype-representation",
+   scheme_make_immed_prim((Scheme_Prim *)unimplemented, "assert-ctype-representation", 2, 2), env);
   scheme_addto_primitive_instance("saved-errno",
    scheme_make_immed_prim((Scheme_Prim *)unimplemented, "saved-errno", 0, 1), env);
   scheme_addto_primitive_instance("lookup-errno",

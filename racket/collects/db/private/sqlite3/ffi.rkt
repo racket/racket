@@ -3,7 +3,7 @@
                      setup/cross-system)
          racket/runtime-path
          racket/string
-         ffi/unsafe
+         ffi/unsafe/static
          ffi/unsafe/define
          setup/cross-system)
 (require "ffi-constants.rkt")
