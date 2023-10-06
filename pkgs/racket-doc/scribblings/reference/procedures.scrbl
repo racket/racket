@@ -131,8 +131,8 @@ supplied keyword arguments in the @racket[#:<kw> kw-arg] sequence,
 where @racket[#:<kw>] stands for any keyword.
 
 The given @racket[kw-lst] must be sorted using @racket[keyword<?].  No
-keyword can appear twice in @racket[kw-lst] or in both
-@racket[kw-list] and as a @racket[#:<kw>], otherwise, the
+keyword can appear twice in @racket[kw-lst] or both in
+@racket[kw-lst] and as a @racket[#:<kw>], otherwise, the
 @exnraise[exn:fail:contract]. The given @racket[kw-val-lst] must have
 the same length as @racket[kw-lst], otherwise, the
 @exnraise[exn:fail:contract]. The given @racket[proc] must accept all
