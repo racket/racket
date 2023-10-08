@@ -785,7 +785,7 @@
              #rx"expected\\: list\\?")
 (err/rt-test (for ([x (in-mlist (list 1 2 3))]) x)
              exn:fail:contract?
-             #rx"expected\\: mpair\\?")
+             #rx"expected:.*or/c mpair\\? null\\?")
 (err/rt-test (for ([x (in-vector '(1 2))]) x)
              exn:fail:contract?
              #rx"expected\\: vector")
