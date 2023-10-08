@@ -722,16 +722,20 @@
   (define (:list-gen l)
     (values car cdr values l pair? #f #f))
 
+  (define (check-mlist l)
+    (unless (or (mpair? l) (null? l)) (raise-argument-error 'in-mlist "(or/c mpair? null?)" l)))
   (define (in-mlist l)
-    (unless (or (null? l) (mpair? l)) (raise-argument-error 'in-mlist "(or/c mpair? null)" l))
+    (check-mlist l)
     (make-do-sequence (lambda () (:mlist-gen l))))
 
   (define (:mlist-gen l)
     (values mcar #f mcdr l mpair? #f #f))
 
-  (define (in-input-port-bytes p)
+  (define (check-in-input-port-bytes p)
     (unless (input-port? p)
-      (raise-argument-error 'in-input-port-bytes "input-port?" p))
+      (raise-argument-error 'in-input-port-bytes "input-port?" p)))
+  (define (in-input-port-bytes p)
+    (check-in-input-port-bytes p)
     (make-do-sequence (lambda () (:input-port-gen p))))
 
   (define (:input-port-gen p)
@@ -739,9 +743,11 @@
             (lambda (x) (not (eof-object? x)))
             #f))
 
-  (define (in-input-port-chars p)
+  (define (check-in-input-port-chars p)
     (unless (input-port? p)
-      (raise-argument-error 'in-input-port-chars "input-port?" p))
+      (raise-argument-error 'in-input-port-chars "input-port?" p)))
+  (define (in-input-port-chars p)
+    (check-in-input-port-chars p)
     (in-producer (lambda () (read-char p)) eof))
 
   (define (check-in-port r p)
@@ -789,8 +795,10 @@
        (check-in-bytes-lines p mode)
        (in-producer (lambda () (read-bytes-line p mode)) eof)]))
 
+  (define (check-stream l)
+    (unless (stream? l) (raise-argument-error 'in-stream "stream?" l)))
   (define (in-stream l)
-    (unless (stream? l) (raise-argument-error 'in-stream "stream?" l))
+    (check-stream l)
     (make-do-sequence (lambda () (:stream-gen l))))
   
   (define (:stream-gen l)
@@ -1035,10 +1043,10 @@
               (:do-in
                ;;outer bindings
                ([(vec len) (let ([vec vec-expr])
-                             (check-vector vec)
+                             (unless-unsafe (check-vector vec))
                              (values vec (unsafe-vector-length vec)))])
                ;; outer check
-               #f
+               (void)
                ;; loop bindings
                ([pos 0])
                ;; pos check
@@ -1073,7 +1081,7 @@
                                          (lambda (x) (unsafe-vector-length x))
                                          vec-expr start stop step))])
                  ;; Outer check is done by normalise-inputs
-                 #t
+                 (void)
                  ;; Loop bindings
                  ([idx start*])
                  ;; Pos guard
@@ -2302,7 +2310,7 @@
     (lambda () #'in-list)
     (lambda (stx)
       (syntax-case stx (list)
-        [[(id) (_ (list expr))] #'[(id) (:do-in ([(id) expr]) #t () #t () #t #f ())]]
+        [[(id) (_ (list expr))] #'[(id) (:do-in ([(id) expr]) (void) () #t () #t #f ())]]
         [[(id) (_ lst-expr)]
          #'[(id)
             (:do-in
@@ -2329,14 +2337,14 @@
     (lambda () #'in-mlist)
     (lambda (stx)
       (syntax-case stx (mlist)
-        [[(id) (_ (mlist expr))] #'[(id) (:do-in ([(id) expr]) #t () #t () #t #f ())]]
+        [[(id) (_ (mlist expr))] #'[(id) (:do-in ([(id) expr]) (void) () #t () #t #f ())]]
         [[(id) (_ lst-expr)]
          #'[(id)
             (:do-in
              ;;outer bindings
              ([(lst) lst-expr])
              ;; outer check
-             (void) ; (unless (list? lst) (in-list lst))
+             (unless-unsafe (check-mlist lst))
              ;; loop bindings
              ([lst lst])
              ;; pos check
@@ -2361,7 +2369,7 @@
              ;;outer bindings
              ([(lst) lst-expr])
              ;; outer check
-             (unless (unless-unsafe (stream? lst)) (in-stream lst))
+             (unless-unsafe (check-stream lst))
              ;; loop bindings
              ([lst lst])
              ;; pos check
@@ -2390,7 +2398,7 @@
     (lambda (stx)
       (syntax-case stx ()
         [[(id) (_ expr)]
-         #'[(id) (:do-in ([(id*) expr]) #t () #t ([(id) id*]) #t #f ())]]
+         #'[(id) (:do-in ([(id*) expr]) (void) () #t ([(id) id*]) #t #f ())]]
         [_ #f])))
 
   (define-sequence-syntax *in-producer
@@ -2400,13 +2408,12 @@
         ;; cheap & simple stop-less and arg-less version
         [[(id ...) (_ producer)]
          #'[(id ...)
-            (:do-in ([(producer*) producer]) #t () #t ([(id ...) (producer*)])
+            (:do-in ([(producer*) producer]) (void) () #t ([(id ...) (producer*)])
                     #t #t ())]]
         ;; full version
         [[(id ...) (_ producer stop more ...)]
-         (with-syntax ([(more* ...) (generate-temporaries #'(more ...))]
-                       [single? (= 1 (length (syntax->list #'(id ...))))])
-           #'[(id ...)
+         (with-syntax ([(more* ...) (generate-temporaries #'(more ...))])
+           #`[(id ...)
               (:do-in
                ;; outer bindings
                ([(producer*) producer]
@@ -2414,12 +2421,14 @@
                 [(stop?)
                  (let ([s stop])
                    (cond [(procedure? s) s]
-                         ['single? (lambda (x) (eq? x s))]
-                         [else (error 'in-producer
-                                      "stop condition for ~a, got: ~e"
-                                      "multiple values must be a predicate" s)]))])
+                         [else #,(if (= 1 (length (syntax->list #'(id ...))))
+                                     #'(lambda (x) (eq? x s))
+                                     #'(raise-arguments-error
+                                        'in-producer
+                                        "stop condition for multiple values must be a predicate"
+                                        "stop condition" s))]))])
                ;; outer check
-               #t
+               (void)
                ;; loop bindings
                ()
                ;; pos check
@@ -2446,7 +2455,7 @@
         [[(id) (_ r p)]
          #'[(id) (*in-producer
                   (let ([r* r] [p* p])
-                    (check-in-port r* p*)
+                    (unless-unsafe (check-in-port r* p*))
                     (lambda () (r* p*)))
                   eof)]]
         [_ #f])))
@@ -2460,7 +2469,7 @@
         [[(id) (_ p mode)]
          #'[(id) (*in-producer
                   (let ([p* p] [mode* mode])
-                    (check-in-lines p* mode*)
+                    (unless-unsafe (check-in-lines p* mode*))
                     (lambda () (read-line p* mode*)))
                   eof)]]
         [_ #f])))
@@ -2474,7 +2483,7 @@
         [[(id) (_ p mode)]
          #'[(id) (*in-producer
                   (let ([p* p] [mode* mode])
-                    (check-in-bytes-lines p* mode*)
+                    (unless-unsafe (check-in-bytes-lines p* mode*))
                     (lambda () (read-bytes-line p* mode*)))
                   eof)]]
         [_ #f])))
@@ -2486,7 +2495,7 @@
         [[(id) (_ p)]
          #'[(id) (*in-producer
                   (let ([p* p])
-                    (unless (input-port? p*) (in-input-port-bytes p*))
+                    (unless-unsafe (check-in-input-port-bytes p*))
                     (lambda () (read-byte p*)))
                   eof)]]
         [_ #f])))
@@ -2498,7 +2507,7 @@
         [[(id) (_ p)]
          #'[(id) (*in-producer
                   (let ([p* p])
-                    (unless (input-port? p*) (in-input-port-chars p*))
+                    (unless-unsafe (check-in-input-port-chars p*))
                     (lambda () (read-char p*)))
                   eof)]]
         [_ #f])))
@@ -2554,7 +2563,7 @@
 	      ([(orig-dir) (or dir #f)]
                [(init-dir) (current-directory)]
                [(use-dir?) use-dir?-expr])
-	      #true
+	      (void)
 	      ([l (initial-state orig-dir init-dir)])
 	      (pair? l)
 	      ([(d) (car l)])
