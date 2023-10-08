@@ -46,17 +46,9 @@
   (#%vector? v)
   (#3%vector-set! v i n))
 
-(define-inline (unbox b)
-  (#%box? b)
-  (#3%unbox b))
-
 (define-inline (set-box! b v)
   (#%mutable-box? b)
   (#3%set-box! b v))
-
-(define-inline (unsafe-unbox b)
-  (#%box? b)
-  (#3%unbox b))
 
 (define-inline (unsafe-set-box! b v)
   (#%box? b)

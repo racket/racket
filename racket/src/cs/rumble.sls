@@ -397,7 +397,8 @@
           unsafe-chaperone-vector
 
           box?
-          (rename [inline:unbox unbox]
+          unbox
+          (rename #;[inline:unbox unbox]
                   [inline:set-box! set-box!])
           unbox* set-box*!
           make-weak-box weak-box? weak-box-value
@@ -704,7 +705,8 @@
           ptr-ref/double ptr-set!/double  ; not exported to Racket
           ptr-ref/float ptr-set!/float    ; not exported to Racket
 
-          (rename [inline:unsafe-unbox unsafe-unbox]
+          unsafe-unbox
+          (rename #;[inline:unsafe-unbox unsafe-unbox]
                   [inline:unsafe-set-box! unsafe-set-box!])
           unsafe-unbox*
           unsafe-set-box*!

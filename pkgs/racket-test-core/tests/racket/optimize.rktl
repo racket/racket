@@ -447,7 +447,7 @@
          (test-comp #:except (and (eq? e? 'equal?) 'chez-scheme)
                     `(lambda (x y) (when (and (pair? x) (box? y)) (,e? x y)))
                     `(lambda (x y) (when (and (pair? x) (box? y)) #f)))
-         (test-comp #:except 'chez-scheme ; cptypes could improve here
+         (test-comp #:except (and (eq? e? 'equal?) 'chez-scheme)
                     `(lambda (x y) (car x) (unbox y) (,e? x y))
                     `(lambda (x y) (car x) (unbox y) #f))
          (test-comp #:except (and (eq? e? 'equal?) 'chez-scheme)
