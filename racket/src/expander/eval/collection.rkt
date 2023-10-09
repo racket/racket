@@ -3,6 +3,7 @@
          racket/private/config
          racket/private/place-local
          racket/private/link-path
+         racket/path
          ffi/unsafe/atomic
          "parameter.rkt"
          "shadow-directory.rkt"
@@ -406,13 +407,6 @@
                           (if (null? (cdr cp))
                               (list (to-string (car cp)))
                               (list* (to-string (car cp)) "/" (loop (cdr cp)))))))])
-              (define-values (filter)
-                (lambda (f l)
-                  (if (null? l)
-                      null
-                      (if (f (car l))
-                          (cons (car l) (filter f (cdr l)))
-                          (filter f (cdr l))))))
               (fail
                (format "collection not found\n  collection: ~s\n  in collection directories:~a~a" 
                        (if (null? collection-path)
@@ -434,9 +428,9 @@
                                    rest-coll 
                                    (apply
                                     string-append
-                                    (map (lambda (p)
-                                           (format "\n   ~a" (unbox p)))
-                                         (filter box? all-paths))))
+                                    (for/list ([p (in-list all-paths)]
+                                               #:when (box? p))
+                                      (format "\n   ~a" (unbox p)))))
                            "")))))
         (let ([dir (*build-path-rep (car paths) collection)])
           (if (*directory-exists? (car paths) collection dir)
@@ -447,14 +441,15 @@
                     (if file-name
                         (if (or (file-exists?/maybe-compiled cpath file-name
                                                              check-compiled?)
-                                (let ([alt-file-name
-                                       (let* ([file-name (if (path? file-name)
-                                                             (path->string file-name)
-                                                             file-name)]
-                                              [len (string-length file-name)])
-                                         (and (len . >= . 4)
-                                              (string=? ".rkt" (substring file-name (- len 4)))
-                                              (string-append (substring file-name 0 (- len 4)) ".ss")))])
+                                (let* ([file-bs (if (path? file-name)
+                                                    (path->bytes file-name)
+                                                    (string->bytes/utf-8 file-name))]
+                                       [file-bs-len (- (bytes-length file-bs) 4)]
+                                       [alt-file-name
+                                        (and (>= 0 file-bs-len)
+                                             (for/and ([i (in-range 4)])
+                                               (eq? (bytes-ref '#".rkt" i) (bytes-ref file-bs (+ i file-bs-len))))
+                                             (path-replace-extension file-name #".ss"))])
                                   (and alt-file-name
                                        (file-exists?/maybe-compiled cpath alt-file-name
                                                                     check-compiled?))))
