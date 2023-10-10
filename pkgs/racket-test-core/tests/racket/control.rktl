@@ -281,6 +281,12 @@
                  (cupto p k (+ 3 (k 2) (k 5))))))
        12)
 
+(ctest (let ([p (new-prompt 'set/cupto)])
+         (set p
+              (+ 1
+                 (cupto p k (+ 3 (k 2) (k 5))))))
+       12)
+
 ;; ----------------------------------------
 
 (report-errs)

@@ -78,11 +78,10 @@
 ;; This is possible via call/cc (i.e., it must be possible
 ;; to abort and keep a prompt, because call/cc needs it).
 (define (abort-current-continuation/keep-prompt tag thunk)
-  ((call-with-continuation-prompt
+  (call-in-continuation
+   (call-with-continuation-prompt
     (lambda ()
-      ((call-with-current-continuation
-        (lambda (k) (lambda () k))
-        tag)))
+      (call-with-current-continuation values tag))
     tag)
    thunk))
 
@@ -216,7 +215,7 @@
 ;; Hieb & Dybvig, PPOPP'90
 
 (define (spawn f)
-  (let ([p (make-continuation-prompt-tag)])
+  (let ([p (make-continuation-prompt-tag 'spawn)])
     (call-with-continuation-prompt
      (lambda ()
        (f (lambda (f)
@@ -239,7 +238,7 @@
 ;; Queinnec & Serpette, POPL'91
 
 (define (splitter receiver)
-  (let ([p (make-continuation-prompt-tag)])
+  (let ([p (make-continuation-prompt-tag 'splitter)])
     (call-with-continuation-prompt
      (lambda ()
        (receiver (lambda (thunk)
@@ -259,7 +258,7 @@
 ;;  we call "prompt tags". In our terminology, a "prompt"
 ;;  is a tagged instance in a continuation.
 
-(define (new-prompt) (make-continuation-prompt-tag))
+(define new-prompt make-continuation-prompt-tag)
 
 (define-syntax set (make-rename-transformer #'prompt0-at))
 
