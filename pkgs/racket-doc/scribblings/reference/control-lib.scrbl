@@ -10,13 +10,13 @@
           (the-eval '(require racket/control))
           the-eval))
 
-The @racket[racket/control] library provides various control operators
+The @racketmodname[racket/control] library provides various control operators
 from the research literature on higher-order control operators, plus a
 few extra convenience forms. These control operators are implemented
 in terms of @racket[call-with-continuation-prompt],
 @racket[call-with-composable-continuation], @|etc|, and they generally
 work sensibly together. Many are redundant; for example,
-@racket[reset] and @racket[prompt] are aliases.
+@racket[reset] and @racket[prompt] are interchangeable.
  
 @; ----------------------------------------------------------------------
 
@@ -82,7 +82,7 @@ Sitaram's operators @cite["Sitaram93"].
 The essential reduction rules are:
 
 @racketblock[
-(% _val proc) => _val
+(% _val _proc) => _val
 (% _E[(fcontrol _val)] _proc) => (_proc _val (lambda (_x) _E[_x]))
   (code:comment @#,t{where @racket[_E] has no @racket[%]})
 ]
@@ -217,8 +217,8 @@ Furthermore, the following reductions apply:
 ]
 
 That is, both the @racket[prompt]/@racket[reset] and
-@racket[control]/@racket[shift] sites must agree for @racket[0]-like
-behavior, otherwise the non-@racket[0] behavior applies.}
+@racket[control]/@racket[shift] sites must agree for @racketidfont{0}-like
+behavior, otherwise the non-@racketidfont{0} behavior applies.}
 
 @; ----------------------------------------------------------------------
 
@@ -240,11 +240,15 @@ The operators of Hieb and Dybvig @cite["Hieb90"].
 The essential reduction rules are:
 
 @racketblock[
-(prompt-at _tag _obj) => _obj
-(spawn _proc) => (prompt _tag (_proc (lambda (_x) (abort _tag _x))))
-(prompt-at _tag _E[(abort _tag _proc)])
-  => (_proc (lambda (_x) (prompt-at _tag _E[_x])))
-  (code:comment @#,t{where @racket[_E] has no @racket[prompt-at] for @racket[_tag]})
+(spawn _proc)
+  => (prompt/spawn _tag
+       (_proc (lambda (_proc) (abort/spawn _tag _proc))))
+  (code:comment @#,t{where @racket[_tag] is a freshly generated prompt tag})
+(prompt/spawn _tag _val)
+  => _val
+(prompt/spawn _tag _E[(abort/spawn _tag _proc)])
+  => (_proc (lambda (_x) (prompt/spawn _tag _E[_x])))
+  (code:comment @#,t{where @racket[_E] has no @racket[prompt/spawn] for @racket[_tag]})
 ]}
 
 @; ----------------------------------------------------------------------
@@ -258,22 +262,27 @@ The operator of Queinnec and Serpette @cite["Queinnec91"].
 
 The essential reduction rules are:
 @racketblock[
-(splitter _proc) => (prompt-at _tag
-                     (_proc (lambda (_thunk) 
-                              (abort _tag _thunk))
-                            (lambda (_proc)
-                              (control0-at _tag _k (_proc _k)))))
-(prompt-at _tag _E[(abort _tag _thunk)]) => (_thunk)
-  (code:comment @#,t{where @racket[_E] has no @racket[prompt-at] for @racket[_tag]})
-(prompt-at _tag _E[(control0-at _tag _k _expr)]) => ((lambda (_k) _expr)
-                                                     (lambda (_x) _E[_x]))
-  (code:comment @#,t{where @racket[_E] has no @racket[prompt-at] for @racket[_tag]})
+(splitter _proc)
+  => (prompt/splitter _tag
+       (_proc (lambda (_thunk) (abort/splitter _tag _thunk))
+              (lambda (_proc) (control0/splitter _tag _k (_proc _k)))))
+  (code:comment @#,t{where @racket[_tag] is a freshly generated prompt tag})
+(prompt/splitter _tag _val)
+  => _val
+(prompt/splitter _tag _E[(abort/splitter _tag _thunk)])
+  => (_thunk)
+  (code:comment @#,t{where @racket[_E] has no @racket[prompt/splitter] for @racket[_tag]})
+(prompt/splitter _tag _E[(control0/splitter _tag _k _expr)])
+  => ((lambda (_k) _expr)
+      (lambda (_x) _E[_x]))
+  (code:comment @#,t{where @racket[_E] has no @racket[prompt/splitter] for @racket[_tag]})
 ]}
 
 @; ----------------------------------------------------------------------
 
 @deftogether[(
-@defproc[(new-prompt) any]
+@defproc*[([(new-prompt) continuation-prompt-tag?]
+           [(new-prompt [name symbol?]) continuation-prompt-tag?])]
 @defform[(set prompt-expr expr ...+)]
 @defform[(cupto prompt-expr id expr ...+)]
 )]{
@@ -284,6 +293,8 @@ In this library, @racket[new-prompt] is an alias for
 @racket[make-continuation-prompt-tag], @racket[set] is an alias for
 @racket[prompt0-at], and @racket[cupto] is an alias for @racket[control0-at].
 
+@history[#:changed "8.10.0.5" @elem{The @racket[new-prompt] function is now
+          really an alias for @racket[make-continuation-prompt-tag].}]
 }
 
 @close-eval[control-eval]
