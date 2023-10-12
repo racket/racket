@@ -1,3 +1,10 @@
+Version 8.11, October 2023
+Add `#:do` option support to `match` clauses
+Add `#:indent` to `write-json`
+Add `initiate-sequence` and extend `:do-in` to allow an inner
+ definition sequence
+Fix `module-path?` to disallow trailing dots in directory elements
+
 Version 8.10, July 2023
 Improve Check Syntax binding arrows from `define-local-member-name`
 Change `syntax-parse` to use interpreted mode for patterns outside
