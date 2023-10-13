@@ -258,6 +258,8 @@
     config-file->hash
 
     maybe-jobserver-client
-    maybe-jobserver-jobs))
+    maybe-jobserver-jobs
+
+    maybe-dry-run-mode))
 
 (intro-define-fake)

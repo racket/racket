@@ -16,7 +16,7 @@
                  (assoc "MAKEFLAGS" (hash-ref (runtime-env) 'env))))
   (and a
        (let ([args (shell->strings (cdr a))])
-         (and (ormap (lambda (arg) (string=? "-j" arg)) args)
+         (and (ormap (glob->matcher "-j*") args)
               (ormap (let ([match? (let ([fds? (glob->matcher "--jobserver-fds=*")]
                                          [auth? (glob->matcher "--jobserver-auth=*")])
                                      (lambda (s) (or (fds? s) (auth? s))))])

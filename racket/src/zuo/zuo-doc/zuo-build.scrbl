@@ -360,16 +360,23 @@ The following keys are recognized in @racket[options]:
       its dependencies as quiet.}
 
 @item{@racket['eager?] mapped to any value: if non-@racket[#f], then
-      the target's build step is not run in a separate thread, which
-      has the effect of ordering the build step before others that do
+      the target's rule is not run in a separate thread, which
+      has the effect of ordering the rule before others that do
       run in a separate thread.}
+
+@item{@racket['recur?] mapped to any value: if non-@racket[#f], then
+      the target's rule is run in dry-run modes of @racket[build] the
+      same as non-dry-run modes. This option is analogous to prefixing
+      a command with @litchar{+} in a makefile.}
 
 @item{@racket['db-dir] mapped to a path or @racket[#f]: if
       non-@racket[#f], build information for the target is stored in
       @filepath{_zuo.db} and @filepath{_zuo_tc.db} files in the
       specified directory, instead of the directory of @racket[name].}
 
-]}
+]
+
+@history[#:changed "1.8" @elem{Added @racket['recur?] for @racket[options].}]}
 
 @deftogether[(
 @defproc[(rule [dependencies (listof (or/c target? path-string?))]
@@ -442,6 +449,17 @@ following keys are recognized:
       logging also can be enabled by setting the
       @envvar{ZUO_BUILD_LOG} environment variable}
 
+@item{@racket['dry-run-mode] mapped to @racket[#f], @racket['question], or
+      @racket['dry-run]: enables ``dry run'' mode when
+      non-@racket[#f]; when the value is @racket['dry-run],
+      @racket[build] prints targets whose rules would be run (without
+      running them); when the value is @racket['question],
+      @racket[build] does not rules, but  exits with
+      @racket[1] when some target's rule would be run; a @tech{target}
+      can be made immune to dry-run mode through a @racket['recur?]
+      option; when @racket['dry-run] is not set in @racket[options],
+      the mode is determined by calling @racket[maybe-dry-run-mode]}
+
 ]
 
 If @racket[token] is not @racket[#f], it must be a @tech{build token}
@@ -461,7 +479,9 @@ the same build.
 
 @history[#:changed "1.1" @elem{Use @racket[maybe-jobserver-client] if
                                @racket['jobs] is not set in
-                               @racket[options].}]}
+                               @racket[options].}
+         #:changed "1.8" @elem{Added support for @racket['dry-run-mode]
+                               in @racket[options].}]}
 
 
 @defproc[(build/dep [target (or target? path-string?)] [token token?]) void?]{
@@ -487,7 +507,8 @@ similar to @hyperlink[shake-url]{Shake}'s ``order only'' dependencies.}
 Parses command-line arguments to build one or more targets in
 @racket[targets], where the first one is built by default. The
 @racket[options] argument is passed along to @racket[build], but may
-be adjusted via command-line flags such as @DFlag{jobs}.
+be adjusted via command-line flags such as @DFlag{jobs}, @Flag{n},
+or @Flag{q}.
 
 If @racket[options] has a mapping for @racket['args], the value is
 used as the command-line arguments to parse instead of
@@ -664,9 +685,12 @@ to an input-file target. A @racket[_dep-path-or-target] can also be a
 target that is created outside the @racket[make-targets] call.
 
 An @racket[_option] can be @racket[':precious], @racket[':command],
-@racket[':noisy], @racket[':quiet], or @racket[':eager] to set the
-corresponding option (see @racket[target]) in a target.}
+@racket[':noisy], @racket[':quiet], @racket[':eager], or @racket[':recur] to set the
+corresponding option (see @racket[target]) in a target.
 
 A @racket[':db-dir] line (appearing at most once) specifies where
 build information should be recorded for all targets. Otherwise, the
 build result for each target is stored in the target's directory.
+
+@history[#:changed "1.8" @elem{Added @racket[':recur] for
+                               @racket[_option].}]}

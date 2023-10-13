@@ -1,0 +1,26 @@
+#lang zuo/base
+
+(provide maybe-dry-run-mode)
+
+(define (maybe-dry-run-mode)
+  (define a (and (eq? 'unix (system-type))
+                 (assoc "MAKEFLAGS" (hash-ref (runtime-env) 'env))))
+  (define (new-mode mode sym)
+    (when (and mode (not (eq? mode sym)))
+      (error (~a "`MAKEFLAGS` specified both " mode " and " sym " modes")))
+    sym)
+  (and a
+       (let ([s (cdr a)])
+         (let loop ([i 0] [mode #f])
+           (cond
+             [(or (= i (string-length s)) 
+                  (equal? (char " ") (string-ref s i)))
+              mode]
+             [(equal? (char "n") (string-ref s i))
+              (loop (+ i 1) (new-mode mode 'dry-run))]
+             [(equal? (char "q") (string-ref s i))
+              (loop (+ i 1) (new-mode mode 'question))]
+             [(equal? (char "t") (string-ref s i))
+              (error "`MAKEFLAGS` has `-t`, but trace mode is not supported")]
+             [else
+              (loop (+ i 1) mode)])))))

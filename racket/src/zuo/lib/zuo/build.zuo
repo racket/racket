@@ -3,6 +3,7 @@
          "thread.zuo"
          "config.zuo"
          "jobserver.zuo"
+         "dry-run.zuo"
          "private/build-db.zuo")
 
 (provide (rename-out [make-target target]
@@ -207,17 +208,18 @@
 ;; Where the contracts below say "dep-sha256s", that's a hash table
 ;; mapping a dependency's key to a SHA-256.
 
-(struct build-state (ch            ; channel to hold the state while target is running
-                     target-state  ; key -> (cons sha256 dep-sha256s) | 'pending | channel
-                     target-accum  ; key -> dep-sha256s
-                     db            ; key -> (cons sha256 dep-sha256s) | #t [for db file itself]
-                     time-cache    ; key -> (cons timestamp sha256)
-                     saw-targets   ; key -> target [to detect multiple for same output]
-                     thread-count  ; channel to hold thread-scheduler state
-                     thread-seens  ; sym -> hash [to detect cycles when count goes to 0]
-                     resourcer     ; build stat's resource manager
-                     log?          ; logging enabled?
-                     uni?))        ; just one job?
+(struct build-state (ch             ; channel to hold the state while target is running
+                     target-state   ; key -> (cons sha256 dep-sha256s) | 'pending | channel
+                     target-accum   ; key -> dep-sha256s
+                     db             ; key -> (cons sha256 dep-sha256s) | #t [for db file itself]
+                     time-cache     ; key -> (cons timestamp sha256)
+                     saw-targets    ; key -> target [to detect multiple for same output]
+                     thread-count   ; channel to hold thread-scheduler state
+                     thread-seens   ; sym -> hash [to detect cycles when count goes to 0]
+                     resourcer      ; build stat's resource manager
+                     log?           ; logging enabled?
+                     uni?           ; just one job?
+                     dry-run-mode)) ; #f, 'dry-run, 'question, or 'would
 
 ;; Main entry point to build a target `t`
 (define (build t-in [token #f] [options (hash)])
@@ -255,12 +257,15 @@
                                         (make-resourcer num-jobs))
                                     (or (hash-ref options 'log? #f)
                                         (assoc "ZUO_BUILD_LOG" (hash-ref (runtime-env) 'env)))
-                                    (= num-jobs 1)))
+                                    (= num-jobs 1)
+                                    (hash-ref options 'dry-run-mode (maybe-dry-run-mode))))
          (when resourcer
            (release-resource state "nested"))
-         (do-build t state seen #t)
+         (define end-state (do-build t state seen #t))
          (when resourcer
-           (acquire-resource state "continue from nested")))))))
+           (acquire-resource state "continue from nested"))
+         (when (eq? 'would (build-state-dry-run-mode end-state))
+           (exit 1)))))))
 
 (define (build/maybe-dep t-in token add-dep?)
   (unless (token? token) (arg-error 'build/dep "build token" token))
@@ -482,6 +487,16 @@
      (define done-state (update-target-state newer-state t (cons sha256 all-dep-sha256s)))
      (channel-put result-ch 'done)
      done-state]
+    [(and (build-state-dry-run-mode newer-state)
+          (not (hash-ref (target-options t) 'recur? #f)))
+     (define mode (build-state-dry-run-mode newer-state))
+     (when (eq? mode 'dry-run)
+       (alert (~a "would build target: " (target-name t))))
+     (define done-state (update-target-state newer-state t (cons no-sha256 all-dep-sha256s)))
+     (channel-put result-ch 'done)
+     (if (eq? mode 'question)
+         (build-state-set-dry-run-mode done-state 'would)
+         done-state)]
     [else
      (unless to-build
        (error "build: out-of-date target has no build procedure" (target-name t)))
@@ -560,6 +575,11 @@
            (if (and v (> v 0))
                (hash-set opts 'jobs v)
                (error "not a positive integer" n)))]
+   :once-any
+   [opts ("-n" "--just-print" "--dry-run") "Print needed builds without running"
+         (hash-set opts 'dry-run-mode 'dry-run)]
+   [opts ("-q" "--question") "Check whether builds are needed without running"
+         (hash-set opts 'dry-run-mode 'question)]
    :args
    args
    (lambda (opts)
@@ -1071,4 +1091,5 @@
         ':command 'command?
         ':noisy 'noisy?
         ':quiet 'quiet?
-        ':eager 'eager?))
+        ':eager 'eager?
+        ':recur 'recur?))

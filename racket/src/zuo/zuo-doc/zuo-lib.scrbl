@@ -387,3 +387,24 @@ number.
 
 Unlike @racket[maybe-jobserver-client], @racket[maybe-jobserver-jobs]
 does not need to be called in a @tech{threading context}.}
+
+@; ------------------------------------------------------------
+
+@section[#:tag "zuo-dry-run"]{Dry-Run Mode Detection}
+
+@defzuomodule[zuo/dry-run]
+
+@history[#:added "1.8"]
+
+@defproc[(maybe-dry-run-mode) (or/c #f 'dry-run 'question)]{
+
+Returns a non-@racket[#f] value when a dry-run configuration is found via the
+@envvar{MAKEFLAGS} environment variable, @racket[#f] otherwise. That
+environment variable is normally set by @exec{make} when it runs a target
+command and when @Flag{n}, @Flag{q}, or @Flag{t} was provided.
+
+Since ``touch'' mode is not supported by @racket[build], detection of
+a @Flag{t} flag triggers an error instead of a non-@racket[#f] value.
+Conflicting options also trigger an error.
+
+}
