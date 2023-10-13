@@ -4063,7 +4063,7 @@ ended up returning @racket[contract-random-generate-fail].
 }
 
 @defproc[(contract-random-generate-get-current-environment) contract-random-generate-env?]{
-  Returns the environment currently being for generation. This function
+  Returns the environment currently being used for generation. This function
   can be called only during the dynamic extent of contract generation.
   It is intended to be grabbed during the construction of a contract
   generator and then used with @racket[contract-random-generate-stash]
