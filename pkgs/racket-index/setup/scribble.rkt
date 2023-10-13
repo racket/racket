@@ -1078,6 +1078,7 @@
          [css-path (collection-file-path "scribble.css" "scribble")]
          [aux-sha1s (list (get-compiled-file-sha1 renderer-path)
                           (get-file-sha1 css-path))]
+         [stamp-sha1s (cons src-sha1 aux-sha1s)]
          [out-exists? (file-exists? out-file)]
          [info-out-time (for/fold ([t +inf.0]) ([info-out-file info-out-files])
                           (and t
@@ -1105,8 +1106,7 @@
                                (and (not info-in-exists?)
                                     'missing-in)
                                (and can-run?
-                                    (not (equal? (car stamp-data)
-                                                 src-sha1))
+                                    (not (equal? stamp-data stamp-sha1s))
                                     'newer)
                                (and (or (not provides-time)
                                         (provides-time . < . info-out-time))
@@ -1262,7 +1262,7 @@
                        (render-time "xref-in" (write-in/info latex-dest info lock main-doc-exists?))
                        (set-info-need-in-write?! info #f))
 
-                     (let ([data (cons src-sha1 aux-sha1s)])
+                     (let ([data stamp-sha1s])
                        (unless (equal? data stamp-data)
                          (with-compile-output 
                           stamp-file 
