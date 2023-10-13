@@ -640,8 +640,8 @@ ping: $(ZUO)
 # Zuo build rules
 
 racket/src/build/bin/zuo: racket/src/zuo/zuo.c
-	mkdir -p racket/src/build/bin
-	$(CC_FOR_BUILD) $(CFLAGS_FOR_BUILD) -DZUO_LIB_PATH='"../../zuo/lib"' -o $(ZUO) racket/src/zuo/zuo.c
+	$(PLUS_MODIFIER) mkdir -p racket/src/build/bin
+	$(PLUS_MODIFIER) $(CC_FOR_BUILD) $(CFLAGS_FOR_BUILD) -DZUO_LIB_PATH='"../../zuo/lib"' -o $(ZUO) racket/src/zuo/zuo.c
 
 racket\src\build\zuo.exe: racket\src\zuo\zuo.c
 	IF NOT EXIST racket\src\build cmd /c mkdir racket\src\build

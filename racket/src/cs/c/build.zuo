@@ -383,7 +383,8 @@
                    (build/dep (find-target gracketcs the-targets) token)
                    (build/dep (find-target "starter" starter-targets) token)
                    (when (and mac? (not mac-fw?))
-                     (build/dep (find-target framework the-targets) token)))]
+                     (build/dep (find-target framework the-targets) token)))
+                :recur]
 
        [:target build-and-prepare ()
                 ,(lambda (token)
@@ -419,7 +420,8 @@
                    (build/dep (find-target "scheme" the-targets) token)
                    (unless cross?
                      (build/dep (find-target racket.boot the-targets) token))
-                   (build/dep (find-target racketcs the-targets) token))]
+                   (build/dep (find-target racketcs the-targets) token))
+                :recur]
 
        ,(if windows?
             `[:target (,racketcs ,gracketcs ,libracketcsxxxxxxx.dll)
