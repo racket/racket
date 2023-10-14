@@ -4301,25 +4301,23 @@
      (lambda () (unsafe-normalise-inputs unsafe-bytes-length bstr_0 i_0 #f 1))
      (case-lambda
       ((v*_0 start*_0 stop*_0 step*_0)
-       (begin
-         #t
-         (letrec*
-          ((for-loop_0
-            (|#%name|
-             for-loop
-             (lambda (result_0 idx_0)
-               (begin
-                 (if (unsafe-fx< idx_0 stop*_0)
-                   (let ((c_0 (unsafe-bytes-ref v*_0 idx_0)))
-                     (let ((result_1
-                            (let ((result_1 (= c_0 0))) (values result_1))))
-                       (if (if (not (let ((x_0 (list c_0))) (not result_1)))
-                             #t
-                             #f)
-                         (for-loop_0 result_1 (unsafe-fx+ idx_0 1))
-                         result_1)))
-                   result_0))))))
-          (for-loop_0 #t start*_0))))
+       (letrec*
+        ((for-loop_0
+          (|#%name|
+           for-loop
+           (lambda (result_0 idx_0)
+             (begin
+               (if (unsafe-fx< idx_0 stop*_0)
+                 (let ((c_0 (unsafe-bytes-ref v*_0 idx_0)))
+                   (let ((result_1
+                          (let ((result_1 (= c_0 0))) (values result_1))))
+                     (if (if (not (let ((x_0 (list c_0))) (not result_1)))
+                           #t
+                           #f)
+                       (for-loop_0 result_1 (unsafe-fx+ idx_0 1))
+                       result_1)))
+                 result_0))))))
+        (for-loop_0 #t start*_0)))
       (args (raise-binding-result-arity-error 4 args))))))
 (define anchored?
   (lambda (rx_0)
@@ -5240,40 +5238,37 @@
                           (start*_2 start*_0)
                           (stop*_2 stop*_0)
                           (step*_2 step*_0))
-                      (begin
-                        #t
-                        #t
-                        (letrec*
-                         ((for-loop_0
-                           (|#%name|
-                            for-loop
-                            (lambda (result_0 idx_0 idx_1)
-                              (begin
-                                (if (if (unsafe-fx< idx_0 stop*_2)
-                                      (unsafe-fx< idx_1 stop*_1)
-                                      #f)
-                                  (let ((c1_0 (unsafe-bytes-ref v*_2 idx_0)))
-                                    (let ((c2_0 (unsafe-bytes-ref v*_1 idx_1)))
-                                      (let ((c1_1 c1_0))
-                                        (let ((result_1
-                                               (let ((result_1 (= c1_1 c2_0)))
-                                                 (values result_1))))
-                                          (if (if (not
-                                                   (let ((x_0 (list c1_1)))
+                      (letrec*
+                       ((for-loop_0
+                         (|#%name|
+                          for-loop
+                          (lambda (result_0 idx_0 idx_1)
+                            (begin
+                              (if (if (unsafe-fx< idx_0 stop*_2)
+                                    (unsafe-fx< idx_1 stop*_1)
+                                    #f)
+                                (let ((c1_0 (unsafe-bytes-ref v*_2 idx_0)))
+                                  (let ((c2_0 (unsafe-bytes-ref v*_1 idx_1)))
+                                    (let ((c1_1 c1_0))
+                                      (let ((result_1
+                                             (let ((result_1 (= c1_1 c2_0)))
+                                               (values result_1))))
+                                        (if (if (not
+                                                 (let ((x_0 (list c1_1)))
+                                                   (not result_1)))
+                                              (if (not
+                                                   (let ((x_0 (list c2_0)))
                                                      (not result_1)))
-                                                (if (not
-                                                     (let ((x_0 (list c2_0)))
-                                                       (not result_1)))
-                                                  #t
-                                                  #f)
+                                                #t
                                                 #f)
-                                            (for-loop_0
-                                             result_1
-                                             (unsafe-fx+ idx_0 1)
-                                             (unsafe-fx+ idx_1 1))
-                                            result_1)))))
-                                  result_0))))))
-                         (for-loop_0 #t start*_2 start*_1)))))
+                                              #f)
+                                          (for-loop_0
+                                           result_1
+                                           (unsafe-fx+ idx_0 1)
+                                           (unsafe-fx+ idx_1 1))
+                                          result_1)))))
+                                result_0))))))
+                       (for-loop_0 #t start*_2 start*_1))))
                    (args (raise-binding-result-arity-error 4 args)))))
                 (args (raise-binding-result-arity-error 4 args))))
               #f)
@@ -5288,8 +5283,6 @@
                        (stop*_1 stop*_0)
                        (step*_1 step*_0))
                    (begin
-                     #t
-                     (void)
                      (letrec*
                       ((for-loop_0
                         (|#%name|
@@ -5367,40 +5360,37 @@
                           (start*_2 start*_0)
                           (stop*_2 stop*_0)
                           (step*_2 step*_0))
-                      (begin
-                        #t
-                        #t
-                        (letrec*
-                         ((for-loop_0
-                           (|#%name|
-                            for-loop
-                            (lambda (result_0 idx_0 idx_1)
-                              (begin
-                                (if (if (unsafe-fx< idx_0 stop*_2)
-                                      (unsafe-fx< idx_1 stop*_1)
-                                      #f)
-                                  (let ((c1_0 (unsafe-bytes-ref v*_2 idx_0)))
-                                    (let ((c2_0 (unsafe-bytes-ref v*_1 idx_1)))
-                                      (let ((c1_1 c1_0))
-                                        (let ((result_1
-                                               (let ((result_1 (= c1_1 c2_0)))
-                                                 (values result_1))))
-                                          (if (if (not
-                                                   (let ((x_0 (list c1_1)))
+                      (letrec*
+                       ((for-loop_0
+                         (|#%name|
+                          for-loop
+                          (lambda (result_0 idx_0 idx_1)
+                            (begin
+                              (if (if (unsafe-fx< idx_0 stop*_2)
+                                    (unsafe-fx< idx_1 stop*_1)
+                                    #f)
+                                (let ((c1_0 (unsafe-bytes-ref v*_2 idx_0)))
+                                  (let ((c2_0 (unsafe-bytes-ref v*_1 idx_1)))
+                                    (let ((c1_1 c1_0))
+                                      (let ((result_1
+                                             (let ((result_1 (= c1_1 c2_0)))
+                                               (values result_1))))
+                                        (if (if (not
+                                                 (let ((x_0 (list c1_1)))
+                                                   (not result_1)))
+                                              (if (not
+                                                   (let ((x_0 (list c2_0)))
                                                      (not result_1)))
-                                                (if (not
-                                                     (let ((x_0 (list c2_0)))
-                                                       (not result_1)))
-                                                  #t
-                                                  #f)
+                                                #t
                                                 #f)
-                                            (for-loop_0
-                                             result_1
-                                             (unsafe-fx+ idx_0 1)
-                                             (unsafe-fx+ idx_1 1))
-                                            result_1)))))
-                                  result_0))))))
-                         (for-loop_0 #t start*_2 start*_1)))))
+                                              #f)
+                                          (for-loop_0
+                                           result_1
+                                           (unsafe-fx+ idx_0 1)
+                                           (unsafe-fx+ idx_1 1))
+                                          result_1)))))
+                                result_0))))))
+                       (for-loop_0 #t start*_2 start*_1))))
                    (args (raise-binding-result-arity-error 4 args)))))
                 (args (raise-binding-result-arity-error 4 args))))
               #f)
@@ -5415,8 +5405,6 @@
                        (stop*_1 stop*_0)
                        (step*_1 step*_0))
                    (begin
-                     #t
-                     (void)
                      (letrec*
                       ((for-loop_0
                         (|#%name|
@@ -5499,64 +5487,59 @@
                                            (start*_2 start*_0)
                                            (stop*_2 stop*_0)
                                            (step*_2 step*_0))
-                                       (begin
-                                         #t
-                                         #t
-                                         (letrec*
-                                          ((for-loop_0
-                                            (|#%name|
-                                             for-loop
-                                             (lambda (result_0 idx_0 idx_1)
-                                               (begin
-                                                 (if (if (unsafe-fx<
-                                                          idx_0
-                                                          stop*_2)
-                                                       (unsafe-fx<
-                                                        idx_1
-                                                        stop*_1)
-                                                       #f)
-                                                   (let ((c1_0
+                                       (letrec*
+                                        ((for-loop_0
+                                          (|#%name|
+                                           for-loop
+                                           (lambda (result_0 idx_0 idx_1)
+                                             (begin
+                                               (if (if (unsafe-fx<
+                                                        idx_0
+                                                        stop*_2)
+                                                     (unsafe-fx< idx_1 stop*_1)
+                                                     #f)
+                                                 (let ((c1_0
+                                                        (unsafe-bytes-ref
+                                                         v*_2
+                                                         idx_0)))
+                                                   (let ((c2_0
                                                           (unsafe-bytes-ref
-                                                           v*_2
-                                                           idx_0)))
-                                                     (let ((c2_0
-                                                            (unsafe-bytes-ref
-                                                             v*_1
-                                                             idx_1)))
-                                                       (let ((c1_1 c1_0))
-                                                         (let ((result_1
-                                                                (let ((result_1
-                                                                       (=
-                                                                        c1_1
-                                                                        c2_0)))
-                                                                  (values
-                                                                   result_1))))
-                                                           (if (if (not
+                                                           v*_1
+                                                           idx_1)))
+                                                     (let ((c1_1 c1_0))
+                                                       (let ((result_1
+                                                              (let ((result_1
+                                                                     (=
+                                                                      c1_1
+                                                                      c2_0)))
+                                                                (values
+                                                                 result_1))))
+                                                         (if (if (not
+                                                                  (let ((x_0
+                                                                         (list
+                                                                          c1_1)))
+                                                                    (not
+                                                                     result_1)))
+                                                               (if (not
                                                                     (let ((x_0
                                                                            (list
-                                                                            c1_1)))
+                                                                            c2_0)))
                                                                       (not
                                                                        result_1)))
-                                                                 (if (not
-                                                                      (let ((x_0
-                                                                             (list
-                                                                              c2_0)))
-                                                                        (not
-                                                                         result_1)))
-                                                                   #t
-                                                                   #f)
+                                                                 #t
                                                                  #f)
-                                                             (for-loop_0
-                                                              result_1
-                                                              (unsafe-fx+
-                                                               idx_0
-                                                               1)
-                                                              (unsafe-fx+
-                                                               idx_1
-                                                               1))
-                                                             result_1)))))
-                                                   result_0))))))
-                                          (for-loop_0 #t start*_2 start*_1)))))
+                                                               #f)
+                                                           (for-loop_0
+                                                            result_1
+                                                            (unsafe-fx+
+                                                             idx_0
+                                                             1)
+                                                            (unsafe-fx+
+                                                             idx_1
+                                                             1))
+                                                           result_1)))))
+                                                 result_0))))))
+                                        (for-loop_0 #t start*_2 start*_1))))
                                     (args
                                      (raise-binding-result-arity-error
                                       4
@@ -5604,8 +5587,6 @@
                                             (stop*_1 stop*_0)
                                             (step*_1 step*_0))
                                         (begin
-                                          #t
-                                          (void)
                                           (letrec*
                                            ((for-loop_0
                                              (|#%name|
@@ -6297,52 +6278,45 @@
                                    (start*_2 start*_0)
                                    (stop*_2 stop*_0)
                                    (step*_2 step*_0))
-                               (begin
-                                 #t
-                                 #t
-                                 (letrec*
-                                  ((for-loop_0
-                                    (|#%name|
-                                     for-loop
-                                     (lambda (result_0 idx_0 idx_1)
-                                       (begin
-                                         (if (if (unsafe-fx< idx_0 stop*_2)
-                                               (unsafe-fx< idx_1 stop*_1)
-                                               #f)
-                                           (let ((c1_0
+                               (letrec*
+                                ((for-loop_0
+                                  (|#%name|
+                                   for-loop
+                                   (lambda (result_0 idx_0 idx_1)
+                                     (begin
+                                       (if (if (unsafe-fx< idx_0 stop*_2)
+                                             (unsafe-fx< idx_1 stop*_1)
+                                             #f)
+                                         (let ((c1_0
+                                                (unsafe-bytes-ref v*_2 idx_0)))
+                                           (let ((c2_0
                                                   (unsafe-bytes-ref
-                                                   v*_2
-                                                   idx_0)))
-                                             (let ((c2_0
-                                                    (unsafe-bytes-ref
-                                                     v*_1
-                                                     idx_1)))
-                                               (let ((c1_1 c1_0))
-                                                 (let ((result_1
-                                                        (let ((result_1
-                                                               (= c1_1 c2_0)))
-                                                          (values result_1))))
-                                                   (if (if (not
+                                                   v*_1
+                                                   idx_1)))
+                                             (let ((c1_1 c1_0))
+                                               (let ((result_1
+                                                      (let ((result_1
+                                                             (= c1_1 c2_0)))
+                                                        (values result_1))))
+                                                 (if (if (not
+                                                          (let ((x_0
+                                                                 (list c1_1)))
+                                                            (not result_1)))
+                                                       (if (not
                                                             (let ((x_0
                                                                    (list
-                                                                    c1_1)))
+                                                                    c2_0)))
                                                               (not result_1)))
-                                                         (if (not
-                                                              (let ((x_0
-                                                                     (list
-                                                                      c2_0)))
-                                                                (not
-                                                                 result_1)))
-                                                           #t
-                                                           #f)
+                                                         #t
                                                          #f)
-                                                     (for-loop_0
-                                                      result_1
-                                                      (unsafe-fx+ idx_0 1)
-                                                      (unsafe-fx+ idx_1 1))
-                                                     result_1)))))
-                                           result_0))))))
-                                  (for-loop_0 #t start*_2 start*_1)))))
+                                                       #f)
+                                                   (for-loop_0
+                                                    result_1
+                                                    (unsafe-fx+ idx_0 1)
+                                                    (unsafe-fx+ idx_1 1))
+                                                   result_1)))))
+                                         result_0))))))
+                                (for-loop_0 #t start*_2 start*_1))))
                             (args (raise-binding-result-arity-error 4 args)))))
                          (args (raise-binding-result-arity-error 4 args))))
                        #f)
@@ -6437,58 +6411,51 @@
                                    (start*_2 start*_0)
                                    (stop*_2 stop*_0)
                                    (step*_2 step*_0))
-                               (begin
-                                 #t
-                                 #t
-                                 (letrec*
-                                  ((for-loop_0
-                                    (|#%name|
-                                     for-loop
-                                     (lambda (result_0 idx_0 idx_1)
-                                       (begin
-                                         (if (if (unsafe-fx< idx_0 stop*_2)
-                                               (unsafe-fx< idx_1 stop*_1)
-                                               #f)
-                                           (let ((c1_0
+                               (letrec*
+                                ((for-loop_0
+                                  (|#%name|
+                                   for-loop
+                                   (lambda (result_0 idx_0 idx_1)
+                                     (begin
+                                       (if (if (unsafe-fx< idx_0 stop*_2)
+                                             (unsafe-fx< idx_1 stop*_1)
+                                             #f)
+                                         (let ((c1_0
+                                                (unsafe-bytes-ref v*_2 idx_0)))
+                                           (let ((c2_0
                                                   (unsafe-bytes-ref
-                                                   v*_2
-                                                   idx_0)))
-                                             (let ((c2_0
-                                                    (unsafe-bytes-ref
-                                                     v*_1
-                                                     idx_1)))
-                                               (let ((c1_1 c1_0))
-                                                 (let ((result_1
-                                                        (let ((result_1
-                                                               (let ((app_0
-                                                                      (chyte-to-lower
-                                                                       c1_1)))
-                                                                 (=
-                                                                  app_0
-                                                                  (chyte-to-lower
-                                                                   c2_0)))))
-                                                          (values result_1))))
-                                                   (if (if (not
+                                                   v*_1
+                                                   idx_1)))
+                                             (let ((c1_1 c1_0))
+                                               (let ((result_1
+                                                      (let ((result_1
+                                                             (let ((app_0
+                                                                    (chyte-to-lower
+                                                                     c1_1)))
+                                                               (=
+                                                                app_0
+                                                                (chyte-to-lower
+                                                                 c2_0)))))
+                                                        (values result_1))))
+                                                 (if (if (not
+                                                          (let ((x_0
+                                                                 (list c1_1)))
+                                                            (not result_1)))
+                                                       (if (not
                                                             (let ((x_0
                                                                    (list
-                                                                    c1_1)))
+                                                                    c2_0)))
                                                               (not result_1)))
-                                                         (if (not
-                                                              (let ((x_0
-                                                                     (list
-                                                                      c2_0)))
-                                                                (not
-                                                                 result_1)))
-                                                           #t
-                                                           #f)
+                                                         #t
                                                          #f)
-                                                     (for-loop_0
-                                                      result_1
-                                                      (unsafe-fx+ idx_0 1)
-                                                      (unsafe-fx+ idx_1 1))
-                                                     result_1)))))
-                                           result_0))))))
-                                  (for-loop_0 #t start*_2 start*_1)))))
+                                                       #f)
+                                                   (for-loop_0
+                                                    result_1
+                                                    (unsafe-fx+ idx_0 1)
+                                                    (unsafe-fx+ idx_1 1))
+                                                   result_1)))))
+                                         result_0))))))
+                                (for-loop_0 #t start*_2 start*_1))))
                             (args (raise-binding-result-arity-error 4 args)))))
                          (args (raise-binding-result-arity-error 4 args))))
                        #f)
@@ -7548,40 +7515,32 @@
               (reverse$1
                (call-with-values
                 (lambda ()
-                  (begin
-                    (check-vector state5_0)
-                    (values state5_0 (unsafe-vector-length state5_0))))
+                  (begin (values state5_0 (unsafe-vector-length state5_0))))
                 (case-lambda
                  ((vec_0 len_0)
-                  (begin
-                    #f
-                    (letrec*
-                     ((for-loop_0
-                       (|#%name|
-                        for-loop
-                        (lambda (fold-var_0 pos_0)
-                          (begin
-                            (if (unsafe-fx< pos_0 len_0)
-                              (let ((p_0 (unsafe-vector-ref vec_0 pos_0)))
-                                (let ((fold-var_1
-                                       (let ((fold-var_1
-                                              (cons
-                                               (if p_0
-                                                 (let ((app_1
-                                                        (+
-                                                         (car p_0)
-                                                         delta1_0)))
-                                                   (cons
-                                                    app_1
-                                                    (+ (cdr p_0) delta1_0)))
-                                                 #f)
-                                               fold-var_0)))
-                                         (values fold-var_1))))
-                                  (for-loop_0
-                                   fold-var_1
-                                   (unsafe-fx+ 1 pos_0))))
-                              fold-var_0))))))
-                     (for-loop_0 null 0))))
+                  (letrec*
+                   ((for-loop_0
+                     (|#%name|
+                      for-loop
+                      (lambda (fold-var_0 pos_0)
+                        (begin
+                          (if (unsafe-fx< pos_0 len_0)
+                            (let ((p_0 (unsafe-vector-ref vec_0 pos_0)))
+                              (let ((fold-var_1
+                                     (let ((fold-var_1
+                                            (cons
+                                             (if p_0
+                                               (let ((app_1
+                                                      (+ (car p_0) delta1_0)))
+                                                 (cons
+                                                  app_1
+                                                  (+ (cdr p_0) delta1_0)))
+                                               #f)
+                                             fold-var_0)))
+                                       (values fold-var_1))))
+                                (for-loop_0 fold-var_1 (unsafe-fx+ 1 pos_0))))
+                            fold-var_0))))))
+                   (for-loop_0 null 0)))
                  (args (raise-binding-result-arity-error 2 args)))))))))))))
 (define byte-positions->bytess.1
   (|#%name|
@@ -7597,37 +7556,33 @@
             (reverse$1
              (call-with-values
               (lambda ()
-                (begin
-                  (check-vector state12_0)
-                  (values state12_0 (unsafe-vector-length state12_0))))
+                (begin (values state12_0 (unsafe-vector-length state12_0))))
               (case-lambda
                ((vec_0 len_0)
-                (begin
-                  #f
-                  (letrec*
-                   ((for-loop_0
-                     (|#%name|
-                      for-loop
-                      (lambda (fold-var_0 pos_0)
-                        (begin
-                          (if (unsafe-fx< pos_0 len_0)
-                            (let ((p_0 (unsafe-vector-ref vec_0 pos_0)))
-                              (let ((fold-var_1
-                                     (let ((fold-var_1
-                                            (cons
-                                             (if p_0
-                                               (let ((app_1
-                                                      (- (car p_0) delta7_0)))
-                                                 (subbytes
-                                                  in9_0
-                                                  app_1
-                                                  (- (cdr p_0) delta7_0)))
-                                               #f)
-                                             fold-var_0)))
-                                       (values fold-var_1))))
-                                (for-loop_0 fold-var_1 (unsafe-fx+ 1 pos_0))))
-                            fold-var_0))))))
-                   (for-loop_0 null 0))))
+                (letrec*
+                 ((for-loop_0
+                   (|#%name|
+                    for-loop
+                    (lambda (fold-var_0 pos_0)
+                      (begin
+                        (if (unsafe-fx< pos_0 len_0)
+                          (let ((p_0 (unsafe-vector-ref vec_0 pos_0)))
+                            (let ((fold-var_1
+                                   (let ((fold-var_1
+                                          (cons
+                                           (if p_0
+                                             (let ((app_1
+                                                    (- (car p_0) delta7_0)))
+                                               (subbytes
+                                                in9_0
+                                                app_1
+                                                (- (cdr p_0) delta7_0)))
+                                             #f)
+                                           fold-var_0)))
+                                     (values fold-var_1))))
+                              (for-loop_0 fold-var_1 (unsafe-fx+ 1 pos_0))))
+                          fold-var_0))))))
+                 (for-loop_0 null 0)))
                (args (raise-binding-result-arity-error 2 args)))))
             null)))))))
 (define byte-positions->string-positions.1
@@ -7671,40 +7626,33 @@
               (reverse$1
                (call-with-values
                 (lambda ()
-                  (begin
-                    (check-vector state23_0)
-                    (values state23_0 (unsafe-vector-length state23_0))))
+                  (begin (values state23_0 (unsafe-vector-length state23_0))))
                 (case-lambda
                  ((vec_0 len_0)
-                  (begin
-                    #f
-                    (letrec*
-                     ((for-loop_0
-                       (|#%name|
-                        for-loop
-                        (lambda (fold-var_0 pos_0)
-                          (begin
-                            (if (unsafe-fx< pos_0 len_0)
-                              (let ((p_0 (unsafe-vector-ref vec_0 pos_0)))
-                                (let ((fold-var_1
-                                       (let ((fold-var_1
-                                              (cons
-                                               (if p_0
-                                                 (let ((app_1
-                                                        (string-offset_0
-                                                         (car p_0))))
-                                                   (cons
-                                                    app_1
-                                                    (string-offset_0
-                                                     (cdr p_0))))
-                                                 #f)
-                                               fold-var_0)))
-                                         (values fold-var_1))))
-                                  (for-loop_0
-                                   fold-var_1
-                                   (unsafe-fx+ 1 pos_0))))
-                              fold-var_0))))))
-                     (for-loop_0 null 0))))
+                  (letrec*
+                   ((for-loop_0
+                     (|#%name|
+                      for-loop
+                      (lambda (fold-var_0 pos_0)
+                        (begin
+                          (if (unsafe-fx< pos_0 len_0)
+                            (let ((p_0 (unsafe-vector-ref vec_0 pos_0)))
+                              (let ((fold-var_1
+                                     (let ((fold-var_1
+                                            (cons
+                                             (if p_0
+                                               (let ((app_1
+                                                      (string-offset_0
+                                                       (car p_0))))
+                                                 (cons
+                                                  app_1
+                                                  (string-offset_0 (cdr p_0))))
+                                               #f)
+                                             fold-var_0)))
+                                       (values fold-var_1))))
+                                (for-loop_0 fold-var_1 (unsafe-fx+ 1 pos_0))))
+                            fold-var_0))))))
+                   (for-loop_0 null 0)))
                  (args (raise-binding-result-arity-error 2 args)))))
               null))))))))
 (define byte-positions->strings.1
@@ -7725,38 +7673,34 @@
             (reverse$1
              (call-with-values
               (lambda ()
-                (begin
-                  (check-vector state30_0)
-                  (values state30_0 (unsafe-vector-length state30_0))))
+                (begin (values state30_0 (unsafe-vector-length state30_0))))
               (case-lambda
                ((vec_0 len_0)
-                (begin
-                  #f
-                  (letrec*
-                   ((for-loop_0
-                     (|#%name|
-                      for-loop
-                      (lambda (fold-var_0 pos_0)
-                        (begin
-                          (if (unsafe-fx< pos_0 len_0)
-                            (let ((p_0 (unsafe-vector-ref vec_0 pos_0)))
-                              (let ((fold-var_1
-                                     (let ((fold-var_1
-                                            (cons
-                                             (if p_0
-                                               (let ((app_1
-                                                      (- (car p_0) delta25_0)))
-                                                 (bytes->string/utf-8
-                                                  bstr-in27_0
-                                                  '#\x3f
-                                                  app_1
-                                                  (- (cdr p_0) delta25_0)))
-                                               #f)
-                                             fold-var_0)))
-                                       (values fold-var_1))))
-                                (for-loop_0 fold-var_1 (unsafe-fx+ 1 pos_0))))
-                            fold-var_0))))))
-                   (for-loop_0 null 0))))
+                (letrec*
+                 ((for-loop_0
+                   (|#%name|
+                    for-loop
+                    (lambda (fold-var_0 pos_0)
+                      (begin
+                        (if (unsafe-fx< pos_0 len_0)
+                          (let ((p_0 (unsafe-vector-ref vec_0 pos_0)))
+                            (let ((fold-var_1
+                                   (let ((fold-var_1
+                                          (cons
+                                           (if p_0
+                                             (let ((app_1
+                                                    (- (car p_0) delta25_0)))
+                                               (bytes->string/utf-8
+                                                bstr-in27_0
+                                                '#\x3f
+                                                app_1
+                                                (- (cdr p_0) delta25_0)))
+                                             #f)
+                                           fold-var_0)))
+                                     (values fold-var_1))))
+                              (for-loop_0 fold-var_1 (unsafe-fx+ 1 pos_0))))
+                          fold-var_0))))))
+                 (for-loop_0 null 0)))
                (args (raise-binding-result-arity-error 2 args)))))
             null)))))))
 (define byte-index->string-index
@@ -7884,27 +7828,24 @@
                   1))
                (case-lambda
                 ((v*_0 start*_0 stop*_0 step*_0)
-                 (begin
-                   #t
-                   (letrec*
-                    ((for-loop_0
-                      (|#%name|
-                       for-loop
-                       (lambda (result_0 idx_0)
-                         (begin
-                           (if (unsafe-fx< idx_0 stop*_0)
-                             (let ((c_0 (unsafe-bytes-ref v*_0 idx_0)))
-                               (let ((result_1
-                                      (let ((result_1 (= c_0 mc_0)))
-                                        (values result_1))))
-                                 (if (if (not
-                                          (let ((x_0 (list c_0))) result_1))
-                                       #t
-                                       #f)
-                                   (for-loop_0 result_1 (unsafe-fx+ idx_0 1))
-                                   result_1)))
-                             result_0))))))
-                    (for-loop_0 #f start*_0))))
+                 (letrec*
+                  ((for-loop_0
+                    (|#%name|
+                     for-loop
+                     (lambda (result_0 idx_0)
+                       (begin
+                         (if (unsafe-fx< idx_0 stop*_0)
+                           (let ((c_0 (unsafe-bytes-ref v*_0 idx_0)))
+                             (let ((result_1
+                                    (let ((result_1 (= c_0 mc_0)))
+                                      (values result_1))))
+                               (if (if (not (let ((x_0 (list c_0))) result_1))
+                                     #t
+                                     #f)
+                                 (for-loop_0 result_1 (unsafe-fx+ idx_0 1))
+                                 result_1)))
+                           result_0))))))
+                  (for-loop_0 #f start*_0)))
                 (args (raise-binding-result-arity-error 4 args)))))
             (let ((mc1_0 (unsafe-bytes-ref must-string_0 0)))
               (let ((end_0
@@ -7949,70 +7890,67 @@
                                                         (start*_2 start*_0)
                                                         (stop*_2 stop*_0)
                                                         (step*_2 step*_0))
-                                                    (begin
-                                                      #t
-                                                      #t
-                                                      (letrec*
-                                                       ((for-loop_1
-                                                         (|#%name|
-                                                          for-loop
-                                                          (lambda (result_1
-                                                                   idx_0
-                                                                   idx_1)
-                                                            (begin
-                                                              (if (if (unsafe-fx<
-                                                                       idx_0
-                                                                       stop*_2)
-                                                                    (unsafe-fx<
-                                                                     idx_1
-                                                                     stop*_1)
-                                                                    #f)
-                                                                (let ((c_0
+                                                    (letrec*
+                                                     ((for-loop_1
+                                                       (|#%name|
+                                                        for-loop
+                                                        (lambda (result_1
+                                                                 idx_0
+                                                                 idx_1)
+                                                          (begin
+                                                            (if (if (unsafe-fx<
+                                                                     idx_0
+                                                                     stop*_2)
+                                                                  (unsafe-fx<
+                                                                   idx_1
+                                                                   stop*_1)
+                                                                  #f)
+                                                              (let ((c_0
+                                                                     (unsafe-bytes-ref
+                                                                      v*_2
+                                                                      idx_0)))
+                                                                (let ((mc_0
                                                                        (unsafe-bytes-ref
-                                                                        v*_2
-                                                                        idx_0)))
-                                                                  (let ((mc_0
-                                                                         (unsafe-bytes-ref
-                                                                          v*_1
-                                                                          idx_1)))
-                                                                    (let ((c_1
-                                                                           c_0))
-                                                                      (let ((result_2
-                                                                             (let ((result_2
-                                                                                    (=
-                                                                                     c_1
-                                                                                     mc_0)))
-                                                                               (values
-                                                                                result_2))))
-                                                                        (if (if (not
+                                                                        v*_1
+                                                                        idx_1)))
+                                                                  (let ((c_1
+                                                                         c_0))
+                                                                    (let ((result_2
+                                                                           (let ((result_2
+                                                                                  (=
+                                                                                   c_1
+                                                                                   mc_0)))
+                                                                             (values
+                                                                              result_2))))
+                                                                      (if (if (not
+                                                                               (let ((x_0
+                                                                                      (list
+                                                                                       c_1)))
+                                                                                 (not
+                                                                                  result_2)))
+                                                                            (if (not
                                                                                  (let ((x_0
                                                                                         (list
-                                                                                         c_1)))
+                                                                                         mc_0)))
                                                                                    (not
                                                                                     result_2)))
-                                                                              (if (not
-                                                                                   (let ((x_0
-                                                                                          (list
-                                                                                           mc_0)))
-                                                                                     (not
-                                                                                      result_2)))
-                                                                                #t
-                                                                                #f)
+                                                                              #t
                                                                               #f)
-                                                                          (for-loop_1
-                                                                           result_2
-                                                                           (unsafe-fx+
-                                                                            idx_0
-                                                                            1)
-                                                                           (unsafe-fx+
-                                                                            idx_1
-                                                                            1))
-                                                                          result_2)))))
-                                                                result_1))))))
-                                                       (for-loop_1
-                                                        #t
-                                                        start*_2
-                                                        start*_1)))))
+                                                                            #f)
+                                                                        (for-loop_1
+                                                                         result_2
+                                                                         (unsafe-fx+
+                                                                          idx_0
+                                                                          1)
+                                                                         (unsafe-fx+
+                                                                          idx_1
+                                                                          1))
+                                                                        result_2)))))
+                                                              result_1))))))
+                                                     (for-loop_1
+                                                      #t
+                                                      start*_2
+                                                      start*_1))))
                                                  (args
                                                   (raise-binding-result-arity-error
                                                    4
@@ -8174,40 +8112,36 @@
                      (call-with-values
                       (lambda ()
                         (begin
-                          (check-vector state_0)
                           (values state_0 (unsafe-vector-length state_0))))
                       (case-lambda
                        ((vec_0 len_0)
-                        (begin
-                          #f
-                          (letrec*
-                           ((for-loop_0
-                             (|#%name|
-                              for-loop
-                              (lambda (fold-var_0 pos_0)
-                                (begin
-                                  (if (unsafe-fx< pos_0 len_0)
-                                    (let ((p_0
-                                           (unsafe-vector-ref vec_0 pos_0)))
-                                      (let ((fold-var_1
-                                             (let ((fold-var_1
-                                                    (cons
-                                                     (if p_0
-                                                       (let ((app_1
-                                                              (string-offset_0
-                                                               (car p_0))))
-                                                         (cons
-                                                          app_1
-                                                          (string-offset_0
-                                                           (cdr p_0))))
-                                                       #f)
-                                                     fold-var_0)))
-                                               (values fold-var_1))))
-                                        (for-loop_0
-                                         fold-var_1
-                                         (unsafe-fx+ 1 pos_0))))
-                                    fold-var_0))))))
-                           (for-loop_0 null 0))))
+                        (letrec*
+                         ((for-loop_0
+                           (|#%name|
+                            for-loop
+                            (lambda (fold-var_0 pos_0)
+                              (begin
+                                (if (unsafe-fx< pos_0 len_0)
+                                  (let ((p_0 (unsafe-vector-ref vec_0 pos_0)))
+                                    (let ((fold-var_1
+                                           (let ((fold-var_1
+                                                  (cons
+                                                   (if p_0
+                                                     (let ((app_1
+                                                            (string-offset_0
+                                                             (car p_0))))
+                                                       (cons
+                                                        app_1
+                                                        (string-offset_0
+                                                         (cdr p_0))))
+                                                     #f)
+                                                   fold-var_0)))
+                                             (values fold-var_1))))
+                                      (for-loop_0
+                                       fold-var_1
+                                       (unsafe-fx+ 1 pos_0))))
+                                  fold-var_0))))))
+                         (for-loop_0 null 0)))
                        (args (raise-binding-result-arity-error 2 args)))))
                     null)))
                #f)))
@@ -8236,38 +8170,34 @@
                 (reverse$1
                  (call-with-values
                   (lambda ()
-                    (begin
-                      (check-vector state_0)
-                      (values state_0 (unsafe-vector-length state_0))))
+                    (begin (values state_0 (unsafe-vector-length state_0))))
                   (case-lambda
                    ((vec_0 len_0)
-                    (begin
-                      #f
-                      (letrec*
-                       ((for-loop_0
-                         (|#%name|
-                          for-loop
-                          (lambda (fold-var_0 pos_0)
-                            (begin
-                              (if (unsafe-fx< pos_0 len_0)
-                                (let ((p_0 (unsafe-vector-ref vec_0 pos_0)))
-                                  (let ((fold-var_1
-                                         (let ((fold-var_1
-                                                (cons
-                                                 (if p_0
-                                                   (let ((app_1 (car p_0)))
-                                                     (subbytes
-                                                      in_0
-                                                      app_1
-                                                      (cdr p_0)))
-                                                   #f)
-                                                 fold-var_0)))
-                                           (values fold-var_1))))
-                                    (for-loop_0
-                                     fold-var_1
-                                     (unsafe-fx+ 1 pos_0))))
-                                fold-var_0))))))
-                       (for-loop_0 null 0))))
+                    (letrec*
+                     ((for-loop_0
+                       (|#%name|
+                        for-loop
+                        (lambda (fold-var_0 pos_0)
+                          (begin
+                            (if (unsafe-fx< pos_0 len_0)
+                              (let ((p_0 (unsafe-vector-ref vec_0 pos_0)))
+                                (let ((fold-var_1
+                                       (let ((fold-var_1
+                                              (cons
+                                               (if p_0
+                                                 (let ((app_1 (car p_0)))
+                                                   (subbytes
+                                                    in_0
+                                                    app_1
+                                                    (cdr p_0)))
+                                                 #f)
+                                               fold-var_0)))
+                                         (values fold-var_1))))
+                                  (for-loop_0
+                                   fold-var_1
+                                   (unsafe-fx+ 1 pos_0))))
+                              fold-var_0))))))
+                     (for-loop_0 null 0)))
                    (args (raise-binding-result-arity-error 2 args)))))
                 null)))
            #f))
@@ -8296,39 +8226,35 @@
                   (reverse$1
                    (call-with-values
                     (lambda ()
-                      (begin
-                        (check-vector state_0)
-                        (values state_0 (unsafe-vector-length state_0))))
+                      (begin (values state_0 (unsafe-vector-length state_0))))
                     (case-lambda
                      ((vec_0 len_0)
-                      (begin
-                        #f
-                        (letrec*
-                         ((for-loop_0
-                           (|#%name|
-                            for-loop
-                            (lambda (fold-var_0 pos_0)
-                              (begin
-                                (if (unsafe-fx< pos_0 len_0)
-                                  (let ((p_0 (unsafe-vector-ref vec_0 pos_0)))
-                                    (let ((fold-var_1
-                                           (let ((fold-var_1
-                                                  (cons
-                                                   (if p_0
-                                                     (let ((app_1 (car p_0)))
-                                                       (bytes->string/utf-8
-                                                        in_0
-                                                        '#\x3f
-                                                        app_1
-                                                        (cdr p_0)))
-                                                     #f)
-                                                   fold-var_0)))
-                                             (values fold-var_1))))
-                                      (for-loop_0
-                                       fold-var_1
-                                       (unsafe-fx+ 1 pos_0))))
-                                  fold-var_0))))))
-                         (for-loop_0 null 0))))
+                      (letrec*
+                       ((for-loop_0
+                         (|#%name|
+                          for-loop
+                          (lambda (fold-var_0 pos_0)
+                            (begin
+                              (if (unsafe-fx< pos_0 len_0)
+                                (let ((p_0 (unsafe-vector-ref vec_0 pos_0)))
+                                  (let ((fold-var_1
+                                         (let ((fold-var_1
+                                                (cons
+                                                 (if p_0
+                                                   (let ((app_1 (car p_0)))
+                                                     (bytes->string/utf-8
+                                                      in_0
+                                                      '#\x3f
+                                                      app_1
+                                                      (cdr p_0)))
+                                                   #f)
+                                                 fold-var_0)))
+                                           (values fold-var_1))))
+                                    (for-loop_0
+                                     fold-var_1
+                                     (unsafe-fx+ 1 pos_0))))
+                                fold-var_0))))))
+                       (for-loop_0 null 0)))
                      (args (raise-binding-result-arity-error 2 args)))))
                   null)))
              #f))

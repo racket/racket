@@ -412,7 +412,9 @@
                              null
                              (cond
                                [(bulk-required? where)
-                                (format "\n  also provided by: ~.s" (syntax->datum (bulk-required-s where)))]
+                                (format "\n  also provided by: ~a"
+                                        ((error-syntax->string-handler) (bulk-required-s where)
+                                                                        (error-print-width)))]
                                [else ""])))
        (cond
          [(and (not at-mod)
