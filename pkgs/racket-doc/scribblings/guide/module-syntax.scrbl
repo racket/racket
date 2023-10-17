@@ -100,7 +100,7 @@ is
 racket
 _decl ...]
 
-which @secref["hash-lang reader"]{reads} the same as
+which @seclink["hash-lang reader"]{reads} the same as
 
 @racketblock[
 (module _name racket
