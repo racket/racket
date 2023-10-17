@@ -407,4 +407,12 @@ Since ``touch'' mode is not supported by @racket[build], detection of
 a @Flag{t} flag triggers an error instead of a non-@racket[#f] value.
 Conflicting options also trigger an error.
 
+The @envvar{MAKEFLAGS} environment variable is parsed into arguments
+using @racket[shell->strings]. If the first argument has only ASCII
+letters (lowercase or uppercase), then it is treated as a set of
+single-character flags. Otherwise, the argument list is scanned for
+@racket["-n"], @racket["--just-print"], @racket["--dry-run"],
+@racket["--recon"], @racket["-q"], @racket["--question"], @racket["-t"],
+or @racket["--touch"] stopping at any @racket["--"].
+
 }

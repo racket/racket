@@ -34,20 +34,21 @@
                                (string<? "z" (substring s i (+ i 1))))
                            (or (string<? (substring s i (+ i 1)) "A")
                                (string<? "Z" (substring s i (+ i 1)))))
-                      ;; doesn't look like single-letter flags
-                      #f]
+                      ;; doesn't look like single-letter flags, so
+                      ;; look for "-n", "-t", or "-q"
+                      (let loop ([l l] [mode #f])
+                        (cond
+                          [(null? l)
+                           (no-touch mode)]
+                          [(member (car l) '("-n" "--just-print" "--dry-run" "--recon"))
+                           (loop (cdr l) (new-mode mode 'dry-run))]
+                          [(member (car l) '("-q" "--question"))
+                           (loop (cdr l) (new-mode mode 'question))]
+                          [(member (car l) '("-t" "--touch"))
+                           (loop (cdr l) (new-mode mode 'touch))]
+                          [(equal? "--" (car l))
+                           (loop '() mode)]
+                          [else
+                           (loop (cdr l) mode)]))]
                      [else
-                      (loop (+ i 1) mode)])))
-               ;; Otherwise, look for "-n", "-t", and "-q"
-               (let loop ([l l] [mode #f])
-                 (cond
-                   [(null? l)
-                    (no-touch mode)]
-                   [(equal? "-n" (car l))
-                    (loop (cdr l) (new-mode mode 'dry-run))]
-                   [(equal? "-q" (car l))
-                    (loop (cdr l) (new-mode mode 'question))]
-                   [(equal? "-t" (car l))
-                    (loop (cdr l) (new-mode mode 'touch))]
-                   [else
-                    (loop (cdr l) mode)])))))))
+                      (loop (+ i 1) mode)]))))))))
