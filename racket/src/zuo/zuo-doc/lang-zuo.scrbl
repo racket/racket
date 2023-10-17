@@ -519,7 +519,7 @@ null character.}
 @section{Hash Tables (Persistent Maps)}
 
 Zuo @tech{hash tables} do not actually have anything to do with
-hashing, but they're called that for similarly to Racket. A hash table
+hashing, but they're called that for similarity to Racket. A hash table
 maps symbols to other values, and updating a hash table produces a new
 hash table (which, internally, may share with the original).
 
