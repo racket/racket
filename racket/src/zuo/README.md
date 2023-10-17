@@ -78,7 +78,7 @@ well as a `to-install/zuo` that has the right internal path to find
 other libraries after `make install` or `./zuo build.zuo install`.
 
 You can use heap images without embedding. The `dump-heap-and-exit`
-Zuo kernel permitive creates a heap image, and a `-B` or `--boot`
+Zuo kernel primitive creates a heap image, and a `-B` or `--boot`
 command-line flag for Zuo uses the given boot image on startup. You
 can also embed an image created with `dump-image-and-exit` by using
 `local/image.zuo` with the `--image` flag.
