@@ -100,7 +100,7 @@ is
 racket
 _decl ...]
 
-which @tt{@hyperlink["https://docs.racket-lang.org/guide/hash-lang_reader.html"]{reads}} the same as
+which @secref["hash-lang reader"]{reads} the same as
 
 @racketblock[
 (module _name racket
