@@ -262,7 +262,7 @@ straightforward:
 ]
 Both modules @racket[require] the @tt{fast} module, but @tt{needs-goodness}
 on the left goes through the contracted @racket[provide] while
-@tt{needs-speed} on the right uses the @tt{no-contract} submodule. Tchnically,
+@tt{needs-speed} on the right uses the @tt{no-contract} submodule. Technically,
 the left module imports @racket[human] with contracts; the right one
 imports the same function without contract and thus doesn't have to pay the
 performance penalty.
