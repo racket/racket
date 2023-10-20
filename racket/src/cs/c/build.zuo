@@ -349,11 +349,19 @@
     (call-with-dest-racket
      (lambda (bindir dest-racket)
        (cons dest-racket
-             (cond
-               [mac-fw? (list (build-path (shell-subst (lookup 'FRAMEWORK_INSTALL_DIR) config)
-                                          framework-dir
-                                          "Racket"))]
-               [else '()])))))
+             (append
+              (cond
+                [mac-fw? (list (build-path (shell-subst (lookup 'FRAMEWORK_INSTALL_DIR) config)
+                                           framework-dir
+                                           "Racket"))]
+                [else '()])
+              (cond
+                [xpatch? (list* (at-source "cross-serve.ss")
+                                (at-source "mk-cross-serve.ss")
+                                (at-source "../expander/env.ss")
+                                (map (lambda (name) (at-dir (~a name "." host-m)))
+                                     library-xpatch-names))]
+                [else '()]))))))
   (define install-data-to-check
     (input-data-target 'install-data
                        ;; this could be more precise, too:
