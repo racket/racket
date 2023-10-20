@@ -136,7 +136,7 @@ Switch Racket CS immutable hash table to HAMTs, based on
  stencil vectors in the Chez Scheme
 Bug repairs and other changes noted in the documentation
 
-Version 7.6, January 2019
+Version 7.6, January 2020
 Bug repairs and other changes noted in the documentation
 
 Version 7.5, November 2019
