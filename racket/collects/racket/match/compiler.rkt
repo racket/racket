@@ -100,7 +100,7 @@
         #`[question (let ([tmps (accs #,x)] ...) body)])))
   (cond
     [(eq? 'box k)
-     (compile-con-pat (list #'unsafe-unbox*) #'box? (compose list Box-p))]
+     (compile-con-pat (list #'unsafe-unbox) #'box? (compose list Box-p))]
     [(eq? 'pair k)
      (compile-con-pat (list #'unsafe-car #'unsafe-cdr) #'pair?
                       (lambda (p) (list (Pair-a p) (Pair-d p))))]
