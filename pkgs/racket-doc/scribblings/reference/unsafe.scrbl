@@ -319,11 +319,10 @@ Some pitfalls of using @racket[unsafe-set-immutable-car!] and
 @history[#:added "7.9.0.18"]}
 
 @deftogether[(
-@defproc[(unsafe-unbox [b box?]) fixnum?]
-@defproc[(unsafe-set-box! [b box?] [k fixnum?]) void?]
+@defproc[(unsafe-unbox [b box?]) any/c]
+@defproc[(unsafe-set-box! [b box?] [k any/c]) void?]
 @defproc[(unsafe-unbox* [v (and/c box? (not/c impersonator?))]) any/c]
-@defproc[(unsafe-set-box*! [v (and/c box? (not/c impersonator?))] [val any/c]) void?]
-)]{
+@defproc[(unsafe-set-box*! [v (and/c box? (not/c impersonator?))] [val any/c]) void?])]{
 
 Unsafe versions of @racket[unbox] and @racket[set-box!], where the
 @schemeidfont{box*} variants can be faster but do not work on
