@@ -6,4 +6,4 @@
     ("local-redirect.scrbl" (depends-all-main no-depend-on every-main-layer) (omit) "local-redirect" 1 10)
     ("license.scrbl" () (omit))
     ("acks.scrbl"    () (omit))
-    ("release.scrbl" (depends-all-main no-depend-on) (omit))))
+    ("release.scrbl" (depends-all-main no-depend-on every-main-layer) (omit))))
