@@ -290,7 +290,7 @@
                                            (url->string (path->url e))
                                            (format "../~a" name))))
          (fprintf o "];\n\n")
-         (fprintf o (rewrite-code prefix here-url num-bins))
+         (fprintf o "~a" (rewrite-code prefix here-url num-bins))
          (newline o)))
       (unless (file-exists? alt-dest)
         ;; make empty alternate file; in `user?` mode, this
