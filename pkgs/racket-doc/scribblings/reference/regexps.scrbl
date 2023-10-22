@@ -880,8 +880,8 @@ an end-of-file if @racket[input] is an input port).
 @defproc[(regexp-replace [pattern (or/c string? bytes? regexp? byte-regexp?)]
                          [input (or/c string? bytes?)]
                          [insert (or/c string? bytes?
-                                       ((string?) () #:rest (listof string?) . ->* . string?)
-                                       ((bytes?) () #:rest (listof bytes?) . ->* . bytes?))]
+                                       (string? string? ... . -> . string?)
+                                       (bytes? bytes? ... . -> . bytes?))]
                          [input-prefix bytes? #""])
          (if (and (or (string? pattern) (regexp? pattern))
                   (string? input))
@@ -948,8 +948,8 @@ before the @litchar{\}. For example, the Racket constant
 @defproc[(regexp-replace* [pattern (or/c string? bytes? regexp? byte-regexp?)]
                           [input (or/c string? bytes?)]
                           [insert (or/c string? bytes?
-                                        ((string?) () #:rest (listof string?) . ->* . string?)
-                                        ((bytes?) () #:rest (listof bytes?) . ->* . bytes?))]
+                                        (string? string? ... . -> . string?)
+                                        (bytes? bytes? ... . -> . bytes?))]
                           [start-pos exact-nonnegative-integer? 0]
                           [end-pos (or/c exact-nonnegative-integer? #f) #f]
                           [input-prefix bytes? #""])
@@ -989,8 +989,8 @@ string or the stream up to an end-of-file.
                            (listof
                             (list/c (or/c string? bytes? regexp? byte-regexp?)
                                     (or/c string? bytes?
-                                        ((string?) () #:rest (listof string?) . ->* . string?)
-                                        ((bytes?) () #:rest (listof bytes?) . ->* . bytes?))))])
+                                        (string? string? ... . -> . string?)
+                                        (bytes? bytes? ... . -> . bytes?))))])
          (or/c string? bytes?)]{
 
 Performs a chain of @racket[regexp-replace*] operations, where each
