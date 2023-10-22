@@ -590,6 +590,9 @@
     (error? (char-foldcase 'a))
     (eqv? (char-foldcase #\a) #\a)
     (eqv? (char-foldcase #\Z) #\z)
+    (eqv? (char-foldcase #\Z) #\z)
+    (eqv? (char-foldcase #\x1e9e) #\xDF)
+    (eqv? (char-foldcase #\x1f8d) #\x1f85)
  )
 
 (mat integer->char

@@ -1733,6 +1733,9 @@
 
 (test "\xDF\xDF" string-downcase  "\u1E9E\xDF")
 
+(test #\uDF char-foldcase #\u1e9e)
+(test #\u1f85 char-foldcase #\u1f8d)
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Bytes converters and custodians - check that built-in conversions are
 ;; not registered
