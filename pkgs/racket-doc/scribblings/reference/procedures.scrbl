@@ -312,7 +312,7 @@ list is also in the second list.
 }
 
 @defproc[(make-keyword-procedure
-          [proc (((listof keyword?) list?) () #:rest list? . ->* . any)]
+          [proc ((listof keyword?) list? any/c ... . -> . any)]
           [plain-proc procedure? (lambda args (apply proc null null args))])
          procedure?]{
 
