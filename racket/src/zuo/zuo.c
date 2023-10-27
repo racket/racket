@@ -3330,6 +3330,7 @@ static void continue_step() {
             if (tag->tag != zuo_symbol_tag)
               zuo_fail1w("call/prompt", "not a symbol", tag);
             args = z.o_null;
+            count = 0;
             Z.o_interp_meta_k = zuo_cons(zuo_cons(Z.o_interp_k, tag),
                                          Z.o_interp_meta_k);
             Z.o_interp_k = z.o_done_k;
