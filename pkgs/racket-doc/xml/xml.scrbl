@@ -416,7 +416,7 @@ or otherwise escaping. Results from the leaves are combined with
 
 @section{Parameters}
 
-@defparam[current-unescaped-tags tags (listof symbol?) #:value null]{
+@defparam[current-unescaped-tags tags (listof symbol?) #:auto-value]{
   A parameter that determines which tags' string contents should not
   be escaped.  For backwards compatibility, this defaults to the empty
   list.
@@ -424,7 +424,7 @@ or otherwise escaping. Results from the leaves are combined with
   @history[#:added "8.0.0.12"]
 }
 
-@defthing[html-unescaped-tags (listof symbol?) #:value '(script style)]{
+@defthing[html-unescaped-tags (listof symbol?) #:auto-value]{
   The list of tags whose contents are normally not escaped in HTML.
   See @racket[current-unescaped-tags].
 
@@ -458,7 +458,7 @@ document uses a mixture of the two formats. The
 recommended list of XHTML tags that should use the shorthand. This
 list is the default value of @racket[empty-tag-shorthand].}
 
-@defthing[html-empty-tags (listof symbol?)]{
+@defthing[html-empty-tags (listof symbol?) #:auto-value]{
 
 See @racket[empty-tag-shorthand].
 
