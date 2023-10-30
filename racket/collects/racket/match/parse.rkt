@@ -7,7 +7,9 @@
          "parse-helper.rkt"
          "parse-quasi.rkt"
          (only-in "stxtime.rkt" current-form-name)
-         (for-template (only-in "runtime.rkt" matchable? pregexp-matcher mlist? mlist->list)
+         (for-template (only-in "runtime.rkt" matchable? pregexp-matcher mlist? mlist->list
+                                undef user-def undef? user-def? hash-remove-safe
+                                hash-remove-safe!)
                        (only-in racket/unsafe/ops unsafe-vector-ref)
                        racket/base))
 
@@ -53,6 +55,131 @@
           (rest suffix)
           (if (eq? ddk-size #t) 0 ddk-size)))
 
+
+;; gen-closed-mode :: syntax?
+;;                    (listof identifier?)
+;;                    (listof identifier?)
+;;                    -> (listof syntax?)
+(define (gen-closed-mode mode k-ids ref-ids)
+  (cond
+    [(eq? mode #t)
+     (list #`(λ ()
+               (define seen (hash-copy-clear e #:kind 'mutable))
+               (define cnt
+                 (+ #,@(for/list ([k-id (in-list k-ids)]
+                                  [ref-id (in-list ref-ids)])
+                         #`(cond
+                             [(or (hash-has-key? seen #,k-id)
+                                  (user-def? #,ref-id))
+                              0]
+                             [else
+                              (hash-set! seen #,k-id #t)
+                              1]))))
+               (= (hash-count e) cnt)))]
+    [else '()]))
+
+;; do-hash :: syntax? stx-list? (or/c #t #f syntax?) -> syntax?
+(define (do-hash stx kvps mode)
+  (define kvp-list (syntax->list kvps))
+  (define-values (k-exprs v-pats def-exprs def-ids)
+    (for/fold ([k-exprs '()]
+               [v-pats '()]
+               [def-exprs '()]
+               [def-ids '()]
+               #:result (values (reverse k-exprs)
+                                (reverse v-pats)
+                                (reverse def-exprs)
+                                (reverse def-ids)))
+              ([kvp (in-list kvp-list)])
+      (syntax-case kvp ()
+        [(k-expr v-pat #:default def-expr)
+         (values (cons #'k-expr k-exprs)
+                 (cons #'v-pat v-pats)
+                 (cons #'def-expr def-exprs)
+                 (cons #'user-def def-ids))]
+        [(k-expr v-pat)
+         (values (cons #'k-expr k-exprs)
+                 (cons #'v-pat v-pats)
+                 (cons #'undef def-exprs)
+                 (cons #'undef def-ids))]
+        [_ (raise-syntax-error #f "expect a key-value group" stx kvp)])))
+
+  (define k-ids (generate-temporaries k-exprs))
+  (define ref-ids (generate-temporaries k-exprs))
+
+  (with-syntax ([(k-id ...) k-ids]
+                [(ref-id ...) ref-ids]
+                [(k-expr ...) k-exprs]
+                [(v-pat ...) v-pats]
+                [(def-expr ...) def-exprs]
+                [(def-id ...) def-ids])
+    (parse
+     (quasisyntax/loc stx
+       (? hash?
+          ;; we use let explicitly to prevent macro expander from nesting too much
+          (app (λ (e)
+                 ;; initially assign k-ids and ref-ids to #f, so that
+                 ;; if section 1 short-circuits, there's no need to
+                 ;; evaluate all k-exprs and hash-refs
+                 (let ([k-id #f] ... [ref-id #f] ...)
+                   (values
+                    ;; SECTION 1: predicate
+                    (or (undef? (begin
+                                  (set! k-id k-expr)
+                                  (set! ref-id (hash-ref e k-id def-id))
+                                  ref-id))
+                        ...)
+
+                    ;; henceforth, we can assume ref-ids are not undef
+
+                    ;; SECTION 2: full mode predicate
+                    #,@(gen-closed-mode mode k-ids ref-ids)
+
+                    ;; SECTION 3: values
+                    ref-id ...
+
+                    ;; SECTION 4: rest
+                    #,@(cond
+                         [(syntax? mode)
+                          (list #`(λ ()
+                                    (cond
+                                      [(immutable? e)
+                                       #,(for/fold ([stx #'e])
+                                                   ([k (in-list k-ids)])
+                                           #`(hash-remove-safe #,stx #,k))]
+                                      [else
+                                       (define e* (hash-copy e))
+                                       #,@(for/list ([k (in-list k-ids)])
+                                            #`(hash-remove-safe! e* #,k))
+                                       e*])))]
+                         [else '()]))))
+
+               ;; SECTION 1
+               #f
+               ;; SECTION 2
+               #,@(cond
+                    [(eq? mode #t) (list #'(app (λ (p) (p)) #t))]
+                    [else '()])
+               ;; SECTION 3
+               (app (λ (ref-id)
+                      (if (user-def? ref-id)
+                          def-expr
+                          ref-id))
+                    v-pat) ...
+               ;; SECTION 4
+               #,@(cond
+                    [(syntax? mode)
+                     (list #`(app (λ (p) (p)) #,mode))]
+                    [else '()])))))))
+
+(define (make-kvps stx xs)
+  (let loop ([xs (syntax->list xs)] [acc '()])
+    (cond
+      [(empty? xs) (reverse acc)]
+      [(empty? (rest xs))
+       (raise-syntax-error #f "key does not have a value" stx)]
+      [else (loop (rest (rest xs)) (cons (list (first xs) (second xs)) acc))])))
+
 ;; parse : syntax -> Pat
 ;; compile stx into a pattern, using the new syntax
 (define (parse stx)
@@ -61,7 +188,8 @@
   (define disarmed-stx (syntax-disarm stx orig-insp))
   (syntax-case* disarmed-stx (not var struct box cons list vector ? and or quote app
                                   regexp pregexp list-rest list-no-order hash-table
-                                  quasiquote mcons list* mlist)
+                                  quasiquote mcons list* mlist
+                                  hash hash*)
                 (lambda (x y) (eq? (syntax-e x) (syntax-e y)))
     [(expander . args)
      (and (identifier? #'expander)
@@ -125,6 +253,30 @@
                   (rearm+parse (syntax/loc stx (list es ...))))]
     [(vector es ...)
      (Vector (map rearm+parse (syntax->list #'(es ...))))]
+
+    ;; Hash table patterns
+    [(hash* kvp ... #:rest rest-pat)
+     (eq? (syntax-e #'rest-pat) '_)
+     (do-hash stx #'(kvp ...) #f)]
+    [(hash* kvp ... #:rest rest-pat) (do-hash stx #'(kvp ...) #'rest-pat)]
+    [(hash* kvp ... #:closed) (do-hash stx #'(kvp ...) #t)]
+    [(hash* kvp ... #:open) (do-hash stx #'(kvp ...) #f)]
+    [(hash* kvp ...) (do-hash stx #'(kvp ...) #f)]
+
+    [(hash es ... #:rest rest-pat)
+     (with-syntax ([(kvp ...) (make-kvps stx #'(es ...))])
+       (parse (syntax/loc stx (hash* kvp ... #:rest rest-pat))))]
+    [(hash es ... #:closed)
+     (with-syntax ([(kvp ...) (make-kvps stx #'(es ...))])
+       (parse (syntax/loc stx (hash* kvp ... #:closed))))]
+    [(hash es ... #:open)
+     (with-syntax ([(kvp ...) (make-kvps stx #'(es ...))])
+       (parse (syntax/loc stx (hash* kvp ... #:open))))]
+    [(hash es ...)
+     (with-syntax ([(kvp ...) (make-kvps stx #'(es ...))])
+       (parse (syntax/loc stx (hash* kvp ... #:closed))))]
+
+    ;; Deprecated hash table patterns
     [(hash-table p ... dd)
      (ddk? #'dd)
      (trans-match

@@ -11,7 +11,14 @@
          pregexp-matcher
          match-prompt-tag
          mlist? mlist->list
-         syntax-srclocs)
+         syntax-srclocs
+
+         undef
+         user-def
+         undef?
+         user-def?
+         hash-remove-safe
+         hash-remove-safe!)
 
 (define match-prompt-tag (make-continuation-prompt-tag 'match)) 
 
@@ -79,3 +86,21 @@
                 (syntax-column stx)
                 (syntax-position stx)
                 (syntax-span stx))))
+
+(define undef (gensym))
+(define user-def (gensym))
+
+(define (undef? v)
+  (eq? undef v))
+
+(define (user-def? v)
+  (eq? user-def v))
+
+(define (hash-remove-safe h k)
+  (if (hash-has-key? h k)
+      (hash-remove h k)
+      h))
+
+(define (hash-remove-safe! h k)
+  (when (hash-has-key? h k)
+    (hash-remove! h k)))

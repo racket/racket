@@ -5,6 +5,7 @@
          "legacy-match-tests.rkt"
          "examples.rkt"
          "case-tests.rkt"
+         "hash-table-tests.rkt"
          rackunit rackunit/text-ui
          (only-in racket/base local-require))
 
@@ -463,7 +464,8 @@
                             ;; from bruce
                             other-tests 
                             other-plt-tests
-                            case-tests)
+                            case-tests
+                            hash-table-tests)
              'verbose))
 
 (module+ main
