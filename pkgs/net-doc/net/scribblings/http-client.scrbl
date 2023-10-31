@@ -21,7 +21,7 @@ Identifies an HTTP connection.
 @defproc[(http-conn-live? [x any/c])
          boolean?]{
 
-Identifies an HTTP connection that is "live", i.e. one that is still
+Identifies an HTTP connection that is ``live'', i.e., one that is still
 connected to the server.
 
 }
@@ -29,7 +29,7 @@ connected to the server.
 @defproc[(http-conn-liveable? [x any/c])
          boolean?]{
 
-Identifies an HTTP connection that can be made "live", i.e. one for which
+Identifies an HTTP connection that can be made ``live'', i.e., one for which
 @racket[http-conn-send!] is valid. Either the HTTP connection is already
 @racket[http-conn-live?], or it can @tech{auto-reconnect}.
 
@@ -51,9 +51,9 @@ Returns a fresh HTTP connection.
 Uses @racket[hc] to connect to @racket[host] on port @racket[port]
 using SSL if @racket[ssl?] is not @racket[#f] (using @racket[ssl?] as
 an argument to @racket[ssl-connect] to, for example, check
-certificates.) If @racket[auto-reconnect?] is @racket[#t], then the HTTP
+certificates). If @racket[auto-reconnect?] is @racket[#t], then the HTTP
 connection is going to try to @deftech{auto-reconnect} for subsequent requests.
-I.e., if the connection is closed when performing @racket[http-conn-send!] or
+That is, if the connection is closed when performing @racket[http-conn-send!] or
 @racket[http-conn-recv!], then @racket[http-conn-enliven!] is going to be
 called on it.
 
@@ -138,7 +138,7 @@ Parses an HTTP response from @racket[hc] for the method
 @racket[method] while decoding the encodings listed in
 @racket[decodes].
 
-Returns the status line, a list of headers, and an port which contains
+Returns the status line, a list of headers, and an input port which contains
 the contents of the response. The port's content must be consumed
 before the connection is used further.
 
@@ -204,24 +204,25 @@ response, which is why there is no @racket[#:closed?] argument like
  The function returns four values:
 
  @itemize[
-   @item{If @racket[ssl?] was @racket[#f] then @racket[#f]. Otherwise
-     an @racket[ssl-client-context?] that has been negotiated with the
-     target.
-
-     If @racket[ssl?] was a protocol symbol, then a new
-     @racket[ssl-client-context?] is created, otherwise the current
-     value of @racket[ssl?] is used.}
-   @item{An @racket[input-port?] from the tunnelled service.}
-   @item{An @racket[output-port?] to the tunnelled service.}
-   @item{An abandon function, which when applied to either returned
-     port, will abandon it, in a manner similar to
+   @item{
+     The first value is @racket[#f] if @racket[ssl?] is @racket[#f],
+     otherwise it is an @racket[ssl-client-context?] that has been
+     negotiated with the target. In the latter case,
+     @itemize[
+       @item{if @racket[ssl?] is @racket[#t] or a symbol, the
+         @racket[ssl-client-context?] is created with
+         @racket[ssl-make-client-context], where @racket[#t] means
+         @racket['auto];}
+       @item{if @racket[ssl?] is @racket[ssl-client-context?], it is
+         used as is.}
+     ]}
+   @item{The second value is an input port from the tunnelled service.}
+   @item{The third value is an output port to the tunnelled service.}
+   @item{The fourth value is an abandon function, which when applied to
+     either returned port, will abandon it, in a manner similar to
      @racket[tcp-abandon-port].}
  ]
 
- The SSL context or symbol, if any, provided in @racket[ssl?] is
- applied to the gateway ports using @racket[ports->ssl-ports] (or
- @racket[ports->win32-ssl-ports]) and the negotiated client context is
- returned.
 }
 
 @defthing[data-procedure/c chaperone-contract?]{
@@ -232,13 +233,13 @@ argument, which is a string or byte string:
 
 }
 
-@defthing[base-ssl?/c contract?]{
- Base contract for the definition of the SSL context (passed in @racket[ssl?]) of an
+@defthing[base-ssl?/c flat-contract?]{
+ Base contract for the definition of the SSL context (passed in @racket[_ssl?]) of an
  @racket[http-conn-CONNECT-tunnel]:
 
  @racket[(or/c boolean? ssl-client-context? symbol?)].
 
- If @racket[ssl?] is not @racket[#f] then @racket[ssl?] is used as an argument to
+ If @racket[_ssl?] is not @racket[#f], then @racket[_ssl?] is used as an argument to
  @racket[ssl-connect] to, for example, check certificates.
 }
 
@@ -246,7 +247,7 @@ argument, which is a string or byte string:
  Contract for a @racket[base-ssl?/c] that might have been applied to a tunnel.
  It is either a @racket[base-ssl?/c], or a @racket[base-ssl?/c] consed onto a list of an
  @racket[input-port?], @racket[output-port?], and an abandon function
- (e.g. @racket[tcp-abandon-port]):
+ (e.g., @racket[tcp-abandon-port]):
 
  @racket[(or/c base-ssl?/c (list/c base-ssl?/c input-port? output-port? (-> port? void?)))]
 }

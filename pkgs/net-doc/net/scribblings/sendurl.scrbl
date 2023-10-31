@@ -7,7 +7,7 @@
 in the user's chosen web browser.}
 
 See also @racketmodname[browser/external #:indirect], which requires
-@racket[racket/gui], but can prompt the user for a browser if no
+@racketmodname[racket/gui #:indirect], but can prompt the user for a browser if no
 browser preference is set.
 
 
@@ -58,13 +58,13 @@ which means that already-encoded characters are used as-is.}
 Similar to @racket[send-url/file], but it consumes the contents of a
 page to show and displays it from a temporary file.
 
-When @racket[send-url/content] is called, it scans old generated files
+When @racket[send-url/contents] is called, it scans old generated files
 (this happens randomly, not on every call) and removes them to avoid
-cluttering the temporary directory.  If the @racket[#:delete-at]
+cluttering the temporary directory.  If the @racket[seconds]
 argument is a number, then the temporary file is more eagerly removed
 after the specified number of seconds; the deletion happens in a
 thread, so if Racket exits earlier, the deletion will not happen.  If
-the @racket[#:delete-at] argument is @racket[#f], no eager deletion
+the @racket[seconds] argument is @racket[#f], no eager deletion
 happens, but old temporary files are still deleted as described
 above.}
 

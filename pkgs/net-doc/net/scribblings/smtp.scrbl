@@ -11,9 +11,9 @@ provide the address of an SMTP server; in contrast, the
 @exec{sendmail} on the local system.}
 
 The @racketmodname[net/head] library defines the format of a
-@tech{header} string, which is used by @racket[send-smtp-message]. The
+@tech{header} string, which is used by @racket[smtp-send-message]. The
 @racketmodname[net/head] module also provides utilities to verify the
-formatting of a mail address. The procedures of the @racket[net/smtp]
+formatting of a mail address. The procedures of the @racketmodname[net/smtp]
 module assume that the given string arguments are well-formed.
 
 
@@ -62,31 +62,31 @@ with the @racket[#:port-no] keyword or, for backward compatibility, as
 an extra argument after keywords---specifies the IP port to use in
 contacting the SMTP server.
 
-The optional @racket[#:auth-user] and @racket[#:auth-passwd] keyword
-argument supply a username and password for authenticated SMTP (using
+The optional @racket[user] and @racket[pw]
+arguments supply a username and password for authenticated SMTP (using
 the AUTH PLAIN protocol).
 
-The optional @racket[#:tcp-connect] keyword argument supplies a
+The optional @racket[connect] argument supplies a
 connection procedure to be used in place of @racket[tcp-connect]. For
 example, use @racket[ssl-connect] to connect to the server via SSL.
 
-If the optional @racket[#:tls-encode] keyword argument supplies a
-procedure instead of #f, then the ESMTP STARTTLS protocol is used to
+If the optional @racket[encode] argument supplies a procedure
+instead of @racket[#f], then the ESMTP STARTTLS protocol is used to
 initiate SSL communication with the server. The procedure given as the
-#:tls-encode argument should be like @racket[ports->ssl-ports]; it
+@racket[encode] argument should be like @racket[ports->ssl-ports]; it
 will be called as
 
 @racketblock[
 (encode r w #:mode 'connect #:encrypt 'tls #:close-original? #t)
 ]
 
-and it should return two values: an input port and an export port.
+and it should return two values: an input port and an output port.
 All further SMTP communication uses the returned ports.
 
 For encrypted communication, normally either @racket[ssl-connect]
-should be supplied for @racket[#:tcp-connect], or
+should be supplied for @racket[connect], or
 @racket[ports->ssl-ports] should be supplied for
-@racket[#:tls-encode]---one or the other (depending on what the server
+@racket[encode]---one or the other (depending on what the server
 expects), rather than both.}
 
 @defparam[smtp-sending-end-of-message proc (-> any)]{
