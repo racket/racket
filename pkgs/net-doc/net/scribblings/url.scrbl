@@ -102,7 +102,7 @@ paths to from URL structure types and back again are provided by the
 
 @defthing[url-regexp regexp?]{
 A @tech[#:doc '(lib "scribblings/reference/reference.scrbl")]{regexp value} 
-that can be useful for matching url strings. Mostly follows 
+that can be useful for matching URL strings. Mostly follows 
 RFC 3986 @cite["RFC3986"], Appendix B, except for using @tt{*} instead of 
 @tt{+} for the scheme part (see @racket[url]).
 @history[#:added "6.4.0.7"]}
@@ -115,7 +115,7 @@ struct. The @racket[string->url] procedure uses
 sensitive to the @racket[current-alist-separator-mode] parameter for
 determining the association separator.
 
-The contract on @racket[str] insists that, if the url has a scheme,
+The contract on @racket[str] insists that, if the URL has a scheme,
 then the scheme begins with a letter and consists only of letters,
 numbers, @litchar{+}, @litchar{-}, and @litchar{.} characters.
 
@@ -541,8 +541,8 @@ The default mapping is the empty list (i.e., no proxies).}
 
 @defparam[current-no-proxy-servers dest-hosts-list (listof (or/c string? regexp?))]{
 
-A parameter that determines which servers will be accessed directly
-i.e. without resort to @racket[current-proxy-servers]. It is a list of
+A parameter that determines which servers will be accessed directly,
+i.e., without resort to @racket[current-proxy-servers]. It is a list of
 
 @itemize[
          
@@ -570,7 +570,7 @@ where a pattern is one of:
          
   @item{a string beginning with a @litchar{.} (period): converted to a
     regexp that performs a suffix match on a destination host name;
-    e.g. @litchar[".racket-lang.org"] matches destinations of
+    e.g., @litchar[".racket-lang.org"] matches destinations of
     @litchar["doc.racket-lang.org"], @litchar["pkgs.racket-lang.org"], but
     neither @litchar["doc.bracket-lang.org"] nor
     @litchar["pkgs.racket-lang.org.uk"];
