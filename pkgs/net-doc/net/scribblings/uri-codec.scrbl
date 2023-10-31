@@ -120,7 +120,7 @@ Decode a string encoded using the
 @tt{application/x-www-form-urlencoded} encoding rules.}
 
 
-@defproc[(alist->form-urlencoded [alist (listof (cons/c symbol? (or/c false/c string?)))])
+@defproc[(alist->form-urlencoded [alist (listof (cons/c symbol? (or/c #f string?)))])
          string?]{
 
 Encode an association list using the
@@ -131,7 +131,7 @@ separator used in the result.}
 
 
 @defproc[(form-urlencoded->alist [str string])
-         (listof (cons/c symbol? (or/c false/c string?)))]{
+         (listof (cons/c symbol? (or/c #f string?)))]{
 
 Decode a string encoded using the
 @tt{application/x-www-form-urlencoded} encoding rules into an
@@ -142,7 +142,7 @@ that separators are parsed in the input.}
 
 
 @defparam[current-alist-separator-mode mode 
-          (one-of/c 'amp 'semi 'amp-or-semi 'semi-or-amp)]{
+          (or/c 'amp 'semi 'amp-or-semi 'semi-or-amp)]{
 
 A parameter that determines the separator used/recognized between
 associations in @racket[form-urlencoded->alist],

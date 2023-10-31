@@ -36,8 +36,8 @@ Archive creation fails if @racket[dist-file] exists.}
 
 
 @defproc[(bundle-put-file-extension+style+filters)
-         (values (or/c string? false/c)
-                 (listof (one-of/c 'packages 'enter-packages))
+         (values (or/c string? #f)
+                 (listof (or/c 'packages 'enter-packages))
                  (listof (list/c string? string?)))]{
 
 Returns three values suitable for use as the @racket[extension],

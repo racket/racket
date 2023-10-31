@@ -7,10 +7,10 @@
 
 @defproc[(raise-read-error [msg-string string?] 
                            [source any/c]
-                           [line (or/c exact-positive-integer? false/c)]
-                           [col (or/c exact-nonnegative-integer? false/c)]
-                           [pos (or/c exact-positive-integer? false/c)]
-                           [span (or/c exact-nonnegative-integer? false/c)]
+                           [line (or/c exact-positive-integer? #f)]
+                           [col (or/c exact-nonnegative-integer? #f)]
+                           [pos (or/c exact-positive-integer? #f)]
+                           [span (or/c exact-nonnegative-integer? #f)]
                            [#:extra-srclocs extra-srclocs (listof srcloc?) '()]) 
          any]{
 
@@ -35,10 +35,10 @@ was discovered.}
 
 @defproc[(raise-read-eof-error [msg-string string?] 
                                [source any/c]
-                               [line (or/c exact-positive-integer? false/c)]
-                               [col (or/c exact-nonnegative-integer? false/c)]
-                               [pos (or/c exact-positive-integer? false/c)]
-                               [span (or/c exact-nonnegative-integer? false/c)]) 
+                               [line (or/c exact-positive-integer? #f)]
+                               [col (or/c exact-nonnegative-integer? #f)]
+                               [pos (or/c exact-positive-integer? #f)]
+                               [span (or/c exact-nonnegative-integer? #f)])
          any]{
 
 Like @racket[raise-read-error], but raises @racket[exn:fail:read:eof]

@@ -1314,9 +1314,9 @@ results.
 @defproc[(make-cstruct-type [types (non-empty-listof ctype?)]
                             [abi (or/c #f 'default 'stdcall 'sysv) #f]
                             [alignment (or/c #f 1 2 4 8 16) #f]
-                            [malloc-mode (one-of/c 'raw 'atomic 'nonatomic 'tagged
-                                                    'atomic-interior 'interior
-                                                    'stubborn 'uncollectable 'eternal)
+                            [malloc-mode (or/c 'raw 'atomic 'nonatomic 'tagged
+                                               'atomic-interior 'interior
+                                               'stubborn 'uncollectable 'eternal)
                                          'atomic])
          ctype?]{
 
@@ -1344,9 +1344,9 @@ allocation mode is @emph{not} used for an argument to a
 
 @defproc[(_list-struct [#:alignment alignment (or/c #f 1 2 4 8 16) #f] 
                        [#:malloc-mode malloc-mode
-                                      (one-of/c 'raw 'atomic 'nonatomic 'tagged
-                                                'atomic-interior 'interior
-                                                'stubborn 'uncollectable 'eternal)
+                                      (or/c 'raw 'atomic 'nonatomic 'tagged
+                                            'atomic-interior 'interior
+                                            'stubborn 'uncollectable 'eternal)
                                       'atomic]
                        [type ctype?] ...+)
          ctype?]{
@@ -1374,9 +1374,9 @@ below for a more efficient approach.
                               #:define-unsafe)]
          #:contracts ([offset-expr exact-integer?]
                       [alignment-expr (or/c #f 1 2 4 8 16)]
-                      [malloc-mode-expr (one-of/c 'raw 'atomic 'nonatomic 'tagged
-                                                  'atomic-interior 'interior
-                                                  'stubborn 'uncollectable 'eternal)]
+                      [malloc-mode-expr (or/c 'raw 'atomic 'nonatomic 'tagged
+                                              'atomic-interior 'interior
+                                              'stubborn 'uncollectable 'eternal)]
                       [prop-expr struct-type-property?])]{
 
 Defines a new C struct type, but unlike @racket[_list-struct], the

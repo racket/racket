@@ -99,7 +99,7 @@ configured to @tech{auto-reconnect}.
                           [#:close? close? boolean? #f]
                           [#:headers headers (listof (or/c bytes? string?)) empty]
                           [#:content-decode decodes (listof symbol?) '(gzip deflate)]
-                          [#:data data (or/c false/c bytes? string? data-procedure/c) #f])
+                          [#:data data (or/c #f bytes? string? data-procedure/c) #f])
          void?]{
 
 Sends an HTTP request to @racket[hc] to the URI @racket[uri] using
@@ -156,7 +156,7 @@ to do so.
                               [#:version version (or/c bytes? string?) #"1.1"]
                               [#:method method (or/c bytes? string? symbol?) #"GET"]
                               [#:headers headers (listof (or/c bytes? string?)) empty]
-                              [#:data data (or/c false/c bytes? string? data-procedure/c) #f]
+                              [#:data data (or/c #f bytes? string? data-procedure/c) #f]
                               [#:content-decode decodes (listof symbol?) '(gzip deflate)]
                               [#:close? close? boolean? #f])
          (values bytes? (listof bytes?) input-port?)]{
@@ -172,7 +172,7 @@ Calls @racket[http-conn-send!] and @racket[http-conn-recv!] in sequence.
                         [#:version version (or/c bytes? string?) #"1.1"]
                         [#:method method (or/c bytes? string? symbol?) #"GET"]
                         [#:headers headers (listof (or/c bytes? string?)) empty]
-                        [#:data data (or/c false/c bytes? string? data-procedure/c) #f]
+                        [#:data data (or/c #f bytes? string? data-procedure/c) #f]
                         [#:content-decode decodes (listof symbol?) '(gzip deflate)])
          (values bytes? (listof bytes?) input-port?)]{
 

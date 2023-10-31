@@ -7,12 +7,12 @@
 library provides a function for creating a @racket[tcp^]
 implementation with @racketmodname[openssl] functionality.}
 
-@defproc[(make-ssl-tcp@ [server-cert-file (or/c path-string? false/c)]
-                        [server-key-file (or/c path-string? false/c)]
-                        [server-root-cert-files (or/c (listof path-string?) false/c)]
+@defproc[(make-ssl-tcp@ [server-cert-file (or/c path-string? #f)]
+                        [server-key-file (or/c path-string? #f)]
+                        [server-root-cert-files (or/c (listof path-string?) #f)]
                         [server-suggest-auth-file path-string?]
-                        [client-cert-file (or/c path-string? false/c)]
-                        [client-key-file (or/c path-string? false/c)]
+                        [client-cert-file (or/c path-string? #f)]
+                        [client-key-file (or/c path-string? #f)]
                         [client-root-cert-files (listof path-string?)])
          unit?]{
 

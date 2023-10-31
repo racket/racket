@@ -92,7 +92,7 @@ in a pointer.  The same operation could be performed using
             any]
            [(ptr-ref [cptr cpointer?]
                      [type ctype?]
-                     [abs-tag (one-of/c 'abs)]
+                     [abs-tag 'abs]
                      [offset exact-nonnegative-integer?])
             any]
            [(ptr-set! [cptr cpointer?]
@@ -106,7 +106,7 @@ in a pointer.  The same operation could be performed using
             void?]
            [(ptr-set! [cptr cpointer?]
                       [type ctype?]
-                      [abs-tag (one-of/c 'abs)]
+                      [abs-tag 'abs]
                       [offset exact-nonnegative-integer?]
                       [val any/c])
             void?])]{
@@ -212,11 +212,11 @@ see @|InsideRacket|.
                                       ctype?) 
                                 @#,elem{absent}]
                  [cptr cpointer? @#,elem{absent}]
-                 [mode (one-of/c 'raw 'atomic 'nonatomic 'tagged
-                                 'atomic-interior 'interior
-                                 'stubborn 'uncollectable 'eternal)
+                 [mode (or/c 'raw 'atomic 'nonatomic 'tagged
+                             'atomic-interior 'interior
+                             'stubborn 'uncollectable 'eternal)
                        @#,elem{absent}]
-                 [fail-mode (one-of/c 'failok) @#,elem{absent}])
+                 [fail-mode 'failok @#,elem{absent}])
          cpointer?]{
 
 Allocates a memory block of a specified size using a specified

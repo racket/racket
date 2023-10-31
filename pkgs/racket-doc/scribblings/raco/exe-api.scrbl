@@ -45,9 +45,9 @@ parameter is true.
 
 @defproc[(create-embedding-executable [dest path-string?]
                                [#:modules mod-list 
-                                         (listof (or/c (list/c (or/c symbol? (one-of/c #t #f)) 
+                                         (listof (or/c (list/c (or/c symbol? #f #t)
                                                                (or/c module-path? path?))
-                                                       (list/c (or/c symbol? (one-of/c #t #f)) 
+                                                       (list/c (or/c symbol? #f #t)
                                                                (or/c module-path? path?)
                                                                (listof symbol?))))]
                                [#:early-literal-expressions early-literal-sexps
@@ -394,9 +394,9 @@ have been applied as needed to refer to the existing file).
 @defproc[(make-embedding-executable [dest path-string?]
                                [mred? any/c]
                                [verbose? any/c]
-                               [mod-list (listof (or/c (list/c (or/c symbol? (one-of/c #t #f)) 
+                               [mod-list (listof (or/c (list/c (or/c symbol? #f #t)
                                                                (or/c module-path? path?))
-                                                       (list/c (or/c symbol? (one-of/c #t #f)) 
+                                                       (list/c (or/c symbol? #f #t)
                                                                (or/c module-path? path?)
                                                                (listof symbol?))))]
                                [literal-files (listof path-string?)]
@@ -404,7 +404,7 @@ have been applied as needed to refer to the existing file).
                                [cmdline (listof string?)]
                                [aux (listof (cons/c symbol? any/c)) null]
                                [launcher? any/c #f]
-                               [variant (one-of/c 'cgc '3m'cs) (system-type 'gc)]
+                               [variant (or/c 'cgc '3m 'cs) (system-type 'gc)]
                                [collects-path (or/c #f
                                                     path-string? 
                                                     (listof path-string?))
@@ -415,9 +415,9 @@ Old (keywordless) interface to @racket[create-embedding-executable].}
 
 
 @defproc[(write-module-bundle [verbose? any/c]
-                               [mod-list (listof (or/c (list/c (or/c symbol? (one-of/c #t #f)) 
+                               [mod-list (listof (or/c (list/c (or/c symbol? #f #t)
                                                                (or/c module-path? path?))
-                                                       (list/c (or/c symbol? (one-of/c #t #f)) 
+                                                       (list/c (or/c symbol? #f #t)
                                                                (or/c module-path? path?)
                                                                (listof symbol?))))]
                               [literal-files (listof path-string?)]
@@ -450,8 +450,8 @@ Mac OS when @racket[mred?] is @racket[#t], @racket[#f] otherwise.}
 
 
 @defproc[(embedding-executable-put-file-extension+style+filters [mred? any/c])
-         (values (or/c string? false/c)
-                 (listof (one-of/c 'packages 'enter-packages))
+         (values (or/c string? #f)
+                 (listof (or/c 'packages 'enter-packages))
                  (listof (list/c string? string?)))]{
 
 Returns three values suitable for use as the @racket[extension],

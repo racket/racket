@@ -348,7 +348,7 @@ making @filepath{.plt} archives.}
             [#:collections collection-list (listof path-string?) null]
             [#:plt-relative? plt-relative? any/c #f]
             [#:at-plt-home? at-plt-home? any/c #f]
-            [#:test-plt-dirs dirs (or/c (listof path-string?) false/c) #f]
+            [#:test-plt-dirs dirs (or/c (listof path-string?) #f) #f]
             [#:requires mod-and-version-list
                         (listof (listof path-string?)
                                 (listof exact-integer?))
@@ -460,7 +460,7 @@ making @filepath{.plt} archives.}
                 [#:as-path as-path path-string? path]
                 (output output-port?)
                 (filter (path-string? . -> . boolean?))
-                (file-mode (symbols 'file 'file-replace))) void?]{
+                (file-mode (or/c 'file 'file-replace))) void?]{
    Called by @racket[pack] to write one directory/file @racket[path] to the
    output port @racket[output] using the filter procedure @racket[filter]
    (see @racket[pack] for a description of @racket[filter]). The @racket[path]

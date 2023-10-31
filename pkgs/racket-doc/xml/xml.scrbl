@@ -34,14 +34,14 @@ It does not interpret namespaces either.
 
 @section{Datatypes}
 
-@defstruct[location ([line (or/c false/c exact-nonnegative-integer?)]
-                     [char (or/c false/c exact-nonnegative-integer?)]
+@defstruct[location ([line (or/c #f exact-nonnegative-integer?)]
+                     [char (or/c #f exact-nonnegative-integer?)]
                      [offset exact-nonnegative-integer?])]{
 
 Represents a location in an input stream. The offset is a character offset unless @racket[xml-count-bytes] is @racket[#t], in which case it is a byte offset.}
 
 @defthing[location/c contract?]{
- Equivalent to @racket[(or/c location? symbol? false/c)].
+ Equivalent to @racket[(or/c location? symbol? #f)].
 }
 
 @defstruct[source ([start location/c]
@@ -65,7 +65,7 @@ Represents an externally defined DTD.}
 
 @defstruct[document-type ([name symbol?]
                           [external external-dtd?]
-                          [inlined false/c])]{
+                          [inlined #f])]{
 
 Represents a document type.}
 
@@ -83,7 +83,7 @@ Represents a processing instruction.}
 }
 
 @defstruct[prolog ([misc (listof misc/c)]
-                   [dtd (or/c document-type false/c)]
+                   [dtd (or/c document-type #f)]
                    [misc2 (listof misc/c)])]{
 Represents a document prolog. 
 }
@@ -439,7 +439,7 @@ or otherwise escaping. Results from the leaves are combined with
   @history[#:added "8.0.0.12"]
 }
 
-@defparam[empty-tag-shorthand shorthand (or/c (one-of/c 'always 'never) (listof symbol?))]{
+@defparam[empty-tag-shorthand shorthand (or/c 'always 'never (listof symbol?))]{
 
 A parameter that determines whether output functions should use the
 @litchar{<}@nonterm{tag}@litchar{/>} tag notation instead of

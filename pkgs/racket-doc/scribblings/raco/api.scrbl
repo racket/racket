@@ -31,7 +31,7 @@ through a Racket API.}
 
 @defproc[((compile-zos [expr any/c] [#:module? module? any/c #f] [#:verbose? verbose? any/c #f]) 
           [racket-files (listof path-string?)]
-          [dest-dir (or/c path-string? false/c (one-of/c 'auto))])
+          [dest-dir (or/c path-string? #f 'auto)])
          void?]{
 
 Supplying just @racket[expr] returns a compiler that is initialized
@@ -284,7 +284,7 @@ the files that it compiles and produces. The default is @racket[#f].}
 A @racket[#t] value for the parameter causes the compiler to print
 verbose messages about its operations. The default is @racket[#f].}
 
-@defparam[compile-subcollections cols (one-of/c #t #f)]{
+@defboolparam[compile-subcollections on?]{
 
 A parameter that specifies whether sub-collections are compiled by
 @racket[compile-collection-zos].  The default is @racket[#t].}

@@ -104,7 +104,7 @@ prints them with the subject line "Internal error", and exits via
 @racket[exit].}
 
 
-@defproc[(get-cgi-method) (one-of/c "GET" "POST")]{
+@defproc[(get-cgi-method) (or/c "GET" "POST")]{
 
 Returns either @racket["GET"] or @racket["POST"] when invoked inside a
 CGI script, unpredictable otherwise.}

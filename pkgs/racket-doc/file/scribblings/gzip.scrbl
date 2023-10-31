@@ -23,7 +23,7 @@ is the name of the file to compress. If the file named by
 
 @defproc[(gzip-through-ports [in input-port?]
                              [out output-port?]
-                             [orig-filename (or/c string? false/c)]
+                             [orig-filename (or/c string? #f)]
                              [timestamp exact-integer?])
          void?]{
 

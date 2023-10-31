@@ -39,14 +39,14 @@ re-exported by @racketmodname[net/url] and @racketmodname[net/url-string].}
 @; ----------------------------------------
 
 
-@defstruct[url ([scheme (or/c false/c string?)]
-                [user (or/c false/c string?)]
-                [host (or/c false/c string?)]
-                [port (or/c false/c exact-nonnegative-integer?)]
+@defstruct[url ([scheme (or/c #f string?)]
+                [user (or/c #f string?)]
+                [host (or/c #f string?)]
+                [port (or/c #f exact-nonnegative-integer?)]
                 [path-absolute? boolean?]
                 [path (listof path/param?)]
-                [query (listof (cons/c symbol? (or/c false/c string?)))]
-                [fragment (or/c false/c string?)])]{
+                [query (listof (cons/c symbol? (or/c #f string?)))]
+                [fragment (or/c #f string?)])]{
 
 The basic structure for all URLs, which is explained in RFC 3986
 @cite["RFC3986"]. The following diagram illustrates the parts:
@@ -583,7 +583,7 @@ where a pattern is one of:
 
 @defproc[(proxy-server-for
           [url-schm string?]
-          [dest-host-name (or/c false/c string?) #f])
+          [dest-host-name (or/c #f string?) #f])
          (or/c (list/c string? string? (integer-in 0 65535)) #f)]{
 
 Returns the proxy server entry for the combination of @racket[url-schm]
@@ -598,7 +598,7 @@ and @racket[host], or @racket[#f] if no proxy is to be used.}
 @defproc[(http-sendrecv/url [u url?]
                             [#:method method (or/c bytes? string? symbol?) #"GET"]
                             [#:headers headers (listof (or/c bytes? string?)) empty]
-                            [#:data data (or/c false/c bytes? string? data-procedure/c) #f]
+                            [#:data data (or/c #f bytes? string? data-procedure/c) #f]
                             [#:content-decode decodes (listof symbol?) '(gzip deflate)])
          (values bytes? (listof bytes?) input-port?)]{
 
