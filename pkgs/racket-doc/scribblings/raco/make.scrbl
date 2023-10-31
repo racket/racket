@@ -187,7 +187,7 @@ implements the compilation and dependency management used by
 @defproc[(make-compilation-manager-load/use-compiled-handler 
           [delete-zos-when-rkt-file-does-not-exist? any/c #f]
           [#:security-guard security-guard (or/c security-guard? #f) #f])
-         (path? (or/c symbol? false/c) . -> . any)]{
+         (path? (or/c symbol? #f) . -> . any)]{
 
 Returns a procedure suitable as a value for the
 @racket[current-load/use-compiled] parameter. The returned procedure

@@ -94,7 +94,7 @@ while the second will refer to the main installation.}
                                                  (list/c (or/c 'collects 'doc 'lib 'include)
                                                          path-string?))
                                            input-port? 
-                                           (one-of/c 'file 'file-replace) 
+                                           (or/c 'file 'file-replace)
                                            any/c 
                                            . -> . any/c))]
                            [initial-value any/c])

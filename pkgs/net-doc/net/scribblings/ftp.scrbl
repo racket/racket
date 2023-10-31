@@ -63,8 +63,8 @@ The @racket[new-dir] argument is not interpreted at all, but simply
 passed on to the server; it must not contain a newline.}
 
 @defproc[(ftp-directory-list [ftp-conn ftp-connection?]
-                             [path (or/c false/c string?) #f])
-         (listof (list/c (one-of/c "-" "d" "l")
+                             [path (or/c #f string?) #f])
+         (listof (list/c (or/c "-" "d" "l")
                          string?
                          string?))]{
 

@@ -65,7 +65,7 @@ times in the input occurs multiple times in the options list.
 
 @defproc[(parse-keyword-options [stx syntax?]
                                 [table #, @techlink{keyword-table}]
-                                [#:context ctx (or/c false/c syntax?) #f]
+                                [#:context ctx (or/c #f syntax?) #f]
                                 [#:no-duplicates? no-duplicates? boolean? #f]
                                 [#:incompatible incompatible (listof (listof keyword?)) '()]
                                 [#:on-incompatible incompatible-handler
@@ -172,7 +172,7 @@ of @racket[parse-keyword-options].
 
 @defproc[(parse-keyword-options/eol [stx syntax?]
                                 [table #, @techlink{keyword-table}]
-                                [#:context ctx (or/c false/c syntax?) #f]
+                                [#:context ctx (or/c #f syntax?) #f]
                                 [#:no-duplicates? no-duplicates? boolean? #f]
                                 [#:incompatible incompatible (listof (list keyword? keyword?)) '()]
                                 [#:on-incompatible incompatible-handler
@@ -239,13 +239,13 @@ in @racket[options], the @racket[default] value is returned.
 
 
 
-@defproc[(check-identifier [stx syntax?] [ctx (or/c false/c syntax?)]) identifier?]{
+@defproc[(check-identifier [stx syntax?] [ctx (or/c #f syntax?)]) identifier?]{
 
 A @techlink{check-procedure} that accepts only identifiers.
 
 }
 
-@defproc[(check-expression [stx syntax?] [ctx (or/c false/c syntax?)]) syntax?]{
+@defproc[(check-expression [stx syntax?] [ctx (or/c #f syntax?)]) syntax?]{
 
 A @techlink{check-procedure} that accepts any non-keyword term. It does
 not actually check that the term is a valid expression.
@@ -253,7 +253,7 @@ not actually check that the term is a valid expression.
 }
 
 @defproc[((check-stx-listof [check #, @techlink{check-procedure}])
-          [stx syntax?] [ctx (or/c false/c syntax?)])
+          [stx syntax?] [ctx (or/c #f syntax?)])
          (listof any/c)]{
 
 Lifts a @techlink{check-procedure} to accept syntax lists of whatever the
@@ -261,13 +261,13 @@ original procedure accepted.
 
 }
 
-@defproc[(check-stx-string [stx syntax?] [ctx (or/c false/c syntax?)]) syntax?]{
+@defproc[(check-stx-string [stx syntax?] [ctx (or/c #f syntax?)]) syntax?]{
 
 A @techlink{check-procedure} that accepts syntax strings.
 
 }
 
-@defproc[(check-stx-boolean [stx syntax?] [ctx (or/c false/c syntax?)])
+@defproc[(check-stx-boolean [stx syntax?] [ctx (or/c #f syntax?)])
          syntax?]{
 
 A @techlink{check-procedure} that accepts syntax booleans.

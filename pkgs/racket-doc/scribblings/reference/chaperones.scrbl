@@ -793,7 +793,8 @@ an extra argument as with @racket[impersonate-procedure*].
                            [orig-proc (or/c struct-accessor-procedure?
                                             struct-mutator-procedure?
                                             struct-type-property-accessor-procedure?
-                                            (one-of/c struct-info))]
+                                            (lambda (proc)
+                                              (eq? proc struct-info)))]
                            [redirect-proc (or/c procedure? #f)] ... ...
                            [prop impersonator-property?]
                            [prop-val any/c] ... ...)

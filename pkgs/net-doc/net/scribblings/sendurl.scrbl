@@ -34,8 +34,8 @@ procedure to override the above behavior, and the procedure will be
 called with the URL @racket[str].}
 
 @defproc[(send-url/file [path path-string?] [separate-window? any/c #t]
-                        [#:fragment fragment (or/c string? false/c) #f]
-                        [#:query query (or/c string? false/c) #f])
+                        [#:fragment fragment (or/c string? #f) #f]
+                        [#:query query (or/c string? #f) #f])
          void?]{
 
 Similar to @racket[send-url] (with @racket[#:escape? #t]), but accepts
@@ -50,9 +50,9 @@ all encoded in the same way as a path provided to @racket[send-url],
 which means that already-encoded characters are used as-is.}
 
 @defproc[(send-url/contents [contents string?] [separate-window? any/c #t]
-                            [#:fragment fragment (or/c string? false/c) #f]
-                            [#:query query (or/c string? false/c) #f]
-                            [#:delete-at seconds (or/c number? false/c) #f])
+                            [#:fragment fragment (or/c string? #f) #f]
+                            [#:query query (or/c string? #f) #f]
+                            [#:delete-at seconds (or/c number? #f) #f])
          void?]{
 
 Similar to @racket[send-url/file], but it consumes the contents of a

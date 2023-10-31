@@ -12,7 +12,7 @@ tools for the Post Office Protocol version 3 @cite["RFC977"].}
                          [receiver input-port?]
                          [server string?]
                          [port (integer-in 0 65535)]
-                         [state (one-of/c 'disconnected 'authorization 'transaction)])]{
+                         [state (or/c 'disconnected 'authorization 'transaction)])]{
 
 Once a connection to a POP-3 server has been established, its state is
 stored in a @racket[communicator] instance, and other procedures take

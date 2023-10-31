@@ -25,19 +25,19 @@ module assume that the given string arguments are well-formed.
                             [header string?]
                             [message (listof (or/c string? bytes?))]
                             [#:port-no port-no/k (integer-in 0 65535) 25]
-                            [#:auth-user user (or/c string? false/c) #f]
-                            [#:auth-passwd pw (or/c string? false/c) #f]
+                            [#:auth-user user (or/c string? #f) #f]
+                            [#:auth-passwd pw (or/c string? #f) #f]
                             [#:tcp-connect connect
-                                           ((string? (integer-in 0 65535))
-                                            . ->* . (input-port? output-port?))
+                                           (string? (integer-in 0 65535)
+                                            . -> . (values input-port? output-port?))
                                            tcp-connect]
                             [#:tls-encode encode
-                                          (or/c false/c
-                                                ((input-port? output-port?
-                                                  #:mode (one-of/c 'connect)
-                                                  #:encrypt (one-of/c 'tls)
-                                                  #:close-original? (one-of/c #t))
-                                                 . ->* . (input-port? output-port?)))
+                                          (or/c #f
+                                                (input-port? output-port?
+                                                 #:mode 'connect
+                                                 #:encrypt 'tls
+                                                 #:close-original? #t
+                                                 . -> . (values input-port? output-port?)))
                                           #f]
                             [port-no (integer-in 0 65535) port-no/k])
          void?]{

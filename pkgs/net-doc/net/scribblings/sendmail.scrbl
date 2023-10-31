@@ -14,7 +14,7 @@ corresponding SMTP specifications, except as noted otherwise.
 
 @section{Sendmail Functions}
 
-@defproc[(send-mail-message/port [from (or/c string? false/c)]
+@defproc[(send-mail-message/port [from (or/c string? #f)]
                                  [subject string?]
                                  [to (listof string?)]
                                  [cc (listof string?)]

@@ -22,34 +22,27 @@ See also @racket[tcp-redirect] and @racket[make-ssl-tcp@].
 
 @defsignature[tcp^ ()]{
 
-@defproc[(tcp-listen [port-no (and/c exact-nonnegative-integer?
-                                     (integer-in 0 65535))]
+@defproc[(tcp-listen [port-no (integer-in 0 65535)]
                      [max-allow-wait exact-nonnegative-integer? 4]
                      [reuse? any/c #f]
-                     [hostname (or/c string? false/c) #f])
+                     [hostname (or/c string? #f) #f])
          @#,sigelem[tcp^ tcp-listener?]]{
 
 Like @racket[tcp-listen] from @racketmodname[racket/tcp].}
 
 @defproc[(tcp-connect [hostname string?]
-                      [port-no (and/c exact-nonnegative-integer?
-                                     (integer-in 1 65535))]
-                      [local-hostname (or/c string? false/c) #f]
-                      [local-port-no (or/c (and/c exact-nonnegative-integer?
-                                                  (integer-in 1 65535))
-                                           false/c)
+                      [port-no (integer-in 1 65535)]
+                      [local-hostname (or/c string? #f) #f]
+                      [local-port-no (or/c (integer-in 1 65535) #f)
                                      #f])
           (values input-port? output-port?)]{
 
 Like @racket[tcp-connect] from @racketmodname[racket/tcp].}
 
 @defproc[(tcp-connect/enable-break [hostname string?]
-                      [port-no (and/c exact-nonnegative-integer?
-                                     (integer-in 1 65535))]
-                      [local-hostname (or/c string? false/c) #f]
-                      [local-port-no (or/c (and/c exact-nonnegative-integer?
-                                                  (integer-in 1 65535))
-                                           false/c)])
+                      [port-no (integer-in 1 65535)]
+                      [local-hostname (or/c string? #f) #f]
+                      [local-port-no (or/c (integer-in 1 65535) #f)])
           (values input-port? output-port?)]{
 
 Like @racket[tcp-connect/enable-break] from @racketmodname[racket/tcp].}
