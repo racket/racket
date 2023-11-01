@@ -754,7 +754,7 @@ does not yet have a contained value.}
 
 A @deftech{module path} is a path string or a symbol, where a symbol
 must contain only the letters @litchar{A}-@litchar{Z},
-@litchar{a}-@litchar{z}, @litchar{0}-@litchar{9}, @litchar{-}, @litchar{+}, or
+@litchar{a}-@litchar{z}, @litchar{0}-@litchar{9}, @litchar{-}, @litchar{+}, @litchar{_}, or
 @litchar{/}. Furthermore, @litchar{/} in a symbol module path cannot
 be at the start, end, or adjacent to another @litchar{/}.
 
