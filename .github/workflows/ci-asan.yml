@@ -15,7 +15,7 @@ jobs:
       ASAN_OPTIONS: 'halt_on_error=0,log_path=racket-asan'
     
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
       with:
         fetch-depth: 100
     - name: Create logs directory

@@ -20,7 +20,7 @@ jobs:
       run: |
         apt-get update
         apt-get install -y libffi-dev unzip python libxml2-dev libfindbin-libs-perl make gcc g++ git tree jq moreutils
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
       with:
         fetch-depth: 100
     - name: Configure
@@ -73,7 +73,7 @@ jobs:
       run: |
         apt-get update
         apt-get install -y libffi-dev unzip python libxml2-dev libfindbin-libs-perl make gcc g++ git jq moreutils
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
       with:
         fetch-depth: 100
     - name: Speed build and install racketcgc
@@ -135,7 +135,7 @@ jobs:
       run: |
         apt update
         apt install -y libffi-dev unzip python libxml2-dev libfindbin-libs-perl make gcc g++ git jq moreutils
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
       with:
         fetch-depth: 100
     - name: Speed build and install racketcgc
@@ -191,7 +191,7 @@ jobs:
         variants: ["cgc", "3m", "cs"]
         chunks: ["00", "01", "02", "03", "04"]
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
       with:
         fetch-depth: 100
     - uses: actions/download-artifact@v3

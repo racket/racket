@@ -20,7 +20,7 @@ jobs:
       VERSION: ${{ github.sha }}
       
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Build image
         working-directory: ./.github/images
         run: docker build --tag image .

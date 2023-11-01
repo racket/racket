@@ -19,7 +19,7 @@ jobs:
         cify: [nocify]
     
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
       with:
         fetch-depth: 100
     - name: Setup cify if enabled
@@ -84,7 +84,7 @@ jobs:
             cc: gcc # clang has a problem with future tests timing out
   
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
       with:
         fetch-depth: 100
     - name: Setup cify if enabled
@@ -158,7 +158,7 @@ jobs:
       matrix:
         cc: [gcc, clang]
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
       with:
         fetch-depth: 100
     - uses: actions/download-artifact@v3
@@ -217,7 +217,7 @@ jobs:
         cify: [nocify]
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: actions/download-artifact@v3
         with:
           name: racketcgc-debian10-${{ matrix.cify }}-x64_git${{ github.sha }}
@@ -300,7 +300,7 @@ jobs:
             cc: gcc
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: actions/download-artifact@v3
         with:
           name: racket3m-debian10-${{ matrix.cify }}-${{ matrix.jit }}-${{ matrix.efp }}-x64_git${{ github.sha }}
@@ -371,7 +371,7 @@ jobs:
         cc: [gcc]
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: actions/download-artifact@v3
         with:
           name: racketcs-debian10-x64-${{ matrix.cc }}_git${{ github.sha }}
