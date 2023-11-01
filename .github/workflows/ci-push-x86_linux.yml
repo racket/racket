@@ -436,7 +436,7 @@ jobs:
     if: always()
 
     steps:
-      - uses: technote-space/workflow-conclusion-action@v2
+      - uses: technote-space/workflow-conclusion-action@v3
       - name: Send Slack notification
         uses: 8398a7/action-slack@v3
         if: github.repository == 'racket/racket'
