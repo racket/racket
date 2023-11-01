@@ -2,6 +2,8 @@ name: Scribble License Files
 
 on:
   push:
+    branches:
+      - master
     paths:
       - "LICENSE.txt"
       - "racket/src/LICENSE.txt"

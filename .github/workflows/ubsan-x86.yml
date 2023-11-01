@@ -1,6 +1,9 @@
 name: Test with UBSan on X86
 
-on: [push]
+on:
+  push:
+    branches:
+      - master
 
 permissions:
   contents: read

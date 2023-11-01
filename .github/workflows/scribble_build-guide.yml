@@ -2,6 +2,8 @@ name: Scribble Racket Build Guide
 
 on:
   push:
+    branches:
+      - master
     paths:
       - "build.md"
       - ".github/workflows/scribble_build-guide.yml"

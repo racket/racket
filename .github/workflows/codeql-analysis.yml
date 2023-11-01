@@ -1,6 +1,10 @@
 name: "LGTM Code Scanning"
 
-on: [push, pull_request]
+on:
+  push:
+    branches:
+      - master
+  pull_request:
 
 permissions:
   security-events: write
