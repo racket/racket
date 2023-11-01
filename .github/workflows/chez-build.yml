@@ -2,6 +2,8 @@ name: Solo Chez Build
 
 on:
   push:
+    branches:
+      - master
     paths:
       - "racket/src/ChezScheme/**"
       - ".github/scripts/**"

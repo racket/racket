@@ -1,6 +1,9 @@
 name: LLVM Static Analysis
 
-on: push
+on:
+  push:
+    branches:
+      - master
 
 permissions:
   security-events: write
