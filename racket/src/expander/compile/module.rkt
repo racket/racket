@@ -203,7 +203,7 @@
                                                     (hash-ref phase-to-link-extra-inspectorsss phase #f)))))))
    
    ;; Assemble the declaration linking unit, which includes linking
-   ;; information for each phase, is instanted once for a module
+   ;; information for each phase, is instantiated once for a module
    ;; declaration, and is shared among instances
    (define declaration-linklet
      (and serializable?

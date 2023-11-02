@@ -14,7 +14,7 @@
 ;; the path `(list key-expr ...)`. Times for a path
 ;; are included in the times for the path's prefixes, but
 ;; not for any other path. When regions that are nested
-;; dynamically, time accumlates only for the most nested
+;; dynamically, time accumulates only for the most nested
 ;; region.
 ;;
 ;; For example,
