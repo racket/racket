@@ -127,7 +127,7 @@
          ;; Dummy callback to avoid retaining anything:
          void))
 
-   ;; At this point, we've prepared everything anout the module that we
+   ;; At this point, we've prepared everything about the module that we
    ;; can while staying independent of a specific declaration or
    ;; specific instance. If we have a hash key for this module, we can
    ;; stash `declare-this-module` for potential reuse later.
