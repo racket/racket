@@ -45,7 +45,8 @@
 (define sources-date
   (for/fold ([d 0]) ([dir (in-list (list here-dir
                                          nano-dir
-                                         (build-path scheme-dir "s")))])
+                                         (build-path scheme-dir "s")
+                                         (build-path scheme-dir "unicode")))])
     (status (format "Use ~a" dir))
     (for/fold ([d d]) ([f (in-list (directory-list dir))]
                        #:when (regexp-match? #rx"[.](?:rkt|ss|sls|def)$" f))
