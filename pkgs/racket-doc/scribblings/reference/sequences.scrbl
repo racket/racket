@@ -1569,8 +1569,7 @@ values from the generator.
 
   When not in the @tech{dynamic extent} of a @racket[generator],
   @racket[infinite-generator], or @racket[in-generator] body,
-  @racket[yield] raises @racket[exn:fail] after evaluating its
-  @racket[expr]s.
+  @racket[yield] raises @racket[exn:fail:contract].
 
   @examples[#:eval generator-eval
     (define my-generator (generator () (yield 1) (yield 2 3 4)))
@@ -1607,7 +1606,7 @@ values from the generator.
               ([maybe-arity code:blank
                             (code:line #:arity arity-k)])]{
   Produces a @tech{sequence} that encapsulates the @tech{generator}
-  formed by @racket[(generator () body ...+)]. The values produced by
+  formed by @racket[(generator () body ...)]. The values produced by
   the generator form the elements of the sequence, except for the last
   value produced by the generator (i.e., the values produced by
   returning).

@@ -12,7 +12,7 @@
 (test #f generator? error)
 
 (define (exn-yield? e)
-  (and (exn:fail? e)
+  (and (exn:fail:contract? e)
        ;; the old yield raised arity errors when given anything but a single
        ;; argument (outside of a generator expression), contrary to the spec
        ;; (yield v ...)
@@ -49,6 +49,12 @@
   (test '(1 2 3) 'parameterized-yield
         (for/list ([x (in-generator (helper 0) (helper 1) (helper 2))])
                   x)))
+
+(test '(gen inf-gen) 'inferred-name
+      (list (let ([gen (generator () #f)])
+              (object-name gen))
+            (let ([inf-gen (infinite-generator #f)])
+              (object-name inf-gen))))
 
 (let ([g (lambda () (generator () (yield 1) (yield 2) (yield 3)))])
   (let ([g (g)]) (test '(1 2 3) list (g) (g) (g)))
