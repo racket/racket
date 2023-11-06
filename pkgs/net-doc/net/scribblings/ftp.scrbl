@@ -21,13 +21,35 @@ returned by @racket[ftp-establish-connection], @racket[#f] otherwise.}
 @defproc[(ftp-establish-connection [server string?]
                                    [port-no (integer-in 0 65535)]
                                    [user string?]
-                                   [passwd string?])
+                                   [passwd string?]
+                                   [#:ports->ssl-ports ports->ssl-ports
+                                                       (or/c #f (-> (input-port? output-port?)
+                                                                    (values input-port? output-port?)))
+                                                       #f])
           ftp-connection?]{
 
 Establishes an FTP connection with the given server using the supplied
-username and password. The @racket[port-np] argument usually should be
-@racket[21].}
+username and password. The @racket[port-no] argument usually should be
+@racket[21].
 
+If @racket[ports->ssl-ports] is not @racket[#f], the connection is
+negotiated to an FTPS connection, and @racket[ports->ssl-ports] is
+responsible for converting ports to an SSL channel.
+
+@history[#:changed "1.1" @elem{Added the @racket[#:ports->ssl-ports] option.}]}
+
+@defproc[(ftp-establish-connection* [in input-port?]
+                                    [out output-port?]
+                                    [user string?]
+                                    [passwd string?]
+                                    [#:ports->ssl-ports ports->ssl-ports
+                                                        (or/c #f (-> (input-port? output-port?)
+                                                                     (values input-port? output-port?)))
+                                                        #f])
+          ftp-connection?]{
+
+Like @racket[ftp-establish-connection], but accepts input and output
+ports instead of a server address and port number.}
 
 @defproc[(ftp-close-connection [ftp-conn ftp-connection?]) void?]{
 

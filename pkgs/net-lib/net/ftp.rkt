@@ -138,26 +138,36 @@
 ;; "if one line's head is 230, then this ftp server do not
 ;; need PASS command. "or 230? (rege..." means if 230? is true already
 ;; , then do not check the line anymore, it's just true.
-(define (ftp-establish-connection* in out username password)
+(define (ftp-establish-connection* in out username password
+                                   #:ports->ssl-ports [ports->ssl-ports #f])
   (with-handlers ([exn:fail? (λ (e)
                                (close-input-port in)
                                (close-output-port out)
                                (raise e))])
     (ftp-check-response in out #"220" void (void))
-    (fprintf out "USER ~a\r\n" username)
-    (let ([no-password? (ftp-check-response
-                         in out (list #"331" #"230")
-                         (lambda (line 230?)
-                           (or 230? (regexp-match #rx#"^230" line)))
-                         #f)])
-      (unless no-password?
-        (fprintf out "PASS ~a\r\n" password)
-        (ftp-check-response in out #"230" void (void))))
-    (make-ftp-connection in out)))
+    (let-values ([(in out)
+                  (cond
+                    [ports->ssl-ports
+                     (fprintf out "AUTH TLS\r\n")
+                     (ftp-check-response in out #"234" void (void))
+                     (ports->ssl-ports in out)]
+                    [else (values in out)])])
+      (fprintf out "USER ~a\r\n" username)
+      (let ([no-password? (ftp-check-response
+                           in out (list #"331" #"230")
+                           (lambda (line 230?)
+                             (or 230? (regexp-match #rx#"^230" line)))
+                           #f)])
+        (unless no-password?
+          (fprintf out "PASS ~a\r\n" password)
+          (ftp-check-response in out #"230" void (void))))
+      (make-ftp-connection in out))))
 
-(define (ftp-establish-connection server-address server-port username password)
+(define (ftp-establish-connection server-address server-port username password
+                                  #:ports->ssl-ports [ports->ssl-ports #f])
   (let-values ([(tcpin tcpout) (tcp-connect server-address server-port)])
-    (ftp-establish-connection* tcpin tcpout username password)))
+    (ftp-establish-connection* tcpin tcpout username password
+                               #:ports->ssl-ports ports->ssl-ports)))
 
 (define (ftp-close-connection ftp-ports)
   (fprintf (ftp-connection-out ftp-ports) "QUIT\r\n")
