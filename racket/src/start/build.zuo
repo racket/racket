@@ -58,7 +58,9 @@
                (list start_rc.o gstart_rc.o)
                (list #f #t)))]
      [else
-      `([:target ,starter (,(at-source "ustart.c") ,(at-source "self_exe.inc"))
+      `([:target ,starter (,(at-source "ustart.c")
+                           ,(at-source "self_exe.inc")
+                           ,(at-source "../ChezScheme/c/self-exe.c"))
                  ,(lambda (path token)
                     (c-compile path
                                (list (at-source "ustart.c"))

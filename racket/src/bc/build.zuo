@@ -1224,6 +1224,7 @@
                                        ,(at-source "../start/cmdl_to_argv.inc")
                                        ,(at-source "../start/config.inc")
                                        ,(at-source "../start/self_exe.inc")
+                                       ,(at-source "../ChezScheme/c/self-exe.c")
                                        ,(at-source "../start/delayed.inc")
                                        ,(at-source "../start/embedded_dll.inc")
                                        ,@(if msvc? (list bc_suffix.h) '()))

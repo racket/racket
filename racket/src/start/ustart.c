@@ -188,6 +188,26 @@ static int as_int(char *_c)
   return c[0] | ((int)c[1] << 8) | ((int)c[2] << 16)  | ((int)c[3] << 24);
 }
 
+static char *do_path_append(const char *s1, int l1, const char *s2) XFORM_SKIP_PROC
+{
+  int l2;
+  char *s;
+
+  l2 = strlen(s2);
+
+  s  = (char *)malloc(l1 + l2 + 2);
+
+  memcpy(s, s1, l1);
+  if (s[l1 - 1] != '/') {
+    s[l1++] = '/';
+  }
+
+  memcpy(s + l1, s2, l2);
+  s[l1 + l2] = 0;
+
+  return s;
+}
+
 char *absolutize(char *p, char *d)
 {
   int l1;
@@ -254,7 +274,7 @@ int main(int argc, char **argv)
     return 1;
   }
 
-  me = lookup_exe_via_path(me);
+  me = get_self_path_generic(me);
   
   /* me is now an absolute path to the binary */
 
