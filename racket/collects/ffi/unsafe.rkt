@@ -1913,7 +1913,7 @@
             (define _TYPE
               ;; c->scheme adjusts all tags
               (let* ([cst (make-cstruct-type types #f alignment-v malloc-mode)]
-                     [t (_cpointer ^TYPE-tag cst)]
+                     [t (_cpointer ^TYPE-tag)]
                      [c->s (ctype-c->scheme t)])
                 (wrap-TYPE-type
                  (make-ctype cst (ctype-scheme->c t)
