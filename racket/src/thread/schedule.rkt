@@ -171,6 +171,7 @@
           ;; Thread continues
           (cond
             [(zero? (current-atomic))
+             (flush-end-atomic-callbacks!)
              (when (thread-dead? root-thread)
                (force-exit 0))
              (define new-leftover-ticks (- leftover-ticks (- TICKS remaining-ticks)))

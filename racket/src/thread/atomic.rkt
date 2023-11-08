@@ -71,15 +71,20 @@
   (define n (fx- (current-atomic) 1))
   (cond
     [(fx= n 0)
+     ;; There's a small chance that `end-atomic-callback`
+     ;; was set by the scheduler after the check and
+     ;; before we exit atomic mode. Make sure that rare
+     ;; possibility remains ok. There are also places that
+     ;; exit atomic mode by decrementing `(current-atomic)`
+     ;; directly; those are places where an arbitrar ycallback
+     ;; is not allowed, such as in a foreign callbacks, and in
+     ;; that case, we end up delaying the callback until a
+     ;; time interrupt.
      (if (eq? 0 (end-atomic-callback))
          (current-atomic n)
          (do-end-atomic-callback))]
     [(fx< n 0) (bad-end-atomic)]
     [else
-     ;; There's a small chance that `end-atomic-callback`
-     ;; was set by the scheduler after the check and
-     ;; before we exit atomic mode. Make sure that rare
-     ;; possibility remains ok.
      (current-atomic n)]))
 
 ;; intended to avoid an infinite loop of "can't do that in atomic
@@ -125,9 +130,14 @@
 ;; Chez Scheme, which explains why 0 is the "none" value.
 (define end-atomic-callback (make-pthread-parameter 0))
 
-;; in atomic mode, but need to disable interrupts to ensure
-;; no race with the scheduler
+;; If we're in a situation like an atomic foreign callback, which
+;; exits atomic mode by decrementing `current-atomic` directly, then a
+;; registered callback might get flushed and never run if the thread
+;; ends or gets swapped out. So, only use this for things where it's
+;; ok to drop the callback on those unusual boundaries.
 (define (add-end-atomic-callback! cb)
+  ;; in atomic mode, but need to disable interrupts to ensure
+  ;; no race with the scheduler
   (host:disable-interrupts)
   (define all-cbs (end-atomic-callback))
   (let loop ([cbs all-cbs])

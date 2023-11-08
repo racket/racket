@@ -12644,23 +12644,27 @@
                     (- leftover-ticks_0 (- TICKS remaining-ticks_0))))
                  (if (zero? (current-atomic))
                    (begin
-                     (if (1/thread-dead? (unsafe-place-local-ref cell.1$1))
-                       (force-exit 0)
-                       (void))
-                     (let ((new-leftover-ticks_0
-                            (- leftover-ticks_0 (- TICKS remaining-ticks_0))))
-                       (begin
-                         (accum-cpu-time! t_0 (<= new-leftover-ticks_0 0))
-                         (set-thread-future! t_0 (current-future$1))
-                         (current-future$1 #f)
-                         (set-place-current-thread!
-                          (unsafe-place-local-ref cell.1$2)
-                          #f)
-                         (if (eq? (thread-engine t_0) 'done)
-                           (void)
-                           (set-thread-engine! t_0 e_2))
-                         (current-thread/in-atomic #f)
-                         (poll-and-select-thread! new-leftover-ticks_0))))
+                     (flush-end-atomic-callbacks!)
+                     (begin
+                       (if (1/thread-dead? (unsafe-place-local-ref cell.1$1))
+                         (force-exit 0)
+                         (void))
+                       (let ((new-leftover-ticks_0
+                              (-
+                               leftover-ticks_0
+                               (- TICKS remaining-ticks_0))))
+                         (begin
+                           (accum-cpu-time! t_0 (<= new-leftover-ticks_0 0))
+                           (set-thread-future! t_0 (current-future$1))
+                           (current-future$1 #f)
+                           (set-place-current-thread!
+                            (unsafe-place-local-ref cell.1$2)
+                            #f)
+                           (if (eq? (thread-engine t_0) 'done)
+                             (void)
+                             (set-thread-engine! t_0 e_2))
+                           (current-thread/in-atomic #f)
+                           (poll-and-select-thread! new-leftover-ticks_0)))))
                    (begin
                      (add-end-atomic-callback! engine-timeout)
                      (loop_0 e_2 check-for-atomic-timeout)))))))))))

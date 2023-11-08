@@ -685,7 +685,7 @@ the generated type:
 
 @itemize[
 
-@item{The @racket[keep] argument provides control over reachbility by
+@item{The @racket[keep] argument provides control over reachability by
       the garbage collector of the underlying value that foreign code
       see as a plain C function.  Additional care must be taken in
       case the foreign code might retain the callback function, in
@@ -744,7 +744,7 @@ the generated type:
        it can return different results to the foreign caller.
 
        The callback value's reachability (and its interaction with
-       @racket[keep] is based on the original function for the
+       @racket[keep]) is based on the original function for the
        callback, not the result of @racket[wrapper].}
 
  @item{If @racket[atomic?] is true or when using the @CS[] implementation of
@@ -769,7 +769,12 @@ the generated type:
        because Racket threads do not capture C-stack context. Even on
        the @BC[] implementation of Racket, atomic mode is
        typically needed for callbacks, because capturing by copying a
-       portion of the C stack is often incompatible with C libraries.}
+       portion of the C stack is often incompatible with C libraries.
+
+       If a callback in atomic mode sends a break to the current
+       thread, then not only is the break delayed as usual for
+       @tech{atomic mode}, it delivery might be delayed further
+       than return from a foreign call that led to the callback.}
 
  @item{If a @racket[async-apply] is provided as a procedure or box, then a Racket
        @tech{callback} procedure with the generated procedure type can

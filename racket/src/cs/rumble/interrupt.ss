@@ -1,7 +1,7 @@
 
 ;; Like `with-interrupts-disabled`, but with no winders
-;; and ways returning a single value. Avoiding winders
-;; is important in "foreign.ss" so htat callbacks do
+;; and always returning a single value. Avoiding winders
+;; is important in "foreign.ss" so that callbacks do
 ;; not return to a world with Scheme-level winders, which
 ;; will not interact correctly with engines.
 (define-syntax-rule (with-interrupts-disabled* e0 e ...)
