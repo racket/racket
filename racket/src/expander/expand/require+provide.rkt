@@ -180,7 +180,7 @@
 
 ;; Like `add-defined-or-required-id!`, but faster for bindings that
 ;; all have the same scope, etc., and no space level
-;; Return #t if any required id is already defined by a shaodwing definition.
+;; Return #t if any required id is already defined by a shadowing definition.
 (define (add-bulk-required-ids! r+p s self nominal-module phase-level provides provide-phase+space
                                 #:prefix bulk-prefix
                                 #:excepts bulk-excepts
@@ -328,7 +328,7 @@
 ;; require; if something is found but it will be replaced, then record that
 ;; bindings are not simple. Returns a status to indicate whether/how the binding
 ;; is defined or required already, since `allow-defined?` and `ok-binding/delated`
-;; allow that possibilify; the possible results are #f, 'defined, or 'required.
+;; allow that possibility; the possible results are #f, 'defined, or 'required.
 (define (check-not-defined #:check-not-required? [check-not-required? #f]
                            #:allow-defined? [allow-defined? #f]
                            r+p id phase space #:in orig-s
@@ -493,7 +493,7 @@
 
 ;; For importing into the default space, adjust shadowable imports of
 ;; the same name into non-default spaces to that they're treated as
-;; abiguous, the same as would happen for local bindings.
+;; ambiguous, the same as would happen for local bindings.
 (define (adjust-shadow-requires! r+p id phase space)
   (unless space
     (for ([space (in-hash-keys (requires+provides-spaces r+p))])
@@ -643,7 +643,7 @@
 ;; ----------------------------------------
 
 ;; Note: the provides may include non-interned symbols. Those may be
-;; accessible via` dynamic-require`, but don't import them.
+;; accessible via `dynamic-require`, but don't import them.
 (define (shift-provides-module-path-index provides from-mpi to-mpi)
   (for/hasheqv ([(phase+space at-phase) (in-hash provides)])
     (values phase+space
