@@ -20,8 +20,6 @@ manner. For some platforms and configurations, the
 @racket[separate-window?] parameter determines if the browser creates
 a new window to display the URL or not.
 
-On Mac OS, @racket[send-url] calls @racket[send-url/mac].
-
 If @racket[escape?] is true, then @racket[str] is escaped (by UTF-8
 encoding followed by ``%'' encoding) to avoid dangerous shell
 characters: single quotes, double quotes, backquotes, dollar signs,
