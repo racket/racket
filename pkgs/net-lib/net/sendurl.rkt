@@ -156,7 +156,7 @@
     (with-output-to-file temp #:exists 'truncate
       (lambda () (display contents)))
     (when delete-at (thread (lambda () (sleep delete-at) (delete-file temp))))
-    (send-url/file temp)))
+    (send-url/file temp separate-window? #:fragment fragment #:query query)))
 
 (define (send-url/simple url [separate-window? separate-by-default?])
   ;; in cases where a browser was uninstalled, we might get a preference that
