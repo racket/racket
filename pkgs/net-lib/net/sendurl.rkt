@@ -158,51 +158,57 @@
     (when delete-at (thread (lambda () (sleep delete-at) (delete-file temp))))
     (send-url/file temp separate-window? #:fragment fragment #:query query)))
 
+;; precondition: (external-browser) is already determined to be a non procedure.
 (define (send-url/simple url [separate-window? separate-by-default?])
   ;; in cases where a browser was uninstalled, we might get a preference that
   ;; is no longer valid, this will turn it back to #f
   (define (try pref)
     (if (symbol? pref)
-      (if (memq pref browser-list) pref #f)
-      pref))
+        (if (memq pref browser-list) pref #f)
+        pref))
   (define browser
     (or (try (external-browser))
         (try (get-preference 'external-browser))
         ;; no preference -- chose the first one from the filtered list
         (and (pair? browser-list) (car browser-list))))
-  (define exe
-    (cond [(assq browser (force existing-browsers->exes)) => cdr]
-          [else #f]))
-  (define (simple) (browser-run exe url))
-  (define (w/arg a) (browser-run exe a url))
-  (define (try-remote)
-    (or (browser-run exe "-remote" (format "openURL(~a~a)" url
-                                           (if separate-window? ",new-window" "")))
-        (simple)))
-  (define (windows-start)
-    (shell-execute #f url "" (current-directory) 'SW_SHOWNORMAL))
+  ;; browser is either
+  ;; - #f
+  ;; - a symbol in browser-list
+  ;; - a pair of strings
   (cond
     [(not browser)
      (error 'send-url "Couldn't find a browser to open URL: ~e" url)]
     [(custom-browser? browser)
      (browser-run #:shell #t (string-append (car browser) url (cdr browser)))]
     ;; if it's a known browser, then it must be an existing one at this point
-    [(not exe) (error 'send-url "internal error")]
-    ;; if it's gone throw an error (refiltering will break assumptions of
-    ;; browser/external.rkt, and we really mimic the Win/Mac case where there
-    ;; should be some builtin facility that doesn't change)
-    [(not (file-exists? exe)) (error 'send-url "executable vanished: ~a" exe)]
-    ;; finally, deal with the actual browser process
     [else
-     (case browser
-       [(open xdg-open
-         sensible-browser x-www-browser firefox konqueror google-chrome chromium-browser)
-        (simple)]
-       [(cmd.exe) (windows-start)]
-       ;; don't really know how to run these
-       [(epiphany) (if separate-window? (w/arg "--new-window") (simple))]
-       [(seamonkey opera) (try-remote)]
-       [else (error 'send-url "internal error")])]))
+     ;; here, browser is a symbol in browser-list
+     (define exe (cdr (assq browser (force existing-browsers->exes))))
+     (define (simple) (browser-run exe url))
+     (define (w/arg a) (browser-run exe a url))
+     (define (try-remote)
+       (or (browser-run exe "-remote" (format "openURL(~a~a)" url
+                                              (if separate-window? ",new-window" "")))
+           (simple)))
+     (define (windows-start)
+       (shell-execute #f url "" (current-directory) 'SW_SHOWNORMAL))
+
+     (cond
+       ;; if it's gone throw an error (refiltering will break assumptions of
+       ;; browser/external.rkt, and we really mimic the Win/Mac case where there
+       ;; should be some builtin facility that doesn't change)
+       [(not (file-exists? exe)) (error 'send-url "executable vanished: ~a" exe)]
+       ;; finally, deal with the actual browser process
+       [else
+        (case browser
+          [(open xdg-open
+                 sensible-browser x-www-browser firefox konqueror google-chrome chromium-browser)
+           (simple)]
+          [(cmd.exe) (windows-start)]
+          ;; don't really know how to run these
+          [(epiphany) (if separate-window? (w/arg "--new-window") (simple))]
+          [(seamonkey opera) (try-remote)]
+          [else (error 'send-url "internal error")])])]))
 
 ;; Write and use (via `send-url/contents') a trampoline html that redirects
 ;; to the actual file and fragment, for launchers that can't cope with query
