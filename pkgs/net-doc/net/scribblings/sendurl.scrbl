@@ -79,35 +79,29 @@ above.}
 }
 
 @defparam[external-browser cmd browser-preference?]{
-
-A parameter that can hold a procedure to override how a browser is
-started, or @racket[#f] to use the default platform-dependent command.
-
-On Unix, the command that is used depends on the @racket['external-browser]
-preference.  It's recommended not to use this preference, but to rely on
-@tt{xdg-open}.  If the preference is unset, @racket[send-url] uses the first
-of the browsers from @racket[unix-browser-list] for which the executable is
-found.  Otherwise, the preference should hold a symbol indicating a known
-browser (from the @racket[unix-browser-list]), or it a pair of a prefix and
-a suffix string that are concatenated around the @racket[url] string to make
-up a shell command to run.  In addition, the @racket[external-browser]
-paremeter can be set to one of these values, and @racket[send-url] will use
-it instead of the preference value.
-
-Note that the URL is encoded to make it work inside shell double-quotes:
-URLs can still hold characters like @litchar{#}, @litchar{?}, and
-@litchar{&}, so if the @racket[external-browser] is set to a pair of
-prefix/suffix strings, they should use double quotes around the url.
-
-If the preferred or default browser can't be launched,
-@racket[send-url] fails. See @racket[get-preference] and
-@racket[put-preferences] for details on setting preferences.}
+A parameter that can hold a browser preference to override how a browser is
+started for @racket[send-url]. See @racket[browser-preference?] for details.}
 
 @defproc[(browser-preference? [a any/c]) boolean?]{
 
 Returns @racket[#t] if @racket[v] is a valid browser preference,
-@racket[#f] otherwise. See @racket[external-browser] for more
-information.}
+@racket[#f] otherwise. A valid browser preference is either:
+
+@itemlist[
+  @item{The value @racket[#f], which fallbacks to the next preference method.}
+  @item{A @racket[procedure?] that accepts a URL string.
+        This value is not allowed for the @racket['external-browser] preference.}
+  @item{A symbol in @racket[browser-list] that indicates a browser to use.}
+  @item{A pair of strings to be concatenated with a URL string to form a shell command to run.
+        The first string is the command prefix and the second string is the command suffix.
+        This method requires extra care:
+
+        @itemlist[
+          @item{The URL can hold characters like @litchar{#}, @litchar{?}, and
+                @litchar{&}, so the pair of strings should place double quotes around the URL.}
+          @item{The URL should be encoded to make it work inside shell double-quotes,
+                so the default value of @racket[escape?] in @racket[send-url] should be used.}]}]}
+
 @defthing[browser-list (listof symbol?)]{
 
 A list of symbols representing executable names that may be tried
