@@ -16,7 +16,10 @@ browser preference is set.
          void?]{
 
 Opens @racket[str], which represents a URL, in a platform-specific
-manner. For some platforms and configurations, the
+manner.
+In particular, the first value in @racket[browser-list] will determine
+which browser will be used to open the URL.
+For some platforms and configurations, the
 @racket[separate-window?] parameter determines if the browser creates
 a new window to display the URL or not.
 
@@ -27,9 +30,16 @@ backslashes, non-ASCII characters, and non-graphic characters. Note
 that escaping does not affect already-encoded characters in
 @racket[str].
 
-On all platforms, the @racket[external-browser] parameter can be set to a
-procedure to override the above behavior, and the procedure will be
-called with the URL @racket[str].}
+There are two ways to override the above behavior: the @racket[external-browser] parameter and
+the @racket['external-browser] preference.
+A valid setting for both the @racket[external-browser] parameter and the @racket['external-browser] preference
+must satisfy @racket[browser-preference?], with a restriction that
+the setting for the @racket['external-browser] preference cannot be a procedure.
+The @racket[external-browser] parameter takes priority over @racket['external-browser] preference:
+the preference is only used when @racket[(external-browser)] is @racket[#f].
+See @racket[put-preferences] for details on setting preferences.
+
+On Unix, it's recommended to not override the default behavior, but to rely on @tt{xdg-open} in @racket[browser-list].}
 
 @defproc[(send-url/file [path path-string?] [separate-window? any/c #t]
                         [#:fragment fragment (or/c string? #f) #f]
@@ -88,7 +98,7 @@ Returns @racket[#t] if @racket[v] is a valid browser preference,
 @racket[#f] otherwise. A valid browser preference is either:
 
 @itemlist[
-  @item{The value @racket[#f], which fallbacks to the next preference method.}
+  @item{The value @racket[#f], which falls back to the next preference method.}
   @item{A @racket[procedure?] that accepts a URL string.
         This value is not allowed for the @racket['external-browser] preference.}
   @item{A symbol in @racket[browser-list] that indicates a browser to use.}
