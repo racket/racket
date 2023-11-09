@@ -4,7 +4,8 @@
 #lang racket/base
 
 (require racket/system racket/file racket/promise racket/port
-         racket/contract racket/promise json)
+         racket/contract racket/promise
+         (for-syntax racket/base))
 
 (provide send-url send-url/file send-url/contents
          browser-list external-browser
@@ -57,7 +58,7 @@
 
 ;; Backwards compatibility
 
-(define unix-browser-list browser-list)
+(define-syntax unix-browser-list (make-rename-transformer #'browser-list))
 
 ;; : any -> bool
 (define (custom-browser? x)
