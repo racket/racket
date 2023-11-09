@@ -108,10 +108,19 @@ If the preferred or default browser can't be launched,
 Returns @racket[#t] if @racket[v] is a valid browser preference,
 @racket[#f] otherwise. See @racket[external-browser] for more
 information.}
+@defthing[browser-list (listof symbol?)]{
+
+A list of symbols representing executable names that may be tried
+in order by @racket[send-url]. The @racket[send-url] function
+internally includes information on how to launch each executable with
+a URL.
+
+@history[#:added "7.5.0.10"]}
 
 @defthing[unix-browser-list (listof symbol?)]{
 
-A list of symbols representing Unix executable names that may be tried
-in order by @racket[send-url]. The @racket[send-url] function
-internally includes information on how to launch each executable with
-a URL.}
+@deprecated[#:what "value" @racket[browser-list]]
+
+The same as @racket[browser-list].
+
+@history[#:changed "7.5.0.10" @elem{Changed the value to be an alias of @racket[browser-list].}]}
