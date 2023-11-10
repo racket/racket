@@ -2121,9 +2121,13 @@ static zuo_t *zuo_in(const unsigned char *s, zuo_int_t *_o, zuo_t *where, int sk
                        stack);
       obj = z.o_undefined;
     } else if ((c == '.') && !(isalpha(s[*_o+1]) || isdigit(s[*_o+1]) || strchr(symbol_chars, s[*_o+1]))) {
-      if ((stack != z.o_null) && (ZUO_CAR(ZUO_CAR(stack)) == ZUO_IN_PAREN_LIST_RECUR))
+      if ((stack != z.o_null)
+          && (ZUO_CAR(ZUO_CAR(stack)) == ZUO_IN_PAREN_LIST_RECUR)
+          && (ZUO_CAR(ZUO_CDR(ZUO_CAR(stack))) != z.o_null))
         ZUO_CAR(ZUO_CAR(stack)) = ZUO_IN_PAREN_PAIR_RECUR;
-      else if ((stack != z.o_null) && (ZUO_CAR(ZUO_CAR(stack)) == ZUO_IN_BRACKET_LIST_RECUR))
+      else if ((stack != z.o_null)
+               && (ZUO_CAR(ZUO_CAR(stack)) == ZUO_IN_BRACKET_LIST_RECUR)
+               && (ZUO_CAR(ZUO_CDR(ZUO_CAR(stack))) != z.o_null))
         ZUO_CAR(ZUO_CAR(stack)) = ZUO_IN_BRACKET_PAIR_RECUR;
       else
         zuo_read_fail(s, _o, where, "misplaced `.`");
