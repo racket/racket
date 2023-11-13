@@ -532,11 +532,19 @@
                                #f #f #f
                                ;; flags
                                #t #f))
-                (apply
-                 (if (bytes? buf) bytes-append string-append)
-                 (cond [(and (= start 0) (not end)) r]
-                       [(not end) (cons (sub string 0 start) r)]
-                       [else `(,(sub string 0 start) ,@r ,(sub string end #f))]))]))])
+
+                (let-values ([(app sub)
+                              (if (bytes? buf)
+                                  (values bytes-append subbytes)
+                                  (values string-append substring))])
+                  (apply app
+                         (let* ([r (if end
+                                       (append r (list (sub buf end)))
+                                       r)]
+                                [r (if (eqv? start 0)
+                                       r
+                                       (cons (sub buf 0 start) r))])
+                           r)))]))])
       regexp-replace*))
 
   ;; Returns all the matches for the pattern in the string, optionally
