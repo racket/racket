@@ -155,10 +155,11 @@
                       [(bytes?  string) (bytes-length  string)]
                       [else #f])]
            [orig-rx
-            (cond [(bytes? pattern) (byte-regexp pattern)]
+            (cond [(or (regexp? pattern)
+                       (byte-regexp? pattern))
+                   pattern]
                   [(string? pattern) (regexp pattern)]
-                  [(regexp? pattern) pattern]
-                  [(byte-regexp? pattern) pattern]
+                  [(bytes? pattern) (byte-regexp pattern)]
                   [else (raise-argument-error
                          'name
                          "(or/c regexp? byte-regexp? string? bytes?)"
@@ -428,33 +429,68 @@
                 (regexp-replace* pattern string orig-replacement ipre)]
                [else
                 ;; general implementation
-                (define-values [buf sub] (get-buf+sub string pattern start ipre))
+                (unless (or (regexp? pattern)
+                            (byte-regexp? pattern)
+                            (string? pattern)
+                            (bytes? pattern))
+                  (raise-argument-error 'regexp-replace*
+                                        "(or/c regexp? byte-regexp? string? bytes?)"
+                                        pattern))
+                (unless (or (string? string)
+                            (bytes? string))
+                  (raise-argument-error 'regexp-replace*
+                                        "(or/c string? bytes?)"
+                                        string))
+                (unless (or (string? orig-replacement)
+                            (bytes? orig-replacement)
+                            (procedure? orig-replacement))
+                  (raise-argument-error 'regexp-replace*
+                                        "(or/c string? bytes? procedure?)"
+                                        orig-replacement))
+
                 (define needs-string?
-                  (and (or (string? pattern) (regexp? pattern)) (string? string)))
+                  (and (or (string? pattern) (regexp? pattern))
+                       (string? string)))
+                (when (and needs-string? (bytes? orig-replacement))
+                  (raise-arguments-error 'regexp-replace*
+                                         "cannot replace a string with a byte string"
+                                         "string-matching regexp" pattern
+                                         "string" string
+                                         "byte string" orig-replacement))
+
                 (define replacement
-                  (if (and (not needs-string?) (string? orig-replacement))
+                  (if (and (not needs-string?)
+                           (string? orig-replacement))
                       (string->bytes/utf-8 orig-replacement)
                       orig-replacement))
-                (define (check proc args)
-                  (let ([v (apply proc args)])
-                    (unless (if needs-string? (string? v) (bytes? v))
-                      (raise-mismatch-error
-                       '|regexp-replace* (calling given filter procedure)|
-                       (if needs-string?
-                           "expected a string result: "
-                           "expected a byte string result: ")
-                       v))
-                    v))
-                (define need-replac?
-                  (and (not (procedure? replacement))
-                       (regexp-match? #rx#"[\\&]" replacement)))
-                (define (replac ms str)
-                  (if need-replac?
-                      ((if (string? str) bytes->string/utf-8 values)
+
+                (define-values [buf sub] (get-buf+sub string pattern start ipre))
+
+                (define (checked-apply proc args)
+                  (define v (apply proc args))
+                  (define (do-raise expected)
+                    (raise-result-error
+                     '|regexp-replace* (calling given filter procedure)|
+                     expected
+                     v))
+                  (if needs-string?
+                      (unless (string? v) (do-raise "string?"))
+                      (unless (bytes? v) (do-raise "bytes?")))
+                  v)
+
+                (define process-ms
+                  (cond
+                    [(procedure? replacement)
+                     (lambda (ms)
+                       (checked-apply
+                        replacement
+                        (for/list ([m ms])
+                          (and m (sub buf (car m) (cdr m))))))]
+                    [(regexp-match? #rx#"[\\&]" replacement)
+                     (define ((make-do-replac str) ms)
                        (apply
                         bytes-append
-                        (let ([str (if (string? str) (string->bytes/utf-8 str) str)]
-                              [get-match
+                        (let ([get-match
                                (lambda (n)
                                  (if (n . < . (length ms))
                                      (let* ([p (list-ref ms n)]
@@ -495,34 +531,19 @@
                                                  (cons (get-match 0)
                                                        (loop (cdar m)))))]))
                                   (list (subbytes str pos))))))))
-                      str))
-                (when (or (string? pattern) (bytes? pattern)
-                          (regexp? pattern) (byte-regexp? pattern))
-                  (unless (or (string? string)
-                              (bytes? string))
-                    (raise-argument-error 'regexp-replace* "(or/c string? bytes?)"
-                                          string))
-                  (unless (or (string? replacement)
-                              (bytes? replacement)
-                              (procedure? replacement))
-                    (raise-argument-error 'regexp-replace*
-                                          "(or/c string? bytes? procedure?)"
-                                          replacement))
-                  (when (and needs-string? (bytes? replacement))
-                    (raise-mismatch-error
-                     'regexp-replace*
-                     "cannot replace a string with a byte string: "
-                     replacement)))
+                     (cond
+                       [(string? replacement)
+                        (define do-replac
+                          (make-do-replac (string->bytes/utf-8 replacement)))
+                        (lambda (ms) (bytes->string/utf-8 (do-replac ms)))]
+                       [else (make-do-replac replacement)])]
+                    [else (lambda (_) replacement)]))
+
                 (define r
                   (regexp-loop regexp-replace* loop start end pattern buf ipre
                                ;; success-choose:
                                (lambda (start ms acc)
-                                 (list* (if (procedure? replacement)
-                                            (check
-                                             replacement
-                                             (for/list ([m ms])
-                                               (and m (sub buf (car m) (cdr m)))))
-                                            (replac ms replacement))
+                                 (list* (process-ms ms)
                                         (sub buf start (caar ms))
                                         acc))
                                ;; failure-k:
