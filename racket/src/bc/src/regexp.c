@@ -5794,6 +5794,7 @@ static Scheme_Object *gen_replace(const char *name, int argc, Scheme_Object *arg
       if (SCHEME_CHAR_STRINGP(argv[1])) {
 	scheme_contract_error(name, "cannot replace a string with a byte string",
                               "string-matching regexp", 1, argv[0],
+                              "string", 1, argv[1],
                               "byte string", 1, argv[2],
                               NULL);
       }

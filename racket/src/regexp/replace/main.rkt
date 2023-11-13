@@ -1,5 +1,6 @@
 #lang racket/base
-(require "../match/regexp.rkt"
+(require racket/symbol
+         "../match/regexp.rkt"
          "../match/main.rkt"
          "chyte.rkt")
 
@@ -13,32 +14,35 @@
   (do-regexp-replace 'regexp-replace* rx orig-in insert prefix #t))
 
 (define (do-regexp-replace who rx-in orig-in insert prefix all?)
+  (define rx
+    (cond
+      [(rx:regexp? rx-in) rx-in]
+      [(string? rx-in) (make-regexp who rx-in #f #f #f)]
+      [(bytes? rx-in) (make-regexp who rx-in #f #t #f)]
+      [else (raise-argument-error who "(or/c regexp? byte-regexp? string? bytes?)" rx-in)]))
+
+  (unless (or (string? orig-in)
+              (bytes? orig-in))
+    (raise-argument-error who "(or/c string? bytes?)" orig-in))
+  (unless (or (string? insert)
+              (bytes? insert)
+              (procedure? insert))
+    (raise-argument-error who "(or/c string? bytes? procedure?)" insert))
+
   (define string-mode?
     (and (or (string? rx-in) (regexp? rx-in))
          (string? orig-in)))
+  (when (and string-mode? (bytes? insert))
+    (raise-arguments-error who
+                           "cannot replace a string with a byte string"
+                           "string-matching regexp" rx-in
+                           "string" orig-in
+                           "byte string" insert))
+
   (define in (if (and (not string-mode?)
                       (string? orig-in))
                  (string->bytes/utf-8 orig-in)
                  orig-in))
-  
-  (when (or string-mode?
-            (and (or (bytes? rx-in) (byte-regexp? rx-in))
-                 (or (string? orig-in) (bytes? orig-in))))
-    (unless (or (string? insert)
-                (bytes? insert)
-                (procedure? insert))
-      (raise-argument-error who "(or/c string? bytes? procedure?)" insert)))
-  
-  (when string-mode?
-    (when (bytes? insert)
-      (raise-arguments-error who
-                             "cannot replace a string with a byte string"
-                             "byte string" insert)))
-  
-  (define rx (cond
-              [(string? rx-in) (make-regexp who rx-in #f #f #f)]
-              [(bytes? rx-in) (make-regexp who rx-in #f #t #f)]
-              [else rx-in]))
   
   (define ins (if (and (not string-mode?)
                        (string? insert))
@@ -97,7 +101,13 @@
                        (and pos
                             (subchytes* in (car pos) (cdr pos) prefix)))))
     (unless (chytes? in a)
-      (raise-result-error who (if (bytes? in) "bytes?" "string?") a))
+      (raise-result-error
+       (string->symbol
+        (string-append
+         (symbol->immutable-string who)
+         " (calling given filter procedure)"))
+       (if (bytes? in) "bytes?" "string?")
+       a))
     a]
     
    [else

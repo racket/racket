@@ -1456,6 +1456,16 @@
 (test "hello world" regexp-replace* #px"o" "ohello world" "" 0 3)
 (test "hell world" regexp-replace* #px"o" "ohello world" "" 0 6)
 
+(let ([rx #rx"regexp-replace: contract violation.+expected:.+or/c regexp\\? byte-regexp\\? string\\? bytes\\?"])
+  (err/rt-test (regexp-replace 'not-regexp "string" "rep") exn:fail:contract? rx)
+  (err/rt-test (regexp-replace 'not-regexp "string" "rep" #"ipre") exn:fail:contract? rx))
+
+(let ([rx #rx"regexp-replace\\*: contract violation.+expected:.+or/c regexp\\? byte-regexp\\? string\\? bytes\\?"])
+  (err/rt-test (regexp-replace* 'not-regexp "string" "rep") exn:fail:contract? rx)
+  (err/rt-test (regexp-replace* 'not-regexp "string" "rep" 1) exn:fail:contract? rx)
+  (err/rt-test (regexp-replace* 'not-regexp "string" "rep" 1 2) exn:fail:contract? rx)
+  (err/rt-test (regexp-replace* 'not-regexp "string" "rep" 1 2 #"ipre") exn:fail:contract? rx))
+
 ;; Test weird port offsets:
 (define (test-weird-offset regexp-match regexp-match-positions)
   (test #f regexp-match "e" (open-input-string ""))
