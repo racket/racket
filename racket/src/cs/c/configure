@@ -4703,6 +4703,10 @@ case "$MACH_HOST_CPU" in
     MACH="${thread_prefix}rv64${MACH_OS}"
     pb_machine_name="${thread_prefix}pb64l"
     ;;
+  loongarch64*)
+    MACH="${thread_prefix}la64${MACH_OS}"
+    pb_machine_name="${thread_prefix}pb64l"
+    ;;
 esac
 
 if test "${MACH}" = "" ; then
@@ -4801,6 +4805,9 @@ if test "${build_os}_${build_cpu}" != "${host_os}_${host_cpu}" ; then
       ;;
     riscv64*)
       BUILD_MACH="${BUILD_THREAD_PREFIX}rv64${BUILD_OS}"
+      ;;
+    loongarch64*)
+      BUILD_MACH="${BUILD_THREAD_PREFIX}la64${BUILD_OS}"
       ;;
     *)
       echo "unknown build CPU"
