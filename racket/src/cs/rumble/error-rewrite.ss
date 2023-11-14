@@ -143,8 +143,11 @@
                                                 "  " what ": ~s")
                                  irritants)))]
      [else
-      (format-error-values (string-append "contract violation\n"
-                                          "  expected: exact-nonnegative-integer?\n"
+      (format-error-values (string-append "contract violation\n  expected: "
+                                          (error-contract->adjusted-string
+                                           "exact-nonnegative-integer?"
+                                           primitive-realm)
+                                          "\n"
                                           "  given: ~s\n"
                                           "  argument position: 2nd\n"
                                           "  first argument...:\n"
@@ -170,13 +173,16 @@
         (and (eq? who 'stencil-vector-update)
              (or (equal? str invalid-removal-mask)
                  (equal? str invalid-addition-mask))))
-    (format-error-values (string-append "contract violation\n"
-                                        "  expected: (integer-in 0 (sub1 (expt 2 (stencil-vector-mask-width))))\n"
+    (format-error-values (string-append "contract violation\n  expected: "
+                                        (error-contract->adjusted-string
+                                         "(integer-in 0 (sub1 (expt 2 (stencil-vector-mask-width))))"
+                                         primitive-realm)
+                                        "\n"
                                         (cond
                                           [(equal? str invalid-removal-mask) "  argument position: 2nd\n"]
                                           [(equal? str invalid-addition-mask) "  argument position: 3rd\n"]
                                           [else ""])
-                                        "  given: ~s\n")
+                                        "  given: ~s")
                          irritants)]
    [(or (equal? str "mask ~s does not match given number of items ~s")
         (equal? str "addition mask ~s does not match given number of items ~s"))

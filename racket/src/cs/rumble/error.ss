@@ -174,7 +174,7 @@
           [(string? (car more))
            (cond
              [(null? (cdr more))
-              (raise-arguments-error 'raise-arguments-error
+              (raise-arguments-error e-who
                                      "missing value after field string"
                                      "string"
                                      (car more))]
@@ -187,7 +187,7 @@
                                          (error-value->string val))))
                     (loop (cddr more)))])]
           [else
-           (raise-argument-error 'raise-arguments-error "string?" (car more))])))
+           (raise-argument-error e-who "string?" (car more))])))
      realm)
     (current-continuation-marks))))
 

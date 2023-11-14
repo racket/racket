@@ -2450,6 +2450,12 @@
 (err/rt-test (raise-arguments-error 'f "invalid" 'x 5) exn:fail:contract? #rx"raise-arguments-error:")
 (err/rt-test (raise-arguments-error 'f "invalid" "x" 5 "y") exn:fail:contract? #rx"raise-arguments-error:")
 
+(err/rt-test (raise-arguments-error* "f" 'mars "invalid") exn:fail:contract? #rx"raise-arguments-error\\*:")
+(err/rt-test (raise-arguments-error* 'f 'mars 'invalid) exn:fail:contract? #rx"raise-arguments-error\\*:")
+(err/rt-test (raise-arguments-error* 'f 'mars "invalid" "x") exn:fail:contract? #rx"raise-arguments-error\\*:")
+(err/rt-test (raise-arguments-error* 'f 'mars "invalid" 'x 5) exn:fail:contract? #rx"raise-arguments-error\\*:")
+(err/rt-test (raise-arguments-error* 'f 'mars "invalid" "x" 5 "y") exn:fail:contract? #rx"raise-arguments-error\\*:")
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; continuations
 
