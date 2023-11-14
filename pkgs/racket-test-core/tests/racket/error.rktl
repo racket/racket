@@ -122,12 +122,32 @@
                        (values (case (and (eq? realm 'racket/primitive)
                                           ctc)
                                  [("number?") "number/c"]
+                                 [("exact-nonnegative-integer?") "nonneg-int/c"]
+                                 [("(integer-in 0 (sub1 (expt 2 (stencil-vector-mask-width))))")
+                                  "valid-stencil-vector-mask/c"]
                                  [else ctc])
                                'mars))]
                     [else #f]))])
   (test-error-match #rx"expected: number/c" (+ 'a 'b))
+  (test-error-match #rx"expected: number[?]" (raise-argument-error 'plus "number?" 'a))
 
-  (test-error-match #rx"expected: number[?]" (raise-argument-error 'plus "number?" 'a)))
+  (test-error-match #rx"expected: nonneg-int/c"
+                    (vector-ref #(1 2 3) 'not-nonneg-int))
+  (test-error-match #rx"expected: nonneg-int/c"
+                    (vector-set! (make-vector 3) 'not-nonneg-int 0))
+  (test-error-match #rx"expected: exact-nonngative-integer[?]"
+                    (raise-argument-error 'vector-add "exact-nonngative-integer?" 'not-nonneg-int))
+
+  (test-error-match #rx"expected: valid-stencil-vector-mask/c"
+                    (stencil-vector 'invalid))
+  (test-error-match #rx"expected: valid-stencil-vector-mask/c"
+                    (stencil-vector-update (stencil-vector 0) 'invalid 0))
+  (test-error-match #rx"expected: valid-stencil-vector-mask/c"
+                    (stencil-vector-update (stencil-vector 0) 0 'invalid))
+  (test-error-match #rx"expected:.+integer-in 0.+sub1.+expt 2.+stencil-vector-mask-width"
+                    (raise-argument-error 'stencil-vector-add
+                                          "(integer-in 0 (sub1 (expt 2 (stencil-vector-mask-width))))"
+                                          'invalid)))
 
 (parameterize ([current-error-message-adjuster
                 (lambda (mode)
