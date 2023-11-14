@@ -52,6 +52,7 @@
       [("arm") "arm32"]
       [("ppc") "ppc32"]
       [("riscv64") "rv64"]
+      [("loongarch64") "la64"]
       [("unknown") #f] ; pb machine types
       [else #f]))
   (define os
