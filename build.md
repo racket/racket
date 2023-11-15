@@ -100,8 +100,9 @@ have several options:
   described in the `"src"` subdirectory of `"racket"` (i.e., ignore the
   repository’s root directory and `"pkgs"` subdirectory). Build a
   minimal Racket using the usual `configure && make && make install`
-  steps (or similar for Windows), and then you can install packages from
-  the catalog server with `raco pkg`.
+  steps (or similar for Windows). Then, you can install packages from
+  the catalog server with `raco pkg`, and you should install at least
+  the `"racket-lib"` package.
 
 * **Installers** — This mode creates Racket distribution installers for
   a variety of platforms by farming out work to machines that run those

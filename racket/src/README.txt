@@ -75,8 +75,10 @@ If you need more information specific to Racket BC, see
 
 Quick instructions:
 
- From this directory (where the `configure` file is), run the following
- commands:
+ From this directory (where the `configure` file is), run the
+ following commands:
+
+   # see extra commands below when building withing a Git clone
 
    mkdir build
    cd build
@@ -96,18 +98,28 @@ Quick instructions:
  Some build modes may require GNU Make. See "Dependency details" below
  for more information about dependencies.
 
- When building from a Git clone, after `make install`, the Racket
- installation is still more "minimal" than a "Minimal Racket"
- distribution, because it does not have the "racket-lib" package
- installed. Consider adding that package with
+ When working from a clone of the Racket Git repository, as opposed to
+ a source code distirbution, prefix the above commands with
+  
+   make --directory=../../ pb-fetch
+
+ and add a command to run the installed `raco` to the end:
 
    raco pkg install -i racket-lib
 
 Detailed instructions:
 
  0. If you have an old Racket installation in the target directory,
-    remove it (unless you are using an "in-place" build from a
-    repository as described below).
+    remove it (unless you are using an "in-place" build as described
+    below).
+
+    When building from a clone of the Racket Git repository, note that
+    "../../build.md" has more information about build options in that
+    mode. If you work from here, though, an extra step is needed to
+    download or update sources in "ChezScheme/boot/pb" (which are
+    already present in a source code distribution):
+
+       make --directory=../../ pb-fetch
 
  1. Select (or create) a build directory.
 
@@ -273,13 +285,20 @@ Detailed instructions:
     versions of the dynamic libraries in your installation target.
 
  5. After an "in-place" install from a source distribution, the
-   "racket/src" directory is no longer needed, and it can be safely
-   deleted. Build information is recorded in a "buildinfo" file in the
-   installation.
+    "racket/src" directory is no longer needed, and it can be safely
+    deleted. Build information is recorded in a "buildinfo" file in
+    the installation.
 
-   For a build without `--prefix` (or with `--enable-origtree`) and
-   without `--enable-shared`, you can safely move the install tree,
-   because all file references within the installation are relative.
+    For a build without `--prefix` (or with `--enable-origtree`) and
+    without `--enable-shared`, you can safely move the install tree,
+    because all file references within the installation are relative.
+
+ 6. When building from a Git clone, after `make install`, the Racket
+    installation is still more "minimal" than a "Minimal Racket"
+    distribution, because it does not have the "racket-lib" package
+    installed. Consider adding that package with
+
+       raco pkg install -i racket-lib
 
 Dependency details:
 
