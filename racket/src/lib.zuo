@@ -42,6 +42,7 @@
          strip-lib-debug
          run-raco-setup
          raco-setup-prepare-to-here
+         in-builtpkgs-distro?
 
          install-license-files
          maybe-copytree
@@ -493,6 +494,9 @@
                                                  "--no-pkg-deps"))
                   built-racket
                   #f '()))
+
+(define (in-builtpkgs-distro?)
+  (file-exists? (at-source "../collects/racket/compiled/base_rkt.zo")))
 
 (define (install-license-files sharepltdir)
   (mkdir-p sharepltdir)
