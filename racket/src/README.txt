@@ -78,6 +78,7 @@ Quick instructions:
  From this directory (where the `configure` file is), run the following
  commands:
 
+   make --directory=../../ pb-fetch
    mkdir build
    cd build
    ../configure
