@@ -637,7 +637,8 @@
 
   (define (setup-prepare-to-here?)
     (and (equal? (lookup 'MAKE_COPYTREE) "copytree")
-         (not cross?)))
+         (not cross?)
+         (not (in-builtpkgs-distro?))))
 
   (define the-targets
     (append
