@@ -61,15 +61,41 @@ END_XFORM_SKIP;
 #if defined(__APPLE__) && defined(__MACH__)
 # include <mach-o/getsect.h>
 # include <mach-o/dyld.h>
+# include <crt_externs.h>
 # ifndef SELF_EXE_NO_EXTRAS
 static long find_mach_o_segment(const char *name, long *_len)
 {
 #  if defined(__x86_64__) || defined(__arm64__)
   const struct segment_command_64 *seg;
+  const struct mach_header_64 *mh;
+# define LC_SEGMENT_bits LC_SEGMENT_64
 #  else
   const struct segment_command *seg;
+  const struct mach_header *mh;
+# define LC_SEGMENT_bits LC_SEGMENT
 #  endif
+
+#if 0
   seg = getsegbyname(name);
+#else
+  /* `getsegbyname` has been deprecated, but is implementing it
+     ourselves really the right idea? */
+  {
+    int i;
+    mh = _NSGetMachExecuteHeader();
+    seg = (void*)((char *)mh + sizeof(*mh));
+    for (i = mh->ncmds; i--; ){
+      if (seg->cmd == LC_SEGMENT_bits) {
+        if (!strcmp(seg->segname, name))
+          break;
+      }
+      seg = (void *)((char *)seg + seg->cmdsize);
+    }
+    if (i < 0)
+      seg = NULL;
+  }
+#endif
+
   if (seg) {
     if (_len)
       *_len = seg->filesize;
