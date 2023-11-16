@@ -28,7 +28,7 @@
 ;; the compilation occurs while expanding another module.
 ;;
 ;; The key '_ as a path element is special: it is replaced
-;; by the correspondig element of the enclosing region's
+;; by the corresponding element of the enclosing region's
 ;; path (if any).
 ;;
 ;; Beware that `body ...` is not in tail position when

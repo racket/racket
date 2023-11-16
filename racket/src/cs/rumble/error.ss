@@ -728,7 +728,7 @@
 ;; Limit on length of a context extracted from a continuation. This is
 ;; not a hard limit on the total length, because it only applied to an
 ;; individual frame in a metacontinuation, and it only applies to an
-;; extension of a cached context. But it keeps from tunrning an
+;; extension of a cached context. But it keeps from turning an
 ;; out-of-memory situation due to a deep continuation into one that
 ;; uses even more memory.
 (define trace-length-limit 65535)
