@@ -278,7 +278,7 @@
                 (listof module-path?)
                 any/c))]
   [extract-pkg-dependencies
-   (->* ((symbol? (-> any/c) . -> . any/c))
+   (->* ((or/c #f (symbol? (-> any/c) . -> . any/c)))
         (#:build-deps? boolean?
                        #:filter? boolean?
                        #:versions? boolean?)

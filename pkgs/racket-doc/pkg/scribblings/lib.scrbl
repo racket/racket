@@ -705,7 +705,7 @@ and status reporting.
                                    @racket[#:quiet?] arguments.}]}
 
 
-@defproc[(extract-pkg-dependencies [info (symbol? (-> any/c) . -> . any/c)]
+@defproc[(extract-pkg-dependencies [info (or/c #f (symbol? (-> any/c) . -> . any/c))]
                                    [#:build-deps? build-deps? boolean? #t]
                                    [#:filter? filter? boolean? #f]
                                    [#:versions? versions? boolean? #f])
@@ -723,6 +723,8 @@ platform, and other information is stripped so that the result list is
 always a list of either strings (when @racket[versions?] is true) or a
 two-element list containing a string and a version (when
 @racket[versions?] is @racket[#f]).
+
+If @racket[info] is @racket[#f], the result is @racket[(list)].
 
 @history[#:changed "6.0.1.6" @elem{Added the @racket[#:versions?] argument.}]}
 
