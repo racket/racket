@@ -92,6 +92,40 @@ static char *get_process_executable_path(const char *exec_file) {
 
 #include <unistd.h>
 
+/* strdup() is in POSIX, but it's not in C99 */
+static char *string_dup(const char *s1)
+{
+  int l1;
+  char *s;
+  l1 = strlen(s1);
+  s  = (char *)malloc(l1 + 1);
+  memcpy(s, s1, l1 + 1);
+  return s;
+}
+
+/* strtok_r() is not in C99; this function is similar, but only
+   has to deal with a single character */
+static char *string_char_tok_r(char *in_s, char find, char **state)
+{
+  int i;
+
+  if (!in_s) in_s = *state;
+
+  if (in_s[0] == 0)
+    return NULL;
+
+  for (i = 0; in_s[i] != 0; i++) {
+    if (in_s[i] == find) {
+      in_s[i] = 0;
+      *state = in_s + i + 1;
+      return in_s;
+    }
+  }
+
+  *state = in_s + i;
+  return in_s;
+}
+
 #if defined(__APPLE__) && defined(__MACH__)
 #include <mach-o/dyld.h>
 #define HAVE_GET_SELF_PATH_PLATFORM
@@ -146,7 +180,7 @@ static char *get_self_path_platform() {
   /* Iterate through auxiliary vectors for AT_EXECPATH. */
   for (Elf_Auxinfo *aux = (Elf_Auxinfo *)p; aux->a_type != AT_NULL; aux++) {
     if (aux->a_type == AT_EXECPATH) {
-      return strdup((char *)aux->a_un.a_ptr);
+      return string_dup((char *)aux->a_un.a_ptr);
     }
   }
 #endif
@@ -159,7 +193,7 @@ static char *get_self_path_platform() {
 static char *get_self_path_platform() {
   const char *r = getexecname();
   if (r != NULL && strchr(r, '/') != NULL) {
-    return strdup(r);
+    return string_dup(r);
   }
   return NULL;
 }
@@ -167,13 +201,13 @@ static char *get_self_path_platform() {
 
 #if defined(__linux__) || defined(__CYGWIN__) || defined(__gnu_hurd__)
 #define HAVE_GET_SELF_PATH_PLATFORM
-static char *get_self_path_platform() { return strdup("/proc/self/exe"); }
+static char *get_self_path_platform() { return string_dup("/proc/self/exe"); }
 #endif
 
 #if defined(__NetBSD__) || defined(__minix) || defined(__DragonFly__) ||       \
     defined(__FreeBSD_kernel__) || defined(_AIX)
 #define HAVE_GET_SELF_PATH_PLATFORM
-static char *get_self_path_platform() { return strdup("/proc/curproc/file"); }
+static char *get_self_path_platform() { return string_dup("/proc/curproc/file"); }
 #endif
 
 #ifndef HAVE_GET_SELF_PATH_PLATFORM
@@ -195,19 +229,20 @@ static char *path_append(const char *s1, const char *s2) {
 
 static char *get_self_path_generic(const char *exec_file) {
   if (strchr(exec_file, '/')) {
-    return strdup(exec_file);
+    return string_dup(exec_file);
   }
   char *pv = getenv("PATH");
   if (pv == NULL) {
     return NULL;
   }
-  char *s = strdup(pv);
+  char *s = string_dup(pv);
   if (s == NULL) {
     return NULL;
   }
   char *state = NULL;
-  for (char *t = strtok_r(s, ":", &state); t != NULL;
-       t = strtok_r(NULL, ":", &state)) {
+  for (char *t = string_char_tok_r(s, ':', &state);
+       t != NULL;
+       t = string_char_tok_r(NULL, ':', &state)) {
     char *r = path_append(t, exec_file);
     if (access(r, X_OK) == 0) {
       free(s);
