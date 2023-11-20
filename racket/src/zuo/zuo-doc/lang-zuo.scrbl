@@ -73,7 +73,7 @@ expansion. The absence of a phase separation is related to the way that
 each module is evaluated only once, and it's made workable in part by
 the absence of mutable data structures in Zuo, and in part because
 there is no support for compiling a @racketmodname[zuo] module and
-saving it separate from it's instantiation in a Zuo process or saved
+saving it separate from its instantiation in a Zuo process or saved
 image.
 
 Zuo macros consume a representation of syntax that uses plain pairs,
@@ -271,7 +271,7 @@ Declares a kind of @deftech{submodule}, roughly analogous to
 submodules nested in submodules.
 
 A submodule becomes a procedure of zero arguments that is a mapped
-from the symbol form of @racket[id] in the encloding module's
+from the symbol form of @racket[id] in the enclosing module's
 representation as a hash table (see @secref["module-protocol"]).
 Calling the procedure evaluates the @racket[defn-or-expr] content of
 the submodule, where expression results are printed and the procedure's
@@ -723,7 +723,7 @@ object with access allowed via @racket[key], @racket[failure-val] otherwise.}
 
 @section{Variables}
 
-A @tech{variable} is a value with a name that contains an another
+A @tech{variable} is a value with a name that contains another
 value. The contained value is initially undefined, and attempting to
 access the contained value before it's set results in an error where
 the variable's name is used in the error message. A variable's
@@ -804,7 +804,7 @@ Returns @racket[#t] if @racket[v] is the unique @deftech{void} value,
 
 @defproc[(void [v any/c] ...) void?]{
 
-Accepts any number of arguments and ignored them, returning the void
+Accepts any number of arguments and ignores them, returning the void
 value.}
 
 
@@ -855,7 +855,7 @@ using an error color if standard error is a terminal.
 If the first @racket[v] is a string, its characters are printed
 followed by @litchar{: }. All
 other @racket[v]s (including the first one if it's not a string) are
-combined using @racket[~v], and that resulting string's characters are
+combined using @racket[~v], and the resulting string's characters are
 printed.}
 
 
@@ -1086,7 +1086,7 @@ keys are as follows, and supplying an unrecognized key in
 @itemlist[
 
 @item{@racket['dir] mapped to a path string: the working directory of
-      the new porcess; if @racket[executable] is a relative path, it
+      the new process; if @racket[executable] is a relative path, it
       is relative to this directory}
 
 @item{@racket['env] mapped to a list of pairs of strings: environment
@@ -1275,7 +1275,7 @@ Creates a directory @racket[dir].}
 @defproc[(mkdir-p [dir path-string?]) void?]{
 
 Creates a directory @racket[dir] if it does not already exist, along
-with its ancector directories.}
+with its ancestor directories.}
 
 @defproc[(rmdir [dir path-string?]) void?]{
 
