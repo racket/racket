@@ -98,11 +98,15 @@ have several options:
 
 * **Minimal** — This mode is like a source distribution, and it is
   described in the `"src"` subdirectory of `"racket"` (i.e., ignore the
-  repository’s root directory and `"pkgs"` subdirectory). Build a
-  minimal Racket using the usual `configure && make && make install`
-  steps (or similar for Windows). Then, you can install packages from
-  the catalog server with `raco pkg`, and you should install at least
-  the `"racket-lib"` package.
+  repository’s root directory and `"pkgs"` subdirectory). Build an
+  in-place minimal Racket using `make base`. Alternatively, use `make
+  pb-fetch` to download bootstrapping support, and then in
+  `"racket/src"` use the usual `configure && make && make install` steps
+  (or similar for Windows). After installation, you can install packages
+  from the catalog server with `raco pkg`; if you do not use `make
+  base`, you should install at least the `"racket-lib"` package. See
+  [Building Minimal Racket](#171-building-minimal-racket) for more
+  information.
 
 * **Installers** — This mode creates Racket distribution installers for
   a variety of platforms by farming out work to machines that run those
@@ -125,7 +129,7 @@ creates a build in the `"racket"` directory.
 On Windows with Microsoft Visual Studio (any version between 2008/9.0
 and 2022/17.0), `nmake` creates a build in the `"racket"` directory. If
 your command-prompt environment is not already configured for Visual
-Studio to run programs like `nmake.exe` and `cl.exe`, you run
+Studio to run programs like `nmake.exe` and `cl.exe`, you can run
 `"racket/src/worksp/msvcprep.bat"` \(PowerShell:
 `"racket/src/worksp/msvcprep.ps1"`} and provide an argument that selects
 a build mode: `x86` (32-bit Intel/AMD mode), `x64` or `x86_amd64`

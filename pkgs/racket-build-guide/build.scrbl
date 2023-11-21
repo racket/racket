@@ -61,11 +61,13 @@ several options:
  @item{@bold{Minimal} --- This mode is like a source distribution, and
    it is described in the @filepath{src} subdirectory of
    @filepath{racket} (i.e., ignore the repository's root directory and
-   @filepath{pkgs} subdirectory). Build a minimal Racket using the
-   usual @exec{configure && make && make install} steps (or similar
-   for Windows). Then, you can install packages from the catalog
-   server with @exec{raco pkg}, and you should install at least the
-   @filepath{racket-lib} package.}
+   @filepath{pkgs} subdirectory). Build an in-place minimal Racket using @exec{make base}.
+   Alternatively, use @exec{make pb-fetch} to download bootstrapping support, and then
+   in @filepath{racket/src} use the usual @exec{configure && make && make install} steps (or similar
+   for Windows). After installation, you can install packages from the catalog
+   server with @exec{raco pkg}; if you do not use @exec{make base},
+   you should install at least the @filepath{racket-lib} package. See
+   @secref["minimal"] for more information.}
 
  @item{@bold{Installers} --- This mode creates Racket distribution
    installers for a variety of platforms by farming out work to
@@ -91,7 +93,7 @@ On Windows with Microsoft Visual Studio (any version between 2008/9.0
 and 2022/17.0), @exec{nmake} creates a build in the @filepath{racket}
 directory. If your command-prompt environment is not already
 configured for Visual Studio to run programs like @exec{nmake.exe} and
-@exec{cl.exe}, you run @filepath{racket/src/worksp/msvcprep.bat}
+@exec{cl.exe}, you can run @filepath{racket/src/worksp/msvcprep.bat}
 (PowerShell: @filepath{racket/src/worksp/msvcprep.ps1}} and provide an
 argument that selects a build mode: @exec{x86} (32-bit Intel/AMD
 mode), @exec{x64} or @exec{x86_amd64} (64-bit Intel/AMD mode), or
@@ -252,7 +254,7 @@ together. You can also read @filepath{Makefile}, which defines and
 describes many variables that can be supplied via @exec{make}.
 
 @; - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-@subsection{Building Minimal Racket}
+@subsection[#:tag "minimal"]{Building Minimal Racket}
 
 Instead of using the top-level makefile, you can go into
 @filepath{racket/src} and follow the @filepath{README.txt} there,
