@@ -47,7 +47,8 @@
                #:namespace metadata-ns
                #:use-cache? use-cache?
                #:quiet? quiet?))
-  (define get-info (get-info/full dir #:namespace metadata-ns))
+  (define get-info (with-handlers ([exn:fail? (lambda _ #f)])
+		     (get-info/full dir #:namespace metadata-ns)))
   (begin0
    (values cksum
            (set->list module-paths)
