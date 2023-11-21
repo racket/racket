@@ -7,9 +7,9 @@
          "mutated-state.rkt"
          "literal.rkt"
          "lambda.rkt"
-         "simple.rkt"
          "fold.rkt"
-         "ffi-static-core.rkt")
+         "ffi-static-core.rkt"
+         "unwrap-let.rkt")
 
 (provide optimize
          optimize*)
@@ -19,7 +19,7 @@
 ;; immediate expression have already been optimized.
 
 (define (optimize v prim-knowns primitives knowns imports mutated target compiler-query)
-  (match v
+  (match (unwrap-let v)
     [`(if ,t ,e1 ,e2)
      (if (literal? t)
          (if (unwrap t) e1 e2)
@@ -155,12 +155,6 @@
           ;; to a different name
           [else v])]
        [else v])]))
-
-;; Functions where multiple arguments are inspected to optimize, and where the
-;; arguments can be complex, so it's worth tracking info in a left-to-right
-;; conversion of a function call
-(define optimize-inspects-arguments
-  '(ffi-maybe-call-and-callback-core))
 
 ;; ----------------------------------------
 

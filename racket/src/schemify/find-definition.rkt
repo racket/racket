@@ -2,10 +2,10 @@
 (require "wrap.rkt"
          "match.rkt"
          "known.rkt"
-         "import.rkt"
          "struct-type-info.rkt"
          "optimize.rkt"
-         "infer-known.rkt")
+         "infer-known.rkt"
+         "unwrap-let.rkt")
 
 (provide find-definitions)
 
@@ -16,18 +16,14 @@
                           #:optimize? optimize?
                           #:compiler-query [compiler-query (lambda (v) #f)])
   (match v
-    [`(define-values (,id) ,orig-rhs)
-     (define rhs (if optimize?
-                     (optimize orig-rhs prim-knowns primitives knowns imports mutated target compiler-query)
-                     orig-rhs))
+    [`(define-values (,id) ,rhs)
      (values
-      (let ([k (infer-known rhs v id knowns prim-knowns imports mutated simples unsafe-mode? target
-                            #:primitives primitives
-                            #:optimize-inline? optimize?
-                            #:compiler-query compiler-query)])
-        (if k
-            (hash-set knowns (unwrap id) k)
-            knowns))
+      (find-one-definition id rhs
+                           prim-knowns knowns imports mutated simples unsafe-mode? target
+                           #:primitives primitives
+                           #:optimize? optimize?
+                           #:compiler-query compiler-query
+                           #:cross-module-inline? (find-cross-module-inline? v))
       #f)]
     [`(define-values (,struct:s ,make-s ,s? ,acc/muts ...) ; pattern from `struct` or `define-struct`
        (let-values (((,struct: ,make ,? ,-ref ,-set!) ,rhs))
@@ -106,43 +102,63 @@
                                                                 (struct-type-info-sealed? info))))
         info)]
       [else (values knowns #f)])]
-    [`(define-values (,prop:s ,s? ,s-ref)
-       (make-struct-type-property ,_ . ,rest))
-     (define type (string->uninterned-symbol (symbol->string (unwrap prop:s))))
-     (values
-      (let* ([knowns (hash-set knowns (unwrap s-ref) (known-accessor 2 type))]
-             [knowns (hash-set knowns (unwrap s?) (known-predicate 2 type))])
-        ;; Check whether the property type has an immediate (or no) guard:
-        (cond
-         [(or (null? (unwrap rest))
-              (and (not (wrap-car rest))
-                   (null? (unwrap (wrap-cdr rest)))))
-          (hash-set knowns (unwrap prop:s) (known-struct-type-property/immediate-guard))]
-         [else knowns]))
-      #f)]
+    [`(define-values (,prop:s ,s? ,s-ref) ,rhs)
+     (match (unwrap-let rhs)
+       [`(make-struct-type-property ,_ . ,rest)
+        (define type (string->uninterned-symbol (symbol->string (unwrap prop:s))))
+        (values
+         (let* ([knowns (hash-set knowns (unwrap s-ref) (known-accessor 2 type))]
+                [knowns (hash-set knowns (unwrap s?) (known-predicate 2 type))])
+           ;; Check whether the property type has an immediate (or no) guard:
+           (cond
+             [(or (null? (unwrap rest))
+                  (and (not (wrap-car rest))
+                       (null? (unwrap (wrap-cdr rest)))))
+              (hash-set knowns (unwrap prop:s) (known-struct-type-property/immediate-guard))]
+             [else knowns]))
+         #f)]
+       [`,_  (values knowns #f)])]
     [`(define-values ,ids ,rhs)
-     (let loop ([rhs rhs])
-       (match rhs
-         [`(let-values () ,rhs) (loop rhs)]
-         [`(values ,rhss ...)
-          (cond
-            [(equal? (length ids) (length rhss))
-             (values
-              (for/fold ([knowns knowns]) ([id (in-list ids)]
-                                           [rhs (in-list rhss)])
-                (define-values (new-knowns info)
-                  (find-definitions (propagate-inline-hint v `(define-values (,id) ,rhs))
-                                    prim-knowns knowns imports mutated simples unsafe-mode? target
-                                    #:optimize? optimize?))
-                new-knowns)
-              #f)]
-            [else (values knowns #f)])]
-         [`,_  (values knowns #f)]))]
+     (match (unwrap-let rhs)
+       [`(values ,rhss ...)
+        (cond
+          [(eqv? (length ids) (length rhss))
+           (define cross-module-inline? (find-cross-module-inline? v))
+           (values
+            (for/fold ([knowns knowns]) ([id (in-list ids)]
+                                         [rhs (in-list rhss)])
+              (find-one-definition id rhs
+                                   prim-knowns knowns imports mutated simples unsafe-mode? target
+                                   #:primitives primitives
+                                   #:optimize? optimize?
+                                   #:compiler-query compiler-query
+                                   #:cross-module-inline? cross-module-inline?))
+            #f)]
+          [else (values knowns #f)])]
+       [`,_  (values knowns #f)])]
     [`,_ (values knowns #f)]))
 
 ;; ----------------------------------------
 
-(define (propagate-inline-hint defn new-defn)
-  (if (wrap-property defn 'compiler-hint:cross-module-inline)
-      (wrap-property-set new-defn 'compiler-hint:cross-module-inline #t)
-      new-defn))
+(define (find-one-definition id rhs
+                             prim-knowns knowns imports mutated simples unsafe-mode? target
+                             #:primitives primitives
+                             #:optimize? optimize?
+                             #:compiler-query compiler-query
+                             #:cross-module-inline? cross-module-inline?)
+  (define new-rhs
+    (if optimize?
+        (optimize rhs prim-knowns primitives knowns imports mutated target compiler-query)
+        rhs))
+  (define k
+    (infer-known new-rhs id knowns prim-knowns imports mutated simples unsafe-mode? target
+                 #:primitives primitives
+                 #:optimize-inline? optimize?
+                 #:compiler-query compiler-query
+                 #:defn (or (and cross-module-inline? 'inline) #t)))
+  (if k
+      (hash-set knowns (unwrap id) k)
+      knowns))
+
+(define (find-cross-module-inline? defn)
+  (wrap-property defn 'compiler-hint:cross-module-inline))

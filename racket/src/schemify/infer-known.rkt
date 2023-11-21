@@ -13,7 +13,8 @@
          "optimize.rkt"
          "single-valued.rkt"
          "lambda.rkt"
-         "aim.rkt")
+         "aim.rkt"
+         "unwrap-let.rkt")
 
 (provide infer-known
          can-improve-infer-known?
@@ -22,12 +23,13 @@
 ;; For definitions, it's useful to infer `a-known-constant` to reflect
 ;; that the variable will get a value without referencing anything
 ;; too early. If `post-schemify?`, then `rhs` has been schemified.
-(define (infer-known rhs defn id knowns prim-knowns imports mutated simples unsafe-mode? target
+(define (infer-known rhs id knowns prim-knowns imports mutated simples unsafe-mode? target
                      #:primitives [primitives #hasheq()] ; for `optimize-inline?` mode
                      #:optimize-inline? [optimize-inline? #f]
                      #:post-schemify? [post-schemify? #f]
-                     #:compiler-query [compiler-query (lambda (v) #f)])
-  (let loop ([rhs rhs])
+                     #:compiler-query [compiler-query (lambda (v) #f)]
+                     #:defn [defn #f]) ; either `#t` or `'inline`
+  (let loop ([rhs (if post-schemify? rhs (unwrap-let rhs))])
     (cond
       [(lambda? rhs)
        (define-values (lam inlinable?) (extract-lambda rhs))
@@ -36,7 +38,7 @@
          [(and inlinable?
                (not post-schemify?)
                (or (can-inline? lam)
-                   (wrap-property defn 'compiler-hint:cross-module-inline)))
+                   (eq? defn 'inline)))
           (let ([lam (if optimize-inline?
                          (optimize* lam prim-knowns primitives knowns imports mutated unsafe-mode? target compiler-query)
                          lam)])
@@ -94,10 +96,6 @@
        => (lambda (m) (known-procedure m))]
       [else
        (match rhs
-         [`(let-values () ,e)
-          (loop e)]
-         [`(begin ,e)
-          (loop e)]
          [`(assert-ctype-representation ,type1 ,type2)
           (define k (loop type1))
           (cond

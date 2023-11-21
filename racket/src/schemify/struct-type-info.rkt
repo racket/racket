@@ -2,11 +2,10 @@
 (require "wrap.rkt"
          "match.rkt"
          "known.rkt"
-         "import.rkt"
-         "mutated-state.rkt"
          "simple.rkt"
          "find-known.rkt"
-         "lambda.rkt")
+         "lambda.rkt"
+         "unwrap-let.rkt")
 
 (provide (struct-out struct-type-info)
          struct-type-info-rest-properties-list-pos
@@ -28,7 +27,7 @@
 ;; Parse `make-struct-type` forms, returning a `struct-type-info`
 ;; if the parse succeed:
 (define (make-struct-type-info v prim-knowns knowns imports mutated)
-  (match v
+  (match (unwrap-let v)
     [`(make-struct-type (quote ,name) ,parent ,fields 0 #f . ,rest)
      ;; Note: auto-field count must be zero, because a non-zero count involves
      ;; an arity-reduced procedure
@@ -117,8 +116,6 @@
                                      non-prefab-imms
                                      constructor-name-expr
                                      rest)))))]
-    [`(let-values () ,body)
-     (make-struct-type-info body prim-knowns knowns imports mutated)]
     [`,_ #f]))
 
 ;; Check whether `e` has the shape of a property list that uses only

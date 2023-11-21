@@ -11,7 +11,6 @@
          "mutated.rkt"
          "mutated-state.rkt"
          "left-to-right.rkt"
-         "let.rkt"
          "equal.rkt"
          "optimize.rkt"
          "find-known.rkt"
@@ -309,7 +308,7 @@
                (define id (car ids))
                (define k (match schemified
                            [`(define ,id ,rhs)
-                            (infer-known rhs #f id knowns prim-knowns imports mutated simples unsafe-mode? target
+                            (infer-known rhs id knowns prim-knowns imports mutated simples unsafe-mode? target
                                          #:post-schemify? #t)]))
                (if k
                    (hash-set knowns (unwrap id) k)
@@ -550,8 +549,8 @@
                (define-values (new-knowns rev-s-rhss)
                  (for/fold ([knowns knowns] [rev-s-rhss '()]) ([id (in-list ids)]
                                                                [rhs (in-list rhss)])
-                   ;; eacrlt `infer-known` to detect "mere copies"
-                   (define k (infer-known rhs #f id knowns prim-knowns imports mutated simples unsafe-mode? target))
+                   ;; early `infer-known` to detect "mere copies"
+                   (define k (infer-known rhs id knowns prim-knowns imports mutated simples unsafe-mode? target))
                    (define (merely-a-copy? k)
                      (and (or (known-copy? k)
                               (known-literal? k))
@@ -569,7 +568,7 @@
                                  (cons s-rhs rev-s-rhss))]
                         [else
                          ;; try inferring from schemified, which has also been optimized
-                         (define post-k (infer-known s-rhs #f id knowns prim-knowns imports mutated simples unsafe-mode? target
+                         (define post-k (infer-known s-rhs id knowns prim-knowns imports mutated simples unsafe-mode? target
                                                      #:post-schemify? #t))
                          (cond
                            [(merely-a-copy? post-k)
@@ -622,7 +621,7 @@
             (define-values (rhs-knowns body-knowns)
               (for/fold ([rhs-knowns knowns] [body-knowns knowns]) ([id (in-list ids)]
                                                                     [rhs (in-list rhss)])
-                (define k (infer-known rhs #f id knowns prim-knowns imports mutated simples unsafe-mode? target))
+                (define k (infer-known rhs id knowns prim-knowns imports mutated simples unsafe-mode? target))
                 (define u-id (unwrap id))
                 (cond
                   [(too-early-mutated-state? (hash-ref mutated u-id #f))
