@@ -6635,6 +6635,33 @@
            '(lambda (x)
               (list (eq? x 7) (box 5))))
 
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check for cross-module inlining in the presence of vacuous `let`
+;; This is specifically for schemify
+
+(register-top-level-module
+ (module add1/with-vacuous-let racket/base
+   (provide add1)
+   (define add1
+     (let ()
+       (letrec ()
+         (begin
+           (begin0
+             (values (lambda (x) (+ x 1))))))))))
+
+(register-top-level-module
+ (module add1/without-vacuous-let racket/base
+   (provide add1)
+   (define (add1 x)
+     (+ x 1))))
+
+(when (eq? (system-type 'vm) 'chez-scheme)
+  (test-comp `(module m racket/base
+                (require 'add1/with-vacuous-let)
+                (add1 2))
+             `(module m racket/base
+                (require 'add1/without-vacuous-let)
+                (add1 2))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Try to check that struct optimizations are ok
