@@ -41,4 +41,4 @@
                   key)))))]))
 
   (define-syntax (syntax-parameterize stx)
-    (do-syntax-parameterize stx #'letrec-syntaxes #f #f)))
+    (do-syntax-parameterize stx #f)))

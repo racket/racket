@@ -989,47 +989,45 @@ thus can only be used, for methods where no Beta-style augmentation has taken
 place. The following example shows this difference:
 
 @racketblock[
+(define/contract glutton%
+  (class/c (override [eat (->m edible/c void?)]))
+  (class animal%
+    (super-new)
+    (inherit eat)
+    (define/public (gulp food-list)
+      (for ([f food-list])
+        (eat f)))))
 (define/contract sloppy-eater%
   (class/c [eat (->m edible/c edible/c)])
-  (begin
-    (define/contract glutton%
-      (class/c (override [eat (->m edible/c void?)]))
-      (class animal%
-        (super-new)
-        (inherit eat)
-        (define/public (gulp food-list)
-          (for ([f food-list])
-            (eat f)))))
-    (class glutton%
-      (super-new)
-      (inherit-field size)
-      (define/override (eat f)
-        (let ([food-size (get-field size f)])
-          (set! size (/ food-size 2))
-          (set-field! size f (/ food-size 2))
-          f)))))]
+  (class glutton%
+    (super-new)
+    (inherit-field size)
+    (define/override (eat f)
+      (let ([food-size (get-field size f)])
+        (set! size (/ food-size 2))
+        (set-field! size f (/ food-size 2))
+        f))))]
 
 @interaction-eval[
 #:eval class-eval
+(define/contract glutton%
+  (class/c (override [eat (->m edible/c void?)]))
+  (class animal%
+    (super-new)
+    (inherit eat)
+    (define/public (gulp food-list)
+      (for ([f food-list])
+        (eat f)))))
 (define/contract sloppy-eater%
   (class/c [eat (->m edible/c edible/c)])
-  (begin
-    (define/contract glutton%
-      (class/c (override [eat (->m edible/c void?)]))
-      (class animal%
-        (super-new)
-        (inherit eat)
-        (define/public (gulp food-list)
-          (for ([f food-list])
-            (eat f)))))
-    (class glutton%
-      (super-new)
-      (inherit-field size)
-      (define/override (eat f)
-        (let ([food-size (get-field size f)])
-          (set! size (/ food-size 2))
-          (set-field! size f (/ food-size 2))
-          f)))))]
+  (class glutton%
+    (super-new)
+    (inherit-field size)
+    (define/override (eat f)
+      (let ([food-size (get-field size f)])
+        (set! size (/ food-size 2))
+        (set-field! size f (/ food-size 2))
+        f))))]
 
 @interaction[
 #:eval class-eval
