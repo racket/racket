@@ -295,19 +295,21 @@
 (define-syntax (splicing-syntax-parameterize stx)
   (if (eq? 'expression (syntax-local-context))
       ;; Splicing is no help in an expression context:
-      (do-syntax-parameterize stx #'let-syntaxes #f #f)
+      (do-syntax-parameterize stx #f)
       ;; Let `syntax-parameterize' check syntax, then continue
-      (do-syntax-parameterize stx #'ssp-let-syntaxes #t #t)))
-
-(define-syntax (ssp-let-syntaxes stx)
-  (syntax-case stx ()
-    [(_ ([(id) rhs] ...) orig-id ... (llk binds body ...))
-     #'(begin
-         ;; Evaluate each RHS only once:
-         (define-syntax id rhs) ...
-         ;; Partially expand `body' to push down `let-syntax':
-         (expand-ssp-body binds [orig-id ...] body)
-         ...)]))
+      (do-syntax-parameterize
+       stx
+       (lambda (ids gen-ids rhss binds bodys)
+         (with-syntax ([ids ids]
+                       [(gen-id ...) gen-ids]
+                       [(rhs ...) rhss]
+                       [binds binds]
+                       [(body ...) bodys])
+           #'(begin
+               ;; Evaluate each RHS only once:
+               (define-syntax gen-id rhs) ...
+               ;; Partially expand `body' to push down `let-syntax':
+               (expand-ssp-body binds ids body) ...))))))
 
 (define-syntax (expand-ssp-body stx)
   (syntax-case stx ()
