@@ -38,10 +38,10 @@
         (define-values (min1 max1 lb1) (validate (rx:alts-rx1 rx)))
         (define-values (min2 max2 lb2) (validate (rx:alts-rx2 rx)))
         (values (min min1 min2) (max max1 max2) (max lb1 lb2))]
-       [(rx:sequence? rx)       
+       [(rx:sequence? rx)
         (for/fold ([min-len 0] [max-len 0] [max-lb 0]) ([rx (in-list (rx:sequence-rxs rx))])
           (define-values (min1 max1 lb1) (validate rx))
-          (values (+ min-len min1) (+ max-len max1) (max max-lb lb1)))]
+          (values (+ min-len min1) (+ max-len max1) (max max-lb (- lb1 min-len))))]
        [(rx:group? rx)
         (define-values (min1 max1 lb1) (validate (rx:group-rx rx)))
         (set! group-sizes (hash-set group-sizes (rx:group-number rx) min1))

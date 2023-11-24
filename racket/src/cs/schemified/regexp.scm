@@ -3707,7 +3707,9 @@
                                                                        app_1
                                                                        (max
                                                                         max-lb_0
-                                                                        lb1_0)))))
+                                                                        (-
+                                                                         lb1_0
+                                                                         min-len_0))))))
                                                                  (args
                                                                   (raise-binding-result-arity-error
                                                                    3
@@ -9349,7 +9351,7 @@
            (void)
            (raise-argument-error
             'regexp-max-lookbehind
-            "(or regexp? byte-regexp?)"
+            "(or/c regexp? byte-regexp?)"
             rx_0))
          (rx:regexp-max-lookbehind rx_0))))))
 (define no-prefix #vu8())

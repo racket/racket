@@ -52,7 +52,7 @@
 (define/who (regexp-max-lookbehind rx)
   (check who
          #:test (or (regexp? rx) (byte-regexp? rx))
-         #:contract "(or regexp? byte-regexp?)"
+         #:contract "(or/c regexp? byte-regexp?)"
          rx)
   (rx:regexp-max-lookbehind rx))
 

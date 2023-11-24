@@ -321,7 +321,13 @@ example, the pattern @litchar{(?<=abc)d} consults three bytes
 preceding a matching @litchar{d}, while @litchar{e(?<=a..)d} consults
 two bytes before a matching @litchar{ed}. A @litchar{^} pattern may
 consult a preceding byte to determine whether the current position is
-the start of the input or of a line.}
+the start of the input or of a line.
+
+@examples[
+(regexp-max-lookbehind #rx#"(?<=abc)d")
+(regexp-max-lookbehind #rx#"e(?<=a..)d")
+(regexp-max-lookbehind #rx"^")
+]}
 
 @;------------------------------------------------------------------------
 @section{Regexp Matching}
