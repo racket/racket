@@ -9108,7 +9108,7 @@
                    who_0
                    "impersonator-property?"
                    (car args_1)))
-                (if (null? args_1)
+                (if (null? (cdr args_1))
                   (raise-arguments-error
                    who_0
                    "missing an argument after an impersonator-property argument"
