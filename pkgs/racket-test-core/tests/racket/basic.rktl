@@ -1687,6 +1687,18 @@
 (arity-test regexp-replace 3 4)
 (arity-test regexp-replace* 3 6)
 
+(test 3 regexp-max-lookbehind #rx#"(?<=abc)d")
+(test 2 regexp-max-lookbehind #rx#"e(?<=a..)d")
+(test 2 regexp-max-lookbehind #rx#"(?:a|ab)(?<!a..)d")
+(test 1 regexp-max-lookbehind #rx"^")
+(test 1 regexp-max-lookbehind #px"\\b")
+(test 0 regexp-max-lookbehind #rx"$")
+(test 0 regexp-max-lookbehind #rx".")
+(let ([rx #rx"regexp-max-lookbehind: contract violation.*expected:.+or/c.+regexp[?].+byte-regexp[?]"])
+  (err/rt-test (regexp-max-lookbehind "string") exn:fail:contract? rx)
+  (err/rt-test (regexp-max-lookbehind #"bytes") exn:fail:contract? rx)
+  (err/rt-test (regexp-max-lookbehind 'obviously-not-regexp) exn:fail:contract? rx))
+
 (test #t procedure? car)
 (test #f procedure? 'car)
 (test #t procedure? (lambda (x) (* x x)))
