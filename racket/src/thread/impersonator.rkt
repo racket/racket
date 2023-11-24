@@ -116,7 +116,7 @@
     (unless (null? args)
       (check who impersonator-property? (car args))
       (cond
-        [(null? args)
+        [(null? (cdr args))
          (raise-arguments-error who
                                 "missing an argument after an impersonator-property argument"
                                 "impersonator property" (car args))]

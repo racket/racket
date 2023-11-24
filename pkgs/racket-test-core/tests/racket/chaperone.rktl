@@ -2880,6 +2880,25 @@
   (err/rt-test/once (channel-get (chaperone-channel ch (lambda (c) (values c (lambda (x) 2.71))) (lambda (c v) v)))))
 
 ;; ----------------------------------------
+;; check impersonator properties check
+(let ()
+  (define rx #rx"missing.+after.+property")
+  (define ch (make-channel))
+  (define (get c) (values c (lambda (v) v)))
+  (define (put c v) v)
+  (define-values (impersonator-prop:prop has-prop? get-prop)
+    (make-impersonator-property 'prop))
+  (err/rt-test (impersonate-channel ch get put impersonator-prop:prop)
+               exn:fail:contract?
+               rx)
+  (err/rt-test (chaperone-channel ch get put impersonator-prop:prop)
+               exn:fail:contract?
+               rx)
+  (err/rt-test (chaperone-evt ch get impersonator-prop:prop)
+               exn:fail:contract?
+               rx))
+
+;; ----------------------------------------
 
 (let ()
   (define-values (prop:blue blue? blue-ref) (make-impersonator-property 'blue))
