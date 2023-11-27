@@ -249,6 +249,31 @@
   (include "linklet/annotation.ss")
   (include "linklet/performance.ss")
 
+  (define (trace-compile inner-compile)
+    (let* ([print-header (lambda ()
+                           (trace-printf ";; compile-linklet: passes:")
+                           (for-each (lambda (p)
+                                       (define pass
+                                         (if (eq? p #t) 'all p))
+                                       (trace-printf " ~a" pass))
+                                     (if assembly-on?
+                                         (append passes-on '(assembly))
+                                         passes-on))
+                           (trace-printf "\n;; ---------------------\n"))]
+           [wrapped-compile (lambda ()
+                              (if (not (null? passes-on))
+                                (parameterize ([print-gensym gensym-mode]
+                                               [print-extended-identifiers #t]
+                                               [#%$np-tracer passes-on])
+                                  (inner-compile))
+                                (inner-compile)))])
+      (when (or (not (null? passes-on)) assembly-on?)
+        (print-header))
+      (if assembly-on?
+          (parameterize ([#%$assembly-output (#%current-error-port)])
+            (wrapped-compile))
+          (wrapped-compile))))
+
   ;; `compile`, `interpret`, etc. have `dynamic-wind`-based state
   ;; that need to be managed correctly when swapping Racket
   ;; engines/threads.
@@ -260,29 +285,7 @@
                                                                   3
                                                                   (optimize-level))]
                                               [compile-procedure-realm realm])
-                                 (let* ([print-header (lambda ()
-                                                        (trace-printf ";; compile-linklet: passes:")
-                                                        (for-each (lambda (p)
-                                                                    (define pass
-                                                                      (if (eq? p #t) 'all p))
-                                                                    (trace-printf " ~a" pass))
-                                                                  (if assembly-on?
-                                                                      (append passes-on '(assembly))
-                                                                      passes-on))
-                                                        (trace-printf "\n;; ---------------------\n"))]
-                                        [-compile (lambda (e)
-                                                    (if (not (null? passes-on))
-                                                        (parameterize ([print-gensym gensym-mode]
-                                                                       [print-extended-identifiers #t]
-                                                                       [#%$np-tracer passes-on])
-                                                            (compile e))
-                                                        (compile e)))])
-                                   (when (or (not (null? passes-on)) assembly-on?)
-                                     (print-header))
-                                   (if assembly-on?
-                                       (parameterize ([#%$assembly-output (#%current-error-port)])
-                                        (-compile e))
-                                       (-compile e))))))]
+                                 (trace-compile (lambda () (compile e))))))]
      [(e) (compile* e #f #f)]))
   (define (interpret* e) ; result is not safe for space
     (call-with-system-wind (lambda () (interpret e))))
@@ -310,12 +313,14 @@
                                                                 3
                                                                 (optimize-level))]
                                             [compile-procedure-realm realm])
-                               (call-getting-literals
-                                quoteds
-                                (lambda (pred)
-                                  ;; If arguments change here, then probably they should change in
-                                  ;; "cross-serve.ss", too:
-                                  (compile-to-port s o #f #f #f (machine-type) #f pred 'omit-rtds)))))))
+                               (trace-compile
+                                (lambda ()
+                                  (call-getting-literals
+                                   quoteds
+                                   (lambda (pred)
+                                     ;; If arguments change here, then probably they should change in
+                                     ;; "cross-serve.ss", too:
+                                     (compile-to-port s o #f #f #f (machine-type) #f pred 'omit-rtds)))))))))
   (define (expand/optimize* e unsafe?)
     (call-with-system-wind (lambda ()
                              (parameterize ([optimize-level (if unsafe?
