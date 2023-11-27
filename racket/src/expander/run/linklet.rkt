@@ -315,7 +315,7 @@
 (define linklet-compile-to-s-expr (make-parameter #f #f 'linklet-compile-to-s-expr))
 
 ;; Compile to a serializable form
-(define (compile-linklet c [name #f] [import-keys #f] [get-import (lambda (key) (values #f #f))] [options '(serializable)])
+(define (compile-linklet c [info #f] [import-keys #f] [get-import (lambda (key) (values #f #f))] [options '(serializable)])
   (define l
     (cond
       [(linklet-compile-to-s-expr)
@@ -335,7 +335,7 @@
       l))
 
 ;; For re-optimizing:
-(define (recompile-linklet linklet name [import-keys #f] [get-import (lambda (key) (values #f #f))])
+(define (recompile-linklet linklet info [import-keys #f] [get-import (lambda (key) (values #f #f))])
   (if import-keys
       (values linklet import-keys)
       linklet))

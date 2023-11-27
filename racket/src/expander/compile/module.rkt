@@ -212,7 +212,8 @@
                  (make-correlated-linklet s 'decl)
                  (performance-region
                   ['compile 'module 'linklet]
-                  (compile-linklet s 'decl))))
+                  (compile-linklet s (hasheq 'module full-module-name
+                                             'name 'decl)))))
            (generate-module-declaration-linklet mpis self requires recur-requires provides
                                                 phase-to-link-module-uses-expr
                                                 portal-stxes))))
@@ -229,7 +230,9 @@
                  (performance-region
                   ['compile 'module 'linklet]
                   (define-values (linklet new-keys)
-                    (compile-linklet s 'syntax-literals
+                    (compile-linklet s
+                                     (hasheq 'module full-module-name
+                                             'name 'syntax-literals)
                                      (vector deserialize-instance
                                              empty-top-syntax-literal-instance
                                              empty-syntax-literals-data-instance
@@ -278,7 +281,8 @@
                            (make-correlated-linklet s 'syntax-literals-data)
                            (performance-region
                             ['compile 'module 'linklet]
-                            (compile-linklet s 'syntax-literals-data #f #f '(serializable)))))
+                            (compile-linklet s (hasheq 'module full-module-name
+                                                       'name 'syntax-literals-data)))))
            `(linklet
              ;; imports
              (,deserialize-imports
@@ -302,7 +306,8 @@
                            (make-correlated-linklet s 'data)
                            (performance-region
                             ['compile 'module 'linklet]
-                            (compile-linklet s 'data))))
+                            (compile-linklet s (hasheq 'module full-module-name
+                                                       'name 'data)))))
            (generate-module-data-linklet mpis))))
 
    ;; Combine linklets with other metadata as the bundle:

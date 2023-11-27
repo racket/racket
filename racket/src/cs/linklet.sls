@@ -70,7 +70,6 @@
           schemify-table
           call-with-module-prompt)
   (import (chezpart)
-          (only (chezscheme) printf)
           (rename (rumble)
                   [raise-argument-error raise-argument-error/primitive]
                   [raise-argument-error/user raise-argument-error]
@@ -230,16 +229,18 @@
      [(what v) (show show-on? what v)]
      [(on? what v)
       (when on?
-        (printf ";; ~a ---------------------\n" what)
+        (trace-printf ";; compile-linklet: step: ~a ---------------------\n" what)
         (call-with-system-wind
          (lambda ()
            (parameterize ([print-gensym gensym-mode]
                           [print-extended-identifiers #t])
              (pretty-print (strip-jit-wrapper
                             (strip-nested-annotations
-                             (correlated->annotation v))))))))
+                             (correlated->annotation v)))
+                           (#%current-error-port))))))
       v]))
 
+  (include "linklet/trace.ss")
   (include "linklet/check.ss")
   (include "linklet/version.ss")
   (include "linklet/write.ss")
@@ -259,15 +260,15 @@
                                                                   (optimize-level))]
                                               [compile-procedure-realm realm])
                                  (let* ([print-header (lambda ()
-                                                        (printf ";;")
+                                                        (trace-printf ";; compile-linklet: passes:")
                                                         (for-each (lambda (p)
                                                                     (define pass
                                                                       (if (eq? p #t) 'all p))
-                                                                    (printf " ~a" pass))
+                                                                    (trace-printf " ~a" pass))
                                                                   (if assembly-on?
                                                                       (append passes-on '(assembly))
                                                                       passes-on))
-                                                        (printf " ---------------------\n"))]
+                                                        (trace-printf " ---------------------\n"))]
                                         [-compile (lambda (e)
                                                     (if (not (null? passes-on))
                                                         (parameterize ([print-gensym gensym-mode]
@@ -278,7 +279,7 @@
                                    (when (or (not (null? passes-on)) assembly-on?)
                                      (print-header))
                                    (if assembly-on?
-                                       (parameterize ([#%$assembly-output (#%current-output-port)])
+                                       (parameterize ([#%$assembly-output (#%current-error-port)])
                                         (-compile e))
                                        (-compile e))))))]
      [(e) (compile* e #f #f)]))
@@ -561,20 +562,27 @@
   (define compile-linklet
     (case-lambda
      [(c) (compile-linklet c #f #f #f '(serializable))]
-     [(c name) (compile-linklet c name #f #f '(serializable))]
-     [(c name import-keys) (compile-linklet c name import-keys #f '(serializable))]
-     [(c name import-keys get-import) (compile-linklet c name import-keys get-import '(serializable))]
-     [(c name import-keys get-import options)
-      (do-compile-linklet 'compile-linklet c name import-keys get-import options #f)]))
+     [(c info) (compile-linklet c info #f #f '(serializable))]
+     [(c info import-keys) (compile-linklet c info import-keys #f '(serializable))]
+     [(c info import-keys get-import) (compile-linklet c info import-keys get-import '(serializable))]
+     [(c info import-keys get-import options)
+      (do-compile-linklet 'compile-linklet c info import-keys get-import options #f)]))
 
   (define expand/optimize-linklet ; for testing
     (case-lambda
      [(c) (do-compile-linklet 'expand/optimize-linklet c #f #f #f '() #t)]
-     [(c name import-keys get-import options)
-      (do-compile-linklet 'expand/optimize-linklet c name import-keys get-import options #t)]))
+     [(c info import-keys get-import options)
+      (do-compile-linklet 'expand/optimize-linklet c info import-keys get-import options #t)]))
 
   (define do-compile-linklet
-    (lambda (who c name import-keys get-import options just-expand?)
+    (lambda (who c info-or-name import-keys get-import options just-expand?)
+      ;; If `info-or-name` is not a hash, assume it may be a `name`
+      ;; value for compatibility with previous versions.
+      (define info
+        (if (hash? info-or-name)
+            info-or-name
+            (hasheq 'name info-or-name)))
+      (define name (hash-ref info 'name #f))
       (define check-result (check-compile-args who import-keys get-import options))
       (define serializable? (#%memq 'serializable options))
       (define use-prompt? (#%memq 'use-prompt options))
@@ -597,6 +605,11 @@
                             (make-hash)
                             ;; For speed and more flexible sharing: a weak, place-local cache
                             (get-nonserializable-sfd-cache)))
+
+      (when show-on?
+        (hash-for-each info (lambda (k v)
+                              (trace-printf ";; ~a: ~a: ~a\n" who k v))))
+
       (performance-region
        'schemify
        (define jitify-mode?
@@ -744,10 +757,10 @@
   (define recompile-linklet
     (case-lambda
      [(lnk) (recompile-linklet lnk #f #f #f '(serializable))]
-     [(lnk name) (recompile-linklet lnk name #f #f '(serializable))]
-     [(lnk name import-keys) (recompile-linklet lnk name import-keys #f '(serializable))]
-     [(lnk name import-keys get-import) (recompile-linklet lnk name import-keys get-import '(serializable))]
-     [(lnk name import-keys get-import options)
+     [(lnk info) (recompile-linklet lnk info #f #f '(serializable))]
+     [(lnk info import-keys) (recompile-linklet lnk info import-keys #f '(serializable))]
+     [(lnk info import-keys get-import) (recompile-linklet lnk info import-keys get-import '(serializable))]
+     [(lnk info import-keys get-import options)
       (unless (linklet? lnk)
         (raise-argument-error 'recompile-linklet "linklet?" lnk))
       (check-compile-args 'recompile-linklet import-keys get-import options)

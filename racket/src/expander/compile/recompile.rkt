@@ -184,6 +184,7 @@
                                 #:compile-linklet (if (correlated-linklet? body-linklet)
                                                       compile-linklet
                                                       recompile-linklet)
+                                #:body-info (hasheq 'phase phase)
                                 #:body-imports `([,get-syntax-literal!-id]
                                                  [,set-transformer!-id])
                                 #:body-import-instances (list empty-syntax-literals-instance

@@ -32,7 +32,7 @@
 (define compile/optimize
   (let ()
     ;; General strategy for checking optimization: compile to machine-independent
-    ;; linklets, then use `expand/optimize-linklet` (provided as a priitive just
+    ;; linklets, then use `expand/optimize-linklet` (provided as a primitive just
     ;; for this test suite) to run schemify and cp0
     (define expand/optimize-linklet (vm-primitive 'expand/optimize-linklet))
 
