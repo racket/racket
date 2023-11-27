@@ -43,10 +43,10 @@
 (define recompile-linklet
   (case-lambda
     [(lnk) (raw:recompile-linklet (force-compile-linklet lnk))]
-    [(lnk name) (raw:recompile-linklet (force-compile-linklet lnk) name)]
-    [(lnk name import-keys) (raw:recompile-linklet (force-compile-linklet lnk) name import-keys)]
-    [(lnk name import-keys get-import) (raw:recompile-linklet (force-compile-linklet lnk) name import-keys get-import)]
-    [(lnk name import-keys get-import options) (raw:recompile-linklet (force-compile-linklet lnk) name import-keys get-import options)]))
+    [(lnk info) (raw:recompile-linklet (force-compile-linklet lnk) info)]
+    [(lnk info import-keys) (raw:recompile-linklet (force-compile-linklet lnk) info import-keys)]
+    [(lnk info import-keys get-import) (raw:recompile-linklet (force-compile-linklet lnk) info import-keys get-import)]
+    [(lnk info import-keys get-import options) (raw:recompile-linklet (force-compile-linklet lnk) info import-keys get-import options)]))
 
 (define (eval-linklet lnk)
   (raw:eval-linklet (force-compile-linklet lnk)))

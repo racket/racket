@@ -116,9 +116,8 @@ element of compilation.
 Returns @racket[#t] if @racket[v] is a @tech{linklet}, @racket[#f]
 otherwise.}
 
-
 @defproc*[([(compile-linklet [form (or/c correlated? any/c)]
-                             [name any/c #f]
+                             [info (or/c hash? any/c) #f]
                              [import-keys #f #f]
                              [get-import #f #f]
                              [options (listof (or/c 'serializable 'unsafe 'static 'quick
@@ -126,7 +125,7 @@ otherwise.}
                                       '(serializable)])
             linklet?]
            [(compile-linklet [form (or/c correlated? any/c)]
-                             [name any/c]
+                             [info (or/c hash? any/c)]
                              [import-keys vector?]
                              [get-import (or/c #f (any/c . -> . (values (or/c linklet? instance? #f)
                                                                         (or/c vector? #f))))
@@ -142,8 +141,13 @@ As long as @racket['serializable] included in @racket[options], the
 resulting linklet can be marshaled to and from a byte stream when it is
 part of a @tech{linklet bundle} (possibly in a @tech{linklet directory}).
 
-The optional @racket[name] is associated to the linklet for debugging
-purposes and as the default name of the linklet's instance.
+The optional @racket[info] hash provides various debugging details
+about the linklet, such as the module name the linklet is part of,
+the linklet name, and the phase for body linklets. If a @racket['name]
+value is present in the hash, it is associated to the linklet for
+debugging purposes and as the default name of the linklet's instance.
+If @racket[info] is not a hash, it is assumed to be a name value
+directly for backward compatibility.
 
 The optional @racket[import-keys] and @racket[get-import] arguments
 support cross-linklet optimization. If @racket[import-keys] is a
@@ -219,11 +223,12 @@ The symbols in @racket[options] must be distinct, otherwise
 
 @history[#:changed "7.1.0.8" @elem{Added the @racket['use-prompt] option.}
          #:changed "7.1.0.10" @elem{Added the @racket['uninterned-literal] option.}
-         #:changed "7.5.0.14" @elem{Added the @racket['quick] option.}]}
+         #:changed "7.5.0.14" @elem{Added the @racket['quick] option.}
+         #:changed "8.11.1.2" @elem{Changed @racket[info] to a hash.}]}
 
 
 @defproc*[([(recompile-linklet [linklet linklet?]
-                               [name any/c #f]
+                               [info (or/c hash? any/c) #f]
                                [import-keys #f #f]
                                [get-import #f #f]
                                [options (listof (or/c 'serializable 'unsafe 'static 'quick
@@ -231,7 +236,7 @@ The symbols in @racket[options] must be distinct, otherwise
                                         '(serializable)])
             linklet?]
            [(recompile-linklet [linklet linklet?]
-                               [name any/c]
+                               [info (or/c hash? any/c)]
                                [import-keys vector?]
                                [get-import (or/c (any/c . -> . (values (or/c linklet? #f)
                                                                        (or/c vector? #f)))
@@ -248,7 +253,8 @@ and potentially optimizes it further.
 @history[#:changed "7.1.0.6" @elem{Added the @racket[options] argument.}
          #:changed "7.1.0.8" @elem{Added the @racket['use-prompt] option.}
          #:changed "7.1.0.10" @elem{Added the @racket['uninterned-literal] option.}
-         #:changed "7.5.0.14" @elem{Added the @racket['quick] option.}]}
+         #:changed "7.5.0.14" @elem{Added the @racket['quick] option.}
+         #:changed "8.11.1.2" @elem{Changed @racket[info] to a hash.}]}
 
 
 @defproc[(eval-linklet [linklet linklet?]) linklet?]{

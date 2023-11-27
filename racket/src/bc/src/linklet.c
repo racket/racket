@@ -437,10 +437,16 @@ static Scheme_Object *compile_linklet(int argc, Scheme_Object **argv)
 
   extract_import_info("compile-linklet", argc, argv, &import_keys, &get_import);
 
-  if ((argc > 1) && SCHEME_TRUEP(argv[1]))
-    name = argv[1];
-  else
-    name = scheme_intern_symbol("anonymous");
+  name = scheme_intern_symbol("anonymous");
+  if (argc > 1) {
+    if (SCHEME_HASHTRP(argv[1])) {
+      Scheme_Object *hn;
+      hn = scheme_hash_tree_get((Scheme_Hash_Tree *)argv[1], scheme_intern_symbol("name"));
+      if (hn)
+        name = hn;
+    } else if (SCHEME_TRUEP(argv[1]))
+      name = argv[1];
+  }
 
   e = argv[0];
   if (!SCHEME_STXP(e))
@@ -482,10 +488,16 @@ static Scheme_Object *recompile_linklet(int argc, Scheme_Object **argv)
 
   extract_import_info("recompile-linklet", argc, argv, &import_keys, &get_import);
 
-  if ((argc > 1) && SCHEME_TRUEP(argv[1]))
-    name = argv[1];
-  else
-    name = ((Scheme_Linklet *)argv[0])->name;
+  name = ((Scheme_Linklet *)argv[0])->name;
+  if (argc > 1) {
+    if (SCHEME_HASHTRP(argv[1])) {
+      Scheme_Object *hn;
+      hn = scheme_hash_tree_get((Scheme_Hash_Tree *)argv[1], scheme_intern_symbol("name"));
+      if (hn)
+        name = hn;
+    } else if (SCHEME_TRUEP(argv[1]))
+      name = argv[1];
+  }
 
   if (import_keys && (SCHEME_VEC_SIZE(import_keys) != SCHEME_VEC_SIZE(linklet->importss))) {
     scheme_contract_error("recompile-linklet",

@@ -275,6 +275,8 @@
            ;; Compile the linklet with support for cross-module inlining, which
            ;; means that the set of imports can change:
            (compile-module-linklet body-linklet
+                                   #:body-info (hasheq 'module (compile-context-full-module-name cctx)
+                                                       'phase phase)
                                    #:body-imports body-imports
                                    #:body-import-instances body-import-instances
                                    #:get-module-linklet-info get-module-linklet-info
@@ -397,6 +399,7 @@
 ;; and a list of `module-use*`
 (define (compile-module-linklet body-linklet
                                 #:compile-linklet [compile-linklet compile-linklet]
+                                #:body-info body-info
                                 #:body-imports body-imports
                                 #:body-import-instances body-import-instances
                                 #:get-module-linklet-info get-module-linklet-info
@@ -411,9 +414,9 @@
   (define-values (linklet new-module-use*s)
     (performance-region
      ['compile '_ 'linklet]
-     ((lambda (l name keys getter)
+     ((lambda (l info keys getter)
         (parameterize ([current-compile-realm realm])
-          (compile-linklet l name keys getter (let ([flags (if serializable?
+          (compile-linklet l info keys getter (let ([flags (if serializable?
                                                                (if module-prompt?
                                                                    '(serializable use-prompt)
                                                                    '(serializable))
@@ -426,7 +429,10 @@
                                                     (cons 'unsafe flags)
                                                     flags)))))
       body-linklet
-      'module
+      ;; Info from caller supplies
+      ;;   - 'module with full module name (if available)
+      ;;   - 'phase
+      (hash-set body-info 'name 'module)
       ;; Support for cross-module optimization starts with a vector
       ;; of keys for the linklet imports; we use `module-use` values
       ;; as keys, plus #f or an instance (=> cannot be pruned) for
