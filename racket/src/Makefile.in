@@ -10,52 +10,54 @@ INSTALL_VARS_FROM_ENV = $(BUILD_VARS) \
                         DESTDIR="$(DESTDIR)" \
                         PLT_SETUP_OPTIONS="$(PLT_SETUP_OPTIONS)"
 
+RUN_ZUO = + $(ZUO) .
+
 all: $(ZUO)
-	$(ZUO) . all $(BUILD_VARS)
+	$(RUN_ZUO) all $(BUILD_VARS)
 
 install: $(ZUO)
-	$(ZUO) . install $(INSTALL_VARS_FROM_ENV)
+	$(RUN_ZUO) install $(INSTALL_VARS_FROM_ENV)
 
 plain-install: $(ZUO)
-	$(ZUO) . plain-install $(INSTALL_VARS_FROM_ENV)
+	$(RUN_ZUO) plain-install $(INSTALL_VARS_FROM_ENV)
 
 .PHONY: cs
 cs: $(ZUO)
-	$(ZUO) . cs $(BUILD_VARS)
+	$(RUN_ZUO) cs $(BUILD_VARS)
 
 install-cs: $(ZUO)
-	$(ZUO) . install-cs $(INSTALL_VARS_FROM_ENV)
+	$(RUN_ZUO) install-cs $(INSTALL_VARS_FROM_ENV)
 
 plain-install-cs: $(ZUO)
-	$(ZUO) . plain-install-cs $(INSTALL_VARS_FROM_ENV)
+	$(RUN_ZUO) plain-install-cs $(INSTALL_VARS_FROM_ENV)
 
 .PHONY: bc
 bc: $(ZUO)
-	$(ZUO) . bc $(BUILD_VARS)
+	$(RUN_ZUO) bc $(BUILD_VARS)
 
 install-bc: $(ZUO)
-	$(ZUO) . install-bc $(INSTALL_VARS_FROM_ENV)
+	$(RUN_ZUO) install-bc $(INSTALL_VARS_FROM_ENV)
 
 plain-install-bc: $(ZUO)
-	$(ZUO) . plain-install-bc $(INSTALL_VARS_FROM_ENV)
+	$(RUN_ZUO) plain-install-bc $(INSTALL_VARS_FROM_ENV)
 
 3m: $(ZUO)
-	$(ZUO) . 3m $(BUILD_VARS)
+	$(RUN_ZUO) 3m $(BUILD_VARS)
 
 install-3m: $(ZUO)
-	$(ZUO) . install-3m $(INSTALL_VARS_FROM_ENV)
+	$(RUN_ZUO) install-3m $(INSTALL_VARS_FROM_ENV)
 
 plain-install-3m: $(ZUO)
-	$(ZUO) . plain-install-3m $(INSTALL_VARS_FROM_ENV)
+	$(RUN_ZUO) plain-install-3m $(INSTALL_VARS_FROM_ENV)
 
 cgc: $(ZUO)
-	$(ZUO) . cgc $(BUILD_VARS)
+	$(RUN_ZUO) cgc $(BUILD_VARS)
 
 install-cgc: $(ZUO)
-	$(ZUO) . install-cgc $(INSTALL_VARS_FROM_ENV)
+	$(RUN_ZUO) install-cgc $(INSTALL_VARS_FROM_ENV)
 
 plain-install-cgc: $(ZUO)
-	$(ZUO) . plain-install-cgc $(INSTALL_VARS_FROM_ENV)
+	$(RUN_ZUO) plain-install-cgc $(INSTALL_VARS_FROM_ENV)
 
 $(ZUO):
 	mkdir -p bin
