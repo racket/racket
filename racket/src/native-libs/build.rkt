@@ -235,10 +235,11 @@
 ;; Build GNU sed to avoid potential BSD sed:
 (define need-sed? win?)
 
-(define (sdk n)
-  (~a " -isysroot /usr/local/Developer/SDKs/MacOSX10."n".sdk -mmacosx-version-min=10."n))
+(define (sdk n #:base [base 10])
+  (~a " -isysroot /Library/Developer/CommandLineTools/SDKs/MacOSX"base"."n".sdk -mmacosx-version-min="base"."n))
 (define mac32-sdk 6)
 (define mac64-sdk 9)
+(define macaarch64-sdk (sdk 0 #:base 11))
 
 (define all-env
   (cond
@@ -259,7 +260,7 @@
    [mac?
     (cond
      [aarch64?
-      (define flags "-arch arm64 -mmacosx-version-min=11")
+      (define flags (~a "-arch arm64 " macaarch64-sdk))
       (list
        (list "CPPFLAGS" (~a flags))
        (list "LDFLAGS" (~a flags)))]

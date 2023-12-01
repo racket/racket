@@ -38,7 +38,7 @@ older versions):
  freetype-2.12.1
  pango-1.42.0
  poppler-0.24.5
- mpfr-3.1.6
+ mpfr-3.1.6 (Mac OS AArch64: mpfr-4.2.0)
  gmp-6.2.1
  atk-2.28.1
 

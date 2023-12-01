@@ -25,7 +25,7 @@
 
 ;; Hack to make AArch64 Mac OS and Windows libraries look like other Macs:
 (define aarch64-renames
-  `(("libffi.7" "libffi.6")))
+  `(("libmpfr.6" "libmpfr.4")))
 
 (define libs
   `("libffi.6"
