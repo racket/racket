@@ -414,23 +414,18 @@ terminates, if a @racket[result-expr] is provided then the result of the
 ]
 
 The binding and evaluation order of @racket[accum-id]s and
-@racket[init-expr]s do not completely follow the textual,
-left-to-right order relative to the @racket[for-clause]s. Instead, the
-sequence expressions in @racket[for-clause]s that determine the
-outermost iteration are evaluated first, then the @racket[init-expr]s
-are evaluated and the @racket[accum-id]s are bound, and finally the
-outermost iteration's identifiers are bound. One consequence is that
-the @racket[accum-id]s are not bound in @racket[for-clause]s for the
-outermost initialization. At the same time, when a @racket[accum-id]
-is used as a @racket[for-clause] binding for the outermost iteration,
-the @racket[for-clause] binding shadows the @racket[accum-id] binding
-in the loop body (which is what you would expect syntactically).
-A fresh variable for each @racket[accum-id] (at a
-fresh location) is bound in each nested iteration that is created by a
-later group for @racket[for-clause]s (after a @racket[#:when] or
-@racket[#:unless], for example).
+@racket[init-expr]s follow the textual, left-to-right order relative
+to the @racket[for-clause]s, except that (for historical reasons)
+@racket[accum-id]s are not available in the @racket[for-clause]s for
+the outermost iteration. The lifetimes of variables are not quite the
+same as the lexical nesting, however: the variable referenced by a
+@racket[accum-id] has a fresh location in each iteration.
 
-@history[#:changed "6.11.0.1" @elem{Added the @racket[#:result] form.}]
+@history[#:changed "6.11.0.1" @elem{Added the @racket[#:result] form.}
+         #:changed "8.11.1.3" @elem{Changed evaluation order to match textual left-to-right order,
+                                    including evaluating @racket[init-expr]s before the first
+                                    @racket[for-clause]'s right-hand side and fixing shadowing of
+                                    @racket[accum-id].}]
 }
 
 @(define for/foldr-eval ((make-eval-factory '(racket/promise racket/sequence racket/stream))))

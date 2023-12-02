@@ -296,6 +296,30 @@
            (number->string i))
          c)))
 
+;; make sure `#:break` is not confused by shadowing
+(test 0 'break-0 (for*/fold ([x 0]) ([x '(1)]) #:break #true (add1 x)))
+(test 0 'break-0 (for*/fold ([x 0]) ([x '(1)] [y '(3)]) #:break #true (add1 x)))
+(test 0 'break-0 (for*/fold ([x 0]) ([x '(1)] #:break #true) (add1 x)))
+(test 0 'break-0 (for*/fold ([x 0]) ([x '(1)] [y '(3)] #:break #true) (add1 x)))
+(test 0 'break-0 (for*/fold ([x 0]) ([x '(1)] #:break #true [y '(3)]) (add1 x)))
+
+(test 2 'break-2 (for*/fold ([x 0]) ([x '(1)]) #:break #false (add1 x)))
+(test 2 'break-2 (for*/fold ([x 0]) ([x '(1)] [y '(3)]) #:break false (add1 x)))
+(test 2 'break-2 (for*/fold ([x 0]) ([x '(1)] #:break #false) (add1 x)))
+(test 2 'break-2 (for*/fold ([x 0]) ([x '(1)] [y '(3)] #:break #false) (add1 x)))
+(test 2 'break-2 (for*/fold ([x 0]) ([x '(1)] #:break #false [y '(3)]) (add1 x)))
+
+(test 2 'break-v2 (for*/fold ([x 0]) ([x '(1)] [y (in-value 3)]) #:break false (add1 x)))
+(test 2 'break-v2 (for*/fold ([x 0]) ([x '(1)] [y (in-value 3)] #:break #false) (add1 x)))
+(test 2 'break-v2 (for*/fold ([x 0]) ([x '(1)] #:break #false [y (in-value 3)]) (add1 x)))
+
+;; make sure `#:final` is not treated like `#:break`
+(test 2 'final-0 (for*/fold ([x 0]) ([x '(1)]) #:final #true (add1 x)))
+(test 2 'final-0 (for*/fold ([x 0]) ([x '(1)] [y '(3)]) #:final #true (add1 x)))
+(test 2 'final-0 (for*/fold ([x 0]) ([x '(1)] #:final #true) (add1 x)))
+(test 2 'final-0 (for*/fold ([x 0]) ([x '(1)] [y '(3)] #:final #true) (add1 x)))
+(test 2 'final-0 (for*/fold ([x 0]) ([x '(1)] #:final #true [y '(3)]) (add1 x)))
+
 ;; Basic sanity checks.
 (test '#(1 2 3 4) 'for/vector (for/vector ((i (in-range 4))) (+ i 1)))
 (test '#(1 2 3 4) 'for/vector-fast (for/vector #:length 4 ((i (in-range 4))) (+ i 1)))
@@ -497,6 +521,21 @@
                                            ([x (values (in-value 2))])
                                    x))
 
+;; Check against pre-8.11.1.3 weird effect of shadowing fold variables
+(let ([accum null])
+  (test '("x" 10 10)
+        'weird-shadow
+        (cons (for*/fold ([x 0]) ([x '(10)] [y '(1 2)]) (set! accum (cons x accum)) "x")
+              accum)))
+(let ([accum null])
+  (test '("x" 10 10)
+        'weird-shadow
+        (cons
+         (for*/fold ([x 0]) ([x '(10)] [y '(1 2)] #:break #false) (set! accum (cons x accum)) "x")
+         accum)))
+
+;; Check against pre-8.11.1.3 weird ordering of fold variable's initial value,
+;; but for continued weird absence of fold varibales in the initial clause
 (let ([x 'out]
       [prints '()])
   (for/fold ([x (begin
@@ -507,7 +546,7 @@
                            (list 1 2 3)))])
     (set! prints (cons x prints))
     x)
-  (test '(3 2 1 (top out) (rhs out)) values prints))
+  (test '(3 2 1 (rhs out) (top out)) values prints))
 
 ;; check ranges on `in-vector', especially as a value
 (test '() 'in-empty-vector (let ([v (in-vector '#())]) (for/list ([e v]) e)))
