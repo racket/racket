@@ -233,7 +233,11 @@ directory}:
  @item{@indexed-racket['build-stamp] --- a string that identifies a build,
        which can be used to augment the Racket version number to more
        specifically identify the build. An empty string is normally
-       appropriate for a release build.}
+       appropriate for a release build. The default @racket{banner}
+       also shows the build stamp when non-empty.}
+
+       @history[#:changed "8.11.1.7" @elem{Added build stamp to
+                                           @racket{banner}.}]
 
  @item{@indexed-racket['absolute-installation?] --- a boolean that is
        @racket[#t] if the installation uses absolute path names,

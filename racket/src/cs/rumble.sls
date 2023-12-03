@@ -1,6 +1,7 @@
 (library (rumble)
   (export version
           banner
+          set-build-stamp! ; not exported to Racket
 
           null eof void void?
 

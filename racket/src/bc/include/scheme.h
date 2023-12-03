@@ -1941,6 +1941,7 @@ MZ_EXTERN void scheme_set_stdio_makers(Scheme_Stdio_Maker_Proc in,
 
 
 MZ_EXTERN void scheme_set_banner(char *s);
+MZ_EXTERN void scheme_set_build_stamp(char *s);
 MZ_EXTERN Scheme_Object *scheme_set_exec_cmd(char *s);
 MZ_EXTERN Scheme_Object *scheme_set_run_cmd(char *s);
 MZ_EXTERN void scheme_set_collects_path(Scheme_Object *p);
