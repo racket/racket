@@ -793,7 +793,10 @@
        (set-collects-dir! init-collects-dir)])
      (set-config-dir! init-config-dir)
      (let* ([config (read-installation-configuration-table)]
-            [name (get-installation-name config)])
+            [name (get-installation-name config)]
+            [build-stamp (or (hash-ref config 'build-stamp #f) "")])
+       (unless (equal? build-stamp "")
+         (set-build-stamp! build-stamp))
        (unless (eq? init-collects-dir 'disable)
          (current-library-collection-links
           (find-library-collection-links config name))
@@ -929,14 +932,15 @@
          (when (and n (exact-nonnegative-integer? n))
            (set-schedule-quantum! n)))))
 
-   (when version?
-     (display (banner)))
    (call/cc ; Chez Scheme's `call/cc`, used here to escape from the Racket-thread engine loop
     (lambda (entry-point-k)
       (call-in-main-thread
        (lambda ()
          (initialize-exit-handler!)
          (initialize-place!)
+
+         (when version?
+           (display (banner)))
 
          (when (and make? (not (null? compiled-file-paths)))
            (|#%app|

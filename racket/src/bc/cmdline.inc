@@ -1227,19 +1227,6 @@ static int run_from_cmd_line(int argc, char *_argv[],
 
   if (no_init_ns)
     init_ns = 0;
-
-  if (show_vers) {
-#ifndef RACKET_CMD_LINE  
-    if (!use_repl
-#ifdef CMDLINE_STDIO_FLAG
-	|| alternate_rep
-#endif
-	)
-#endif
-      PRINTF("%s", BANNER);
-
-   CMDLINE_FFLUSH(stdout);
-  }
 #endif /* DONT_PARSE_COMMAND_LINE */
 
   if (!syslog_level) {
@@ -1406,6 +1393,34 @@ static int run_from_cmd_line(int argc, char *_argv[],
   if (!skip_coll_dirs)
     scheme_init_collection_paths_post_config(global_env, collects_paths_l, collects_paths_r, config_table);
   scheme_init_compiled_roots_config(global_env, compiled_paths, config_table);
+
+  {
+    Scheme_Object *build_stamp;
+    build_stamp = scheme_hash_tree_get((Scheme_Hash_Tree *)config_table, scheme_intern_symbol("build-stamp"));
+    if (build_stamp) {
+      char *s;
+      intptr_t s_len;
+      s = scheme_display_to_string(build_stamp, &s_len);
+      if (s_len) {
+        scheme_set_build_stamp(s);
+      }
+    }
+  }
+
+#ifndef DONT_PARSE_COMMAND_LINE
+  if (show_vers) {
+#ifndef RACKET_CMD_LINE
+    if (!use_repl
+#ifdef CMDLINE_STDIO_FLAG
+        || alternate_rep
+#endif
+        )
+#endif
+      PRINTF("%s", BANNER);
+
+    CMDLINE_FFLUSH(stdout);
+  }
+#endif
 
   scheme_seal_parameters();
 
