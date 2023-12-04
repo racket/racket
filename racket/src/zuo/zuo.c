@@ -407,9 +407,31 @@ static zuo_int_t gc_threshold = 0;
 
 typedef struct old_space_t {
   void *space;
+  zuo_int_t size;
   struct old_space_t *next;
 } old_space_t;
 static old_space_t *old_spaces;
+static old_space_t *free_spaces; /* to recycle without going through malloc */
+
+static void *malloc_or_recycle(zuo_int_t min_size, zuo_int_t *size) {
+  /* distinguishing min versus preferred lets us recycle more often;
+     recycling can avoid triggering mmap/munmap system calls and
+     associated page-clearing work */
+  old_space_t *sp, *prev = NULL;
+  for (sp = free_spaces; sp; prev = sp, sp = sp->next) {
+    if (sp->size >= min_size) {
+      void *result = sp->space;
+      *size = sp->size;
+      if (prev)
+        prev->next = sp->next;
+      else
+        free_spaces = sp->next;
+      free(sp);
+      return result;
+    }
+  }
+  return malloc(*size);
+}
 
 static zuo_t *zuo_new(int tag, zuo_int_t size) {
   zuo_t *obj;
@@ -419,7 +441,7 @@ static zuo_t *zuo_new(int tag, zuo_int_t size) {
   size = ALLOC_ALIGN(size);
 
   if (to_space == NULL) {
-    to_space = malloc(heap_size);
+    to_space = malloc_or_recycle(heap_size, &heap_size);
     gc_threshold = heap_size;
   }
 
@@ -427,12 +449,13 @@ static zuo_t *zuo_new(int tag, zuo_int_t size) {
     old_space_t *new_old_spaces;
     new_old_spaces = malloc(sizeof(old_space_t));
     new_old_spaces->space = to_space;
+    new_old_spaces->size = heap_size;
     new_old_spaces->next = old_spaces;
     old_spaces = new_old_spaces;
 
     if (heap_size < size)
       heap_size = size * 2;
-    to_space = malloc(heap_size);
+    to_space = malloc_or_recycle(size * 2, &heap_size);
     allocation_offset = 0;
   }
 
@@ -551,14 +574,22 @@ static void zuo_trace_objects() {
   }
 }
 
-static void zuo_finish_gc(void *old_space, old_space_t *old_old_spaces) {
-  free(old_space);
-  while (old_old_spaces != NULL) {
-    old_space_t *next_old_old_spaces = old_old_spaces->next;
-    free(old_old_spaces->space);
-    free(old_old_spaces);
-    old_old_spaces = next_old_old_spaces;
+static void zuo_finish_gc(void *old_space, zuo_int_t old_heap_size, old_space_t *old_old_spaces) {
+  old_space_t *sp;
+
+  sp = free_spaces;
+  while (sp != NULL) {
+    old_space_t *next_free_spaces = sp->next;
+    free(sp->space);
+    free(sp);
+    sp = next_free_spaces;
   }
+
+  sp = malloc(sizeof(old_space_t));
+  sp->space = old_space;
+  sp->size = old_heap_size;
+  sp->next = old_old_spaces;
+  free_spaces = sp;
 
   total_allocation = allocation_offset;
   gc_threshold = total_allocation * 2;
@@ -569,12 +600,13 @@ static void zuo_finish_gc(void *old_space, old_space_t *old_old_spaces) {
 static void zuo_collect() {
   void *old_space = to_space;
   old_space_t *old_old_spaces = old_spaces;
+  zuo_int_t old_heap_size = heap_size;
 
   zuo_suspend_signal();
 
   old_spaces = NULL;
-  heap_size = total_allocation;
-  to_space = malloc(heap_size);
+  heap_size = total_allocation * 2;
+  to_space = malloc_or_recycle(total_allocation, &heap_size);
   allocation_offset = 0;
 
   /* roots */
@@ -591,7 +623,7 @@ static void zuo_collect() {
   zuo_trace_objects();
 
   /* cleanup */
-  zuo_finish_gc(old_space, old_old_spaces);
+  zuo_finish_gc(old_space, old_heap_size, old_old_spaces);
 
   zuo_resume_signal();
 }
@@ -604,7 +636,7 @@ static void zuo_check_collect() {
 static void zuo_replace_heap(void *space, zuo_int_t size, zuo_int_t offset) {
   allocation_offset = offset;
 
-  zuo_finish_gc(to_space, old_spaces);
+  zuo_finish_gc(to_space, heap_size, old_spaces);
 
   old_spaces = NULL;
   heap_size = size;
