@@ -2,7 +2,8 @@
 @(require "mz.rkt"
           (for-label syntax/for-body
                      syntax/parse
-                     syntax/parse/define))
+                     syntax/parse/define
+                     racket/for-clause))
 
 @title[#:tag "for"]{Iterations and Comprehensions: @racket[for], @racket[for/list], ...}
 
@@ -875,6 +876,18 @@ sequence of forms, and the forms are spliced in place of the
 ]
 
 @history[#:added "8.4.0.3"]}
+
+@;------------------------------------------------------------------------
+@section{Iteration Expansion}
+
+@note-lib-only[racket/for-clause]
+
+@defproc[(syntax-local-splicing-clause-introduce [stx syntax?]) syntax?]{
+
+Analogous to @racket[syntax-local-introduce], but for use in an
+expander bound with @racket[define-splicing-for-clause-syntax].
+
+@history[#:added "8.11.1.4"]}
 
 @;------------------------------------------------------------------------
 @section{Do Loops}

@@ -16,7 +16,8 @@
                          "define.rkt"
                          "member.rkt"
                          "define-et-al.rkt" "qq-and-or.rkt" "cond.rkt"
-                         "stxcase-scheme.rkt"))
+                         "stxcase-scheme.rkt"
+                         "more-scheme.rkt"))
 
   (#%provide for/fold for*/fold
              for/foldr for*/foldr
@@ -113,6 +114,9 @@
              define-:vector-like-gen
              (for-syntax make-in-vector-like
                          for-clause-syntax-protect))
+
+  (module* expand #f
+    (#%provide (for-syntax syntax-local-splicing-for-clause-introduce)))
 
   ;; redefininition of functions not in #%kernel
   (begin-for-syntax
@@ -422,6 +426,13 @@
        (define-syntax id
          (create-splicing-for-clause-transformer transformer-expr))]))
 
+  (define-for-syntax syntax-local-splicing-clause-introducer
+    (make-parameter (lambda (stx) stx)))
+  (define-for-syntax (syntax-local-splicing-for-clause-introduce stx)
+    (unless (syntax? stx)
+      (raise-argument-error 'syntax-local-splicing-for-clause-introduce "syntax?" stx))
+    ((syntax-local-splicing-clause-introducer) stx))
+
   (define-for-syntax (expand-splicing-clause orig-form form)
     (syntax-case form ()
       [(id . _)
@@ -429,7 +440,8 @@
             (splicing-for-clause-transformer? (syntax-local-value #'id (lambda () #f))))
        (let ([xformer (splicing-for-clause-transformer-ref (syntax-local-value #'id) 0)]
              [introducer (make-syntax-introducer)])
-         (let ([xformed (xformer (introducer (syntax-local-introduce form)))])
+         (let ([xformed (parameterize ([syntax-local-splicing-clause-introducer introducer])
+                          (xformer (introducer (syntax-local-introduce form))))])
            (syntax-case xformed ()
              [(_ ...)
               (cons #'id (syntax-local-introduce (introducer xformed)))]
