@@ -698,14 +698,14 @@ if no bytes are available before an end-of-file, the event's result is
 @racket[eof]. Otherwise, the event's result is a byte string of up to
 @racket[k] bytes, which contains as many bytes as are available (up to
 @racket[k]) before an available end-of-file. (The result is a byte
-string on less than @racket[k] bytes only when an end-of-file is
+string of less than @racket[k] bytes only when an end-of-file is
 encountered.)
 
 Bytes are read from the port if and only if the event is chosen in a
 synchronization, and the returned bytes always represent contiguous
 bytes in the port's stream.
 
-The event can be synchronized multiple times---event
+The event can be synchronized multiple times---even
 concurrently---and each synchronization corresponds to a distinct read
 request.
 
