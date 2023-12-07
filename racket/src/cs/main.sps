@@ -329,6 +329,7 @@
                  loads)))
 
    (include "main/help.ss")
+   (include "main/eval-all.ss")
 
    (define-syntax string-case
      ;; Assumes that `arg` is a variable
@@ -396,7 +397,10 @@
                 (flags-loop (cons "--" rest-args) (see saw 'non-config 'lib)))]
              [("-f" "--load")
               (let-values ([(file-name rest-args) (next-arg "file name" arg within-arg args)])
-                (set! loads (cons (lambda () (load file-name))
+                (set! loads (cons (lambda ()
+                                    (if (equal? file-name "-")
+                                        (eval-all (current-input-port))
+                                        (load file-name)))
                                   loads))
                 (flags-loop rest-args (see saw 'non-config 'top)))]
              [("-r" "--script")
@@ -412,23 +416,7 @@
                       (cons
                        (lambda ()
                          (define i (open-input-string expr))
-                         (let loop ()
-                           (define expr (read i))
-                           (unless (eof-object? expr)
-                             (call-with-values (lambda ()
-                                                 (call-with-continuation-prompt
-                                                  (lambda ()
-                                                    (eval `(|#%top-interaction| . ,expr)))
-                                                  (default-continuation-prompt-tag)
-                                                  (lambda (proc)
-                                                    ;; continue escape to set error status:
-                                                    (abort-current-continuation (default-continuation-prompt-tag) proc))))
-                               (lambda vals
-                                 (for-each (lambda (v)
-                                             (|#%app| (current-print) v)
-                                             (flush-output))
-                                           vals)))
-                             (loop))))
+                         (eval-all i))
                        loads))
                 (flags-loop rest-args (see saw 'non-config 'top)))]
              [("-k" "-Y")

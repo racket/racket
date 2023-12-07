@@ -292,7 +292,8 @@
                      (cat (append main-deps (list main.so)) path)))]
 
      ,(library-target main.so (at-source "main.sps") main-deps
-                      (list (at-source "main/help.ss")))
+                      (list (at-source "main/help.ss")
+                            (at-source "main/eval-all.ss")))
 
      ,(library-target expander.so (at-source "expander.sls") expander-deps
                       (list* expander.scm (at-source "expander/env.ss")
