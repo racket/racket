@@ -196,7 +196,8 @@
   (instance-unset-variable! (definitions-variables d) name))
 
 (define (namespace-set-transformer! ns phase-level name val)
-  (define d (namespace->definitions ns (add1 phase-level)))
+  ;; `phase-level` can be #f for portal syntax
+  (define d (namespace->definitions ns (and phase-level (add1 phase-level))))
   (hash-set! (definitions-transformers d) name val))
 
 (define (namespace-unset-transformer! ns phase-level name)
@@ -208,7 +209,7 @@
   (instance-variable-value (definitions-variables d) name fail-k))
   
 (define (namespace-get-transformer ns phase-level name fail-k)
-  (define d (namespace->definitions ns (add1 phase-level)))
+  (define d (namespace->definitions ns (and phase-level (add1 phase-level))))
   (hash-ref (definitions-transformers d) name fail-k))
 
 (define (namespace->instance ns phase-shift)

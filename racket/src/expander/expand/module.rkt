@@ -1586,7 +1586,6 @@
     (add-defined-syms! requires+provides syms phase #:as-transformer? #t)
     (define sym (car syms))
     (define t (portal-syntax portal-stx))
-    (when phase
-      (namespace-set-transformer! m-ns phase sym t))
+    (namespace-set-transformer! m-ns phase sym t)
     (add-portal-stx! portal-syntaxes t sym phase)
     sym))

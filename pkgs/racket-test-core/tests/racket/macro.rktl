@@ -857,6 +857,15 @@
   (test 1 extract (identifier-binding-portal-syntax id))
   (test 2 extract (identifier-binding-portal-syntax (intro id))))
 
+;; make sure provide at label phase is ok for a local portal binding
+;; and that we can look up the binding while expanding
+(module provide-portal-binding-at-label-phase '#%kernel
+  (#%require (for-syntax racket/base)
+             (for-meta #f (portal bread-and-butter (bread butter))))
+  (#%provide (for-meta #f bread-and-butter))
+  (begin-for-syntax
+    (identifier-binding-portal-syntax #'bread-and-butter #f)))
+
 ;; ----------------------------------------
 
 (module distinct-binding-tests racket/base

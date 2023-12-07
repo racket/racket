@@ -458,7 +458,7 @@
     [(top-level-module-path-index? mpi)
      (lambda (phase sym)
        (try-namespace-lookup ns (phase+ phase phase-shift) sym))]
-    [else
+    [(non-self-module-path-index? mpi)
      (define mi (or ready-mi
                     (let ([m (namespace->module ns name)])
                       (unless m (raise-unknown-module-error 'identifier-binding-portal-syntax name))
@@ -474,7 +474,11 @@
      (lambda (phase sym)
        (or (get data-box phase sym)
            ;; in case a top-level definition happened in the module's namespace:
-           (try-namespace-lookup m-ns phase sym)))]))
+           (try-namespace-lookup m-ns phase sym)))]
+    [else
+     ;; self MPI can only refer to a for-label portal binding
+     (lambda (phase sym)
+       (try-namespace-lookup ns phase sym))]))
 
 ;; The `instance-phase` corresponds to the phase shift for the module
 ;; instances. The module may have content at different phase levels,
