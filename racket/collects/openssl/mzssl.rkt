@@ -100,7 +100,7 @@ TO DO:
   [ssl-make-client-context
    (->* ()
         (protocol-symbol/c
-         #:private-key (or/c (list/c 'pem path-string?) (list/c 'der path-string?) #f)
+         #:private-key (or/c (list/c 'pem path-string?) (list/c 'pem-data bytes?) (list/c 'der path-string?) #f)
          #:certificate-chain (or/c path-string? #f))
         ssl-client-context?)]
   [ssl-secure-client-context
@@ -108,7 +108,7 @@ TO DO:
   [ssl-make-server-context
    (->* ()
         (protocol-symbol/c
-         #:private-key (or/c (list/c 'pem path-string?) (list/c 'der path-string?) #f)
+         #:private-key (or/c (list/c 'pem path-string?) (list/c 'pem-data bytes?) (list/c 'der path-string?) #f)
          #:certificate-chain (or/c path-string? #f))
         ssl-server-context?)]
   [ssl-server-context-enable-dhe!
@@ -124,7 +124,7 @@ TO DO:
   [ssl-load-certificate-chain!
    (c-> (or/c ssl-context? ssl-listener?) path-string? void?)]
   [ssl-load-private-key!
-   (->* ((or/c ssl-context? ssl-listener?) path-string?)
+   (->* ((or/c ssl-context? ssl-listener?) (or/c path-string? (list/c 'data bytes?)))
         (any/c any/c)
         void?)]
   [ssl-load-verify-root-certificates!
@@ -477,6 +477,8 @@ TO DO:
   (when cert-chain (ssl-load-certificate-chain! mzctx cert-chain))
   (cond [(and (pair? priv-key) (eq? (car priv-key) 'pem))
          (ssl-load-private-key! mzctx (cadr priv-key) #f #f)]
+        [(and (pair? priv-key) (eq? (car priv-key) 'pem-data))
+         (ssl-load-private-key! mzctx (list 'data (cadr priv-key)) #f #f)]
         [(and (pair? priv-key) (eq? (car priv-key) 'der))
          (ssl-load-private-key! mzctx (cadr priv-key) #f #t)]
         [else (void)])
@@ -646,15 +648,36 @@ TO DO:
                     1))))
           ssl-listener pathname))
 
-(define (ssl-load-private-key! ssl-context-or-listener pathname
+(define (ssl-load-private-key! ssl-context-or-listener path-or-data
                                [rsa? #t] [asn1? #f])
-  (ssl-load-...
-   'ssl-load-private-key!
-   (lambda (ctx path)
-     ((if rsa? SSL_CTX_use_RSAPrivateKey_file SSL_CTX_use_PrivateKey_file)
-      ctx path
-      (if asn1? SSL_FILETYPE_ASN1 SSL_FILETYPE_PEM)))
-   ssl-context-or-listener pathname))
+  (if (and (pair? path-or-data) (eq? (car path-or-data) 'data))
+      (let* ([data (cadr path-or-data)]
+             [ctx (get-context/listener 'ssl-load-private-key! ssl-context-or-listener
+                                        #:need-unsealed? #t)]
+             [bio (BIO_new_mem_buf data (bytes-length data))])
+        (with-failure (lambda () (BIO_free bio))
+          (when asn1?
+            ;; TODO: we can probably use d2i_PrivateKey and d2i_RSAPrivateKey to support this if we want
+            (error 'ssl-load-private-key
+                   "loading ASN.1 from bytes data not currently supported;\n must load from file path"))
+          (define success (if rsa?
+                              (SSL_CTX_use_RSAPrivateKey
+                               ctx
+                               (PEM_read_bio_RSAPrivateKey bio #f 0 #f))
+                              (SSL_CTX_use_PrivateKey
+                               ctx
+                               (PEM_read_bio_PrivateKey bio #f 0 #f))))
+
+          (unless (= 1 success)
+            (error 'ssl-load-private-key "failed to load private key"))
+          (BIO_free bio)))
+      (ssl-load-...
+       'ssl-load-private-key!
+       (lambda (ctx path)
+         ((if rsa? SSL_CTX_use_RSAPrivateKey_file SSL_CTX_use_PrivateKey_file)
+          ctx path
+          (if asn1? SSL_FILETYPE_ASN1 SSL_FILETYPE_PEM)))
+       ssl-context-or-listener path-or-data)))
 
 (define (ssl-load-verify-root-certificates! scl src)
   (ssl-load-... 'ssl-load-verify-root-certificates!
