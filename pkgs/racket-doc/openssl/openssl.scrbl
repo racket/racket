@@ -238,7 +238,7 @@ in other kind of servers.
 #:changed "6.3.0.12" @elem{Added @racket['secure].}
 #:changed "7.3.0.10" @elem{Added @racket[#:private-key] and @racket[#:certificate-chain]
 arguments.}
-#:changed "8.9.0.4" @elem{Added the @racket['pem-data] method for @racket[private-key].}
+#:changed "8.11.1.4" @elem{Added the @racket['pem-data] method for @racket[private-key].}
 ]}
 
 @defthing[ssl-protocol-symbol/c contract?
@@ -389,7 +389,7 @@ and @racket[ssl-load-certificate-chain!], respectively.
 #:changed "6.3.0.12" @elem{Added @racket['secure].}
 #:changed "7.3.0.10" @elem{Added @racket[#:private-key] and @racket[#:certificate-chain]
 arguments.}
-#:changed "8.9.0.4" @elem{Added the @racket['pem-data] method for @racket[private-key].}
+#:changed "8.11.1.4" @elem{Added the @racket['pem-data] method for @racket[private-key].}
 ]}
 
 
