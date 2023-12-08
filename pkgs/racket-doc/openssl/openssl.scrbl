@@ -430,8 +430,8 @@ current platform for server connections.
                            ssl-make-client-context)
                        protocol)]
 	   [#:encrypt protocol ssl-protocol-symbol/c 'auto]
-	   [#:close-original? close-original? boolean? #f]
-	   [#:shutdown-on-close? shutdown-on-close? boolean? #f]
+	   [#:close-original? close-original? any/c #f]
+	   [#:shutdown-on-close? shutdown-on-close? any/c #f]
 	   [#:error/ssl error procedure? error]
            [#:hostname hostname (or/c string? #f) #f]
            [#:alpn alpn-protocols (listof bytes?) null])
@@ -649,8 +649,8 @@ such a test configuration obviously provides no security.
 	  [context-or-listener (or/c ssl-client-context? ssl-server-context?
 				     ssl-listener?)]
 	  [path-or-data (or/c path-string? (list/c 'data bytes?))]
-	  [rsa? boolean? #t]
-	  [asn1? boolean? #f])
+	  [rsa? any/c #t]
+	  [asn1? any/c #f])
          void?]{
 
 Loads the first private key from @racket[path-or-data] for the given
@@ -675,7 +675,7 @@ You can use the file @filepath{test.pem} of the @filepath{openssl}
 collection for testing purposes. Since @filepath{test.pem} is public,
 such a test configuration obviously provides no security.
 
-@history[#:changed "8.9.0.4" @elem{Added support for specifying key
+@history[#:changed "8.11.1.4" @elem{Added support for specifying key
            data directly by providing a list of the form
            @racket[(list 'data _data-bytes)] for @racket[path-or-data].}]}
 

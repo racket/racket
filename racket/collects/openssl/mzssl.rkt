@@ -657,9 +657,9 @@ TO DO:
              [bio (BIO_new_mem_buf data (bytes-length data))])
         (with-failure (lambda () (BIO_free bio))
           (when asn1?
-            ; TODO: we can probably use d2i_PrivateKey and d2i_RSAPrivateKey to support this if we want
-            (error 'ssl-load-private-key "Cannot load ASN.1 keyfile from bytes at the moment. Must load from file path."))
-
+            ;; TODO: we can probably use d2i_PrivateKey and d2i_RSAPrivateKey to support this if we want
+            (error 'ssl-load-private-key
+                   "loading ASN.1 from bytes data not currently supported;\n must load from file path"))
           (define success (if rsa?
                               (SSL_CTX_use_RSAPrivateKey
                                ctx
