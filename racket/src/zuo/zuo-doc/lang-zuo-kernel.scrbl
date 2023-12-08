@@ -73,7 +73,7 @@ in @racketmodname[zuo/kernel] (and the values originate there):
   pair? null? list? cons car cdr list append reverse length
   list-ref list-set
 
-  integer? + - * quotient modulo < <= = >= >
+  integer? + - * quotient remainder < <= = >= >
   bitwise-and bitwise-ior bitwise-xor bitwise-not
 
   string? string-length string-ref string-u32-ref substring string

@@ -79,7 +79,7 @@
                (string=? s no-sha256)
                ;; also allow a concatenation of SHA-256s for multi-file targets
                (and (>= (string-length s) sha256-length)
-                    (= 0 (modulo (string-length s) sha256-length)))))
+                    (= 0 (remainder (string-length s) sha256-length)))))
       (eq? s phony-sha256)))
 
 ;; public constructor

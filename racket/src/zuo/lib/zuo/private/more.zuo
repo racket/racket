@@ -10,6 +10,8 @@
          boolean?
          string-tree?
 
+         modulo
+
          equal?
          assoc
          member
@@ -58,6 +60,17 @@
   (or (string? v)
       (and (list? v)
            (andmap string-tree? v))))
+
+(define (modulo n m)
+  (unless (integer? n) (arg-error 'modulo "integer" n))
+  (unless (integer? m) (arg-error 'modulo "integer" m))
+  (when (= m 0) (error "modulo: divide by zero"))
+  (let ([r (remainder n m)])
+    (if (eq? (>= m 0) (>= n 0))
+        r
+        (if (= r 0)
+            0
+            (+ r m)))))
 
 (define (equal? a b)
   (or (eq? a b)

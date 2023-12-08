@@ -322,6 +322,7 @@ Returns @racket[#t] if @racket[v] is an integer, @racket[#f] otherwise.}
            [(- [z integer?] [w integer?] ...+) integer?])]
 @defproc[(* [z integer?] ...) integer?]
 @defproc[(quotient [n integer?] [m integer?]) integer?]
+@defproc[(remainder [n integer?] [m integer?]) integer?]
 @defproc[(modulo [n integer?] [m integer?]) integer?]
 @defproc[(= [z integer?] [w integer?]) boolean?]
 @defproc[(< [x integer?] [y integer?]) boolean?]
@@ -334,7 +335,7 @@ Returns @racket[#t] if @racket[v] is an integer, @racket[#f] otherwise.}
 @defproc[(bitwise-not [n integer?])  integer?]
 )]{
 
-Analogous to @realracket*[+ - * quotient modulo = < <= > >=
+Analogous to @realracket*[+ - * quotient remainder modulo = < <= > >=
 bitwise-ior bitwise-and bitwise-xor bitwise-not] from
 @racketmodname[racket], but on Zuo integers and sometimes constrained
 to two arguments.}

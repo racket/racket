@@ -91,6 +91,7 @@
     *
     quotient
     modulo
+    remainder
     <
     <=
     =

@@ -2783,14 +2783,14 @@ static zuo_t *zuo_quotient(zuo_t *n, zuo_t *m) {
   return zuo_integer(ZUO_INT_I(n) / m_i);
 }
 
-static zuo_t *zuo_modulo(zuo_t *n, zuo_t *m) {
-  const char *who = "modulo";
+static zuo_t *zuo_remainder(zuo_t *n, zuo_t *m) {
+  const char *who = "remainder";
   zuo_int_t m_i;
   check_ints(n, m, who);
   m_i = ZUO_UINT_I(m);
   if (m_i == 0) zuo_fail1w(who, "divide by zero", m);
   if (m_i == -1) {
-    /* avoid potential overflow a the minimum integer */
+    /* avoid potential overflow at the minimum integer */
     return zuo_integer(0);
   }
   return zuo_integer(ZUO_INT_I(n) % m_i);
@@ -7156,7 +7156,7 @@ static void zuo_primitive_init(int will_load_image) {
   ZUO_TOP_ENV_SET_PRIMITIVEN("-", zuo_subtract, -2);
   ZUO_TOP_ENV_SET_PRIMITIVEN("*", zuo_multiply, -1);
   ZUO_TOP_ENV_SET_PRIMITIVE2("quotient", zuo_quotient);
-  ZUO_TOP_ENV_SET_PRIMITIVE2("modulo", zuo_modulo);
+  ZUO_TOP_ENV_SET_PRIMITIVE2("remainder", zuo_remainder);
   ZUO_TOP_ENV_SET_PRIMITIVE2("<", zuo_lt);
   ZUO_TOP_ENV_SET_PRIMITIVE2("<=", zuo_le);
   ZUO_TOP_ENV_SET_PRIMITIVE2("=", zuo_eql);
