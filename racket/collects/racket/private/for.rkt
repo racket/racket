@@ -1842,7 +1842,11 @@
                (check-identifier-bindings #'orig-stx #`(fold-var ... delayed-id) "accumulator" (void))
                (with-syntax ([(int-var ...)
                               (map (lambda (fold-var)
-                                     (datum->syntax fold-var (gensym (syntax-e fold-var)) fold-var fold-var))
+                                     (datum->syntax fold-var
+                                                    (string->uninterned-symbol
+                                                     (symbol->string (syntax-e fold-var)))
+                                                    fold-var
+                                                    fold-var))
                                    (syntax->list #'(fold-var ...)))])
                  (cond
                    [right?
