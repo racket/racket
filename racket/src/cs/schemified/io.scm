@@ -20360,35 +20360,38 @@
                   #f)
                 (if (vector? v_1)
                   (if (not print-graph?_0)
-                    (call-with-values
-                     (lambda ()
-                       (begin (values v_1 (unsafe-vector-length v_1))))
-                     (case-lambda
-                      ((vec_0 len_0)
-                       (letrec*
-                        ((for-loop_0
-                          (|#%name|
-                           for-loop
-                           (lambda (fuel_2 pos_0)
-                             (begin
-                               (if (unsafe-fx< pos_0 len_0)
-                                 (let ((e_0 (unsafe-vector-ref vec_0 pos_0)))
-                                   (let ((next-k-proc_0
-                                          (|#%name|
-                                           next-k-proc
-                                           (lambda (fuel_3)
-                                             (begin
-                                               (for-loop_0
-                                                fuel_3
-                                                (unsafe-fx+ 1 pos_0)))))))
-                                     (if (not fuel_2)
-                                       fuel_2
-                                       (let ((fuel_3
-                                              (quick-no-graph?_0 e_0 fuel_2)))
-                                         (next-k-proc_0 fuel_3)))))
-                                 fuel_2))))))
-                        (for-loop_0 (sub1 fuel_1) 0)))
-                      (args (raise-binding-result-arity-error 2 args))))
+                    (let ((fuel_2 (let ((fuel_2 (sub1 fuel_1))) fuel_2)))
+                      (call-with-values
+                       (lambda ()
+                         (begin (values v_1 (unsafe-vector-length v_1))))
+                       (case-lambda
+                        ((vec_0 len_0)
+                         (letrec*
+                          ((for-loop_0
+                            (|#%name|
+                             for-loop
+                             (lambda (fuel_3 pos_0)
+                               (begin
+                                 (if (unsafe-fx< pos_0 len_0)
+                                   (let ((e_0 (unsafe-vector-ref vec_0 pos_0)))
+                                     (let ((next-k-proc_0
+                                            (|#%name|
+                                             next-k-proc
+                                             (lambda (fuel_4)
+                                               (begin
+                                                 (for-loop_0
+                                                  fuel_4
+                                                  (unsafe-fx+ 1 pos_0)))))))
+                                       (if (not fuel_3)
+                                         fuel_3
+                                         (let ((fuel_4
+                                                (quick-no-graph?_0
+                                                 e_0
+                                                 fuel_3)))
+                                           (next-k-proc_0 fuel_4)))))
+                                   fuel_3))))))
+                          (for-loop_0 fuel_2 0)))
+                        (args (raise-binding-result-arity-error 2 args)))))
                     #f)
                   (if (if (box? v_1) (config-get config_0 1/print-box) #f)
                     (if (not print-graph?_0)
@@ -20401,39 +20404,43 @@
                             #f)
                           #f)
                       (if (not print-graph?_0)
-                        (begin
-                          (letrec*
-                           ((for-loop_0
-                             (|#%name|
-                              for-loop
-                              (lambda (fuel_2 i_0)
-                                (begin
-                                  (if i_0
-                                    (let ((k_0 (hash-iterate-key v_1 i_0 #f)))
-                                      (let ((next-k-proc_0
-                                             (|#%name|
-                                              next-k-proc
-                                              (lambda (fuel_3)
-                                                (begin
-                                                  (for-loop_0
-                                                   fuel_3
-                                                   (hash-iterate-next
-                                                    v_1
-                                                    i_0)))))))
-                                        (if (not fuel_2)
-                                          fuel_2
-                                          (let ((fuel_3
-                                                 (let ((val_0
-                                                        (hash-ref v_1 k_0 #f)))
-                                                   (quick-no-graph?_0
-                                                    val_0
-                                                    (quick-no-graph?_0
-                                                     k_0
-                                                     fuel_2)))))
-                                            (next-k-proc_0 fuel_3)))))
-                                    fuel_2))))))
-                           (let ((app_0 (sub1 fuel_1)))
-                             (for-loop_0 app_0 (hash-iterate-first v_1)))))
+                        (let ((fuel_2 (let ((fuel_2 (sub1 fuel_1))) fuel_2)))
+                          (begin
+                            (letrec*
+                             ((for-loop_0
+                               (|#%name|
+                                for-loop
+                                (lambda (fuel_3 i_0)
+                                  (begin
+                                    (if i_0
+                                      (let ((k_0
+                                             (hash-iterate-key v_1 i_0 #f)))
+                                        (let ((next-k-proc_0
+                                               (|#%name|
+                                                next-k-proc
+                                                (lambda (fuel_4)
+                                                  (begin
+                                                    (for-loop_0
+                                                     fuel_4
+                                                     (hash-iterate-next
+                                                      v_1
+                                                      i_0)))))))
+                                          (if (not fuel_3)
+                                            fuel_3
+                                            (let ((fuel_4
+                                                   (let ((val_0
+                                                          (hash-ref
+                                                           v_1
+                                                           k_0
+                                                           #f)))
+                                                     (quick-no-graph?_0
+                                                      val_0
+                                                      (quick-no-graph?_0
+                                                       k_0
+                                                       fuel_3)))))
+                                              (next-k-proc_0 fuel_4)))))
+                                      fuel_3))))))
+                             (for-loop_0 fuel_2 (hash-iterate-first v_1)))))
                         #f)
                       (if (stencil-vector? v_1)
                         (if (not print-graph?_0)
@@ -30743,75 +30750,79 @@
                         (if (vector? ev_0)
                           hash2725
                           (begin0
-                            (let ((end_0
-                                   (|#%app|
-                                    rktio_envvars_count
-                                    (unsafe-place-local-ref cell.1)
-                                    ev_0)))
-                              (begin
-                                (letrec*
-                                 ((for-loop_0
-                                   (|#%name|
-                                    for-loop
-                                    (lambda (table_0 pos_0)
-                                      (begin
-                                        (if (< pos_0 end_0)
-                                          (let ((table_1
-                                                 (let ((table_1
-                                                        (call-with-values
-                                                         (lambda ()
-                                                           (let ((k_0
-                                                                  (|#%app|
-                                                                   rktio_envvars_name_ref
-                                                                   (unsafe-place-local-ref
-                                                                    cell.1)
-                                                                   ev_0
-                                                                   pos_0)))
-                                                             (let ((v_0
-                                                                    (|#%app|
-                                                                     rktio_envvars_value_ref
-                                                                     (unsafe-place-local-ref
-                                                                      cell.1)
-                                                                     ev_0
-                                                                     pos_0)))
-                                                               (let ((case-k_0
-                                                                      (begin0
-                                                                        (bytes->immutable-bytes
-                                                                         (|#%app|
-                                                                          rktio_to_bytes
-                                                                          k_0))
+                            (let ((table_0 hash2725))
+                              (let ((table_1 table_0))
+                                (let ((end_0
+                                       (|#%app|
+                                        rktio_envvars_count
+                                        (unsafe-place-local-ref cell.1)
+                                        ev_0)))
+                                  (begin
+                                    (letrec*
+                                     ((for-loop_0
+                                       (|#%name|
+                                        for-loop
+                                        (lambda (table_2 pos_0)
+                                          (begin
+                                            (if (< pos_0 end_0)
+                                              (let ((table_3
+                                                     (let ((table_3
+                                                            (call-with-values
+                                                             (lambda ()
+                                                               (let ((k_0
+                                                                      (|#%app|
+                                                                       rktio_envvars_name_ref
+                                                                       (unsafe-place-local-ref
+                                                                        cell.1)
+                                                                       ev_0
+                                                                       pos_0)))
+                                                                 (let ((v_0
                                                                         (|#%app|
-                                                                         rktio_free
-                                                                         k_0))))
-                                                                 (let ((app_0
-                                                                        (normalize-key
-                                                                         case-k_0)))
-                                                                   (values
-                                                                    app_0
-                                                                    (cons
-                                                                     case-k_0
-                                                                     (begin0
-                                                                       (bytes->immutable-bytes
-                                                                        (|#%app|
-                                                                         rktio_to_bytes
-                                                                         v_0))
-                                                                       (|#%app|
-                                                                        rktio_free
-                                                                        v_0)))))))))
-                                                         (case-lambda
-                                                          ((key_0 val_0)
-                                                           (hash-set
-                                                            table_0
-                                                            key_0
-                                                            val_0))
-                                                          (args
-                                                           (raise-binding-result-arity-error
-                                                            2
-                                                            args))))))
-                                                   (values table_1))))
-                                            (for-loop_0 table_1 (+ pos_0 1)))
-                                          table_0))))))
-                                 (for-loop_0 hash2725 0))))
+                                                                         rktio_envvars_value_ref
+                                                                         (unsafe-place-local-ref
+                                                                          cell.1)
+                                                                         ev_0
+                                                                         pos_0)))
+                                                                   (let ((case-k_0
+                                                                          (begin0
+                                                                            (bytes->immutable-bytes
+                                                                             (|#%app|
+                                                                              rktio_to_bytes
+                                                                              k_0))
+                                                                            (|#%app|
+                                                                             rktio_free
+                                                                             k_0))))
+                                                                     (let ((app_0
+                                                                            (normalize-key
+                                                                             case-k_0)))
+                                                                       (values
+                                                                        app_0
+                                                                        (cons
+                                                                         case-k_0
+                                                                         (begin0
+                                                                           (bytes->immutable-bytes
+                                                                            (|#%app|
+                                                                             rktio_to_bytes
+                                                                             v_0))
+                                                                           (|#%app|
+                                                                            rktio_free
+                                                                            v_0)))))))))
+                                                             (case-lambda
+                                                              ((key_0 val_0)
+                                                               (hash-set
+                                                                table_2
+                                                                key_0
+                                                                val_0))
+                                                              (args
+                                                               (raise-binding-result-arity-error
+                                                                2
+                                                                args))))))
+                                                       (values table_3))))
+                                                (for-loop_0
+                                                 table_3
+                                                 (+ pos_0 1)))
+                                              table_2))))))
+                                     (for-loop_0 table_1 0))))))
                             (|#%app|
                              rktio_envvars_free
                              (unsafe-place-local-ref cell.1)
