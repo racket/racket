@@ -680,6 +680,7 @@
                                                                     (add-scheme-kernel-config
                                                                      (adjust-linking-config config)))
                                                                    'm m
+                                                                   'relativeBootFiles "yes"
                                                                    ;; these are for Windows:
                                                                    'runtimeAs "static"
                                                                    'linkAs "exe"
