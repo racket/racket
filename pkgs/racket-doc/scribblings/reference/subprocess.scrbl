@@ -136,19 +136,30 @@ The @racket[current-subprocess-keep-file-descriptors] parameter
 determines how file descriptors and handles in the current process are
 shared with the subprocess. File descriptors (on Unix and Mac OS) or
 handles (on Windows) represented by @racket[stdin], @racket[stdout],
-and @racket[stderr] are always shared with the subprocess. With the
-default parameter value of @racket['inherited], handles that are
-inherited on Windows are also shared, while no other file descriptors
-are shared on Unix and Mac OS. The parameter value @racket['all] is
-equivalent to @racket['inherited] on Windows, but on Unix and Mac OS,
-all file descriptors from the current process are shared with the
-subprocess---except for file descriptors 0, 1, and 2 as replaced by
-newly created pipes when the corresponding @racket[stdin],
-@racket[stdout], and @racket[stderr] argument is @racket[#f]. The
-parameter value @racket['()] is the same as @racket['inherited] on
-Unix and Mac OS , but it prevents sharing of inheritable handles on
-Windows. (A future extension may support a list of specific file
-descriptors or handles to share.)
+and @racket[stderr] are always shared with the subprocess. File
+descriptors and handles that are replaced by newly created pipes (when
+the corresponding @racket[stdin], @racket[stdout], and @racket[stderr]
+argument is @racket[#f]) are not shared. Sharing for other file
+descriptors and handles depends on the parameter value:
+@;
+@itemlist[
+
+ @item{@racket['inherited] (the default) --- other handles that are
+   inherited on Windows are shared with the subprocess; file
+   descriptors that lack the @tt{FD_CLOEXEC} flag on Unix and Mac OS
+   variants that support the flag are also shared; and no other file
+   descriptors are shared on variants of Unix and Mac OS that do not
+   support @tt{FD_CLOEXEC}.}
+
+ @item{@racket['all] --- like @racket['inherited], except on
+   variants of Unix and Mac OS that do not support @tt{FD_CLOEXEC}, in
+   which case all file descriptors are shared.}
+
+ @item{@racket['()] --- no additional file descriptors are shared, not
+   even ones that are inherited on Windows or lacking the
+   @tt{FD_CLOEXEC} flag.}
+
+]
 
 A subprocess can be used as a @tech{synchronizable event} (see @secref["sync"]).
 A subprocess value is @tech{ready for synchronization} when
@@ -170,7 +181,10 @@ Example:
 @history[#:changed "6.11.0.1" @elem{Added the @racket[group] argument.}
          #:changed "7.4.0.5" @elem{Added waiting for a fifo without a reader
                                    as @racket[stdout] and/or @racket[stderr].}
-         #:changed "8.3.0.4" @elem{Added @racket[current-subprocess-custodian-mode] support.}]}
+         #:changed "8.3.0.4" @elem{Added @racket[current-subprocess-custodian-mode] support.}
+         #:changed "8.11.1.6" @elem{Changed the treatment of file-descriptor sharing
+                                    on variants of Unix and Mac OS that support
+                                    @tt{FD_CLOEXEC}.}]}
 
 
 @defproc[(subprocess-wait [subproc subprocess?]) void?]{

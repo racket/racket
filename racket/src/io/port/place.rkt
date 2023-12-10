@@ -54,7 +54,7 @@
   new-fd)
 
 (define (pipe cleanup during)
-  (define p (rktio_make_pipe rktio 0))
+  (define p (rktio_make_pipe rktio (bitwise-ior RKTIO_NO_INHERIT_INPUT RKTIO_NO_INHERIT_OUTPUT)))
   (when (rktio-error? p)
     (cleanup)
     (end-atomic)

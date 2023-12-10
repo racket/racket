@@ -12,6 +12,9 @@
 # ifdef USE_ULIMIT
 #  include <ulimit.h>
 # endif
+# ifdef RKTIO_HAS_CLOEXEC
+#  include <fcntl.h>
+# endif
 #endif
 
 #if defined(RKTIO_SYSTEM_UNIX) && defined(RKTIO_USE_PTHREADS)
@@ -21,6 +24,15 @@
 #ifdef RKTIO_SYSTEM_UNIX
 static void reliably_copy_or_move_fd(int src_fd, int target_fd, int move);
 static void close_non_standard_fd(int fd);
+# ifdef RKTIO_HAS_CLOEXEC
+static void disable_fd_cloexec(int fd);
+static int cloexec_lock_initialized = 0;
+static pthread_mutex_t cloexec_lock;
+# endif
+#endif
+
+#ifdef RKTIO_SYSTEM_WINDOWS
+static HANDLE cloexec_lock = NULL;
 #endif
 
 /*========================================================================*/
@@ -989,6 +1001,19 @@ int rktio_process_init(rktio_t *rktio)
   centralized_start_child_signal_handler();
 #endif
 
+#ifdef RKTIO_SYSTEM_WINDOWS
+  if (cloexec_lock == NULL)
+    cloexec_lock = CreateSemaphore(NULL, 1, 1, NULL);
+#endif
+#ifdef RKTIO_SYSTEM_UNIX
+# ifdef RKTIO_HAS_CLOEXEC
+  if (!cloexec_lock_initialized) {
+    pthread_mutex_init(&cloexec_lock, NULL);
+    cloexec_lock_initialized = 1;
+  }
+# endif
+#endif
+
   return 1;
 }
 
@@ -1003,6 +1028,32 @@ void rktio_process_deinit(rktio_t *rktio)
 #endif
 #if defined(RKTIO_SYSTEM_UNIX) && !defined(CENTRALIZED_SIGCHILD)
   remove_from_sigchld_chain(rktio);
+#endif
+}
+
+/*========================================================================*/
+/* Lock for creating and adjust inherit or O_CLOEXEC                      */
+/*========================================================================*/
+
+void rktio_cloexec_lock() {
+#ifdef RKTIO_SYSTEM_WINDOWS
+  WaitForSingleObject(cloexec_lock, INFINITE);
+#endif
+#ifdef RKTIO_SYSTEM_UNIX
+# ifdef RKTIO_HAS_CLOEXEC
+  pthread_mutex_lock(&cloexec_lock);
+# endif
+#endif
+}
+
+void rktio_cloexec_unlock() {
+#ifdef RKTIO_SYSTEM_WINDOWS
+  ReleaseSemaphore(cloexec_lock, 1, NULL);
+#endif
+#ifdef RKTIO_SYSTEM_UNIX
+# ifdef RKTIO_HAS_CLOEXEC
+  pthread_mutex_unlock(&cloexec_lock);
+# endif
 #endif
 }
 
@@ -1066,6 +1117,22 @@ static char *cmdline_protect(const char *s)
   }
 
   return MSC_IZE(strdup)(s);
+}
+
+static void copy_handle_to_inherited(HANDLE *dest, intptr_t src)
+{
+  DuplicateHandle(GetCurrentProcess(),
+                  (HANDLE)src,
+                  GetCurrentProcess(),
+                  dest,
+                  0,
+                  TRUE, /* inherited */
+                  DUPLICATE_SAME_ACCESS);
+}
+
+static void close_inherited_handle(HANDLE dest)
+{
+  CloseHandle(dest);
 }
 
 /* Avoid direct reference to Vista functionality: */
@@ -1142,26 +1209,6 @@ static intptr_t do_spawnv(rktio_t *rktio,
     cmdline[len] = 0;
   }
 
-  memset(&startupx, 0, sizeof(startupx));
-  startup = &startupx.StartupInfo;
-  startup->cb = sizeof(*startup);
-  startup->dwFlags = STARTF_USESTDHANDLES;
-  startup->hStdInput = (HANDLE)sin;
-  startup->hStdOutput = (HANDLE)sout;
-  startup->hStdError = (HANDLE)serr;
-
-  /* If none of the stdio handles are consoles, specifically
-     create the subprocess without a console: */
-  if (!rktio_system_fd_is_terminal(rktio, (intptr_t)startup->hStdInput)
-      && !rktio_system_fd_is_terminal(rktio, (intptr_t)startup->hStdOutput)
-      && !rktio_system_fd_is_terminal(rktio, (intptr_t)startup->hStdError))
-    cr_flag = CREATE_NO_WINDOW;
-  else
-    cr_flag = 0;
-  if (new_process_group)
-    cr_flag |= CREATE_NEW_PROCESS_GROUP;
-  cr_flag |= CREATE_UNICODE_ENVIRONMENT;
-
   use_jo = chain_termination_here_to_child;
   if (use_jo) {
     /* Use a job object to ensure that the new process will be terminated
@@ -1180,7 +1227,30 @@ static intptr_t do_spawnv(rktio_t *rktio,
     }
   }
 
-  
+  /* avoid race in configuring pipes to be non-inherited elsewhere,
+     and configuring sin, sout, and to be inherited */
+  rktio_cloexec_lock();
+
+  memset(&startupx, 0, sizeof(startupx));
+  startup = &startupx.StartupInfo;
+  startup->cb = sizeof(*startup);
+  startup->dwFlags = STARTF_USESTDHANDLES;
+  copy_handle_to_inherited(&startup->hStdInput, sin);
+  copy_handle_to_inherited(&startup->hStdOutput, sout);
+  copy_handle_to_inherited(&startup->hStdError, serr);
+
+  /* If none of the stdio handles are consoles, specifically
+     create the subprocess without a console: */
+  if (!rktio_system_fd_is_terminal(rktio, (intptr_t)startup->hStdInput)
+      && !rktio_system_fd_is_terminal(rktio, (intptr_t)startup->hStdOutput)
+      && !rktio_system_fd_is_terminal(rktio, (intptr_t)startup->hStdError))
+    cr_flag = CREATE_NO_WINDOW;
+  else
+    cr_flag = 0;
+  if (new_process_group)
+    cr_flag |= CREATE_NEW_PROCESS_GROUP;
+  cr_flag |= CREATE_UNICODE_ENVIRONMENT;
+
   cmdline_w = WIDE_PATH_copy(cmdline);
   if (!exact_cmdline)
     free(cmdline);
@@ -1241,38 +1311,17 @@ static intptr_t do_spawnv(rktio_t *rktio,
     HeapFree(GetProcessHeap(), 0, lpAttributeList);
   }
 
- return retval;
+  close_inherited_handle(startup->hStdInput);
+  close_inherited_handle(startup->hStdOutput);
+  close_inherited_handle(startup->hStdError);
+
+  rktio_cloexec_unlock();
+
+  return retval;
 }
 
-static void CopyFileHandleForSubprocess(intptr_t *hs, int pos)
-{
-  HANDLE h2;
-  int alt_pos = (pos ? 0 : 1);
-
-  if (DuplicateHandle(GetCurrentProcess(),
-		      (HANDLE)hs[pos],
-		      GetCurrentProcess(),
-		      &h2,
-		      0,
-		      TRUE,
-		      DUPLICATE_SAME_ACCESS)) {
-    hs[pos] = (intptr_t)h2;
-    hs[alt_pos] = 1;
-  } else {
-    hs[alt_pos] = 0;
-  }
-}
-
-static void CloseFileHandleForSubprocess(intptr_t *hs, int pos)
-{
-  int alt_pos = (pos ? 0 : 1);
-  if (hs[alt_pos]) {
-    CloseHandle((HANDLE)hs[pos]);
-  }
-}
-
-#define RKTIO_COPY_FOR_SUBPROCESS(array, pos) CopyFileHandleForSubprocess(array, pos)
-#define RKTIO_CLOSE_SUBPROCESS_COPY(array, pos) CloseFileHandleForSubprocess(array, pos)
+#define RKTIO_COPY_FOR_SUBPROCESS(array, pos) /* empty */
+#define RKTIO_CLOSE_SUBPROCESS_COPY(array, pos) /* empty */
 #define RKTIO_CLOSE(fd) CloseHandle((HANDLE)fd)
 
 #endif /* RKTIO_SYSTEM_WINDOWS */
@@ -1345,17 +1394,25 @@ rktio_process_result_t *rktio_process(rktio_t *rktio,
   /*          Create needed pipes         */
   /*--------------------------------------*/
 
+  /* We create all pipes with RKTIO_NO_INHERIT_INPUT | RKTIO_NO_INHERIT_OUTPUT,
+     even though we eventually want to inherit half, to avoid avoid a potential
+     among rktio_process() calls in multiple threads, and because it's simplest
+     to make any kind of file descriptor (pipe or open file) inheritable
+     just-in-time. */
+
   if (stdout_fd) {
     from_subprocess[1] = rktio_fd_system_fd(rktio, stdout_fd);
     RKTIO_COPY_FOR_SUBPROCESS(from_subprocess, 1);
-  } else if (rktio_make_os_pipe(rktio, from_subprocess, RKTIO_NO_INHERIT_INPUT)) {
+  } else if (rktio_make_os_pipe(rktio, from_subprocess,
+                                RKTIO_NO_INHERIT_INPUT | RKTIO_NO_INHERIT_OUTPUT)) {
     return NULL;
   }
 
   if (stdin_fd) {
     to_subprocess[0] = rktio_fd_system_fd(rktio, stdin_fd);
     RKTIO_COPY_FOR_SUBPROCESS(to_subprocess, 0);
-  } else if (rktio_make_os_pipe(rktio, to_subprocess, RKTIO_NO_INHERIT_OUTPUT)) {
+  } else if (rktio_make_os_pipe(rktio, to_subprocess,
+                                RKTIO_NO_INHERIT_INPUT | RKTIO_NO_INHERIT_OUTPUT)) {
     if (stdout_fd) { RKTIO_CLOSE_SUBPROCESS_COPY(from_subprocess, 1); }
     return NULL;
   }
@@ -1366,7 +1423,8 @@ rktio_process_result_t *rktio_process(rktio_t *rktio,
   } else if (stderr_is_stdout) {
     err_subprocess[0] = from_subprocess[0];
     err_subprocess[1] = from_subprocess[1];
-  } else if (rktio_make_os_pipe(rktio, err_subprocess, RKTIO_NO_INHERIT_INPUT)) {
+  } else if (rktio_make_os_pipe(rktio, err_subprocess,
+                                RKTIO_NO_INHERIT_INPUT | RKTIO_NO_INHERIT_OUTPUT)) {
     if (stdout_fd) { RKTIO_CLOSE_SUBPROCESS_COPY(from_subprocess, 1); }
     if (stdin_fd) { RKTIO_CLOSE_SUBPROCESS_COPY(to_subprocess, 0); }
     return NULL;
@@ -1457,6 +1515,10 @@ rktio_process_result_t *rktio_process(rktio_t *rktio,
 
     if (flags & RKTIO_PROCESS_NO_CLOSE_FDS)
       close_after_len = 0;
+#ifdef RKTIO_HAS_CLOEXEC
+    else if (!(flags & RKTIO_PROCESS_NO_INHERIT_FDS))
+      close_after_len = 0;
+#endif
     else
       close_after_len = rktio_close_fds_len();
 
@@ -1470,6 +1532,9 @@ rktio_process_result_t *rktio_process(rktio_t *rktio,
       new_argv[i] = NULL;
     }
 
+    /* avoid race in configuring file descriptors to have O_CLOEXEC */
+    rktio_cloexec_lock();
+
 #if defined(__QNX__)
     pid = vfork();
 #elif defined(SUBPROCESS_USE_FORK1)
@@ -1481,7 +1546,9 @@ rktio_process_result_t *rktio_process(rktio_t *rktio,
     if (pid > 0) {
       /* This is the original process, which needs to manage the 
          newly created child process. */
-      
+
+      rktio_cloexec_unlock();
+
       if (new_process_group || group_proc) {
         /* there's a race condition between this use and the exec(),
            and there's a race condition between the other setpgid() in
@@ -1521,6 +1588,7 @@ rktio_process_result_t *rktio_process(rktio_t *rktio,
       }
     } else {
       get_posix_error();
+      rktio_cloexec_unlock();
     }
 
 #if !defined(CENTRALIZED_SIGCHILD)
@@ -1617,6 +1685,12 @@ rktio_process_result_t *rktio_process(rktio_t *rktio,
 	if (!stderr_fd && !stderr_is_stdout) {
 	  close_non_standard_fd(err_subprocess[0]);
 	}
+
+#ifdef RKTIO_HAS_CLOEXEC
+        disable_fd_cloexec(0);
+        disable_fd_cloexec(1);
+        disable_fd_cloexec(2);
+#endif
 
         rktio_close_fds_after_fork(close_after_len, 0, 1, 2);
       }
@@ -1750,6 +1824,16 @@ static void close_non_standard_fd(int fd)
     rktio_reliably_close(fd);
   }
 }
+
+# ifdef RKTIO_HAS_CLOEXEC
+static void disable_fd_cloexec(int fd)
+{
+  int flags;
+  flags = fcntl(fd, F_GETFD, 0);
+  if (flags & FD_CLOEXEC)
+    fcntl(fd, F_SETFD, flags - FD_CLOEXEC);
+}
+# endif
 
 int rktio_close_fds_len()
 {

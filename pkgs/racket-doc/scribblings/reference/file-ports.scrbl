@@ -97,6 +97,11 @@ to close it more automatically (see @secref["willexecutor"]).
 A @tech{path} value that is the @tech{cleanse}d version of
 @racket[path] is used as the name of the opened port.
 
+On variants of Unix and MacOS that support @tt{O_CLOEXEC}, the file is
+opened with @tt{O_CLOEXEC} so that the underlying file descriptor is
+not shared with a subprocess created by @racket[subprocess]. On
+Windows, the file is opened as a non-inherited handle.
+
 If opening the file fails due to an error in the filesystem,
 then @exnraise[exn:fail:filesystem:errno]---as long as
 @racket[for-module?] is @racket[#f],
@@ -110,7 +115,9 @@ then the raised exception is either
 @racket[current-module-path-for-load] is a @tech{syntax object}) or
 @racket[exn:fail:filesystem:missing-module] (otherwise).
 
-@history[#:changed "6.0.1.6" @elem{Added @racket[#:for-module?].}]
+@history[#:changed "6.0.1.6" @elem{Added @racket[#:for-module?].}
+         #:changed "8.11.1.6" @elem{Changed to use @tt{O_CLOEXEC}
+                                    where supported by the operating system.}]
 
 @file-examples[
 ;; put some text in a file
@@ -221,6 +228,11 @@ to close it more automatically (see @secref["willexecutor"]).
 A @tech{path} value that is the @tech{cleanse}d version of
 @racket[path] is used as the name of the opened port.
 
+On variants of Unix and MacOS that support @tt{O_CLOEXEC}, the file is
+opened with @tt{O_CLOEXEC} so that the underlying file descriptor is
+not shared with a subprocess created by @racket[subprocess]. On
+Windows, the file is opened as a non-inherited handle.
+
 If opening the file fails due to an error in the underlying filesystem
 then @exnraise[exn:fail:filesystem:errno].
 
@@ -238,7 +250,9 @@ then @exnraise[exn:fail:filesystem:errno].
                                    make the port block for output until the fifo has a
                                    reader.}
          #:changed "8.1.0.3" @elem{Added the @racket[#:permissions] argument.}
-         #:changed "8.7.0.10" @elem{Added the @racket[#:replace-permissions?] argument.}]}
+         #:changed "8.7.0.10" @elem{Added the @racket[#:replace-permissions?] argument.}
+         #:changed "8.11.1.6" @elem{Changed to use @tt{O_CLOEXEC}
+                                    where supported by the operating system.}]}
 
 @defproc[(open-input-output-file [path path-string?]
                            [#:mode mode-flag (or/c 'binary 'text) 'binary]

@@ -558,7 +558,7 @@ int rktio_file_exists(rktio_t *rktio, const char *filename)
 # ifdef NO_STAT_PROC
   int fd;
 
-  fd = open(filename, O_RDONLY);
+  fd = open(filename, O_RDONLY | RKTIO_CLOEXEC);
   if (fd != -1) {
     fclose(fd);
     return 1;

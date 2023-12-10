@@ -43,14 +43,18 @@ associated with the given hostname. For example, providing
 accepts only connections to @racket["127.0.0.1"] (the loopback
 interface) from the local machine.
 
-(Racket implements a listener with multiple sockets, if necessary, to
+Racket implements a listener with multiple sockets, if necessary, to
 accommodate multiple addresses with different protocol families. On
 Linux, if @racket[hostname] maps to both IPv4 and IPv6 addresses, then
 the behavior depends on whether IPv6 is supported and IPv6 sockets can
 be configured to listen to only IPv6 connections: if IPv6 is not
 supported or IPv6 sockets are not configurable, then the IPv6
 addresses are ignored; otherwise, each IPv6 listener accepts only IPv6
-connections.)
+connections.
+
+On variants of Unix and MacOS that support @tt{FD_CLOEXEC}, a listener
+socket is given that flag so that it is not shared with a subprocess
+created by @racket[subprocess].
 
 The return value of @racket[tcp-listen] is a @deftech{TCP
 listener}. This value can be used in future calls to
@@ -63,7 +67,10 @@ If the server cannot be started by @racket[tcp-listen], the
 
 A TCP listener can be used as a @tech{synchronizable event} (see @secref["sync"]).
 A TCP listener is @tech{ready for synchronization} when
-@racket[tcp-accept] would not block; @resultItself{TCP listener}.}
+@racket[tcp-accept] would not block; @resultItself{TCP listener}.
+
+@history[#:changed "8.11.1.6" @elem{Changed to use @tt{FD_CLOEXEC}
+                                    where supported by the operating system.}]}
 
 
 @defproc[(tcp-connect [hostname string?]
@@ -120,11 +127,17 @@ response to sending data; in particular, some number of writes on the
 still-open end may appear to succeed, though writes will eventually
 produce an error.
 
+On variants of Unix and MacOS that support @tt{FD_CLOEXEC}, a
+connection socket is given that flag so that it is not shared with a
+subprocess created by @racket[subprocess].
+
 If a connection cannot be established by @racket[tcp-connect], the
 @exnraise[exn:fail:network].
 
 @history[#:changed "8.8.0.8" @elem{Changed block buffering to imply
-                                   @tt{TCP_NODELAY}.}]}
+                                   @tt{TCP_NODELAY}.}
+         #:changed "8.11.1.6" @elem{Changed to use @tt{FD_CLOEXEC}
+                                    where supported by the operating system.}]}
 
 @defproc[(tcp-connect/enable-break [hostname string?]
                       [port-no port-number?]
@@ -155,8 +168,15 @@ placed into the management of the current custodian (see
 In terms of buffering and connection states, the ports act the same as
 ports from @racket[tcp-connect].
 
+On variants of Unix and MacOS that support @tt{FD_CLOEXEC}, an
+accepted socket is given that flag so that it is not shared with a
+subprocess created by @racket[subprocess].
+
 If a connection cannot be accepted by @racket[tcp-accept], or if the
-listener has been closed, the @exnraise[exn:fail:network].}
+listener has been closed, the @exnraise[exn:fail:network].
+
+@history[#:changed "8.11.1.6" @elem{Changed to use @tt{FD_CLOEXEC}
+                                    where supported by the operating system.}]}
 
 
 @defproc[(tcp-accept/enable-break [listener tcp-listener?])
@@ -300,7 +320,14 @@ destination. Alternately, the arguments might be the same as for
 a future call to @racket[udp-bind!], which ensures that the
 socket's protocol family is consistent with the binding. If
 neither @racket[family-hostname] nor @racket[family-port-no] is
-non-@racket[#f], then the socket's protocol family is IPv4.}
+non-@racket[#f], then the socket's protocol family is IPv4.
+
+On variants of Unix and MacOS that support @tt{FD_CLOEXEC}, a socket
+is given that flag so that it is not shared with a subprocess created
+by @racket[subprocess].
+
+@history[#:changed "8.11.1.6" @elem{Changed to use @tt{FD_CLOEXEC}
+                                    where supported by the operating system.}]}
 
 @defproc[(udp-bind! [udp-socket udp?]
                     [hostname-string (or/c string? #f)]

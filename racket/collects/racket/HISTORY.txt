@@ -1,3 +1,11 @@
+Version 8.12
+Changed `open-input-file`, `open-output-file`, and `subprocess`
+ on variants of Unix and Mac OS where `O_CLOEXEC` is supported
+ to open files with that flag and to refrain from closing all
+ file descriptors (without `O_CLOEXEC`) in `subprocess`
+Changed treatment of shadowing for a `for/fold` accumulator
+ variable by an iteration clause
+
 Version 8.11, October 2023
 Add `#:do` option support to `match` clauses
 Add `#:indent` to `write-json`

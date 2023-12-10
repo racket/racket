@@ -506,7 +506,7 @@ static rktio_fd_t *accept_loop(rktio_t *rktio, rktio_listener_t *lnr)
 
 static char *month_name(rktio_t *rktio, int month)
 {
-  static char *months[] = {"JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "NOV", "DEC"};
+  static char *months[] = {"JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"};
   check_valid((month >= 1) && (month <= 12));
   return months[month-1];
 }
@@ -952,7 +952,7 @@ int main(int argc, char **argv)
     rktio_fd_t *err_fd = rktio_std_fd(rktio, RKTIO_STDERR);
     int i;
 
-    result = rktio_process(rktio, argv[0], argc, argv,
+    result = rktio_process(rktio, argv[0], argc, (rktio_const_string_t *)argv,
                            NULL, NULL, err_fd,
                            NULL,
                            pwd, envvars,
@@ -990,7 +990,7 @@ int main(int argc, char **argv)
 
     /* Run and then break or kill `cat` */
     for (i = (CAN_INTERRUPT_NON_GROUP ? 0 : 1); i < 2; i++) {
-      result = rktio_process(rktio, argv[0], 1, argv,
+      result = rktio_process(rktio, argv[0], 1, (rktio_const_string_t *)argv,
                              NULL, NULL, err_fd,
                              NULL,
                              pwd, envvars,
@@ -1060,7 +1060,7 @@ int main(int argc, char **argv)
       check_valid(!strcmp(s, "howdy"));
       free(s);
 
-      result = rktio_process(rktio, argv[0], argc, argv,
+      result = rktio_process(rktio, argv[0], argc, (rktio_const_string_t *)argv,
                              NULL, NULL, err_fd,
                              NULL,
                              pwd, envvars,

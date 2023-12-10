@@ -37,7 +37,7 @@ static rktio_fd_t *open_read(rktio_t *rktio, const char *filename, int modes)
   struct stat buf;
 
   do {
-    fd = open(filename, O_RDONLY | RKTIO_NONBLOCKING | RKTIO_BINARY);
+    fd = open(filename, O_RDONLY | RKTIO_NONBLOCKING | RKTIO_BINARY | RKTIO_CLOEXEC);
   } while ((fd == -1) && (errno == EINTR));
 
   if (fd == -1) {
@@ -132,20 +132,20 @@ static rktio_fd_t *open_write(rktio_t *rktio, const char *filename, int modes, i
     flags |= O_EXCL;
 
   do {
-    fd = open(filename, flags | RKTIO_NONBLOCKING | RKTIO_BINARY, perm_bits);
+    fd = open(filename, flags | RKTIO_NONBLOCKING | RKTIO_BINARY | RKTIO_CLOEXEC, perm_bits);
   } while ((fd == -1) && (errno == EINTR));
 
   if (errno == ENXIO) {
     /* FIFO with no reader? */
 #ifdef RKTIO_USE_PENDING_OPEN
-    return open_via_thread(rktio, filename, modes, flags | RKTIO_BINARY,
+    return open_via_thread(rktio, filename, modes, flags | RKTIO_BINARY | RKTIO_CLOEXEC,
                            perm_bits, modes & RKTIO_OPEN_REPLACE_PERMS);
 #else
     /* Try opening in RW mode: */
     flags -= O_WRONLY;
     flags |= O_RDWR;
     do {
-      fd = open(filename, flags | RKTIO_NONBLOCKING | RKTIO_BINARY, perm_bits);
+      fd = open(filename, flags | RKTIO_NONBLOCKING | RKTIO_BINARY | RKTIO_CLOEXEC, perm_bits);
     } while ((fd == -1) && (errno == EINTR));
 #endif
   }

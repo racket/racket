@@ -259,6 +259,15 @@ const char *rktio_gai_strerror(rktio_t *rktio, int errnum);
 
 int rktio_process_init(rktio_t *rktio);
 void rktio_process_deinit(rktio_t *rktio);
+
+void rktio_cloexec_lock();
+void rktio_cloexec_unlock();
+
+#ifdef RKTIO_HAS_CLOEXEC
+# define RKTIO_CLOEXEC O_CLOEXEC
+#else
+# define RKTIO_CLOEXEC 0
+#endif
   
 /*========================================================================*/
 /* Strings                                                                */
@@ -363,6 +372,8 @@ void rktio_reliably_close(intptr_t s);
 int rktio_close_fds_len();
 void rktio_close_fds_after_fork(int len, int skip1, int skip2, int skip3);
 #endif
+
+void rktio_fd_cloexec(intptr_t fd);
 
 int rktio_system_fd_is_terminal(rktio_t *rktio, intptr_t fd);
 

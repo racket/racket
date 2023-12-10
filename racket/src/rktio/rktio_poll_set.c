@@ -1104,8 +1104,8 @@ int rktio_initialize_signal(rktio_t *rktio)
 {
 #ifdef RKTIO_SYSTEM_UNIX
   /* Set up a pipe for signaling external events: */
-  int fds[2];
-  if (!pipe(fds)) {
+  intptr_t fds[2];
+  if (!rktio_make_os_pipe(rktio, fds, RKTIO_NO_INHERIT_INPUT | RKTIO_NO_INHERIT_OUTPUT)) {
     rktio->external_event_fd = fds[0];
     rktio->put_external_event_fd = fds[1];
     fcntl(rktio->external_event_fd, F_SETFL, RKTIO_NONBLOCKING);

@@ -39918,7 +39918,7 @@
         new-fd_0))))
 (define pipe
   (lambda (cleanup_0 during_0)
-    (let ((p_0 (|#%app| rktio_make_pipe (unsafe-place-local-ref cell.1) 0)))
+    (let ((p_0 (|#%app| rktio_make_pipe (unsafe-place-local-ref cell.1) 3)))
       (begin
         (if (vector? p_0)
           (begin

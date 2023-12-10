@@ -93,7 +93,7 @@ rktio_fs_change_t *rktio_fs_change(rktio_t *rktio, const char *path, rktio_ltps_
     ok = 0;
   } else {
     do {
-      fd = open(path, RKTIO_BINARY, 0666);
+      fd = open(path, RKTIO_BINARY | RKTIO_CLOEXEC, 0666);
     } while ((fd == -1) && (errno == EINTR));
     if (fd == -1)
       get_posix_error();

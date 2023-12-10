@@ -53,8 +53,8 @@ int rktio_file_lock_try(rktio_t *rktio, rktio_fd_t *rfd, int excl)
         /* already have a lock */
         return RKTIO_LOCK_ACQUIRED;
 
-    if (!pipe(ifds)) {
-      if (!pipe(ofds)) {
+    if (!rktio_make_os_pipe(ifds, RKTIO_NO_INHERIT_INPUT | RKTIO_NO_INHERIT_OUTPUT, rktio)) {
+      if (!rktio_make_os_pipe(ofds, RKTIO_NO_INHERIT_INPUT | RKTIO_NO_INHERIT_OUTPUT, rktio)) {
         int pid;
         int close_len = rktio_close_fds_len();
 
@@ -150,7 +150,6 @@ int rktio_file_lock_try(rktio_t *rktio, rktio_fd_t *rfd, int excl)
       } else {
         /* Second pipe creation failed */
         int i;
-        get_posix_error();
         for (i = 0; i < 2; i++) {
           rktio_reliably_close(ifds[i]);
         }
@@ -158,7 +157,6 @@ int rktio_file_lock_try(rktio_t *rktio, rktio_fd_t *rfd, int excl)
       }
     } else {
       /* First pipe creation failed */
-      get_posix_error();
       return RKTIO_LOCK_ERROR;
     }
   }

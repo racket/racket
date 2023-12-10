@@ -723,7 +723,7 @@
 
   (list ok? (get-output-bytes o) (regexp-match? #rx"error reading" (get-output-bytes e))))
 
-(unless (eq? 'windows (system-type))
+(unless 'closes-all-cloexec-and-uninherited ; we don't have a predicate for platforms without O_CLOEXEC
   (test '(#t #"y\n1\n" #f) check-sharing 'all))
 (test '(#f #"y\n" #t) check-sharing 'inherited)
 (test '(#f #"y\n" #t) check-sharing '())

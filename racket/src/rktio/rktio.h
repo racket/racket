@@ -395,7 +395,8 @@ RKTIO_EXTERN rktio_fd_t **rktio_make_pipe(rktio_t *rktio, int flags);
 /* Makes a pair of file descriptors for a pipe. The first one
    is the read end, and the second is the write end. The `flags`
    can declare the intended sharing of the file descriptors
-   with a child process, and is useful only on Windows. */
+   with a child process on Windows and platforms where O_CLOEXEC
+   is used. */
 /* For `flags`: */
 #define RKTIO_NO_INHERIT_INPUT  (1<<0)
 #define RKTIO_NO_INHERIT_OUTPUT (1<<1)

@@ -395,12 +395,20 @@ rktio_fd_t *rktio_dup(rktio_t *rktio, rktio_fd_t *rfd)
   }
 # endif
 
+  rktio_cloexec_lock();
+
   do {
     nfd = dup(rfd->fd);
   } while (nfd == -1 && errno == EINTR);
 
-  if (nfd == -1) {
+  if (nfd != -1)
+    rktio_fd_cloexec(nfd);
+  else
     get_posix_error();
+
+  rktio_cloexec_unlock();
+
+  if (nfd == -1) {
     return NULL;
   } else {
     /* Set the `RKTIO_OPEN_INIT` flag, because dup()ing a file
@@ -432,6 +440,17 @@ rktio_fd_t *rktio_dup(rktio_t *rktio, rktio_fd_t *rfd)
       return rktio_system_fd(rktio, (intptr_t)newhandle, rfd->modes);
     }
   }
+#endif
+}
+
+
+void rktio_fd_cloexec(intptr_t fd) {
+#ifdef RKTIO_SYSTEM_UNIX
+# ifdef RKTIO_HAS_CLOEXEC
+  int flags;
+  flags = fcntl(fd, F_GETFD, 0);
+  fcntl(fd, F_SETFD, flags | FD_CLOEXEC);
+# endif
 #endif
 }
 
