@@ -28,6 +28,8 @@ exit 0
 ;; In addition, we want none of the feature-selection flags
 ;;  (such as --enable-mac64) to be passed to sub-configures,
 ;;  so we adjust the script to strip them away.
+;; Finally, we want to support `CFLAGS+=...` to add to `CFLAGS`
+;;  instead of replacing the default arguments.
 
 (define skip-rxs
   (map (lambda (s)
@@ -47,10 +49,29 @@ exit 0
          ;;  localedir - converted to "appsdir"
         )))
 
+;; Keep "#!" line first:
+(displayln (read-line))
+
+(define (insert-filter_add)
+ (newline)
+ (call-with-input-file
+  "filter_add.sh"
+  (lambda (i)
+   (let loop ()
+    (let ([l (read-line i)])
+     (unless (eof-object? l)
+      (displayln l)
+      (loop))))))
+ (newline))
+
 (let loop ()
   (let ([l (read-line)])
     (unless (eof-object? l)
       (cond
+       [(regexp-match #rx"for ac_option" l)
+        (insert-filter_add)
+        (displayln l)
+        (loop)]
        [(ormap (lambda (rx)
                  (regexp-match rx l))
                skip-rxs)
@@ -85,6 +106,13 @@ exit 0
           (displayln "  --appsdir=DIR           .desktop files [EPREFIX/share/applications]")]
          [else
           (displayln (regexp-replace* #rx"locale" l "apps"))])
+        (loop)]
+       [(regexp-match #rx"Usage: .*[[]VAR=VALUE[]][.][.][.]" l)
+        (displayln (string-append l " [VAR+=VALUE]..."))
+        (loop)]
+       [(regexp-match #rx"See below for descriptions of some of the useful variables" l)
+        (displayln l)
+        (displayln "Use += with CFLAGS, CPPFLAGS, LDFLAGS, or LIBS to add to the variable.")
         (loop)]
        [else
         ;; Copy

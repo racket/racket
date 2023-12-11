@@ -5,6 +5,7 @@
 #################################################################
 
 AC_INIT([embed-boot.rkt])
+
 AC_CONFIG_HEADERS([cs_config.h])
 
 AC_CONFIG_AUX_DIR(../../lt)
@@ -198,6 +199,8 @@ ENABLE_EXTRA_CHECKS=no
 m4_include(../ac/sdk_ios.m4)
 
 AC_PROG_CC
+
+m4_include(../ac/add_c_flags.m4)
 
 m4_include(../ac/is_gcc.m4)
 

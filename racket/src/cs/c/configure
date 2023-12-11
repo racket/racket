@@ -878,6 +878,33 @@ mandir='${datarootdir}/man'
 
 ac_prev=
 ac_dashdash=
+
+# Added to the front of an autoconf script to handle
+# `CFLAGS+=...` and similar additions, athering the
+# content into vabiables like `CFLAGS_ADD` and removing
+# them from autoconf's view
+
+for arg do
+    shift
+    case $arg in
+        CFLAGS+=*)
+            CFLAGS_ADD="${CFLAGS_ADD} "`echo $arg | sed -e 's/^CFLAGS+=//'`
+            ;;
+        CPPFLAGS+=*)
+            CPPFLAGS_ADD="${CPPFLAGS_ADD} "`echo $arg | sed -e 's/^CPPFLAGS+=//'`
+            ;;
+        LDFLAGS+=*)
+            LDFLAGS_ADD="${LDFLAGS_ADD} "`echo $arg | sed -e 's/^LDFLAGS+=//'`
+            ;;
+        LIBS+=*)
+            LIBS_ADD="${LIBS_ADD} "`echo $arg | sed -e 's/^LIBS+=//'`
+            ;;
+        *)
+            set -- "$@" "$arg"
+            ;;
+    esac
+done
+
 for ac_option
 do
   # If the previous option needs an argument, assign it.
@@ -1368,10 +1395,11 @@ if test "$ac_init_help" = "long"; then
   cat <<_ACEOF
 \`configure' configures this package to adapt to many kinds of systems.
 
-Usage: $0 [OPTION]... [VAR=VALUE]...
+Usage: $0 [OPTION]... [VAR=VALUE]... [VAR+=VALUE]...
 
 To assign environment variables (e.g., CC, CFLAGS...), specify them as
 VAR=VALUE.  See below for descriptions of some of the useful variables.
+Use += with CFLAGS, CPPFLAGS, LDFLAGS, or LIBS to add to the variable.
 
 Defaults for the options are specified in brackets.
 
@@ -2387,6 +2415,7 @@ ac_cpp='$CPP $CPPFLAGS'
 ac_compile='$CC -c $CFLAGS $CPPFLAGS conftest.$ac_ext >&5'
 ac_link='$CC -o conftest$ac_exeext $CFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
 ac_compiler_gnu=$ac_cv_c_compiler_gnu
+
 
 
 ac_config_headers="$ac_config_headers cs_config.h"
@@ -3677,6 +3706,33 @@ See \`config.log' for more details" "$LINENO" 5; }
 $as_echo "$as_me:${as_lineno-$LINENO}: checking for C compiler version" >&5
 set X $ac_compile
 ac_compiler=$2
+
+# Added to the front of an autoconf script to handle
+# `CFLAGS+=...` and similar additions, athering the
+# content into vabiables like `CFLAGS_ADD` and removing
+# them from autoconf's view
+
+for arg do
+    shift
+    case $arg in
+        CFLAGS+=*)
+            CFLAGS_ADD="${CFLAGS_ADD} "`echo $arg | sed -e 's/^CFLAGS+=//'`
+            ;;
+        CPPFLAGS+=*)
+            CPPFLAGS_ADD="${CPPFLAGS_ADD} "`echo $arg | sed -e 's/^CPPFLAGS+=//'`
+            ;;
+        LDFLAGS+=*)
+            LDFLAGS_ADD="${LDFLAGS_ADD} "`echo $arg | sed -e 's/^LDFLAGS+=//'`
+            ;;
+        LIBS+=*)
+            LIBS_ADD="${LIBS_ADD} "`echo $arg | sed -e 's/^LIBS+=//'`
+            ;;
+        *)
+            set -- "$@" "$arg"
+            ;;
+    esac
+done
+
 for ac_option in --version -v -V -qversion; do
   { { ac_try="$ac_compiler $ac_option >&5"
 case "(($ac_try" in
@@ -4158,6 +4214,30 @@ ac_cpp='$CPP $CPPFLAGS'
 ac_compile='$CC -c $CFLAGS $CPPFLAGS conftest.$ac_ext >&5'
 ac_link='$CC -o conftest$ac_exeext $CFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
 ac_compiler_gnu=$ac_cv_c_compiler_gnu
+
+
+
+# The "filter_add.sh" script is inserted into autoconf output just
+# before the generated configure script handles arguments. The
+# configure script later handles the variables potentially built up
+# here, adding contents to the default or initially configured flag
+# sets.
+
+if test "$CPPFLAGS_ADD" != "" ; then
+   CPPFLAGS="$CPPFLAGS $CPPFLAGS_ADD"
+fi
+
+if test "$CFLAGS_ADD" != "" ; then
+   CFLAGS="$CFLAGS $CFLAGS_ADD"
+fi
+
+if test "$LDFLAGS_ADD" != "" ; then
+   LDFLAGS="$LDFLAGS $LDFLAGS_ADD"
+fi
+
+if test "$LIBS_ADD" != "" ; then
+   LIBS="$LIBS $LIBS_ADD"
+fi
 
 
 # If using gcc, we'll want all warnings
