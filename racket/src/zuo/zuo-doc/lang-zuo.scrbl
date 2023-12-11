@@ -338,7 +338,10 @@ Returns @racket[#t] if @racket[v] is an integer, @racket[#f] otherwise.}
 Analogous to @realracket*[+ - * quotient remainder modulo = < <= > >=
 bitwise-ior bitwise-and bitwise-xor bitwise-not] from
 @racketmodname[racket], but on Zuo integers and sometimes constrained
-to two arguments.}
+to two arguments.
+
+@history[#:changed "1.9" @elem{Added @racket[remainder] and changed @racket[modulo]
+                               to match Racket.}]}
 
 
 @section{Pairs and Lists}

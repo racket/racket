@@ -109,3 +109,5 @@ in @racketmodname[zuo/kernel] (and the values originate there):
   suspend-signal resume-signal
 
 ]
+
+@history[#:changed "1.9" @elem{Removed @racket[modulo] and added @racket[remainder].}]
