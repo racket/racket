@@ -57,7 +57,9 @@ languages.}
 the @racketmodname[racket] library and will typically load faster.
 
 The @racketmodname[racket] library combines
-@racketmodname[racket/base]@racket-extra-libs[].}
+@racketmodname[racket/base]@racket-extra-libs[].
+In addition, it re-exports @racket[for-syntax] everything from
+@racketmodname[racket/base].}
 
 @table-of-contents[]
 
