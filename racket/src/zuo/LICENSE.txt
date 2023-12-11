@@ -1,3 +1,8 @@
+Copyright 2022-2023 Zuo Developers
+
+Copyrights in the Zuo implementation are retained by their contributors.
+No copyright assignment is required to contribute to Zuo.
+
 This component of Racket is distributed under the under the Apache 2.0
 and MIT licenses. The user can choose the license under which they
 will be using the software. There may be other licenses within the
