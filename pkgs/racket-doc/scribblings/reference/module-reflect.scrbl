@@ -757,10 +757,11 @@ A module can be @tech{declare}d by using @racket[dynamic-require].
          (listof (cons/c exact-integer? (listof symbol?)))]{
 
  Like @racket[module-compiled-indirect-exports], but produces the
- exports of @racket[mod], which must be @tech{declare}d (but
- not necessarily @tech{instantiate}d or @tech{visit}ed) in
- the current namespace. See @racket[module->language-info] for
- an example of declaring an existing module.
+ indirect exports of @racket[mod], which must be
+ @tech{declare}d (but not necessarily @tech{instantiate}d or
+ @tech{visit}ed) in the current namespace. See
+ @racket[module->language-info] for an example of declaring
+ an existing module.
 
 @examples[#:eval mod-eval
           (module banana racket/base
@@ -779,9 +780,9 @@ A module can be @tech{declare}d by using @racket[dynamic-require].
          symbol?]{
 
  Like @racket[module-compiled-realm], but produces the
- exports of @racket[mod], which must be @tech{declare}d (but
- not necessarily @tech{instantiate}d or @tech{visit}ed) in
- the current namespace.
+ @tech{realm} of @racket[mod], which must be @tech{declare}d
+ (but not necessarily @tech{instantiate}d or @tech{visit}ed)
+ in the current namespace.
 
 @history[#:added "8.4.0.2"]}
 
