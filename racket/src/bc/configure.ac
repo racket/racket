@@ -434,8 +434,6 @@ if test "$ARFLAGS" = '' ; then
 fi
 SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} AR_FLAGS="'"'"${ARFLAGS}"'"'
 
-m4_include(../ac/add_c_flags.m4)
-
 is_gmake=`make -v no-such-target-we-hope 2>&1 | grep "GNU Make"`
 
 m4_include(../ac/is_gcc.m4)

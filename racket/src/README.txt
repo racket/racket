@@ -183,10 +183,8 @@ Detailed instructions:
 
          env CC=cc [here]configure
 
-    Use CFLAGS+=.... to add to CFLAGS instead of replacing the default,
-    and `+=` also works for the variables CPPFLAGS, LDFLAGS, and LIBS.
-    To add an include path, be sure to use CPPFLAGS+="-I..." instead of
-    CFLAGS+="-I...". The CPPFLAGS variable controls C pre-processing,
+    To add an include path, be sure to use CPPFLAGS="-I..." instead of
+    CFLAGS="-I...". The CPPFLAGS variable controls C pre-processing,
     which includes C compilation, and the Racket build normally uses
     the C pre-processor directly for some parts of the build.
 
