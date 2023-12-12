@@ -26,6 +26,7 @@
                               (if (null? (cdr bodys))
                                   (lambda? (car bodys) #:simple? simple?)
                                   (loop (cdr bodys)))))]
+    [`(values ,body) (lambda? body #:simple? simple?)]
     [`,_ #f]))
 
 (define (let-lambda? id rhs body #:simple? simple?)
@@ -50,7 +51,8 @@
     [`(begin . ,bodys) (let loop ([bodys bodys])
                          (if (null? (cdr bodys))
                              (extract-lambda* (car bodys))
-                             (loop (cdr bodys))))]))
+                             (loop (cdr bodys))))]
+    [`(values ,body) (extract-lambda body)]))
 
 (define (extract-let-lambda rec? id rhs body)
   (if (wrap-eq? id body)
