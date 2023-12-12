@@ -37,8 +37,8 @@
        (cond
          [(and inlinable?
                (not post-schemify?)
-               (or (can-inline? lam)
-                   (eq? defn 'inline)))
+               (or (eq? defn 'inline)
+                   (can-inline? lam)))
           (let ([lam (if optimize-inline?
                          (optimize* lam prim-knowns primitives knowns imports mutated unsafe-mode? target compiler-query)
                          lam)])

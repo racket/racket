@@ -11,5 +11,4 @@
     [`(letrec-values () ,body) (unwrap-let body)]
     [`(begin ,body) (unwrap-let body)]
     [`(begin0 ,body) (unwrap-let body)]
-    [`(values ,body) (unwrap-let body)]
     [`,_ v]))

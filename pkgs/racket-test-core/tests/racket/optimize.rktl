@@ -6650,6 +6650,16 @@
              (values (lambda (x) (+ x 1))))))))))
 
 (register-top-level-module
+ (module add1/with-vacuous-let/not-broken racket/base
+   (provide add1)
+   (define add1
+     (let ()
+       (letrec ()
+         (begin
+           (begin0
+             (values (values (lambda (x) (+ x 1)))))))))))
+
+(register-top-level-module
  (module add1/without-vacuous-let racket/base
    (provide add1)
    (define (add1 x)
@@ -6661,7 +6671,184 @@
                 (add1 2))
              `(module m racket/base
                 (require 'add1/without-vacuous-let)
+                (add1 2)))
+  (test-comp `(module m racket/base
+                (require 'add1/with-vacuous-let/not-broken)
+                (add1 2))
+             `(module m racket/base
+                (require 'add1/without-vacuous-let)
                 (add1 2))))
+
+(register-top-level-module
+ (module add3/with-vacuous-let racket/base
+   (provide add3)
+   (define-values (add1 add2 add3)
+     (let ()
+       (letrec ()
+         (begin
+           (begin0
+             (values (lambda (x) (+ x 1))
+                     (lambda (x) (add1 (add1 x)))
+                     (lambda (x) (add1 (add2 x)))))))))))
+
+(register-top-level-module
+ (module add3/with-vacuous-let/broken racket/base
+   (provide add3)
+   (define-values (add1 add2 add3)
+     (let ()
+       (letrec ()
+         (begin
+           (begin0
+             (values (values (lambda (x) (+ x 1))
+                             (lambda (x) (add1 (add1 x)))
+                             (lambda (x) (add1 (add2 x))))))))))))
+
+(register-top-level-module
+ (module add3/without-vacuous-let racket/base
+   (provide add3)
+   (define (add1 x)
+     (+ x 1))
+   (define (add2 x)
+     (add1 (add1 x)))
+   (define (add3 x)
+     (add1 (add2 x)))))
+
+(when (eq? (system-type 'vm) 'chez-scheme)
+  (test-comp `(module m racket/base
+                (require 'add3/with-vacuous-let)
+                (add3 2))
+             `(module m racket/base
+                (require 'add3/without-vacuous-let)
+                (add3 2)))
+  (test-comp `(module m racket/base
+                (require 'add3/with-vacuous-let/broken)
+                (add3 2))
+             `(module m racket/base
+                (require 'add3/without-vacuous-let)
+                (add3 2))
+             #f))
+
+(register-top-level-module
+ (module add5/with-vacuous-let racket/base
+   (provide add5)
+   (define-values (add1 add2 add3 add4 add5)
+     (let ()
+       (letrec ()
+         (begin
+           (begin0
+             (values (lambda (x) (+ x 1))
+                     (lambda (x) (add1 (add1 x)))
+                     (lambda (x) (add1 (add2 x)))
+                     (lambda (x) (add1 (add3 x)))
+                     (lambda (x) (add1 (add4 x)))))))))))
+
+(register-top-level-module
+ (module add5/with-vacuous-let/broken racket/base
+   (provide add5)
+   (define-values (add1 add2 add3 add4 add5)
+     (let ()
+       (letrec ()
+         (begin
+           (begin0
+             (values (values (lambda (x) (+ x 1))
+                             (lambda (x) (add1 (add1 x)))
+                             (lambda (x) (add1 (add2 x)))
+                             (lambda (x) (add1 (add3 x)))
+                             (lambda (x) (add1 (add4 x))))))))))))
+
+(register-top-level-module
+ (module add5/without-vacuous-let racket/base
+   (provide add5)
+   (define (add1 x)
+     (+ x 1))
+   (define (add2 x)
+     (add1 (add1 x)))
+   (define (add3 x)
+     (add1 (add2 x)))
+   (define (add4 x)
+     (add1 (add3 x)))
+   (define (add5 x)
+     (add1 (add4 x)))))
+
+(when (eq? (system-type 'vm) 'chez-scheme)
+  (test-comp `(module m racket/base
+                (require 'add5/with-vacuous-let)
+                (add5 2))
+             `(module m racket/base
+                (require 'add5/without-vacuous-let)
+                (add5 2)))
+  (test-comp `(module m racket/base
+                (require 'add5/with-vacuous-let/broken)
+                (add5 2))
+             `(module m racket/base
+                (require 'add5/without-vacuous-let)
+                (add5 2))
+             #f))
+
+(register-top-level-module
+ (module add7/with-vacuous-let racket/base
+   (provide add7)
+   (define-values (add1 add2 add3 add4 add5 add6 add7)
+     (let ()
+       (letrec ()
+         (begin
+           (begin0
+             (values (lambda (x) (+ x 1))
+                     (lambda (x) (add1 (add1 x)))
+                     (lambda (x) (add1 (add2 x)))
+                     (lambda (x) (add1 (add3 x)))
+                     (lambda (x) (add1 (add4 x)))
+                     (lambda (x) (add1 (add5 x)))
+                     (lambda (x) (add1 (add6 x)))))))))))
+
+(register-top-level-module
+ (module add7/with-vacuous-let/broken racket/base
+   (provide add7)
+   (define-values (add1 add2 add3 add4 add5 add6 add7)
+     (let ()
+       (letrec ()
+         (begin
+           (begin0
+             (values (values (lambda (x) (+ x 1))
+                             (lambda (x) (add1 (add1 x)))
+                             (lambda (x) (add1 (add2 x)))
+                             (lambda (x) (add1 (add3 x)))
+                             (lambda (x) (add1 (add4 x)))
+                             (lambda (x) (add1 (add5 x)))
+                             (lambda (x) (add1 (add6 x))))))))))))
+
+(register-top-level-module
+ (module add7/without-vacuous-let racket/base
+   (provide add7)
+   (define (add1 x)
+     (+ x 1))
+   (define (add2 x)
+     (add1 (add1 x)))
+   (define (add3 x)
+     (add1 (add2 x)))
+   (define (add4 x)
+     (add1 (add3 x)))
+   (define (add5 x)
+     (add1 (add4 x)))
+   (define (add6 x)
+     (add1 (add5 x)))
+   (define (add7 x)
+     (add1 (add6 x)))))
+
+(when (eq? (system-type 'vm) 'chez-scheme)
+  (test-comp `(module m racket/base
+                (require 'add7/with-vacuous-let)
+                (add7 2))
+             `(module m racket/base
+                (require 'add7/without-vacuous-let)
+                (add7 2)))
+  (test-comp `(module m racket/base
+                (require 'add7/with-vacuous-let/broken)
+                (add7 2))
+             `(module m racket/base
+                (require 'add7/without-vacuous-let)
+                (add7 2))
+             #f))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Try to check that struct optimizations are ok
