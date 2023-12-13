@@ -40,7 +40,11 @@
                                                             "-DMZSTART")
                                                         (if msvc?
                                                             (build-shell "/Fo:"
-                                                                         (string->shell (at-dir "start.obj")))
+                                                                         (string->shell
+                                                                          (at-dir
+                                                                           (path-replace-extension
+                                                                            (file-name-from-path .exe)
+                                                                            ".obj"))))
                                                             "")))))])
                (list MzStart.exe MrStart.exe)
                (list start_rc.o gstart_rc.o)
