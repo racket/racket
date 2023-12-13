@@ -8,7 +8,7 @@ Previous releases do not get security updates.
 
 Please create a report with the [Report a vulnerability](https://github.com/racket/racket/security/advisories/new) issue template.
 
-## originator of the repot
+## Originator of the report
 
 If you are not the origniator of the report - who is? 
 
