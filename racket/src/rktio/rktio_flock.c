@@ -46,15 +46,16 @@ int rktio_file_lock_try(rktio_t *rktio, rktio_fd_t *rfd, int excl)
      a new process whose only job is to use lockf(). */
   {
     intptr_t fd = rktio_fd_system_fd(rktio, rfd);
-    int ifds[2], ofds[2], cr;
+    intptr_t ifds[2], ofds[2];
+    int cr;
 
     if (rktio->locked_fd_process_map)
       if (rktio_hash_get(rktio->locked_fd_process_map, fd))
         /* already have a lock */
         return RKTIO_LOCK_ACQUIRED;
 
-    if (!rktio_make_os_pipe(ifds, RKTIO_NO_INHERIT_INPUT | RKTIO_NO_INHERIT_OUTPUT, rktio)) {
-      if (!rktio_make_os_pipe(ofds, RKTIO_NO_INHERIT_INPUT | RKTIO_NO_INHERIT_OUTPUT, rktio)) {
+    if (!rktio_make_os_pipe(rktio, ifds, RKTIO_NO_INHERIT_INPUT | RKTIO_NO_INHERIT_OUTPUT)) {
+      if (!rktio_make_os_pipe(rktio, ofds, RKTIO_NO_INHERIT_INPUT | RKTIO_NO_INHERIT_OUTPUT)) {
         int pid;
         int close_len = rktio_close_fds_len();
 
