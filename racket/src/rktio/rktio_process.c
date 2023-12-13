@@ -26,8 +26,10 @@ static void reliably_copy_or_move_fd(int src_fd, int target_fd, int move);
 static void close_non_standard_fd(int fd);
 # ifdef RKTIO_HAS_CLOEXEC
 static void disable_fd_cloexec(int fd);
+#  ifdef RKTIO_USE_PTHREADS
 static int cloexec_lock_initialized = 0;
 static pthread_mutex_t cloexec_lock;
+#  endif
 # endif
 #endif
 
@@ -1007,10 +1009,12 @@ int rktio_process_init(rktio_t *rktio)
 #endif
 #ifdef RKTIO_SYSTEM_UNIX
 # ifdef RKTIO_HAS_CLOEXEC
+#  ifdef RKTIO_USE_PTHREADS
   if (!cloexec_lock_initialized) {
     pthread_mutex_init(&cloexec_lock, NULL);
     cloexec_lock_initialized = 1;
   }
+#  endif
 # endif
 #endif
 
@@ -1041,7 +1045,9 @@ void rktio_cloexec_lock() {
 #endif
 #ifdef RKTIO_SYSTEM_UNIX
 # ifdef RKTIO_HAS_CLOEXEC
+#  ifdef RKTIO_USE_PTHREADS
   pthread_mutex_lock(&cloexec_lock);
+#  endif
 # endif
 #endif
 }
@@ -1052,7 +1058,9 @@ void rktio_cloexec_unlock() {
 #endif
 #ifdef RKTIO_SYSTEM_UNIX
 # ifdef RKTIO_HAS_CLOEXEC
+#  ifdef RKTIO_USE_PTHREADS
   pthread_mutex_unlock(&cloexec_lock);
+#  endif
 # endif
 #endif
 }
