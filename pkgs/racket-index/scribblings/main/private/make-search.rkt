@@ -61,6 +61,19 @@
       ;; Quote unicode chars:
       (regexp-replace* #px"[^[:ascii:]]" str hex4)))
 
+
+(define (transform-one x)
+  (match x
+    [(? string?) x]
+    [`(code ,x) (make-element symbol-color
+                              (list (make-element value-link-color
+                                                  (list x))))]))
+
+(define (attach-kind e xs)
+  (append e
+          (list (make-element "smaller"
+                              `(" (" ,@(map transform-one xs) ")")))))
+
 (define (make-script as-empty? user-dir? renderer sec ri)
   (define dest-dir (send renderer get-dest-directory #t))
   (define span-classes null)
@@ -100,7 +113,7 @@
         [`(,x . ,r) 
          (cons (xexpr->string x) (compact r))]))
     ;; generate javascript array code
-    (let loop ([body (compact xexprs)])
+    (let ([body (compact xexprs)])
       (if (andmap string? body)
         (quote-string (string-append* body))
         (let ([body (for/list ([x (in-list body)])
@@ -124,20 +137,31 @@
       (define text (string-downcase (string-join texts)))
       (define-values (href html)
         (let* ([e (add-between elts ", ")]
-               ;; !!HACK!! The index entry for methods should have the extra
-               ;; text in it (when it does, this should go away)
-               [e (if (method-index-desc? desc)
-                    `(,@e ,(make-element "smaller"
-                             `(" (method of "
-                               ,(make-element 
-                                 symbol-color
-                                 (list
-                                  (make-element 
-                                   value-link-color
-                                   (list (symbol->string
-                                          (exported-index-desc-name desc))))))
-                               ")")))
-                    e)]
+               [e (cond
+                    [(method-index-desc? desc)
+                     (attach-kind
+                      e
+                      (list "method of "
+                            `(code ,(symbol->string (exported-index-desc-name desc)))))]
+                    [(exported-index-desc*? desc)
+                     (attach-kind e (exported-index-desc*-kind desc))]
+                    [(procedure-index-desc? desc)
+                     (attach-kind e (list "procedure"))]
+                    [(form-index-desc? desc)
+                     (attach-kind e (list "syntax"))]
+                    [(thing-index-desc? desc)
+                     (attach-kind e (list "value"))]
+                    [(struct-index-desc? desc)
+                     (attach-kind e (list "struct"))]
+                    [(constructor-index-desc? desc)
+                     (attach-kind e (list "constructor"))]
+                    [(class-index-desc? desc)
+                     (attach-kind e (list "class"))]
+                    [(interface-index-desc? desc)
+                     (attach-kind e (list "interface"))]
+                    [(mixin-index-desc? desc)
+                     (attach-kind e (list "mixin"))]
+                    [else e])]
                [e (make-link-element "indexlink" e tag)]
                [e (send renderer render-content e sec ri)])
           (match e ; should always render to a single `a'
