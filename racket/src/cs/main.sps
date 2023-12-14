@@ -255,22 +255,16 @@
          (when (module-declared? main-m #t)
            (dynamic-require main-m #f)))))
 
-   (define (get-repl-init-filename)
-     (call-with-continuation-prompt
-      (lambda ()
-        (or (let ([p (build-path (find-system-path 'addon-dir)
-                                 (if gracket?
-                                     "gui-interactive.rkt"
-                                     "interactive.rkt"))])
-              (and (file-exists? p) p))
-            (let ([config-fn (build-path (find-main-config) "config.rktd")])
-              (and (file-exists? config-fn)
-                   (hash-ref (call-with-input-file config-fn read)
-                             (if gracket? 'gui-interactive-file 'interactive-file)
-                             #f)))
-            (if gracket? 'racket/gui/interactive 'racket/interactive)))
-      (default-continuation-prompt-tag)
-      (lambda args #f)))
+   (define (get-repl-init-filename config)
+     (or (let ([p (build-path (find-system-path 'addon-dir)
+                              (if gracket?
+                                  "gui-interactive.rkt"
+                                  "interactive.rkt"))])
+           (and (file-exists? p) p))
+         (hash-ref config
+                   (if gracket? 'gui-interactive-file 'interactive-file)
+                   #f)
+         (if gracket? 'racket/gui/interactive 'racket/interactive)))
 
    (define init-library (if gracket?
                             '(lib "racket/gui/init")
@@ -763,6 +757,22 @@
 
    (define gcs-on-exit? (and (getenv "PLT_GCS_ON_EXIT") #t))
 
+   (define config
+     (let ()
+       (when host-collects-dir
+         (set-host-collects-dir! host-collects-dir))
+       (when host-config-dir
+         (set-host-config-dir! host-config-dir))
+       (cond
+         [(eq? init-collects-dir 'disable)
+          (set-collects-dir! (build-path 'same))]
+         [else
+          (set-collects-dir! init-collects-dir)])
+       (set-config-dir! init-config-dir)
+       ;; Beware: using Racket I/O outside of the initial thread, but
+       ;; enough is in place on startup to read a configuration file
+       (read-installation-configuration-table)))
+
    (define (initialize-place!)
      (current-command-line-arguments remaining-command-line-arguments)
      (use-compiled-file-paths compiled-file-paths)
@@ -781,22 +791,9 @@
      (when (and syslog-logging
                 (not (null? syslog-logging)))
        (apply add-syslog-log-receiver! (current-logger) syslog-logging))
-     (when host-collects-dir
-       (set-host-collects-dir! host-collects-dir))
-     (when host-config-dir
-       (set-host-config-dir! host-config-dir))
-     (cond
-      [(eq? init-collects-dir 'disable)
-       (use-collection-link-paths #f)
-       (set-collects-dir! (build-path 'same))]
-      [else
-       (set-collects-dir! init-collects-dir)])
-     (set-config-dir! init-config-dir)
-     (let* ([config (read-installation-configuration-table)]
-            [name (get-installation-name config)]
-            [build-stamp (or (hash-ref config 'build-stamp #f) "")])
-       (unless (equal? build-stamp "")
-         (set-build-stamp! build-stamp))
+     (when (eq? init-collects-dir 'disable)
+       (use-collection-link-paths #f))
+     (let ([name (get-installation-name config)])
        (unless (eq? init-collects-dir 'disable)
          (current-library-collection-links
           (find-library-collection-links config name))
@@ -932,15 +929,19 @@
          (when (and n (exact-nonnegative-integer? n))
            (set-schedule-quantum! n)))))
 
+   (let ([build-stamp (or (hash-ref config 'build-stamp #f) "")])
+     (unless (equal? build-stamp "")
+       (set-build-stamp! build-stamp)))
+
+   (when version?
+     (#%display (banner)))
+
    (call/cc ; Chez Scheme's `call/cc`, used here to escape from the Racket-thread engine loop
     (lambda (entry-point-k)
       (call-in-main-thread
        (lambda ()
          (initialize-exit-handler!)
          (initialize-place!)
-
-         (when version?
-           (display (banner)))
 
          (when (and make? (not (null? compiled-file-paths)))
            (|#%app|
@@ -967,7 +968,7 @@
          (when repl?
            (set! exit-value 0)
            (when repl-init?
-             (let ([m (get-repl-init-filename)])
+             (let ([m (get-repl-init-filename config)])
                (when m
                  (call-with-continuation-prompt
                   (lambda () (dynamic-require m 0))
