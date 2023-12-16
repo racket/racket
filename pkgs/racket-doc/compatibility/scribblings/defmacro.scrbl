@@ -15,7 +15,7 @@ macro systems.
 
 Use of @racket[defmacro] for modern Racket code is @bold{@italic{strongly}}
 discouraged. Instead, consider using @racket[syntax-parse] or
-@racket[define-simple-macro].
+@racket[define-syntax-parse-rule].
 
 @deftogether[(
 @defform*[[(define-macro id expr)
