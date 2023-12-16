@@ -5427,7 +5427,7 @@ static zuo_t *zuo_cp(zuo_t *src_path, zuo_t *dest_path, zuo_t *options) {
 
 zuo_t *zuo_current_time() {
 #ifdef ZUO_UNIX
-  /* clock_gettime() provides more precision but ay require linking
+  /* clock_gettime() provides more precision but may require linking
      to an extra library */
 # ifdef USE_CLOCK_REALTIME
   struct timespec t;
