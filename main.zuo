@@ -355,6 +355,10 @@
   (define (as-is token vm)
     (check-mode "in-place")
     (base token vm)
+    (racket (find-racket vm)
+            (list "-U" "-G" (path-only build-config.rktd)
+                  (at-source "racket/src/pkgs-config.rkt")
+                  "--maybe-update-stamp"))
     (setup vm))
 
   (define (in-place token vm [also? #f] [setup-extra-args ""])
@@ -392,6 +396,7 @@
     (racket vars
             (list "-U" "-G" (path-only build-config.rktd)
                   (at-source "racket/src/pkgs-config.rkt")
+                  "--pkgs-catalog"
                   default-src-catalog
                   (lookup 'SRC_CATALOG)))
     (racket vars
@@ -456,9 +461,8 @@
   (define (server-from-base token [options-in (hash)])
     (check-mode "server")
     (make-build/site.rkt)
-    (update-stamp.txt)
-
     (define options (add-server-compile-machine options-in))
+    (update-stamp.txt options)
 
     ;; Create a copy of `SRC_CATALOG', so that we snapshot checksums, and
     ;; start building from it. The packages are installed in user scope,
@@ -524,26 +528,25 @@
                            "(machine)")
                        build/site.rkt)))
   
-  (define (update-stamp.txt)
+  (define (update-stamp.txt options)
     (define given-stamp (lookup 'BUILD_STAMP))
     (define stamp
       (cond
         [(not (equal? given-stamp ""))
          given-stamp]
         [else
-         (define (shell-result . cmds)
-           (define p (shell cmds (hash 'stdout 'pipe)))
-           (define r (fd-read (hash-ref p 'stdout) eof))
-           (process-wait (hash-ref p 'process))
-           (unless (= 0 (process-status (hash-ref p 'process)))
-             (error "failed" cmds))
-           (car (string-split r "\n")))
-         (~a
-          (shell-result "date" (string->shell "+%Y%m%d"))
-          (if (directory-exists? (at-source ".git"))
-              (~a "-"
-                  (shell-result "git log -1 --pretty=format:%h"))
-              ""))]))
+         (define cmds
+           (list (find-built-racket options)
+                 (at-source "racket/src/pkgs-config.rkt")
+                 "--display-auto-stamp"))
+         (define p
+           (apply racket/process (append cmds (list (hash 'stdout 'pipe)))))
+         (define r
+           (fd-read (hash-ref p 'stdout) eof))
+         (process-wait (hash-ref p 'process))
+         (unless (= 0 (process-status (hash-ref p 'process)))
+           (error "failed" cmds))
+         (car (string-split r "\n"))]))
     (display-to-file (~a stamp "\n") (at-source "build/stamp.txt") :truncate))
 
   (define (server-cache-config options)
