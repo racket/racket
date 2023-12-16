@@ -31,7 +31,7 @@ typedef struct zuo_t zuo_ext_t;
 
    To ensure that images will work, primitives must be added in the
    same order, always. Images will only work in an environment with
-   the same set of primitives, and using an iage without the
+   the same set of primitives, and using an image without the
    primitives will effectively remove them by using the image's
    `kernel-env`.
  */
