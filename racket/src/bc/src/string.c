@@ -197,7 +197,6 @@ READ_ONLY Scheme_Object *scheme_zero_length_char_immutable_string;
 READ_ONLY Scheme_Object *scheme_zero_length_byte_string;
 
 SHARED_OK static char *embedding_banner;
-SHARED_OK static char *build_stamp;
 SHARED_OK static char build_stamp_banner[128];
 SHARED_OK static Scheme_Object *vers_str;
 SHARED_OK static Scheme_Object *banner_str;
@@ -225,7 +224,7 @@ static void reset_locale(void);
 
 #define current_locale_name ((const mzchar *)current_locale_name_ptr)
 
-static void update_banner(void);
+static void update_banner(const char *build_stamp);
 
 static const mzchar empty_char_string[1] = { 0 };
 static const mzchar xes_char_string[2] = { 0x78787878, 0 };
@@ -316,14 +315,12 @@ scheme_init_string (Scheme_Startup_Env *env)
   platform_cs_path = scheme_make_path(SCHEME_PLATFORM_LIBRARY_SUBPATH SPLS_SUFFIX MZCS_SUBDIR);
 
   REGISTER_SO(embedding_banner);
-  REGISTER_SO(build_stamp);
-  REGISTER_SO(build_stamp_banner);
   REGISTER_SO(vers_str);
   REGISTER_SO(banner_str);
 
   vers_str = scheme_make_utf8_string(scheme_version());
   SCHEME_SET_CHAR_STRING_IMMUTABLE(vers_str);
-  update_banner();
+  update_banner(NULL);
 
   REGISTER_SO(scheme_string_p_proc);
   p = scheme_make_folding_prim(string_p, "string?", 1, 1, 1);
@@ -2077,23 +2074,20 @@ char *scheme_version(void)
 # endif
 #endif
 
+#define RACKET_BANNER_FMT(insert)               \
+  ("Welcome to Racket"                          \
+   " v" MZSCHEME_VERSION insert VERSION_SUFFIX  \
+   ".\n")
+
 char *scheme_banner(void)
 {
   if (embedding_banner)
     return embedding_banner;
 
-  if (build_stamp) {
-    snprintf(build_stamp_banner, sizeof(build_stamp_banner),
-             "Welcome to Racket"
-             " v" MZSCHEME_VERSION "-%s" VERSION_SUFFIX
-             ".\n",
-             build_stamp);
+  if (build_stamp_banner[0])
     return build_stamp_banner;
-  }
 
-  return ("Welcome to Racket"
-          " v" MZSCHEME_VERSION VERSION_SUFFIX
-          ".\n");
+  return RACKET_BANNER_FMT("");
 }
 
 void scheme_set_banner(char *s)
@@ -2103,15 +2097,37 @@ void scheme_set_banner(char *s)
 
 void scheme_set_build_stamp(char *s)
 {
-  build_stamp = s;
-  // Cached `banner_str` depends on `build_stamp`
-  update_banner();
+  update_banner(s);
 }
 
-static void update_banner(void)
+/* if build_stamp is not NULL, assume that we'e in the main place */
+static void update_banner(const char *build_stamp)
 {
+#if defined(MZ_USE_PLACES)
+  void *gc_state;
+#endif
+
+  if (build_stamp && build_stamp[0]) {
+    snprintf(build_stamp_banner, sizeof(build_stamp_banner),
+             RACKET_BANNER_FMT("-%s"),
+             build_stamp);
+  } else
+    build_stamp_banner[0] = 0;
+
+#if defined(MZ_USE_PLACES)
+  if (build_stamp)
+    gc_state = GC_switch_to_master_gc();
+  else
+    gc_state = NULL;
+#endif
+
   banner_str = scheme_make_utf8_string(scheme_banner());
   SCHEME_SET_CHAR_STRING_IMMUTABLE(banner_str);
+
+#if defined(MZ_USE_PLACES)
+  if (build_stamp)
+    GC_switch_back_from_master(gc_state);
+#endif
 }
 
 int scheme_byte_string_has_null(Scheme_Object *o)
