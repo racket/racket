@@ -86,7 +86,7 @@ jobs:
     - name: Run db tests
       continue-on-error: true
       run: raco test -l tests/db/all-tests
-    - uses: actions/upload-artifact@v3
+    - uses: actions/upload-artifact@v4
       with:
         name: asan-errors-cs_git${{ github.sha }}
         path: ./racket-asan.*

@@ -61,7 +61,7 @@ jobs:
     - name: Tarballing
       working-directory: ${{ github.workspace }}
       run: tar -cvjf racketcgc-macos-${{ matrix.cify }}-x64_git${{ github.sha }}.tar.bz2 racketcgc
-    - uses: actions/upload-artifact@v3
+    - uses: actions/upload-artifact@v4
       with:
         name: racketcgc-macos-${{ matrix.cify }}-x64_git${{ github.sha }}
         path: ${{ github.workspace }}/racketcgc-macos-${{ matrix.cify }}-x64_git${{ github.sha }}.tar.bz2
@@ -126,7 +126,7 @@ jobs:
     - name: Tarballing
       working-directory: ${{ github.workspace }}
       run: tar -cvjf racket3m-macos-${{ matrix.cify }}-x64_git${{ github.sha}}.tar.bz2 racket3m
-    - uses: actions/upload-artifact@v3
+    - uses: actions/upload-artifact@v4
       with:
         name: racket3m-macos-${{ matrix.cify }}-x64_git${{ github.sha }}
         path: ${{ github.workspace }}/racket3m-macos-${{ matrix.cify }}-x64_git${{ github.sha }}.tar.bz2
@@ -173,7 +173,7 @@ jobs:
     - name: Tarballing
       working-directory: ${{ github.workspace }}
       run: tar -cvjf racketcs-macos-x64_git${{ github.sha}}.tar.bz2 racketcs
-    - uses: actions/upload-artifact@v3
+    - uses: actions/upload-artifact@v4
       with:
         name: racketcs-macos-x64_git${{ github.sha }}
         path: ${{ github.workspace }}/racketcs-macos-x64_git${{ github.sha }}.tar.bz2
