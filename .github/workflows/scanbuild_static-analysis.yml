@@ -59,7 +59,7 @@ jobs:
       run: |
         find . -type f -name '*.sarif' > list.txt
         split -d -l15 list.txt list.
-    - uses: actions/upload-artifact@v3
+    - uses: actions/upload-artifact@v4
       with:
         name: scanbuild-cgc-${{ github.sha }}
         path: sarif-files/
@@ -121,7 +121,7 @@ jobs:
       run: |
         find . -type f -name '*.sarif' > list.txt
         split -d -l15 list.txt list.
-    - uses: actions/upload-artifact@v3
+    - uses: actions/upload-artifact@v4
       with:
         name: scanbuild-3m-${{ github.sha }}
         path: sarif-files/
@@ -179,7 +179,7 @@ jobs:
       run: |
         find . -type f -name '*.sarif' > list.txt
         split -d -l15 list.txt list.
-    - uses: actions/upload-artifact@v3
+    - uses: actions/upload-artifact@v4
       with:
         name: scanbuild-cs-${{ github.sha }}
         path: sarif-files/

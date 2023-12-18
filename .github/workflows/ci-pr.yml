@@ -71,7 +71,7 @@ jobs:
         raco test -c tests/syntax
     - name: Tarball
       run: tar -cvjf racketcs-macos-x64_git${{ github.sha }}.tar.bz2 racket
-    - uses: actions/upload-artifact@v3
+    - uses: actions/upload-artifact@v4
       with:
         name: racketcs-macos-x64_git${{ github.sha }}
         path: racketcs-macos-x64_git${{ github.sha }}.tar.bz2
