@@ -583,6 +583,7 @@
                                 (apply 1/fprintf (|#%app| 1/current-error-port) fmt args))
                               1/srcloc->string
                               1/error-print-source-location)
+  (set-error-value->string! error-value->string)
   (set-ffi-get-lib-and-obj! ffi-get-lib ffi-get-obj ffi-unload-lib ptr->address)
   (set-make-async-callback-poll-wakeup! 1/unsafe-make-signal-received)
   (set-get-machine-info! get-machine-info)

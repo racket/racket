@@ -284,17 +284,21 @@
          [else
           (loop i s end)]))])))
 
-(define (error-value->string v)
-  (let ([s (|#%app|
-            (|#%app| error-value->string-handler)
-            v
-            (|#%app| error-print-width))])
-    (cond
-      [(string? s) s]
-      [(bytes? s)
-       ;; Racket BC allows byte strings, and we approximate that here
-       (utf8->string s)]
-      [else "..."])))
+(define error-value->string
+  (lambda (v)
+    (let ([s (|#%app|
+              (|#%app| error-value->string-handler)
+              v
+              (|#%app| error-print-width))])
+      (cond
+        [(string? s) s]
+        [(bytes? s)
+         ;; Racket BC allows byte strings, and we approximate that here
+         (utf8->string s)]
+        [else "..."]))))
+
+(define (set-error-value->string! proc)
+  (set! error-value->string proc))
 
 (define raise-type-error
   (case-lambda

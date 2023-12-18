@@ -3,6 +3,7 @@
          "../common/class.rkt"
          "../host/thread.rkt"
          "../error/message.rkt"
+         "../error/value-string.rkt"
          "port.rkt"
          "input-port.rkt"
          "output-port.rkt"
@@ -24,7 +25,7 @@
                                    who
                                    (string-append
                                     "the port's current position is not known\n port: "
-                                    ((error-value->string-handler) p (error-print-width))))
+                                    (error-value->string p)))
                                   (current-continuation-marks)))))]
     [(p pos)
      (unless (or (input-port? p) (output-port? p))

@@ -1,7 +1,10 @@
 #lang racket/base
-(require "../port/string-port.rkt"
+(require "../print/parameter.rkt"
+         "../port/string-port.rkt"
          (submod "../print/main.rkt" internal)
-         "../format/printf.rkt")
+         "../format/printf.rkt"
+         "../string/convert.rkt"
+         "value-string.rkt")
 
 (provide error
          raise-user-error
@@ -48,20 +51,35 @@
 (define error-print-source-location
   (make-parameter #t (lambda (v) (and v #t)) 'error-print-source-location))
 
+(define (default-error-value->string-handler v len)
+  (unless (exact-nonnegative-integer? len)
+    (raise-argument-error 'default-error-value->string-handler
+                          "exact-nonnegative-integer?"
+                          len))
+  (define o (open-output-string))
+  (do-global-print 'default-error-value->string-handler v o 0 len)
+  (get-output-string o))
+
 ;; Install the default error-value->string handler,
 ;; replacing the non-working primitive placeholder
 (define (install-error-value->string-handler!)
-  (error-value->string-handler
-   (let ([default-error-value->string-handler
-           (lambda (v len)
-             (unless (exact-nonnegative-integer? len)
-               (raise-argument-error 'default-error-value->string-handler
-                                     "exact-nonnegative-integer?"
-                                     len))
-             (define o (open-output-string))
-             (do-global-print 'default-error-value->string-handler v o 0 len)
-             (get-output-string o))])
-     default-error-value->string-handler)))
+  (error-value->string-handler default-error-value->string-handler)
+  (register-error-value->string!
+   (lambda (v)
+     (define len (error-print-width))
+     (define h (error-value->string-handler))
+     (define result
+       (parameterize ([error-value->string-handler default-error-value->string-handler]
+                      [print-unreadable #t])
+         (h v len)))
+     (define str
+       (cond
+         [(string? result) result]
+         [(bytes? result) (bytes->string/utf-8 result #\?)]
+         [else "..."]))
+     (if ((string-length str) . > . len)
+         (substring str 0 len)
+         str))))
 
 (void (install-error-value->string-handler!))
 

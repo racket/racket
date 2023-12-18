@@ -78,6 +78,7 @@
                 (1/eprintf eprintf)
                 (1/error error)
                 (1/error-print-source-location error-print-source-location)
+                (error-value->string error-value->string)
                 (1/executable-yield-handler executable-yield-handler)
                 (1/expand-user-path expand-user-path)
                 (1/explode-path explode-path)
@@ -6000,6 +6001,18 @@
 (define maybe-raise-missing-module void)
 (define set-maybe-raise-missing-module!
   (lambda (proc_0) (set! maybe-raise-missing-module proc_0)))
+(define saved-error-value->string #f)
+(define error-value->string
+  (lambda (v_0)
+    (if saved-error-value->string
+      (|#%app| saved-error-value->string v_0)
+      (let ((app_0 (error-value->string-handler)))
+        (|#%app| app_0 v_0 (error-print-width))))))
+(define register-error-value->string!
+  (lambda (proc_0)
+    (if saved-error-value->string
+      (void)
+      (set! saved-error-value->string proc_0))))
 (define 1/port-closed?
   (|#%name|
    port-closed?
@@ -6096,8 +6109,7 @@
                             "output port is closed")
                           "\n  "
                           (if input?_0 "input port: " "output port: ")
-                          (let ((app_0 (error-value->string-handler)))
-                            (|#%app| app_0 cp_0 (error-print-width))))))
+                          (error-value->string cp_0))))
                     (begin-unsafe
                      (error-message->adjusted-string
                       who_0
@@ -6121,8 +6133,7 @@
                   (let ((msg_0
                          (string-append
                           "the port's current position is not known\n port: "
-                          (let ((app_0 (error-value->string-handler)))
-                            (|#%app| app_0 p_0 (error-print-width))))))
+                          (error-value->string p_0))))
                     (begin-unsafe
                      (error-message->adjusted-string
                       'file-position
@@ -22968,13 +22979,8 @@
                                               1/print-unreadable
                                               #t)
                                              (1/write-string
-                                              (let ((app_0
-                                                     (error-value->string-handler)))
-                                                (let ((app_1 (car args_0)))
-                                                  (|#%app|
-                                                   app_0
-                                                   app_1
-                                                   (error-print-width))))
+                                              (error-value->string
+                                               (car args_0))
                                               o_0))
                                             (next_1 i_1 (cdr args_0)))
                                           (let ((i_2 (add1 i_1)))
@@ -23097,7 +23103,7 @@
   (lambda (who_0 what_0 val_0 fmt_0 args_0)
     (raise-error
      (let ((app_0 (symbol->string who_0)))
-       (let ((app_1 (value->string val_0)))
+       (let ((app_1 (error-value->string val_0)))
          (string-append
           app_0
           ": "
@@ -23107,10 +23113,6 @@
           "  bad argument: "
           app_1
           (arguments->string (cons fmt_0 args_0))))))))
-(define value->string
-  (lambda (v_0)
-    (let ((app_0 (error-value->string-handler)))
-      (|#%app| app_0 v_0 (error-print-width)))))
 (define arguments->string
   (lambda (fmt+args_0)
     (let ((args_0 (cdr fmt+args_0)))
@@ -23141,7 +23143,7 @@
                     ss_0
                     (let ((app_0 (car ss_0)))
                       (cons app_0 (cons " " (loop_0 (cdr ss_0)))))))))))
-           (loop_0 (map_1346 value->string args_0)))))
+           (loop_0 (map_1346 error-value->string args_0)))))
         ""))))
 (define 1/fprintf
   (|#%name|
@@ -32171,30 +32173,53 @@
    #t
    (lambda (v_0) (if v_0 #t #f))
    'error-print-source-location))
+(define default-error-value->string-handler
+  (lambda (v_0 len_0)
+    (begin
+      (if (exact-nonnegative-integer? len_0)
+        (void)
+        (raise-argument-error
+         'default-error-value->string-handler
+         "exact-nonnegative-integer?"
+         len_0))
+      (let ((o_0 (1/open-output-string)))
+        (begin
+          (|#%app|
+           do-global-print
+           'default-error-value->string-handler
+           v_0
+           o_0
+           0
+           len_0)
+          (1/get-output-string o_0))))))
 (define install-error-value->string-handler!
   (lambda ()
-    (error-value->string-handler
-     (|#%name|
-      default-error-value->string-handler
-      (lambda (v_0 len_0)
-        (begin
-          (begin
-            (if (exact-nonnegative-integer? len_0)
-              (void)
-              (raise-argument-error
-               'default-error-value->string-handler
-               "exact-nonnegative-integer?"
-               len_0))
-            (let ((o_0 (1/open-output-string)))
-              (begin
-                (|#%app|
-                 do-global-print
-                 'default-error-value->string-handler
-                 v_0
-                 o_0
-                 0
-                 len_0)
-                (1/get-output-string o_0))))))))))
+    (begin
+      (error-value->string-handler default-error-value->string-handler)
+      (register-error-value->string!
+       (lambda (v_0)
+         (let ((len_0 (error-print-width)))
+           (let ((h_0 (error-value->string-handler)))
+             (let ((result_0
+                    (with-continuation-mark*
+                     push-authentic
+                     parameterization-key
+                     (extend-parameterization
+                      (continuation-mark-set-first #f parameterization-key)
+                      error-value->string-handler
+                      default-error-value->string-handler
+                      1/print-unreadable
+                      #t)
+                     (|#%app| h_0 v_0 len_0))))
+               (let ((str_0
+                      (if (string? result_0)
+                        result_0
+                        (if (bytes? result_0)
+                          (1/bytes->string/utf-8 result_0 '#\x3f)
+                          "..."))))
+                 (if (> (string-length str_0) len_0)
+                   (substring str_0 0 len_0)
+                   str_0))))))))))
 (define effect_2767
   (begin (void (install-error-value->string-handler!)) (void)))
 (define relative-to-user-directory
@@ -35602,8 +35627,7 @@
                      (string-append
                       msg_0
                       "\n  socket: "
-                      (let ((app_0 (error-value->string-handler)))
-                        (|#%app| app_0 u_0 (error-print-width))))))
+                      (error-value->string u_0))))
                 (begin-unsafe
                  (error-message->adjusted-string
                   who_0

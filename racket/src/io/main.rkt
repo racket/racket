@@ -30,6 +30,8 @@
                   rktio-place-destroy!)
          (submod "error/main.rkt"
                  place-init)
+         (only-in "error/value-string.rkt"
+                  error-value->string)
          (only-in "sandman/ltps.rkt"
                   shared-ltps-place-init!)
          (only-in "locale/cache.rkt"
@@ -67,7 +69,8 @@
          make-place-ports+fds
          io-place-init!
          io-place-destroy!
-         get-original-error-port)
+         get-original-error-port
+         error-value->string)
 
 (define (io-place-init! in-fd out-fd err-fd cust plumber)
   (rktio-place-init!)

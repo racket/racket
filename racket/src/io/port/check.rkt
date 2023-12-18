@@ -1,6 +1,7 @@
 #lang racket/base
 (require "../host/thread.rkt"
          "../error/message.rkt"
+         "../error/value-string.rkt"
          "port.rkt"
          "input-port.rkt"
          "output-port.rkt"
@@ -27,5 +28,5 @@
                       (if input?
                           "input port: "
                           "output port: ")
-                      ((error-value->string-handler) cp (error-print-width))))
+                      (error-value->string cp)))
       (current-continuation-marks)))))

@@ -776,10 +776,12 @@ handler}; see @racket[global-port-print-handler]). If the printed form
 is too long, the printed form is truncated and the last three
 characters of the return string are set to ``...''.
 
-If the string returned by an error value conversion handler is longer
-than requested, the string is destructively ``truncated'' by setting
-the first extra position in the string to the null character. If a
-non-string is returned, then the string @racket["..."] is used. If a
+When called by function like @racket[error],
+if the string returned by an error value conversion handler is longer
+than requested, the string is truncated to the requested length. If a
+byte string is returned instead of a string, it is converted using
+@racket[bytes->string/utf-8]. If any other non-string value
+is returned, then the string @racket["..."] is used. If a
 primitive error string needs to be generated before the handler has
 returned, the default error value conversion handler is used.
 

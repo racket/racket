@@ -3,7 +3,8 @@
          (submod "../print/main.rkt" internal)
          "../print/mode.rkt"
          "../port/string-output.rkt"
-         "../port/output-port.rkt")
+         "../port/output-port.rkt"
+         "../error/value-string.rkt")
 
 (provide do-printf)
 
@@ -98,9 +99,7 @@
               (next i (cdr args))]
              [(#\e #\E)
               (parameterize ([print-unreadable #t])
-                (write-string ((error-value->string-handler)
-                               (car args)
-                               (error-print-width))
+                (write-string (error-value->string (car args))
                               o))
               (next i (cdr args))]
              [(#\.)
@@ -189,11 +188,8 @@
                 (symbol->string who)
                 ": "
                 "format string requires a " what ", given something else\n"
-                "  bad argument: " (value->string val)
+                "  bad argument: " (error-value->string val)
                 (arguments->string (cons fmt args)))))
-
-(define (value->string v)
-  ((error-value->string-handler) v (error-print-width)))
 
 (define (arguments->string fmt+args)
   (define args (cdr fmt+args))
@@ -203,7 +199,7 @@
         (apply string-append
                "; "
                "arguments were: "
-               (let loop ([ss (map value->string args)])
+               (let loop ([ss (map error-value->string args)])
                  (if (or (null? ss) (null? (cdr ss)))
                      ss
                      (cons (car ss) (cons " " (loop (cdr ss))))))))

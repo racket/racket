@@ -611,5 +611,41 @@
       (get-repctx-error-message 16))
 
 ;; ----------------------------------------
+;; tests for `error-value->string-handler` and the way
+;; it's called by functions like `error`
+
+;; parameterization
+(test "test: got it\n  value: #<unreadable>"
+      (lambda ()
+        (struct unreadable ())
+        (parameterize ([error-value->string-handler
+                        (lambda (v _)
+                          ((error-value->string-handler) v 100))]
+                       [print-unreadable #f])
+          (with-handlers ([exn:fail:contract? exn-message])
+            (raise-arguments-error 'test "got it"
+                                   "value" (unreadable))))))
+
+;; truncate over-long result
+(test "test: got it\n  value: xxxxxxxxxx"
+      (lambda ()
+        (parameterize ([error-value->string-handler
+                        (lambda (v n)
+                          (make-string (* 2 n) #\x))]
+                       [error-print-width 10])
+          (with-handlers ([exn:fail:contract? exn-message])
+            (raise-arguments-error 'test "got it"
+                                   "value" 'any)))))
+
+(test "test: got it\n  value: oops"
+      (lambda ()
+        (parameterize ([error-value->string-handler
+                        (lambda (v n)
+                          #"oops")])
+          (with-handlers ([exn:fail:contract? exn-message])
+            (raise-arguments-error 'test "got it"
+                                   "value" 'any)))))
+
+;; ----------------------------------------
 
 (report-errs)
