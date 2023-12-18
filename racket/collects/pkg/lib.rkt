@@ -181,6 +181,8 @@
                         #:force-strip? boolean?
                         #:dry-run? boolean?)
         (or/c #f 'skip (listof (or/c path-string? (non-empty-listof path-string?)))))]
+  [pkg-migrate-available-versions
+   (-> (listof string?))]
   [pkg-catalog-show
    (->* ((listof string?))
         (#:all? boolean?

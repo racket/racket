@@ -1,6 +1,7 @@
 #lang racket/base
 (require racket/match
          net/url
+         setup/dirs
          "../path.rkt"
          "config.rkt"
          "lock.rkt"
@@ -12,7 +13,8 @@
          "dirs.rkt"
          "print.rkt")
 
-(provide pkg-migrate)
+(provide pkg-migrate
+         pkg-migrate-available-versions)
 
 (define (pkg-migrate from-version
                      #:all-platforms? [all-platforms? #f]
@@ -88,3 +90,12 @@
                     #:dry-run? dry-run?)
        (unless quiet?
          (printf "Packages migrated~a\n" (dry-run-explain dry-run?))))))
+
+(define (pkg-migrate-available-versions)
+  (define d (find-system-path 'addon-dir))
+  (for/list ([p (in-list (directory-list d))]
+             #:when (let ([p (build-path d p "pkgs" "pkgs.rktd")])
+                      (file-exists? p))
+             #:unless (equal? (path-element->string p)
+                              (get-installation-name)))
+    (path-element->string p)))

@@ -475,6 +475,14 @@ The package lock must be held; see @racket[with-pkg-lock].
 @history[#:changed "6.4.0.14" @elem{Added the @racket[#:dry-run] argument.}]}
 
 
+@defproc[(pkg-migrate-available-versions) (listof string?)]{
+
+Returns a list of versions that are suitable as arguments to
+@racket[pkg-migrate].
+
+@history[#:added "8.11.1.7"]}
+
+
 @defproc[(pkg-catalog-show [names (listof string?)]
                            [#:all? all? boolean? #f]
                            [#:only-names? only-names? boolean? #f]
