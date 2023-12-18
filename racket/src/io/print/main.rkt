@@ -314,7 +314,7 @@
        [else
         (check-unreadable who config mode v)
         (write-string/max "#<hash>" o max-length)])]
-    [(and (eq? mode WRITE-MODE)
+    [(and (not (eq? mode DISPLAY-MODE))
           (not (config-get config print-unreadable))
           (not (prefab-struct-key v))
           ;; Regexps are a special case: custom writers that produce readable input

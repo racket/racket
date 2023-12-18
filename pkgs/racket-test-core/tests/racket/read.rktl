@@ -1224,9 +1224,12 @@
 	 (lambda (x)
 	   (test (void) (list x)
 		 (parameterize ([print-unreadable #f])
-		   (display x p)))
+		   (display x p)))  
 	   (err/rt-test (parameterize ([print-unreadable #f])
 			  (write x p))
+                        exn:fail?)  
+	   (err/rt-test (parameterize ([print-unreadable #f])
+			  (print x p))
                         exn:fail?))]
 	[try-good
 	 (lambda (x)

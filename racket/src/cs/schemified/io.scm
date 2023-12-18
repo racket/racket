@@ -22244,7 +22244,7 @@
                                            "#<hash>"
                                            o_0
                                            max-length_0)))
-                                      (if (if (eq? mode_0 #t)
+                                      (if (if (not (eq? mode_0 #f))
                                             (if (not
                                                  (config-get
                                                   config_0
