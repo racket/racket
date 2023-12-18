@@ -197,7 +197,7 @@ jobs:
     - uses: actions/checkout@v4
       with:
         fetch-depth: 100
-    - uses: actions/download-artifact@v3
+    - uses: actions/download-artifact@v4
       with:
         name: scanbuild-${{ matrix.variants }}-${{ github.sha }}
     - name: Test for presence of the chunk
