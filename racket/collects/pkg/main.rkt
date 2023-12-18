@@ -4,6 +4,7 @@
          racket/format
          racket/path
          racket/splicing
+         racket/string
          raco/command-name
          setup/dirs
          net/url
@@ -479,7 +480,18 @@
              install-force-flags ...
              dry-run-flags ...
              job-flags ...
-             #:args (from-version)
+             #:args ([from-version #f])
+             (unless from-version
+               (define versions (pkg-migrate-available-versions))
+               ((pkg-error 'migrate) (string-append
+                                      "expected <from-version> to migrate from"
+                                      (cond
+                                        [(null? versions) ", but none are available"]
+                                        [else
+                                         (string-join (cons
+                                                       "\n  available versions:"
+                                                       versions)
+                                                      "\n   ")]))))
              (call-with-package-scope
               'migrate
               scope scope-dir installation user #f #f #f #f

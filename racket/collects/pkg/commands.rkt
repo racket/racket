@@ -113,10 +113,20 @@
              (syntax->list #'(#:usage-help s ...))])
 
   (define-splicing-syntax-class arguments
-    #:attributes (accum args (body 1) help-strs)
+    #:attributes (accum args arg-ids (body 1) help-strs)
     [pattern (~seq #:args args 
                    body:expr ...)
              #:with accum #'ignored
+             #:with arg-ids (let loop ([args #'args])
+                              (cond 
+                                [(stx-null? args) null]
+                                [(stx-pair? args)
+                                 (cons (let ([arg (stx-car args)])
+                                         (if (stx-pair? arg)
+                                             (stx-car arg)
+                                             arg))
+                                       (loop (stx-cdr args)))]
+                                [else args]))
              #:with help-strs (with-syntax ([strs 
                                              (map symbol->string
                                                   (map syntax->datum
@@ -124,14 +134,18 @@
                                                          (cond 
                                                           [(stx-null? args) null]
                                                           [(stx-pair? args)
-                                                           (cons (stx-car args)
+                                                           (cons (let ([arg (stx-car args)])
+                                                                   (if (stx-pair? arg)
+                                                                       (stx-car arg)
+                                                                       arg))
                                                                  (loop (stx-cdr args)))]
                                                           [else
                                                            (list args)]))))])
                                 #`(list . strs))]
     [pattern (~seq #:handlers
                    (lambda (accum . args) body:expr ...) 
-                   help-strs:expr)])
+                   help-strs:expr)
+             #:with arg-ids #'args])
 
   (define-syntax-class command
     #:attributes (name function variables command-line (extra-defs 1))
@@ -155,7 +169,7 @@
                 og.command-line ... ...
                 #:handlers
                 (lambda (accum . arg.args)
-                  (args-app arg.args (name og.call ... ...)))
+                  (args-app arg.arg-ids (name og.call ... ...)))
                 arg.help-strs])]))
 
 (define-syntax (args-app stx)
