@@ -388,7 +388,7 @@
    [(mutable-hash? ht)
     (cond
      [(eq-mutable-hash? ht)
-      ;; As long as we'e not in a future thread, it's an atomic action
+      ;; As long as we're not in a future thread, it's an atomic action
       ;; to access the mutable hash table using `eq-hashtable-ref`:
       (if (current-future)
           (future-sync 'hash-ref (lambda () (eq-hashtable-ref (mutable-hash-ht ht) k none)))
@@ -540,7 +540,7 @@
                      (|#%app| proc key val)
                      (loop (fx+ i 1))])))]))]))))
 
-;; In sorted hash-table travesals, make some effort to sort the key.
+;; In sorted hash-table traversals, make some effort to sort the key.
 ;; This attempt is useful for making hash-table traversals more
 ;; deterministic, especially for marshaling operations.
 (define (try-sort-keys ps)

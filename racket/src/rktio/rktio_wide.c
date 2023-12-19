@@ -152,7 +152,7 @@ static intptr_t utf8ish_to_utf16ish(const unsigned char *s, intptr_t end, unsign
           if (pending_surrogate) {
             if (us)
               us[j] = pending_surrogate;
-            j++; /* Accept previousy written unpaired surrogate */
+            j++; /* Accept previously written unpaired surrogate */
             pending_surrogate = 0;
           }
           if ((v & 0xDC00) == 0xD800)
@@ -164,7 +164,7 @@ static intptr_t utf8ish_to_utf16ish(const unsigned char *s, intptr_t end, unsign
         if (pending_surrogate) {
           if (us)
             us[j] = pending_surrogate;
-          j++; /* Accept previousy written unpaired surrogate */
+          j++; /* Accept previously written unpaired surrogate */
           pending_surrogate = 0;
         }
       }

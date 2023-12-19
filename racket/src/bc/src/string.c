@@ -2100,7 +2100,7 @@ void scheme_set_build_stamp(char *s)
   update_banner(s);
 }
 
-/* if build_stamp is not NULL, assume that we'e in the main place */
+/* if build_stamp is not NULL, assume that we're in the main place */
 static void update_banner(const char *build_stamp)
 {
 #if defined(MZ_USE_PLACES)
@@ -3247,7 +3247,7 @@ int mz_locale_strcoll(char *s1, int d1, int l1, char *s2, int d2, int l2, int cv
     if (!origl1)
       return -1;
 
-    /* Compare an unconverable character directly. No case conversions
+    /* Compare an unconvertable character directly. No case conversions
        if it's outside the locale. */
     if (((unsigned int *)s1)[d1] > ((unsigned int *)s2)[d2])
       return 1;
@@ -3306,7 +3306,7 @@ int do_locale_comp(const char *who, const mzchar *us1, intptr_t ul1, const mzcha
   }
 
   /* Walk back through the strings looking for nul characters. If we
-     find one, compare the part after the null character to update
+     find one, compare the part after the nul character to update
      endres, then continue. Unfortunately, we do too much work if an
      earlier part of the string (tested later) determines the result,
      but hopefully nul characters are rare. */
@@ -5261,7 +5261,7 @@ static intptr_t utf8_decode_x(const unsigned char *s, intptr_t start, intptr_t e
 		if (pending_surrogate) {
 		  if (us)
 		    ((unsigned short *)us)[j] = pending_surrogate;
-		  j++; /* Accept previousy written unpaired surrogate */
+		  j++; /* Accept previously written unpaired surrogate */
 		  pending_surrogate = 0;
 		  if (j >= dend)
 		    break;
@@ -5275,7 +5275,7 @@ static intptr_t utf8_decode_x(const unsigned char *s, intptr_t start, intptr_t e
 	      if (pending_surrogate) {
 		if (us)
 		  ((unsigned short *)us)[j] = pending_surrogate;
-		j++; /* Accept previousy written unpaired surrogate */
+		j++; /* Accept previously written unpaired surrogate */
 		pending_surrogate = 0;
 		if (j >= dend)
 		  break;
