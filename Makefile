@@ -141,7 +141,8 @@ PKG_UPDATE_OPTIONS =
 # Options passed along to any `raco setup` run:
 PLT_SETUP_OPTIONS =
 
-# Catalog for package sources:
+# Catalog for package sources, but packages within this
+# repo take precedence:
 SRC_CATALOG = https://pkgs.racket-lang.org
 
 # Built-in catalog for package sources (not meant to be configured):

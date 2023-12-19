@@ -387,9 +387,7 @@
                   "-l-" "pkg/dirs-catalog"
                   "--link" "--check-metadata" "--immediate"
                   (at-source "racket/share/pkgs-catalog")
-                  (at-source "pkgs")
-                  (at-source "racket/src/expander")
-                  (at-source "racket/src/zuo/zuo-doc")))
+                  (local-pkg-dirs)))
     (racket vars
             (list "-U" "-G" (path-only build-config.rktd)
                   (at-source "racket/src/pkgs-config.rkt")
@@ -398,6 +396,11 @@
     (racket vars
             (at-source "racket/src/pkgs-check.rkt")
             (at-source "racket/share/pkgs-catalog")))
+
+  (define (local-pkg-dirs)
+    (list (at-source "pkgs")
+          (at-source "racket/src/expander")
+          (at-source "racket/src/zuo/zuo-doc")))
 
   ;; ------------------------------------------------------------
   ;; Distribution builds: server
@@ -460,10 +463,20 @@
     ;; start building from it. The packages are installed in user scope,
     ;; but we set the add-on directory to "build/user", so that we don't
     ;; affect the actual current user's installation (and to a large degree
-    ;; we're insulated from it)
+    ;; we're insulated from it). Before using `SRC_CATALOG`, though, use
+    ;; packages that are part of the main repo in preference to entries
+    ;; in the catalog.
     (rm* "build/user")
+    (define link-catalog "build/link-catalog")
+    (rm* link-catalog)
+    (built-racket options
+                  "-l-" "pkg/dirs-catalog" "--immediate"
+                  link-catalog
+                  (local-pkg-dirs))
     (rm* "build/catalog-copy")
-    (built-raco options "pkg" "catalog-copy" (lookup 'SRC_CATALOG) "build/catalog-copy")
+    (built-raco options "pkg" "catalog-copy"
+                link-catalog (lookup 'SRC_CATALOG)
+                "build/catalog-copy")
     (server-cache-config options)
     (built-raco options "pkg" "install" "--all-platforms" source-user-auto
                 required-pkgs

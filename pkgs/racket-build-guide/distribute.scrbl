@@ -122,7 +122,7 @@ installers are configured to access pre-built packages and
 documentation from the site indicated by @racket[#:dist-base-url].
 
 Note that @racket[#:dist-base-url] should almost always end with
-@filepath{/}, since others URLs will be constructed as relative to
+@filepath{/}, since other URLs will be constructed as relative to
 @racket[#:dist-base-url].
 
 The site is generated as @filepath{build/site} by default. A

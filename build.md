@@ -460,7 +460,7 @@ installers are configured to access pre-built packages and documentation
 from the site indicated by `#:dist-base-url`.
 
 Note that `#:dist-base-url` should almost always end with `"/"`, since
-others URLs will be constructed as relative to `#:dist-base-url`.
+other URLs will be constructed as relative to `#:dist-base-url`.
 
 The site is generated as `"build/site"` by default. A `#:site-dest`
 entry in the configuration file can select an alternate destination.
