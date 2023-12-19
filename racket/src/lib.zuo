@@ -254,13 +254,21 @@
                                 (input-data-target 'configure-args configure-args)
                                 inputs)
                          (lambda ()
-                           (shell/wait (map string->shell
-                                            (cons (ensure-path
-                                                   (if (relative-path? configure)
-                                                       (find-relative-path dir configure)
-                                                       configure))
-                                                  configure-args))
-                                       (hash 'dir dir)))))
+			   (define cmd (cons (ensure-path
+                                              (if (relative-path? configure)
+						  (find-relative-path dir configure)
+						  configure))
+                                             configure-args))
+			   (cond
+			    [(and (eq? 'windows (system-type))
+				  (eq? 'unix (hash-ref (runtime-env) 'toolchain-type)))
+			     (process/wait (find-executable-path "sh")
+					   (car cmd)
+					   (cdr cmd)
+					   (hash 'dir dir))]
+			    [else
+                             (shell/wait (map string->shell cmd)
+					 (hash 'dir dir))]))))
                  (hash 'quiet? #t
                        'co-outputs (cdr outputs))))
   ((dynamic-require script 'targets-at) (make-at-dir dir) vars))

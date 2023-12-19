@@ -197,7 +197,10 @@ static int bytes_main(int argc, char **argv,
   boot_offset = find_rktboot_section(boot_exe);
   if (!boot_offset) boot_images_in_exe = 0;
 #elif WIN32
-  boot_offset = find_resource_offset(dll_path, 259, boot_rsrc_offset);
+  if (boot1_offset || boot2_offset || boot3_offset)
+    boot_offset = find_resource_offset(dll_path, 259, boot_rsrc_offset);
+  else
+    boot_offset = 0;
 #else
   boot_offset = find_boot_section(boot_exe);
 #endif
@@ -226,7 +229,7 @@ static int bytes_main(int argc, char **argv,
       && (boot3_offset == 0)
       && (boot1_path == boot2_path)
       && (boot1_path == boot3_path)) {
-    /* No offsets have been set, so we must be trying< to run
+    /* No offsets have been set, so we must be trying to run
        something like `raw_racketcs` during the build process.
        Look for boot files adjacent to the executable. */
     boot1_path = path_replace_filename(boot_exe, "petite-v.boot");

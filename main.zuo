@@ -165,7 +165,7 @@
     (define prefix (hash-ref options 'prefix #f))
     (define targets
       (configured-targets-at (hash
-                              'configure (if (eq? 'windows (system-type))
+                              'configure (if (eq? 'windows (hash-ref (runtime-env) 'toolchain-type))
                                              (at-source "racket/src" subdir "winfig.bat")
                                              (at-source "racket/src" subdir "configure"))
                               'inputs (list (at-source "racket/src" subdir "Makefile.in"))
@@ -187,7 +187,8 @@
                                                   '("--enable-bcdefault")]
                                                  [else '()])
                                                (cond
-                                                 [(eq? 'windows (system-type)) '()]
+                                                 [(eq? 'windows (hash-ref (runtime-env) 'toolchain-type))
+						  '()]
                                                  [prefix (list (~a "--prefix=" prefix)
                                                                "--enable-macprefix")]
                                                  [else '("--disable-useprefix"

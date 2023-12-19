@@ -550,7 +550,7 @@ FARPROC MemoryDefaultGetProcAddress(HCUSTOMMODULE module, LPCSTR name, void *use
     FARPROC result = GetProcAddress((HMODULE) module, name);
 
     if (result == &GetModuleHandleExW)
-      return GetModuleHandleExW_redirect;
+      return (FARPROC)GetModuleHandleExW_redirect;
 
     return result;
 }
