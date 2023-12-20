@@ -4,7 +4,8 @@
 (Section 'syntax)
 
 (require syntax/srcloc
-         syntax/strip-context)
+         syntax/strip-context
+         racket/case)
 
 ;; ----------------------------------------
 
@@ -347,6 +348,28 @@
 			[(bye) 'a]
 			[(hello) (values 10 9)]
 			[else #f])))
+(test "none" 'case/equal-always (case/equal-always (string-append "a" "b")
+                                                   (("ab" "ac") "a")
+                                                   (else "none")))
+(test "a" 'case/equal-always (case/equal-always (string->immutable-string (string-append "a" "b"))
+                                                (("ab" "ac") "a")
+                                                (else "none")))
+(test 'composite 'case/eqv (case/eqv (* 2 3)
+                                     ((2 3 5 7) 'prime)
+                                     ((1 4 6 8 9) 'composite)))
+(test "none" 'case/eqv (case/eqv (string->immutable-string
+                                  (string-append "a" (if (zero? (random 1)) "b" "_")))
+                                 (("ab" "ac") "a")
+                                 (else "none")))
+(test "a" 'case/eqv (case/eqv (datum-intern-literal (string-append "a" "b"))
+                              (("ab" "ac") "a")
+                              (else "none")))
+(test "2^100" 'case/eqv (case/eqv (expt 2 (if (zero? (random 1)) 100 0))
+                                  ((1267650600228229401496703205376) "2^100")
+                                  (else "none")))
+(test "none" 'case/eq (case/eq (expt 2 (if (zero? (random 1)) 100 0))
+                               ((1267650600228229401496703205376) "2^100")
+                               (else "none")))
 (error-test #'(cond [(values 1 2) 8]) arity?)
 (error-test #'(case (values 1 2) [(a) 8]) arity?)
 (syntax-test #'(case 1 []) #rx"ill-formed clause")
@@ -359,6 +382,10 @@
 (syntax-test #'(case 1 [(y) 5] [(x)]) #rx"missing expression after datum sequence")
 (syntax-test #'(case 1 [(x) . 8]) #rx"illegal use of `.'")
 (syntax-test #'(case 1 [(x) 10] . 9) #rx"illegal use of `.'")
+(syntax-test #'(case/equal 1 []) #rx"ill-formed clause")
+(syntax-test #'(case/equal-always 1 []) #rx"ill-formed clause")
+(syntax-test #'(case/eq 1 []) #rx"ill-formed clause")
+(syntax-test #'(case/eqv 1 []) #rx"ill-formed clause")
 
 ;; test larger `case' dispatches to trigger for binary-search
 ;; and hash-table-based dispatch:

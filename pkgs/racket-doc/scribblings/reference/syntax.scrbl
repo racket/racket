@@ -14,6 +14,7 @@
                      racket/provide
                      racket/package
                      racket/splicing
+                     racket/case
                      racket/runtime-path
                      racket/lazy-require
                      (only-in compiler/cm-accomplice
@@ -2547,6 +2548,24 @@ in @math{O(log N)} time for @math{N} @racket[datum]s.
 (classify #\1)
 (classify #\!)
 ]}
+
+@subsection[#:tag "case/equal"]{Variants of @racket[case]}
+
+@note-lib-only[racket/case]
+
+@history[#:added "8.11.1.8"]
+
+@deftogether[(
+@defform[(case/equal val-expr case-clause ...)]
+@defform[(case/equal-always val-expr case-clause ...)]
+@defform[(case/eq val-expr case-clause ...)]
+@defform[(case/eqv val-expr case-clause ...)]
+)]{
+
+Like @racket[case], but using @racket[equal?], @racket[equal-always?],
+@racket[eq?], or @racket[eqv?] for comparing the result of
+@racket[val-expr] to the literals in the @racket[case-clause]s. The
+@racket[case/equal] form is equivalent to @racket[case].}
 
 @;------------------------------------------------------------------------
 @section[#:tag "define"]{Definitions: @racket[define], @racket[define-syntax], ...}
