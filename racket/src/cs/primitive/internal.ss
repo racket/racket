@@ -28,6 +28,7 @@
   [record-mutator (known-constant)]
   [unsafe-struct? (known-procedure/allocates 4)] ; claim allocation to preserver on order
   [unsafe-struct (known-procedure/allocates -2)]
+  [unsafe-sealed-struct? (known-procedure/allocates 2)]
 
   [call-with-module-prompt (known-procedure 2)]
   [raise-binding-result-arity-error (known-procedure 4)]
