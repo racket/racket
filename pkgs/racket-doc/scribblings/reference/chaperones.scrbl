@@ -164,7 +164,12 @@ reachability of @racket[v] (in the sense of garbage collection; see
 @racket[v] is an @tech{impersonator}. That is, the value @racket[v]
 will be considered reachable as long as the result ephemeron is
 reachable in addition to any value that @racket[v] impersonates
-(including itself).}
+(including itself).
+
+In the terminology of @tech{ephemerons}, @racket[v] is the
+value of the ephemeron and all of the values that @racket[v]
+impersonates are keys.
+}
 
 @defproc[(procedure-impersonator*? [v any/c]) boolean?]{
 
