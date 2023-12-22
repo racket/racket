@@ -230,7 +230,9 @@
                               immutable-hash? immutable-box?
                               mutable-string? mutable-bytes? mutable-vector?
                               mutable-hash? mutable-box?
-                              syntax-srcloc)
+                              syntax-srcloc
+                              vector-copy vector-append vector-set/copy
+                              vector*-copy vector*-set/copy vector*-append)
              (all-from "reqprov.rkt")
              (all-from-except "for.rkt"
                               define-in-vector-like

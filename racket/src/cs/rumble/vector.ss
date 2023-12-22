@@ -326,17 +326,101 @@
 
 ;; ----------------------------------------
 
-(define/who (vector-copy vec)
+(define/who vector-copy
+  (case-lambda
+   [(vec)
+    (cond
+      [(#%vector? vec)
+       (#%vector-copy vec)]
+      [else
+       (vector-copy vec 0 (and (vector? vec) (vector-length vec)))])]
+   [(vec start)
+    (vector-copy vec start (and (vector? vec) (vector-length vec)))]
+   [(vec start end)
+    (cond
+      [(#%vector? vec)
+       (check who exact-nonnegative-integer? start)
+       (check who exact-nonnegative-integer? end)
+       (check-range who "vector" vec start end (#%vector-length vec))
+       (#%vector-copy vec start (fx- end start))]
+      [(vector? vec)
+       (check who exact-nonnegative-integer? start)
+       (check who exact-nonnegative-integer? end)
+       (check-range who "vector" vec start end (vector-length vec))
+       (let* ([vec2 (make-vector (- end start))])
+         (vector-copy! vec2 0 vec start end)
+         vec2)]
+      [else
+       (raise-argument-error who "vector?" vec)])]))
+
+(define unsafe-vector-copy
+  (case-lambda
+   [(vec) (vector-copy vec)]
+   [(vec start) (vector-copy vec start)]
+   [(vec start end) (vector-copy vec start end)]))
+
+(define/who (vector-set/copy vec idx val)
   (cond
-   [(#%vector? vec)
-    (#3%vector-copy vec)]
-   [(vector? vec)
-    (let* ([len (vector-length vec)]
-           [vec2 (make-vector len)])
-      (vector-copy! vec2 0 vec)
-      vec2)]
-   [else
-    (raise-argument-error who "vector?" vec)]))
+    [(#%vector? vec) (#2%vector-set/copy vec idx val)]
+    [(vector? vec)
+     (check who exact-nonnegative-integer? idx)
+     (let ([len (vector-length vec)])
+       (check-range who "vector" vec idx #f len)
+       (let* ([vec2 (vector-copy vec 0 len)])
+         (#%vector-set! vec2 idx val)
+         vec2))]
+    [else
+     (raise-argument-error who "vector?" vec)]))
+
+(define (unsafe-vector-set/copy vec idx val)
+  (vector-set/copy vec idx val))
+
+(define (vectors-append vecs)
+  (let ([len (let loop ([vecs vecs])
+               (cond
+                 [(null? vecs) 0]
+                 [(vector? (car vecs))
+                  (+ (vector-length (car vecs))
+                     (loop (cdr vecs)))]
+                  [else
+                   (raise-argument-error 'vector-append "vector?" (car vecs))]))])
+    (let ([dest (make-vector len)])
+      (let loop ([vecs vecs] [i 0])
+        (cond
+          [(null? vecs) dest]
+          [else
+           (let* ([vec (car vecs)]
+                  [len (vector-length vec)])
+             (let vloop ([j 0] [i i])
+               (cond
+                 [(= j len) (loop (cdr vecs) i)]
+                 [else
+                  (#%vector-set! dest i (vector-ref vec j))
+                  (vloop (fx+ j 1) (fx+ i 1))])))])))))
+  
+(define/who vector-append
+  (case-lambda
+   [(vec)
+    (cond
+      [(#%vector? vec) (#%vector-copy vec)]
+      [(vector? vec) (vector-copy vec)]
+      [else (raise-argument-error who "vector?" vec)])]
+   [(vec1 vec2)
+    (cond
+      [(and (#%vector? vec1) (#%vector? vec2)) (#%vector-append vec1 vec2)]
+      [else (vectors-append (list vec1 vec2))])]
+   [(vec1 vec2 vec3)
+    (cond
+      [(and (#%vector? vec1) (#%vector? vec2) (#%vector? vec3)) (#%vector-append vec1 vec2 vec3)]
+      [else (vectors-append (list vec1 vec2 vec3))])]
+   [vecs (vectors-append vecs)]))
+
+(define unsafe-vector-append
+  (case-lambda
+   [(vec) (vector-append vec)]
+   [(vec1 vec2) (vector-append vec1 vec2)]
+   [(vec1 vec2 vec3) (vector-append vec1 vec2 vec3)]
+   [vecs (vectors-append vecs)]))
 
 (define/who vector-copy!
   (case-lambda
@@ -399,6 +483,31 @@
             (let ([i (fx1- i)])
               (#%vector-set! dest (fx+ dest-start i) (vector-ref src (fx+ src-start i)))
               (loop i))))]))]))
+
+(define/who vector*-append
+  (case-lambda
+   [(vec) (#2%vector-append vec)]
+   [(vec1 vec2) (#2%vector-append vec1 vec2)]
+   [(vec1 vec2 vec3) (#2%vector-append vec1 vec2 vec3)]
+   [vecs (#%apply #2%vector-append vecs)]))
+
+(define/who vector*-copy
+  (case-lambda
+   [(vec) (#2%vector-copy vec)]
+   [(vec start)
+    (check who #%vector? vec)
+    (check who exact-nonnegative-integer? start)
+    (check-range who "vector" vec start #f (#%vector-length vec))
+    (#2%vector-copy vec start (fx- (#%vector-length vec) start))]
+   [(vec start end)
+    (check who #%vector? vec)
+    (check who exact-nonnegative-integer? start)
+    (check who exact-nonnegative-integer? end)
+    (check-range who "vector" vec start end (#%vector-length vec))
+    (#%vector-copy vec start (fx- end start))]))
+
+(define/who (vector*-set/copy vec idx val)
+  (#2%vector-set/copy vec idx val))
 
 (define/who vector->values
   (case-lambda

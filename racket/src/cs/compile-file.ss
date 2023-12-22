@@ -2,7 +2,7 @@
 ;; Check to make we're using a build of Chez Scheme
 ;; that has all the features we need.
 (define-values (need-maj need-min need-sub need-pre)
-  (values 9 9 9 10))
+  (values 9 9 9 23))
 
 (unless (guard (x [else #f]) (eval 'scheme-pre-release))
   (error 'compile-file

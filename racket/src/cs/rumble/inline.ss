@@ -46,6 +46,14 @@
   (#%vector? v)
   (#3%vector-set! v i n))
 
+(define-inline (unsafe-vector-copy v start end)
+  (#%vector? v)
+  (#3%vector-copy v start (fx- end start)))
+
+(define-inline (unsafe-vector-set/copy v idx val)
+  (#%vector? v)
+  (#3%vector-set/copy v idx val))
+
 (define-inline (unbox b)
   (#%box? b)
   (#3%unbox b))
