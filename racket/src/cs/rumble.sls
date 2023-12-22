@@ -382,6 +382,8 @@
                   [inline:vector-set! vector-set!])
           vector-copy
           vector-copy!
+          vector-set/copy
+          vector-append
           (rename [inline:vector-immutable vector-immutable])
           vector->values
           vector-fill!
@@ -390,6 +392,9 @@
           vector*-length
           vector*-ref
           vector*-set!
+          vector*-copy
+          vector*-append
+          vector*-set/copy
 
           impersonate-vector
           impersonate-vector*
@@ -722,11 +727,17 @@
 
           (rename [inline:unsafe-vector-ref unsafe-vector-ref]
                   [inline:unsafe-vector-set! unsafe-vector-set!]
-                  [inline:unsafe-vector-length unsafe-vector-length])
+                  [inline:unsafe-vector-length unsafe-vector-length]
+                  [inline:unsafe-vector-copy unsafe-vector-copy]
+                  [inline:unsafe-vector-set/copy unsafe-vector-set/copy])
+          unsafe-vector-append
           unsafe-vector*-ref
           unsafe-vector*-set!
           unsafe-vector*-cas!
           unsafe-vector*-length
+          unsafe-vector*-copy
+          unsafe-vector*-set/copy
+          unsafe-vector*-append
 
           unsafe-fxvector-length
           unsafe-fxvector-ref

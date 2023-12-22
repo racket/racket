@@ -88,6 +88,14 @@
 (define unsafe-vector*-ref (unsafe-primitive vector-ref))
 (define unsafe-vector*-set! (unsafe-primitive vector-set!))
 (define unsafe-vector*-cas! (unsafe-primitive vector-cas!))
+(define unsafe-vector*-append (unsafe-primitive vector-append))
+(define unsafe-vector*-set/copy (unsafe-primitive vector-set/copy))
+
+(define unsafe-vector*-copy
+  (case-lambda
+   [(vec) ((unsafe-primitive vector-copy) vec)]
+   [(vec start) ((unsafe-primitive vector-copy) vec start (fx- ((unsafe-primitive vector-length) vec) start))]
+   [(vec start end) ((unsafe-primitive vector-copy) vec start (fx- end start))]))
 
 (define (unsafe-struct*-cas! s k old new)
   (#3%$record-cas! s k old new))

@@ -345,6 +345,21 @@ elements of @racket[vec] from @racket[start] (inclusive) to
 ]
 }
 
+@defproc[(vector-set/copy [vec vector?]
+                          [pos exact-nonnegative-integer?]
+                          [val any/c])
+         vector?]{
+
+Creates a fresh vector with the same content as @racket[vec], except that
+@racket[val] is the element at index @racket[pos].
+
+@mz-examples[#:eval vec-eval
+ (vector-set/copy #(1 2 3) 0 'x)
+ (vector-set/copy #(1 2 3) 2 'x)
+]
+
+@history[#:added "8.11.1.10"]}
+
 @defproc[(vector-filter [pred procedure?] [vec vector?]) vector?]{
 Returns a fresh vector with the elements of @racket[vec] for which
  @racket[pred] produces a true value. The @racket[pred] procedure is
@@ -483,6 +498,25 @@ v2]
 
 @history[#:added "6.6.0.5"]{}
 }
+
+
+@deftogether[(
+@defproc[(vector*-copy [vec (and/c vector? (not/c impersonator?))]
+                       [start exact-nonnegative-integer? 0]
+                       [end exact-nonnegative-integer? (vector-length v)])
+          vector?]
+@defproc[(vector*-append [vec (and/c vector? (not/c impersonator?))] ...) vector?]
+@defproc[(vector*-set/copy [vec (and/c vector? (not/c impersonator?))]
+                           [pos exact-nonnegative-integer?]
+                           [val any/c])
+         vector?]
+)]{
+
+Like @racket[vector-copy], @racket[vector-append], and
+@racket[vector-set/copy], but constrained to work on vectors that are not
+@tech{impersonators}.
+
+@history[#:added "8.11.1.10"]}
 
 
 @close-eval[vec-eval]

@@ -96,6 +96,26 @@
     (err/rt-test (fun #(1) -1))
     (err/rt-test (fun #(1) 2) exn:application:mismatch?)))
 
+;; ---------- vector-set/copy ----------
+(let ()
+  (test #(x 2 3) vector-set/copy #(1 2 3) 0 'x)
+  (test #(1 x 3) vector-set/copy #(1 2 3) 1 'x)
+  (test #(1 2 x) vector-set/copy #(1 2 3) 2 'x)
+  (test #(x 2 3) vector-set/copy (chaperone-vector #(1 2 3) (lambda (b i v) v) (lambda (b i v) v)) 0 'x)
+  (err/rt-test (vector-set/copy #(1 2 3) -1 'x))
+  (err/rt-test (vector-set/copy #(1 2 3) 3 'x))
+  (err/rt-test (vector-set/copy #(1 2 3) #f 'x)))
+
+(let ()
+  (test #(x 2 3) vector*-set/copy #(1 2 3) 0 'x)
+  (test #(1 x 3) vector*-set/copy #(1 2 3) 1 'x)
+  (test #(1 2 x) vector*-set/copy #(1 2 3) 2 'x)
+  (err/rt-test (vector*-set/copy #(1 2 3) -1 'x))
+  (err/rt-test (vector*-set/copy #(1 2 3) 3 'x))
+  (err/rt-test (vector*-set/copy #(1 2 3) #f 'x))
+  (err/rt-test (let ([vec (chaperone-vector #(1 2 3) (lambda (b i v) v) (lambda (b i v) v))])
+                 (vector*-set/copy vec 0 'x))))
+
 ;; ---------- vector-append ----------
 (let ()
   (test #() vector-append #())
@@ -104,8 +124,22 @@
   (test #(1 2) vector-append #() #(1 2))
   (test #(a b) vector-append #(a) #(b))
   (test #(a b c) vector-append #(a b) #() #(c))
-  (test #(a b d c) vector-append #(a b) #(d) #(c)))
+  (test #(a b d c) vector-append #(a b) #(d) #(c))
+  (test #(a b d c d e f g) vector-append #(a b) #(d) #(c) #(d e f) #(g))
+  (err/rt-test (vector-append 1 #(a b)))
+  (err/rt-test (vector-append #(a b) #(c d) 1))
+  (err/rt-test (vector-append #(a b) #(c d) #(f) 1)))
 
+(let ()
+  (test #() vector*-append #())
+  (test #(1 2) vector*-append #(1 2) #())
+  (test #(a b d c) vector*-append #(a b) #(d) #(c))
+  (err/rt-test (vector*-append 1 #(a b)))
+  (err/rt-test (vector*-append #(a b) #(c d) 1))
+  (err/rt-test (vector*-append #(a b) #(c d) #(f) 1))
+  (let ([vec (chaperone-vector #(1 2 3) (lambda (b i v) v) (lambda (b i v) v))])
+    (err/rt-test (vector*-append vec #(a b)))
+    (err/rt-test (vector*-append #(a b) vec))))
 
 ;; ---------- vector-filter[-not] ----------
 (let ()
@@ -149,6 +183,20 @@
 
 (err/rt-test (vector-copy #(4 5 6) 4) exn:fail:contract? #rx"[[]0, 3[]]")
 (err/rt-test (vector-copy #(4 5 6) 1 4) exn:fail:contract? #rx"[[]0, 3[]]")
+
+(let ()
+  (test #() vector*-copy #())
+  (test #(1 2 3) vector*-copy #(1 2 3))
+  (test #() vector*-copy #(1 2 3) 3)
+  (test #(2 3) vector*-copy #(1 2 3) 1)
+  (test #(2) vector*-copy #(1 2 3) 1 2)
+  (let ([vec (chaperone-vector #(1 2 3) (lambda (b i v) v) (lambda (b i v) v))])
+    (err/rt-test (vector*-copy vec))
+    (err/rt-test (vector*-copy vec 0))
+    (err/rt-test (vector*-copy vec 0 1))))
+
+(err/rt-test (vector*-copy #(4 5 6) 4) exn:fail:contract? #rx"[[]0, 3[]]")
+(err/rt-test (vector*-copy #(4 5 6) 1 4) exn:fail:contract? #rx"[[]0, 3[]]")
 
 ;; ---------- vector-arg{min,max} ----------
 

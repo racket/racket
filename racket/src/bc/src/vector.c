@@ -40,7 +40,13 @@ static Scheme_Object *vector_star_length (int argc, Scheme_Object *argv[]);
 static Scheme_Object *vector_to_list (int argc, Scheme_Object *argv[]);
 static Scheme_Object *list_to_vector (int argc, Scheme_Object *argv[]);
 static Scheme_Object *vector_fill (int argc, Scheme_Object *argv[]);
+static Scheme_Object *vector_copy(int argc, Scheme_Object *argv[]);
+static Scheme_Object *vector_star_copy(int argc, Scheme_Object *argv[]);
 static Scheme_Object *vector_copy_bang(int argc, Scheme_Object *argv[]);
+static Scheme_Object *vector_set_copy(int argc, Scheme_Object *argv[]);
+static Scheme_Object *vector_star_set_copy(int argc, Scheme_Object *argv[]);
+static Scheme_Object *vector_append(int argc, Scheme_Object *argv[]);
+static Scheme_Object *vector_star_append(int argc, Scheme_Object *argv[]);
 static Scheme_Object *vector_to_immutable (int argc, Scheme_Object *argv[]);
 static Scheme_Object *vector_to_values (int argc, Scheme_Object *argv[]);
 static Scheme_Object *chaperone_vector(int argc, Scheme_Object **argv);
@@ -215,6 +221,36 @@ scheme_init_vector (Scheme_Startup_Env *env)
 						    "vector-copy!", 
 						    3, 5), 
 			     env);
+  scheme_addto_prim_instance("vector-copy",
+			     scheme_make_immed_prim(vector_copy,
+						    "vector-copy",
+						    1, 3),
+			     env);
+  scheme_addto_prim_instance("vector-set/copy",
+			     scheme_make_immed_prim(vector_set_copy,
+						    "vector-set/copy",
+						    3, 3),
+			     env);
+  scheme_addto_prim_instance("vector-append",
+			     scheme_make_immed_prim(vector_append,
+						    "vector-append",
+						    0, -1),
+			     env);
+  scheme_addto_prim_instance("vector*-copy",
+			     scheme_make_immed_prim(vector_star_copy,
+						    "vector*-copy",
+						    1, 3),
+			     env);
+  scheme_addto_prim_instance("vector*-set/copy",
+			     scheme_make_immed_prim(vector_star_set_copy,
+						    "vector*-set/copy",
+						    3, 3),
+			     env);
+  scheme_addto_prim_instance("vector*-append",
+			     scheme_make_immed_prim(vector_star_append,
+						    "vector*-append",
+						    0, -1),
+			     env);
 
   p = scheme_make_immed_prim(vector_to_immutable, "vector->immutable-vector", 1, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_AD_HOC_OPT);
@@ -338,6 +374,25 @@ scheme_init_unsafe_vector (Scheme_Startup_Env *env)
   p = scheme_make_immed_prim(unsafe_vector_star_cas, "unsafe-vector*-cas!", 4, 4);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_NARY_INLINED);
   scheme_addto_prim_instance("unsafe-vector*-cas!", p, env);
+
+  scheme_addto_prim_instance("unsafe-vector-copy",
+                             scheme_make_immed_prim(vector_copy, "unsafe-vector-copy", 1, 3),
+                             env);
+  scheme_addto_prim_instance("unsafe-vector*-copy",
+                             scheme_make_immed_prim(vector_star_copy, "unsafe-vector*-copy", 1, 3),
+                             env);
+  scheme_addto_prim_instance("unsafe-vector-set/copy",
+                             scheme_make_immed_prim(vector_set_copy, "unsafe-vector-set/copy", 3, 3),
+                             env);
+  scheme_addto_prim_instance("unsafe-vector*-set/copy",
+                             scheme_make_immed_prim(vector_star_set_copy, "unsafe-vector*-set/copy", 3, 3),
+                             env);
+  scheme_addto_prim_instance("unsafe-vector-append",
+                             scheme_make_immed_prim(vector_append, "unsafe-vector-append", 0, -1),
+                             env);
+  scheme_addto_prim_instance("unsafe-vector*-append",
+                             scheme_make_immed_prim(vector_star_append, "unsafe-vector*-append", 0, -1),
+                             env);
 
   REGISTER_SO(scheme_unsafe_struct_ref_proc);
   p = scheme_make_immed_prim(unsafe_struct_ref, "unsafe-struct-ref", 2, 2);
@@ -636,7 +691,7 @@ Scheme_Object *scheme_vector_star_length(Scheme_Object *v)
   return vector_star_length(1, a);
 }
 
-void scheme_bad_vec_index(char *name, Scheme_Object *i, const char *which, Scheme_Object *vec, 
+void scheme_bad_vec_index(const char *name, Scheme_Object *i, const char *which, Scheme_Object *vec, 
                           intptr_t bottom, intptr_t len)
 {
   const char *type;
@@ -662,7 +717,7 @@ void scheme_bad_vec_index(char *name, Scheme_Object *i, const char *which, Schem
 }
 
 static Scheme_Object *
-bad_index(char *name, const char *which, Scheme_Object *i, Scheme_Object *vec, int bottom)
+bad_index(const char *name, const char *which, Scheme_Object *i, Scheme_Object *vec, int bottom)
 {
   intptr_t len;
 
@@ -1092,6 +1147,46 @@ static Scheme_Object *vector_copy_bang(int argc, Scheme_Object *argv[])
   return scheme_void;
 }
 
+static Scheme_Object *vector_copy(int argc, Scheme_Object *argv[])
+{
+  int slow;
+  Scheme_Object *s, *d, *v;
+  intptr_t istart, ifinish, i;
+    
+  s = argv[0];
+  if (SCHEME_NP_CHAPERONEP(s)) {
+    slow = 1;
+    s = SCHEME_CHAPERONE_VAL(s);
+  }
+  if (!SCHEME_VECTORP(s))
+    scheme_wrong_contract("vector-copy", "vector?", 0, argc, argv);
+  
+  scheme_do_get_substring_indices("vector-copy", s,
+                                  argc, argv, 1, 2, 
+                                  &istart, &ifinish, SCHEME_VEC_SIZE(s));
+
+  d = scheme_make_vector(ifinish - istart, NULL);
+  if (slow) {
+    for (i = istart; i <= ifinish; i++) {
+      v = scheme_chaperone_vector_ref(argv[0], i);
+      SCHEME_VEC_ELS(d)[i-istart] = v;
+    }
+  } else
+    memcpy(SCHEME_VEC_ELS(d),
+           SCHEME_VEC_ELS(s) + istart,
+           (ifinish - istart) * sizeof(Scheme_Object*));
+
+  return d;
+}
+
+static Scheme_Object *vector_star_copy(int argc, Scheme_Object *argv[])
+{
+  if (!SCHEME_VECTORP(argv[0]))
+    scheme_wrong_contract("vector*-copy", "(and/c vector? (not/c immutable?))", 0, argc, argv);
+
+  return vector_copy(argc, argv);
+}
+
 Scheme_Object *scheme_chaperone_vector_copy(Scheme_Object *vec)
 {
   int len;
@@ -1110,6 +1205,90 @@ Scheme_Object *scheme_chaperone_vector_copy(Scheme_Object *vec)
   (void)vector_copy_bang(3, a);
 
   return vec2;
+}
+
+static Scheme_Object *do_vector_set_copy(const char *who, int chaperone_ok, int argc, Scheme_Object *argv[])
+{
+  Scheme_Object *s, *d, *argv2[1];
+  intptr_t i, len;
+
+  s = argv[0];
+  if (chaperone_ok && SCHEME_NP_CHAPERONEP(s))
+    s = SCHEME_CHAPERONE_VAL(s);
+  if (!SCHEME_VECTORP(s))
+    scheme_wrong_contract(who, chaperone_ok ? "vector?" : "(and/c vector? (not/c immutable?))", 0, argc, argv);
+
+  len = SCHEME_VEC_SIZE(s);
+
+  i = scheme_extract_index(who, 1, argc, argv, len, 0);
+  if (i >= len)
+    bad_index(who, "", argv[1], argv[0], 0);
+
+  argv2[0] = argv[0];
+  d = vector_copy(1, argv2);
+
+  SCHEME_VEC_ELS(d)[i] = argv[2];
+
+  return d;
+}
+
+static Scheme_Object *vector_set_copy(int argc, Scheme_Object *argv[])
+{
+  return do_vector_set_copy("vector-set/copy", 1, argc, argv);
+}
+
+static Scheme_Object *vector_star_set_copy(int argc, Scheme_Object *argv[])
+{
+  return do_vector_set_copy("vector*-set/copy", 0, argc, argv);
+}
+
+static Scheme_Object *do_vector_append(const char *who, int chaperone_ok, int argc, Scheme_Object *argv[])
+{
+  int i, slow = 0;
+  intptr_t len = 0;
+  Scheme_Object *d, *s, *v;
+  
+  for (i = 0; i < argc; i++) {
+    s = argv[i];
+    if (chaperone_ok && SCHEME_NP_CHAPERONEP(s))
+      s = SCHEME_CHAPERONE_VAL(s);
+    if (!SCHEME_VECTORP(s))
+      scheme_wrong_contract(who, chaperone_ok ? "vector?" : "(and/c vector? (not/c immutable?))", i, argc, argv);
+    len += SCHEME_VEC_SIZE(s);
+  }
+
+  d = scheme_make_vector(len, NULL);
+  len = 0;
+
+  for (i = 0; i < argc; i++) {
+    s = argv[i];
+    if (SCHEME_NP_CHAPERONEP(s)) {
+      intptr_t j, s_len;
+      s = SCHEME_CHAPERONE_VAL(s);
+      s_len = SCHEME_VEC_SIZE(s);
+      for (j = 0; j < s_len; j++) {
+        v = scheme_chaperone_vector_ref(argv[i], j);
+        SCHEME_VEC_ELS(d)[len++] = v;
+      }
+    } else {
+      memcpy(SCHEME_VEC_ELS(d) + len,
+             SCHEME_VEC_ELS(s),
+             SCHEME_VEC_SIZE(s) * sizeof(Scheme_Object*));
+      len += SCHEME_VEC_SIZE(s);
+    }
+  }
+
+  return d;
+}
+
+static Scheme_Object *vector_append(int argc, Scheme_Object *argv[])
+{
+  return do_vector_append("vector-append", 1, argc, argv);
+}
+
+static Scheme_Object *vector_star_append(int argc, Scheme_Object *argv[])
+{
+  return do_vector_append("vector*-append", 0, argc, argv);
 }
 
 static Scheme_Object *vector_to_immutable (int argc, Scheme_Object *argv[])

@@ -38,6 +38,7 @@
                            equal?
                            vector? mutable-vector? vector-length vector-ref vector-set!
                            vector-copy vector-fill! vector->immutable-vector vector->list
+                           vector-append vector-set/copy
                            immutable-vector?
                            random random-seed
                            box? unbox set-box! immutable-box? mutable-box?
