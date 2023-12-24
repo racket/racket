@@ -339,16 +339,16 @@
     (init-field queue create-job-thunk success-thunk failure-thunk [report-proc display])
     (field [results null])
 
-    (define/public (work-done work workerid msg)
+    (define/public (work-done work worker msg)
       (match msg
         [(list (list 'REPORT msg) stdout stderr)
          (report-proc msg)
          #f]
         [(list (list 'DONE result) stdout stderr)
-         (set! results (cons (success-thunk work result stdout stderr) results))
+         (set! results (cons (success-thunk work result stdout stderr (send worker get-id)) results))
          #t]
         [(list (list 'ERROR errmsg) stdout stderr)
-         (failure-thunk work errmsg stdout stderr)
+         (failure-thunk work errmsg stdout stderr (send worker get-id))
          #t]))
     (define/public (get-job workerid)
       (match queue

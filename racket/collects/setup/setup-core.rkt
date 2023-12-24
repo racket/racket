@@ -43,6 +43,7 @@
          "private/format-error.rkt"
          "private/encode-relative.rkt"
          "private/time.rkt"
+         "private/setup-fprintf.rkt"
          compiler/private/dep
          (only-in pkg/lib pkg-directory
                   pkg-single-collection))
@@ -104,22 +105,6 @@
        ;; No `#f' in links list means that we don't look at
        ;; the current library collection paths:
        null))
-
-  (define (setup-fprintf p task s . args)
-    (let ([task (if task (string-append task ": ") "")])
-      (define st
-        (string-append name-str ": " task s
-                       (if timestamp-output?
-                           (format " @ ~a" (current-process-milliseconds))
-                           "")
-                       "\n"))
-      (if (null? args)
-          (write-string st p)
-          (apply fprintf p st args))
-      (flush-output p)))
-
-  (define (setup-printf task s . args)
-    (apply setup-fprintf (current-output-port) task s args))
 
   (define (exn->string x) (if (exn? x) (exn-message x) (format "~s" x)))
 
@@ -183,6 +168,13 @@
   (define (maybe-reroot-info-domain p)
     (define r (get-info-domain-root))
     (if r (reroot-path p r) p))
+
+  (define setup-fprintf (mk-setup-fprintf name-str timestamp-output?))
+
+  (define (setup-printf #:n [n #f] #:only-if-terminal? [only-if-terminal? #f] task s . args)
+    (apply setup-fprintf
+           #:n n #:only-if-terminal? only-if-terminal?
+           (current-output-port) task s args))
 
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;;                   Errors                      ;;

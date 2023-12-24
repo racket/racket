@@ -383,14 +383,14 @@
                  (list-queue
                   (list-tail docs num-sequential)
                   (lambda (x workerid) (s-exp->fasl (serialize x)))
-                  (lambda (work r outstr errstr) 
+                  (lambda (work r outstr errstr workerid)
                     (printf "~a" outstr)
                     (printf "~a" errstr)
                     (deserialize (fasl->s-exp r)))
-                  (lambda (work errmsg outstr errstr) 
+                  (lambda (work errmsg outstr errstr workerid)
                     (parallel-do-error-handler with-record-error work errmsg outstr errstr))
                   (lambda (args)
-                    (apply setup-printf args)))
+                    (keyword-apply setup-printf (list-ref args 0) (list-ref args 1) (list-ref args 2))))
                  (define-worker (get-doc-info-worker workerid program-name verbosev only-dirs latex-dest 
                                                      avoid-main? auto-main? auto-user? main-doc-exists?
                                                      force-out-of-date? lock-ch)
@@ -399,8 +399,10 @@
                                                 force-out-of-date? lock
                                                 send/report) 
                             doc)
-                     (define (setup-printf . args)
-                       (send/report args))
+                     (define setup-printf
+                       (make-keyword-procedure
+                        (λ (kwds kwd-args . args)
+                          (send/report (list kwds kwd-args args)))))
                      (define (with-record-error cc go fail-k)
                        (with-handlers ([exn:fail?
                                         (lambda (exn)
@@ -674,12 +676,19 @@
                                                      i)))
                                             infos)
                                 info<?)])
-          (define (say-rendering i workerid)
+          (define (say-rendering i workerid idle?)
             (setup-printf (string-append
-                           (if workerid (format "~a " workerid) "")
-                           (if (info-rendered? i) "re-rendering" "rendering") )
+                           (if workerid (format "~a" workerid) "")
+                           (if idle?
+                               ""
+                               (string-append
+                                (if workerid " " "")
+                                (if (info-rendered? i) "re-" "")
+                                "rendering")))
+                          #:only-if-terminal? idle?
+                          #:n workerid
                           "~a"
-                          (path->relative-string/setup (doc-src-file (info-doc i)))))
+                          (if idle? "idle" (path->relative-string/setup (doc-src-file (info-doc i))))))
           (define (prep-info! i)
             (set-info-start-time! i (current-inexact-milliseconds)))
           (define (update-info! info response)
@@ -695,7 +704,7 @@
                  (set-info-done-time! info (current-inexact-milliseconds)))]))
           (if ((min worker-count (length need-rerun)) . < . 2)
               (for ([i (in-list need-rerun)])
-                (say-rendering i #f)
+                (say-rendering i #f #f)
                 (prep-info! i)
                 (update-info! i (build-again! latex-dest i with-record-error
                                               no-lock (if gc-after-each-sequential? gc-point void)
@@ -709,7 +718,7 @@
                (list-queue
                 need-rerun
                 (lambda (i workerid) 
-                  (say-rendering i workerid)
+                  (say-rendering i workerid #f)
                   (prep-info! i)
                   (s-exp->fasl (serialize (list (info-doc i)
                                                 ;; Other content of `info' can be re-read from
@@ -720,11 +729,13 @@
                                                 ;; in this list:
                                                 (info-deps->rel-doc-src-file i)
                                                 (info-need-in-write? i)))))
-                (lambda (i r outstr errstr) 
+                (lambda (i r outstr errstr workerid)
+                  (say-rendering i workerid #t)
                   (printf "~a" outstr) 
                   (printf "~a" errstr)
                   (update-info! i (deserialize (fasl->s-exp r))))
-                (lambda (i errmsg outstr errstr) 
+                (lambda (i errmsg outstr errstr workerid)
+                  (say-rendering i workerid #t)
                   (parallel-do-error-handler with-record-error (info-doc i) errmsg outstr errstr)))
                (define-worker (build-again!-worker2 workerid verbosev latex-dest lock-ch
                                                     main-doc-exists?)
@@ -1122,8 +1133,10 @@
                                  (or (memq 'depends-all (doc-flags doc))
                                      (memq 'depends-all-user (doc-flags doc))))))])
 
-    (when (or (and (not up-to-date?) (not only-fast?))
-              (verbose))
+    (define print-worker-status?
+      (or (and (not up-to-date?) (not only-fast?))
+          (verbose)))
+    (when print-worker-status?
       (when out-of-date
         (verbose/log "Need run (~a) ~a" out-of-date (doc-name doc)))
       (setup-printf
@@ -1135,6 +1148,7 @@
                        "checking"
                        "running")]
          [else "skipping"]))
+       #:n workerid
        "~a"
        (path->relative-string/setup (doc-src-file doc))))
 
@@ -1143,6 +1157,7 @@
         (when (file-exists? p)
           (delete-file p))))
 
+    (define result
     (if up-to-date?
         ;; Load previously calculated info:
         (render-time
@@ -1270,7 +1285,14 @@
                      (db-shutdown)
                      info))))
              (lambda () #f))
-            #f))))
+            #f)))
+    (when (and print-worker-status? workerid)
+      (setup-printf
+       (format "~a" workerid)
+       #:n workerid
+       #:only-if-terminal? #t
+       "idle"))
+    result))
 
 (define (check-shared-files dir root? main? done setup-printf)
   (define dest-dir (simplify-path (if root?
