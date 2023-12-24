@@ -33,7 +33,7 @@
 
 (define lock-manager% 
   (class object%
-    (init-field worker-count)
+    (init-field worker-count [blocked-notify void] [unblocked-notify void])
     (field (locks (make-hash)))
     (define depends (make-hash))
     (define currently-idle 0)
@@ -57,6 +57,7 @@
                [else
                 (idle! +1)
                 (hash-set! depends wrkr (cons w fn))
+                (blocked-notify wrkr fn)
                 (list w (append waitlst (list wrkr)))]))]
            [_
             (wrkr/send wrkr (list 'locked))
@@ -68,6 +69,7 @@
          (for ([x (second (hash-ref locks fn))])
             (idle! -1)
             (hash-remove! depends x)
+            (unblocked-notify x)
             (wrkr/send x (list 'compiled)))
           (hash-set! locks fn 'done)]))
     (define/private (check-cycles w seen fns)
@@ -97,8 +99,25 @@
   (class* object% (work-queue<%>) 
     (init-field cclst printer append-error options)
     (init worker-count)
-    (field (lock-mgr (new lock-manager% [worker-count worker-count])))
-    (field (hash (make-hash)))
+    (field (lock-mgr (new lock-manager%
+                          [worker-count worker-count]
+                          [blocked-notify
+                           (λ (wrkr fn)
+                             (define id (send wrkr get-id))
+                             (printer
+                              (current-output-port)
+                              #:n id
+                              #:only-if-terminal? #t
+                              (format "~a waiting for" id)
+                              "~a" fn))]
+                          [unblocked-notify
+                           (λ (wrkr)
+                             (say-making
+                              (send wrkr get-id)
+                              #:only-if-terminal? #t))])))
+
+    ;; assigned-ccs : (hash natural?[workerid] -o> (μX. (or/c '() (cons (list cc? (listof file?) X) X))))
+    (define assigned-ccs (make-hash))
     (inspect #f)
 
     (define/public (work-done work wrkr msg)
@@ -109,6 +128,7 @@
             (match result-type
               [(list 'ERROR long-msg short-msg)
                 (append-error cc "making" (cons long-msg short-msg) out err "error")
+                (say-idle id)
                 #t]
               [(list 'LOCK fn) (lm/lock lock-mgr fn wrkr) #f]
               [(list 'UNLOCK fn) (lm/unlock lock-mgr fn) #f]
@@ -117,6 +137,7 @@
                  (log-message pb-logger level msg (parallel-compile-event id data)))
                #f]
               ['DONE
+               (say-idle id)
                (cond
                  [#f
                   ;; treat output as an error:
@@ -145,76 +166,100 @@
               (eprintf "trying to match:\n~e\n" (list work msg))
               (eprintf "FATAL\n")
               (exit 1)])]))
-           
-      ;; assigns a collection to each worker to be compiled
-      ;; when it runs out of collections, steals work from other workers collections
-      (define/public (get-job workerid)
-        (define (say-making id x)
-          (unless (null? x)
-            (printer (current-output-port) 
-                     #:n id
-                     (format "~a making"  id)
-                     "~a" 
-                     (cc-name (car (car x))))))
-        (define (find-job-in-cc cc id)
-          (define (retry) (get-job workerid))
-          (define (build-job cc file last)
-            (values
-              (list cc file last)
-              (list (->bytes (cc-name cc))
-                    (->bytes (build-path (cc-path cc) file))
-                    options)))
-          (match cc
-            [(list)
-              (hash-remove! hash id) (retry)]
-            [(list (list cc (list) (list)))       ;empty collect
-              (hash-remove! hash id) (retry)]
-            [(cons (list cc (list) (list)) tail)  ;empty parent collect
-              (say-making id tail)
-              (hash-set! hash id tail) (retry)]
-            [(cons (list cc (list) subs) tail)    ;empty srcs list
-              (define nl (append subs tail))
-              (say-making id nl)
-              (hash-set! hash id nl) (retry)]
-            [(cons (list cc (list file) subs) tail)
-              (define nl (append subs tail))
-              (hash-set! hash id nl)
-              (say-making id nl)
-              (build-job cc file #t)]
-            [(cons (list cc (cons file ft) subs) tail)
-              (hash-set! hash id (cons (list cc ft subs) tail))
-              (build-job cc file #f)]
-            [_
-              (eprintf "get-job match cc failed.\n")
-              (eprintf "trying to match:\n~v\n" cc)]))
 
-
-        ; find a cc 
+    (define/public (get-job workerid)
+      (define (extract-job-from-assigned-cc id)
         (cond
-          ; lookup already assigned cc 
-          [(hash-ref hash workerid #f) => (lambda (x)
-            (find-job-in-cc x workerid))]
-          ; get next cc from cclst
-          [(pair? cclst)
-            (define workercc (list (car cclst)))
-            (say-making workerid workercc)
-            (set! cclst (cdr cclst))
-            (hash-set! hash workerid workercc)
-            (find-job-in-cc workercc workerid)]
-          ; try to steal work from another workers cc
-          [(hash-iterate-first hash) => (lambda (x)
-            (find-job-in-cc (hash-iterate-value hash x)
-                            (hash-iterate-key hash x)))]))
-          ; no work left
-          ; should never get here, get-job only called when the queue has work
+          [(hash-has-key? assigned-ccs id)
+           (let loop ()
+             (match (hash-ref assigned-ccs id)
+               [(list)
+                (hash-remove! assigned-ccs id)
+                #f]
+               [(cons (list cc (list) subs) tail)
+                (hash-set! assigned-ccs id (append subs tail))
+                (loop)]
+               [(cons (list cc (cons file ft) subs) tail)
+                (hash-set! assigned-ccs id (cons (list cc ft subs) tail))
+                (vector cc file (null? ft))]))]
+          [else #f]))
+
+      (define cc-before
+        (match (hash-ref assigned-ccs workerid #f)
+          [(cons (list cc files subs) ccs) cc]
+          [_ #f]))
+
+      (define-values (stolen-work? next-assigned-job)
+        (let/ec got-it
+
+          ;; try the next file in our already assigned ccs
+          (define next-assigned-job-in-given-cc (extract-job-from-assigned-cc workerid))
+          (when next-assigned-job-in-given-cc (got-it #f next-assigned-job-in-given-cc))
+
+          ;; try to grab an unallocated cc
+          (let loop ()
+            (when (pair? cclst)
+              (define new-cc (list (car cclst)))
+              (set! cclst (cdr cclst))
+              (hash-set! assigned-ccs workerid new-cc)
+              (define job-in-new-cc (extract-job-from-assigned-cc workerid))
+              (when job-in-new-cc (got-it #f job-in-new-cc))
+              (loop)))
+
+          ;; try to steal some work from someone else's ccs
+          (for ([fellow-id (in-list (sort (hash-keys assigned-ccs) <))])
+            (define job-in-fellows-cc (extract-job-from-assigned-cc fellow-id))
+            (when job-in-fellows-cc
+              (match-define (vector cc _ _) job-in-fellows-cc)
+              ;; update hash to record which cc we're working
+              ;; in so that `say-making` knows what to say
+              (hash-set! assigned-ccs workerid (list (list cc (list) (list))))
+              (got-it #t job-in-fellows-cc)))
+
+          (error 'parallel-build.rkt "found no work (but we should have)")))
+
+      (match-define (vector cc file last) next-assigned-job)
+      (define same-cc-as-last-time?
+        (cond
+          [(not cc-before) #f]
+          [else (equal? (cc-name cc-before) (cc-name cc))]))
+
+      (say-making workerid #:only-if-terminal? (or stolen-work? same-cc-as-last-time?))
+
+      (values
+       (list cc file last)
+       (list (->bytes (cc-name cc))
+             (->bytes (build-path (cc-path cc) file))
+             options)))
+
+    (define/public (say-making id #:only-if-terminal? [only-if-terminal? #f])
+      (cond
+        [(hash-has-key? assigned-ccs id)
+         (define x (hash-ref assigned-ccs id #f))
+         (unless (null? x)
+           (printer (current-output-port)
+                    #:n id
+                    #:only-if-terminal? only-if-terminal?
+                    (format "~a making"  id)
+                    "~a"
+                    (cc-name (car (car x)))))]
+        [else (say-idle id)]))
+
+    (define/private (say-idle id)
+      (printer
+       (current-output-port)
+       #:n id
+       #:only-if-terminal? #t
+       (format "~a" id)
+       "idle"))
 
       (define/public (has-jobs?)
         (define (hasjob?  cct)
           (let loop ([cct cct])
-            (ormap (lambda (x) (or ((length (second x)) . > . 0) (loop (third x)))) cct)))
+            (ormap (lambda (x) (or (pair? (second x)) (loop (third x)))) cct)))
 
         (or (hasjob? cclst)
-            (for/or ([cct (in-hash-values hash)])
+            (for/or ([cct (in-hash-values assigned-ccs)])
               (hasjob? cct))))
 
       (define/public (jobs-cnt)
@@ -223,7 +268,7 @@
             (apply + (map (lambda (x) (+ (length (second x)) (loop (third x)))) cct))))
 
         (+ (count-cct cclst)
-           (for/fold ([cnt 0]) ([cct (in-hash-values hash)])
+           (for/fold ([cnt 0]) ([cct (in-hash-values assigned-ccs)])
               (+ cnt (count-cct cct)))))
       (define/public (get-results) (void))
       (super-new)))
