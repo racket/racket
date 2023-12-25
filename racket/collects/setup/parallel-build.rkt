@@ -7,6 +7,7 @@
          racket/serialize
          "private/cc-struct.rkt"
          setup/parallel-do
+         setup/path-to-relative
          racket/class
          compiler/find-exe
          racket/place
@@ -100,23 +101,26 @@
     (init-field cclst printer append-error options)
     (init worker-count)
     (define lock-mgr
-      (new lock-manager%
-           [worker-count worker-count]
-           [blocked-notify
-            (λ (wrkr fn)
-              (define id (send wrkr get-id))
-              (printer
-               (current-output-port)
-               #:n id
-               #:only-if-terminal? #t
-               (format "~a awaiting" id)
-               "~a"
-               fn))]
-           [unblocked-notify
-            (λ (wrkr)
-              (say-making
-               (send wrkr get-id)
-               #:only-if-terminal? #t))]))
+      (let ([cache (make-hash)])
+        (new lock-manager%
+             [worker-count worker-count]
+             [blocked-notify
+              (λ (wrkr fn)
+                (define id (send wrkr get-id))
+                (printer
+                 (current-output-port)
+                 #:n id
+                 #:only-if-terminal? #t
+                 (format "~a awaiting" id)
+                 "~a"
+                 (path->relative-string/library
+                  (bytes->path fn)
+                  #:cache cache)))]
+             [unblocked-notify
+              (λ (wrkr)
+                (say-making
+                 (send wrkr get-id)
+                 #:only-if-terminal? #t))])))
 
     ;; assigned-ccs : (hash natural?[workerid] -o> (μX. (or/c '() (cons (list cc? (listof file?) X) X))))
     (define assigned-ccs (make-hash))
