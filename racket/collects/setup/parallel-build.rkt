@@ -34,7 +34,7 @@
 (define lock-manager% 
   (class object%
     (init-field worker-count [blocked-notify void] [unblocked-notify void])
-    (field (locks (make-hash)))
+    (define locks (make-hash))
     (define depends (make-hash))
     (define currently-idle 0)
     (define/private (idle! delta)
@@ -99,22 +99,24 @@
   (class* object% (work-queue<%>) 
     (init-field cclst printer append-error options)
     (init worker-count)
-    (field (lock-mgr (new lock-manager%
-                          [worker-count worker-count]
-                          [blocked-notify
-                           (λ (wrkr fn)
-                             (define id (send wrkr get-id))
-                             (printer
-                              (current-output-port)
-                              #:n id
-                              #:only-if-terminal? #t
-                              (format "~a waiting for" id)
-                              "~a" fn))]
-                          [unblocked-notify
-                           (λ (wrkr)
-                             (say-making
-                              (send wrkr get-id)
-                              #:only-if-terminal? #t))])))
+    (define lock-mgr
+      (new lock-manager%
+           [worker-count worker-count]
+           [blocked-notify
+            (λ (wrkr fn)
+              (define id (send wrkr get-id))
+              (printer
+               (current-output-port)
+               #:n id
+               #:only-if-terminal? #t
+               (format "~a awaiting" id)
+               "~a"
+               fn))]
+           [unblocked-notify
+            (λ (wrkr)
+              (say-making
+               (send wrkr get-id)
+               #:only-if-terminal? #t))]))
 
     ;; assigned-ccs : (hash natural?[workerid] -o> (μX. (or/c '() (cons (list cc? (listof file?) X) X))))
     (define assigned-ccs (make-hash))
@@ -277,8 +279,8 @@
   (class* object% (work-queue<%>) 
     (init-field filelist handler options)
     (init worker-count)
-    (field (lock-mgr (new lock-manager% [worker-count worker-count])))
-    (field [results (void)])
+    (define lock-mgr (new lock-manager% [worker-count worker-count]))
+    (define results (void))
     (inspect #f)
 
     (define seen
