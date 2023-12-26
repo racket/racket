@@ -676,7 +676,7 @@
                                                      i)))
                                             infos)
                                 info<?)])
-          (define (say-rendering i workerid idle?)
+          (define (say-rendering i workerid idle? %age)
             (setup-printf (string-append
                            (if workerid (format "~a" workerid) "")
                            (if idle?
@@ -686,6 +686,7 @@
                                 (if (info-rendered? i) "re-" "")
                                 "rendering")))
                           #:only-if-terminal? idle?
+                          #:%age %age
                           #:n workerid
                           "~a"
                           (if idle? "idle" (path->relative-string/setup (doc-src-file (info-doc i))))))
@@ -704,7 +705,7 @@
                  (set-info-done-time! info (current-inexact-milliseconds)))]))
           (if ((min worker-count (length need-rerun)) . < . 2)
               (for ([i (in-list need-rerun)])
-                (say-rendering i #f #f)
+                (say-rendering i #f #f #f)
                 (prep-info! i)
                 (update-info! i (build-again! latex-dest i with-record-error
                                               no-lock (if gc-after-each-sequential? gc-point void)
@@ -717,8 +718,8 @@
                  (list workerid (verbose) latex-dest lock-ch main-doc-exists?))
                (list-queue
                 need-rerun
-                (lambda (i workerid) 
-                  (say-rendering i workerid #f)
+                (lambda (i workerid remaining-work original-amount-of-work)
+                  (say-rendering i workerid #f (- 1 (/ remaining-work original-amount-of-work)))
                   (prep-info! i)
                   (s-exp->fasl (serialize (list (info-doc i)
                                                 ;; Other content of `info' can be re-read from
@@ -730,12 +731,12 @@
                                                 (info-deps->rel-doc-src-file i)
                                                 (info-need-in-write? i)))))
                 (lambda (i r outstr errstr workerid)
-                  (say-rendering i workerid #t)
+                  (say-rendering i workerid #t #f)
                   (printf "~a" outstr) 
                   (printf "~a" errstr)
                   (update-info! i (deserialize (fasl->s-exp r))))
                 (lambda (i errmsg outstr errstr workerid)
-                  (say-rendering i workerid #t)
+                  (say-rendering i workerid #t #f)
                   (parallel-do-error-handler with-record-error (info-doc i) errmsg outstr errstr)))
                (define-worker (build-again!-worker2 workerid verbosev latex-dest lock-ch
                                                     main-doc-exists?)

@@ -67,7 +67,7 @@
     (define/public (unlock fn)
       (match (hash-ref locks fn)
         [(list w waitlst)
-         (for ([x (second (hash-ref locks fn))])
+         (for ([x (in-list waitlst)])
             (idle! -1)
             (hash-remove! depends x)
             (unblocked-notify x)
@@ -239,17 +239,16 @@
              options)))
 
     (define/public (say-making id #:only-if-terminal? [only-if-terminal? #f])
-      (cond
-        [(hash-has-key? assigned-ccs id)
-         (define x (hash-ref assigned-ccs id #f))
-         (unless (null? x)
-           (printer (current-output-port)
-                    #:n id
-                    #:only-if-terminal? only-if-terminal?
-                    (format "~a making"  id)
-                    "~a"
-                    (cc-name (car (car x)))))]
-        [else (say-idle id)]))
+      (match (hash-ref assigned-ccs id #f)
+        [(cons (list cc files subs) _)
+         (printer (current-output-port)
+                  #:n id
+                  #:only-if-terminal? only-if-terminal?
+                  #:%age (/ (- original-count (jobs-cnt)) original-count)
+                  (format "~a making" id)
+                  "~a"
+                  (cc-name cc))]
+        [_ (say-idle id)]))
 
     (define/private (say-idle id)
       (printer
@@ -277,7 +276,9 @@
            (for/fold ([cnt 0]) ([cct (in-hash-values assigned-ccs)])
               (+ cnt (count-cct cct)))))
       (define/public (get-results) (void))
-      (super-new)))
+      (super-new)
+
+    (define original-count (jobs-cnt))))
 
 (define file-list-queue% 
   (class* object% (work-queue<%>) 
