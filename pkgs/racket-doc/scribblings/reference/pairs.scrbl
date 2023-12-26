@@ -130,11 +130,12 @@ otherwise.
   (null? (cdr (list 1)))]}
 
 
-@defproc[(cons [a any/c] [d any/c])
-         pair?]{
+@defproc*[([(cons [a any/c] [d list?]) list?]
+           [(cons [a any/c] [d any/c]) pair?])]{
 
 Returns a newly allocated pair whose first element is @racket[a] and
 second element is @racket[d].
+When @racket[d] is a list, the allocated pair is also a list.
 
 @mz-examples[
   (cons 1 2)
@@ -148,7 +149,7 @@ Returns the first element of the pair @racket[p].
 
 @mz-examples[
   (car '(1 2))
-  (car (cons 2 3))]}
+  (car '(2 . 3))]}
 
 
 @defproc[(cdr [p pair?])
@@ -158,7 +159,7 @@ Returns the second element of the pair @racket[p].
 
 @mz-examples[
   (cdr '(1 2))
-  (cdr '(1))]}
+  (cdr '(2 . 3))]}
 
 
 @defthing[null null?]{
@@ -197,20 +198,20 @@ elements.
   (list (list 1 2) (list 3 4))]}
 
 
-@defproc[(list* [v any/c] ... [tail any/c])
-         any/c]{
+@defproc*[([(list* [v any/c] ... [tail list?]) list?]
+           [(list* [v any/c] ... [tail any/c]) any/c])]{
 
 Like @racket[list], but the last argument is used as the tail of the
 result, instead of the final element.  The result is a list only if the
 last argument is a list.
 
 @mz-examples[
- (list* 1 2)
+ (list* 1 2 3)
  (list* 1 2 (list 3 4))]}
 
 
 @defproc[(build-list [n exact-nonnegative-integer?]
-                     [proc (exact-nonnegative-integer? . -> . any)])
+                     [proc (exact-nonnegative-integer? . -> . any/c)])
          list?]{
 
 Creates a list of @racket[n] elements by applying @racket[proc] to the
@@ -237,8 +238,8 @@ time proportional to that length.
   (length '())]}
 
 
-@defproc[(list-ref [lst pair?] [pos exact-nonnegative-integer?])
-         any/c]{
+@defproc*[([(list-ref [lst list?] [pos exact-nonnegative-integer?]) any/c]
+           [(list-ref [lst pair?] [pos exact-nonnegative-integer?]) any/c])]{
 
 Returns the element of @racket[lst] at position @racket[pos], where the
 list's first element is position @racket[0].  If the list has
@@ -257,8 +258,8 @@ This function takes time proportional to @racket[pos].
   (eval:error (list-ref (cons 1 2) 1))]}
 
 
-@defproc[(list-tail [lst any/c] [pos exact-nonnegative-integer?])
-         any/c]{
+@defproc*[([(list-tail [lst list?] [pos exact-nonnegative-integer?]) list?]
+           [(list-tail [lst any/c] [pos exact-nonnegative-integer?]) any/c])]{
 
 Returns the list after the first @racket[pos] elements of @racket[lst].
 If the list has fewer than @racket[pos] elements, then the
@@ -328,7 +329,7 @@ a list containing each result of @racket[proc] in order.
 
 
 @defproc[(andmap [proc procedure?] [lst list?] ...+)
-          any]{
+         any]{
 
 Similar to @racket[map] in the sense that @racket[proc] is applied to
 each element of @racket[lst], but
@@ -623,9 +624,12 @@ effectively shuffles the list.}
 @; ----------------------------------------
 @section{List Searching}
 
-@defproc[(member [v any/c] [lst (or/c list? any/c)]
-                 [is-equal? (any/c any/c . -> . any/c) equal?])
-         (or/c #f list? any/c)]{
+@defproc*[([(member [v any/c] [lst list?]
+                    [is-equal? (any/c any/c . -> . any/c) equal?])
+            (or/c #f list?)]
+           [(member [v any/c] [lst any/c]
+                    [is-equal? (any/c any/c . -> . any/c) equal?])
+            any/c])]{
 
 Locates the first element of @racket[lst] that is equal to
 @racket[v] according to @racket[is-equal?].  If such an element exists, the tail of @racket[lst]
@@ -644,11 +648,12 @@ non-list.
   (member 9 (list 1 2 3 4))
   (member #'x (list #'x #'y) free-identifier=?)
   (member #'a (list #'x #'y) free-identifier=?)
-  (member 'b '(a b . etc))]}
+  (member 'b '(a b . etc))
+  (eval:error (member 'c '(a b . etc)))]}
 
 
-@defproc[(memw [v any/c] [lst (or/c list? any/c)])
-         (or/c #f list? any/c)]{
+@defproc*[([(memw [v any/c] [lst list?]) (or/c #f list?)]
+           [(memw [v any/c] [lst any/c]) any/c])]{
 
 Like @racket[member], but finds an element using @racket[equal-always?].
 
@@ -662,8 +667,8 @@ Like @racket[member], but finds an element using @racket[equal-always?].
 @history[#:added "8.5.0.3"]}
 
 
-@defproc[(memv [v any/c] [lst (or/c list? any/c)])
-         (or/c #f list? any/c)]{
+@defproc*[([(memv [v any/c] [lst list?]) (or/c #f list?)]
+           [(memv [v any/c] [lst any/c]) any/c])]{
 
 Like @racket[member], but finds an element using @racket[eqv?].
 
@@ -672,8 +677,8 @@ Like @racket[member], but finds an element using @racket[eqv?].
   (memv 9 (list 1 2 3 4))]}
 
 
-@defproc[(memq [v any/c] [lst (or/c list? any/c)])
-         (or/c #f list? any/c)]{
+@defproc*[([(memq [v any/c] [lst list?]) (or/c #f list?)]
+           [(memq [v any/c] [lst any/c]) any/c])]{
 
 Like @racket[member], but finds an element using @racket[eq?].
 
@@ -682,8 +687,8 @@ Like @racket[member], but finds an element using @racket[eq?].
   (memq 9 (list 1 2 3 4))]}
 
 
-@defproc[(memf [proc procedure?] [lst (or/c list? any/c)])
-         (or/c #f list? any/c)]{
+@defproc*[([(memf [proc procedure?] [lst list?]) (or/c #f list?)]
+           [(memf [proc procedure?] [lst any/c]) any/c])]{
 
 Like @racket[member], but finds an element using the predicate
 @racket[proc]; an element is found when @racket[proc] applied to the
@@ -695,11 +700,16 @@ element returns a true value.
         '(7 8 9 10 11))]}
 
 
-@defproc[(findf [proc procedure?] [lst list?])
-         any/c]{
+@defproc*[([(findf [proc procedure?] [lst list?]) (or/c #f any/c)]
+           [(findf [proc procedure?] [lst any/c]) any/c])]{
 
 Like @racket[memf], but returns the element or @racket[#f] instead of a
 tail of @racket[lst] or @racket[#f].
+
+Notably, if @racket[#f] is an element of @racket[lst],
+then the result of @racket[#f] is ambiguous:
+it may indicate that no element satisfies @racket[proc],
+or may indicate that the element @racket[#f] satisfies @racket[proc].
 
 @mz-examples[
   (findf (lambda (arg)
@@ -707,10 +717,14 @@ tail of @racket[lst] or @racket[#f].
          '(7 8 9 10 11))]}
 
 
-@defproc[(assoc [v any/c]
-                [lst (or/c (listof pair?) any/c)]
-                [is-equal? (any/c any/c . -> . any/c) equal?])
-         (or/c pair? #f)]{
+@defproc*[([(assoc [v any/c]
+                   [lst (listof pair?)]
+                   [is-equal? (any/c any/c . -> . any/c) equal?])
+            (or/c pair? #f)]
+           [(assoc [v any/c]
+                   [lst (list*of pair? (not/c '()))]
+                   [is-equal? (any/c any/c . -> . any/c) equal?])
+            pair?])]{
 
 Locates the first element of @racket[lst] whose @racket[car] is equal to
 @racket[v] according to @racket[is-equal?].  If such an element exists,
@@ -730,8 +744,8 @@ then @racket[lst] must be a list of pairs (and not a cyclic list).
          (lambda (a b) (< (abs (- a b)) 1)))]}
 
 
-@defproc[(assw [v any/c] [lst (or/c (listof pair?) any/c)])
-         (or/c pair? #f)]{
+@defproc*[([(assw [v any/c] [lst (listof pair?)]) (or/c pair? #f)]
+           [(assw [v any/c] [lst (list*of pair? (not/c '()))]) pair?])]{
 
 Like @racket[assoc], but finds an element using @racket[equal-always?].
 
@@ -744,8 +758,8 @@ Like @racket[assoc], but finds an element using @racket[equal-always?].
 @history[#:added "8.5.0.3"]}
 
 
-@defproc[(assv [v any/c] [lst (or/c (listof pair?) any/c)])
-         (or/c pair? #f)]{
+@defproc*[([(assv [v any/c] [lst (listof pair?)]) (or/c pair? #f)]
+           [(assv [v any/c] [lst (list*of pair? (not/c '()))]) pair?])]{
 
 Like @racket[assoc], but finds an element using @racket[eqv?].
 
@@ -753,8 +767,8 @@ Like @racket[assoc], but finds an element using @racket[eqv?].
   (assv 3 (list (list 1 2) (list 3 4) (list 5 6)))]}
 
 
-@defproc[(assq [v any/c] [lst (or/c (listof pair?) any/c)])
-         (or/c pair? #f)]{
+@defproc*[([(assq [v any/c] [lst (listof pair?)]) (or/c pair? #f)]
+           [(assq [v any/c] [lst (list*of pair? (not/c '()))]) pair?])]{
 
 Like @racket[assoc], but finds an element using @racket[eq?].
 
@@ -762,8 +776,8 @@ Like @racket[assoc], but finds an element using @racket[eq?].
   (assq 'c (list (list 'a 'b) (list 'c 'd) (list 'e 'f)))]}
 
 
-@defproc[(assf [proc procedure?] [lst (or/c (listof pair?) any/c)])
-         (or/c pair? #f)]{
+@defproc*[([(assf [proc procedure?] [lst (listof pair?)]) (or/c pair? #f)]
+           [(assf [proc procedure?] [lst (list*of pair? (not/c '()))]) pair?])]{
 
 Like @racket[assoc], but finds an element using the predicate
 @racket[proc]; an element is found when @racket[proc] applied to the
@@ -863,8 +877,7 @@ The same as @racket[(cdr lst)], but only for lists (that are not empty).
   (rest '(1 2 3 4 5 6 7 8 9 10))]}
 
 
-@defproc[(second [lst list?])
-         any]{
+@defproc[(second [lst list?]) any/c]{
 
 Returns the second element of the list.
 
@@ -872,8 +885,7 @@ Returns the second element of the list.
   (second '(1 2 3 4 5 6 7 8 9 10))]}
 
 
-@defproc[(third [lst list?])
-         any]{
+@defproc[(third [lst list?]) any/c]{
 
 Returns the third element of the list.
 
@@ -881,8 +893,7 @@ Returns the third element of the list.
   (third '(1 2 3 4 5 6 7 8 9 10))]}
 
 
-@defproc[(fourth [lst list?])
-         any]{
+@defproc[(fourth [lst list?]) any/c]{
 
 Returns the fourth element of the list.
 
@@ -890,8 +901,7 @@ Returns the fourth element of the list.
   (fourth '(1 2 3 4 5 6 7 8 9 10))]}
 
 
-@defproc[(fifth [lst list?])
-         any]{
+@defproc[(fifth [lst list?]) any/c]{
 
 Returns the fifth element of the list.
 
@@ -899,8 +909,7 @@ Returns the fifth element of the list.
   (fifth '(1 2 3 4 5 6 7 8 9 10))]}
 
 
-@defproc[(sixth [lst list?])
-         any]{
+@defproc[(sixth [lst list?]) any/c]{
 
 Returns the sixth element of the list.
 
@@ -908,8 +917,7 @@ Returns the sixth element of the list.
   (sixth '(1 2 3 4 5 6 7 8 9 10))]}
 
 
-@defproc[(seventh [lst list?])
-         any]{
+@defproc[(seventh [lst list?]) any/c]{
 
 Returns the seventh element of the list.
 
@@ -917,8 +925,7 @@ Returns the seventh element of the list.
   (seventh '(1 2 3 4 5 6 7 8 9 10))]}
 
 
-@defproc[(eighth [lst list?])
-         any]{
+@defproc[(eighth [lst list?]) any/c]{
 
 Returns the eighth element of the list.
 
@@ -926,7 +933,7 @@ Returns the eighth element of the list.
   (eighth '(1 2 3 4 5 6 7 8 9 10))]}
 
 
-@defproc[(ninth [lst list?]) any]{
+@defproc[(ninth [lst list?]) any/c]{
 
 Returns the ninth element of the list.
 
@@ -934,7 +941,7 @@ Returns the ninth element of the list.
   (ninth '(1 2 3 4 5 6 7 8 9 10))]}
 
 
-@defproc[(tenth [lst list?]) any]{
+@defproc[(tenth [lst list?]) any/c]{
 
 Returns the tenth element of the list.
 
@@ -942,7 +949,7 @@ Returns the tenth element of the list.
   (tenth '(1 2 3 4 5 6 7 8 9 10))]}
 
 
-@defproc[(last [lst list?]) any]{
+@defproc[(last [lst list?]) any/c]{
 
 Returns the last element of the list.
 
@@ -1044,8 +1051,8 @@ Like @racket[indexes-of] but with the predicate-searching behavior of
 
 @history[#:added "6.7.0.3"]}
 
-@defproc[(take [lst any/c] [pos exact-nonnegative-integer?])
-         list?]{
+@defproc*[([(take [lst list?] [pos exact-nonnegative-integer?]) list?]
+           [(take [lst any/c] [pos exact-nonnegative-integer?]) list?])]{
 
 Returns a fresh list whose elements are the first @racket[pos] elements
 of @racket[lst].  If @racket[lst] has fewer than @racket[pos] elements,
@@ -1061,14 +1068,16 @@ This function takes time proportional to @racket[pos].
   (take 'non-list 0)]}
 
 
-@defproc[(drop [lst any/c] [pos exact-nonnegative-integer?])
-         any/c]{
+@defproc*[([(drop [lst list?] [pos exact-nonnegative-integer?]) list?]
+           [(drop [lst any/c] [pos exact-nonnegative-integer?]) any/c])]{
 
 Just like @racket[list-tail].}
 
 
-@defproc[(split-at [lst any/c] [pos exact-nonnegative-integer?])
-         (values list? any/c)]{
+@defproc*[([(split-at [lst list?] [pos exact-nonnegative-integer?])
+            (values list? list?)]
+           [(split-at [lst any/c] [pos exact-nonnegative-integer?])
+            (values list? any/c)])]{
 
 Returns the same result as
 
@@ -1078,8 +1087,8 @@ except that it can be faster, but it will still take time
 proportional to @racket[pos].}
 
 
-@defproc[(takef [lst any/c] [pred procedure?])
-         list?]{
+@defproc*[([(takef [lst list?] [pred procedure?]) list?]
+           [(takef [lst any/c] [pred procedure?]) list?])]{
 
 Returns a fresh list whose elements are taken successively from
 @racket[lst] as long as they satisfy @racket[pred].  The returned list
@@ -1095,8 +1104,8 @@ pairs in @racket[lst] will be traversed until a non-pair is encountered.
   (takef '(2 4 . 6) even?)]}
 
 
-@defproc[(dropf [lst any/c] [pred procedure?])
-         any/c]{
+@defproc*[([(dropf [lst list?] [pred procedure?]) list?]
+           [(dropf [lst any/c] [pred procedure?]) any/c])]{
 
 Drops elements from the front of @racket[lst] as long as they satisfy
 @racket[pred].
@@ -1106,8 +1115,10 @@ Drops elements from the front of @racket[lst] as long as they satisfy
   (dropf '(2 4 6 8) odd?)]}
 
 
-@defproc[(splitf-at [lst any/c] [pred procedure?])
-         (values list? any/c)]{
+@defproc*[([(splitf-at [lst list?] [pred procedure?])
+            (values list? list?)]
+           [(splitf-at [lst any/c] [pred procedure?])
+            (values list? any/c)])]{
 
 Returns the same result as
 
@@ -1116,8 +1127,8 @@ Returns the same result as
 except that it can be faster.}
 
 
-@defproc[(take-right [lst any/c] [pos exact-nonnegative-integer?])
-         any/c]{
+@defproc*[([(take-right [lst list?] [pos exact-nonnegative-integer?]) list?]
+           [(take-right [lst any/c] [pos exact-nonnegative-integer?]) any/c])]{
 
 Returns the @racket[list]'s @racket[pos]-length tail. If @racket[lst]
 has fewer than @racket[pos] elements, then the
@@ -1133,8 +1144,8 @@ This function takes time proportional to the length of @racket[lst].
   (take-right 'non-list 0)]}
 
 
-@defproc[(drop-right [lst any/c] [pos exact-nonnegative-integer?])
-         list?]{
+@defproc*[([(drop-right [lst list?] [pos exact-nonnegative-integer?]) list?]
+           [(drop-right [lst any/c] [pos exact-nonnegative-integer?]) list?])]{
 
 Returns a fresh list whose elements are the prefix of @racket[lst],
 dropping its @racket[pos]-length tail.  If @racket[lst] has fewer than
@@ -1150,8 +1161,10 @@ This function takes time proportional to the length of @racket[lst].
   (drop-right 'non-list 0)]}
 
 
-@defproc[(split-at-right [lst any/c] [pos exact-nonnegative-integer?])
-         (values list? any/c)]{
+@defproc*[([(split-at-right [lst list?] [pos exact-nonnegative-integer?])
+            (values list? list?)]
+           [(split-at-right [lst any/c] [pos exact-nonnegative-integer?])
+            (values list? any/c)])]{
 
 Returns the same result as
 
@@ -1161,14 +1174,17 @@ except that it can be faster, but it will still take time proportional
 to the length of @racket[lst].
 
 @mz-examples[#:eval list-eval
-  (split-at-right '(1 2 3 4 5 6) 3)
+  (split-at-right '(1 2 3 4 5 . 6) 4)
   (split-at-right '(1 2 3 4 5 6) 4)]}
 
 
 @deftogether[(
-  @defproc[(takef-right [lst any/c] [pred procedure?]) any/c]
-  @defproc[(dropf-right [lst any/c] [pred procedure?]) list?]
-  @defproc[(splitf-at-right [lst any/c] [pred procedure?]) (values list? any/c)]
+  @defproc*[([(takef-right [lst list?] [pred procedure?]) list?]
+             [(takef-right [lst any/c] [pred procedure?]) any/c])]
+  @defproc*[([(dropf-right [lst list?] [pred procedure?]) list?]
+             [(dropf-right [lst any/c] [pred procedure?]) list?])]
+  @defproc*[([(splitf-at-right [lst list?] [pred procedure?]) (values list? list?)]
+             [(splitf-at-right [lst any/c] [pred procedure?]) (values list? any/c)])]
 )]{
 
 Like @racket[takef], @racket[dropf], and @racket[splitf-at], but
@@ -1472,7 +1488,7 @@ Returns a list with all elements from @racket[lst], randomly shuffled.
            [(combinations [lst list?] [size exact-nonnegative-integer?]) list?])]{
 @margin-note{Wikipedia @hyperlink["https://en.wikipedia.org/wiki/Combination"]{combinations}}
 Return a list of all combinations of elements in the input list
-(aka the @index["powerset"]{powerset} of @racket[lst]).
+(a.k.a. the @index["powerset"]{powerset} of @racket[lst]).
 If @racket[size] is given, limit results to combinations of @racket[size] elements.
 
 @mz-examples[#:eval list-eval
