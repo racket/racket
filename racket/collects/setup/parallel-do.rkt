@@ -337,6 +337,8 @@
 (define list-queue% 
   (class* object% (work-queue<%>)
     (init-field queue create-job-thunk success-thunk failure-thunk [report-proc display])
+    (define queue-size (length queue))
+    (define original-size queue-size)
     (field [results null])
 
     (define/public (work-done work worker msg)
@@ -354,7 +356,11 @@
       (match queue
         [(cons h t)
           (set! queue t)
-          (values h (create-job-thunk h workerid))]))
+          (set! queue-size (- queue-size 1))
+          (values h
+                  (if (procedure-arity-includes? create-job-thunk 4)
+                      (create-job-thunk h workerid (+ 1 queue-size) original-size)
+                      (create-job-thunk h workerid)))]))
     (define/public (has-jobs?) (not (null? queue)))
     (define/public (get-results) (reverse results))
     (define/public (jobs-cnt) (length queue))

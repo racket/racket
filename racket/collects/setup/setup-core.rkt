@@ -171,9 +171,10 @@
 
   (define setup-fprintf (mk-setup-fprintf name-str timestamp-output?))
 
-  (define (setup-printf #:n [n #f] #:only-if-terminal? [only-if-terminal? #f] task s . args)
+  (define (setup-printf #:n [n #f] #:%age [%age #f]
+                        #:only-if-terminal? [only-if-terminal? #f] task s . args)
     (apply setup-fprintf
-           #:n n #:only-if-terminal? only-if-terminal?
+           #:n n #:only-if-terminal? only-if-terminal? #:%age %age
            (current-output-port) task s args))
 
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
