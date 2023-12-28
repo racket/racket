@@ -423,3 +423,15 @@ X int callback_hungry(int (*f)(void*)) {
   char use_stack_space[10000];
   return f(use_stack_space);
 }
+
+X void underscore_variable() {
+  return;
+}
+
+X void camelCaseVariable() {
+  return;
+}
+
+X void PascalCaseVariable() {
+  return;
+}
