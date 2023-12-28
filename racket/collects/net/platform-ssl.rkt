@@ -20,8 +20,10 @@
 (define-predicate-stubs
   (osx-ssl-output-port? _p)
   (osx-old-openssl?)
-  (win32-ssl-port? _p)
-  (win32-ssl-available?))
+  (win32-ssl-port? _p))
+
+(provide win32-ssl-available?)
+(define win32-ssl-available? #f)
 
 (define-syntax (define-stubs stx)
   (syntax-case stx ()
