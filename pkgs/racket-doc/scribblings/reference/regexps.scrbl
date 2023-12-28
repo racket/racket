@@ -60,7 +60,7 @@ or both byte regexps.
 
 A literal or printed @tech{regexp value} starts with @litchar{#rx} or
 @litchar{#px}. @see-read-print["regexp"]{regular expressions} Regexp
-values produced by the default reader are @tech{interned} in 
+values produced by the default reader are @tech{interned} in
 @racket[read-syntax] mode.
 
 On the @tech[#:doc '(lib "scribblings/guide/guide.scrbl")]{BC} variant of Racket,
@@ -311,6 +311,15 @@ case-insensitively.
 (regexp-match "." "apple.scm")
 (regexp-match (regexp-quote ".") "apple.scm")
 ]}
+
+@defproc*[([(pregexp-quote [str string?] [case-sensitive? any/c #t]) string?]
+           [(pregexp-quote [bstr bytes?] [case-sensitive? any/c #t]) bytes?])]{
+
+Like @racket[regexp-quote], but intended for use with @racket[pregexp].
+Escapes all non-alphanumeric, non-underscore characters in the input.
+
+@history[#:added "8.11.1.9"]
+}
 
 @defproc[(regexp-max-lookbehind [pattern (or/c regexp? byte-regexp?)])
          exact-nonnegative-integer?]{
