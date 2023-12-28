@@ -23,11 +23,10 @@ TO DO:
 |#
 
 #lang racket/base
+
 (require (rename-in racket/contract/base [-> c->])
          ffi/unsafe
-         ffi/unsafe/define
          ffi/unsafe/atomic
-         ffi/unsafe/alloc
          ffi/unsafe/global
          ffi/file
          ffi/unsafe/custodian
