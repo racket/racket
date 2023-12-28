@@ -1,6 +1,6 @@
 #lang racket/base
 
-(require (for-syntax syntax/parse
+(require (for-syntax syntax/parse/pre
                      racket/base)
          ffi/unsafe)
 
