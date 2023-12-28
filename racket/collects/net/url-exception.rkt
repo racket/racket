@@ -1,7 +1,6 @@
 #lang racket/base
-(require racket/string
-         racket/contract/base
-         racket/list)
+
+(require racket/contract/base)
 
 (define-struct (url-exception exn:fail) ())
 (define (-url-exception? x)
