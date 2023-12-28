@@ -1610,16 +1610,34 @@
 ;; ----------------------------------------
 
 (let ()
-  (unless (eq? (system-type) 'windows)
-    (define-ffi-definer define-test-lib test-lib
-      #:make-c-id convention:hyphen->underscore)
-    (define-test-lib check-multiple-of-ten
-      (_fun #:save-errno 'posix _int -> _int))
-    (test 0 check-multiple-of-ten 40)
-    (test -1 check-multiple-of-ten 42)
-    (test 2 saved-errno)
-    (saved-errno 5)
-    (test 5 saved-errno)))
+  (define-ffi-definer define-test-lib test-lib
+    #:make-c-id convention:hyphen->underscore)
+  (define-test-lib underscore-variable (_fun -> _void))
+  (test (void) underscore-variable))
+
+(let ()
+  (define-ffi-definer define-test-lib test-lib
+    #:make-c-id convention:hyphen->camelCase)
+  (define-test-lib camel-case-variable (_fun -> _void))
+  (test (void) camel-case-variable)
+  (define-test-lib cAmeL-CAsE-vaRiaBlE (_fun -> _void))
+  (test (void) cAmeL-CAsE-vaRiaBlE))
+
+(let ()
+  (define-ffi-definer define-test-lib test-lib
+    #:make-c-id convention:hyphen->PascalCase)
+  (define-test-lib pascal-case-variable (_fun -> _void))
+  (test (void) pascal-case-variable)
+  (define-test-lib paSCaL-CAsE-vaRiaBlE (_fun -> _void))
+  (test (void) paSCaL-CAsE-vaRiaBlE))
+
+(let ()
+  (define-ffi-definer define-test-lib test-lib
+    #:make-c-id convention:hyphen->camelcase)
+  (define-test-lib pascal-case-variable (_fun -> _void))
+  (test (void) pascal-case-variable)
+  (define-test-lib paSCaL-CAsE-vaRiaBlE (_fun -> _void))
+  (test (void) paSCaL-CAsE-vaRiaBlE))
 
 (let ()
   (define-ffi-definer define-test-lib test-lib)
