@@ -8,7 +8,6 @@
          racket/tcp
          (prefix-in hc: "http-client.rkt")
          (only-in "url-connect.rkt" current-https-protocol)
-         "uri-codec.rkt"
          "url-string.rkt"
          (only-in "url-exception.rkt" make-url-exception))
 
