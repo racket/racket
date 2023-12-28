@@ -2,6 +2,7 @@
 
   (provide real->decimal-string
            regexp-quote
+           pregexp-quote
            regexp-replace-quote
            regexp-match*
            regexp-match-positions*
@@ -41,17 +42,35 @@
   (define regexp-quote-chars:s #rx"[][.*?+|(){}\\$^]")
   (define regexp-quote-chars:b #rx#"[][.*?+|(){}\\$^]")
 
-  (define (regexp-quote s [case-sens? #t])
+  (define (do-regexp-quote who pat:b pat:s s case-sens?)
     (let* ([b? (cond [(bytes? s) #t]
                      [(string? s) #f]
-                     [else (raise-argument-error 'regexp-quote
-                                                 "(or/c string? bytes?)" s)])]
+                     [else (raise-argument-error who "(or/c string? bytes?)" s)])]
            [s (if b?
-                (regexp-replace* regexp-quote-chars:b s #"\\\\&")
-                (regexp-replace* regexp-quote-chars:s s "\\\\&"))])
+                  (regexp-replace* pat:b s #"\\\\&")
+                  (regexp-replace* pat:s s "\\\\&"))])
       (cond [case-sens? s]
             [b?   (bytes-append #"(?i:" s #")")]
             [else (string-append "(?i:" s ")")])))
+
+  (define (regexp-quote s [case-sens? #t])
+    (do-regexp-quote
+     'regexp-quote
+     regexp-quote-chars:b
+     regexp-quote-chars:s
+     s
+     case-sens?))
+
+  (define pregexp-quote-chars:s #rx"[^0-9A-Za-z_]")
+  (define pregexp-quote-chars:b #rx#"[^0-9A-Za-z_]")
+
+  (define (pregexp-quote s [case-sens? #t])
+    (do-regexp-quote
+     'pregexp-quote
+     pregexp-quote-chars:b
+     pregexp-quote-chars:s
+     s
+     case-sens?))
 
   (define (regexp-replace-quote s)
     (cond [(bytes?  s) (regexp-replace* #rx#"[&\\]" s #"\\\\&")]
