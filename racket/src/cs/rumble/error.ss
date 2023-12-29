@@ -674,11 +674,13 @@
 (define (nth-str n)
   (string-append
    (number->string n)
-   (case (modulo n 10)
-     [(1) "st"]
-     [(2) "nd"]
-     [(3) "rd"]
-     [else "th"])))
+   (case (modulo n 100)
+     [(11 12 13) "th"]
+     [else (case (modulo n 10)
+             [(1) "st"]
+             [(2) "nd"]
+             [(3) "rd"]
+             [else "th"])])))
 
 ;; ----------------------------------------
 
