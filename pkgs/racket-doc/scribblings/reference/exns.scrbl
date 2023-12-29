@@ -189,19 +189,19 @@ adjusted via @racket[error-contract->adjusted-string] and then
 
 @examples[
 (define (feed-machine bits)
-  (if (not (integer? bits))
-    (raise-argument-error 'feed-machine "integer?" bits)
-    "fed the machine"))
+  (unless (integer? bits)
+    (raise-argument-error 'feed-machine "integer?" bits))
+  "fed the machine")
 (eval:error (feed-machine 'turkey))
 (define (feed-cow animal)
-  (if (not (eq? animal 'cow))
-    (raise-argument-error 'feed-cow "'cow" animal)
-    "fed the cow"))
+  (unless (eq? animal 'cow)
+    (raise-argument-error 'feed-cow "'cow" animal))
+  "fed the cow")
 (eval:error (feed-cow 'turkey))
 (define (feed-animals cow sheep goose cat)
-  (if (not (eq? goose 'goose))
-    (raise-argument-error 'feed-animals "'goose" 2 cow sheep goose cat)
-    "fed the animals"))
+  (unless (eq? goose 'goose)
+    (raise-argument-error 'feed-animals "'goose" 2 cow sheep goose cat))
+  "fed the animals")
 (eval:error (feed-animals 'cow 'sheep 'dog 'cat))
 ]}
 
