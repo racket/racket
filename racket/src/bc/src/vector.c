@@ -1160,14 +1160,14 @@ static Scheme_Object *vector_copy(int argc, Scheme_Object *argv[])
   }
   if (!SCHEME_VECTORP(s))
     scheme_wrong_contract("vector-copy", "vector?", 0, argc, argv);
-  
+
   scheme_do_get_substring_indices("vector-copy", s,
                                   argc, argv, 1, 2, 
                                   &istart, &ifinish, SCHEME_VEC_SIZE(s));
 
   d = scheme_make_vector(ifinish - istart, NULL);
   if (slow) {
-    for (i = istart; i <= ifinish; i++) {
+    for (i = istart; i < ifinish; i++) {
       v = scheme_chaperone_vector_ref(argv[0], i);
       SCHEME_VEC_ELS(d)[i-istart] = v;
     }
