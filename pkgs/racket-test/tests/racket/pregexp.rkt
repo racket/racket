@@ -3,7 +3,7 @@
 (require rackunit)
 
 (check-equal?
- (regexp-quote "ab-cd")
+ (pregexp-quote "ab-cd")
  "ab\\-cd")
 
 (let ([re (pregexp (pregexp-quote "-"))])
