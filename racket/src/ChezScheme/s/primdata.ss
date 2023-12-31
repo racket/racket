@@ -1838,7 +1838,7 @@
   (vector->pseudo-random-generator [sig [(nonempty-vector) -> (pseudo-random-generator)]] [flags])
   (vector->pseudo-random-generator! [sig [(pseudo-random-generator nonempty-vector) -> (void)]] [flags])
   (vector-set-fixnum! [sig [(nonempty-vector sub-index fixnum) -> (void)]] [flags true])
-  (vector-set/copy [sig [(nonempty-vector sub-index ptr) -> (boolean)]] [flags alloc])
+  (vector-set/copy [sig [(nonempty-vector sub-index ptr) -> (vector)]] [flags alloc])
   (verify-loadability [sig [(sub-symbol sub-ptr ...) -> (void)]] [flags true])
   (virtual-register [sig [(sub-index) -> (ptr)]] [flags discard])
   (virtual-register-count [sig [() -> (length)]] [flags pure unrestricted true cp02])
