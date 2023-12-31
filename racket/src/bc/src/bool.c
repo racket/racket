@@ -15,6 +15,7 @@ READ_ONLY Scheme_Object *scheme_boolean_p_proc;
 READ_ONLY Scheme_Object *scheme_eq_proc;
 READ_ONLY Scheme_Object *scheme_eqv_proc;
 READ_ONLY Scheme_Object *scheme_equal_proc;
+READ_ONLY Scheme_Object *scheme_equal_always_proc;
 
 /* locals */
 static Scheme_Object *not_prim (int argc, Scheme_Object *argv[]);
@@ -68,6 +69,7 @@ void scheme_init_bool (Scheme_Startup_Env *env)
   REGISTER_SO(scheme_eq_proc);
   REGISTER_SO(scheme_eqv_proc);
   REGISTER_SO(scheme_equal_proc);
+  REGISTER_SO(scheme_equal_always_proc);
 
   p = scheme_make_folding_prim(not_prim, "not", 1, 1, 1);
   scheme_not_proc = p;
@@ -114,9 +116,10 @@ void scheme_init_bool (Scheme_Startup_Env *env)
                              scheme_make_prim_w_arity(equalish_prim, "equal?/recur", 3, 3),
                              env);
 
-  scheme_addto_prim_instance("equal-always?",
-                             scheme_make_prim_w_arity(equal_always_prim, "equal-always?", 2, 2),
-                             env);
+  p = scheme_make_prim_w_arity(equal_always_prim, "equal-always?", 2, 2);
+  scheme_equal_always_proc = p;
+  scheme_addto_prim_instance("equal-always?", p, env);
+
   scheme_addto_prim_instance("equal-always?/recur",
                              scheme_make_prim_w_arity(equal_always_recur_prim, "equal-always?/recur", 3, 3),
                              env);

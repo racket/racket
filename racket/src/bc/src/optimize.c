@@ -5001,6 +5001,7 @@ static Scheme_Object *finish_optimize_application3(Scheme_App3_Rec *app, Optimiz
   }
 
   if (SAME_OBJ(app->rator, scheme_equal_proc)
+       || SAME_OBJ(app->rator, scheme_equal_always_proc)
        || SAME_OBJ(app->rator, scheme_eqv_proc)
        || SAME_OBJ(app->rator, scheme_eq_proc)) {
     if (equivalent_exprs(app->rand1, app->rand2, NULL, NULL, 0)) {

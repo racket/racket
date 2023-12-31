@@ -658,6 +658,7 @@ extern Scheme_Object *scheme_boolean_p_proc;
 extern Scheme_Object *scheme_eq_proc;
 extern Scheme_Object *scheme_eqv_proc;
 extern Scheme_Object *scheme_equal_proc;
+extern Scheme_Object *scheme_equal_always_proc;
 
 extern Scheme_Object *scheme_def_exit_proc;
 extern Scheme_Object *scheme_system_type_proc;

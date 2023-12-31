@@ -806,20 +806,11 @@
                       [(hash-ref prim-knowns u #f) u] ; assuming that `mutable` and `constant` are not primitives
                       [else 'constant])))]
            [`(equal? ,exp1 ,exp2)
-            (let ([exp1 (schemify exp1 'fresh)]
-                  [exp2 (schemify exp2 'fresh)])
-              (cond
-                [(eq? exp1 exp2)
-                 #t]
-                [(or (equal-implies-eq? exp1) (equal-implies-eq? exp2))
-                 `(eq? ,exp1 ,exp2)]
-                [(or (equal-implies-eqv? exp1) (equal-implies-eqv? exp2))
-                 `(eqv? ,exp1 ,exp2)]
-                [else
-                 (left-to-right/app 'equal?
-                                    (list exp1 exp2)
-                                    #f target
-                                    prim-knowns knowns imports mutated simples unsafe-mode?)]))]
+            (optimize-equal 'equal? (schemify exp1 'fresh) (schemify exp2 'fresh)
+                            target prim-knowns knowns imports mutated simples unsafe-mode?)]
+           [`(equal-always? ,exp1 ,exp2)
+            (optimize-equal 'equal-always? (schemify exp1 'fresh) (schemify exp2 'fresh)
+                            target prim-knowns knowns imports mutated simples unsafe-mode?)]
            [`(call-with-values ,generator ,receiver)
             (cond
               [(and (lambda? generator)

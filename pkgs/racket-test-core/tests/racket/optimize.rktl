@@ -369,6 +369,8 @@
                    `(lambda (x) (eq? x ,val)))
         (test-comp `(lambda (x) (equal? ,val x))
                    `(lambda (x) (eq? ,val x)))
+        (test-comp `(lambda (x) (equal-always? x ,val))
+                   `(lambda (x) (eq? x ,val)))
         (test-comp #:except 'chez-scheme ; `eqv?` conversion happens in cpnanopass
                    `(lambda (x) (eqv? x ,val))
                    `(lambda (x) (eq? x ,val)))
@@ -378,6 +380,8 @@
        [test-equal-reduction/only-eqv
         (lambda (val)
          (test-comp `(lambda (x) (equal? x ,val))
+                    `(lambda (x) (eqv? x ,val)))
+         (test-comp `(lambda (x) (equal-always? x ,val))
                     `(lambda (x) (eqv? x ,val)))
          (test-comp `(lambda (x) (equal? ,val x))
                     `(lambda (x) (eqv? ,val x)))

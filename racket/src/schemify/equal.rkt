@@ -1,15 +1,32 @@
 #lang racket/base
 (require "wrap.rkt"
          "match.rkt"
-         "mutated-state.rkt")
+         "mutated-state.rkt"
+         "left-to-right.rkt")
 
 ;; Since a Racket `equal?` will shadow the host Scheme's `equal?`,
 ;; its optimizer won't be able to reduce `equal?` to `eq?` or `eqv?`
 ;; with obvious arguments. So, we perform that conversion in schemify.
 
-(provide equal-implies-eq?
+(provide optimize-equal
+         equal-implies-eq?
          equal-implies-eqv?
          always-eq/no-marks?)
+
+(define (optimize-equal equal-op exp1 exp2
+                        target prim-knowns knowns imports mutated simples unsafe-mode?)
+  (cond
+    [(eq? exp1 exp2)
+     #t]
+    [(or (equal-implies-eq? exp1) (equal-implies-eq? exp2))
+     `(eq? ,exp1 ,exp2)]
+    [(or (equal-implies-eqv? exp1) (equal-implies-eqv? exp2))
+     `(eqv? ,exp1 ,exp2)]
+    [else
+     (left-to-right/app equal-op
+                        (list exp1 exp2)
+                        #f target
+                        prim-knowns knowns imports mutated simples unsafe-mode?)]))
 
 (define (equal-implies-eq? e)
   (match e
