@@ -215,7 +215,7 @@
   (* [sig [(number ...) -> (number)]] [flags arith-op partial-folder safeongoodargs ieee r5rs])
   (- [sig [(number number ...) -> (number)]] [flags arith-op partial-folder safeongoodargs ieee r5rs])
   (/ [sig [(number number ...) -> (number)]] [flags arith-op partial-folder ieee r5rs])
-  (abs [sig [(real) -> (real)]] [flags arith-op mifoldable discard safeongoodargs cptypes ieee r5rs])
+  (abs [sig [(real) -> (real)]] [flags arith-op mifoldable discard safeongoodargs cptypes2 ieee r5rs])
   (div-and-mod [sig [(real real) -> (real real)]] [flags mifoldable+ discard])
   (div [sig [(real real) -> (real)]] [flags arith-op mifoldable discard])
   (mod [sig [(real real) -> (real)]] [flags arith-op mifoldable discard])
