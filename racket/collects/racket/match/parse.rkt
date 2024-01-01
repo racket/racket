@@ -8,8 +8,7 @@
          "parse-quasi.rkt"
          (only-in "stxtime.rkt" current-form-name)
          (for-template (only-in "runtime.rkt" matchable? pregexp-matcher mlist? mlist->list
-                                undef user-def undef? user-def? hash-remove-safe
-                                hash-remove-safe!
+                                undef user-def undef? user-def?
                                 hash-state hash-state-ht hash-state-keys hash-state-vals
                                 hash-state-closed? hash-state-residue)
                        (only-in racket/unsafe/ops unsafe-vector-ref)
