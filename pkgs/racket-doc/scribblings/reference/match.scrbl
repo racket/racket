@@ -274,7 +274,7 @@ In more detail, patterns match as follows:
            [_ 'not-matched]))
        ]
 
-       The behavior of unmatched key-value entries depends on @racket[_ht-opt].
+       The behavior of residue key-value entries in the hash table value depends on @racket[_ht-opt].
 
        When @racket[_ht-opt] is not provided or when it is @racket[#:closed],
        all of the keys in the hash table value must be matched.
@@ -320,11 +320,17 @@ In more detail, patterns match as follows:
        ]}
 
  @item{@racket[(#,(match-kw "hash*") [_expr _pat _kv-opt] ... _ht-opt)] ---
-       similar to @racketidfont{hash}, but (1) key-value-pattern must be grouped;
-       (2) if @racket[_ht-opt] is not specified, it behaves like @racket[#:open];
-       (3) if @racket[_kv-opt] is specified, and the key does not exist in
-       the hash table value, the default value will be matched against the
-       value pattern instead.
+       similar to @racketidfont{hash}, but with the following differences:
+
+       @itemlist[
+         @item{The key-value pattern must be grouped syntactically.}
+         @item{If @racket[_ht-opt] is not specified, it behaves like @racket[#:open]
+               (as opposed to @racket[#:closed]).}
+         @item{If @racket[_kv-opt] is specified with @racket[#:default _def-expr],
+               and the key does not exist in the hash table value, then the default value
+               from @racket[_def-expr] will be matched against the value pattern,
+               instead of immediately failing to match.}
+       ]
 
        @examples[
        #:eval match-eval
