@@ -345,7 +345,7 @@ In more detail, patterns match as follows:
        ]}
 
  @item{@racket[(#,(match-kw "hash-table") (_pat _pat) ...)] ---
-       @bold{This pattern is deprecated because it has a bug.}
+       @bold{This pattern is deprecated because it can be incorrect.}
        However, many programs rely on the incorrect behavior,
        so we still provide this pattern for backward compatibility reasons.
 
@@ -359,7 +359,7 @@ In more detail, patterns match as follows:
        ]}
 
  @item{@racket[(#,(racketidfont "hash-table") (_pat _pat) ...+ _ooo)] ---
-       @bold{This pattern is deprecated because it has a bug.}
+       @bold{This pattern is deprecated because it can be incorrect.}
        However, many programs rely on the incorrect behavior,
        so we still provide this pattern for backward compatibility reasons.
 
