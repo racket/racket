@@ -9,7 +9,9 @@
          (only-in "stxtime.rkt" current-form-name)
          (for-template (only-in "runtime.rkt" matchable? pregexp-matcher mlist? mlist->list
                                 undef user-def undef? user-def? hash-remove-safe
-                                hash-remove-safe!)
+                                hash-remove-safe!
+                                hash-state hash-state-ht hash-state-keys hash-state-vals
+                                hash-state-closed? hash-state-residue)
                        (only-in racket/unsafe/ops unsafe-vector-ref)
                        racket/base))
 
@@ -55,31 +57,40 @@
           (rest suffix)
           (if (eq? ddk-size #t) 0 ddk-size)))
 
-
-;; gen-closed-mode :: syntax?
-;;                    (listof identifier?)
-;;                    (listof identifier?)
-;;                    -> (listof syntax?)
-(define (gen-closed-mode mode k-ids ref-ids)
-  (cond
-    [(eq? mode #t)
-     (list #`(λ ()
-               (define seen (hash-copy-clear e #:kind 'mutable))
-               (define cnt
-                 (+ #,@(for/list ([k-id (in-list k-ids)]
-                                  [ref-id (in-list ref-ids)])
-                         #`(cond
-                             [(or (hash-has-key? seen #,k-id)
-                                  (user-def? #,ref-id))
-                              0]
-                             [else
-                              (hash-set! seen #,k-id #t)
-                              1]))))
-               (= (hash-count e) cnt)))]
-    [else '()]))
-
 ;; do-hash :: syntax? stx-list? (or/c #t #f syntax?) -> syntax?
-(define (do-hash stx kvps mode)
+;; mode: #t for closed, #f for open, syntax? for rest pattern
+;;
+;; Design note: we want the "simple case" to be as simple as possible, so:
+;;
+;;   (hash* [k1 p1] [k2 p2])
+;;
+;; should be equivalent to
+;;
+;;   (and (? hash?)
+;;        (ref k1 p1)
+;;        (ref k2 p2))
+;;
+;; where ref does the hash-ref and the matching.
+;;
+;; In this pattern:
+;;
+;; 1. k1 is evaluated.
+;; 2. (hash-ref ht k1) is performed
+;; 3. (hash-ref ht k1) is matched against p1
+;; 4. k2 is evaluated.
+;; 5. (hash-ref ht k2) is performed
+;; 6. (hash-ref ht k2) is matched against p2
+;;
+;; Step (2) could fail because there is no key in ht.
+;; Step (3) could fail because p1 doesn't match the value.
+;; When these failures occur, subsequent steps are short-circuited.
+;; The general case should preserve this behavior.
+
+(define (do-hash stx kvps init-mode)
+  (define mode
+    (if (and (syntax? init-mode) (eq? (syntax-e init-mode) '_))
+        #f
+        init-mode))
   (define kvp-list (syntax->list kvps))
   (define-values (k-exprs v-pats def-exprs def-ids)
     (for/fold ([k-exprs '()]
@@ -104,88 +115,63 @@
                  (cons #'undef def-ids))]
         [_ (raise-syntax-error #f "expect a key-value group" stx kvp)])))
 
-  (define k-ids (generate-temporaries k-exprs))
-  (define ref-ids (generate-temporaries k-exprs))
+  (cond
+    ;; Simple case for the open mode.
+    ;; Since we know that there is no "final pattern", we do not need to
+    ;; accumulate anything, thus being able to avoid the nested App.
+    ;; Comment this case out to test the general open mode handling.
+    [(not mode)
+     (OrderedAnd
+      (cons (Pred #'hash?)
+            (for/list ([k-expr (in-list k-exprs)]
+                       [v-pat (in-list v-pats)]
+                       [def-expr (in-list def-exprs)])
+              (with-syntax ([k-expr k-expr]
+                            [def-expr def-expr])
+                (App #'(λ (ht)
+                         (define val (hash-ref ht k-expr (λ () def-expr)))
+                         (values (undef? val) val))
+                     (list (Exact #f) (parse v-pat)))))))]
+    ;; General case
+    [else
+     (define final-pat
+       (cond
+         ;; rest pattern
+         [(syntax? mode)
+          (App #'hash-state-residue (list (parse mode)))]
+         ;; closed mode
+         [mode (Pred #'hash-state-closed?)]
+         ;; open mode -- technically dead code, but keep it as a
+         ;; "reference implementation"
+         [else (Dummy stx)]))
 
-  (with-syntax ([(k-id ...) k-ids]
-                [(ref-id ...) ref-ids]
-                [(k-expr ...) k-exprs]
-                [(def-id ...) def-ids])
-
-    (define activate-fun
-      #'(λ (p) (p)))
-
-    ;; we use let explicitly to prevent macro expander from nesting too much
-    (define main-fun
-      #`(λ (e)
-          ;; initially assign k-ids and ref-ids to #f, so that
-          ;; if section 1 short-circuits, there's no need to
-          ;; evaluate all k-exprs and hash-refs
-          (let ([k-id #f] ... [ref-id #f] ...)
-            (values
-             ;; SECTION 1: predicate
-             (or (undef? (begin
-                           (set! k-id k-expr)
-                           (set! ref-id (hash-ref e k-id def-id))
-                           ref-id))
-                 ...)
-
-             ;; henceforth, we can assume ref-ids are not undef
-
-             ;; SECTION 2: full mode predicate
-             #,@(gen-closed-mode mode k-ids ref-ids)
-
-             ;; SECTION 3: values
-             ref-id ...
-
-             ;; SECTION 4: rest
-             #,@(cond
-                  [(syntax? mode)
-                   (list #`(λ ()
-                             (cond
-                               [(immutable? e)
-                                #,(for/fold ([stx #'e])
-                                            ([k (in-list k-ids)])
-                                    #`(hash-remove-safe #,stx #,k))]
-                               [else
-                                (define e* (hash-copy e))
-                                #,@(for/list ([k (in-list k-ids)])
-                                     #`(hash-remove-safe! e* #,k))
-                                e*])))]
-                  [else '()])))))
-
-    (OrderedAnd
-     (list (Pred #'hash?)
-           (App main-fun
-                (append
-                 ;; SECTION 1
-                 (list (Exact #f))
-
-                 ;; SECTION 2
-                 (cond
-                   [(eq? mode #t) (list (App activate-fun (list (Exact #t))))]
-                   [else '()])
-
-                 ;; SECTION 3: transform user-def to the default value if needed
-                 (for/list ([ref-id (in-list ref-ids)]
-                            [def-expr (in-list def-exprs)]
-                            [v-pat (in-list v-pats)])
-                   (with-syntax ([ref-id ref-id]
-                                 [def-expr def-expr])
-                     (if (and (identifier? #'def-expr)
-                              (free-identifier=? #'undef #'def-expr))
-                         (parse v-pat)
-                         (App #'(λ (ref-id)
-                                  (if (user-def? ref-id)
-                                      def-expr
-                                      ref-id))
-                              (list (parse v-pat))))))
-
-                 ;; SECTION 4
-                 (cond
-                   [(syntax? mode)
-                    (list (App activate-fun (list (parse mode))))]
-                   [else '()])))))))
+     (OrderedAnd
+      (list (Pred #'hash?)
+            (App #'(λ (ht) (hash-state ht '() '()))
+                 (list (for/foldr ([pat-acc final-pat])
+                                  ([k-expr (in-list k-exprs)]
+                                   [v-pat (in-list v-pats)]
+                                   [def-expr (in-list def-exprs)]
+                                   [def-id (in-list def-ids)])
+                         (with-syntax ([k-expr k-expr]
+                                       [def-expr def-expr]
+                                       [def-id def-id])
+                           (App #'(λ (state)
+                                    (define ht (hash-state-ht state))
+                                    (define acc-keys (hash-state-keys state))
+                                    (define acc-vals (hash-state-vals state))
+                                    (define key k-expr)
+                                    (define val (hash-ref ht key def-id))
+                                    (values (undef? val)
+                                            (cond
+                                              [(user-def? val) def-expr]
+                                              [else val])
+                                            (hash-state ht
+                                                        (cons key acc-keys)
+                                                        (cons val acc-vals))))
+                                (list (Exact #f)
+                                      (parse v-pat)
+                                      pat-acc))))))))]))
 
 (define (make-kvps stx xs)
   (let loop ([xs (syntax->list xs)] [acc '()])
@@ -270,9 +256,6 @@
      (Vector (map rearm+parse (syntax->list #'(es ...))))]
 
     ;; Hash table patterns
-    [(hash* kvp ... #:rest rest-pat)
-     (eq? (syntax-e #'rest-pat) '_)
-     (do-hash stx #'(kvp ...) #f)]
     [(hash* kvp ... #:rest rest-pat) (do-hash stx #'(kvp ...) #'rest-pat)]
     [(hash* kvp ... #:closed) (do-hash stx #'(kvp ...) #t)]
     [(hash* kvp ... #:open) (do-hash stx #'(kvp ...) #f)]
@@ -280,7 +263,7 @@
 
     [(hash es ... #:rest rest-pat)
      (with-syntax ([(kvp ...) (make-kvps stx #'(es ...))])
-       (parse (syntax/loc stx (hash* kvp ... #:rest rest-pat))))]
+       (do-hash stx #'(kvp ...) #'rest-pat))]
     [(hash es ... #:closed)
      (with-syntax ([(kvp ...) (make-kvps stx #'(es ...))])
        (do-hash stx #'(kvp ...) #t))]

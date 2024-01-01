@@ -52,25 +52,25 @@
                       [_ 'failed])
                     (list 2 2 4)))
 
-    (test-case "partial matching"
+    (test-case "open matching"
       (check-equal? (match (hash 1 2 3 4)
                       [(hash* [1 x]) x]
                       [_ 'failed])
                     2))
 
-    (test-case "partial matching (multiple)"
+    (test-case "open matching (multiple)"
       (check-equal? (match (hash 1 2 3 4 5 6)
                       [(hash* [1 x] [5 z]) (list x z)]
                       [_ 'failed])
                     (list 2 6)))
 
-    (test-case "full matching"
+    (test-case "closed matching"
       (check-equal? (match (hash 1 2 3 4 5 6)
                       [(hash* [1 x] [3 y] [5 z] #:closed) (list x y z)]
                       [_ 'failed])
                     (list 2 4 6)))
 
-    (test-case "full matching failure"
+    (test-case "closed matching failure"
       ;; extra keys
       (check-equal? (match (hash 1 2 3 4 5 6)
                       [(hash* [1 x] [5 z] #:closed) (list x z)]
@@ -116,7 +116,7 @@
                     'failed))
 
     (test-case "evaluate only once (at least when hash* is the top-level pattern)"
-      ;; partial mode
+      ;; open mode
       (let ([var 0])
         (check-equal? (match (hash -5 -6 1 2 3 4)
                         [(hash* [(begin (set! var (+ var 1))
@@ -130,7 +130,7 @@
                       (list 2 4))
         (check-equal? var 3))
 
-      ;; full mode
+      ;; closed mode
       (let ([var 0])
         (check-equal? (match (hash 1 2 3 4)
                         [(hash* [(begin (set! var (+ var 1))
@@ -160,6 +160,186 @@
                       (list 2 4 (hash -5 -6)))
         (check-equal? var 3)))
 
+    (test-case "evaluation order (open)"
+      (let ([acc '()])
+        (check-equal? (match (hash -5 -6 1 2 3 4)
+                        [(hash* [(begin (set! acc (cons 'k1 acc))
+                                        1)
+                                 (app (λ (x)
+                                        (set! acc (cons 'p1 acc))
+                                        x)
+                                      x)]
+                                [(begin (set! acc (cons 'k2 acc))
+                                        3)
+                                 y])
+                         (list x y)]
+                        [_ 'failed])
+                      (list 2 4))
+        (check-equal? acc '(k2 p1 k1)))
+
+      (let ([acc '()])
+        (check-equal? (match (hash -5 -6 1 2 3 4)
+                        [(hash* [(begin (set! acc (cons 'k1 acc))
+                                        10)
+                                 (app (λ (x)
+                                        (set! acc (cons 'p1 acc))
+                                        x)
+                                      x)]
+                                [(begin (set! acc (cons 'k2 acc))
+                                        3)
+                                 y])
+                         (list x y)]
+                        [_ 'failed])
+                      'failed)
+        (check-equal? acc '(k1)))
+
+      (let ([acc '()])
+        (check-equal? (match (hash -5 -6 1 2 3 4)
+                        [(hash* [(begin (set! acc (cons 'k1 acc))
+                                        1)
+                                 (app (λ (x)
+                                        (set! acc (cons 'p1 acc))
+                                        x)
+                                      10)]
+                                [(begin (set! acc (cons 'k2 acc))
+                                        3)
+                                 y])
+                         (list y)]
+                        [_ 'failed])
+                      'failed)
+        (check-equal? acc '(p1 k1)))
+
+      (let ([acc '()])
+        (check-equal? (match (hash -5 -6 1 2 3 4)
+                        [(hash* [(begin (set! acc (cons 'k1 acc))
+                                        10)
+                                 (app (λ (x)
+                                        (set! acc (cons 'p1 acc))
+                                        x)
+                                      x)
+                                 #:default (begin (set! acc (cons 'd1 acc))
+                                                  100)]
+                                [(begin (set! acc (cons 'k2 acc))
+                                        3)
+                                 y])
+                         (list x y)]
+                        [_ 'failed])
+                      (list 100 4))
+        (check-equal? acc '(k2 p1 d1 k1))))
+
+    (test-case "evaluation order (closed)"
+      (let ([acc '()])
+        (check-equal? (match (hash -5 -6 1 2 3 4)
+                        [(hash* [(begin (set! acc (cons 'k1 acc))
+                                        1)
+                                 (app (λ (x)
+                                        (set! acc (cons 'p1 acc))
+                                        x)
+                                      x)]
+                                [(begin (set! acc (cons 'k2 acc))
+                                        3)
+                                 y]
+                                [(begin (set! acc (cons 'k3 acc))
+                                        -5)
+                                 z]
+                                #:closed)
+                         (list x y z)]
+                        [_ 'failed])
+                      (list 2 4 -6))
+        (check-equal? acc '(k3 k2 p1 k1)))
+
+      (let ([acc '()])
+        (check-equal? (match (hash -5 -6 1 2 3 4)
+                        [(hash* [(begin (set! acc (cons 'k1 acc))
+                                        1)
+                                 (app (λ (x)
+                                        (set! acc (cons 'p1 acc))
+                                        x)
+                                      x)]
+                                [(begin (set! acc (cons 'k2 acc))
+                                        3)
+                                 y]
+                                #:closed)
+                         (list x y)]
+                        [_ 'failed])
+                      'failed)
+        (check-equal? acc '(k2 p1 k1)))
+
+      (let ([acc '()])
+        (check-equal? (match (hash 1 2 3 4)
+                        [(hash* [(begin (set! acc (cons 'k1 acc))
+                                        10)
+                                 (app (λ (x)
+                                        (set! acc (cons 'p1 acc))
+                                        x)
+                                      x)]
+                                [(begin (set! acc (cons 'k2 acc))
+                                        3)
+                                 y]
+                                #:closed)
+                         (list x y)]
+                        [_ 'failed])
+                      'failed)
+        (check-equal? acc '(k1)))
+
+      (let ([acc '()])
+        (check-equal? (match (hash 1 2 3 4)
+                        [(hash* [(begin (set! acc (cons 'k1 acc))
+                                        1)
+                                 (app (λ (x)
+                                        (set! acc (cons 'p1 acc))
+                                        x)
+                                      10)]
+                                [(begin (set! acc (cons 'k2 acc))
+                                        3)
+                                 y]
+                                #:closed)
+                         (list y)]
+                        [_ 'failed])
+                      'failed)
+        (check-equal? acc '(p1 k1)))
+
+      (let ([acc '()])
+        (check-equal? (match (hash 1 2 3 4)
+                        [(hash* [(begin (set! acc (cons 'k1 acc))
+                                        10)
+                                 (app (λ (x)
+                                        (set! acc (cons 'p1 acc))
+                                        x)
+                                      x)
+                                 #:default (begin (set! acc (cons 'd1 acc))
+                                                  100)]
+                                [(begin (set! acc (cons 'k2 acc))
+                                        3)
+                                 y]
+                                [(begin (set! acc (cons 'k3 acc))
+                                        1)
+                                 z]
+                                #:closed)
+                         (list x y z)]
+                        [_ 'failed])
+                      (list 100 4 2))
+        (check-equal? acc '(k3 k2 p1 d1 k1)))
+
+      (let ([acc '()])
+        (check-equal? (match (hash 1 2 3 4)
+                        [(hash* [(begin (set! acc (cons 'k1 acc))
+                                        10)
+                                 (app (λ (x)
+                                        (set! acc (cons 'p1 acc))
+                                        x)
+                                      x)
+                                 #:default (begin (set! acc (cons 'd1 acc))
+                                                  100)]
+                                [(begin (set! acc (cons 'k2 acc))
+                                        3)
+                                 y]
+                                #:closed)
+                         (list x y)]
+                        [_ 'failed])
+                      'failed)
+        (check-equal? acc '(k2 p1 d1 k1))))
+
     (test-case "default value"
       ;; mismatch
       (check-equal? (match (hash 1 2
@@ -169,7 +349,7 @@
                       [_ 'failed])
                     'failed)
 
-      ;; partial
+      ;; open
       (check-equal? (match (hash 1 (list 2)
                                  3 (list 4)
                                  5 (list 6))
@@ -185,7 +365,7 @@
                       [_ 'failed])
                     (list 3 4))
 
-      ;; full
+      ;; closed
       (check-equal? (match (hash 1 (list 2)
                                  3 (list 4)
                                  5 (list 6))
@@ -204,7 +384,7 @@
                       [_ 'failed])
                     (list 2 2))
 
-      ;; full failure
+      ;; closed failure
       (check-equal? (match (hash 1 (list 2)
                                  3 (list 4)
                                  5 (list 6))
