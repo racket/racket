@@ -3805,6 +3805,44 @@
                (a? (a-x (a 1 2)))
                5)))
 
+;; check for inlined accessor, including when contract and realm info is present
+(for-each
+ (lambda (more)
+   (test-comp #:except 'racket
+              `(module m racket/base
+                 (require racket/unsafe/ops)
+                 (#%declare #:unsafe)
+                 (define-values (struct:a a a? a-x a-y)
+                   (let-values ([(struct:a a a? a-ref a-set!)
+                                 (make-struct-type 'a #f 2 0 #f
+                                                   (list (cons prop:authentic #t)))])
+                     (values struct:a a a?
+                             (make-struct-field-accessor a-ref 0 'a-x ,@more)
+                             (make-struct-field-accessor a-ref 1 'a-y ,@more))))
+                 (lambda (v)
+                   (+ (and (a? v) (a-x v))
+                      (and (a? v) (a-y v)))))
+              `(module m racket/base
+                 (require racket/unsafe/ops)
+                 (#%declare #:unsafe)
+                 (define-values (struct:a a a? a-x a-y)
+                   (let-values ([(struct:a a a? a-ref a-set!)
+                                 (make-struct-type 'a #f 2 0 #f
+                                                   (list (cons prop:authentic #t)))])
+                     (values struct:a a a?
+                             (make-struct-field-accessor a-ref 0 'a-x ,@more)
+                             (make-struct-field-accessor a-ref 1 'a-y ,@more))))
+                 (lambda (v)
+                   (+ (and (a? v) (unsafe-struct*-ref v 0))
+                      (and (a? v) (unsafe-struct*-ref v 1)))))))
+ (list '()
+       '('a?)
+       '("a?")
+       '(#f)
+       '('a? 'dreamland)
+       '("a?" 'dreamland)
+       '(#f 'dreamland)))
+
 (test-comp '(module m racket/base
               (struct a (x y) #:omit-define-syntaxes)
               (begin0

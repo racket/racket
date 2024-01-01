@@ -66,11 +66,23 @@
                    (let* ([immediate-count (struct-type-info-immediate-field-count info)]
                           [parent-count (- (struct-type-info-field-count info)
                                            immediate-count)])
+                     (define (ok-contract-expr? ctc)
+                       (match ctc
+                         [`(quote ,ctc) (or (string? ctc) (symbol? ctc) (not ctc))]
+                         [`,_ (or (string? ctc) (not ctc))]))
+                     (define (ok-error-config? more)
+                       (match more
+                         [`() #t]
+                         [`(,ctc) (ok-contract-expr? ctc)]
+                         [`(,ctc (quote ,realm)) (and (ok-contract-expr? ctc)
+                                                      (symbol? realm))]
+                         [`,_ #f]))
                      (for/fold ([knowns knowns]) ([id (in-list acc/muts)]
                                                   [maker (in-list make-acc/muts)])
                        (match maker
-                         [`(,make ,ref-or-set ,pos (quote ,name))
-                          (or (and (exact-nonnegative-integer? pos)
+                         [`(,make ,ref-or-set ,pos (quote ,name) . ,more)
+                          (or (and (ok-error-config? more)
+                                   (exact-nonnegative-integer? pos)
                                    (pos . < . immediate-count)
                                    (symbol? name)
                                    (cond
