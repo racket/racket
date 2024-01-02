@@ -7,7 +7,10 @@
          "parse-helper.rkt"
          "parse-quasi.rkt"
          (only-in "stxtime.rkt" current-form-name)
-         (for-template (only-in "runtime.rkt" matchable? pregexp-matcher mlist? mlist->list)
+         (for-template (only-in "runtime.rkt" matchable? pregexp-matcher mlist? mlist->list
+                                undef user-def undef? user-def?
+                                hash-state hash-state-ht hash-state-keys hash-state-vals
+                                hash-state-closed? hash-state-residue)
                        (only-in racket/unsafe/ops unsafe-vector-ref)
                        racket/base))
 
@@ -53,6 +56,130 @@
           (rest suffix)
           (if (eq? ddk-size #t) 0 ddk-size)))
 
+;; do-hash :: syntax? stx-list? (or/c #t #f syntax?) -> syntax?
+;; mode: #t for closed, #f for open, syntax? for rest pattern
+;;
+;; Design note: we want the "simple case" to be as simple as possible, so:
+;;
+;;   (hash* [k1 p1] [k2 p2])
+;;
+;; should be equivalent to
+;;
+;;   (and (? hash?)
+;;        (ref k1 p1)
+;;        (ref k2 p2))
+;;
+;; where ref does the hash-ref and the matching.
+;;
+;; In this pattern:
+;;
+;; 1. k1 is evaluated.
+;; 2. (hash-ref ht k1) is performed
+;; 3. (hash-ref ht k1) is matched against p1
+;; 4. k2 is evaluated.
+;; 5. (hash-ref ht k2) is performed
+;; 6. (hash-ref ht k2) is matched against p2
+;;
+;; Step (2) could fail because there is no key in ht.
+;; Step (3) could fail because p1 doesn't match the value.
+;; When these failures occur, subsequent steps are short-circuited.
+;; The general case should preserve this behavior.
+
+(define (do-hash stx kvps init-mode)
+  (define mode
+    (if (and (syntax? init-mode) (eq? (syntax-e init-mode) '_))
+        #f
+        init-mode))
+  (define kvp-list (syntax->list kvps))
+  (define-values (k-exprs v-pats def-exprs def-ids)
+    (for/fold ([k-exprs '()]
+               [v-pats '()]
+               [def-exprs '()]
+               [def-ids '()]
+               #:result (values (reverse k-exprs)
+                                (reverse v-pats)
+                                (reverse def-exprs)
+                                (reverse def-ids)))
+              ([kvp (in-list kvp-list)])
+      (syntax-case kvp ()
+        [(k-expr v-pat #:default def-expr)
+         (values (cons #'k-expr k-exprs)
+                 (cons #'v-pat v-pats)
+                 (cons #'def-expr def-exprs)
+                 (cons #'user-def def-ids))]
+        [(k-expr v-pat)
+         (values (cons #'k-expr k-exprs)
+                 (cons #'v-pat v-pats)
+                 (cons #'undef def-exprs)
+                 (cons #'undef def-ids))]
+        [_ (raise-syntax-error #f "expect a key-value group" stx kvp)])))
+
+  (cond
+    ;; Simple case for the open mode.
+    ;; Since we know that there is no "final pattern", we do not need to
+    ;; accumulate anything, thus being able to avoid the nested App.
+    ;; Comment this case out to test the general open mode handling.
+    [(not mode)
+     (OrderedAnd
+      (cons (Pred #'hash?)
+            (for/list ([k-expr (in-list k-exprs)]
+                       [v-pat (in-list v-pats)]
+                       [def-expr (in-list def-exprs)])
+              (with-syntax ([k-expr k-expr]
+                            [def-expr def-expr])
+                (App #'(λ (ht)
+                         (define val (hash-ref ht k-expr (λ () def-expr)))
+                         (values (undef? val) val))
+                     (list (Exact #f) (parse v-pat)))))))]
+    ;; General case
+    [else
+     (define final-pat
+       (cond
+         ;; rest pattern
+         [(syntax? mode)
+          (App #'hash-state-residue (list (parse mode)))]
+         ;; closed mode
+         [mode (Pred #'hash-state-closed?)]
+         ;; open mode -- technically dead code, but keep it as a
+         ;; "reference implementation"
+         [else (Dummy stx)]))
+
+     (OrderedAnd
+      (list (Pred #'hash?)
+            (App #'(λ (ht) (hash-state ht '() '()))
+                 (list (for/foldr ([pat-acc final-pat])
+                                  ([k-expr (in-list k-exprs)]
+                                   [v-pat (in-list v-pats)]
+                                   [def-expr (in-list def-exprs)]
+                                   [def-id (in-list def-ids)])
+                         (with-syntax ([k-expr k-expr]
+                                       [def-expr def-expr]
+                                       [def-id def-id])
+                           (App #'(λ (state)
+                                    (define ht (hash-state-ht state))
+                                    (define acc-keys (hash-state-keys state))
+                                    (define acc-vals (hash-state-vals state))
+                                    (define key k-expr)
+                                    (define val (hash-ref ht key def-id))
+                                    (values (undef? val)
+                                            (cond
+                                              [(user-def? val) def-expr]
+                                              [else val])
+                                            (hash-state ht
+                                                        (cons key acc-keys)
+                                                        (cons val acc-vals))))
+                                (list (Exact #f)
+                                      (parse v-pat)
+                                      pat-acc))))))))]))
+
+(define (make-kvps stx xs)
+  (let loop ([xs (syntax->list xs)] [acc '()])
+    (cond
+      [(empty? xs) (reverse acc)]
+      [(empty? (rest xs))
+       (raise-syntax-error #f "key does not have a value" stx)]
+      [else (loop (rest (rest xs)) (cons (list (first xs) (second xs)) acc))])))
+
 ;; parse : syntax -> Pat
 ;; compile stx into a pattern, using the new syntax
 (define (parse stx)
@@ -61,7 +188,8 @@
   (define disarmed-stx (syntax-disarm stx orig-insp))
   (syntax-case* disarmed-stx (not var struct box cons list vector ? and or quote app
                                   regexp pregexp list-rest list-no-order hash-table
-                                  quasiquote mcons list* mlist)
+                                  quasiquote mcons list* mlist
+                                  hash hash*)
                 (lambda (x y) (eq? (syntax-e x) (syntax-e y)))
     [(expander . args)
      (and (identifier? #'expander)
@@ -125,6 +253,27 @@
                   (rearm+parse (syntax/loc stx (list es ...))))]
     [(vector es ...)
      (Vector (map rearm+parse (syntax->list #'(es ...))))]
+
+    ;; Hash table patterns
+    [(hash* kvp ... #:rest rest-pat) (do-hash stx #'(kvp ...) #'rest-pat)]
+    [(hash* kvp ... #:closed) (do-hash stx #'(kvp ...) #t)]
+    [(hash* kvp ... #:open) (do-hash stx #'(kvp ...) #f)]
+    [(hash* kvp ...) (do-hash stx #'(kvp ...) #f)]
+
+    [(hash es ... #:rest rest-pat)
+     (with-syntax ([(kvp ...) (make-kvps stx #'(es ...))])
+       (do-hash stx #'(kvp ...) #'rest-pat))]
+    [(hash es ... #:closed)
+     (with-syntax ([(kvp ...) (make-kvps stx #'(es ...))])
+       (do-hash stx #'(kvp ...) #t))]
+    [(hash es ... #:open)
+     (with-syntax ([(kvp ...) (make-kvps stx #'(es ...))])
+       (do-hash stx #'(kvp ...) #f))]
+    [(hash es ...)
+     (with-syntax ([(kvp ...) (make-kvps stx #'(es ...))])
+       (do-hash stx #'(kvp ...) #t))]
+
+    ;; Deprecated hash table patterns
     [(hash-table p ... dd)
      (ddk? #'dd)
      (trans-match

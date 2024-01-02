@@ -11,7 +11,16 @@
          pregexp-matcher
          match-prompt-tag
          mlist? mlist->list
-         syntax-srclocs)
+         syntax-srclocs
+
+         undef
+         user-def
+         undef?
+         user-def?
+
+         (struct-out hash-state)
+         hash-state-closed?
+         hash-state-residue)
 
 (define match-prompt-tag (make-continuation-prompt-tag 'match)) 
 
@@ -79,3 +88,43 @@
                 (syntax-column stx)
                 (syntax-position stx)
                 (syntax-span stx))))
+
+(define undef (gensym))
+(define user-def (gensym))
+
+(define (undef? v)
+  (eq? undef v))
+
+(define (user-def? v)
+  (eq? user-def v))
+
+(struct hash-state (ht keys vals))
+
+(define (hash-state-closed? state)
+  (define ht (hash-state-ht state))
+  (define acc-keys (hash-state-keys state))
+  (define acc-vals (hash-state-vals state))
+  (define seen (hash-copy-clear ht #:kind 'mutable))
+  (define cnt
+    (for/sum ([k (in-list acc-keys)]
+              [v (in-list acc-vals)])
+      (cond
+        [(or (hash-has-key? seen k) (user-def? v)) 0]
+        [else
+         (hash-set! seen k #t)
+         1])))
+  (= (hash-count ht) cnt))
+
+(define (hash-state-residue state)
+  (define ht (hash-state-ht state))
+  (define acc-keys (hash-state-keys state))
+  (cond
+    [(immutable? ht)
+     (for/fold ([ht ht])
+               ([k (in-list acc-keys)])
+       (hash-remove ht k))]
+    [else
+     (define ht* (hash-copy ht))
+     (for ([k (in-list acc-keys)])
+       (hash-remove! ht* k))
+     ht*]))

@@ -246,8 +246,110 @@ In more detail, patterns match as follows:
          [(vector 1 (list a) ..3 5) a])
        ]}
 
+ @item{@racket[(#,(match-kw "hash") _expr _pat ... ... _ht-opt)] ---
+       matches against a hash table where @racket[_expr] matches
+       a key and @racket[_pat] matches a corresponding value.
+
+       @examples[
+       #:eval match-eval
+       (match (hash "aa" 1 "b" 2)
+         [(hash "b" b (string-append "a" "a") a)
+          (list b a)])
+       (match (hash "aa" 1 "b" 2)
+         [(hash "b" _ "c" _) 'matched]
+         [_ 'not-matched])
+       ]
+
+       The key matchings use the key comparator of the matching hash table.
+
+       @examples[
+       #:eval match-eval
+       (let ([k (string-append "a" "b")])
+         (match (hasheq "ab" 1)
+           [(hash k v) 'matched]
+           [_ 'not-matched]))
+       (let ([k (string-append "a" "b")])
+         (match (hasheq k 1)
+           [(hash k v) 'matched]
+           [_ 'not-matched]))
+       ]
+
+       The behavior of residue key-value entries in the hash table value depends on @racket[_ht-opt].
+
+       When @racket[_ht-opt] is not provided or when it is @racket[#:closed],
+       all of the keys in the hash table value must be matched.
+       I.e., the matching is closed to extension.
+
+       @examples[
+       #:eval match-eval
+       (match (hash "a" 1 "b" 2)
+         [(hash "b" _) 'matched]
+         [_ 'not-matched])
+       ]
+
+       When @racket[_ht-opt] is @racket[#:open],
+       there can be keys in the hash table value that are not specified in the pattern.
+       I.e., the matching is open to extension.
+
+       @examples[
+       #:eval match-eval
+       (match (hash "a" 1 "b" 2)
+         [(hash "b" _ #:open) 'matched]
+         [_ 'not-matched])
+       ]
+
+       When @racket[_ht-opt] is @racket[#:rest _pat], @racket[_pat] is further
+       matched against the residue hash table.
+       If the matching hash table is immutable, this residue matching is efficient.
+       Otherwise, the matching hash table will be copied, which could be expensive.
+
+       @examples[
+       #:eval match-eval
+       (match (hash "a" 1 "b" 2)
+         [(hash "b" _ #:rest (hash "a" a)) a]
+         [_ #f])
+       ]
+
+       Many key @racket[_expr]s could evaluate to the same value.
+
+       @examples[
+       #:eval match-eval
+       (match (hash "a" 1 "b" 2)
+         [(hash "b" _ "b" 2 "a" _) 'matched]
+         [_ 'not-matched])
+       ]}
+
+ @item{@racket[(#,(match-kw "hash*") [_expr _pat _kv-opt] ... _ht-opt)] ---
+       similar to @racketidfont{hash}, but with the following differences:
+
+       @itemlist[
+         @item{The key-value pattern must be grouped syntactically.}
+         @item{If @racket[_ht-opt] is not specified, it behaves like @racket[#:open]
+               (as opposed to @racket[#:closed]).}
+         @item{If @racket[_kv-opt] is specified with @racket[#:default _def-expr],
+               and the key does not exist in the hash table value, then the default value
+               from @racket[_def-expr] will be matched against the value pattern,
+               instead of immediately failing to match.}
+       ]
+
+       @examples[
+       #:eval match-eval
+       (match (hash "a" 1 "b" 2)
+         [(hash* ["b" b] ["a" a]) (list b a)])
+       (match (hash "a" 1 "b" 2)
+         [(hash* ["b" b]) 'matched]
+         [_ 'not-matched])
+       (match (hash "a" 1 "b" 2)
+         [(hash* ["a" a #:default 42] ["c" c #:default 100]) (list a c)]
+         [_ #f])
+       ]}
+
  @item{@racket[(#,(match-kw "hash-table") (_pat _pat) ...)] ---
-       similar to @racketidfont{list-no-order}, but matching against
+       @bold{This pattern is deprecated because it can be incorrect.}
+       However, many programs rely on the incorrect behavior,
+       so we still provide this pattern for backward compatibility reasons.
+
+       Similar to @racketidfont{list-no-order}, but matching against
        hash table's key--value pairs.
 
        @examples[
@@ -256,8 +358,12 @@ In more detail, patterns match as follows:
          [(hash-table ("b" b) ("a" a)) (list b a)])
        ]}
 
- @item{@racket[(#,(racketidfont "hash-table") (_pat _pat) ...+ _ooo)]
-       --- Generalizes @racketidfont{hash-table} to support a final
+ @item{@racket[(#,(racketidfont "hash-table") (_pat _pat) ...+ _ooo)] ---
+       @bold{This pattern is deprecated because it can be incorrect.}
+       However, many programs rely on the incorrect behavior,
+       so we still provide this pattern for backward compatibility reasons.
+
+       Generalizes @racketidfont{hash-table} to support a final
        repeating pattern.
 
        @examples[
