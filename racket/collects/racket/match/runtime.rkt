@@ -17,8 +17,6 @@
          user-def
          undef?
          user-def?
-         hash-remove-safe
-         hash-remove-safe!
 
          (struct-out hash-state)
          hash-state-closed?
@@ -100,15 +98,6 @@
 (define (user-def? v)
   (eq? user-def v))
 
-(define (hash-remove-safe h k)
-  (if (hash-has-key? h k)
-      (hash-remove h k)
-      h))
-
-(define (hash-remove-safe! h k)
-  (when (hash-has-key? h k)
-    (hash-remove! h k)))
-
 (struct hash-state (ht keys vals))
 
 (define (hash-state-closed? state)
@@ -133,9 +122,9 @@
     [(immutable? ht)
      (for/fold ([ht ht])
                ([k (in-list acc-keys)])
-       (hash-remove-safe ht k))]
+       (hash-remove ht k))]
     [else
      (define ht* (hash-copy ht))
      (for ([k (in-list acc-keys)])
-       (hash-remove-safe! ht* k))
+       (hash-remove! ht* k))
      ht*]))
