@@ -116,7 +116,8 @@ In more detail, patterns match as follows:
        @racketidfont{..}@racket[_k], and
        @racketidfont{__}@racket[_k] for non-negative integers
        @racket[_k]) @margin-note{Unlike in @racket[cond] and @racket[case],
-       @racket[else] is not a keyword in @racket[match].} or @racket[(var _id)]
+       @racket[else] is not a keyword in @racket[match].
+       Use the @racketidfont{_} pattern for the ``else'' clause.} or @racket[(var _id)]
        --- matches anything, and binds @racket[_id] to the
        matching values. If an @racket[_id] is used multiple times
        within a pattern, the corresponding matches must be the same
