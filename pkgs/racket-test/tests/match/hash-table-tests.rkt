@@ -3,10 +3,22 @@
 (provide hash-table-tests)
 
 (require racket/match
-         rackunit)
+         rackunit
+         syntax/parse/define
+         racket/stxparam
+         (only-in racket/match/runtime hash-pattern-optimized?)
+         (for-syntax racket/base))
+
+(define-syntax-parse-rule (test-suite-hash-table tcase ...)
+  (test-suite "Tests for hash tables"
+    (test-suite "optimization on"
+      tcase ...)
+    (test-suite "optimization off"
+      (syntax-parameterize ([hash-pattern-optimized? #f])
+        tcase ...))))
 
 (define hash-table-tests
-  (test-suite "Test for hash tables"
+  (test-suite-hash-table
     (test-case "non hash"
       (check-equal? (match 1
                       [(hash* [3 x]) x]

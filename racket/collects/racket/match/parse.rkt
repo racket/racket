@@ -3,6 +3,7 @@
 (require racket/struct-info
          racket/syntax
          racket/list
+         racket/stxparam-exptime
          "patterns.rkt"
          "parse-helper.rkt"
          "parse-quasi.rkt"
@@ -10,7 +11,8 @@
          (for-template (only-in "runtime.rkt" matchable? pregexp-matcher mlist? mlist->list
                                 undef user-def undef? user-def?
                                 hash-state hash-state-ht hash-state-keys hash-state-vals
-                                hash-state-closed? hash-state-residue)
+                                hash-state-closed? hash-state-residue
+                                hash-pattern-optimized?)
                        (only-in racket/unsafe/ops unsafe-vector-ref)
                        racket/base))
 
@@ -86,8 +88,11 @@
 ;; The general case should preserve this behavior.
 
 (define (do-hash stx kvps init-mode)
+  (define optimized? (syntax-parameter-value #'hash-pattern-optimized?))
   (define mode
-    (if (and (syntax? init-mode) (eq? (syntax-e init-mode) '_))
+    (if (and optimized?
+             (syntax? init-mode)
+             (eq? (syntax-e init-mode) '_))
         #f
         init-mode))
   (define kvp-list (syntax->list kvps))
@@ -118,8 +123,7 @@
     ;; Simple case for the open mode.
     ;; Since we know that there is no "final pattern", we do not need to
     ;; accumulate anything, thus being able to avoid the nested App.
-    ;; Comment this case out to test the general open mode handling.
-    [(not mode)
+    [(and optimized? (not mode))
      (OrderedAnd
       (cons (Pred #'hash?)
             (for/list ([k-expr (in-list k-exprs)]

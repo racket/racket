@@ -13,6 +13,7 @@
          mlist? mlist->list
          syntax-srclocs
 
+         ;; hash pattern
          undef
          user-def
          undef?
@@ -20,7 +21,8 @@
 
          (struct-out hash-state)
          hash-state-closed?
-         hash-state-residue)
+         hash-state-residue
+         hash-pattern-optimized?)
 
 (define match-prompt-tag (make-continuation-prompt-tag 'match)) 
 
@@ -130,3 +132,8 @@
      (for ([k (in-list acc-keys)])
        (hash-remove! ht* k))
      ht*]))
+
+;; If true, optimize the hash pattern as follows:
+;; - Generate simplified code for the open mode
+;; - Treat #:rest _ as the open mode
+(define-syntax-parameter hash-pattern-optimized? #t)
