@@ -7477,15 +7477,17 @@
             [() `(quote ,(vector))]
             [(vec1 vec2) (nanopass-case (L7 Expr) vec1
                            [(call ,info1 ,mdcl1 ,pr ,e1)
-                            (eq? (primref-name pr) 'vector)
-                            (bind #t (vec2)
-                              (build-vector-copy vec2 `(immediate ,(fix 0)) (extract-vector-length vec2) e1 #t))]
+                            (guard (eq? (primref-name pr) 'vector))
+                            (bind #f (e1)
+                              (bind #t (vec2)
+                                (build-vector-copy vec2 `(immediate ,(fix 0)) (extract-vector-length vec2) e1 #t)))]
                            [else
                             (nanopass-case (L7 Expr) vec2
                               [(call ,info2 ,mdcl2 ,pr ,e2)
-                               (eq? (primref-name pr) 'vector)
+                               (guard (eq? (primref-name pr) 'vector))
                                (bind #t (vec1)
-                                 (build-vector-copy vec1 `(immediate ,(fix 0)) (extract-vector-length vec1) e2 #f))]
+                                 (bind #f (e2)
+                                   (build-vector-copy vec1 `(immediate ,(fix 0)) (extract-vector-length vec1) e2 #f)))]
                               [else (build-vector-append (list vec1 vec2))])])]
             [(vec . vecs) (build-vector-append (cons vec vecs))]))
         (let ()

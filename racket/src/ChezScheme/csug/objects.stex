@@ -801,7 +801,7 @@ concatenation of the given \var{vector}s in order.
 
 \schemedisplay
 (vector-append '#(a b c)) ;=> #(a b c)
-(vector-append '#(a b c) #'(d e) #'(f)) ;=> #(a b c d e f)
+(vector-append '#(a b c) '#(d e) '#(f)) ;=> #(a b c d e f)
 (vector-append) ;=> #()
 \endschemedisplay
 

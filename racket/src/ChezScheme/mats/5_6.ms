@@ -163,6 +163,23 @@
     (error? (vector-append '#(a b c) 'x))
     (error? (vector-append '#(a b c) '#(d) 'x))
     (error? (vector-append '#(a b c) '#(d) '#(e)'x))
+
+    ;; ensure that `vector-append` optimization doesn't misorder
+    ;; evaluation and potential collection with respect to filling
+    ;; the vector
+    (with-interrupts-disabled
+      (letrec ([f (lambda (m)
+                    (collect 0 1)
+                    (number->string m))]
+               [N 1000])
+        (let ([v (vector-append (make-vector N)
+                                (vector (f 8)))])
+          (and (eqv? 0 (#%$generation (vector-ref v N)))
+               (eqv? 0 (#%$generation v))
+               (begin
+                 (collect 0 1)
+                 (and (eqv? 1 (#%$generation (vector-ref v N)))
+                      (equal? (vector-ref v N) "8")))))))
  )
 
 (mat vector-fill!
