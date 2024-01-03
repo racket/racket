@@ -89,6 +89,8 @@
                 (syntax-position stx)
                 (syntax-span stx))))
 
+;; Hash table patterns
+
 (define undef (gensym))
 (define user-def (gensym))
 

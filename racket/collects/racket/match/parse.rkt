@@ -132,6 +132,29 @@
                          (values (undef? val) val))
                      (list (Exact #f) (parse v-pat)))))))]
     ;; General case
+    ;;
+    ;; To short-circuit, we use the following strategy:
+    ;;
+    ;;   (hash* [k1 p1] [k2 p2])
+    ;;
+    ;; is expanded to the nested App:
+    ;;
+    ;;   (App setup (list (App f1 (list #f p1 (App f2 (list #f p2 final))))))
+    ;;
+    ;; where fi evaluates ki, uses hash-ref on it, and returns three values:
+    ;;
+    ;; - The first value indicates that there's a failure due to key not present.
+    ;;   (so we want this value to be #f to continue the matching)
+    ;; - The second value is the value associated with ki, which is to be matched
+    ;;   against pi.
+    ;; - The third value is an updated state, which is passed to the next
+    ;;   nested App.
+    ;;
+    ;; A state consists of the hash table, a list of accumulated keys,
+    ;; and a list of accumulated values. setup transforms the hash table value
+    ;; into the initial state. final accepts the final state and makes a check
+    ;; on the accumulated keys and values for the residue mode or
+    ;; the closed mode.
     [else
      (define final-pat
        (cond
