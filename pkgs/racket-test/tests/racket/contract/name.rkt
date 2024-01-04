@@ -275,6 +275,7 @@
   (test-name '(between/c 1 10) (between/c 1 10))
   (test-name '(string-len/c 3) (string-len/c 3))
   (test-name 'natural-number/c natural-number/c)
+  (test-name '(complex/c even? odd?) (complex/c even? odd?))
   (test-name #f false/c)
   (test-name #t #t)
   (test-name #\a #\a)

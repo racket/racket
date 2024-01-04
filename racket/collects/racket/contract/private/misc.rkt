@@ -16,6 +16,7 @@
          renamed->-ctc renamed-<-ctc
          char-in
          real-in
+         (rename-out [-complex/c complex/c])
          natural-number/c
          string-len/c
          false/c
@@ -329,6 +330,68 @@
                                 between/c-s?
                                 between/c-s-low
                                 between/c-s-high)
+
+(define -complex/c
+  (let ()
+    (define (complex/c rp ip)
+      (make-complex/c (coerce-flat-contract 'complex/c rp)
+                      (coerce-flat-contract 'complex/c ip)))
+    complex/c))
+
+(struct complex/c (real? imag?)
+  #:extra-constructor-name make-complex/c
+  #:property prop:custom-write custom-write-property-proc
+  #:property prop:flat-contract
+  (build-flat-contract-property
+   #:trusted trust-me
+   #:name (λ (c) (build-compound-type-name 'complex/c (complex/c-real? c) (complex/c-imag? c)))
+   #:first-order (λ (ctc)
+                   (define rp? (complex/c-real? ctc))
+                   (define ip? (complex/c-imag? ctc))
+                   (λ (v) (and (complex? v) (rp? (real-part v)) (ip? (imag-part v)))))
+   #:late-neg-projection
+   (λ (ctc)
+     (define rp? (complex/c-real? ctc))
+     (define ip? (complex/c-imag? ctc))
+     (λ (blame)
+       (λ (val neg-party)
+         (if (and (complex? val)
+                  (rp? (real-part val))
+                  (ip? (imag-part val)))
+             val
+             (raise-blame-error
+              blame val #:missing-party neg-party
+              '(expected:
+                "a complex number with\n"
+                "  real part: ~s\n"
+                "  imaginary part: ~s"
+                given: "~v")
+              (contract-name rp?)
+              (contract-name ip?)
+              val)))))
+   #:generate
+   (λ (ctc)
+     (λ (fuel)
+       (define gen-real (contract-random-generate/choose (complex/c-real? ctc) fuel))
+       (define gen-imag (contract-random-generate/choose (complex/c-imag? ctc) fuel))
+       (and gen-real
+            gen-imag
+            (λ ()
+              (make-rectangular (gen-real) (gen-imag))))))
+   #:stronger
+   (λ (this that)
+     (cond
+       [(complex/c? that)
+        (and (contract-stronger? (complex/c-real? this) (complex/c-real? that))
+             (contract-stronger? (complex/c-imag? this) (complex/c-imag? that)))]
+       [else #f]))
+   #:equivalent
+   (λ (this that)
+     (cond
+       [(complex/c? that)
+        (and (contract-equivalent? (complex/c-real? this) (complex/c-real? that))
+             (contract-equivalent? (complex/c-imag? this) (complex/c-imag? that)))]
+       [else #f]))))
 
 (define (char-in a b)
   (check-two-args 'char-in a b char? char?)

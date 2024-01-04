@@ -70,6 +70,7 @@
  integer-in
  char-in
  real-in
+ complex/c
  natural-number/c
  string-len/c
  false/c

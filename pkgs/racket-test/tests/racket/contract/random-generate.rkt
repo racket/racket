@@ -82,6 +82,7 @@
 (check-not-exn (λ () (test-contract-generation (and/c integer? even?))))
 (check-not-exn (λ () (test-contract-generation (or/c (and/c real? positive? (</c 0)) boolean?))))
 (check-not-exn (λ () (test-contract-generation (first-or/c (and/c real? positive? (</c 0)) boolean?))))
+(check-not-exn (λ () (test-contract-generation (complex/c (and/c integer? odd?) (and/c integer? even?)))))
 
 (check-not-exn (λ () (test-contract-generation (listof boolean?))))
 (check-not-exn (λ () (test-contract-generation (listof some-crazy-predicate?))))

@@ -394,6 +394,25 @@ is @racket[#f], then the range is unbounded on that end.
 
 }
 
+@defproc[(complex/c [real flat-contract?] [imag flat-contract?]) flat-contract?]{
+
+Returns a @tech{flat contract} that accepts complex numbers whose real parts match @racket[real]
+and whose imaginary parts match @racket[imag].
+
+@examples[#:eval (contract-eval) #:once
+          (eval:error
+           (define/contract can-be-converted-to-exact
+             (complex/c rational? rational?)
+             +inf.0))
+
+          (define/contract complex-integer
+            (complex/c integer? integer?)
+           1+2i)]
+
+@history[#:added "8.11.1.10"]
+
+}
+
 @defproc[(char-in [a char?] [b char?]) flat-contract?]{
 
 Returns a @tech{flat contract} that requires the input to be a character whose

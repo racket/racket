@@ -251,6 +251,13 @@
   (test-flat-contract '(</c 1) 0 1+1i)
   (test-flat-contract '(>/c 1) 4 1+1i)
   (test-flat-contract '(>=/c 1) 4 1+1i)
+  (test-flat-contract '(complex/c (and/c integer? odd?)
+                                  (and/c integer? even?))
+                      1+2i
+                      2+1i)
+  (test-flat-contract '(complex/c rational? rational?)
+                      11
+                      +inf.0)
   
   (test #t 'malformed-binder
         (with-handlers ((exn? exn:fail:syntax?))
