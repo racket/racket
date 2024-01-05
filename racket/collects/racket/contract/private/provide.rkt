@@ -967,17 +967,13 @@
                                     constructor-id)))]
 
                          [(field-contract-id-definitions ...)
-                          (filter values
-                                  (map (λ (field-contract-id field-contract)
-                                         (with-syntax ([field-contract-id field-contract-id]
-                                                       [field-contract field-contract])
-                                           #'(define field-contract-id 
-                                               (coerce-contract 'provide/contract field-contract)
-                                               #;
-                                               (opt/c field-contract #:error-name provide/contract))))
-                                       field-contract-ids
-                                       field-contracts))]
-                         [(field-contracts ...) field-contracts]
+                          (map (λ (field-contract-id field-contract)
+                                 #`(define #,field-contract-id 
+                                     (coerce-contract 'provide/contract #,field-contract)
+                                     #;
+                                     (opt/c field-contract #:error-name provide/contract)))
+                               field-contract-ids
+                               field-contracts)]
                          [(field-contract-ids ...) field-contract-ids])
 
              (with-syntax ([((mutator-codes _) ...)
