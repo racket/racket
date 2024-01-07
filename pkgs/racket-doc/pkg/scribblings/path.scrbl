@@ -66,7 +66,7 @@ package does not match the package name, but is instead
 
 
 @defproc[(path->pkg [path path-string?]
-                    [#:cache cache (or/c #f (and/c hash? (not/c immutable?)))])
+                    [#:cache cache (or/c #f (and/c hash? (not/c immutable?))) #f])
          (or/c string? #f)]{
 
 Returns the installed package containing @racket[path], if any.
@@ -79,7 +79,7 @@ packages does not change across calls that receive the same
 
 
 @defproc[(path->pkg+subpath [path path-string?]
-                            [#:cache cache (or/c #f (and/c hash? (not/c immutable?)))])
+                            [#:cache cache (or/c #f (and/c hash? (not/c immutable?))) #f])
          (values (or/c string? #f) (or/c path? 'same #f))]{
 
 Like @racket[path->pkg], but returns a second value that represents
@@ -87,7 +87,7 @@ the remainder of @racket[path] within the package's directory.}
 
 
 @defproc[(path->pkg+subpath+scope [path path-string?]
-                                  [#:cache cache (or/c #f (and/c hash? (not/c immutable?)))])
+                                  [#:cache cache (or/c #f (and/c hash? (not/c immutable?))) #f])
          (values (or/c string? #f)
                  (or/c path? 'same #f)
                  (or/c 'installation 'user (and/c path? complete-path?) #f))]{
@@ -97,7 +97,7 @@ installation scope.}
 
 
 @defproc[(path->pkg+subpath+collect [path path-string?]
-                                    [#:cache cache (or/c #f (and/c hash? (not/c immutable?)))])
+                                    [#:cache cache (or/c #f (and/c hash? (not/c immutable?))) #f])
          (values (or/c string? #f) (or/c path? 'same #f) (or/c string? #f))]{
 
 Like @racket[path->pkg+subpath], but returns a third value for a
@@ -106,7 +106,7 @@ collection name if the package is a single-collection package,
 
 
 @defproc[(path->pkg+subpath+collect+scope [path path-string?]
-                                    [#:cache cache (or/c #f (and/c hash? (not/c immutable?)))])
+                                    [#:cache cache (or/c #f (and/c hash? (not/c immutable?))) #f])
          (values (or/c string? #f)
                  (or/c path? 'same #f)
                  (or/c string? #f)
