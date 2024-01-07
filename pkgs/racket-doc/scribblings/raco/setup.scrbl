@@ -1948,15 +1948,22 @@ current-system paths while @racket[get-cross-lib-search-dirs] and
    @racket['no-planet], or @racket['no-user]. If @racket[mode] is
    @racket['all-available], @racket[find-relevant-directories] returns
    all installed directories whose info files contain the specified
-   symbols---for instance, all versions of all installed PLaneT
+   symbols---for instance, all versions of all installed @|PLaneT|
    packages will be searched if @racket['all-available] is
    specified. If @racket[mode] is @racket['preferred], then only a
    subset of ``preferred'' packages will be searched: only the
-   directory containing the most recent version of any PLaneT package
+   directory containing the most recent version of any @|PLaneT| package
    will be returned. If @racket[mode] is @racket['no-planet], then
-   PLaneT packages are not included in the search. If @racket[mode] is
+   @|PLaneT| packages are not included in the search. If @racket[mode] is
    @racket['no-user], then only installation-wide directories are
    searched, which means omitting @|PLaneT| package directories.
+
+   Regardless of @racket[mode], note that @racket[find-relevant-directories]
+   will not consider package-level @filepath{info.rkt} files for
+   @tech[#:doc pkg-doc]{multi-collection packages},
+   since those files are not part of any collection or @|PLaneT| package.
+   In contrast, a @tech[#:doc pkg-doc]{single-collection package}'s
+   @filepath{info.rkt} file is part of a collection, and thus will be considered.
 
    Collection links from the installation-wide @tech[#:doc
    reference-doc]{collection links file} or packages with installation
@@ -2008,7 +2015,7 @@ display such paths (e.g., in error messages).
 @defmodule[setup/collects]
 
 @defproc[(path->collects-relative [path path-string?]
-                                  [#:cache cache (or/c #f (and/c hash? (not/c immutable?)))])
+                                  [#:cache cache (or/c #f (and/c hash? (not/c immutable?))) #f])
          (or/c path-string?
                (cons/c 'collects
                        (cons/c bytes? (non-empty-listof bytes?))))]{
@@ -2033,8 +2040,8 @@ is a pair that starts with @racket['collects], then it is converted
 back to a path using @racket[collection-file-path].}
 
 @defproc[(path->module-path [path path-string?]
-                            [#:cache cache (or/c #f (and/c hash? (not/c immutable?)))])
-         (or/c path-string? module-path?)]{
+                            [#:cache cache (or/c #f (and/c hash? (not/c immutable?))) #f])
+         (or/c path-string? normalized-lib-module-path?)]{
 
 Like @racket[path->collects-relative], but the result is either
 @racket[path] or a normalized (in the sense of
@@ -2115,7 +2122,7 @@ back to a path relative to @racket[(find-collects-dir)].}
   @racket["<doc>/"] or @racket["<user-doc>/"].
 
   If @racket[cache] is not @racket[#f], it is used as a cache argument
-  for @racket[pkg->path] to speed up detection and conversion of
+  for @racket[path->pkg] to speed up detection and conversion of
   package paths.
 
   If the path is not absolute, or if it is not in any of these, it is
@@ -2223,7 +2230,7 @@ directory exists.}
 @defproc[(normalized-lib-module-path? [v any/c]) boolean?]{
 
 Returns @racket[#t] if @racket[v] is a module path (in the sense of
-@racket[module-path?]) of the form @racket['(lib _str)] where
+@racket[module-path?]) of the form @racket['(lib @#,racket[_str])] where
 @racket[_str] contains at least one slash. The
 @racket[collapse-module-path] function produces such module paths for
 collection-based module references.}
