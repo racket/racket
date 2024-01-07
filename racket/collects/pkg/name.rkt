@@ -1,6 +1,6 @@
 #lang racket/base
 (require racket/list
-         racket/contract
+         racket/contract/base
          racket/format
          racket/string
          racket/path
