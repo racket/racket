@@ -6,7 +6,7 @@
          (for-syntax racket/base
                      racket/list
                      racket/syntax
-                     syntax/parse
+                     syntax/parse/pre
                      syntax/stx))
 
 (define ((string->option what valid-options) str)

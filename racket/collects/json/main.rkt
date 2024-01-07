@@ -13,7 +13,7 @@
 (require syntax/readerr
          racket/symbol
          ;; racket/contract must come before provide
-         racket/contract)
+         racket/contract/base)
 
 ;; tests in:
 ;; ~plt/pkgs/racket-test/tests/json/
