@@ -194,7 +194,6 @@ void scheme_init_unsafe_char(Scheme_Startup_Env *env)
   REGISTER_SO(scheme_unsafe_char_eq_proc);
   p = scheme_make_folding_prim(unsafe_char_eq, "unsafe-char=?", 1, -1, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_BINARY_INLINED
-                                                            | SCHEME_PRIM_IS_NARY_INLINED
                                                             | SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL);
   scheme_addto_prim_instance("unsafe-char=?", p, env);
   scheme_unsafe_char_eq_proc = p;
@@ -202,7 +201,6 @@ void scheme_init_unsafe_char(Scheme_Startup_Env *env)
   REGISTER_SO(scheme_unsafe_char_lt_proc);
   p = scheme_make_folding_prim(unsafe_char_lt, "unsafe-char<?", 1, -1, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_BINARY_INLINED
-                                                            | SCHEME_PRIM_IS_NARY_INLINED
                                                             | SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL);
   scheme_addto_prim_instance("unsafe-char<?", p, env);
   scheme_unsafe_char_lt_proc = p;
@@ -210,7 +208,6 @@ void scheme_init_unsafe_char(Scheme_Startup_Env *env)
   REGISTER_SO(scheme_unsafe_char_gt_proc);
   p = scheme_make_folding_prim(unsafe_char_gt, "unsafe-char>?", 1, -1, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_BINARY_INLINED
-                                                            | SCHEME_PRIM_IS_NARY_INLINED
                                                             | SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL);
   scheme_addto_prim_instance("unsafe-char>?", p, env);
   scheme_unsafe_char_gt_proc = p;
@@ -218,7 +215,6 @@ void scheme_init_unsafe_char(Scheme_Startup_Env *env)
   REGISTER_SO(scheme_unsafe_char_lt_eq_proc);
   p = scheme_make_folding_prim(unsafe_char_lt_eq, "unsafe-char<=?", 1, -1, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_BINARY_INLINED
-                                                            | SCHEME_PRIM_IS_NARY_INLINED
                                                             | SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL);
   scheme_addto_prim_instance("unsafe-char<=?", p, env);
   scheme_unsafe_char_lt_eq_proc = p;
@@ -226,7 +222,6 @@ void scheme_init_unsafe_char(Scheme_Startup_Env *env)
   REGISTER_SO(scheme_unsafe_char_gt_eq_proc);
   p = scheme_make_folding_prim(unsafe_char_gt_eq, "unsafe-char>=?", 1, -1, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_BINARY_INLINED
-                                                            | SCHEME_PRIM_IS_NARY_INLINED
                                                             | SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL);
   scheme_addto_prim_instance("unsafe-char>=?", p, env);
   scheme_unsafe_char_gt_eq_proc = p;
