@@ -1,10 +1,18 @@
-Version 8.12
-Changed `open-input-file`, `open-output-file`, and `subprocess`
- on variants of Unix and Mac OS where `O_CLOEXEC` is supported
+Version 8.12, January 2024
+Change `open-input-file`, `open-output-file`, and `subprocess`
+ on variants of Unix and Mac OS where O_CLOEXEC is supported
  to open files with that flag and to refrain from closing all
- file descriptors (without `O_CLOEXEC`) in `subprocess`
-Changed treatment of shadowing for a `for/fold` accumulator
+ file descriptors (without O_CLOEXEC) in `subprocess`
+Add support for `hash` and `hash*` patterns in `match`
+Add `vector-set/copy` to `racket/vector`
+Add `pregexp-quote`
+Add `convention:hyphen->{Pascal,camel}Case` FFI conventions
+Add `racket/case` with `case/equal-always` and related forms
+Add configured build stamp to `banner` result
+Change treatment of shadowing for a `for/fold` accumulator
  variable by an iteration clause
+Change `PLT_LINKLET_SHOW` and variants to write to error port,
+ and adjusted the output format
 
 Version 8.11, October 2023
 Add `#:do` option support to `match` clauses
