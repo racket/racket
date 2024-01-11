@@ -346,13 +346,7 @@
                                (delay (get-compiled-sha1 path->mode roots path)))])
               (define (make-key p)
                 (if (or needs-build?
-                        ;; If `(deps-machine deps)` is #f and doesn't match the current machine,
-                        ;; then we still need to build.
-                        (and (or (eq? (current-compile-target-machine) (deps-machine deps))
-                                 (and (eq? (system-type 'target-machine) (deps-machine deps))
-                                      (cross-multi-compile? roots)))
-                             (or (deps-machine deps)
-                                 (not (cross-multi-compile? roots)))))
+                        (not sha1-only?))
                     p
                     ;; We didn't actually recompile, yet, so don't record the path
                     ;; as done. But record an "assume" sha1-stamp, so we don't keep
@@ -447,12 +441,16 @@
               (when lc (log-compile-event path 'locking))
               (define locked? (and lc (lc 'lock lock-zo-name)))
               (define ok-to-compile? (or (not lc) locked?))
+              (define compile-dependency
+                (lambda (path)
+                  (compile-root path->mode roots path up-to-date collection-cache read-src-syntax seen)))
               (dynamic-wind
                (lambda () (void))
                (lambda ()
                  (when ok-to-compile?
                    (cond
                      [(and just-touch? (file-exists? zo-name))
+                      (check-recompile-module-dependencies deps collection-cache compile-dependency)
                       (log-compile-event path 'start-touch)
                       (touch zo-name)
                       (when cross-zo-name
@@ -480,9 +478,7 @@
                                                                                (force assume-compiled-sha1))
                                                    #:use-existing-deps (and recompile-from-exists?
                                                                             use-existing-deps)
-                                                   #:compile-dependency
-                                                   (lambda (path)
-                                                     (compile-root path->mode roots path up-to-date collection-cache read-src-syntax seen))))
+                                                   #:compile-dependency compile-dependency))
                       (trace-printf "~acompiled ~a" (if recompile-from-exists? "re" "") actual-path)])))
                (lambda ()
                  (log-compile-event path (if (or (not lc) locked?)
