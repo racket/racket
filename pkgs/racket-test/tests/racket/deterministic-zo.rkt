@@ -58,15 +58,20 @@
 (define (check-one collects-dir collects file)
   (check-file (build-path collects-dir collects) collects-dir collects file))
 
-(let-values ([(dir name dir?)
-              (split-path
-               (collection-file-path "sc.rkt" "racket/private"))])
-  (define collects-dir (simplify-path (build-path dir 'up 'up)))
-  ;; To check just one:
-  #; (check-one collects-dir "syntax" "free-vars.rkt")
-  (check (simplify-path collects-dir))
-  (void))
+(define collects-dir
+  (let-values ([(dir name dir?)
+		(split-path
+		 (collection-file-path "sc.rkt" "racket/private"))])
+    (simplify-path (build-path dir 'up 'up))))
+
 
 (module+ test
+  (check (simplify-path collects-dir))
   (module config info
     (define timeout 600)))
+
+(module+ main
+  (let-values ([(dir name dir?)
+		(split-path
+		 (vector-ref (current-command-line-arguments) 0))])
+    (check-one collects-dir dir name)))
