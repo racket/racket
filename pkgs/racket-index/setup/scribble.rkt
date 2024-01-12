@@ -59,7 +59,6 @@
                                  flags
                                  under-main?
                                  via-search?
-                                 pkg?
                                  category
                                  out-count
                                  name
@@ -184,48 +183,50 @@
                                   (apply validate i)))
                            infos)])
            (and (not (memq #f infos)) infos))))
-  (define ((get-docs main-dirs) i rec)
-    (let* ([pre-s (and i (i 'scribblings (λ () #f)))]
-           [s (validate-scribblings-infos pre-s)]
-           [dir (directory-record-path rec)])
-      (if s
-          (map (lambda (d)
-                 (let* ([flags (cadr d)]
-                        [under-main?
-                         (and (not (memq 'user-doc-root flags))
-                              (not (memq 'user-doc flags))
-                              (or (memq 'main-doc flags)
-                                  (hash-ref main-dirs dir #f)))])
-                   (define src (simplify-path (build-path dir (car d)) #f))
-                   (define name (cadddr d))
-                   (define dest (doc-path dir name flags under-main?))
-                   (define via-search? (and under-main?
-                                            (not (or (equal? (find-doc-dir) dest)
-                                                     (let-values ([(base name dir?) (split-path dest)])
-                                                       (equal? (path->directory-path (find-doc-dir))
-                                                               base))))))
-                   (make-doc dir
-                             (let ([spec (directory-record-spec rec)])
-                               (list* (car spec)
-                                      (car d)
-                                      (if (eq? 'planet (car spec))
-                                          (list (append (cdr spec)
-                                                        (list (directory-record-maj rec)
-                                                              (list '= (directory-record-min rec)))))
-                                          (cdr spec))))
-                             src
-                             dest
-                             flags under-main? via-search? (and (path->pkg src) #t)
-                             (caddr d)
-                             (list-ref d 4)
-                             (if (path? name) (path-element->string name) name)
-                             (list-ref d 5))))
-               s)
-          (begin (setup-printf
-                  "WARNING"
-                  "bad 'scribblings info: ~e from: ~e" 
-                  pre-s dir)
-                 null))))
+  (define (get-docs main-dirs)
+    (define doc-dir (find-doc-dir))
+    (lambda (i rec)
+      (let* ([pre-s (and i (i 'scribblings (λ () #f)))]
+	     [s (validate-scribblings-infos pre-s)]
+	     [dir (directory-record-path rec)])
+	(if s
+	    (map (lambda (d)
+		   (let* ([flags (cadr d)]
+			  [under-main?
+			   (and (not (memq 'user-doc-root flags))
+				(not (memq 'user-doc flags))
+				(or (memq 'main-doc flags)
+				    (hash-ref main-dirs dir #f)))])
+		     (define src (simplify-path (build-path dir (car d)) #f))
+		     (define name (cadddr d))
+		     (define dest (doc-path dir name flags under-main?))
+		     (define via-search? (and under-main?
+					      (not (or (equal? (find-doc-dir) dest)
+						       (let-values ([(base name dir?) (split-path dest)])
+							 (equal? (path->directory-path (find-doc-dir))
+								 base))))))
+		     (make-doc dir
+			       (let ([spec (directory-record-spec rec)])
+				 (list* (car spec)
+					(car d)
+					(if (eq? 'planet (car spec))
+					    (list (append (cdr spec)
+							  (list (directory-record-maj rec)
+								(list '= (directory-record-min rec)))))
+					    (cdr spec))))
+			       src
+			       dest
+			       flags under-main? via-search?
+			       (caddr d)
+			       (list-ref d 4)
+			       (if (path? name) (path-element->string name) name)
+			       (list-ref d 5))))
+		 s)
+	    (begin (setup-printf
+		    "WARNING"
+		    "bad 'scribblings info: ~e from: ~e" 
+		    pre-s dir)
+		   null)))))
   (log-setup-info "getting documents")
   (define docs
     (sort
@@ -1717,3 +1718,7 @@
     (build-path base root)]
    [else
     (reroot-path base root)]))
+
+
+(define (doc-pkg? doc)
+  (and (path->pkg (doc-src-file doc)) #t))
