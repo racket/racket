@@ -315,6 +315,7 @@
                       (clone-to-package-name clone 'update)]
                      [else
                       ;; In a package directory?
+		      ;; This is the only call to path->pkg so not worth a cache
                       (define pkg (path->pkg (current-directory)))
                       (if pkg
                           (begin
