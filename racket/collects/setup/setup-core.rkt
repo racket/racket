@@ -4,6 +4,7 @@
 #lang racket/base
 
 (require racket/path
+	 racket/promise
          racket/file
          racket/port
          racket/match
@@ -355,14 +356,14 @@
            (error name-sym
                   "'name' result from collection ~e is not a string: ~e"
                   path x)))))
-    (define path-name (path->relative-string/setup path #:cache pkg-path-cache))
+    (define path-name (delay (path->relative-string/setup path #:cache pkg-path-cache)))
     (when (info 'compile-subcollections (lambda () #f))
       (setup-printf "WARNING"
                     "ignoring `compile-subcollections' entry in info ~a"
                     path-name))
     (make-cc collection path
              (if name
-                 (format "~a (~a)" path-name name)
+                 (delay (format "~a (~a)" (force path-name) name))
                  path-name)
              info
              parent
@@ -556,7 +557,9 @@
 
   ;; `all-collections' lists all top-level collections (not from Planet):
   (define all-collections
-    (apply append (hash-map collection-ccs-table (lambda (k v) v))))
+    (for*/list ([v (in-hash-values collection-ccs-table)]
+		[i (in-list v)])
+      i))
 
   ;; Close over sub-collections
   (define (collection-closure collections-to-compile make-subs)
