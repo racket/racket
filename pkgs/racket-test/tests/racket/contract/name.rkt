@@ -527,6 +527,9 @@
                           [d (a c) integer?]
                           #:inv (a c) (if c (even? a) (odd? a)))))
 
+  (contract-eval #:test-case-name "object-name.or/c"
+                 `(,test '|(or/c 'ogg 'mp3)| object-name (or/c 'ogg 'mp3)))
+
   ;; NOT YET RELEASED
   #;
   (test-name '(pr/dc [x integer?]

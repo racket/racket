@@ -2,6 +2,7 @@
 
 (require "blame.rkt"
          "generate-base.rkt"
+         racket/pretty
          racket/private/performance-hint)
 
 (provide prop:contract
@@ -300,6 +301,11 @@
          [get-predicate (contract-property-first-order impl)])
     (lambda (c x) ((get-predicate c) x))))
 
+(define (flat-contract-property->object-name-property prop)
+  (define get-name (contract-property-name (flat-contract-property-implementation prop)))
+  (λ (c)
+    (string->symbol (pretty-format (get-name c) 'infinity #:mode 'write))))
+
 (define-values [ prop:flat-contract
                  flat-contract-struct?
                  flat-contract-struct-property ]
@@ -307,7 +313,8 @@
    'prop:flat-contract
    flat-contract-property-guard
    (list (cons prop:chaperone-contract flat-contract-property->chaperone-contract-property)
-         (cons prop:procedure flat-contract-property->procedure-property))))
+         (cons prop:procedure flat-contract-property->procedure-property)
+         (cons prop:object-name flat-contract-property->object-name-property))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
