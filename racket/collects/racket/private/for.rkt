@@ -1546,26 +1546,26 @@
             ...)
         next-k)))
 
-  (define-for-syntax ((make-inner-recur/foldr/strict int-vars) stx)
+  (define-for-syntax ((make-inner-recur/foldr/strict fold-vars) stx)
     (syntax-case stx ()
       [(_ () [expr ...] next-k)
-       #`(let-values ([#,(map syntax-local-introduce int-vars) next-k])
+       #`(let-values ([#,(map syntax-local-introduce fold-vars) next-k])
            expr ...)]))
 
-  (define-for-syntax ((make-inner-recur/foldr/lazy int-vars delayed-id delayer-id) stx)
+  (define-for-syntax ((make-inner-recur/foldr/lazy fold-vars delayed-id delayer-id) stx)
     (syntax-case stx ()
       [(_ () [expr ...] next-k)
-       (with-syntax ([(int-var ...) (map syntax-local-introduce int-vars)]
+       (with-syntax ([(fold-var ...) (map syntax-local-introduce fold-vars)]
                      [delayed-id (syntax-local-introduce delayed-id)]
                      [delayer-id delayer-id])
          #`(let*-values
                ([(delayed-id) (delayer-id next-k)]
                 #,@(cond
-                     [(= (length int-vars) 1)
-                      #`([(int-var ...) delayed-id])]
+                     [(= (length fold-vars) 1)
+                      #`([(fold-var ...) delayed-id])]
                      [(delayer? (syntax-local-value #'delayer-id (lambda () #f)))
-                      #`([(int-var) (delayer-id (let-values ([(int-var ...) (force delayed-id)])
-                                                   int-var))]
+                      #`([(fold-var) (delayer-id (let-values ([(fold-var ...) (force delayed-id)])
+                                                   fold-var))]
                          ...)]
                      [else #'()]))
              expr ...))]))
@@ -1854,41 +1854,40 @@
                            [delayed-id delayed-id]
                            [delayer-id delayer-id])
                (check-identifier-bindings #'orig-stx #`(fold-var ... delayed-id) "accumulator" (void))
-               (with-syntax ([(int-var ...)
-                              (map (lambda (fold-var)
-                                     (datum->syntax fold-var
-                                                    (string->uninterned-symbol
-                                                     (symbol->string (syntax-e fold-var)))
-                                                    fold-var
-                                                    fold-var))
-                                   (syntax->list #'(fold-var ...)))])
-                 (cond
-                   [right?
-                    (define loop-stx
-                      (quasisyntax/loc #'orig-stx
-                        (for/foldX/derived [orig-stx inner-recur/foldr #,for*? #f ()]
-                          () ([fold-var (make-fold-var 'int-var)] ...)
-                          (done-k-proc)
-                          (done-k-proc)
-                          #f
-                          . rest)))
+               (cond
+                 [right?
+                  (define loop-stx
                     (quasisyntax/loc #'orig-stx
-                      (let ([done-k-proc (lambda () (#%expression (values* fold-init ...)))])
-                        (define-syntax inner-recur/foldr
-                          #,(if delay?
-                                #'(make-inner-recur/foldr/lazy
-                                   (list (quote-syntax int-var) ...)
-                                   (quote-syntax delayed-id)
-                                   (quote-syntax delayer-id))
-                                #'(make-inner-recur/foldr/strict
-                                   (list (quote-syntax int-var) ...))))
-                        #,(if result-expr
-                              ;; Make sure `fold-var`s in `result-expr` are also delayed, if relevant
-                              (let ([result-expr #`(letrec-syntax ([fold-var (make-fold-var 'int-var)] ...)
-                                                     #,result-expr)])
-                                #`(inner-recur/foldr () [#,result-expr] #,loop-stx))
-                              loop-stx)))]
-                   [else
+                      (for/foldX/derived [orig-stx inner-recur/foldr #,for*? #f ()]
+                        ()
+                        ()
+                        (done-k-proc)
+                        (done-k-proc)
+                        #f
+                        . rest)))
+                  (quasisyntax/loc #'orig-stx
+                    (let ([done-k-proc (lambda () (values* fold-init ...))])
+                      (define-syntax inner-recur/foldr
+                        #,(if delay?
+                              #'(make-inner-recur/foldr/lazy
+                                 (list (quote-syntax fold-var) ...)
+                                 (quote-syntax delayed-id)
+                                 (quote-syntax delayer-id))
+                              #'(make-inner-recur/foldr/strict
+                                 (list (quote-syntax fold-var) ...))))
+                      #,(if result-expr
+                            ;; Make sure `fold-var`s in `result-expr` are also delayed, if relevant
+                            #`(inner-recur/foldr () [#,result-expr] #,loop-stx)
+                            loop-stx)))]
+                 [else
+                  (with-syntax ([(int-var ...)
+                                 (map (lambda (fold-var)
+                                        (datum->syntax fold-var
+                                                       (string->uninterned-symbol
+                                                        (symbol->string (syntax-e fold-var)))
+                                                       fold-var
+                                                       fold-var))
+                                      (syntax->list #'(fold-var ...)))])
                     (quasisyntax/loc #'orig-stx
                       (let ([int-var (let ([fold-var fold-init])
                                        fold-var)]
@@ -1902,10 +1901,9 @@
                                      . rest))])
                             (if result-expr
                                 (quasisyntax/loc #'orig-stx
-                                  (letrec-syntax ([fold-var (make-fold-var 'int-var)] ...)
-                                    (let-values ([(fold-var ...) #,loop-stx])
-                                      #,result-expr)))
-                                loop-stx))))]))))]
+                                  (let-values ([(fold-var ...) #,loop-stx])
+                                    #,result-expr))
+                                loop-stx)))))])))]
           [(_ orig-stx . rst)
            (raise-syntax-error #f "bad syntax" #'orig-stx)]))
 

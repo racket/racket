@@ -304,12 +304,12 @@
 (test 0 'break-0 (for*/fold ([x 0]) ([x '(1)] #:break #true [y '(3)]) (add1 x)))
 
 (test 2 'break-2 (for*/fold ([x 0]) ([x '(1)]) #:break #false (add1 x)))
-(test 2 'break-2 (for*/fold ([x 0]) ([x '(1)] [y '(3)]) #:break false (add1 x)))
+(test 2 'break-2 (for*/fold ([x 0]) ([x '(1)] [y '(3)]) #:break #false (add1 x)))
 (test 2 'break-2 (for*/fold ([x 0]) ([x '(1)] #:break #false) (add1 x)))
 (test 2 'break-2 (for*/fold ([x 0]) ([x '(1)] [y '(3)] #:break #false) (add1 x)))
 (test 2 'break-2 (for*/fold ([x 0]) ([x '(1)] #:break #false [y '(3)]) (add1 x)))
 
-(test 2 'break-v2 (for*/fold ([x 0]) ([x '(1)] [y (in-value 3)]) #:break false (add1 x)))
+(test 2 'break-v2 (for*/fold ([x 0]) ([x '(1)] [y (in-value 3)]) #:break #false (add1 x)))
 (test 2 'break-v2 (for*/fold ([x 0]) ([x '(1)] [y (in-value 3)] #:break #false) (add1 x)))
 (test 2 'break-v2 (for*/fold ([x 0]) ([x '(1)] #:break #false [y (in-value 3)]) (add1 x)))
 
@@ -1519,6 +1519,111 @@
         [_ #f])))
 
   (for ([i (in-digits 12)]) i))
+
+;; ----------------------------------------
+;; Check more fold variables in outermost iteration clauses
+
+(test '(3 2 1)
+      'for/fold-var-in-outermost
+      (let ([a '(1 2 3)])
+        (for/fold ([a '()])
+                  ([x (in-list a)])
+          (cons x a))))
+
+(test '(1 2 3)
+      'for/fold-var-in-outermost/result
+      (let ([a '(1 2 3)])
+        (for/fold ([a '()]
+                   #:result (reverse a))
+                  ([x (in-list a)])
+          (cons x a))))
+
+(test '(1 2 3)
+      'for/foldr-var-in-outermost
+      (let ([a '(1 2 3)])
+        (for/foldr ([a '()])
+                   ([x (in-list a)])
+          (cons x a))))
+
+(test '(3 2 1)
+      'for/foldr-var-in-outermost/result
+      (let ([a '(1 2 3)])
+        (for/foldr ([a '()]
+                    #:result (reverse a))
+                   ([x (in-list a)])
+          (cons x a))))
+
+(test '(1 2 3)
+      'for/foldr-var-in-outermost/delay
+      (let ([a '(1 2 3)])
+        (force
+         (for/foldr ([a '()]
+                     #:delay)
+                    ([x (in-list a)])
+           (cons x (force a))))))
+
+(test '(3 2 1)
+      'for/foldr-var-in-outermost/delay/result
+      (let ([a '(1 2 3)])
+        (for/foldr ([a '()]
+                    #:delay
+                    #:result (reverse (force a)))
+                   ([x (in-list a)])
+          (cons x (force a)))))
+
+(test '()
+      'for/fold-var-not-in-outermost
+      (let ([a '(1 2 3)])
+        (for/fold ([a '()])
+                  (#:when #t
+                   [x (in-list a)])
+          (cons x a))))
+
+(test '()
+      'for/fold-var-not-in-outermost/result
+      (let ([a '(1 2 3)])
+        (for/fold ([a '()]
+                   #:result (reverse a))
+                  (#:when #t
+                   [x (in-list a)])
+          (cons x a))))
+
+(test '(1 2 3)
+      'for/foldr-var-not-in-outermost
+      (let ([a '(1 2 3)])
+        (for/foldr ([a '()])
+                   (#:when #t
+                    [x (in-list a)])
+          (cons x a))))
+
+(test '(3 2 1)
+      'for/foldr-var-not-in-outermost/result
+      (let ([a '(1 2 3)])
+        (for/foldr ([a '()]
+                    #:result (reverse a))
+                   (#:when #t
+                    [x (in-list a)])
+          (cons x a))))
+
+(test '(1 2 3)
+      'for/foldr-var-not-in-outermost/delay
+      (let ([a '(1 2 3)])
+        (force
+         (for/foldr ([a '()]
+                     #:delay)
+                    (#:when #t
+                     [x (in-list a)])
+           (cons x (force a))))))
+
+(test '(3 2 1)
+      'for/foldr-var-not-in-outermost/delay/result
+      (let ([a '(1 2 3)])
+        (for/foldr ([a '()]
+                    #:delay
+                    #:result (reverse (force a)))
+                   (#:when #t
+                    [x (in-list a)])
+          (cons x (force a)))))
 
 ;; ----------------------------------------
 
