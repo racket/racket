@@ -37125,10 +37125,10 @@
                  v_0))))))
         (for-loop_0 0 0)))
       (args (raise-binding-result-arity-error 2 args))))))
-(define finish_2217
+(define finish_2442
   (make-struct-type-install-properties
    '(udp)
-   3
+   4
    0
    #f
    (list (cons prop:authentic #t))
@@ -37144,22 +37144,27 @@
    (|#%nongenerative-uid| udp)
    #f
    #f
-   '(3 . 7)))
-(define effect_2743 (finish_2217 struct:udp))
+   '(4 . 15)))
+(define effect_2743 (finish_2442 struct:udp))
 (define udp1.1
   (|#%name|
    udp
    (record-constructor (make-record-constructor-descriptor struct:udp #f #f))))
 (define 1/udp? (|#%name| udp? (record-predicate struct:udp)))
-(define udp-s (|#%name| udp-s (record-accessor struct:udp 0)))
+(define udp-s-box (|#%name| udp-s-box (record-accessor struct:udp 0)))
 (define udp-is-bound? (|#%name| udp-is-bound? (record-accessor struct:udp 1)))
 (define udp-is-connected?
   (|#%name| udp-is-connected? (record-accessor struct:udp 2)))
-(define set-udp-s! (|#%name| set-udp-s! (record-mutator struct:udp 0)))
+(define udp-custodian-reference
+  (|#%name| udp-custodian-reference (record-accessor struct:udp 3)))
+(define set-udp-s-box! (|#%name| set-udp-s-box! (record-mutator struct:udp 0)))
 (define set-udp-is-bound?!
   (|#%name| set-udp-is-bound?! (record-mutator struct:udp 1)))
 (define set-udp-is-connected?!
   (|#%name| set-udp-is-connected?! (record-mutator struct:udp 2)))
+(define set-udp-custodian-reference!
+  (|#%name| set-udp-custodian-reference! (record-mutator struct:udp 3)))
+(define udp-s (lambda (u_0) (unbox (udp-s-box u_0))))
 (define 1/udp-open-socket
   (let ((udp-open-socket_0
          (|#%name|
@@ -37192,20 +37197,36 @@
                 (begin0
                   (let ((temp21_0
                          (lambda (addr_0)
-                           (let ((s_0
-                                  (|#%app|
-                                   rktio_udp_open
-                                   (unsafe-place-local-ref cell.1)
-                                   addr_0
-                                   (udp-default-family))))
-                             (if (vector? s_0)
-                               (begin
-                                 (unsafe-end-atomic)
-                                 (raise-network-error
-                                  'udp-open-socket
-                                  s_0
-                                  "creation failed"))
-                               (udp1.1 s_0 #f #f))))))
+                           (begin
+                             (check-current-custodian 'udp-open-socket)
+                             (let ((s_0
+                                    (|#%app|
+                                     rktio_udp_open
+                                     (unsafe-place-local-ref cell.1)
+                                     addr_0
+                                     (udp-default-family))))
+                               (if (vector? s_0)
+                                 (begin
+                                   (unsafe-end-atomic)
+                                   (raise-network-error
+                                    'udp-open-socket
+                                    s_0
+                                    "creation failed"))
+                                 (let ((s-box_0 (box s_0)))
+                                   (let ((custodian-reference_0
+                                          (|#%app|
+                                           1/unsafe-custodian-register
+                                           (current-custodian)
+                                           s-box_0
+                                           (lambda (s-box_1)
+                                             (do-udp-close s-box_1))
+                                           #f
+                                           #f)))
+                                     (udp1.1
+                                      s-box_0
+                                      #f
+                                      #f
+                                      custodian-reference_0)))))))))
                     (call-with-resolved-address.1
                      #f
                      unsafe-undefined
@@ -37226,6 +37247,14 @@
       ((family-hostname_0 family-port-no3_0)
        (udp-open-socket_0 family-hostname_0 family-port-no3_0))
       ((family-hostname2_0) (udp-open-socket_0 family-hostname2_0 #f))))))
+(define do-udp-close
+  (lambda (s-box_0)
+    (let ((s_0 (unbox s-box_0)))
+      (if s_0
+        (begin
+          (|#%app| rktio_close (unsafe-place-local-ref cell.1) s_0)
+          (set-box! s-box_0 #f))
+        (void)))))
 (define 1/udp-close
   (|#%name|
    udp-close
@@ -37235,13 +37264,14 @@
          (if (1/udp? u_0) (void) (raise-argument-error 'udp-close "udp?" u_0))
          (unsafe-start-atomic)
          (begin0
-           (if (udp-s u_0)
-             (begin
-               (|#%app|
-                rktio_close
-                (unsafe-place-local-ref cell.1)
-                (udp-s u_0))
-               (set-udp-s! u_0 #f))
+           (if (begin-unsafe (unbox (udp-s-box u_0)))
+             (let ((s-box_0 (udp-s-box u_0)))
+               (begin
+                 (do-udp-close s-box_0)
+                 (|#%app|
+                  1/unsafe-custodian-unregister
+                  s-box_0
+                  (udp-custodian-reference u_0))))
              (begin
                (unsafe-end-atomic)
                (raise-network-arguments-error
@@ -37310,7 +37340,7 @@
                                       (|#%app|
                                        rktio_udp_bind
                                        (unsafe-place-local-ref cell.1)
-                                       (udp-s u5_0)
+                                       (begin-unsafe (unbox (udp-s-box u5_0)))
                                        addr_0
                                        reuse?4_0)))
                                  (begin
@@ -37405,7 +37435,7 @@
                         (|#%app|
                          rktio_udp_disconnect
                          (unsafe-place-local-ref cell.1)
-                         (udp-s u_0))))
+                         (begin-unsafe (unbox (udp-s-box u_0))))))
                    (begin
                      (if (vector? d_0)
                        (begin
@@ -37429,7 +37459,7 @@
                                (|#%app|
                                 rktio_udp_connect
                                 (unsafe-place-local-ref cell.1)
-                                (udp-s u_0)
+                                (begin-unsafe (unbox (udp-s-box u_0)))
                                 addr_0)))
                           (begin
                             (if (vector? c_0)
@@ -37468,7 +37498,7 @@
               (if (eq? handle-error8_0 unsafe-undefined)
                 handle-error-immediately
                 handle-error8_0)))
-         (if (udp-s u13_0)
+         (if (begin-unsafe (unbox (udp-s-box u13_0)))
            (|#%app| continue9_0)
            (|#%app|
             handle-error_0
@@ -37497,7 +37527,7 @@
                     (|#%app|
                      rktio_udp_get_ttl
                      (unsafe-place-local-ref cell.1)
-                     (udp-s u_0))))
+                     (begin-unsafe (unbox (udp-s-box u_0))))))
                (if (vector? v_0)
                  (begin
                    (unsafe-end-atomic)
@@ -37529,7 +37559,7 @@
                     (|#%app|
                      rktio_udp_set_ttl
                      (unsafe-place-local-ref cell.1)
-                     (udp-s u_0)
+                     (begin-unsafe (unbox (udp-s-box u_0)))
                      ttl_0)))
                (if (vector? r_0)
                  (begin
@@ -37586,7 +37616,7 @@
                                    unsafe-undefined
                                    'tcp-addresses
                                    p2_0)
-                                  (udp-s p2_0))
+                                  (begin-unsafe (unbox (udp-s-box p2_0))))
                                 (if (1/port-closed? p2_0)
                                   (begin
                                     (unsafe-end-atomic)
@@ -38045,7 +38075,7 @@
            (raise-argument-error 'udp-send-ready-evt "udp?" u_0))
          (udp-sending-ready-evt67.1
           (lambda ()
-            (let ((or-part_0 (not (udp-s u_0))))
+            (let ((or-part_0 (not (begin-unsafe (unbox (udp-s-box u_0))))))
               (if or-part_0
                 or-part_0
                 (not
@@ -38053,13 +38083,13 @@
                   (|#%app|
                    rktio_poll_write_ready
                    (unsafe-place-local-ref cell.1)
-                   (udp-s u_0))
+                   (begin-unsafe (unbox (udp-s-box u_0))))
                   0)))))
           (lambda (ps_0)
             (|#%app|
              rktio_poll_add
              (unsafe-place-local-ref cell.1)
-             (udp-s u_0)
+             (begin-unsafe (unbox (udp-s-box u_0)))
              ps_0
              2))))))))
 (define check-send
@@ -38207,7 +38237,8 @@
                                        (|#%app|
                                         rktio_udp_sendto_in
                                         (unsafe-place-local-ref cell.1)
-                                        (udp-s u60_0)
+                                        (begin-unsafe
+                                         (unbox (udp-s-box u60_0)))
                                         addr61_0
                                         bstr62_0
                                         start63_0
@@ -38232,7 +38263,10 @@
                                            (rktio-evt1.1
                                             (lambda ()
                                               (let ((or-part_0
-                                                     (not (udp-s u60_0))))
+                                                     (not
+                                                      (begin-unsafe
+                                                       (unbox
+                                                        (udp-s-box u60_0))))))
                                                 (if or-part_0
                                                   or-part_0
                                                   (not
@@ -38241,13 +38275,16 @@
                                                      rktio_poll_write_ready
                                                      (unsafe-place-local-ref
                                                       cell.1)
-                                                     (udp-s u60_0))
+                                                     (begin-unsafe
+                                                      (unbox
+                                                       (udp-s-box u60_0))))
                                                     0)))))
                                             (lambda (ps_0)
                                               (|#%app|
                                                rktio_poll_add
                                                (unsafe-place-local-ref cell.1)
-                                               (udp-s u60_0)
+                                               (begin-unsafe
+                                                (unbox (udp-s-box u60_0)))
                                                ps_0
                                                2))))
                                           (unsafe-start-atomic)
@@ -38280,7 +38317,7 @@
                     who59_0
                     u60_0)))))))
           (loop_0)))))))
-(define finish_2623
+(define finish_1905
   (make-struct-type-install-properties
    '(udp-send-evt)
    2
@@ -38307,7 +38344,8 @@
                        (|#%app|
                         rktio_poll_add
                         (unsafe-place-local-ref cell.1)
-                        (udp-s (udp-sending-evt-u self_0))
+                        (let ((u_0 (udp-sending-evt-u self_0)))
+                          (begin-unsafe (unbox (udp-s-box u_0))))
                         ps_0
                         1)))
                     (values #f self_0)))))))))))
@@ -38324,7 +38362,7 @@
    #f
    #f
    '(2 . 0)))
-(define effect_2114 (finish_2623 struct:udp-sending-evt))
+(define effect_2114 (finish_1905 struct:udp-sending-evt))
 (define udp-sending-evt66.1
   (|#%name|
    udp-sending-evt
@@ -38517,7 +38555,7 @@
            (raise-argument-error 'udp-receive-ready-evt "udp?" u_0))
          (udp-receiving-ready-evt40.1
           (lambda ()
-            (let ((or-part_0 (not (udp-s u_0))))
+            (let ((or-part_0 (not (begin-unsafe (unbox (udp-s-box u_0))))))
               (if or-part_0
                 or-part_0
                 (not
@@ -38525,13 +38563,13 @@
                   (|#%app|
                    rktio_poll_read_ready
                    (unsafe-place-local-ref cell.1)
-                   (udp-s u_0))
+                   (begin-unsafe (unbox (udp-s-box u_0))))
                   0)))))
           (lambda (ps_0)
             (|#%app|
              rktio_poll_add
              (unsafe-place-local-ref cell.1)
-             (udp-s u_0)
+             (begin-unsafe (unbox (udp-s-box u_0)))
              ps_0
              1))))))))
 (define check-receive!
@@ -38576,7 +38614,7 @@
                                    (|#%app|
                                     rktio_udp_recvfrom_in
                                     (unsafe-place-local-ref cell.1)
-                                    (udp-s u34_0)
+                                    (begin-unsafe (unbox (udp-s-box u34_0)))
                                     bstr35_0
                                     start36_0
                                     end37_0)))
@@ -38595,7 +38633,10 @@
                                        (rktio-evt1.1
                                         (lambda ()
                                           (let ((or-part_0
-                                                 (not (udp-s u34_0))))
+                                                 (not
+                                                  (begin-unsafe
+                                                   (unbox
+                                                    (udp-s-box u34_0))))))
                                             (if or-part_0
                                               or-part_0
                                               (not
@@ -38604,13 +38645,15 @@
                                                  rktio_poll_read_ready
                                                  (unsafe-place-local-ref
                                                   cell.1)
-                                                 (udp-s u34_0))
+                                                 (begin-unsafe
+                                                  (unbox (udp-s-box u34_0))))
                                                 0)))))
                                         (lambda (ps_0)
                                           (|#%app|
                                            rktio_poll_add
                                            (unsafe-place-local-ref cell.1)
-                                           (udp-s u34_0)
+                                           (begin-unsafe
+                                            (unbox (udp-s-box u34_0)))
                                            ps_0
                                            1))))
                                       (unsafe-start-atomic)
@@ -38666,7 +38709,7 @@
           (loop_0)))))))
 (define cell.1$2 (unsafe-make-place-local #vu8()))
 (define cell.2 (unsafe-make-place-local ""))
-(define finish_2739
+(define finish_2615
   (make-struct-type-install-properties
    '(udp-receive-evt)
    2
@@ -38698,7 +38741,8 @@
                       (|#%app|
                        rktio_poll_add
                        (unsafe-place-local-ref cell.1)
-                       (udp-s (udp-receiving-evt-u self_0))
+                       (let ((u_0 (udp-receiving-evt-u self_0)))
+                         (begin-unsafe (unbox (udp-s-box u_0))))
                        ps_0
                        1)))
                    (values #f self_0))))))))))))
@@ -38715,7 +38759,7 @@
    #f
    #f
    '(2 . 0)))
-(define effect_2638 (finish_2739 struct:udp-receiving-evt))
+(define effect_2638 (finish_2615 struct:udp-receiving-evt))
 (define udp-receiving-evt39.1
   (|#%name|
    udp-receiving-evt
@@ -38793,7 +38837,7 @@
                       (|#%app|
                        rktio_udp_set_receive_buffer_size
                        (unsafe-place-local-ref cell.1)
-                       (udp-s u_0)
+                       (begin-unsafe (unbox (udp-s-box u_0)))
                        size_0)))
                  (if (vector? r_0)
                    (raise-option-error$1
@@ -38883,7 +38927,8 @@
                                              (|#%app|
                                               rktio_udp_change_multicast_group
                                               (unsafe-place-local-ref cell.1)
-                                              (udp-s u_0)
+                                              (begin-unsafe
+                                               (unbox (udp-s-box u_0)))
                                               multicast-addr_0
                                               intf-addr_0
                                               action_0)))
@@ -38959,7 +39004,7 @@
                     (|#%app|
                      rktio_udp_multicast_interface
                      (unsafe-place-local-ref cell.1)
-                     (udp-s u_0))))
+                     (begin-unsafe (unbox (udp-s-box u_0))))))
                (if (vector? v_0)
                  (let ((mode_0 "get"))
                    (begin-unsafe
@@ -39007,7 +39052,7 @@
                                  (|#%app|
                                   rktio_udp_set_multicast_interface
                                   (unsafe-place-local-ref cell.1)
-                                  (udp-s u_0)
+                                  (begin-unsafe (unbox (udp-s-box u_0)))
                                   addr_0)))
                             (if (vector? r_0)
                               (let ((mode_0 "set"))
@@ -39057,7 +39102,7 @@
                     (|#%app|
                      rktio_udp_get_multicast_loopback
                      (unsafe-place-local-ref cell.1)
-                     (udp-s u_0))))
+                     (begin-unsafe (unbox (udp-s-box u_0))))))
                (if (vector? v_0)
                  (let ((mode_0 "get"))
                    (begin-unsafe
@@ -39091,7 +39136,7 @@
                     (|#%app|
                      rktio_udp_set_multicast_loopback
                      (unsafe-place-local-ref cell.1)
-                     (udp-s u_0)
+                     (begin-unsafe (unbox (udp-s-box u_0)))
                      loopback?_0)))
                (if (vector? r_0)
                  (let ((mode_0 "set"))
@@ -39122,7 +39167,7 @@
                     (|#%app|
                      rktio_udp_get_multicast_ttl
                      (unsafe-place-local-ref cell.1)
-                     (udp-s u_0))))
+                     (begin-unsafe (unbox (udp-s-box u_0))))))
                (if (vector? v_0)
                  (let ((mode_0 "get"))
                    (begin-unsafe
@@ -39159,7 +39204,7 @@
                     (|#%app|
                      rktio_udp_set_multicast_ttl
                      (unsafe-place-local-ref cell.1)
-                     (udp-s u_0)
+                     (begin-unsafe (unbox (udp-s-box u_0)))
                      ttl_0)))
                (if (vector? r_0)
                  (let ((mode_0 "set"))

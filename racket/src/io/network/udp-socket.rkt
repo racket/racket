@@ -28,9 +28,11 @@
          set-udp-is-bound?!
          set-udp-is-connected?!)
 
-(struct udp (s is-bound? is-connected?)
+(struct udp (s-box is-bound? is-connected? custodian-reference)
   #:mutable
   #:authentic)
+
+(define (udp-s u) (unbox (udp-s-box u)))
 
 (define/who (udp-open-socket [family-hostname #f] [family-port-no #f])
   (check who string? #:or-false family-hostname)
@@ -41,22 +43,40 @@
     #:who who
     family-hostname family-port-no
     #:tcp? #f
+    ;; in atomic mode
     (lambda (addr)
+      (check-current-custodian who)
       (define s (rktio_udp_open rktio addr (udp-default-family)))
       (cond
         [(rktio-error? s)
          (end-atomic)
          (raise-network-error who s "creation failed")]
         [else
-         (udp s #f #f)])))))
+         (define s-box (box s))
+         (define custodian-reference
+           (unsafe-custodian-register (current-custodian)
+                                      s-box
+                                      ;; in atomic mode
+                                      (lambda (s-box) (do-udp-close s-box))
+                                      #f
+                                      #f))
+         (udp s-box #f #f custodian-reference)])))))
+
+; in atomic mode
+(define (do-udp-close s-box)
+  (define s (unbox s-box))
+  (when s
+    (rktio_close rktio s)
+    (set-box! s-box #f)))
 
 (define/who (udp-close u)
   (check who udp? u)
   (atomically
    (cond
      [(udp-s u)
-      (rktio_close rktio (udp-s u))
-      (set-udp-s! u #f)]
+      (define s-box (udp-s-box u))
+      (do-udp-close s-box)
+      (unsafe-custodian-unregister s-box (udp-custodian-reference u))]
      [else
       (end-atomic)
       (raise-network-arguments-error who "udp socket was already closed"

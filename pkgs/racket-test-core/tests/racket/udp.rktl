@@ -48,6 +48,16 @@
 (arity-test udp-send-ready-evt 1 1)
 (arity-test udp-receive-ready-evt 1 1)
 
+(let ([c (make-custodian)])
+  (define u
+    (parameterize ([current-custodian c])
+      (udp-open-socket)))
+  (custodian-shutdown-all c)
+  (err/rt-test (udp-bind! u "127.0.0.1" 40008) exn:fail:network?)
+  (err/rt-test (parameterize ([current-custodian c])
+                 (udp-open-socket))
+               "custodian"))
+
 (define udp1 (udp-open-socket))
 (define us1 (make-bytes 10))
 
