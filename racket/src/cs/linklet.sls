@@ -430,7 +430,7 @@
     (fields (mutable content) ; bytevector for 'lambda mode; annotation or (vector hash annotation) for 'jit mode
             literals
             arity-mask
-            name
+            name ; #f, symbol, or boxed (=> method) #f or symbol
             realm)
     (nongenerative #{wrapped-code ca80s538oixlhvqqyokefc87g-0}))
 
@@ -674,25 +674,25 @@
                                         (case linklet-compilation-mode
                                           [(jit)
                                            ;; Preserve annotated `lambda` source for on-demand compilation:
-                                           (lambda (expr arity-mask name)
+                                           (lambda (expr arity-mask name method?)
                                              (let ([a (correlated->annotation (xify expr) serializable? sfd-cache)])
                                                (make-wrapped-code a
                                                                   #f
                                                                   arity-mask
-                                                                  (extract-inferred-name expr name)
+                                                                  (extract-inferred-name expr name method?)
                                                                   realm)))]
                                           [else
                                            ;; Compile an individual `lambda`:
-                                           (lambda (expr arity-mask name)
+                                           (lambda (expr-in arity-mask name method?)
                                              (performance-region
                                               'compile-nested
-                                              (let ([expr (show lambda-on? "lambda" (correlated->annotation expr serializable? sfd-cache))])
+                                              (let ([expr (show lambda-on? "lambda" (correlated->annotation expr-in serializable? sfd-cache))])
                                                 (if serializable?
                                                     (let ([quoteds (unbox serializable?-box)])
                                                       (let-values ([(code literals) (if cross-machine
                                                                                         (cross-compile cross-machine expr quoteds realm unsafe?)
                                                                                         (compile*-to-bytevector expr quoteds realm unsafe?))])
-                                                        (make-wrapped-code code literals arity-mask (extract-inferred-name expr name) realm)))
+                                                        (make-wrapped-code code literals arity-mask (extract-inferred-name expr-in name method?) realm)))
                                                     (compile* expr realm unsafe?)))))])))]))
        (define impl-lam/interpable
          (let ([impl-lam (case (and jitify-mode?

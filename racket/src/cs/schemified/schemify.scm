@@ -35489,95 +35489,100 @@
                               (let ((or-part_0
                                      (wrap-property v_1 'inferred-name)))
                                 (if or-part_0 or-part_0 name_0))))
-                         (if (if (null? captures_0)
-                               (no-lifts?_0 body-lifts_0)
-                               #f)
-                           (let ((e_0
-                                  (|#%app|
-                                   extractable-annotation_0
-                                   jitted-proc_0
-                                   arity-mask_0
-                                   i-name_0)))
-                             (call-with-values
-                              (lambda ()
-                                (if (convert-mode-need-lift?_0 convert-mode_0)
-                                  (add-lift_0 e_0 lifts_0)
-                                  (values (list 'quote e_0) lifts_0)))
-                              (case-lambda
-                               ((get-e_0 new-lifts_0)
-                                (values
-                                 (if need-extract?_0
-                                   (list 'jitified-extract-closed get-e_0)
-                                   get-e_0)
-                                 new-lifts_0))
-                               (args
-                                (raise-binding-result-arity-error 2 args)))))
-                           (let ((e_0
-                                  (|#%app|
-                                   extractable-annotation_0
-                                   (reannotate
-                                    v_1
-                                    (list
-                                     'lambda
-                                     (if (no-lifts?_0 body-lifts_0)
-                                       captures_0
-                                       (cons lifts-id captures_0))
-                                     jitted-proc_0))
-                                   arity-mask_0
-                                   i-name_0)))
-                             (call-with-values
-                              (lambda ()
-                                (if (no-lifts?_0 body-lifts_0)
-                                  (values captures_0 lifts_0)
-                                  (if (not
-                                       (convert-mode-need-lift?_0
-                                        convert-mode_0))
-                                    (values
-                                     (cons
+                         (let ((i-method?_0
+                                (wrap-property v_1 'method-arity-error)))
+                           (if (if (null? captures_0)
+                                 (no-lifts?_0 body-lifts_0)
+                                 #f)
+                             (let ((e_0
+                                    (|#%app|
+                                     extractable-annotation_0
+                                     jitted-proc_0
+                                     arity-mask_0
+                                     i-name_0
+                                     i-method?_0)))
+                               (call-with-values
+                                (lambda ()
+                                  (if (convert-mode-need-lift?_0
+                                       convert-mode_0)
+                                    (add-lift_0 e_0 lifts_0)
+                                    (values (list 'quote e_0) lifts_0)))
+                                (case-lambda
+                                 ((get-e_0 new-lifts_0)
+                                  (values
+                                   (if need-extract?_0
+                                     (list 'jitified-extract-closed get-e_0)
+                                     get-e_0)
+                                   new-lifts_0))
+                                 (args
+                                  (raise-binding-result-arity-error 2 args)))))
+                             (let ((e_0
+                                    (|#%app|
+                                     extractable-annotation_0
+                                     (reannotate
+                                      v_1
                                       (list
-                                       'quote
-                                       (lifts->datum_0 body-lifts_0))
-                                      captures_0)
-                                     lifts_0)
-                                    (call-with-values
-                                     (lambda ()
-                                       (add-lift_0
-                                        (lifts->datum_0 body-lifts_0)
-                                        lifts_0))
-                                     (case-lambda
-                                      ((get-sub-lift_0 new-lifts_0)
-                                       (values
-                                        (cons get-sub-lift_0 captures_0)
-                                        new-lifts_0))
-                                      (args
-                                       (raise-binding-result-arity-error
-                                        2
-                                        args)))))))
-                              (case-lambda
-                               ((all-captures_0 new-lifts_0)
-                                (call-with-values
-                                 (lambda ()
-                                   (if (convert-mode-need-lift?_0
-                                        convert-mode_0)
-                                     (add-lift_0 e_0 new-lifts_0)
-                                     (values (list 'quote e_0) new-lifts_0)))
-                                 (case-lambda
-                                  ((get-e_0 newer-lifts_0)
-                                   (values
-                                    (if need-extract?_0
-                                      (list*
-                                       (list 'jitified-extract get-e_0)
-                                       all-captures_0)
-                                      (list* get-e_0 all-captures_0))
-                                    newer-lifts_0))
-                                  (args
-                                   (raise-binding-result-arity-error
-                                    2
-                                    args)))))
-                               (args
-                                (raise-binding-result-arity-error
-                                 2
-                                 args)))))))))))))))))
+                                       'lambda
+                                       (if (no-lifts?_0 body-lifts_0)
+                                         captures_0
+                                         (cons lifts-id captures_0))
+                                       jitted-proc_0))
+                                     arity-mask_0
+                                     i-name_0
+                                     i-method?_0)))
+                               (call-with-values
+                                (lambda ()
+                                  (if (no-lifts?_0 body-lifts_0)
+                                    (values captures_0 lifts_0)
+                                    (if (not
+                                         (convert-mode-need-lift?_0
+                                          convert-mode_0))
+                                      (values
+                                       (cons
+                                        (list
+                                         'quote
+                                         (lifts->datum_0 body-lifts_0))
+                                        captures_0)
+                                       lifts_0)
+                                      (call-with-values
+                                       (lambda ()
+                                         (add-lift_0
+                                          (lifts->datum_0 body-lifts_0)
+                                          lifts_0))
+                                       (case-lambda
+                                        ((get-sub-lift_0 new-lifts_0)
+                                         (values
+                                          (cons get-sub-lift_0 captures_0)
+                                          new-lifts_0))
+                                        (args
+                                         (raise-binding-result-arity-error
+                                          2
+                                          args)))))))
+                                (case-lambda
+                                 ((all-captures_0 new-lifts_0)
+                                  (call-with-values
+                                   (lambda ()
+                                     (if (convert-mode-need-lift?_0
+                                          convert-mode_0)
+                                       (add-lift_0 e_0 new-lifts_0)
+                                       (values (list 'quote e_0) new-lifts_0)))
+                                   (case-lambda
+                                    ((get-e_0 newer-lifts_0)
+                                     (values
+                                      (if need-extract?_0
+                                        (list*
+                                         (list 'jitified-extract get-e_0)
+                                         all-captures_0)
+                                        (list* get-e_0 all-captures_0))
+                                      newer-lifts_0))
+                                    (args
+                                     (raise-binding-result-arity-error
+                                      2
+                                      args)))))
+                                 (args
+                                  (raise-binding-result-arity-error
+                                   2
+                                   args))))))))))))))))))
       (top_0
        (|#%name|
         top
