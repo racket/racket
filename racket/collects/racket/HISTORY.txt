@@ -13,6 +13,8 @@ Change treatment of shadowing for a `for/fold` accumulator
  variable by an iteration clause
 Change `PLT_LINKLET_SHOW` and variants to write to error port,
  and adjusted the output format
+Add partial support for static generation of foreign-function
+ bindings
 
 Version 8.11, October 2023
 Add `#:do` option support to `match` clauses
