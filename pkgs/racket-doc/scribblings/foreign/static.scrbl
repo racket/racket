@@ -26,11 +26,13 @@ form.}
          (_fun fun-option ... maybe-args type-spec ... ->> type-spec
                maybe-wrapper)]{
 
-Like @dynamic_fun from @racketmodname[ffi/unsafe], but triggers an
+Like @dynamic_fun from @racketmodname[ffi/unsafe], but @bold{intended} to trigger an
 error at compile time in the @CS[] implementation of Racket if the
 compiler is unable to infer enough information about the resulting C
 type to statically generate code for @tech{callouts} and
 @tech{callbacks} using the type.
+@bold{The check for static generation is currently disabled; do not use
+this form until the check is restored (planned for version 8.13).}
 
 The @racket[type-spec] forms and some @racket[fun-option] forms within
 @racket[_fun] are arbitrary expressions that can compute C types and
