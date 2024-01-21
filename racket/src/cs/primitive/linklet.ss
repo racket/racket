@@ -12,6 +12,7 @@
   [instance-variable-value (known-procedure 12)]
   [instance? (known-procedure 2)]
   [instantiate-linklet (known-procedure 28)]
+  [linklet-add-target-machine-info (known-procedure 4)]
   [linklet-export-variables (known-procedure 2)]
   [linklet-import-variables (known-procedure 2)]
   [linklet? (known-procedure 2)]

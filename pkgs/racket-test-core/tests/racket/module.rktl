@@ -2841,6 +2841,47 @@ case of module-leve bindings; it doesn't cover local bindings.
 (err/rt-test (module-compiled-exports (compile '(module m racket/kernel)) 'not-a-valid-verbosity)
              #rx"not-a-valid-verbosity")
 
+(parameterize ([current-namespace (make-base-namespace)])
+  (define ce
+    (compile '(module m racket/base
+                (provide x)
+                (define x 10))))
+  (define other-ce
+    (compile '(module m racket/base
+                (provide x)
+                (define x 10))))
+  (test #t 'compiled-expression-add-target-machine
+        (compiled-expression? (compiled-expression-add-target-machine ce other-ce))))
+
+;; Hack: check `compiled-expression-add-target-machine` by copying
+;; cross-module info for the same platform from on module to a
+;; different module, and where an exported variable is a constant (but
+;; different ones). This works because `compiled-expression-add-target-machine`
+;; doesn't try too hard to make sure that the given compiled
+;; expressions started out the same.
+(when (eq? 'chez-scheme (system-type 'vm))
+  (parameterize ([current-namespace (make-base-namespace)])
+    (define new-ce
+      (parameterize ([current-namespace (make-base-namespace)])
+        (define ce
+          (compile '(module m racket/base
+                      (provide x)
+                      (define x 10))))
+        (define other-ce
+          (compile '(module m racket/base
+                      (provide x)
+                      (define x 8))))
+        (compiled-expression-add-target-machine ce other-ce)))
+    (eval new-ce)
+    (eval
+     (parameterize ([current-namespace (make-base-namespace)])
+       (eval new-ce)
+       (compile '(module n racket/base
+                   (require 'm)
+                   (define y x)
+                   (provide y)))))
+    (test 8 dynamic-require ''n 'y)))
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (let ([check

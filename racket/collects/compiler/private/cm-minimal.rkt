@@ -646,7 +646,7 @@
      (define running-root (car roots))
      (define target-root (cadr roots))
      ;; First, generate machine-independent form at the second root:
-     (define mi-zo-name
+     (define-values (mi-zo-name mi-code)
        (compile-zo* path->mode (list target-root) path src-sha1 read-src-syntax #f up-to-date collection-cache
                     #:recompile-from recompile-from
                     #:assume-compiled-sha1 assume-compiled-sha1
@@ -657,30 +657,38 @@
      (define mi-sha1 (or (deps-assume-compiled-sha1 mi-deps)
                          (call-with-input-file* mi-zo-name sha1)))
      ;; Recompile to running-Racket form:
-     (define running-zo
+     (define-values (running-zo running-code)
        (parameterize ([current-compile-target-machine (system-type 'target-machine)])
          (compile-zo* path->mode (list running-root) path src-sha1 read-src-syntax #f up-to-date collection-cache
                       #:recompile-from mi-zo-name
                       #:assume-compiled-sha1 mi-sha1
                       #:use-existing-deps mi-deps
                       #:compile-dependency compile-dependency)))
-     (when (and (not (current-multi-compile-any))
+     ;; Recompile to cross-compile target form (maybe):
+     (define-values (target-zo-name target-code)
+       (if (and (not (current-multi-compile-any))
                 (cross-system-type 'target-machine))
-       ;; Recompile to cross-compile target form:
-       (parameterize ([current-compile-target-machine (cross-system-type 'target-machine)])
-         (compile-zo* path->mode (list target-root) path src-sha1 read-src-syntax #f up-to-date collection-cache
-                      #:recompile-from mi-zo-name
-                      #:assume-compiled-sha1 mi-sha1
-                      #:use-existing-deps mi-deps
-                      #:compile-dependency compile-dependency)))
+           (parameterize ([current-compile-target-machine (cross-system-type 'target-machine)])
+             (compile-zo* path->mode (list target-root) path src-sha1 read-src-syntax #f up-to-date collection-cache
+                          #:recompile-from mi-zo-name
+                          #:assume-compiled-sha1 mi-sha1
+                          #:use-existing-deps mi-deps
+                          #:compile-dependency compile-dependency))
+           (values #f #f)))
+     (when target-code
+       ;; Add cross-module optimization info for target to running-Racket ".zo" so it's
+       ;; available when that module is loaded to satisfy compilation dependencies:
+       (rewrite-compiled-for-target-info path running-zo mi-zo-name running-code target-code))
      running-zo]
     [else
      ;; Regular mode, just [re]compile:
-     (compile-zo* path->mode roots path src-sha1 read-src-syntax orig-zo-name up-to-date collection-cache
-                  #:recompile-from recompile-from
-                  #:assume-compiled-sha1 assume-compiled-sha1
-                  #:use-existing-deps use-existing-deps
-                  #:compile-dependency compile-dependency)]))
+     (define-values (zo code)
+       (compile-zo* path->mode roots path src-sha1 read-src-syntax orig-zo-name up-to-date collection-cache
+                    #:recompile-from recompile-from
+                    #:assume-compiled-sha1 assume-compiled-sha1
+                    #:use-existing-deps use-existing-deps
+                    #:compile-dependency compile-dependency))
+     zo]))
 
 ;; For communication within `compile-zo*`:
 (define-struct ext-reader-guard (proc top)
@@ -812,36 +820,7 @@
     (with-compiler-security-guard (make-directory* code-dir))
     (with-compile-output zo-name
       (lambda (out tmp-name)
-        (with-handlers ([exn:fail?
-                         (lambda (ex)
-                           (close-output-port out)
-                           (compilation-failure zo-name recompile-from)
-                           (raise ex))])
-          (parameterize ([current-write-relative-directory
-                          (let* ([dir
-                                  (let-values ([(base name dir?) (split-path path)])
-                                    (if (eq? base 'relative)
-                                        (current-directory)
-                                        (path->complete-path base (current-directory))))]
-                                 [collects-dir (find-collects-dir)]
-                                 [e-dir (explode-path dir)]
-                                 [e-collects-dir (explode-path collects-dir)])
-                            (if (and ((length e-dir) . > . (length e-collects-dir))
-                                     (for/and ([a (in-list e-dir)]
-                                               [b (in-list e-collects-dir)])
-                                       (equal? a b)))
-                                ;; `dir' extends `collects-dir':
-                                (cons dir collects-dir)
-                                ;; `dir' doesn't extend `collects-dir':
-                                dir))])
-            (let ([b (open-output-bytes)])
-              ;; Write bytecode into string
-              (write code b)
-              ;; Compute SHA1 over modules within bytecode
-              (let* ([s (get-output-bytes b)])
-                (install-module-hashes! s)
-                ;; Write out the bytecode with module hash
-                (write-bytes s out)))))
+        (write-compiled-code zo-name out tmp-name path recompile-from code)
         ;; redundant, but close as early as possible:
         (close-output-port out)
         ;; Note that we check time and write ".dep" before returning from
@@ -867,8 +846,47 @@
                        up-to-date collection-cache read-src-syntax)])))
     (trace-printf "wrote zo file: ~a" zo-name))
 
-  ;; Return generated ".zo" path:
-  zo-name)
+  ;; Return generated ".zo" path along with code:
+  (values zo-name code))
+
+(define (write-compiled-code zo-name out tmp-name path recompile-from code)
+  (with-handlers ([exn:fail?
+                   (lambda (ex)
+                     (close-output-port out)
+                     (compilation-failure zo-name recompile-from)
+                     (raise ex))])
+    (parameterize ([current-write-relative-directory
+                    (let* ([dir
+                            (let-values ([(base name dir?) (split-path path)])
+                              (if (eq? base 'relative)
+                                  (current-directory)
+                                  (path->complete-path base (current-directory))))]
+                           [collects-dir (find-collects-dir)]
+                           [e-dir (explode-path dir)]
+                           [e-collects-dir (explode-path collects-dir)])
+                      (if (and ((length e-dir) . > . (length e-collects-dir))
+                               (for/and ([a (in-list e-dir)]
+                                         [b (in-list e-collects-dir)])
+                                 (equal? a b)))
+                          ;; `dir' extends `collects-dir':
+                          (cons dir collects-dir)
+                          ;; `dir' doesn't extend `collects-dir':
+                          dir))])
+      (let ([b (open-output-bytes)])
+        ;; Write bytecode into string
+        (write code b)
+        ;; Compute SHA1 over modules within bytecode
+        (let* ([s (get-output-bytes b)])
+          (install-module-hashes! s)
+          ;; Write out the bytecode with module hash
+          (write-bytes s out))))))
+
+(define (rewrite-compiled-for-target-info path zo-name recompile-from running-code target-code)
+  (define code (compiled-expression-add-target-machine running-code target-code))
+  ;; atomically replace ".zo" file with extended content:
+  (with-compile-output zo-name
+    (lambda (out tmp-name)
+      (write-compiled-code zo-name out tmp-name path recompile-from code))))
 
 ;; Recompile an individual file
 (define (recompile-module-code recompile-from src-path deps collection-cache compile-dependency)

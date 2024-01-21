@@ -159,7 +159,8 @@ corresponds to the variable's import set. The @racket[get-import]
 function can then return a linklet or instance that represents an instance to be
 provided to the compiled linklet when it is eventually instantiated;
 ensuring consistency between reported linklet or instance and the eventual
-instance is up to the caller of @racket[compile-linklet]. If
+instance is up to the caller of @racket[compile-linklet], but see also
+@racket[linklet-add-target-machine-info]. If
 @racket[get-import] returns @racket[#f] as its first value, the
 compiler will be prevented from making any assumptions about the
 imported instance. The second result from @racket[get-import] is an
@@ -320,6 +321,25 @@ Returns a description of a linklet's exports. Each element of the list
 corresponds to a variable that is made available by the linklet in its
 instance.}
 
+@defproc[(linklet-add-target-machine-info [linklet linklet?]
+                                          [from-linklet linklet?])
+         linklet?]{
+
+When @racket[compile-linklet] or @racket[recompile-linklet] requests a
+linklet via @racket[_get-import] for cross-module information, the
+linklet is expected to have information compatible with the current
+compilation target as determined by
+@racket[current-compile-target-machine]. To simplify the management of
+linklets to both run and use for cross-compilation, a linklet
+implementation may support information for multiple target machines
+within a linklet, in which case
+@racket[linklet-add-target-machine-info] returns a linklet like
+@racket[linklet] but with target-specific information added from
+@racket[from-linklet]. The two linklets must be from compatible
+sources, but @racket[linklet-add-target-machine-info] might perform
+only a sanity check for compatibility.
+
+@history[#:added "8.12.0.3"]}
 
 @defproc[(linklet-directory? [v any/c]) boolean?]{
 

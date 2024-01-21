@@ -23,6 +23,7 @@
               
               linklet-import-variables
               linklet-export-variables
+              linklet-add-target-machine-info
 
               instance?
               make-instance

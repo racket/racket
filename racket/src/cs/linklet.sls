@@ -13,6 +13,7 @@
           linklet-fasled-code+arguments      ; for tools like `raco decompile`
           linklet-interpret-jitified?        ; for `raco decompile`
           linklet-interpret-jitified-extract ; for `raco decompile`
+          linklet-add-target-machine-info    ; helps cross-compilation
           
           instance?
           make-instance
@@ -511,7 +512,7 @@
             format         ; 'compile or 'interpret (where the latter may have compiled internal parts)
             (mutable preparation) ; 'faslable, 'faslable-strict, 'faslable-unsafe, 'callable, 'lazy, or (cons 'cross <machine>)
             importss-abi   ; ABI for each import, in parallel to `importss`
-            (mutable exports-info) ; hash(sym -> known) for info about export; see "known.rkt"; unfasl on demand
+            (mutable exports-info) ; hash(target -> hash(sym -> known)) for info about export; see "known.rkt"; unfasl on demand
             name           ; name of the linklet (for debugging purposes)
             importss       ; list of list of import symbols
             exports)       ; list of export symbol-or-pair, pair is (cons export-symbol src-symbol)
@@ -546,6 +547,17 @@
                   preparation
                   (linklet-importss-abi linklet)
                   (linklet-exports-info linklet)
+                  (linklet-name linklet)
+                  (linklet-importss linklet)
+                  (linklet-exports linklet)))
+
+  (define (set-linklet-exports-info linklet exports-info)
+    (make-linklet (linklet-code linklet)
+                  (linklet-literals linklet)
+                  (linklet-format linklet)
+                  (linklet-preparation linklet)
+                  (linklet-importss-abi linklet)
+                  exports-info
                   (linklet-name linklet)
                   (linklet-importss linklet)
                   (linklet-exports linklet)))
@@ -594,9 +606,10 @@
       (define use-prompt? (#%memq 'use-prompt options))
       (define unsafe? (and (#%memq 'unsafe options) #t))
       (define cross-machine (and serializable?
-                                 (let ([m  (|#%app| current-compile-target-machine)])
+                                 (let ([m (|#%app| current-compile-target-machine)])
                                    (and (not (eq? m (machine-type)))
                                         m))))
+      (define target-machine (or cross-machine (machine-type)))
       (define realm (let ([v (|#%app| current-compile-realm)])
                       (if (eq? v 'racket) #f v)))
       (define enforce-constant? (|#%app| compile-enforce-module-constants))
@@ -656,7 +669,7 @@
                            ;; Callback to get a specific linklet for a
                            ;; given import:
                            (if get-import
-                               (lambda (key) (lookup-linklet-or-instance get-import key))
+                               (lambda (key) (lookup-linklet-or-instance get-import key target-machine))
                                (lambda (key) (values #f #f #f)))
                            import-keys))
        (define impl-lam/jitified
@@ -732,7 +745,7 @@
                                        format
                                        (if serializable? (if cross-machine (cons 'cross cross-machine) 'faslable) 'callable)
                                        importss-abi
-                                       exports-info
+                                       (hasheq target-machine exports-info)
                                        name
                                        importss
                                        exports)])
@@ -745,7 +758,7 @@
                      (values lk new-import-keys)
                      lk)))]))))))
 
-  (define (lookup-linklet-or-instance get-import key)
+  (define (lookup-linklet-or-instance get-import key target-machine)
     ;; Use the provided callback to get an linklet for the
     ;; import at `index`
     (cond
@@ -754,10 +767,12 @@
         (cond
          [(linklet? lnk/inst)
           (linklet-unpack-exports-info! lnk/inst)
-          (values (linklet-exports-info lnk/inst)
-                  ;; No conversion needed:
-                  #f
-                  more-import-keys)]
+          (let ([ei (linklet-exports-info lnk/inst)])
+            (values (and ei
+                         (hash-ref ei target-machine (hasheq)))
+                    ;; No conversion needed:
+                    #f
+                    more-import-keys))]
          [(instance? lnk/inst)
           (values (instance-hash lnk/inst)
                   variable->known
@@ -890,6 +905,32 @@
     (unless (wrapped-code? v)
       (raise-argument-error 'linklet-interpret-jitified-extract "linklet-interpret-jitified?" v))
     (force-wrapped-code v))
+
+  (define (linklet-add-target-machine-info linklet other-linklet)
+    (unless (linklet? linklet)
+      (raise-argument-error 'linklet-add-target-machine-info "linklet?" linklet))
+    (unless (linklet? other-linklet)
+      (raise-argument-error 'linklet-add-target-machine-info "linklet?" other-linklet))
+    (linklet-unpack-exports-info! linklet)
+    (linklet-unpack-exports-info! other-linklet)
+    ;; sanity check:
+    (let ([ht (make-hasheq)])
+      (for-each (lambda (ex) (hash-set! ht ex #t)) (linklet-export-variables linklet))
+      (let ([exs (linklet-export-variables other-linklet)])
+        (unless (and (= (length exs) (hash-count ht))
+                     (andmap (lambda (ex) (hash-ref ht ex #f)) exs))
+          (raise-arguments-error 'linklet-add-target-machine-info
+                                 "linklets are not compatible"))))
+    ;; merge:
+    (let ([other-ei (or (linklet-exports-info other-linklet) (hasheq))])
+      (set-linklet-exports-info linklet
+                                (let loop ([ei (or (linklet-exports-info linklet) (hasheq))]
+                                           [keys (hash-map other-ei (lambda (k v) k))])
+                                  (cond
+                                    [(null? keys) ei]
+                                    [else (let ([key (car keys)])
+                                            (loop (hash-set ei key (hash-ref other-ei key))
+                                                  (cdr keys)))])))))
 
   ;; ----------------------------------------
 

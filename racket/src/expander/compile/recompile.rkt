@@ -15,7 +15,8 @@
          "extra-inspector.rkt"
          "compiled-in-memory.rkt")
 
-(provide compiled-expression-recompile)
+(provide compiled-expression-recompile
+         compiled-expression-add-target-machine)
 
 (define (compiled-expression-recompile c)
   (unless (compiled-expression? c)
@@ -232,3 +233,44 @@
   (recompiled new-bundle
               phase-to-link-module-uses
               self))
+
+;; ----------------------------------------
+
+(define (compiled-expression-add-target-machine c from-c)
+  (unless (compiled-expression? c)
+    (raise-argument-error 'compiled-expression-recompile "compiled-expression?" c))
+  (unless (compiled-expression? from-c)
+    (raise-argument-error 'compiled-expression-recompile "compiled-expression?" from-c))
+  (define (looks-wrong)
+    (raise-arguments-error 'compiled-expression-recompile
+                           (string-append
+                            "compiled expressions are not compatible;\n"
+                            " they appear to be from compiling different modules")))
+  ;; Like `compiled-expression-recompile`, abandon any compiled in-memory information,
+  ;; since the intended use case is with serialization
+  (define (get-linklet c)
+    (if (or (linklet-bundle? c)
+            (linklet-directory? c))
+        c
+        (compiled-in-memory-linklet-directory c)))
+  (let ([c (get-linklet c)]
+        [from-c (get-linklet from-c)])
+    (define bundles (extract-linklet-bundles c '() #hash()))
+    (define from-bundles (extract-linklet-bundles from-c '() #hash()))
+    (unless (= (hash-count bundles) (hash-count from-bundles)) (looks-wrong))
+    (define new-bundles
+      (for/hash ([k (in-hash-keys bundles)])
+        (define b (hash-ref bundles k))
+        (define from-b (hash-ref from-bundles k #f))
+        (unless from-b (looks-wrong))
+        (define h (linklet-bundle->hash b))
+        (define from-h (linklet-bundle->hash from-b))
+        (define new-b
+          (hash->linklet-bundle
+           (for/fold ([h h]) ([(phase body-linklet) (in-hash h)]
+                              #:when (exact-integer? phase))
+             (define from-body-linklet (hash-ref from-h phase #f))
+             (unless from-body-linklet (looks-wrong))
+             (hash-set h phase (linklet-add-target-machine-info body-linklet from-body-linklet)))))
+        (values k (recompiled new-b #f #f))))
+    (replace-linklet-bundles c '() new-bundles)))

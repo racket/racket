@@ -340,6 +340,10 @@
       (values linklet import-keys)
       linklet))
 
+;; For adding cross-module optimization info for an extra target
+(define (linklet-add-target-machine-info linklet other-linklet)
+  linklet)
+
 ;; Intended for JIT preparation
 ;; (and we could compile to a function here)
 (define (eval-linklet c)

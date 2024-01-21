@@ -41,6 +41,7 @@ static Scheme_Object *eval_linklet(int argc, Scheme_Object **argv);
 static Scheme_Object *instantiate_linklet(int argc, Scheme_Object **argv);
 static Scheme_Object *linklet_import_variables(int argc, Scheme_Object **argv);
 static Scheme_Object *linklet_export_variables(int argc, Scheme_Object **argv);
+static Scheme_Object *linklet_add_target_machine_info(int argc, Scheme_Object **argv);
 
 static Scheme_Object *linklet_vm_bytes(int argc, Scheme_Object **argv);
 static Scheme_Object *write_linklet_bundle_hash(int argc, Scheme_Object **argv);
@@ -140,6 +141,7 @@ void scheme_init_linklet(Scheme_Startup_Env *env)
   ADD_PRIM_W_ARITY2("instantiate-linklet", instantiate_linklet, 2, 4, 0, -1, env);
   ADD_PRIM_W_ARITY("linklet-import-variables", linklet_import_variables, 1, 1, env);
   ADD_PRIM_W_ARITY("linklet-export-variables", linklet_export_variables, 1, 1, env);
+  ADD_PRIM_W_ARITY("linklet-add-target-machine-info", linklet_add_target_machine_info, 2, 2, env);
 
   ADD_PRIM_W_ARITY("linklet-virtual-machine-bytes", linklet_vm_bytes, 0, 0, env);
   ADD_PRIM_W_ARITY("write-linklet-bundle-hash", write_linklet_bundle_hash, 2, 2, env);
@@ -713,6 +715,17 @@ static Scheme_Object *linklet_export_variables(int argc, Scheme_Object **argv)
   }
 
   return l;
+}
+
+static Scheme_Object *linklet_add_target_machine_info(int argc, Scheme_Object **argv)
+{
+  if (!SAME_TYPE(SCHEME_TYPE(argv[0]), scheme_linklet_type))
+    scheme_wrong_contract("linklet-add-target-machine-info", "linklet?", 0, argc, argv);
+  if (!SAME_TYPE(SCHEME_TYPE(argv[1]), scheme_linklet_type))
+    scheme_wrong_contract("linklet-add-target-machine-info", "linklet?", 1, argc, argv);
+
+  /* we only have one target, so cross-module information is already target-indepedent */
+  return argv[0];
 }
 
 static Scheme_Object *instance_p(int argc, Scheme_Object **argv)

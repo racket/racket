@@ -607,6 +607,19 @@ potentially different performance characteristics.
 
 @history[#:added "6.3"]}
 
+@defproc[(compiled-expression-add-target-machine [ce compiled-expression?]
+                                                 [other-ce compiled-expression?])
+         compiled-expression?]{
+
+Returns a compiled expression like @racket[ce], but augments or
+replaces cross-compilation information in @racket[ce] with information
+from @racket[other-ce]. The intent is that @racket[ce] and
+@racket[other-ce] have been compiled with different values for
+@racket[current-compile-target-machine], and @racket[ce] will be used
+to run a module on the compiling machine, while information from
+@racket[other-ce] is needed for cross-compiling imports of the module.
+
+@history[#:added "8.12.0.3"]}
 
 @defproc[(compiled-expression? [v any/c]) boolean?]{
 
