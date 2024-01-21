@@ -658,11 +658,6 @@
                            (not use-prompt?)
                            prim-knowns
                            primitives
-                           ;; can't perform compiler queries for optimization, yet, because
-                           ;; the can leak out to cross-module info and make that information
-                           ;; target-specific
-                           (lambda (v) #f)
-                           #;
                            (if cross-machine
                                (lambda (v) (cross-compiler-query cross-machine v))
                                compiler-query)

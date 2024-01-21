@@ -598,8 +598,7 @@
 (define-syntax (_fun stx)
   (_fun* stx #f))
 (define-syntax (_fun/static stx)
-  ;; static requests are currently disabled:
-  (_fun* stx #f))
+  (_fun* stx #t))
 (define-for-syntax (_fun* stx static?)
   (define (err msg . sub) (apply raise-syntax-error '_fun msg stx sub))
   (define xs     #f)
