@@ -954,5 +954,29 @@
             [else #f]))))
 
 ;; ----------------------------------------
+;; regression tests for certain paths that raise "required keyword not supplied"
+(let ([kw-proc (make-keyword-procedure
+                (lambda (ks vs . ps)
+                  (apply values vs ps)))]
+      [match-message? (lambda (x)
+                        (regexp-match? "required keyword argument not supplied"
+                                       (exn-message x)))])
+  (err/rt-test ((procedure-reduce-keyword-arity
+                 kw-proc
+                 (arity-at-least 0)
+                 '(#:kw)
+                 '(#:kw)))
+               match-message?)
+  (let ([reduced (procedure-reduce-keyword-arity-mask
+                  kw-proc
+                  -1
+                  '(#:kw)
+                  '(#:kw))])
+    (err/rt-test (reduced) match-message?)
+    (err/rt-test ((procedure->method reduced) #f) match-message?)
+    (err/rt-test ((chaperone-procedure reduced reduced)) match-message?)
+    (err/rt-test ((impersonate-procedure reduced reduced)) match-message?)))
+
+;; ----------------------------------------
 
 (report-errs)
