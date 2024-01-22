@@ -942,7 +942,7 @@
      args))
 
   (define (raise-missing-kw name req-kws args)
-    (raise-wrong-kws name #t #t #f null null req-kws null args))
+    (raise-wrong-kws name #t #t #f null null (car req-kws) #f args))
 
   (define-for-syntax (generate-proc-id default local-name)
     (cond
@@ -1805,7 +1805,7 @@
                  allowed-kw
                  plain-proc)
                 ;; Some keywords are required, so "plain" proc is
-                ;;  irrelevant; we build a new one that wraps `raise-missing-kws'.
+                ;;  irrelevant; we build a new one that wraps `raise-missing-kw'.
                 (let ([name (or name
                                 (and (named-keyword-procedure? proc)
                                      (vector-ref (keyword-procedure-name+fail* proc) 0))
@@ -1824,7 +1824,7 @@
                    allowed-kw
                    (procedure-reduce-arity-mask
                     (lambda args
-                      (raise-missing-kw name req-kw))
+                      (raise-missing-kw name req-kw args))
                     mask)
                    name
                    realm)))))))
@@ -1923,7 +1923,7 @@
                         (if (vector? raw-name+fail)
                             (procedure-reduce-arity-mask
                              (lambda args
-                               (raise-missing-kw name req-kw))
+                               (raise-missing-kw name req-kw args))
                              (arithmetic-shift (procedure-arity-mask (vector-ref name+fail 2)) -1))
                             (vector-ref name+fail 2))
                         name
@@ -2212,7 +2212,7 @@
                                        (if (vector? raw-name+fail)
                                            (procedure-reduce-arity-mask
                                             (lambda args
-                                              (raise-missing-kw name req-kw))
+                                              (raise-missing-kw name req-kw args))
                                             (arithmetic-shift (procedure-arity-mask (vector-ref name+fail 2)) -1))
                                            (vector-ref name+fail 2))
                                        (vector-ref name+fail 0)
