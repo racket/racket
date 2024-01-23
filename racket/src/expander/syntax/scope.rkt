@@ -81,7 +81,7 @@
 ;; faster and to improve GC, since non-nested binding contexts will
 ;; generally not share a most-recent scope.
 
-(struct scope (id             ; internal scope identity; used for sorting
+(struct scope (id             ; internal scope identity as an exact rational; used for sorting
                kind           ; 'macro for macro-introduction scopes, otherwise treated as debug info
                [binding-table #:mutable]) ; see "binding-table.rkt"
   #:authentic
@@ -315,8 +315,14 @@
   ;; having a larger id
   (- (new-scope-id!)))
 
-(define (deserialized-scope-id? scope-id)
-  (negative? scope-id))
+(define (make-representative-scope-id scope-id phase)
+  ;; keep a representative scope's age in line with the enclosing multi-scope's
+  ;; age, and make it deterministic for the phase
+  (cond
+    [(eqv? phase 0) (+ scope-id 1/2)]
+    [(not phase) (+ scope-id 7/8)]
+    [(phase . > . 0) (+ scope-id (/ 1 (+ 2 phase)))] ; in (0, 1/3]
+    [else (+ scope-id 1/2 (/ 1 (- 2 phase)))])) ; (1/2, 3/4]
 
 ;; A shared "outside-edge" scope for all top-level contexts
 (define top-level-common-scope (scope 0 'module empty-binding-table))
@@ -366,9 +372,9 @@
   ;; Get the identity of `ms` at phase`
   (let ([scopes (unbox (multi-scope-scopes ms))])
     (or (hash-ref scopes phase #f)
-        (let ([s (representative-scope (if (deserialized-scope-id? (multi-scope-id ms))
-                                           (new-deserialize-scope-id!)
-                                           (new-scope-id!))
+        (let ([s (representative-scope (make-representative-scope-id
+                                        (multi-scope-id ms)
+                                        phase)
                                        'module
                                        empty-binding-table
                                        ms phase)])
