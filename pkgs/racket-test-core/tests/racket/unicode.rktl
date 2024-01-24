@@ -1736,6 +1736,8 @@
 (test #\uDF char-foldcase #\u1e9e)
 (test #\u1f85 char-foldcase #\u1f8d)
 
+(test 'so char-general-category #\u31EF) ; Unicode 15.1
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Bytes converters and custodians - check that built-in conversions are
 ;; not registered

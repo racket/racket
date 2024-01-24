@@ -1,6 +1,7 @@
 Version 8.13
 Improved support for static generation of foreign-function
  bindings via machine-specific cross-module optimization
+Use Unicode 15.1 for character and string operations
 
 Version 8.12, January 2024
 Change `open-input-file`, `open-output-file`, and `subprocess`
