@@ -1237,7 +1237,7 @@
     (raise-type-error 'rename-contract "contract?" ctc))
   (let ([ctc (coerce-contract 'rename-contract ctc)])
     (if (flat-contract? ctc)
-        (flat-named-contract name (flat-contract-predicate ctc))
+        (flat-named-contract name (flat-contract-predicate ctc) (contract-struct-generate ctc))
         (let* ([make-contract (if (chaperone-contract? ctc) make-chaperone-contract make-contract)])
           (define (rename-contract-stronger? this other)
             (contract-struct-stronger? ctc other))
@@ -1248,6 +1248,8 @@
                          #:first-order (contract-first-order ctc)
                          #:stronger rename-contract-stronger?
                          #:equivalent rename-contract-equivalent?
+                         #:generate (contract-struct-generate ctc)
+                         #:exercise (contract-struct-exercise ctc)
                          #:list-contract? (list-contract? ctc))))))
 
 (define (if/c predicate then/c else/c)

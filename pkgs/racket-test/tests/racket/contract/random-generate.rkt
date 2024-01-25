@@ -111,6 +111,18 @@
 
 (check-not-exn (λ () (test-contract-generation (promise/c string?))))
 
+(check-not-exn (λ ()
+                 (define (a-stream/c c)
+                   (or/c null?
+                         (cons/c c (recursive-contract (a-stream/c c)))
+                         (promise/c (recursive-contract (a-stream/c c)))))
+                 (test-contract-generation
+                  (rename-contract (a-stream/c integer?)
+                                   'integer-stream))))
+(check-not-exn (λ ()
+                 (test-contract-generation
+                  (rename-contract (or/c integer? boolean?) 'b-or-i))))
+
 (define (check-empty-and-nonempty ctc val-empty? val-nonempty?)
   (define val-list
     (for/list ([i (in-range 100)])
@@ -583,6 +595,17 @@
            (delay "x")
            'pos
            'neg))
+
+(check-exercise
+ 10
+ pos-exn?
+ (let ()
+   (define (a-stream/c c)
+     (or/c null?
+           (promise/c (cons/c c (recursive-contract (a-stream/c c))))))
+   (contract (a-stream/c integer?)
+             (cons 1 (delay (cons "two" '())))
+             'pos 'neg)))
 
 ;; a test for contract-random-generate/choose
 (let ()
