@@ -3,6 +3,7 @@
 (require racket/private/generic ; to avoid circular dependencies
          racket/private/generic-methods
          racket/vector
+         racket/mutability
          (only-in racket/private/hash paired-fold)
          (for-syntax racket/base))
 
@@ -19,18 +20,6 @@
                     (begin
                       (hash-set! known-assocs v #t)
                       #t))))))
-
-(define (immutable-hash? v)
-  (and (hash? v) (immutable? v)))
-
-(define (mutable-hash? v)
-  (and (hash? v) (not (immutable? v))))
-
-(define (immutable-vector? v)
-  (and (vector? v) (immutable? v)))
-
-(define (mutable-vector? v)
-  (and (vector? v) (not (immutable? v))))
 
 (define (dict-mutable? d)
   (unless (dict? d)

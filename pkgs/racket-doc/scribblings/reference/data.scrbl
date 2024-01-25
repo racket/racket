@@ -140,6 +140,9 @@ boxes that are not @tech{impersonators}.
 @include-section["hashes.scrbl"]
 
 @; ----------------------------------------------------------------------
+@include-section["treelists.scrbl"]
+
+@; ----------------------------------------------------------------------
 @include-section["sequences.scrbl"]
 
 @; ----------------------------------------------------------------------

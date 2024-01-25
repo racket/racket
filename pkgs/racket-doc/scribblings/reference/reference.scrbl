@@ -285,6 +285,13 @@ In addition, it re-exports @racket[for-syntax] everything from
              #:url "http://www.eecs.northwestern.edu/~robby/pubs/papers/oopsla2012-stff.pdf"
              #:date "2012")
 
+  (bib-entry #:key "Stucki15"
+             #:title "RRB Vector: A Practical General Purpose Immutable Sequence"
+             #:author "Nicolas Stucki, Tiark Rompf, Vlad Ureche, and Phil Bagwell"
+             #:location "International Conference on Functional Programming"
+             #:url "https://dl.acm.org/doi/abs/10.1145/2784731.2784739"
+             #:date "2015")
+
   (bib-entry #:key "Torosyan21"
              #:title "Runtime and Compiler Support for HAMTs"
              #:author "Son Torosyan, Jon Zeppieri, and Matthew Flatt"
