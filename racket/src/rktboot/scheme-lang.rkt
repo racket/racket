@@ -273,12 +273,12 @@
          vector->immutable-vector
          bytevector->immutable-bytevector
          box-immutable
+         immutable-vector
          immutable-string?
          immutable-vector?
          immutable-bytevector?
          immutable-box?
          (rename-out
-          [vector-immutable immutable-vector]
           [string-length/handle-empty-immutable string-length]
           [vector-length/handle-empty-immutable vector-length]
           [bytevector-length/handle-empty-immutable bytevector-length])
@@ -1145,6 +1145,9 @@
       (let ([v (vector-copy v)])
         (hash-set! immutable-values v #t)
         v)))
+
+(define (immutable-vector . args)
+  (vector->immutable-vector (apply vector args)))
 
 (define (vector-length/handle-empty-immutable v)
   (if (eq? v the-immutable-empty-vector)
