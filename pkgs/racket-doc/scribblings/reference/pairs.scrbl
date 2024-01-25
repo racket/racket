@@ -574,7 +574,7 @@ Returns @racket[(remove* v-lst lst equal-always?)].
 
 
 @defproc[(sort [lst list?] [less-than? (any/c any/c . -> . any/c)]
-               [#:key extract-key (any/c . -> . any/c) (lambda (x) x)]
+               [#:key extract-key (or/c #f (any/c . -> . any/c)) #f]
                [#:cache-keys? cache-keys? boolean? #f])
          list?]{
 
@@ -594,7 +594,8 @@ specifies that +nan.0 is neither greater nor less than nor equal to any other
 number, sorting lists containing this value may produce a surprising result.}
 
 The @racket[#:key] argument @racket[extract-key] is used to extract a
-key value for comparison from each list element.  That is, the full
+key value for comparison from each list element, where @racket[#f]
+is replaced by @racket[(lambda (x) x)]  That is, the full
 comparison procedure is essentially
 
 @racketblock[

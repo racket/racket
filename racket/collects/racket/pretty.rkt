@@ -12,7 +12,9 @@
 #lang racket/base
 (require racket/private/port
          racket/flonum
-         racket/fixnum)
+         racket/fixnum
+         racket/treelist
+         racket/mutable-treelist)
 
 (provide pretty-print
          pretty-write
@@ -414,6 +416,9 @@
            (vector-set! v 0 d)
            #t))))
 
+(define (*treelist? obj) (or (treelist? obj) (mutable-treelist? obj)))
+(define (*treelist->list obj) (if (treelist? obj) (treelist->list obj) (mutable-treelist->list obj)))
+
 (define-struct unquoted (val))
 (define struct-ellipses (string->uninterned-symbol "..."))
 
@@ -512,7 +517,8 @@
                      (vloop (or (loop (vector-ref obj i) mode) esc?) 
                             (add1 i))))))]
            [(or (flvector? obj)
-                (fxvector? obj))
+                (fxvector? obj)
+                (*treelist? obj))
             ;; always unquoted:
             #t]
            [(pair? obj)
@@ -892,6 +898,19 @@
                    (begin
                      (out "#&") 
                      (wr (unbox obj) (dsub1 depth) qd))))))]
+         [(*treelist? obj)
+          (check-expr-found
+           obj pport #t
+           #f #f
+           (lambda ()
+             (if (and qd (zero? qd))
+                 (wr-lst (cons (make-unquoted (if (treelist? obj) 'treelist 'mutable-treelist))
+                               (*treelist->list obj))
+                         #f depth pair? car cdr "(" ")" qd)
+                 (begin
+                   (out (if (treelist? obj) "#<treelist: " "#<mutable-treelist: "))
+                   (wr-lst (*treelist->list obj)
+                           #f depth pair? car cdr "" ">" qd)))))]
          [(and (custom-write? obj) 
                (not (struct-type? obj)))
           (check-expr-found
@@ -1033,7 +1052,8 @@
                                  (mpair? obj)
                                  (vector? obj) 
                                  (flvector? obj) 
-                                 (fxvector? obj) 
+                                 (fxvector? obj)
+                                 (*treelist? obj) 
                                  (and (box? obj) print-box?)
                                  (and (custom-write? obj)
                                       (not (struct-type? obj)))
@@ -1132,6 +1152,19 @@
                               (pp-list (fxvector->repeatless-list obj)
                                        extra pp-expr #f depth
                                        pair? car cdr pair-open pair-close
+                                       qd)))]
+                       [(*treelist? obj)
+                        (if (and qd (zero? qd))
+                            (pp-list (cons (make-unquoted (if (treelist? obj) 'treelist 'mutable-treelist))
+                                           (*treelist->list obj))
+                                     extra pp-expr #f depth
+                                     pair? car cdr pair-open pair-close
+                                     qd)
+                            (begin
+                              (out (if (treelist? obj) "#<treelist: " "#<mutable-treelist: "))
+                              (pp-list (*treelist->list obj)
+                                       extra pp-expr #f depth
+                                       pair? car cdr "" ">"
                                        qd)))]
                        [(and (custom-write? obj)
                              (not (struct-type? obj)))

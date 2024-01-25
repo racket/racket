@@ -452,7 +452,7 @@ Like @racket[vector-member], but finds an element using @racket[eq?].
                       [less-than? (any/c any/c . -> . any/c)]
                       [start exact-nonnegative-integer? 0]
                       [end exact-nonnegative-integer? (vector-length vec)]
-                      [#:key key (any/c . -> . any/c) (λ (x) x)]
+                      [#:key key (or/c #f (any/c . -> . any/c)) #f]
                       [#:cache-keys? cache-keys? boolean? #f])
          vector?]{
 
