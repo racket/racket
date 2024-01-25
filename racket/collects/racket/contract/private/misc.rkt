@@ -502,6 +502,20 @@
        (contract-struct-equivalent? (promise-base-ctc-ctc this)
                                     (promise-base-ctc-ctc that))))
 
+(define (promise-ctc-generate ctc)
+  (define base-ctc (promise-base-ctc-ctc ctc))
+  (λ (fuel)
+    (define gen-base (contract-random-generate/choose base-ctc fuel))
+    (and gen-base
+         (λ () (delay (gen-base))))))
+
+(define (promise-ctc-exercise ctc)
+  (define base-ctc (promise-base-ctc-ctc ctc))
+  (λ (fuel)
+    (define gen-base (contract-random-generate/choose base-ctc fuel))
+    (values (λ (p) (force p))
+            (list base-ctc))))
+
 (struct promise-base-ctc (ctc))
 (struct chaperone-promise-ctc promise-base-ctc ()
   #:property prop:custom-write custom-write-property-proc
@@ -512,6 +526,8 @@
    #:late-neg-projection promise-contract-late-neg-proj
    #:stronger promise-ctc-stronger?
    #:equivalent promise-ctc-equivalent?
+   #:generate promise-ctc-generate
+   #:exercise promise-ctc-exercise
    #:first-order (λ (ctc) promise?)))
 
 (struct promise-ctc promise-base-ctc ()
@@ -523,6 +539,8 @@
    #:late-neg-projection promise-contract-late-neg-proj
    #:stronger promise-ctc-stronger?
    #:equivalent promise-ctc-equivalent?
+   #:generate promise-ctc-generate
+   #:exercise promise-ctc-exercise
    #:first-order (λ (ctc) promise?)))
 
 ;; (parameter/c in/out-ctc)

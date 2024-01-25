@@ -108,6 +108,8 @@
 (check-not-exn (λ () (test-contract-generation (set/c string? #:cmp 'eqv #:kind 'weak))))
 (check-not-exn (λ () (test-contract-generation (set/c string? #:cmp 'eq #:kind 'mutable))))
 
+(check-not-exn (λ () (test-contract-generation (promise/c string?))))
+
 (define (check-empty-and-nonempty ctc val-empty? val-nonempty?)
   (define val-list
     (for/list ([i (in-range 100)])
