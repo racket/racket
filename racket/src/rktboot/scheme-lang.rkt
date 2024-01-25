@@ -278,6 +278,7 @@
          immutable-bytevector?
          immutable-box?
          (rename-out
+          [vector-immutable immutable-vector]
           [string-length/handle-empty-immutable string-length]
           [vector-length/handle-empty-immutable vector-length]
           [bytevector-length/handle-empty-immutable bytevector-length])
