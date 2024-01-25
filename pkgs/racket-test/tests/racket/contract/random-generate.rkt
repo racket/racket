@@ -3,6 +3,7 @@
 (require racket/contract
          racket/contract/private/generate-base
          racket/set
+         racket/promise
          (only-in racket/list empty? cons?)
          rackunit
          racket/math
@@ -572,6 +573,14 @@
  pos-exn?
  (contract (set/c (-> integer? boolean?))
            (set add1)
+           'pos
+           'neg))
+
+(check-exercise
+ 10
+ pos-exn?
+ (contract (promise/c integer?)
+           (delay "x")
            'pos
            'neg))
 
