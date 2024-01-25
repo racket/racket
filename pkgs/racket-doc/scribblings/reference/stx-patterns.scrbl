@@ -565,7 +565,22 @@ Equivalent to
 ]
 
 where each @racket[_generated-id] binds no identifier in the
-corresponding @racket[template].}
+corresponding @racket[template].
+This in particular means that the @racket[id] positions are ignored.
+Conventionally, the @racket[id] positions should be the identifier @racket[_].
+
+@mz-examples[
+(define-syntax my-let*
+  (syntax-rules ()
+    [(_ () body ...) (let () body ...)]
+    [(_ ([x v] binding ...) body ...)
+     (let ([x v])
+       (my-let* (binding ...) body ...))]))
+
+(my-let* ([x 42]
+          [x (+ x 1)])
+  x)
+]}
 
 
 @defform[(syntax-id-rules (literal-id ...)
