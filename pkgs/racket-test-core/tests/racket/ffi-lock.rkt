@@ -20,7 +20,7 @@
     (define l
       (for/list ([i 3])
         (go)))
-    (map place-wait l)
+    (for-each place-wait l)
     (unless ((- (current-seconds) now) . >= . 3)
       (error "didn't serialize"))))
 

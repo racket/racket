@@ -165,6 +165,6 @@
                 [item (split-n (processor-count) lst)])
             (place-channel-put p item))
           (define result ((lambda (listvar) body ...) (map place-channel-get places)))
-          (map place-wait places)
-          (map place-kill places)
+          (for-each place-wait places)
+          (for-each place-kill places)
           result)]))
