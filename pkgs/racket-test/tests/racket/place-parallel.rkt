@@ -26,5 +26,4 @@
         (place-channel-put p i)
         (place-channel-put p "quiet.rktl")
         p)))
-  (map place-wait ps))
-
+  (for-each place-wait ps))

@@ -499,7 +499,7 @@
         (sync c-sema)
         (task t b)))
     (semaphore-post continue-sema)
-    (map sync (map task-th ts))
+    (for-each sync (map task-th ts))
     (for/list ([t (in-list ts)])
       (define v (unbox (task-result-box t)))
       (if (exn? v)
