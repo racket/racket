@@ -2,12 +2,13 @@
 @(require "mz.rkt")
 @(require (for-label syntax/modcollapse
                      racket/stxparam
-                     racket/serialize))
+                     racket/serialize
+                     racket/treelist))
 
 @(define contract-eval
    (lambda ()
      (let ([the-eval (make-base-eval)])
-       (the-eval '(require racket/contract racket/contract/parametric racket/list racket/math))
+       (the-eval '(require racket/contract racket/treelist racket/contract/parametric racket/list racket/math))
        the-eval)))
 
 @(define blame-object @tech{blame object})
@@ -702,6 +703,49 @@ necessarily @racket[eq?] to the input.
 
 }
 
+@defproc[(treelist/c [ctc contract?]
+                     [#:flat? flat? any/c (flat-contract? ctc)]
+                     [#:lazy? lazy? any/c
+                      (cond
+                        [(flat-contract? ctc) #f]
+                        [(chaperone-contract? ctc) #t]
+                        [else #f])])
+         contract?]{
+
+ Produces a contract for @tech{treelists} whose elements
+ match @racket[ctc].
+
+ If @racket[flat?] is a true value then @racket[ctc] must be
+ a @tech{flat contract}. In that situation, the result of
+ @racket[treelist/c] will also be a flat contract.
+
+ If @racket[lazy?] is a true value, then @racket[ctc] must
+ be a @tech{chaperone contract} and the resulting contract
+ will be a chaperone contract. In that situation, the
+ contracts on the elements of the tree list are not checked
+ until the values are accessed.
+
+ If both @racket[flat?] and @racket[lazy?] are @racket[#f],
+ then the contract will copy the tree list as part of the
+ process of checking the contract and the result will be
+ a @tech{chaperone contract} if @racket[ctc] is a
+ chaperone contract.
+
+ At least one of @racket[flat?] and @racket[lazy?] must be
+ @racket[#f].
+
+ @examples[#:eval (contract-eval) #:once
+           (define/contract natural-treelist
+             (treelist/c natural?)
+             (treelist 1 2 3))
+
+           (eval:error
+            (define/contract natural-treelist
+              (treelist/c natural?)
+              (treelist -1 -2 -3)))]
+
+@history[#:added "8.12.0.7"]
+}
 
 @defproc[(syntax/c [c flat-contract?]) flat-contract?]{
 

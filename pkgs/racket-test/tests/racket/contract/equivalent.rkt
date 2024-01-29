@@ -289,6 +289,10 @@
   (ctest #t contract-equivalent? (listof char?) (list*of char? null?))
   (ctest #f contract-equivalent? (list*of char? any/c) (listof char?))
   
+  (ctest #t contract-equivalent? (treelist/c integer?) (treelist/c integer?))
+  (ctest #f contract-equivalent? (treelist/c integer?) (treelist/c natural?))
+  (ctest #f contract-equivalent? (treelist/c natural?) (treelist/c integer?))
+
   (ctest #f contract-equivalent? (vectorof (<=/c 3)) (vectorof (<=/c 4)))
   (ctest #f contract-equivalent? (vectorof (<=/c 3)) (vectorof (<=/c 4)))
   (ctest #t contract-equivalent? (vectorof (<=/c 3)) (vectorof (<=/c 3)))
