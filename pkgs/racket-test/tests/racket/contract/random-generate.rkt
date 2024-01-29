@@ -4,6 +4,7 @@
          racket/contract/private/generate-base
          racket/set
          racket/promise
+         racket/treelist
          (only-in racket/list empty? cons?)
          rackunit
          racket/math
@@ -94,6 +95,8 @@
 (check-not-exn (λ () ((car (test-contract-generation (list/c (-> number? number?)))) 0)))
 (check-not-exn (λ () (test-contract-generation (*list/c boolean? number? char?))))
 (check-not-exn (λ () (test-contract-generation (-> (*list/c boolean? number? char?) any))))
+
+(check-not-exn (λ () (test-contract-generation (treelist/c char?))))
 
 (check-not-exn (λ () (test-contract-generation (hash/c boolean? boolean?))))
 (check-not-exn (λ () (test-contract-generation (hash/c char? integer?))))

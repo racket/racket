@@ -21,6 +21,7 @@
          "private/arrow-val-first.rkt"
          "private/orc.rkt"
          "private/list.rkt"
+         "private/treelist.rkt"
          "private/and.rkt"
          "private/property.rkt")
 
@@ -79,6 +80,7 @@
  *list/c
  promise/c
  syntax/c
+ treelist/c
  
  parameter/c
  procedure-arity-includes/c

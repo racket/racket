@@ -293,6 +293,10 @@
   (ctest #t trust/not-stronger? (listof char?) (list*of char? null?))
   (ctest #f trust/not-stronger? (list*of char? any/c) (listof char?))
 
+  (ctest #t trust/not-stronger? (treelist/c integer?) (treelist/c integer?))
+  (ctest #f trust/not-stronger? (treelist/c integer?) (treelist/c natural?))
+  (ctest #t trust/not-stronger? (treelist/c (between/c 1 10)) (treelist/c (between/c 0 100)))
+  
   (ctest #f trust/not-stronger? (vectorof (<=/c 3)) (vectorof (<=/c 4)))
   (ctest #f trust/not-stronger? (vectorof (<=/c 3)) (vectorof (<=/c 4)))
   (ctest #t trust/not-stronger? (vectorof (<=/c 3) #:immutable #t) (vectorof (<=/c 4) #:immutable #t))
