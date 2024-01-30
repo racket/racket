@@ -212,6 +212,13 @@ mappings can hide earlier mappings.
 
 See also @racket[make-custom-hash].
 
+@examples[
+#:eval the-eval
+(make-hash)
+(make-hash '((0 1) (1 2) (2 3)))
+(make-hash '((0 1) (0 2)))
+]
+
 @history[#:changed "8.5.0.3" @elem{Added @racket[make-hashalw].}]}
 
 @deftogether[(
@@ -630,6 +637,12 @@ with the following order (earlier bullets before later):
 
 @history[#:changed "6.3" @elem{Added the @racket[try-order?] argument.}
          #:changed "7.1.0.7" @elem{Added guarantees for @racket[try-order?].}]}
+
+@examples[
+#:eval the-eval
+(hash-map (make-hash '((0 1) (1 2) (2 3))) (λ (k v) k))
+(hash-map (make-hash '((0 1) (1 2) (2 3))) (λ (k v) v))
+]
 
 @defproc[(hash-map/copy
           [hash hash?]
