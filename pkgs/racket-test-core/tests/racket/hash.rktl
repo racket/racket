@@ -123,6 +123,18 @@
          #hash([one . 1] [two . 2] [three . 3] [four . 4]))
         h))
 
+(test #hash([1 . 0] [2 . 0])
+      hash-filter-keys #hash([1 . 0] [2 . 0] [3 . 0] [4 . 0] [5 . 0]) (λ (k) (< k 3)))
+
+(test #hash()
+      hash-filter-keys #hash() (λ (k) (< k 5)))
+
+(test #hash([1 . 2])
+      hash-filter-values #hash((1 . 2) (2 . 3) (3 . 4) (4 . 5) (5 . 6)) (λ (v) (< v 3)))
+
+(test #hash()
+      hash-filter-values #hash() (λ (v) (< v 5)))
+
 (let ()
   (struct a (n m)
           #:property

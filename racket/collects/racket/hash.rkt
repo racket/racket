@@ -63,6 +63,12 @@
                     (combine/key k v (hash-ref hm k))))
         res)))
 
+(define (hash-filter-values ht pred)
+  (for/hash ([(k v) (in-hash ht)] #:when (pred v)) (values k v)))
+
+(define (hash-filter-keys ht pred)
+  (for/hash ([(k v) (in-hash ht)] #:when (pred k)) (values k v)))
+
 (provide/contract
  [hash-union (->* [(and/c hash? immutable?)]
                   [#:combine
@@ -84,4 +90,6 @@
                         #:combine/key
                         (-> any/c any/c any/c any/c)]
                        #:rest (listof hash?)
-                       (and/c hash? immutable?))])
+                       (and/c hash? immutable?))]
+ [hash-filter-values (-> (hash? procedure?) hash?)]
+ [hash-filter-keys (-> (hash? procedure?) hash?)])

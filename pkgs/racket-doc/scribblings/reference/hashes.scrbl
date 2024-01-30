@@ -1005,4 +1005,34 @@ one for the result.
 
 @history[#:added "7.9.0.1"]}
 
+
+@defproc[(hash-filter-values [ht hash?] [pred procedure?])
+         hash?]{
+
+Filters a hash table by applying a predicate to it's values.
+
+@examples[
+#:eval the-eval
+(hash-filter-values (for/hash ([num '(1 2 3 4 5)]) (values num (add1 num))) (λ (v) (< v 3)))
+(hash-filter-values (make-hash) (λ (v) (< v 3)))
+]
+
+@history[#:added "8.11.1"]
+}
+
+
+@defproc[(hash-filter-keys [ht hash?] [pred procedure?])
+         hash?]{
+
+Filters a hash table by applying a predicate to it's keys.
+
+@examples[
+#:eval the-eval
+(hash-filter-keys (for/hash ([num '(1 2 3 4 5)]) (values num 0)) (λ (k) (< k 3)))
+(hash-filter-keys (make-hash) (λ (k) (< k 3)))
+]
+
+@history[#:added "8.11.1"]
+}
+
 @(close-eval the-eval)
