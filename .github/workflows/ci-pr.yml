@@ -42,7 +42,7 @@ jobs:
 
   buildtest-macos:
 
-    runs-on: macos-latest
+    runs-on: macos-14
 
     steps:
     - uses: actions/checkout@v4
@@ -70,25 +70,25 @@ jobs:
         raco test -c tests/stxparse
         raco test -c tests/syntax
     - name: Tarball
-      run: tar -cvjf racketcs-macos-x64_git${{ github.sha }}.tar.bz2 racket
+      run: tar -cvjf racketcs-macos-aarch64_git${{ github.sha }}.tar.bz2 racket
     - uses: actions/upload-artifact@v4
       with:
-        name: racketcs-macos-x64_git${{ github.sha }}
-        path: racketcs-macos-x64_git${{ github.sha }}.tar.bz2
+        name: racketcs-macos-aarch64_git${{ github.sha }}
+        path: racketcs-macos-aarch64_git${{ github.sha }}.tar.bz2
 
   build-ios:
-    runs-on: macos-latest
+    runs-on: macos-14
     needs: buildtest-macos
     steps:
     - uses: actions/checkout@v4
     - uses: actions/download-artifact@v4
       with:
-        name: racketcs-macos-x64_git${{ github.sha }}
+        name: racketcs-macos-aarch64_git${{ github.sha }}
         path: ${{ github.workspace }}
     - name: Untar host Racket
       run: |
         mkdir host-racket
-        tar -xvjf racketcs-macos-x64_git${{ github.sha }}.tar.bz2 -C host-racket --strip-components 1
+        tar -xvjf racketcs-macos-aarch64_git${{ github.sha }}.tar.bz2 -C host-racket --strip-components 1
     - name: Build iOS Racket
       run: |
         set -euxo pipefail
