@@ -284,15 +284,20 @@
 
   (void))
 
-(measure 1000000
-         10)
-(measure 100000
-         100)
-(measure 10000
-         1000)
-(measure 1000
-         10000)
-(measure 100
-         100000)
-(measure 10
-         1000000)
+(module+ main
+  (measure 1000000
+           10)
+  (measure 100000
+           100)
+  (measure 10000
+           1000)
+  (measure 1000
+           10000)
+  (measure 100
+           100000)
+  (measure 10
+           1000000))
+
+(module+ test
+  (measure 100000
+           100))
