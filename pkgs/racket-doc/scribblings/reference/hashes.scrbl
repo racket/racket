@@ -215,11 +215,11 @@ See also @racket[make-custom-hash].
 @examples[
 #:eval the-eval
 (make-hash)
-(make-hash '([0 . 1] [1 . 2] [2 . 3]))
+(make-hash '([0 . 1] [42 . "meaning of life"] [2 . 3]))
 (make-hash '([0 . 1] [1 . 2] [0 . 3]))
-(make-hash (list (cons 0 1) (cons 1 2) (cons 2 3)))
+(make-hash (list (cons 0 1) (cons 'apple 'orange) (cons #t #f)))
 (make-hash '((0 1) (1 2) (2 3)))
-(make-hash (list (cons "hello" "world") (cons 42 "meaning of life") (cons (list 1 2 3) (list #\a #\b #\c)) (cons #t #f) (cons 'apple 'orange) (cons (list 'a 1 "apple") (vector #t 'b 2 "banana")) (cons + -)))
+(make-hash (list (cons + -)))
 ]
 
 @history[#:changed "8.5.0.3" @elem{Added @racket[make-hashalw].}]}
