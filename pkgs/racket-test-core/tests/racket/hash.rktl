@@ -3,7 +3,7 @@
 
 (Section 'hash)
 
-(require racket/hash (only-in racket list? number? null? symbol? eq? eqv?))
+(require racket/hash)
 
 ;; ----------------------------------------
 ;; Hash-key sorting:
@@ -126,59 +126,59 @@
 (test #hash([1 . 0] [2 . 0])
       hash-filter-keys #hash([1 . 0] [2 . 0] [3 . 0] [4 . 0] [5 . 0]) (λ (k) (< k 3)))
 
-(test #hash()
-      hash-filter-keys #hash() (λ (k) (< k 5)))
+;; filtering by key with strings
+(test (hash "one" 1)
+      hash-filter-keys
+      (hash "one" 1 "two" 2 "three" 3)
+      (λ (k) (string=? k "one")))
 
-(test #hash([1 . 2])
-      hash-filter-values #hash((1 . 2) (2 . 3) (3 . 4) (4 . 5) (5 . 6)) (λ (v) (< v 3)))
+;; filtering by value with strings
+(test (hash 'apple "fruit" 'banana "fruit")
+      hash-filter-values
+      (hash 'apple "fruit" 'carrot "vegetable" 'banana "fruit")
+      (λ (v) (string=? v "vegetable")))
 
 ;; filtering by key with number lists
-(test #hash([(list 1 2) . 'number-list])
+(test (hash (list 1 2) 'number-list)
       hash-filter-keys
-      #hash([(list 1 2) . 'number-list] [(list "a" "b") . 'letter-list])
+      (hash (list 1 2) 'number-list (list "a" "b") 'letter-list)
       (λ (k) (list? k) (number? (car k))))
 
 ;; filtering by value with membership in list
-(test #hash(['summer . "hot"] ['winter . "cold"])
+(test (hash 'summer "hot" 'winter "cold")
       hash-filter-values
-      #hash(['spring . "warm"] ['summer . "hot"] ['autumn . "cool"] ['winter . "cold"])
+      (hash 'spring "warm" 'summer "hot" 'autumn "cool" 'winter "cold")
       (λ (v) (member v '("hot" "cold"))))
 
 ;; filtering by key with booleans
-(test #hash([#t . 'truth] [#f . 'falsehood])
+(test (hash #t 'truth #f 'falsehood)
       hash-filter-keys
-      #hash([#t . 'truth] [#f . 'falsehood] ['unknown . 'mystery])
+      (hash #t 'truth #f 'falsehood 'unknown 'mystery)
       (λ (k) (boolean? k)))
-
-;; filtering by value with non-empty lists containing symbols
-(test #hash(['nested-list . (list 'a 'b 'c)])
-      hash-filter-values
-      #hash(['flat-list . (list 1 2 3)] ['nested-list . (list 'a 'b 'c)] ['empty-list . '()])
-      (λ (v) (and (list? v) (not (null? v)) (symbol? (car v)))))
 
 ;; test alternate equal implementations and for mutability
 ;; eq
-(test #hash([#t . "true"])
+(test (hasheq #t "true")
       hash-filter-keys
-      #hasheq([#f . "false"] [#t . "true"])
+      (hasheq #f "false" #t "true")
       (λ (k) (eq? k #t)))
 
 ;;eqv
-(test #hash([2 . "two"])
+(test (hasheqv 2 "two")
       hash-filter-values
-      #hasheqv([1 . "one"] [2 . "two"])
+      (hasheqv 1 "one" 2 "two")
       (λ (v) (eqv? v "two")))
 
 ;; immutable
-(test #hash([(list 1 2) . 'pair])
+(test (hash (list 1 2) 'pair)
       hash-filter-keys
-      #hash([(list 1 2) . pair] [#(3 4) . vector])
+      (hash (list 1 2) 'pair #(3 4) 'vector)
       list?)
 
 ;; mutable
-(test #hash(['b . 2])
+(test (make-hash (list (cons 'b 2)))
       hash-filter-values
-      '#hash(['a . 1] ['b . 2])
+      (make-hash (list (cons 'a 1) (cons 'b 2)))
       (λ (v) (> v 1)))
 
 (let ()
@@ -248,46 +248,46 @@
          -in-immut-hash-pairs -in-mut-hash-pairs -in-weak-hash-pairs -in-ephemeron-hash-pairs
          -in-immut-hash-keys -in-mut-hash-keys -in-weak-hash-keys -in-ephemeron-hash-keys
          -in-immut-hash-values -in-mut-hash-values -in-weak-hash-values -in-ephemeron-hash-values)
-      (with-syntax 
-       ([name 
-         (datum->syntax #'tag 
-           (string->symbol 
+      (with-syntax
+       ([name
+         (datum->syntax #'tag
+           (string->symbol
              (format "test-hash-iters-~a" (syntax->datum #'tag))))])
        #'(define (name lst1 lst2)
           (define ht/immut (make-immutable-hash (map cons lst1 lst2)))
           (define ht/mut (make-hash (map cons lst1 lst2)))
           (define ht/weak (make-weak-hash (map cons lst1 lst2)))
           (define ht/ephemeron (make-ephemeron-hash (map cons lst1 lst2)))
-            
+
           (define fake-ht/immut
-            (chaperone-hash 
+            (chaperone-hash
                 ht/immut
               (lambda (h k) (values k (lambda (h k v) v))) ; ref-proc
               (lambda (h k v) values k v) ; set-proc
               (lambda (h k) k) ; remove-proc
               (lambda (h k) k))) ; key-proc
           (define fake-ht/mut
-            (impersonate-hash 
+            (impersonate-hash
                 ht/mut
               (lambda (h k) (values k (lambda (h k v) v))) ; ref-proc
               (lambda (h k v) values k v) ; set-proc
               (lambda (h k) k) ; remove-proc
               (lambda (h k) k))) ; key-proc
           (define fake-ht/weak
-            (impersonate-hash 
+            (impersonate-hash
                 ht/weak
               (lambda (h k) (values k (lambda (h k v) v))) ; ref-proc
               (lambda (h k v) values k v) ; set-proc
               (lambda (h k) k) ; remove-proc
               (lambda (h k) k)))
           (define fake-ht/ephemeron
-            (impersonate-hash 
+            (impersonate-hash
                 ht/ephemeron
               (lambda (h k) (values k (lambda (h k v) v))) ; ref-proc
               (lambda (h k v) values k v) ; set-proc
               (lambda (h k) k) ; remove-proc
               (lambda (h k) k))) ; key-proc
-            
+
           (define ht/immut/seq (-in-immut-hash ht/immut))
           (define ht/mut/seq (-in-mut-hash ht/mut))
           (define ht/weak/seq (-in-weak-hash ht/weak))
@@ -304,7 +304,7 @@
           (define ht/mut-vals/seq (-in-mut-hash-values ht/mut))
           (define ht/weak-vals/seq (-in-weak-hash-values ht/weak))
           (define ht/ephemeron-vals/seq (-in-ephemeron-hash-values ht/ephemeron))
-    
+
           (test #t =
            (for/sum ([(k v) (-in-immut-hash ht/immut)]) (+ k v))
            (for/sum ([(k v) (-in-mut-hash ht/mut)]) (+ k v))
@@ -326,13 +326,13 @@
              (+ (car k+v) (cdr k+v)))
            (for/sum ([k+v (-in-ephemeron-hash-pairs ht/ephemeron)])
              (+ (car k+v) (cdr k+v)))
-           (for/sum ([k+v (-in-immut-hash-pairs fake-ht/immut)]) 
+           (for/sum ([k+v (-in-immut-hash-pairs fake-ht/immut)])
              (+ (car k+v) (cdr k+v)))
-           (for/sum ([k+v (-in-mut-hash-pairs fake-ht/mut)]) 
+           (for/sum ([k+v (-in-mut-hash-pairs fake-ht/mut)])
              (+ (car k+v) (cdr k+v)))
-           (for/sum ([k+v (-in-weak-hash-pairs fake-ht/weak)]) 
+           (for/sum ([k+v (-in-weak-hash-pairs fake-ht/weak)])
              (+ (car k+v) (cdr k+v)))
-           (for/sum ([k+v (-in-ephemeron-hash-pairs fake-ht/ephemeron)]) 
+           (for/sum ([k+v (-in-ephemeron-hash-pairs fake-ht/ephemeron)])
              (+ (car k+v) (cdr k+v)))
            (for/sum ([k+v ht/immut-pair/seq]) (+ (car k+v) (cdr k+v)))
            (for/sum ([k+v ht/mut-pair/seq]) (+ (car k+v) (cdr k+v)))
@@ -362,7 +362,7 @@
               (for/sum ([v ht/weak-vals/seq]) v))
            (+ (for/sum ([k ht/ephemeron-keys/seq]) k)
               (for/sum ([v ht/ephemeron-vals/seq]) v)))
-          
+
           (test #t =
            (for/sum ([(k v) (-in-immut-hash ht/immut)]) k)
            (for/sum ([(k v) (-in-mut-hash ht/mut)]) k)
@@ -400,7 +400,7 @@
            (for/sum ([k ht/mut-keys/seq]) k)
            (for/sum ([k ht/weak-keys/seq]) k)
            (for/sum ([k ht/ephemeron-keys/seq]) k))
-    
+
           (test #t =
            (for/sum ([(k v) (-in-immut-hash ht/immut)]) v)
            (for/sum ([(k v) (-in-mut-hash ht/mut)]) v)
@@ -445,7 +445,7 @@
     in-immutable-hash-pairs in-mutable-hash-pairs in-weak-hash-pairs in-ephemeron-hash-pairs
     in-immutable-hash-keys in-mutable-hash-keys in-weak-hash-keys in-ephemeron-hash-keys
     in-immutable-hash-values in-mutable-hash-values in-weak-hash-values in-ephemeron-hash-values)
-  
+
   (define lst1 (build-list 10 values))
   (define lst2 (build-list 10 add1))
   (test-hash-iters-generic lst1 lst2)
@@ -486,18 +486,18 @@
 ;; They are used for safe iteration in in-weak-hash- sequence forms
   (let ()
     (define ht #f)
-    
+
     (define lst (build-list 10 add1))
     (set! ht (make-weak-hash `((,lst . val))))
-    
+
     (define i (hash-iterate-first ht))
-    
+
     ;; everything ok
     (test #t number? i)
     (test #t list? (hash-iterate-key ht i))
     (test #t equal? (hash-iterate-value ht i) 'val)
     (test #t equal? (cdr (hash-iterate-pair ht i)) 'val)
-    (test #t equal? 
+    (test #t equal?
           (call-with-values (lambda () (hash-iterate-key+value ht i)) cons)
           '((1 2 3 4 5 6 7 8 9 10) . val))
     (test #f hash-iterate-next ht i)
@@ -520,19 +520,19 @@
 ;; Throw exception instead since they're used for safe iteration
   (let ()
     (define ht (make-hash '((a . b))))
-    
+
     (define i (hash-iterate-first ht))
-    
+
     ;; everything ok
     (test #t number? i)
     (test #t equal? (hash-iterate-key ht i) 'a)
     (test #t equal? (hash-iterate-value ht i) 'b)
     (test #t equal? (hash-iterate-pair ht i) '(a . b))
-    (test #t equal? 
+    (test #t equal?
           (call-with-values (lambda () (hash-iterate-key+value ht i)) cons)
           '(a . b))
     (test #t boolean? (hash-iterate-next ht i))
-    
+
     ;; remove element, everything should error
     (hash-remove! ht 'a)
     (test #t boolean? (hash-iterate-first ht))
@@ -541,19 +541,19 @@
     (err/rt-test (hash-iterate-pair ht i) exn:fail:contract? err-msg)
     (err/rt-test (hash-iterate-key+value ht i) exn:fail:contract? err-msg)
     (test #f hash-iterate-next ht i))
-    
+
 
   (let ()
     (define ht (make-weak-hash '((a . b))))
-    
+
     (define i (hash-iterate-first ht))
-    
+
     ;; everything ok
     (test #t number? i)
     (test #t equal? (hash-iterate-key ht i) 'a)
     (test #t equal? (hash-iterate-value ht i) 'b)
     (test #t equal? (hash-iterate-pair ht i) '(a . b))
-    (test #t equal? (call-with-values 
+    (test #t equal? (call-with-values
                         (lambda () (hash-iterate-key+value ht i)) cons)
                     '(a . b))
     (test #t boolean? (hash-iterate-next ht i))
@@ -642,7 +642,7 @@
     (test 'ok hash-ref eht key2)
 
     (collect-garbage)
-    
+
     (test 1 values (hash-count wht))
     (test 1 values (hash-count eht))
 
@@ -762,7 +762,7 @@
 (let ([ht (make-hash)])
   (for ([i 113])
     (hash-set! ht i 1))
-  
+
   (define new-ht (hash-copy ht))
 
   (test (hash-count ht) hash-count new-ht)
@@ -877,7 +877,7 @@
 ;; ----------------------------------------
 ;; check `hash-keys` on a table with weakly held keys:
 
-(test #t 'hash-keys 
+(test #t 'hash-keys
       (for/and ([i 10000])
         (define ht (make-weak-hasheq))
         (for ([i (in-range 1000)])
