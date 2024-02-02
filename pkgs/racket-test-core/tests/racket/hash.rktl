@@ -178,7 +178,7 @@
 ;; mutable
 (test #hash(['b . 2])
       hash-filter-values
-      '#hash((['a . 1] ['b . 2]))
+      '#hash(['a . 1] ['b . 2])
       (λ (v) (> v 1)))
 
 (let ()
