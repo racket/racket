@@ -133,7 +133,7 @@
       (λ (k) (string=? k "one")))
 
 ;; filtering by value with strings
-(test (hash 'apple "fruit" 'banana "fruit")
+(test (hash 'carrot "vegetable")
       hash-filter-values
       (hash 'apple "fruit" 'carrot "vegetable" 'banana "fruit")
       (λ (v) (string=? v "vegetable")))
