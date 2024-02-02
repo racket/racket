@@ -3,7 +3,7 @@
 
 (Section 'hash)
 
-(require racket/hash)
+(require racket/hash (only-in racket list? number? null? symbol? eq? eqv?))
 
 ;; ----------------------------------------
 ;; Hash-key sorting:
