@@ -215,8 +215,11 @@ See also @racket[make-custom-hash].
 @examples[
 #:eval the-eval
 (make-hash)
+(make-hash '([0 . 1] [1 . 2] [2 . 3]))
+(make-hash '([0 . 1] [1 . 2] [0 . 3]))
+(make-hash (list (cons 0 1) (cons 1 2) (cons 2 3)))
 (make-hash '((0 1) (1 2) (2 3)))
-(make-hash '((0 1) (0 2)))
+(make-hash (list (cons "hello" "world") (cons 42 "meaning of life") (cons (list 1 2 3) (list #\a #\b #\c)) (cons #t #f) (cons 'apple 'orange) (cons (list 'a 1 "apple") (vector #t 'b 2 "banana")) (cons + -)))
 ]
 
 @history[#:changed "8.5.0.3" @elem{Added @racket[make-hashalw].}]}
@@ -640,8 +643,8 @@ with the following order (earlier bullets before later):
 
 @examples[
 #:eval the-eval
-(hash-map (make-hash '((0 1) (1 2) (2 3))) (λ (k v) k))
-(hash-map (make-hash '((0 1) (1 2) (2 3))) (λ (k v) v))
+(hash-map (make-hash '([0 . 1] [1 . 2] [2 . 3])) (λ (k v) k))
+(hash-map (make-hash '([0 . 1] [1 . 2] [2 . 3])) (λ (k v) v))
 ]
 
 @defproc[(hash-map/copy
