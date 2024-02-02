@@ -132,8 +132,54 @@
 (test #hash([1 . 2])
       hash-filter-values #hash((1 . 2) (2 . 3) (3 . 4) (4 . 5) (5 . 6)) (λ (v) (< v 3)))
 
-(test #hash()
-      hash-filter-values #hash() (λ (v) (< v 5)))
+;; filtering by key with number lists
+(test #hash([(list 1 2) . 'number-list])
+      hash-filter-keys
+      #hash([(list 1 2) . 'number-list] [(list "a" "b") . 'letter-list])
+      (λ (k) (list? k) (number? (car k))))
+
+;; filtering by value with membership in list
+(test #hash(['summer . "hot"] ['winter . "cold"])
+      hash-filter-values
+      #hash(['spring . "warm"] ['summer . "hot"] ['autumn . "cool"] ['winter . "cold"])
+      (λ (v) (member v '("hot" "cold"))))
+
+;; filtering by key with booleans
+(test #hash([#t . 'truth] [#f . 'falsehood])
+      hash-filter-keys
+      #hash([#t . 'truth] [#f . 'falsehood] ['unknown . 'mystery])
+      (λ (k) (boolean? k)))
+
+;; filtering by value with non-empty lists containing symbols
+(test #hash(['nested-list . (list 'a 'b 'c)])
+      hash-filter-values
+      #hash(['flat-list . (list 1 2 3)] ['nested-list . (list 'a 'b 'c)] ['empty-list . '()])
+      (λ (v) (and (list? v) (not (null? v)) (symbol? (car v)))))
+
+;; test alternate equal implementations and for mutability
+;; eq
+(test #hash([#t . "true"])
+      hash-filter-keys
+      #hasheq([#f . "false"] [#t . "true"])
+      (λ (k) (eq? k #t)))
+
+;;eqv
+(test #hash([2 . "two"])
+      hash-filter-values
+      #hasheqv([1 . "one"] [2 . "two"])
+      (λ (v) (eqv? v "two")))
+
+;; immutable
+(test #hash([(list 1 2) . 'pair])
+      hash-filter-keys
+      #hash([(list 1 2) . pair] [#(3 4) . vector])
+      list?)
+
+;; mutable
+(test #hash(['b . 2])
+      hash-filter-values
+      '#hash((['a . 1] ['b . 2]))
+      (λ (v) (> v 1)))
 
 (let ()
   (struct a (n m)
