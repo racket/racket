@@ -284,3 +284,61 @@ provides support for syntax highlighting and building for Sublime Text.
 
 The @hyperlink["https://marketplace.visualstudio.com/items?itemName=evzen-wybitul.magic-racket"]{Magic Racket}
 extension provides Racket support including REPL integration and syntax highlighting in Visual Studio Code.
+
+@section{racket-langserver}
+
+The @tt{racket-langserver} is a @hyperlink["http://langserver.org/"]{Language Server Protocol}
+implementation for Racket. This project seeks to use @hyperlink["https://github.com/racket/drracket"]{DrRacket's public APIs} 
+to provide functionality that mimics DrRacket's code tools as closely as possible.
+
+@subsection{Installation and usage}
+
+A Racket runtime is a prerequisite, so before using @tt{racket-langserver}, ensure that a Racket runtime 
+is installed. You can install an from the @hyperlink["https://download.racket-lang.org"]{official download page}
+or install one from your package manager.
+
+@subsection{Atom}
+
+You can use the @hyperlink["https://github.com/cfinegan/atom-ide-racket"]{atom-ide-racket} package. The language 
+server will be automatically installed when @tt{atom-ide-racket} installs.
+
+The @tt{racket-langserver} is under active development. Please see the 
+@hyperlink["https://github.com/jeapostrophe/racket-langserver"]{@tt{racket-langserver}source code repository} 
+for more informatoon.
+
+
+@subsection{VSCode}
+
+Use the @hyperlink["https://marketplace.visualstudio.com/items?itemName=evzen-wybitul.magic-racket"]{Magic Racket} extension.
+
+@subsection{Other editors and IDEs}
+
+First, install an LSP runtime for your editor.
+
+Next, install the package via @tt{raco}:
+
+@commandline{raco pkg install racket-langserver}
+
+Once it is installed, you can configure your editor to use a custom LSP client for Racket files (@tt{.rkt}), 
+and set the command for the custom client to
+
+@commandline{racket -l racket-langserver}
+
+You may need to restart your LSP runtime or your editor for `racket-langserver` to start.
+
+@subsection{Capabilities}
+
+Currently Supported capabilities include
+
+@itemize[
+ @item{@bold{Hover} (textDocument/hover)}
+ @item{@bold{Jump to Definition} (textDocument/definition)}
+ @item{@bold{Find References} (textDocument/references) Note: Currently only considers references within the current file.}
+ @item{@bold{Document Highlight} (textDocument/documentHighlight)}
+ @item{@bold{Diagnostics} (textDocument/publishDiagnostics)}
+ @item{@bold{Code Formatting} (textDocument/formatting & textDocument/rangeFormatting & textDocument/onTypeFormatting)}
+ @item{@bold{Code Action} (textDocument/codeAction)}
+ @item{@bold{Signature Help} (textDocument/signatureHelp)}
+ @item{@bold{Rename} (textDocument/rename & textDocument/prepareRename) Note: Currently only allows renaming symbols defined within the current file.}
+ @item{@bold{Code completion} (textDocument/completion)}
+]
