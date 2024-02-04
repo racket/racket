@@ -754,6 +754,8 @@
            [(or (not (equal? (lookup 'BOOTFILE_RACKET) ""))
                 (not (equal? (lookup 'RACKET) "")))
             ;; use `BOOTFILE_RACKET` or `RACKET` to build boot files
+            (when xpatch?
+              (error "cross build needs --enable-scheme=SCHEME or --enable-racket=auto"))
             `([:target bootfiles ()
                        ,(lambda (token)
                           (define bootfile-racket (let ([r (lookup 'BOOTFILE_RACKET)])

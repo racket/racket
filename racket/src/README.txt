@@ -444,10 +444,11 @@ Cross-compilation requires at least two flags to `configure`:
    The `configure` script uses OS to find suitable compilation tools,
    such as `OS-gcc` and `OS-strip`.
 
- * `--enable-racket=RACKET`, where RACKET is a path to a Racket
-   executable that runs on the build platform; the executable must be
-   the same version of Racket and the same virtual machine (i.e., CS
-   or BC) as being built for the target platform.
+ * `--enable-racket=RACKET`, where RACKET is either "auto" or a path
+   to a Racket executable that runs on the build platform; in the
+   latter case, the executable must be the same version of Racket and
+   the same virtual machine (i.e., CS or BC) as being built for the
+   target platform.
 
    This flag is needed because building and installing Racket requires
    running (an existing build of) Racket.
@@ -457,13 +458,12 @@ Cross-compilation requires at least two flags to `configure`:
    run `configure` again (with no arguments) in a "local" subdirectory
    to create a build for the current platform.
 
-For Racket CS, an additional flag is required:
+For Racket CS, an additional flag is required when not using
+`--enable-racket=auto`:
 
- * `--enable-scheme=SCHEME`, where SCHEME is a Chez Scheme (v9.5.3 and
-   up) executable that runs on the build platform; it does not need to
-   match the Chez Scheme version as used in the Racket being built; a
-   "reboot" bootstrapping path is able to reconstruct boot files across
-   versions.
+ * `--enable-scheme=SCHEME`, where SCHEME is a Chez Scheme executable
+   that runs on the build platform; for cross-compilation, it must
+   match the Chez Scheme version as used in the Racket being built.
  
    Supplying `--enable-scheme=DIR` is also supported, where DIR is a
    path that has a "ChezScheme" directory where Chez Scheme is built
@@ -475,12 +475,12 @@ allowed for non-cross builds, too:
  * For Racket CS, supplying either selects a Racket or Chez Scheme
    implementation used to create boot files to the build platform.
    Supplying Chez Scheme is a much more direct path. These executables
-   do not need to match the versions being built, as there are
-   bootstrapping paths that can handle differences where needed. If
-   you supply both Racket and Chez Scheme, then Racket is used
-   (despite being less direct).
+   do not need to match the versions being built in non-cross mode, as
+   there are bootstrapping paths that can handle differences where
+   needed. If you supply both Racket and Chez Scheme, then Racket is
+   used (despite being less direct).
 
- * For Racket BC, `--enable-racket=RACKET` selects a Racket for
+ * For Racket BC, `--enable-racket=RACKET` selects a Racket to
    prepare C sources to cooperate with garbage collection. Its version
    needs to be close to the one being built, and potentially exactly
    the same version.
