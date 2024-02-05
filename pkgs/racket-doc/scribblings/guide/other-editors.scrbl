@@ -295,7 +295,7 @@ to provide functionality that mimics DrRacket's code tools as closely as possibl
 @subsection{Installation and usage}
 
 A Racket runtime is a prerequisite, so before using @tt{racket-langserver}, ensure that a Racket runtime 
-is installed. You can install an from the @hyperlink["https://download.racket-lang.org"]{official download page}
+is installed. You can install from the @hyperlink["https://download.racket-lang.org"]{official download page}
 or install one from your package manager.
 
 @subsection{VSCode}
