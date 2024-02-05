@@ -302,11 +302,6 @@ or install one from your package manager.
 You can use the @hyperlink["https://github.com/cfinegan/atom-ide-racket"]{atom-ide-racket} package. The language 
 server will be automatically installed when @tt{atom-ide-racket} installs.
 
-The @tt{racket-langserver} is under active development. Please see the 
-@hyperlink["https://github.com/jeapostrophe/racket-langserver"]{@tt{racket-langserver}source code repository} 
-for more informatoon.
-
-
 @subsection{VSCode}
 
 Use the @hyperlink["https://marketplace.visualstudio.com/items?itemName=evzen-wybitul.magic-racket"]{Magic Racket} extension.
