@@ -45,7 +45,6 @@ jobs:
         --enable-foreign
         --enable-macprefix
         --enable-places 
-        --enable-futures 
         --enable-float
         $CIFY_OPTION
         --enable-pthread
@@ -110,7 +109,6 @@ jobs:
         --enable-foreign
         --enable-macprefix
         --enable-places 
-        --enable-futures 
         --enable-float 
         --disable-docs 
         $CIFY_OPTION 
