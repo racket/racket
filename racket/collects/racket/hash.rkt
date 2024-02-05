@@ -1,5 +1,5 @@
 #lang racket/base
-(require racket/contract/base)
+(require racket/contract/base racket/match)
 
 (define ((hash-duplicate-error name) key value1 value2)
   (error name "duplicate values for key ~e: ~e and ~e" key value1 value2))
@@ -63,11 +63,37 @@
                     (combine/key k v (hash-ref hm k))))
         res)))
 
-(define (hash-filter-values ht pred)
-  (for/hash ([(k v) (in-hash ht)] #:when (pred v)) (values k v)))
+(define (hash-filter ht pred)
+  (define constructor
+    (match (map (λ (f) (f ht)) (list immutable? hash-ephemeron? hash-weak? hash-eq? hash-eqv? hash-equal-always?))
+      ;; Ephemerons
+      [(list _ #t _ #t _ _) make-ephemeron-hasheq]
+      [(list _ #t _ _ #t _) make-ephemeron-hasheqv]
+      [(list _ #t _ _ _ #t) make-ephemeron-hashalw]
+      [(list _ #t _ _ _ _) make-ephemeron-hash]
+      ;; Weak Hashes
+      [(list _ _ #t #t _ _) make-weak-hasheq]
+      [(list _ _ #t _ #t _) make-weak-hasheqv]
+      [(list _ _ #t _ _ #t) make-weak-hashalw]
+      [(list _ _ #t _ _ _) make-weak-hash]
+      ;; Immutable Hashes
+      [(list #t _ _ #t _ _) make-immutable-hasheq]
+      [(list #t _ _ _ #t _) make-immutable-hasheqv]
+      [(list #t _ _ _ _ #t) make-immutable-hashalw]
+      [(list #t _ _ _ _ _) make-immutable-hash]
+      ;; Mutable Hashes
+      [(list _ _ _ #t _ _) make-hasheq]
+      [(list _ _ _ _ #t _) make-hasheqv]
+      [(list _ _ _ _ _ #t) make-hashalw]
+      ;; mutable hash with equal? comparator
+      [_ make-hash]))
+  (constructor (for/list ([(k v) (in-hash ht)] #:when (pred k v)) (cons k v))))
 
 (define (hash-filter-keys ht pred)
-  (for/hash ([(k v) (in-hash ht)] #:when (pred k)) (values k v)))
+  (hash-filter ht (lambda (k _) (pred k))))
+
+(define (hash-filter-values ht pred)
+  (hash-filter ht (lambda (_ v) (pred v))))
 
 (provide/contract
  [hash-union (->* [(and/c hash? immutable?)]
@@ -91,5 +117,6 @@
                         (-> any/c any/c any/c any/c)]
                        #:rest (listof hash?)
                        (and/c hash? immutable?))]
- [hash-filter-values (-> (hash? procedure?) hash?)]
- [hash-filter-keys (-> (hash? procedure?) hash?)])
+ [hash-filter (-> hash? procedure? hash?)]
+ [hash-filter-values (-> hash? procedure? hash?)]
+ [hash-filter-keys (-> hash? procedure? hash?)])

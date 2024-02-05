@@ -123,8 +123,110 @@
          #hash([one . 1] [two . 2] [three . 3] [four . 4]))
         h))
 
-(test #hash([1 . 0] [2 . 0])
-      hash-filter-keys #hash([1 . 0] [2 . 0] [3 . 0] [4 . 0] [5 . 0]) (λ (k) (< k 3)))
+;; ----------------------------------------
+;; hash-filter, hash-filter-key, and hash-filter-value:
+
+;; Filtering where key is a string and value is 1
+(test (hash "one" 1)
+      hash-filter
+      (hash "one" 1 "two" 2 "three" 3)
+      (λ (k v) (and (string? k) (= v 1))))
+
+;; Filtering where value is "vegetable" and key is a symbol
+(test (hash 'carrot "vegetable")
+      hash-filter
+      (hash 'apple "fruit" 'carrot "vegetable" 'banana "fruit")
+      (λ (k v) (and (symbol? k) (string=? v "vegetable"))))
+
+;; Filtering by key-value pairs where key is a list of numbers and value is a symbol
+(test (hash (list 1 2) 'number-list)
+      hash-filter
+      (hash (list 1 2) 'number-list (list "a" "b") 'letter-list (list 3 4) 'another-number-list)
+      (λ (k v) (and (list? k) (number? (car k)) (symbol? v))))
+
+;; Filtering by key-value pairs where the value is in the list ["hot", "cold"] and key is a symbol
+(test (hash 'summer "hot" 'winter "cold")
+      hash-filter
+      (hash 'spring "warm" 'summer "hot" 'autumn "cool" 'winter "cold")
+      (λ (k v) (and (symbol? k) (member v '("hot" "cold")))))
+
+;; Filtering by key-value pairs where the key is boolean
+(test (hash #t 'truth #f 'falsehood)
+      hash-filter
+      (hash #t 'truth #f 'falsehood 'unknown 'mystery)
+      (λ (k _) (boolean? k)))
+
+;; Filtering by key-value pairs with eq? comparator
+(test (hasheq #t "true")
+      hash-filter
+      (hasheq #f "false" #t "true")
+      (λ (k v) (and (eq? k #t) (string=? v "true"))))
+
+;; Filtering by key-value pairs with eqv? comparator
+(test (hasheqv 2 "two")
+      hash-filter
+      (hasheqv 1 "one" 2 "two")
+      (λ (k v) (and (eqv? k 2) (string=? v "two"))))
+
+;; Mutable hash with equal-always?: filtering by key-value pairs
+(test (make-hashalw (list (cons 'pear "fruit")))
+      hash-filter
+      (make-hashalw (list (cons 'apple "not-fruit") (cons 'pear "fruit")))
+      (λ (k v) (and (equal-always? k 'pear) (string=? v "fruit"))))
+
+;; Immutable hash with equal-always?: filtering by key-value pairs
+(test (make-immutable-hashalw (list (cons 'cherry "fruit")))
+      hash-filter
+      (make-immutable-hashalw (list (cons 'apple "not-fruit") (cons 'cherry "fruit")))
+      (λ (k v) (and (equal-always? k 'cherry) (string=? v "fruit"))))
+
+;; Filtering by key-value pairs in an immutable hash table
+(test (hash (list 1 2) 'pair)
+      hash-filter
+      (hash (list 1 2) 'pair #(3 4) 'vector)
+      (λ (k v) (and (list? k) (symbol? v))))
+
+;; Filtering by key-value pairs in a mutable hash table
+(test (make-hash (list (cons 'b 2)))
+      hash-filter
+      (make-hash (list (cons 'a 1) (cons 'b 2)))
+      (λ (_ v) (> v 1)))
+
+;; Ephemerons with equal comparator
+(test (make-ephemeron-hash (list (cons 'grape "fruit")))
+      hash-filter
+      (make-ephemeron-hash (list (cons 'grape "fruit") (cons 'lettuce "vegetable")))
+      (λ (k v) (and (equal? k 'grape) (string=? v "fruit"))))
+
+;; Ephemerons with eqv comparator
+(test (make-ephemeron-hasheqv (list (cons 3.14 "pi")))
+      hash-filter
+      (make-ephemeron-hasheqv (list (cons 3.14 "pi") (cons 2.71 "e")))
+      (λ (k v) (and (eqv? k 3.14) (string=? v "pi"))))
+
+;; Filtering by key-value pairs in an ephemeron hash table with equal-always?
+(test (make-ephemeron-hashalw (list (cons (list 'a) "list-a")))
+      hash-filter
+      (make-ephemeron-hashalw (list (cons (list 'a) "list-a") (cons (list 'b) "list-b")))
+      (λ (k v) (and (equal? k (list 'a)) (string=? v "list-a"))))
+
+;; Weak hashes with equal comparator
+(test (make-weak-hash (list (cons 'melon "fruit")))
+      hash-filter
+      (make-weak-hash (list (cons 'melon "fruit") (cons 'cucumber "vegetable")))
+      (λ (k v) (and (equal? k 'melon) (string=? v "fruit"))))
+
+;; Weak hashes with eqv comparator
+(test (make-weak-hasheqv (list (cons 1.618 "golden")))
+      hash-filter
+      (make-weak-hasheqv (list (cons 1.618 "golden") (cons 0.618 "silver")))
+      (λ (k v) (and (eqv? k 1.618) (string=? v "golden"))))
+
+;; Filtering by key-value pairs in a weak hash table with equal-always?
+(test (make-weak-hashalw (list (cons 'apple "fruit")))
+      hash-filter
+      (make-weak-hashalw (list (cons 'apple "fruit") (cons 'carrot "vegetable")))
+      (λ (k v) (and (equal-always? k 'apple) (string=? v "fruit"))))
 
 ;; filtering by key with strings
 (test (hash "one" 1)
@@ -180,6 +282,66 @@
       hash-filter-values
       (make-hash (list (cons 'a 1) (cons 'b 2)))
       (λ (v) (> v 1)))
+
+;; Ephemerons: filtering by key
+(test (make-ephemeron-hash (list (cons 'a "ephemeron-a")))
+      hash-filter-keys
+      (make-ephemeron-hash (list (cons 'a "ephemeron-a") (cons 'b "ephemeron-b")))
+      (λ (k) (equal? k 'a)))
+
+;; Ephemerons: filtering by value
+(test (make-ephemeron-hash (list (cons 'b "ephemeron-b")))
+      hash-filter-values
+      (make-ephemeron-hash (list (cons 'a "ephemeron-a") (cons 'b "ephemeron-b")))
+      (λ (v) (string=? v "ephemeron-b")))
+
+;; Weak hashes: filtering by key
+(test (make-weak-hash (list (cons 'apple "fruit")))
+      hash-filter-keys
+      (make-weak-hash (list (cons 'apple "fruit") (cons 'carrot "vegetable")))
+      (λ (k) (symbol? k)))
+
+;; Weak hashes: filtering by value
+(test (make-weak-hash (list (cons 'carrot "vegetable")))
+      hash-filter-values
+      (make-weak-hash (list (cons 'apple "fruit") (cons 'carrot "vegetable")))
+      (λ (v) (string=? v "vegetable")))
+
+;; Ephemerons with eqv?: filtering by key
+(test (make-ephemeron-hasheqv (list (cons 1.0 "one")))
+      hash-filter-keys
+      (make-ephemeron-hasheqv (list (cons 1.0 "one") (cons 2.0 "two")))
+      (λ (k) (eqv? k 1.0)))
+
+;; Weak hashes with eqv?: filtering by value
+(test (make-weak-hasheqv (list (cons 'number 2.0)))
+      hash-filter-values
+      (make-weak-hasheqv (list (cons 'number 2.0) (cons 'string "two")))
+      (λ (v) (eqv? v 2.0)))
+
+;; Ephemeron with equal-always?: filtering by key
+(test (make-ephemeron-hashalw (list (cons (list 'a) "list-a")))
+      hash-filter-keys
+      (make-ephemeron-hashalw (list (cons (list 'a) "list-a") (cons (list 'b) "list-b")))
+      (λ (k) (equal? k (list 'a))))
+
+;; Ephemeron with equal-always?: filtering by value
+(test (make-ephemeron-hashalw (list (cons 'unique (vector 1 2 3))))
+      hash-filter-values
+      (make-ephemeron-hashalw (list (cons 'unique (vector 1 2 3)) (cons 'common (vector 4 5 6))))
+      (λ (v) (equal? v (vector 1 2 3))))
+
+;; Weak hash with equal-always?: filtering by key
+(test (make-weak-hashalw (list (cons 'apple "fruit")))
+      hash-filter-keys
+      (make-weak-hashalw (list (cons 'apple "fruit") (cons 'carrot "vegetable")))
+      (λ (k) (equal-always? k 'apple)))
+
+;; Weak hash with equal-always?: filtering by value
+(test (make-weak-hashalw (list (cons 'carrot "vegetable")))
+      hash-filter-values
+      (make-weak-hashalw (list (cons 'apple "fruit") (cons 'carrot "vegetable")))
+      (λ (v) (equal-always? v "vegetable")))
 
 (let ()
   (struct a (n m)
