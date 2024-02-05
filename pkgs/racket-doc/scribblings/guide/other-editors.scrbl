@@ -287,7 +287,7 @@ extension provides Racket support including REPL integration and syntax highligh
 
 @section{racket-langserver}
 
-The @tt{racket-langserver} is a @hyperlink["http://langserver.org/"]{Language Server Protocol}
+The @tt{racket-langserver} is a @hyperlink["https://langserver.org/"]{Language Server Protocol}
 implementation for Racket. This project seeks to use 
 @seclink[#:indirect? #t #:doc '(lib "scribblings/drracket-tools/drracket-tools.scrbl") "top"]{DrRacket's public APIs} 
 to provide functionality that mimics DrRacket's code tools as closely as possible.
@@ -297,11 +297,6 @@ to provide functionality that mimics DrRacket's code tools as closely as possibl
 A Racket runtime is a prerequisite, so before using @tt{racket-langserver}, ensure that a Racket runtime 
 is installed. You can install an from the @hyperlink["https://download.racket-lang.org"]{official download page}
 or install one from your package manager.
-
-@subsection{Atom}
-
-You can use the @hyperlink["https://github.com/cfinegan/atom-ide-racket"]{atom-ide-racket} package. The language 
-server will be automatically installed when @tt{atom-ide-racket} installs.
 
 @subsection{VSCode}
 
