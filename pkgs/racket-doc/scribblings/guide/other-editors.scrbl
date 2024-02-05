@@ -288,7 +288,8 @@ extension provides Racket support including REPL integration and syntax highligh
 @section{racket-langserver}
 
 The @tt{racket-langserver} is a @hyperlink["http://langserver.org/"]{Language Server Protocol}
-implementation for Racket. This project seeks to use @hyperlink["https://github.com/racket/drracket"]{DrRacket's public APIs} 
+implementation for Racket. This project seeks to use 
+@seclink[#:indirect? #t #:doc '(lib "scribblings/drracket-tools/drracket-tools.scrbl") "top"]{DrRacket's public APIs} 
 to provide functionality that mimics DrRacket's code tools as closely as possible.
 
 @subsection{Installation and usage}
