@@ -325,20 +325,3 @@ and set the command for the custom client to
 @commandline{racket -l racket-langserver}
 
 You may need to restart your LSP runtime or your editor for `racket-langserver` to start.
-
-@subsection{Capabilities}
-
-Currently Supported capabilities include
-
-@itemize[
- @item{@bold{Hover} (textDocument/hover)}
- @item{@bold{Jump to Definition} (textDocument/definition)}
- @item{@bold{Find References} (textDocument/references) Note: Currently only considers references within the current file.}
- @item{@bold{Document Highlight} (textDocument/documentHighlight)}
- @item{@bold{Diagnostics} (textDocument/publishDiagnostics)}
- @item{@bold{Code Formatting} (textDocument/formatting & textDocument/rangeFormatting & textDocument/onTypeFormatting)}
- @item{@bold{Code Action} (textDocument/codeAction)}
- @item{@bold{Signature Help} (textDocument/signatureHelp)}
- @item{@bold{Rename} (textDocument/rename & textDocument/prepareRename) Note: Currently only allows renaming symbols defined within the current file.}
- @item{@bold{Code completion} (textDocument/completion)}
-]
