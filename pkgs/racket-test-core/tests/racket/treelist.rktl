@@ -164,23 +164,30 @@
   (test-bad (treelist-sort small-treelist 0))
   (test-bad (treelist-sort small-treelist add1))
   (test-bad (treelist-sort small-treelist cons #:key cons))
-  (test-bad (chaperone-treelist-sort 0 void void void void))
-  (test-bad (chaperone-treelist-sort small-treelist #f #f void void))
-  (test-bad (chaperone-treelist-sort small-treelist (lambda (x) x) void void void))
-  (test-bad (chaperone-treelist-sort small-treelist void (lambda (x) x) void void))
-  (test-bad (chaperone-treelist-sort small-treelist void void (lambda (x) x) void))
-  (test-bad (chaperone-treelist-sort small-treelist void void void (lambda (x) x)))
-  (test-bad (chaperone-treelist-sort small-treelist void void void void 0))
-  (test-bad (chaperone-treelist-sort small-treelist void void void void 0 1))
-
+  (test-bad (chaperone-treelist 0 #:state #f #:ref void #:set void #:insert void #:append void #:prepend void #:delete void #:take void #:drop void))
+  (test-bad (chaperone-treelist small-treelist #f #:state #f #:ref #f #:set void #:insert void #:append void #:prepend void #:delete void #:take void #:drop void))
+  (test-bad (chaperone-treelist small-treelist #:state #f #:ref (lambda (x) x) #:set void #:insert void #:append void #:prepend void #:delete void #:take void #:drop void))
+  (test-bad (chaperone-treelist small-treelist #:state #f #:ref void #:set (lambda (x) x) #:insert void #:append void #:prepend void #:delete void #:take void #:drop void))
+  (test-bad (chaperone-treelist small-treelist #:state #f #:ref void #:set void #:insert (lambda (x) x) #:append void #:prepend void #:delete void #:take void #:drop void))
+  (test-bad (chaperone-treelist small-treelist #:state #f #:ref void #:set void #:insert void #:append (lambda (x) x) #:prepend void #:delete void #:take void #:drop void))
+  (test-bad (chaperone-treelist small-treelist #:state #f #:ref void #:set void #:insert void #:append void #:prepend  (lambda (x) x) #:delete void #:take void #:drop void))
+  (test-bad (chaperone-treelist small-treelist #:state #f #:ref void #:set void #:insert void #:append void #:prepend void #:delete void #:take (lambda (x) x) #:drop void))
+  (test-bad (chaperone-treelist small-treelist #:state #f #:ref void #:set void #:insert void #:append void #:prepend void #:delete void #:take void #:drop (lambda (x) x)))
+  (test-bad (chaperone-treelist small-treelist #:state #f #:ref void #:set void #:insert void #:append void #:prepend void #:delete void #:take void #:drop void 0))
+  (test-bad (chaperone-treelist small-treelist #:state #f #:ref void #:set void #:insert void #:append void #:prepend void #:delete void #:take void #:drop void 0 1))
   (void))
 
 (treelist-tests small-treelist)
 (treelist-tests (chaperone-treelist small-treelist
-                                    (lambda (t i v) v)
-                                    (lambda (t i v) v)
-                                    (lambda (t i v) v)
-                                    (lambda (t o) o)))
+                                    #:state #false
+                                    #:ref (lambda (t i v state) v)
+                                    #:set (lambda (t i v state) (values v state))
+                                    #:insert (lambda (t i v state) (values v state))
+                                    #:append (lambda (t o state) (values o state))
+                                    #:prepend (lambda (o t state) (values o state))
+                                    #:delete (lambda (t i state) state)
+                                    #:take (lambda (t i state) state)
+                                    #:drop (lambda (t i state) state)))
 
 ;; ----------------------------------------
 
@@ -339,10 +346,10 @@
 (mutable-treelist-tests small-mutable-treelist values)
 (let ([chap (lambda (mtl)
               (chaperone-mutable-treelist mtl
-                                          (lambda (t i v) v)
-                                          (lambda (t i v) v)
-                                          (lambda (t i v) v)
-                                          (lambda (t o) o)))])
+                                          #:ref (lambda (t i v) v)
+                                          #:set (lambda (t i v) v)
+                                          #:insert (lambda (t i v) v)
+                                          #:append (lambda (t o) o)))])
   (mutable-treelist-tests (chap small-mutable-treelist) chap))
 
 ;; ----------------------------------------
@@ -385,25 +392,50 @@
     (define (get-mode tl)
       (cond
         [(treelist? tl)
-         (values chaperone-treelist chaperone-val)]
+         (values chaperone-treelist chaperone-val #f)]
         [(not impersonate?)
-         (values chaperone-mutable-treelist chaperone-val)]
+         (values chaperone-mutable-treelist chaperone-val #t)]
         [else
-         (values impersonate-mutable-treelist impersonate-val)]))
+         (values impersonate-mutable-treelist impersonate-val #t)]))
     (define (check-on-read tl)
-      (define-values (chaperone-treelist chaperone-val) (get-mode tl))
-      (chaperone-treelist tl
-                          (lambda (t i v) (chaperone-val v))
-                          (lambda (t i v) v)
-                          (lambda (t i v) v)
-                          (lambda (t o) o)))
+      (define-values (chaperone-treelist chaperone-val mutable?) (get-mode tl))
+      (if mutable?
+          (chaperone-treelist tl
+                              #:ref (lambda (t i v) (chaperone-val v))
+                              #:set (lambda (t i v) v)
+                              #:insert (lambda (t i v) v)
+                              #:append (lambda (t o) o))
+          (chaperone-treelist tl
+                              #:state #false
+                              #:state-key 'check-on-read
+                              #:ref (lambda (t i v s) (chaperone-val v))
+                              #:set (lambda (t i v s) (values v s))
+                              #:insert (lambda (t i v s) (values v s))
+                              #:append (lambda (t o s) (values o s))
+                              #:append2 (lambda (t o s s2) (values o (list s s2)))
+                              #:prepend (lambda (o t s) (values o s))
+                              #:delete (lambda (t i s) s)
+                              #:take (lambda (t i s) s)
+                              #:drop (lambda (t i s) s))))
     (define (check-on-write tl)
-      (define-values (chaperone-treelist chaperone-val) (get-mode tl))
-      (chaperone-treelist tl
-                          #f
-                          (lambda (t i v) (chaperone-val v))
-                          (lambda (t i v) (chaperone-val v))
-                          (lambda (t o) (check-on-read o))))
+      (define-values (chaperone-treelist chaperone-val mutable?) (get-mode tl))
+      (if mutable?
+          (chaperone-treelist tl
+                              #:ref (lambda (t i v) v)
+                              #:set (lambda (t i v) (chaperone-val v))
+                              #:insert (lambda (t i v) (chaperone-val v))
+                              #:append (lambda (t o) (check-on-read o)))
+          (chaperone-treelist tl
+                              #:state #false
+                              #:state-key 'check-on-write
+                              #:ref (lambda (t i v s) v)
+                              #:set (lambda (t i v s) (values (chaperone-val v) s))
+                              #:insert (lambda (t i v s) (values (chaperone-val v) s))
+                              #:append (lambda (t o s) (values (check-on-read o) s))
+                              #:prepend (lambda (o t s) (values (check-on-read o) s))
+                              #:delete (lambda (t i s) s)
+                              #:take (lambda (t i s) s)
+                              #:drop (lambda (t i s) s))))
     (printf "checking ~s~a\n" (mk-tl) (if impersonate? " impersonator" ""))
     (test (inc 2) 'ok (vector-ref (treelist-ref (check-on-read (mk-tl)) 0) 1))
     (err/rt-test (vector-ref (treelist-ref (check-on-read (mk-tl)) 0) 0) exn:no?)
@@ -417,6 +449,12 @@
     (err/rt-test (treelist-find (check-on-read (mk-tl)) (lambda (v) (vector-ref v 0))) exn:no?)
     (err/rt-test (vector-ref (treelist-last (treelist-append (mk-tl) (check-on-read (treelist (vector 1 1 1))))) 0) exn:no?)
     (test 2 'ok (vector-ref (treelist-last (treelist-append (mk-tl) (check-on-read (treelist (vector 1 2 1))))) 1))
+    (err/rt-test (vector-ref (treelist-ref (treelist-append (check-on-read (treelist (vector 1 2 1))) (mk-tl)) 2) 1) exn:no?)
+    (test 4 'len (treelist-length (treelist-append (check-on-read (mk-tl)) (check-on-read (treelist (vector 1 1 1))))))
+    (test 4 'len (treelist-length (treelist-append (check-on-read (mk-tl)) (check-on-read (treelist (mk-tl))))))
+    (unless (mutable-treelist? (mk-tl))
+      (test '(#f #f) 'keys (treelist-chaperone-state (treelist-append (check-on-read (mk-tl)) (check-on-read (treelist (vector 1 1 1))))
+                                                     'check-on-read)))
 
     (test 2 'ok (vector-ref (treelist-ref (check-on-write (mk-tl)) 0) 1))
     (test 3 'ok (vector-ref (treelist-ref (check-on-write (mk-tl)) 0) 2))
@@ -424,7 +462,16 @@
     (err/rt-test (vector-ref (treelist-first (treelist-cons (check-on-write (mk-tl)) (vector 1 1 1))) 0) exn:no?)
     (test (inc 0) 'ok (vector-ref (treelist-first (treelist-cons (check-on-write (mk-tl)) (vector 1 0 1))) 1))
     (err/rt-test (vector-ref (treelist-last (treelist-append (check-on-write (mk-tl)) (treelist (vector 1 1 1)))) 0) exn:no?)
-    (test 2 'ok (vector-ref (treelist-last (treelist-append (check-on-write (mk-tl)) (treelist (vector 1 2 1)))) 1)))
+    (test 2 'ok (vector-ref (treelist-last (treelist-append (check-on-write (mk-tl)) (treelist (vector 1 2 1)))) 1))
+    (test 4 'len (treelist-length (treelist-append (check-on-write (mk-tl)) (check-on-write (treelist (vector 1 1 1))))))
+
+    (unless (mutable-treelist? (mk-tl))
+      (test #f 'rdc (treelist-chaperone-state (check-on-read (mk-tl)) 'check-on-read))
+      (test #f 'wrc (treelist-chaperone-state (check-on-write (mk-tl)) 'check-on-write))
+      (test #f 'rd2 (treelist-chaperone-state (check-on-write (check-on-read (mk-tl))) 'check-on-read))
+      (test #f 'wr2 (treelist-chaperone-state (check-on-write (check-on-read (mk-tl))) 'check-on-write))
+      (err/rt-test (treelist-chaperone-state (check-on-write (mk-tl)) 'check-on-read))
+      (test 'nope 'rdx (treelist-chaperone-state (check-on-write (mk-tl)) 'check-on-read (lambda () 'nope)))))
 
    (check-chaperone (lambda () tl)
                     treelist-length
