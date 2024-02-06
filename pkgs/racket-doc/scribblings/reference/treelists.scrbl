@@ -182,14 +182,9 @@ Produces a treelist like @racket[tl], except that the element at
 @defproc[(treelist-append [tl treelist?] ...) treelist?]{
 
 Appends the elements of the given @racket[tl]s into a single
-@tech{treelist}. If @math{M} non-chaperoned treelists are given and
-the resulting treelist's length is @math{N}, then appending takes
-@math{O(M log N)} time.
-
-If any other than the first @racket[tl] is chaperoned via
-@racket[chaperone-treelist] with a procedure for its @racket[_ref-proc],
-the time to produce the result is @math{O(N)} for @math{N} elements
-added to the first @racket[tl].
+@tech{treelist}. If @math{M} treelists are given and the resulting
+treelist's length is @math{N}, then appending takes @math{O(M log N)}
+time.
 
 @examples[
 #:eval the-eval
@@ -378,44 +373,119 @@ Like @racket[for/list] and @racket[for*/list], but generating
 ]}
 
 @defproc[(chaperone-treelist [tl treelist?]
-                             [ref-proc (or/c #f (treelist? exact-nonnegative-integer? any/c . -> . any/c))]
-                             [set-proc (treelist? exact-nonnegative-integer? any/c . -> . any/c)]
-                             [insert-proc (treelist? exact-nonnegative-integer? any/c . -> . any/c)]
-                             [append-proc (treelist? treelist? . -> . treelist?)]
+                             [#:state state any/c]
+                             [#:state-key state-key any/c (list 'fresh)]
+                             [#:ref ref-proc (or/c #f (treelist? exact-nonnegative-integer? any/c any/c
+                                                       . -> . any/c))]
+                             [#:set set-proc (treelist? exact-nonnegative-integer? any/c any/c
+                                              . -> . (values any/c any/c))]
+                             [#:insert insert-proc (treelist? exact-nonnegative-integer? any/c any/c
+                                                    . -> . (values any/c any/c))]
+                             [#:append append-proc (treelist? treelist? any/c
+                                                    . -> . (values treelist? any/c))]
+                             [#:prepend prepend-proc (treelist? treelist? any/c
+                                                      . -> . (values treelist? any/c))]
+                             [#:append2 append2-proc (or/c #f (treelist? treelist? any/c
+                                                               . -> . (values treelist? any/c any/c))) #f]
+                             [#:delete delete-proc (treelist? exact-nonnegative-integer? any/c
+                                                    . -> . any/c)]
+                             [#:take take-proc (treelist? exact-nonnegative-integer? any/c
+                                                . -> . any/c)]
+                             [#:drop drop-proc (treelist? exact-nonnegative-integer? any/c
+                                                . -> . any/c)]
                              [prop impersonator-property?]
                              [prop-val any/c] ... ...)
           (and/c treelist? chaperone?)]{
 
 Analogous to @racket[chaperone-vector], returns a @tech{chaperone} of
 @racket[tl], which redirects the @racket[treelist-ref],
-@racket[treelist-set], @racket[treelist-insert], and
-@racket[treelist-append] operations, as well as operations derived
-from those.
+@racket[treelist-set], @racket[treelist-insert],
+@racket[treelist-append], @racket[treelist-delete],
+@racket[treelist-take], and @racket[treelist-drop]
+operations, as well as operations derived
+from those. The @racket[state] argument is an initial state, where
+a state value is passed to each procedure that redirects an operation,
+and except for @racket[ref-proc] (which corresponds to the one
+operation that does not update a treelist), a new state is returned to
+be associated with the updated treelist. When @racket[state-key]
+is provided, it can be used with @racket[treelist-chaperone-state]
+to extract the state from the original treelist or an updated
+treelist.
 
-If @racket[ref-proc] is a procedure, it must accept @racket[tl], an index
-passed to @racket[treelist-ref], and the value that
-@racket[treelist-ref] on @racket[tl] produces for the given index; it
+The @racket[ref-proc] procedure must accept @racket[tl], an index
+passed to @racket[treelist-ref], the value that
+@racket[treelist-ref] on @racket[tl] produces for the given index, and
+the current chaperone state; it
 must produce a chaperone replacement for the value, which is the
-result of @racket[treelist-ref] on the chaperone. A @racket[ref-proc] as
-@racket[#f] is equivalent to @racket[(lambda (tl _i _v) _v)], except
-that it does not disable efficient @racket[treelist-append].
+result of @racket[treelist-ref] on the chaperone.
 
 The @racket[set-proc] procedure must accept @racket[tl], an index
-passed to @racket[treelist-set], and the value provided to
-@racket[treelist-set]; it must produce a chaperone replacement for the
+passed to @racket[treelist-set], the value provided to
+@racket[treelist-set], and the current chaperone state;
+it must produce two values: a chaperone replacement for the
 value, which is used in the result of @racket[treelist-set] on the
-chaperone. The result of @racket[treelist-set] is chaperoned with the
-same procedures as @racket[tl].
+chaperone, and an updated state. The result of @racket[treelist-set] is chaperoned with the
+same procedures and properties as @racket[tl], but with the updated state.
 
 The @racket[insert-proc] procedure is like @racket[set-proc], but for
 inserting via @racket[treelist-insert].
 
-The @racket[append-proc] procedure must accept @racket[tl] and a
-treelist to append into @racket[tl]; it must produce a chaperone
-replacement for the second treelist, which is appended for result of
-@racket[treelist-append] on the chaperone. The result of
-@racket[treelist-append] is chaperoned with the same procedures as
-@racket[tl].}
+The @racket[append-proc] procedure must accept @racket[tl], a treelist
+to append onto @racket[tl], and the current chaperone state; it must
+produce a chaperone replacement for the second treelist, which is
+appended for the result of @racket[treelist-append] on the chaperone,
+and an updated state. The result of @racket[treelist-append] is
+chaperoned with the same procedures and properties as @racket[tl], but
+with the updated state.
+
+The @racket[prepend-proc] procedure must accept a treelist being
+append with @racket[tl], @racket[tl], and the current chaperone
+state; it must produce a chaperone replacement for the first
+treelist, which is prepended for the result of @racket[treelist-append]
+on the chaperone, and an updated state. The result of
+@racket[treelist-append] is chaperoned with the same procedures and
+properties as @racket[tl], but with the updated state.
+
+The @racket[append2-proc] procedure is optional and similar to
+@racket[append-proc], but when it is non-@racket[#f],
+@racket[append2-proc] is used instead of @racket[append-proc] when a
+second argument to @racket[treelist-append] is chaperoned with the
+same @racket[state-key]. In that case, the second argument to
+@racket[append2-proc] is the second argument with a @racket[state-key]
+chaperone wrapper removed, and with that chaperone's state as the last
+argument to @racket[append2-proc].
+
+When two chaperoned treelists are given to @racket[treelist-append]
+and @racket[append2-proc] is not used, then the @racket[append-proc]
+of the first treelist is used, and the result of @racket[append-proc] will
+stil be a chaperone whose @racket[prepend-proc] is used. If the result
+of @racket[prepend-proc] is a chaperone, then that chaperone's
+@racket[append-proc] is used, and so on. If @racket[prepend-proc] and
+@racket[append-proc] keep returning chaperones, it is possible that
+no progress will be made.
+
+The @racket[delete-proc], @racket[take-proc], and @racket[drop-proc]
+procedures must accept @racket[tl], the index or count for deleting,
+taking or dropping, and the current chaperone state; they
+must produce an updated state. The result of @racket[treelist-delete],
+@racket[treelist-take], or @racket[treelist-drop] is chaperoned
+with the same procedures and properties as @racket[tl], but with the
+updated state.
+
+}
+
+@defproc[(treelist-chaperone-state [tl treelist?]
+                                   [state-key any/c]
+                                   [fail-k (procedure-arity-includes/c 0) _key-error]) any/c]{
+
+Extracts state associated with a treelist chaperone where
+@racket[state-key] was provided along with the initial state to
+@racket[chaperone-treelist]. If @racket[tl] is not a chaperone with
+state keyed by @racket[state-key], then @racket[fail-k] is called,
+and the default @racket[fail-k] raises @racket[exn:fail:contract].
+
+}
+
 
 
 @section{Mutable Treelists}
@@ -425,18 +495,21 @@ replacement for the second treelist, which is appended for result of
 A @deftech{mutable treelist} is like an immutable @tech{treelist} in a
 box, where operations that change the mutable treelist replace the
 treelist in the box. As a special case, @racket[mutable-treelist-set!]
-modifies the treelist representation within the boxed value. This
+on an unimpersonated mutable treelist modifies the treelist representation within the boxed value. This
 model of a mutable treelist explains its behavior in the case of
 concurrent modification: concurrent @racket[mutable-treelist-set!]
-operations for different positions will not interfere, but races with
-other operations will sometimes negate one of the modifications.
+operations for different positions will not interefere, but races with
+other operations or on impersonated mutable treelists will sometimes negate one of the modifications.
 Concurrent modification is thus somewhat unpredictable but still safe,
 and it is not managed by a lock.
 
 A mutable treelist is not a treelist in the sense of
 @racket[treelist?], which recognizes only immutable treelists.
 Operations on a mutable treelist have the same time complexity as
-corresponding operations on an immutable treelist.
+corresponding operations on an immutable treelist unless otherwise
+noted.
+
+@history[#:added "8.12.0.7"]
 
 @defproc[(mutable-treelist? [v any/c]) boolean?]{
 
@@ -601,7 +674,10 @@ items
 Modifies @racket[tl]s by appending all of the elements of
 @racket[other-tl]. If @racket[other-tl] is a @tech{mutable treelist},
 it is first converted to an immutable @tech{treelist} with
-@racket[mutable-treelist-snapshot].
+@racket[mutable-treelist-snapshot], which takes takes @math{O(N)} time
+if @racket[other-tl] has @math{N} elements. If @racket[other-tl] is an
+immutable treelist but chaperoned, then appending takes @math{O(N)}
+time for @math{N} elements.
 
 @examples[
 #:eval the-eval
@@ -762,24 +838,35 @@ Like @racket[for/list] and @racket[for*/list], but generating
 ]}
 
 @defproc[(chaperone-mutable-treelist [tl mutable-treelist?]
-                                     [ref-proc (or/c #f (mutable-treelist? exact-nonnegative-integer? any/c . -> . any/c))]
-                                     [set-proc (mutable-treelist? exact-nonnegative-integer? any/c . -> . any/c)]
-                                     [insert-proc (mutable-treelist? exact-nonnegative-integer? any/c . -> . any/c)]
-                                     [append-proc (mutable-treelist? treelist? . -> . treelist?)]
+                                     [#:ref ref-proc (or/c #f (mutable-treelist? exact-nonnegative-integer? any/c
+                                                               . -> . any/c))]
+                                     [#:set set-proc (mutable-treelist? exact-nonnegative-integer? any/c
+                                                      . -> . any/c)]
+                                     [#:insert insert-proc (mutable-treelist? exact-nonnegative-integer? any/c
+                                                            . -> . any/c)]
+                                     [#:append append-proc (mutable-treelist? treelist?
+                                                            . -> . treelist?)]
                                      [prop impersonator-property?]
                                      [prop-val any/c] ... ...)
           (and/c mutable-treelist? chaperone?)]{
 
-Like @racket[chaperone-treelist], but for @tech{mutable treelists}.
+Similar to @racket[chaperone-treelist], but for @tech{mutable treelists}.
 For example, the given @racket[set-proc] is used for
 @racket[mutable-treelist-set!], and the resulting value is installed
-into the mutable treelist instead of the one provided to @racket[set-proc].}
+into the mutable treelist instead of the one provided to
+@racket[set-proc]. Mutable treelist chaperones do not have state
+separate from the treelist itself, and procedures like
+@racket[set-proc] do not consume or return a state.}
 
 @defproc[(impersonate-mutable-treelist [tl mutable-treelist?]
-                                       [ref-proc (mutable-treelist? exact-nonnegative-integer? any/c . -> . any/c)]
-                                       [set-proc (mutable-treelist? exact-nonnegative-integer? any/c . -> . any/c)]
-                                       [insert-proc (mutable-treelist? exact-nonnegative-integer? any/c . -> . any/c)]
-                                       [append-proc (mutable-treelist? treelist? . -> . treelist?)]
+                                       [#:ref ref-proc (or/c #f (mutable-treelist? exact-nonnegative-integer? any/c
+                                                                 . -> . any/c))]
+                                       [#:set set-proc (mutable-treelist? exact-nonnegative-integer? any/c
+                                                        . -> . any/c)]
+                                       [#:insert insert-proc (mutable-treelist? exact-nonnegative-integer? any/c
+                                                              . -> . any/c)]
+                                       [#:append append-proc (mutable-treelist? treelist?
+                                                              . -> . treelist?)]
                                        [prop impersonator-property?]
                                        [prop-val any/c] ... ...)
           (and/c mutable-treelist? chaperone?)]{

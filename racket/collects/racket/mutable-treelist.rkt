@@ -133,7 +133,11 @@
   (check-mutable-treelist 'mutable-treelist-set! mtl)
   (define tl (mutable-treelist-tl mtl))
   (check-treelist-index 'mutable-treelist-set! tl (treelist-length tl) index)
-  (treelist-set! tl index val))
+  (cond
+    [(impersonator? mtl)
+     (set-mutable-treelist-tl! mtl (treelist-set tl index val))]
+    [else
+     (treelist-set! tl index val)]))
 
 (define (mutable-treelist-add! mtl val)
   (check-mutable-treelist 'mutable-treelist-add! mtl)
@@ -153,7 +157,8 @@
       [(treelist? m/tl) m/tl]
       [(mutable-treelist? m/tl) (mutable-treelist-snapshot m/tl)]
       [else (raise-argument-error* 'mutable-treelist-append! 'racket/primitive "mutable-treelist?" m/tl)]))
-  (set-mutable-treelist-tl! mtl (treelist-append tl tl2)))
+  (define new-tl (treelist-append tl tl2))
+  (set-mutable-treelist-tl! mtl new-tl))
 
 (define (mutable-treelist-insert! mtl index val)
   (check-mutable-treelist 'mutable-treelist-insert! mtl)
@@ -225,10 +230,15 @@
 (define (mutable-treelist-map! mtl proc)
   (check-mutable-treelist 'mutable-treelist-map! mtl)
   (unless (and (procedure? proc) (procedure-arity-includes? proc 1))
-    (raise-argument-error 'mutable-treelist-map! "(procedure-arity-includes/c 1)" proc))
+    (raise-argument-error 'mutable-treelist-map! "(procedure-arity-includes/c 1)" proc)) 
   (define tl (mutable-treelist-tl mtl))
-  (for ([i (in-range (treelist-length tl))])
-    (treelist-set! tl i (proc (treelist-ref tl i)))))
+  (cond
+    [(impersonator? mtl)
+     (for ([i (in-range (treelist-length tl))])
+       (mutable-treelist-set! mtl i (proc (treelist-ref tl i))))]
+    [else
+     (for ([i (in-range (treelist-length tl))])
+       (treelist-set! tl i (proc (treelist-ref tl i))))]))
 
 (define (mutable-treelist-for-each mtl proc)
   (check-mutable-treelist 'mutable-treelist-for-each mtl)
@@ -277,11 +287,31 @@
 (define-syntax for*/mutable-treelist
   (make-for/treelist #'for*/fold/derived #'treelist-copy))
 
+(define (check-chaperone-arguments who
+                                   ref-proc
+                                   set-proc
+                                   insert-proc
+                                   append-proc
+                                   props)
+  (unless (and (procedure? ref-proc)
+               (procedure-arity-includes? ref-proc 3))
+    (raise-argument-error who "(procedure-arity-includes/c 3)" ref-proc)) 
+  (unless (and (procedure? set-proc)
+               (procedure-arity-includes? set-proc 3))
+    (raise-argument-error who "(procedure-arity-includes/c 3)" set-proc))
+  (unless (and (procedure? insert-proc)
+               (procedure-arity-includes? insert-proc 3))
+    (raise-argument-error who "(procedure-arity-includes/c 3)" insert-proc))
+  (unless (and (procedure? append-proc)
+               (procedure-arity-includes? append-proc 2))
+    (raise-argument-error who "(procedure-arity-includes/c 2)" append-proc))
+  (check-chaperone-properties who props))
+
 (define (chaperone-mutable-treelist mtl
-                                    ref-proc
-                                    set-proc
-                                    insert-proc
-                                    append-proc
+                                    #:ref ref-proc
+                                    #:set set-proc
+                                    #:insert insert-proc
+                                    #:append append-proc
                                     . props)
   (check-mutable-treelist 'chaperone-mutable-treelist mtl)
   (check-chaperone-arguments 'chaperone-mutable-treelist
@@ -296,10 +326,10 @@
                             props))
 
 (define (impersonate-mutable-treelist mtl
-                                      ref-proc
-                                      set-proc
-                                      insert-proc
-                                      append-proc
+                                      #:ref ref-proc
+                                      #:set set-proc
+                                      #:insert insert-proc
+                                      #:append append-proc
                                       . props)
   (check-mutable-treelist 'impersonate-mutable-treelist mtl)
   (check-chaperone-arguments 'impersonate-mutable-treelist
@@ -317,22 +347,32 @@
                                   mtl
                                   ref-proc set-proc insert-proc append-proc
                                   props)
-  (define (tl-ref-proc tl index v) (ref-proc mtl index v))
-  (define (tl-set-proc tl index v) (set-proc mtl index v))
-  (define (tl-insert-proc tl index v) (insert-proc mtl index v))
-  (define (tl-append-proc tl rhs) (append-proc mtl rhs))
-  (chaperone-struct mtl
-                    mutable-treelist-tl
-                    (lambda (mtl tl)
-                      (apply chaperone-treelist
-                             tl
-                             (and ref-proc tl-ref-proc)
-                             tl-set-proc
-                             tl-insert-proc
-                             tl-append-proc
-                             props))
-                    set-mutable-treelist-tl!
-                    (lambda (mtl tl)
-                      ;; strip chaperone or impersonator away, and we'll reapply
-                      ;; as appropriate when reading via a mutable wrapper
-                      (unimpersonate-treelist tl))))
+  (define (tl-ref-proc tl index v state) (ref-proc mtl index v))
+  (define (tl-set-proc tl index v state) (values (set-proc mtl index v) state))
+  (define (tl-insert-proc tl index v state) (values (insert-proc mtl index v) state))
+  (define (tl-prepend-proc lhs tl state) (error "prepend should never apply for a mutuable treelist"))
+  (define (tl-append-proc tl rhs state) (values (append-proc mtl rhs) state))
+  (define (tl-delete-proc tl index state) state)
+  (define (tl-take-proc tl index state) state)
+  (define (tl-drop-proc tl index state) state)
+  (apply chaperone-struct mtl
+         mutable-treelist-tl
+         (lambda (mtl tl)
+           (chaperone-treelist tl
+                               #:state #f
+                               #:state-key (list 'fresh)
+                               #:ref tl-ref-proc
+                               #:set tl-set-proc
+                               #:insert tl-insert-proc
+                               #:prepend tl-prepend-proc
+                               #:append tl-append-proc
+                               #:append2 #f
+                               #:delete tl-delete-proc
+                               #:take tl-take-proc
+                               #:drop tl-drop-proc))
+         set-mutable-treelist-tl!
+         (lambda (mtl tl)
+           ;; strip chaperone or impersonator away, and we'll reapply
+           ;; as appropriate when reading via a mutable wrapper
+           (unimpersonate-treelist tl))
+         props))

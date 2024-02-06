@@ -118,13 +118,18 @@
       (define blame+neg-party (cons blame neg-party))
       (chaperone-treelist
        val
-       (λ (tl i val)
-         (with-contract-continuation-mark
-             blame+neg-party
-           (ln+blame val neg-party)))
-       (λ (tl i val) val)
-       (λ (tl i val) val)
-       (λ (tl1 tl2) tl2)
+       #:state #f
+       #:ref (λ (tl i val state)
+               (with-contract-continuation-mark
+                 blame+neg-party
+                 (ln+blame val neg-party)))
+       #:set (λ (tl i val state) (values val state))
+       #:insert (λ (tl i val state) (values val state))
+       #:prepend (λ (tl1 tl2 state) (values tl1 state))
+       #:append (λ (tl1 tl2 state) (values tl2 state))
+       #:delete (λ (tl i state) state)
+       #:take (λ (tl n state) state)
+       #:drop (λ (tl n state) state)
        impersonator-prop:contracted ctc
        impersonator-prop:blame blame))))
 

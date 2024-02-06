@@ -56,7 +56,8 @@
          in-treelist
          for/treelist
          for*/treelist
-         chaperone-treelist)
+         chaperone-treelist
+         treelist-chaperone-state)
 
 (module+ unsafe
   (provide
@@ -74,7 +75,7 @@
    check-treelist-end-index
    check-treelist-bound-index
    check-sort-arguments
-   check-chaperone-arguments
+   check-chaperone-properties
    ;; For printing, comparing, etc., mutable treelists:
    treelist-print
    treelist-equal?
@@ -1134,7 +1135,11 @@
                 treelist-chaperone-ref)
   (make-impersonator-property 'treelist))
 
-(struct treelist-wrapper (chaperone? prev ref set insert append)
+(struct treelist-wrapper (chaperone? prev props state procs)
+  #:authentic
+  #:sealed)
+
+(struct procs (ref set insert prepend append append2 delete take drop state-key)
   #:authentic
   #:sealed)
 
@@ -1142,20 +1147,44 @@
                                    ref-proc
                                    set-proc
                                    insert-proc
+                                   prepend-proc
                                    append-proc
+                                   append2-proc
+                                   delete-proc
+                                   take-proc
+                                   drop-proc
                                    props)
-  (unless (or (not ref-proc) (and (procedure? ref-proc)
-                                  (procedure-arity-includes? ref-proc 3)))
-    (raise-argument-error who "(or/c #f (procedure-arity-includes/c 3))" ref-proc)) 
+  (unless (and (procedure? ref-proc)
+               (procedure-arity-includes? ref-proc 4))
+    (raise-argument-error who "(procedure-arity-includes/c 4)" ref-proc)) 
   (unless (and (procedure? set-proc)
-               (procedure-arity-includes? set-proc 3))
-    (raise-argument-error who "(procedure-arity-includes/c 3)" set-proc))
+               (procedure-arity-includes? set-proc 4))
+    (raise-argument-error who "(procedure-arity-includes/c 4)" set-proc))
   (unless (and (procedure? insert-proc)
-               (procedure-arity-includes? insert-proc 3))
-    (raise-argument-error who "(procedure-arity-includes/c 3)" insert-proc))
+               (procedure-arity-includes? insert-proc 4))
+    (raise-argument-error who "(procedure-arity-includes/c 4)" insert-proc))
+  (unless (and (procedure? prepend-proc)
+               (procedure-arity-includes? prepend-proc 3))
+    (raise-argument-error who "(procedure-arity-includes/c 3)" prepend-proc))
   (unless (and (procedure? append-proc)
-               (procedure-arity-includes? append-proc 2))
-    (raise-argument-error who "(procedure-arity-includes/c 2)" append-proc))
+               (procedure-arity-includes? append-proc 3))
+    (raise-argument-error who "(procedure-arity-includes/c 3)" append-proc))
+  (unless (or (not append2-proc)
+              (and (procedure? append2-proc)
+                   (procedure-arity-includes? append2-proc 4)))
+    (raise-argument-error who "(procedure-arity-includes/c 4)" append2-proc))
+  (unless (and (procedure? delete-proc)
+               (procedure-arity-includes? delete-proc 3))
+    (raise-argument-error who "(procedure-arity-includes/c 3)" delete-proc))
+  (unless (and (procedure? take-proc)
+               (procedure-arity-includes? take-proc 3))
+    (raise-argument-error who "(procedure-arity-includes/c 3)" take-proc))
+  (unless (and (procedure? drop-proc)
+               (procedure-arity-includes? drop-proc 3))
+    (raise-argument-error who "(procedure-arity-includes/c 3)" drop-proc))
+  (check-chaperone-properties who props))
+
+(define (check-chaperone-properties who props)
   (let loop ([ps props])
     (unless (null? ps)
       (define prop (car ps))
@@ -1167,49 +1196,123 @@
       (loop (cddr ps)))))
 
 (define (chaperone-treelist tl
-                            ref-proc
-                            set-proc
-                            insert-proc
-                            append-proc
+                            #:state state
+                            #:state-key [state-key (list 'fresh)]
+                            #:ref ref-proc
+                            #:set set-proc
+                            #:insert insert-proc
+                            #:prepend prepend-proc
+                            #:append append-proc
+                            #:append2 [append2-proc #f]
+                            #:delete delete-proc
+                            #:take take-proc
+                            #:drop drop-proc
                             . props)
   (check-treelist 'chaperone-treelist tl)
-  (check-chaperone-arguments 'chaperone-mutable-treelist
+  (check-chaperone-arguments 'chaperone-treelist
                              ref-proc
                              set-proc
                              insert-proc
+                             prepend-proc
                              append-proc
+                             append2-proc
+                             delete-proc
+                             take-proc
+                             drop-proc
                              props)
   (apply chaperone-struct tl
          struct:treelist
          prop:treelist-chaperone
          (treelist-wrapper #t
                            tl
-                           ref-proc
-                           set-proc
-                           insert-proc
-                           append-proc)
+                           props
+                           state
+                           (procs
+                            ref-proc
+                            set-proc
+                            insert-proc
+                            prepend-proc
+                            append-proc
+                            append2-proc
+                            delete-proc
+                            take-proc
+                            drop-proc
+                            state-key))
          props))
 
 (define (impersonate-treelist tl
-                              ref-proc
-                              set-proc
-                              insert-proc
-                              append-proc
+                              #:state state
+                              #:state-key state-key
+                              #:ref ref-proc
+                              #:set set-proc
+                              #:insert insert-proc
+                              #:prepend prepend-proc
+                              #:append append-proc
+                              #:append2 append2-proc
+                              #:delete delete-proc
+                              #:take take-proc
+                              #:drop drop-proc
                               . props)
   (apply impersonate-struct tl
          struct:treelist
          prop:treelist-chaperone
          (treelist-wrapper #f
                            tl
-                           ref-proc
-                           set-proc
-                           insert-proc
-                           append-proc)
+                           props
+                           state
+                           (procs
+                            ref-proc
+                            set-proc
+                            insert-proc
+                            prepend-proc
+                            append-proc
+                            append2-proc
+                            delete-proc
+                            take-proc
+                            drop-proc
+                            state-key))
          props))
 
 (define (unimpersonate-treelist tl)
   (define w (treelist-chaperone-ref tl))
   (treelist-wrapper-prev w))
+
+(define (treelist-chaperone-state tl key [fail-k (make-state-key-fail tl key)])
+  (define who 'treelist-chaperone-state)
+  (check-treelist who tl)
+  (unless (and (procedure? fail-k) (procedure-arity-includes? fail-k 0))
+    (raise-argument-error who "(procedure-arity-includes/c 0)" fail-k))
+  (let loop ([tl tl])
+    (define w (and tl (treelist-chaperone-ref tl #f)))
+    (cond
+      [(not w)
+       (fail-k)]
+      [(eq? key (procs-state-key (treelist-wrapper-procs w)))
+       (treelist-wrapper-state w)]
+      [else
+       (loop (treelist-wrapper-prev w))])))
+
+;; removes a chaperone layer whose state is keyed by `key`
+(define (extract-keyed-treelist tl key)
+  (let loop ([tl tl])
+    (define w (and tl (treelist-chaperone-ref tl #f)))
+    (cond
+      [(not w) (values #f #f)]
+      [(eq? key (procs-state-key (treelist-wrapper-procs w)))
+       (values (treelist-wrapper-prev w) (treelist-wrapper-state w))]
+      [else
+       (define-values (new-prev state) (loop (treelist-wrapper-prev w)))
+       (if new-prev
+           (values (re-chaperone new-prev w (treelist-wrapper-state w))
+                   state)
+           (values #f #f))])))
+
+(define (make-state-key-fail tl key)
+  (lambda ()
+    (raise-arguments-error* 'treelist-chaperone-state 'racket/primitive
+                            "no state found for the given key"
+                            "treelist" tl
+                            "key" key)))
 
 (define (check-chaperone who check? v old-v)
   (when check?
@@ -1217,16 +1320,23 @@
       (error who "result is not a chaperone")))
   v)
 
-(define (re-chaperone new-prev w)
-  (if  (treelist-wrapper-chaperone? w)
-       (chaperone-struct new-prev
-                         struct:treelist
-                         prop:treelist-chaperone
-                         (struct-copy treelist-wrapper w [prev new-prev]))
-       (impersonate-struct new-prev
-                           struct:treelist
-                           prop:treelist-chaperone
-                           (struct-copy treelist-wrapper w [prev new-prev]))))
+(define (re-chaperone new-prev w-in new-state)
+  (define w (struct-copy treelist-wrapper w-in
+                         [prev new-prev]
+                         [state new-state]))
+  (if (treelist-wrapper-chaperone? w)
+      (apply chaperone-struct
+             new-prev
+             struct:treelist
+             prop:treelist-chaperone
+             w
+             (treelist-wrapper-props w))
+      (apply impersonate-struct
+             new-prev
+             struct:treelist
+             prop:treelist-chaperone
+             w
+             (treelist-wrapper-props w))))
 
 (define (treelist-ref/slow tl index)
   (define who 'treelist-ref)
@@ -1235,9 +1345,9 @@
   (define w (treelist-chaperone-ref tl))
   (define prev (treelist-wrapper-prev w))
   (define v (treelist-ref prev index))
-  (define ref (treelist-wrapper-ref w))
+  (define ref (procs-ref (treelist-wrapper-procs w)))
   (if ref
-      (check-chaperone who (treelist-wrapper-chaperone? w) (ref prev index v) v)
+      (check-chaperone who (treelist-wrapper-chaperone? w) (ref prev index v (treelist-wrapper-state w)) v)
       v))
 
 (define (treelist-first/slow tl)
@@ -1277,16 +1387,41 @@
        (for/and ([i (in-range len)])
          (recur (treelist-ref tl i) (treelist-ref other-tl i)))))
 
+(define (call-with-chaperone-values who tl w el producer receiver)
+  (define chaperone? (treelist-wrapper-chaperone? w))
+  (call-with-values
+   producer
+   (case-lambda
+     [(new-el new-state)
+      (check-chaperone who chaperone? new-el el)
+      (receiver new-el new-state)]
+     [args
+      (raise
+       (|#%app|
+        exn:fail:contract:arity
+        (error-message->adjusted-string
+         who 'racket/primitive	 
+         (string-append "arity mismatch;\n"
+                        " received wrong number of values from a chaperone's replacement procedure\n"
+                        "  expected: 2\n"
+                        "  received: " (number->string (length args)) "\n"
+                        "  chaperone: " (format "~e" tl))
+         'racket/primitive)))])))
+
 (define (treelist-set/slow tl index el)
   (define who 'treelist-set)
   (check-treelist who tl)
   (check-treelist-index who tl (treelist-size tl) index)
   (define w (treelist-chaperone-ref tl))
   (define prev (treelist-wrapper-prev w))
-  (define new-el
-    (check-chaperone who (treelist-wrapper-chaperone? w) ((treelist-wrapper-set w) prev index el) el))
-  (define new-prev (treelist-set prev index new-el))
-  (re-chaperone new-prev w))
+  (call-with-chaperone-values
+   who tl w
+   el
+   (lambda ()
+     ((procs-set (treelist-wrapper-procs w)) prev index el (treelist-wrapper-state w)))
+   (lambda (new-el new-state)
+     (define new-prev (treelist-set prev index new-el))
+     (re-chaperone new-prev w new-state))))
 
 (define (treelist-insert/slow tl at el)
   (define who 'treelist-insert)
@@ -1295,10 +1430,14 @@
   (check-treelist-end-index who tl size at)
   (define w (treelist-chaperone-ref tl))
   (define prev (treelist-wrapper-prev w))
-  (define new-el
-    (check-chaperone who (treelist-wrapper-chaperone? w) ((treelist-wrapper-insert w) prev at el) el))
-  (define new-prev (treelist-insert prev at new-el))
-  (re-chaperone new-prev w))
+  (call-with-chaperone-values
+   who tl w
+   el
+   (lambda ()
+     ((procs-insert (treelist-wrapper-procs w)) prev at el (treelist-wrapper-state w)))
+   (lambda (new-el new-state)
+     (define new-prev (treelist-insert prev at new-el))
+     (re-chaperone new-prev w new-state))))
 
 (define (treelist-add/slow tl el)
   (check-treelist 'treelist-add tl)
@@ -1308,68 +1447,94 @@
   (check-treelist 'treelist-cons tl)
   (treelist-insert/slow tl 0 el))
 
-(define (treelist-do-slow who op tl at)
+(define (treelist-do-slow who op procs-op tl at)
   (check-treelist who tl)
   (define size (treelist-size tl))
   (check-treelist-end-index who tl size at)
   (define w (treelist-chaperone-ref tl))
   (define prev (treelist-wrapper-prev w))
-  (define new-prev (op prev at))
-  (re-chaperone new-prev w))
+  (define op-tl (op prev at))
+  (define new-state
+    ((procs-op (treelist-wrapper-procs w)) prev at (treelist-wrapper-state w)))
+  (re-chaperone op-tl w new-state))
 
 (define (treelist-delete/slow tl at)
-  (treelist-do-slow 'treelist-delete treelist-delete tl at))
+  (treelist-do-slow 'treelist-delete treelist-delete procs-delete tl at))
 
 (define (treelist-take/slow tl pos)
-  (treelist-do-slow 'treelist-take treelist-take tl pos))
+  (treelist-do-slow 'treelist-take treelist-take procs-take tl pos))
 
 (define (treelist-drop/slow tl pos)
-  (treelist-do-slow 'treelist-drop treelist-drop tl pos))
+  (treelist-do-slow 'treelist-drop treelist-drop procs-drop tl pos))
 
 (define (treelist-append/slow tl rhs)
   (define who 'treelist-append)
   (cond
     [(impersonator? tl)
      (check-treelist who tl)
+     (check-treelist who rhs)
      (define w (treelist-chaperone-ref tl))
      (define prev (treelist-wrapper-prev w))
-     (define new-rhs (check-chaperone who (treelist-wrapper-chaperone? w)
-                                      ((treelist-wrapper-append w) prev rhs)
-                                      rhs))
-     (define new-tl (treelist-append prev new-rhs))
-     (re-chaperone new-tl w)]
+     (define-values (rhs2 state2) (if (procs-append2 (treelist-wrapper-procs w))
+                                      (extract-keyed-treelist rhs (procs-state-key
+                                                                   (treelist-wrapper-procs w)))
+                                      (values #f #f)))
+     (cond
+       [rhs2
+        (call-with-chaperone-values
+         who tl w
+         rhs2
+         (lambda ()
+           ((procs-append2 (treelist-wrapper-procs w)) prev rhs2 (treelist-wrapper-state w) state2))
+         (lambda (new-rhs new-state)
+           (define new-tl (treelist-append prev new-rhs))
+           (re-chaperone new-tl w new-state)))]
+       [else
+        (call-with-chaperone-values
+         who tl w
+         rhs
+         (lambda ()
+           ((procs-append (treelist-wrapper-procs w)) prev rhs (treelist-wrapper-state w)))
+         (lambda (new-rhs new-state)
+           (define new-tl (treelist-append prev new-rhs))
+           (re-chaperone new-tl w new-state)))])]
     [else
      (check-treelist who tl)
      (check-treelist who rhs)
      ;; `rhs` must be an impersonator to get here; if it has `#f` for `ref-proc`,
      ;; we can strip it away to keep treelist-add` faster:     
      (define w (treelist-chaperone-ref rhs))
-     (cond
-       [(not (treelist-wrapper-ref w))
-        (treelist-append tl (treelist-wrapper-prev w))]
-       [else
-        (for/fold ([tl tl]) ([e (in-treelist rhs)])
-          (treelist-add tl e))])]))
+     (define prev (treelist-wrapper-prev w))
+     (call-with-chaperone-values
+      who rhs w
+      tl
+      (lambda ()
+        ((procs-prepend (treelist-wrapper-procs w)) tl prev (treelist-wrapper-state w)))
+      (lambda (new-tl new-state)
+        (define new-rhs (treelist-append new-tl prev))
+        (re-chaperone new-rhs w new-state)))]))
 
 (define (treelist-copy-for-mutable tl)
-  (if (eq? tl empty-treelist)
-      tl
-      (struct-copy treelist tl
-                   [root(let copy-node ([n (treelist-root tl)] [height (treelist-height tl)])
-                           (cond
-                             [(fx= height 0) (vector*-copy n)]
-                             [else
-                              (for/vector #:length (vector-length n) ([e (in-vector n)])
-                                          (copy-node e (fx- height 1)))]))])))
+  (cond
+    [(eq? tl empty-treelist)
+     tl]
+    [(impersonator? tl)
+     ;; copy the slow but general way
+     (for/treelist ([i (in-treelist tl)])
+       i)]
+    [else
+     (struct-copy treelist tl
+                  [root(let copy-node ([n (treelist-root tl)] [height (treelist-height tl)])
+                         (cond
+                           [(fx= height 0) (vector*-copy n)]
+                           [else
+                            (for/vector #:length (vector-length n) ([e (in-vector n)])
+                                        (copy-node e (fx- height 1)))]))])]))
 
 (define (treelist-set! tl index el)
   (cond
     [(impersonator? tl)
-     (define w (treelist-chaperone-ref tl))
-     (define prev (treelist-wrapper-prev w))
-     (define new-el
-       (check-chaperone 'mutable-treelist-set! (treelist-wrapper-chaperone? w) ((treelist-wrapper-set w) prev index el) el))
-     (treelist-set! prev index new-el)]
+     (error "cannot mutate a chaperoned treelist")]
     [else
      (define-values (node node-pos) (treelist-node-for tl index))
      (vector-set! node node-pos el)]))
