@@ -139,7 +139,7 @@
       (λ (k v) (and (symbol? k) (string=? v "vegetable"))))
 
 ;; Filtering by key-value pairs where key is a list of numbers and value is a symbol
-(test (hash (list 1 2) 'number-list)
+(test (hash (list 3 4) 'another-number-list (list 1 2) 'number-list)
       hash-filter
       (hash (list 1 2) 'number-list (list "a" "b") 'letter-list (list 3 4) 'another-number-list)
       (λ (k v) (and (list? k) (number? (car k)) (symbol? v))))
@@ -298,7 +298,7 @@
 ;; Weak hashes: filtering by key
 (test (make-weak-hash (list (cons 'apple "fruit")))
       hash-filter-keys
-      (make-weak-hash (list (cons 'apple "fruit") (cons 'carrot "vegetable")))
+      (make-weak-hash (list (cons 'apple "fruit") (cons "carrot" "vegetable")))
       (λ (k) (symbol? k)))
 
 ;; Weak hashes: filtering by value
