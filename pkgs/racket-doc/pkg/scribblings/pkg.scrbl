@@ -1374,7 +1374,7 @@ The following @filepath{info.rkt} fields are used by the package manager:
 
   The grammar of @tech{license S-expressions} is designed so that
   @racket[(format "~s" license)] produces a string conforming to the grammar in
-  @hyperlink["https://spdx.github.io/spdx-spec/SPDX-license-expressions/"]{
+  @hyperlink["https://spdx.github.io/spdx-spec/v2-draft/SPDX-license-expressions/"]{
   Annex D} and
   @hyperlink["https://spdx.github.io/spdx-spec/v2.3/using-SPDX-short-identifiers-in-source-files/"]{
   Annex E}
