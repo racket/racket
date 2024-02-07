@@ -258,7 +258,7 @@ be accessed more efficiently when @nonterm{rev} refers to a branch or
 tag (even if it is written as a commit). In those cases, the content
 typically can be obtained without downloading irrelevant history.}
 
-For example, @filepath{https://bitbucket.org/glampert/tic-tac-toe-tcp/src/master/}
+For example, @filepath{http://bitbucket.org/game/tic-tac-toe#main}
 is a Git package source.
 
 A checkout of the repository at @nonterm{rev} provides the content of
@@ -1374,7 +1374,7 @@ The following @filepath{info.rkt} fields are used by the package manager:
 
   The grammar of @tech{license S-expressions} is designed so that
   @racket[(format "~s" license)] produces a string conforming to the grammar in
-  @hyperlink["https://spdx.github.io/spdx-spec/v2-draft/SPDX-license-expressions/"]{
+  @hyperlink["https://spdx.github.io/spdx-spec/v2.3/SPDX-license-expressions/"]{
   Annex D} and
   @hyperlink["https://spdx.github.io/spdx-spec/v2.3/using-SPDX-short-identifiers-in-source-files/"]{
   Annex E}
