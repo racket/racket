@@ -258,7 +258,7 @@ be accessed more efficiently when @nonterm{rev} refers to a branch or
 tag (even if it is written as a commit). In those cases, the content
 typically can be obtained without downloading irrelevant history.}
 
-For example, @filepath{http://bitbucket.org/game/tic-tac-toe#main}
+For example, @filepath{https://bitbucket.org/glampert/tic-tac-toe-tcp/src/master/}
 is a Git package source.
 
 A checkout of the repository at @nonterm{rev} provides the content of
