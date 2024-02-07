@@ -1344,7 +1344,7 @@ The following @filepath{info.rkt} fields are used by the package manager:
 
  @item{@definfofield{license} --- a @deftech{license S-expression}
   specifying the package's license. A license S-expression represents an @deftech{SPDX}
-  @hyperlink["https://spdx.github.io/spdx-spec/appendix-IV-SPDX-license-expressions/"]{
+  @hyperlink["https://spdx.github.io/spdx-spec/v2.3/SPDX-license-expressions/"]{
    license expression} as a datum with the quoted form:
 
   @racketgrammar[#:literals (AND OR WITH) license-sexp
