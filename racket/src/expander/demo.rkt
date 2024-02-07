@@ -474,6 +474,25 @@
     (m x y)))
  #:check 12)
 
+(eval-expression
+ '(letrec-syntaxes+values
+   ([(m) (lambda (stx)
+           (let-values ([(id) (car (cdr (syntax-e stx)))]
+                        [(outside-intro)
+                         (syntax-local-make-definition-context-introducer 'intdef-outside)]
+                        [(inside-intro)
+                         (syntax-local-make-definition-context-introducer)])
+             (datum->syntax
+              (quote-syntax here)
+              (list (quote-syntax bound-identifier=?)
+                    (list (quote-syntax quote-syntax)
+                          id)
+                    (list (quote-syntax quote-syntax)
+                          (outside-intro (inside-intro id 'add) 'add))))))])
+   ()
+   (m x))
+ #:check #t)
+
 "set! transformer"
 (eval-expression
  '(let-values ([(real-one) 1]
