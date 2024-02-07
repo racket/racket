@@ -183,6 +183,7 @@
 
                       internal-definition-context?
                       syntax-local-make-definition-context
+                      syntax-local-make-definition-context-introducer
                       syntax-local-bind-syntaxes
                       internal-definition-context-binding-identifiers
                       internal-definition-context-introduce

@@ -523,22 +523,31 @@
   (provide v))
 (test 1 dynamic-require ''uses-internal-definition-context-around-id 'v)
 
-;; Make sure `syntax-local-make-definition-context` can be called
+;; Make sure `syntax-local-make-definition-context{,-introducer}` can be called
 ;; at unusual times, where the scope that is otherwise captured
 ;; for `quote-syntax` isn't or can't be recorded
-(let-syntax ([x (syntax-local-make-definition-context)])
+(let-syntax ([x (syntax-local-make-definition-context)]
+             [y (syntax-local-make-definition-context-introducer 'intdef-outside)]
+             [z (syntax-local-make-definition-context-introducer)])
   (void))
-(module makes-definition-context-at-compile-time-begin racket
+(module makes-definition-context-at-compile-time-begin racket/base
+  (require (for-syntax racket/base))
   (begin-for-syntax
-    (syntax-local-make-definition-context)))
+    (syntax-local-make-definition-context)
+    (syntax-local-make-definition-context-introducer 'intdef-outside)
+    (syntax-local-make-definition-context-introducer)))
 (require 'makes-definition-context-at-compile-time-begin)
 
 
 (module create-definition-context-during-visit racket/base
   (require (for-syntax racket/base))
-  (provide (for-syntax ds))
-  ;; won't be stipped for `quote-syntax`
-  (define-for-syntax ds (syntax-local-make-definition-context)))
+  (provide (for-syntax ds
+                       outside-intro
+                       inside-intro))
+  ;; won't be pruned for `quote-syntax`
+  (define-for-syntax ds (syntax-local-make-definition-context))
+  (define-for-syntax outside-intro (syntax-local-make-definition-context-introducer 'intdef-outside))
+  (define-for-syntax inside-intro (syntax-local-make-definition-context-introducer)))
 
 (module create-definition-context-during-expand racket/base
   (require (for-syntax racket/base)
@@ -546,24 +555,40 @@
   (provide results
            get-results)
 
-  ;; will be stipped for `quote-syntax`
+  ;; will be pruned for `quote-syntax`
   (define-for-syntax ds2 (syntax-local-make-definition-context))
+  (define-for-syntax outside-intro2 (syntax-local-make-definition-context-introducer 'intdef-outside))
+  (define-for-syntax inside-intro2 (syntax-local-make-definition-context-introducer))
 
   (define-syntax (m stx)
     (syntax-case stx ()
       [(_ body)
-       (internal-definition-context-introduce ds #'body)]))
+       (outside-intro
+        (inside-intro
+         (internal-definition-context-introduce ds #'body 'add)
+         'add)
+        'add)]))
 
   (define-syntax (m2 stx)
     (syntax-case stx ()
       [(_ body)
-       (internal-definition-context-introduce ds2 #'body)]))
+       (outside-intro2
+        (inside-intro2
+         (internal-definition-context-introduce ds2 #'body 'add)
+         'add)
+        'add)]))
 
   (define-syntax (m3 stx)
     (syntax-case stx ()
       [(_ body)
-       (let ([ds3 (syntax-local-make-definition-context)])
-         (internal-definition-context-introduce ds3 #'body))]))
+       (let ([ds3 (syntax-local-make-definition-context)]
+             [outside-intro3 (syntax-local-make-definition-context-introducer 'intdef-outside)]
+             [inside-intro3 (syntax-local-make-definition-context-introducer)])
+         (outside-intro3
+          (inside-intro3
+           (internal-definition-context-introduce ds3 #'body 'add)
+           'add)
+          'add))]))
 
   (define results
     (list

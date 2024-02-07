@@ -583,6 +583,27 @@ being expanded.
          #:changed "8.2.0.7" @elem{Added the @tech{outside-edge scope} and @tech{use-site scope}
                                    tracking behaviors.}]}
 
+@defproc[(syntax-local-make-definition-context-introducer
+          [name (and/c symbol? (not/c 'macro)) 'intdef])
+         ((syntax?) ((or/c 'flip 'add 'remove)) . ->* . syntax?)]{
+
+Like @racket[make-syntax-introducer], but the encapsulated
+@tech{scope} is pruned from @racket[quote-syntax] forms, much like the
+scopes associated with a new definition context (see
+@racket[syntax-local-make-definition-context]). The @racket[name]
+argument is used as the symbolic name, which serves as a debugging
+aid.
+
+Typically, @racket[internal-definition-context-add-scopes] and
+@racket[internal-definition-context-splice-binding-identifier] are
+preferred, but this function can be useful when you are sure that you
+want a single scope that should be pruned from @racket[quote-syntax]
+forms.
+
+@transform-time[]
+
+@history[#:added "8.12.0.8"]}
+
 
 @defproc[(internal-definition-context-add-scopes [intdef-ctx internal-definition-context?]
                                                  [stx syntax?])
@@ -673,6 +694,9 @@ for @racket[intdef-ctx] for all parts of @racket[stx].
 This function is provided for backwards compatibility;
 @racket[internal-definition-context-add-scopes] and
 @racket[internal-definition-context-splice-binding-identifier] are preferred.
+See also @racket[syntax-local-make-definition-context-introducer] for
+encapsulating a single scope that should be pruned from
+@racket[quote-syntax] forms.
 
 @history[#:added "6.3"]}
 
