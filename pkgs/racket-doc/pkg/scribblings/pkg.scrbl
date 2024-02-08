@@ -1344,7 +1344,7 @@ The following @filepath{info.rkt} fields are used by the package manager:
 
  @item{@definfofield{license} --- a @deftech{license S-expression}
   specifying the package's license. A license S-expression represents an @deftech{SPDX}
-  @hyperlink["https://spdx.github.io/spdx-spec/appendix-IV-SPDX-license-expressions/"]{
+  @hyperlink["https://spdx.github.io/spdx-spec/v2.3/SPDX-license-expressions/"]{
    license expression} as a datum with the quoted form:
 
   @racketgrammar[#:literals (AND OR WITH) license-sexp
@@ -1374,9 +1374,9 @@ The following @filepath{info.rkt} fields are used by the package manager:
 
   The grammar of @tech{license S-expressions} is designed so that
   @racket[(format "~s" license)] produces a string conforming to the grammar in
-  @hyperlink["https://spdx.github.io/spdx-spec/SPDX-license-expressions/"]{
+  @hyperlink["https://spdx.github.io/spdx-spec/v2.3/SPDX-license-expressions/"]{
   Annex D} and
-  @hyperlink["https://spdx.github.io/spdx-spec/using-SPDX-short-identifiers-in-source-files/"]{
+  @hyperlink["https://spdx.github.io/spdx-spec/v2.3/using-SPDX-short-identifiers-in-source-files/"]{
   Annex E}
   of the SPDX Specification v2.2.2,
   which is specified in terms of character sequences.

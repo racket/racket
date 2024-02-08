@@ -609,7 +609,7 @@ loading certificate files in PEM format.
 Specifies the cipher suites that can be used in connections created
 with @racket[context]. The meaning of @racket[cipher-spec] is the same
 as for the
-@hyperlink["http://www.openssl.org/docs/apps/ciphers.html"]{@tt{openssl
+@hyperlink["https://www.openssl.org/docs/manmaster/man1/ciphers.html"]{@tt{openssl
 ciphers} command}.
 }
 
