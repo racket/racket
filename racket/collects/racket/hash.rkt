@@ -1,5 +1,7 @@
 #lang racket/base
-(require racket/contract/base racket/match)
+(require racket/contract/base
+         (only-in racket/function curry)
+         (only-in racket/list flatten))
 
 (define ((hash-duplicate-error name) key value1 value2)
   (error name "duplicate values for key ~e: ~e and ~e" key value1 value2))
@@ -64,15 +66,15 @@
         res)))
 
 (define (hash-filter ht pred)
-  (cond [(immutable? ht)
-         (for ([(k v) (in-hash ht)])
-           (when (not (pred k v))
-             (set! ht (hash-remove ht k))))]
-        [else
-         (for ([(k v) (in-hash ht)])
-           (when (not (pred k v))
-             (hash-remove! ht k)))])
-  ht)
+  (define fresh-ht (hash-copy-clear ht))
+  (define filter-ht
+    (λ (ht-set-fn seq-fn)
+      (apply (curry ht-set-fn fresh-ht)
+             (flatten (for/list ([(k v) (seq-fn ht)] #:when (pred k v)) (cons k v))))))
+  (if (immutable? ht)
+      (set! fresh-ht (filter-ht hash-set* in-immutable-hash))
+      (filter-ht hash-set*! in-hash))
+  fresh-ht)
 
 (define (hash-filter-keys ht pred)
   (hash-filter ht (lambda (k _) (pred k))))
