@@ -71,7 +71,8 @@
         [else
          (for ([(k v) (in-hash ht)])
            (when (not (pred k v))
-             (hash-remove! ht k)))]))
+             (hash-remove! ht k)))])
+  ht)
 
 (define (hash-filter-keys ht pred)
   (hash-filter ht (lambda (k _) (pred k))))
