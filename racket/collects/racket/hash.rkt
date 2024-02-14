@@ -64,30 +64,14 @@
         res)))
 
 (define (hash-filter ht pred)
-  (define constructor
-    (match (map (λ (f) (f ht)) (list immutable? hash-ephemeron? hash-weak? hash-eq? hash-eqv? hash-equal-always?))
-      ;; Ephemerons
-      [(list _ #t _ #t _ _) make-ephemeron-hasheq]
-      [(list _ #t _ _ #t _) make-ephemeron-hasheqv]
-      [(list _ #t _ _ _ #t) make-ephemeron-hashalw]
-      [(list _ #t _ _ _ _) make-ephemeron-hash]
-      ;; Weak Hashes
-      [(list _ _ #t #t _ _) make-weak-hasheq]
-      [(list _ _ #t _ #t _) make-weak-hasheqv]
-      [(list _ _ #t _ _ #t) make-weak-hashalw]
-      [(list _ _ #t _ _ _) make-weak-hash]
-      ;; Immutable Hashes
-      [(list #t _ _ #t _ _) make-immutable-hasheq]
-      [(list #t _ _ _ #t _) make-immutable-hasheqv]
-      [(list #t _ _ _ _ #t) make-immutable-hashalw]
-      [(list #t _ _ _ _ _) make-immutable-hash]
-      ;; Mutable Hashes
-      [(list _ _ _ #t _ _) make-hasheq]
-      [(list _ _ _ _ #t _) make-hasheqv]
-      [(list _ _ _ _ _ #t) make-hashalw]
-      ;; mutable hash with equal? comparator
-      [_ make-hash]))
-  (constructor (for/list ([(k v) (in-hash ht)] #:when (pred k v)) (cons k v))))
+  (cond [(immutable? ht)
+         (for ([(k v) (in-hash ht)])
+           (when (not (pred k v))
+             (set! ht (hash-remove ht k))))]
+        [else
+         (for ([(k v) (in-hash ht)])
+           (when (not (pred k v))
+             (hash-remove! ht k)))]))
 
 (define (hash-filter-keys ht pred)
   (hash-filter ht (lambda (k _) (pred k))))
