@@ -1040,36 +1040,80 @@ depends on both the key and value meeting the criteria defined by @racket[pred].
                (λ (k v) (and (not (number? k)) (number? v) (> v 1))))
 ]
 
-@history[#:added "8.12.0.6"]
+@history[#:added "8.12.0.9"]
 }
-
-@defproc[(hash-filter-values [ht hash?] [pred procedure?])
-         hash?]{
-
-Filters a hash table by applying a predicate to it's values.
-
-@examples[
-#:eval the-eval
-(hash-filter-values (for/hash ([num '(1 2 3 4 5)]) (values num (add1 num))) (λ (v) (< v 3)))
-(hash-filter-values (make-hash) (λ (v) (< v 3)))
-]
-
-@history[#:added "8.11.1"]
-}
-
 
 @defproc[(hash-filter-keys [ht hash?] [pred procedure?])
          hash?]{
 
-Filters a hash table by applying a predicate to it's keys.
+Filters the @racket[hash?] @racket[ht] based on a predicate @racket[pred] applied to its keys.
+This function constructs a new hash table that includes only those key-value pairs
+from the input @racket[ht] for which the predicate @racket[pred] returns true when
+applied to the keys. Similar to @racket[hash-filter-values], the output hash table
+maintains the mutability and key comparator of the input hash table, ensuring that
+the structural and operational properties of the original hash are retained.
 
 @examples[
-#:eval the-eval
-(hash-filter-keys (for/hash ([num '(1 2 3 4 5)]) (values num 0)) (λ (k) (< k 3)))
-(hash-filter-keys (make-hash) (λ (k) (< k 3)))
+  #:eval the-eval
+  ;; Filtering keys less than 3 from a hash table
+  (hash-filter-keys (for/hash ([num '(1 2 3 4 5)]) (values num 0)) (λ (k) (< k 3)))
+
+  ;; Filtering keys from an empty hash table
+  (hash-filter-keys (make-hash) (λ (k) (< k 3)))
+
+  ;; Filtering with eq? hash table
+  (hash-filter-keys (make-hasheq '([#f . "false"] [#t . "true"])) (λ (k) (eq? k #t)))
+
+  ;; Filtering lists as keys
+  (hash-filter-keys (hash (list 1 2) 'pair (vector 3 4) 'vector) list?)
+
+  ;; Filtering keys of mixed types: numbers and strings
+  (hash-filter-keys (hash "one" 1 2 "two" "three" 3) (lambda (k) (number? k)))
+
+  ;; Filtering keys that are symbols
+  (hash-filter-keys (hash 'apple "fruit" 'carrot "vegetable" "banana" "fruit")
+                    (lambda (k) (symbol? k)))
 ]
 
-@history[#:added "8.11.1"]
+@history[#:added "8.12.0.9"]
+}
+
+
+@defproc[(hash-filter-values [ht hash?] [pred procedure?])
+         hash?]{
+
+Filters the @racket[hash?] @racket[ht] based on a predicate @racket[pred] applied to its values.
+This function returns a new hash table containing only the key-value pairs for which
+the predicate @racket[pred] returns true when applied to the values of @racket[ht].
+The resulting hash table retains the mutability and the key comparison predicate
+(e.g., @racket[eq?], @racket[eqv?], @racket[equal-always?], @racket[equal?]) of the input
+hash table @racket[ht]. This ensures that the characteristics of the input hash are preserved
+in the output, allowing for a seamless transition between different types of hash tables.
+
+@examples[
+   #:eval the-eval
+   ;; Filtering values less than 3
+   (hash-filter-values (for/hash ([num '(1 2 3 4 5)]) (values num num)) (λ (v) (< v 3)))
+
+   ;; Filtering values from an empty hash table
+   (hash-filter-values (make-hash) (λ (v) (< v 3)))
+
+   ;; Filtering with eqv? hash table
+   (hash-filter-values (make-hasheqv '([1 . "one"] [2 . "two"])) (λ (v) (eqv? v "two")))
+
+   ;; Filtering values of mixed types: strings and numbers
+   (hash-filter-values (hash 'one "1" 'two 2 'three "3") (lambda (v) (string? v)))
+
+   ;; Filtering values to include only vectors
+   (hash-filter-values (hash 'list (list 1 2 3) 'vector #(4 5 6) 'string "hello")
+                       (lambda (v) (vector? v)))
+
+   ;; Filtering based on complex values (hash tables and lists)
+   (hash-filter-values (hash 'nested-hash (hash 'a 1 'b 2) 'nested-list (list 'x 'y 'z))
+                       (lambda (v) (hash? v)))
+ ]
+
+@history[#:added "8.12.0.9"]
 }
 
 @(close-eval the-eval)

@@ -67,7 +67,7 @@
   (cond
     [(immutable? ht)
      (for/fold ([ht ht]) ([(k v) (in-immutable-hash ht)]
-                          #:when (not (pred k v)))
+                          #:unless (pred k v))
        (hash-remove ht k))]
     [else
      (define new-ht (hash-copy-clear ht))
