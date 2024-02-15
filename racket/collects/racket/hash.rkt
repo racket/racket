@@ -1,7 +1,5 @@
 #lang racket/base
-(require racket/contract/base
-         (only-in racket/function curry)
-         (only-in racket/list flatten))
+(require racket/contract/base)
 
 (define ((hash-duplicate-error name) key value1 value2)
   (error name "duplicate values for key ~e: ~e and ~e" key value1 value2))
