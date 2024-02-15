@@ -66,15 +66,16 @@
         res)))
 
 (define (hash-filter ht pred)
-  (define fresh-ht (hash-copy-clear ht))
-  (define filter-ht
-    (λ (ht-set-fn seq-fn)
-      (apply (curry ht-set-fn fresh-ht)
-             (flatten (for/list ([(k v) (seq-fn ht)] #:when (pred k v)) (cons k v))))))
-  (if (immutable? ht)
-      (set! fresh-ht (filter-ht hash-set* in-immutable-hash))
-      (filter-ht hash-set*! in-hash))
-  fresh-ht)
+  (cond
+    [(immutable? ht)
+     (for/fold ([ht ht]) ([(k v) (in-immutable-hash ht)]
+                          #:when (not (pred k v)))
+       (hash-remove ht k))]
+    [else
+     (define new-ht (hash-copy-clear ht))
+     (for ([(k v) (in-hash ht)] #:when (pred k v))
+       (hash-set! new-ht k v))
+     new-ht]))
 
 (define (hash-filter-keys ht pred)
   (hash-filter ht (lambda (k _) (pred k))))
