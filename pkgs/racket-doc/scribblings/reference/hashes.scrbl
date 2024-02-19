@@ -1008,15 +1008,16 @@ one for the result.
 @defproc[(hash-filter [ht hash?] [pred (-> any/c any/c boolean?)])
          hash?]{
 
-Filters the @racket[hash?] @racket[ht] based on a predicate @racket[pred] applied to both its keys and values.
-This function constructs a new hash table that includes only those key-value pairs
-from the input @racket[ht] for which the predicate @racket[pred] returns true when
-applied simultaneously to the keys and values of @racket[ht]. The output hash table
-retains the mutability and the key comparison predicate (e.g., @racket[eqv?],
-@racket[equal-always?], @racket[equal?]) of the input hash table @racket[ht], ensuring that
-the structural and operational properties of the original hash are preserved
-in the output. This allows for nuanced filtering where the inclusion of a key-value pair
-depends on both the key and value meeting the criteria defined by @racket[pred].
+Filters the @racket[hash?] @racket[ht] based on a predicate
+@racket[pred] applied to both its keys and values. This function
+constructs a new hash table that includes only those key-value pairs
+from the input @racket[ht] for which the predicate @racket[pred]
+returns true when applied simultaneously to the keys and values of
+@racket[ht]. The output hash table retains the mutability and the key
+comparison predicate (e.g., @racket[eqv?], @racket[equal-always?],
+@racket[equal?]) of the input hash table @racket[ht], ensuring that
+the structural and operational properties of the original hash are
+preserved in the output.
 
 @examples[
   #:eval the-eval
@@ -1082,13 +1083,13 @@ the structural and operational properties of the original hash are retained.
 @defproc[(hash-filter-values [ht hash?] [pred procedure?])
          hash?]{
 
-Filters the @racket[hash?] @racket[ht] based on a predicate @racket[pred] applied to its values.
-This function returns a new hash table containing only the key-value pairs for which
-the predicate @racket[pred] returns true when applied to the values of @racket[ht].
-The resulting hash table retains the mutability and the key comparison predicate
-(e.g., @racket[eq?], @racket[eqv?], @racket[equal-always?], @racket[equal?]) of the input
-hash table @racket[ht]. This ensures that the characteristics of the input hash are preserved
-in the output, allowing for a seamless transition between different types of hash tables.
+Filters the @racket[hash?] @racket[ht] based on a predicate
+@racket[pred] applied to its values.  This function returns a new hash
+table containing only the key-value pairs for which the predicate
+@racket[pred] returns true when applied to the values of @racket[ht].
+The resulting hash table retains the mutability and the key comparison
+predicate (e.g., @racket[eq?], @racket[eqv?], @racket[equal-always?],
+@racket[equal?]) of the input hash table @racket[ht].
 
 @examples[
    #:eval the-eval
