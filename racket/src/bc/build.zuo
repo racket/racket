@@ -386,15 +386,6 @@
                          (list (at-source "../mzcom/com_glue.h")
                                (at-source "../mzcom/resource.h"))))
 
-  ;; These headers have only preprocessor definitions, so they're not
-  ;; picked up in ".sdep" files:
-  (define quiet-deps
-    (list
-     (at-source "../version/racket_version.h")
-     (at-source "sconfig.h")
-     mzconfig.h
-     (at-source "src/schcpt.h")))
-
   (define rktio-headers
     (list (at-source "src/schrktio.h")
           (at-source "../rktio/rktio.h")
@@ -419,6 +410,20 @@
      (at-source "src/lightning/arm/fp.h") (at-source "src/lightning/arm/fp-common.h")
      (at-source "src/lightning/arm/fp-vfp.h") (at-source "src/lightning/arm/fp-swf.h")
      (at-source "src/future.h") (at-source "src/jit_ts.c") (at-source "src/jit_ts_protos.h")))
+
+  ;; These headers have only preprocessor definitions, so they're not
+  ;; picked up in ".sdep" files:
+  (define quiet-deps
+    (append
+     (list
+      (at-source "../version/racket_version.h")
+      (at-source "sconfig.h")
+      mzconfig.h
+      (at-source "src/schcpt.h"))
+     ;; mostly preprocessor definitions, at least; this creates
+     ;; too many dependencies, but that's better than too few,
+     ;; and we don't work on BC enough for it to matter anymore:
+     jit-headers))
 
   (define windows-libs '("WS2_32.lib" "Shell32.lib" "User32.lib" "Winmm.lib"
                                       "RpCrt4.lib" "Ole32.lib" "Advapi32.lib"))

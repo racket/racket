@@ -576,6 +576,8 @@
     (bin-exact 25 'fx+/wraparound 10 15)
     (bin-exact 3.4 'fl+ 1.1 2.3 #t)
     (tri-exact 7.4 'fl+ (lambda () 1.1) 2.3 4.0 void #f)
+    ;; 4.1995579896506e-322 has only its low byte as non-zero
+    (bin-exact 4.1995579896506e-322 'fl+ 4.1995579896506e-322 0.0 #t)
 
     (un -3 '- 3)
     (bin 3 '- 7 4)
@@ -593,6 +595,7 @@
     (un-exact -3.6 'fl- 3.6)
     (bin-exact -0.75 'fl- 1.5 2.25 #t)
     (tri-exact -1.5 'fl- (lambda () 1.5) 2.25 0.75 void #f)
+    (un-exact -4.1995579896506e-322 'fl- 4.1995579896506e-322 #t)
 
     (un 4 '* 4)
     (bin 4 '* 1 4)
@@ -611,6 +614,7 @@
     (bin-exact 253 'fx* 11 23)
     (bin-exact 253 'fx*/wraparound 11 23)
     (bin-exact 2.53 'fl* 1.1 2.3 #t)
+    (bin-exact 4.1995579896506e-322 'fl* 4.1995579896506e-322 1.0 #t)
     (tri-exact 506 'fx* (lambda () 11) 23 2 void #f)
     (tri-exact 7.59 'fl* (lambda () 1.1) 2.3 3.0 void #f)
 
