@@ -797,10 +797,12 @@ We should also test deep continuations.
     (sleep 0.1))
   
   ;; Stress test:
-  (for-each
-   (lambda (v) (check-equal? 10 (touch (touch v))))
-   (for/list ([i (in-range 10000)])
-     (func (lambda () (func (lambda () 10))))))
+  (check-equal?
+   #t
+   (andmap
+    (lambda (v) (equal? 10 (touch (touch v))))
+    (for/list ([i (in-range 10000)])
+      (func (lambda () (func (lambda () 10)))))))
   
   ;; Stress test:
   (check-equal?
