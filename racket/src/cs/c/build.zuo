@@ -152,7 +152,8 @@
          (list
           (at-source "../../start/embedded_dll.inc")
           (at-source "../../start/cmdl_to_argv.inc")
-          (at-source "../../start/delayed.inc"))
+          (at-source "../../start/delayed.inc")
+          (at-source "../../start/parse_cmdl.inc"))
          '())))
 
   (define main.o (at-dir (.c->.o "main.c")))

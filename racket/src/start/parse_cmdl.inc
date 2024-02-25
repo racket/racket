@@ -39,10 +39,12 @@ static int parse_command_line(int pos, /* starting pos ifor output in `_command`
   int maxargs = *_command_len;
   int findquote = 0; /* i.e., inside a quoted block? */
   wchar_t **command = *_command;
+  int command_alloc = 0;
 
   if (maxargs == 0) {
     maxargs = 49;
     command = (wchar_t **)malloc((maxargs + 1) * sizeof(wchar_t *));
+    command_alloc = 1;
   }
   
   parse = created = write = buf;
@@ -92,6 +94,10 @@ static int parse_command_line(int pos, /* starting pos ifor output in `_command`
           c2 = (wchar_t **)malloc(((2 * maxargs) + 1) * sizeof(wchar_t *));
           memcpy(c2, command, maxargs * sizeof(wchar_t *));
           maxargs *= 2;
+	  if (command_alloc)
+	    free(command);
+	  command = c2;
+	  command_alloc = 1;
         }
       }
     }
