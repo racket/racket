@@ -869,4 +869,25 @@
 
 ;; ----------------------------------------
 
+(let* ([ht
+        (for/fold ([ht #hash()]) ([i (in-range 100000)])
+          (hash-set ht (equal-hash-code (hash i #t)) #t))]
+       [ht
+        (for/fold ([ht ht]) ([i (in-range 100000)])
+          (hash-set ht (equal-hash-code (hash (number->string i) #t)) #t))]
+       [ht
+        (for/fold ([ht ht]) ([i (in-range 100000)])
+          (hash-set ht (equal-hash-code (list i)) #t))]
+       [ht
+        (for/fold ([ht ht]) ([i (in-range 100000)])
+          (hash-set ht (equal-hash-code (vector i)) #t))]
+       [ht
+        (for/fold ([ht ht]) ([i (in-range 1000)])
+          (hash-set ht (equal-hash-code (hash (integer->char i) #t)) #t))])
+  ;; allow some collisions, at worst 2 collisions per key; at the time of
+  ;; writing, we expect collisions with chars, but not other collisions
+  (test #t > (hash-count ht) 200000))
+
+;; ----------------------------------------
+
 (report-errs)
