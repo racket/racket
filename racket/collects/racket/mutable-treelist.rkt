@@ -255,7 +255,7 @@
   (check-sort-arguments 'mutable-treelist-sort! less-than? get-key)
   (define vec (treelist->vector (mutable-treelist-tl mtl)))
   (vector-sort! vec less-than? 0 (vector*-length vec) get-key cache-keys?)
-  (for/treelist ([i (in-range 0 (vector-length vec))])
+  (for ([i (in-range 0 (vector-length vec))])
     (mutable-treelist-set! mtl i (vector*-ref vec i))))
 
 (define-sequence-syntax in-mutable-treelist

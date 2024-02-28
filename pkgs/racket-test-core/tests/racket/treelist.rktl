@@ -198,7 +198,7 @@
     (make-keyword-procedure
      (lambda (kws kw-args expect op! mtl . args)
        (define copy (wrap (mutable-treelist-copy mtl)))
-       (keyword-apply op! kws kw-args copy args)
+       (test #t void? (keyword-apply op! kws kw-args copy args))
        (test expect `(,op!) (mutable-treelist-snapshot copy)))))
   (test #f mutable-treelist-empty? small-treelist)
   (test #t equal? small-treelist small-treelist)
