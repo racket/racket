@@ -9,7 +9,7 @@
 
 @title[#:tag "treelist"]{Treelists}
 
-A @deftech{treelist} is represents a sequence of list elements in a
+A @deftech{treelist} represents a sequence of elements in a
 way that supports many operations in @math{O(log N)} time: accessing
 an element of the list by index, adding to the front of the list,
 adding to the end of the list, removing an element by index, replacing
@@ -23,7 +23,7 @@ Treelists are primarily intended to be used in immutable form via
 @racketmodname[racket/treelist], where an operation such as adding to
 the treelist produces a new treelist while the old one remains intact.
 A mutable variant of treelists is provided by
-@racketmodname[racket/mutable-treelist], where an mutable treelist can
+@racketmodname[racket/mutable-treelist], where a mutable treelist can
 be a convenient alternative to putting an immutable treelist into a
 @tech{box}. Mutable treelist operations take the same time as
 immutable treelist operations, unless otherwise specified. Where the
@@ -54,7 +54,7 @@ Returns a @tech{treelist} with @racket[v]s as its elements in order.
 
 This operation takes @math{O(N log N)} time to construct a treelist of
 @math{N} elements. Unless otherwise specified, other operations on a
-treelist of length @math{N} also take @math{O(log N)} time.
+treelist of length @math{N} take @math{O(log N)} time.
 
 @examples[
 #:eval the-eval
@@ -88,7 +88,7 @@ Returns the number of elements in @racket[tl]. This operation takes
 
 @defproc[(treelist-ref [tl treelist?] [pos exact-nonnegative-integer?]) any/c]{
 
-Returns the @racket[i]th element of @racket[tl]. The first element is
+Returns the @racket[pos]th element of @racket[tl]. The first element is
 position @racket[0], and the last position is one less than
 @racket[(treelist-length tl)].
 
@@ -168,7 +168,7 @@ Produces a treelist like @racket[tl], except that the element at
 
 @defproc[(treelist-set [tl treelist?] [pos exact-nonnegative-integer?] [v any/c]) treelist?]{
 
-Produces a treelist like @racket[tl], except that is the element at
+Produces a treelist like @racket[tl], except that the element at
 @racket[pos] is replaced with @racket[v]. The result is equivalent to
 @racket[(treelist-insert (treelist-delete tl pos) pos v)].
 
@@ -186,8 +186,8 @@ the resulting treelist's length is @math{N}, then appending takes
 @math{O(M log N)} time.
 
 If any other than the first @racket[tl] is chaperoned via
-@racket[chaperone-treelist] with a procedure for it @racket[_ref-proc],
-the time to produce the result of @math{O(N)} for @math{N} elements
+@racket[chaperone-treelist] with a procedure for its @racket[_ref-proc],
+the time to produce the result is @math{O(N)} for @math{N} elements
 added to the first @racket[tl].
 
 @examples[
@@ -310,7 +310,7 @@ results. For a constant-time @racket[proc], this operation takes
 Checks each element of @racket[tl] with @racket[eql?] and @racket[v]
 (with @racket[v] the second argument) until the result is a true
 value, and then returns @racket[#t]. If no such element is found, the
-result is @racket[#false]. For a constant-time @racket[eql?], this
+result is @racket[#f]. For a constant-time @racket[eql?], this
 operation takes @math{O(N)} time.
 
 @examples[
@@ -325,7 +325,7 @@ operation takes @math{O(N)} time.
 
 Checks each element of @racket[tl] with @racket[pred] until the result
 is a true value, and then returns that element. If no such element is
-found, the result is @racket[#false]. For a constant-time
+found, the result is @racket[#f]. For a constant-time
 @racket[pred], this operation takes @math{O(N)} time.
 
 @examples[
@@ -396,7 +396,7 @@ passed to @racket[treelist-ref], and the value that
 @racket[treelist-ref] on @racket[tl] produces for the given index; it
 must produce a chaperone replacement for the value, which is the
 result of @racket[treelist-ref] on the chaperone. A @racket[ref-proc] as
-@racket[#false] is equivalent to @racket[(lambda (tl _i _v) _v)], except
+@racket[#f] is equivalent to @racket[(lambda (tl _i _v) _v)], except
 that it does not disable efficient @racket[treelist-append].
 
 The @racket[set-proc] procedure must accept @racket[tl], an index
@@ -427,7 +427,7 @@ treelist in the box. As a special case, @racket[mutable-treelist-set!]
 modifies the treelist representation within the boxed value. This
 model of a mutable treelist explains its behavior in the case of
 concurrent modification: concurrent @racket[mutable-treelist-set!]
-operations for different positions will not interefere, but races with
+operations for different positions will not interfere, but races with
 other operations will sometimes negate one of the modifications.
 Concurrent modification is thus somewhat unpredictable but still safe,
 and it is not managed by a lock.
@@ -451,7 +451,7 @@ Returns a @tech{mutable treelist} with @racket[v]s as its elements in order.
 (mutable-treelist 1 "a" 'apple)
 ]}
 
-@defproc[(make-mutable-treelist [n nonnegative-exact-integer?] [v any/c #f]) mutable-treelist?]{
+@defproc[(make-mutable-treelist [n exact-nonnegative-integer?] [v any/c #f]) mutable-treelist?]{
 
 Creates a @tech{mutable treelist} that contains @racket[n] elements,
 each initialized as @racket[v]. Creating the mutable treelist takes @math{O(N)}
@@ -510,7 +510,7 @@ Returns the number of elements currently in @racket[tl].
 
 @defproc[(mutable-treelist-ref [tl mutable-treelist?] [pos exact-nonnegative-integer?]) any/c]{
 
-Returns the @racket[i]th element of @racket[tl]. The first element is
+Returns the @racket[pos]th element of @racket[tl]. The first element is
 position @racket[0], and the last position is one less than
 @racket[(mutable-treelist-length tl)].
 
@@ -677,7 +677,7 @@ time.
 @defproc[(mutable-treelist-map! [tl mutable-treelist?] [proc (any/c . -> . any/c)]) void?]{
 
 Modifies @racket[tl] by applying @racket[proc] to each element
-of @racket[tl] and installed the result in place of the element.
+of @racket[tl] and installing the result in place of the element.
 
 @examples[
 #:eval the-eval
