@@ -47,6 +47,8 @@ static Scheme_Object *vector_set_copy(int argc, Scheme_Object *argv[]);
 static Scheme_Object *vector_star_set_copy(int argc, Scheme_Object *argv[]);
 static Scheme_Object *vector_append(int argc, Scheme_Object *argv[]);
 static Scheme_Object *vector_star_append(int argc, Scheme_Object *argv[]);
+static Scheme_Object *vector_extend(int argc, Scheme_Object *argv[]);
+static Scheme_Object *vector_star_extend(int argc, Scheme_Object *argv[]);
 static Scheme_Object *vector_to_immutable (int argc, Scheme_Object *argv[]);
 static Scheme_Object *vector_to_values (int argc, Scheme_Object *argv[]);
 static Scheme_Object *chaperone_vector(int argc, Scheme_Object **argv);
@@ -236,6 +238,11 @@ scheme_init_vector (Scheme_Startup_Env *env)
 						    "vector-append",
 						    0, -1),
 			     env);
+  scheme_addto_prim_instance("vector-extend",
+			     scheme_make_immed_prim(vector_extend,
+						    "vector-extend",
+						    2, 3),
+			     env);
   scheme_addto_prim_instance("vector*-copy",
 			     scheme_make_immed_prim(vector_star_copy,
 						    "vector*-copy",
@@ -250,6 +257,11 @@ scheme_init_vector (Scheme_Startup_Env *env)
 			     scheme_make_immed_prim(vector_star_append,
 						    "vector*-append",
 						    0, -1),
+			     env);
+  scheme_addto_prim_instance("vector*-extend",
+			     scheme_make_immed_prim(vector_star_extend,
+						    "vector*-extend",
+						    2, 3),
 			     env);
 
   p = scheme_make_immed_prim(vector_to_immutable, "vector->immutable-vector", 1, 1);
@@ -1182,7 +1194,7 @@ static Scheme_Object *vector_copy(int argc, Scheme_Object *argv[])
 static Scheme_Object *vector_star_copy(int argc, Scheme_Object *argv[])
 {
   if (!SCHEME_VECTORP(argv[0]))
-    scheme_wrong_contract("vector*-copy", "(and/c vector? (not/c immutable?))", 0, argc, argv);
+    scheme_wrong_contract("vector*-copy", "(and/c vector? (not/c impersonator?))", 0, argc, argv);
 
   return vector_copy(argc, argv);
 }
@@ -1216,7 +1228,7 @@ static Scheme_Object *do_vector_set_copy(const char *who, int chaperone_ok, int 
   if (chaperone_ok && SCHEME_NP_CHAPERONEP(s))
     s = SCHEME_CHAPERONE_VAL(s);
   if (!SCHEME_VECTORP(s))
-    scheme_wrong_contract(who, chaperone_ok ? "vector?" : "(and/c vector? (not/c immutable?))", 0, argc, argv);
+    scheme_wrong_contract(who, chaperone_ok ? "vector?" : "(and/c vector? (not/c impersonator?))", 0, argc, argv);
 
   len = SCHEME_VEC_SIZE(s);
 
@@ -1253,7 +1265,7 @@ static Scheme_Object *do_vector_append(const char *who, int chaperone_ok, int ar
     if (chaperone_ok && SCHEME_NP_CHAPERONEP(s))
       s = SCHEME_CHAPERONE_VAL(s);
     if (!SCHEME_VECTORP(s))
-      scheme_wrong_contract(who, chaperone_ok ? "vector?" : "(and/c vector? (not/c immutable?))", i, argc, argv);
+      scheme_wrong_contract(who, chaperone_ok ? "vector?" : "(and/c vector? (not/c impersonator?))", i, argc, argv);
     len += SCHEME_VEC_SIZE(s);
   }
 
@@ -1290,6 +1302,56 @@ static Scheme_Object *vector_star_append(int argc, Scheme_Object *argv[])
 {
   return do_vector_append("vector*-append", 0, argc, argv);
 }
+
+static Scheme_Object *do_vector_extend(const char *who, int chaperone_ok, int argc, Scheme_Object *argv[])
+{
+  Scheme_Object *v, *fill, *new_vec, *argv2[2];
+  intptr_t new_len;
+
+  v = argv[0];
+  if (chaperone_ok && SCHEME_NP_CHAPERONEP(v))
+    v = SCHEME_CHAPERONE_VAL(v);
+  if (!SCHEME_VECTORP(v))
+    scheme_wrong_contract(who, chaperone_ok ? "vector?" : "(and/c vector? (not/c impersonator?))", 0, argc, argv);
+  new_len = scheme_extract_index(who, 1, argc, argv, -1, 0);
+
+  if (new_len < SCHEME_VEC_SIZE(v))
+    scheme_contract_error(who,
+			  "new length must be at least the existing length",
+			  "new length", 1, argv[1],
+			  "existing length", 1, scheme_make_integer(SCHEME_VEC_SIZE(v)),
+			  NULL);
+
+  if ((new_len == -1) 
+      /* also watch for overflow: */
+      || (REV_VECTOR_BYTES(VECTOR_BYTES(new_len)) != new_len)) {
+    scheme_raise_out_of_memory(who, "creating vector of length %s",
+			       scheme_make_provided_string(argv[1], 1, NULL));
+  }
+
+  if (argc == 3)
+    fill = argv[2];
+  else
+    fill = scheme_make_integer(0);
+
+  new_vec = scheme_make_vector(new_len - SCHEME_VEC_SIZE(v), fill);
+
+  argv2[0] = argv[0]; /* v might have lost the chaperone */
+  argv2[1] = new_vec;
+
+  return do_vector_append(who, chaperone_ok, 2, argv2);
+}
+
+static Scheme_Object *vector_extend(int argc, Scheme_Object *argv[])
+{
+  return do_vector_extend("vector-extend", 1, argc, argv);
+}
+
+static Scheme_Object *vector_star_extend(int argc, Scheme_Object *argv[])
+{
+  return do_vector_extend("vector*-extend", 0, argc, argv);
+}
+
 
 static Scheme_Object *vector_to_immutable (int argc, Scheme_Object *argv[])
 {

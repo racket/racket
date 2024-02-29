@@ -568,3 +568,45 @@
    [(size) (make-shared-fxvector size 0)]
    [(size init)
     (register-place-shared (make-fxvector size init))]))
+
+(define/who vector-extend
+  (case-lambda
+   [(v new-size)
+    (vector-extend v new-size 0)]
+   [(v new-size fill)
+    (check who vector? v)
+    (check who exact-nonnegative-integer? new-size)
+    (let ([old-size (vector-length v)])
+      (unless (<= old-size new-size)
+	(raise-arguments-error who
+                               "new length is shorter than existing length"
+                               "new length" new-size
+                               "existing length" old-size))
+      (unless (and (fixnum? new-size)
+                   (fx< new-size 1000))
+	(guard-large-allocation who 'vector new-size (foreign-sizeof 'void*)))
+      (vector-append
+       v
+       (#3%make-vector (fx- new-size old-size) fill)))]))
+
+
+
+(define/who vector*-extend
+  (case-lambda
+   [(v new-size)
+    (vector*-extend v new-size 0)]
+   [(v new-size fill)
+    (check who #%vector? :contract  "(and/c vector? (not impersonator?))" v)
+    (check who exact-nonnegative-integer? new-size)
+    (let ([old-size (#%vector-length v)])
+      (unless (<= old-size new-size)
+	(raise-arguments-error who
+                               "new length is shorter than existing length"
+                               "new length" new-size
+                               "existing length" old-size))
+      (unless (and (fixnum? new-size)
+                   (fx< new-size 1000))
+	(guard-large-allocation who 'vector new-size (foreign-sizeof 'void*)))
+      (#%vector-append
+       v
+       (#3%make-vector (fx- new-size old-size) fill)))]))

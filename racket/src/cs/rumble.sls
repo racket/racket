@@ -389,12 +389,14 @@
           vector-fill!
           vector->immutable-vector
           vector->list
+	  vector-extend
           vector*-length
           vector*-ref
           vector*-set!
           vector*-copy
           vector*-append
           vector*-set/copy
+	  vector*-extend
 
           impersonate-vector
           impersonate-vector*

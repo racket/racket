@@ -360,6 +360,24 @@ Creates a fresh vector with the same content as @racket[vec], except that
 
 @history[#:added "8.11.1.10"]}
 
+@defproc[(vector-extend [vec vector?]
+                        [new-size (and/c exact-nonnegative-integer? (>=/c (vector-length vec)))]
+                        [val any/c 0])
+         vector?]{
+
+Creates a fresh vector of length @racket[new-size] where the prefix is
+filled with the elements of @racket[vec] and the remainder with
+@racket[val]. 
+
+@mz-examples[#:eval vec-eval
+ (vector-extend #(1 2 3) 10)
+ (vector-extend #(1 2 3) 10 #f)
+ (vector-extend #(1 2 3) 3 #f)
+]
+
+@history[#:added "8.12.0.10"]}
+
+
 @defproc[(vector-filter [pred procedure?] [vec vector?]) vector?]{
 Returns a fresh vector with the elements of @racket[vec] for which
  @racket[pred] produces a true value. The @racket[pred] procedure is
@@ -510,13 +528,18 @@ v2]
                            [pos exact-nonnegative-integer?]
                            [val any/c])
          vector?]
+@defproc[(vector*-extend [vec (and/c vector? (not/c impersonator?))]
+                         [pos exact-nonnegative-integer?]
+                         [val any/c 0])
+         vector?]
 )]{
 
-Like @racket[vector-copy], @racket[vector-append], and
-@racket[vector-set/copy], but constrained to work on vectors that are not
-@tech{impersonators}.
+Like @racket[vector-copy], @racket[vector-append],
+@racket[vector-set/copy], and @racket[vector-extend] but constrained
+to work on vectors that are not @tech{impersonators}.
 
-@history[#:added "8.11.1.10"]}
+@history[#:added "8.11.1.10"
+         #:changed "8.12.0.10" @elem{Added @racket[vector*-extend].}]}
 
 
 @close-eval[vec-eval]

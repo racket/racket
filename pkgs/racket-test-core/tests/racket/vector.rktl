@@ -141,6 +141,40 @@
     (err/rt-test (vector*-append vec #(a b)))
     (err/rt-test (vector*-append #(a b) vec))))
 
+;; ---------- vector-extend ----------------
+
+(let ()
+  (test #() vector-extend #() 0)
+  (test #(0) vector-extend #() 1)
+  (test #(#f) vector-extend #() 1 #f)
+  (test #(1 2) vector-extend #(1 2) 2)
+  (test #(1 2 0) vector-extend #(1 2) 3)
+  (test #(1 2 0 0 0 0 0 0 0 0) vector-extend #(1 2) 10)
+  (err/rt-test (vector-extend #(a b) 1))
+  (err/rt-test (vector-extend #(a b) 'x))
+  (err/rt-test (vector-extend 1 #(a b)))
+  (err/rt-test (vector-extend 1 #(a b) #f))
+  (let ([vec (chaperone-vector #(1 2 3) (lambda (b i v) v) (lambda (b i v) v))])
+    (test #(1 2 3) vector-extend vec 3)
+    (test #(1 2 3 #f) vector-extend vec 4 #f)))
+
+
+(let ()
+  (test #() vector*-extend #() 0)
+  (test #(0) vector*-extend #() 1)
+  (test #(#f) vector*-extend #() 1 #f)
+  (test #(1 2) vector*-extend #(1 2) 2)
+  (test #(1 2 0) vector*-extend #(1 2) 3)
+  (test #(1 2 0 0 0 0 0 0 0 0) vector*-extend #(1 2) 10)
+  (err/rt-test (vector*-extend #(a b) 1))
+  (err/rt-test (vector*-extend #(a b) 'x))
+  (err/rt-test (vector*-extend 1 #(a b)))
+  (err/rt-test (vector*-extend 1 #(a b) #f))
+  (let ([vec (chaperone-vector #(1 2 3) (lambda (b i v) v) (lambda (b i v) v))])
+    (err/rt-test (vector*-extend vec 3))
+    (err/rt-test (vector*-extend vec 5 #f))))
+
+
 ;; ---------- vector-filter[-not] ----------
 (let ()
   (define f vector-filter)

@@ -8,11 +8,13 @@
          vector-count vector-argmin vector-argmax
          vector-member vector-memq vector-memv
          vector-sort vector-sort!
-         vector*-copy vector*-set/copy vector*-append)
+         vector*-copy vector*-set/copy vector*-append
+	 vector-extend vector*-extend)
 (require racket/unsafe/ops
          (only-in '#%kernel
                   vector-copy vector-append vector-set/copy
-                  vector*-copy vector*-append vector*-set/copy)
+                  vector*-copy vector*-append vector*-set/copy
+		  vector-extend vector*-extend)
          (for-syntax racket/base)
          (rename-in (except-in "private/sort.rkt" sort)
                     [vector-sort! raw-vector-sort!]

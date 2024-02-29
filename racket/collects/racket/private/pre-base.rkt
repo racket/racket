@@ -232,7 +232,8 @@
                               mutable-hash? mutable-box?
                               syntax-srcloc
                               vector-copy vector-append vector-set/copy
-                              vector*-copy vector*-set/copy vector*-append)
+                              vector*-copy vector*-set/copy vector*-append
+                              vector-extend vector*-extend)
              (all-from "reqprov.rkt")
              (all-from-except "for.rkt"
                               define-in-vector-like
