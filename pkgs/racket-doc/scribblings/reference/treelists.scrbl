@@ -14,7 +14,9 @@ way that supports many operations in @math{O(log N)} time: accessing
 an element of the list by index, adding to the front of the list,
 adding to the end of the list, removing an element by index, replacing
 an element by index, appending lists, dropping elements from the start
-or end of the list, and extracting a sublist. The base for the
+or end of the list, and extracting a sublist. More generally,
+unless otherwise specified, operations on a
+treelist of length @math{N} take @math{O(log N)} time. The base for the
 @math{log} in @math{O(log N)} is large enough that it's effectively
 constant-time for many purposes. Treelists are currently implemented
 as RRB trees @cite["Stucki15"].
@@ -53,8 +55,7 @@ otherwise.}
 Returns a @tech{treelist} with @racket[v]s as its elements in order.
 
 This operation takes @math{O(N log N)} time to construct a treelist of
-@math{N} elements. Unless otherwise specified, other operations on a
-treelist of length @math{N} take @math{O(log N)} time.
+@math{N} elements.
 
 @examples[
 #:eval the-eval
