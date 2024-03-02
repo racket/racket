@@ -38,6 +38,19 @@
                       [m '(1 -1)])
         (* i m)))
 
+(test (make-treelist 0 567) "make-treelist 0" (treelist))
+(test (eq? (make-treelist 0 567) (treelist)) "eq make-treelist" #t)
+(test (make-treelist 1 #f) "make-treelist 1" (treelist #f))
+(test (make-treelist 2 #f) "make-treelist 2" (treelist #f #f))
+(test (equal? (make-treelist 100 #f) (vector->treelist (make-vector 100 #f))) "make-treelist 100" #t)
+(test (equal? (make-treelist 100 'other) (vector->treelist (make-vector 100 'other))) "make-treelist 100" #t)
+(test (equal? (make-treelist 101 #f) (vector->treelist (make-vector 101 #f))) "make-treelist 101" #t)
+(test (equal? (make-treelist 1000 #f) (vector->treelist (make-vector 1000 #f))) "make-treelist 1000" #t)
+(test (equal? (make-treelist 1001 #f) (vector->treelist (make-vector 1001 #f))) "make-treelist 1001" #t)
+(test (equal? (make-treelist 10000 #f) (vector->treelist (make-vector 10000 #f))) "make-treelist 10000" #t)
+(test (equal? (make-treelist 10001 #f) (vector->treelist (make-vector 10001 #f))) "make-treelist 10001" #t)
+(test (equal? (make-treelist 12321 #f) (vector->treelist (make-vector 12321 #f))) "make-treelist 12321" #t)
+
 (define-syntax-rule (test-bad (op arg ...))
   (err/rt-test (op arg ...) exn:fail:contract? (regexp (string-append "^"
                                                                       (regexp-quote (symbol->string 'op))
