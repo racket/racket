@@ -118,18 +118,20 @@
       (define blame+neg-party (cons blame neg-party))
       (chaperone-treelist
        val
-       #:state #f
+       #:state (make-treelist (treelist-length val) #t)
        #:ref (λ (tl i val state)
-               (with-contract-continuation-mark
-                 blame+neg-party
-                 (ln+blame val neg-party)))
-       #:set (λ (tl i val state) (values val state))
-       #:insert (λ (tl i val state) (values val state))
-       #:prepend (λ (tl1 tl2 state) (values tl1 state))
-       #:append (λ (tl1 tl2 state) (values tl2 state))
-       #:delete (λ (tl i state) state)
-       #:take (λ (tl n state) state)
-       #:drop (λ (tl n state) state)
+               (if (treelist-ref state i)
+                   (with-contract-continuation-mark
+                       blame+neg-party
+                     (ln+blame val neg-party))
+                   val))
+       #:set (λ (tl i val state) (values val (treelist-set state i #f)))
+       #:insert (λ (tl i val state) (values val (treelist-insert state i #f)))
+       #:append (λ (tl1 tl2 state) (values tl2 (treelist-append state (make-treelist (treelist-length tl2) #f))))
+       #:prepend (λ (tl1 tl2 state) (values tl1 (treelist-append (make-treelist (treelist-length tl2) #f) state)))
+       #:delete (λ (tl i state) (treelist-delete state i))
+       #:take (λ (tl n state) (treelist-take state n))
+       #:drop (λ (tl n state) (treelist-drop state n))
        impersonator-prop:contracted ctc
        impersonator-prop:blame blame))))
 
