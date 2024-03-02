@@ -101,16 +101,139 @@
               'pos
               'neg))
   (test/spec-passed
-   'treelist/c5
+   'treelist/c8
    '(contract (treelist/c (-> integer? integer?) #:lazy? #t)
               (treelist (λ (x) #f))
               'pos
               'neg))
   (test/pos-blame
-   'treelist/c6
+   'treelist/c9
    '((treelist-first
       (contract (treelist/c (-> integer? integer?) #:lazy? #t)
                 (treelist (λ (x) #f))
                 'pos
                 'neg))
-     1)))
+     1))
+  (test/pos-blame
+   'treelist/c10
+   '(treelist-ref
+     (treelist-append
+      (contract (treelist/c number? #:lazy? #t #:flat? #f)
+                (treelist "one")
+                'pos 'neg)
+      (contract (treelist/c number? #:lazy? #t #:flat? #f)
+                (treelist #t)
+                'something 'else))
+     0))
+  (test/pos-blame
+   'treelist/c11
+   '(treelist-ref
+     (treelist-append
+      (contract (treelist/c number? #:lazy? #t #:flat? #f)
+                (treelist "one")
+                'something 'else)
+      (contract (treelist/c number? #:lazy? #t #:flat? #f)
+                (treelist #t)
+                'pos 'neg))
+     1))
+
+  ;; tests that make sure that
+  ;; the contract does not get put
+  ;; onto newly added things in the treelist
+  (test/spec-passed/result
+   'treelist/c-add.set
+   '(treelist-ref
+     (treelist-set
+      (contract
+       (treelist/c number? #:lazy? #t #:flat? #f)
+       (treelist 1 2 3)
+       'pos
+       'neg)
+      0
+      "abc")
+     0)
+   "abc")
+  (test/spec-passed/result
+   'treelist/c-add.insert
+   '(treelist-ref
+     (treelist-insert
+      (contract
+       (treelist/c number? #:lazy? #t #:flat? #f)
+       (treelist 1 2 3)
+       'pos
+       'neg)
+      2
+      "abc")
+     2)
+   "abc")
+  (test/spec-passed/result
+   'treelist/c-add.append
+   '(let ([t
+           (treelist-append
+            (contract
+             (treelist/c number? #:lazy? #t #:flat? #f)
+             (treelist 1 2 3)
+             'pos
+             'neg)
+            (treelist "abc" "def" "ghi"))])
+      (list (treelist-ref t 3)
+            (treelist-ref t 4)
+            (treelist-ref t 5)))
+   (list "abc" "def" "ghi"))
+  (test/spec-passed/result
+   'treelist/c-add.prepend
+   '(let ([t
+           (treelist-append
+            (treelist "abc" "def" "ghi")
+            (contract
+             (treelist/c number? #:lazy? #t #:flat? #f)
+             (treelist 1 2 3)
+             'pos
+             'neg))])
+      (list (treelist-ref t 0)
+            (treelist-ref t 1)
+            (treelist-ref t 2)))
+   (list "abc" "def" "ghi"))
+  (test/spec-passed/result
+   'treelist/c-add.delete
+   '(let ([t
+           (treelist-append
+            (treelist-delete
+             (contract
+              (treelist/c number? #:lazy? #t #:flat? #f)
+              (treelist 1 2 3)
+              'pos
+              'neg)
+             0)
+            (treelist "abc"))])
+      (treelist-ref t 2))
+   "abc")
+  (test/spec-passed/result
+   'treelist/c-add.take
+   '(let ([t
+           (treelist-append
+            (treelist-take
+             (contract
+              (treelist/c number? #:lazy? #t #:flat? #f)
+              (treelist 1 2 3)
+              'pos
+              'neg)
+             2)
+            (treelist "abc"))])
+      (treelist-ref t 2))
+   "abc")
+  (test/spec-passed/result
+   'treelist/c-add.drop
+   '(let ([t
+           (treelist-append
+            (treelist-drop
+             (contract
+              (treelist/c number? #:lazy? #t #:flat? #f)
+              (treelist 1 2 3)
+              'pos
+              'neg)
+             1)
+            (treelist "abc"))])
+      (treelist-ref t 2))
+   "abc")
+  )
