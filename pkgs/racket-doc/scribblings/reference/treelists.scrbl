@@ -62,6 +62,20 @@ This operation takes @math{O(N log N)} time to construct a treelist of
 (treelist 1 "a" 'apple)
 ]}
 
+@defproc[(make-treelist [size exact-nonnegative-integer?] [v any/c]) treelist?]{
+
+ Returns a @tech{treelist} with size @racket[size], where
+ every element is @racket[v].
+ This operation takes @math{O(log N)} time to construct a
+ treelist of @math{N} elements.
+
+ @examples[
+ #:eval the-eval
+ (make-treelist 0 'pear)
+ (make-treelist 3 'pear)
+ ]
+
+@history[#:added "8.12.0.11"]}
 
 @deftogether[(
 @defproc[(treelist-empty? [tl treelist?]) boolean?]

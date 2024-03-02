@@ -24,6 +24,7 @@
 ;; and ported from an initial implementation in Rhombus by Alec Mills.
 
 (provide (rename-out [build-treelist treelist])
+         make-treelist
          treelist?
          treelist-ref
          treelist-first
@@ -555,6 +556,84 @@
                 (Node (for/vector #:length len ([start (in-range start end step)])
                                   (loop start (fx- height 1))))]))
            height)]))
+     (treelist root size height)]))
+
+(define (make-treelist size element)
+
+#| This function follows the same recursive structure as
+`vector->treelist`, but instead of using `vector*-copy` to copy
+different elements into different vectors inside the treelist, it
+tries to reuse as many vectors as possible, creating vectors
+whose sizes sum up to O(log(size)). For example, if size is
+MAX_WIDTH*2, then this code will end up creating this vector:
+(let ([v (make-vector MAX_WIDTH element)]) (vector v v))
+
+The strategy this code uses is to keep track of the first element in
+any vector it builds as it works its way across and, if any other
+elements of a vector have the same size as that first (inner) vector
+then they must also have the same elements, so we can just reuse the
+same vector. This happens in the loop whose result is bound to `root`,
+below. For example, when `size` is MAX_WIDTH*2 we'll get `first-one`
+bound to the vector in the first slot and then we'll reuse it in the
+second iteration of the loop.
+
+This strategy only most of the sharing, but not all of the it. To
+mitigate this somewhat we ensure that all leaves are shared (when they
+have size MAX_WIDTH), thanks to `max-width-leaf`.
+
+Thus, since all nodes candidate at height 1 will be shared (thanks to
+`max-width-leaf`), the smallest node that won't be shared has size
+MAX_WIDTH*MAX_WIDTH and thanks to the structure of loop that
+implements the sharing, we would need those nodes to have two
+different parents, meaning we need at least MAX_WIDTH^3+MAX_WIDTH^2
+nodes to miss some sharing. In that case, the sharing we miss is one
+vector of size MAX_WITH. When MAX_WIDTH=32, the smallest tree that
+misses any sharing has 33,792 nodes and an extra 1/1055th of the
+minimum required storage. |#
+
+  (unless (exact-nonnegative-integer? size)
+    (raise-argument-error 'make-treelist "natural?" size))
+  (unless (fixnum? size)
+    (raise (make-exn:fail:out-of-memory
+            (format "out of memory making treelist\n  size: ~s"
+                    size)
+            (current-continuation-marks))))
+  (cond
+    [(fx= size 0) empty-treelist]
+    [(size . fx<= . MAX_WIDTH) (treelist (Node (make-vector size element)) size 0)]
+    [else
+     (define max-width-leaf (make-vector MAX_WIDTH element))
+     (define height (fx- (fxquotient (fx+ (integer-length (fx- size 1)) BITS -1) BITS) 1))
+     (define available-to-reuse (make-hash))
+     (define root
+       (let loop ([first-one-at-this-level #f]
+                  [first-one-size #f]
+                  [start 0]
+                  [end (fxmin size (fxlshift MAX_WIDTH (fx* height BITS)))]
+                  [height height])
+         (cond
+           [(and first-one-at-this-level
+                 (fx= (fx- end start) first-one-size))
+            first-one-at-this-level]
+           [(fx= height 0)
+            (define size (fx- end start))
+            (if (fx= size MAX_WIDTH)
+                max-width-leaf
+                (Node (make-vector size element)))]
+           [else
+            (define width (fxlshift MAX_WIDTH (fx* height BITS)))
+            (define step (fxrshift width BITS))
+            (define len (fxquotient (fx+ (fx- end start) (fx- step 1)) step))
+            (define first-one (loop #f #f start (fxmin end (fx+ start step)) (fx- height 1)))
+            (hash-set! available-to-reuse height #t)
+            (Node (for/vector #:length len ([inner-start (in-range start end step)])
+                    (if (fx= inner-start start)
+                        first-one
+                        (loop first-one
+                              step
+                              inner-start
+                              (fxmin end (fx+ inner-start step))
+                              (fx- height 1)))))])))
      (treelist root size height)]))
 
 (define (treelist->list tl)
