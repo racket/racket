@@ -296,6 +296,9 @@
   (ctest #t trust/not-stronger? (treelist/c integer?) (treelist/c integer?))
   (ctest #f trust/not-stronger? (treelist/c integer?) (treelist/c natural?))
   (ctest #t trust/not-stronger? (treelist/c (between/c 1 10)) (treelist/c (between/c 0 100)))
+  (ctest #t trust/not-stronger? (mutable-treelist/c integer?) (mutable-treelist/c integer?))
+  (ctest #f trust/not-stronger? (mutable-treelist/c integer?) (mutable-treelist/c natural?))
+  (ctest #f trust/not-stronger? (mutable-treelist/c (between/c 1 10)) (mutable-treelist/c (between/c 0 100)))
   
   (ctest #f trust/not-stronger? (vectorof (<=/c 3)) (vectorof (<=/c 4)))
   (ctest #f trust/not-stronger? (vectorof (<=/c 3)) (vectorof (<=/c 4)))

@@ -8,7 +8,7 @@
 @(define contract-eval
    (lambda ()
      (let ([the-eval (make-base-eval)])
-       (the-eval '(require racket/contract racket/treelist racket/contract/parametric racket/list racket/math))
+       (the-eval '(require racket/contract racket/treelist racket/contract/parametric racket/list racket/math racket/mutable-treelist))
        the-eval)))
 
 @(define blame-object @tech{blame object})
@@ -740,11 +740,35 @@ necessarily @racket[eq?] to the input.
              (treelist 1 2 3))
 
            (eval:error
-            (define/contract natural-treelist
+            (define/contract unnatural-treelist
               (treelist/c natural?)
               (treelist -1 -2 -3)))]
 
 @history[#:added "8.12.0.7"]
+}
+
+@defproc[(mutable-treelist/c [ctc contract?])
+         contract?]{
+
+ Produces a contract for @tech{mutable treelists} whose elements
+ match @racket[ctc].
+
+ @examples[#:eval (contract-eval) #:once
+           (define/contract natural-treelist
+             (mutable-treelist/c natural?)
+             (mutable-treelist 0 1 2 3))
+           (mutable-treelist-ref natural-treelist 1)
+
+           (define/contract unnatural-treelist
+             (mutable-treelist/c natural?)
+             (mutable-treelist -1 2 3))
+
+           (eval:error
+            (mutable-treelist-ref unnatural-treelist 0))
+           (eval:error
+            (mutable-treelist-set! unnatural-treelist 2 -3))]
+
+@history[#:added "8.12.0.11"]
 }
 
 @defproc[(syntax/c [c flat-contract?]) flat-contract?]{

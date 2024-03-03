@@ -1,6 +1,7 @@
 #lang racket/base
 (require (for-syntax racket/base)
          racket/treelist
+         racket/mutable-treelist
          syntax/location
          "guts.rkt"
          "blame.rkt"
@@ -8,7 +9,7 @@
          "rand.rkt"
          "generate.rkt")
 
-(provide treelist/c)
+(provide treelist/c mutable-treelist/c)
 
 (struct base-treelist/c (ctc))
 
@@ -51,29 +52,35 @@
 
 (define (treelist/c-chaperone-first-order tl) treelist?)
 
-(define (treelist/c-generate ctc)
+(define (do-treelist-generate ctc-inside adjust)
   (λ (fuel)
-    (define eg (contract-random-generate/choose (base-treelist/c-ctc ctc) fuel))
-    (if eg
-        (λ ()
-          (let loop ([so-far '()])
-            (rand-choice
-             [1/5 (apply treelist so-far)]
-             [else (loop (cons (eg) so-far))])))
-        (λ () (treelist)))))
+    (define eg (contract-random-generate/choose ctc-inside fuel))
+     (if eg
+         (λ ()
+           (adjust
+            (let loop ([so-far '()])
+              (rand-choice
+               [1/5 (apply treelist so-far)]
+               [else (loop (cons (eg) so-far))]))))
+         (λ () (adjust (treelist))))))
 
-(define (treelist/c-exercise ctc)
-  (define elem-ctc (base-treelist/c-ctc ctc))
+(define (treelist/c-generate ctc)
+  (do-treelist-generate (base-treelist/c-ctc ctc) values))
+
+(define (do-treelist/c-exercise elem-ctc adjust)
   (λ (fuel)
-    (printf "fuel: ~s\n" fuel)
     (define env (contract-random-generate-get-current-environment))
     (values
      (λ (lst)
        (contract-random-generate-stash
         env elem-ctc
-        (oneof (for/list ([e (in-treelist lst)])
+        (oneof (for/list ([e (in-treelist (adjust lst))])
                  e))))
      (list elem-ctc))))
+
+(define (treelist/c-exercise ctc)
+  (define elem-ctc (base-treelist/c-ctc ctc))
+  (do-treelist/c-exercise elem-ctc values))
 
 (define (treelist/c-stronger this that)
   (cond
@@ -199,3 +206,130 @@
    #:stronger treelist/c-stronger
    #:equivalent treelist/c-equivalent
    #:late-neg-projection treelist/c-copying-late-neg-projection))
+
+
+(define (mutable-treelist/c-name ctc)
+  (build-compound-type-name 'mutable-treelist/c (base-mutable-treelist/c-ctc ctc)))
+
+(define (mutable-treelist/c-first-order tl)
+  mutable-treelist?)
+
+(define (mutable-treelist/c-generate ctc)
+  (do-treelist-generate (base-mutable-treelist/c-ctc ctc)
+                        treelist-copy))
+
+(define (mutable-treelist/c-exercise ctc)
+  (define elem-ctc (base-mutable-treelist/c-ctc ctc))
+  (do-treelist/c-exercise elem-ctc mutable-treelist-snapshot))
+
+(define (mutable-treelist/c-stronger this that)
+  (cond
+    [(base-mutable-treelist/c? that)
+     (define this-sub (base-mutable-treelist/c-ctc this))
+     (define that-sub (base-mutable-treelist/c-ctc that))
+     (contract-struct-equivalent? this-sub that-sub)]
+    [else #f]))
+
+(define (mutable-treelist/c-equivalent this that)
+  (cond
+    [(base-mutable-treelist/c? that)
+     (define this-sub (base-mutable-treelist/c-ctc this))
+     (define that-sub (base-mutable-treelist/c-ctc that))
+     (contract-struct-equivalent? this-sub that-sub)]
+    [else #f]))
+
+(define ((mutable-treelist/c-late-neg-projection c-or-i-mutable-treelist) ctc)
+  (define late-neg (contract-late-neg-projection (base-mutable-treelist/c-ctc ctc)))
+  (λ (blame)
+    (define tl-blame (blame-add-context blame "the elements of"))
+    (define tl-swap-blame (blame-add-context blame "the elements of" #:swap? #t))
+    (define-values (filled? maybe-ln+blame maybe-ln+swap-blame)
+      (contract-pos/neg-doubling (late-neg tl-blame) (late-neg tl-swap-blame)))
+    (define (make-val-np/proc ln+blame ln+swap-blame)
+      (λ (val neg-party)
+        (unless (mutable-treelist? val)
+          (raise-blame-error
+           blame val #:missing-party neg-party
+           '(expected "a mutable treelist" given: "~e") val))
+        (define blame+neg-party (cons blame neg-party))
+        (c-or-i-mutable-treelist
+         val
+         #:ref (λ (tl i val)
+                 (with-contract-continuation-mark
+                     blame+neg-party
+                   (ln+blame val neg-party)))
+         #:set (λ (tl i val)
+                 (with-contract-continuation-mark
+                     blame+neg-party
+                   (ln+swap-blame val neg-party)))
+         #:insert (λ (tl i val)
+                    (with-contract-continuation-mark
+                        blame+neg-party
+                      (ln+swap-blame val neg-party)))
+         #:append (λ (tl1 tl2)
+                    (chaperone-treelist
+                     tl2
+                     #:state #f
+                     #:ref (λ (tl i val state) (ln+swap-blame val neg-party))
+                     #:set (λ (tl i val state) (values val state))
+                     #:insert (λ (tl i val state) (values val state))
+                     #:append (λ (tl1 tl2 state) (values tl2 state))
+                     #:prepend (λ (tl1 tl2 state) (values tl1 state))
+                     #:delete (λ (tl i state) state)
+                     #:take (λ (tl i state) state)
+                     #:drop (λ (tl i state) state))
+                    ;; alternatively, we could just copy the to-be-appended
+                    ;; treelist but the chaperone above has better asymptotic
+                    ;; complexity and seems to be working out
+                    #;
+                    (for/treelist ([ele (in-treelist tl2)])
+                      (ln+swap-blame ele neg-party)))
+         impersonator-prop:contracted ctc
+         impersonator-prop:blame blame)))
+    (cond
+      [filled? (make-val-np/proc maybe-ln+blame maybe-ln+swap-blame)]
+      [else
+       (define tc (make-thread-cell #f))
+       (λ (val neg-party)
+         (cond
+           [(thread-cell-ref tc)
+            =>
+            (λ (f) (f val neg-party))]
+           [else
+            (define proc (make-val-np/proc (maybe-ln+blame) (maybe-ln+swap-blame)))
+            (thread-cell-set! tc proc)
+            (proc val neg-party)]))])))
+
+(struct base-mutable-treelist/c (ctc))
+(struct chaperone-mutable-treelist/c base-mutable-treelist/c ()
+  #:property prop:custom-write custom-write-property-proc
+  #:property prop:chaperone-contract
+  (build-chaperone-contract-property
+   #:trusted trust-me
+   #:name mutable-treelist/c-name
+   #:first-order mutable-treelist/c-first-order
+   #:generate mutable-treelist/c-generate
+   #:exercise mutable-treelist/c-exercise
+   #:stronger mutable-treelist/c-stronger
+   #:equivalent mutable-treelist/c-equivalent
+   #:late-neg-projection (mutable-treelist/c-late-neg-projection chaperone-mutable-treelist)))
+(struct impersonator-mutable-treelist/c base-mutable-treelist/c ()
+  #:property prop:custom-write custom-write-property-proc
+  #:property prop:contract
+  (build-contract-property
+   #:trusted trust-me
+   #:name mutable-treelist/c-name
+   #:first-order mutable-treelist/c-first-order
+   #:generate mutable-treelist/c-generate
+   #:exercise mutable-treelist/c-exercise
+   #:stronger mutable-treelist/c-stronger
+   #:equivalent mutable-treelist/c-equivalent
+   #:late-neg-projection (mutable-treelist/c-late-neg-projection impersonate-mutable-treelist)))
+
+(define/subexpression-pos-prop (mutable-treelist/c _ctc)
+  (define ctc (coerce-contract 'mutable-treelist/c _ctc))
+  (cond
+    [(chaperone-contract? ctc)
+     (chaperone-mutable-treelist/c ctc)]
+    [else
+     (impersonator-mutable-treelist/c ctc)]))

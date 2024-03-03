@@ -323,6 +323,7 @@
   (test-name '(list*of (-> boolean? boolean?) char?) (list*of (-> boolean? boolean?) char?))
 
   (test-name '(treelist/c integer?) (treelist/c integer?))
+  (test-name '(mutable-treelist/c boolean?) (mutable-treelist/c boolean?))
 
   (test-name '(vectorof boolean?) (vectorof boolean?))
   (test-name '(vectorof any/c) (vectorof any/c))

@@ -81,6 +81,7 @@
  promise/c
  syntax/c
  treelist/c
+ mutable-treelist/c
  
  parameter/c
  procedure-arity-includes/c

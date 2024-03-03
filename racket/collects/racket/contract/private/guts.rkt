@@ -1051,6 +1051,30 @@
 (define-precompute/simple nth-argument-of nth-argument-of/alloc 1 7)
 (define-precompute/simple nth-case-of nth-case-of/alloc 1 2)
 
+#|
+
+These "doubling" constructs are designed to help with a problem that
+comes up when a mutable container contract is building the contract
+for the part inside the container. Specifically, since it needs both
+the positive and negative version of the containee contract, it is
+going to invoke that projection function twice, one with a swapped
+blame and once without. If these contracts then nested, we can get
+exponential calls.
+
+To avoid this problem wrap the calls in `contract-pos/neg-doubling`,
+which uses a continuation mark to track if the nesting is getting too
+big. They return a boolean indicating if the nesting looks too bad.
+When that boolean is #f then `contract-pos/neg-doubling` just returns
+the results of its argument. If the boolean is #t, then
+`contract-pos/neg-doubling` returns thunks that, when called return
+the argument. In that case, the contract combinator is responsible for
+delaying the call and using memoization to cache the result so that
+other calls that are also happening can just get the stashed result
+(use a thread-cell to avoid concurrency issues).
+
+See vector/c, box/c, and mutable-treelist/c for example uses of this.
+
+|#
 (define-syntax-rule
   (contract-pos/neg-doubling e1 e2)
   (contract-pos/neg-doubling/proc (λ () e1) (λ () e2)))

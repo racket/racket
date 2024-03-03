@@ -4,6 +4,7 @@
 (parameterize ([current-contract-namespace
                 (make-basic-contract-namespace
                  'racket/treelist
+                 'racket/mutable-treelist
                  'racket/contract/parametric)])
 
   (test/spec-passed/result
@@ -236,4 +237,241 @@
             (treelist "abc"))])
       (treelist-ref t 2))
    "abc")
+
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  ;;
+  ;;  mutable-treelist/c
+  ;;
+
+  (test/pos-blame
+   'mutable-treelist/c.1
+   '(contract (mutable-treelist/c boolean?)
+              #true
+              'pos 'neg))
+
+  (test/pos-blame
+   'mutable-treelist/c.2
+   '(mutable-treelist-ref
+     (contract (mutable-treelist/c boolean?)
+               (mutable-treelist 1 2)
+               'pos 'neg)
+     0))
+
+  (test/neg-blame
+   'mutable-treelist/c.3
+   '(mutable-treelist-set!
+     (contract (mutable-treelist/c boolean?)
+               (mutable-treelist #f #f)
+               'pos 'neg)
+     0
+     "str"))
+
+  (test/neg-blame
+   'mutable-treelist/c.4
+   '(mutable-treelist-insert!
+     (contract (mutable-treelist/c boolean?)
+               (mutable-treelist #f #f)
+               'pos 'neg)
+     1
+     "str"))
+
+  (test/spec-passed/result
+   'mutable-treelist/c.5
+   '(let ([tl (contract (mutable-treelist/c boolean?)
+                        (mutable-treelist #t #f)
+                        'pos 'neg)])
+      (mutable-treelist-append! tl (mutable-treelist 1 2))
+      (mutable-treelist-ref tl 0))
+   #t)
+
+  (test/neg-blame
+   'mutable-treelist/c.6
+   '(let ([tl (contract (mutable-treelist/c boolean?)
+                        (mutable-treelist #t #f)
+                        'pos 'neg)])
+      (mutable-treelist-append! tl (mutable-treelist 1 2))
+      (mutable-treelist-ref tl 2)))
+
+  (test/neg-blame
+   'mutable-treelist/c.7
+   '(let ([tl (contract
+               (mutable-treelist/c integer?)
+               (mutable-treelist 1 2)
+               'pos 'neg)])
+      (mutable-treelist-append!
+       tl
+       (mutable-treelist #t #f))
+      (mutable-treelist-ref tl 2)))
+
+  (test/spec-passed/result
+   'mutable-treelist/c.8
+   '(let ([tl (contract
+               (mutable-treelist/c integer?)
+               (mutable-treelist 0 1)
+               'pos 'neg)])
+      (mutable-treelist-append!
+       tl
+       (mutable-treelist #t #f))
+      (mutable-treelist-set! tl 2 2)
+      (mutable-treelist-ref tl 2))
+   2)
+
+  (test/neg-blame
+   'mutable-treelist/c.9
+   '(let ([tl (contract
+               (mutable-treelist/c integer?)
+               (mutable-treelist 0 1)
+               'pos 'neg)])
+      (mutable-treelist-append!
+       tl
+       (mutable-treelist #t #f))
+      (mutable-treelist-set! tl 2 2)
+      (mutable-treelist-ref tl 3)))
+
+  ;; tests with deep nesting
+
+  (test/pos-blame
+   'mutable-treelist/c-deep.1
+   '(let ()
+      (define depth 100)
+      (define (mk-deep-tl bottom)
+        (let loop ([n depth])
+          (cond
+            [(zero? n) bottom]
+            [else (mutable-treelist (loop (- n 1)))])))
+
+      (define (do-deep tl f)
+        (let loop ([n depth]
+                   [tl tl])
+          (cond
+            [(zero? n) (f tl)]
+            [else (loop (- n 1) (mutable-treelist-ref tl 0))])))
+
+      (define (mk-deep-ctc)
+        (let loop ([n depth])
+          (cond
+            [(zero? n) (mutable-treelist/c integer?)]
+            [else (mutable-treelist/c (loop (- n 1)))])))
+
+      (define tl (contract (mk-deep-ctc)
+                           (mk-deep-tl (mutable-treelist 1/2 2/3 3/4))
+                           'pos 'neg))
+      (do-deep tl (λ (tl) (mutable-treelist-ref tl 2)))))
+
+  (test/neg-blame
+   'mutable-treelist/c-deep.2
+   '(let ()
+      (define depth 100)
+      (define (mk-deep-tl bottom)
+        (let loop ([n depth])
+          (cond
+            [(zero? n) bottom]
+            [else (mutable-treelist (loop (- n 1)))])))
+
+      (define (do-deep tl f)
+        (let loop ([n depth]
+                   [tl tl])
+          (cond
+            [(zero? n) (f tl)]
+            [else (loop (- n 1) (mutable-treelist-ref tl 0))])))
+
+      (define (mk-deep-ctc)
+        (let loop ([n depth])
+          (cond
+            [(zero? n) (mutable-treelist/c integer?)]
+            [else (mutable-treelist/c (loop (- n 1)))])))
+
+      (define tl (contract (mk-deep-ctc)
+                           (mk-deep-tl (mutable-treelist 0 1 2 3))
+                           'pos 'neg))
+      (do-deep tl (λ (tl) (mutable-treelist-set! tl 2 "two")))))
+
+  (test/neg-blame
+   'mutable-treelist/c-deep.3
+   '(let ()
+      (define depth 100)
+      (define (mk-deep-tl bottom)
+        (let loop ([n depth])
+          (cond
+            [(zero? n) bottom]
+            [else (mutable-treelist (loop (- n 1)))])))
+
+      (define (do-deep tl f)
+        (let loop ([n depth]
+                   [tl tl])
+          (cond
+            [(zero? n) (f tl)]
+            [else (loop (- n 1) (mutable-treelist-ref tl 0))])))
+
+      (define (mk-deep-ctc)
+        (let loop ([n depth])
+          (cond
+            [(zero? n) (mutable-treelist/c integer?)]
+            [else (mutable-treelist/c (loop (- n 1)))])))
+
+      (define tl (contract (mk-deep-ctc)
+                           (mk-deep-tl (mutable-treelist 0 1 2 3))
+                           'pos 'neg))
+      (do-deep tl (λ (tl) (mutable-treelist-insert! tl 2 "two")))))
+
+  (test/spec-passed/result
+   'mutable-treelist/c-deep.4
+   '(let ()
+      (define depth 100)
+      (define (mk-deep-tl bottom)
+        (let loop ([n depth])
+          (cond
+            [(zero? n) bottom]
+            [else (mutable-treelist (loop (- n 1)))])))
+
+      (define (do-deep tl f)
+        (let loop ([n depth]
+                   [tl tl])
+          (cond
+            [(zero? n) (f tl)]
+            [else (loop (- n 1) (mutable-treelist-ref tl 0))])))
+
+      (define (mk-deep-ctc)
+        (let loop ([n depth])
+          (cond
+            [(zero? n) (mutable-treelist/c integer?)]
+            [else (mutable-treelist/c (loop (- n 1)))])))
+
+      (define tl (contract (mk-deep-ctc)
+                           (mk-deep-tl (mutable-treelist 0 1 2 3))
+                           'pos 'neg))
+      (do-deep tl (λ (tl) (mutable-treelist-append! tl (mutable-treelist "four" "five" "six"))))
+      (do-deep tl (λ (tl) (mutable-treelist-ref tl 0))))
+   0)
+
+  (test/neg-blame
+   'mutable-treelist/c-deep.5
+   '(let ()
+      (define depth 100)
+      (define (mk-deep-tl bottom)
+        (let loop ([n depth])
+          (cond
+            [(zero? n) bottom]
+            [else (mutable-treelist (loop (- n 1)))])))
+
+      (define (do-deep tl f)
+        (let loop ([n depth]
+                   [tl tl])
+          (cond
+            [(zero? n) (f tl)]
+            [else (loop (- n 1) (mutable-treelist-ref tl 0))])))
+
+      (define (mk-deep-ctc)
+        (let loop ([n depth])
+          (cond
+            [(zero? n) (mutable-treelist/c integer?)]
+            [else (mutable-treelist/c (loop (- n 1)))])))
+
+      (define tl (contract (mk-deep-ctc)
+                           (mk-deep-tl (mutable-treelist 0 1 2 3))
+                           'pos 'neg))
+      (do-deep tl (λ (tl) (mutable-treelist-append! tl (mutable-treelist "four" "five" "six"))))
+      (do-deep tl (λ (tl) (mutable-treelist-ref tl 5)))))
+
   )

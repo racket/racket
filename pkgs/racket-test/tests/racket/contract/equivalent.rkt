@@ -292,6 +292,9 @@
   (ctest #t contract-equivalent? (treelist/c integer?) (treelist/c integer?))
   (ctest #f contract-equivalent? (treelist/c integer?) (treelist/c natural?))
   (ctest #f contract-equivalent? (treelist/c natural?) (treelist/c integer?))
+  (ctest #t contract-equivalent? (mutable-treelist/c integer?) (mutable-treelist/c integer?))
+  (ctest #f contract-equivalent? (mutable-treelist/c integer?) (mutable-treelist/c natural?))
+  (ctest #f contract-equivalent? (mutable-treelist/c natural?) (mutable-treelist/c integer?))
 
   (ctest #f contract-equivalent? (vectorof (<=/c 3)) (vectorof (<=/c 4)))
   (ctest #f contract-equivalent? (vectorof (<=/c 3)) (vectorof (<=/c 4)))
