@@ -123,6 +123,226 @@
          #hash([one . 1] [two . 2] [three . 3] [four . 4]))
         h))
 
+;; ----------------------------------------
+;; hash-filter, hash-filter-key, and hash-filter-value:
+
+;; Filtering where key is a string and value is 1
+(test (hash "one" 1)
+      hash-filter
+      (hash "one" 1 "two" 2 "three" 3)
+      (λ (k v) (and (string? k) (= v 1))))
+
+;; Filtering where value is "vegetable" and key is a symbol
+(test (hash 'carrot "vegetable")
+      hash-filter
+      (hash 'apple "fruit" 'carrot "vegetable" 'banana "fruit")
+      (λ (k v) (and (symbol? k) (string=? v "vegetable"))))
+
+;; Filtering by key-value pairs where key is a list of numbers and value is a symbol
+(test (hash (list 3 4) 'another-number-list (list 1 2) 'number-list)
+      hash-filter
+      (hash (list 1 2) 'number-list (list "a" "b") 'letter-list (list 3 4) 'another-number-list)
+      (λ (k v) (and (list? k) (number? (car k)) (symbol? v))))
+
+;; Filtering by key-value pairs where the value is in the list ["hot", "cold"] and key is a symbol
+(test (hash 'summer "hot" 'winter "cold")
+      hash-filter
+      (hash 'spring "warm" 'summer "hot" 'autumn "cool" 'winter "cold")
+      (λ (k v) (and (symbol? k) (member v '("hot" "cold")))))
+
+;; Filtering by key-value pairs where the key is boolean
+(test (hash #t 'truth #f 'falsehood)
+      hash-filter
+      (hash #t 'truth #f 'falsehood 'unknown 'mystery)
+      (λ (k _) (boolean? k)))
+
+;; Filtering by key-value pairs with eq? comparator
+(test (hasheq #t "true")
+      hash-filter
+      (hasheq #f "false" #t "true")
+      (λ (k v) (and (eq? k #t) (string=? v "true"))))
+
+;; Filtering by key-value pairs with eqv? comparator
+(test (hasheqv 2 "two")
+      hash-filter
+      (hasheqv 1 "one" 2 "two")
+      (λ (k v) (and (eqv? k 2) (string=? v "two"))))
+
+;; Mutable hash with equal-always?: filtering by key-value pairs
+(test (make-hashalw (list (cons 'pear "fruit")))
+      hash-filter
+      (make-hashalw (list (cons 'apple "not-fruit") (cons 'pear "fruit")))
+      (λ (k v) (and (equal-always? k 'pear) (string=? v "fruit"))))
+
+;; Immutable hash with equal-always?: filtering by key-value pairs
+(test (make-immutable-hashalw (list (cons 'cherry "fruit")))
+      hash-filter
+      (make-immutable-hashalw (list (cons 'apple "not-fruit") (cons 'cherry "fruit")))
+      (λ (k v) (and (equal-always? k 'cherry) (string=? v "fruit"))))
+
+;; Filtering by key-value pairs in an immutable hash table
+(test (hash (list 1 2) 'pair)
+      hash-filter
+      (hash (list 1 2) 'pair #(3 4) 'vector)
+      (λ (k v) (and (list? k) (symbol? v))))
+
+;; Filtering by key-value pairs in a mutable hash table
+(test (make-hash (list (cons 'b 2)))
+      hash-filter
+      (make-hash (list (cons 'a 1) (cons 'b 2)))
+      (λ (_ v) (> v 1)))
+
+;; Ephemerons with equal comparator
+(test (make-ephemeron-hash (list (cons 'grape "fruit")))
+      hash-filter
+      (make-ephemeron-hash (list (cons 'grape "fruit") (cons 'lettuce "vegetable")))
+      (λ (k v) (and (equal? k 'grape) (string=? v "fruit"))))
+
+;; Ephemerons with eqv comparator
+(test (make-ephemeron-hasheqv (list (cons 3.14 "pi")))
+      hash-filter
+      (make-ephemeron-hasheqv (list (cons 3.14 "pi") (cons 2.71 "e")))
+      (λ (k v) (and (eqv? k 3.14) (string=? v "pi"))))
+
+;; Filtering by key-value pairs in an ephemeron hash table with equal-always?
+(test (make-ephemeron-hashalw (list (cons (list 'a) "list-a")))
+      hash-filter
+      (make-ephemeron-hashalw (list (cons (list 'a) "list-a") (cons (list 'b) "list-b")))
+      (λ (k v) (and (equal? k (list 'a)) (string=? v "list-a"))))
+
+;; Weak hashes with equal comparator
+(test (make-weak-hash (list (cons 'melon "fruit")))
+      hash-filter
+      (make-weak-hash (list (cons 'melon "fruit") (cons 'cucumber "vegetable")))
+      (λ (k v) (and (equal? k 'melon) (string=? v "fruit"))))
+
+;; Weak hashes with eqv comparator
+(test (make-weak-hasheqv (list (cons 1.618 "golden")))
+      hash-filter
+      (make-weak-hasheqv (list (cons 1.618 "golden") (cons 0.618 "silver")))
+      (λ (k v) (and (eqv? k 1.618) (string=? v "golden"))))
+
+;; Filtering by key-value pairs in a weak hash table with equal-always?
+(test (make-weak-hashalw (list (cons 'apple "fruit")))
+      hash-filter
+      (make-weak-hashalw (list (cons 'apple "fruit") (cons 'carrot "vegetable")))
+      (λ (k v) (and (equal-always? k 'apple) (string=? v "fruit"))))
+
+;; filtering by key with strings
+(test (hash "one" 1)
+      hash-filter-keys
+      (hash "one" 1 "two" 2 "three" 3)
+      (λ (k) (string=? k "one")))
+
+;; filtering by value with strings
+(test (hash 'carrot "vegetable")
+      hash-filter-values
+      (hash 'apple "fruit" 'carrot "vegetable" 'banana "fruit")
+      (λ (v) (string=? v "vegetable")))
+
+;; filtering by key with number lists
+(test (hash (list 1 2) 'number-list)
+      hash-filter-keys
+      (hash (list 1 2) 'number-list (list "a" "b") 'letter-list)
+      (λ (k) (list? k) (number? (car k))))
+
+;; filtering by value with membership in list
+(test (hash 'summer "hot" 'winter "cold")
+      hash-filter-values
+      (hash 'spring "warm" 'summer "hot" 'autumn "cool" 'winter "cold")
+      (λ (v) (member v '("hot" "cold"))))
+
+;; filtering by key with booleans
+(test (hash #t 'truth #f 'falsehood)
+      hash-filter-keys
+      (hash #t 'truth #f 'falsehood 'unknown 'mystery)
+      (λ (k) (boolean? k)))
+
+;; test alternate equal implementations and for mutability
+;; eq
+(test (hasheq #t "true")
+      hash-filter-keys
+      (hasheq #f "false" #t "true")
+      (λ (k) (eq? k #t)))
+
+;;eqv
+(test (hasheqv 2 "two")
+      hash-filter-values
+      (hasheqv 1 "one" 2 "two")
+      (λ (v) (eqv? v "two")))
+
+;; immutable
+(test (hash (list 1 2) 'pair)
+      hash-filter-keys
+      (hash (list 1 2) 'pair #(3 4) 'vector)
+      list?)
+
+;; mutable
+(test (make-hash (list (cons 'b 2)))
+      hash-filter-values
+      (make-hash (list (cons 'a 1) (cons 'b 2)))
+      (λ (v) (> v 1)))
+
+;; Ephemerons: filtering by key
+(test (make-ephemeron-hash (list (cons 'a "ephemeron-a")))
+      hash-filter-keys
+      (make-ephemeron-hash (list (cons 'a "ephemeron-a") (cons 'b "ephemeron-b")))
+      (λ (k) (equal? k 'a)))
+
+;; Ephemerons: filtering by value
+(test (make-ephemeron-hash (list (cons 'b "ephemeron-b")))
+      hash-filter-values
+      (make-ephemeron-hash (list (cons 'a "ephemeron-a") (cons 'b "ephemeron-b")))
+      (λ (v) (string=? v "ephemeron-b")))
+
+;; Weak hashes: filtering by key
+(test (make-weak-hash (list (cons 'apple "fruit")))
+      hash-filter-keys
+      (make-weak-hash (list (cons 'apple "fruit") (cons "carrot" "vegetable")))
+      (λ (k) (symbol? k)))
+
+;; Weak hashes: filtering by value
+(test (make-weak-hash (list (cons 'carrot "vegetable")))
+      hash-filter-values
+      (make-weak-hash (list (cons 'apple "fruit") (cons 'carrot "vegetable")))
+      (λ (v) (string=? v "vegetable")))
+
+;; Ephemerons with eqv?: filtering by key
+(test (make-ephemeron-hasheqv (list (cons 1.0 "one")))
+      hash-filter-keys
+      (make-ephemeron-hasheqv (list (cons 1.0 "one") (cons 2.0 "two")))
+      (λ (k) (eqv? k 1.0)))
+
+;; Weak hashes with eqv?: filtering by value
+(test (make-weak-hasheqv (list (cons 'number 2.0)))
+      hash-filter-values
+      (make-weak-hasheqv (list (cons 'number 2.0) (cons 'string "two")))
+      (λ (v) (eqv? v 2.0)))
+
+;; Ephemeron with equal-always?: filtering by key
+(test (make-ephemeron-hashalw (list (cons (list 'a) "list-a")))
+      hash-filter-keys
+      (make-ephemeron-hashalw (list (cons (list 'a) "list-a") (cons (list 'b) "list-b")))
+      (λ (k) (equal? k (list 'a))))
+
+;; Ephemeron with equal-always?: filtering by value
+(test (make-ephemeron-hashalw (list (cons 'unique (vector 1 2 3))))
+      hash-filter-values
+      (make-ephemeron-hashalw (list (cons 'unique (vector 1 2 3)) (cons 'common (vector 4 5 6))))
+      (λ (v) (equal? v (vector 1 2 3))))
+
+;; Weak hash with equal-always?: filtering by key
+(test (make-weak-hashalw (list (cons 'apple "fruit")))
+      hash-filter-keys
+      (make-weak-hashalw (list (cons 'apple "fruit") (cons 'carrot "vegetable")))
+      (λ (k) (equal-always? k 'apple)))
+
+;; Weak hash with equal-always?: filtering by value
+(test (make-weak-hashalw (list (cons 'carrot "vegetable")))
+      hash-filter-values
+      (make-weak-hashalw (list (cons 'apple "fruit") (cons 'carrot "vegetable")))
+      (λ (v) (equal-always? v "vegetable")))
+
 (let ()
   (struct a (n m)
           #:property
@@ -190,46 +410,46 @@
          -in-immut-hash-pairs -in-mut-hash-pairs -in-weak-hash-pairs -in-ephemeron-hash-pairs
          -in-immut-hash-keys -in-mut-hash-keys -in-weak-hash-keys -in-ephemeron-hash-keys
          -in-immut-hash-values -in-mut-hash-values -in-weak-hash-values -in-ephemeron-hash-values)
-      (with-syntax 
-       ([name 
-         (datum->syntax #'tag 
-           (string->symbol 
+      (with-syntax
+       ([name
+         (datum->syntax #'tag
+           (string->symbol
              (format "test-hash-iters-~a" (syntax->datum #'tag))))])
        #'(define (name lst1 lst2)
           (define ht/immut (make-immutable-hash (map cons lst1 lst2)))
           (define ht/mut (make-hash (map cons lst1 lst2)))
           (define ht/weak (make-weak-hash (map cons lst1 lst2)))
           (define ht/ephemeron (make-ephemeron-hash (map cons lst1 lst2)))
-            
+
           (define fake-ht/immut
-            (chaperone-hash 
+            (chaperone-hash
                 ht/immut
               (lambda (h k) (values k (lambda (h k v) v))) ; ref-proc
               (lambda (h k v) values k v) ; set-proc
               (lambda (h k) k) ; remove-proc
               (lambda (h k) k))) ; key-proc
           (define fake-ht/mut
-            (impersonate-hash 
+            (impersonate-hash
                 ht/mut
               (lambda (h k) (values k (lambda (h k v) v))) ; ref-proc
               (lambda (h k v) values k v) ; set-proc
               (lambda (h k) k) ; remove-proc
               (lambda (h k) k))) ; key-proc
           (define fake-ht/weak
-            (impersonate-hash 
+            (impersonate-hash
                 ht/weak
               (lambda (h k) (values k (lambda (h k v) v))) ; ref-proc
               (lambda (h k v) values k v) ; set-proc
               (lambda (h k) k) ; remove-proc
               (lambda (h k) k)))
           (define fake-ht/ephemeron
-            (impersonate-hash 
+            (impersonate-hash
                 ht/ephemeron
               (lambda (h k) (values k (lambda (h k v) v))) ; ref-proc
               (lambda (h k v) values k v) ; set-proc
               (lambda (h k) k) ; remove-proc
               (lambda (h k) k))) ; key-proc
-            
+
           (define ht/immut/seq (-in-immut-hash ht/immut))
           (define ht/mut/seq (-in-mut-hash ht/mut))
           (define ht/weak/seq (-in-weak-hash ht/weak))
@@ -246,7 +466,7 @@
           (define ht/mut-vals/seq (-in-mut-hash-values ht/mut))
           (define ht/weak-vals/seq (-in-weak-hash-values ht/weak))
           (define ht/ephemeron-vals/seq (-in-ephemeron-hash-values ht/ephemeron))
-    
+
           (test #t =
            (for/sum ([(k v) (-in-immut-hash ht/immut)]) (+ k v))
            (for/sum ([(k v) (-in-mut-hash ht/mut)]) (+ k v))
@@ -268,13 +488,13 @@
              (+ (car k+v) (cdr k+v)))
            (for/sum ([k+v (-in-ephemeron-hash-pairs ht/ephemeron)])
              (+ (car k+v) (cdr k+v)))
-           (for/sum ([k+v (-in-immut-hash-pairs fake-ht/immut)]) 
+           (for/sum ([k+v (-in-immut-hash-pairs fake-ht/immut)])
              (+ (car k+v) (cdr k+v)))
-           (for/sum ([k+v (-in-mut-hash-pairs fake-ht/mut)]) 
+           (for/sum ([k+v (-in-mut-hash-pairs fake-ht/mut)])
              (+ (car k+v) (cdr k+v)))
-           (for/sum ([k+v (-in-weak-hash-pairs fake-ht/weak)]) 
+           (for/sum ([k+v (-in-weak-hash-pairs fake-ht/weak)])
              (+ (car k+v) (cdr k+v)))
-           (for/sum ([k+v (-in-ephemeron-hash-pairs fake-ht/ephemeron)]) 
+           (for/sum ([k+v (-in-ephemeron-hash-pairs fake-ht/ephemeron)])
              (+ (car k+v) (cdr k+v)))
            (for/sum ([k+v ht/immut-pair/seq]) (+ (car k+v) (cdr k+v)))
            (for/sum ([k+v ht/mut-pair/seq]) (+ (car k+v) (cdr k+v)))
@@ -304,7 +524,7 @@
               (for/sum ([v ht/weak-vals/seq]) v))
            (+ (for/sum ([k ht/ephemeron-keys/seq]) k)
               (for/sum ([v ht/ephemeron-vals/seq]) v)))
-          
+
           (test #t =
            (for/sum ([(k v) (-in-immut-hash ht/immut)]) k)
            (for/sum ([(k v) (-in-mut-hash ht/mut)]) k)
@@ -342,7 +562,7 @@
            (for/sum ([k ht/mut-keys/seq]) k)
            (for/sum ([k ht/weak-keys/seq]) k)
            (for/sum ([k ht/ephemeron-keys/seq]) k))
-    
+
           (test #t =
            (for/sum ([(k v) (-in-immut-hash ht/immut)]) v)
            (for/sum ([(k v) (-in-mut-hash ht/mut)]) v)
@@ -387,7 +607,7 @@
     in-immutable-hash-pairs in-mutable-hash-pairs in-weak-hash-pairs in-ephemeron-hash-pairs
     in-immutable-hash-keys in-mutable-hash-keys in-weak-hash-keys in-ephemeron-hash-keys
     in-immutable-hash-values in-mutable-hash-values in-weak-hash-values in-ephemeron-hash-values)
-  
+
   (define lst1 (build-list 10 values))
   (define lst2 (build-list 10 add1))
   (test-hash-iters-generic lst1 lst2)
@@ -428,18 +648,18 @@
 ;; They are used for safe iteration in in-weak-hash- sequence forms
   (let ()
     (define ht #f)
-    
+
     (define lst (build-list 10 add1))
     (set! ht (make-weak-hash `((,lst . val))))
-    
+
     (define i (hash-iterate-first ht))
-    
+
     ;; everything ok
     (test #t number? i)
     (test #t list? (hash-iterate-key ht i))
     (test #t equal? (hash-iterate-value ht i) 'val)
     (test #t equal? (cdr (hash-iterate-pair ht i)) 'val)
-    (test #t equal? 
+    (test #t equal?
           (call-with-values (lambda () (hash-iterate-key+value ht i)) cons)
           '((1 2 3 4 5 6 7 8 9 10) . val))
     (test #f hash-iterate-next ht i)
@@ -462,19 +682,19 @@
 ;; Throw exception instead since they're used for safe iteration
   (let ()
     (define ht (make-hash '((a . b))))
-    
+
     (define i (hash-iterate-first ht))
-    
+
     ;; everything ok
     (test #t number? i)
     (test #t equal? (hash-iterate-key ht i) 'a)
     (test #t equal? (hash-iterate-value ht i) 'b)
     (test #t equal? (hash-iterate-pair ht i) '(a . b))
-    (test #t equal? 
+    (test #t equal?
           (call-with-values (lambda () (hash-iterate-key+value ht i)) cons)
           '(a . b))
     (test #t boolean? (hash-iterate-next ht i))
-    
+
     ;; remove element, everything should error
     (hash-remove! ht 'a)
     (test #t boolean? (hash-iterate-first ht))
@@ -483,19 +703,19 @@
     (err/rt-test (hash-iterate-pair ht i) exn:fail:contract? err-msg)
     (err/rt-test (hash-iterate-key+value ht i) exn:fail:contract? err-msg)
     (test #f hash-iterate-next ht i))
-    
+
 
   (let ()
     (define ht (make-weak-hash '((a . b))))
-    
+
     (define i (hash-iterate-first ht))
-    
+
     ;; everything ok
     (test #t number? i)
     (test #t equal? (hash-iterate-key ht i) 'a)
     (test #t equal? (hash-iterate-value ht i) 'b)
     (test #t equal? (hash-iterate-pair ht i) '(a . b))
-    (test #t equal? (call-with-values 
+    (test #t equal? (call-with-values
                         (lambda () (hash-iterate-key+value ht i)) cons)
                     '(a . b))
     (test #t boolean? (hash-iterate-next ht i))
@@ -584,7 +804,7 @@
     (test 'ok hash-ref eht key2)
 
     (collect-garbage)
-    
+
     (test 1 values (hash-count wht))
     (test 1 values (hash-count eht))
 
@@ -704,7 +924,7 @@
 (let ([ht (make-hash)])
   (for ([i 113])
     (hash-set! ht i 1))
-  
+
   (define new-ht (hash-copy ht))
 
   (test (hash-count ht) hash-count new-ht)
@@ -819,7 +1039,7 @@
 ;; ----------------------------------------
 ;; check `hash-keys` on a table with weakly held keys:
 
-(test #t 'hash-keys 
+(test #t 'hash-keys
       (for/and ([i 10000])
         (define ht (make-weak-hasheq))
         (for ([i (in-range 1000)])
