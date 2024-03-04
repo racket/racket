@@ -811,8 +811,20 @@
            [`(equal-always? ,exp1 ,exp2)
             (optimize-equal 'equal-always? (schemify exp1 'fresh) (schemify exp2 'fresh)
                             target prim-knowns knowns imports mutated simples unsafe-mode?)]
+	   [`(procedure-result-arity ,proc)
+	    (cond [(single-valued-lambda? proc knowns prim-knowns imports mutated) 1]
+		  [else `(procedure-result-arity ,(schemify proc 'fresh))])]
            [`(call-with-values ,generator ,receiver)
             (cond
+	     [(and (single-valued-lambda? generator knowns prim-knowns imports mutated)
+		   (match receiver
+		     [`(lambda (,id) ,body)
+		      `(let ([,id  ,(schemify `(,generator) 'fresh)])
+                         ,(schemify body 'fresh))]
+		     [`(case-lambda [(,id) ,body] . ,_)
+		      `(let ([,id  ,(schemify `(,generator) 'fresh)])
+                         ,(schemify body 'fresh))]
+		     [`,_ #f]))] ;; no rhs, just returns match result
               [(and (lambda? generator)
                     (or (lambda? receiver)
                         (eq? (unwrap receiver) 'list)))
