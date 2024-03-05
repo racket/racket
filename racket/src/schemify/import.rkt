@@ -13,13 +13,14 @@
          
          make-add-import!)
 
-(struct import (grp id int-id ext-id))
+(struct import (grp id int-id ext-id) #:authentic)
 (struct import-group (index
                       key
                       [knowns/proc #:mutable]  ; starts as a procedure to get table
                       [converter #:mutable]    ; converts table entries to `known`s (i.e., lazy conversion)
                       [import-keys #:mutable]  ; vector of imports, used for inlining
-                      [imports #:mutable]))    ; starts as declared imports, but inlining can grow
+                      [imports #:mutable])    ; starts as declared imports, but inlining can grow
+  #:authentic)
 
 (define (import-group-knowns grp)
   (define knowns/proc (import-group-knowns/proc grp))

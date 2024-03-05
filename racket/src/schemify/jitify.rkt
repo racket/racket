@@ -34,7 +34,7 @@
 
 (provide jitify-schemified-linklet)
 
-(struct convert-mode (sizes called? lift? no-more-conversions?))
+(struct convert-mode (sizes called? lift? no-more-conversions?) #:authentic)
 
 (define lifts-id (string->uninterned-symbol "_jits"))
 

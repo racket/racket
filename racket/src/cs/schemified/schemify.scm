@@ -4770,13 +4770,13 @@
          (let ((app_0
                 (if (string? prefix_0) prefix_0 (symbol->string prefix_0))))
            (string-append app_0 (number->string (unbox b_0)))))))))
-(define finish_2816
+(define finish_2868
   (make-struct-type-install-properties
    '(import)
    4
    0
    #f
-   null
+   (list (cons prop:authentic #t))
    (current-inspector)
    #f
    '(0 1 2 3)
@@ -4790,65 +4790,26 @@
    #f
    #f
    '(4 . 0)))
-(define effect_2192 (finish_2816 struct:import))
+(define effect_2192 (finish_2868 struct:import))
 (define import1.1
   (|#%name|
    import
    (record-constructor
     (make-record-constructor-descriptor struct:import #f #f))))
-(define import?_2699 (|#%name| import? (record-predicate struct:import)))
-(define import?
-  (|#%name|
-   import?
-   (lambda (v)
-     (if (import?_2699 v)
-       #t
-       ($value
-        (if (impersonator? v) (import?_2699 (impersonator-val v)) #f))))))
-(define import-grp_3110
-  (|#%name| import-grp (record-accessor struct:import 0)))
-(define import-grp
-  (|#%name|
-   import-grp
-   (lambda (s)
-     (if (import?_2699 s)
-       (import-grp_3110 s)
-       ($value (impersonate-ref import-grp_3110 struct:import 0 s 'grp))))))
-(define import-id_2226 (|#%name| import-id (record-accessor struct:import 1)))
-(define import-id
-  (|#%name|
-   import-id
-   (lambda (s)
-     (if (import?_2699 s)
-       (import-id_2226 s)
-       ($value (impersonate-ref import-id_2226 struct:import 1 s 'id))))))
-(define import-int-id_2707
-  (|#%name| import-int-id (record-accessor struct:import 2)))
+(define import? (|#%name| import? (record-predicate struct:import)))
+(define import-grp (|#%name| import-grp (record-accessor struct:import 0)))
+(define import-id (|#%name| import-id (record-accessor struct:import 1)))
 (define import-int-id
-  (|#%name|
-   import-int-id
-   (lambda (s)
-     (if (import?_2699 s)
-       (import-int-id_2707 s)
-       ($value
-        (impersonate-ref import-int-id_2707 struct:import 2 s 'int-id))))))
-(define import-ext-id_2460
-  (|#%name| import-ext-id (record-accessor struct:import 3)))
+  (|#%name| import-int-id (record-accessor struct:import 2)))
 (define import-ext-id
-  (|#%name|
-   import-ext-id
-   (lambda (s)
-     (if (import?_2699 s)
-       (import-ext-id_2460 s)
-       ($value
-        (impersonate-ref import-ext-id_2460 struct:import 3 s 'ext-id))))))
-(define finish_1986
+  (|#%name| import-ext-id (record-accessor struct:import 3)))
+(define finish_2201
   (make-struct-type-install-properties
    '(import-group)
    6
    0
    #f
-   null
+   (list (cons prop:authentic #t))
    (current-inspector)
    #f
    '(0 1)
@@ -4862,188 +4823,40 @@
    #f
    #f
    '(6 . 60)))
-(define effect_2739 (finish_1986 struct:import-group))
+(define effect_2739 (finish_2201 struct:import-group))
 (define import-group2.1
   (|#%name|
    import-group
    (record-constructor
     (make-record-constructor-descriptor struct:import-group #f #f))))
-(define import-group?_1821
-  (|#%name| import-group? (record-predicate struct:import-group)))
 (define import-group?
-  (|#%name|
-   import-group?
-   (lambda (v)
-     (if (import-group?_1821 v)
-       #t
-       ($value
-        (if (impersonator? v)
-          (import-group?_1821 (impersonator-val v))
-          #f))))))
-(define import-group-index_2302
-  (|#%name| import-group-index (record-accessor struct:import-group 0)))
+  (|#%name| import-group? (record-predicate struct:import-group)))
 (define import-group-index
-  (|#%name|
-   import-group-index
-   (lambda (s)
-     (if (import-group?_1821 s)
-       (import-group-index_2302 s)
-       ($value
-        (impersonate-ref
-         import-group-index_2302
-         struct:import-group
-         0
-         s
-         'index))))))
-(define import-group-key_2439
-  (|#%name| import-group-key (record-accessor struct:import-group 1)))
+  (|#%name| import-group-index (record-accessor struct:import-group 0)))
 (define import-group-key
-  (|#%name|
-   import-group-key
-   (lambda (s)
-     (if (import-group?_1821 s)
-       (import-group-key_2439 s)
-       ($value
-        (impersonate-ref
-         import-group-key_2439
-         struct:import-group
-         1
-         s
-         'key))))))
-(define import-group-knowns/proc_2775
-  (|#%name| import-group-knowns/proc (record-accessor struct:import-group 2)))
+  (|#%name| import-group-key (record-accessor struct:import-group 1)))
 (define import-group-knowns/proc
-  (|#%name|
-   import-group-knowns/proc
-   (lambda (s)
-     (if (import-group?_1821 s)
-       (import-group-knowns/proc_2775 s)
-       ($value
-        (impersonate-ref
-         import-group-knowns/proc_2775
-         struct:import-group
-         2
-         s
-         'knowns/proc))))))
-(define import-group-converter_2731
-  (|#%name| import-group-converter (record-accessor struct:import-group 3)))
+  (|#%name| import-group-knowns/proc (record-accessor struct:import-group 2)))
 (define import-group-converter
-  (|#%name|
-   import-group-converter
-   (lambda (s)
-     (if (import-group?_1821 s)
-       (import-group-converter_2731 s)
-       ($value
-        (impersonate-ref
-         import-group-converter_2731
-         struct:import-group
-         3
-         s
-         'converter))))))
-(define import-group-import-keys_2577
-  (|#%name| import-group-import-keys (record-accessor struct:import-group 4)))
+  (|#%name| import-group-converter (record-accessor struct:import-group 3)))
 (define import-group-import-keys
-  (|#%name|
-   import-group-import-keys
-   (lambda (s)
-     (if (import-group?_1821 s)
-       (import-group-import-keys_2577 s)
-       ($value
-        (impersonate-ref
-         import-group-import-keys_2577
-         struct:import-group
-         4
-         s
-         'import-keys))))))
-(define import-group-imports_2122
-  (|#%name| import-group-imports (record-accessor struct:import-group 5)))
+  (|#%name| import-group-import-keys (record-accessor struct:import-group 4)))
 (define import-group-imports
-  (|#%name|
-   import-group-imports
-   (lambda (s)
-     (if (import-group?_1821 s)
-       (import-group-imports_2122 s)
-       ($value
-        (impersonate-ref
-         import-group-imports_2122
-         struct:import-group
-         5
-         s
-         'imports))))))
-(define set-import-group-knowns/proc!_2971
-  (|#%name|
-   set-import-group-knowns/proc!
-   (record-mutator struct:import-group 2)))
+  (|#%name| import-group-imports (record-accessor struct:import-group 5)))
 (define set-import-group-knowns/proc!
   (|#%name|
    set-import-group-knowns/proc!
-   (lambda (s v)
-     (if (import-group?_1821 s)
-       (set-import-group-knowns/proc!_2971 s v)
-       ($value
-        (impersonate-set!
-         set-import-group-knowns/proc!_2971
-         struct:import-group
-         2
-         2
-         s
-         v
-         'knowns/proc))))))
-(define set-import-group-converter!_2381
-  (|#%name|
-   set-import-group-converter!
-   (record-mutator struct:import-group 3)))
+   (record-mutator struct:import-group 2)))
 (define set-import-group-converter!
   (|#%name|
    set-import-group-converter!
-   (lambda (s v)
-     (if (import-group?_1821 s)
-       (set-import-group-converter!_2381 s v)
-       ($value
-        (impersonate-set!
-         set-import-group-converter!_2381
-         struct:import-group
-         3
-         3
-         s
-         v
-         'converter))))))
-(define set-import-group-import-keys!_2611
-  (|#%name|
-   set-import-group-import-keys!
-   (record-mutator struct:import-group 4)))
+   (record-mutator struct:import-group 3)))
 (define set-import-group-import-keys!
   (|#%name|
    set-import-group-import-keys!
-   (lambda (s v)
-     (if (import-group?_1821 s)
-       (set-import-group-import-keys!_2611 s v)
-       ($value
-        (impersonate-set!
-         set-import-group-import-keys!_2611
-         struct:import-group
-         4
-         4
-         s
-         v
-         'import-keys))))))
-(define set-import-group-imports!_2489
-  (|#%name| set-import-group-imports! (record-mutator struct:import-group 5)))
+   (record-mutator struct:import-group 4)))
 (define set-import-group-imports!
-  (|#%name|
-   set-import-group-imports!
-   (lambda (s v)
-     (if (import-group?_1821 s)
-       (set-import-group-imports!_2489 s v)
-       ($value
-        (impersonate-set!
-         set-import-group-imports!_2489
-         struct:import-group
-         5
-         5
-         s
-         v
-         'imports))))))
+  (|#%name| set-import-group-imports! (record-mutator struct:import-group 5)))
 (define import-group-knowns
   (lambda (grp_0)
     (let ((knowns/proc_0 (import-group-knowns/proc grp_0)))
@@ -5070,9 +4883,7 @@
           (if converter_0 (|#%app| converter_0 v_0) v_0))
         v_0))))
 (define import-lookup
-  (lambda (im_0)
-    (let ((app_0 (import-grp im_0)))
-      (import-group-lookup app_0 (import-ext-id im_0)))))
+  (lambda (im_0) (import-group-lookup (import-grp im_0) (import-ext-id im_0))))
 (define hash-ref-either
   (lambda (knowns_0 imports_0 key_0)
     (let ((or-part_0 (hash-ref knowns_0 key_0 #f)))
@@ -5199,13 +5010,13 @@
             (|#%app| inc-index!_0)
             (|#%app| add-group!_0 grp_0)
             grp_0))))))
-(define finish_2351
+(define finish_2670
   (make-struct-type-install-properties
    '(export)
    2
    0
    #f
-   null
+   (list (cons prop:authentic #t))
    (current-inspector)
    #f
    '(0 1)
@@ -5219,39 +5030,54 @@
    #f
    #f
    '(2 . 0)))
-(define effect_2782 (finish_2351 struct:export))
+(define effect_2782 (finish_2670 struct:export))
 (define export1.1
   (|#%name|
    export
    (record-constructor
     (make-record-constructor-descriptor struct:export #f #f))))
-(define export?_2921 (|#%name| export? (record-predicate struct:export)))
-(define export?
-  (|#%name|
-   export?
-   (lambda (v)
-     (if (export?_2921 v)
-       #t
-       ($value
-        (if (impersonator? v) (export?_2921 (impersonator-val v)) #f))))))
-(define export-id_2664 (|#%name| export-id (record-accessor struct:export 0)))
-(define export-id
-  (|#%name|
-   export-id
-   (lambda (s)
-     (if (export?_2921 s)
-       (export-id_2664 s)
-       ($value (impersonate-ref export-id_2664 struct:export 0 s 'id))))))
-(define export-ext-id_2745
-  (|#%name| export-ext-id (record-accessor struct:export 1)))
+(define export? (|#%name| export? (record-predicate struct:export)))
+(define export-id (|#%name| export-id (record-accessor struct:export 0)))
 (define export-ext-id
+  (|#%name| export-ext-id (record-accessor struct:export 1)))
+(define finish_2581
+  (make-struct-type-install-properties
+   '(export-like)
+   3
+   0
+   struct:export
+   (list (cons prop:authentic #t))
+   (current-inspector)
+   #f
+   '(0 1)
+   #f
+   'export-like))
+(define struct:export-like
+  (make-record-type-descriptor
+   'export-like
+   struct:export
+   (|#%nongenerative-uid| export-like)
+   #f
+   #f
+   '(3 . 4)))
+(define effect_2157 (finish_2581 struct:export-like))
+(define export-like2.1
   (|#%name|
-   export-ext-id
-   (lambda (s)
-     (if (export?_2921 s)
-       (export-ext-id_2745 s)
-       ($value
-        (impersonate-ref export-ext-id_2745 struct:export 1 s 'ext-id))))))
+   export-like
+   (record-constructor
+    (make-record-constructor-descriptor struct:export-like #f #f))))
+(define export-like?
+  (|#%name| export-like? (record-predicate struct:export-like)))
+(define export-like-id
+  (|#%name| export-like-id (record-accessor struct:export-like 0)))
+(define export-like-ext-id
+  (|#%name| export-like-ext-id (record-accessor struct:export-like 1)))
+(define export-like-referenced?
+  (|#%name| export-like-referenced? (record-accessor struct:export-like 2)))
+(define set-export-like-referenced?!
+  (|#%name|
+   set-export-like-referenced?!
+   (record-mutator struct:export-like 2)))
 (define check-fxvector
   (lambda (v_0)
     (if (fxvector? v_0)
@@ -5261,13 +5087,13 @@
   (|#%name|
    not-an-fX
    (lambda (who_0 v_0) (begin (raise-argument-error who_0 "fixnum?" v_0)))))
-(define finish_2682
+(define finish_2648
   (make-struct-type-install-properties
    '(too-early)
    2
    0
    #f
-   null
+   (list (cons prop:authentic #t))
    (current-inspector)
    #f
    '(0 1)
@@ -5281,47 +5107,17 @@
    #f
    #f
    '(2 . 0)))
-(define effect_2833 (finish_2682 struct:too-early))
+(define effect_2833 (finish_2648 struct:too-early))
 (define too-early1.1
   (|#%name|
    too-early
    (record-constructor
     (make-record-constructor-descriptor struct:too-early #f #f))))
-(define too-early?_1816
-  (|#%name| too-early? (record-predicate struct:too-early)))
-(define too-early?
-  (|#%name|
-   too-early?
-   (lambda (v)
-     (if (too-early?_1816 v)
-       #t
-       ($value
-        (if (impersonator? v) (too-early?_1816 (impersonator-val v)) #f))))))
-(define too-early-name_2356
-  (|#%name| too-early-name (record-accessor struct:too-early 0)))
+(define too-early? (|#%name| too-early? (record-predicate struct:too-early)))
 (define too-early-name
-  (|#%name|
-   too-early-name
-   (lambda (s)
-     (if (too-early?_1816 s)
-       (too-early-name_2356 s)
-       ($value
-        (impersonate-ref too-early-name_2356 struct:too-early 0 s 'name))))))
-(define too-early-set!ed?_2625
-  (|#%name| too-early-set!ed? (record-accessor struct:too-early 1)))
+  (|#%name| too-early-name (record-accessor struct:too-early 0)))
 (define too-early-set!ed?
-  (|#%name|
-   too-early-set!ed?
-   (lambda (s)
-     (if (too-early?_1816 s)
-       (too-early-set!ed?_2625 s)
-       ($value
-        (impersonate-ref
-         too-early-set!ed?_2625
-         struct:too-early
-         1
-         s
-         'set!ed?))))))
+  (|#%name| too-early-set!ed? (record-accessor struct:too-early 1)))
 (define delayed-mutated-state? (lambda (v_0) (procedure? v_0)))
 (define simple-mutated-state?
   (lambda (v_0)
@@ -8978,13 +8774,13 @@
       (if (begin-unsafe (pair? (unwrap args_0)))
         (arithmetic-shift (args-arity-mask (wrap-cdr args_0)) 1)
         -1))))
-(define finish_2858
+(define finish_2575
   (make-struct-type-install-properties
    '(struct-type-info)
    11
    0
    #f
-   null
+   (list (cons prop:authentic #t))
    (current-inspector)
    #f
    '(0 1 2 3 4 5 6 7 8 9 10)
@@ -8998,209 +8794,56 @@
    #f
    #f
    '(11 . 0)))
-(define effect_2037 (finish_2858 struct:struct-type-info))
+(define effect_2037 (finish_2575 struct:struct-type-info))
 (define struct-type-info1.1
   (|#%name|
    struct-type-info
    (record-constructor
     (make-record-constructor-descriptor struct:struct-type-info #f #f))))
-(define struct-type-info?_2591
-  (|#%name| struct-type-info? (record-predicate struct:struct-type-info)))
 (define struct-type-info?
-  (|#%name|
-   struct-type-info?
-   (lambda (v)
-     (if (struct-type-info?_2591 v)
-       #t
-       ($value
-        (if (impersonator? v)
-          (struct-type-info?_2591 (impersonator-val v))
-          #f))))))
-(define struct-type-info-name_2272
-  (|#%name| struct-type-info-name (record-accessor struct:struct-type-info 0)))
+  (|#%name| struct-type-info? (record-predicate struct:struct-type-info)))
 (define struct-type-info-name
-  (|#%name|
-   struct-type-info-name
-   (lambda (s)
-     (if (struct-type-info?_2591 s)
-       (struct-type-info-name_2272 s)
-       ($value
-        (impersonate-ref
-         struct-type-info-name_2272
-         struct:struct-type-info
-         0
-         s
-         'name))))))
-(define struct-type-info-parent_2983
-  (|#%name|
-   struct-type-info-parent
-   (record-accessor struct:struct-type-info 1)))
+  (|#%name| struct-type-info-name (record-accessor struct:struct-type-info 0)))
 (define struct-type-info-parent
   (|#%name|
    struct-type-info-parent
-   (lambda (s)
-     (if (struct-type-info?_2591 s)
-       (struct-type-info-parent_2983 s)
-       ($value
-        (impersonate-ref
-         struct-type-info-parent_2983
-         struct:struct-type-info
-         1
-         s
-         'parent))))))
-(define struct-type-info-immediate-field-count_2698
-  (|#%name|
-   struct-type-info-immediate-field-count
-   (record-accessor struct:struct-type-info 2)))
+   (record-accessor struct:struct-type-info 1)))
 (define struct-type-info-immediate-field-count
   (|#%name|
    struct-type-info-immediate-field-count
-   (lambda (s)
-     (if (struct-type-info?_2591 s)
-       (struct-type-info-immediate-field-count_2698 s)
-       ($value
-        (impersonate-ref
-         struct-type-info-immediate-field-count_2698
-         struct:struct-type-info
-         2
-         s
-         'immediate-field-count))))))
-(define struct-type-info-field-count_2405
-  (|#%name|
-   struct-type-info-field-count
-   (record-accessor struct:struct-type-info 3)))
+   (record-accessor struct:struct-type-info 2)))
 (define struct-type-info-field-count
   (|#%name|
    struct-type-info-field-count
-   (lambda (s)
-     (if (struct-type-info?_2591 s)
-       (struct-type-info-field-count_2405 s)
-       ($value
-        (impersonate-ref
-         struct-type-info-field-count_2405
-         struct:struct-type-info
-         3
-         s
-         'field-count))))))
-(define struct-type-info-pure-constructor?_2558
-  (|#%name|
-   struct-type-info-pure-constructor?
-   (record-accessor struct:struct-type-info 4)))
+   (record-accessor struct:struct-type-info 3)))
 (define struct-type-info-pure-constructor?
   (|#%name|
    struct-type-info-pure-constructor?
-   (lambda (s)
-     (if (struct-type-info?_2591 s)
-       (struct-type-info-pure-constructor?_2558 s)
-       ($value
-        (impersonate-ref
-         struct-type-info-pure-constructor?_2558
-         struct:struct-type-info
-         4
-         s
-         'pure-constructor?))))))
-(define struct-type-info-authentic?_2530
-  (|#%name|
-   struct-type-info-authentic?
-   (record-accessor struct:struct-type-info 5)))
+   (record-accessor struct:struct-type-info 4)))
 (define struct-type-info-authentic?
   (|#%name|
    struct-type-info-authentic?
-   (lambda (s)
-     (if (struct-type-info?_2591 s)
-       (struct-type-info-authentic?_2530 s)
-       ($value
-        (impersonate-ref
-         struct-type-info-authentic?_2530
-         struct:struct-type-info
-         5
-         s
-         'authentic?))))))
-(define struct-type-info-sealed?_2632
-  (|#%name|
-   struct-type-info-sealed?
-   (record-accessor struct:struct-type-info 6)))
+   (record-accessor struct:struct-type-info 5)))
 (define struct-type-info-sealed?
   (|#%name|
    struct-type-info-sealed?
-   (lambda (s)
-     (if (struct-type-info?_2591 s)
-       (struct-type-info-sealed?_2632 s)
-       ($value
-        (impersonate-ref
-         struct-type-info-sealed?_2632
-         struct:struct-type-info
-         6
-         s
-         'sealed?))))))
-(define struct-type-info-prefab-immutables_2507
-  (|#%name|
-   struct-type-info-prefab-immutables
-   (record-accessor struct:struct-type-info 7)))
+   (record-accessor struct:struct-type-info 6)))
 (define struct-type-info-prefab-immutables
   (|#%name|
    struct-type-info-prefab-immutables
-   (lambda (s)
-     (if (struct-type-info?_2591 s)
-       (struct-type-info-prefab-immutables_2507 s)
-       ($value
-        (impersonate-ref
-         struct-type-info-prefab-immutables_2507
-         struct:struct-type-info
-         7
-         s
-         'prefab-immutables))))))
-(define struct-type-info-non-prefab-immutables_2796
-  (|#%name|
-   struct-type-info-non-prefab-immutables
-   (record-accessor struct:struct-type-info 8)))
+   (record-accessor struct:struct-type-info 7)))
 (define struct-type-info-non-prefab-immutables
   (|#%name|
    struct-type-info-non-prefab-immutables
-   (lambda (s)
-     (if (struct-type-info?_2591 s)
-       (struct-type-info-non-prefab-immutables_2796 s)
-       ($value
-        (impersonate-ref
-         struct-type-info-non-prefab-immutables_2796
-         struct:struct-type-info
-         8
-         s
-         'non-prefab-immutables))))))
-(define struct-type-info-constructor-name-expr_2430
-  (|#%name|
-   struct-type-info-constructor-name-expr
-   (record-accessor struct:struct-type-info 9)))
+   (record-accessor struct:struct-type-info 8)))
 (define struct-type-info-constructor-name-expr
   (|#%name|
    struct-type-info-constructor-name-expr
-   (lambda (s)
-     (if (struct-type-info?_2591 s)
-       (struct-type-info-constructor-name-expr_2430 s)
-       ($value
-        (impersonate-ref
-         struct-type-info-constructor-name-expr_2430
-         struct:struct-type-info
-         9
-         s
-         'constructor-name-expr))))))
-(define struct-type-info-rest_2501
-  (|#%name|
-   struct-type-info-rest
-   (record-accessor struct:struct-type-info 10)))
+   (record-accessor struct:struct-type-info 9)))
 (define struct-type-info-rest
   (|#%name|
    struct-type-info-rest
-   (lambda (s)
-     (if (struct-type-info?_2591 s)
-       (struct-type-info-rest_2501 s)
-       ($value
-        (impersonate-ref
-         struct-type-info-rest_2501
-         struct:struct-type-info
-         10
-         s
-         'rest))))))
+   (record-accessor struct:struct-type-info 10)))
 (define struct-type-info-rest-properties-list-pos 0)
 (define make-struct-type-info
   (lambda (v_0 prim-knowns_0 knowns_0 imports_0 mutated_0)
@@ -14448,12 +14091,10 @@
                                                 (hash-set
                                                  needed_0
                                                  u-v_0
-                                                 (let ((app_0
-                                                        (import-ext-id c2_0)))
-                                                   (cons
-                                                    app_0
-                                                    (import-group-index
-                                                     (import-grp c2_0)))))
+                                                 (cons
+                                                  (import-ext-id c2_0)
+                                                  (import-group-index
+                                                   (import-grp c2_0))))
                                                 #f)))))
                                       needed_0))))))))))))))))
       #f)))
@@ -16831,18 +16472,14 @@
                                                 (hash-set
                                                  knowns_2
                                                  app_0
-                                                 (let ((app_1
-                                                        (struct-type-info-field-count
-                                                         info_0)))
-                                                   (let ((app_2
-                                                          (struct-type-info-pure-constructor?
-                                                           info_0)))
-                                                     (known-struct-type
-                                                      type_0
-                                                      app_1
-                                                      app_2
-                                                      (struct-type-info-sealed?
-                                                       info_0))))))
+                                                 (known-struct-type
+                                                  type_0
+                                                  (struct-type-info-field-count
+                                                   info_0)
+                                                  (struct-type-info-pure-constructor?
+                                                   info_0)
+                                                  (struct-type-info-sealed?
+                                                   info_0))))
                                               info_0)))))))
                                  (nothing_0)))))
                           (if (let ((p_0 (unwrap v_0)))
@@ -17035,32 +16672,26 @@
                                                  (hash-set
                                                   knowns_0
                                                   app_0
-                                                  (let ((app_1
-                                                         (struct-type-info-authentic?
-                                                          info_0)))
-                                                    (known-struct-predicate
-                                                     2
-                                                     type_0
-                                                     struct:s_0
-                                                     app_1
-                                                     (struct-type-info-sealed?
-                                                      info_0)))))))
+                                                  (known-struct-predicate
+                                                   2
+                                                   type_0
+                                                   struct:s_0
+                                                   (struct-type-info-authentic?
+                                                    info_0)
+                                                   (struct-type-info-sealed?
+                                                    info_0))))))
                                           (let ((app_0 (unwrap struct:s_0)))
                                             (hash-set
                                              knowns_1
                                              app_0
-                                             (let ((app_1
-                                                    (struct-type-info-field-count
-                                                     info_0)))
-                                               (let ((app_2
-                                                      (struct-type-info-pure-constructor?
-                                                       info_0)))
-                                                 (known-struct-type
-                                                  type_0
-                                                  app_1
-                                                  app_2
-                                                  (struct-type-info-sealed?
-                                                   info_0))))))))
+                                             (known-struct-type
+                                              type_0
+                                              (struct-type-info-field-count
+                                               info_0)
+                                              (struct-type-info-pure-constructor?
+                                               info_0)
+                                              (struct-type-info-sealed?
+                                               info_0))))))
                                       info_0))
                                    (maybe-immediate-values_0)))))
                             (if (let ((p_0 (unwrap v_0)))
@@ -19372,51 +19003,47 @@
                                               #f
                                               (list
                                                'quote
-                                               (let ((app_5
-                                                      (struct-type-info-immediate-field-count
-                                                       sti_0)))
-                                                 (list*
-                                                  app_5
-                                                  (let ((n_0
-                                                         (struct-type-info-immediate-field-count
-                                                          sti_0)))
-                                                    (let ((mask_0
-                                                           (sub1
-                                                            (arithmetic-shift
-                                                             1
-                                                             n_0))))
-                                                      (let ((c1_0
-                                                             (struct-type-info-non-prefab-immutables
-                                                              sti_0)))
-                                                        (if c1_0
-                                                          (letrec*
-                                                           ((loop_0
-                                                             (|#%name|
-                                                              loop
-                                                              (lambda (imms_0
-                                                                       mask_1)
-                                                                (begin
-                                                                  (if (null?
-                                                                       imms_0)
-                                                                    mask_1
-                                                                    (let ((m_0
-                                                                           (bitwise-not
-                                                                            (arithmetic-shift
-                                                                             1
-                                                                             (car
-                                                                              imms_0)))))
-                                                                      (let ((app_6
-                                                                             (cdr
-                                                                              imms_0)))
-                                                                        (loop_0
-                                                                         app_6
-                                                                         (bitwise-and
-                                                                          mask_1
-                                                                          m_0))))))))))
-                                                           (loop_0
-                                                            c1_0
-                                                            mask_0))
-                                                          mask_0)))))))))))))))
+                                               (list*
+                                                (struct-type-info-immediate-field-count
+                                                 sti_0)
+                                                (let ((n_0
+                                                       (struct-type-info-immediate-field-count
+                                                        sti_0)))
+                                                  (let ((mask_0
+                                                         (sub1
+                                                          (arithmetic-shift
+                                                           1
+                                                           n_0))))
+                                                    (let ((c1_0
+                                                           (struct-type-info-non-prefab-immutables
+                                                            sti_0)))
+                                                      (if c1_0
+                                                        (letrec*
+                                                         ((loop_0
+                                                           (|#%name|
+                                                            loop
+                                                            (lambda (imms_0
+                                                                     mask_1)
+                                                              (begin
+                                                                (if (null?
+                                                                     imms_0)
+                                                                  mask_1
+                                                                  (let ((m_0
+                                                                         (bitwise-not
+                                                                          (arithmetic-shift
+                                                                           1
+                                                                           (car
+                                                                            imms_0)))))
+                                                                    (let ((app_5
+                                                                           (cdr
+                                                                            imms_0)))
+                                                                      (loop_0
+                                                                       app_5
+                                                                       (bitwise-and
+                                                                        mask_1
+                                                                        m_0))))))))))
+                                                         (loop_0 c1_0 mask_0))
+                                                        mask_0))))))))))))))
                                (list*
                                 app_1
                                 (let ((app_2
@@ -19556,24 +19183,18 @@
                                                                       ""))
                                                                  (let ((post_0
                                                                         "?"))
-                                                                   (let ((sep_1
-                                                                          sep_0)
-                                                                         (st_1
-                                                                          st_0)
-                                                                         (pre_1
-                                                                          pre_0))
-                                                                     (begin-unsafe
-                                                                      (string->symbol
-                                                                       (let ((app_4
-                                                                              (symbol->immutable-string
-                                                                               st_1)))
-                                                                         (string-append-immutable
-                                                                          pre_1
-                                                                          app_4
-                                                                          sep_1
-                                                                          (symbol->immutable-string
-                                                                           '||)
-                                                                          post_0))))))))))
+                                                                   (begin-unsafe
+                                                                    (string->symbol
+                                                                     (let ((app_4
+                                                                            (symbol->immutable-string
+                                                                             st_0)))
+                                                                       (string-append-immutable
+                                                                        pre_0
+                                                                        app_4
+                                                                        sep_0
+                                                                        (symbol->immutable-string
+                                                                         '||)
+                                                                        post_0)))))))))
                                                         (let ((proc-expr_0
                                                                (list
                                                                 'record-predicate
@@ -19611,24 +19232,18 @@
                                                                             ""))
                                                                        (let ((post_0
                                                                               "?"))
-                                                                         (let ((sep_1
-                                                                                sep_0)
-                                                                               (st_1
-                                                                                st_0)
-                                                                               (pre_1
-                                                                                pre_0))
-                                                                           (begin-unsafe
-                                                                            (string->symbol
-                                                                             (let ((app_5
-                                                                                    (symbol->immutable-string
-                                                                                     st_1)))
-                                                                               (string-append-immutable
-                                                                                pre_1
-                                                                                app_5
-                                                                                sep_1
-                                                                                (symbol->immutable-string
-                                                                                 '||)
-                                                                                post_0))))))))))
+                                                                         (begin-unsafe
+                                                                          (string->symbol
+                                                                           (let ((app_5
+                                                                                  (symbol->immutable-string
+                                                                                   st_0)))
+                                                                             (string-append-immutable
+                                                                              pre_0
+                                                                              app_5
+                                                                              sep_0
+                                                                              (symbol->immutable-string
+                                                                               '||)
+                                                                              post_0)))))))))
                                                               (let ((proc-expr_0
                                                                      (list
                                                                       'lambda
@@ -19772,24 +19387,18 @@
                                                                                                                    "-"))
                                                                                                               (let ((post_0
                                                                                                                      ""))
-                                                                                                                (let ((sep_1
-                                                                                                                       sep_0)
-                                                                                                                      (st_1
-                                                                                                                       st_0)
-                                                                                                                      (pre_1
-                                                                                                                       pre_0))
-                                                                                                                  (begin-unsafe
-                                                                                                                   (string->symbol
-                                                                                                                    (let ((app_6
-                                                                                                                           (symbol->immutable-string
-                                                                                                                            st_1)))
-                                                                                                                      (string-append-immutable
-                                                                                                                       pre_1
-                                                                                                                       app_6
-                                                                                                                       sep_1
-                                                                                                                       (symbol->immutable-string
-                                                                                                                        field/proc-name_0)
-                                                                                                                       post_0))))))))))))
+                                                                                                                (begin-unsafe
+                                                                                                                 (string->symbol
+                                                                                                                  (let ((app_6
+                                                                                                                         (symbol->immutable-string
+                                                                                                                          st_0)))
+                                                                                                                    (string-append-immutable
+                                                                                                                     pre_0
+                                                                                                                     app_6
+                                                                                                                     sep_0
+                                                                                                                     (symbol->immutable-string
+                                                                                                                      field/proc-name_0)
+                                                                                                                     post_0)))))))))))
                                                                                                  (let ((raw-def_0
                                                                                                         (list
                                                                                                          'define
@@ -19898,24 +19507,18 @@
                                                                                                                      "-"))
                                                                                                                 (let ((post_0
                                                                                                                        "!"))
-                                                                                                                  (let ((sep_1
-                                                                                                                         sep_0)
-                                                                                                                        (st_1
-                                                                                                                         st_0)
-                                                                                                                        (pre_1
-                                                                                                                         pre_0))
-                                                                                                                    (begin-unsafe
-                                                                                                                     (string->symbol
-                                                                                                                      (let ((app_6
-                                                                                                                             (symbol->immutable-string
-                                                                                                                              st_1)))
-                                                                                                                        (string-append-immutable
-                                                                                                                         pre_1
-                                                                                                                         app_6
-                                                                                                                         sep_1
-                                                                                                                         (symbol->immutable-string
-                                                                                                                          field/proc-name_0)
-                                                                                                                         post_0))))))))))))
+                                                                                                                  (begin-unsafe
+                                                                                                                   (string->symbol
+                                                                                                                    (let ((app_6
+                                                                                                                           (symbol->immutable-string
+                                                                                                                            st_0)))
+                                                                                                                      (string-append-immutable
+                                                                                                                       pre_0
+                                                                                                                       app_6
+                                                                                                                       sep_0
+                                                                                                                       (symbol->immutable-string
+                                                                                                                        field/proc-name_0)
+                                                                                                                       post_0)))))))))))
                                                                                                    (let ((raw-def_0
                                                                                                           (list
                                                                                                            'define
@@ -19943,13 +19546,11 @@
                                                                                                      (let ((abs-pos_0
                                                                                                             (+
                                                                                                              pos_0
-                                                                                                             (let ((app_6
-                                                                                                                    (struct-type-info-field-count
-                                                                                                                     sti_0)))
-                                                                                                               (-
-                                                                                                                app_6
-                                                                                                                (struct-type-info-immediate-field-count
-                                                                                                                 sti_0))))))
+                                                                                                             (-
+                                                                                                              (struct-type-info-field-count
+                                                                                                               sti_0)
+                                                                                                              (struct-type-info-immediate-field-count
+                                                                                                               sti_0)))))
                                                                                                        (let ((err-args_0
                                                                                                               (|#%name|
                                                                                                                err-args
@@ -26210,14 +25811,12 @@
                                    (let ((fold-var_1
                                           (let ((fold-var_1
                                                  (cons
-                                                  (let ((app_0
-                                                         (export-id ex_0)))
-                                                    (list
-                                                     'define
-                                                     app_0
-                                                     (list
-                                                      'make-internal-variable
-                                                      (list 'quote int-id_0))))
+                                                  (list
+                                                   'define
+                                                   (export-id ex_0)
+                                                   (list
+                                                    'make-internal-variable
+                                                    (list 'quote int-id_0)))
                                                   fold-var_0)))
                                             (values fold-var_1))))
                                      (for-loop_0
@@ -33842,13 +33441,13 @@
                            (schemify-body_0 (cdr l_0) wcm-state_2))))))))))
              (schemify_0 v_1 wcm-state_1)))))))
      (schemify/knowns_0 knowns_0 8 wcm-state_0 v_0))))
-(define finish_2118
+(define finish_2608
   (make-struct-type-install-properties
    '(convert-mode)
    4
    0
    #f
-   null
+   (list (cons prop:authentic #t))
    (current-inspector)
    #f
    '(0 1 2 3)
@@ -33862,86 +33461,24 @@
    #f
    #f
    '(4 . 0)))
-(define effect_2443 (finish_2118 struct:convert-mode))
+(define effect_2443 (finish_2608 struct:convert-mode))
 (define convert-mode1.1
   (|#%name|
    convert-mode
    (record-constructor
     (make-record-constructor-descriptor struct:convert-mode #f #f))))
-(define convert-mode?_2433
-  (|#%name| convert-mode? (record-predicate struct:convert-mode)))
 (define convert-mode?
-  (|#%name|
-   convert-mode?
-   (lambda (v)
-     (if (convert-mode?_2433 v)
-       #t
-       ($value
-        (if (impersonator? v)
-          (convert-mode?_2433 (impersonator-val v))
-          #f))))))
-(define convert-mode-sizes_3279
-  (|#%name| convert-mode-sizes (record-accessor struct:convert-mode 0)))
+  (|#%name| convert-mode? (record-predicate struct:convert-mode)))
 (define convert-mode-sizes
-  (|#%name|
-   convert-mode-sizes
-   (lambda (s)
-     (if (convert-mode?_2433 s)
-       (convert-mode-sizes_3279 s)
-       ($value
-        (impersonate-ref
-         convert-mode-sizes_3279
-         struct:convert-mode
-         0
-         s
-         'sizes))))))
-(define convert-mode-called?_2733
-  (|#%name| convert-mode-called? (record-accessor struct:convert-mode 1)))
+  (|#%name| convert-mode-sizes (record-accessor struct:convert-mode 0)))
 (define convert-mode-called?
-  (|#%name|
-   convert-mode-called?
-   (lambda (s)
-     (if (convert-mode?_2433 s)
-       (convert-mode-called?_2733 s)
-       ($value
-        (impersonate-ref
-         convert-mode-called?_2733
-         struct:convert-mode
-         1
-         s
-         'called?))))))
-(define convert-mode-lift?_2529
-  (|#%name| convert-mode-lift? (record-accessor struct:convert-mode 2)))
+  (|#%name| convert-mode-called? (record-accessor struct:convert-mode 1)))
 (define convert-mode-lift?
-  (|#%name|
-   convert-mode-lift?
-   (lambda (s)
-     (if (convert-mode?_2433 s)
-       (convert-mode-lift?_2529 s)
-       ($value
-        (impersonate-ref
-         convert-mode-lift?_2529
-         struct:convert-mode
-         2
-         s
-         'lift?))))))
-(define convert-mode-no-more-conversions?_2511
-  (|#%name|
-   convert-mode-no-more-conversions?
-   (record-accessor struct:convert-mode 3)))
+  (|#%name| convert-mode-lift? (record-accessor struct:convert-mode 2)))
 (define convert-mode-no-more-conversions?
   (|#%name|
    convert-mode-no-more-conversions?
-   (lambda (s)
-     (if (convert-mode?_2433 s)
-       (convert-mode-no-more-conversions?_2511 s)
-       ($value
-        (impersonate-ref
-         convert-mode-no-more-conversions?_2511
-         struct:convert-mode
-         3
-         s
-         'no-more-conversions?))))))
+   (record-accessor struct:convert-mode 3)))
 (define lifts-id (string->uninterned-symbol "_jits"))
 (define jitify-schemified-linklet
   (lambda (v_0
@@ -38656,13 +38193,11 @@
           (begin
             (if (convert-mode? cm_0)
               (if (convert-mode? cm_0)
-                (let ((app_0 (convert-mode-sizes cm_0)))
-                  (let ((app_1 (convert-mode-lift? cm_0)))
-                    (convert-mode1.1
-                     app_0
-                     #f
-                     app_1
-                     (convert-mode-no-more-conversions? cm_0))))
+                (convert-mode1.1
+                 (convert-mode-sizes cm_0)
+                 #f
+                 (convert-mode-lift? cm_0)
+                 (convert-mode-no-more-conversions? cm_0))
                 (raise-argument-error 'struct-copy "convert-mode?" cm_0))
               (if (eq? 'no-lift (cdr cm_0))
                 '(not-called . no-lift)
@@ -38674,13 +38209,11 @@
           (begin
             (if (convert-mode? cm_0)
               (if (convert-mode? cm_0)
-                (let ((app_0 (convert-mode-sizes cm_0)))
-                  (let ((app_1 (convert-mode-lift? cm_0)))
-                    (convert-mode1.1
-                     app_0
-                     #t
-                     app_1
-                     (convert-mode-no-more-conversions? cm_0))))
+                (convert-mode1.1
+                 (convert-mode-sizes cm_0)
+                 #t
+                 (convert-mode-lift? cm_0)
+                 (convert-mode-no-more-conversions? cm_0))
                 (raise-argument-error 'struct-copy "convert-mode?" cm_0))
               (if (eq? 'no-lift (cdr cm_0))
                 '(called . no-lift)
@@ -42777,13 +42310,13 @@
                         (if (|#%app| need-exposed?_0 q_0)
                           #t
                           (if (extflonum? q_0) #t #f))))))))))))))
-(define finish_3138
+(define finish_2489
   (make-struct-type-install-properties
    '(to-unfasl)
    3
    0
    #f
-   null
+   (list (cons prop:authentic #t))
    (current-inspector)
    #f
    '(0 1 2)
@@ -42797,57 +42330,19 @@
    #f
    #f
    '(3 . 0)))
-(define effect_2898 (finish_3138 struct:to-unfasl))
+(define effect_2898 (finish_2489 struct:to-unfasl))
 (define to-unfasl1.1
   (|#%name|
    to-unfasl
    (record-constructor
     (make-record-constructor-descriptor struct:to-unfasl #f #f))))
-(define to-unfasl?_2342
-  (|#%name| to-unfasl? (record-predicate struct:to-unfasl)))
-(define to-unfasl?
-  (|#%name|
-   to-unfasl?
-   (lambda (v)
-     (if (to-unfasl?_2342 v)
-       #t
-       ($value
-        (if (impersonator? v) (to-unfasl?_2342 (impersonator-val v)) #f))))))
-(define to-unfasl-bstr_2318
-  (|#%name| to-unfasl-bstr (record-accessor struct:to-unfasl 0)))
+(define to-unfasl? (|#%name| to-unfasl? (record-predicate struct:to-unfasl)))
 (define to-unfasl-bstr
-  (|#%name|
-   to-unfasl-bstr
-   (lambda (s)
-     (if (to-unfasl?_2342 s)
-       (to-unfasl-bstr_2318 s)
-       ($value
-        (impersonate-ref to-unfasl-bstr_2318 struct:to-unfasl 0 s 'bstr))))))
-(define to-unfasl-externals_2291
-  (|#%name| to-unfasl-externals (record-accessor struct:to-unfasl 1)))
+  (|#%name| to-unfasl-bstr (record-accessor struct:to-unfasl 0)))
 (define to-unfasl-externals
-  (|#%name|
-   to-unfasl-externals
-   (lambda (s)
-     (if (to-unfasl?_2342 s)
-       (to-unfasl-externals_2291 s)
-       ($value
-        (impersonate-ref
-         to-unfasl-externals_2291
-         struct:to-unfasl
-         1
-         s
-         'externals))))))
-(define to-unfasl-wrt_2425
-  (|#%name| to-unfasl-wrt (record-accessor struct:to-unfasl 2)))
+  (|#%name| to-unfasl-externals (record-accessor struct:to-unfasl 1)))
 (define to-unfasl-wrt
-  (|#%name|
-   to-unfasl-wrt
-   (lambda (s)
-     (if (to-unfasl?_2342 s)
-       (to-unfasl-wrt_2425 s)
-       ($value
-        (impersonate-ref to-unfasl-wrt_2425 struct:to-unfasl 2 s 'wrt))))))
+  (|#%name| to-unfasl-wrt (record-accessor struct:to-unfasl 2)))
 (define empty-literals?
   (lambda (v_0) (if (vector? v_0) (eqv? 0 (vector-length v_0)) #f)))
 (define fasl-literals
@@ -42893,8 +42388,7 @@
                      (to-unfasl-wrt v_0)))
                   (let ((temp7_0 (to-unfasl-bstr v_0)))
                     (let ((temp10_0 (to-unfasl-externals v_0)))
-                      (let ((temp7_1 temp7_0))
-                        (fasl->s-exp.1 #t temp10_0 #t temp7_1)))))))
+                      (fasl->s-exp.1 #t temp10_0 #t temp7_0))))))
             (letrec*
              ((loop_0
                (|#%name|
@@ -43235,13 +42729,13 @@
                          app_2
                          (stack-set stack_1 pos_1 (car vals_1))))))))))))
          (loop_0 pos_0 vals_0 count_0 stack_0))))))
-(define finish_2471
+(define finish_2254
   (make-struct-type-install-properties
    '(stack-info)
    5
    0
    #f
-   null
+   (list (cons prop:authentic #t))
    (current-inspector)
    #f
    '(0 1)
@@ -43255,154 +42749,36 @@
    #f
    #f
    '(5 . 28)))
-(define effect_2334 (finish_2471 struct:stack-info))
+(define effect_2334 (finish_2254 struct:stack-info))
 (define stack-info4.1
   (|#%name|
    stack-info
    (record-constructor
     (make-record-constructor-descriptor struct:stack-info #f #f))))
-(define stack-info?_2054
-  (|#%name| stack-info? (record-predicate struct:stack-info)))
 (define stack-info?
-  (|#%name|
-   stack-info?
-   (lambda (v)
-     (if (stack-info?_2054 v)
-       #t
-       ($value
-        (if (impersonator? v) (stack-info?_2054 (impersonator-val v)) #f))))))
-(define stack-info-capture-depth_2245
-  (|#%name| stack-info-capture-depth (record-accessor struct:stack-info 0)))
+  (|#%name| stack-info? (record-predicate struct:stack-info)))
 (define stack-info-capture-depth
-  (|#%name|
-   stack-info-capture-depth
-   (lambda (s)
-     (if (stack-info?_2054 s)
-       (stack-info-capture-depth_2245 s)
-       ($value
-        (impersonate-ref
-         stack-info-capture-depth_2245
-         struct:stack-info
-         0
-         s
-         'capture-depth))))))
-(define stack-info-closure-map_2860
-  (|#%name| stack-info-closure-map (record-accessor struct:stack-info 1)))
+  (|#%name| stack-info-capture-depth (record-accessor struct:stack-info 0)))
 (define stack-info-closure-map
-  (|#%name|
-   stack-info-closure-map
-   (lambda (s)
-     (if (stack-info?_2054 s)
-       (stack-info-closure-map_2860 s)
-       ($value
-        (impersonate-ref
-         stack-info-closure-map_2860
-         struct:stack-info
-         1
-         s
-         'closure-map))))))
-(define stack-info-use-map_2830
-  (|#%name| stack-info-use-map (record-accessor struct:stack-info 2)))
+  (|#%name| stack-info-closure-map (record-accessor struct:stack-info 1)))
 (define stack-info-use-map
-  (|#%name|
-   stack-info-use-map
-   (lambda (s)
-     (if (stack-info?_2054 s)
-       (stack-info-use-map_2830 s)
-       ($value
-        (impersonate-ref
-         stack-info-use-map_2830
-         struct:stack-info
-         2
-         s
-         'use-map))))))
-(define stack-info-local-use-map_2796
-  (|#%name| stack-info-local-use-map (record-accessor struct:stack-info 3)))
+  (|#%name| stack-info-use-map (record-accessor struct:stack-info 2)))
 (define stack-info-local-use-map
-  (|#%name|
-   stack-info-local-use-map
-   (lambda (s)
-     (if (stack-info?_2054 s)
-       (stack-info-local-use-map_2796 s)
-       ($value
-        (impersonate-ref
-         stack-info-local-use-map_2796
-         struct:stack-info
-         3
-         s
-         'local-use-map))))))
-(define stack-info-non-tail-call-later?_2901
-  (|#%name|
-   stack-info-non-tail-call-later?
-   (record-accessor struct:stack-info 4)))
+  (|#%name| stack-info-local-use-map (record-accessor struct:stack-info 3)))
 (define stack-info-non-tail-call-later?
   (|#%name|
    stack-info-non-tail-call-later?
-   (lambda (s)
-     (if (stack-info?_2054 s)
-       (stack-info-non-tail-call-later?_2901 s)
-       ($value
-        (impersonate-ref
-         stack-info-non-tail-call-later?_2901
-         struct:stack-info
-         4
-         s
-         'non-tail-call-later?))))))
-(define set-stack-info-use-map!_2735
-  (|#%name| set-stack-info-use-map! (record-mutator struct:stack-info 2)))
+   (record-accessor struct:stack-info 4)))
 (define set-stack-info-use-map!
-  (|#%name|
-   set-stack-info-use-map!
-   (lambda (s v)
-     (if (stack-info?_2054 s)
-       (set-stack-info-use-map!_2735 s v)
-       ($value
-        (impersonate-set!
-         set-stack-info-use-map!_2735
-         struct:stack-info
-         2
-         2
-         s
-         v
-         'use-map))))))
-(define set-stack-info-local-use-map!_2852
-  (|#%name|
-   set-stack-info-local-use-map!
-   (record-mutator struct:stack-info 3)))
+  (|#%name| set-stack-info-use-map! (record-mutator struct:stack-info 2)))
 (define set-stack-info-local-use-map!
   (|#%name|
    set-stack-info-local-use-map!
-   (lambda (s v)
-     (if (stack-info?_2054 s)
-       (set-stack-info-local-use-map!_2852 s v)
-       ($value
-        (impersonate-set!
-         set-stack-info-local-use-map!_2852
-         struct:stack-info
-         3
-         3
-         s
-         v
-         'local-use-map))))))
-(define set-stack-info-non-tail-call-later?!_2871
-  (|#%name|
-   set-stack-info-non-tail-call-later?!
-   (record-mutator struct:stack-info 4)))
+   (record-mutator struct:stack-info 3)))
 (define set-stack-info-non-tail-call-later?!
   (|#%name|
    set-stack-info-non-tail-call-later?!
-   (lambda (s v)
-     (if (stack-info?_2054 s)
-       (set-stack-info-non-tail-call-later?!_2871 s v)
-       ($value
-        (impersonate-set!
-         set-stack-info-non-tail-call-later?!_2871
-         struct:stack-info
-         4
-         4
-         s
-         v
-         'non-tail-call-later?))))))
+   (record-mutator struct:stack-info 4)))
 (define make-stack-info.1
   (|#%name|
    make-stack-info
@@ -43462,15 +42838,13 @@
                          pos_0)))))))))))))
 (define stack-info-branch
   (lambda (stk-i_0)
-    (let ((app_0 (stack-info-capture-depth stk-i_0)))
-      (let ((app_1 (stack-info-closure-map stk-i_0)))
-        (let ((app_2 (stack-info-use-map stk-i_0)))
-          (stack-info4.1
-           app_0
-           app_1
-           app_2
-           hash2610
-           (stack-info-non-tail-call-later? stk-i_0)))))))
+    (let ((app_0 (stack-info-use-map stk-i_0)))
+      (stack-info4.1
+       (stack-info-capture-depth stk-i_0)
+       (stack-info-closure-map stk-i_0)
+       app_0
+       hash2610
+       (stack-info-non-tail-call-later? stk-i_0)))))
 (define stack-info-branch-need-clears?
   (lambda (stk-i_0) (stack-info-non-tail-call-later? stk-i_0)))
 (define stack-info-merge!
@@ -43584,13 +42958,13 @@
 (define stack-info-non-tail!
   (lambda (stk-i_0 stack-depth_0)
     (set-stack-info-non-tail-call-later?! stk-i_0 #t)))
-(define finish_2360
+(define finish_2657
   (make-struct-type-install-properties
    '(indirect)
    2
    0
    #f
-   null
+   (list (cons prop:authentic #t))
    (current-inspector)
    #f
    '(0 1)
@@ -43604,53 +42978,24 @@
    #f
    #f
    '(2 . 0)))
-(define effect_2125 (finish_2360 struct:indirect))
+(define effect_2125 (finish_2657 struct:indirect))
 (define indirect1.1
   (|#%name|
    indirect
    (record-constructor
     (make-record-constructor-descriptor struct:indirect #f #f))))
-(define indirect?_2680 (|#%name| indirect? (record-predicate struct:indirect)))
-(define indirect?
-  (|#%name|
-   indirect?
-   (lambda (v)
-     (if (indirect?_2680 v)
-       #t
-       ($value
-        (if (impersonator? v) (indirect?_2680 (impersonator-val v)) #f))))))
-(define indirect-pos_2819
-  (|#%name| indirect-pos (record-accessor struct:indirect 0)))
+(define indirect? (|#%name| indirect? (record-predicate struct:indirect)))
 (define indirect-pos
-  (|#%name|
-   indirect-pos
-   (lambda (s)
-     (if (indirect?_2680 s)
-       (indirect-pos_2819 s)
-       ($value
-        (impersonate-ref indirect-pos_2819 struct:indirect 0 s 'pos))))))
-(define indirect-element_2353
-  (|#%name| indirect-element (record-accessor struct:indirect 1)))
+  (|#%name| indirect-pos (record-accessor struct:indirect 0)))
 (define indirect-element
-  (|#%name|
-   indirect-element
-   (lambda (s)
-     (if (indirect?_2680 s)
-       (indirect-element_2353 s)
-       ($value
-        (impersonate-ref
-         indirect-element_2353
-         struct:indirect
-         1
-         s
-         'element))))))
-(define finish_2373
+  (|#%name| indirect-element (record-accessor struct:indirect 1)))
+(define finish_2990
   (make-struct-type-install-properties
    '(boxed)
    1
    0
    #f
-   null
+   (list (cons prop:authentic #t))
    (current-inspector)
    #f
    '(0)
@@ -43664,36 +43009,21 @@
    #f
    #f
    '(1 . 0)))
-(define effect_2970 (finish_2373 struct:boxed))
+(define effect_2970 (finish_2990 struct:boxed))
 (define boxed2.1
   (|#%name|
    boxed
    (record-constructor
     (make-record-constructor-descriptor struct:boxed #f #f))))
-(define boxed?_2226 (|#%name| boxed? (record-predicate struct:boxed)))
-(define boxed?
-  (|#%name|
-   boxed?
-   (lambda (v)
-     (if (boxed?_2226 v)
-       #t
-       ($value
-        (if (impersonator? v) (boxed?_2226 (impersonator-val v)) #f))))))
-(define boxed-pos_2515 (|#%name| boxed-pos (record-accessor struct:boxed 0)))
-(define boxed-pos
-  (|#%name|
-   boxed-pos
-   (lambda (s)
-     (if (boxed?_2226 s)
-       (boxed-pos_2515 s)
-       ($value (impersonate-ref boxed-pos_2515 struct:boxed 0 s 'pos))))))
-(define finish_2767
+(define boxed? (|#%name| boxed? (record-predicate struct:boxed)))
+(define boxed-pos (|#%name| boxed-pos (record-accessor struct:boxed 0)))
+(define finish_2131
   (make-struct-type-install-properties
    '(boxed/check)
    0
    0
    struct:boxed
-   null
+   (list (cons prop:authentic #t))
    (current-inspector)
    #f
    '()
@@ -43707,22 +43037,14 @@
    #f
    #f
    '(0 . 0)))
-(define effect_2937 (finish_2767 struct:boxed/check))
+(define effect_2937 (finish_2131 struct:boxed/check))
 (define boxed/check3.1
   (|#%name|
    boxed/check
    (record-constructor
     (make-record-constructor-descriptor struct:boxed/check #f #f))))
-(define boxed/check?_2060
-  (|#%name| boxed/check? (record-predicate struct:boxed/check)))
 (define boxed/check?
-  (|#%name|
-   boxed/check?
-   (lambda (v)
-     (if (boxed/check?_2060 v)
-       #t
-       ($value
-        (if (impersonator? v) (boxed/check?_2060 (impersonator-val v)) #f))))))
+  (|#%name| boxed/check? (record-predicate struct:boxed/check)))
 (define primitives hash2610)
 (define strip-annotations (lambda (e_0) e_0))
 (define make-internal-variable (lambda (name_0) (box unsafe-undefined)))
