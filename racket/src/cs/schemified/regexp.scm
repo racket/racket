@@ -554,8 +554,7 @@
         (void)
         (call-with-values
          (lambda () (procedure-keywords f_0))
-         (case-lambda
-          ((required-keywords_0 optional-keywords_0)
+         (lambda (required-keywords_0 optional-keywords_0)
            (let ((app_0
                   (if (pair? required-keywords_0)
                     (string-append
@@ -657,8 +656,7 @@
                                            app_5
                                            (loop_0 (cdr ls_1))))))))))
                                (loop_0 ls_0)))))
-                           null))))))))))
-          (args (raise-binding-result-arity-error 2 args))))))))
+                           null)))))))))))))))
 (define gen-map
   (lambda (f_0 ls_0)
     (begin
@@ -864,10 +862,7 @@
                                                    (for-loop_1 (+ pos_0 1)))
                                                  (values)))))))
                                         (for-loop_1 start_1)))))))
-                             (case-lambda
-                              (() (for-loop_0 rest_0))
-                              (args
-                               (raise-binding-result-arity-error 0 args))))))
+                             (lambda () (for-loop_0 rest_0)))))
                         (values)))))))
                (for-loop_0 range_0)))
             (void)
@@ -2438,8 +2433,7 @@
                (if (eqv? tmp_1 '#\x5e)
                  (values #t (+ pos_0 2))
                  (values #f (add1 pos_0))))))
-         (case-lambda
-          ((cat-negated?_0 next-pos_0)
+         (lambda (cat-negated?_0 next-pos_0)
            (call-with-values
             (lambda ()
               (letrec*
@@ -2465,8 +2459,7 @@
                                    (cons (chytes-ref$1 s_0 pos_1) accum_0)))
                               (loop_0 app_0 (add1 pos_1)))))))))))
                (loop_0 null next-pos_0)))
-            (case-lambda
-             ((l_0 pos2_0)
+            (lambda (l_0 pos2_0)
               (let ((categories_0
                      (let ((tmp_1 (list->bytes l_0)))
                        (let ((index_0
@@ -2549,9 +2542,7 @@
                    (rx:unicode-categories12.1
                     categories_0
                     (not (xor prop-negated?_0 cat-negated?_0)))
-                   pos2_0))))
-             (args (raise-binding-result-arity-error 2 args)))))
-          (args (raise-binding-result-arity-error 2 args))))
+                   pos2_0)))))))
         (let ((fmt_0 "expected `{` after `\\~a`"))
           (let ((args_0 (list (integer->char p-c_0))))
             (let ((fmt_1 fmt_0))
@@ -2609,10 +2600,8 @@
         (if (eqv? tmp_0 '#\x5e)
           (call-with-values
            (lambda () (parse-range s_0 (add1 pos_0) config_0))
-           (case-lambda
-            ((range_0 pos2_0)
-             (values (range-invert range_0 (chytes-limit s_0)) pos2_0))
-            (args (raise-binding-result-arity-error 2 args))))
+           (lambda (range_0 pos2_0)
+             (values (range-invert range_0 (chytes-limit s_0)) pos2_0)))
           (parse-range s_0 pos_0 config_0))))))
 (define parse-range
   (lambda (s_0 pos_0 config_0)
@@ -2721,8 +2710,7 @@
                               "misplaced hyphen within square brackets in pattern")
                              (call-with-values
                               (lambda () (parse-class s6_0 pos2_0 config8_0))
-                              (case-lambda
-                               ((success?_0 range1_0 pos3_0)
+                              (lambda (success?_0 range1_0 pos3_0)
                                 (begin
                                   (if success?_0
                                     (void)
@@ -2745,9 +2733,7 @@
                                        range2_0
                                        s6_0
                                        temp39_0
-                                       config8_0)))))
-                               (args
-                                (raise-binding-result-arity-error 3 args)))))
+                                       config8_0)))))))
                            (let ((temp44_0 (add1 pos2_0)))
                              (parse-range-rest/span.1
                               must-span-from2_0
@@ -2774,8 +2760,7 @@
                             #f)
                         (parse-posix-char-class s6_0 (add1 pos7_0))
                         (values #f #f #f)))
-                    (case-lambda
-                     ((success?_0 range1_0 pos2_0)
+                    (lambda (success?_0 range1_0 pos2_0)
                       (if success?_0
                         (let ((range2_0
                                (range-union
@@ -2796,8 +2781,7 @@
                            range5_0
                            s6_0
                            temp62_0
-                           config8_0))))
-                     (args (raise-binding-result-arity-error 3 args))))
+                           config8_0)))))
                    (let ((temp66_0 (chytes-ref$1 s6_0 pos7_0)))
                      (let ((temp69_0 (add1 pos7_0)))
                        (let ((temp66_1 temp66_0))
@@ -2864,8 +2848,7 @@
        (let ((config_0 (make-parse-config.1 #f px?1_0 'regexp)))
          (call-with-values
           (lambda () (parse-regexp.1 unsafe-undefined p3_0 0 config_0))
-          (case-lambda
-           ((rx_0 pos_0)
+          (lambda (rx_0 pos_0)
             (let ((pos_1 pos_0))
               (let ((tmp_0
                      (if (let ((app_0 pos_1)) (= app_0 (chytes-length$1 p3_0)))
@@ -2879,8 +2862,8 @@
                     (values
                      rx_0
                      app_0
-                     (unbox (parse-config-references?-box config_0))))))))
-           (args (raise-binding-result-arity-error 2 args)))))))))
+                     (unbox
+                      (parse-config-references?-box config_0))))))))))))))
 (define parse-regexp.1
   (|#%name|
    parse-regexp
@@ -2896,8 +2879,7 @@
                 parse-regexp5_0)))
          (call-with-values
           (lambda () (parse-pces s7_0 pos8_0 config9_0))
-          (case-lambda
-           ((rxs_0 pos2_0)
+          (lambda (rxs_0 pos2_0)
             (let ((tmp_0
                    (if (= pos2_0 (chytes-length$1 s7_0))
                      'eos
@@ -2906,15 +2888,12 @@
                 (call-with-values
                  (lambda ()
                    (|#%app| parse-regexp_0 s7_0 (add1 pos2_0) config9_0))
-                 (case-lambda
-                  ((rx_0 pos3_0)
+                 (lambda (rx_0 pos3_0)
                    (values
                     (let ((app_0 (rx-sequence rxs_0)))
                       (rx-alts app_0 rx_0 (chytes-limit s7_0)))
-                    pos3_0))
-                  (args (raise-binding-result-arity-error 2 args))))
-                (values (rx-sequence rxs_0) pos2_0))))
-           (args (raise-binding-result-arity-error 2 args)))))))))
+                    pos3_0)))
+                (values (rx-sequence rxs_0) pos2_0))))))))))
 (define parse-regexp/maybe-empty
   (lambda (s_0 pos_0 config_0)
     (let ((tmp_0
@@ -2930,8 +2909,7 @@
       (values null pos_0)
       (call-with-values
        (lambda () (parse-pce s_0 pos_0 config_0))
-       (case-lambda
-        ((rx_0 pos2_0)
+       (lambda (rx_0 pos2_0)
          (let ((tmp_0
                 (if (= pos2_0 (chytes-length$1 s_0))
                   'eos
@@ -2942,16 +2920,13 @@
                (values (list rx_0) pos2_0)
                (call-with-values
                 (lambda () (parse-pces s_0 pos2_0 config_0))
-                (case-lambda
-                 ((rxs_0 pos3_0) (values (cons rx_0 rxs_0) pos3_0))
-                 (args (raise-binding-result-arity-error 2 args))))))))
-        (args (raise-binding-result-arity-error 2 args)))))))
+                (lambda (rxs_0 pos3_0)
+                  (values (cons rx_0 rxs_0) pos3_0)))))))))))
 (define parse-pce
   (lambda (s_0 pos_0 config_0)
     (call-with-values
      (lambda () (parse-atom s_0 pos_0 config_0))
-     (case-lambda
-      ((rx_0 pos2_0)
+     (lambda (rx_0 pos2_0)
        (let ((tmp_0
               (if (= pos2_0 (chytes-length$1 s_0))
                 'eos
@@ -2959,30 +2934,23 @@
          (if (eqv? tmp_0 '#\x2a)
            (call-with-values
             (lambda () (parse-non-greedy s_0 (add1 pos2_0) config_0))
-            (case-lambda
-             ((non-greedy?_0 pos3_0)
-              (values (rx:repeat4.1 rx_0 0 +inf.0 non-greedy?_0) pos3_0))
-             (args (raise-binding-result-arity-error 2 args))))
+            (lambda (non-greedy?_0 pos3_0)
+              (values (rx:repeat4.1 rx_0 0 +inf.0 non-greedy?_0) pos3_0)))
            (if (eqv? tmp_0 '#\x2b)
              (call-with-values
               (lambda () (parse-non-greedy s_0 (add1 pos2_0) config_0))
-              (case-lambda
-               ((non-greedy?_0 pos3_0)
-                (values (rx:repeat4.1 rx_0 1 +inf.0 non-greedy?_0) pos3_0))
-               (args (raise-binding-result-arity-error 2 args))))
+              (lambda (non-greedy?_0 pos3_0)
+                (values (rx:repeat4.1 rx_0 1 +inf.0 non-greedy?_0) pos3_0)))
              (if (eqv? tmp_0 '#\x3f)
                (call-with-values
                 (lambda () (parse-non-greedy s_0 (add1 pos2_0) config_0))
-                (case-lambda
-                 ((non-greedy?_0 pos3_0)
-                  (values (rx:maybe5.1 rx_0 non-greedy?_0) pos3_0))
-                 (args (raise-binding-result-arity-error 2 args))))
+                (lambda (non-greedy?_0 pos3_0)
+                  (values (rx:maybe5.1 rx_0 non-greedy?_0) pos3_0)))
                (if (eqv? tmp_0 '#\x7b)
                  (if (parse-config-px? config_0)
                    (call-with-values
                     (lambda () (parse-integer 0 s_0 (add1 pos2_0) config_0))
-                    (case-lambda
-                     ((n1_0 pos3_0)
+                    (lambda (n1_0 pos3_0)
                       (let ((tmp_1
                              (if (= pos3_0 (chytes-length$1 s_0))
                                'eos
@@ -2991,8 +2959,7 @@
                           (call-with-values
                            (lambda ()
                              (parse-integer 0 s_0 (add1 pos3_0) config_0))
-                           (case-lambda
-                            ((n2_0 pos4_0)
+                           (lambda (n2_0 pos4_0)
                              (let ((tmp_2
                                     (if (= pos4_0 (chytes-length$1 s_0))
                                       'eos
@@ -3008,45 +2975,34 @@
                                        s_0
                                        (add1 pos4_0)
                                        config_0))
-                                    (case-lambda
-                                     ((non-greedy?_0 pos5_0)
+                                    (lambda (non-greedy?_0 pos5_0)
                                       (values
                                        (rx:repeat4.1
                                         rx_0
                                         n1_0
                                         n2*_0
                                         non-greedy?_0)
-                                       pos5_0))
-                                     (args
-                                      (raise-binding-result-arity-error
-                                       2
-                                       args)))))
+                                       pos5_0))))
                                  (parse-error
                                   s_0
                                   pos3_0
                                   config_0
-                                  "expected digit or `}` to end repetition specification started with `{`"))))
-                            (args (raise-binding-result-arity-error 2 args))))
+                                  "expected digit or `}` to end repetition specification started with `{`")))))
                           (if (eqv? tmp_1 '#\x7d)
                             (call-with-values
                              (lambda ()
                                (parse-non-greedy s_0 (add1 pos3_0) config_0))
-                             (case-lambda
-                              ((non-greedy?_0 pos4_0)
+                             (lambda (non-greedy?_0 pos4_0)
                                (values
                                 (rx:repeat4.1 rx_0 n1_0 n1_0 non-greedy?_0)
-                                pos4_0))
-                              (args
-                               (raise-binding-result-arity-error 2 args))))
+                                pos4_0)))
                             (parse-error
                              s_0
                              pos3_0
                              config_0
-                             "expected digit, `,`, or `}' for repetition specification started with `{`")))))
-                     (args (raise-binding-result-arity-error 2 args))))
+                             "expected digit, `,`, or `}' for repetition specification started with `{`"))))))
                    (values rx_0 pos2_0))
-                 (values rx_0 pos2_0)))))))
-      (args (raise-binding-result-arity-error 2 args))))))
+                 (values rx_0 pos2_0))))))))))
 (define parse-non-greedy
   (lambda (s_0 pos_0 config_0)
     (let ((tmp_0
@@ -3086,10 +3042,8 @@
           (if (eqv? tmp_0 '#\x5b)
             (call-with-values
              (lambda () (parse-range/not s_0 (add1 pos_0) config_0))
-             (case-lambda
-              ((range_0 pos2_0)
-               (values (rx-range range_0 (chytes-limit s_0)) pos2_0))
-              (args (raise-binding-result-arity-error 2 args))))
+             (lambda (range_0 pos2_0)
+               (values (rx-range range_0 (chytes-limit s_0)) pos2_0)))
             (if (eqv? tmp_0 '#\x2e)
               (let ((rx_0
                      (if (parse-config-multi-line? config_0)
@@ -3145,8 +3099,7 @@
                     (call-with-values
                      (lambda ()
                        (parse-regexp/maybe-empty s_0 (add1 pos2_0) config_0))
-                     (case-lambda
-                      ((rx_0 pos3_0)
+                     (lambda (rx_0 pos3_0)
                        (let ((post-num-groups_0
                               (begin-unsafe
                                (unbox
@@ -3162,8 +3115,7 @@
                                     (needs-backtrack? rx_0))))))
                            (values
                             app_0
-                            (check-close-paren s_0 pos3_0 config_0)))))
-                      (args (raise-binding-result-arity-error 2 args)))))
+                            (check-close-paren s_0 pos3_0 config_0)))))))
                   (if (eqv? tmp_1 '#\x28)
                     (parse-conditional s_0 (add1 pos2_0) config_0)
                     (if (if (eqv? tmp_1 '#\x69)
@@ -3177,8 +3129,7 @@
                                 (eqv? tmp_1 '#\x3a)))))
                       (call-with-values
                        (lambda () (parse-mode s_0 pos2_0 config_0))
-                       (case-lambda
-                        ((config2_0 pos3_0)
+                       (lambda (config2_0 pos3_0)
                          (let ((tmp_2
                                 (if (= pos3_0 (chytes-length$1 s_0))
                                   'eos
@@ -3190,21 +3141,17 @@
                                  s_0
                                  (add1 pos3_0)
                                  config2_0))
-                              (case-lambda
-                               ((rx_0 pos4_0)
+                              (lambda (rx_0 pos4_0)
                                 (values
                                  rx_0
-                                 (check-close-paren s_0 pos4_0 config2_0)))
-                               (args
-                                (raise-binding-result-arity-error 2 args))))
+                                 (check-close-paren s_0 pos4_0 config2_0))))
                              (parse-error
                               s_0
                               pos3_0
                               config2_0
                               (string-append
                                "expected `:` or another mode after `(?` and a mode sequence;\n"
-                               " a mode is `i`, `-i`, `m`, `-m`, `s`, or `-s`")))))
-                        (args (raise-binding-result-arity-error 2 args))))
+                               " a mode is `i`, `-i`, `m`, `-m`, `s`, or `-s`"))))))
                       (parse-look s_0 pos2_0 config_0)))))))
           (let ((group-number_0
                  (begin-unsafe
@@ -3215,11 +3162,11 @@
                 s_0
                 pos_0
                 (config-group-number+1 config_0)))
-             (case-lambda
-              ((rx_0 pos2_0)
+             (lambda (rx_0 pos2_0)
                (let ((app_0 (begin-unsafe (rx:group3.1 rx_0 group-number_0))))
-                 (values app_0 (check-close-paren s_0 pos2_0 config_0))))
-              (args (raise-binding-result-arity-error 2 args))))))))))
+                 (values
+                  app_0
+                  (check-close-paren s_0 pos2_0 config_0)))))))))))
 (define parse-look
   (lambda (s_0 pos2_0 config_0)
     (let ((pre-num-groups_0
@@ -3237,30 +3184,26 @@
           (if (eqv? tmp_0 '#\x3d)
             (call-with-values
              (lambda () (parse-regexp/maybe-empty s_0 (add1 pos2_0) config_0))
-             (case-lambda
-              ((rx_0 pos3_0)
+             (lambda (rx_0 pos3_0)
                (let ((app_0
                       (rx:lookahead7.1
                        rx_0
                        #t
                        pre-num-groups_0
                        (span-num-groups_0))))
-                 (values app_0 (check-close-paren s_0 pos3_0 config_0))))
-              (args (raise-binding-result-arity-error 2 args))))
+                 (values app_0 (check-close-paren s_0 pos3_0 config_0)))))
             (if (eqv? tmp_0 '#\x21)
               (call-with-values
                (lambda ()
                  (parse-regexp/maybe-empty s_0 (add1 pos2_0) config_0))
-               (case-lambda
-                ((rx_0 pos3_0)
+               (lambda (rx_0 pos3_0)
                  (let ((app_0
                         (rx:lookahead7.1
                          rx_0
                          #f
                          pre-num-groups_0
                          (span-num-groups_0))))
-                   (values app_0 (check-close-paren s_0 pos3_0 config_0))))
-                (args (raise-binding-result-arity-error 2 args))))
+                   (values app_0 (check-close-paren s_0 pos3_0 config_0)))))
               (if (eqv? tmp_0 '#\x3c)
                 (let ((pos2+_0 (add1 pos2_0)))
                   (let ((tmp_1
@@ -3281,8 +3224,7 @@
                             s_0
                             (add1 pos2+_0)
                             config_0))
-                         (case-lambda
-                          ((rx_0 pos3_0)
+                         (lambda (rx_0 pos3_0)
                            (let ((app_0
                                   (rx:lookbehind8.1
                                    rx_0
@@ -3293,8 +3235,7 @@
                                    (span-num-groups_0))))
                              (values
                               app_0
-                              (check-close-paren s_0 pos3_0 config_0))))
-                          (args (raise-binding-result-arity-error 2 args))))
+                              (check-close-paren s_0 pos3_0 config_0)))))
                         (if (eqv? tmp_1 '#\x21)
                           (call-with-values
                            (lambda ()
@@ -3302,8 +3243,7 @@
                               s_0
                               (add1 pos2+_0)
                               config_0))
-                           (case-lambda
-                            ((rx_0 pos3_0)
+                           (lambda (rx_0 pos3_0)
                              (let ((app_0
                                     (rx:lookbehind8.1
                                      rx_0
@@ -3314,8 +3254,7 @@
                                      (span-num-groups_0))))
                                (values
                                 app_0
-                                (check-close-paren s_0 pos3_0 config_0))))
-                            (args (raise-binding-result-arity-error 2 args))))
+                                (check-close-paren s_0 pos3_0 config_0)))))
                           (begin-unsafe
                            (parse-error
                             s_0
@@ -3334,8 +3273,7 @@
            (begin-unsafe (unbox (parse-config-group-number-box config_0)))))
       (call-with-values
        (lambda () (parse-test s_0 pos_0 config_0))
-       (case-lambda
-        ((tst_0 pos2_0)
+       (lambda (tst_0 pos2_0)
          (let ((tst-span-num-groups_0
                 (-
                  (begin-unsafe
@@ -3343,8 +3281,7 @@
                  tst-pre-num-groups_0)))
            (call-with-values
             (lambda () (parse-pces s_0 pos2_0 config_0))
-            (case-lambda
-             ((pces_0 pos3_0)
+            (lambda (pces_0 pos3_0)
               (let ((tmp_0
                      (if (= pos3_0 (chytes-length$1 s_0))
                        'eos
@@ -3359,8 +3296,7 @@
                   (if (eqv? tmp_0 '#\x7c)
                     (call-with-values
                      (lambda () (parse-pces s_0 (add1 pos3_0) config_0))
-                     (case-lambda
-                      ((pces2_0 pos4_0)
+                     (lambda (pces2_0 pos4_0)
                        (let ((tmp_1
                               (if (= pos4_0 (chytes-length$1 s_0))
                                 'eos
@@ -3386,8 +3322,7 @@
                               s_0
                               pos4_0
                               config_0
-                              "expected `)` to close `(?(...)...` after second branch")))))
-                      (args (raise-binding-result-arity-error 2 args))))
+                              "expected `)` to close `(?(...)...` after second branch"))))))
                     (if (eqv? tmp_0 '#\x29)
                       (let ((app_0
                              (rx-conditional
@@ -3397,9 +3332,7 @@
                               tst-pre-num-groups_0
                               tst-span-num-groups_0)))
                         (values app_0 (add1 pos3_0)))
-                      (void))))))
-             (args (raise-binding-result-arity-error 2 args))))))
-        (args (raise-binding-result-arity-error 2 args)))))))
+                      (void)))))))))))))
 (define parse-test
   (lambda (s_0 pos_0 config_0)
     (let ((tmp_0
@@ -3421,8 +3354,7 @@
                 (set-box! (parse-config-references?-box config_0) #t)
                 (call-with-values
                  (lambda () (parse-integer 0 s_0 pos_0 config_0))
-                 (case-lambda
-                  ((n_0 pos3_0)
+                 (lambda (n_0 pos3_0)
                    (begin
                      (if (if (< pos3_0 (chytes-length$1 s_0))
                            (= (chytes-ref$1 s_0 pos3_0) 41)
@@ -3434,8 +3366,7 @@
                         config_0
                         "expected `)` after `(?(` followed by digits"))
                      (let ((app_0 (rx:reference10.1 n_0 #f)))
-                       (values app_0 (add1 pos3_0)))))
-                  (args (raise-binding-result-arity-error 2 args)))))
+                       (values app_0 (add1 pos3_0)))))))
               (parse-error
                s_0
                pos_0
@@ -3494,12 +3425,10 @@
             (set-box! (parse-config-references?-box config_0) #t)
             (call-with-values
              (lambda () (parse-integer 0 s_0 pos2_0 config_0))
-             (case-lambda
-              ((n_0 pos3_0)
+             (lambda (n_0 pos3_0)
                (values
                 (rx:reference10.1 n_0 (parse-config-case-sensitive? config_0))
-                pos3_0))
-              (args (raise-binding-result-arity-error 2 args)))))
+                pos3_0))))
           (if (if (parse-config-px? config_0)
                 (let ((or-part_0 (if (>= c2_0 97) (<= c2_0 122) #f)))
                   (if or-part_0 or-part_0 (if (>= c2_0 65) (<= c2_0 90) #f)))
@@ -3513,16 +3442,14 @@
                     (values 'not-word-boundary (add1 pos2_0))
                     (call-with-values
                      (lambda () (parse-class s_0 pos2_0 config_0))
-                     (case-lambda
-                      ((success?_0 range_0 pos3_0)
+                     (lambda (success?_0 range_0 pos3_0)
                        (if success?_0
                          (values (rx-range range_0 (chytes-limit s_0)) pos3_0)
                          (parse-error
                           s_0
                           pos2_0
                           config_0
-                          "illegal alphabetic escape")))
-                      (args (raise-binding-result-arity-error 3 args))))))))
+                          "illegal alphabetic escape"))))))))
             (values c2_0 (add1 pos2_0))))))))
 (define parse-mode
   (lambda (s_0 pos_0 config_0)
@@ -3642,27 +3569,17 @@
                                      (call-with-values
                                       (lambda ()
                                         (validate_0 (rx:alts-rx_2265 rx_1)))
-                                      (case-lambda
-                                       ((min1_0 max1_0 lb1_0)
+                                      (lambda (min1_0 max1_0 lb1_0)
                                         (call-with-values
                                          (lambda ()
                                            (validate_0 (rx:alts-rx_1912 rx_1)))
-                                         (case-lambda
-                                          ((min2_0 max2_0 lb2_0)
+                                         (lambda (min2_0 max2_0 lb2_0)
                                            (let ((app_0 (min min1_0 min2_0)))
                                              (let ((app_1 (max max1_0 max2_0)))
                                                (values
                                                 app_0
                                                 app_1
-                                                (max lb1_0 lb2_0)))))
-                                          (args
-                                           (raise-binding-result-arity-error
-                                            3
-                                            args)))))
-                                       (args
-                                        (raise-binding-result-arity-error
-                                         3
-                                         args))))
+                                                (max lb1_0 lb2_0))))))))
                                      (if (rx:sequence? rx_1)
                                        (let ((lst_0 (rx:sequence-rxs rx_1)))
                                          (begin
@@ -3690,10 +3607,9 @@
                                                                 (lambda ()
                                                                   (validate_0
                                                                    rx_2))
-                                                                (case-lambda
-                                                                 ((min1_0
-                                                                   max1_0
-                                                                   lb1_0)
+                                                                (lambda (min1_0
+                                                                         max1_0
+                                                                         lb1_0)
                                                                   (let ((app_0
                                                                          (+
                                                                           min-len_0
@@ -3709,36 +3625,22 @@
                                                                         max-lb_0
                                                                         (-
                                                                          lb1_0
-                                                                         min-len_0))))))
-                                                                 (args
-                                                                  (raise-binding-result-arity-error
-                                                                   3
-                                                                   args)))))
-                                                             (case-lambda
-                                                              ((min-len_1
-                                                                max-len_1
-                                                                max-lb_1)
+                                                                         min-len_0))))))))
+                                                             (lambda (min-len_1
+                                                                      max-len_1
+                                                                      max-lb_1)
                                                                (values
                                                                 min-len_1
                                                                 max-len_1
-                                                                max-lb_1))
-                                                              (args
-                                                               (raise-binding-result-arity-error
-                                                                3
-                                                                args)))))
-                                                          (case-lambda
-                                                           ((min-len_1
-                                                             max-len_1
-                                                             max-lb_1)
+                                                                max-lb_1))))
+                                                          (lambda (min-len_1
+                                                                   max-len_1
+                                                                   max-lb_1)
                                                             (for-loop_0
                                                              min-len_1
                                                              max-len_1
                                                              max-lb_1
-                                                             rest_0))
-                                                           (args
-                                                            (raise-binding-result-arity-error
-                                                             3
-                                                             args))))))
+                                                             rest_0)))))
                                                      (values
                                                       min-len_0
                                                       max-len_0
@@ -3748,8 +3650,7 @@
                                          (call-with-values
                                           (lambda ()
                                             (validate_0 (rx:group-rx rx_1)))
-                                          (case-lambda
-                                           ((min1_0 max1_0 lb1_0)
+                                          (lambda (min1_0 max1_0 lb1_0)
                                             (begin
                                               (set! group-sizes_0
                                                 (let ((app_0 group-sizes_0))
@@ -3757,11 +3658,7 @@
                                                    app_0
                                                    (rx:group-number rx_1)
                                                    min1_0)))
-                                              (values min1_0 max1_0 lb1_0)))
-                                           (args
-                                            (raise-binding-result-arity-error
-                                             3
-                                             args))))
+                                              (values min1_0 max1_0 lb1_0))))
                                          (if (rx:repeat? rx_1)
                                            (let ((old-depends-sizes_0
                                                   depends-sizes_0))
@@ -3772,8 +3669,7 @@
                                                 (lambda ()
                                                   (validate_0
                                                    (rx:repeat-rx rx_1)))
-                                                (case-lambda
-                                                 ((min1_0 max1_0 lb1_0)
+                                                (lambda (min1_0 max1_0 lb1_0)
                                                   (begin
                                                     (if (zero? min1_0)
                                                       (might-be-empty-error_0)
@@ -3798,44 +3694,36 @@
                                                        (*
                                                         max1_0
                                                         (rx:repeat-max rx_1))
-                                                       lb1_0))))
-                                                 (args
-                                                  (raise-binding-result-arity-error
-                                                   3
-                                                   args))))))
+                                                       lb1_0)))))))
                                            (if (rx:maybe? rx_1)
                                              (call-with-values
                                               (lambda ()
                                                 (validate_0
                                                  (rx:maybe-rx rx_1)))
-                                              (case-lambda
-                                               ((min1_0 max1_0 lb1_0)
-                                                (values 0 max1_0 lb1_0))
-                                               (args
-                                                (raise-binding-result-arity-error
-                                                 3
-                                                 args))))
+                                              (lambda (min1_0 max1_0 lb1_0)
+                                                (values 0 max1_0 lb1_0)))
                                              (if (rx:conditional? rx_1)
                                                (call-with-values
                                                 (lambda ()
                                                   (validate_0
                                                    (rx:conditional-tst rx_1)))
-                                                (case-lambda
-                                                 ((min0_0 max0_0 lb0_0)
+                                                (lambda (min0_0 max0_0 lb0_0)
                                                   (call-with-values
                                                    (lambda ()
                                                      (validate_0
                                                       (rx:conditional-rx_2162
                                                        rx_1)))
-                                                   (case-lambda
-                                                    ((min1_0 max1_0 lb1_0)
+                                                   (lambda (min1_0
+                                                            max1_0
+                                                            lb1_0)
                                                      (call-with-values
                                                       (lambda ()
                                                         (validate_0
                                                          (rx:conditional-rx_2328
                                                           rx_1)))
-                                                      (case-lambda
-                                                       ((min2_0 max2_0 lb2_0)
+                                                      (lambda (min2_0
+                                                               max2_0
+                                                               lb2_0)
                                                         (let ((app_0
                                                                (min
                                                                 min1_0
@@ -3850,39 +3738,23 @@
                                                              (max
                                                               lb0_0
                                                               lb1_0
-                                                              lb2_0)))))
-                                                       (args
-                                                        (raise-binding-result-arity-error
-                                                         3
-                                                         args)))))
-                                                    (args
-                                                     (raise-binding-result-arity-error
-                                                      3
-                                                      args)))))
-                                                 (args
-                                                  (raise-binding-result-arity-error
-                                                   3
-                                                   args))))
+                                                              lb2_0))))))))))
                                                (if (rx:lookahead? rx_1)
                                                  (call-with-values
                                                   (lambda ()
                                                     (validate_0
                                                      (rx:lookahead-rx rx_1)))
-                                                  (case-lambda
-                                                   ((min1_0 max1_0 lb1_0)
-                                                    (values 0 0 lb1_0))
-                                                   (args
-                                                    (raise-binding-result-arity-error
-                                                     3
-                                                     args))))
+                                                  (lambda (min1_0 max1_0 lb1_0)
+                                                    (values 0 0 lb1_0)))
                                                  (if (rx:lookbehind? rx_1)
                                                    (call-with-values
                                                     (lambda ()
                                                       (validate_0
                                                        (rx:lookbehind-rx
                                                         rx_1)))
-                                                    (case-lambda
-                                                     ((min1_0 max1_0 lb1_0)
+                                                    (lambda (min1_0
+                                                             max1_0
+                                                             lb1_0)
                                                       (begin
                                                         (if (= +inf.0 max1_0)
                                                           (regexp-error
@@ -3897,11 +3769,7 @@
                                                         (values
                                                          0
                                                          0
-                                                         (max max1_0 lb1_0))))
-                                                     (args
-                                                      (raise-binding-result-arity-error
-                                                       3
-                                                       args))))
+                                                         (max max1_0 lb1_0)))))
                                                    (if (rx:cut? rx_1)
                                                      (validate_0
                                                       (rx:cut-rx rx_1))
@@ -3947,8 +3815,7 @@
                                                           "internal error: ~s"
                                                           rx_1)))))))))))))))))))))))
                 (validate_0 rx_0)))
-             (case-lambda
-              ((min-len_0 max-len_0 max-lookbehind_0)
+             (lambda (min-len_0 max-len_0 max-lookbehind_0)
                (begin
                  (let ((ht_0 must-sizes_0))
                    (begin
@@ -3969,8 +3836,7 @@
                                (values)))))))
                       (for-loop_0 (hash-iterate-first ht_0)))))
                  (void)
-                 max-lookbehind_0))
-              (args (raise-binding-result-arity-error 3 args))))))))))
+                 max-lookbehind_0)))))))))
 (define merge-depends-sizes
   (lambda (ht1_0 ht2_0)
     (if (zero? (hash-count ht1_0))
@@ -4301,8 +4167,7 @@
   (lambda (bstr_0 i_0)
     (call-with-values
      (lambda () (unsafe-normalise-inputs unsafe-bytes-length bstr_0 i_0 #f 1))
-     (case-lambda
-      ((v*_0 start*_0 stop*_0 step*_0)
+     (lambda (v*_0 start*_0 stop*_0 step*_0)
        (letrec*
         ((for-loop_0
           (|#%name|
@@ -4319,8 +4184,7 @@
                        (for-loop_0 result_1 (unsafe-fx+ idx_0 1))
                        result_1)))
                  result_0))))))
-        (for-loop_0 #t start*_0)))
-      (args (raise-binding-result-arity-error 4 args))))))
+        (for-loop_0 #t start*_0))))))
 (define anchored?
   (lambda (rx_0)
     (if (eq? rx_0 'start)
@@ -5224,8 +5088,7 @@
                   0
                   len_0
                   1))
-               (case-lambda
-                ((v*_0 start*_0 stop*_0 step*_0)
+               (lambda (v*_0 start*_0 stop*_0 step*_0)
                  (call-with-values
                   (lambda ()
                     (unsafe-normalise-inputs
@@ -5234,8 +5097,7 @@
                      pos_0
                      (+ pos_0 len_0)
                      1))
-                  (case-lambda
-                   ((v*_1 start*_1 stop*_1 step*_1)
+                  (lambda (v*_1 start*_1 stop*_1 step*_1)
                     (let ((v*_2 v*_0)
                           (start*_2 start*_0)
                           (stop*_2 stop*_0)
@@ -5270,15 +5132,12 @@
                                            (unsafe-fx+ idx_1 1))
                                           result_1)))))
                                 result_0))))))
-                       (for-loop_0 #t start*_2 start*_1))))
-                   (args (raise-binding-result-arity-error 4 args)))))
-                (args (raise-binding-result-arity-error 4 args))))
+                       (for-loop_0 #t start*_2 start*_1)))))))
               #f)
             (call-with-values
              (lambda ()
                (unsafe-normalise-inputs unsafe-bytes-length bstr_0 0 len_0 1))
-             (case-lambda
-              ((v*_0 start*_0 stop*_0 step*_0)
+             (lambda (v*_0 start*_0 stop*_0 step*_0)
                (let ((start_1 pos_0))
                  (let ((v*_1 v*_0)
                        (start*_1 start*_0)
@@ -5321,8 +5180,7 @@
                                       (+ pos_1 1))
                                      result_1)))
                                result_0))))))
-                      (for-loop_0 #t start*_1 start_1))))))
-              (args (raise-binding-result-arity-error 4 args)))))
+                      (for-loop_0 #t start*_1 start_1))))))))
         (|#%app|
          next-m_0
          s_0
@@ -5346,8 +5204,7 @@
                   0
                   len_0
                   1))
-               (case-lambda
-                ((v*_0 start*_0 stop*_0 step*_0)
+               (lambda (v*_0 start*_0 stop*_0 step*_0)
                  (call-with-values
                   (lambda ()
                     (unsafe-normalise-inputs
@@ -5356,8 +5213,7 @@
                      pos_0
                      (+ pos_0 len_0)
                      1))
-                  (case-lambda
-                   ((v*_1 start*_1 stop*_1 step*_1)
+                  (lambda (v*_1 start*_1 stop*_1 step*_1)
                     (let ((v*_2 v*_0)
                           (start*_2 start*_0)
                           (stop*_2 stop*_0)
@@ -5392,15 +5248,12 @@
                                            (unsafe-fx+ idx_1 1))
                                           result_1)))))
                                 result_0))))))
-                       (for-loop_0 #t start*_2 start*_1))))
-                   (args (raise-binding-result-arity-error 4 args)))))
-                (args (raise-binding-result-arity-error 4 args))))
+                       (for-loop_0 #t start*_2 start*_1)))))))
               #f)
             (call-with-values
              (lambda ()
                (unsafe-normalise-inputs unsafe-bytes-length bstr_0 0 len_0 1))
-             (case-lambda
-              ((v*_0 start*_0 stop*_0 step*_0)
+             (lambda (v*_0 start*_0 stop*_0 step*_0)
                (let ((start_1 pos_0))
                  (let ((v*_1 v*_0)
                        (start*_1 start*_0)
@@ -5443,8 +5296,7 @@
                                       (+ pos_1 1))
                                      result_1)))
                                result_0))))))
-                      (for-loop_0 #t start*_1 start_1))))))
-              (args (raise-binding-result-arity-error 4 args)))))
+                      (for-loop_0 #t start*_1 start_1))))))))
         (+ pos_0 len_0)
         #f))))
 (define bytes-matcher*
@@ -5473,8 +5325,7 @@
                                    0
                                    len_0
                                    1))
-                                (case-lambda
-                                 ((v*_0 start*_0 stop*_0 step*_0)
+                                (lambda (v*_0 start*_0 stop*_0 step*_0)
                                   (call-with-values
                                    (lambda ()
                                      (unsafe-normalise-inputs
@@ -5483,8 +5334,7 @@
                                       pos_1
                                       (+ pos_1 len_0)
                                       1))
-                                   (case-lambda
-                                    ((v*_1 start*_1 stop*_1 step*_1)
+                                   (lambda (v*_1 start*_1 stop*_1 step*_1)
                                      (let ((v*_2 v*_0)
                                            (start*_2 start*_0)
                                            (stop*_2 stop*_0)
@@ -5541,15 +5391,10 @@
                                                              1))
                                                            result_1)))))
                                                  result_0))))))
-                                        (for-loop_0 #t start*_2 start*_1))))
-                                    (args
-                                     (raise-binding-result-arity-error
-                                      4
-                                      args)))))
-                                 (args
-                                  (raise-binding-result-arity-error
-                                   4
-                                   args)))))))
+                                        (for-loop_0
+                                         #t
+                                         start*_2
+                                         start*_1))))))))))
                         (values pos_1 n_0 len_0)
                         (loop_0 pos3_0 (add1 n_0)))))))))
              (loop_0 pos_0 0)))
@@ -5581,8 +5426,7 @@
                                      0
                                      len_0
                                      1))
-                                  (case-lambda
-                                   ((v*_0 start*_0 stop*_0 step*_0)
+                                  (lambda (v*_0 start*_0 stop*_0 step*_0)
                                     (let ((start_1 pos_1))
                                       (let ((v*_1 v*_0)
                                             (start*_1 start*_0)
@@ -5644,11 +5488,7 @@
                                            (for-loop_0
                                             #t
                                             start*_1
-                                            start_1))))))
-                                   (args
-                                    (raise-binding-result-arity-error
-                                     4
-                                     args)))))))))
+                                            start_1))))))))))))
                       (values pos_1 n_0 len_0)
                       (let ((app_0 (+ pos_1 len_0)))
                         (loop_0 app_0 (add1 n_0)))))))))
@@ -6047,8 +5887,7 @@
     (lambda (s_0 pos_0 start_0 limit_0 end_0 state_0 stack_0)
       (call-with-values
        (lambda () (|#%app| r-m*_0 s_0 pos_0 start_0 limit_0 end_0 state_0))
-       (case-lambda
-        ((pos2_0 n_0 back-amt_0)
+       (lambda (pos2_0 n_0 back-amt_0)
          (letrec*
           ((bloop_0
             (|#%name|
@@ -6111,8 +5950,7 @@
                              (group-revert_0)
                              (let ((app_0 (- pos_1 back-amt_0)))
                                (bloop_0 app_0 (sub1 n_1))))))))))))))
-          (bloop_0 pos2_0 n_0)))
-        (args (raise-binding-result-arity-error 3 args)))))))
+          (bloop_0 pos2_0 n_0)))))))
 (define lazy-repeat-matcher
   (lambda (r-m_0 min_0 max_0 next-m_0)
     (lambda (s_0 pos_0 start_0 limit_0 end_0 state_0 stack_0)
@@ -6264,8 +6102,7 @@
                              app_0
                              (cdr p_0)
                              1)))
-                        (case-lambda
-                         ((v*_0 start*_0 stop*_0 step*_0)
+                        (lambda (v*_0 start*_0 stop*_0 step*_0)
                           (call-with-values
                            (lambda ()
                              (unsafe-normalise-inputs
@@ -6274,8 +6111,7 @@
                               pos_0
                               (+ pos_0 len_0)
                               1))
-                           (case-lambda
-                            ((v*_1 start*_1 stop*_1 step*_1)
+                           (lambda (v*_1 start*_1 stop*_1 step*_1)
                              (let ((v*_2 v*_0)
                                    (start*_2 start*_0)
                                    (stop*_2 stop*_0)
@@ -6318,9 +6154,7 @@
                                                     (unsafe-fx+ idx_1 1))
                                                    result_1)))))
                                          result_0))))))
-                                (for-loop_0 #t start*_2 start*_1))))
-                            (args (raise-binding-result-arity-error 4 args)))))
-                         (args (raise-binding-result-arity-error 4 args))))
+                                (for-loop_0 #t start*_2 start*_1)))))))
                        #f)
                      (let ((start_1 (car p_0)))
                        (let ((end_1 (cdr p_0)))
@@ -6397,8 +6231,7 @@
                              app_0
                              (cdr p_0)
                              1)))
-                        (case-lambda
-                         ((v*_0 start*_0 stop*_0 step*_0)
+                        (lambda (v*_0 start*_0 stop*_0 step*_0)
                           (call-with-values
                            (lambda ()
                              (unsafe-normalise-inputs
@@ -6407,8 +6240,7 @@
                               pos_0
                               (+ pos_0 len_0)
                               1))
-                           (case-lambda
-                            ((v*_1 start*_1 stop*_1 step*_1)
+                           (lambda (v*_1 start*_1 stop*_1 step*_1)
                              (let ((v*_2 v*_0)
                                    (start*_2 start*_0)
                                    (stop*_2 stop*_0)
@@ -6457,9 +6289,7 @@
                                                     (unsafe-fx+ idx_1 1))
                                                    result_1)))))
                                          result_0))))))
-                                (for-loop_0 #t start*_2 start*_1))))
-                            (args (raise-binding-result-arity-error 4 args)))))
-                         (args (raise-binding-result-arity-error 4 args))))
+                                (for-loop_0 #t start*_2 start*_1)))))))
                        #f)
                      (let ((start_1 (car p_0)))
                        (let ((end_1 (cdr p_0)))
@@ -7296,8 +7126,7 @@
                 (string->immutable-string orig-p_0))))
          (call-with-values
           (lambda () (parse.1 px?_0 p_0))
-          (case-lambda
-           ((raw-rx_0 num-groups_0 references?_0)
+          (lambda (raw-rx_0 num-groups_0 references?_0)
             (let ((rx_0 (if as-bytes?_0 raw-rx_0 (convert raw-rx_0))))
               (let ((max-lookbehind_0 (validate rx_0 num-groups_0)))
                 (let ((matcher_0 (1/compile rx_0)))
@@ -7313,8 +7142,7 @@
                        max-lookbehind_0
                        app_0
                        app_1
-                       (get-start-range rx_0))))))))
-           (args (raise-binding-result-arity-error 3 args))))))
+                       (get-start-range rx_0)))))))))))
      regexp-error-tag
      (lambda (str_0)
        (if handler_0
@@ -7518,8 +7346,7 @@
                (call-with-values
                 (lambda ()
                   (begin (values state5_0 (unsafe-vector-length state5_0))))
-                (case-lambda
-                 ((vec_0 len_0)
+                (lambda (vec_0 len_0)
                   (letrec*
                    ((for-loop_0
                      (|#%name|
@@ -7542,8 +7369,7 @@
                                        (values fold-var_1))))
                                 (for-loop_0 fold-var_1 (unsafe-fx+ 1 pos_0))))
                             fold-var_0))))))
-                   (for-loop_0 null 0)))
-                 (args (raise-binding-result-arity-error 2 args)))))))))))))
+                   (for-loop_0 null 0)))))))))))))
 (define byte-positions->bytess.1
   (|#%name|
    byte-positions->bytess
@@ -7559,8 +7385,7 @@
              (call-with-values
               (lambda ()
                 (begin (values state12_0 (unsafe-vector-length state12_0))))
-              (case-lambda
-               ((vec_0 len_0)
+              (lambda (vec_0 len_0)
                 (letrec*
                  ((for-loop_0
                    (|#%name|
@@ -7584,8 +7409,7 @@
                                      (values fold-var_1))))
                               (for-loop_0 fold-var_1 (unsafe-fx+ 1 pos_0))))
                           fold-var_0))))))
-                 (for-loop_0 null 0)))
-               (args (raise-binding-result-arity-error 2 args)))))
+                 (for-loop_0 null 0)))))
             null)))))))
 (define byte-positions->string-positions.1
   (|#%name|
@@ -7629,8 +7453,7 @@
                (call-with-values
                 (lambda ()
                   (begin (values state23_0 (unsafe-vector-length state23_0))))
-                (case-lambda
-                 ((vec_0 len_0)
+                (lambda (vec_0 len_0)
                   (letrec*
                    ((for-loop_0
                      (|#%name|
@@ -7654,8 +7477,7 @@
                                        (values fold-var_1))))
                                 (for-loop_0 fold-var_1 (unsafe-fx+ 1 pos_0))))
                             fold-var_0))))))
-                   (for-loop_0 null 0)))
-                 (args (raise-binding-result-arity-error 2 args)))))
+                   (for-loop_0 null 0)))))
               null))))))))
 (define byte-positions->strings.1
   (|#%name|
@@ -7676,8 +7498,7 @@
              (call-with-values
               (lambda ()
                 (begin (values state30_0 (unsafe-vector-length state30_0))))
-              (case-lambda
-               ((vec_0 len_0)
+              (lambda (vec_0 len_0)
                 (letrec*
                  ((for-loop_0
                    (|#%name|
@@ -7702,8 +7523,7 @@
                                      (values fold-var_1))))
                               (for-loop_0 fold-var_1 (unsafe-fx+ 1 pos_0))))
                           fold-var_0))))))
-                 (for-loop_0 null 0)))
-               (args (raise-binding-result-arity-error 2 args)))))
+                 (for-loop_0 null 0)))))
             null)))))))
 (define byte-index->string-index
   (lambda (str_0 start-pos_0 pos_0)
@@ -7828,8 +7648,7 @@
                   pos_0
                   end-pos_0
                   1))
-               (case-lambda
-                ((v*_0 start*_0 stop*_0 step*_0)
+               (lambda (v*_0 start*_0 stop*_0 step*_0)
                  (letrec*
                   ((for-loop_0
                     (|#%name|
@@ -7847,8 +7666,7 @@
                                  (for-loop_0 result_1 (unsafe-fx+ idx_0 1))
                                  result_1)))
                            result_0))))))
-                  (for-loop_0 #f start*_0)))
-                (args (raise-binding-result-arity-error 4 args)))))
+                  (for-loop_0 #f start*_0)))))
             (let ((mc1_0 (unsafe-bytes-ref must-string_0 0)))
               (let ((end_0
                      (- end-pos_0 (sub1 (unsafe-bytes-length must-string_0)))))
@@ -7873,8 +7691,10 @@
                                                 (add1 pos_1)
                                                 #f
                                                 1))
-                                             (case-lambda
-                                              ((v*_0 start*_0 stop*_0 step*_0)
+                                             (lambda (v*_0
+                                                      start*_0
+                                                      stop*_0
+                                                      step*_0)
                                                (call-with-values
                                                 (lambda ()
                                                   (unsafe-normalise-inputs
@@ -7883,11 +7703,10 @@
                                                    1
                                                    #f
                                                    1))
-                                                (case-lambda
-                                                 ((v*_1
-                                                   start*_1
-                                                   stop*_1
-                                                   step*_1)
+                                                (lambda (v*_1
+                                                         start*_1
+                                                         stop*_1
+                                                         step*_1)
                                                   (let ((v*_2 v*_0)
                                                         (start*_2 start*_0)
                                                         (stop*_2 stop*_0)
@@ -7952,15 +7771,7 @@
                                                      (for-loop_1
                                                       #t
                                                       start*_2
-                                                      start*_1))))
-                                                 (args
-                                                  (raise-binding-result-arity-error
-                                                   4
-                                                   args)))))
-                                              (args
-                                               (raise-binding-result-arity-error
-                                                4
-                                                args))))
+                                                      start*_1)))))))
                                             #f)))
                                      (values result_1))))
                               (if (if (not (let ((x_0 (list pos_1))) result_1))
@@ -8035,9 +7846,7 @@
           start-pos_0
           (if end-pos_0 end-pos_0 (unsafe-bytes-length in_0))
           state_0))
-       (case-lambda
-        ((ms-pos_0 me-pos_0) (if ms-pos_0 #t #f))
-        (args (raise-binding-result-arity-error 2 args)))))))
+       (lambda (ms-pos_0 me-pos_0) (if ms-pos_0 #t #f))))))
 (define fast-drive-regexp-match?/string
   (lambda (rx_0 in-str_0 start-offset_0 end-offset_0)
     (let ((state_0
@@ -8053,9 +7862,7 @@
         (call-with-values
          (lambda ()
            (search-match rx_0 in_0 0 0 (unsafe-bytes-length in_0) state_0))
-         (case-lambda
-          ((ms-pos_0 me-pos_0) (if ms-pos_0 #t #f))
-          (args (raise-binding-result-arity-error 2 args))))))))
+         (lambda (ms-pos_0 me-pos_0) (if ms-pos_0 #t #f)))))))
 (define fast-drive-regexp-match-positions/bytes
   (lambda (rx_0 in_0 start-pos_0 end-pos_0)
     (let ((state_0
@@ -8070,15 +7877,13 @@
           start-pos_0
           (if end-pos_0 end-pos_0 (unsafe-bytes-length in_0))
           state_0))
-       (case-lambda
-        ((ms-pos_0 me-pos_0)
+       (lambda (ms-pos_0 me-pos_0)
          (if ms-pos_0
            (if state_0
              (let ((app_0 (cons ms-pos_0 me-pos_0)))
                (cons app_0 (vector->list state_0)))
              (list (cons ms-pos_0 me-pos_0)))
-           #f))
-        (args (raise-binding-result-arity-error 2 args)))))))
+           #f))))))
 (define fast-drive-regexp-match-positions/string
   (lambda (rx_0 in-str_0 start-offset_0 end-offset_0)
     (let ((in_0
@@ -8093,8 +7898,7 @@
         (call-with-values
          (lambda ()
            (search-match rx_0 in_0 0 0 (unsafe-bytes-length in_0) state_0))
-         (case-lambda
-          ((ms-pos_0 me-pos_0)
+         (lambda (ms-pos_0 me-pos_0)
            (let ((string-offset_0
                   (|#%name|
                    string-offset
@@ -8115,8 +7919,7 @@
                       (lambda ()
                         (begin
                           (values state_0 (unsafe-vector-length state_0))))
-                      (case-lambda
-                       ((vec_0 len_0)
+                      (lambda (vec_0 len_0)
                         (letrec*
                          ((for-loop_0
                            (|#%name|
@@ -8143,11 +7946,9 @@
                                        fold-var_1
                                        (unsafe-fx+ 1 pos_0))))
                                   fold-var_0))))))
-                         (for-loop_0 null 0)))
-                       (args (raise-binding-result-arity-error 2 args)))))
+                         (for-loop_0 null 0)))))
                     null)))
-               #f)))
-          (args (raise-binding-result-arity-error 2 args))))))))
+               #f))))))))
 (define fast-drive-regexp-match/bytes
   (lambda (rx_0 in_0 start-pos_0 end-pos_0)
     (let ((state_0
@@ -8162,8 +7963,7 @@
           start-pos_0
           (if end-pos_0 end-pos_0 (unsafe-bytes-length in_0))
           state_0))
-       (case-lambda
-        ((ms-pos_0 me-pos_0)
+       (lambda (ms-pos_0 me-pos_0)
          (if ms-pos_0
            (let ((app_0 (subbytes in_0 ms-pos_0 me-pos_0)))
              (cons
@@ -8173,8 +7973,7 @@
                  (call-with-values
                   (lambda ()
                     (begin (values state_0 (unsafe-vector-length state_0))))
-                  (case-lambda
-                   ((vec_0 len_0)
+                  (lambda (vec_0 len_0)
                     (letrec*
                      ((for-loop_0
                        (|#%name|
@@ -8199,11 +7998,9 @@
                                    fold-var_1
                                    (unsafe-fx+ 1 pos_0))))
                               fold-var_0))))))
-                     (for-loop_0 null 0)))
-                   (args (raise-binding-result-arity-error 2 args)))))
+                     (for-loop_0 null 0)))))
                 null)))
-           #f))
-        (args (raise-binding-result-arity-error 2 args)))))))
+           #f))))))
 (define fast-drive-regexp-match/string
   (lambda (rx_0 in-str_0 start-offset_0 end-offset_0)
     (let ((in_0
@@ -8218,8 +8015,7 @@
         (call-with-values
          (lambda ()
            (search-match rx_0 in_0 0 0 (unsafe-bytes-length in_0) state_0))
-         (case-lambda
-          ((ms-pos_0 me-pos_0)
+         (lambda (ms-pos_0 me-pos_0)
            (if ms-pos_0
              (let ((app_0 (bytes->string/utf-8 in_0 '#\x3f ms-pos_0 me-pos_0)))
                (cons
@@ -8229,8 +8025,7 @@
                    (call-with-values
                     (lambda ()
                       (begin (values state_0 (unsafe-vector-length state_0))))
-                    (case-lambda
-                     ((vec_0 len_0)
+                    (lambda (vec_0 len_0)
                       (letrec*
                        ((for-loop_0
                          (|#%name|
@@ -8256,11 +8051,9 @@
                                      fold-var_1
                                      (unsafe-fx+ 1 pos_0))))
                                 fold-var_0))))))
-                       (for-loop_0 null 0)))
-                     (args (raise-binding-result-arity-error 2 args)))))
+                       (for-loop_0 null 0)))))
                   null)))
-             #f))
-          (args (raise-binding-result-arity-error 2 args))))))))
+             #f)))))))
 (define drive-regexp-match.1
   (|#%name|
    drive-regexp-match
@@ -8402,8 +8195,7 @@
                                  start-offset_0
                                  end-offset_0
                                  state_0))
-                              (case-lambda
-                               ((ms-pos_0 me-pos_0)
+                              (lambda (ms-pos_0 me-pos_0)
                                 (begin
                                   (if out24_0
                                     (write-bytes
@@ -8446,9 +8238,7 @@
                                                end-bytes-count9_0
                                                in_0
                                                me-pos_0))
-                                            (void))))))))
-                               (args
-                                (raise-binding-result-arity-error 2 args))))
+                                            (void)))))))))
                              (if (if (string? in_0)
                                    (if (not out24_0)
                                      (if (equal? #vu8() prefix25_0)
@@ -8480,8 +8270,7 @@
                                          0
                                          end-pos_0
                                          state_0))
-                                      (case-lambda
-                                       ((ms-pos_0 me-pos_0)
+                                      (lambda (ms-pos_0 me-pos_0)
                                         (begin
                                           (if out24_0
                                             (begin
@@ -8556,11 +8345,7 @@
                                                        end-bytes-count9_0
                                                        bstr-in_0
                                                        me-pos_0))
-                                                    (void))))))))
-                                       (args
-                                        (raise-binding-result-arity-error
-                                         2
-                                         args)))))))
+                                                    (void))))))))))))
                                (let ((prefix-len_0
                                       (unsafe-bytes-length prefix25_0)))
                                  (let ((search-pos_0
@@ -8671,8 +8456,7 @@
                                                    end-pos_0
                                                    state_0)
                                                   (values #f #f)))
-                                              (case-lambda
-                                               ((ms-pos_0 me-pos_0)
+                                              (lambda (ms-pos_0 me-pos_0)
                                                 (let ((write/consume-skipped_0
                                                        (|#%name|
                                                         write/consume-skipped
@@ -8840,11 +8624,7 @@
                                                                       me-pos_0
                                                                       delta_0)))))
                                                               (void))))))
-                                                    (write/consume-skipped_0))))
-                                               (args
-                                                (raise-binding-result-arity-error
-                                                 2
-                                                 args)))))))))))))))))))))))))))
+                                                    (write/consume-skipped_0))))))))))))))))))))))))))))
 (define check-range
   (lambda (who_0 what_0 in_0 pos_0 start-pos_0)
     (let ((len_0
