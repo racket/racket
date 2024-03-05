@@ -618,8 +618,7 @@
         (void)
         (call-with-values
          (lambda () (procedure-keywords f_0))
-         (case-lambda
-          ((required-keywords_0 optional-keywords_0)
+         (lambda (required-keywords_0 optional-keywords_0)
            (let ((app_0
                   (if (pair? required-keywords_0)
                     (string-append
@@ -721,8 +720,7 @@
                                            app_5
                                            (loop_0 (cdr ls_1))))))))))
                                (loop_0 ls_0)))))
-                           null))))))))))
-          (args (raise-binding-result-arity-error 2 args))))))))
+                           null)))))))))))))))
 (define gen-map
   (lambda (f_0 ls_0)
     (begin
@@ -975,26 +973,18 @@
                            (if i_0
                              (call-with-values
                               (lambda () (hash-iterate-key+value table7_0 i_0))
-                              (case-lambda
-                               ((k1_0 v1_0)
+                              (lambda (k1_0 v1_0)
                                 (let ((acc_2
                                        (let ((acc_2
                                               (call-with-values
                                                (lambda ()
                                                  (|#%app| f8_0 k1_0 v1_0))
-                                               (case-lambda
-                                                ((k2_0 v2_0)
-                                                 (hash-set acc_1 k2_0 v2_0))
-                                                (args
-                                                 (raise-binding-result-arity-error
-                                                  2
-                                                  args))))))
+                                               (lambda (k2_0 v2_0)
+                                                 (hash-set acc_1 k2_0 v2_0)))))
                                          (values acc_2))))
                                   (for-loop_0
                                    acc_2
-                                   (hash-iterate-next table7_0 i_0))))
-                               (args
-                                (raise-binding-result-arity-error 2 args))))
+                                   (hash-iterate-next table7_0 i_0)))))
                              acc_1))))))
                     (for-loop_0 acc_0 (hash-iterate-first table7_0))))
                  (begin
@@ -1009,21 +999,14 @@
                                (call-with-values
                                 (lambda ()
                                   (hash-iterate-key+value table7_0 i_0))
-                                (case-lambda
-                                 ((k1_0 v1_0)
+                                (lambda (k1_0 v1_0)
                                   (begin
                                     (call-with-values
                                      (lambda () (|#%app| f8_0 k1_0 v1_0))
-                                     (case-lambda
-                                      ((k2_0 v2_0) (hash-set! acc_0 k2_0 v2_0))
-                                      (args
-                                       (raise-binding-result-arity-error
-                                        2
-                                        args))))
+                                     (lambda (k2_0 v2_0)
+                                       (hash-set! acc_0 k2_0 v2_0)))
                                     (for-loop_0
-                                     (hash-iterate-next table7_0 i_0))))
-                                 (args
-                                  (raise-binding-result-arity-error 2 args))))
+                                     (hash-iterate-next table7_0 i_0)))))
                                (values)))))))
                       (for-loop_0 (hash-iterate-first table7_0))))
                    (void)
@@ -1536,8 +1519,7 @@
               (node-left t_0)
               (call-with-values
                (lambda () (max-key+value (node-left t_0)))
-               (case-lambda
-                ((move-key_0 move-val_0)
+               (lambda (move-key_0 move-val_0)
                  (let ((new-left_0 (delete (node-left t_0) move-key_0 <?_0)))
                    (let ((new-t_0
                           (combine
@@ -1556,8 +1538,7 @@
                           new-t_0
                           node-left
                           node-right
-                          combine))))))
-                (args (raise-binding-result-arity-error 2 args)))))))))))
+                          combine))))))))))))))
 (define delete-at
   (lambda (t_0 key_0 <?_0 node-to_0 node-from_0 combine_0 reverse-combine_0)
     (let ((new-to_0 (delete (|#%app| node-to_0 t_0) key_0 <?_0)))
@@ -1853,8 +1834,7 @@
        (void)
        (call-with-values
         (lambda () (min-key+value (unsafe-place-local-ref cell.3$1)))
-        (case-lambda
-         ((timeout-at_0 threads_0)
+        (lambda (timeout-at_0 threads_0)
           (if (<= timeout-at_0 (current-inexact-monotonic-milliseconds))
             (if (null? threads_0)
               (void)
@@ -1875,8 +1855,7 @@
                             (values)))))))
                    (for-loop_0 (hash-iterate-first threads_0))))
                 (void)))
-            (void)))
-         (args (raise-binding-result-arity-error 2 args))))))
+            (void))))))
    (lambda () (|#%app| host:get-wakeup-handle))
    (lambda (h_0) (|#%app| host:wakeup h_0))
    (lambda ()
@@ -1889,9 +1868,7 @@
             (begin-unsafe (not t_0))))
        (call-with-values
         (lambda () (min-key+value (unsafe-place-local-ref cell.3$1)))
-        (case-lambda
-         ((timeout-at_0 threads_0) timeout-at_0)
-         (args (raise-binding-result-arity-error 2 args))))
+        (lambda (timeout-at_0 threads_0) timeout-at_0))
        #f))
    (lambda (t_0 sleep-until_0)
      (begin
@@ -3114,9 +3091,8 @@
                                                                               v_0
                                                                               (unsafe-vector-length
                                                                                v_0))))
-                                                                         (case-lambda
-                                                                          ((vec_0
-                                                                            len_0)
+                                                                         (lambda (vec_0
+                                                                                  len_0)
                                                                            (letrec*
                                                                             ((for-loop_0
                                                                               (|#%name|
@@ -3155,11 +3131,7 @@
                                                                                      result_0))))))
                                                                             (for-loop_0
                                                                              #t
-                                                                             0)))
-                                                                          (args
-                                                                           (raise-binding-result-arity-error
-                                                                            2
-                                                                            args)))))))
+                                                                             0)))))))
                                                                   #f)
                                                                 #f)))
                                                          (if or-part_10
@@ -3189,9 +3161,8 @@
                                                                                   vec_0
                                                                                   (unsafe-vector-length
                                                                                    vec_0)))))
-                                                                           (case-lambda
-                                                                            ((vec_0
-                                                                              len_0)
+                                                                           (lambda (vec_0
+                                                                                    len_0)
                                                                              (letrec*
                                                                               ((for-loop_0
                                                                                 (|#%name|
@@ -3230,11 +3201,7 @@
                                                                                        result_0))))))
                                                                               (for-loop_0
                                                                                #t
-                                                                               0)))
-                                                                            (args
-                                                                             (raise-binding-result-arity-error
-                                                                              2
-                                                                              args)))))))
+                                                                               0)))))))
                                                                     #f)))
                                                              (if or-part_11
                                                                or-part_11
@@ -3278,9 +3245,8 @@
                                                                                                (hash-iterate-key+value
                                                                                                 v_0
                                                                                                 i_0))
-                                                                                             (case-lambda
-                                                                                              ((k_0
-                                                                                                v_1)
+                                                                                             (lambda (k_0
+                                                                                                      v_1)
                                                                                                (let ((result_1
                                                                                                       (let ((result_1
                                                                                                              (if (loop_0
@@ -3306,11 +3272,7 @@
                                                                                                     (hash-iterate-next
                                                                                                      v_0
                                                                                                      i_0))
-                                                                                                   result_1)))
-                                                                                              (args
-                                                                                               (raise-binding-result-arity-error
-                                                                                                2
-                                                                                                args))))
+                                                                                                   result_1))))
                                                                                             result_0))))))
                                                                                    (for-loop_0
                                                                                     #t
@@ -3467,8 +3429,8 @@
                                                                 v_1
                                                                 (unsafe-vector-length
                                                                  v_1))))
-                                                           (case-lambda
-                                                            ((vec_0 len_1)
+                                                           (lambda (vec_0
+                                                                    len_1)
                                                              (letrec*
                                                               ((for-loop_0
                                                                 (|#%name|
@@ -3514,11 +3476,7 @@
                                                                        i_0))))))
                                                               (for-loop_0
                                                                0
-                                                               0)))
-                                                            (args
-                                                             (raise-binding-result-arity-error
-                                                              2
-                                                              args)))))
+                                                               0)))))
                                                         v_2)))))))
                                            (let ((c1_0
                                                   (immutable-prefab-struct-key
@@ -3543,11 +3501,10 @@
                                                           1
                                                           #f
                                                           1))
-                                                       (case-lambda
-                                                        ((v*_0
-                                                          start*_0
-                                                          stop*_0
-                                                          step*_0)
+                                                       (lambda (v*_0
+                                                                start*_0
+                                                                stop*_0
+                                                                step*_0)
                                                          (letrec*
                                                           ((for-loop_0
                                                             (|#%name|
@@ -3578,11 +3535,7 @@
                                                                    fold-var_0))))))
                                                           (for-loop_0
                                                            null
-                                                           start*_0)))
-                                                        (args
-                                                         (raise-binding-result-arity-error
-                                                          4
-                                                          args)))))))))
+                                                           start*_0)))))))))
                                                (if (hash? v_1)
                                                  (let ((ph_0
                                                         (make-placeholder #f)))
@@ -3684,8 +3637,7 @@
                                   (lambda ()
                                     (begin
                                       (values v_1 (unsafe-vector-length v_1))))
-                                  (case-lambda
-                                   ((vec_0 len_1)
+                                  (lambda (vec_0 len_1)
                                     (letrec*
                                      ((for-loop_0
                                        (|#%name|
@@ -3721,11 +3673,7 @@
                                                      (unsafe-fx+ 1 pos_0))
                                                     i_1)))
                                               i_0))))))
-                                     (for-loop_0 0 0)))
-                                   (args
-                                    (raise-binding-result-arity-error
-                                     2
-                                     args)))))
+                                     (for-loop_0 0 0)))))
                                v_2)))))
                       (let ((c3_0 (immutable-prefab-struct-key v_1)))
                         (if c3_0
@@ -3741,8 +3689,7 @@
                                 1
                                 #f
                                 1))
-                             (case-lambda
-                              ((v*_0 start*_0 stop*_0 step*_0)
+                             (lambda (v*_0 start*_0 stop*_0 step*_0)
                                (letrec*
                                 ((for-loop_0
                                   (|#%name|
@@ -3764,9 +3711,7 @@
                                               fold-var_1
                                               (unsafe-fx+ idx_0 1))))
                                          fold-var_0))))))
-                                (for-loop_0 null start*_0)))
-                              (args
-                               (raise-binding-result-arity-error 4 args))))))
+                                (for-loop_0 null start*_0))))))
                           (if (hash? v_1)
                             (let ((temp15_0
                                    (lambda (k_0 v_2)
@@ -5432,8 +5377,7 @@
                             (if i_0
                               (call-with-values
                                (lambda () (hash-iterate-key+value ht_0 i_0 #f))
-                               (case-lambda
-                                ((child_0 callback_0)
+                               (lambda (child_0 callback_0)
                                  (begin
                                    (if child_0
                                      (let ((gc-root?_0
@@ -5455,9 +5399,7 @@
                                         child_0
                                         callback_0))
                                      (void))
-                                   (for-loop_0 (hash-iterate-next ht_0 i_0))))
-                                (args
-                                 (raise-binding-result-arity-error 2 args))))
+                                   (for-loop_0 (hash-iterate-next ht_0 i_0)))))
                               (values)))))))
                      (for-loop_0 (hash-iterate-first ht_0)))))
                 (let ((self-ref_0 (custodian-self-reference c_0)))
@@ -5587,12 +5529,7 @@
                                        (do-custodian-shutdown-all c_0)
                                        (values))
                                      (values)))
-                                 (case-lambda
-                                  (() (for-loop_0 rest_0))
-                                  (args
-                                   (raise-binding-result-arity-error
-                                    0
-                                    args))))))
+                                 (lambda () (for-loop_0 rest_0)))))
                             (values)))))))
                    (for-loop_0 queued_0)))
                 (void)
@@ -5639,8 +5576,7 @@
                                     (call-with-values
                                      (lambda ()
                                        (hash-iterate-key+value ht_0 i_0 #f))
-                                     (case-lambda
-                                      ((child_0 callback_0)
+                                     (lambda (child_0 callback_0)
                                        (begin
                                          (if child_0
                                            (if (if only-at-exit?27_0
@@ -5667,11 +5603,7 @@
                                                (void)))
                                            (void))
                                          (for-loop_0
-                                          (hash-iterate-next ht_0 i_0))))
-                                      (args
-                                       (raise-binding-result-arity-error
-                                        2
-                                        args))))
+                                          (hash-iterate-next ht_0 i_0)))))
                                     (values)))))))
                            (for-loop_0 (hash-iterate-first ht_0)))))
                       (begin
@@ -6052,7 +5984,7 @@
 (define memory-limit-lock (|#%app| host:make-mutex))
 (define compute-memory-sizes 0)
 (define computed-memory-sizes? #f)
-(define effect_2497
+(define effect_2420
   (begin
     (void
      (|#%app|
@@ -6154,17 +6086,13 @@
                                                     pl_0
                                                     accum-roots_1
                                                     accum-custs_1))
-                                                 (case-lambda
-                                                  ((new-roots_0 new-custs_0)
+                                                 (lambda (new-roots_0
+                                                          new-custs_0)
                                                    (loop_0
                                                     (cdr roots_1)
                                                     local-accum-roots_0
                                                     new-roots_0
-                                                    new-custs_0))
-                                                  (args
-                                                   (raise-binding-result-arity-error
-                                                    2
-                                                    args))))
+                                                    new-custs_0)))
                                                 (if (1/place? (car roots_1))
                                                   (let ((pl_1 (car roots_1)))
                                                     (let ((c_1
@@ -6185,18 +6113,13 @@
                                                             pl_1
                                                             accum-roots_1
                                                             accum-custs_1))
-                                                         (case-lambda
-                                                          ((new-roots_0
-                                                            new-custs_0)
+                                                         (lambda (new-roots_0
+                                                                  new-custs_0)
                                                            (loop_0
                                                             (cdr roots_1)
                                                             local-accum-roots_0
                                                             new-roots_0
-                                                            new-custs_0))
-                                                          (args
-                                                           (raise-binding-result-arity-error
-                                                            2
-                                                            args)))))))
+                                                            new-custs_0))))))
                                                   (let ((root_0 (car roots_1)))
                                                     (let ((new-local-roots_0
                                                            (cons
@@ -6248,8 +6171,7 @@
                       initial-place
                       null
                       null)))
-                  (case-lambda
-                   ((roots_0 custs_0)
+                  (lambda (roots_0 custs_0)
                     (|#%app|
                      call-with-size-increments_0
                      roots_0
@@ -6443,8 +6365,7 @@
                                (void)
                                (set! compute-memory-sizes
                                  (sub1 compute-memory-sizes)))
-                             (set! computed-memory-sizes? #t)))))))
-                   (args (raise-binding-result-arity-error 2 args))))))))))))
+                             (set! computed-memory-sizes? #t))))))))))))))))
     (void)))
 (define effect_2597
   (begin
@@ -9931,8 +9852,7 @@
               (call-with-values
                (lambda ()
                  (cross-commits-and-abandons commits14_0 abandons15_0))
-               (case-lambda
-                ((extended-commits_0 guarded-abandons_0)
+               (lambda (extended-commits_0 guarded-abandons_0)
                  (letrec*
                   ((loop_0
                     (|#%name|
@@ -9985,8 +9905,7 @@
                                       (cdr evts_0)
                                       (if first_0 first_0 sr_0)
                                       sr_0))))))))))))
-                  (loop_0 evts17_0 #f #f)))
-                (args (raise-binding-result-arity-error 2 args)))))))))
+                  (loop_0 evts17_0 #f #f)))))))))
     (case-lambda
      ((who_0 evts_0) (evts->syncers_0 who_0 evts_0 null null null))
      ((who_0 evts_0 wraps_0 commits_0 abandons15_0)
@@ -10150,8 +10069,7 @@
                                    just-poll?20_0
                                    fast-only?21_0
                                    sched-info_0))
-                                (case-lambda
-                                 ((same?_0 new-evt_0)
+                                (lambda (same?_0 new-evt_0)
                                   (if same?_0
                                     (loop_0
                                      (syncer-next sr_0)
@@ -10170,9 +10088,7 @@
                                          sr_0
                                          (add1 retries_0)
                                          polled-all-so-far?_0
-                                         no-wrappers?_0)))))
-                                 (args
-                                  (raise-binding-result-arity-error 2 args)))))
+                                         no-wrappers?_0)))))))
                              (let ((ctx_0
                                     (poll-ctx3.1
                                      just-poll?20_0
@@ -10181,8 +10097,7 @@
                                      #f)))
                                (call-with-values
                                 (lambda () (evt-poll (syncer-evt sr_0) ctx_0))
-                                (case-lambda
-                                 ((results_0 new-evt_0)
+                                (lambda (results_0 new-evt_0)
                                   (if results_0
                                     (begin
                                       (syncing-done! s32_0 sr_0)
@@ -10485,11 +10400,7 @@
                                                      sr_0
                                                      (add1 retries_0)
                                                      polled-all-so-far?_0
-                                                     no-wrappers?_0)))))))))))
-                                 (args
-                                  (raise-binding-result-arity-error
-                                   2
-                                   args))))))))))))))))
+                                                     no-wrappers?_0))))))))))))))))))))))))
           (loop_0 (syncing-syncers s32_0) 0 #t #t)))))))
 (define make-result
   (lambda (sr_0 results_0 success-k_0)
@@ -10619,8 +10530,7 @@
                         (if retry_0
                           (call-with-values
                            (lambda () (|#%app| retry_0))
-                           (case-lambda
-                            ((result_0 ready?_0)
+                           (lambda (result_0 ready?_0)
                              (if ready?_0
                                (begin
                                  (set-syncer-wraps!
@@ -10629,8 +10539,7 @@
                                    (lambda args_0 result_0)
                                    (syncer-wraps sr_0)))
                                  (syncing-done! s_0 sr_0))
-                               (void)))
-                            (args (raise-binding-result-arity-error 2 args))))
+                               (void))))
                           (void))))
                     (void))
                   (loop_0 (syncer-next sr_0)))
@@ -13914,8 +13823,7 @@
                (let ((started_0 (|#%app| host:make-condition)))
                  (call-with-values
                   (lambda () (1/place-channel))
-                  (case-lambda
-                   ((place-pch_0 child-pch_0)
+                  (lambda (place-pch_0 child-pch_0)
                     (let ((orig-plumber_0 (1/make-plumber)))
                       (let ((new-place_0
                              (let ((current-place15_0
@@ -14005,13 +13913,12 @@
                                           in_0
                                           out_0
                                           err_0))
-                                       (case-lambda
-                                        ((parent-in_0
-                                          parent-out_0
-                                          parent-err_0
-                                          child-in-fd_0
-                                          child-out-fd_0
-                                          child-err-fd_0)
+                                       (lambda (parent-in_0
+                                                parent-out_0
+                                                parent-err_0
+                                                child-in-fd_0
+                                                child-out-fd_0
+                                                child-err-fd_0)
                                          (begin
                                            (|#%app| host:mutex-acquire lock_0)
                                            (let ((host-thread_0
@@ -14195,12 +14102,7 @@
                                                 new-place_0
                                                 parent-in_0
                                                 parent-out_0
-                                                parent-err_0)))))
-                                        (args
-                                         (raise-binding-result-arity-error
-                                          6
-                                          args))))))))))))))
-                   (args (raise-binding-result-arity-error 2 args)))))))))))))
+                                                parent-err_0))))))))))))))))))))))))))
 (define 1/place-break
   (let ((place-break_0
          (|#%name|
@@ -14370,8 +14272,7 @@
                    (call-with-values
                     (lambda ()
                       (begin (values vec_0 (unsafe-vector-length vec_0))))
-                    (case-lambda
-                     ((vec_1 len_0)
+                    (lambda (vec_1 len_0)
                       (letrec*
                        ((for-loop_0
                          (|#%name|
@@ -14386,8 +14287,7 @@
                                       (void))
                                     (for-loop_0 (unsafe-fx+ 1 pos_0))))
                                 (values)))))))
-                       (for-loop_0 0)))
-                     (args (raise-binding-result-arity-error 2 args))))
+                       (for-loop_0 0))))
                    (void)
                    (set-place-pumpers! p_0 #f))
                  (void))
@@ -14628,8 +14528,7 @@
                               (call-with-values
                                (lambda ()
                                  (hash-iterate-key+value waiters_0 i_0))
-                               (case-lambda
-                                ((pl_0 s_0)
+                               (lambda (pl_0 s_0)
                                  (begin
                                    (begin
                                      (|#%app|
@@ -14644,9 +14543,7 @@
                                       (place-lock pl_0))
                                      (wakeup-waiting pl_0))
                                    (for-loop_0
-                                    (hash-iterate-next waiters_0 i_0))))
-                                (args
-                                 (raise-binding-result-arity-error 2 args))))
+                                    (hash-iterate-next waiters_0 i_0)))))
                               (values)))))))
                      (for-loop_0 (hash-iterate-first waiters_0))))
                   (void)))))

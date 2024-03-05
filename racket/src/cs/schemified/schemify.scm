@@ -1864,8 +1864,7 @@
         (void)
         (call-with-values
          (lambda () (procedure-keywords f_0))
-         (case-lambda
-          ((required-keywords_0 optional-keywords_0)
+         (lambda (required-keywords_0 optional-keywords_0)
            (let ((app_0
                   (if (pair? required-keywords_0)
                     (string-append
@@ -1967,8 +1966,7 @@
                                            app_5
                                            (loop_0 (cdr ls_1))))))))))
                                (loop_0 ls_0)))))
-                           null))))))))))
-          (args (raise-binding-result-arity-error 2 args))))))))
+                           null)))))))))))))))
 (define gen-map
   (lambda (f_0 ls_0)
     (begin
@@ -5052,15 +5050,13 @@
       (if (procedure? knowns/proc_0)
         (call-with-values
          (lambda () (|#%app| knowns/proc_0 (import-group-key grp_0)))
-         (case-lambda
-          ((knowns_0 converter_0 import-keys_0)
+         (lambda (knowns_0 converter_0 import-keys_0)
            (let ((knowns-or-empty_0 (if knowns_0 knowns_0 (hasheq))))
              (begin
                (set-import-group-knowns/proc! grp_0 knowns-or-empty_0)
                (set-import-group-converter! grp_0 converter_0)
                (set-import-group-import-keys! grp_0 import-keys_0)
-               knowns-or-empty_0)))
-          (args (raise-binding-result-arity-error 3 args))))
+               knowns-or-empty_0))))
         knowns/proc_0))))
 (define import-group-lookup-ready?
   (lambda (grp_0)
@@ -5759,58 +5755,37 @@
                                                                                  (values
                                                                                   idss_2
                                                                                   rhss_1))))))
-                                                                       (case-lambda
-                                                                        ((idss19_0
-                                                                          rhss20_0)
+                                                                       (lambda (idss19_0
+                                                                                rhss20_0)
                                                                          (values
                                                                           (cons
                                                                            idss19_0
                                                                            idss_0)
                                                                           (cons
                                                                            rhss20_0
-                                                                           rhss_0)))
-                                                                        (args
-                                                                         (raise-binding-result-arity-error
-                                                                          2
-                                                                          args)))))
-                                                                    (case-lambda
-                                                                     ((idss_1
-                                                                       rhss_1)
+                                                                           rhss_0)))))
+                                                                    (lambda (idss_1
+                                                                             rhss_1)
                                                                       (values
                                                                        idss_1
-                                                                       rhss_1))
-                                                                     (args
-                                                                      (raise-binding-result-arity-error
-                                                                       2
-                                                                       args)))))
-                                                                 (case-lambda
-                                                                  ((idss_1
-                                                                    rhss_1)
+                                                                       rhss_1))))
+                                                                 (lambda (idss_1
+                                                                          rhss_1)
                                                                    (for-loop_0
                                                                     idss_1
                                                                     rhss_1
-                                                                    rest_0))
-                                                                  (args
-                                                                   (raise-binding-result-arity-error
-                                                                    2
-                                                                    args)))))))
+                                                                    rest_0))))))
                                                           (values
                                                            idss_0
                                                            rhss_0)))))))
                                                  (for-loop_0 null null a_0)))
-                                              (case-lambda
-                                               ((idss_0 rhss_0)
+                                              (lambda (idss_0 rhss_0)
                                                 (let ((app_0
                                                        (reverse$1 idss_0)))
                                                   (values
                                                    app_0
-                                                   (reverse$1 rhss_0))))
-                                               (args
-                                                (raise-binding-result-arity-error
-                                                 2
-                                                 args))))))
-                                         (case-lambda
-                                          ((idss_0 rhss_0)
+                                                   (reverse$1 rhss_0)))))))
+                                         (lambda (idss_0 rhss_0)
                                            (let ((body_0
                                                   (let ((d_1 (cdr p_0)))
                                                     (let ((a_0
@@ -5818,13 +5793,11 @@
                                                       a_0))))
                                              (let ((idss_1 idss_0)
                                                    (rhss_1 rhss_0))
-                                               (values idss_1 rhss_1 body_0))))
-                                          (args
-                                           (raise-binding-result-arity-error
-                                            2
-                                            args)))))))
-                                  (case-lambda
-                                   ((idss_0 rhss_0 body_0)
+                                               (values
+                                                idss_1
+                                                rhss_1
+                                                body_0))))))))
+                                  (lambda (idss_0 rhss_0 body_0)
                                     (let ((c_0
                                            (hash-ref
                                             simples16_0
@@ -5971,11 +5944,7 @@
                                                            c_0
                                                            2)))))
                                                     r_1))
-                                                r_0)))))))
-                                   (args
-                                    (raise-binding-result-arity-error
-                                     3
-                                     args))))
+                                                r_0))))))))
                                  (if (if (eq? 'let hd_0)
                                        (let ((a_0 (cdr (unwrap e_0))))
                                          (let ((p_0 (unwrap a_0)))
@@ -6141,8 +6110,7 @@
                                                        a_0))))
                                               (let ((rhss_1 rhss_0))
                                                 (values rhss_1 body_0)))))))
-                                    (case-lambda
-                                     ((rhss_0 body_0)
+                                    (lambda (rhss_0 body_0)
                                       (let ((c_0
                                              (hash-ref
                                               simples16_0
@@ -6274,11 +6242,7 @@
                                                              c_0
                                                              2)))))
                                                       r_1))
-                                                  r_0)))))))
-                                     (args
-                                      (raise-binding-result-arity-error
-                                       2
-                                       args))))
+                                                  r_0))))))))
                                    (if (if (eq? 'letrec-values hd_0)
                                          (let ((a_0 (cdr (unwrap e_0))))
                                            (let ((p_0 (unwrap a_0)))
@@ -6449,41 +6413,26 @@
                                                                                      (values
                                                                                       idss_2
                                                                                       rhss_1))))))
-                                                                           (case-lambda
-                                                                            ((idss22_0
-                                                                              rhss23_0)
+                                                                           (lambda (idss22_0
+                                                                                    rhss23_0)
                                                                              (values
                                                                               (cons
                                                                                idss22_0
                                                                                idss_0)
                                                                               (cons
                                                                                rhss23_0
-                                                                               rhss_0)))
-                                                                            (args
-                                                                             (raise-binding-result-arity-error
-                                                                              2
-                                                                              args)))))
-                                                                        (case-lambda
-                                                                         ((idss_1
-                                                                           rhss_1)
+                                                                               rhss_0)))))
+                                                                        (lambda (idss_1
+                                                                                 rhss_1)
                                                                           (values
                                                                            idss_1
-                                                                           rhss_1))
-                                                                         (args
-                                                                          (raise-binding-result-arity-error
-                                                                           2
-                                                                           args)))))
-                                                                     (case-lambda
-                                                                      ((idss_1
-                                                                        rhss_1)
+                                                                           rhss_1))))
+                                                                     (lambda (idss_1
+                                                                              rhss_1)
                                                                        (for-loop_0
                                                                         idss_1
                                                                         rhss_1
-                                                                        rest_0))
-                                                                      (args
-                                                                       (raise-binding-result-arity-error
-                                                                        2
-                                                                        args)))))))
+                                                                        rest_0))))))
                                                               (values
                                                                idss_0
                                                                rhss_0)))))))
@@ -6491,19 +6440,13 @@
                                                       null
                                                       null
                                                       a_0)))
-                                                  (case-lambda
-                                                   ((idss_0 rhss_0)
+                                                  (lambda (idss_0 rhss_0)
                                                     (let ((app_0
                                                            (reverse$1 idss_0)))
                                                       (values
                                                        app_0
-                                                       (reverse$1 rhss_0))))
-                                                   (args
-                                                    (raise-binding-result-arity-error
-                                                     2
-                                                     args))))))
-                                             (case-lambda
-                                              ((idss_0 rhss_0)
+                                                       (reverse$1 rhss_0)))))))
+                                             (lambda (idss_0 rhss_0)
                                                (let ((body_0
                                                       (let ((d_1 (cdr p_0)))
                                                         (let ((a_0
@@ -6515,13 +6458,8 @@
                                                    (values
                                                     idss_1
                                                     rhss_1
-                                                    body_0))))
-                                              (args
-                                               (raise-binding-result-arity-error
-                                                2
-                                                args)))))))
-                                      (case-lambda
-                                       ((idss_0 rhss_0 body_0)
+                                                    body_0))))))))
+                                      (lambda (idss_0 rhss_0 body_0)
                                         (let ((c_0
                                                (hash-ref
                                                 simples16_0
@@ -6677,11 +6615,7 @@
                                                                c_0
                                                                2)))))
                                                         r_1))
-                                                    r_0)))))))
-                                       (args
-                                        (raise-binding-result-arity-error
-                                         3
-                                         args))))
+                                                    r_0))))))))
                                      (if (if (eq? 'letrec* hd_0)
                                            (let ((a_0 (cdr (unwrap e_0))))
                                              (let ((p_0 (unwrap a_0)))
@@ -6846,41 +6780,26 @@
                                                                                        (values
                                                                                         ids_2
                                                                                         rhss_1))))))
-                                                                             (case-lambda
-                                                                              ((ids24_0
-                                                                                rhss25_0)
+                                                                             (lambda (ids24_0
+                                                                                      rhss25_0)
                                                                                (values
                                                                                 (cons
                                                                                  ids24_0
                                                                                  ids_0)
                                                                                 (cons
                                                                                  rhss25_0
-                                                                                 rhss_0)))
-                                                                              (args
-                                                                               (raise-binding-result-arity-error
-                                                                                2
-                                                                                args)))))
-                                                                          (case-lambda
-                                                                           ((ids_1
-                                                                             rhss_1)
+                                                                                 rhss_0)))))
+                                                                          (lambda (ids_1
+                                                                                   rhss_1)
                                                                             (values
                                                                              ids_1
-                                                                             rhss_1))
-                                                                           (args
-                                                                            (raise-binding-result-arity-error
-                                                                             2
-                                                                             args)))))
-                                                                       (case-lambda
-                                                                        ((ids_1
-                                                                          rhss_1)
+                                                                             rhss_1))))
+                                                                       (lambda (ids_1
+                                                                                rhss_1)
                                                                          (for-loop_0
                                                                           ids_1
                                                                           rhss_1
-                                                                          rest_0))
-                                                                        (args
-                                                                         (raise-binding-result-arity-error
-                                                                          2
-                                                                          args)))))))
+                                                                          rest_0))))))
                                                                 (values
                                                                  ids_0
                                                                  rhss_0)))))))
@@ -6888,20 +6807,15 @@
                                                         null
                                                         null
                                                         a_0)))
-                                                    (case-lambda
-                                                     ((ids_0 rhss_0)
+                                                    (lambda (ids_0 rhss_0)
                                                       (let ((app_0
                                                              (reverse$1
                                                               ids_0)))
                                                         (values
                                                          app_0
-                                                         (reverse$1 rhss_0))))
-                                                     (args
-                                                      (raise-binding-result-arity-error
-                                                       2
-                                                       args))))))
-                                               (case-lambda
-                                                ((ids_0 rhss_0)
+                                                         (reverse$1
+                                                          rhss_0)))))))
+                                               (lambda (ids_0 rhss_0)
                                                  (let ((body_0
                                                         (let ((d_1 (cdr p_0)))
                                                           (let ((a_0
@@ -6914,13 +6828,8 @@
                                                      (values
                                                       ids_1
                                                       rhss_1
-                                                      body_0))))
-                                                (args
-                                                 (raise-binding-result-arity-error
-                                                  2
-                                                  args)))))))
-                                        (case-lambda
-                                         ((ids_0 rhss_0 body_0)
+                                                      body_0))))))))
+                                        (lambda (ids_0 rhss_0 body_0)
                                           (let ((c_0
                                                  (hash-ref
                                                   simples16_0
@@ -7058,11 +6967,7 @@
                                                                  c_0
                                                                  2)))))
                                                           r_1))
-                                                      r_0)))))))
-                                         (args
-                                          (raise-binding-result-arity-error
-                                           3
-                                           args))))
+                                                      r_0))))))))
                                        (if (if (if (eq? 'begin hd_0)
                                                  (let ((a_0
                                                         (cdr (unwrap e_0))))
@@ -7109,8 +7014,7 @@
                                                           (values
                                                            e0_1
                                                            es_0)))))))
-                                              (case-lambda
-                                               ((e0_0 es_0)
+                                              (lambda (e0_0 es_0)
                                                 (let ((c_0
                                                        (hash-ref
                                                         simples16_0
@@ -7253,11 +7157,7 @@
                                                                        c_0
                                                                        2)))))
                                                                 r_1))
-                                                            r_0)))))))
-                                               (args
-                                                (raise-binding-result-arity-error
-                                                 2
-                                                 args))))
+                                                            r_0))))))))
                                              (if (if (if (eq? 'set! hd_0)
                                                        (let ((a_0
                                                               (cdr
@@ -7375,20 +7275,15 @@
                                                                        (values
                                                                         thn_1
                                                                         els_0)))))))
-                                                           (case-lambda
-                                                            ((thn_0 els_0)
+                                                           (lambda (thn_0
+                                                                    els_0)
                                                              (let ((tst_1
                                                                     tst_0))
                                                                (values
                                                                 tst_1
                                                                 thn_0
-                                                                els_0)))
-                                                            (args
-                                                             (raise-binding-result-arity-error
-                                                              2
-                                                              args))))))))
-                                                  (case-lambda
-                                                   ((tst_0 thn_0 els_0)
+                                                                els_0))))))))
+                                                  (lambda (tst_0 thn_0 els_0)
                                                     (if (simple?_0 tst_0 1)
                                                       (if (simple?_0
                                                            thn_0
@@ -7397,11 +7292,7 @@
                                                          els_0
                                                          result-arity_0)
                                                         #f)
-                                                      #f))
-                                                   (args
-                                                    (raise-binding-result-arity-error
-                                                     3
-                                                     args))))
+                                                      #f)))
                                                  (if (if (eq? 'values hd_0)
                                                        (let ((a_0
                                                               (cdr
@@ -7603,8 +7494,7 @@
                                                                   (values
                                                                    proc_1
                                                                    es_0)))))))
-                                                      (case-lambda
-                                                       ((proc_0 es_0)
+                                                      (lambda (proc_0 es_0)
                                                         (let ((c_0
                                                                (hash-ref
                                                                 simples16_0
@@ -7777,11 +7667,7 @@
                                                                                c_0
                                                                                2)))))
                                                                         r_1))
-                                                                    r_0)))))))
-                                                       (args
-                                                        (raise-binding-result-arity-error
-                                                         2
-                                                         args))))
+                                                                    r_0))))))))
                                                      (if (let ((p_0
                                                                 (unwrap e_0)))
                                                            (if (pair? p_0)
@@ -7806,8 +7692,7 @@
                                                                   (values
                                                                    proc_1
                                                                    args_0))))))
-                                                        (case-lambda
-                                                         ((proc_0 args_0)
+                                                        (lambda (proc_0 args_0)
                                                           (let ((c_0
                                                                  (hash-ref
                                                                   simples16_0
@@ -7989,11 +7874,7 @@
                                                                                  c_0
                                                                                  2)))))
                                                                           r_1))
-                                                                      r_0)))))))
-                                                         (args
-                                                          (raise-binding-result-arity-error
-                                                           2
-                                                           args))))
+                                                                      r_0))))))))
                                                        (let ((e_1
                                                               (unwrap e_0)))
                                                          (if (returns_0 1)
@@ -8101,9 +7982,7 @@
     (call-with-values
      (lambda ()
        (find-known+import key_0 prim-knowns_0 knowns_0 imports_0 mutated_0))
-     (case-lambda
-      ((k_0 im_0) k_0)
-      (args (raise-binding-result-arity-error 2 args))))))
+     (lambda (k_0 im_0) k_0))))
 (define unwrap-let
   (lambda (v_0)
     (let ((hd_0
@@ -8269,18 +8148,14 @@
                                               a_2))))
                                      (let ((id_1 id_0))
                                        (values id_1 rhs_0))))))))
-                         (case-lambda
-                          ((id_0 rhs_0)
+                         (lambda (id_0 rhs_0)
                            (let ((body_0
                                   (let ((d_1 (cdr p_0)))
                                     (let ((a_0 (car (unwrap d_1)))) a_0))))
                              (let ((id_1 id_0) (rhs_1 rhs_0))
-                               (values id_1 rhs_1 body_0))))
-                          (args (raise-binding-result-arity-error 2 args)))))))
-                  (case-lambda
-                   ((id_0 rhs_0 body_0)
-                    (let-lambda?.1 simple?1_0 id_0 rhs_0 body_0))
-                   (args (raise-binding-result-arity-error 3 args))))
+                               (values id_1 rhs_1 body_0))))))))
+                  (lambda (id_0 rhs_0 body_0)
+                    (let-lambda?.1 simple?1_0 id_0 rhs_0 body_0)))
                  (if (if (eq? 'letrec-values hd_0)
                        (let ((a_0 (cdr (unwrap v_0))))
                          (let ((p_0 (unwrap a_0)))
@@ -8356,19 +8231,14 @@
                                                 a_2))))
                                        (let ((id_1 id_0))
                                          (values id_1 rhs_0))))))))
-                           (case-lambda
-                            ((id_0 rhs_0)
+                           (lambda (id_0 rhs_0)
                              (let ((body_0
                                     (let ((d_1 (cdr p_0)))
                                       (let ((a_0 (car (unwrap d_1)))) a_0))))
                                (let ((id_1 id_0) (rhs_1 rhs_0))
-                                 (values id_1 rhs_1 body_0))))
-                            (args
-                             (raise-binding-result-arity-error 2 args)))))))
-                    (case-lambda
-                     ((id_0 rhs_0 body_0)
-                      (let-lambda?.1 simple?1_0 id_0 rhs_0 body_0))
-                     (args (raise-binding-result-arity-error 3 args))))
+                                 (values id_1 rhs_1 body_0))))))))
+                    (lambda (id_0 rhs_0 body_0)
+                      (let-lambda?.1 simple?1_0 id_0 rhs_0 body_0)))
                    (if (if (eq? 'let hd_0)
                          (let ((a_0 (cdr (unwrap v_0))))
                            (let ((p_0 (unwrap a_0)))
@@ -8425,19 +8295,14 @@
                                                   a_2))))
                                          (let ((id_1 id_0))
                                            (values id_1 rhs_0))))))))
-                             (case-lambda
-                              ((id_0 rhs_0)
+                             (lambda (id_0 rhs_0)
                                (let ((body_0
                                       (let ((d_1 (cdr p_0)))
                                         (let ((a_0 (car (unwrap d_1)))) a_0))))
                                  (let ((id_1 id_0) (rhs_1 rhs_0))
-                                   (values id_1 rhs_1 body_0))))
-                              (args
-                               (raise-binding-result-arity-error 2 args)))))))
-                      (case-lambda
-                       ((id_0 rhs_0 body_0)
-                        (let-lambda?.1 simple?1_0 id_0 rhs_0 body_0))
-                       (args (raise-binding-result-arity-error 3 args))))
+                                   (values id_1 rhs_1 body_0))))))))
+                      (lambda (id_0 rhs_0 body_0)
+                        (let-lambda?.1 simple?1_0 id_0 rhs_0 body_0)))
                      (if (if (eq? 'letrec* hd_0)
                            (let ((a_0 (cdr (unwrap v_0))))
                              (let ((p_0 (unwrap a_0)))
@@ -8499,22 +8364,15 @@
                                                     a_2))))
                                            (let ((id_1 id_0))
                                              (values id_1 rhs_0))))))))
-                               (case-lambda
-                                ((id_0 rhs_0)
+                               (lambda (id_0 rhs_0)
                                  (let ((body_0
                                         (let ((d_1 (cdr p_0)))
                                           (let ((a_0 (car (unwrap d_1))))
                                             a_0))))
                                    (let ((id_1 id_0) (rhs_1 rhs_0))
-                                     (values id_1 rhs_1 body_0))))
-                                (args
-                                 (raise-binding-result-arity-error
-                                  2
-                                  args)))))))
-                        (case-lambda
-                         ((id_0 rhs_0 body_0)
-                          (let-lambda?.1 simple?1_0 id_0 rhs_0 body_0))
-                         (args (raise-binding-result-arity-error 3 args))))
+                                     (values id_1 rhs_1 body_0))))))))
+                        (lambda (id_0 rhs_0 body_0)
+                          (let-lambda?.1 simple?1_0 id_0 rhs_0 body_0)))
                        (if (if (eq? 'let-values hd_0)
                              (let ((a_0 (cdr (unwrap v_0))))
                                (let ((p_0 (unwrap a_0)))
@@ -8675,17 +8533,14 @@
                                          (let ((a_2 (car (unwrap d_1))))
                                            a_2))))
                                   (let ((id_1 id_0)) (values id_1 rhs_0))))))))
-                      (case-lambda
-                       ((id_0 rhs_0)
+                      (lambda (id_0 rhs_0)
                         (let ((body_0
                                (let ((d_1 (cdr p_0)))
                                  (let ((a_0 (car (unwrap d_1)))) a_0))))
                           (let ((id_1 id_0) (rhs_1 rhs_0))
-                            (values id_1 rhs_1 body_0))))
-                       (args (raise-binding-result-arity-error 2 args)))))))
-               (case-lambda
-                ((id_0 rhs_0 body_0) (extract-let-lambda #f id_0 rhs_0 body_0))
-                (args (raise-binding-result-arity-error 3 args))))
+                            (values id_1 rhs_1 body_0))))))))
+               (lambda (id_0 rhs_0 body_0)
+                 (extract-let-lambda #f id_0 rhs_0 body_0)))
               (if (if (eq? 'letrec-values hd_0)
                     (let ((a_0 (cdr (unwrap new-v_0))))
                       (let ((p_0 (unwrap a_0)))
@@ -8757,18 +8612,14 @@
                                              a_2))))
                                     (let ((id_1 id_0))
                                       (values id_1 rhs_0))))))))
-                        (case-lambda
-                         ((id_0 rhs_0)
+                        (lambda (id_0 rhs_0)
                           (let ((body_0
                                  (let ((d_1 (cdr p_0)))
                                    (let ((a_0 (car (unwrap d_1)))) a_0))))
                             (let ((id_1 id_0) (rhs_1 rhs_0))
-                              (values id_1 rhs_1 body_0))))
-                         (args (raise-binding-result-arity-error 2 args)))))))
-                 (case-lambda
-                  ((id_0 rhs_0 body_0)
-                   (extract-let-lambda #t id_0 rhs_0 body_0))
-                  (args (raise-binding-result-arity-error 3 args))))
+                              (values id_1 rhs_1 body_0))))))))
+                 (lambda (id_0 rhs_0 body_0)
+                   (extract-let-lambda #t id_0 rhs_0 body_0)))
                 (if (if (eq? 'let hd_0)
                       (let ((a_0 (cdr (unwrap new-v_0))))
                         (let ((p_0 (unwrap a_0)))
@@ -8824,19 +8675,14 @@
                                                a_2))))
                                       (let ((id_1 id_0))
                                         (values id_1 rhs_0))))))))
-                          (case-lambda
-                           ((id_0 rhs_0)
+                          (lambda (id_0 rhs_0)
                             (let ((body_0
                                    (let ((d_1 (cdr p_0)))
                                      (let ((a_0 (car (unwrap d_1)))) a_0))))
                               (let ((id_1 id_0) (rhs_1 rhs_0))
-                                (values id_1 rhs_1 body_0))))
-                           (args
-                            (raise-binding-result-arity-error 2 args)))))))
-                   (case-lambda
-                    ((id_0 rhs_0 body_0)
-                     (extract-let-lambda #f id_0 rhs_0 body_0))
-                    (args (raise-binding-result-arity-error 3 args))))
+                                (values id_1 rhs_1 body_0))))))))
+                   (lambda (id_0 rhs_0 body_0)
+                     (extract-let-lambda #f id_0 rhs_0 body_0)))
                   (if (if (eq? 'letrec* hd_0)
                         (let ((a_0 (cdr (unwrap new-v_0))))
                           (let ((p_0 (unwrap a_0)))
@@ -8893,19 +8739,14 @@
                                                  a_2))))
                                         (let ((id_1 id_0))
                                           (values id_1 rhs_0))))))))
-                            (case-lambda
-                             ((id_0 rhs_0)
+                            (lambda (id_0 rhs_0)
                               (let ((body_0
                                      (let ((d_1 (cdr p_0)))
                                        (let ((a_0 (car (unwrap d_1)))) a_0))))
                                 (let ((id_1 id_0) (rhs_1 rhs_0))
-                                  (values id_1 rhs_1 body_0))))
-                             (args
-                              (raise-binding-result-arity-error 2 args)))))))
-                     (case-lambda
-                      ((id_0 rhs_0 body_0)
-                       (extract-let-lambda #t id_0 rhs_0 body_0))
-                      (args (raise-binding-result-arity-error 3 args))))
+                                  (values id_1 rhs_1 body_0))))))))
+                     (lambda (id_0 rhs_0 body_0)
+                       (extract-let-lambda #t id_0 rhs_0 body_0)))
                     (if (if (eq? 'let-values hd_0)
                           (let ((a_0 (cdr (unwrap new-v_0))))
                             (let ((p_0 (unwrap a_0)))
@@ -9024,9 +8865,7 @@
   (lambda (v_0)
     (call-with-values
      (lambda () (extract-lambda v_0))
-     (case-lambda
-      ((lam_0 inlinable?_0) (values lam_0 #f))
-      (args (raise-binding-result-arity-error 2 args))))))
+     (lambda (lam_0 inlinable?_0) (values lam_0 #f)))))
 (define lambda-arity-mask
   (lambda (v_0)
     (let ((hd_0
@@ -9447,19 +9286,13 @@
                                                   d_5)))))
                                        (let ((fields_1 fields_0))
                                          (values fields_1 rest_0)))))))
-                             (case-lambda
-                              ((fields_0 rest_0)
+                             (lambda (fields_0 rest_0)
                                (let ((parent_1 parent_0))
-                                 (values parent_1 fields_0 rest_0)))
-                              (args
-                               (raise-binding-result-arity-error 2 args))))))))
-                    (case-lambda
-                     ((parent_0 fields_0 rest_0)
+                                 (values parent_1 fields_0 rest_0))))))))
+                    (lambda (parent_0 fields_0 rest_0)
                       (let ((name_1 name_0))
-                        (values name_1 parent_0 fields_0 rest_0)))
-                     (args (raise-binding-result-arity-error 3 args))))))))
-           (case-lambda
-            ((name_0 parent_0 fields_0 rest_0)
+                        (values name_1 parent_0 fields_0 rest_0))))))))
+           (lambda (name_0 parent_0 fields_0 rest_0)
              (let ((u-name_0 (unwrap name_0)))
                (let ((u-parent_0
                       (let ((u-parent_0 (unwrap parent_0)))
@@ -9481,12 +9314,7 @@
                                    knowns_0
                                    imports_0
                                    mutated_0))
-                                (case-lambda
-                                 ((k_0 im_0) k_0)
-                                 (args
-                                  (raise-binding-result-arity-error
-                                   2
-                                   args))))))))
+                                (lambda (k_0 im_0) k_0))))))
                        (if (exact-nonnegative-integer? fields_0)
                          (if (<= (length rest_0) 6)
                            (let ((prefab-imms_0
@@ -9867,12 +9695,7 @@
                                            knowns_0
                                            imports_0
                                            mutated_0))
-                                        (case-lambda
-                                         ((k_0 im_0) k_0)
-                                         (args
-                                          (raise-binding-result-arity-error
-                                           2
-                                           args)))))
+                                        (lambda (k_0 im_0) k_0)))
                                       #f)))
                                (let ((prefab-imms_1 prefab-imms_0))
                                  (let ((includes-property?_0
@@ -10063,41 +9886,26 @@
                                                                                                 (values
                                                                                                  props_2
                                                                                                  vals_1)))))))
-                                                                                    (case-lambda
-                                                                                     ((props3_0
-                                                                                       vals4_0)
+                                                                                    (lambda (props3_0
+                                                                                             vals4_0)
                                                                                       (values
                                                                                        (cons
                                                                                         props3_0
                                                                                         props_0)
                                                                                        (cons
                                                                                         vals4_0
-                                                                                        vals_0)))
-                                                                                     (args
-                                                                                      (raise-binding-result-arity-error
-                                                                                       2
-                                                                                       args)))))
-                                                                                 (case-lambda
-                                                                                  ((props_1
-                                                                                    vals_1)
+                                                                                        vals_0)))))
+                                                                                 (lambda (props_1
+                                                                                          vals_1)
                                                                                    (values
                                                                                     props_1
-                                                                                    vals_1))
-                                                                                  (args
-                                                                                   (raise-binding-result-arity-error
-                                                                                    2
-                                                                                    args)))))
-                                                                              (case-lambda
-                                                                               ((props_1
-                                                                                 vals_1)
+                                                                                    vals_1))))
+                                                                              (lambda (props_1
+                                                                                       vals_1)
                                                                                 (for-loop_0
                                                                                  props_1
                                                                                  vals_1
-                                                                                 rest_1))
-                                                                               (args
-                                                                                (raise-binding-result-arity-error
-                                                                                 2
-                                                                                 args)))))))
+                                                                                 rest_1))))))
                                                                        (values
                                                                         props_0
                                                                         vals_0)))))))
@@ -10105,21 +9913,16 @@
                                                                null
                                                                null
                                                                d_0)))
-                                                           (case-lambda
-                                                            ((props_0 vals_0)
+                                                           (lambda (props_0
+                                                                    vals_0)
                                                              (let ((app_0
                                                                     (reverse$1
                                                                      props_0)))
                                                                (values
                                                                 app_0
                                                                 (reverse$1
-                                                                 vals_0))))
-                                                            (args
-                                                             (raise-binding-result-arity-error
-                                                              2
-                                                              args))))))
-                                                      (case-lambda
-                                                       ((props_0 vals_0)
+                                                                 vals_0)))))))
+                                                      (lambda (props_0 vals_0)
                                                         (begin
                                                           (letrec*
                                                            ((for-loop_0
@@ -10158,11 +9961,7 @@
                                                                     result_0))))))
                                                            (for-loop_0
                                                             #f
-                                                            props_0))))
-                                                       (args
-                                                        (raise-binding-result-arity-error
-                                                         2
-                                                         args))))
+                                                            props_0)))))
                                                      #f)))
                                                #f))))))
                                    (letrec*
@@ -10191,12 +9990,9 @@
                                                                  knowns_0
                                                                  imports_0
                                                                  mutated_0))
-                                                              (case-lambda
-                                                               ((k_0 im_0) k_0)
-                                                               (args
-                                                                (raise-binding-result-arity-error
-                                                                 2
-                                                                 args)))))))
+                                                              (lambda (k_0
+                                                                       im_0)
+                                                                k_0)))))
                                                        (if (not k_0)
                                                          #f
                                                          (if (known-literal?
@@ -10435,16 +10231,11 @@
                                                                         (values
                                                                          proc-spec_1
                                                                          immutables_0))))))))
-                                                          (case-lambda
-                                                           ((proc-spec_0
-                                                             immutables_0)
+                                                          (lambda (proc-spec_0
+                                                                   immutables_0)
                                                             (handle-proc-spec_0
                                                              proc-spec_0
-                                                             immutables_0))
-                                                           (args
-                                                            (raise-binding-result-arity-error
-                                                             2
-                                                             args))))
+                                                             immutables_0)))
                                                          #f)))))
                                                #f)))
                                         (if (if (eq? prefab-imms_1 'non-prefab)
@@ -10506,8 +10297,7 @@
                            #f)
                          #f)
                        #f)
-                     #f)))))
-            (args (raise-binding-result-arity-error 4 args))))
+                     #f))))))
           #f)))))
 (define pure-properties-list
   (lambda (e_0 prim-knowns_0 knowns_0 imports_0 mutated_0 simples_0)
@@ -10622,37 +10412,20 @@
                                                    (values
                                                     props_2
                                                     vals_1)))))))
-                                       (case-lambda
-                                        ((props6_0 vals7_0)
+                                       (lambda (props6_0 vals7_0)
                                          (values
                                           (cons props6_0 props_0)
-                                          (cons vals7_0 vals_0)))
-                                        (args
-                                         (raise-binding-result-arity-error
-                                          2
-                                          args)))))
-                                    (case-lambda
-                                     ((props_1 vals_1) (values props_1 vals_1))
-                                     (args
-                                      (raise-binding-result-arity-error
-                                       2
-                                       args)))))
-                                 (case-lambda
-                                  ((props_1 vals_1)
-                                   (for-loop_0 props_1 vals_1 rest_0))
-                                  (args
-                                   (raise-binding-result-arity-error
-                                    2
-                                    args)))))))
+                                          (cons vals7_0 vals_0)))))
+                                    (lambda (props_1 vals_1)
+                                      (values props_1 vals_1))))
+                                 (lambda (props_1 vals_1)
+                                   (for-loop_0 props_1 vals_1 rest_0))))))
                           (values props_0 vals_0)))))))
                  (for-loop_0 null null d_0)))
-              (case-lambda
-               ((props_0 vals_0)
+              (lambda (props_0 vals_0)
                 (let ((app_0 (reverse$1 props_0)))
-                  (values app_0 (reverse$1 vals_0))))
-               (args (raise-binding-result-arity-error 2 args))))))
-         (case-lambda
-          ((props_0 vals_0)
+                  (values app_0 (reverse$1 vals_0)))))))
+         (lambda (props_0 vals_0)
            (if (begin
                  (letrec*
                   ((for-loop_0
@@ -10680,12 +10453,8 @@
                                                                knowns_0
                                                                imports_0
                                                                mutated_0))
-                                                            (case-lambda
-                                                             ((k_0 im_0) k_0)
-                                                             (args
-                                                              (raise-binding-result-arity-error
-                                                               2
-                                                               args))))))
+                                                            (lambda (k_0 im_0)
+                                                              k_0))))
                                                        (simple?.1
                                                         #f
                                                         #t
@@ -10716,8 +10485,7 @@
                            result_0))))))
                   (for-loop_0 #t props_0 vals_0)))
              vals_0
-             #f))
-          (args (raise-binding-result-arity-error 2 args))))
+             #f)))
         (if (begin-unsafe
              (let ((app_0 (unwrap 'null))) (eq? app_0 (unwrap e_0))))
           null
@@ -10869,8 +10637,7 @@
                                  (let ((d_1 (cdr p_1)))
                                    (let ((a_2 (car (unwrap d_1)))) a_2))))
                             (let ((tmp1_1 tmp1_0)) (values tmp1_1 id_0))))))))
-                (case-lambda
-                 ((tmp1_0 id_0)
+                (lambda (tmp1_0 id_0)
                   (call-with-values
                    (lambda ()
                      (let ((d_1 (cdr p_0)))
@@ -10887,21 +10654,16 @@
                                         (let ((a_1 (car (unwrap d_3)))) a_1))))
                                  (let ((tmp2_1 tmp2_0))
                                    (values tmp2_1 tmp3_0)))))))))
-                   (case-lambda
-                    ((tmp2_0 tmp3_0)
+                   (lambda (tmp2_0 tmp3_0)
                      (let ((tmp1_1 tmp1_0) (id_1 id_0))
-                       (values tmp1_1 id_1 tmp2_0 tmp3_0)))
-                    (args (raise-binding-result-arity-error 2 args)))))
-                 (args (raise-binding-result-arity-error 2 args)))))))
-         (case-lambda
-          ((tmp1_0 id_0 tmp2_0 tmp3_0)
+                       (values tmp1_1 id_1 tmp2_0 tmp3_0)))))))))
+         (lambda (tmp1_0 id_0 tmp2_0 tmp3_0)
            (let ((u-tmp1_0 (unwrap tmp1_0)))
              (if (eq? u-tmp1_0 (unwrap tmp2_0))
                (if (eq? u-tmp1_0 (unwrap tmp3_0))
                  (let ((u_0 (unwrap id_0))) (if (symbol? u_0) u_0 #f))
                  #f)
-               #f)))
-          (args (raise-binding-result-arity-error 4 args))))
+               #f))))
         #f))))
 (define literal?
   (lambda (v_0)
@@ -11030,8 +10792,7 @@
                                (lambda ()
                                  (begin
                                    (values q_1 (unsafe-vector-length q_1))))
-                               (case-lambda
-                                ((vec_0 len_0)
+                               (lambda (vec_0 len_0)
                                  (letrec*
                                   ((for-loop_0
                                     (|#%name|
@@ -11048,9 +10809,7 @@
                                                (for-loop_0
                                                 (unsafe-fx+ 1 pos_0))))
                                            (values)))))))
-                                  (for-loop_0 0)))
-                                (args
-                                 (raise-binding-result-arity-error 2 args))))
+                                  (for-loop_0 0))))
                               (void))))
                         (if (hash? q_1)
                           (begin
@@ -11076,8 +10835,7 @@
                                                  (hash-iterate-key+value
                                                   q_1
                                                   i_0))
-                                               (case-lambda
-                                                ((k_0 v_0)
+                                               (lambda (k_0 v_0)
                                                  (begin
                                                    (begin
                                                      (check-register_0
@@ -11089,11 +10847,7 @@
                                                    (for-loop_0
                                                     (hash-iterate-next
                                                      q_1
-                                                     i_0))))
-                                                (args
-                                                 (raise-binding-result-arity-error
-                                                  2
-                                                  args))))
+                                                     i_0)))))
                                               (values)))))))
                                      (for-loop_0 (hash-iterate-first q_1))))
                                   (void)))))
@@ -11123,13 +10877,8 @@
                                        seen_1)))
                                   (call-with-values
                                    (lambda () (struct-info q_1))
-                                   (case-lambda
-                                    ((st_0 skipped?_0)
-                                     (check-register_0 st_0 seen_0))
-                                    (args
-                                     (raise-binding-result-arity-error
-                                      2
-                                      args)))))
+                                   (lambda (st_0 skipped?_0)
+                                     (check-register_0 st_0 seen_0))))
                                 (register!_0 q_1))))))))))))))))
      (check-register_0 q_0 hash2610))))
 (define try-fold-primitive
@@ -11265,9 +11014,7 @@
                      knowns_0
                      imports_0
                      mutated_0))
-                  (case-lambda
-                   ((k_0 im_0) k_0)
-                   (args (raise-binding-result-arity-error 2 args)))))
+                  (lambda (k_0 im_0) k_0)))
                 (if (if (pair? u_0)
                       (if (eq? 'assert-ctype-representation (unwrap (car u_0)))
                         (pair? (unwrap (cdr u_0)))
@@ -11444,13 +11191,10 @@
                                    (let ((d_2 (cdr p_1)))
                                      (let ((a_0 (car (unwrap d_2)))) a_0))))
                               (let ((e1_1 e1_0)) (values e1_1 e2_0)))))))
-                    (case-lambda
-                     ((e1_0 e2_0) (let ((t_1 t_0)) (values t_1 e1_0 e2_0)))
-                     (args (raise-binding-result-arity-error 2 args))))))))
-           (case-lambda
-            ((t_0 e1_0 e2_0)
-             (if (literal? t_0) (if (unwrap t_0) e1_0 e2_0) v_0))
-            (args (raise-binding-result-arity-error 3 args))))
+                    (lambda (e1_0 e2_0)
+                      (let ((t_1 t_0)) (values t_1 e1_0 e2_0))))))))
+           (lambda (t_0 e1_0 e2_0)
+             (if (literal? t_0) (if (unwrap t_0) e1_0 e2_0) v_0)))
           (if (if (eq? 'begin hd_0)
                 (let ((a_0 (cdr (unwrap v_1))))
                   (let ((p_0 (unwrap a_0)))
@@ -11485,8 +11229,7 @@
                      (let ((e_0 (let ((a_0 (car p_0))) a_0)))
                        (let ((es_0 (let ((d_2 (cdr p_0))) d_2)))
                          (let ((e_1 e_0)) (values e_1 es_0))))))))
-             (case-lambda
-              ((e_0 es_0)
+             (lambda (e_0 es_0)
                (optimize
                 (reannotate v_0 (list* 'begin e_0 es_0))
                 prim-knowns_0
@@ -11495,8 +11238,7 @@
                 imports_0
                 mutated_0
                 target_0
-                compiler-query_0))
-              (args (raise-binding-result-arity-error 2 args))))
+                compiler-query_0)))
             (if (if (eq? 'not hd_0)
                   (let ((a_0 (cdr (unwrap v_1))))
                     (let ((p_0 (unwrap a_0)))
@@ -11527,10 +11269,8 @@
                   (if (lambda?.1 #f e_0)
                     (call-with-values
                      (lambda () (extract-lambda e_0))
-                     (case-lambda
-                      ((lam_0 inlinable?_0)
-                       (if inlinable?_0 #t (list* 'begin e_0 '(#t))))
-                      (args (raise-binding-result-arity-error 2 args))))
+                     (lambda (lam_0 inlinable?_0)
+                       (if inlinable?_0 #t (list* 'begin e_0 '(#t)))))
                     (let ((u_0 (unwrap e_0)))
                       (if (symbol? u_0)
                         (let ((k_0
@@ -11543,12 +11283,7 @@
                                     knowns_0
                                     imports_0
                                     mutated_0))
-                                 (case-lambda
-                                  ((k_0 im_0) k_0)
-                                  (args
-                                   (raise-binding-result-arity-error
-                                    2
-                                    args)))))))
+                                 (lambda (k_0 im_0) k_0)))))
                           (if (known-procedure? k_0) #t v_0))
                         v_0))))
                 (if (if (eq? 'procedure-arity-includes? hd_0)
@@ -11572,13 +11307,9 @@
                                   (let ((n_0 (let ((a_0 (car p_1))) a_0)))
                                     (let ((opt_0 (let ((d_2 (cdr p_1))) d_2)))
                                       (let ((n_1 n_0)) (values n_1 opt_0)))))))
-                            (case-lambda
-                             ((n_0 opt_0)
-                              (let ((e_1 e_0)) (values e_1 n_0 opt_0)))
-                             (args
-                              (raise-binding-result-arity-error 2 args))))))))
-                   (case-lambda
-                    ((e_0 n_0 opt_0)
+                            (lambda (n_0 opt_0)
+                              (let ((e_1 e_0)) (values e_1 n_0 opt_0))))))))
+                   (lambda (e_0 n_0 opt_0)
                      (let ((u-n_0 (unwrap n_0)))
                        (if (if (exact-nonnegative-integer? n_0)
                              (let ((or-part_0 (null? opt_0)))
@@ -11591,16 +11322,14 @@
                          (if (lambda?.1 #f e_0)
                            (call-with-values
                             (lambda () (extract-lambda e_0))
-                            (case-lambda
-                             ((lam_0 inlinable?_0)
+                            (lambda (lam_0 inlinable?_0)
                               (let ((inc?_0
                                      (bitwise-bit-set?
                                       (lambda-arity-mask lam_0)
                                       n_0)))
                                 (if inlinable?_0
                                   inc?_0
-                                  (list 'begin e_0 inc?_0))))
-                             (args (raise-binding-result-arity-error 2 args))))
+                                  (list 'begin e_0 inc?_0)))))
                            (let ((u_0 (unwrap e_0)))
                              (if (symbol? u_0)
                                (let ((k_0
@@ -11613,20 +11342,14 @@
                                            knowns_0
                                            imports_0
                                            mutated_0))
-                                        (case-lambda
-                                         ((k_0 im_0) k_0)
-                                         (args
-                                          (raise-binding-result-arity-error
-                                           2
-                                           args)))))))
+                                        (lambda (k_0 im_0) k_0)))))
                                  (if (known-procedure? k_0)
                                    (bitwise-bit-set?
                                     (known-procedure-arity-mask k_0)
                                     u-n_0)
                                    v_0))
                                v_0)))
-                         v_0)))
-                    (args (raise-binding-result-arity-error 3 args))))
+                         v_0))))
                   (if (if (eq? 'procedure-specialize hd_0)
                         (let ((a_0 (cdr (unwrap v_1))))
                           (let ((p_0 (unwrap a_0)))
@@ -11731,39 +11454,28 @@
                                                                                 (values
                                                                                  result-type_1
                                                                                  arg-types_0)))))))
-                                                                    (case-lambda
-                                                                     ((result-type_0
-                                                                       arg-types_0)
+                                                                    (lambda (result-type_0
+                                                                             arg-types_0)
                                                                       (let ((async-apply_1
                                                                              async-apply_0))
                                                                         (values
                                                                          async-apply_1
                                                                          result-type_0
-                                                                         arg-types_0)))
-                                                                     (args
-                                                                      (raise-binding-result-arity-error
-                                                                       2
-                                                                       args))))))))
-                                                           (case-lambda
-                                                            ((async-apply_0
-                                                              result-type_0
-                                                              arg-types_0)
+                                                                         arg-types_0))))))))
+                                                           (lambda (async-apply_0
+                                                                    result-type_0
+                                                                    arg-types_0)
                                                              (let ((blocking?_1
                                                                     blocking?_0))
                                                                (values
                                                                 blocking?_1
                                                                 async-apply_0
                                                                 result-type_0
-                                                                arg-types_0)))
-                                                            (args
-                                                             (raise-binding-result-arity-error
-                                                              3
-                                                              args))))))))
-                                                  (case-lambda
-                                                   ((blocking?_0
-                                                     async-apply_0
-                                                     result-type_0
-                                                     arg-types_0)
+                                                                arg-types_0))))))))
+                                                  (lambda (blocking?_0
+                                                           async-apply_0
+                                                           result-type_0
+                                                           arg-types_0)
                                                     (let ((varargs-after_1
                                                            varargs-after_0))
                                                       (values
@@ -11771,17 +11483,12 @@
                                                        blocking?_0
                                                        async-apply_0
                                                        result-type_0
-                                                       arg-types_0)))
-                                                   (args
-                                                    (raise-binding-result-arity-error
-                                                     4
-                                                     args))))))))
-                                         (case-lambda
-                                          ((varargs-after_0
-                                            blocking?_0
-                                            async-apply_0
-                                            result-type_0
-                                            arg-types_0)
+                                                       arg-types_0))))))))
+                                         (lambda (varargs-after_0
+                                                  blocking?_0
+                                                  async-apply_0
+                                                  result-type_0
+                                                  arg-types_0)
                                            (let ((abi_1 abi_0))
                                              (values
                                               abi_1
@@ -11789,18 +11496,13 @@
                                               blocking?_0
                                               async-apply_0
                                               result-type_0
-                                              arg-types_0)))
-                                          (args
-                                           (raise-binding-result-arity-error
-                                            5
-                                            args))))))))
-                                (case-lambda
-                                 ((abi_0
-                                   varargs-after_0
-                                   blocking?_0
-                                   async-apply_0
-                                   result-type_0
-                                   arg-types_0)
+                                              arg-types_0))))))))
+                                (lambda (abi_0
+                                         varargs-after_0
+                                         blocking?_0
+                                         async-apply_0
+                                         result-type_0
+                                         arg-types_0)
                                   (let ((must-at_1 must-at_0))
                                     (values
                                      must-at_1
@@ -11809,19 +11511,14 @@
                                      blocking?_0
                                      async-apply_0
                                      result-type_0
-                                     arg-types_0)))
-                                 (args
-                                  (raise-binding-result-arity-error
-                                   6
-                                   args))))))))
-                       (case-lambda
-                        ((must-at_0
-                          abi_0
-                          varargs-after_0
-                          blocking?_0
-                          async-apply_0
-                          result-type_0
-                          arg-types_0)
+                                     arg-types_0))))))))
+                       (lambda (must-at_0
+                                abi_0
+                                varargs-after_0
+                                blocking?_0
+                                async-apply_0
+                                result-type_0
+                                arg-types_0)
                          (let ((or-part_0
                                 (if (eq? target_0 'compile)
                                   (let ((or-part_0
@@ -11876,8 +11573,7 @@
                                              must-at_0)))
                                         #f)))
                                   #f)))
-                           (if or-part_0 or-part_0 v_0)))
-                        (args (raise-binding-result-arity-error 7 args))))
+                           (if or-part_0 or-part_0 v_0))))
                       (if (if (eq? 'system-type hd_0) #t #f)
                         (let ((hd_1
                                (let ((p_0 (unwrap v_0)))
@@ -12127,8 +11823,7 @@
                                    (let ((rands_0 (let ((d_0 (cdr p_0))) d_0)))
                                      (let ((rator_1 rator_0))
                                        (values rator_1 rands_0))))))
-                             (case-lambda
-                              ((rator_0 rands_0)
+                             (lambda (rator_0 rands_0)
                                (let ((u-rator_0 (unwrap rator_0)))
                                  (let ((k_0
                                         (if (symbol? u-rator_0)
@@ -12197,9 +11892,7 @@
                                                 #f)
                                               #f)
                                             #f)))
-                                     (if c1_0 (car c1_0) v_0)))))
-                              (args
-                               (raise-binding-result-arity-error 2 args))))
+                                     (if c1_0 (car c1_0) v_0))))))
                             (let ((u_0 (unwrap v_0)))
                               (if (symbol? u_0)
                                 (let ((k_0
@@ -12253,10 +11946,8 @@
                                           (unwrap-list d_1))))
                                    (let ((formal_1 formal_0))
                                      (values formal_1 body_0)))))))
-                         (case-lambda
-                          ((formal_0 body_0)
-                           (list* 'lambda formal_0 (optimize*-body_0 body_0)))
-                          (args (raise-binding-result-arity-error 2 args))))
+                         (lambda (formal_0 body_0)
+                           (list* 'lambda formal_0 (optimize*-body_0 body_0))))
                         (if (if (eq? 'case-lambda hd_0)
                               (let ((a_0 (cdr (unwrap v_1))))
                                 (if (wrap-list? a_0)
@@ -12361,51 +12052,31 @@
                                                                    (values
                                                                     formalss_2
                                                                     bodys_1))))))
-                                                         (case-lambda
-                                                          ((formalss4_0
-                                                            bodys5_0)
+                                                         (lambda (formalss4_0
+                                                                  bodys5_0)
                                                            (values
                                                             (cons
                                                              formalss4_0
                                                              formalss_0)
                                                             (cons
                                                              bodys5_0
-                                                             bodys_0)))
-                                                          (args
-                                                           (raise-binding-result-arity-error
-                                                            2
-                                                            args)))))
-                                                      (case-lambda
-                                                       ((formalss_1 bodys_1)
+                                                             bodys_0)))))
+                                                      (lambda (formalss_1
+                                                               bodys_1)
                                                         (values
                                                          formalss_1
-                                                         bodys_1))
-                                                       (args
-                                                        (raise-binding-result-arity-error
-                                                         2
-                                                         args)))))
-                                                   (case-lambda
-                                                    ((formalss_1 bodys_1)
+                                                         bodys_1))))
+                                                   (lambda (formalss_1 bodys_1)
                                                      (for-loop_0
                                                       formalss_1
                                                       bodys_1
-                                                      rest_0))
-                                                    (args
-                                                     (raise-binding-result-arity-error
-                                                      2
-                                                      args)))))))
+                                                      rest_0))))))
                                             (values formalss_0 bodys_0)))))))
                                    (for-loop_0 null null d_0)))
-                                (case-lambda
-                                 ((formalss_0 bodys_0)
+                                (lambda (formalss_0 bodys_0)
                                   (let ((app_0 (reverse$1 formalss_0)))
-                                    (values app_0 (reverse$1 bodys_0))))
-                                 (args
-                                  (raise-binding-result-arity-error
-                                   2
-                                   args))))))
-                           (case-lambda
-                            ((formalss_0 bodys_0)
+                                    (values app_0 (reverse$1 bodys_0)))))))
+                           (lambda (formalss_0 bodys_0)
                              (list*
                               'case-lambda
                               (reverse$1
@@ -12441,8 +12112,7 @@
                                                       rest_0
                                                       rest_1))))))
                                            fold-var_0))))))
-                                  (for-loop_0 null formalss_0 bodys_0))))))
-                            (args (raise-binding-result-arity-error 2 args))))
+                                  (for-loop_0 null formalss_0 bodys_0)))))))
                           (if (if (eq? 'let-values hd_0) #t #f)
                             (optimize*-let_0 v_1)
                             (if (if (eq? 'letrec-values hd_0) #t #f)
@@ -12492,25 +12162,17 @@
                                                       (values
                                                        thn_1
                                                        els_0)))))))
-                                          (case-lambda
-                                           ((thn_0 els_0)
+                                          (lambda (thn_0 els_0)
                                             (let ((tst_1 tst_0))
-                                              (values tst_1 thn_0 els_0)))
-                                           (args
-                                            (raise-binding-result-arity-error
-                                             2
-                                             args))))))))
-                                 (case-lambda
-                                  ((tst_0 thn_0 els_0)
+                                              (values tst_1 thn_0 els_0))))))))
+                                 (lambda (tst_0 thn_0 els_0)
                                    (let ((app_0 (optimize*_0 tst_0)))
                                      (let ((app_1 (optimize*_0 thn_0)))
                                        (list
                                         'if
                                         app_0
                                         app_1
-                                        (optimize*_0 els_0)))))
-                                  (args
-                                   (raise-binding-result-arity-error 3 args))))
+                                        (optimize*_0 els_0))))))
                                 (if (if (eq? 'with-continuation-mark hd_0)
                                       (let ((a_0 (cdr (unwrap v_1))))
                                         (let ((p_0 (unwrap a_0)))
@@ -12558,27 +12220,20 @@
                                                         (values
                                                          val_1
                                                          body_0)))))))
-                                            (case-lambda
-                                             ((val_0 body_0)
+                                            (lambda (val_0 body_0)
                                               (let ((key_1 key_0))
-                                                (values key_1 val_0 body_0)))
-                                             (args
-                                              (raise-binding-result-arity-error
-                                               2
-                                               args))))))))
-                                   (case-lambda
-                                    ((key_0 val_0 body_0)
+                                                (values
+                                                 key_1
+                                                 val_0
+                                                 body_0))))))))
+                                   (lambda (key_0 val_0 body_0)
                                      (let ((app_0 (optimize*_0 key_0)))
                                        (let ((app_1 (optimize*_0 val_0)))
                                          (list
                                           'with-continuation-mark
                                           app_0
                                           app_1
-                                          (optimize*_0 body_0)))))
-                                    (args
-                                     (raise-binding-result-arity-error
-                                      3
-                                      args))))
+                                          (optimize*_0 body_0))))))
                                   (if (if (eq? 'begin hd_0)
                                         (let ((a_0 (cdr (unwrap v_1))))
                                           (wrap-list? a_0))
@@ -12617,17 +12272,12 @@
                                                           (unwrap-list d_1))))
                                                    (let ((e_1 e_0))
                                                      (values e_1 body_0)))))))
-                                         (case-lambda
-                                          ((e_0 body_0)
+                                         (lambda (e_0 body_0)
                                            (let ((app_0 (optimize*_0 e_0)))
                                              (list*
                                               'begin0
                                               app_0
-                                              (optimize*-body_0 body_0))))
-                                          (args
-                                           (raise-binding-result-arity-error
-                                            2
-                                            args))))
+                                              (optimize*-body_0 body_0)))))
                                         (if (if (eq? 'set! hd_0)
                                               (let ((a_0 (cdr (unwrap v_1))))
                                                 (let ((p_0 (unwrap a_0)))
@@ -12667,16 +12317,11 @@
                                                        (values
                                                         id_1
                                                         rhs_0)))))))
-                                           (case-lambda
-                                            ((id_0 rhs_0)
+                                           (lambda (id_0 rhs_0)
                                              (list
                                               'set!
                                               id_0
-                                              (optimize*_0 rhs_0)))
-                                            (args
-                                             (raise-binding-result-arity-error
-                                              2
-                                              args))))
+                                              (optimize*_0 rhs_0))))
                                           (if (if (eq?
                                                    'variable-reference-from-unsafe?
                                                    hd_0)
@@ -12813,19 +12458,14 @@
                                                                (values
                                                                 rator_1
                                                                 exps_0))))))
-                                                     (case-lambda
-                                                      ((rator_0 exps_0)
+                                                     (lambda (rator_0 exps_0)
                                                        (let ((app_0
                                                               (optimize*_0
                                                                rator_0)))
                                                          (list*
                                                           app_0
                                                           (optimize*-body_0
-                                                           exps_0))))
-                                                      (args
-                                                       (raise-binding-result-arity-error
-                                                        2
-                                                        args))))
+                                                           exps_0)))))
                                                     v_1)))))))))))))))))))
               (optimize
                new-v_0
@@ -13010,64 +12650,39 @@
                                                                      (values
                                                                       idss_2
                                                                       rhss_1))))))
-                                                           (case-lambda
-                                                            ((idss6_0 rhss7_0)
+                                                           (lambda (idss6_0
+                                                                    rhss7_0)
                                                              (values
                                                               (cons
                                                                idss6_0
                                                                idss_0)
                                                               (cons
                                                                rhss7_0
-                                                               rhss_0)))
-                                                            (args
-                                                             (raise-binding-result-arity-error
-                                                              2
-                                                              args)))))
-                                                        (case-lambda
-                                                         ((idss_1 rhss_1)
+                                                               rhss_0)))))
+                                                        (lambda (idss_1 rhss_1)
                                                           (values
                                                            idss_1
-                                                           rhss_1))
-                                                         (args
-                                                          (raise-binding-result-arity-error
-                                                           2
-                                                           args)))))
-                                                     (case-lambda
-                                                      ((idss_1 rhss_1)
+                                                           rhss_1))))
+                                                     (lambda (idss_1 rhss_1)
                                                        (for-loop_0
                                                         idss_1
                                                         rhss_1
-                                                        rest_0))
-                                                      (args
-                                                       (raise-binding-result-arity-error
-                                                        2
-                                                        args)))))))
+                                                        rest_0))))))
                                               (values idss_0 rhss_0)))))))
                                      (for-loop_0 null null a_0)))
-                                  (case-lambda
-                                   ((idss_0 rhss_0)
+                                  (lambda (idss_0 rhss_0)
                                     (let ((app_0 (reverse$1 idss_0)))
-                                      (values app_0 (reverse$1 rhss_0))))
-                                   (args
-                                    (raise-binding-result-arity-error
-                                     2
-                                     args))))))
-                             (case-lambda
-                              ((idss_0 rhss_0)
+                                      (values app_0 (reverse$1 rhss_0)))))))
+                             (lambda (idss_0 rhss_0)
                                (let ((body_0
                                       (let ((d_1 (cdr p_1)))
                                         (unwrap-list d_1))))
                                  (let ((idss_1 idss_0) (rhss_1 rhss_0))
-                                   (values idss_1 rhss_1 body_0))))
-                              (args
-                               (raise-binding-result-arity-error 2 args)))))))
-                      (case-lambda
-                       ((idss_0 rhss_0 body_0)
+                                   (values idss_1 rhss_1 body_0))))))))
+                      (lambda (idss_0 rhss_0 body_0)
                         (let ((let-id_1 let-id_0))
-                          (values let-id_1 idss_0 rhss_0 body_0)))
-                       (args (raise-binding-result-arity-error 3 args)))))))
-               (case-lambda
-                ((let-id_0 idss_0 rhss_0 body_0)
+                          (values let-id_1 idss_0 rhss_0 body_0)))))))
+               (lambda (let-id_0 idss_0 rhss_0 body_0)
                  (let ((app_0
                         (reverse$1
                          (begin
@@ -13097,8 +12712,7 @@
                                                 rest_1))))))
                                      fold-var_0))))))
                             (for-loop_0 null idss_0 rhss_0))))))
-                   (list* let-id_0 app_0 (optimize*-body_0 body_0))))
-                (args (raise-binding-result-arity-error 4 args))))
+                   (list* let-id_0 app_0 (optimize*-body_0 body_0)))))
               (error 'match "failed ~e" v_1)))))))
      (optimize*_0 v_0))))
 (define parameter-result?
@@ -13173,13 +12787,11 @@
   (lambda (p_0)
     (call-with-values
      (lambda () (split-path p_0))
-     (case-lambda
-      ((base1_0 name1_0 dir?_0)
+     (lambda (base1_0 name1_0 dir?_0)
        (if (path-for-some-system? base1_0)
          (call-with-values
           (lambda () (split-path base1_0))
-          (case-lambda
-           ((base2_0 name2_0 dir?_1)
+          (lambda (base2_0 name2_0 dir?_1)
             (if (not base2_0)
               (path-for-some-system->string p_0)
               (if (symbol? name2_0)
@@ -13189,12 +12801,10 @@
                    ".../"
                    app_0
                    "/"
-                   (path-elem->string name1_0))))))
-           (args (raise-binding-result-arity-error 3 args))))
+                   (path-elem->string name1_0)))))))
          (if (eq? base1_0 'relative)
            (path-elem->string name1_0)
-           (path-for-some-system->string p_0))))
-      (args (raise-binding-result-arity-error 3 args))))))
+           (path-for-some-system->string p_0)))))))
 (define path-elem->string
   (lambda (p_0)
     (if (eq? p_0 'same)
@@ -13212,8 +12822,7 @@
         (let ((u-e_0 (wrap-truncate-paths orig_0)))
           (call-with-values
            (lambda () (wrap-source e_0))
-           (case-lambda
-            ((src_0 line_0 col_0 pos_0 span_0)
+           (lambda (src_0 line_0 col_0 pos_0 span_0)
              (if (if (not (path-for-some-system? src_0)) (eq? orig_0 u-e_0) #f)
                e_0
                (if (path-for-some-system? src_0)
@@ -13225,8 +12834,7 @@
                          pos_0
                          span_0)))
                    (begin-unsafe (datum->syntax #f u-e_0 new-srcloc_0 e_0)))
-                 (reannotate e_0 u-e_0))))
-            (args (raise-binding-result-arity-error 5 args))))))
+                 (reannotate e_0 u-e_0)))))))
       (if (pair? e_0)
         (let ((a_0 (wrap-truncate-paths (car e_0))))
           (let ((d_0 (wrap-truncate-paths (cdr e_0))))
@@ -13252,10 +12860,8 @@
                (let ((args_0 (let ((a_0 (car p_0))) a_0)))
                  (let ((bodys_0 (let ((d_1 (cdr p_0))) d_1)))
                    (let ((args_1 args_0)) (values args_1 bodys_0)))))))
-         (case-lambda
-          ((args_0 bodys_0)
-           (smaller-than? bodys_0 (+ 3 (* 3 (args-size args_0)))))
-          (args (raise-binding-result-arity-error 2 args))))
+         (lambda (args_0 bodys_0)
+           (smaller-than? bodys_0 (+ 3 (* 3 (args-size args_0))))))
         (if (if (eq? 'case-lambda hd_0)
               (let ((a_0 (cdr (unwrap v_0))))
                 (if (wrap-list? a_0)
@@ -13329,38 +12935,20 @@
                                                    (values
                                                     argss_2
                                                     bodyss_1))))))
-                                         (case-lambda
-                                          ((argss1_0 bodyss2_0)
+                                         (lambda (argss1_0 bodyss2_0)
                                            (values
                                             (cons argss1_0 argss_0)
-                                            (cons bodyss2_0 bodyss_0)))
-                                          (args
-                                           (raise-binding-result-arity-error
-                                            2
-                                            args)))))
-                                      (case-lambda
-                                       ((argss_1 bodyss_1)
-                                        (values argss_1 bodyss_1))
-                                       (args
-                                        (raise-binding-result-arity-error
-                                         2
-                                         args)))))
-                                   (case-lambda
-                                    ((argss_1 bodyss_1)
-                                     (for-loop_0 argss_1 bodyss_1 rest_0))
-                                    (args
-                                     (raise-binding-result-arity-error
-                                      2
-                                      args)))))))
+                                            (cons bodyss2_0 bodyss_0)))))
+                                      (lambda (argss_1 bodyss_1)
+                                        (values argss_1 bodyss_1))))
+                                   (lambda (argss_1 bodyss_1)
+                                     (for-loop_0 argss_1 bodyss_1 rest_0))))))
                             (values argss_0 bodyss_0)))))))
                    (for-loop_0 null null d_0)))
-                (case-lambda
-                 ((argss_0 bodyss_0)
+                (lambda (argss_0 bodyss_0)
                   (let ((app_0 (reverse$1 argss_0)))
-                    (values app_0 (reverse$1 bodyss_0))))
-                 (args (raise-binding-result-arity-error 2 args))))))
-           (case-lambda
-            ((argss_0 bodyss_0)
+                    (values app_0 (reverse$1 bodyss_0)))))))
+           (lambda (argss_0 bodyss_0)
              (begin
                (letrec*
                 ((for-loop_0
@@ -13393,8 +12981,7 @@
                                      (for-loop_0 result_1 rest_0 rest_1)
                                      result_1))))))
                          result_0))))))
-                (for-loop_0 #t argss_0 bodyss_0))))
-            (args (raise-binding-result-arity-error 2 args))))
+                (for-loop_0 #t argss_0 bodyss_0)))))
           #f)))))
 (define args-size
   (lambda (args_0)
@@ -13450,18 +13037,14 @@
                      (let ((args_0 (let ((a_0 (car p_0))) a_0)))
                        (let ((bodys_0 (let ((d_1 (cdr p_0))) d_1)))
                          (let ((args_1 args_0)) (values args_1 bodys_0)))))))
-               (case-lambda
-                ((args_0 bodys_0)
+               (lambda (args_0 bodys_0)
                  (call-with-values
                   (lambda () (clone-args args_0 env_0 mutated_0))
-                  (case-lambda
-                   ((new-args_0 new-env_0)
+                  (lambda (new-args_0 new-env_0)
                     (list*
                      'lambda
                      new-args_0
-                     (clone-body bodys_0 new-env_0 mutated_0)))
-                   (args (raise-binding-result-arity-error 2 args)))))
-                (args (raise-binding-result-arity-error 2 args))))
+                     (clone-body bodys_0 new-env_0 mutated_0))))))
               (if (if (eq? 'case-lambda hd_0)
                     (let ((a_0 (cdr (unwrap v_0))))
                       (if (wrap-list? a_0)
@@ -13543,41 +13126,23 @@
                                                          (values
                                                           argss_2
                                                           bodyss_1))))))
-                                               (case-lambda
-                                                ((argss3_0 bodyss4_0)
+                                               (lambda (argss3_0 bodyss4_0)
                                                  (values
                                                   (cons argss3_0 argss_0)
-                                                  (cons bodyss4_0 bodyss_0)))
-                                                (args
-                                                 (raise-binding-result-arity-error
-                                                  2
-                                                  args)))))
-                                            (case-lambda
-                                             ((argss_1 bodyss_1)
-                                              (values argss_1 bodyss_1))
-                                             (args
-                                              (raise-binding-result-arity-error
-                                               2
-                                               args)))))
-                                         (case-lambda
-                                          ((argss_1 bodyss_1)
+                                                  (cons bodyss4_0 bodyss_0)))))
+                                            (lambda (argss_1 bodyss_1)
+                                              (values argss_1 bodyss_1))))
+                                         (lambda (argss_1 bodyss_1)
                                            (for-loop_0
                                             argss_1
                                             bodyss_1
-                                            rest_0))
-                                          (args
-                                           (raise-binding-result-arity-error
-                                            2
-                                            args)))))))
+                                            rest_0))))))
                                   (values argss_0 bodyss_0)))))))
                          (for-loop_0 null null d_0)))
-                      (case-lambda
-                       ((argss_0 bodyss_0)
+                      (lambda (argss_0 bodyss_0)
                         (let ((app_0 (reverse$1 argss_0)))
-                          (values app_0 (reverse$1 bodyss_0))))
-                       (args (raise-binding-result-arity-error 2 args))))))
-                 (case-lambda
-                  ((argss_0 bodyss_0)
+                          (values app_0 (reverse$1 bodyss_0)))))))
+                 (lambda (argss_0 bodyss_0)
                    (list*
                     'case-lambda
                     (reverse$1
@@ -13602,19 +13167,14 @@
                                                             args_0
                                                             env_0
                                                             mutated_0))
-                                                         (case-lambda
-                                                          ((new-args_0
-                                                            new-env_0)
+                                                         (lambda (new-args_0
+                                                                  new-env_0)
                                                            (list*
                                                             new-args_0
                                                             (clone-body
                                                              bodys_0
                                                              new-env_0
-                                                             mutated_0)))
-                                                          (args
-                                                           (raise-binding-result-arity-error
-                                                            2
-                                                            args))))
+                                                             mutated_0))))
                                                         fold-var_0)))
                                                   (values fold-var_1))))
                                            (for-loop_0
@@ -13622,8 +13182,7 @@
                                             rest_0
                                             rest_1))))))
                                  fold-var_0))))))
-                        (for-loop_0 null argss_0 bodyss_0))))))
-                  (args (raise-binding-result-arity-error 2 args))))
+                        (for-loop_0 null argss_0 bodyss_0)))))))
                 (let ((c1_0 (hash-ref imports_0 (unwrap v_0) #f)))
                   (if c1_0
                     (let ((i-k_0 (import-lookup c1_0)))
@@ -13904,53 +13463,31 @@
                                                              (values
                                                               idss_2
                                                               rhss_1))))))
-                                                   (case-lambda
-                                                    ((idss5_0 rhss6_0)
+                                                   (lambda (idss5_0 rhss6_0)
                                                      (values
                                                       (cons idss5_0 idss_0)
-                                                      (cons rhss6_0 rhss_0)))
-                                                    (args
-                                                     (raise-binding-result-arity-error
-                                                      2
-                                                      args)))))
-                                                (case-lambda
-                                                 ((idss_1 rhss_1)
-                                                  (values idss_1 rhss_1))
-                                                 (args
-                                                  (raise-binding-result-arity-error
-                                                   2
-                                                   args)))))
-                                             (case-lambda
-                                              ((idss_1 rhss_1)
+                                                      (cons rhss6_0 rhss_0)))))
+                                                (lambda (idss_1 rhss_1)
+                                                  (values idss_1 rhss_1))))
+                                             (lambda (idss_1 rhss_1)
                                                (for-loop_0
                                                 idss_1
                                                 rhss_1
-                                                rest_0))
-                                              (args
-                                               (raise-binding-result-arity-error
-                                                2
-                                                args)))))))
+                                                rest_0))))))
                                       (values idss_0 rhss_0)))))))
                              (for-loop_0 null null a_0)))
-                          (case-lambda
-                           ((idss_0 rhss_0)
+                          (lambda (idss_0 rhss_0)
                             (let ((app_0 (reverse$1 idss_0)))
-                              (values app_0 (reverse$1 rhss_0))))
-                           (args (raise-binding-result-arity-error 2 args))))))
-                     (case-lambda
-                      ((idss_0 rhss_0)
+                              (values app_0 (reverse$1 rhss_0)))))))
+                     (lambda (idss_0 rhss_0)
                        (let ((bodys_0
                               (let ((d_1 (cdr p_1))) (unwrap-list d_1))))
                          (let ((idss_1 idss_0) (rhss_1 rhss_0))
-                           (values idss_1 rhss_1 bodys_0))))
-                      (args (raise-binding-result-arity-error 2 args)))))))
-              (case-lambda
-               ((idss_0 rhss_0 bodys_0)
+                           (values idss_1 rhss_1 bodys_0))))))))
+              (lambda (idss_0 rhss_0 bodys_0)
                 (let ((let-id_1 let-id_0))
-                  (values let-id_1 idss_0 rhss_0 bodys_0)))
-               (args (raise-binding-result-arity-error 3 args)))))))
-       (case-lambda
-        ((let-id_0 idss_0 rhss_0 bodys_0)
+                  (values let-id_1 idss_0 rhss_0 bodys_0)))))))
+       (lambda (let-id_0 idss_0 rhss_0 bodys_0)
          (call-with-values
           (lambda ()
             (begin
@@ -13970,29 +13507,17 @@
                                   (call-with-values
                                    (lambda ()
                                      (clone-args ids_0 env_1 mutated_0))
-                                   (case-lambda
-                                    ((new-ids_0 new-env_0)
+                                   (lambda (new-ids_0 new-env_0)
                                      (values
                                       (cons new-ids_0 rev-new-idss_0)
-                                      new-env_0))
-                                    (args
-                                     (raise-binding-result-arity-error
-                                      2
-                                      args)))))
-                                (case-lambda
-                                 ((rev-new-idss_1 env_2)
-                                  (values rev-new-idss_1 env_2))
-                                 (args
-                                  (raise-binding-result-arity-error 2 args)))))
-                             (case-lambda
-                              ((rev-new-idss_1 env_2)
-                               (for-loop_0 rev-new-idss_1 env_2 rest_0))
-                              (args
-                               (raise-binding-result-arity-error 2 args))))))
+                                      new-env_0))))
+                                (lambda (rev-new-idss_1 env_2)
+                                  (values rev-new-idss_1 env_2))))
+                             (lambda (rev-new-idss_1 env_2)
+                               (for-loop_0 rev-new-idss_1 env_2 rest_0)))))
                         (values rev-new-idss_0 env_1)))))))
                (for-loop_0 null env_0 idss_0))))
-          (case-lambda
-           ((rev-new-idss_0 new-env_0)
+          (lambda (rev-new-idss_0 new-env_0)
             (let ((app_0
                    (reverse$1
                     (let ((lst_0 (reverse$1 rev-new-idss_0)))
@@ -14025,9 +13550,10 @@
                                              rest_1))))))
                                   fold-var_0))))))
                          (for-loop_0 null lst_0 rhss_0)))))))
-              (list* let-id_0 app_0 (clone-body bodys_0 new-env_0 mutated_0))))
-           (args (raise-binding-result-arity-error 2 args)))))
-        (args (raise-binding-result-arity-error 4 args))))
+              (list*
+               let-id_0
+               app_0
+               (clone-body bodys_0 new-env_0 mutated_0)))))))
       (error 'match "failed ~e" v_0))))
 (define clone-expr
   (lambda (v_0 env_0 mutated_0)
@@ -14046,18 +13572,14 @@
                 (let ((args_0 (let ((a_0 (car p_0))) a_0)))
                   (let ((bodys_0 (let ((d_1 (cdr p_0))) d_1)))
                     (let ((args_1 args_0)) (values args_1 bodys_0)))))))
-          (case-lambda
-           ((args_0 bodys_0)
+          (lambda (args_0 bodys_0)
             (call-with-values
              (lambda () (clone-args args_0 env_0 mutated_0))
-             (case-lambda
-              ((new-args_0 new-env_0)
+             (lambda (new-args_0 new-env_0)
                (list*
                 'lambda
                 new-args_0
-                (clone-body bodys_0 new-env_0 mutated_0)))
-              (args (raise-binding-result-arity-error 2 args)))))
-           (args (raise-binding-result-arity-error 2 args))))
+                (clone-body bodys_0 new-env_0 mutated_0))))))
          (if (if (eq? 'case-lambda hd_0)
                (let ((a_0 (cdr (unwrap v_0))))
                  (if (wrap-list? a_0)
@@ -14131,38 +13653,20 @@
                                                     (values
                                                      argss_2
                                                      bodyss_1))))))
-                                          (case-lambda
-                                           ((argss7_0 bodyss8_0)
+                                          (lambda (argss7_0 bodyss8_0)
                                             (values
                                              (cons argss7_0 argss_0)
-                                             (cons bodyss8_0 bodyss_0)))
-                                           (args
-                                            (raise-binding-result-arity-error
-                                             2
-                                             args)))))
-                                       (case-lambda
-                                        ((argss_1 bodyss_1)
-                                         (values argss_1 bodyss_1))
-                                        (args
-                                         (raise-binding-result-arity-error
-                                          2
-                                          args)))))
-                                    (case-lambda
-                                     ((argss_1 bodyss_1)
-                                      (for-loop_0 argss_1 bodyss_1 rest_0))
-                                     (args
-                                      (raise-binding-result-arity-error
-                                       2
-                                       args)))))))
+                                             (cons bodyss8_0 bodyss_0)))))
+                                       (lambda (argss_1 bodyss_1)
+                                         (values argss_1 bodyss_1))))
+                                    (lambda (argss_1 bodyss_1)
+                                      (for-loop_0 argss_1 bodyss_1 rest_0))))))
                              (values argss_0 bodyss_0)))))))
                     (for-loop_0 null null d_0)))
-                 (case-lambda
-                  ((argss_0 bodyss_0)
+                 (lambda (argss_0 bodyss_0)
                    (let ((app_0 (reverse$1 argss_0)))
-                     (values app_0 (reverse$1 bodyss_0))))
-                  (args (raise-binding-result-arity-error 2 args))))))
-            (case-lambda
-             ((argss_0 bodyss_0)
+                     (values app_0 (reverse$1 bodyss_0)))))))
+            (lambda (argss_0 bodyss_0)
               (list*
                'case-lambda
                (reverse$1
@@ -14187,18 +13691,14 @@
                                                        args_0
                                                        env_0
                                                        mutated_0))
-                                                    (case-lambda
-                                                     ((new-args_0 new-env_0)
+                                                    (lambda (new-args_0
+                                                             new-env_0)
                                                       (list*
                                                        new-args_0
                                                        (clone-body
                                                         bodys_0
                                                         new-env_0
-                                                        mutated_0)))
-                                                     (args
-                                                      (raise-binding-result-arity-error
-                                                       2
-                                                       args))))
+                                                        mutated_0))))
                                                    fold-var_0)))
                                              (values fold-var_1))))
                                       (for-loop_0
@@ -14206,8 +13706,7 @@
                                        rest_0
                                        rest_1))))))
                             fold-var_0))))))
-                   (for-loop_0 null argss_0 bodyss_0))))))
-             (args (raise-binding-result-arity-error 2 args))))
+                   (for-loop_0 null argss_0 bodyss_0)))))))
            (if (if (eq? 'quote hd_0)
                  (let ((a_0 (cdr (unwrap v_0))))
                    (let ((p_0 (unwrap a_0)))
@@ -14257,22 +13756,17 @@
                                                 a_0))))
                                        (let ((thn_1 thn_0))
                                          (values thn_1 els_0)))))))
-                             (case-lambda
-                              ((thn_0 els_0)
+                             (lambda (thn_0 els_0)
                                (let ((tst_1 tst_0))
-                                 (values tst_1 thn_0 els_0)))
-                              (args
-                               (raise-binding-result-arity-error 2 args))))))))
-                    (case-lambda
-                     ((tst_0 thn_0 els_0)
+                                 (values tst_1 thn_0 els_0))))))))
+                    (lambda (tst_0 thn_0 els_0)
                       (let ((app_0 (clone-expr tst_0 env_0 mutated_0)))
                         (let ((app_1 (clone-expr thn_0 env_0 mutated_0)))
                           (list
                            'if
                            app_0
                            app_1
-                           (clone-expr els_0 env_0 mutated_0)))))
-                     (args (raise-binding-result-arity-error 3 args))))
+                           (clone-expr els_0 env_0 mutated_0))))))
                    (if (if (eq? 'with-continuation-mark hd_0)
                          (let ((a_0 (cdr (unwrap v_0))))
                            (let ((p_0 (unwrap a_0)))
@@ -14307,24 +13801,17 @@
                                                   a_0))))
                                          (let ((val_1 val_0))
                                            (values val_1 body_0)))))))
-                               (case-lambda
-                                ((val_0 body_0)
+                               (lambda (val_0 body_0)
                                  (let ((key_1 key_0))
-                                   (values key_1 val_0 body_0)))
-                                (args
-                                 (raise-binding-result-arity-error
-                                  2
-                                  args))))))))
-                      (case-lambda
-                       ((key_0 val_0 body_0)
+                                   (values key_1 val_0 body_0))))))))
+                      (lambda (key_0 val_0 body_0)
                         (let ((app_0 (clone-expr key_0 env_0 mutated_0)))
                           (let ((app_1 (clone-expr val_0 env_0 mutated_0)))
                             (list
                              'with-continuation-mark
                              app_0
                              app_1
-                             (clone-expr body_0 env_0 mutated_0)))))
-                       (args (raise-binding-result-arity-error 3 args))))
+                             (clone-expr body_0 env_0 mutated_0))))))
                      (if (if (eq? 'begin hd_0)
                            (let ((a_0 (cdr (unwrap v_0)))) (wrap-list? a_0))
                            #f)
@@ -14374,16 +13861,13 @@
                                                  a_0))))
                                         (let ((id_1 id_0))
                                           (values id_1 rhs_0)))))))
-                              (case-lambda
-                               ((id_0 rhs_0)
+                              (lambda (id_0 rhs_0)
                                 (let ((app_0
                                        (clone-expr id_0 env_0 mutated_0)))
                                   (list
                                    'set!
                                    app_0
-                                   (clone-expr rhs_0 env_0 mutated_0))))
-                               (args
-                                (raise-binding-result-arity-error 2 args))))
+                                   (clone-expr rhs_0 env_0 mutated_0)))))
                              (if (if (eq? '|#%variable-reference| hd_0)
                                    (let ((a_0 (cdr (unwrap v_0))))
                                      (begin-unsafe
@@ -14568,16 +14052,14 @@
                  (let ((args_0 (let ((a_0 (car p_0))) a_0)))
                    (let ((bodys_0 (let ((d_1 (cdr p_0))) d_1)))
                      (let ((args_1 args_0)) (values args_1 bodys_0)))))))
-           (case-lambda
-            ((args_0 bodys_0)
+           (lambda (args_0 bodys_0)
              (body-needed-imports
               bodys_0
               prim-knowns_0
               imports_0
               exports_0
               (add-args env_0 args_0)
-              needed_0))
-            (args (raise-binding-result-arity-error 2 args))))
+              needed_0)))
           (if (if (eq? 'case-lambda hd_0)
                 (let ((a_0 (cdr (unwrap v_0))))
                   (if (wrap-list? a_0)
@@ -14653,38 +14135,23 @@
                                                      (values
                                                       argss_2
                                                       bodyss_1))))))
-                                           (case-lambda
-                                            ((argss9_0 bodyss10_0)
+                                           (lambda (argss9_0 bodyss10_0)
                                              (values
                                               (cons argss9_0 argss_0)
-                                              (cons bodyss10_0 bodyss_0)))
-                                            (args
-                                             (raise-binding-result-arity-error
-                                              2
-                                              args)))))
-                                        (case-lambda
-                                         ((argss_1 bodyss_1)
-                                          (values argss_1 bodyss_1))
-                                         (args
-                                          (raise-binding-result-arity-error
-                                           2
-                                           args)))))
-                                     (case-lambda
-                                      ((argss_1 bodyss_1)
-                                       (for-loop_0 argss_1 bodyss_1 rest_0))
-                                      (args
-                                       (raise-binding-result-arity-error
-                                        2
-                                        args)))))))
+                                              (cons bodyss10_0 bodyss_0)))))
+                                        (lambda (argss_1 bodyss_1)
+                                          (values argss_1 bodyss_1))))
+                                     (lambda (argss_1 bodyss_1)
+                                       (for-loop_0
+                                        argss_1
+                                        bodyss_1
+                                        rest_0))))))
                               (values argss_0 bodyss_0)))))))
                      (for-loop_0 null null d_0)))
-                  (case-lambda
-                   ((argss_0 bodyss_0)
+                  (lambda (argss_0 bodyss_0)
                     (let ((app_0 (reverse$1 argss_0)))
-                      (values app_0 (reverse$1 bodyss_0))))
-                   (args (raise-binding-result-arity-error 2 args))))))
-             (case-lambda
-              ((argss_0 bodyss_0)
+                      (values app_0 (reverse$1 bodyss_0)))))))
+             (lambda (argss_0 bodyss_0)
                (begin
                  (letrec*
                   ((for-loop_0
@@ -14709,8 +14176,7 @@
                                             (values needed_2))))
                                      (for-loop_0 needed_2 rest_0 rest_1))))))
                            needed_1))))))
-                  (for-loop_0 needed_0 argss_0 bodyss_0))))
-              (args (raise-binding-result-arity-error 2 args))))
+                  (for-loop_0 needed_0 argss_0 bodyss_0)))))
             (if (if (eq? 'quote hd_0)
                   (let ((a_0 (cdr (unwrap v_0))))
                     (let ((p_0 (unwrap a_0)))
@@ -14772,16 +14238,10 @@
                                                  a_0))))
                                         (let ((thn_1 thn_0))
                                           (values thn_1 els_0)))))))
-                              (case-lambda
-                               ((thn_0 els_0)
+                              (lambda (thn_0 els_0)
                                 (let ((tst_1 tst_0))
-                                  (values tst_1 thn_0 els_0)))
-                               (args
-                                (raise-binding-result-arity-error
-                                 2
-                                 args))))))))
-                     (case-lambda
-                      ((tst_0 thn_0 els_0)
+                                  (values tst_1 thn_0 els_0))))))))
+                     (lambda (tst_0 thn_0 els_0)
                        (needed-imports
                         tst_0
                         prim-knowns_0
@@ -14800,8 +14260,7 @@
                           imports_0
                           exports_0
                           env_0
-                          needed_0))))
-                      (args (raise-binding-result-arity-error 3 args))))
+                          needed_0)))))
                     (if (if (eq? 'with-continuation-mark hd_0)
                           (let ((a_0 (cdr (unwrap v_0))))
                             (let ((p_0 (unwrap a_0)))
@@ -14838,16 +14297,10 @@
                                                    a_0))))
                                           (let ((val_1 val_0))
                                             (values val_1 body_0)))))))
-                                (case-lambda
-                                 ((val_0 body_0)
+                                (lambda (val_0 body_0)
                                   (let ((key_1 key_0))
-                                    (values key_1 val_0 body_0)))
-                                 (args
-                                  (raise-binding-result-arity-error
-                                   2
-                                   args))))))))
-                       (case-lambda
-                        ((key_0 val_0 body_0)
+                                    (values key_1 val_0 body_0))))))))
+                       (lambda (key_0 val_0 body_0)
                          (needed-imports
                           key_0
                           prim-knowns_0
@@ -14866,8 +14319,7 @@
                             imports_0
                             exports_0
                             env_0
-                            needed_0))))
-                        (args (raise-binding-result-arity-error 3 args))))
+                            needed_0)))))
                       (if (if (eq? 'begin hd_0)
                             (let ((a_0 (cdr (unwrap v_0)))) (wrap-list? a_0))
                             #f)
@@ -14933,8 +14385,7 @@
                                                   a_0))))
                                          (let ((id_1 id_0))
                                            (values id_1 rhs_0)))))))
-                               (case-lambda
-                                ((id_0 rhs_0)
+                               (lambda (id_0 rhs_0)
                                  (let ((u_0 (unwrap id_0)))
                                    (if (hash-ref exports_0 id_0 #f)
                                      #f
@@ -14950,9 +14401,7 @@
                                        imports_0
                                        exports_0
                                        env_0
-                                       needed_0)))))
-                                (args
-                                 (raise-binding-result-arity-error 2 args))))
+                                       needed_0))))))
                               (if (if (eq? '|#%variable-reference| hd_0) #t #f)
                                 #f
                                 (if (let ((p_0 (unwrap v_0)))
@@ -15164,53 +14613,33 @@
                                                              (values
                                                               idss_2
                                                               rhss_1))))))
-                                                   (case-lambda
-                                                    ((idss11_0 rhss12_0)
+                                                   (lambda (idss11_0 rhss12_0)
                                                      (values
                                                       (cons idss11_0 idss_0)
-                                                      (cons rhss12_0 rhss_0)))
-                                                    (args
-                                                     (raise-binding-result-arity-error
-                                                      2
-                                                      args)))))
-                                                (case-lambda
-                                                 ((idss_1 rhss_1)
-                                                  (values idss_1 rhss_1))
-                                                 (args
-                                                  (raise-binding-result-arity-error
-                                                   2
-                                                   args)))))
-                                             (case-lambda
-                                              ((idss_1 rhss_1)
+                                                      (cons
+                                                       rhss12_0
+                                                       rhss_0)))))
+                                                (lambda (idss_1 rhss_1)
+                                                  (values idss_1 rhss_1))))
+                                             (lambda (idss_1 rhss_1)
                                                (for-loop_0
                                                 idss_1
                                                 rhss_1
-                                                rest_0))
-                                              (args
-                                               (raise-binding-result-arity-error
-                                                2
-                                                args)))))))
+                                                rest_0))))))
                                       (values idss_0 rhss_0)))))))
                              (for-loop_0 null null a_0)))
-                          (case-lambda
-                           ((idss_0 rhss_0)
+                          (lambda (idss_0 rhss_0)
                             (let ((app_0 (reverse$1 idss_0)))
-                              (values app_0 (reverse$1 rhss_0))))
-                           (args (raise-binding-result-arity-error 2 args))))))
-                     (case-lambda
-                      ((idss_0 rhss_0)
+                              (values app_0 (reverse$1 rhss_0)))))))
+                     (lambda (idss_0 rhss_0)
                        (let ((bodys_0
                               (let ((d_1 (cdr p_1))) (unwrap-list d_1))))
                          (let ((idss_1 idss_0) (rhss_1 rhss_0))
-                           (values idss_1 rhss_1 bodys_0))))
-                      (args (raise-binding-result-arity-error 2 args)))))))
-              (case-lambda
-               ((idss_0 rhss_0 bodys_0)
+                           (values idss_1 rhss_1 bodys_0))))))))
+              (lambda (idss_0 rhss_0 bodys_0)
                 (let ((let-id_1 let-id_0))
-                  (values let-id_1 idss_0 rhss_0 bodys_0)))
-               (args (raise-binding-result-arity-error 3 args)))))))
-       (case-lambda
-        ((let-id_0 idss_0 rhss_0 bodys_0)
+                  (values let-id_1 idss_0 rhss_0 bodys_0)))))))
+       (lambda (let-id_0 idss_0 rhss_0 bodys_0)
          (let ((new-env_0
                 (begin
                   (letrec*
@@ -15280,8 +14709,7 @@
                                      (values needed_2))))
                               (for-loop_0 needed_2 rest_0))))
                         needed_1))))))
-               (for-loop_0 needed_0 rhss_0))))))
-        (args (raise-binding-result-arity-error 4 args))))
+               (for-loop_0 needed_0 rhss_0)))))))
       (error 'match "failed ~e" v_0))))
 (define add-args
   (lambda (env_0 args_0)
@@ -15677,8 +15105,7 @@
                                                      (values
                                                       thn_1
                                                       els_0))))))))
-                                       (case-lambda
-                                        ((thn_0 els_0)
+                                       (lambda (thn_0 els_0)
                                          (if (single-valued?
                                               thn_0
                                               knowns_0
@@ -15693,11 +15120,7 @@
                                             imports_0
                                             mutated_0
                                             (unsafe-fxrshift fuel_0 1))
-                                           #f))
-                                        (args
-                                         (raise-binding-result-arity-error
-                                          2
-                                          args))))
+                                           #f)))
                                       (if (if (eq? '|#%app/value| hd_0) #t #f)
                                         #t
                                         (if (if (eq? '|#%app/no-return| hd_0)
@@ -15720,8 +15143,7 @@
                                                        (values
                                                         proc_1
                                                         args_0))))))
-                                             (case-lambda
-                                              ((proc_0 args_0)
+                                             (lambda (proc_0 args_0)
                                                (let ((proc_1 (unwrap proc_0)))
                                                  (if (symbol? proc_1)
                                                    (if (let ((v_0
@@ -15744,11 +15166,7 @@
                                                        proc_1
                                                        #f))
                                                      #f)
-                                                   #f)))
-                                              (args
-                                               (raise-binding-result-arity-error
-                                                2
-                                                args))))
+                                                   #f))))
                                             #t))))))))))))))))))))))
 (define infer-known.1
   (|#%name|
@@ -15781,8 +15199,7 @@
                  (if (lambda?.1 #f rhs_0)
                    (call-with-values
                     (lambda () (extract-lambda rhs_0))
-                    (case-lambda
-                     ((lam_0 inlinable?_0)
+                    (lambda (lam_0 inlinable?_0)
                       (let ((arity-mask_0 (lambda-arity-mask lam_0)))
                         (if (if inlinable?_0
                               (if (not post-schemify?3_0)
@@ -15817,8 +15234,7 @@
                                imports15_0
                                mutated16_0)
                             (known-procedure/single-valued arity-mask_0)
-                            (known-procedure arity-mask_0)))))
-                     (args (raise-binding-result-arity-error 2 args))))
+                            (known-procedure arity-mask_0))))))
                    (if (if (literal? rhs_0)
                          (not (hash-ref mutated16_0 (unwrap id12_0) #f))
                          #f)
@@ -15943,8 +15359,7 @@
                                                   (values
                                                    type1_1
                                                    type2_0)))))))
-                                      (case-lambda
-                                       ((type1_0 type2_0)
+                                      (lambda (type1_0 type2_0)
                                         (let ((k_0 (loop_0 type1_0)))
                                           (if (known-ctype? k_0)
                                             k_0
@@ -15979,11 +15394,7 @@
                                                             c5_0
                                                             #f)
                                                           #f))))))
-                                              #f))))
-                                       (args
-                                        (raise-binding-result-arity-error
-                                         2
-                                         args))))
+                                              #f)))))
                                      (if (if defn5_0
                                            (simple?.1
                                             #f
@@ -16024,9 +15435,8 @@
                 (let ((args_0 (let ((a_0 (car p_0))) a_0)))
                   (let ((body_0 (let ((d_1 (cdr p_0))) d_1)))
                     (let ((args_1 args_0)) (values args_1 body_0)))))))
-          (case-lambda
-           ((args_0 body_0) (list 'lambda args_0 (list* 'begin-unsafe body_0)))
-           (args (raise-binding-result-arity-error 2 args))))
+          (lambda (args_0 body_0)
+            (list 'lambda args_0 (list* 'begin-unsafe body_0))))
          (if (if (eq? 'case-lambda hd_0)
                (let ((a_0 (cdr (unwrap lam_0))))
                  (if (wrap-list? a_0)
@@ -16100,38 +15510,20 @@
                                                     (values
                                                      argss_2
                                                      bodys_1))))))
-                                          (case-lambda
-                                           ((argss30_0 bodys31_0)
+                                          (lambda (argss30_0 bodys31_0)
                                             (values
                                              (cons argss30_0 argss_0)
-                                             (cons bodys31_0 bodys_0)))
-                                           (args
-                                            (raise-binding-result-arity-error
-                                             2
-                                             args)))))
-                                       (case-lambda
-                                        ((argss_1 bodys_1)
-                                         (values argss_1 bodys_1))
-                                        (args
-                                         (raise-binding-result-arity-error
-                                          2
-                                          args)))))
-                                    (case-lambda
-                                     ((argss_1 bodys_1)
-                                      (for-loop_0 argss_1 bodys_1 rest_0))
-                                     (args
-                                      (raise-binding-result-arity-error
-                                       2
-                                       args)))))))
+                                             (cons bodys31_0 bodys_0)))))
+                                       (lambda (argss_1 bodys_1)
+                                         (values argss_1 bodys_1))))
+                                    (lambda (argss_1 bodys_1)
+                                      (for-loop_0 argss_1 bodys_1 rest_0))))))
                              (values argss_0 bodys_0)))))))
                     (for-loop_0 null null d_0)))
-                 (case-lambda
-                  ((argss_0 bodys_0)
+                 (lambda (argss_0 bodys_0)
                    (let ((app_0 (reverse$1 argss_0)))
-                     (values app_0 (reverse$1 bodys_0))))
-                  (args (raise-binding-result-arity-error 2 args))))))
-            (case-lambda
-             ((argss_0 bodys_0)
+                     (values app_0 (reverse$1 bodys_0)))))))
+            (lambda (argss_0 bodys_0)
               (list*
                'case-lambda
                (reverse$1
@@ -16159,8 +15551,7 @@
                                          rest_0
                                          rest_1)))))))
                             fold-var_0))))))
-                   (for-loop_0 null argss_0 bodys_0))))))
-             (args (raise-binding-result-arity-error 2 args))))
+                   (for-loop_0 null argss_0 bodys_0)))))))
            lam_0))))))
 (define find-definitions.1
   (|#%name|
@@ -16209,8 +15600,7 @@
                                (let ((d_1 (cdr p_0)))
                                  (let ((a_0 (car (unwrap d_1)))) a_0))))
                           (let ((ids_1 ids_0)) (values ids_1 rhs_0)))))))
-                (case-lambda
-                 ((ids_0 rhs_0)
+                (lambda (ids_0 rhs_0)
                   (let ((new-rhs_0 (unwrap-let rhs_0)))
                     (let ((maybe-immediate-values_0
                            (|#%name|
@@ -16551,31 +15941,20 @@
                                                               (values
                                                                s?_1
                                                                acc/muts_0)))))))
-                                                  (case-lambda
-                                                   ((s?_0 acc/muts_0)
+                                                  (lambda (s?_0 acc/muts_0)
                                                     (let ((make-s_1 make-s_0))
                                                       (values
                                                        make-s_1
                                                        s?_0
-                                                       acc/muts_0)))
-                                                   (args
-                                                    (raise-binding-result-arity-error
-                                                     2
-                                                     args))))))))
-                                         (case-lambda
-                                          ((make-s_0 s?_0 acc/muts_0)
+                                                       acc/muts_0))))))))
+                                         (lambda (make-s_0 s?_0 acc/muts_0)
                                            (let ((struct:s_1 struct:s_0))
                                              (values
                                               struct:s_1
                                               make-s_0
                                               s?_0
-                                              acc/muts_0)))
-                                          (args
-                                           (raise-binding-result-arity-error
-                                            3
-                                            args))))))))
-                                (case-lambda
-                                 ((struct:s_0 make-s_0 s?_0 acc/muts_0)
+                                              acc/muts_0))))))))
+                                (lambda (struct:s_0 make-s_0 s?_0 acc/muts_0)
                                   (call-with-values
                                    (lambda ()
                                      (let ((d_0 (cdr p_0)))
@@ -16652,39 +16031,28 @@
                                                                                               (values
                                                                                                -ref_1
                                                                                                -set!_0)))))))
-                                                                                  (case-lambda
-                                                                                   ((-ref_0
-                                                                                     -set!_0)
+                                                                                  (lambda (-ref_0
+                                                                                           -set!_0)
                                                                                     (let ((?_1
                                                                                            ?_0))
                                                                                       (values
                                                                                        ?_1
                                                                                        -ref_0
-                                                                                       -set!_0)))
-                                                                                   (args
-                                                                                    (raise-binding-result-arity-error
-                                                                                     2
-                                                                                     args))))))))
-                                                                         (case-lambda
-                                                                          ((?_0
-                                                                            -ref_0
-                                                                            -set!_0)
+                                                                                       -set!_0))))))))
+                                                                         (lambda (?_0
+                                                                                  -ref_0
+                                                                                  -set!_0)
                                                                            (let ((make_1
                                                                                   make_0))
                                                                              (values
                                                                               make_1
                                                                               ?_0
                                                                               -ref_0
-                                                                              -set!_0)))
-                                                                          (args
-                                                                           (raise-binding-result-arity-error
-                                                                            3
-                                                                            args))))))))
-                                                                (case-lambda
-                                                                 ((make_0
-                                                                   ?_0
-                                                                   -ref_0
-                                                                   -set!_0)
+                                                                              -set!_0))))))))
+                                                                (lambda (make_0
+                                                                         ?_0
+                                                                         -ref_0
+                                                                         -set!_0)
                                                                   (let ((struct:_1
                                                                          struct:_0))
                                                                     (values
@@ -16692,17 +16060,12 @@
                                                                      make_0
                                                                      ?_0
                                                                      -ref_0
-                                                                     -set!_0)))
-                                                                 (args
-                                                                  (raise-binding-result-arity-error
-                                                                   4
-                                                                   args))))))))
-                                                       (case-lambda
-                                                        ((struct:_0
-                                                          make_0
-                                                          ?_0
-                                                          -ref_0
-                                                          -set!_0)
+                                                                     -set!_0))))))))
+                                                       (lambda (struct:_0
+                                                                make_0
+                                                                ?_0
+                                                                -ref_0
+                                                                -set!_0)
                                                          (let ((rhs_1
                                                                 (let ((d_2
                                                                        (cdr
@@ -16727,18 +16090,13 @@
                                                               ?_1
                                                               -ref_1
                                                               -set!_1
-                                                              rhs_1))))
-                                                        (args
-                                                         (raise-binding-result-arity-error
-                                                          5
-                                                          args))))))))
-                                              (case-lambda
-                                               ((struct:_0
-                                                 make_0
-                                                 ?_0
-                                                 -ref_0
-                                                 -set!_0
-                                                 rhs_1)
+                                                              rhs_1)))))))))
+                                              (lambda (struct:_0
+                                                       make_0
+                                                       ?_0
+                                                       -ref_0
+                                                       -set!_0
+                                                       rhs_1)
                                                 (call-with-values
                                                  (lambda ()
                                                    (let ((d_2 (cdr p_1)))
@@ -16792,39 +16150,28 @@
                                                                                    (values
                                                                                     ?2_1
                                                                                     make-acc/muts_0)))))))
-                                                                       (case-lambda
-                                                                        ((?2_0
-                                                                          make-acc/muts_0)
+                                                                       (lambda (?2_0
+                                                                                make-acc/muts_0)
                                                                          (let ((make2_1
                                                                                 make2_0))
                                                                            (values
                                                                             make2_1
                                                                             ?2_0
-                                                                            make-acc/muts_0)))
-                                                                        (args
-                                                                         (raise-binding-result-arity-error
-                                                                          2
-                                                                          args))))))))
-                                                              (case-lambda
-                                                               ((make2_0
-                                                                 ?2_0
-                                                                 make-acc/muts_0)
+                                                                            make-acc/muts_0))))))))
+                                                              (lambda (make2_0
+                                                                       ?2_0
+                                                                       make-acc/muts_0)
                                                                 (let ((struct:2_1
                                                                        struct:2_0))
                                                                   (values
                                                                    struct:2_1
                                                                    make2_0
                                                                    ?2_0
-                                                                   make-acc/muts_0)))
-                                                               (args
-                                                                (raise-binding-result-arity-error
-                                                                 3
-                                                                 args))))))))))
-                                                 (case-lambda
-                                                  ((struct:2_0
-                                                    make2_0
-                                                    ?2_0
-                                                    make-acc/muts_0)
+                                                                   make-acc/muts_0))))))))))
+                                                 (lambda (struct:2_0
+                                                          make2_0
+                                                          ?2_0
+                                                          make-acc/muts_0)
                                                    (let ((struct:_1 struct:_0)
                                                          (make_1 make_0)
                                                          (?_1 ?_0)
@@ -16841,26 +16188,17 @@
                                                       struct:2_0
                                                       make2_0
                                                       ?2_0
-                                                      make-acc/muts_0)))
-                                                  (args
-                                                   (raise-binding-result-arity-error
-                                                    4
-                                                    args)))))
-                                               (args
-                                                (raise-binding-result-arity-error
-                                                 6
-                                                 args)))))))))
-                                   (case-lambda
-                                    ((struct:_0
-                                      make_0
-                                      ?_0
-                                      -ref_0
-                                      -set!_0
-                                      rhs_1
-                                      struct:2_0
-                                      make2_0
-                                      ?2_0
-                                      make-acc/muts_0)
+                                                      make-acc/muts_0)))))))))))
+                                   (lambda (struct:_0
+                                            make_0
+                                            ?_0
+                                            -ref_0
+                                            -set!_0
+                                            rhs_1
+                                            struct:2_0
+                                            make2_0
+                                            ?2_0
+                                            make-acc/muts_0)
                                      (let ((struct:s_1 struct:s_0)
                                            (make-s_1 make-s_0)
                                            (s?_1 s?_0)
@@ -16879,30 +16217,21 @@
                                         struct:2_0
                                         make2_0
                                         ?2_0
-                                        make-acc/muts_0)))
-                                    (args
-                                     (raise-binding-result-arity-error
-                                      10
-                                      args)))))
-                                 (args
-                                  (raise-binding-result-arity-error
-                                   4
-                                   args))))))
-                           (case-lambda
-                            ((struct:s_0
-                              make-s_0
-                              s?_0
-                              acc/muts_0
-                              struct:_0
-                              make_0
-                              ?_0
-                              -ref_0
-                              -set!_0
-                              rhs_1
-                              struct:2_0
-                              make2_0
-                              ?2_0
-                              make-acc/muts_0)
+                                        make-acc/muts_0))))))))
+                           (lambda (struct:s_0
+                                    make-s_0
+                                    s?_0
+                                    acc/muts_0
+                                    struct:_0
+                                    make_0
+                                    ?_0
+                                    -ref_0
+                                    -set!_0
+                                    rhs_1
+                                    struct:2_0
+                                    make2_0
+                                    ?2_0
+                                    make-acc/muts_0)
                              (let ((info_0
                                     (if (begin-unsafe
                                          (let ((app_0 (unwrap struct:_0)))
@@ -17175,18 +16504,13 @@
                                                                                      (values
                                                                                       ctc_1
                                                                                       realm_0))))))
-                                                                           (case-lambda
-                                                                            ((ctc_0
-                                                                              realm_0)
+                                                                           (lambda (ctc_0
+                                                                                    realm_0)
                                                                              (if (ok-contract-expr?_0
                                                                                   ctc_0)
                                                                                (symbol?
                                                                                 realm_0)
-                                                                               #f))
-                                                                            (args
-                                                                             (raise-binding-result-arity-error
-                                                                              2
-                                                                              args))))
+                                                                               #f)))
                                                                           #f))))))))
                                                           (begin
                                                             (letrec*
@@ -17359,39 +16683,28 @@
                                                                                                                                     (values
                                                                                                                                      name_1
                                                                                                                                      more_0)))))))
-                                                                                                                        (case-lambda
-                                                                                                                         ((name_0
-                                                                                                                           more_0)
+                                                                                                                        (lambda (name_0
+                                                                                                                                 more_0)
                                                                                                                           (let ((pos_1
                                                                                                                                  pos_0))
                                                                                                                             (values
                                                                                                                              pos_1
                                                                                                                              name_0
-                                                                                                                             more_0)))
-                                                                                                                         (args
-                                                                                                                          (raise-binding-result-arity-error
-                                                                                                                           2
-                                                                                                                           args))))))))
-                                                                                                               (case-lambda
-                                                                                                                ((pos_0
-                                                                                                                  name_0
-                                                                                                                  more_0)
+                                                                                                                             more_0))))))))
+                                                                                                               (lambda (pos_0
+                                                                                                                        name_0
+                                                                                                                        more_0)
                                                                                                                  (let ((ref-or-set_1
                                                                                                                         ref-or-set_0))
                                                                                                                    (values
                                                                                                                     ref-or-set_1
                                                                                                                     pos_0
                                                                                                                     name_0
-                                                                                                                    more_0)))
-                                                                                                                (args
-                                                                                                                 (raise-binding-result-arity-error
-                                                                                                                  3
-                                                                                                                  args))))))))
-                                                                                                      (case-lambda
-                                                                                                       ((ref-or-set_0
-                                                                                                         pos_0
-                                                                                                         name_0
-                                                                                                         more_0)
+                                                                                                                    more_0))))))))
+                                                                                                      (lambda (ref-or-set_0
+                                                                                                               pos_0
+                                                                                                               name_0
+                                                                                                               more_0)
                                                                                                         (let ((make_2
                                                                                                                make_1))
                                                                                                           (values
@@ -17399,17 +16712,12 @@
                                                                                                            ref-or-set_0
                                                                                                            pos_0
                                                                                                            name_0
-                                                                                                           more_0)))
-                                                                                                       (args
-                                                                                                        (raise-binding-result-arity-error
-                                                                                                         4
-                                                                                                         args)))))))
-                                                                                               (case-lambda
-                                                                                                ((make_1
-                                                                                                  ref-or-set_0
-                                                                                                  pos_0
-                                                                                                  name_0
-                                                                                                  more_0)
+                                                                                                           more_0)))))))
+                                                                                               (lambda (make_1
+                                                                                                        ref-or-set_0
+                                                                                                        pos_0
+                                                                                                        name_0
+                                                                                                        more_0)
                                                                                                  (let ((or-part_0
                                                                                                         (if (ok-error-config?_0
                                                                                                              more_0)
@@ -17504,11 +16812,7 @@
                                                                                                           #f)))
                                                                                                    (if or-part_0
                                                                                                      or-part_0
-                                                                                                     knowns_2)))
-                                                                                                (args
-                                                                                                 (raise-binding-result-arity-error
-                                                                                                  5
-                                                                                                  args))))
+                                                                                                     knowns_2))))
                                                                                               knowns_2)))
                                                                                        (values
                                                                                         knowns_3))))
@@ -17540,8 +16844,7 @@
                                                       (struct-type-info-sealed?
                                                        info_0))))))
                                               info_0)))))))
-                                 (nothing_0))))
-                            (args (raise-binding-result-arity-error 14 args))))
+                                 (nothing_0)))))
                           (if (let ((p_0 (unwrap v_0)))
                                 (if (pair? p_0)
                                   (if (let ((a_0 (car p_0)))
@@ -17644,47 +16947,40 @@
                                                                          (values
                                                                           s-ref_1
                                                                           s-set!_0)))))))
-                                                             (case-lambda
-                                                              ((s-ref_0
-                                                                s-set!_0)
+                                                             (lambda (s-ref_0
+                                                                      s-set!_0)
                                                                (let ((s?_1
                                                                       s?_0))
                                                                  (values
                                                                   s?_1
                                                                   s-ref_0
-                                                                  s-set!_0)))
-                                                              (args
-                                                               (raise-binding-result-arity-error
-                                                                2
-                                                                args))))))))
-                                                    (case-lambda
-                                                     ((s?_0 s-ref_0 s-set!_0)
+                                                                  s-set!_0))))))))
+                                                    (lambda (s?_0
+                                                             s-ref_0
+                                                             s-set!_0)
                                                       (let ((make-s_1
                                                              make-s_0))
                                                         (values
                                                          make-s_1
                                                          s?_0
                                                          s-ref_0
-                                                         s-set!_0)))
-                                                     (args
-                                                      (raise-binding-result-arity-error
-                                                       3
-                                                       args))))))))
-                                           (case-lambda
-                                            ((make-s_0 s?_0 s-ref_0 s-set!_0)
+                                                         s-set!_0))))))))
+                                           (lambda (make-s_0
+                                                    s?_0
+                                                    s-ref_0
+                                                    s-set!_0)
                                              (let ((struct:s_1 struct:s_0))
                                                (values
                                                 struct:s_1
                                                 make-s_0
                                                 s?_0
                                                 s-ref_0
-                                                s-set!_0)))
-                                            (args
-                                             (raise-binding-result-arity-error
-                                              4
-                                              args))))))))
-                                  (case-lambda
-                                   ((struct:s_0 make-s_0 s?_0 s-ref_0 s-set!_0)
+                                                s-set!_0))))))))
+                                  (lambda (struct:s_0
+                                           make-s_0
+                                           s?_0
+                                           s-ref_0
+                                           s-set!_0)
                                     (let ((rhs_1
                                            (let ((d_0 (cdr p_0)))
                                              (let ((a_0 (car (unwrap d_0))))
@@ -17700,18 +16996,13 @@
                                          s?_1
                                          s-ref_1
                                          s-set!_1
-                                         rhs_1))))
-                                   (args
-                                    (raise-binding-result-arity-error
-                                     5
-                                     args))))))
-                             (case-lambda
-                              ((struct:s_0
-                                make-s_0
-                                s?_0
-                                s-ref_0
-                                s-set!_0
-                                rhs_1)
+                                         rhs_1)))))))
+                             (lambda (struct:s_0
+                                      make-s_0
+                                      s?_0
+                                      s-ref_0
+                                      s-set!_0
+                                      rhs_1)
                                (let ((info_0
                                       (make-struct-type-info
                                        rhs_1
@@ -17771,9 +17062,7 @@
                                                   (struct-type-info-sealed?
                                                    info_0))))))))
                                       info_0))
-                                   (maybe-immediate-values_0))))
-                              (args
-                               (raise-binding-result-arity-error 6 args))))
+                                   (maybe-immediate-values_0)))))
                             (if (let ((p_0 (unwrap v_0)))
                                   (if (pair? p_0)
                                     (if (let ((a_0 (car p_0)))
@@ -17859,19 +17148,13 @@
                                                          (values
                                                           s?_1
                                                           s-ref_0)))))))
-                                             (case-lambda
-                                              ((s?_0 s-ref_0)
+                                             (lambda (s?_0 s-ref_0)
                                                (let ((prop:s_1 prop:s_0))
                                                  (values
                                                   prop:s_1
                                                   s?_0
-                                                  s-ref_0)))
-                                              (args
-                                               (raise-binding-result-arity-error
-                                                2
-                                                args))))))))
-                                    (case-lambda
-                                     ((prop:s_0 s?_0 s-ref_0)
+                                                  s-ref_0))))))))
+                                    (lambda (prop:s_0 s?_0 s-ref_0)
                                       (let ((rest_0
                                              (let ((d_0 (cdr p_0)))
                                                (let ((a_0 (car (unwrap d_0))))
@@ -17887,13 +17170,8 @@
                                            prop:s_1
                                            s?_1
                                            s-ref_1
-                                           rest_0))))
-                                     (args
-                                      (raise-binding-result-arity-error
-                                       3
-                                       args))))))
-                               (case-lambda
-                                ((prop:s_0 s?_0 s-ref_0 rest_0)
+                                           rest_0)))))))
+                               (lambda (prop:s_0 s?_0 s-ref_0 rest_0)
                                  (let ((type_0
                                         (string->uninterned-symbol
                                          (symbol->string (unwrap prop:s_0)))))
@@ -17924,11 +17202,8 @@
                                              app_0
                                              (known-struct-type-property/immediate-guard)))
                                           knowns_1)))
-                                    #f)))
-                                (args
-                                 (raise-binding-result-arity-error 4 args))))
-                              (maybe-immediate-values_0))))))))
-                 (args (raise-binding-result-arity-error 2 args))))
+                                    #f))))
+                              (maybe-immediate-values_0)))))))))
                (nothing_0)))))))))
 (define find-one-definition.1
   (|#%name|
@@ -18223,22 +17498,17 @@
                                                    (unwrap-list d_3))))
                                             (let ((s?_1 s?_0))
                                               (values s?_1 acc/muts_0)))))))
-                                  (case-lambda
-                                   ((s?_0 acc/muts_0)
+                                  (lambda (s?_0 acc/muts_0)
                                     (let ((make-s_1 make-s_0))
-                                      (values make-s_1 s?_0 acc/muts_0)))
-                                   (args
-                                    (raise-binding-result-arity-error
-                                     2
-                                     args))))))))
-                         (case-lambda
-                          ((make-s_0 s?_0 acc/muts_0)
+                                      (values make-s_1 s?_0 acc/muts_0))))))))
+                         (lambda (make-s_0 s?_0 acc/muts_0)
                            (let ((struct:s_1 struct:s_0))
-                             (values struct:s_1 make-s_0 s?_0 acc/muts_0)))
-                          (args
-                           (raise-binding-result-arity-error 3 args))))))))
-                (case-lambda
-                 ((struct:s_0 make-s_0 s?_0 acc/muts_0)
+                             (values
+                              struct:s_1
+                              make-s_0
+                              s?_0
+                              acc/muts_0))))))))
+                (lambda (struct:s_0 make-s_0 s?_0 acc/muts_0)
                   (call-with-values
                    (lambda ()
                      (let ((d_1 (cdr p_0)))
@@ -18304,49 +17574,40 @@
                                                                               (values
                                                                                -ref_1
                                                                                -set!_0)))))))
-                                                                  (case-lambda
-                                                                   ((-ref_0
-                                                                     -set!_0)
+                                                                  (lambda (-ref_0
+                                                                           -set!_0)
                                                                     (let ((?1_1
                                                                            ?1_0))
                                                                       (values
                                                                        ?1_1
                                                                        -ref_0
-                                                                       -set!_0)))
-                                                                   (args
-                                                                    (raise-binding-result-arity-error
-                                                                     2
-                                                                     args))))))))
-                                                         (case-lambda
-                                                          ((?1_0
-                                                            -ref_0
-                                                            -set!_0)
+                                                                       -set!_0))))))))
+                                                         (lambda (?1_0
+                                                                  -ref_0
+                                                                  -set!_0)
                                                            (let ((make_1
                                                                   make_0))
                                                              (values
                                                               make_1
                                                               ?1_0
                                                               -ref_0
-                                                              -set!_0)))
-                                                          (args
-                                                           (raise-binding-result-arity-error
-                                                            3
-                                                            args))))))))
-                                                (case-lambda
-                                                 ((make_0 ?1_0 -ref_0 -set!_0)
+                                                              -set!_0))))))))
+                                                (lambda (make_0
+                                                         ?1_0
+                                                         -ref_0
+                                                         -set!_0)
                                                   (let ((struct:_1 struct:_0))
                                                     (values
                                                      struct:_1
                                                      make_0
                                                      ?1_0
                                                      -ref_0
-                                                     -set!_0)))
-                                                 (args
-                                                  (raise-binding-result-arity-error
-                                                   4
-                                                   args))))))))
-                                       (case-lambda
-                                        ((struct:_0 make_0 ?1_0 -ref_0 -set!_0)
+                                                     -set!_0))))))))
+                                       (lambda (struct:_0
+                                                make_0
+                                                ?1_0
+                                                -ref_0
+                                                -set!_0)
                                          (let ((mk_0
                                                 (let ((d_3 (cdr p_2)))
                                                   (let ((a_3
@@ -18363,13 +17624,13 @@
                                               ?1_1
                                               -ref_1
                                               -set!_1
-                                              mk_0))))
-                                        (args
-                                         (raise-binding-result-arity-error
-                                          5
-                                          args))))))))
-                              (case-lambda
-                               ((struct:_0 make_0 ?1_0 -ref_0 -set!_0 mk_0)
+                                              mk_0)))))))))
+                              (lambda (struct:_0
+                                       make_0
+                                       ?1_0
+                                       -ref_0
+                                       -set!_0
+                                       mk_0)
                                 (call-with-values
                                  (lambda ()
                                    (let ((d_3 (cdr p_1)))
@@ -18408,32 +17669,27 @@
                                                                    (values
                                                                     ?2_1
                                                                     make-acc/muts_0)))))))
-                                                       (case-lambda
-                                                        ((?2_0 make-acc/muts_0)
+                                                       (lambda (?2_0
+                                                                make-acc/muts_0)
                                                          (let ((make2_1
                                                                 make2_0))
                                                            (values
                                                             make2_1
                                                             ?2_0
-                                                            make-acc/muts_0)))
-                                                        (args
-                                                         (raise-binding-result-arity-error
-                                                          2
-                                                          args))))))))
-                                              (case-lambda
-                                               ((make2_0 ?2_0 make-acc/muts_0)
+                                                            make-acc/muts_0))))))))
+                                              (lambda (make2_0
+                                                       ?2_0
+                                                       make-acc/muts_0)
                                                 (let ((struct:2_1 struct:2_0))
                                                   (values
                                                    struct:2_1
                                                    make2_0
                                                    ?2_0
-                                                   make-acc/muts_0)))
-                                               (args
-                                                (raise-binding-result-arity-error
-                                                 3
-                                                 args))))))))))
-                                 (case-lambda
-                                  ((struct:2_0 make2_0 ?2_0 make-acc/muts_0)
+                                                   make-acc/muts_0))))))))))
+                                 (lambda (struct:2_0
+                                          make2_0
+                                          ?2_0
+                                          make-acc/muts_0)
                                    (let ((struct:_1 struct:_0)
                                          (make_1 make_0)
                                          (?1_1 ?1_0)
@@ -18450,26 +17706,17 @@
                                       struct:2_0
                                       make2_0
                                       ?2_0
-                                      make-acc/muts_0)))
-                                  (args
-                                   (raise-binding-result-arity-error
-                                    4
-                                    args)))))
-                               (args
-                                (raise-binding-result-arity-error
-                                 6
-                                 args)))))))))
-                   (case-lambda
-                    ((struct:_0
-                      make_0
-                      ?1_0
-                      -ref_0
-                      -set!_0
-                      mk_0
-                      struct:2_0
-                      make2_0
-                      ?2_0
-                      make-acc/muts_0)
+                                      make-acc/muts_0)))))))))))
+                   (lambda (struct:_0
+                            make_0
+                            ?1_0
+                            -ref_0
+                            -set!_0
+                            mk_0
+                            struct:2_0
+                            make2_0
+                            ?2_0
+                            make-acc/muts_0)
                      (let ((struct:s_1 struct:s_0)
                            (make-s_1 make-s_0)
                            (s?_1 s?_0)
@@ -18488,24 +17735,21 @@
                         struct:2_0
                         make2_0
                         ?2_0
-                        make-acc/muts_0)))
-                    (args (raise-binding-result-arity-error 10 args)))))
-                 (args (raise-binding-result-arity-error 4 args)))))))
-         (case-lambda
-          ((struct:s_0
-            make-s_0
-            s?_0
-            acc/muts_0
-            struct:_0
-            make_0
-            ?1_0
-            -ref_0
-            -set!_0
-            mk_0
-            struct:2_0
-            make2_0
-            ?2_0
-            make-acc/muts_0)
+                        make-acc/muts_0)))))))))
+         (lambda (struct:s_0
+                  make-s_0
+                  s?_0
+                  acc/muts_0
+                  struct:_0
+                  make_0
+                  ?1_0
+                  -ref_0
+                  -set!_0
+                  mk_0
+                  struct:2_0
+                  make2_0
+                  ?2_0
+                  make-acc/muts_0)
            (let ((sti_0
                   (if (begin-unsafe
                        (let ((app_0 (unwrap struct:_0)))
@@ -18735,23 +17979,17 @@
                                                                                           (values
                                                                                            pos_1
                                                                                            field-name_0)))))))
-                                                                              (case-lambda
-                                                                               ((pos_0
-                                                                                 field-name_0)
+                                                                              (lambda (pos_0
+                                                                                       field-name_0)
                                                                                 (let ((ref-id_1
                                                                                        ref-id_0))
                                                                                   (values
                                                                                    ref-id_1
                                                                                    pos_0
-                                                                                   field-name_0)))
-                                                                               (args
-                                                                                (raise-binding-result-arity-error
-                                                                                 2
-                                                                                 args))))))))
-                                                                     (case-lambda
-                                                                      ((ref-id_0
-                                                                        pos_0
-                                                                        field-name_0)
+                                                                                   field-name_0))))))))
+                                                                     (lambda (ref-id_0
+                                                                              pos_0
+                                                                              field-name_0)
                                                                        (if (begin-unsafe
                                                                             (let ((app_0
                                                                                    (unwrap
@@ -18765,11 +18003,7 @@
                                                                            (exact-nonnegative-integer?
                                                                             pos_0)
                                                                            #f)
-                                                                         #f))
-                                                                      (args
-                                                                       (raise-binding-result-arity-error
-                                                                        3
-                                                                        args))))
+                                                                         #f)))
                                                                     (if (if (eq?
                                                                              'make-struct-field-accessor
                                                                              hd_1)
@@ -18926,39 +18160,28 @@
                                                                                                      (values
                                                                                                       field/proc-name_1
                                                                                                       contract_0)))))))
-                                                                                         (case-lambda
-                                                                                          ((field/proc-name_0
-                                                                                            contract_0)
+                                                                                         (lambda (field/proc-name_0
+                                                                                                  contract_0)
                                                                                            (let ((pos_1
                                                                                                   pos_0))
                                                                                              (values
                                                                                               pos_1
                                                                                               field/proc-name_0
-                                                                                              contract_0)))
-                                                                                          (args
-                                                                                           (raise-binding-result-arity-error
-                                                                                            2
-                                                                                            args))))))))
-                                                                                (case-lambda
-                                                                                 ((pos_0
-                                                                                   field/proc-name_0
-                                                                                   contract_0)
+                                                                                              contract_0))))))))
+                                                                                (lambda (pos_0
+                                                                                         field/proc-name_0
+                                                                                         contract_0)
                                                                                   (let ((ref-id_1
                                                                                          ref-id_0))
                                                                                     (values
                                                                                      ref-id_1
                                                                                      pos_0
                                                                                      field/proc-name_0
-                                                                                     contract_0)))
-                                                                                 (args
-                                                                                  (raise-binding-result-arity-error
-                                                                                   3
-                                                                                   args))))))))
-                                                                       (case-lambda
-                                                                        ((ref-id_0
-                                                                          pos_0
-                                                                          field/proc-name_0
-                                                                          contract_0)
+                                                                                     contract_0))))))))
+                                                                       (lambda (ref-id_0
+                                                                                pos_0
+                                                                                field/proc-name_0
+                                                                                contract_0)
                                                                          (if (begin-unsafe
                                                                               (let ((app_0
                                                                                      (unwrap
@@ -18975,11 +18198,7 @@
                                                                                 contract_0)
                                                                                #f)
                                                                              #f)
-                                                                           #f))
-                                                                        (args
-                                                                         (raise-binding-result-arity-error
-                                                                          4
-                                                                          args))))
+                                                                           #f)))
                                                                       (if (if (eq?
                                                                                'make-struct-field-accessor
                                                                                hd_1)
@@ -19208,39 +18427,28 @@
                                                                                                                 (values
                                                                                                                  contract_1
                                                                                                                  realm_0)))))))
-                                                                                                    (case-lambda
-                                                                                                     ((contract_0
-                                                                                                       realm_0)
+                                                                                                    (lambda (contract_0
+                                                                                                             realm_0)
                                                                                                       (let ((field/proc-name_1
                                                                                                              field/proc-name_0))
                                                                                                         (values
                                                                                                          field/proc-name_1
                                                                                                          contract_0
-                                                                                                         realm_0)))
-                                                                                                     (args
-                                                                                                      (raise-binding-result-arity-error
-                                                                                                       2
-                                                                                                       args))))))))
-                                                                                           (case-lambda
-                                                                                            ((field/proc-name_0
-                                                                                              contract_0
-                                                                                              realm_0)
+                                                                                                         realm_0))))))))
+                                                                                           (lambda (field/proc-name_0
+                                                                                                    contract_0
+                                                                                                    realm_0)
                                                                                              (let ((pos_1
                                                                                                     pos_0))
                                                                                                (values
                                                                                                 pos_1
                                                                                                 field/proc-name_0
                                                                                                 contract_0
-                                                                                                realm_0)))
-                                                                                            (args
-                                                                                             (raise-binding-result-arity-error
-                                                                                              3
-                                                                                              args))))))))
-                                                                                  (case-lambda
-                                                                                   ((pos_0
-                                                                                     field/proc-name_0
-                                                                                     contract_0
-                                                                                     realm_0)
+                                                                                                realm_0))))))))
+                                                                                  (lambda (pos_0
+                                                                                           field/proc-name_0
+                                                                                           contract_0
+                                                                                           realm_0)
                                                                                     (let ((ref-id_1
                                                                                            ref-id_0))
                                                                                       (values
@@ -19248,17 +18456,12 @@
                                                                                        pos_0
                                                                                        field/proc-name_0
                                                                                        contract_0
-                                                                                       realm_0)))
-                                                                                   (args
-                                                                                    (raise-binding-result-arity-error
-                                                                                     4
-                                                                                     args))))))))
-                                                                         (case-lambda
-                                                                          ((ref-id_0
-                                                                            pos_0
-                                                                            field/proc-name_0
-                                                                            contract_0
-                                                                            realm_0)
+                                                                                       realm_0))))))))
+                                                                         (lambda (ref-id_0
+                                                                                  pos_0
+                                                                                  field/proc-name_0
+                                                                                  contract_0
+                                                                                  realm_0)
                                                                            (if (begin-unsafe
                                                                                 (let ((app_0
                                                                                        (unwrap
@@ -19278,11 +18481,7 @@
                                                                                    #f)
                                                                                  #f)
                                                                                #f)
-                                                                             #f))
-                                                                          (args
-                                                                           (raise-binding-result-arity-error
-                                                                            5
-                                                                            args))))
+                                                                             #f)))
                                                                         (if (if (eq?
                                                                                  'make-struct-field-mutator
                                                                                  hd_1)
@@ -19417,23 +18616,17 @@
                                                                                                 (values
                                                                                                  pos_1
                                                                                                  field-name_0)))))))
-                                                                                    (case-lambda
-                                                                                     ((pos_0
-                                                                                       field-name_0)
+                                                                                    (lambda (pos_0
+                                                                                             field-name_0)
                                                                                       (let ((set-id_1
                                                                                              set-id_0))
                                                                                         (values
                                                                                          set-id_1
                                                                                          pos_0
-                                                                                         field-name_0)))
-                                                                                     (args
-                                                                                      (raise-binding-result-arity-error
-                                                                                       2
-                                                                                       args))))))))
-                                                                           (case-lambda
-                                                                            ((set-id_0
-                                                                              pos_0
-                                                                              field-name_0)
+                                                                                         field-name_0))))))))
+                                                                           (lambda (set-id_0
+                                                                                    pos_0
+                                                                                    field-name_0)
                                                                              (if (begin-unsafe
                                                                                   (let ((app_0
                                                                                          (unwrap
@@ -19447,11 +18640,7 @@
                                                                                  (exact-nonnegative-integer?
                                                                                   pos_0)
                                                                                  #f)
-                                                                               #f))
-                                                                            (args
-                                                                             (raise-binding-result-arity-error
-                                                                              3
-                                                                              args))))
+                                                                               #f)))
                                                                           (if (if (eq?
                                                                                    'make-struct-field-mutator
                                                                                    hd_1)
@@ -19608,39 +18797,28 @@
                                                                                                            (values
                                                                                                             field/proc-name_1
                                                                                                             contract_0)))))))
-                                                                                               (case-lambda
-                                                                                                ((field/proc-name_0
-                                                                                                  contract_0)
+                                                                                               (lambda (field/proc-name_0
+                                                                                                        contract_0)
                                                                                                  (let ((pos_1
                                                                                                         pos_0))
                                                                                                    (values
                                                                                                     pos_1
                                                                                                     field/proc-name_0
-                                                                                                    contract_0)))
-                                                                                                (args
-                                                                                                 (raise-binding-result-arity-error
-                                                                                                  2
-                                                                                                  args))))))))
-                                                                                      (case-lambda
-                                                                                       ((pos_0
-                                                                                         field/proc-name_0
-                                                                                         contract_0)
+                                                                                                    contract_0))))))))
+                                                                                      (lambda (pos_0
+                                                                                               field/proc-name_0
+                                                                                               contract_0)
                                                                                         (let ((set-id_1
                                                                                                set-id_0))
                                                                                           (values
                                                                                            set-id_1
                                                                                            pos_0
                                                                                            field/proc-name_0
-                                                                                           contract_0)))
-                                                                                       (args
-                                                                                        (raise-binding-result-arity-error
-                                                                                         3
-                                                                                         args))))))))
-                                                                             (case-lambda
-                                                                              ((set-id_0
-                                                                                pos_0
-                                                                                field/proc-name_0
-                                                                                contract_0)
+                                                                                           contract_0))))))))
+                                                                             (lambda (set-id_0
+                                                                                      pos_0
+                                                                                      field/proc-name_0
+                                                                                      contract_0)
                                                                                (if (begin-unsafe
                                                                                     (let ((app_0
                                                                                            (unwrap
@@ -19657,11 +18835,7 @@
                                                                                       contract_0)
                                                                                      #f)
                                                                                    #f)
-                                                                                 #f))
-                                                                              (args
-                                                                               (raise-binding-result-arity-error
-                                                                                4
-                                                                                args))))
+                                                                                 #f)))
                                                                             (if (if (eq?
                                                                                      'make-struct-field-mutator
                                                                                      hd_1)
@@ -19890,39 +19064,28 @@
                                                                                                                       (values
                                                                                                                        contract_1
                                                                                                                        realm_0)))))))
-                                                                                                          (case-lambda
-                                                                                                           ((contract_0
-                                                                                                             realm_0)
+                                                                                                          (lambda (contract_0
+                                                                                                                   realm_0)
                                                                                                             (let ((field/proc-name_1
                                                                                                                    field/proc-name_0))
                                                                                                               (values
                                                                                                                field/proc-name_1
                                                                                                                contract_0
-                                                                                                               realm_0)))
-                                                                                                           (args
-                                                                                                            (raise-binding-result-arity-error
-                                                                                                             2
-                                                                                                             args))))))))
-                                                                                                 (case-lambda
-                                                                                                  ((field/proc-name_0
-                                                                                                    contract_0
-                                                                                                    realm_0)
+                                                                                                               realm_0))))))))
+                                                                                                 (lambda (field/proc-name_0
+                                                                                                          contract_0
+                                                                                                          realm_0)
                                                                                                    (let ((pos_1
                                                                                                           pos_0))
                                                                                                      (values
                                                                                                       pos_1
                                                                                                       field/proc-name_0
                                                                                                       contract_0
-                                                                                                      realm_0)))
-                                                                                                  (args
-                                                                                                   (raise-binding-result-arity-error
-                                                                                                    3
-                                                                                                    args))))))))
-                                                                                        (case-lambda
-                                                                                         ((pos_0
-                                                                                           field/proc-name_0
-                                                                                           contract_0
-                                                                                           realm_0)
+                                                                                                      realm_0))))))))
+                                                                                        (lambda (pos_0
+                                                                                                 field/proc-name_0
+                                                                                                 contract_0
+                                                                                                 realm_0)
                                                                                           (let ((set-id_1
                                                                                                  set-id_0))
                                                                                             (values
@@ -19930,17 +19093,12 @@
                                                                                              pos_0
                                                                                              field/proc-name_0
                                                                                              contract_0
-                                                                                             realm_0)))
-                                                                                         (args
-                                                                                          (raise-binding-result-arity-error
-                                                                                           4
-                                                                                           args))))))))
-                                                                               (case-lambda
-                                                                                ((set-id_0
-                                                                                  pos_0
-                                                                                  field/proc-name_0
-                                                                                  contract_0
-                                                                                  realm_0)
+                                                                                             realm_0))))))))
+                                                                               (lambda (set-id_0
+                                                                                        pos_0
+                                                                                        field/proc-name_0
+                                                                                        contract_0
+                                                                                        realm_0)
                                                                                  (if (begin-unsafe
                                                                                       (let ((app_0
                                                                                              (unwrap
@@ -19960,11 +19118,7 @@
                                                                                          #f)
                                                                                        #f)
                                                                                      #f)
-                                                                                   #f))
-                                                                                (args
-                                                                                 (raise-binding-result-arity-error
-                                                                                  5
-                                                                                  args))))
+                                                                                   #f)))
                                                                               #f)))))))))
                                                            (values result_1))))
                                                     (if (if (not
@@ -20999,18 +20153,13 @@
                                                                                                           (values
                                                                                                            pos_1
                                                                                                            field-name_0))))))))
-                                                                                            (case-lambda
-                                                                                             ((pos_0
-                                                                                               field-name_0)
+                                                                                            (lambda (pos_0
+                                                                                                     field-name_0)
                                                                                               (build-accessor_0
                                                                                                pos_0
                                                                                                field-name_0
                                                                                                #f
-                                                                                               'racket))
-                                                                                             (args
-                                                                                              (raise-binding-result-arity-error
-                                                                                               2
-                                                                                               args))))
+                                                                                               'racket)))
                                                                                            (if (if (eq?
                                                                                                     'make-struct-field-accessor
                                                                                                     hd_1)
@@ -21158,32 +20307,22 @@
                                                                                                                      (values
                                                                                                                       field/proc-name_1
                                                                                                                       contract_0)))))))
-                                                                                                         (case-lambda
-                                                                                                          ((field/proc-name_0
-                                                                                                            contract_0)
+                                                                                                         (lambda (field/proc-name_0
+                                                                                                                  contract_0)
                                                                                                            (let ((pos_1
                                                                                                                   pos_0))
                                                                                                              (values
                                                                                                               pos_1
                                                                                                               field/proc-name_0
-                                                                                                              contract_0)))
-                                                                                                          (args
-                                                                                                           (raise-binding-result-arity-error
-                                                                                                            2
-                                                                                                            args)))))))))
-                                                                                              (case-lambda
-                                                                                               ((pos_0
-                                                                                                 field/proc-name_0
-                                                                                                 contract_0)
+                                                                                                              contract_0)))))))))
+                                                                                              (lambda (pos_0
+                                                                                                       field/proc-name_0
+                                                                                                       contract_0)
                                                                                                 (build-accessor_0
                                                                                                  pos_0
                                                                                                  field/proc-name_0
                                                                                                  contract_0
-                                                                                                 'racket))
-                                                                                               (args
-                                                                                                (raise-binding-result-arity-error
-                                                                                                 3
-                                                                                                 args))))
+                                                                                                 'racket)))
                                                                                              (if (if (eq?
                                                                                                       'make-struct-field-accessor
                                                                                                       hd_1)
@@ -21403,48 +20542,33 @@
                                                                                                                                 (values
                                                                                                                                  contract_1
                                                                                                                                  realm_0)))))))
-                                                                                                                    (case-lambda
-                                                                                                                     ((contract_0
-                                                                                                                       realm_0)
+                                                                                                                    (lambda (contract_0
+                                                                                                                             realm_0)
                                                                                                                       (let ((field/proc-name_1
                                                                                                                              field/proc-name_0))
                                                                                                                         (values
                                                                                                                          field/proc-name_1
                                                                                                                          contract_0
-                                                                                                                         realm_0)))
-                                                                                                                     (args
-                                                                                                                      (raise-binding-result-arity-error
-                                                                                                                       2
-                                                                                                                       args))))))))
-                                                                                                           (case-lambda
-                                                                                                            ((field/proc-name_0
-                                                                                                              contract_0
-                                                                                                              realm_0)
+                                                                                                                         realm_0))))))))
+                                                                                                           (lambda (field/proc-name_0
+                                                                                                                    contract_0
+                                                                                                                    realm_0)
                                                                                                              (let ((pos_1
                                                                                                                     pos_0))
                                                                                                                (values
                                                                                                                 pos_1
                                                                                                                 field/proc-name_0
                                                                                                                 contract_0
-                                                                                                                realm_0)))
-                                                                                                            (args
-                                                                                                             (raise-binding-result-arity-error
-                                                                                                              3
-                                                                                                              args)))))))))
-                                                                                                (case-lambda
-                                                                                                 ((pos_0
-                                                                                                   field/proc-name_0
-                                                                                                   contract_0
-                                                                                                   realm_0)
+                                                                                                                realm_0)))))))))
+                                                                                                (lambda (pos_0
+                                                                                                         field/proc-name_0
+                                                                                                         contract_0
+                                                                                                         realm_0)
                                                                                                   (build-accessor_0
                                                                                                    pos_0
                                                                                                    field/proc-name_0
                                                                                                    contract_0
-                                                                                                   realm_0))
-                                                                                                 (args
-                                                                                                  (raise-binding-result-arity-error
-                                                                                                   4
-                                                                                                   args))))
+                                                                                                   realm_0)))
                                                                                                (if (if (eq?
                                                                                                         'make-struct-field-mutator
                                                                                                         hd_1)
@@ -21570,18 +20694,13 @@
                                                                                                                 (values
                                                                                                                  pos_1
                                                                                                                  field-name_0))))))))
-                                                                                                  (case-lambda
-                                                                                                   ((pos_0
-                                                                                                     field-name_0)
+                                                                                                  (lambda (pos_0
+                                                                                                           field-name_0)
                                                                                                     (build-mutator_0
                                                                                                      pos_0
                                                                                                      field-name_0
                                                                                                      #f
-                                                                                                     'racket))
-                                                                                                   (args
-                                                                                                    (raise-binding-result-arity-error
-                                                                                                     2
-                                                                                                     args))))
+                                                                                                     'racket)))
                                                                                                  (if (if (eq?
                                                                                                           'make-struct-field-mutator
                                                                                                           hd_1)
@@ -21729,32 +20848,22 @@
                                                                                                                            (values
                                                                                                                             field-name_1
                                                                                                                             contract_0)))))))
-                                                                                                               (case-lambda
-                                                                                                                ((field-name_0
-                                                                                                                  contract_0)
+                                                                                                               (lambda (field-name_0
+                                                                                                                        contract_0)
                                                                                                                  (let ((pos_1
                                                                                                                         pos_0))
                                                                                                                    (values
                                                                                                                     pos_1
                                                                                                                     field-name_0
-                                                                                                                    contract_0)))
-                                                                                                                (args
-                                                                                                                 (raise-binding-result-arity-error
-                                                                                                                  2
-                                                                                                                  args)))))))))
-                                                                                                    (case-lambda
-                                                                                                     ((pos_0
-                                                                                                       field-name_0
-                                                                                                       contract_0)
+                                                                                                                    contract_0)))))))))
+                                                                                                    (lambda (pos_0
+                                                                                                             field-name_0
+                                                                                                             contract_0)
                                                                                                       (build-mutator_0
                                                                                                        pos_0
                                                                                                        field-name_0
                                                                                                        contract_0
-                                                                                                       'racket))
-                                                                                                     (args
-                                                                                                      (raise-binding-result-arity-error
-                                                                                                       3
-                                                                                                       args))))
+                                                                                                       'racket)))
                                                                                                    (if (if (eq?
                                                                                                             'make-struct-field-mutator
                                                                                                             hd_1)
@@ -21974,48 +21083,33 @@
                                                                                                                                       (values
                                                                                                                                        contract_1
                                                                                                                                        realm_0)))))))
-                                                                                                                          (case-lambda
-                                                                                                                           ((contract_0
-                                                                                                                             realm_0)
+                                                                                                                          (lambda (contract_0
+                                                                                                                                   realm_0)
                                                                                                                             (let ((field-name_1
                                                                                                                                    field-name_0))
                                                                                                                               (values
                                                                                                                                field-name_1
                                                                                                                                contract_0
-                                                                                                                               realm_0)))
-                                                                                                                           (args
-                                                                                                                            (raise-binding-result-arity-error
-                                                                                                                             2
-                                                                                                                             args))))))))
-                                                                                                                 (case-lambda
-                                                                                                                  ((field-name_0
-                                                                                                                    contract_0
-                                                                                                                    realm_0)
+                                                                                                                               realm_0))))))))
+                                                                                                                 (lambda (field-name_0
+                                                                                                                          contract_0
+                                                                                                                          realm_0)
                                                                                                                    (let ((pos_1
                                                                                                                           pos_0))
                                                                                                                      (values
                                                                                                                       pos_1
                                                                                                                       field-name_0
                                                                                                                       contract_0
-                                                                                                                      realm_0)))
-                                                                                                                  (args
-                                                                                                                   (raise-binding-result-arity-error
-                                                                                                                    3
-                                                                                                                    args)))))))))
-                                                                                                      (case-lambda
-                                                                                                       ((pos_0
-                                                                                                         field-name_0
-                                                                                                         contract_0
-                                                                                                         realm_0)
+                                                                                                                      realm_0)))))))))
+                                                                                                      (lambda (pos_0
+                                                                                                               field-name_0
+                                                                                                               contract_0
+                                                                                                               realm_0)
                                                                                                         (build-mutator_0
                                                                                                          pos_0
                                                                                                          field-name_0
                                                                                                          contract_0
-                                                                                                         realm_0))
-                                                                                                       (args
-                                                                                                        (raise-binding-result-arity-error
-                                                                                                         4
-                                                                                                         args))))
+                                                                                                         realm_0)))
                                                                                                      (error
                                                                                                       "oops"))))))))))))
                                                                                fold-var_0)))
@@ -22030,8 +21124,7 @@
                                                 null
                                                 acc/muts_0
                                                 make-acc/muts_0)))))))))))))))))))))
-               #f)))
-          (args (raise-binding-result-arity-error 14 args))))
+               #f))))
         #f))))
 (define struct-convert-local.1
   (|#%name|
@@ -22091,14 +21184,11 @@
                                   (let ((d_1 (cdr p_1)))
                                     (let ((a_2 (car (unwrap d_1)))) a_2))))
                              (let ((ids_1 ids_0)) (values ids_1 rhs_0))))))))
-                 (case-lambda
-                  ((ids_0 rhs_0)
+                 (lambda (ids_0 rhs_0)
                    (let ((bodys_0 (let ((d_1 (cdr p_0))) (unwrap-list d_1))))
                      (let ((ids_1 ids_0) (rhs_1 rhs_0))
-                       (values ids_1 rhs_1 bodys_0))))
-                  (args (raise-binding-result-arity-error 2 args)))))))
-          (case-lambda
-           ((ids_0 rhs_0 bodys_0)
+                       (values ids_1 rhs_1 bodys_0))))))))
+          (lambda (ids_0 rhs_0 bodys_0)
             (let ((defn_0 (list 'define-values ids_0 rhs_0)))
               (let ((new-seq_0
                      (struct-convert
@@ -22133,8 +21223,7 @@
                             simples12_0
                             unsafe-mode?2_0
                             target3_0))
-                         (case-lambda
-                          ((new-knowns_0 info_0)
+                         (lambda (new-knowns_0 info_0)
                            (if letrec?1_0
                              (let ((app_0
                                     (letrec*
@@ -22202,14 +21291,9 @@
                                                            (values
                                                             forms_1
                                                             rest_0))))))
-                                                 (case-lambda
-                                                  ((forms_0 rest_0)
+                                                 (lambda (forms_0 rest_0)
                                                    (loop_0
-                                                    (append forms_0 rest_0)))
-                                                  (args
-                                                   (raise-binding-result-arity-error
-                                                    2
-                                                    args))))
+                                                    (append forms_0 rest_0))))
                                                 (if (let ((p_0
                                                            (unwrap new-seq_2)))
                                                       (if (pair? p_0)
@@ -22299,8 +21383,7 @@
                                                                       (values
                                                                        id_1
                                                                        rhs_1))))))))
-                                                        (case-lambda
-                                                         ((id_0 rhs_1)
+                                                        (lambda (id_0 rhs_1)
                                                           (let ((rest_0
                                                                  (let ((d_0
                                                                         (cdr
@@ -22312,22 +21395,13 @@
                                                               (values
                                                                id_1
                                                                rhs_2
-                                                               rest_0))))
-                                                         (args
-                                                          (raise-binding-result-arity-error
-                                                           2
-                                                           args))))))
-                                                   (case-lambda
-                                                    ((id_0 rhs_1 rest_0)
+                                                               rest_0)))))))
+                                                   (lambda (id_0 rhs_1 rest_0)
                                                      (let ((app_0
                                                             (list id_0 rhs_1)))
                                                        (cons
                                                         app_0
-                                                        (loop_0 rest_0))))
-                                                    (args
-                                                     (raise-binding-result-arity-error
-                                                      3
-                                                      args))))
+                                                        (loop_0 rest_0)))))
                                                   (error
                                                    'match
                                                    "failed ~e"
@@ -22398,13 +21472,8 @@
                                                     (values
                                                      forms_1
                                                      rest_0))))))
-                                          (case-lambda
-                                           ((forms_0 rest_0)
-                                            (loop_0 (append forms_0 rest_0)))
-                                           (args
-                                            (raise-binding-result-arity-error
-                                             2
-                                             args))))
+                                          (lambda (forms_0 rest_0)
+                                            (loop_0 (append forms_0 rest_0))))
                                          (if (let ((p_0 (unwrap new-seq_2)))
                                                (if (pair? p_0)
                                                  (if (let ((a_0 (car p_0)))
@@ -22484,8 +21553,7 @@
                                                                (values
                                                                 id_1
                                                                 rhs_1))))))))
-                                                 (case-lambda
-                                                  ((id_0 rhs_1)
+                                                 (lambda (id_0 rhs_1)
                                                    (let ((rest_0
                                                           (let ((d_0
                                                                  (cdr p_0)))
@@ -22495,32 +21563,21 @@
                                                        (values
                                                         id_1
                                                         rhs_2
-                                                        rest_0))))
-                                                  (args
-                                                   (raise-binding-result-arity-error
-                                                    2
-                                                    args))))))
-                                            (case-lambda
-                                             ((id_0 rhs_1 rest_0)
+                                                        rest_0)))))))
+                                            (lambda (id_0 rhs_1 rest_0)
                                               (let ((app_0
                                                      (list (list id_0 rhs_1))))
                                                 (list
                                                  'let
                                                  app_0
-                                                 (loop_0 rest_0))))
-                                             (args
-                                              (raise-binding-result-arity-error
-                                               3
-                                               args))))
+                                                 (loop_0 rest_0)))))
                                            (error
                                             'match
                                             "failed ~e"
                                             new-seq_2)))))))))
-                              (loop_0 new-seq_1))))
-                          (args (raise-binding-result-arity-error 2 args)))))
+                              (loop_0 new-seq_1))))))
                       (error 'match "failed ~e" new-seq_0)))
-                  #f))))
-           (args (raise-binding-result-arity-error 3 args))))
+                  #f)))))
          #f)))))
 (define schemify-body$1
   (|#%name|
@@ -22621,8 +21678,7 @@
                                                        (values
                                                         ids_1
                                                         rhs_0)))))))
-                                           (case-lambda
-                                            ((ids_0 rhs_0)
+                                           (lambda (ids_0 rhs_0)
                                              (begin
                                                (letrec*
                                                 ((for-loop_1
@@ -22666,11 +21722,7 @@
                                                          src-syms_3))))))
                                                 (for-loop_1
                                                  src-syms_2
-                                                 ids_0))))
-                                            (args
-                                             (raise-binding-result-arity-error
-                                              2
-                                              args))))
+                                                 ids_0)))))
                                           src-syms_2))))
                                  (values src-syms_3))))
                           (for-loop_0 src-syms_3 rest_0))))
@@ -22884,44 +21936,27 @@
                                                           (values
                                                            ids_3
                                                            rhss_1))))))
-                                                (case-lambda
-                                                 ((ids3_0 rhss4_0)
+                                                (lambda (ids3_0 rhss4_0)
                                                   (values
                                                    (cons ids3_0 ids_1)
-                                                   (cons rhss4_0 rhss_0)))
-                                                 (args
-                                                  (raise-binding-result-arity-error
-                                                   2
-                                                   args)))))
-                                             (case-lambda
-                                              ((ids_2 rhss_1)
-                                               (values ids_2 rhss_1))
-                                              (args
-                                               (raise-binding-result-arity-error
-                                                2
-                                                args)))))
-                                          (case-lambda
-                                           ((ids_2 rhss_1)
-                                            (for-loop_0 ids_2 rhss_1 rest_0))
-                                           (args
-                                            (raise-binding-result-arity-error
-                                             2
-                                             args)))))))
+                                                   (cons rhss4_0 rhss_0)))))
+                                             (lambda (ids_2 rhss_1)
+                                               (values ids_2 rhss_1))))
+                                          (lambda (ids_2 rhss_1)
+                                            (for-loop_0
+                                             ids_2
+                                             rhss_1
+                                             rest_0))))))
                                    (values ids_1 rhss_0)))))))
                           (for-loop_0 null null a_0)))
-                       (case-lambda
-                        ((ids_1 rhss_0)
+                       (lambda (ids_1 rhss_0)
                          (let ((app_0 (reverse$1 ids_1)))
-                           (values app_0 (reverse$1 rhss_0))))
-                        (args (raise-binding-result-arity-error 2 args))))))
-                  (case-lambda
-                   ((ids_1 rhss_0)
+                           (values app_0 (reverse$1 rhss_0)))))))
+                  (lambda (ids_1 rhss_0)
                     (let ((body_0 (let ((d_1 (cdr p_0))) d_1)))
                       (let ((ids_2 ids_1) (rhss_1 rhss_0))
-                        (values ids_2 rhss_1 body_0))))
-                   (args (raise-binding-result-arity-error 2 args)))))))
-           (case-lambda
-            ((ids_1 rhss_0 body_0)
+                        (values ids_2 rhss_1 body_0))))))))
+           (lambda (ids_1 rhss_0 body_0)
              (let ((app_0
                     (reverse$1
                      (begin
@@ -22970,8 +22005,7 @@
                                            rest_1)))))))
                               fold-var_0))))))
                      (for-loop_0 null ids_1 rhss_0))))
-                 body_0))))
-            (args (raise-binding-result-arity-error 3 args))))
+                 body_0)))))
           (error 'match "failed ~e" e_0))
         e_0))))
 (define id-to-variable
@@ -23096,8 +22130,7 @@
                                                               (values
                                                                ids_1
                                                                rhs_0)))))))
-                                                  (case-lambda
-                                                   ((ids_0 rhs_0)
+                                                  (lambda (ids_0 rhs_0)
                                                     (begin
                                                       (letrec*
                                                        ((for-loop_1
@@ -23141,11 +22174,7 @@
                                                                 unexported-ids_1))))))
                                                        (for-loop_1
                                                         unexported-ids_0
-                                                        ids_0))))
-                                                   (args
-                                                    (raise-binding-result-arity-error
-                                                     2
-                                                     args))))
+                                                        ids_0)))))
                                                  unexported-ids_0))))
                                         (values unexported-ids_1))))
                                  (for-loop_0 unexported-ids_1 rest_0))))
@@ -23218,8 +22247,7 @@
                                                 simples_0
                                                 unsafe-mode?_0
                                                 target_0))
-                                             (case-lambda
-                                              ((knowns_1 info_0)
+                                             (lambda (knowns_1 info_0)
                                                (begin
                                                  (let ((hd_0
                                                         (let ((p_0
@@ -23295,8 +22323,7 @@
                                                                   (values
                                                                    ids_1
                                                                    rhs_0)))))))
-                                                      (case-lambda
-                                                       ((ids_0 rhs_0)
+                                                      (lambda (ids_0 rhs_0)
                                                         (begin
                                                           (if info_0
                                                             (begin
@@ -23429,11 +22456,7 @@
                                                                       (values)))))))
                                                              (for-loop_1
                                                               ids_0)))
-                                                          (void)))
-                                                       (args
-                                                        (raise-binding-result-arity-error
-                                                         2
-                                                         args))))
+                                                          (void))))
                                                      (find-mutated!
                                                       form_0
                                                       #f
@@ -23443,11 +22466,7 @@
                                                       mutated_0
                                                       simples_0
                                                       unsafe-mode?_0)))
-                                                 knowns_1))
-                                              (args
-                                               (raise-binding-result-arity-error
-                                                2
-                                                args))))))
+                                                 knowns_1)))))
                                        (values prev-knowns_1))))
                                 (for-loop_0 prev-knowns_1 rest_0))))
                           prev-knowns_0))))))
@@ -23503,8 +22522,7 @@
                                                         a_0))))
                                                (let ((ids_1 ids_0))
                                                  (values ids_1 rhs_0)))))))
-                                     (case-lambda
-                                      ((ids_0 rhs_0)
+                                     (lambda (ids_0 rhs_0)
                                        (begin
                                          (begin
                                            (letrec*
@@ -23556,11 +22574,7 @@
                                                             rest_1))))
                                                      (values)))))))
                                             (for-loop_1 ids_0)))
-                                         (void)))
-                                      (args
-                                       (raise-binding-result-arity-error
-                                        2
-                                        args))))
+                                         (void))))
                                     (void)))
                                 (for-loop_0 rest_0))))
                           (values)))))))
@@ -23698,14 +22712,12 @@
                                     (let ((d_1 (cdr p_0))) (unwrap-list d_1))))
                                (let ((formals_1 formals_0))
                                  (values formals_1 body_0)))))))
-                     (case-lambda
-                      ((formals_0 body_0)
+                     (lambda (formals_0 body_0)
                        (if ids_1
                          (delay!_0
                           ids_1
                           (lambda () (find-mutated!*_0 body_0 #f)))
-                         (find-mutated!*_0 body_0 #f)))
-                      (args (raise-binding-result-arity-error 2 args))))
+                         (find-mutated!*_0 body_0 #f))))
                     (if (if (eq? 'case-lambda hd_0)
                           (let ((a_0 (cdr (unwrap v_0))))
                             (if (wrap-list? a_0)
@@ -23803,48 +22815,30 @@
                                                                (values
                                                                 formalss_2
                                                                 bodys_1))))))
-                                                     (case-lambda
-                                                      ((formalss10_0 bodys11_0)
+                                                     (lambda (formalss10_0
+                                                              bodys11_0)
                                                        (values
                                                         (cons
                                                          formalss10_0
                                                          formalss_0)
                                                         (cons
                                                          bodys11_0
-                                                         bodys_0)))
-                                                      (args
-                                                       (raise-binding-result-arity-error
-                                                        2
-                                                        args)))))
-                                                  (case-lambda
-                                                   ((formalss_1 bodys_1)
+                                                         bodys_0)))))
+                                                  (lambda (formalss_1 bodys_1)
                                                     (values
                                                      formalss_1
-                                                     bodys_1))
-                                                   (args
-                                                    (raise-binding-result-arity-error
-                                                     2
-                                                     args)))))
-                                               (case-lambda
-                                                ((formalss_1 bodys_1)
+                                                     bodys_1))))
+                                               (lambda (formalss_1 bodys_1)
                                                  (for-loop_0
                                                   formalss_1
                                                   bodys_1
-                                                  rest_0))
-                                                (args
-                                                 (raise-binding-result-arity-error
-                                                  2
-                                                  args)))))))
+                                                  rest_0))))))
                                         (values formalss_0 bodys_0)))))))
                                (for-loop_0 null null d_0)))
-                            (case-lambda
-                             ((formalss_0 bodys_0)
+                            (lambda (formalss_0 bodys_0)
                               (let ((app_0 (reverse$1 formalss_0)))
-                                (values app_0 (reverse$1 bodys_0))))
-                             (args
-                              (raise-binding-result-arity-error 2 args))))))
-                       (case-lambda
-                        ((formalss_0 bodys_0)
+                                (values app_0 (reverse$1 bodys_0)))))))
+                       (lambda (formalss_0 bodys_0)
                          (if ids_1
                            (delay!_0
                             ids_1
@@ -23883,8 +22877,7 @@
                                                (for-loop_0 rest_0))))
                                          (values)))))))
                                 (for-loop_0 bodys_0)))
-                             (void))))
-                        (args (raise-binding-result-arity-error 2 args))))
+                             (void)))))
                       (if (if (eq? 'quote hd_0)
                             (let ((a_0 (cdr (unwrap v_0))))
                               (let ((p_0 (unwrap a_0)))
@@ -24038,62 +23031,40 @@
                                                                           (values
                                                                            idss_2
                                                                            rhss_1))))))
-                                                                (case-lambda
-                                                                 ((idss12_0
-                                                                   rhss13_0)
+                                                                (lambda (idss12_0
+                                                                         rhss13_0)
                                                                   (values
                                                                    (cons
                                                                     idss12_0
                                                                     idss_0)
                                                                    (cons
                                                                     rhss13_0
-                                                                    rhss_0)))
-                                                                 (args
-                                                                  (raise-binding-result-arity-error
-                                                                   2
-                                                                   args)))))
-                                                             (case-lambda
-                                                              ((idss_1 rhss_1)
+                                                                    rhss_0)))))
+                                                             (lambda (idss_1
+                                                                      rhss_1)
                                                                (values
                                                                 idss_1
-                                                                rhss_1))
-                                                              (args
-                                                               (raise-binding-result-arity-error
-                                                                2
-                                                                args)))))
-                                                          (case-lambda
-                                                           ((idss_1 rhss_1)
+                                                                rhss_1))))
+                                                          (lambda (idss_1
+                                                                   rhss_1)
                                                             (for-loop_0
                                                              idss_1
                                                              rhss_1
-                                                             rest_0))
-                                                           (args
-                                                            (raise-binding-result-arity-error
-                                                             2
-                                                             args)))))))
+                                                             rest_0))))))
                                                    (values idss_0 rhss_0)))))))
                                           (for-loop_0 null null a_0)))
-                                       (case-lambda
-                                        ((idss_0 rhss_0)
+                                       (lambda (idss_0 rhss_0)
                                          (let ((app_0 (reverse$1 idss_0)))
-                                           (values app_0 (reverse$1 rhss_0))))
-                                        (args
-                                         (raise-binding-result-arity-error
-                                          2
-                                          args))))))
-                                  (case-lambda
-                                   ((idss_0 rhss_0)
+                                           (values
+                                            app_0
+                                            (reverse$1 rhss_0)))))))
+                                  (lambda (idss_0 rhss_0)
                                     (let ((bodys_0
                                            (let ((d_1 (cdr p_0)))
                                              (unwrap-list d_1))))
                                       (let ((idss_1 idss_0) (rhss_1 rhss_0))
-                                        (values idss_1 rhss_1 bodys_0))))
-                                   (args
-                                    (raise-binding-result-arity-error
-                                     2
-                                     args)))))))
-                           (case-lambda
-                            ((idss_0 rhss_0 bodys_0)
+                                        (values idss_1 rhss_1 bodys_0))))))))
+                           (lambda (idss_0 rhss_0 bodys_0)
                              (begin
                                (begin
                                  (letrec*
@@ -24121,8 +23092,7 @@
                                            (values)))))))
                                   (for-loop_0 idss_0 rhss_0)))
                                (void)
-                               (find-mutated!*_0 bodys_0 ids_1)))
-                            (args (raise-binding-result-arity-error 3 args))))
+                               (find-mutated!*_0 bodys_0 ids_1))))
                           (if (if (eq? 'letrec-values hd_0)
                                 (let ((a_0 (cdr (unwrap v_0))))
                                   (let ((p_0 (unwrap a_0)))
@@ -24269,67 +23239,42 @@
                                                                             (values
                                                                              idss_2
                                                                              rhss_1))))))
-                                                                  (case-lambda
-                                                                   ((idss14_0
-                                                                     rhss15_0)
+                                                                  (lambda (idss14_0
+                                                                           rhss15_0)
                                                                     (values
                                                                      (cons
                                                                       idss14_0
                                                                       idss_0)
                                                                      (cons
                                                                       rhss15_0
-                                                                      rhss_0)))
-                                                                   (args
-                                                                    (raise-binding-result-arity-error
-                                                                     2
-                                                                     args)))))
-                                                               (case-lambda
-                                                                ((idss_1
-                                                                  rhss_1)
+                                                                      rhss_0)))))
+                                                               (lambda (idss_1
+                                                                        rhss_1)
                                                                  (values
                                                                   idss_1
-                                                                  rhss_1))
-                                                                (args
-                                                                 (raise-binding-result-arity-error
-                                                                  2
-                                                                  args)))))
-                                                            (case-lambda
-                                                             ((idss_1 rhss_1)
+                                                                  rhss_1))))
+                                                            (lambda (idss_1
+                                                                     rhss_1)
                                                               (for-loop_0
                                                                idss_1
                                                                rhss_1
-                                                               rest_0))
-                                                             (args
-                                                              (raise-binding-result-arity-error
-                                                               2
-                                                               args)))))))
+                                                               rest_0))))))
                                                      (values
                                                       idss_0
                                                       rhss_0)))))))
                                             (for-loop_0 null null a_0)))
-                                         (case-lambda
-                                          ((idss_0 rhss_0)
+                                         (lambda (idss_0 rhss_0)
                                            (let ((app_0 (reverse$1 idss_0)))
                                              (values
                                               app_0
-                                              (reverse$1 rhss_0))))
-                                          (args
-                                           (raise-binding-result-arity-error
-                                            2
-                                            args))))))
-                                    (case-lambda
-                                     ((idss_0 rhss_0)
+                                              (reverse$1 rhss_0)))))))
+                                    (lambda (idss_0 rhss_0)
                                       (let ((bodys_0
                                              (let ((d_1 (cdr p_0)))
                                                (unwrap-list d_1))))
                                         (let ((idss_1 idss_0) (rhss_1 rhss_0))
-                                          (values idss_1 rhss_1 bodys_0))))
-                                     (args
-                                      (raise-binding-result-arity-error
-                                       2
-                                       args)))))))
-                             (case-lambda
-                              ((idss_0 rhss_0 bodys_0)
+                                          (values idss_1 rhss_1 bodys_0))))))))
+                             (lambda (idss_0 rhss_0 bodys_0)
                                (if (letrec-splitable-values-binding?
                                     idss_0
                                     rhss_0)
@@ -24393,12 +23338,8 @@
                                                                          rest_1)))))
                                                                 (values)))))))
                                                        (for-loop_1 ids_2)))
-                                                    (case-lambda
-                                                     (() (for-loop_0 rest_0))
-                                                     (args
-                                                      (raise-binding-result-arity-error
-                                                       0
-                                                       args))))))
+                                                    (lambda ()
+                                                      (for-loop_0 rest_0)))))
                                                (values)))))))
                                       (for-loop_0 idss_0)))
                                    (void)
@@ -24566,9 +23507,7 @@
                                                           rest_1))))))
                                                maybe-cc?_0))))))
                                       (for-loop_0 #f idss_0 rhss_0)))
-                                   (find-mutated!*_0 bodys_0 ids_1))))
-                              (args
-                               (raise-binding-result-arity-error 3 args))))
+                                   (find-mutated!*_0 bodys_0 ids_1)))))
                             (if (if (eq? 'if hd_0)
                                   (let ((a_0 (cdr (unwrap v_0))))
                                     (let ((p_0 (unwrap a_0)))
@@ -24611,22 +23550,14 @@
                                                            a_0))))
                                                   (let ((thn_1 thn_0))
                                                     (values thn_1 els_0)))))))
-                                        (case-lambda
-                                         ((thn_0 els_0)
+                                        (lambda (thn_0 els_0)
                                           (let ((tst_1 tst_0))
-                                            (values tst_1 thn_0 els_0)))
-                                         (args
-                                          (raise-binding-result-arity-error
-                                           2
-                                           args))))))))
-                               (case-lambda
-                                ((tst_0 thn_0 els_0)
+                                            (values tst_1 thn_0 els_0))))))))
+                               (lambda (tst_0 thn_0 els_0)
                                  (begin
                                    (find-mutated!_0 tst_0 #f)
                                    (find-mutated!_0 thn_0 #f)
-                                   (find-mutated!_0 els_0 #f)))
-                                (args
-                                 (raise-binding-result-arity-error 3 args))))
+                                   (find-mutated!_0 els_0 #f))))
                               (if (if (eq? 'with-continuation-mark hd_0)
                                     (let ((a_0 (cdr (unwrap v_0))))
                                       (let ((p_0 (unwrap a_0)))
@@ -24672,22 +23603,17 @@
                                                       (values
                                                        val_1
                                                        body_0)))))))
-                                          (case-lambda
-                                           ((val_0 body_0)
+                                          (lambda (val_0 body_0)
                                             (let ((key_1 key_0))
-                                              (values key_1 val_0 body_0)))
-                                           (args
-                                            (raise-binding-result-arity-error
-                                             2
-                                             args))))))))
-                                 (case-lambda
-                                  ((key_0 val_0 body_0)
+                                              (values
+                                               key_1
+                                               val_0
+                                               body_0))))))))
+                                 (lambda (key_0 val_0 body_0)
                                    (begin
                                      (find-mutated!_0 key_0 #f)
                                      (find-mutated!_0 val_0 #f)
-                                     (find-mutated!_0 body_0 ids_1)))
-                                  (args
-                                   (raise-binding-result-arity-error 3 args))))
+                                     (find-mutated!_0 body_0 ids_1))))
                                 (if (if (eq? 'begin hd_0)
                                       (let ((a_0 (cdr (unwrap v_0))))
                                         (wrap-list? a_0))
@@ -24724,15 +23650,10 @@
                                                         (unwrap-list d_1))))
                                                  (let ((exp_1 exp_0))
                                                    (values exp_1 exps_0)))))))
-                                       (case-lambda
-                                        ((exp_0 exps_0)
+                                       (lambda (exp_0 exps_0)
                                          (begin
                                            (find-mutated!_0 exp_0 ids_1)
-                                           (find-mutated!*_0 exps_0 #f)))
-                                        (args
-                                         (raise-binding-result-arity-error
-                                          2
-                                          args))))
+                                           (find-mutated!*_0 exps_0 #f))))
                                       (if (if (eq? 'set! hd_0)
                                             (let ((a_0 (cdr (unwrap v_0))))
                                               (let ((p_0 (unwrap a_0)))
@@ -24767,8 +23688,7 @@
                                                             a_0))))
                                                    (let ((id_1 id_0))
                                                      (values id_1 rhs_0)))))))
-                                         (case-lambda
-                                          ((id_0 rhs_0)
+                                         (lambda (id_0 rhs_0)
                                            (begin
                                              (let ((id_1 (unwrap id_0)))
                                                (let ((old-state_0
@@ -24787,11 +23707,7 @@
                                                          old-state_0))
                                                      (|#%app| old-state_0)
                                                      (void)))))
-                                             (find-mutated!_0 rhs_0 #f)))
-                                          (args
-                                           (raise-binding-result-arity-error
-                                            2
-                                            args))))
+                                             (find-mutated!_0 rhs_0 #f))))
                                         (if (if (eq?
                                                  '|#%variable-reference|
                                                  hd_0)
@@ -24818,8 +23734,7 @@
                                                        (values
                                                         rator_1
                                                         exps_0))))))
-                                             (case-lambda
-                                              ((rator_0 exps_0)
+                                             (lambda (rator_0 exps_0)
                                                (if (if ids_1
                                                      (let ((rator_1
                                                             (unwrap rator_0)))
@@ -24834,14 +23749,9 @@
                                                                          knowns_0
                                                                          imports_0
                                                                          mutated_0))
-                                                                      (case-lambda
-                                                                       ((k_0
-                                                                         im_0)
-                                                                        k_0)
-                                                                       (args
-                                                                        (raise-binding-result-arity-error
-                                                                         2
-                                                                         args)))))))
+                                                                      (lambda (k_0
+                                                                               im_0)
+                                                                        k_0)))))
                                                                (if (let ((or-part_0
                                                                           (known-constructor?
                                                                            v_1)))
@@ -24938,11 +23848,7 @@
                                                    (find-mutated!_0 rator_0 #f)
                                                    (find-mutated!*_0
                                                     exps_0
-                                                    #f))))
-                                              (args
-                                               (raise-binding-result-arity-error
-                                                2
-                                                args))))
+                                                    #f)))))
                                             (let ((v_1 (unwrap v_0)))
                                               (if (symbol? v_1)
                                                 (let ((state_0
@@ -25038,8 +23944,7 @@
                                                    a_0))))
                                           (let ((ids_1 ids_0))
                                             (values ids_1 rhs_0)))))))
-                                (case-lambda
-                                 ((ids_0 rhs_0)
+                                (lambda (ids_0 rhs_0)
                                   (if (lambda?.1 #t rhs_0)
                                     (begin
                                       (begin
@@ -25078,9 +23983,7 @@
                                          (for-loop_0 ids_0)))
                                       (void)
                                       (loop_0 (wrap-cdr mut-l_1)))
-                                    mut-l_1))
-                                 (args
-                                  (raise-binding-result-arity-error 2 args))))
+                                    mut-l_1)))
                                mut-l_1)))))))))
                 (loop_0 mut-l_0))))
           (if (eq? mut-l_0 l_0) (wrap-cdr mut-l_0) l_0))
@@ -25162,12 +24065,12 @@
                                 (cons (list id_0 id_0) binds_0)))))))))))))))
          (loop_0 ids_0 rhss_0 #t null))))))
 (define left-to-right/let-values
-  (lambda (idss_0 rhss_0 bodys_0 mutated_0 target_0)
+  (lambda (idss_0 rhss_0 bodys_0 mutated_0 target_0 unsafe-mode?_0)
     (if (null? (cdr idss_0))
       (let ((e_0
              (if (null? (cdr bodys_0)) (car bodys_0) (list* 'begin bodys_0))))
         (let ((app_0 (car idss_0)))
-          (make-let-values app_0 (car rhss_0) e_0 target_0)))
+          (make-let-values app_0 (car rhss_0) e_0 target_0 unsafe-mode?_0)))
       (letrec*
        ((loop_0
          (|#%name|
@@ -25181,7 +24084,8 @@
                      app_0
                      app_1
                      (list* 'let binds_0 bodys_0)
-                     target_0)))
+                     target_0
+                     unsafe-mode?_0)))
                 (let ((ids_0 (car idss_1)))
                   (let ((app_0 (car rhss_1)))
                     (make-let-values
@@ -25225,7 +24129,8 @@
                                       fold-var_0))))))
                              (for-loop_0 null ids_0)))
                            binds_0))))
-                     target_0)))))))))
+                     target_0
+                     unsafe-mode?_0)))))))))
        (loop_0 idss_0 rhss_0 null)))))
 (define left-to-right/app
   (lambda (rator_0
@@ -25357,7 +24262,7 @@
                                (cons (car l_1) accum_0)))))))))))
                (loop_0 l_0 modes_0 null)))))))))
 (define make-let-values
-  (lambda (ids_0 rhs_0 body_0 target_0)
+  (lambda (ids_0 rhs_0 body_0 target_0 unsafe-mode?_0)
     (if (if (pair? ids_0) (null? (cdr ids_0)) #f)
       (list 'let (list (list (car ids_0) rhs_0)) body_0)
       (let ((v_0 (if (null? ids_0) rhs_0 #f)))
@@ -25396,7 +24301,7 @@
                    (let ((d_0 (cdr (unwrap v_0))))
                      (let ((a_0 (car (unwrap d_0)))) a_0))))
               (list 'begin rhs_1 body_0))
-            (if (eq? target_0 'cify)
+            (if (if unsafe-mode?_0 unsafe-mode?_0 (eq? target_0 'cify))
               (list
                'call-with-values
                (list 'lambda '() rhs_0)
@@ -25570,12 +24475,10 @@
                     (let ((binds_0 (let ((a_0 (car p_1))) (unwrap-list a_0))))
                       (let ((body_0 (let ((d_1 (cdr p_1))) d_1)))
                         (let ((binds_1 binds_0)) (values binds_1 body_0)))))))
-              (case-lambda
-               ((binds_0 body_0)
-                (let ((let-id_1 let-id_0)) (values let-id_1 binds_0 body_0)))
-               (args (raise-binding-result-arity-error 2 args)))))))
-       (case-lambda
-        ((let-id_0 binds_0 body_0)
+              (lambda (binds_0 body_0)
+                (let ((let-id_1 let-id_0))
+                  (values let-id_1 binds_0 body_0)))))))
+       (lambda (let-id_0 binds_0 body_0)
          (if (let ((or-part_0 (eq? let-id_0 'let)))
                (if or-part_0 or-part_0 (eq? let-id_0 'letrec*)))
            (letrec*
@@ -25798,41 +24701,26 @@
                                                                                            (values
                                                                                             ids_2
                                                                                             rhss_1))))))
-                                                                                 (case-lambda
-                                                                                  ((ids1_0
-                                                                                    rhss2_0)
+                                                                                 (lambda (ids1_0
+                                                                                          rhss2_0)
                                                                                    (values
                                                                                     (cons
                                                                                      ids1_0
                                                                                      ids_0)
                                                                                     (cons
                                                                                      rhss2_0
-                                                                                     rhss_0)))
-                                                                                  (args
-                                                                                   (raise-binding-result-arity-error
-                                                                                    2
-                                                                                    args)))))
-                                                                              (case-lambda
-                                                                               ((ids_1
-                                                                                 rhss_1)
+                                                                                     rhss_0)))))
+                                                                              (lambda (ids_1
+                                                                                       rhss_1)
                                                                                 (values
                                                                                  ids_1
-                                                                                 rhss_1))
-                                                                               (args
-                                                                                (raise-binding-result-arity-error
-                                                                                 2
-                                                                                 args)))))
-                                                                           (case-lambda
-                                                                            ((ids_1
-                                                                              rhss_1)
+                                                                                 rhss_1))))
+                                                                           (lambda (ids_1
+                                                                                    rhss_1)
                                                                              (for-loop_0
                                                                               ids_1
                                                                               rhss_1
-                                                                              rest_0))
-                                                                            (args
-                                                                             (raise-binding-result-arity-error
-                                                                              2
-                                                                              args)))))))
+                                                                              rest_0))))))
                                                                     (values
                                                                      ids_0
                                                                      rhss_0)))))))
@@ -25840,21 +24728,15 @@
                                                             null
                                                             null
                                                             a_1)))
-                                                        (case-lambda
-                                                         ((ids_0 rhss_0)
+                                                        (lambda (ids_0 rhss_0)
                                                           (let ((app_0
                                                                  (reverse$1
                                                                   ids_0)))
                                                             (values
                                                              app_0
                                                              (reverse$1
-                                                              rhss_0))))
-                                                         (args
-                                                          (raise-binding-result-arity-error
-                                                           2
-                                                           args))))))
-                                                   (case-lambda
-                                                    ((ids_0 rhss_0)
+                                                              rhss_0)))))))
+                                                   (lambda (ids_0 rhss_0)
                                                      (let ((body_1
                                                             (let ((d_2
                                                                    (cdr p_2)))
@@ -25868,39 +24750,24 @@
                                                          (values
                                                           ids_1
                                                           rhss_1
-                                                          body_1))))
-                                                    (args
-                                                     (raise-binding-result-arity-error
-                                                      2
-                                                      args)))))))
-                                            (case-lambda
-                                             ((ids_0 rhss_0 body_1)
+                                                          body_1))))))))
+                                            (lambda (ids_0 rhss_0 body_1)
                                               (let ((nest-let-id_1
                                                      nest-let-id_0))
                                                 (values
                                                  nest-let-id_1
                                                  ids_0
                                                  rhss_0
-                                                 body_1)))
-                                             (args
-                                              (raise-binding-result-arity-error
-                                               3
-                                               args)))))))))
-                                 (case-lambda
-                                  ((nest-let-id_0 ids_0 rhss_0 body_1)
+                                                 body_1)))))))))
+                                 (lambda (nest-let-id_0 ids_0 rhss_0 body_1)
                                    (let ((id_1 id_0))
                                      (values
                                       id_1
                                       nest-let-id_0
                                       ids_0
                                       rhss_0
-                                      body_1)))
-                                  (args
-                                   (raise-binding-result-arity-error
-                                    4
-                                    args)))))))
-                          (case-lambda
-                           ((id_0 nest-let-id_0 ids_0 rhss_0 body_1)
+                                      body_1)))))))
+                          (lambda (id_0 nest-let-id_0 ids_0 rhss_0 body_1)
                             (if (not
                                  (let ((or-part_0 (eq? let-id_0 'let)))
                                    (if or-part_0
@@ -26049,8 +24916,7 @@
                                    app_0
                                    (cons (car binds_1) accum-binds_0)
                                    wraps_0
-                                   convert?_0)))))
-                           (args (raise-binding-result-arity-error 5 args))))
+                                   convert?_0))))))
                          (if (let ((p_0 (unwrap v_0)))
                                (if (pair? p_0)
                                  (let ((a_0 (cdr p_0)))
@@ -26078,8 +24944,7 @@
                                e_0))
                            (error 'match "failed ~e" v_0))))))))))
             (loop_0 binds_0 '() '() #f))
-           e_0))
-        (args (raise-binding-result-arity-error 3 args))))
+           e_0)))
       e_0)))
 (define immediate-lambda?
   (lambda (e_0)
@@ -26116,8 +24981,7 @@
             new-s_0))
         (call-with-values
          (lambda () (wrap-source orig-s_0))
-         (case-lambda
-          ((src_0 line_0 col_0 pos_0 span_0)
+         (lambda (src_0 line_0 col_0 pos_0 span_0)
            (let ((add-property_0
                   (|#%name|
                    add-property
@@ -26166,8 +25030,7 @@
                     (reannotate orig-s_0 new-s_0)
                     'inferred-name
                     '|[|)
-                   new-s_0)))))
-          (args (raise-binding-result-arity-error 5 args))))))))
+                   new-s_0))))))))))
 (define source->string
   (lambda (src_0)
     (let ((str_0 (if (string? src_0) src_0 (path->string src_0))))
@@ -26255,14 +25118,11 @@
                                  (let ((a_0 (car (unwrap d_2)))) a_0)))))
                         (let ((type-e_1 type-e_0))
                           (values type-e_1 offset-e_0)))))))
-              (case-lambda
-               ((type-e_0 offset-e_0)
-                (let ((ptr-e_1 ptr-e_0)) (values ptr-e_1 type-e_0 offset-e_0)))
-               (args (raise-binding-result-arity-error 2 args)))))))
-       (case-lambda
-        ((ptr-e_0 type-e_0 offset-e_0)
-         (type->direct type-e_0 ptr-e_0 offset-e_0 #t make-ref #f))
-        (args (raise-binding-result-arity-error 3 args))))
+              (lambda (type-e_0 offset-e_0)
+                (let ((ptr-e_1 ptr-e_0))
+                  (values ptr-e_1 type-e_0 offset-e_0)))))))
+       (lambda (ptr-e_0 type-e_0 offset-e_0)
+         (type->direct type-e_0 ptr-e_0 offset-e_0 #t make-ref #f)))
       (if (let ((p_0 (unwrap args_0)))
             (if (pair? p_0)
               (let ((a_0 (cdr p_0)))
@@ -26292,15 +25152,11 @@
                                  (let ((a_0 (car (unwrap d_1)))) a_0))))
                           (let ((type-e_1 type-e_0))
                             (values type-e_1 offset-e_0)))))))
-                (case-lambda
-                 ((type-e_0 offset-e_0)
+                (lambda (type-e_0 offset-e_0)
                   (let ((ptr-e_1 ptr-e_0))
-                    (values ptr-e_1 type-e_0 offset-e_0)))
-                 (args (raise-binding-result-arity-error 2 args)))))))
-         (case-lambda
-          ((ptr-e_0 type-e_0 offset-e_0)
-           (type->direct type-e_0 ptr-e_0 offset-e_0 #f make-ref #f))
-          (args (raise-binding-result-arity-error 3 args))))
+                    (values ptr-e_1 type-e_0 offset-e_0)))))))
+         (lambda (ptr-e_0 type-e_0 offset-e_0)
+           (type->direct type-e_0 ptr-e_0 offset-e_0 #f make-ref #f)))
         (if (let ((p_0 (unwrap args_0)))
               (if (pair? p_0)
                 (let ((a_0 (cdr p_0)))
@@ -26320,10 +25176,8 @@
                         (let ((d_0 (cdr p_0)))
                           (let ((a_0 (car (unwrap d_0)))) a_0))))
                    (let ((ptr-e_1 ptr-e_0)) (values ptr-e_1 type-e_0))))))
-           (case-lambda
-            ((ptr-e_0 type-e_0)
-             (type->direct type-e_0 ptr-e_0 0 #f make-ref #f))
-            (args (raise-binding-result-arity-error 2 args))))
+           (lambda (ptr-e_0 type-e_0)
+             (type->direct type-e_0 ptr-e_0 0 #f make-ref #f)))
           #f)))))
 (define make-ref
   (lambda (ref_0 set_0 ptr-e_0 offset-e_0 val-e_0 abs?_0)
@@ -26397,20 +25251,14 @@
                                             a_0))))
                                    (let ((offset-e_1 offset-e_0))
                                      (values offset-e_1 val-e_0))))))))
-                       (case-lambda
-                        ((offset-e_0 val-e_0)
+                       (lambda (offset-e_0 val-e_0)
                          (let ((type-e_1 type-e_0))
-                           (values type-e_1 offset-e_0 val-e_0)))
-                        (args (raise-binding-result-arity-error 2 args))))))))
-              (case-lambda
-               ((type-e_0 offset-e_0 val-e_0)
+                           (values type-e_1 offset-e_0 val-e_0))))))))
+              (lambda (type-e_0 offset-e_0 val-e_0)
                 (let ((ptr-e_1 ptr-e_0))
-                  (values ptr-e_1 type-e_0 offset-e_0 val-e_0)))
-               (args (raise-binding-result-arity-error 3 args)))))))
-       (case-lambda
-        ((ptr-e_0 type-e_0 offset-e_0 val-e_0)
-         (type->direct type-e_0 ptr-e_0 offset-e_0 #t make-set val-e_0))
-        (args (raise-binding-result-arity-error 4 args))))
+                  (values ptr-e_1 type-e_0 offset-e_0 val-e_0)))))))
+       (lambda (ptr-e_0 type-e_0 offset-e_0 val-e_0)
+         (type->direct type-e_0 ptr-e_0 offset-e_0 #t make-set val-e_0)))
       (if (let ((p_0 (unwrap args_0)))
             (if (pair? p_0)
               (let ((a_0 (cdr p_0)))
@@ -26450,21 +25298,14 @@
                                             a_0))))
                                    (let ((offset-e_1 offset-e_0))
                                      (values offset-e_1 val-e_0)))))))
-                         (case-lambda
-                          ((offset-e_0 val-e_0)
+                         (lambda (offset-e_0 val-e_0)
                            (let ((type-e_1 type-e_0))
-                             (values type-e_1 offset-e_0 val-e_0)))
-                          (args
-                           (raise-binding-result-arity-error 2 args))))))))
-                (case-lambda
-                 ((type-e_0 offset-e_0 val-e_0)
+                             (values type-e_1 offset-e_0 val-e_0))))))))
+                (lambda (type-e_0 offset-e_0 val-e_0)
                   (let ((ptr-e_1 ptr-e_0))
-                    (values ptr-e_1 type-e_0 offset-e_0 val-e_0)))
-                 (args (raise-binding-result-arity-error 3 args)))))))
-         (case-lambda
-          ((ptr-e_0 type-e_0 offset-e_0 val-e_0)
-           (type->direct type-e_0 ptr-e_0 offset-e_0 #f make-set val-e_0))
-          (args (raise-binding-result-arity-error 4 args))))
+                    (values ptr-e_1 type-e_0 offset-e_0 val-e_0)))))))
+         (lambda (ptr-e_0 type-e_0 offset-e_0 val-e_0)
+           (type->direct type-e_0 ptr-e_0 offset-e_0 #f make-set val-e_0)))
         (if (let ((p_0 (unwrap args_0)))
               (if (pair? p_0)
                 (let ((a_0 (cdr p_0)))
@@ -26494,15 +25335,11 @@
                                    (let ((a_0 (car (unwrap d_1)))) a_0))))
                             (let ((type-e_1 type-e_0))
                               (values type-e_1 val-e_0)))))))
-                  (case-lambda
-                   ((type-e_0 val-e_0)
+                  (lambda (type-e_0 val-e_0)
                     (let ((ptr-e_1 ptr-e_0))
-                      (values ptr-e_1 type-e_0 val-e_0)))
-                   (args (raise-binding-result-arity-error 2 args)))))))
-           (case-lambda
-            ((ptr-e_0 type-e_0 val-e_0)
-             (type->direct type-e_0 ptr-e_0 0 #f make-set val-e_0))
-            (args (raise-binding-result-arity-error 3 args))))
+                      (values ptr-e_1 type-e_0 val-e_0)))))))
+           (lambda (ptr-e_0 type-e_0 val-e_0)
+             (type->direct type-e_0 ptr-e_0 0 #f make-set val-e_0)))
           #f)))))
 (define make-set
   (lambda (ref_0 set_0 ptr-e_0 offset-e_0 val-e_0 abs?_0)
@@ -26670,14 +25507,10 @@
                                    (let ((bodys_0 (let ((d_2 (cdr p_1))) d_2)))
                                      (let ((ex-ids_1 ex-ids_0))
                                        (values ex-ids_1 bodys_0)))))))
-                           (case-lambda
-                            ((ex-ids_0 bodys_0)
+                           (lambda (ex-ids_0 bodys_0)
                              (let ((im-idss_1 im-idss_0))
-                               (values im-idss_1 ex-ids_0 bodys_0)))
-                            (args
-                             (raise-binding-result-arity-error 2 args))))))))
-                  (case-lambda
-                   ((im-idss_0 ex-ids_0 bodys_0)
+                               (values im-idss_1 ex-ids_0 bodys_0))))))))
+                  (lambda (im-idss_0 ex-ids_0 bodys_0)
                     (let ((grps_0
                            (reverse$1
                             (begin
@@ -26866,8 +25699,7 @@
                                     no-prompt?_0
                                     #t
                                     compiler-query_0))
-                                 (case-lambda
-                                  ((new-body_0 defn-info_0 mutated_0)
+                                 (lambda (new-body_0 defn-info_0 mutated_0)
                                    (let ((all-grps_0
                                           (append
                                            grps_0
@@ -27299,12 +26131,7 @@
                                                               knowns_1))))))
                                                      (for-loop_0
                                                       knowns_0
-                                                      ex-ids_0))))))))))))
-                                  (args
-                                   (raise-binding-result-arity-error
-                                    3
-                                    args)))))))))))
-                   (args (raise-binding-result-arity-error 3 args))))
+                                                      ex-ids_0)))))))))))))))))))))
                  (error 'match "failed ~e" lk_0))))))))))
 (define schemify-body
   (lambda (l_0
@@ -27340,9 +26167,7 @@
          no-prompt?_0
          explicit-unnamed?_0
          (lambda (v_0) #f)))
-      (case-lambda
-       ((new-body_0 defn-info_0 mutated_0) new-body_0)
-       (args (raise-binding-result-arity-error 3 args)))))))
+      (lambda (new-body_0 defn-info_0 mutated_0) new-body_0)))))
 (define schemify-body*
   (lambda (l_0
            prim-knowns_0
@@ -27381,8 +26206,7 @@
                                    (hash-iterate-key+value
                                     extra-variables_0
                                     i_0))
-                                 (case-lambda
-                                  ((int-id_0 ex_0)
+                                 (lambda (int-id_0 ex_0)
                                    (let ((fold-var_1
                                           (let ((fold-var_1
                                                  (cons
@@ -27400,9 +26224,7 @@
                                       fold-var_1
                                       (hash-iterate-next
                                        extra-variables_0
-                                       i_0))))
-                                  (args
-                                   (raise-binding-result-arity-error 2 args))))
+                                       i_0)))))
                                 fold-var_0))))))
                        (for-loop_0
                         null
@@ -27449,13 +26271,9 @@
                                                        simples_0
                                                        unsafe-mode?_0
                                                        target_0))
-                                                    (case-lambda
-                                                     ((new-knowns_0 info_0)
-                                                      new-knowns_0)
-                                                     (args
-                                                      (raise-binding-result-arity-error
-                                                       2
-                                                       args))))))
+                                                    (lambda (new-knowns_0
+                                                             info_0)
+                                                      new-knowns_0))))
                                               (values knowns_2))))
                                        (for-loop_0 knowns_2 rest_0))))
                                  knowns_1))))))
@@ -27821,9 +26639,8 @@
                                                                                                   (values
                                                                                                    id_2
                                                                                                    rhs_0)))))))
-                                                                                      (case-lambda
-                                                                                       ((id_1
-                                                                                         rhs_0)
+                                                                                      (lambda (id_1
+                                                                                               rhs_0)
                                                                                         (infer-known.1
                                                                                          unsafe-undefined
                                                                                          #f
@@ -27838,11 +26655,7 @@
                                                                                          mutated_0
                                                                                          simples_0
                                                                                          unsafe-mode?_0
-                                                                                         target_0))
-                                                                                       (args
-                                                                                        (raise-binding-result-arity-error
-                                                                                         2
-                                                                                         args))))
+                                                                                         target_0)))
                                                                                      (error
                                                                                       'match
                                                                                       "failed ~e"
@@ -28225,8 +27038,7 @@
                                                                 (values
                                                                  id_1
                                                                  rhs_0)))))))
-                                                    (case-lambda
-                                                     ((id_0 rhs_0)
+                                                    (lambda (id_0 rhs_0)
                                                       (if (simple?.1
                                                            #f
                                                            #f
@@ -28251,11 +27063,7 @@
                                                            unsafe-undefined))
                                                         (finish-wrapped-definition_0
                                                          (list id_0)
-                                                         rhs_0)))
-                                                     (args
-                                                      (raise-binding-result-arity-error
-                                                       2
-                                                       args))))
+                                                         rhs_0))))
                                                    (if (if (eq?
                                                             'define-values
                                                             hd_0)
@@ -28316,8 +27124,7 @@
                                                                   (values
                                                                    ids_1
                                                                    rhs_0)))))))
-                                                      (case-lambda
-                                                       ((ids_0 rhs_0)
+                                                      (lambda (ids_0 rhs_0)
                                                         (if (let ((temp54_0
                                                                    (length
                                                                     ids_0)))
@@ -28494,11 +27301,7 @@
                                                                unsafe-undefined)))
                                                           (finish-wrapped-definition_0
                                                            ids_0
-                                                           rhs_0)))
-                                                       (args
-                                                        (raise-binding-result-arity-error
-                                                         2
-                                                         args))))
+                                                           rhs_0))))
                                                      (if (if (if (eq?
                                                                   'quote
                                                                   hd_0)
@@ -28801,17 +27604,14 @@
                                                   (unwrap-list d_1))))
                                            (let ((formals_1 formals_0))
                                              (values formals_1 body_0)))))))
-                                 (case-lambda
-                                  ((formals_0 body_0)
+                                 (lambda (formals_0 body_0)
                                    (infer-procedure-name
                                     v_2
                                     (list*
                                      'lambda
                                      formals_0
                                      (schemify-body_0 body_0 'tail))
-                                    explicit-unnamed?_0))
-                                  (args
-                                   (raise-binding-result-arity-error 2 args))))
+                                    explicit-unnamed?_0)))
                                 (if (if (eq? 'case-lambda hd_0)
                                       (let ((a_0 (cdr (unwrap v_2))))
                                         (if (wrap-list? a_0)
@@ -28928,57 +27728,36 @@
                                                                            (values
                                                                             formalss_2
                                                                             bodys_1))))))
-                                                                 (case-lambda
-                                                                  ((formalss83_0
-                                                                    bodys84_0)
+                                                                 (lambda (formalss83_0
+                                                                          bodys84_0)
                                                                    (values
                                                                     (cons
                                                                      formalss83_0
                                                                      formalss_0)
                                                                     (cons
                                                                      bodys84_0
-                                                                     bodys_0)))
-                                                                  (args
-                                                                   (raise-binding-result-arity-error
-                                                                    2
-                                                                    args)))))
-                                                              (case-lambda
-                                                               ((formalss_1
-                                                                 bodys_1)
+                                                                     bodys_0)))))
+                                                              (lambda (formalss_1
+                                                                       bodys_1)
                                                                 (values
                                                                  formalss_1
-                                                                 bodys_1))
-                                                               (args
-                                                                (raise-binding-result-arity-error
-                                                                 2
-                                                                 args)))))
-                                                           (case-lambda
-                                                            ((formalss_1
-                                                              bodys_1)
+                                                                 bodys_1))))
+                                                           (lambda (formalss_1
+                                                                    bodys_1)
                                                              (for-loop_0
                                                               formalss_1
                                                               bodys_1
-                                                              rest_0))
-                                                            (args
-                                                             (raise-binding-result-arity-error
-                                                              2
-                                                              args)))))))
+                                                              rest_0))))))
                                                     (values
                                                      formalss_0
                                                      bodys_0)))))))
                                            (for-loop_0 null null d_0)))
-                                        (case-lambda
-                                         ((formalss_0 bodys_0)
+                                        (lambda (formalss_0 bodys_0)
                                           (let ((app_0 (reverse$1 formalss_0)))
                                             (values
                                              app_0
-                                             (reverse$1 bodys_0))))
-                                         (args
-                                          (raise-binding-result-arity-error
-                                           2
-                                           args))))))
-                                   (case-lambda
-                                    ((formalss_0 bodys_0)
+                                             (reverse$1 bodys_0)))))))
+                                   (lambda (formalss_0 bodys_0)
                                      (infer-procedure-name
                                       v_2
                                       (list*
@@ -29025,11 +27804,7 @@
                                             null
                                             formalss_0
                                             bodys_0)))))
-                                      explicit-unnamed?_0))
-                                    (args
-                                     (raise-binding-result-arity-error
-                                      2
-                                      args))))
+                                      explicit-unnamed?_0)))
                                   (if (if (if (eq? 'define-values hd_0)
                                             (let ((a_0 (cdr (unwrap v_2))))
                                               (let ((p_0 (unwrap a_0)))
@@ -29342,39 +28117,28 @@
                                                                           (values
                                                                            s?_1
                                                                            acc/muts_0)))))))
-                                                              (case-lambda
-                                                               ((s?_0
-                                                                 acc/muts_0)
+                                                              (lambda (s?_0
+                                                                       acc/muts_0)
                                                                 (let ((make-s_1
                                                                        make-s_0))
                                                                   (values
                                                                    make-s_1
                                                                    s?_0
-                                                                   acc/muts_0)))
-                                                               (args
-                                                                (raise-binding-result-arity-error
-                                                                 2
-                                                                 args))))))))
-                                                     (case-lambda
-                                                      ((make-s_0
-                                                        s?_0
-                                                        acc/muts_0)
+                                                                   acc/muts_0))))))))
+                                                     (lambda (make-s_0
+                                                              s?_0
+                                                              acc/muts_0)
                                                        (let ((struct:s_1
                                                               struct:s_0))
                                                          (values
                                                           struct:s_1
                                                           make-s_0
                                                           s?_0
-                                                          acc/muts_0)))
-                                                      (args
-                                                       (raise-binding-result-arity-error
-                                                        3
-                                                        args))))))))
-                                            (case-lambda
-                                             ((struct:s_0
-                                               make-s_0
-                                               s?_0
-                                               acc/muts_0)
+                                                          acc/muts_0))))))))
+                                            (lambda (struct:s_0
+                                                     make-s_0
+                                                     s?_0
+                                                     acc/muts_0)
                                               (call-with-values
                                                (lambda ()
                                                  (let ((d_1 (cdr p_0)))
@@ -29462,39 +28226,28 @@
                                                                                                           (values
                                                                                                            -ref_1
                                                                                                            -set!_0)))))))
-                                                                                              (case-lambda
-                                                                                               ((-ref_0
-                                                                                                 -set!_0)
+                                                                                              (lambda (-ref_0
+                                                                                                       -set!_0)
                                                                                                 (let ((?1_1
                                                                                                        ?1_0))
                                                                                                   (values
                                                                                                    ?1_1
                                                                                                    -ref_0
-                                                                                                   -set!_0)))
-                                                                                               (args
-                                                                                                (raise-binding-result-arity-error
-                                                                                                 2
-                                                                                                 args))))))))
-                                                                                     (case-lambda
-                                                                                      ((?1_0
-                                                                                        -ref_0
-                                                                                        -set!_0)
+                                                                                                   -set!_0))))))))
+                                                                                     (lambda (?1_0
+                                                                                              -ref_0
+                                                                                              -set!_0)
                                                                                        (let ((make_1
                                                                                               make_0))
                                                                                          (values
                                                                                           make_1
                                                                                           ?1_0
                                                                                           -ref_0
-                                                                                          -set!_0)))
-                                                                                      (args
-                                                                                       (raise-binding-result-arity-error
-                                                                                        3
-                                                                                        args))))))))
-                                                                            (case-lambda
-                                                                             ((make_0
-                                                                               ?1_0
-                                                                               -ref_0
-                                                                               -set!_0)
+                                                                                          -set!_0))))))))
+                                                                            (lambda (make_0
+                                                                                     ?1_0
+                                                                                     -ref_0
+                                                                                     -set!_0)
                                                                               (let ((struct:_1
                                                                                      struct:_0))
                                                                                 (values
@@ -29502,17 +28255,12 @@
                                                                                  make_0
                                                                                  ?1_0
                                                                                  -ref_0
-                                                                                 -set!_0)))
-                                                                             (args
-                                                                              (raise-binding-result-arity-error
-                                                                               4
-                                                                               args))))))))
-                                                                   (case-lambda
-                                                                    ((struct:_0
-                                                                      make_0
-                                                                      ?1_0
-                                                                      -ref_0
-                                                                      -set!_0)
+                                                                                 -set!_0))))))))
+                                                                   (lambda (struct:_0
+                                                                            make_0
+                                                                            ?1_0
+                                                                            -ref_0
+                                                                            -set!_0)
                                                                      (let ((mk_0
                                                                             (let ((d_3
                                                                                    (cdr
@@ -29538,18 +28286,13 @@
                                                                           ?1_1
                                                                           -ref_1
                                                                           -set!_1
-                                                                          mk_0))))
-                                                                    (args
-                                                                     (raise-binding-result-arity-error
-                                                                      5
-                                                                      args))))))))
-                                                          (case-lambda
-                                                           ((struct:_0
-                                                             make_0
-                                                             ?1_0
-                                                             -ref_0
-                                                             -set!_0
-                                                             mk_0)
+                                                                          mk_0)))))))))
+                                                          (lambda (struct:_0
+                                                                   make_0
+                                                                   ?1_0
+                                                                   -ref_0
+                                                                   -set!_0
+                                                                   mk_0)
                                                             (call-with-values
                                                              (lambda ()
                                                                (let ((d_3
@@ -29608,39 +28351,28 @@
                                                                                                (values
                                                                                                 ?2_1
                                                                                                 make-acc/muts_0)))))))
-                                                                                   (case-lambda
-                                                                                    ((?2_0
-                                                                                      make-acc/muts_0)
+                                                                                   (lambda (?2_0
+                                                                                            make-acc/muts_0)
                                                                                      (let ((make2_1
                                                                                             make2_0))
                                                                                        (values
                                                                                         make2_1
                                                                                         ?2_0
-                                                                                        make-acc/muts_0)))
-                                                                                    (args
-                                                                                     (raise-binding-result-arity-error
-                                                                                      2
-                                                                                      args))))))))
-                                                                          (case-lambda
-                                                                           ((make2_0
-                                                                             ?2_0
-                                                                             make-acc/muts_0)
+                                                                                        make-acc/muts_0))))))))
+                                                                          (lambda (make2_0
+                                                                                   ?2_0
+                                                                                   make-acc/muts_0)
                                                                             (let ((struct:2_1
                                                                                    struct:2_0))
                                                                               (values
                                                                                struct:2_1
                                                                                make2_0
                                                                                ?2_0
-                                                                               make-acc/muts_0)))
-                                                                           (args
-                                                                            (raise-binding-result-arity-error
-                                                                             3
-                                                                             args))))))))))
-                                                             (case-lambda
-                                                              ((struct:2_0
-                                                                make2_0
-                                                                ?2_0
-                                                                make-acc/muts_0)
+                                                                               make-acc/muts_0))))))))))
+                                                             (lambda (struct:2_0
+                                                                      make2_0
+                                                                      ?2_0
+                                                                      make-acc/muts_0)
                                                                (let ((struct:_1
                                                                       struct:_0)
                                                                      (make_1
@@ -29663,26 +28395,17 @@
                                                                   struct:2_0
                                                                   make2_0
                                                                   ?2_0
-                                                                  make-acc/muts_0)))
-                                                              (args
-                                                               (raise-binding-result-arity-error
-                                                                4
-                                                                args)))))
-                                                           (args
-                                                            (raise-binding-result-arity-error
-                                                             6
-                                                             args)))))))))
-                                               (case-lambda
-                                                ((struct:_0
-                                                  make_0
-                                                  ?1_0
-                                                  -ref_0
-                                                  -set!_0
-                                                  mk_0
-                                                  struct:2_0
-                                                  make2_0
-                                                  ?2_0
-                                                  make-acc/muts_0)
+                                                                  make-acc/muts_0)))))))))))
+                                               (lambda (struct:_0
+                                                        make_0
+                                                        ?1_0
+                                                        -ref_0
+                                                        -set!_0
+                                                        mk_0
+                                                        struct:2_0
+                                                        make2_0
+                                                        ?2_0
+                                                        make-acc/muts_0)
                                                  (let ((struct:s_1 struct:s_0)
                                                        (make-s_1 make-s_0)
                                                        (s?_1 s?_0)
@@ -29701,30 +28424,21 @@
                                                     struct:2_0
                                                     make2_0
                                                     ?2_0
-                                                    make-acc/muts_0)))
-                                                (args
-                                                 (raise-binding-result-arity-error
-                                                  10
-                                                  args)))))
-                                             (args
-                                              (raise-binding-result-arity-error
-                                               4
-                                               args)))))))
-                                     (case-lambda
-                                      ((struct:s_0
-                                        make-s_0
-                                        s?_0
-                                        acc/muts_0
-                                        struct:_0
-                                        make_0
-                                        ?1_0
-                                        -ref_0
-                                        -set!_0
-                                        mk_0
-                                        struct:2_0
-                                        make2_0
-                                        ?2_0
-                                        make-acc/muts_0)
+                                                    make-acc/muts_0)))))))))
+                                     (lambda (struct:s_0
+                                              make-s_0
+                                              s?_0
+                                              acc/muts_0
+                                              struct:_0
+                                              make_0
+                                              ?1_0
+                                              -ref_0
+                                              -set!_0
+                                              mk_0
+                                              struct:2_0
+                                              make2_0
+                                              ?2_0
+                                              make-acc/muts_0)
                                        (let ((new-seq_0
                                               (struct-convert
                                                v_2
@@ -29788,21 +28502,15 @@
                                                           (values
                                                            ids_1
                                                            rhs_0)))))))
-                                              (case-lambda
-                                               ((ids_0 rhs_0)
+                                              (lambda (ids_0 rhs_0)
                                                 (list
                                                  'define-values
                                                  ids_0
-                                                 (schemify_0 rhs_0 'fresh)))
-                                               (args
-                                                (raise-binding-result-arity-error
-                                                 2
-                                                 args))))
-                                             (error 'match "failed ~e" v_2)))))
-                                      (args
-                                       (raise-binding-result-arity-error
-                                        14
-                                        args))))
+                                                 (schemify_0 rhs_0 'fresh))))
+                                             (error
+                                              'match
+                                              "failed ~e"
+                                              v_2))))))
                                     (if (if (eq? 'define-values hd_0)
                                           (let ((a_0 (cdr (unwrap v_2))))
                                             (let ((p_0 (unwrap a_0)))
@@ -29854,16 +28562,11 @@
                                                           a_0))))
                                                  (let ((id_1 id_0))
                                                    (values id_1 rhs_0)))))))
-                                       (case-lambda
-                                        ((id_0 rhs_0)
+                                       (lambda (id_0 rhs_0)
                                          (list
                                           'define
                                           id_0
-                                          (schemify_0 rhs_0 'fresh)))
-                                        (args
-                                         (raise-binding-result-arity-error
-                                          2
-                                          args))))
+                                          (schemify_0 rhs_0 'fresh))))
                                       (if (if (eq? 'define-values hd_0)
                                             (let ((a_0 (cdr (unwrap v_2))))
                                               (let ((p_0 (unwrap a_0)))
@@ -29898,16 +28601,11 @@
                                                             a_0))))
                                                    (let ((ids_1 ids_0))
                                                      (values ids_1 rhs_0)))))))
-                                         (case-lambda
-                                          ((ids_0 rhs_0)
+                                         (lambda (ids_0 rhs_0)
                                            (list
                                             'define-values
                                             ids_0
-                                            (schemify_0 rhs_0 'fresh)))
-                                          (args
-                                           (raise-binding-result-arity-error
-                                            2
-                                            args))))
+                                            (schemify_0 rhs_0 'fresh))))
                                         (if (if (eq? 'quote hd_0)
                                               (let ((a_0 (cdr (unwrap v_2))))
                                                 (let ((p_0 (unwrap a_0)))
@@ -30199,41 +28897,26 @@
                                                                                                 (values
                                                                                                  ids_2
                                                                                                  rhss_1))))))
-                                                                                      (case-lambda
-                                                                                       ((ids85_0
-                                                                                         rhss86_0)
+                                                                                      (lambda (ids85_0
+                                                                                               rhss86_0)
                                                                                         (values
                                                                                          (cons
                                                                                           ids85_0
                                                                                           ids_0)
                                                                                          (cons
                                                                                           rhss86_0
-                                                                                          rhss_0)))
-                                                                                       (args
-                                                                                        (raise-binding-result-arity-error
-                                                                                         2
-                                                                                         args)))))
-                                                                                   (case-lambda
-                                                                                    ((ids_1
-                                                                                      rhss_1)
+                                                                                          rhss_0)))))
+                                                                                   (lambda (ids_1
+                                                                                            rhss_1)
                                                                                      (values
                                                                                       ids_1
-                                                                                      rhss_1))
-                                                                                    (args
-                                                                                     (raise-binding-result-arity-error
-                                                                                      2
-                                                                                      args)))))
-                                                                                (case-lambda
-                                                                                 ((ids_1
-                                                                                   rhss_1)
+                                                                                      rhss_1))))
+                                                                                (lambda (ids_1
+                                                                                         rhss_1)
                                                                                   (for-loop_0
                                                                                    ids_1
                                                                                    rhss_1
-                                                                                   rest_0))
-                                                                                 (args
-                                                                                  (raise-binding-result-arity-error
-                                                                                   2
-                                                                                   args)))))))
+                                                                                   rest_0))))))
                                                                          (values
                                                                           ids_0
                                                                           rhss_0)))))))
@@ -30241,21 +28924,16 @@
                                                                  null
                                                                  null
                                                                  a_0)))
-                                                             (case-lambda
-                                                              ((ids_0 rhss_0)
+                                                             (lambda (ids_0
+                                                                      rhss_0)
                                                                (let ((app_0
                                                                       (reverse$1
                                                                        ids_0)))
                                                                  (values
                                                                   app_0
                                                                   (reverse$1
-                                                                   rhss_0))))
-                                                              (args
-                                                               (raise-binding-result-arity-error
-                                                                2
-                                                                args))))))
-                                                        (case-lambda
-                                                         ((ids_0 rhss_0)
+                                                                   rhss_0)))))))
+                                                        (lambda (ids_0 rhss_0)
                                                           (let ((bodys_0
                                                                  (let ((d_1
                                                                         (cdr
@@ -30268,13 +28946,8 @@
                                                               (values
                                                                ids_1
                                                                rhss_1
-                                                               bodys_0))))
-                                                         (args
-                                                          (raise-binding-result-arity-error
-                                                           2
-                                                           args)))))))
-                                                 (case-lambda
-                                                  ((ids_0 rhss_0 bodys_0)
+                                                               bodys_0))))))))
+                                                 (lambda (ids_0 rhss_0 bodys_0)
                                                    (if (if (pair? ids_0)
                                                          (if (null?
                                                               (cdr ids_0))
@@ -30449,28 +29122,18 @@
                                                                                                    (cons
                                                                                                     s-rhs_0
                                                                                                     rev-s-rhss_0)))))))))))
-                                                                                (case-lambda
-                                                                                 ((knowns_3
-                                                                                   rev-s-rhss_1)
+                                                                                (lambda (knowns_3
+                                                                                         rev-s-rhss_1)
                                                                                   (values
                                                                                    knowns_3
-                                                                                   rev-s-rhss_1))
-                                                                                 (args
-                                                                                  (raise-binding-result-arity-error
-                                                                                   2
-                                                                                   args)))))
-                                                                             (case-lambda
-                                                                              ((knowns_3
-                                                                                rev-s-rhss_1)
+                                                                                   rev-s-rhss_1))))
+                                                                             (lambda (knowns_3
+                                                                                      rev-s-rhss_1)
                                                                                (for-loop_0
                                                                                 knowns_3
                                                                                 rev-s-rhss_1
                                                                                 rest_0
-                                                                                rest_1))
-                                                                              (args
-                                                                               (raise-binding-result-arity-error
-                                                                                2
-                                                                                args))))))))
+                                                                                rest_1)))))))
                                                                     (values
                                                                      knowns_2
                                                                      rev-s-rhss_0)))))))
@@ -30479,9 +29142,8 @@
                                                             '()
                                                             ids_0
                                                             rhss_0))))
-                                                      (case-lambda
-                                                       ((new-knowns_0
-                                                         rev-s-rhss_0)
+                                                      (lambda (new-knowns_0
+                                                               rev-s-rhss_0)
                                                         (let ((s-rhss_0
                                                                (reverse$1
                                                                 rev-s-rhss_0)))
@@ -30631,15 +29293,7 @@
                                                            imports_0
                                                            mutated_0
                                                            simples_0
-                                                           unsafe-mode?_0)))
-                                                       (args
-                                                        (raise-binding-result-arity-error
-                                                         2
-                                                         args))))))
-                                                  (args
-                                                   (raise-binding-result-arity-error
-                                                    3
-                                                    args))))
+                                                           unsafe-mode?_0)))))))
                                                 (if (if (eq? 'let-values hd_0)
                                                       (let ((a_0
                                                              (cdr
@@ -30844,8 +29498,7 @@
                                                                (values
                                                                 rhs_1
                                                                 bodys_0)))))))
-                                                   (case-lambda
-                                                    ((rhs_0 bodys_0)
+                                                   (lambda (rhs_0 bodys_0)
                                                      (let ((app_0
                                                             (schemify_0
                                                              rhs_0
@@ -30855,11 +29508,7 @@
                                                         app_0
                                                         (schemify-body_0
                                                          bodys_0
-                                                         wcm-state_2))))
-                                                    (args
-                                                     (raise-binding-result-arity-error
-                                                      2
-                                                      args))))
+                                                         wcm-state_2)))))
                                                   (if (if (eq?
                                                            'let-values
                                                            hd_0)
@@ -31032,41 +29681,26 @@
                                                                                                     (values
                                                                                                      idss_2
                                                                                                      rhss_1))))))
-                                                                                          (case-lambda
-                                                                                           ((idss107_0
-                                                                                             rhss108_0)
+                                                                                          (lambda (idss107_0
+                                                                                                   rhss108_0)
                                                                                             (values
                                                                                              (cons
                                                                                               idss107_0
                                                                                               idss_0)
                                                                                              (cons
                                                                                               rhss108_0
-                                                                                              rhss_0)))
-                                                                                           (args
-                                                                                            (raise-binding-result-arity-error
-                                                                                             2
-                                                                                             args)))))
-                                                                                       (case-lambda
-                                                                                        ((idss_1
-                                                                                          rhss_1)
+                                                                                              rhss_0)))))
+                                                                                       (lambda (idss_1
+                                                                                                rhss_1)
                                                                                          (values
                                                                                           idss_1
-                                                                                          rhss_1))
-                                                                                        (args
-                                                                                         (raise-binding-result-arity-error
-                                                                                          2
-                                                                                          args)))))
-                                                                                    (case-lambda
-                                                                                     ((idss_1
-                                                                                       rhss_1)
+                                                                                          rhss_1))))
+                                                                                    (lambda (idss_1
+                                                                                             rhss_1)
                                                                                       (for-loop_0
                                                                                        idss_1
                                                                                        rhss_1
-                                                                                       rest_0))
-                                                                                     (args
-                                                                                      (raise-binding-result-arity-error
-                                                                                       2
-                                                                                       args)))))))
+                                                                                       rest_0))))))
                                                                              (values
                                                                               idss_0
                                                                               rhss_0)))))))
@@ -31074,22 +29708,17 @@
                                                                      null
                                                                      null
                                                                      a_0)))
-                                                                 (case-lambda
-                                                                  ((idss_0
-                                                                    rhss_0)
+                                                                 (lambda (idss_0
+                                                                          rhss_0)
                                                                    (let ((app_0
                                                                           (reverse$1
                                                                            idss_0)))
                                                                      (values
                                                                       app_0
                                                                       (reverse$1
-                                                                       rhss_0))))
-                                                                  (args
-                                                                   (raise-binding-result-arity-error
-                                                                    2
-                                                                    args))))))
-                                                            (case-lambda
-                                                             ((idss_0 rhss_0)
+                                                                       rhss_0)))))))
+                                                            (lambda (idss_0
+                                                                     rhss_0)
                                                               (let ((bodys_0
                                                                      (let ((d_1
                                                                             (cdr
@@ -31103,13 +29732,10 @@
                                                                   (values
                                                                    idss_1
                                                                    rhss_1
-                                                                   bodys_0))))
-                                                             (args
-                                                              (raise-binding-result-arity-error
-                                                               2
-                                                               args)))))))
-                                                     (case-lambda
-                                                      ((idss_0 rhss_0 bodys_0)
+                                                                   bodys_0))))))))
+                                                     (lambda (idss_0
+                                                              rhss_0
+                                                              bodys_0)
                                                        (let ((or-part_0
                                                               (if (not
                                                                    (let ((or-part_0
@@ -31185,17 +29811,14 @@
                                                                 bodys_0
                                                                 wcm-state_2)
                                                                mutated_0
-                                                               target_0))
+                                                               target_0
+                                                               unsafe-mode?_0))
                                                             prim-knowns_0
                                                             knowns_1
                                                             imports_0
                                                             mutated_0
                                                             simples_0
-                                                            unsafe-mode?_0))))
-                                                      (args
-                                                       (raise-binding-result-arity-error
-                                                        3
-                                                        args))))
+                                                            unsafe-mode?_0)))))
                                                     (if (if (eq?
                                                              'letrec-values
                                                              hd_0)
@@ -31555,9 +30178,8 @@
                                                                                 (values
                                                                                  id_1
                                                                                  rhs_0))))))))
-                                                                  (case-lambda
-                                                                   ((id_0
-                                                                     rhs_0)
+                                                                  (lambda (id_0
+                                                                           rhs_0)
                                                                     (let ((bodys_0
                                                                            (let ((d_1
                                                                                   (cdr
@@ -31571,15 +30193,10 @@
                                                                         (values
                                                                          id_1
                                                                          rhs_1
-                                                                         bodys_0))))
-                                                                   (args
-                                                                    (raise-binding-result-arity-error
-                                                                     2
-                                                                     args)))))))
-                                                           (case-lambda
-                                                            ((id_0
-                                                              rhs_0
-                                                              bodys_0)
+                                                                         bodys_0))))))))
+                                                           (lambda (id_0
+                                                                    rhs_0
+                                                                    bodys_0)
                                                              (schemify_0
                                                               (list*
                                                                'letrec-values
@@ -31588,11 +30205,7 @@
                                                                  (list id_0)
                                                                  rhs_0))
                                                                bodys_0)
-                                                              wcm-state_2))
-                                                            (args
-                                                             (raise-binding-result-arity-error
-                                                              3
-                                                              args))))
+                                                              wcm-state_2)))
                                                           (if (if (eq?
                                                                    'letrec-values
                                                                    hd_0)
@@ -31795,41 +30408,26 @@
                                                                                                             (values
                                                                                                              ids_2
                                                                                                              rhss_1))))))
-                                                                                                  (case-lambda
-                                                                                                   ((ids118_0
-                                                                                                     rhss119_0)
+                                                                                                  (lambda (ids118_0
+                                                                                                           rhss119_0)
                                                                                                     (values
                                                                                                      (cons
                                                                                                       ids118_0
                                                                                                       ids_0)
                                                                                                      (cons
                                                                                                       rhss119_0
-                                                                                                      rhss_0)))
-                                                                                                   (args
-                                                                                                    (raise-binding-result-arity-error
-                                                                                                     2
-                                                                                                     args)))))
-                                                                                               (case-lambda
-                                                                                                ((ids_1
-                                                                                                  rhss_1)
+                                                                                                      rhss_0)))))
+                                                                                               (lambda (ids_1
+                                                                                                        rhss_1)
                                                                                                  (values
                                                                                                   ids_1
-                                                                                                  rhss_1))
-                                                                                                (args
-                                                                                                 (raise-binding-result-arity-error
-                                                                                                  2
-                                                                                                  args)))))
-                                                                                            (case-lambda
-                                                                                             ((ids_1
-                                                                                               rhss_1)
+                                                                                                  rhss_1))))
+                                                                                            (lambda (ids_1
+                                                                                                     rhss_1)
                                                                                               (for-loop_0
                                                                                                ids_1
                                                                                                rhss_1
-                                                                                               rest_0))
-                                                                                             (args
-                                                                                              (raise-binding-result-arity-error
-                                                                                               2
-                                                                                               args)))))))
+                                                                                               rest_0))))))
                                                                                      (values
                                                                                       ids_0
                                                                                       rhss_0)))))))
@@ -31837,23 +30435,17 @@
                                                                              null
                                                                              null
                                                                              a_0)))
-                                                                         (case-lambda
-                                                                          ((ids_0
-                                                                            rhss_0)
+                                                                         (lambda (ids_0
+                                                                                  rhss_0)
                                                                            (let ((app_0
                                                                                   (reverse$1
                                                                                    ids_0)))
                                                                              (values
                                                                               app_0
                                                                               (reverse$1
-                                                                               rhss_0))))
-                                                                          (args
-                                                                           (raise-binding-result-arity-error
-                                                                            2
-                                                                            args))))))
-                                                                    (case-lambda
-                                                                     ((ids_0
-                                                                       rhss_0)
+                                                                               rhss_0)))))))
+                                                                    (lambda (ids_0
+                                                                             rhss_0)
                                                                       (let ((bodys_0
                                                                              (let ((d_1
                                                                                     (cdr
@@ -31867,15 +30459,10 @@
                                                                           (values
                                                                            ids_1
                                                                            rhss_1
-                                                                           bodys_0))))
-                                                                     (args
-                                                                      (raise-binding-result-arity-error
-                                                                       2
-                                                                       args)))))))
-                                                             (case-lambda
-                                                              ((ids_0
-                                                                rhss_0
-                                                                bodys_0)
+                                                                           bodys_0))))))))
+                                                             (lambda (ids_0
+                                                                      rhss_0
+                                                                      bodys_0)
                                                                (call-with-values
                                                                 (lambda ()
                                                                   (begin
@@ -31956,28 +30543,18 @@
                                                                                                     (values
                                                                                                      rhs-knowns_0
                                                                                                      body-knowns_0))))))
-                                                                                          (case-lambda
-                                                                                           ((rhs-knowns_1
-                                                                                             body-knowns_1)
+                                                                                          (lambda (rhs-knowns_1
+                                                                                                   body-knowns_1)
                                                                                             (values
                                                                                              rhs-knowns_1
-                                                                                             body-knowns_1))
-                                                                                           (args
-                                                                                            (raise-binding-result-arity-error
-                                                                                             2
-                                                                                             args)))))
-                                                                                       (case-lambda
-                                                                                        ((rhs-knowns_1
-                                                                                          body-knowns_1)
+                                                                                             body-knowns_1))))
+                                                                                       (lambda (rhs-knowns_1
+                                                                                                body-knowns_1)
                                                                                          (for-loop_0
                                                                                           rhs-knowns_1
                                                                                           body-knowns_1
                                                                                           rest_0
-                                                                                          rest_1))
-                                                                                        (args
-                                                                                         (raise-binding-result-arity-error
-                                                                                          2
-                                                                                          args))))))))
+                                                                                          rest_1)))))))
                                                                               (values
                                                                                rhs-knowns_0
                                                                                body-knowns_0)))))))
@@ -31986,9 +30563,8 @@
                                                                       knowns_1
                                                                       ids_0
                                                                       rhss_0))))
-                                                                (case-lambda
-                                                                 ((rhs-knowns_0
-                                                                   body-knowns_0)
+                                                                (lambda (rhs-knowns_0
+                                                                         body-knowns_0)
                                                                   (unnest-let
                                                                    (letrec-conversion
                                                                     ids_0
@@ -32087,15 +30663,7 @@
                                                                    imports_0
                                                                    mutated_0
                                                                    simples_0
-                                                                   unsafe-mode?_0))
-                                                                 (args
-                                                                  (raise-binding-result-arity-error
-                                                                   2
-                                                                   args)))))
-                                                              (args
-                                                               (raise-binding-result-arity-error
-                                                                3
-                                                                args))))
+                                                                   unsafe-mode?_0)))))
                                                             (if (if (eq?
                                                                      'letrec-values
                                                                      hd_0)
@@ -32273,41 +30841,26 @@
                                                                                                               (values
                                                                                                                idss_2
                                                                                                                rhss_1))))))
-                                                                                                    (case-lambda
-                                                                                                     ((idss129_0
-                                                                                                       rhss130_0)
+                                                                                                    (lambda (idss129_0
+                                                                                                             rhss130_0)
                                                                                                       (values
                                                                                                        (cons
                                                                                                         idss129_0
                                                                                                         idss_0)
                                                                                                        (cons
                                                                                                         rhss130_0
-                                                                                                        rhss_0)))
-                                                                                                     (args
-                                                                                                      (raise-binding-result-arity-error
-                                                                                                       2
-                                                                                                       args)))))
-                                                                                                 (case-lambda
-                                                                                                  ((idss_1
-                                                                                                    rhss_1)
+                                                                                                        rhss_0)))))
+                                                                                                 (lambda (idss_1
+                                                                                                          rhss_1)
                                                                                                    (values
                                                                                                     idss_1
-                                                                                                    rhss_1))
-                                                                                                  (args
-                                                                                                   (raise-binding-result-arity-error
-                                                                                                    2
-                                                                                                    args)))))
-                                                                                              (case-lambda
-                                                                                               ((idss_1
-                                                                                                 rhss_1)
+                                                                                                    rhss_1))))
+                                                                                              (lambda (idss_1
+                                                                                                       rhss_1)
                                                                                                 (for-loop_0
                                                                                                  idss_1
                                                                                                  rhss_1
-                                                                                                 rest_0))
-                                                                                               (args
-                                                                                                (raise-binding-result-arity-error
-                                                                                                 2
-                                                                                                 args)))))))
+                                                                                                 rest_0))))))
                                                                                        (values
                                                                                         idss_0
                                                                                         rhss_0)))))))
@@ -32315,23 +30868,17 @@
                                                                                null
                                                                                null
                                                                                a_0)))
-                                                                           (case-lambda
-                                                                            ((idss_0
-                                                                              rhss_0)
+                                                                           (lambda (idss_0
+                                                                                    rhss_0)
                                                                              (let ((app_0
                                                                                     (reverse$1
                                                                                      idss_0)))
                                                                                (values
                                                                                 app_0
                                                                                 (reverse$1
-                                                                                 rhss_0))))
-                                                                            (args
-                                                                             (raise-binding-result-arity-error
-                                                                              2
-                                                                              args))))))
-                                                                      (case-lambda
-                                                                       ((idss_0
-                                                                         rhss_0)
+                                                                                 rhss_0)))))))
+                                                                      (lambda (idss_0
+                                                                               rhss_0)
                                                                         (let ((bodys_0
                                                                                (let ((d_1
                                                                                       (cdr
@@ -32345,15 +30892,10 @@
                                                                             (values
                                                                              idss_1
                                                                              rhss_1
-                                                                             bodys_0))))
-                                                                       (args
-                                                                        (raise-binding-result-arity-error
-                                                                         2
-                                                                         args)))))))
-                                                               (case-lambda
-                                                                ((idss_0
-                                                                  rhss_0
-                                                                  bodys_0)
+                                                                             bodys_0))))))))
+                                                               (lambda (idss_0
+                                                                        rhss_0
+                                                                        bodys_0)
                                                                  (let ((temp138_0
                                                                         (lambda (v_3
                                                                                  knowns_2)
@@ -32438,7 +30980,8 @@
                                                                                                                                null
                                                                                                                                rhs_1
                                                                                                                                '(void)
-                                                                                                                               target_0))))
+                                                                                                                               target_0
+                                                                                                                               unsafe-mode?_0))))
                                                                                                                           (if (if (pair?
                                                                                                                                    ids_0)
                                                                                                                                 (null?
@@ -32462,7 +31005,8 @@
                                                                                                                                        (list*
                                                                                                                                         'vector
                                                                                                                                         ids_0)
-                                                                                                                                       target_0))))
+                                                                                                                                       target_0
+                                                                                                                                       unsafe-mode?_0))))
                                                                                                                                 (list*
                                                                                                                                  app_0
                                                                                                                                  (reverse$1
@@ -32525,11 +31069,7 @@
                                                                              app_0
                                                                              (schemify-body_0
                                                                               bodys_0
-                                                                              wcm-state_2)))))))))
-                                                                (args
-                                                                 (raise-binding-result-arity-error
-                                                                  3
-                                                                  args))))
+                                                                              wcm-state_2))))))))))
                                                               (if (if (eq?
                                                                        'if
                                                                        hd_0)
@@ -32614,23 +31154,17 @@
                                                                                       (values
                                                                                        thn_1
                                                                                        els_0)))))))
-                                                                          (case-lambda
-                                                                           ((thn_0
-                                                                             els_0)
+                                                                          (lambda (thn_0
+                                                                                   els_0)
                                                                             (let ((tst_1
                                                                                    tst_0))
                                                                               (values
                                                                                tst_1
                                                                                thn_0
-                                                                               els_0)))
-                                                                           (args
-                                                                            (raise-binding-result-arity-error
-                                                                             2
-                                                                             args))))))))
-                                                                 (case-lambda
-                                                                  ((tst_0
-                                                                    thn_0
-                                                                    els_0)
+                                                                               els_0))))))))
+                                                                 (lambda (tst_0
+                                                                          thn_0
+                                                                          els_0)
                                                                    (let ((app_0
                                                                           (schemify_0
                                                                            tst_0
@@ -32645,11 +31179,7 @@
                                                                         app_1
                                                                         (schemify_0
                                                                          els_0
-                                                                         wcm-state_2)))))
-                                                                  (args
-                                                                   (raise-binding-result-arity-error
-                                                                    3
-                                                                    args))))
+                                                                         wcm-state_2))))))
                                                                 (if (if (eq?
                                                                          'with-continuation-mark
                                                                          hd_0)
@@ -32734,23 +31264,17 @@
                                                                                         (values
                                                                                          val_1
                                                                                          body_0)))))))
-                                                                            (case-lambda
-                                                                             ((val_0
-                                                                               body_0)
+                                                                            (lambda (val_0
+                                                                                     body_0)
                                                                               (let ((key_1
                                                                                      key_0))
                                                                                 (values
                                                                                  key_1
                                                                                  val_0
-                                                                                 body_0)))
-                                                                             (args
-                                                                              (raise-binding-result-arity-error
-                                                                               2
-                                                                               args))))))))
-                                                                   (case-lambda
-                                                                    ((key_0
-                                                                      val_0
-                                                                      body_0)
+                                                                                 body_0))))))))
+                                                                   (lambda (key_0
+                                                                            val_0
+                                                                            body_0)
                                                                      (let ((s-key_0
                                                                             (schemify_0
                                                                              key_0
@@ -32987,39 +31511,28 @@
                                                                                                                         (values
                                                                                                                          s-val2_1
                                                                                                                          s-body2_0)))))))
-                                                                                                            (case-lambda
-                                                                                                             ((s-val2_0
-                                                                                                               s-body2_0)
+                                                                                                            (lambda (s-val2_0
+                                                                                                                     s-body2_0)
                                                                                                               (let ((s-key2_1
                                                                                                                      s-key2_0))
                                                                                                                 (values
                                                                                                                  s-key2_1
                                                                                                                  s-val2_0
-                                                                                                                 s-body2_0)))
-                                                                                                             (args
-                                                                                                              (raise-binding-result-arity-error
-                                                                                                               2
-                                                                                                               args))))))))
-                                                                                                   (case-lambda
-                                                                                                    ((s-key2_0
-                                                                                                      s-val2_0
-                                                                                                      s-body2_0)
+                                                                                                                 s-body2_0))))))))
+                                                                                                   (lambda (s-key2_0
+                                                                                                            s-val2_0
+                                                                                                            s-body2_0)
                                                                                                      (let ((mode2_1
                                                                                                             mode2_0))
                                                                                                        (values
                                                                                                         mode2_1
                                                                                                         s-key2_0
                                                                                                         s-val2_0
-                                                                                                        s-body2_0)))
-                                                                                                    (args
-                                                                                                     (raise-binding-result-arity-error
-                                                                                                      3
-                                                                                                      args))))))))
-                                                                                          (case-lambda
-                                                                                           ((mode2_0
-                                                                                             s-key2_0
-                                                                                             s-val2_0
-                                                                                             s-body2_0)
+                                                                                                        s-body2_0))))))))
+                                                                                          (lambda (mode2_0
+                                                                                                   s-key2_0
+                                                                                                   s-val2_0
+                                                                                                   s-body2_0)
                                                                                             (if (if (always-eq/no-marks?
                                                                                                      s-key_0
                                                                                                      s-key2_0
@@ -33048,11 +31561,7 @@
                                                                                               (build-wcm_0
                                                                                                s-key_0
                                                                                                s-val_0
-                                                                                               s-body_0)))
-                                                                                           (args
-                                                                                            (raise-binding-result-arity-error
-                                                                                             4
-                                                                                             args))))
+                                                                                               s-body_0))))
                                                                                          (build-wcm_0
                                                                                           s-key_0
                                                                                           s-val_0
@@ -33060,11 +31569,7 @@
                                                                                    (build-wcm_0
                                                                                     s-key_0
                                                                                     s-val_0
-                                                                                    s-body_0)))))))))
-                                                                    (args
-                                                                     (raise-binding-result-arity-error
-                                                                      3
-                                                                      args))))
+                                                                                    s-body_0))))))))))
                                                                   (if (if (eq?
                                                                            'begin
                                                                            hd_0)
@@ -33229,9 +31734,8 @@
                                                                                          (values
                                                                                           exp_1
                                                                                           exps_0)))))))
-                                                                             (case-lambda
-                                                                              ((exp_0
-                                                                                exps_0)
+                                                                             (lambda (exp_0
+                                                                                      exps_0)
                                                                                (let ((app_0
                                                                                       (schemify_0
                                                                                        exp_0
@@ -33241,11 +31745,7 @@
                                                                                   app_0
                                                                                   (schemify-body_0
                                                                                    exps_0
-                                                                                   'fresh))))
-                                                                              (args
-                                                                               (raise-binding-result-arity-error
-                                                                                2
-                                                                                args))))
+                                                                                   'fresh)))))
                                                                             (if (if (eq?
                                                                                      'set!
                                                                                      hd_0)
@@ -33308,9 +31808,8 @@
                                                                                            (values
                                                                                             id_1
                                                                                             rhs_0)))))))
-                                                                               (case-lambda
-                                                                                ((id_0
-                                                                                  rhs_0)
+                                                                               (lambda (id_0
+                                                                                        rhs_0)
                                                                                  (let ((int-id_0
                                                                                         (unwrap
                                                                                          id_0)))
@@ -33389,11 +31888,7 @@
                                                                                                (list
                                                                                                 'set!
                                                                                                 id_0
-                                                                                                new-rhs_0)))))))))
-                                                                                (args
-                                                                                 (raise-binding-result-arity-error
-                                                                                  2
-                                                                                  args))))
+                                                                                                new-rhs_0))))))))))
                                                                               (if (if (eq?
                                                                                        'variable-reference-constant?
                                                                                        hd_0)
@@ -33732,9 +32227,8 @@
                                                                                                      (values
                                                                                                       exp1_1
                                                                                                       exp2_0)))))))
-                                                                                         (case-lambda
-                                                                                          ((exp1_0
-                                                                                            exp2_0)
+                                                                                         (lambda (exp1_0
+                                                                                                  exp2_0)
                                                                                            (let ((app_0
                                                                                                   (schemify_0
                                                                                                    exp1_0
@@ -33751,11 +32245,7 @@
                                                                                               imports_0
                                                                                               mutated_0
                                                                                               simples_0
-                                                                                              unsafe-mode?_0)))
-                                                                                          (args
-                                                                                           (raise-binding-result-arity-error
-                                                                                            2
-                                                                                            args))))
+                                                                                              unsafe-mode?_0))))
                                                                                         (if (if (eq?
                                                                                                  'equal-always?
                                                                                                  hd_0)
@@ -33818,9 +32308,8 @@
                                                                                                        (values
                                                                                                         exp1_1
                                                                                                         exp2_0)))))))
-                                                                                           (case-lambda
-                                                                                            ((exp1_0
-                                                                                              exp2_0)
+                                                                                           (lambda (exp1_0
+                                                                                                    exp2_0)
                                                                                              (let ((app_0
                                                                                                     (schemify_0
                                                                                                      exp1_0
@@ -33837,11 +32326,7 @@
                                                                                                 imports_0
                                                                                                 mutated_0
                                                                                                 simples_0
-                                                                                                unsafe-mode?_0)))
-                                                                                            (args
-                                                                                             (raise-binding-result-arity-error
-                                                                                              2
-                                                                                              args))))
+                                                                                                unsafe-mode?_0))))
                                                                                           (if (if (eq?
                                                                                                    'procedure-result-arity
                                                                                                    hd_0)
@@ -33951,9 +32436,8 @@
                                                                                                            (values
                                                                                                             generator_1
                                                                                                             receiver_0)))))))
-                                                                                               (case-lambda
-                                                                                                ((generator_0
-                                                                                                  receiver_0)
+                                                                                               (lambda (generator_0
+                                                                                                        receiver_0)
                                                                                                  (let ((c2_0
                                                                                                         (if (single-valued-lambda?
                                                                                                              generator_0
@@ -34058,9 +32542,8 @@
                                                                                                                            (values
                                                                                                                             id_1
                                                                                                                             body_0)))))))
-                                                                                                               (case-lambda
-                                                                                                                ((id_0
-                                                                                                                  body_0)
+                                                                                                               (lambda (id_0
+                                                                                                                        body_0)
                                                                                                                  (let ((app_0
                                                                                                                         (list
                                                                                                                          (list
@@ -34074,11 +32557,7 @@
                                                                                                                     app_0
                                                                                                                     (schemify_0
                                                                                                                      body_0
-                                                                                                                     'fresh))))
-                                                                                                                (args
-                                                                                                                 (raise-binding-result-arity-error
-                                                                                                                  2
-                                                                                                                  args))))
+                                                                                                                     'fresh)))))
                                                                                                               (if (if (eq?
                                                                                                                        'case-lambda
                                                                                                                        hd_1)
@@ -34181,9 +32660,8 @@
                                                                                                                                (values
                                                                                                                                 id_1
                                                                                                                                 body_0))))))))
-                                                                                                                 (case-lambda
-                                                                                                                  ((id_0
-                                                                                                                    body_0)
+                                                                                                                 (lambda (id_0
+                                                                                                                          body_0)
                                                                                                                    (let ((app_0
                                                                                                                           (list
                                                                                                                            (list
@@ -34197,11 +32675,7 @@
                                                                                                                       app_0
                                                                                                                       (schemify_0
                                                                                                                        body_0
-                                                                                                                       'fresh))))
-                                                                                                                  (args
-                                                                                                                   (raise-binding-result-arity-error
-                                                                                                                    2
-                                                                                                                    args))))
+                                                                                                                       'fresh)))))
                                                                                                                 #f)))
                                                                                                           #f)))
                                                                                                    (if c2_0
@@ -34252,11 +32726,7 @@
                                                                                                         imports_0
                                                                                                         mutated_0
                                                                                                         simples_0
-                                                                                                        unsafe-mode?_0)))))
-                                                                                                (args
-                                                                                                 (raise-binding-result-arity-error
-                                                                                                  2
-                                                                                                  args))))
+                                                                                                        unsafe-mode?_0))))))
                                                                                               (if (if (eq?
                                                                                                        'single-flonum-available?
                                                                                                        hd_0)
@@ -34374,9 +32844,8 @@
                                                                                                                       (values
                                                                                                                        binds_1
                                                                                                                        rator_0))))))))
-                                                                                                        (case-lambda
-                                                                                                         ((binds_0
-                                                                                                           rator_0)
+                                                                                                        (lambda (binds_0
+                                                                                                                 rator_0)
                                                                                                           (let ((rands_0
                                                                                                                  (let ((d_0
                                                                                                                         (cdr
@@ -34390,15 +32859,10 @@
                                                                                                               (values
                                                                                                                binds_1
                                                                                                                rator_1
-                                                                                                               rands_0))))
-                                                                                                         (args
-                                                                                                          (raise-binding-result-arity-error
-                                                                                                           2
-                                                                                                           args))))))
-                                                                                                   (case-lambda
-                                                                                                    ((binds_0
-                                                                                                      rator_0
-                                                                                                      rands_0)
+                                                                                                               rands_0)))))))
+                                                                                                   (lambda (binds_0
+                                                                                                            rator_0
+                                                                                                            rands_0)
                                                                                                      (schemify_0
                                                                                                       (list
                                                                                                        'letrec-values
@@ -34406,11 +32870,7 @@
                                                                                                        (list*
                                                                                                         rator_0
                                                                                                         rands_0))
-                                                                                                      wcm-state_2))
-                                                                                                    (args
-                                                                                                     (raise-binding-result-arity-error
-                                                                                                      3
-                                                                                                      args))))
+                                                                                                      wcm-state_2)))
                                                                                                   (if (let ((p_0
                                                                                                              (unwrap
                                                                                                               v_2)))
@@ -34443,9 +32903,8 @@
                                                                                                                (values
                                                                                                                 rator_1
                                                                                                                 exps_0))))))
-                                                                                                     (case-lambda
-                                                                                                      ((rator_0
-                                                                                                        exps_0)
+                                                                                                     (lambda (rator_0
+                                                                                                              exps_0)
                                                                                                        (letrec*
                                                                                                         ((left-left-lambda-convert_0
                                                                                                           (|#%name|
@@ -34507,9 +32966,8 @@
                                                                                                                                 (values
                                                                                                                                  formal-args_1
                                                                                                                                  bodys_0)))))))
-                                                                                                                    (case-lambda
-                                                                                                                     ((formal-args_0
-                                                                                                                       bodys_0)
+                                                                                                                    (lambda (formal-args_0
+                                                                                                                             bodys_0)
                                                                                                                       (letrec*
                                                                                                                        ((loop_0
                                                                                                                          (|#%name|
@@ -34578,11 +33036,7 @@
                                                                                                                        (loop_0
                                                                                                                         formal-args_0
                                                                                                                         exps_0
-                                                                                                                        '())))
-                                                                                                                     (args
-                                                                                                                      (raise-binding-result-arity-error
-                                                                                                                       2
-                                                                                                                       args))))
+                                                                                                                        '()))))
                                                                                                                    (if (if (eq?
                                                                                                                             'case-lambda
                                                                                                                             hd_1)
@@ -34646,9 +33100,8 @@
                                                                                                                                          (values
                                                                                                                                           formal-args_1
                                                                                                                                           bodys_0)))))))
-                                                                                                                             (case-lambda
-                                                                                                                              ((formal-args_0
-                                                                                                                                bodys_0)
+                                                                                                                             (lambda (formal-args_0
+                                                                                                                                      bodys_0)
                                                                                                                                (let ((rest_0
                                                                                                                                       (let ((d_1
                                                                                                                                              (cdr
@@ -34661,15 +33114,10 @@
                                                                                                                                    (values
                                                                                                                                     formal-args_1
                                                                                                                                     bodys_1
-                                                                                                                                    rest_0))))
-                                                                                                                              (args
-                                                                                                                               (raise-binding-result-arity-error
-                                                                                                                                2
-                                                                                                                                args)))))))
-                                                                                                                      (case-lambda
-                                                                                                                       ((formal-args_0
-                                                                                                                         bodys_0
-                                                                                                                         rest_0)
+                                                                                                                                    rest_0))))))))
+                                                                                                                      (lambda (formal-args_0
+                                                                                                                               bodys_0
+                                                                                                                               rest_0)
                                                                                                                         (let ((or-part_0
                                                                                                                                (left-left-lambda-convert_0
                                                                                                                                 (list*
@@ -34683,11 +33131,7 @@
                                                                                                                              (list*
                                                                                                                               'case-lambda
                                                                                                                               rest_0)
-                                                                                                                             inline-fuel_1))))
-                                                                                                                       (args
-                                                                                                                        (raise-binding-result-arity-error
-                                                                                                                         3
-                                                                                                                         args))))
+                                                                                                                             inline-fuel_1)))))
                                                                                                                      #f))))))))
                                                                                                         (let ((inline-rator_0
                                                                                                                (|#%name|
@@ -34708,9 +33152,8 @@
                                                                                                                               knowns_1
                                                                                                                               imports_0
                                                                                                                               mutated_0))
-                                                                                                                           (case-lambda
-                                                                                                                            ((k_0
-                                                                                                                              im_0)
+                                                                                                                           (lambda (k_0
+                                                                                                                                    im_0)
                                                                                                                              (if (known-procedure/can-inline?
                                                                                                                                   k_0)
                                                                                                                                (let ((app_0
@@ -34724,11 +33167,7 @@
                                                                                                                                   app_0
                                                                                                                                   (sub1
                                                                                                                                    inline-fuel_0)))
-                                                                                                                               #f))
-                                                                                                                            (args
-                                                                                                                             (raise-binding-result-arity-error
-                                                                                                                              2
-                                                                                                                              args))))
+                                                                                                                               #f)))
                                                                                                                           #f)
                                                                                                                         #f)))))))
                                                                                                           (let ((maybe-tmp_0
@@ -35092,9 +33531,8 @@
                                                                                                                                           knowns_1
                                                                                                                                           imports_0
                                                                                                                                           mutated_0))
-                                                                                                                                       (case-lambda
-                                                                                                                                        ((k_0
-                                                                                                                                          im_0)
+                                                                                                                                       (lambda (k_0
+                                                                                                                                                im_0)
                                                                                                                                          (let ((c7_0
                                                                                                                                                 (let ((or-part_2
                                                                                                                                                        (if (eq?
@@ -35270,15 +33708,7 @@
                                                                                                                                                                   imports_0
                                                                                                                                                                   mutated_0
                                                                                                                                                                   simples_0
-                                                                                                                                                                  unsafe-mode?_0))))))))))))))
-                                                                                                                                        (args
-                                                                                                                                         (raise-binding-result-arity-error
-                                                                                                                                          2
-                                                                                                                                          args)))))))))))))))))))))
-                                                                                                      (args
-                                                                                                       (raise-binding-result-arity-error
-                                                                                                        2
-                                                                                                        args))))
+                                                                                                                                                                  unsafe-mode?_0)))))))))))))))))))))))))))))))))
                                                                                                     (let ((u-v_0
                                                                                                            (unwrap
                                                                                                             v_2)))
@@ -35613,10 +34043,7 @@
                                                   a_0))))
                                          (let ((m_2 m_1))
                                            (values m_2 orig-id_0)))))))
-                               (case-lambda
-                                ((m_1 orig-id_0) orig-id_0)
-                                (args
-                                 (raise-binding-result-arity-error 2 args))))
+                               (lambda (m_1 orig-id_0) orig-id_0))
                               (if (if (eq? 'self hd_0)
                                     (let ((a_0 (cdr (unwrap m_0))))
                                       (let ((p_0 (unwrap a_0)))
@@ -35668,17 +34095,12 @@
                                                                         id_0)
                                                                        id_0)
                                                                       #t))
-                                                                   (case-lambda
-                                                                    ((key_0
-                                                                      val_0)
+                                                                   (lambda (key_0
+                                                                            val_0)
                                                                      (hash-set
                                                                       table_2
                                                                       key_0
-                                                                      val_0))
-                                                                    (args
-                                                                     (raise-binding-result-arity-error
-                                                                      2
-                                                                      args))))))
+                                                                      val_0)))))
                                                              (values
                                                               table_3))))
                                                       (for-loop_0
@@ -35738,8 +34160,7 @@
                                                     (values
                                                      m_1
                                                      orig-name_0)))))))
-                                        (case-lambda
-                                         ((m_0 orig-name_0)
+                                        (lambda (m_0 orig-name_0)
                                           (if (eq? orig-name_0 name_0)
                                             (let ((self-id_0
                                                    (extract-id_0 m_0 name_0)))
@@ -35751,11 +34172,7 @@
                                                 'letrec
                                                 (list (list name_0 v_1))
                                                 name_0)))
-                                            #f))
-                                         (args
-                                          (raise-binding-result-arity-error
-                                           2
-                                           args))))
+                                            #f)))
                                        #f)))))
                             (if or-part_0
                               or-part_0
@@ -35806,15 +34223,12 @@
                                        convert-mode_0)
                                     (add-lift_0 e_0 lifts_0)
                                     (values (list 'quote e_0) lifts_0)))
-                                (case-lambda
-                                 ((get-e_0 new-lifts_0)
+                                (lambda (get-e_0 new-lifts_0)
                                   (values
                                    (if need-extract?_0
                                      (list 'jitified-extract-closed get-e_0)
                                      get-e_0)
-                                   new-lifts_0))
-                                 (args
-                                  (raise-binding-result-arity-error 2 args)))))
+                                   new-lifts_0))))
                              (let ((e_0
                                     (|#%app|
                                      extractable-annotation_0
@@ -35848,40 +34262,25 @@
                                          (add-lift_0
                                           (lifts->datum_0 body-lifts_0)
                                           lifts_0))
-                                       (case-lambda
-                                        ((get-sub-lift_0 new-lifts_0)
+                                       (lambda (get-sub-lift_0 new-lifts_0)
                                          (values
                                           (cons get-sub-lift_0 captures_0)
-                                          new-lifts_0))
-                                        (args
-                                         (raise-binding-result-arity-error
-                                          2
-                                          args)))))))
-                                (case-lambda
-                                 ((all-captures_0 new-lifts_0)
+                                          new-lifts_0))))))
+                                (lambda (all-captures_0 new-lifts_0)
                                   (call-with-values
                                    (lambda ()
                                      (if (convert-mode-need-lift?_0
                                           convert-mode_0)
                                        (add-lift_0 e_0 new-lifts_0)
                                        (values (list 'quote e_0) new-lifts_0)))
-                                   (case-lambda
-                                    ((get-e_0 newer-lifts_0)
+                                   (lambda (get-e_0 newer-lifts_0)
                                      (values
                                       (if need-extract?_0
                                         (list*
                                          (list 'jitified-extract get-e_0)
                                          all-captures_0)
                                         (list* get-e_0 all-captures_0))
-                                      newer-lifts_0))
-                                    (args
-                                     (raise-binding-result-arity-error
-                                      2
-                                      args)))))
-                                 (args
-                                  (raise-binding-result-arity-error
-                                   2
-                                   args))))))))))))))))))
+                                      newer-lifts_0)))))))))))))))))))
       (top_0
        (|#%name|
         top
@@ -35909,16 +34308,14 @@
                                  (let ((body_0 (let ((d_1 (cdr p_0))) d_1)))
                                    (let ((args_1 args_0))
                                      (values args_1 body_0)))))))
-                         (case-lambda
-                          ((args_0 body_0)
+                         (lambda (args_0 body_0)
                            (let ((new-body_0
                                   (jitify-schemified-body_0
                                    body_0
                                    (plain-add-args_0 env_0 args_0))))
                              (reannotate
                               v_1
-                              (list* 'lambda args_0 new-body_0))))
-                          (args (raise-binding-result-arity-error 2 args))))
+                              (list* 'lambda args_0 new-body_0)))))
                         (if (if (eq? 'let* hd_0)
                               (let ((a_0 (cdr (unwrap v_1))))
                                 (let ((p_0 (unwrap a_0)))
@@ -35945,16 +34342,14 @@
                                               a_0))))
                                      (let ((bindings_1 bindings_0))
                                        (values bindings_1 body_0)))))))
-                           (case-lambda
-                            ((bindings_0 body_0)
+                           (lambda (bindings_0 body_0)
                              (let ((new-body_0
                                     (loop_0
                                      body_0
                                      (add-bindings_0 env_0 bindings_0))))
                                (reannotate
                                 v_1
-                                (list 'let* bindings_0 new-body_0))))
-                            (args (raise-binding-result-arity-error 2 args))))
+                                (list 'let* bindings_0 new-body_0)))))
                           (error 'match "failed ~e" v_1)))))))))
              (loop_0 v_0 hash2610))))))
       (jitify-schemified-body_0
@@ -36042,8 +34437,8 @@
                                                                           (values
                                                                            var-id_1
                                                                            id_0)))))))
-                                                              (case-lambda
-                                                               ((var-id_0 id_0)
+                                                              (lambda (var-id_0
+                                                                       id_0)
                                                                 (let ((app_0
                                                                        (unwrap
                                                                         id_0)))
@@ -36053,11 +34448,7 @@
                                                                    (list
                                                                     'variable-ref
                                                                     (unwrap
-                                                                     var-id_0)))))
-                                                               (args
-                                                                (raise-binding-result-arity-error
-                                                                 2
-                                                                 args))))
+                                                                     var-id_0))))))
                                                              (if (if (eq?
                                                                       'variable-set!/define
                                                                       hd_0)
@@ -36110,9 +34501,8 @@
                                                                             (values
                                                                              var-id_1
                                                                              id_0)))))))
-                                                                (case-lambda
-                                                                 ((var-id_0
-                                                                   id_0)
+                                                                (lambda (var-id_0
+                                                                         id_0)
                                                                   (let ((app_0
                                                                          (unwrap
                                                                           id_0)))
@@ -36122,11 +34512,7 @@
                                                                      (list
                                                                       'variable-ref
                                                                       (unwrap
-                                                                       var-id_0)))))
-                                                                 (args
-                                                                  (raise-binding-result-arity-error
-                                                                   2
-                                                                   args))))
+                                                                       var-id_0))))))
                                                                (if (if (eq?
                                                                         'call-with-module-prompt
                                                                         hd_0)
@@ -36247,9 +34633,8 @@
                                                                                 (values
                                                                                  ids_1
                                                                                  var-ids_0))))))))
-                                                                  (case-lambda
-                                                                   ((ids_0
-                                                                     var-ids_0)
+                                                                  (lambda (ids_0
+                                                                           var-ids_0)
                                                                     (begin
                                                                       (letrec*
                                                                        ((for-loop_1
@@ -36298,11 +34683,7 @@
                                                                        (for-loop_1
                                                                         env_2
                                                                         ids_0
-                                                                        var-ids_0))))
-                                                                   (args
-                                                                    (raise-binding-result-arity-error
-                                                                     2
-                                                                     args))))
+                                                                        var-ids_0)))))
                                                                  (if (if (eq?
                                                                           'define
                                                                           hd_0)
@@ -36365,17 +34746,12 @@
                                                                                 (values
                                                                                  id_1
                                                                                  rhs_0)))))))
-                                                                    (case-lambda
-                                                                     ((id_0
-                                                                       rhs_0)
+                                                                    (lambda (id_0
+                                                                             rhs_0)
                                                                       (plain-add-args_0
                                                                        env_2
                                                                        id_0
-                                                                       #f))
-                                                                     (args
-                                                                      (raise-binding-result-arity-error
-                                                                       2
-                                                                       args))))
+                                                                       #f)))
                                                                    (if (if (eq?
                                                                             'define-values
                                                                             hd_0)
@@ -36438,17 +34814,12 @@
                                                                                   (values
                                                                                    ids_1
                                                                                    rhs_0)))))))
-                                                                      (case-lambda
-                                                                       ((ids_0
-                                                                         rhs_0)
+                                                                      (lambda (ids_0
+                                                                               rhs_0)
                                                                         (plain-add-args_0
                                                                          env_2
                                                                          ids_0
-                                                                         #f))
-                                                                       (args
-                                                                        (raise-binding-result-arity-error
-                                                                         2
-                                                                         args))))
+                                                                         #f)))
                                                                      (if (if (eq?
                                                                               'begin
                                                                               hd_0)
@@ -36672,23 +35043,17 @@
                                                                                 (values
                                                                                  id_1
                                                                                  constance_0)))))))
-                                                                    (case-lambda
-                                                                     ((id_0
-                                                                       constance_0)
+                                                                    (lambda (id_0
+                                                                             constance_0)
                                                                       (let ((var-id_1
                                                                              var-id_0))
                                                                         (values
                                                                          var-id_1
                                                                          id_0
-                                                                         constance_0)))
-                                                                     (args
-                                                                      (raise-binding-result-arity-error
-                                                                       2
-                                                                       args))))))))
-                                                           (case-lambda
-                                                            ((var-id_0
-                                                              id_0
-                                                              constance_0)
+                                                                         constance_0))))))))
+                                                           (lambda (var-id_0
+                                                                    id_0
+                                                                    constance_0)
                                                              (begin
                                                                (if constance_0
                                                                  (set! top-env_0
@@ -36700,11 +35065,7 @@
                                                                        id_0)
                                                                       kw2846)))
                                                                  (void))
-                                                               v_1))
-                                                            (args
-                                                             (raise-binding-result-arity-error
-                                                              3
-                                                              args))))
+                                                               v_1)))
                                                           (if (if (eq?
                                                                    'define
                                                                    hd_0)
@@ -36767,8 +35128,8 @@
                                                                          (values
                                                                           id_1
                                                                           rhs_0)))))))
-                                                             (case-lambda
-                                                              ((id_0 rhs_0)
+                                                             (lambda (id_0
+                                                                      rhs_0)
                                                                (let ((self-env_0
                                                                       (add-self_0
                                                                        top-env_0
@@ -36782,11 +35143,7 @@
                                                                    (jitify-top-expr_0
                                                                     rhs_0
                                                                     self-env_0
-                                                                    id_0)))))
-                                                              (args
-                                                               (raise-binding-result-arity-error
-                                                                2
-                                                                args))))
+                                                                    id_0))))))
                                                             (if (if (eq?
                                                                      'define-values
                                                                      hd_0)
@@ -36849,8 +35206,8 @@
                                                                            (values
                                                                             ids_1
                                                                             rhs_0)))))))
-                                                               (case-lambda
-                                                                ((ids_0 rhs_0)
+                                                               (lambda (ids_0
+                                                                        rhs_0)
                                                                  (reannotate
                                                                   v_1
                                                                   (list
@@ -36859,11 +35216,7 @@
                                                                    (jitify-top-expr_0
                                                                     rhs_0
                                                                     top-env_0
-                                                                    #f))))
-                                                                (args
-                                                                 (raise-binding-result-arity-error
-                                                                  2
-                                                                  args))))
+                                                                    #f)))))
                                                               (if (if (eq?
                                                                        'begin
                                                                        hd_0)
@@ -36909,16 +35262,14 @@
                     convert-mode_0
                     name_0
                     #f))
-                 (case-lambda
-                  ((new-v_0 free_0 lifts_0)
+                 (lambda (new-v_0 free_0 lifts_0)
                    (if (no-lifts?_0 lifts_0)
                      new-v_0
                      (list
                       'let
                       (list
                        (list lifts-id (list 'quote (lifts->datum_0 lifts_0))))
-                      new-v_0)))
-                  (args (raise-binding-result-arity-error 3 args))))))))))
+                      new-v_0))))))))))
       (jitify-expr_0
        (|#%name|
         jitify-expr
@@ -36945,8 +35296,7 @@
                        (let ((args_0 (let ((a_0 (car p_0))) a_0)))
                          (let ((body_0 (let ((d_1 (cdr p_0))) d_1)))
                            (let ((args_1 args_0)) (values args_1 body_0)))))))
-                 (case-lambda
-                  ((args_0 body_0)
+                 (lambda (args_0 body_0)
                    (let ((convert?_0
                           (convert-mode-convert-lambda?_0 convert-mode_0 v_1)))
                      (let ((body-convert-mode_0
@@ -36982,8 +35332,9 @@
                                    body-convert-mode_0
                                    #f
                                    body-in-name_0))
-                                (case-lambda
-                                 ((new-body_0 lam-body-free_0 new-body-lifts_0)
+                                (lambda (new-body_0
+                                         lam-body-free_0
+                                         new-body-lifts_0)
                                   (let ((lam-free_0
                                          (remove-args_0
                                           lam-body-free_0
@@ -37012,21 +35363,11 @@
                                             convert-mode_0
                                             new-body-lifts_0
                                             lifts_0)))
-                                       (case-lambda
-                                        ((converted-v_0 new-lifts_0)
+                                       (lambda (converted-v_0 new-lifts_0)
                                          (values
                                           converted-v_0
                                           (union-free_0 free_0 lam-free_0)
-                                          new-lifts_0))
-                                        (args
-                                         (raise-binding-result-arity-error
-                                          2
-                                          args)))))))
-                                 (args
-                                  (raise-binding-result-arity-error
-                                   3
-                                   args)))))))))))
-                  (args (raise-binding-result-arity-error 2 args))))
+                                          new-lifts_0)))))))))))))))
                 (if (if (eq? 'case-lambda hd_0)
                       (let ((a_0 (cdr (unwrap v_1))))
                         (if (wrap-list? a_0)
@@ -37113,41 +35454,23 @@
                                                            (values
                                                             argss_2
                                                             bodys_1))))))
-                                                 (case-lambda
-                                                  ((argss8_0 bodys9_0)
+                                                 (lambda (argss8_0 bodys9_0)
                                                    (values
                                                     (cons argss8_0 argss_0)
-                                                    (cons bodys9_0 bodys_0)))
-                                                  (args
-                                                   (raise-binding-result-arity-error
-                                                    2
-                                                    args)))))
-                                              (case-lambda
-                                               ((argss_1 bodys_1)
-                                                (values argss_1 bodys_1))
-                                               (args
-                                                (raise-binding-result-arity-error
-                                                 2
-                                                 args)))))
-                                           (case-lambda
-                                            ((argss_1 bodys_1)
+                                                    (cons bodys9_0 bodys_0)))))
+                                              (lambda (argss_1 bodys_1)
+                                                (values argss_1 bodys_1))))
+                                           (lambda (argss_1 bodys_1)
                                              (for-loop_0
                                               argss_1
                                               bodys_1
-                                              rest_0))
-                                            (args
-                                             (raise-binding-result-arity-error
-                                              2
-                                              args)))))))
+                                              rest_0))))))
                                     (values argss_0 bodys_0)))))))
                            (for-loop_0 null null d_0)))
-                        (case-lambda
-                         ((argss_0 bodys_0)
+                        (lambda (argss_0 bodys_0)
                           (let ((app_0 (reverse$1 argss_0)))
-                            (values app_0 (reverse$1 bodys_0))))
-                         (args (raise-binding-result-arity-error 2 args))))))
-                   (case-lambda
-                    ((argss_0 bodys_0)
+                            (values app_0 (reverse$1 bodys_0)))))))
+                   (lambda (argss_0 bodys_0)
                      (let ((convert?_0
                             (convert-mode-convert-lambda?_0
                              convert-mode_0
@@ -37217,10 +35540,9 @@
                                                                       body-convert-mode_0
                                                                       #f
                                                                       body-in-name_0))
-                                                                   (case-lambda
-                                                                    ((new-body_0
-                                                                      lam-body-free_0
-                                                                      new-body-lifts_0)
+                                                                   (lambda (new-body_0
+                                                                            lam-body-free_0
+                                                                            new-body-lifts_0)
                                                                      (let ((app_0
                                                                             (cons
                                                                              new-body_0
@@ -37232,37 +35554,23 @@
                                                                           lam-body-free_0
                                                                           args_0)
                                                                          lam-free_2)
-                                                                        new-body-lifts_0)))
-                                                                    (args
-                                                                     (raise-binding-result-arity-error
-                                                                      3
-                                                                      args))))))
-                                                              (case-lambda
-                                                               ((rev-new-bodys_1
-                                                                 lam-free_3
-                                                                 body-lifts_2)
+                                                                        new-body-lifts_0))))))
+                                                              (lambda (rev-new-bodys_1
+                                                                       lam-free_3
+                                                                       body-lifts_2)
                                                                 (values
                                                                  rev-new-bodys_1
                                                                  lam-free_3
-                                                                 body-lifts_2))
-                                                               (args
-                                                                (raise-binding-result-arity-error
-                                                                 3
-                                                                 args)))))
-                                                           (case-lambda
-                                                            ((rev-new-bodys_1
-                                                              lam-free_3
-                                                              body-lifts_2)
+                                                                 body-lifts_2))))
+                                                           (lambda (rev-new-bodys_1
+                                                                    lam-free_3
+                                                                    body-lifts_2)
                                                              (for-loop_0
                                                               rev-new-bodys_1
                                                               lam-free_3
                                                               body-lifts_2
                                                               rest_0
-                                                              rest_1))
-                                                            (args
-                                                             (raise-binding-result-arity-error
-                                                              3
-                                                              args))))))))
+                                                              rest_1)))))))
                                                   (values
                                                    rev-new-bodys_0
                                                    lam-free_2
@@ -37273,8 +35581,9 @@
                                           body-lifts_0
                                           argss_0
                                           bodys_0))))))
-                                (case-lambda
-                                 ((rev-new-bodys_0 lam-free_0 new-body-lifts_0)
+                                (lambda (rev-new-bodys_0
+                                         lam-free_0
+                                         new-body-lifts_0)
                                   (let ((new-v_0
                                          (reannotate
                                           v_1
@@ -37343,21 +35652,11 @@
                                           convert-mode_0
                                           new-body-lifts_0
                                           lifts_0)))
-                                     (case-lambda
-                                      ((converted-v_0 new-lifts_0)
+                                     (lambda (converted-v_0 new-lifts_0)
                                        (values
                                         converted-v_0
                                         (union-free_0 free_0 lam-free_0)
-                                        new-lifts_0))
-                                      (args
-                                       (raise-binding-result-arity-error
-                                        2
-                                        args))))))
-                                 (args
-                                  (raise-binding-result-arity-error
-                                   3
-                                   args))))))))))
-                    (args (raise-binding-result-arity-error 2 args))))
+                                        new-lifts_0)))))))))))))
                   (if (if (eq? 'let hd_0) #t #f)
                     (jitify-let_0
                      v_1
@@ -37401,14 +35700,11 @@
                                 convert-mode_0
                                 name_0
                                 in-name_0))
-                             (case-lambda
-                              ((new-body_0 new-free_0 new-lifts_0)
+                             (lambda (new-body_0 new-free_0 new-lifts_0)
                                (values
                                 (reannotate v_1 (list* 'begin new-body_0))
                                 new-free_0
-                                new-lifts_0))
-                              (args
-                               (raise-binding-result-arity-error 3 args)))))
+                                new-lifts_0))))
                           (if (if (eq? 'begin-unsafe hd_0) #t #f)
                             (let ((vs_0 (let ((d_0 (cdr (unwrap v_1)))) d_0)))
                               (jitify-expr_0
@@ -37434,8 +35730,7 @@
                                               (let ((d_1 (cdr p_0))) d_1)))
                                          (let ((v0_1 v0_0))
                                            (values v0_1 vs_0)))))))
-                               (case-lambda
-                                ((v0_0 vs_0)
+                               (lambda (v0_0 vs_0)
                                  (call-with-values
                                   (lambda ()
                                     (jitify-expr_0
@@ -37447,8 +35742,7 @@
                                      (convert-mode-non-tail_0 convert-mode_0)
                                      name_0
                                      in-name_0))
-                                  (case-lambda
-                                   ((new-v0_0 v0-free_0 v0-lifts_0)
+                                  (lambda (new-v0_0 v0-free_0 v0-lifts_0)
                                     (call-with-values
                                      (lambda ()
                                        (jitify-body_0
@@ -37461,24 +35755,15 @@
                                          convert-mode_0)
                                         #f
                                         in-name_0))
-                                     (case-lambda
-                                      ((new-body_0 new-free_0 new-lifts_0)
+                                     (lambda (new-body_0
+                                              new-free_0
+                                              new-lifts_0)
                                        (values
                                         (reannotate
                                          v_1
                                          (list* 'begin0 new-v0_0 new-body_0))
                                         new-free_0
-                                        new-lifts_0))
-                                      (args
-                                       (raise-binding-result-arity-error
-                                        3
-                                        args)))))
-                                   (args
-                                    (raise-binding-result-arity-error
-                                     3
-                                     args)))))
-                                (args
-                                 (raise-binding-result-arity-error 2 args))))
+                                        new-lifts_0)))))))
                               (if (if (eq? '$value hd_0)
                                     (let ((a_0 (cdr (unwrap v_1))))
                                       (let ((p_0 (unwrap a_0)))
@@ -37504,16 +35789,11 @@
                                       convert-mode_0
                                       name_0
                                       in-name_0))
-                                   (case-lambda
-                                    ((new-e_0 new-free_0 new-lifts_0)
+                                   (lambda (new-e_0 new-free_0 new-lifts_0)
                                      (values
                                       (reannotate v_1 (list '$value new-e_0))
                                       new-free_0
-                                      new-lifts_0))
-                                    (args
-                                     (raise-binding-result-arity-error
-                                      3
-                                      args)))))
+                                      new-lifts_0))))
                                 (if (if (eq? 'if hd_0)
                                       (let ((a_0 (cdr (unwrap v_1))))
                                         (let ((p_0 (unwrap a_0)))
@@ -37561,16 +35841,13 @@
                                                         (values
                                                          thn_1
                                                          els_0)))))))
-                                            (case-lambda
-                                             ((thn_0 els_0)
+                                            (lambda (thn_0 els_0)
                                               (let ((tst_1 tst_0))
-                                                (values tst_1 thn_0 els_0)))
-                                             (args
-                                              (raise-binding-result-arity-error
-                                               2
-                                               args))))))))
-                                   (case-lambda
-                                    ((tst_0 thn_0 els_0)
+                                                (values
+                                                 tst_1
+                                                 thn_0
+                                                 els_0))))))))
+                                   (lambda (tst_0 thn_0 els_0)
                                      (let ((sub-convert-mode_0
                                             (convert-mode-non-tail_0
                                              convert-mode_0)))
@@ -37585,10 +35862,9 @@
                                            sub-convert-mode_0
                                            #f
                                            in-name_0))
-                                        (case-lambda
-                                         ((new-tst_0
-                                           new-free/tst_0
-                                           new-lifts/tst_0)
+                                        (lambda (new-tst_0
+                                                 new-free/tst_0
+                                                 new-lifts/tst_0)
                                           (call-with-values
                                            (lambda ()
                                              (jitify-expr_0
@@ -37600,10 +35876,9 @@
                                               convert-mode_0
                                               name_0
                                               in-name_0))
-                                           (case-lambda
-                                            ((new-thn_0
-                                              new-free/thn_0
-                                              new-lifts/thn_0)
+                                           (lambda (new-thn_0
+                                                    new-free/thn_0
+                                                    new-lifts/thn_0)
                                              (call-with-values
                                               (lambda ()
                                                 (jitify-expr_0
@@ -37615,10 +35890,9 @@
                                                  convert-mode_0
                                                  name_0
                                                  in-name_0))
-                                              (case-lambda
-                                               ((new-els_0
-                                                 new-free/els_0
-                                                 new-lifts/els_0)
+                                              (lambda (new-els_0
+                                                       new-free/els_0
+                                                       new-lifts/els_0)
                                                 (values
                                                  (reannotate
                                                   v_1
@@ -37628,23 +35902,7 @@
                                                    new-thn_0
                                                    new-els_0))
                                                  new-free/els_0
-                                                 new-lifts/els_0))
-                                               (args
-                                                (raise-binding-result-arity-error
-                                                 3
-                                                 args)))))
-                                            (args
-                                             (raise-binding-result-arity-error
-                                              3
-                                              args)))))
-                                         (args
-                                          (raise-binding-result-arity-error
-                                           3
-                                           args))))))
-                                    (args
-                                     (raise-binding-result-arity-error
-                                      3
-                                      args))))
+                                                 new-lifts/els_0))))))))))
                                   (if (if (eq? 'with-continuation-mark* hd_0)
                                         (let ((a_0 (cdr (unwrap v_1))))
                                           (let ((p_0 (unwrap a_0)))
@@ -37716,31 +35974,20 @@
                                                                    (values
                                                                     val_1
                                                                     body_0)))))))
-                                                       (case-lambda
-                                                        ((val_0 body_0)
+                                                       (lambda (val_0 body_0)
                                                          (let ((key_1 key_0))
                                                            (values
                                                             key_1
                                                             val_0
-                                                            body_0)))
-                                                        (args
-                                                         (raise-binding-result-arity-error
-                                                          2
-                                                          args))))))))
-                                              (case-lambda
-                                               ((key_0 val_0 body_0)
+                                                            body_0))))))))
+                                              (lambda (key_0 val_0 body_0)
                                                 (let ((mode_1 mode_0))
                                                   (values
                                                    mode_1
                                                    key_0
                                                    val_0
-                                                   body_0)))
-                                               (args
-                                                (raise-binding-result-arity-error
-                                                 3
-                                                 args))))))))
-                                     (case-lambda
-                                      ((mode_0 key_0 val_0 body_0)
+                                                   body_0))))))))
+                                     (lambda (mode_0 key_0 val_0 body_0)
                                        (let ((sub-convert-mode_0
                                               (convert-mode-non-tail_0
                                                convert-mode_0)))
@@ -37755,10 +36002,9 @@
                                              sub-convert-mode_0
                                              #f
                                              in-name_0))
-                                          (case-lambda
-                                           ((new-key_0
-                                             new-free/key_0
-                                             new-lifts/key_0)
+                                          (lambda (new-key_0
+                                                   new-free/key_0
+                                                   new-lifts/key_0)
                                             (call-with-values
                                              (lambda ()
                                                (jitify-expr_0
@@ -37770,10 +36016,9 @@
                                                 sub-convert-mode_0
                                                 #f
                                                 in-name_0))
-                                             (case-lambda
-                                              ((new-val_0
-                                                new-free/val_0
-                                                new-lifts/val_0)
+                                             (lambda (new-val_0
+                                                      new-free/val_0
+                                                      new-lifts/val_0)
                                                (call-with-values
                                                 (lambda ()
                                                   (jitify-expr_0
@@ -37785,10 +36030,9 @@
                                                    convert-mode_0
                                                    name_0
                                                    in-name_0))
-                                                (case-lambda
-                                                 ((new-body_0
-                                                   new-free/body_0
-                                                   new-lifts/body_0)
+                                                (lambda (new-body_0
+                                                         new-free/body_0
+                                                         new-lifts/body_0)
                                                   (values
                                                    (reannotate
                                                     v_1
@@ -37799,23 +36043,7 @@
                                                      new-val_0
                                                      new-body_0))
                                                    new-free/body_0
-                                                   new-lifts/body_0))
-                                                 (args
-                                                  (raise-binding-result-arity-error
-                                                   3
-                                                   args)))))
-                                              (args
-                                               (raise-binding-result-arity-error
-                                                3
-                                                args)))))
-                                           (args
-                                            (raise-binding-result-arity-error
-                                             3
-                                             args))))))
-                                      (args
-                                       (raise-binding-result-arity-error
-                                        4
-                                        args))))
+                                                   new-lifts/body_0))))))))))
                                     (if (if (eq? 'quote hd_0)
                                           (let ((a_0 (cdr (unwrap v_1))))
                                             (let ((p_0 (unwrap a_0)))
@@ -37863,8 +36091,7 @@
                                                             a_0))))
                                                    (let ((var_1 var_0))
                                                      (values var_1 rhs_0)))))))
-                                         (case-lambda
-                                          ((var_0 rhs_0)
+                                         (lambda (var_0 rhs_0)
                                            (call-with-values
                                             (lambda ()
                                               (jitify-expr_0
@@ -37877,10 +36104,9 @@
                                                 convert-mode_0)
                                                var_0
                                                in-name_0))
-                                            (case-lambda
-                                             ((new-rhs_0
-                                               new-free_0
-                                               new-lifts_0)
+                                            (lambda (new-rhs_0
+                                                     new-free_0
+                                                     new-lifts_0)
                                               (let ((id_0 (unwrap var_0)))
                                                 (let ((dest_0
                                                        (hash-ref
@@ -38118,15 +36344,7 @@
                                                         (values
                                                          new-v_0
                                                          newer-free_0
-                                                         new-lifts_0)))))))
-                                             (args
-                                              (raise-binding-result-arity-error
-                                               3
-                                               args)))))
-                                          (args
-                                           (raise-binding-result-arity-error
-                                            2
-                                            args))))
+                                                         new-lifts_0))))))))))
                                         (if (if (eq? 'call-with-values hd_0)
                                               (let ((a_0 (cdr (unwrap v_1))))
                                                 (let ((p_0 (unwrap a_0)))
@@ -38166,8 +36384,7 @@
                                                        (values
                                                         proc1_1
                                                         proc2_0)))))))
-                                           (case-lambda
-                                            ((proc1_0 proc2_0)
+                                           (lambda (proc1_0 proc2_0)
                                              (let ((proc-convert-mode_0
                                                     (convert-mode-called_0
                                                      convert-mode_0)))
@@ -38182,10 +36399,9 @@
                                                    proc-convert-mode_0
                                                    #f
                                                    in-name_0))
-                                                (case-lambda
-                                                 ((new-proc1_0
-                                                   new-free1_0
-                                                   new-lifts1_0)
+                                                (lambda (new-proc1_0
+                                                         new-free1_0
+                                                         new-lifts1_0)
                                                   (call-with-values
                                                    (lambda ()
                                                      (jitify-expr_0
@@ -38197,10 +36413,9 @@
                                                       proc-convert-mode_0
                                                       #f
                                                       in-name_0))
-                                                   (case-lambda
-                                                    ((new-proc2_0
-                                                      new-free2_0
-                                                      new-lifts2_0)
+                                                   (lambda (new-proc2_0
+                                                            new-free2_0
+                                                            new-lifts2_0)
                                                      (let ((call-with-values-id_0
                                                             (if (if (lambda?_0
                                                                      new-proc1_0)
@@ -38217,19 +36432,7 @@
                                                           new-proc1_0
                                                           new-proc2_0))
                                                         new-free2_0
-                                                        new-lifts2_0)))
-                                                    (args
-                                                     (raise-binding-result-arity-error
-                                                      3
-                                                      args)))))
-                                                 (args
-                                                  (raise-binding-result-arity-error
-                                                   3
-                                                   args))))))
-                                            (args
-                                             (raise-binding-result-arity-error
-                                              2
-                                              args))))
+                                                        new-lifts2_0)))))))))
                                           (if (if (eq?
                                                    'call-with-module-prompt
                                                    hd_0)
@@ -38257,8 +36460,7 @@
                                                          (values
                                                           proc_1
                                                           var-info_0)))))))
-                                             (case-lambda
-                                              ((proc_0 var-info_0)
+                                             (lambda (proc_0 var-info_0)
                                                (let ((proc-convert-mode_0
                                                       (convert-mode-called_0
                                                        convert-mode_0)))
@@ -38273,10 +36475,9 @@
                                                      proc-convert-mode_0
                                                      #f
                                                      in-name_0))
-                                                  (case-lambda
-                                                   ((new-proc_0
-                                                     new-free_0
-                                                     new-lifts_0)
+                                                  (lambda (new-proc_0
+                                                           new-free_0
+                                                           new-lifts_0)
                                                     (values
                                                      (reannotate
                                                       v_1
@@ -38285,15 +36486,7 @@
                                                        new-proc_0
                                                        var-info_0))
                                                      new-free_0
-                                                     new-lifts_0))
-                                                   (args
-                                                    (raise-binding-result-arity-error
-                                                     3
-                                                     args))))))
-                                              (args
-                                               (raise-binding-result-arity-error
-                                                2
-                                                args))))
+                                                     new-lifts_0))))))
                                             (if (if (eq?
                                                      'ffi-static-call-and-callback-core
                                                      hd_0)
@@ -38340,20 +36533,15 @@
                                                        convert-mode_0)
                                                       #f
                                                       in-name_0)))
-                                                 (case-lambda
-                                                  ((new-vs_0
-                                                    new-free_0
-                                                    new-lifts_0)
+                                                 (lambda (new-vs_0
+                                                          new-free_0
+                                                          new-lifts_0)
                                                    (values
                                                     (reannotate
                                                      v_1
                                                      (list* '|#%app| new-vs_0))
                                                     new-free_0
-                                                    new-lifts_0))
-                                                  (args
-                                                   (raise-binding-result-arity-error
-                                                    3
-                                                    args))))
+                                                    new-lifts_0)))
                                                 (if (let ((p_0 (unwrap v_1)))
                                                       (if (pair? p_0)
                                                         (let ((a_0 (cdr p_0)))
@@ -38446,10 +36634,9 @@
                                                                      convert-mode_0)
                                                                     #f
                                                                     in-name_0)))
-                                                               (case-lambda
-                                                                ((new-vs_0
-                                                                  new-free_0
-                                                                  new-lifts_0)
+                                                               (lambda (new-vs_0
+                                                                        new-free_0
+                                                                        new-lifts_0)
                                                                  (values
                                                                   (reannotate
                                                                    v_1
@@ -38457,11 +36644,7 @@
                                                                     rator_0
                                                                     new-vs_0))
                                                                   new-free_0
-                                                                  new-lifts_0))
-                                                                (args
-                                                                 (raise-binding-result-arity-error
-                                                                  3
-                                                                  args)))))
+                                                                  new-lifts_0))))
                                                             (call-with-values
                                                              (lambda ()
                                                                (jitify-body_0
@@ -38474,20 +36657,15 @@
                                                                  convert-mode_0)
                                                                 #f
                                                                 in-name_0))
-                                                             (case-lambda
-                                                              ((new-vs_0
-                                                                new-free_0
-                                                                new-lifts_0)
+                                                             (lambda (new-vs_0
+                                                                      new-free_0
+                                                                      new-lifts_0)
                                                                (values
                                                                 (reannotate
                                                                  v_1
                                                                  new-vs_0)
                                                                 new-free_0
-                                                                new-lifts_0))
-                                                              (args
-                                                               (raise-binding-result-arity-error
-                                                                3
-                                                                args)))))))))
+                                                                new-lifts_0))))))))
                                                   (let ((id_0 (unwrap v_1)))
                                                     (if (symbol? id_0)
                                                       (let ((dest_0
@@ -38705,10 +36883,8 @@
                             convert-mode_0
                             name_0
                             in-name_0))
-                         (case-lambda
-                          ((new-v_0 new-free_0 new-lifts_0)
-                           (values (list new-v_0) new-free_0 new-lifts_0))
-                          (args (raise-binding-result-arity-error 3 args))))
+                         (lambda (new-v_0 new-free_0 new-lifts_0)
+                           (values (list new-v_0) new-free_0 new-lifts_0)))
                         (call-with-values
                          (lambda ()
                            (let ((app_0 (wrap-car vs_1)))
@@ -38721,21 +36897,15 @@
                               (convert-mode-non-tail_0 convert-mode_0)
                               #f
                               in-name_0)))
-                         (case-lambda
-                          ((new-v_0 new-free_0 new-lifts_0)
+                         (lambda (new-v_0 new-free_0 new-lifts_0)
                            (call-with-values
                             (lambda ()
                               (loop_0 (wrap-cdr vs_1) new-free_0 new-lifts_0))
-                            (case-lambda
-                             ((new-rest_0 newer-free_0 newer-lifts_0)
+                            (lambda (new-rest_0 newer-free_0 newer-lifts_0)
                               (values
                                (cons new-v_0 new-rest_0)
                                newer-free_0
-                               newer-lifts_0))
-                             (args
-                              (raise-binding-result-arity-error 3 args)))))
-                          (args
-                           (raise-binding-result-arity-error 3 args)))))))))))
+                               newer-lifts_0))))))))))))
              (loop_0 vs_0 free_0 lifts_0))))))
       (jitify-let_0
        (|#%name|
@@ -38887,62 +37057,37 @@
                                                                      (values
                                                                       ids_2
                                                                       rhss_1))))))
-                                                           (case-lambda
-                                                            ((ids10_0 rhss11_0)
+                                                           (lambda (ids10_0
+                                                                    rhss11_0)
                                                              (values
                                                               (cons
                                                                ids10_0
                                                                ids_0)
                                                               (cons
                                                                rhss11_0
-                                                               rhss_0)))
-                                                            (args
-                                                             (raise-binding-result-arity-error
-                                                              2
-                                                              args)))))
-                                                        (case-lambda
-                                                         ((ids_1 rhss_1)
+                                                               rhss_0)))))
+                                                        (lambda (ids_1 rhss_1)
                                                           (values
                                                            ids_1
-                                                           rhss_1))
-                                                         (args
-                                                          (raise-binding-result-arity-error
-                                                           2
-                                                           args)))))
-                                                     (case-lambda
-                                                      ((ids_1 rhss_1)
+                                                           rhss_1))))
+                                                     (lambda (ids_1 rhss_1)
                                                        (for-loop_0
                                                         ids_1
                                                         rhss_1
-                                                        rest_0))
-                                                      (args
-                                                       (raise-binding-result-arity-error
-                                                        2
-                                                        args)))))))
+                                                        rest_0))))))
                                               (values ids_0 rhss_0)))))))
                                      (for-loop_0 null null a_0)))
-                                  (case-lambda
-                                   ((ids_0 rhss_0)
+                                  (lambda (ids_0 rhss_0)
                                     (let ((app_0 (reverse$1 ids_0)))
-                                      (values app_0 (reverse$1 rhss_0))))
-                                   (args
-                                    (raise-binding-result-arity-error
-                                     2
-                                     args))))))
-                             (case-lambda
-                              ((ids_0 rhss_0)
+                                      (values app_0 (reverse$1 rhss_0)))))))
+                             (lambda (ids_0 rhss_0)
                                (let ((body_0 (let ((d_1 (cdr p_1))) d_1)))
                                  (let ((ids_1 ids_0) (rhss_1 rhss_0))
-                                   (values ids_1 rhss_1 body_0))))
-                              (args
-                               (raise-binding-result-arity-error 2 args)))))))
-                      (case-lambda
-                       ((ids_0 rhss_0 body_0)
+                                   (values ids_1 rhss_1 body_0))))))))
+                      (lambda (ids_0 rhss_0 body_0)
                         (let ((let-form_1 let-form_0))
-                          (values let-form_1 ids_0 rhss_0 body_0)))
-                       (args (raise-binding-result-arity-error 3 args)))))))
-               (case-lambda
-                ((let-form_0 ids_0 rhss_0 body_0)
+                          (values let-form_1 ids_0 rhss_0 body_0)))))))
+               (lambda (let-form_0 ids_0 rhss_0 body_0)
                  (let ((rec?_0
                         (if (let ((tmp_0 (unwrap let-form_0)))
                               (if (if (eq? tmp_0 'letrec)
@@ -39006,46 +37151,31 @@
                                                               rhs-convert-mode_0
                                                               id_0
                                                               in-name_0))
-                                                           (case-lambda
-                                                            ((new-rhs_0
-                                                              rhs-free_0
-                                                              rhs-lifts_0)
+                                                           (lambda (new-rhs_0
+                                                                    rhs-free_0
+                                                                    rhs-lifts_0)
                                                              (values
                                                               (cons
                                                                new-rhs_0
                                                                rev-new-rhss_0)
                                                               rhs-free_0
-                                                              rhs-lifts_0))
-                                                            (args
-                                                             (raise-binding-result-arity-error
-                                                              3
-                                                              args))))))
-                                                      (case-lambda
-                                                       ((rev-new-rhss_1
-                                                         free_4
-                                                         lifts_2)
+                                                              rhs-lifts_0)))))
+                                                      (lambda (rev-new-rhss_1
+                                                               free_4
+                                                               lifts_2)
                                                         (values
                                                          rev-new-rhss_1
                                                          free_4
-                                                         lifts_2))
-                                                       (args
-                                                        (raise-binding-result-arity-error
-                                                         3
-                                                         args)))))
-                                                   (case-lambda
-                                                    ((rev-new-rhss_1
-                                                      free_4
-                                                      lifts_2)
+                                                         lifts_2))))
+                                                   (lambda (rev-new-rhss_1
+                                                            free_4
+                                                            lifts_2)
                                                      (for-loop_0
                                                       rev-new-rhss_1
                                                       free_4
                                                       lifts_2
                                                       rest_0
-                                                      rest_1))
-                                                    (args
-                                                     (raise-binding-result-arity-error
-                                                      3
-                                                      args))))))))
+                                                      rest_1)))))))
                                           (values
                                            rev-new-rhss_0
                                            free_3
@@ -39056,8 +37186,7 @@
                                   lifts_0
                                   ids_0
                                   rhss_0))))))
-                        (case-lambda
-                         ((rev-new-rhss_0 rhs-free_0 rhs-lifts_0)
+                        (lambda (rev-new-rhss_0 rhs-free_0 rhs-lifts_0)
                           (let ((local-env_0
                                  (add-args/unbox_0
                                   env_0
@@ -39079,8 +37208,7 @@
                                 convert-mode_0
                                 name_0
                                 in-name_0))
-                             (case-lambda
-                              ((new-body_0 new-free_0 new-lifts_0)
+                             (lambda (new-body_0 new-free_0 new-lifts_0)
                                (let ((new-v_0
                                       (if (not rec?_0)
                                         (list*
@@ -39286,11 +37414,7 @@
                                    (values
                                     app_0
                                     (remove-args_0 new-free_0 ids_0)
-                                    new-lifts_0))))
-                              (args
-                               (raise-binding-result-arity-error 3 args))))))
-                         (args (raise-binding-result-arity-error 3 args))))))))
-                (args (raise-binding-result-arity-error 4 args))))
+                                    new-lifts_0)))))))))))))
               (error 'match "failed ~e" v_1))))))
       (mutable-box-bindings_0
        (|#%name|
@@ -39346,13 +37470,11 @@
                             (let ((id_0 (let ((a_0 (car p_0))) a_0)))
                               (let ((args_0 (let ((d_0 (cdr p_0))) d_0)))
                                 (let ((id_1 id_0)) (values id_1 args_0))))))
-                        (case-lambda
-                         ((id_0 args_0)
+                        (lambda (id_0 args_0)
                           (plain-add-args_0
                            (add-one_0 id_0)
                            args_0
-                           replace?3_0))
-                         (args (raise-binding-result-arity-error 2 args))))
+                           replace?3_0)))
                        (if (begin-unsafe
                             (let ((app_0 (unwrap '())))
                               (eq? app_0 (unwrap args5_0))))
@@ -39390,14 +37512,12 @@
                      (let ((id_0 (let ((a_0 (car p_0))) a_0)))
                        (let ((args_1 (let ((d_0 (cdr p_0))) d_0)))
                          (let ((id_1 id_0)) (values id_1 args_1))))))
-                 (case-lambda
-                  ((id_0 args_1)
+                 (lambda (id_0 args_1)
                    (add-args_0
                     (add-one_0 id_0)
                     args_1
                     mutables_0
-                    convert-mode_0))
-                  (args (raise-binding-result-arity-error 2 args))))
+                    convert-mode_0)))
                 (if (begin-unsafe
                      (let ((app_0 (unwrap '()))) (eq? app_0 (unwrap args_0))))
                   env_0
@@ -39433,15 +37553,13 @@
                      (let ((id_0 (let ((a_0 (car p_0))) a_0)))
                        (let ((args_1 (let ((d_0 (cdr p_0))) d_0)))
                          (let ((id_1 id_0)) (values id_1 args_1))))))
-                 (case-lambda
-                  ((id_0 args_1)
+                 (lambda (id_0 args_1)
                    (add-args/unbox_0
                     (add-one_0 id_0)
                     args_1
                     mutables_0
                     var-rec?_0
-                    convert-mode_0))
-                  (args (raise-binding-result-arity-error 2 args))))
+                    convert-mode_0)))
                 (if (begin-unsafe
                      (let ((app_0 (unwrap '()))) (eq? app_0 (unwrap args_0))))
                   env_0
@@ -39458,10 +37576,8 @@
                    (let ((id_0 (let ((a_0 (car p_0))) a_0)))
                      (let ((args_1 (let ((d_0 (cdr p_0))) d_0)))
                        (let ((id_1 id_0)) (values id_1 args_1))))))
-               (case-lambda
-                ((id_0 args_1)
-                 (remove-args_0 (hash-remove env_0 (unwrap id_0)) args_1))
-                (args (raise-binding-result-arity-error 2 args))))
+               (lambda (id_0 args_1)
+                 (remove-args_0 (hash-remove env_0 (unwrap id_0)) args_1)))
               (if (begin-unsafe
                    (let ((app_0 (unwrap '()))) (eq? app_0 (unwrap args_0))))
                 env_0
@@ -39833,13 +37949,11 @@
                         (if i_0
                           (call-with-values
                            (lambda () (hash-iterate-key+value a_0 i_0))
-                           (case-lambda
-                            ((k_0 v_1)
+                           (lambda (k_0 v_1)
                              (let ((b_2
                                     (let ((b_2 (hash-set b_1 k_0 v_1)))
                                       (values b_2))))
-                               (for-loop_0 b_2 (hash-iterate-next a_0 i_0))))
-                            (args (raise-binding-result-arity-error 2 args))))
+                               (for-loop_0 b_2 (hash-iterate-next a_0 i_0)))))
                           b_1))))))
                  (for-loop_0 b_0 (hash-iterate-first a_0)))))))))
       (body->expr_0
@@ -39872,13 +37986,11 @@
                        (let ((args_0 (let ((a_0 (car p_0))) a_0)))
                          (let ((body_0 (let ((d_1 (cdr p_0))) d_1)))
                            (let ((args_1 args_0)) (values args_1 body_0)))))))
-                 (case-lambda
-                  ((args_0 body_0)
+                 (lambda (args_0 body_0)
                    (body-find-mutable_0
                     (plain-add-args_0 env_0 args_0)
                     body_0
-                    accum_0))
-                  (args (raise-binding-result-arity-error 2 args))))
+                    accum_0)))
                 (if (if (eq? 'case-lambda hd_0)
                       (let ((a_0 (cdr (unwrap v_1))))
                         (if (wrap-list? a_0)
@@ -39965,41 +38077,25 @@
                                                            (values
                                                             argss_2
                                                             bodys_1))))))
-                                                 (case-lambda
-                                                  ((argss13_0 bodys14_0)
+                                                 (lambda (argss13_0 bodys14_0)
                                                    (values
                                                     (cons argss13_0 argss_0)
-                                                    (cons bodys14_0 bodys_0)))
-                                                  (args
-                                                   (raise-binding-result-arity-error
-                                                    2
-                                                    args)))))
-                                              (case-lambda
-                                               ((argss_1 bodys_1)
-                                                (values argss_1 bodys_1))
-                                               (args
-                                                (raise-binding-result-arity-error
-                                                 2
-                                                 args)))))
-                                           (case-lambda
-                                            ((argss_1 bodys_1)
+                                                    (cons
+                                                     bodys14_0
+                                                     bodys_0)))))
+                                              (lambda (argss_1 bodys_1)
+                                                (values argss_1 bodys_1))))
+                                           (lambda (argss_1 bodys_1)
                                              (for-loop_0
                                               argss_1
                                               bodys_1
-                                              rest_0))
-                                            (args
-                                             (raise-binding-result-arity-error
-                                              2
-                                              args)))))))
+                                              rest_0))))))
                                     (values argss_0 bodys_0)))))))
                            (for-loop_0 null null d_0)))
-                        (case-lambda
-                         ((argss_0 bodys_0)
+                        (lambda (argss_0 bodys_0)
                           (let ((app_0 (reverse$1 argss_0)))
-                            (values app_0 (reverse$1 bodys_0))))
-                         (args (raise-binding-result-arity-error 2 args))))))
-                   (case-lambda
-                    ((argss_0 bodys_0)
+                            (values app_0 (reverse$1 bodys_0)))))))
+                   (lambda (argss_0 bodys_0)
                      (begin
                        (letrec*
                         ((for-loop_0
@@ -40026,8 +38122,7 @@
                                             rest_0
                                             rest_1))))))
                                  accum_1))))))
-                        (for-loop_0 accum_0 argss_0 bodys_0))))
-                    (args (raise-binding-result-arity-error 2 args))))
+                        (for-loop_0 accum_0 argss_0 bodys_0)))))
                   (if (if (eq? 'let hd_0) #t #f)
                     (find-mutable-in-let_0 env_0 v_1 accum_0)
                     (if (if (eq? 'letrec hd_0) #t #f)
@@ -40089,25 +38184,17 @@
                                                       (values
                                                        thn_1
                                                        els_0)))))))
-                                          (case-lambda
-                                           ((thn_0 els_0)
+                                          (lambda (thn_0 els_0)
                                             (let ((tst_1 tst_0))
-                                              (values tst_1 thn_0 els_0)))
-                                           (args
-                                            (raise-binding-result-arity-error
-                                             2
-                                             args))))))))
-                                 (case-lambda
-                                  ((tst_0 thn_0 els_0)
+                                              (values tst_1 thn_0 els_0))))))))
+                                 (lambda (tst_0 thn_0 els_0)
                                    (find-mutable_0
                                     env_0
                                     tst_0
                                     (find-mutable_0
                                      env_0
                                      thn_0
-                                     (find-mutable_0 env_0 els_0 accum_0))))
-                                  (args
-                                   (raise-binding-result-arity-error 3 args))))
+                                     (find-mutable_0 env_0 els_0 accum_0)))))
                                 (if (if (eq? 'with-continuation-mark* hd_0)
                                       (let ((a_0 (cdr (unwrap v_1))))
                                         (let ((p_0 (unwrap a_0)))
@@ -40175,42 +38262,30 @@
                                                                  (values
                                                                   val_1
                                                                   body_0)))))))
-                                                     (case-lambda
-                                                      ((val_0 body_0)
+                                                     (lambda (val_0 body_0)
                                                        (let ((key_1 key_0))
                                                          (values
                                                           key_1
                                                           val_0
-                                                          body_0)))
-                                                      (args
-                                                       (raise-binding-result-arity-error
-                                                        2
-                                                        args))))))))
-                                            (case-lambda
-                                             ((key_0 val_0 body_0)
+                                                          body_0))))))))
+                                            (lambda (key_0 val_0 body_0)
                                               (let ((mode_1 mode_0))
                                                 (values
                                                  mode_1
                                                  key_0
                                                  val_0
-                                                 body_0)))
-                                             (args
-                                              (raise-binding-result-arity-error
-                                               3
-                                               args))))))))
-                                   (case-lambda
-                                    ((mode_0 key_0 val_0 body_0)
+                                                 body_0))))))))
+                                   (lambda (mode_0 key_0 val_0 body_0)
                                      (find-mutable_0
                                       env_0
                                       key_0
                                       (find-mutable_0
                                        env_0
                                        val_0
-                                       (find-mutable_0 env_0 body_0 accum_0))))
-                                    (args
-                                     (raise-binding-result-arity-error
-                                      4
-                                      args))))
+                                       (find-mutable_0
+                                        env_0
+                                        body_0
+                                        accum_0)))))
                                   (if (if (eq? 'quote hd_0)
                                         (let ((a_0 (cdr (unwrap v_1))))
                                           (let ((p_0 (unwrap a_0)))
@@ -40254,19 +38329,14 @@
                                                           a_0))))
                                                  (let ((var_1 var_0))
                                                    (values var_1 rhs_0)))))))
-                                       (case-lambda
-                                        ((var_0 rhs_0)
+                                       (lambda (var_0 rhs_0)
                                          (let ((id_0 (unwrap var_0)))
                                            (find-mutable_0
                                             env_0
                                             rhs_0
                                             (if (hash-ref env_0 id_0 #f)
                                               (hash-set accum_0 id_0 #t)
-                                              accum_0))))
-                                        (args
-                                         (raise-binding-result-arity-error
-                                          2
-                                          args))))
+                                              accum_0)))))
                                       (if (if (eq?
                                                'ffi-static-call-and-callback-core
                                                hd_0)
@@ -40451,62 +38521,37 @@
                                                                      (values
                                                                       ids_2
                                                                       rhss_1))))))
-                                                           (case-lambda
-                                                            ((ids15_0 rhss16_0)
+                                                           (lambda (ids15_0
+                                                                    rhss16_0)
                                                              (values
                                                               (cons
                                                                ids15_0
                                                                ids_0)
                                                               (cons
                                                                rhss16_0
-                                                               rhss_0)))
-                                                            (args
-                                                             (raise-binding-result-arity-error
-                                                              2
-                                                              args)))))
-                                                        (case-lambda
-                                                         ((ids_1 rhss_1)
+                                                               rhss_0)))))
+                                                        (lambda (ids_1 rhss_1)
                                                           (values
                                                            ids_1
-                                                           rhss_1))
-                                                         (args
-                                                          (raise-binding-result-arity-error
-                                                           2
-                                                           args)))))
-                                                     (case-lambda
-                                                      ((ids_1 rhss_1)
+                                                           rhss_1))))
+                                                     (lambda (ids_1 rhss_1)
                                                        (for-loop_0
                                                         ids_1
                                                         rhss_1
-                                                        rest_0))
-                                                      (args
-                                                       (raise-binding-result-arity-error
-                                                        2
-                                                        args)))))))
+                                                        rest_0))))))
                                               (values ids_0 rhss_0)))))))
                                      (for-loop_0 null null a_0)))
-                                  (case-lambda
-                                   ((ids_0 rhss_0)
+                                  (lambda (ids_0 rhss_0)
                                     (let ((app_0 (reverse$1 ids_0)))
-                                      (values app_0 (reverse$1 rhss_0))))
-                                   (args
-                                    (raise-binding-result-arity-error
-                                     2
-                                     args))))))
-                             (case-lambda
-                              ((ids_0 rhss_0)
+                                      (values app_0 (reverse$1 rhss_0)))))))
+                             (lambda (ids_0 rhss_0)
                                (let ((body_0 (let ((d_1 (cdr p_1))) d_1)))
                                  (let ((ids_1 ids_0) (rhss_1 rhss_0))
-                                   (values ids_1 rhss_1 body_0))))
-                              (args
-                               (raise-binding-result-arity-error 2 args)))))))
-                      (case-lambda
-                       ((ids_0 rhss_0 body_0)
+                                   (values ids_1 rhss_1 body_0))))))))
+                      (lambda (ids_0 rhss_0 body_0)
                         (let ((let-form_1 let-form_0))
-                          (values let-form_1 ids_0 rhss_0 body_0)))
-                       (args (raise-binding-result-arity-error 3 args)))))))
-               (case-lambda
-                ((let-form_0 ids_0 rhss_0 body_0)
+                          (values let-form_1 ids_0 rhss_0 body_0)))))))
+               (lambda (let-form_0 ids_0 rhss_0 body_0)
                  (let ((local-env_0
                         (begin
                           (letrec*
@@ -40563,8 +38608,7 @@
                                              rest_0
                                              rest_1))))))
                                   accum_1))))))
-                         (for-loop_0 accum_0 ids_0 rhss_0)))))))
-                (args (raise-binding-result-arity-error 4 args))))
+                         (for-loop_0 accum_0 ids_0 rhss_0))))))))
               (error 'match "failed ~e" v_1))))))
       (init-convert-mode_0
        (|#%name|
@@ -40718,12 +38762,10 @@
                        (let ((args_0 (let ((a_0 (car p_0))) a_0)))
                          (let ((body_0 (let ((d_1 (cdr p_0))) d_1)))
                            (let ((args_1 args_0)) (values args_1 body_0)))))))
-                 (case-lambda
-                  ((args_0 body_0)
+                 (lambda (args_0 body_0)
                    (let ((size_0 (body-record-sizes!_0 body_0 sizes_0)))
                      (begin-unsafe
-                      (begin (begin (hash-set! sizes_0 v_1 size_0) size_0)))))
-                  (args (raise-binding-result-arity-error 2 args))))
+                      (begin (begin (hash-set! sizes_0 v_1 size_0) size_0))))))
                 (if (if (eq? 'case-lambda hd_0)
                       (let ((a_0 (cdr (unwrap v_1))))
                         (if (wrap-list? a_0)
@@ -40895,16 +38937,10 @@
                                                       (values
                                                        thn_1
                                                        els_0)))))))
-                                          (case-lambda
-                                           ((thn_0 els_0)
+                                          (lambda (thn_0 els_0)
                                             (let ((tst_1 tst_0))
-                                              (values tst_1 thn_0 els_0)))
-                                           (args
-                                            (raise-binding-result-arity-error
-                                             2
-                                             args))))))))
-                                 (case-lambda
-                                  ((tst_0 thn_0 els_0)
+                                              (values tst_1 thn_0 els_0))))))))
+                                 (lambda (tst_0 thn_0 els_0)
                                    (let ((app_0
                                           (record-sizes!_0 tst_0 sizes_0)))
                                      (let ((app_1
@@ -40913,9 +38949,7 @@
                                         1
                                         app_0
                                         app_1
-                                        (record-sizes!_0 els_0 sizes_0)))))
-                                  (args
-                                   (raise-binding-result-arity-error 3 args))))
+                                        (record-sizes!_0 els_0 sizes_0))))))
                                 (if (if (eq? 'with-continuation-mark* hd_0)
                                       (let ((a_0 (cdr (unwrap v_1))))
                                         (let ((p_0 (unwrap a_0)))
@@ -40983,31 +39017,20 @@
                                                                  (values
                                                                   val_1
                                                                   body_0)))))))
-                                                     (case-lambda
-                                                      ((val_0 body_0)
+                                                     (lambda (val_0 body_0)
                                                        (let ((key_1 key_0))
                                                          (values
                                                           key_1
                                                           val_0
-                                                          body_0)))
-                                                      (args
-                                                       (raise-binding-result-arity-error
-                                                        2
-                                                        args))))))))
-                                            (case-lambda
-                                             ((key_0 val_0 body_0)
+                                                          body_0))))))))
+                                            (lambda (key_0 val_0 body_0)
                                               (let ((mode_1 mode_0))
                                                 (values
                                                  mode_1
                                                  key_0
                                                  val_0
-                                                 body_0)))
-                                             (args
-                                              (raise-binding-result-arity-error
-                                               3
-                                               args))))))))
-                                   (case-lambda
-                                    ((mode_0 key_0 val_0 body_0)
+                                                 body_0))))))))
+                                   (lambda (mode_0 key_0 val_0 body_0)
                                      (let ((app_0
                                             (record-sizes!_0 key_0 sizes_0)))
                                        (let ((app_1
@@ -41016,11 +39039,7 @@
                                           1
                                           app_0
                                           app_1
-                                          (record-sizes!_0 body_0 sizes_0)))))
-                                    (args
-                                     (raise-binding-result-arity-error
-                                      4
-                                      args))))
+                                          (record-sizes!_0 body_0 sizes_0))))))
                                   (if (if (eq? 'quote hd_0)
                                         (let ((a_0 (cdr (unwrap v_1))))
                                           (let ((p_0 (unwrap a_0)))
@@ -41239,13 +39258,10 @@
                               (let ((body_0 (let ((d_1 (cdr p_1))) d_1)))
                                 (let ((rhss_1 rhss_0))
                                   (values rhss_1 body_0)))))))
-                      (case-lambda
-                       ((rhss_0 body_0)
+                      (lambda (rhss_0 body_0)
                         (let ((let-form_1 let-form_0))
-                          (values let-form_1 rhss_0 body_0)))
-                       (args (raise-binding-result-arity-error 2 args)))))))
-               (case-lambda
-                ((let-form_0 rhss_0 body_0)
+                          (values let-form_1 rhss_0 body_0)))))))
+               (lambda (let-form_0 rhss_0 body_0)
                  (let ((app_0
                         (begin
                           (letrec*
@@ -41268,8 +39284,7 @@
                                           (for-loop_0 result_1 rest_0))))
                                     result_0))))))
                            (for-loop_0 0 rhss_0)))))
-                   (+ 1 app_0 (body-record-sizes!_0 body_0 sizes_0))))
-                (args (raise-binding-result-arity-error 3 args))))
+                   (+ 1 app_0 (body-record-sizes!_0 body_0 sizes_0)))))
               (error 'match "failed ~e" v_1)))))))
      (with-continuation-mark*
       authentic
@@ -41301,18 +39316,14 @@
                         (let ((ids_0 (let ((a_0 (car p_0))) a_0)))
                           (let ((body_0 (let ((d_1 (cdr p_0))) d_1)))
                             (let ((ids_1 ids_0)) (values ids_1 body_0)))))))
-                  (case-lambda
-                   ((ids_0 body_0)
+                  (lambda (ids_0 body_0)
                     (call-with-values
                      (lambda () (xify-ids_0 ids_0 env_0))
-                     (case-lambda
-                      ((new-ids_0 new-env_0)
+                     (lambda (new-ids_0 new-env_0)
                        (list*
                         'lambda
                         new-ids_0
-                        (xify-body_0 body_0 new-env_0)))
-                      (args (raise-binding-result-arity-error 2 args)))))
-                   (args (raise-binding-result-arity-error 2 args))))
+                        (xify-body_0 body_0 new-env_0))))))
                  (if (if (eq? 'case-lambda hd_0)
                        (let ((a_0 (cdr (unwrap e_1)))) (wrap-list? a_0))
                        #f)
@@ -41480,59 +39491,35 @@
                                                                      (values
                                                                       ids_2
                                                                       rhss_1))))))
-                                                           (case-lambda
-                                                            ((ids1_0 rhss2_0)
+                                                           (lambda (ids1_0
+                                                                    rhss2_0)
                                                              (values
                                                               (cons
                                                                ids1_0
                                                                ids_0)
                                                               (cons
                                                                rhss2_0
-                                                               rhss_0)))
-                                                            (args
-                                                             (raise-binding-result-arity-error
-                                                              2
-                                                              args)))))
-                                                        (case-lambda
-                                                         ((ids_1 rhss_1)
+                                                               rhss_0)))))
+                                                        (lambda (ids_1 rhss_1)
                                                           (values
                                                            ids_1
-                                                           rhss_1))
-                                                         (args
-                                                          (raise-binding-result-arity-error
-                                                           2
-                                                           args)))))
-                                                     (case-lambda
-                                                      ((ids_1 rhss_1)
+                                                           rhss_1))))
+                                                     (lambda (ids_1 rhss_1)
                                                        (for-loop_0
                                                         ids_1
                                                         rhss_1
-                                                        rest_0))
-                                                      (args
-                                                       (raise-binding-result-arity-error
-                                                        2
-                                                        args)))))))
+                                                        rest_0))))))
                                               (values ids_0 rhss_0)))))))
                                      (for-loop_0 null null a_0)))
-                                  (case-lambda
-                                   ((ids_0 rhss_0)
+                                  (lambda (ids_0 rhss_0)
                                     (let ((app_0 (reverse$1 ids_0)))
-                                      (values app_0 (reverse$1 rhss_0))))
-                                   (args
-                                    (raise-binding-result-arity-error
-                                     2
-                                     args))))))
-                             (case-lambda
-                              ((ids_0 rhss_0)
+                                      (values app_0 (reverse$1 rhss_0)))))))
+                             (lambda (ids_0 rhss_0)
                                (let ((body_0 (let ((d_1 (cdr p_0))) d_1)))
                                  (let ((ids_1 ids_0) (rhss_1 rhss_0))
-                                   (values ids_1 rhss_1 body_0))))
-                              (args
-                               (raise-binding-result-arity-error 2 args)))))))
-                      (case-lambda
-                       ((ids_0 rhss_0 body_0)
-                        (xify-let_0 'let ids_0 rhss_0 body_0 env_0))
-                       (args (raise-binding-result-arity-error 3 args))))
+                                   (values ids_1 rhss_1 body_0))))))))
+                      (lambda (ids_0 rhss_0 body_0)
+                        (xify-let_0 'let ids_0 rhss_0 body_0 env_0)))
                      (if (if (eq? 'letrec hd_0)
                            (let ((a_0 (cdr (unwrap e_1))))
                              (let ((p_0 (unwrap a_0)))
@@ -41671,61 +39658,36 @@
                                                                        (values
                                                                         ids_2
                                                                         rhss_1))))))
-                                                             (case-lambda
-                                                              ((ids3_0 rhss4_0)
+                                                             (lambda (ids3_0
+                                                                      rhss4_0)
                                                                (values
                                                                 (cons
                                                                  ids3_0
                                                                  ids_0)
                                                                 (cons
                                                                  rhss4_0
-                                                                 rhss_0)))
-                                                              (args
-                                                               (raise-binding-result-arity-error
-                                                                2
-                                                                args)))))
-                                                          (case-lambda
-                                                           ((ids_1 rhss_1)
+                                                                 rhss_0)))))
+                                                          (lambda (ids_1
+                                                                   rhss_1)
                                                             (values
                                                              ids_1
-                                                             rhss_1))
-                                                           (args
-                                                            (raise-binding-result-arity-error
-                                                             2
-                                                             args)))))
-                                                       (case-lambda
-                                                        ((ids_1 rhss_1)
+                                                             rhss_1))))
+                                                       (lambda (ids_1 rhss_1)
                                                          (for-loop_0
                                                           ids_1
                                                           rhss_1
-                                                          rest_0))
-                                                        (args
-                                                         (raise-binding-result-arity-error
-                                                          2
-                                                          args)))))))
+                                                          rest_0))))))
                                                 (values ids_0 rhss_0)))))))
                                        (for-loop_0 null null a_0)))
-                                    (case-lambda
-                                     ((ids_0 rhss_0)
+                                    (lambda (ids_0 rhss_0)
                                       (let ((app_0 (reverse$1 ids_0)))
-                                        (values app_0 (reverse$1 rhss_0))))
-                                     (args
-                                      (raise-binding-result-arity-error
-                                       2
-                                       args))))))
-                               (case-lambda
-                                ((ids_0 rhss_0)
+                                        (values app_0 (reverse$1 rhss_0)))))))
+                               (lambda (ids_0 rhss_0)
                                  (let ((body_0 (let ((d_1 (cdr p_0))) d_1)))
                                    (let ((ids_1 ids_0) (rhss_1 rhss_0))
-                                     (values ids_1 rhss_1 body_0))))
-                                (args
-                                 (raise-binding-result-arity-error
-                                  2
-                                  args)))))))
-                        (case-lambda
-                         ((ids_0 rhss_0 body_0)
-                          (xify-let_0 'letrec ids_0 rhss_0 body_0 env_0))
-                         (args (raise-binding-result-arity-error 3 args))))
+                                     (values ids_1 rhss_1 body_0))))))))
+                        (lambda (ids_0 rhss_0 body_0)
+                          (xify-let_0 'letrec ids_0 rhss_0 body_0 env_0)))
                        (if (if (eq? 'letrec* hd_0)
                              (let ((a_0 (cdr (unwrap e_1))))
                                (let ((p_0 (unwrap a_0)))
@@ -41867,62 +39829,38 @@
                                                                          (values
                                                                           ids_2
                                                                           rhss_1))))))
-                                                               (case-lambda
-                                                                ((ids5_0
-                                                                  rhss6_0)
+                                                               (lambda (ids5_0
+                                                                        rhss6_0)
                                                                  (values
                                                                   (cons
                                                                    ids5_0
                                                                    ids_0)
                                                                   (cons
                                                                    rhss6_0
-                                                                   rhss_0)))
-                                                                (args
-                                                                 (raise-binding-result-arity-error
-                                                                  2
-                                                                  args)))))
-                                                            (case-lambda
-                                                             ((ids_1 rhss_1)
+                                                                   rhss_0)))))
+                                                            (lambda (ids_1
+                                                                     rhss_1)
                                                               (values
                                                                ids_1
-                                                               rhss_1))
-                                                             (args
-                                                              (raise-binding-result-arity-error
-                                                               2
-                                                               args)))))
-                                                         (case-lambda
-                                                          ((ids_1 rhss_1)
+                                                               rhss_1))))
+                                                         (lambda (ids_1 rhss_1)
                                                            (for-loop_0
                                                             ids_1
                                                             rhss_1
-                                                            rest_0))
-                                                          (args
-                                                           (raise-binding-result-arity-error
-                                                            2
-                                                            args)))))))
+                                                            rest_0))))))
                                                   (values ids_0 rhss_0)))))))
                                          (for-loop_0 null null a_0)))
-                                      (case-lambda
-                                       ((ids_0 rhss_0)
+                                      (lambda (ids_0 rhss_0)
                                         (let ((app_0 (reverse$1 ids_0)))
-                                          (values app_0 (reverse$1 rhss_0))))
-                                       (args
-                                        (raise-binding-result-arity-error
-                                         2
-                                         args))))))
-                                 (case-lambda
-                                  ((ids_0 rhss_0)
+                                          (values
+                                           app_0
+                                           (reverse$1 rhss_0)))))))
+                                 (lambda (ids_0 rhss_0)
                                    (let ((body_0 (let ((d_1 (cdr p_0))) d_1)))
                                      (let ((ids_1 ids_0) (rhss_1 rhss_0))
-                                       (values ids_1 rhss_1 body_0))))
-                                  (args
-                                   (raise-binding-result-arity-error
-                                    2
-                                    args)))))))
-                          (case-lambda
-                           ((ids_0 rhss_0 body_0)
-                            (xify-let_0 'letrec* ids_0 rhss_0 body_0 env_0))
-                           (args (raise-binding-result-arity-error 3 args))))
+                                       (values ids_1 rhss_1 body_0))))))))
+                          (lambda (ids_0 rhss_0 body_0)
+                            (xify-let_0 'letrec* ids_0 rhss_0 body_0 env_0)))
                          (if (if (eq? 'quote hd_0)
                                (let ((a_0 (cdr (unwrap e_1))))
                                  (let ((p_0 (unwrap a_0)))
@@ -41984,25 +39922,17 @@
                                                             a_0))))
                                                    (let ((thn_1 thn_0))
                                                      (values thn_1 els_0)))))))
-                                         (case-lambda
-                                          ((thn_0 els_0)
+                                         (lambda (thn_0 els_0)
                                            (let ((tst_1 tst_0))
-                                             (values tst_1 thn_0 els_0)))
-                                          (args
-                                           (raise-binding-result-arity-error
-                                            2
-                                            args))))))))
-                                (case-lambda
-                                 ((tst_0 thn_0 els_0)
+                                             (values tst_1 thn_0 els_0))))))))
+                                (lambda (tst_0 thn_0 els_0)
                                   (let ((app_0 (xify_0 tst_0 env_0)))
                                     (let ((app_1 (xify_0 thn_0 env_0)))
                                       (list
                                        'if
                                        app_0
                                        app_1
-                                       (xify_0 els_0 env_0)))))
-                                 (args
-                                  (raise-binding-result-arity-error 3 args))))
+                                       (xify_0 els_0 env_0))))))
                                (if (if (eq? 'with-continuation-mark* hd_0)
                                      (let ((a_0 (cdr (unwrap e_1))))
                                        (let ((p_0 (unwrap a_0)))
@@ -42069,31 +39999,20 @@
                                                                 (values
                                                                  val_1
                                                                  body_0)))))))
-                                                    (case-lambda
-                                                     ((val_0 body_0)
+                                                    (lambda (val_0 body_0)
                                                       (let ((key_1 key_0))
                                                         (values
                                                          key_1
                                                          val_0
-                                                         body_0)))
-                                                     (args
-                                                      (raise-binding-result-arity-error
-                                                       2
-                                                       args))))))))
-                                           (case-lambda
-                                            ((key_0 val_0 body_0)
+                                                         body_0))))))))
+                                           (lambda (key_0 val_0 body_0)
                                              (let ((mode_1 mode_0))
                                                (values
                                                 mode_1
                                                 key_0
                                                 val_0
-                                                body_0)))
-                                            (args
-                                             (raise-binding-result-arity-error
-                                              3
-                                              args))))))))
-                                  (case-lambda
-                                   ((mode_0 key_0 val_0 body_0)
+                                                body_0))))))))
+                                  (lambda (mode_0 key_0 val_0 body_0)
                                     (let ((app_0 (xify_0 key_0 env_0)))
                                       (let ((app_1 (xify_0 val_0 env_0)))
                                         (list
@@ -42101,11 +40020,7 @@
                                          mode_0
                                          app_0
                                          app_1
-                                         (xify_0 body_0 env_0)))))
-                                   (args
-                                    (raise-binding-result-arity-error
-                                     4
-                                     args))))
+                                         (xify_0 body_0 env_0))))))
                                  (if (if (eq? 'set! hd_0)
                                        (let ((a_0 (cdr (unwrap e_1))))
                                          (let ((p_0 (unwrap a_0)))
@@ -42137,17 +40052,12 @@
                                                        a_0))))
                                               (let ((id_1 id_0))
                                                 (values id_1 rhs_0)))))))
-                                    (case-lambda
-                                     ((id_0 rhs_0)
+                                    (lambda (id_0 rhs_0)
                                       (let ((app_0 (xify_0 id_0 env_0)))
                                         (list
                                          'set!
                                          app_0
-                                         (xify_0 rhs_0 env_0))))
-                                     (args
-                                      (raise-binding-result-arity-error
-                                       2
-                                       args))))
+                                         (xify_0 rhs_0 env_0)))))
                                    (if (let ((p_0 (unwrap e_1)))
                                          (if (pair? p_0) #t #f))
                                      (xify-body_0 e_1 env_0)
@@ -42194,8 +40104,7 @@
           (begin
             (call-with-values
              (lambda () (xify-ids_0 ids_0 env_0))
-             (case-lambda
-              ((new-ids_0 new-env_0)
+             (lambda (new-ids_0 new-env_0)
                (let ((app_0
                       (reverse$1
                        (begin
@@ -42230,8 +40139,7 @@
                                               rest_1))))))
                                    fold-var_0))))))
                           (for-loop_0 null new-ids_0 rhss_0))))))
-                 (list* form_0 app_0 (xify-body_0 body_0 new-env_0))))
-              (args (raise-binding-result-arity-error 2 args))))))))
+                 (list* form_0 app_0 (xify-body_0 body_0 new-env_0)))))))))
       (xify-ids_0
        (|#%name|
         xify-ids
@@ -42251,17 +40159,14 @@
                    (lambda ()
                      (let ((app_0 (cdr ids_0)))
                        (xify-ids_0 app_0 (hash-set env_0 u-id_0 x_0))))
-                   (case-lambda
-                    ((rest-xs_0 rest-env_0)
-                     (values (cons x_0 rest-xs_0) rest-env_0))
-                    (args (raise-binding-result-arity-error 2 args))))))
+                   (lambda (rest-xs_0 rest-env_0)
+                     (values (cons x_0 rest-xs_0) rest-env_0)))))
               (if (null? ids_0)
                 (values '() env_0)
                 (call-with-values
                  (lambda () (xify-ids_0 (list ids_0) env_0))
-                 (case-lambda
-                  ((xs_0 new-env_0) (values (car xs_0) new-env_0))
-                  (args (raise-binding-result-arity-error 2 args)))))))))))
+                 (lambda (xs_0 new-env_0)
+                   (values (car xs_0) new-env_0))))))))))
      (xify_0 e_0 hash2610))))
 (define kernel (primitive-table '|#%kernel|))
 (define 1/syntax? (hash-ref kernel 'syntax?))
@@ -42823,8 +40728,7 @@
                                                 (values
                                                  v_0
                                                  (unsafe-vector-length v_0))))
-                                            (case-lambda
-                                             ((vec_0 len_0)
+                                            (lambda (vec_0 len_0)
                                               (letrec*
                                                ((for-loop_0
                                                  (|#%name|
@@ -42845,11 +40749,7 @@
                                                               1
                                                               pos_0))))
                                                         (values)))))))
-                                               (for-loop_0 0)))
-                                             (args
-                                              (raise-binding-result-arity-error
-                                               2
-                                               args))))
+                                               (for-loop_0 0))))
                                            (void))
                                          (if (hash? v_0)
                                            (hash-for-each
@@ -42874,11 +40774,10 @@
                                                        1
                                                        #f
                                                        1))
-                                                    (case-lambda
-                                                     ((v*_0
-                                                       start*_0
-                                                       stop*_0
-                                                       step*_0)
+                                                    (lambda (v*_0
+                                                             start*_0
+                                                             stop*_0
+                                                             step*_0)
                                                       (letrec*
                                                        ((for-loop_0
                                                          (|#%name|
@@ -42900,11 +40799,7 @@
                                                                       idx_0
                                                                       1))))
                                                                 (values)))))))
-                                                       (for-loop_0 start*_0)))
-                                                     (args
-                                                      (raise-binding-result-arity-error
-                                                       4
-                                                       args))))
+                                                       (for-loop_0 start*_0))))
                                                    (void))
                                                  (if (srcloc? v_0)
                                                    (loop_0 (srcloc-source v_0))
@@ -43351,9 +41246,8 @@
                                                                                               (loop_1
                                                                                                v_0
                                                                                                0)))
-                                                                                           (case-lambda
-                                                                                            ((n_0
-                                                                                              normal-list?_0)
+                                                                                           (lambda (n_0
+                                                                                                    normal-list?_0)
                                                                                              (begin
                                                                                                (let ((byte_0
                                                                                                       (if normal-list?_0
@@ -43386,11 +41280,7 @@
                                                                                                            (loop_0
                                                                                                             v_1))))))))
                                                                                                 (ploop_0
-                                                                                                 v_0))))
-                                                                                            (args
-                                                                                             (raise-binding-result-arity-error
-                                                                                              2
-                                                                                              args))))
+                                                                                                 v_0)))))
                                                                                           (begin
                                                                                             (begin-unsafe
                                                                                              (write-byte
@@ -43425,9 +41315,8 @@
                                                                                                   v_0
                                                                                                   (unsafe-vector-length
                                                                                                    v_0))))
-                                                                                             (case-lambda
-                                                                                              ((vec_0
-                                                                                                len_0)
+                                                                                             (lambda (vec_0
+                                                                                                      len_0)
                                                                                                (letrec*
                                                                                                 ((for-loop_0
                                                                                                   (|#%name|
@@ -43450,11 +41339,7 @@
                                                                                                                pos_0))))
                                                                                                          (values)))))))
                                                                                                 (for-loop_0
-                                                                                                 0)))
-                                                                                              (args
-                                                                                               (raise-binding-result-arity-error
-                                                                                                2
-                                                                                                args))))
+                                                                                                 0))))
                                                                                             (void))
                                                                                           (if (flvector?
                                                                                                v_0)
@@ -43474,9 +41359,8 @@
                                                                                                     v_0
                                                                                                     (unsafe-flvector-length
                                                                                                      v_0))))
-                                                                                               (case-lambda
-                                                                                                ((vec_0
-                                                                                                  len_0)
+                                                                                               (lambda (vec_0
+                                                                                                        len_0)
                                                                                                  (letrec*
                                                                                                   ((for-loop_0
                                                                                                     (|#%name|
@@ -43500,11 +41384,7 @@
                                                                                                                  pos_0))))
                                                                                                            (values)))))))
                                                                                                   (for-loop_0
-                                                                                                   0)))
-                                                                                                (args
-                                                                                                 (raise-binding-result-arity-error
-                                                                                                  2
-                                                                                                  args))))
+                                                                                                   0))))
                                                                                               (void))
                                                                                             (if (fxvector?
                                                                                                  v_0)
@@ -43524,9 +41404,8 @@
                                                                                                       v_0
                                                                                                       (unsafe-fxvector-length
                                                                                                        v_0))))
-                                                                                                 (case-lambda
-                                                                                                  ((vec_0
-                                                                                                    len_0)
+                                                                                                 (lambda (vec_0
+                                                                                                          len_0)
                                                                                                    (letrec*
                                                                                                     ((for-loop_0
                                                                                                       (|#%name|
@@ -43550,11 +41429,7 @@
                                                                                                                    pos_0))))
                                                                                                              (values)))))))
                                                                                                     (for-loop_0
-                                                                                                     0)))
-                                                                                                  (args
-                                                                                                   (raise-binding-result-arity-error
-                                                                                                    2
-                                                                                                    args))))
+                                                                                                     0))))
                                                                                                 (void))
                                                                                               (if (box?
                                                                                                    v_0)
@@ -43600,11 +41475,10 @@
                                                                                                                 1
                                                                                                                 #f
                                                                                                                 1))
-                                                                                                             (case-lambda
-                                                                                                              ((v*_0
-                                                                                                                start*_0
-                                                                                                                stop*_0
-                                                                                                                step*_0)
+                                                                                                             (lambda (v*_0
+                                                                                                                      start*_0
+                                                                                                                      stop*_0
+                                                                                                                      step*_0)
                                                                                                                (letrec*
                                                                                                                 ((for-loop_0
                                                                                                                   (|#%name|
@@ -43627,11 +41501,7 @@
                                                                                                                                1))))
                                                                                                                          (values)))))))
                                                                                                                 (for-loop_0
-                                                                                                                 start*_0)))
-                                                                                                              (args
-                                                                                                               (raise-binding-result-arity-error
-                                                                                                                4
-                                                                                                                args))))
+                                                                                                                 start*_0))))
                                                                                                             (void)))))
                                                                                                     (if (hash?
                                                                                                          v_0)
@@ -43882,8 +41752,7 @@
                           (values
                            external-lifts_0
                            (unsafe-vector-length external-lifts_0))))
-                      (case-lambda
-                       ((vec_0 len_0)
+                      (lambda (vec_0 len_0)
                         (let ((start_0 0))
                           (let ((vec_1 vec_0) (len_1 len_0))
                             (begin
@@ -43909,8 +41778,7 @@
                                              (unsafe-fx+ 1 pos_0)
                                              (+ pos_1 1))))
                                         (values)))))))
-                               (for-loop_0 0 start_0))))))
-                       (args (raise-binding-result-arity-error 2 args))))
+                               (for-loop_0 0 start_0)))))))
                      (let ((len_0 (read-fasl-integer* init-i_0)))
                        (let ((i_0
                               (if (mpair? init-i_0)
@@ -45897,10 +43765,11 @@
           (begin
             (call-with-values
              (lambda () (compile-linklet-body_0 linklet-e_1 hash2610 0))
-             (case-lambda
-              ((compiled-body_0 num-body-vars_0 internal-var-syms_0)
-               (vector internal-var-syms_0 num-body-vars_0 compiled-body_0))
-              (args (raise-binding-result-arity-error 3 args))))))))
+             (lambda (compiled-body_0 num-body-vars_0 internal-var-syms_0)
+               (vector
+                internal-var-syms_0
+                num-body-vars_0
+                compiled-body_0)))))))
       (compile-linklet-body_0
        (|#%name|
         compile-linklet-body
@@ -45921,8 +43790,7 @@
                          (let ((vars+body_0 (let ((d_1 (cdr p_0))) d_1)))
                            (let ((args_1 args_0))
                              (values args_1 vars+body_0)))))))
-                 (case-lambda
-                  ((args_0 vars+body_0)
+                 (lambda (args_0 vars+body_0)
                    (call-with-values
                     (lambda ()
                       (letrec*
@@ -45991,8 +43859,7 @@
                                        (reverse$1 rev-create-vars_0)
                                        body_0))))))))))
                        (loop_0 '() vars+body_0)))
-                    (case-lambda
-                     ((create-vars_0 body_0)
+                    (lambda (create-vars_0 body_0)
                       (let ((mutated_0
                              (extract-list-mutated_0 body_0 hash2610)))
                         (let ((num-args_0 (length args_0)))
@@ -46373,27 +44240,17 @@
                                                                                                       app_0
                                                                                                       (add1
                                                                                                        num-body-vars_2))))
-                                                                                                 (case-lambda
-                                                                                                  ((env_4
-                                                                                                    num-body-vars_3)
+                                                                                                 (lambda (env_4
+                                                                                                          num-body-vars_3)
                                                                                                    (values
                                                                                                     env_4
-                                                                                                    num-body-vars_3))
-                                                                                                  (args
-                                                                                                   (raise-binding-result-arity-error
-                                                                                                    2
-                                                                                                    args)))))
-                                                                                              (case-lambda
-                                                                                               ((env_4
-                                                                                                 num-body-vars_3)
+                                                                                                    num-body-vars_3))))
+                                                                                              (lambda (env_4
+                                                                                                       num-body-vars_3)
                                                                                                 (for-loop_1
                                                                                                  env_4
                                                                                                  num-body-vars_3
-                                                                                                 rest_1))
-                                                                                               (args
-                                                                                                (raise-binding-result-arity-error
-                                                                                                 2
-                                                                                                 args)))))))
+                                                                                                 rest_1))))))
                                                                                        (values
                                                                                         env_3
                                                                                         num-body-vars_2)))))))
@@ -46451,27 +44308,17 @@
                                                                                                       e_4
                                                                                                       env_3
                                                                                                       num-body-vars_2))
-                                                                                                   (case-lambda
-                                                                                                    ((env_4
-                                                                                                      num-body-vars_3)
+                                                                                                   (lambda (env_4
+                                                                                                            num-body-vars_3)
                                                                                                      (values
                                                                                                       env_4
-                                                                                                      num-body-vars_3))
-                                                                                                    (args
-                                                                                                     (raise-binding-result-arity-error
-                                                                                                      2
-                                                                                                      args)))))
-                                                                                                (case-lambda
-                                                                                                 ((env_4
-                                                                                                   num-body-vars_3)
+                                                                                                      num-body-vars_3))))
+                                                                                                (lambda (env_4
+                                                                                                         num-body-vars_3)
                                                                                                   (for-loop_1
                                                                                                    env_4
                                                                                                    num-body-vars_3
-                                                                                                   rest_1))
-                                                                                                 (args
-                                                                                                  (raise-binding-result-arity-error
-                                                                                                   2
-                                                                                                   args)))))))
+                                                                                                   rest_1))))))
                                                                                          (values
                                                                                           env_3
                                                                                           num-body-vars_2)))))))
@@ -46486,26 +44333,17 @@
                                                              e_1
                                                              env_1
                                                              num-body-vars_0)))
-                                                         (case-lambda
-                                                          ((env_2
-                                                            num-body-vars_1)
+                                                         (lambda (env_2
+                                                                  num-body-vars_1)
                                                            (values
                                                             env_2
-                                                            num-body-vars_1))
-                                                          (args
-                                                           (raise-binding-result-arity-error
-                                                            2
-                                                            args)))))
-                                                      (case-lambda
-                                                       ((env_2 num-body-vars_1)
+                                                            num-body-vars_1))))
+                                                      (lambda (env_2
+                                                               num-body-vars_1)
                                                         (for-loop_0
                                                          env_2
                                                          num-body-vars_1
-                                                         rest_0))
-                                                       (args
-                                                        (raise-binding-result-arity-error
-                                                         2
-                                                         args)))))))
+                                                         rest_0))))))
                                                (values
                                                 env_1
                                                 num-body-vars_0)))))))
@@ -46513,8 +44351,7 @@
                                        args+creates-env_0
                                        0
                                        body_0)))
-                                   (case-lambda
-                                    ((body-env_0 num-body-vars_0)
+                                   (lambda (body-env_0 num-body-vars_0)
                                      (let ((body-stack-depth_0
                                             (+
                                              num-body-vars_0
@@ -46729,13 +44566,7 @@
                                              (values
                                               new-body_0
                                               num-body-vars_0
-                                              internal-var-syms_0))))))
-                                    (args
-                                     (raise-binding-result-arity-error
-                                      2
-                                      args)))))))))))
-                     (args (raise-binding-result-arity-error 2 args)))))
-                  (args (raise-binding-result-arity-error 2 args))))
+                                              internal-var-syms_0)))))))))))))))))
                 (error 'match "failed ~e" v_0)))))))
       (compile-top-body_0
        (|#%name|
@@ -46783,11 +44614,8 @@
                                              (let ((d_0 (cdr p_0))) d_0)))
                                         (let ((subs_1 subs_0))
                                           (values subs_1 rest_0))))))
-                                (case-lambda
-                                 ((subs_0 rest_0)
-                                  (loop_0 (append subs_0 rest_0)))
-                                 (args
-                                  (raise-binding-result-arity-error 2 args))))
+                                (lambda (subs_0 rest_0)
+                                  (loop_0 (append subs_0 rest_0))))
                                (if (let ((p_0 (unwrap body_1)))
                                      (if (pair? p_0) #t #f))
                                  (call-with-values
@@ -46798,8 +44626,7 @@
                                                (let ((d_0 (cdr p_0))) d_0)))
                                           (let ((e_1 e_0))
                                             (values e_1 rest_0))))))
-                                  (case-lambda
-                                   ((e_0 rest_0)
+                                  (lambda (e_0 rest_0)
                                     (let ((new-rest_0 (loop_0 rest_0)))
                                       (cons
                                        (compile-expr_0
@@ -46809,11 +44636,7 @@
                                         stk-i_0
                                         #t
                                         mutated_0)
-                                       new-rest_0)))
-                                   (args
-                                    (raise-binding-result-arity-error
-                                     2
-                                     args))))
+                                       new-rest_0))))
                                  (error 'match "failed ~e" body_1)))))))))
                     (loop_0 body_0))))
               (if (null? bs_0)
@@ -46894,13 +44717,11 @@
                        (let ((ids_0 (let ((a_0 (car p_0))) a_0)))
                          (let ((body_0 (let ((d_1 (cdr p_0))) d_1)))
                            (let ((ids_1 ids_0)) (values ids_1 body_0)))))))
-                 (case-lambda
-                  ((ids_0 body_0)
+                 (lambda (ids_0 body_0)
                    (call-with-values
                     (lambda ()
                       (args->env_0 ids_0 env_0 stack-depth_0 mutated_0))
-                    (case-lambda
-                     ((body-env_0 count_0 rest?_0)
+                    (lambda (body-env_0 count_0 rest?_0)
                       (let ((cmap_0 (make-hasheq)))
                         (let ((body-stack-depth_0 (+ stack-depth_0 count_0)))
                           (let ((body-stk-i_0
@@ -46929,8 +44750,7 @@
                                                         (hash-iterate-key+value
                                                          cmap_0
                                                          i_0))
-                                                      (case-lambda
-                                                       ((i_1 pos_0)
+                                                      (lambda (i_1 pos_0)
                                                         (let ((table_3
                                                                (let ((table_3
                                                                       (call-with-values
@@ -46940,28 +44760,19 @@
                                                                            -1
                                                                            pos_0)
                                                                           i_1))
-                                                                       (case-lambda
-                                                                        ((key_0
-                                                                          val_0)
+                                                                       (lambda (key_0
+                                                                                val_0)
                                                                          (hash-set
                                                                           table_2
                                                                           key_0
-                                                                          val_0))
-                                                                        (args
-                                                                         (raise-binding-result-arity-error
-                                                                          2
-                                                                          args))))))
+                                                                          val_0)))))
                                                                  (values
                                                                   table_3))))
                                                           (for-loop_0
                                                            table_3
                                                            (hash-iterate-next
                                                             cmap_0
-                                                            i_0))))
-                                                       (args
-                                                        (raise-binding-result-arity-error
-                                                         2
-                                                         args))))
+                                                            i_0)))))
                                                      table_2))))))
                                             (for-loop_0
                                              table_1
@@ -47049,9 +44860,7 @@
                                           ids_0
                                           mutated_0
                                           body-env_0
-                                          body-stk-i_0))))))))))))
-                     (args (raise-binding-result-arity-error 3 args)))))
-                  (args (raise-binding-result-arity-error 2 args))))
+                                          body-stk-i_0)))))))))))))))
                 (if (if (eq? 'case-lambda hd_0)
                       (let ((a_0 (cdr (unwrap e_0))))
                         (if (wrap-list? a_0)
@@ -47137,41 +44946,25 @@
                                                            (values
                                                             idss_2
                                                             bodys_1))))))
-                                                 (case-lambda
-                                                  ((idss13_0 bodys14_0)
+                                                 (lambda (idss13_0 bodys14_0)
                                                    (values
                                                     (cons idss13_0 idss_0)
-                                                    (cons bodys14_0 bodys_0)))
-                                                  (args
-                                                   (raise-binding-result-arity-error
-                                                    2
-                                                    args)))))
-                                              (case-lambda
-                                               ((idss_1 bodys_1)
-                                                (values idss_1 bodys_1))
-                                               (args
-                                                (raise-binding-result-arity-error
-                                                 2
-                                                 args)))))
-                                           (case-lambda
-                                            ((idss_1 bodys_1)
+                                                    (cons
+                                                     bodys14_0
+                                                     bodys_0)))))
+                                              (lambda (idss_1 bodys_1)
+                                                (values idss_1 bodys_1))))
+                                           (lambda (idss_1 bodys_1)
                                              (for-loop_0
                                               idss_1
                                               bodys_1
-                                              rest_0))
-                                            (args
-                                             (raise-binding-result-arity-error
-                                              2
-                                              args)))))))
+                                              rest_0))))))
                                     (values idss_0 bodys_0)))))))
                            (for-loop_0 null null d_0)))
-                        (case-lambda
-                         ((idss_0 bodys_0)
+                        (lambda (idss_0 bodys_0)
                           (let ((app_0 (reverse$1 idss_0)))
-                            (values app_0 (reverse$1 bodys_0))))
-                         (args (raise-binding-result-arity-error 2 args))))))
-                   (case-lambda
-                    ((idss_0 bodys_0)
+                            (values app_0 (reverse$1 bodys_0)))))))
+                   (lambda (idss_0 bodys_0)
                      (let ((lams_0
                             (reverse$1
                              (begin
@@ -47248,8 +45041,7 @@
                            'case-lambda
                            mask_0
                            (extract-procedure-wrap-data_0 e_0 realm_0)
-                           lams_0)))))
-                    (args (raise-binding-result-arity-error 2 args))))
+                           lams_0))))))
                   (if (if (eq? 'let hd_0)
                         (let ((a_0 (cdr (unwrap e_0))))
                           (let ((p_0 (unwrap a_0)))
@@ -47386,55 +45178,34 @@
                                                                     (values
                                                                      ids_2
                                                                      rhss_1))))))
-                                                          (case-lambda
-                                                           ((ids15_0 rhss16_0)
+                                                          (lambda (ids15_0
+                                                                   rhss16_0)
                                                             (values
                                                              (cons
                                                               ids15_0
                                                               ids_0)
                                                              (cons
                                                               rhss16_0
-                                                              rhss_0)))
-                                                           (args
-                                                            (raise-binding-result-arity-error
-                                                             2
-                                                             args)))))
-                                                       (case-lambda
-                                                        ((ids_1 rhss_1)
-                                                         (values ids_1 rhss_1))
-                                                        (args
-                                                         (raise-binding-result-arity-error
-                                                          2
-                                                          args)))))
-                                                    (case-lambda
-                                                     ((ids_1 rhss_1)
+                                                              rhss_0)))))
+                                                       (lambda (ids_1 rhss_1)
+                                                         (values
+                                                          ids_1
+                                                          rhss_1))))
+                                                    (lambda (ids_1 rhss_1)
                                                       (for-loop_0
                                                        ids_1
                                                        rhss_1
-                                                       rest_0))
-                                                     (args
-                                                      (raise-binding-result-arity-error
-                                                       2
-                                                       args)))))))
+                                                       rest_0))))))
                                              (values ids_0 rhss_0)))))))
                                     (for-loop_0 null null a_0)))
-                                 (case-lambda
-                                  ((ids_0 rhss_0)
+                                 (lambda (ids_0 rhss_0)
                                    (let ((app_0 (reverse$1 ids_0)))
-                                     (values app_0 (reverse$1 rhss_0))))
-                                  (args
-                                   (raise-binding-result-arity-error
-                                    2
-                                    args))))))
-                            (case-lambda
-                             ((ids_0 rhss_0)
+                                     (values app_0 (reverse$1 rhss_0)))))))
+                            (lambda (ids_0 rhss_0)
                               (let ((body_0 (let ((d_1 (cdr p_0))) d_1)))
                                 (let ((ids_1 ids_0) (rhss_1 rhss_0))
-                                  (values ids_1 rhss_1 body_0))))
-                             (args
-                              (raise-binding-result-arity-error 2 args)))))))
-                     (case-lambda
-                      ((ids_0 rhss_0 body_0)
+                                  (values ids_1 rhss_1 body_0))))))))
+                     (lambda (ids_0 rhss_0 body_0)
                        (let ((len_0 (length ids_0)))
                          (let ((body-env_0
                                 (begin
@@ -47659,8 +45430,7 @@
                                             'let
                                             pos_0
                                             (list->vector new-rhss_0)
-                                            new-body_0))))))))))))
-                      (args (raise-binding-result-arity-error 3 args))))
+                                            new-body_0)))))))))))))
                     (if (if (eq? 'letrec hd_0) #t #f)
                       (compile-letrec_0
                        e_0
@@ -47729,8 +45499,7 @@
                                                 (let ((d_1 (cdr p_0))) d_1)))
                                            (let ((e_2 e_1))
                                              (values e_2 vs_0)))))))
-                                 (case-lambda
-                                  ((e_1 vs_0)
+                                 (lambda (e_1 vs_0)
                                    (let ((new-body_0
                                           (compile-body_0
                                            vs_0
@@ -47748,9 +45517,7 @@
                                        stk-i_0
                                        #f
                                        mutated_0)
-                                      new-body_0)))
-                                  (args
-                                   (raise-binding-result-arity-error 2 args))))
+                                      new-body_0))))
                                 (if (if (eq? '$value hd_0)
                                       (let ((a_0 (cdr (unwrap e_0))))
                                         (let ((p_0 (unwrap a_0)))
@@ -47824,16 +45591,13 @@
                                                           (values
                                                            thn_1
                                                            els_0)))))))
-                                              (case-lambda
-                                               ((thn_0 els_0)
+                                              (lambda (thn_0 els_0)
                                                 (let ((tst_1 tst_0))
-                                                  (values tst_1 thn_0 els_0)))
-                                               (args
-                                                (raise-binding-result-arity-error
-                                                 2
-                                                 args))))))))
-                                     (case-lambda
-                                      ((tst_0 thn_0 els_0)
+                                                  (values
+                                                   tst_1
+                                                   thn_0
+                                                   els_0))))))))
+                                     (lambda (tst_0 thn_0 els_0)
                                        (let ((then-stk-i_0
                                               (stack-info-branch stk-i_0)))
                                          (let ((else-stk-i_0
@@ -47880,11 +45644,7 @@
                                                       (add-clears_0
                                                        new-else_0
                                                        else-stk-i_0
-                                                       all-clear_0))))))))))
-                                      (args
-                                       (raise-binding-result-arity-error
-                                        3
-                                        args))))
+                                                       all-clear_0)))))))))))
                                     (if (if (eq? 'with-continuation-mark* hd_0)
                                           (let ((a_0 (cdr (unwrap e_0))))
                                             (let ((p_0 (unwrap a_0)))
@@ -47959,31 +45719,20 @@
                                                                      (values
                                                                       val_1
                                                                       body_0)))))))
-                                                         (case-lambda
-                                                          ((val_0 body_0)
+                                                         (lambda (val_0 body_0)
                                                            (let ((key_1 key_0))
                                                              (values
                                                               key_1
                                                               val_0
-                                                              body_0)))
-                                                          (args
-                                                           (raise-binding-result-arity-error
-                                                            2
-                                                            args))))))))
-                                                (case-lambda
-                                                 ((key_0 val_0 body_0)
+                                                              body_0))))))))
+                                                (lambda (key_0 val_0 body_0)
                                                   (let ((mode_1 mode_0))
                                                     (values
                                                      mode_1
                                                      key_0
                                                      val_0
-                                                     body_0)))
-                                                 (args
-                                                  (raise-binding-result-arity-error
-                                                   3
-                                                   args))))))))
-                                       (case-lambda
-                                        ((mode_0 key_0 val_0 body_0)
+                                                     body_0))))))))
+                                       (lambda (mode_0 key_0 val_0 body_0)
                                          (let ((new-body_0
                                                 (compile-expr_0
                                                  body_0
@@ -48010,11 +45759,7 @@
                                                #f
                                                mutated_0)
                                               new-val_0
-                                              new-body_0))))
-                                        (args
-                                         (raise-binding-result-arity-error
-                                          4
-                                          args))))
+                                              new-body_0)))))
                                       (if (if (eq? 'quote hd_0)
                                             (let ((a_0 (cdr (unwrap e_0))))
                                               (let ((p_0 (unwrap a_0)))
@@ -48097,19 +45842,14 @@
                                                        (values
                                                         id_1
                                                         rhs_0)))))))
-                                           (case-lambda
-                                            ((id_0 rhs_0)
+                                           (lambda (id_0 rhs_0)
                                              (compile-assignment_0
                                               id_0
                                               rhs_0
                                               env_0
                                               stack-depth_0
                                               stk-i_0
-                                              mutated_0))
-                                            (args
-                                             (raise-binding-result-arity-error
-                                              2
-                                              args))))
+                                              mutated_0)))
                                           (if (if (eq? 'define hd_0)
                                                 (let ((a_0 (cdr (unwrap e_0))))
                                                   (let ((p_0 (unwrap a_0)))
@@ -48151,19 +45891,14 @@
                                                          (values
                                                           id_1
                                                           rhs_0)))))))
-                                             (case-lambda
-                                              ((id_0 rhs_0)
+                                             (lambda (id_0 rhs_0)
                                                (compile-assignment_0
                                                 id_0
                                                 rhs_0
                                                 env_0
                                                 stack-depth_0
                                                 stk-i_0
-                                                mutated_0))
-                                              (args
-                                               (raise-binding-result-arity-error
-                                                2
-                                                args))))
+                                                mutated_0)))
                                             (if (if (eq? 'define-values hd_0)
                                                   (let ((a_0
                                                          (cdr (unwrap e_0))))
@@ -48209,8 +45944,7 @@
                                                            (values
                                                             ids_1
                                                             rhs_0)))))))
-                                               (case-lambda
-                                                ((ids_0 rhs_0)
+                                               (lambda (ids_0 rhs_0)
                                                  (let ((gen-ids_0
                                                         (reverse$1
                                                          (begin
@@ -48309,11 +46043,7 @@
                                                     stack-depth_0
                                                     stk-i_0
                                                     tail?_0
-                                                    mutated_0)))
-                                                (args
-                                                 (raise-binding-result-arity-error
-                                                  2
-                                                  args))))
+                                                    mutated_0))))
                                               (if (if (eq?
                                                        'call-with-values
                                                        hd_0)
@@ -48413,20 +46143,15 @@
                                                                           (values
                                                                            ids_1
                                                                            body_0)))))))))
-                                                          (case-lambda
-                                                           ((ids_0 body_0)
+                                                          (lambda (ids_0
+                                                                   body_0)
                                                             (let ((proc1_1
                                                                    proc1_0))
                                                               (values
                                                                proc1_1
                                                                ids_0
-                                                               body_0)))
-                                                           (args
-                                                            (raise-binding-result-arity-error
-                                                             2
-                                                             args))))))))
-                                                 (case-lambda
-                                                  ((proc1_0 ids_0 body_0)
+                                                               body_0))))))))
+                                                 (lambda (proc1_0 ids_0 body_0)
                                                    (compile-expr_0
                                                     (list
                                                      'call-with-values
@@ -48438,11 +46163,7 @@
                                                     stack-depth_0
                                                     stk-i_0
                                                     tail?_0
-                                                    mutated_0))
-                                                  (args
-                                                   (raise-binding-result-arity-error
-                                                    3
-                                                    args))))
+                                                    mutated_0)))
                                                 (if (if (eq?
                                                          'call-with-values
                                                          hd_0)
@@ -48693,41 +46414,26 @@
                                                                                                         (values
                                                                                                          idss_2
                                                                                                          bodys_1))))))
-                                                                                              (case-lambda
-                                                                                               ((idss20_0
-                                                                                                 bodys21_0)
+                                                                                              (lambda (idss20_0
+                                                                                                       bodys21_0)
                                                                                                 (values
                                                                                                  (cons
                                                                                                   idss20_0
                                                                                                   idss_0)
                                                                                                  (cons
                                                                                                   bodys21_0
-                                                                                                  bodys_0)))
-                                                                                               (args
-                                                                                                (raise-binding-result-arity-error
-                                                                                                 2
-                                                                                                 args)))))
-                                                                                           (case-lambda
-                                                                                            ((idss_1
-                                                                                              bodys_1)
+                                                                                                  bodys_0)))))
+                                                                                           (lambda (idss_1
+                                                                                                    bodys_1)
                                                                                              (values
                                                                                               idss_1
-                                                                                              bodys_1))
-                                                                                            (args
-                                                                                             (raise-binding-result-arity-error
-                                                                                              2
-                                                                                              args)))))
-                                                                                        (case-lambda
-                                                                                         ((idss_1
-                                                                                           bodys_1)
+                                                                                              bodys_1))))
+                                                                                        (lambda (idss_1
+                                                                                                 bodys_1)
                                                                                           (for-loop_0
                                                                                            idss_1
                                                                                            bodys_1
-                                                                                           rest_0))
-                                                                                         (args
-                                                                                          (raise-binding-result-arity-error
-                                                                                           2
-                                                                                           args)))))))
+                                                                                           rest_0))))))
                                                                                  (values
                                                                                   idss_0
                                                                                   bodys_0)))))))
@@ -48735,34 +46441,26 @@
                                                                          null
                                                                          null
                                                                          d_2)))
-                                                                     (case-lambda
-                                                                      ((idss_0
-                                                                        bodys_0)
+                                                                     (lambda (idss_0
+                                                                              bodys_0)
                                                                        (let ((app_0
                                                                               (reverse$1
                                                                                idss_0)))
                                                                          (values
                                                                           app_0
                                                                           (reverse$1
-                                                                           bodys_0))))
-                                                                      (args
-                                                                       (raise-binding-result-arity-error
-                                                                        2
-                                                                        args))))))))
-                                                            (case-lambda
-                                                             ((idss_0 bodys_0)
+                                                                           bodys_0)))))))))
+                                                            (lambda (idss_0
+                                                                     bodys_0)
                                                               (let ((body_1
                                                                      body_0))
                                                                 (values
                                                                  body_1
                                                                  idss_0
-                                                                 bodys_0)))
-                                                             (args
-                                                              (raise-binding-result-arity-error
-                                                               2
-                                                               args))))))))
-                                                   (case-lambda
-                                                    ((body_0 idss_0 bodys_0)
+                                                                 bodys_0))))))))
+                                                   (lambda (body_0
+                                                            idss_0
+                                                            bodys_0)
                                                      (let ((body-stk-is_0
                                                             (reverse$1
                                                              (begin
@@ -48844,10 +46542,9 @@
                                                                                                           env_0
                                                                                                           stack-depth_0
                                                                                                           mutated_0))
-                                                                                                       (case-lambda
-                                                                                                        ((new-env_0
-                                                                                                          count_0
-                                                                                                          rest?_0)
+                                                                                                       (lambda (new-env_0
+                                                                                                                count_0
+                                                                                                                rest?_0)
                                                                                                          (let ((new-stack-depth_0
                                                                                                                 (+
                                                                                                                  stack-depth_0
@@ -48882,11 +46579,7 @@
                                                                                                                     (count->mask
                                                                                                                      count_0
                                                                                                                      rest?_0)
-                                                                                                                    new-body_0)))))))
-                                                                                                        (args
-                                                                                                         (raise-binding-result-arity-error
-                                                                                                          3
-                                                                                                          args))))
+                                                                                                                    new-body_0))))))))
                                                                                                       fold-var_0)))
                                                                                                 (values
                                                                                                  fold-var_1))))
@@ -49035,11 +46728,7 @@
                                                                       (for-loop_0
                                                                        null
                                                                        initial-new-clauses_0
-                                                                       body-stk-is_0))))))))))))
-                                                    (args
-                                                     (raise-binding-result-arity-error
-                                                      3
-                                                      args))))
+                                                                       body-stk-is_0)))))))))))))
                                                   (if (if (eq?
                                                            'call-with-module-prompt
                                                            hd_0)
@@ -49372,39 +47061,28 @@
                                                                                      (values
                                                                                       constances_1
                                                                                       vars_0)))))))
-                                                                         (case-lambda
-                                                                          ((constances_0
-                                                                            vars_0)
+                                                                         (lambda (constances_0
+                                                                                  vars_0)
                                                                            (let ((ids_1
                                                                                   ids_0))
                                                                              (values
                                                                               ids_1
                                                                               constances_0
-                                                                              vars_0)))
-                                                                          (args
-                                                                           (raise-binding-result-arity-error
-                                                                            2
-                                                                            args))))))))
-                                                                (case-lambda
-                                                                 ((ids_0
-                                                                   constances_0
-                                                                   vars_0)
+                                                                              vars_0))))))))
+                                                                (lambda (ids_0
+                                                                         constances_0
+                                                                         vars_0)
                                                                   (let ((body_1
                                                                          body_0))
                                                                     (values
                                                                      body_1
                                                                      ids_0
                                                                      constances_0
-                                                                     vars_0)))
-                                                                 (args
-                                                                  (raise-binding-result-arity-error
-                                                                   3
-                                                                   args))))))))
-                                                       (case-lambda
-                                                        ((body_0
-                                                          ids_0
-                                                          constances_0
-                                                          vars_0)
+                                                                     vars_0))))))))
+                                                       (lambda (body_0
+                                                                ids_0
+                                                                constances_0
+                                                                vars_0)
                                                          (let ((app_0
                                                                 (compile-body_0
                                                                  body_0
@@ -49424,11 +47102,7 @@
                                                              stack-depth_0
                                                              stk-i_0
                                                              #f
-                                                             mutated_0))))
-                                                        (args
-                                                         (raise-binding-result-arity-error
-                                                          4
-                                                          args))))
+                                                             mutated_0)))))
                                                       (if (if (eq?
                                                                'variable-set!
                                                                hd_0)
@@ -49490,8 +47164,8 @@
                                                                      (values
                                                                       dest-id_1
                                                                       e_1)))))))
-                                                         (case-lambda
-                                                          ((dest-id_0 e_1)
+                                                         (lambda (dest-id_0
+                                                                  e_1)
                                                            (let ((dest-var_0
                                                                   (hash-ref
                                                                    env_0
@@ -49513,11 +47187,7 @@
                                                                  stk-i_0)
                                                                 new-expr_0
                                                                 #f
-                                                                #f))))
-                                                          (args
-                                                           (raise-binding-result-arity-error
-                                                            2
-                                                            args))))
+                                                                #f)))))
                                                         (if (if (eq?
                                                                  'variable-set!/define
                                                                  hd_0)
@@ -49652,23 +47322,17 @@
                                                                                 (values
                                                                                  e_2
                                                                                  constance_0)))))))
-                                                                    (case-lambda
-                                                                     ((e_1
-                                                                       constance_0)
+                                                                    (lambda (e_1
+                                                                             constance_0)
                                                                       (let ((dest-id_1
                                                                              dest-id_0))
                                                                         (values
                                                                          dest-id_1
                                                                          e_1
-                                                                         constance_0)))
-                                                                     (args
-                                                                      (raise-binding-result-arity-error
-                                                                       2
-                                                                       args))))))))
-                                                           (case-lambda
-                                                            ((dest-id_0
-                                                              e_1
-                                                              constance_0)
+                                                                         constance_0))))))))
+                                                           (lambda (dest-id_0
+                                                                    e_1
+                                                                    constance_0)
                                                              (let ((dest-var_0
                                                                     (hash-ref
                                                                      env_0
@@ -49690,11 +47354,7 @@
                                                                    stk-i_0)
                                                                   new-expr_0
                                                                   constance_0
-                                                                  #t))))
-                                                            (args
-                                                             (raise-binding-result-arity-error
-                                                              3
-                                                              args))))
+                                                                  #t)))))
                                                           (if (if (eq?
                                                                    'variable-ref
                                                                    hd_0)
@@ -50086,48 +47746,29 @@
                                                               (values
                                                                ids_2
                                                                rhss_1))))))
-                                                    (case-lambda
-                                                     ((ids42_0 rhss43_0)
+                                                    (lambda (ids42_0 rhss43_0)
                                                       (values
                                                        (cons ids42_0 ids_0)
-                                                       (cons rhss43_0 rhss_0)))
-                                                     (args
-                                                      (raise-binding-result-arity-error
-                                                       2
-                                                       args)))))
-                                                 (case-lambda
-                                                  ((ids_1 rhss_1)
-                                                   (values ids_1 rhss_1))
-                                                  (args
-                                                   (raise-binding-result-arity-error
-                                                    2
-                                                    args)))))
-                                              (case-lambda
-                                               ((ids_1 rhss_1)
+                                                       (cons
+                                                        rhss43_0
+                                                        rhss_0)))))
+                                                 (lambda (ids_1 rhss_1)
+                                                   (values ids_1 rhss_1))))
+                                              (lambda (ids_1 rhss_1)
                                                 (for-loop_0
                                                  ids_1
                                                  rhss_1
-                                                 rest_0))
-                                               (args
-                                                (raise-binding-result-arity-error
-                                                 2
-                                                 args)))))))
+                                                 rest_0))))))
                                        (values ids_0 rhss_0)))))))
                               (for-loop_0 null null a_0)))
-                           (case-lambda
-                            ((ids_0 rhss_0)
+                           (lambda (ids_0 rhss_0)
                              (let ((app_0 (reverse$1 ids_0)))
-                               (values app_0 (reverse$1 rhss_0))))
-                            (args
-                             (raise-binding-result-arity-error 2 args))))))
-                      (case-lambda
-                       ((ids_0 rhss_0)
+                               (values app_0 (reverse$1 rhss_0)))))))
+                      (lambda (ids_0 rhss_0)
                         (let ((body_0 (let ((d_1 (cdr p_0))) d_1)))
                           (let ((ids_1 ids_0) (rhss_1 rhss_0))
-                            (values ids_1 rhss_1 body_0))))
-                       (args (raise-binding-result-arity-error 2 args)))))))
-               (case-lambda
-                ((ids_0 rhss_0 body_0)
+                            (values ids_1 rhss_1 body_0))))))))
+               (lambda (ids_0 rhss_0 body_0)
                  (let ((count_0 (length ids_0)))
                    (let ((make-env_0
                           (|#%name|
@@ -50209,8 +47850,7 @@
                                       'letrec
                                       pos_0
                                       new-rhss_0
-                                      new-body_0))))))))))))
-                (args (raise-binding-result-arity-error 3 args))))
+                                      new-body_0)))))))))))))
               (error 'match "failed ~e" e_0))))))
       (compile-apply_0
        (|#%name|
@@ -50283,9 +47923,8 @@
                        (let ((ids_0 (let ((a_0 (car p_0))) a_0)))
                          (let ((body_0 (let ((d_1 (cdr p_0))) d_1)))
                            (let ((ids_1 ids_0)) (values ids_1 body_0)))))))
-                 (case-lambda
-                  ((ids_0 body_0) (extract-list-mutated_0 body_0 mutated_0))
-                  (args (raise-binding-result-arity-error 2 args))))
+                 (lambda (ids_0 body_0)
+                   (extract-list-mutated_0 body_0 mutated_0)))
                 (if (if (eq? 'case-lambda hd_0)
                       (let ((a_0 (cdr (unwrap e_0))))
                         (if (wrap-list? a_0)
@@ -50371,41 +48010,25 @@
                                                            (values
                                                             idss_2
                                                             bodys_1))))))
-                                                 (case-lambda
-                                                  ((idss51_0 bodys52_0)
+                                                 (lambda (idss51_0 bodys52_0)
                                                    (values
                                                     (cons idss51_0 idss_0)
-                                                    (cons bodys52_0 bodys_0)))
-                                                  (args
-                                                   (raise-binding-result-arity-error
-                                                    2
-                                                    args)))))
-                                              (case-lambda
-                                               ((idss_1 bodys_1)
-                                                (values idss_1 bodys_1))
-                                               (args
-                                                (raise-binding-result-arity-error
-                                                 2
-                                                 args)))))
-                                           (case-lambda
-                                            ((idss_1 bodys_1)
+                                                    (cons
+                                                     bodys52_0
+                                                     bodys_0)))))
+                                              (lambda (idss_1 bodys_1)
+                                                (values idss_1 bodys_1))))
+                                           (lambda (idss_1 bodys_1)
                                              (for-loop_0
                                               idss_1
                                               bodys_1
-                                              rest_0))
-                                            (args
-                                             (raise-binding-result-arity-error
-                                              2
-                                              args)))))))
+                                              rest_0))))))
                                     (values idss_0 bodys_0)))))))
                            (for-loop_0 null null d_0)))
-                        (case-lambda
-                         ((idss_0 bodys_0)
+                        (lambda (idss_0 bodys_0)
                           (let ((app_0 (reverse$1 idss_0)))
-                            (values app_0 (reverse$1 bodys_0))))
-                         (args (raise-binding-result-arity-error 2 args))))))
-                   (case-lambda
-                    ((idss_0 bodys_0)
+                            (values app_0 (reverse$1 bodys_0)))))))
+                   (lambda (idss_0 bodys_0)
                      (begin
                        (letrec*
                         ((for-loop_0
@@ -50424,8 +48047,7 @@
                                               (values mutated_2))))
                                        (for-loop_0 mutated_2 rest_0))))
                                  mutated_1))))))
-                        (for-loop_0 mutated_0 bodys_0))))
-                    (args (raise-binding-result-arity-error 2 args))))
+                        (for-loop_0 mutated_0 bodys_0)))))
                   (if (if (eq? 'let hd_0)
                         (let ((a_0 (cdr (unwrap e_0))))
                           (let ((p_0 (unwrap a_0)))
@@ -50562,59 +48184,37 @@
                                                                     (values
                                                                      ids_2
                                                                      rhss_1))))))
-                                                          (case-lambda
-                                                           ((ids53_0 rhss54_0)
+                                                          (lambda (ids53_0
+                                                                   rhss54_0)
                                                             (values
                                                              (cons
                                                               ids53_0
                                                               ids_0)
                                                              (cons
                                                               rhss54_0
-                                                              rhss_0)))
-                                                           (args
-                                                            (raise-binding-result-arity-error
-                                                             2
-                                                             args)))))
-                                                       (case-lambda
-                                                        ((ids_1 rhss_1)
-                                                         (values ids_1 rhss_1))
-                                                        (args
-                                                         (raise-binding-result-arity-error
-                                                          2
-                                                          args)))))
-                                                    (case-lambda
-                                                     ((ids_1 rhss_1)
+                                                              rhss_0)))))
+                                                       (lambda (ids_1 rhss_1)
+                                                         (values
+                                                          ids_1
+                                                          rhss_1))))
+                                                    (lambda (ids_1 rhss_1)
                                                       (for-loop_0
                                                        ids_1
                                                        rhss_1
-                                                       rest_0))
-                                                     (args
-                                                      (raise-binding-result-arity-error
-                                                       2
-                                                       args)))))))
+                                                       rest_0))))))
                                              (values ids_0 rhss_0)))))))
                                     (for-loop_0 null null a_0)))
-                                 (case-lambda
-                                  ((ids_0 rhss_0)
+                                 (lambda (ids_0 rhss_0)
                                    (let ((app_0 (reverse$1 ids_0)))
-                                     (values app_0 (reverse$1 rhss_0))))
-                                  (args
-                                   (raise-binding-result-arity-error
-                                    2
-                                    args))))))
-                            (case-lambda
-                             ((ids_0 rhss_0)
+                                     (values app_0 (reverse$1 rhss_0)))))))
+                            (lambda (ids_0 rhss_0)
                               (let ((body_0 (let ((d_1 (cdr p_0))) d_1)))
                                 (let ((ids_1 ids_0) (rhss_1 rhss_0))
-                                  (values ids_1 rhss_1 body_0))))
-                             (args
-                              (raise-binding-result-arity-error 2 args)))))))
-                     (case-lambda
-                      ((ids_0 rhss_0 body_0)
+                                  (values ids_1 rhss_1 body_0))))))))
+                     (lambda (ids_0 rhss_0 body_0)
                        (extract-list-mutated_0
                         body_0
-                        (extract-list-mutated_0 rhss_0 mutated_0)))
-                      (args (raise-binding-result-arity-error 3 args))))
+                        (extract-list-mutated_0 rhss_0 mutated_0))))
                     (if (if (eq? 'letrec hd_0)
                           (let ((a_0 (cdr (unwrap e_0))))
                             (let ((p_0 (unwrap a_0)))
@@ -50752,62 +48352,37 @@
                                                                       (values
                                                                        ids_2
                                                                        rhss_1))))))
-                                                            (case-lambda
-                                                             ((ids55_0
-                                                               rhss56_0)
+                                                            (lambda (ids55_0
+                                                                     rhss56_0)
                                                               (values
                                                                (cons
                                                                 ids55_0
                                                                 ids_0)
                                                                (cons
                                                                 rhss56_0
-                                                                rhss_0)))
-                                                             (args
-                                                              (raise-binding-result-arity-error
-                                                               2
-                                                               args)))))
-                                                         (case-lambda
-                                                          ((ids_1 rhss_1)
+                                                                rhss_0)))))
+                                                         (lambda (ids_1 rhss_1)
                                                            (values
                                                             ids_1
-                                                            rhss_1))
-                                                          (args
-                                                           (raise-binding-result-arity-error
-                                                            2
-                                                            args)))))
-                                                      (case-lambda
-                                                       ((ids_1 rhss_1)
+                                                            rhss_1))))
+                                                      (lambda (ids_1 rhss_1)
                                                         (for-loop_0
                                                          ids_1
                                                          rhss_1
-                                                         rest_0))
-                                                       (args
-                                                        (raise-binding-result-arity-error
-                                                         2
-                                                         args)))))))
+                                                         rest_0))))))
                                                (values ids_0 rhss_0)))))))
                                       (for-loop_0 null null a_0)))
-                                   (case-lambda
-                                    ((ids_0 rhss_0)
+                                   (lambda (ids_0 rhss_0)
                                      (let ((app_0 (reverse$1 ids_0)))
-                                       (values app_0 (reverse$1 rhss_0))))
-                                    (args
-                                     (raise-binding-result-arity-error
-                                      2
-                                      args))))))
-                              (case-lambda
-                               ((ids_0 rhss_0)
+                                       (values app_0 (reverse$1 rhss_0)))))))
+                              (lambda (ids_0 rhss_0)
                                 (let ((body_0 (let ((d_1 (cdr p_0))) d_1)))
                                   (let ((ids_1 ids_0) (rhss_1 rhss_0))
-                                    (values ids_1 rhss_1 body_0))))
-                               (args
-                                (raise-binding-result-arity-error 2 args)))))))
-                       (case-lambda
-                        ((ids_0 rhss_0 body_0)
+                                    (values ids_1 rhss_1 body_0))))))))
+                       (lambda (ids_0 rhss_0 body_0)
                          (extract-list-mutated_0
                           body_0
-                          (extract-list-mutated_0 rhss_0 mutated_0)))
-                        (args (raise-binding-result-arity-error 3 args))))
+                          (extract-list-mutated_0 rhss_0 mutated_0))))
                       (if (if (eq? 'letrec* hd_0)
                             (let ((a_0 (cdr (unwrap e_0))))
                               (let ((p_0 (unwrap a_0)))
@@ -50948,64 +48523,38 @@
                                                                         (values
                                                                          ids_2
                                                                          rhss_1))))))
-                                                              (case-lambda
-                                                               ((ids57_0
-                                                                 rhss58_0)
+                                                              (lambda (ids57_0
+                                                                       rhss58_0)
                                                                 (values
                                                                  (cons
                                                                   ids57_0
                                                                   ids_0)
                                                                  (cons
                                                                   rhss58_0
-                                                                  rhss_0)))
-                                                               (args
-                                                                (raise-binding-result-arity-error
-                                                                 2
-                                                                 args)))))
-                                                           (case-lambda
-                                                            ((ids_1 rhss_1)
+                                                                  rhss_0)))))
+                                                           (lambda (ids_1
+                                                                    rhss_1)
                                                              (values
                                                               ids_1
-                                                              rhss_1))
-                                                            (args
-                                                             (raise-binding-result-arity-error
-                                                              2
-                                                              args)))))
-                                                        (case-lambda
-                                                         ((ids_1 rhss_1)
+                                                              rhss_1))))
+                                                        (lambda (ids_1 rhss_1)
                                                           (for-loop_0
                                                            ids_1
                                                            rhss_1
-                                                           rest_0))
-                                                         (args
-                                                          (raise-binding-result-arity-error
-                                                           2
-                                                           args)))))))
+                                                           rest_0))))))
                                                  (values ids_0 rhss_0)))))))
                                         (for-loop_0 null null a_0)))
-                                     (case-lambda
-                                      ((ids_0 rhss_0)
+                                     (lambda (ids_0 rhss_0)
                                        (let ((app_0 (reverse$1 ids_0)))
-                                         (values app_0 (reverse$1 rhss_0))))
-                                      (args
-                                       (raise-binding-result-arity-error
-                                        2
-                                        args))))))
-                                (case-lambda
-                                 ((ids_0 rhss_0)
+                                         (values app_0 (reverse$1 rhss_0)))))))
+                                (lambda (ids_0 rhss_0)
                                   (let ((body_0 (let ((d_1 (cdr p_0))) d_1)))
                                     (let ((ids_1 ids_0) (rhss_1 rhss_0))
-                                      (values ids_1 rhss_1 body_0))))
-                                 (args
-                                  (raise-binding-result-arity-error
-                                   2
-                                   args)))))))
-                         (case-lambda
-                          ((ids_0 rhss_0 body_0)
+                                      (values ids_1 rhss_1 body_0))))))))
+                         (lambda (ids_0 rhss_0 body_0)
                            (extract-list-mutated_0
                             body_0
-                            (extract-list-mutated_0 rhss_0 mutated_0)))
-                          (args (raise-binding-result-arity-error 3 args))))
+                            (extract-list-mutated_0 rhss_0 mutated_0))))
                         (if (if (eq? 'begin hd_0) #t #f)
                           (let ((vs_0 (let ((d_0 (cdr (unwrap e_0)))) d_0)))
                             (extract-list-mutated_0 vs_0 mutated_0))
@@ -51099,16 +48648,13 @@
                                                         (values
                                                          thn_1
                                                          els_0)))))))
-                                            (case-lambda
-                                             ((thn_0 els_0)
+                                            (lambda (thn_0 els_0)
                                               (let ((tst_1 tst_0))
-                                                (values tst_1 thn_0 els_0)))
-                                             (args
-                                              (raise-binding-result-arity-error
-                                               2
-                                               args))))))))
-                                   (case-lambda
-                                    ((tst_0 thn_0 els_0)
+                                                (values
+                                                 tst_1
+                                                 thn_0
+                                                 els_0))))))))
+                                   (lambda (tst_0 thn_0 els_0)
                                      (let ((tst-mutated_0
                                             (extract-expr-mutated_0
                                              tst_0
@@ -51119,11 +48665,7 @@
                                                tst-mutated_0)))
                                          (extract-expr-mutated_0
                                           els_0
-                                          thn-mutated_0))))
-                                    (args
-                                     (raise-binding-result-arity-error
-                                      3
-                                      args))))
+                                          thn-mutated_0)))))
                                   (if (if (eq? 'with-continuation-mark* hd_0)
                                         (let ((a_0 (cdr (unwrap e_0))))
                                           (let ((p_0 (unwrap a_0)))
@@ -51195,31 +48737,20 @@
                                                                    (values
                                                                     val_1
                                                                     body_0)))))))
-                                                       (case-lambda
-                                                        ((val_0 body_0)
+                                                       (lambda (val_0 body_0)
                                                          (let ((key_1 key_0))
                                                            (values
                                                             key_1
                                                             val_0
-                                                            body_0)))
-                                                        (args
-                                                         (raise-binding-result-arity-error
-                                                          2
-                                                          args))))))))
-                                              (case-lambda
-                                               ((key_0 val_0 body_0)
+                                                            body_0))))))))
+                                              (lambda (key_0 val_0 body_0)
                                                 (let ((mode_1 mode_0))
                                                   (values
                                                    mode_1
                                                    key_0
                                                    val_0
-                                                   body_0)))
-                                               (args
-                                                (raise-binding-result-arity-error
-                                                 3
-                                                 args))))))))
-                                     (case-lambda
-                                      ((mode_0 key_0 val_0 body_0)
+                                                   body_0))))))))
+                                     (lambda (mode_0 key_0 val_0 body_0)
                                        (let ((key-mutated_0
                                               (extract-expr-mutated_0
                                                key_0
@@ -51230,11 +48761,7 @@
                                                  key-mutated_0)))
                                            (extract-expr-mutated_0
                                             body_0
-                                            val-mutated_0))))
-                                      (args
-                                       (raise-binding-result-arity-error
-                                        4
-                                        args))))
+                                            val-mutated_0)))))
                                     (if (if (eq? 'quote hd_0)
                                           (let ((a_0 (cdr (unwrap e_0))))
                                             (let ((p_0 (unwrap a_0)))
@@ -51286,8 +48813,7 @@
                                                             a_0))))
                                                    (let ((id_1 id_0))
                                                      (values id_1 rhs_0)))))))
-                                         (case-lambda
-                                          ((id_0 rhs_0)
+                                         (lambda (id_0 rhs_0)
                                            (let ((new-mutated_0
                                                   (hash-set
                                                    mutated_0
@@ -51295,11 +48821,7 @@
                                                    #t)))
                                              (extract-expr-mutated_0
                                               rhs_0
-                                              new-mutated_0)))
-                                          (args
-                                           (raise-binding-result-arity-error
-                                            2
-                                            args))))
+                                              new-mutated_0))))
                                         (if (if (eq? 'define hd_0)
                                               (let ((a_0 (cdr (unwrap e_0))))
                                                 (let ((p_0 (unwrap a_0)))
@@ -51339,15 +48861,10 @@
                                                        (values
                                                         id_1
                                                         rhs_0)))))))
-                                           (case-lambda
-                                            ((id_0 rhs_0)
+                                           (lambda (id_0 rhs_0)
                                              (extract-expr-mutated_0
                                               rhs_0
-                                              mutated_0))
-                                            (args
-                                             (raise-binding-result-arity-error
-                                              2
-                                              args))))
+                                              mutated_0)))
                                           (if (if (eq? 'define-values hd_0)
                                                 (let ((a_0 (cdr (unwrap e_0))))
                                                   (let ((p_0 (unwrap a_0)))
@@ -51389,15 +48906,10 @@
                                                          (values
                                                           ids_1
                                                           rhs_0)))))))
-                                             (case-lambda
-                                              ((ids_0 rhs_0)
+                                             (lambda (ids_0 rhs_0)
                                                (extract-expr-mutated_0
                                                 rhs_0
-                                                mutated_0))
-                                              (args
-                                               (raise-binding-result-arity-error
-                                                2
-                                                args))))
+                                                mutated_0)))
                                             (if (if (eq? 'variable-set! hd_0)
                                                   (let ((a_0
                                                          (cdr (unwrap e_0))))
@@ -51444,15 +48956,10 @@
                                                            (values
                                                             dest-id_1
                                                             e_1)))))))
-                                               (case-lambda
-                                                ((dest-id_0 e_1)
+                                               (lambda (dest-id_0 e_1)
                                                  (extract-expr-mutated_0
                                                   e_1
-                                                  mutated_0))
-                                                (args
-                                                 (raise-binding-result-arity-error
-                                                  2
-                                                  args))))
+                                                  mutated_0)))
                                               (if (if (eq?
                                                        'variable-set!/define
                                                        hd_0)
@@ -51575,27 +49082,20 @@
                                                                       (values
                                                                        e_2
                                                                        constance_0)))))))
-                                                          (case-lambda
-                                                           ((e_1 constance_0)
+                                                          (lambda (e_1
+                                                                   constance_0)
                                                             (let ((dest-id_1
                                                                    dest-id_0))
                                                               (values
                                                                dest-id_1
                                                                e_1
-                                                               constance_0)))
-                                                           (args
-                                                            (raise-binding-result-arity-error
-                                                             2
-                                                             args))))))))
-                                                 (case-lambda
-                                                  ((dest-id_0 e_1 constance_0)
+                                                               constance_0))))))))
+                                                 (lambda (dest-id_0
+                                                          e_1
+                                                          constance_0)
                                                    (extract-expr-mutated_0
                                                     e_1
-                                                    mutated_0))
-                                                  (args
-                                                   (raise-binding-result-arity-error
-                                                    3
-                                                    args))))
+                                                    mutated_0)))
                                                 (if (if (eq?
                                                          'variable-ref
                                                          hd_0)
@@ -52057,11 +49557,9 @@
                 (if (pair? b64_0)
                   (call-with-values
                    (lambda () (stack-ref stack65_0 (car b64_0)))
-                   (case-lambda
-                    ((new-stack_0 vec_0)
+                   (lambda (new-stack_0 vec_0)
                      (let ((val_0 (unsafe-vector*-ref vec_0 (cdr b64_0))))
-                       (if return-mode63_0 (values new-stack_0 val_0) val_0)))
-                    (args (raise-binding-result-arity-error 2 args))))
+                       (if return-mode63_0 (values new-stack_0 val_0) val_0))))
                   (if (symbol? b64_0)
                     (let ((val_0 (hash-ref primitives b64_0)))
                       (if return-mode63_0 (values stack65_0 val_0) val_0))
@@ -52100,8 +49598,7 @@
                                                         (hash-iterate-key+value
                                                          return-mode63_0
                                                          i_0))
-                                                      (case-lambda
-                                                       ((k_0 v_0)
+                                                      (lambda (k_0 v_0)
                                                         (with-continuation-mark*
                                                          general
                                                          k_0
@@ -52109,11 +49606,7 @@
                                                          (loop_0
                                                           (hash-iterate-next
                                                            return-mode63_0
-                                                           i_0))))
-                                                       (args
-                                                        (raise-binding-result-arity-error
-                                                         2
-                                                         args))))))))))
+                                                           i_0)))))))))))
                                             (loop_0
                                              (hash-iterate-first
                                               return-mode63_0))))
@@ -52161,8 +49654,7 @@
                                                              (hash-iterate-key+value
                                                               return-mode63_0
                                                               i_0))
-                                                           (case-lambda
-                                                            ((k_0 v_0)
+                                                           (lambda (k_0 v_0)
                                                              (with-continuation-mark*
                                                               general
                                                               k_0
@@ -52170,11 +49662,7 @@
                                                               (loop_0
                                                                (hash-iterate-next
                                                                 return-mode63_0
-                                                                i_0))))
-                                                            (args
-                                                             (raise-binding-result-arity-error
-                                                              2
-                                                              args))))))))))
+                                                                i_0)))))))))))
                                                  (loop_0
                                                   (hash-iterate-first
                                                    return-mode63_0))))
@@ -52244,8 +49732,8 @@
                                                                   (hash-iterate-key+value
                                                                    return-mode63_0
                                                                    i_0))
-                                                                (case-lambda
-                                                                 ((k_0 v_0)
+                                                                (lambda (k_0
+                                                                         v_0)
                                                                   (with-continuation-mark*
                                                                    general
                                                                    k_0
@@ -52253,11 +49741,7 @@
                                                                    (loop_0
                                                                     (hash-iterate-next
                                                                      return-mode63_0
-                                                                     i_0))))
-                                                                 (args
-                                                                  (raise-binding-result-arity-error
-                                                                   2
-                                                                   args))))))))))
+                                                                     i_0)))))))))))
                                                       (loop_0
                                                        (hash-iterate-first
                                                         return-mode63_0))))
@@ -52297,8 +49781,10 @@
                                             2
                                             #f
                                             1))
-                                         (case-lambda
-                                          ((v*_0 start*_0 stop*_0 step*_0)
+                                         (lambda (v*_0
+                                                  start*_0
+                                                  stop*_0
+                                                  step*_0)
                                            (letrec*
                                             ((for-loop_0
                                               (|#%name|
@@ -52340,41 +49826,27 @@
                                                                  1
                                                                  #f
                                                                  vals_0)))))
-                                                           (case-lambda
-                                                            ((stack_2
-                                                              rev-rands_1)
+                                                           (lambda (stack_2
+                                                                    rev-rands_1)
                                                              (values
                                                               stack_2
-                                                              rev-rands_1))
-                                                            (args
-                                                             (raise-binding-result-arity-error
-                                                              2
-                                                              args)))))
-                                                        (case-lambda
-                                                         ((stack_2 rev-rands_1)
+                                                              rev-rands_1))))
+                                                        (lambda (stack_2
+                                                                 rev-rands_1)
                                                           (for-loop_0
                                                            stack_2
                                                            rev-rands_1
                                                            (unsafe-fx+
                                                             idx_0
-                                                            1)))
-                                                         (args
-                                                          (raise-binding-result-arity-error
-                                                           2
-                                                           args)))))
+                                                            1)))))
                                                      (values
                                                       stack_1
                                                       rev-rands_0)))))))
                                             (for-loop_0
                                              rand-stack_0
                                              null
-                                             start*_0)))
-                                          (args
-                                           (raise-binding-result-arity-error
-                                            4
-                                            args)))))
-                                      (case-lambda
-                                       ((stack_1 rev-rands_0)
+                                             start*_0)))))
+                                      (lambda (stack_1 rev-rands_0)
                                         (let ((rands_0
                                                (reverse$1 rev-rands_0)))
                                           (if return-mode63_0
@@ -52406,8 +49878,8 @@
                                                                  (hash-iterate-key+value
                                                                   return-mode63_0
                                                                   i_0))
-                                                               (case-lambda
-                                                                ((k_0 v_0)
+                                                               (lambda (k_0
+                                                                        v_0)
                                                                  (with-continuation-mark*
                                                                   general
                                                                   k_0
@@ -52415,11 +49887,7 @@
                                                                   (loop_0
                                                                    (hash-iterate-next
                                                                     return-mode63_0
-                                                                    i_0))))
-                                                                (args
-                                                                 (raise-binding-result-arity-error
-                                                                  2
-                                                                  args))))))))))
+                                                                    i_0)))))))))))
                                                      (loop_0
                                                       (hash-iterate-first
                                                        return-mode63_0))))
@@ -52430,11 +49898,7 @@
                                                      values
                                                      stack_1
                                                      vs_0)))))))
-                                            (apply rator_0 rands_0))))
-                                       (args
-                                        (raise-binding-result-arity-error
-                                         2
-                                         args))))))))
+                                            (apply rator_0 rands_0)))))))))
                               ((rand-stack_0 . vals_0)
                                (apply
                                 raise-result-arity-error
@@ -52453,14 +49917,11 @@
                             (let ((s_0 (unsafe-vector*-ref b64_0 1)))
                               (call-with-values
                                (lambda () (stack-ref stack65_0 s_0))
-                               (case-lambda
-                                ((new-stack_0 bx_0)
+                               (lambda (new-stack_0 bx_0)
                                  (let ((val_0 (unsafe-unbox* bx_0)))
                                    (if return-mode63_0
                                      (values new-stack_0 val_0)
-                                     val_0)))
-                                (args
-                                 (raise-binding-result-arity-error 2 args)))))
+                                     val_0)))))
                             (if (if (eq?
                                      'unbox/checked
                                      (unsafe-vector*-ref b64_0 0))
@@ -52471,8 +49932,7 @@
                                   (let ((s_1 s_0))
                                     (call-with-values
                                      (lambda () (stack-ref stack65_0 s_1))
-                                     (case-lambda
-                                      ((new-stack_0 bx_0)
+                                     (lambda (new-stack_0 bx_0)
                                        (let ((v_0 (unsafe-unbox* bx_0)))
                                          (let ((val_0
                                                 (check-not-unsafe-undefined
@@ -52480,11 +49940,7 @@
                                                  name_0)))
                                            (if return-mode63_0
                                              (values new-stack_0 val_0)
-                                             val_0))))
-                                      (args
-                                       (raise-binding-result-arity-error
-                                        2
-                                        args)))))))
+                                             val_0))))))))
                               (if (if (eq?
                                        'ref-variable
                                        (unsafe-vector*-ref b64_0 0))
@@ -52493,19 +49949,14 @@
                                 (let ((s_0 (unsafe-vector*-ref b64_0 1)))
                                   (call-with-values
                                    (lambda () (stack-ref stack65_0 s_0))
-                                   (case-lambda
-                                    ((new-stack_0 var_0)
+                                   (lambda (new-stack_0 var_0)
                                      (let ((val_0
                                             (|#%app|
                                              1/variable-ref/no-check
                                              var_0)))
                                        (if return-mode63_0
                                          (values new-stack_0 val_0)
-                                         val_0)))
-                                    (args
-                                     (raise-binding-result-arity-error
-                                      2
-                                      args)))))
+                                         val_0)))))
                                 (if (if (eq?
                                          'ref-variable/checked
                                          (unsafe-vector*-ref b64_0 0))
@@ -52514,17 +49965,12 @@
                                   (let ((s_0 (unsafe-vector*-ref b64_0 1)))
                                     (call-with-values
                                      (lambda () (stack-ref stack65_0 s_0))
-                                     (case-lambda
-                                      ((new-stack_0 var_0)
+                                     (lambda (new-stack_0 var_0)
                                        (let ((val_0
                                               (|#%app| 1/variable-ref var_0)))
                                          (if return-mode63_0
                                            (values new-stack_0 val_0)
-                                           val_0)))
-                                      (args
-                                       (raise-binding-result-arity-error
-                                        2
-                                        args)))))
+                                           val_0)))))
                                   (if (if (eq?
                                            'let
                                            (unsafe-vector*-ref b64_0 0))
@@ -52740,21 +50186,16 @@
                                                                        app_0
                                                                        (add1
                                                                         i_0))))
-                                                                  (case-lambda
-                                                                   ((new-stack_0
-                                                                     boxes_0)
+                                                                  (lambda (new-stack_0
+                                                                           boxes_0)
                                                                     (values
                                                                      new-stack_0
                                                                      (cons
                                                                       bx_0
-                                                                      boxes_0)))
-                                                                   (args
-                                                                    (raise-binding-result-arity-error
-                                                                     2
-                                                                     args)))))))))))
+                                                                      boxes_0)))))))))))
                                                       (loop_0 stack65_0 0)))
-                                                   (case-lambda
-                                                    ((body-stack_0 boxes_0)
+                                                   (lambda (body-stack_0
+                                                            boxes_0)
                                                      (letrec*
                                                       ((loop_0
                                                         (|#%name|
@@ -52806,11 +50247,7 @@
                                                       (loop_0
                                                        0
                                                        body-stack_0
-                                                       boxes_0)))
-                                                    (args
-                                                     (raise-binding-result-arity-error
-                                                      2
-                                                      args)))))))))
+                                                       boxes_0)))))))))
                                         (if (eq?
                                              'begin
                                              (unsafe-vector*-ref b64_0 0))
@@ -53252,9 +50689,8 @@
                                                                           (values
                                                                            stack_1
                                                                            vals_0))))
-                                                                     (case-lambda
-                                                                      ((new-stack_0
-                                                                        vs_0)
+                                                                     (lambda (new-stack_0
+                                                                              vs_0)
                                                                        (let ((len_0
                                                                               (length
                                                                                vs_0)))
@@ -53309,11 +50745,7 @@
                                                                                                  full-mask_0))))))))))))))
                                                                           (loop_0
                                                                            clauses_0
-                                                                           0))))
-                                                                      (args
-                                                                       (raise-binding-result-arity-error
-                                                                        2
-                                                                        args)))))))))
+                                                                           0))))))))))
                                                           (if (if (eq?
                                                                    'cwmp0
                                                                    (unsafe-vector*-ref
@@ -53456,9 +50888,8 @@
                                                                              (capture-closure_0
                                                                               close-vec_1
                                                                               stack65_0))
-                                                                           (case-lambda
-                                                                            ((new-stack_0
-                                                                              captured_0)
+                                                                           (lambda (new-stack_0
+                                                                                    captured_0)
                                                                              (let ((val_0
                                                                                     (|#%app|
                                                                                      make-interp-procedure*
@@ -53473,11 +50904,7 @@
                                                                                  (values
                                                                                   new-stack_0
                                                                                   val_0)
-                                                                                 val_0)))
-                                                                            (args
-                                                                             (raise-binding-result-arity-error
-                                                                              2
-                                                                              args)))))))))
+                                                                                 val_0)))))))))
                                                                 (if (if (eq?
                                                                          'case-lambda
                                                                          (unsafe-vector*-ref
@@ -53520,9 +50947,8 @@
                                                                                             i_0
                                                                                             1)
                                                                                            stack_1))
-                                                                                        (case-lambda
-                                                                                         ((rest-stack_0
-                                                                                           rest-captureds_0)
+                                                                                        (lambda (rest-stack_0
+                                                                                                 rest-captureds_0)
                                                                                           (call-with-values
                                                                                            (lambda ()
                                                                                              (let ((v_0
@@ -53558,28 +50984,18 @@
                                                                                                  (error
                                                                                                   'interp-match
                                                                                                   "no matching clause"))))
-                                                                                           (case-lambda
-                                                                                            ((new-stack_0
-                                                                                              captured_0)
+                                                                                           (lambda (new-stack_0
+                                                                                                    captured_0)
                                                                                              (values
                                                                                               new-stack_0
                                                                                               (cons
                                                                                                captured_0
-                                                                                               rest-captureds_0)))
-                                                                                            (args
-                                                                                             (raise-binding-result-arity-error
-                                                                                              2
-                                                                                              args)))))
-                                                                                         (args
-                                                                                          (raise-binding-result-arity-error
-                                                                                           2
-                                                                                           args))))))))))
+                                                                                               rest-captureds_0))))))))))))
                                                                               (loop_0
                                                                                3
                                                                                stack65_0)))
-                                                                           (case-lambda
-                                                                            ((new-stack_0
-                                                                              captureds_0)
+                                                                           (lambda (new-stack_0
+                                                                                    captureds_0)
                                                                              (let ((val_0
                                                                                     (|#%app|
                                                                                      make-interp-procedure*
@@ -53653,11 +51069,7 @@
                                                                                  (values
                                                                                   new-stack_0
                                                                                   val_0)
-                                                                                 val_0)))
-                                                                            (args
-                                                                             (raise-binding-result-arity-error
-                                                                              2
-                                                                              args))))))))
+                                                                                 val_0))))))))
                                                                   (if (if (eq?
                                                                            'set-variable!
                                                                            (unsafe-vector*-ref
@@ -53692,9 +51104,8 @@
                                                                                  (stack-ref
                                                                                   stack65_0
                                                                                   s_1))
-                                                                               (case-lambda
-                                                                                ((var-stack_0
-                                                                                  var_0)
+                                                                               (lambda (var-stack_0
+                                                                                        var_0)
                                                                                  (call-with-values
                                                                                   (lambda ()
                                                                                     (interpret_1
@@ -53727,11 +51138,7 @@
                                                                                      #f
                                                                                      1
                                                                                      #f
-                                                                                     vals_0)))))
-                                                                                (args
-                                                                                 (raise-binding-result-arity-error
-                                                                                  2
-                                                                                  args)))))))))
+                                                                                     vals_0)))))))))))
                                                                     (if (if (eq?
                                                                              'set!-indirect
                                                                              (unsafe-vector*-ref
@@ -53760,9 +51167,8 @@
                                                                                  (stack-ref
                                                                                   stack65_0
                                                                                   s_1))
-                                                                               (case-lambda
-                                                                                ((vec-stack_0
-                                                                                  vec_0)
+                                                                               (lambda (vec-stack_0
+                                                                                        vec_0)
                                                                                  (call-with-values
                                                                                   (lambda ()
                                                                                     (interpret_1
@@ -53789,11 +51195,7 @@
                                                                                      #f
                                                                                      1
                                                                                      #f
-                                                                                     vals_0)))))
-                                                                                (args
-                                                                                 (raise-binding-result-arity-error
-                                                                                  2
-                                                                                  args))))))))
+                                                                                     vals_0))))))))))
                                                                       (if (if (eq?
                                                                                'set!-boxed
                                                                                (unsafe-vector*-ref
@@ -53822,9 +51224,8 @@
                                                                                    (stack-ref
                                                                                     stack65_0
                                                                                     s_1))
-                                                                                 (case-lambda
-                                                                                  ((bx-stack_0
-                                                                                    bx_0)
+                                                                                 (lambda (bx-stack_0
+                                                                                          bx_0)
                                                                                    (call-with-values
                                                                                     (lambda ()
                                                                                       (interpret_1
@@ -53850,11 +51251,7 @@
                                                                                        #f
                                                                                        1
                                                                                        #f
-                                                                                       vals_0)))))
-                                                                                  (args
-                                                                                   (raise-binding-result-arity-error
-                                                                                    2
-                                                                                    args))))))))
+                                                                                       vals_0))))))))))
                                                                         (if (if (eq?
                                                                                  'set!-boxed/checked
                                                                                  (unsafe-vector*-ref
@@ -53883,9 +51280,8 @@
                                                                                      (stack-ref
                                                                                       stack65_0
                                                                                       s_1))
-                                                                                   (case-lambda
-                                                                                    ((bx-stack_0
-                                                                                      bx_0)
+                                                                                   (lambda (bx-stack_0
+                                                                                            bx_0)
                                                                                      (call-with-values
                                                                                       (lambda ()
                                                                                         (interpret_1
@@ -53915,11 +51311,7 @@
                                                                                          #f
                                                                                          1
                                                                                          #f
-                                                                                         vals_0)))))
-                                                                                    (args
-                                                                                     (raise-binding-result-arity-error
-                                                                                      2
-                                                                                      args))))))))
+                                                                                         vals_0))))))))))
                                                                           (error
                                                                            'interp-match
                                                                            "no matching clause")))))))))))))))))))))))))))
@@ -53952,15 +51344,12 @@
                            (stack-ref
                             stack_2
                             (unsafe-vector*-ref close-vec_0 i_0)))
-                         (case-lambda
-                          ((val-stack_0 val_0)
+                         (lambda (val-stack_0 val_0)
                            (let ((app_0 (add1 i_0)))
                              (loop_0
                               app_0
                               val-stack_0
-                              (stack-set captured_0 (- -1 i_0) val_0))))
-                          (args
-                           (raise-binding-result-arity-error 2 args))))))))))
+                              (stack-set captured_0 (- -1 i_0) val_0)))))))))))
                (loop_0 0 stack_1 #f)))))))
       (apply-function_0
        (|#%name|
@@ -54282,11 +51671,9 @@
                                    (let ((body_0 (let ((d_1 (cdr p_0))) d_1)))
                                      (let ((rhss_1 rhss_0))
                                        (values rhss_1 body_0)))))))
-                           (case-lambda
-                            ((rhss_0 body_0)
+                           (lambda (rhss_0 body_0)
                              (let ((app_0 (cons rhss_0 body_0)))
-                               (body-leftover-size_0 app_0 (sub1 size_1))))
-                            (args (raise-binding-result-arity-error 2 args))))
+                               (body-leftover-size_0 app_0 (sub1 size_1)))))
                           (if (if (eq? 'letrec-values hd_0)
                                 (let ((a_0 (cdr (unwrap e_1))))
                                   (let ((p_0 (unwrap a_0)))
@@ -54432,12 +51819,9 @@
                                             (let ((d_1 (cdr p_0))) d_1)))
                                        (let ((rhss_1 rhss_0))
                                          (values rhss_1 body_0)))))))
-                             (case-lambda
-                              ((rhss_0 body_0)
+                             (lambda (rhss_0 body_0)
                                (let ((app_0 (cons rhss_0 body_0)))
-                                 (body-leftover-size_0 app_0 (sub1 size_1))))
-                              (args
-                               (raise-binding-result-arity-error 2 args))))
+                                 (body-leftover-size_0 app_0 (sub1 size_1)))))
                             (if (if (eq? 'if hd_0)
                                   (let ((a_0 (cdr (unwrap e_1))))
                                     (let ((p_0 (unwrap a_0)))
@@ -54480,23 +51864,15 @@
                                                            a_0))))
                                                   (let ((thn_1 thn_0))
                                                     (values thn_1 els_0)))))))
-                                        (case-lambda
-                                         ((thn_0 els_0)
+                                        (lambda (thn_0 els_0)
                                           (let ((tst_1 tst_0))
-                                            (values tst_1 thn_0 els_0)))
-                                         (args
-                                          (raise-binding-result-arity-error
-                                           2
-                                           args))))))))
-                               (case-lambda
-                                ((tst_0 thn_0 els_0)
+                                            (values tst_1 thn_0 els_0))))))))
+                               (lambda (tst_0 thn_0 els_0)
                                  (leftover-size_0
                                   els_0
                                   (leftover-size_0
                                    thn_0
-                                   (leftover-size_0 tst_0 (sub1 size_1)))))
-                                (args
-                                 (raise-binding-result-arity-error 3 args))))
+                                   (leftover-size_0 tst_0 (sub1 size_1))))))
                               (if (if (eq? 'with-continuation-mark* hd_0)
                                     (let ((a_0 (cdr (unwrap e_1))))
                                       (let ((p_0 (unwrap a_0)))
@@ -54552,23 +51928,18 @@
                                                         (values
                                                          val_1
                                                          body_0)))))))
-                                            (case-lambda
-                                             ((val_0 body_0)
+                                            (lambda (val_0 body_0)
                                               (let ((key_1 key_0))
-                                                (values key_1 val_0 body_0)))
-                                             (args
-                                              (raise-binding-result-arity-error
-                                               2
-                                               args)))))))))
-                                 (case-lambda
-                                  ((key_0 val_0 body_0)
+                                                (values
+                                                 key_1
+                                                 val_0
+                                                 body_0)))))))))
+                                 (lambda (key_0 val_0 body_0)
                                    (leftover-size_0
                                     body_0
                                     (leftover-size_0
                                      val_0
-                                     (leftover-size_0 key_0 (sub1 size_1)))))
-                                  (args
-                                   (raise-binding-result-arity-error 3 args))))
+                                     (leftover-size_0 key_0 (sub1 size_1))))))
                                 (if (if (eq? 'begin-unsafe hd_0) #t #f)
                                   (let ((body_0
                                          (let ((d_0 (cdr (unwrap e_1)))) d_0)))
@@ -54633,15 +52004,10 @@
                                                             a_0))))
                                                    (let ((id_1 id_0))
                                                      (values id_1 rhs_0)))))))
-                                         (case-lambda
-                                          ((id_0 rhs_0)
+                                         (lambda (id_0 rhs_0)
                                            (leftover-size_0
                                             rhs_0
-                                            (sub1 size_1)))
-                                          (args
-                                           (raise-binding-result-arity-error
-                                            2
-                                            args))))
+                                            (sub1 size_1))))
                                         (if (if (eq?
                                                  '|#%variable-reference|
                                                  hd_0)
@@ -54707,8 +52073,7 @@
                        (call-with-values
                         (lambda ()
                           (begin (values v_0 (unsafe-vector-length v_0))))
-                        (case-lambda
-                         ((vec_0 len_0)
+                        (lambda (vec_0 len_0)
                           (letrec*
                            ((for-loop_0
                              (|#%name|
@@ -54734,8 +52099,7 @@
                                                   size_3)))
                                             (next-k-proc_0 size_4)))))
                                     size_3))))))
-                           (for-loop_0 size_2 0)))
-                         (args (raise-binding-result-arity-error 2 args)))))
+                           (for-loop_0 size_2 0)))))
                      (if (prefab-struct-key v_0)
                        (s-expr-leftover-size_0 (struct->vector v_0) size_1)
                        (if (hash? v_0)
@@ -54751,8 +52115,7 @@
                                        (call-with-values
                                         (lambda ()
                                           (hash-iterate-key+value v_0 i_0))
-                                        (case-lambda
-                                         ((k_0 v_1)
+                                        (lambda (k_0 v_1)
                                           (let ((next-k-proc_0
                                                  (|#%name|
                                                   next-k-proc
@@ -54771,11 +52134,7 @@
                                                       (s-expr-leftover-size_0
                                                        k_0
                                                        size_3))))
-                                                (next-k-proc_0 size_4)))))
-                                         (args
-                                          (raise-binding-result-arity-error
-                                           2
-                                           args))))
+                                                (next-k-proc_0 size_4))))))
                                        size_3))))))
                               (for-loop_0 size_2 (hash-iterate-first v_0)))))
                          (sub1 size_1))))))))))))

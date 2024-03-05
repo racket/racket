@@ -608,7 +608,8 @@
                                              (schemify rhs 'fresh))
                                            (schemify-body bodys wcm-state)
                                            mutated
-                                           target)
+                                           target
+					   unsafe-mode?)
                  prim-knowns knowns imports mutated simples unsafe-mode?))]
            [`(letrec-values () ,bodys ...)
             (schemify `(begin . ,bodys) wcm-state)]
@@ -666,12 +667,12 @@
                                 (cond
                                   [(null? ids)
                                    `([,(deterministic-gensym "lr")
-                                      ,(make-let-values null rhs '(void) target)])]
+                                      ,(make-let-values null rhs '(void) target unsafe-mode?)])]
                                   [(and (pair? ids) (null? (cdr ids)))
                                    `([,(car ids) ,rhs])]
                                   [else
                                    (define lr (deterministic-gensym "lr"))
-                                   `([,lr ,(make-let-values ids rhs `(vector . ,ids) target)]
+                                   `([,lr ,(make-let-values ids rhs `(vector . ,ids) target unsafe-mode?)]
                                      ,@(for/list ([id (in-list ids)]
                                                   [pos (in-naturals)])
                                          `[,id (unsafe-vector*-ref ,lr ,pos)]))]))))
