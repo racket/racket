@@ -28,7 +28,7 @@
     ;; non-serializable values is someone else's problem
     [else #f]))
 
-(struct to-unfasl (bstr externals wrt))
+(struct to-unfasl (bstr externals wrt) #:authentic)
 
 (define (empty-literals? v)
   (and (vector? v)

@@ -21,7 +21,8 @@
                                prefab-immutables ; #f or immutable expression to be quoted
                                non-prefab-immutables ; #f or immutable expression to be quoted
                                constructor-name-expr  ; an expression
-                               rest)) ; argument expressions after auto-field value
+                               rest) ; argument expressions after auto-field value
+  #:authentic)
 (define struct-type-info-rest-properties-list-pos 0)
 
 ;; Parse `make-struct-type` forms, returning a `struct-type-info`

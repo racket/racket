@@ -28,9 +28,9 @@
          interpretable-jitified-linklet
          interpret-linklet)
 
-(struct indirect (pos element))
-(struct boxed (pos))
-(struct boxed/check boxed ())
+(struct indirect (pos element) #:authentic)
+(struct boxed (pos) #:authentic)
+(struct boxed/check boxed () #:authentic)
 
 (define primitives '#hasheq())
 (define strip-annotations (lambda (e) e))

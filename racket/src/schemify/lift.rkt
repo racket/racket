@@ -40,12 +40,12 @@
 
 (struct liftable (expr ; a `lambda` or `case-lambda` RHS of the binding
                   [frees #:mutable] ; set of variables free in `expr`, plus any lifted bindings
-                  [binds #:mutable])) ; set of variables bound in `expr`
+                  [binds #:mutable]) ; set of variables bound in `expr`
+  #:authentic)
+(struct indirected ([check? #:mutable]) #:authentic)
 
-(struct indirected ([check? #:mutable]))
-
-(struct mutator (orig)) ; `orig` maps back to the original identifier
-(struct var-ref (orig)) ; ditto
+(struct mutator (orig) #:authentic) ; `orig` maps back to the original identifier
+(struct var-ref (orig) #:authentic) ; ditto
 
 ;; As we traverse expressions, we thread through free- and
 ;; bound-variable sets

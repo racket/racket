@@ -74,7 +74,8 @@
                     closure-map     ; hash table to collect variables beyond boundary to capture
                     [use-map #:mutable] ; table of uses; an entry here means the binding is used later
                     [local-use-map #:mutable] ; subset of `use-map` used to tracked needed merging for branches
-                    [non-tail-call-later? #:mutable])) ; non-tail call afterward?
+                    [non-tail-call-later? #:mutable]) ; non-tail call afterward?
+  #:authentic)
 
 (define (make-stack-info #:capture-depth [capture-depth #f]
                          #:closure-map [closure-map #hasheq()]
