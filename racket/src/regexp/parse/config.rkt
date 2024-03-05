@@ -13,7 +13,8 @@
                       multi-line?
                       group-number-box
                       references?-box
-                      error-handler?))
+                      error-handler?)
+  #:authentic)
 
 (define (make-parse-config #:who [who 'regexp]
                            #:px? [px? #f]
