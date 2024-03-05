@@ -25,6 +25,7 @@
                    anchored?    ; starts with `^`?
                    must-string  ; shortcut: a byte string that must appear in a match
                    start-range) ; shortcut: a range that must match the initial byte
+        #:authentic
         #:reflection-name 'regexp
         #:property prop:custom-write (lambda (rx port mode)
                                        (write-bytes (if (rx:regexp-px? rx)
