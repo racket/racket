@@ -1,6 +1,7 @@
 #lang racket/base
 
 (require racket/stxparam
+         racket/unsafe/undefined
          (for-syntax racket/base))
 
 (provide match-equality-test
@@ -14,10 +15,12 @@
          syntax-srclocs
 
          ;; hash pattern
-         undef
          user-def
-         undef?
-         user-def?
+         undef
+
+         hash-state-step
+         hash-shortcut-step
+         invoke-thunk
 
          (struct-out hash-state)
          hash-state-closed?
@@ -93,16 +96,16 @@
 
 ;; Hash table patterns
 
-(define undef (gensym))
 (define user-def (gensym))
-
-(define (undef? v)
-  (eq? undef v))
+(define undef unsafe-undefined)
 
 (define (user-def? v)
   (eq? user-def v))
 
-(struct hash-state (ht keys vals))
+(define (undef? v)
+  (eq? unsafe-undefined v))
+
+(struct hash-state (ht keys vals) #:prefab)
 
 (define (hash-state-closed? state)
   (define ht (hash-state-ht state))
@@ -132,6 +135,37 @@
      (for ([k (in-list acc-keys)])
        (hash-remove! ht* k))
      ht*]))
+
+(define (error:illegal-hash-table-thunk-usage ht)
+  (error 'match
+         "thunk must not be invoked when matching fails; hash table value: ~e"
+         ht))
+
+(define ((hash-state-step key user-def-thunk def-id) state)
+  (define ht (hash-state-ht state))
+  (define acc-keys (hash-state-keys state))
+  (define acc-vals (hash-state-vals state))
+  (define val (hash-ref ht key def-id))
+  (define new-hash-state (hash-state ht (cons key acc-keys) (cons val acc-vals)))
+  (if (undef? val)
+      (values #t
+              (λ () (error:illegal-hash-table-thunk-usage ht))
+              new-hash-state)
+      (values #f
+              (λ ()
+                (cond
+                  [(user-def? val) (user-def-thunk)]
+                  [else val]))
+              new-hash-state)))
+
+(define ((hash-shortcut-step key user-def-thunk) ht)
+  (define val (hash-ref ht key user-def-thunk))
+  (if (undef? val)
+      (values #t (λ () (error:illegal-hash-table-thunk-usage ht)))
+      (values #f (λ () val))))
+
+(define (invoke-thunk thk)
+  (thk))
 
 ;; If true, optimize the hash pattern as follows:
 ;; - Generate simplified code for the open mode
