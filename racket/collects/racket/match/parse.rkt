@@ -9,8 +9,10 @@
          "parse-quasi.rkt"
          (only-in "stxtime.rkt" current-form-name)
          (for-template (only-in "runtime.rkt" matchable? pregexp-matcher mlist? mlist->list
-                                undef user-def undef? user-def?
-                                hash-state hash-state-ht hash-state-keys hash-state-vals
+                                undef user-def
+                                hash-state
+                                hash-state-step hash-shortcut-step
+                                invoke-thunk
                                 hash-state-closed? hash-state-residue
                                 hash-pattern-optimized?)
                        (only-in racket/unsafe/ops unsafe-vector-ref)
@@ -131,10 +133,8 @@
                        [def-expr (in-list def-exprs)])
               (with-syntax ([k-expr k-expr]
                             [def-expr def-expr])
-                (App #'(λ (ht)
-                         (define val (hash-ref ht k-expr (λ () def-expr)))
-                         (values (undef? val) val))
-                     (list (Exact #f) (parse v-pat)))))))]
+                (App #'(hash-shortcut-step k-expr (λ () def-expr))
+                     (list (Exact #f) (App #'invoke-thunk (list (parse v-pat)))))))))]
     ;; General case
     ;;
     ;; To short-circuit, we use the following strategy:
@@ -182,21 +182,9 @@
                          (with-syntax ([k-expr k-expr]
                                        [def-expr def-expr]
                                        [def-id def-id])
-                           (App #'(λ (state)
-                                    (define ht (hash-state-ht state))
-                                    (define acc-keys (hash-state-keys state))
-                                    (define acc-vals (hash-state-vals state))
-                                    (define key k-expr)
-                                    (define val (hash-ref ht key def-id))
-                                    (values (undef? val)
-                                            (cond
-                                              [(user-def? val) def-expr]
-                                              [else val])
-                                            (hash-state ht
-                                                        (cons key acc-keys)
-                                                        (cons val acc-vals))))
+                           (App #'(hash-state-step k-expr (λ () def-expr) def-id)
                                 (list (Exact #f)
-                                      (parse v-pat)
+                                      (App #'invoke-thunk (list (parse v-pat)))
                                       pat-acc))))))))]))
 
 (define (make-kvps stx xs)
