@@ -881,10 +881,12 @@ fi
 
 if [ "${zuoExternal}" = "" ] ; then
     ZUO="bin/zuo"
+    ZUO_DEP="${ZUO}"
     RM_ZUO="rm -f bin/zuo"
     ZUO_TARGET="bin/zuo"
 else
     ZUO="${zuoExternal}"
+    ZUO_DEP=""
     RM_ZUO="@echo 'Not cleaning external ${zuoExternal}'"
     ZUO_TARGET="DoNotBuildZuo"
 fi
@@ -1108,6 +1110,7 @@ alwaysUseBootFile=$alwaysUseBootFile
 relativeBootFiles=$relativeBootFiles
 
 ZUO=$ZUO
+ZUO_DEP=$ZUO_DEP
 RM_ZUO=$RM_ZUO
 ZUO_TARGET=$ZUO_TARGET
 
