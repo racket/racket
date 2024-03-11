@@ -9,7 +9,7 @@
          rackunit rackunit/text-ui
          (only-in racket/base local-require))
 
-(require mzlib/plt-match)
+(require mzlib/plt-match (prefix-in pre: racket/match/pre))
 
 ;(require (planet "views.ss" ("cobbe" "views.plt" 1 1)))
 
@@ -24,6 +24,7 @@
                                          [`(tile ,@`(a b c))
                                           #t]
                                          [_ #f])))))
+
 (define cons-tests
   (test-suite "Tests for cons pattern"
               (test-case "simple"
@@ -444,6 +445,20 @@
        (match-define (struct* bar ([car x])) (list 1 2 3))
        (check = x 1)))))
 
+
+(define pre-tests
+  (test-suite
+   "tests for racket/match/pre"
+   (let ()
+   (define (f l)
+     (pre:match l
+		[(cons a b) (+ 1 (f b))]
+		[_ 0]))
+   (test-case "length tests"
+    (check = (f #f) 0)
+    (check = (f null) 0)
+    (check = (f (list 1 2 3)) 3)))))
+
 (define plt-match-tests
   (test-suite "Tests for plt-match.rkt"
               doc-tests
@@ -461,6 +476,7 @@
                             match-exn-tests
                             legacy-match-tests
                             new-tests
+			    pre-tests
                             ;; from bruce
                             other-tests 
                             other-plt-tests

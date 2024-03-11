@@ -1,12 +1,8 @@
 #lang racket/base
 
-(require racket/stxparam
-         (for-syntax racket/base))
-
 (provide match-equality-test
          exn:misc:match?
          match:error
-         fail
          matchable?
          pregexp-matcher
          match-prompt-tag
@@ -21,8 +17,7 @@
 
          (struct-out hash-state)
          hash-state-closed?
-         hash-state-residue
-         hash-pattern-optimized?)
+         hash-state-residue)
 
 (define match-prompt-tag (make-continuation-prompt-tag 'match)) 
 
@@ -40,11 +35,6 @@
           (current-continuation-marks)
           val
           srclocs)))
-
-(define-syntax-parameter fail
-  (lambda (stx)
-    (raise-syntax-error
-     #f "used out of context: not in match pattern" stx)))
 
 ;; can we pass this value to regexp-match?
 (define (matchable? e)
@@ -132,8 +122,3 @@
      (for ([k (in-list acc-keys)])
        (hash-remove! ht* k))
      ht*]))
-
-;; If true, optimize the hash pattern as follows:
-;; - Generate simplified code for the open mode
-;; - Treat #:rest _ as the open mode
-(define-syntax-parameter hash-pattern-optimized? #t)

@@ -1,5 +1,6 @@
 #lang scribble/doc
-@(require "mz.rkt" "match-grammar.rkt" racket/match)
+@(require "mz.rkt" "match-grammar.rkt" racket/match
+	  (prefix-in pre: racket/match/pre))
 
 @(define match-eval (make-base-eval))
 @(define (match-kw s) (index (list s) (racketidfont s)))
@@ -984,5 +985,27 @@ not provided, it defaults to @racket[equal?].
  }
 
 @; ----------------------------------------------------------------------
+
+
+
+@(define base-match @racket[match])
+
+@(define-syntax-rule (doc-pre match . body)
+   (begin (require (for-label (only-in racket/match/pre match)))
+          . body))
+
+
+@section{Reducing library dependencies}
+
+@defmodule[racket/match/pre]
+
+To use @racket[match] (but not any of the other bindings provided by
+@racketmodname[racket/match]) with fewer dependencies on other
+libraries, use @racketmodname[racket/match/pre].
+
+@doc-pre[match
+@defform[(match val-expr clause ...)]{Identical to @|base-match|
+but with potentially different syntax errors for ill-formed clauses.}]
+
 
 @close-eval[match-eval]

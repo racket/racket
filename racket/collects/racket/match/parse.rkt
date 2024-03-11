@@ -11,8 +11,8 @@
          (for-template (only-in "runtime.rkt" matchable? pregexp-matcher mlist? mlist->list
                                 undef user-def undef? user-def?
                                 hash-state hash-state-ht hash-state-keys hash-state-vals
-                                hash-state-closed? hash-state-residue
-                                hash-pattern-optimized?)
+                                hash-state-closed? hash-state-residue)
+		       (only-in "stx-runtime.rkt" hash-pattern-optimized?)
                        (only-in racket/unsafe/ops unsafe-vector-ref)
                        racket/base))
 
