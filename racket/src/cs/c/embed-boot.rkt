@@ -127,8 +127,7 @@
      (define terminator-len (bytes-length terminator))
 
      (define big-endian?
-       (if (and target
-                (not (equal? target (symbol->string (system-type 'target-machine)))))
+       (if target
            (case target
              [("tppc32osx" "ppc32osx"
                           "tppc32le" "ppc32le"
