@@ -1542,6 +1542,15 @@ converted to an absolute module path that is equivalent to
 @racket[module-path] relative to the value of
 @racket[current-require-module-path].}
 
+@defproc[(syntax-local-lift-require-top-level-expression [top-level-stx syntax?])]{
+ Lifts @racket[top-level-stx] to the top-level of the enclosing module, immediately
+ following the @racket[require] that is being expanded.
+
+ @transform-time[] In addition, this procedure may only be called while
+ expanding a @tech{require transformer}.
+
+ @history[#:added "8.12.0.13"]
+}
 
 @defproc[(syntax-local-require-certifier)
          ((syntax?) (or/c #f (syntax? . -> . syntax?))

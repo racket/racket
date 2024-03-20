@@ -4,7 +4,7 @@
                          "stx.rkt" "stxcase-scheme.rkt" "define-et-al.rkt"
                          "qq-and-or.rkt" "cond.rkt"
                          "stxloc.rkt" "qqstx.rkt" "more-scheme.rkt"
-                         "../require-transform.rkt"
+                         "../require-transform.rkt" "require-lift.rkt"
                          "../provide-transform.rkt"
                          "struct-info.rkt"
                          "../phase+space.rkt"))
@@ -431,9 +431,14 @@
                        [_ (transform-simple in 0 #| run phase |#)]))])
            (syntax-case stx ()
              [(_ in)
-              (with-syntax ([(new-in ...) (transform-one #'in)])
-                (syntax/loc stx
-                  (#%require new-in ...)))]
+              (let ([lifted-require-definitions (box '())])
+                (parameterize ([syntax-local-lift-require-definition-param lifted-require-definitions])
+                  (with-syntax ([(new-in ...) (transform-one #'in)]
+                                [(lifted-require-definitions ...)
+                                 (reverse (unbox lifted-require-definitions))])
+                    (syntax/loc stx
+                      (begin (#%require new-in ...)
+                             lifted-require-definitions ...)))))]
              [(_ in ...)
               ;; Prefetch on simple module paths:
               (let ([prefetches

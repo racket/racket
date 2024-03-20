@@ -4241,8 +4241,42 @@
         (resolve . #s(stx-boundary s0))
         (enter-macro #s(stx-boundary (s0 s1)) . #s(stx-boundary (s0 s1)))
         (macro-pre-x . #s(stx-boundary (s0 s1)))
-        (macro-post-x #s(stx-boundary (s0 s1)) . #s(stx-boundary (s2 s1)))
-        (exit-macro #s(stx-boundary (s0 s1)) . #s(stx-boundary (s0 s1)))
+        (macro-post-x #s(stx-boundary (s0 (s1 s2))) . #s(stx-boundary (s3 s2)))
+        (exit-macro
+         #s(stx-boundary (s0 (s1 s2)))
+         .
+         #s(stx-boundary (s0 (s1 s2))))
+        (visit . #s(stx-boundary (s0 (s1 s2))))
+        (resolve . #s(stx-boundary s0))
+        (stop/return . #s(stx-boundary (s0 (s1 s2))))
+        (local-post . #s(stx-boundary (s0 (s1 s2))))
+        (exit-local . #s(stx-boundary (s0 (s1 s2))))
+        (track-syntax s0 #s(stx-boundary (s1 s2)) . #s(stx-boundary (s1 s2)))
+        (macro-post-x
+         #s(stx-boundary (s0 (s1 s2 (s3 s4))))
+         .
+         #s(stx-boundary (s1 s2 (s5 s4))))
+        (exit-macro
+         #s(stx-boundary (s0 (s1 s2 (s3 s4))))
+         .
+         #s(stx-boundary (s0 (s1 s2 (s3 s4)))))
+        (visit . #s(stx-boundary (s0 (s1 s2 (s3 s4)))))
+        (resolve . #s(stx-boundary s0))
+        (stop/return . #s(stx-boundary (s0 (s1 s2 (s3 s4)))))
+        (module-pass1-case . #s(stx-boundary (s0 (s1 s2 (s3 s4)))))
+        (prim-begin . #s(stx-boundary (s0 (s1 s2 (s3 s4)))))
+        (splice #s(stx-boundary (s0 s1 (s2 s3))) #s(stx-boundary (s0 s1 s4)))
+        (next . #f)
+        (visit . #s(stx-boundary (s0 s1 (s2 s3))))
+        (resolve . #s(stx-boundary s0))
+        (enter-macro
+         #s(stx-boundary (s0 s1 (s2 s3)))
+         .
+         #s(stx-boundary (s0 s1 (s2 s3))))
+        (macro-pre-x . #s(stx-boundary (s0 s1 (s2 s3))))
+        (enter-local . #s(stx-boundary (s0 s1)))
+        (local-pre . #s(stx-boundary (s0 s1)))
+        (start . #f)
         (visit . #s(stx-boundary (s0 s1)))
         (resolve . #s(stx-boundary s0))
         (stop/return . #s(stx-boundary (s0 s1)))
@@ -4251,7 +4285,7 @@
         (macro-post-x
          #s(stx-boundary (s0 (s1 s2)))
          .
-         #s(stx-boundary (s3 s4 (s5 s2))))
+         #s(stx-boundary (s3 s4 (s1 s2))))
         (exit-macro
          #s(stx-boundary (s0 (s1 s2)))
          .
