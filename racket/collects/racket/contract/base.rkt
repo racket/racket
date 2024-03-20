@@ -13,6 +13,7 @@
          "private/struct-prop.rkt"
          "private/misc.rkt"
          "private/provide.rkt"
+         "private/require.rkt"
          "private/guts.rkt"
          "private/opters.rkt"       ;; required for effect to install the opters
          "private/basic-opters.rkt" ;; required for effect to install the opters
@@ -115,6 +116,7 @@
  ;(for-syntax make-provide/contract-transformer) ;; not documented!
  contract-out
  recontract-out
+ contract-in
  define-module-boundary-contract
  
  ;; from private/opt.rkt:
