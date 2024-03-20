@@ -20,8 +20,8 @@
 
 The contract system guards one part of a program from
 another. Programmers specify the behavior of a module's exports via
-@racket[(provide (contract-out ....))], and the contract system enforces those
-constraints.
+@racket[(provide (contract-out ....))] or @racket[(require (contract-in ...))],
+and the contract system enforces those constraints.
 
 @(define-syntax-rule
    (add-use-sources (x y ...))
@@ -2087,6 +2087,18 @@ A legacy shorthand for @racket[(provide (contract-out unprotected-submodule cont
 except that a @racket[_contract-expr] within @racket[provide/contract]
 is evaluated at the position of the @racket[provide/contract] form
 instead of at the end of the enclosing module.}
+
+@defform[
+(contract-in require-spec contract-in-item ...)
+#:grammar
+([contract-in-item
+  [id contract-expr]])]{
+
+ Imports the identifiers @racket[id] from @racket[require-spec] (via @racket[require])
+ and adds the contracts specified by @racket[contract-expr] to them.
+
+ @history[#:added "8.12.0.13"]
+}
 
 @defform[(struct-guard/c contract-expr ...)]{
   Returns a procedure suitable to be passed as the @racket[#:guard]
