@@ -28,12 +28,12 @@
           (define gen-ids (generate-temporaries ids))
 
           (define pos-blame (car (generate-temporaries '(pos-blame))))
-          (syntax-local-lift-require-top-level-expression
+          (syntax-local-lift-require-top-level-form
            #`(define #,pos-blame #,(format "~s" (syntax->datum #'m))))
           (for ([id (in-list ids)]
                 [gen-id (in-list gen-ids)]
                 [ctc (in-list ctcs)])
-            (syntax-local-lift-require-top-level-expression
+            (syntax-local-lift-require-top-level-form
              #`(define-module-boundary-contract #,id
                  #,gen-id
                  #,ctc

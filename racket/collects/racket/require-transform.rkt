@@ -12,7 +12,7 @@
              (for-syntax '#%kernel))
   
   (#%provide expand-import
-             syntax-local-lift-require-top-level-expression
+             syntax-local-lift-require-top-level-form
              current-require-module-path convert-relative-module-path
              syntax-local-require-certifier
              make-require-transformer prop:require-transformer require-transformer?
@@ -348,9 +348,9 @@
           "bad syntax for require sub-form"
           stx)])))
 
-  (define (syntax-local-lift-require-top-level-expression exp)
+  (define (syntax-local-lift-require-top-level-form exp)
     (unless (syntax? exp)
-      (raise-argument-error 'syntax-local-lift-require-top-level-expression
+      (raise-argument-error 'syntax-local-lift-require-top-level-form
                             "syntax?"
                             exp))
     (define b (syntax-local-lift-require-definition-param))

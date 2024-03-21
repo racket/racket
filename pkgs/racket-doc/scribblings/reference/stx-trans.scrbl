@@ -1542,7 +1542,7 @@ converted to an absolute module path that is equivalent to
 @racket[module-path] relative to the value of
 @racket[current-require-module-path].}
 
-@defproc[(syntax-local-lift-require-top-level-expression [top-level-stx syntax?])
+@defproc[(syntax-local-lift-require-top-level-form [top-level-stx syntax?])
          void?]{
  Lifts @racket[top-level-stx] to the top-level of the enclosing module, immediately
  following the @racket[require] that is being expanded.
