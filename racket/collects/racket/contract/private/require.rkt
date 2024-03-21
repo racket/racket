@@ -27,15 +27,9 @@
                  (raise-syntax-error 'contract-id "expected an identifier and a contract" stx id-pr)])))
           (define gen-ids (generate-temporaries ids))
 
-          (define-values (pos-blame neg-blame)
-            (let ()
-              (define ids (generate-temporaries '(pos-blame neg-blame)))
-              (values (list-ref ids 0)
-                      (list-ref ids 1))))
+          (define pos-blame (car (generate-temporaries '(pos-blame))))
           (syntax-local-lift-require-top-level-expression
            #`(define #,pos-blame #,(format "~s" (syntax->datum #'m))))
-          (syntax-local-lift-require-top-level-expression
-           #`(define #,neg-blame (current-contract-region)))
           (for ([id (in-list ids)]
                 [gen-id (in-list gen-ids)]
                 [ctc (in-list ctcs)])
