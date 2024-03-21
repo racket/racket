@@ -2311,7 +2311,8 @@ The @racket[define-struct/contract] form only allows a subset of the
            pos-blame-party
            source-loc
            name-for-blame
-           context-limit)
+           context-limit
+           lift-to-end)
          #:grammar ([pos-blame-party (code:line)
                                      (code:line #:pos-source pos-source-expr)]
                     [source-loc (code:line)
@@ -2320,7 +2321,9 @@ The @racket[define-struct/contract] form only allows a subset of the
                      (code:line)
                      (code:line #:name-for-blame blame-id)]
                     [context-limit (code:line)
-                     (code:line #:context-limit limit-expr)])]{
+                     (code:line #:context-limit limit-expr)]
+                    [lift-to-end (code:line)
+                     (code:line #:lift-to-end? boolean)])]{
   Defines @racket[id] to be @racket[orig-id], but with the contract
   @racket[contract-expr].
 
@@ -2346,6 +2349,12 @@ The @racket[define-struct/contract] form only allows a subset of the
 
   If @racket[#:context-limit] is supplied, it behaves the same as
   it does when supplied to @racket[contract].
+
+  If @racket[#:lift-to-end?] is @racket[#t] or is not supplied, then
+  the contract expression is placed at the end of the enclosing module
+  (using @racket[syntax-local-lift-module-end-declaration]). If it is
+  supplied and @racket[#f], the contract expression is placed where
+  @racket[define-module-boundary-contract] is placed.
 
   @examples[#:eval (contract-eval) #:once
             (module server racket/base

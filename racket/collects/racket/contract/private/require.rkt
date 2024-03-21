@@ -1,7 +1,8 @@
 #lang racket/base
 (require (for-syntax racket/base
                      racket/require-transform)
-         "base.rkt")
+         "base.rkt"
+         "provide.rkt")
 (provide contract-in)
 
 (define-syntax contract-in
@@ -39,15 +40,18 @@
                 [gen-id (in-list gen-ids)]
                 [ctc (in-list ctcs)])
             (syntax-local-lift-require-top-level-expression
-             #`(define #,id
-                 (contract #,ctc #,gen-id
-                           #,pos-blame #,neg-blame
-                           '#,id
-                           (srcloc '#,(syntax-source id)
-                                   #,(syntax-line id)
-                                   #,(syntax-column id)
-                                   #,(syntax-position id)
-                                   #,(syntax-span id))))))
+             #`(define-module-boundary-contract #,id
+                 #,gen-id
+                 #,ctc
+                 #:pos-source #,pos-blame
+                 #:name-for-blame #,id
+                 #:srcloc
+                 (srcloc '#,(syntax-source id)
+                         #,(syntax-line id)
+                         #,(syntax-column id)
+                         #,(syntax-position id)
+                         #,(syntax-span id))
+                 #:lift-to-end? #f)))
 
           (values (for/list ([id (in-list ids)]
                              [gen-id (in-list gen-ids)])

@@ -332,7 +332,8 @@
                                                                     (stx->srcloc-expr srcloc-id)
                                                                     'provide/contract
                                                                     pos-module-source
-                                                                    #f)
+                                                                    #f
+                                                                    #t)
                              ;; `upe-id` is punned as an indicator of whether the `provide`s will be
                              ;; generated as well as the uncontracted identifier to be exported.  This
                              ;; is fine because we always need to generate both `provide`s anyway.
@@ -360,10 +361,11 @@
                                                         srcloc-expr
                                                         contract-error-name
                                                         pos-module-source
-                                                        context-limit)
+                                                        context-limit
+                                                        lift-to-end?)
   (with-syntax ([id id]
                 [(partially-applied-id extra-neg-party-argument-fn contract-id blame-id) 
-                 (generate-temporaries (list 'idX 'idY 'idZ 'idB))]
+                 (generate-temporaries (list 'id-partially-applied 'id-extra-neg-party-argument-fn 'id-contract 'id-blame))]
                 [ctrct ctrct])
     (define-values (arrow? definition-of-plus-one-acceptor the-valid-app-shapes)
       (build-definition-of-plus-one-acceptor #'ctrct
@@ -371,18 +373,21 @@
                                              #'extra-neg-party-argument-fn
                                              #'contract-id
                                              #'blame-id))
-    (syntax-local-lift-module-end-declaration
-     #`(begin 
-         (define-values (partially-applied-id blame-id)
+    (define maybe-at-end
+      (cons
+       #`(define-values (partially-applied-id blame-id)
            (do-partial-app contract-id
                            id
                            '#,name-for-blame
                            #,pos-module-source
                            #,srcloc-expr
                            #,context-limit))
-         #,@(if arrow?
-                (list definition-of-plus-one-acceptor)
-                (list))))
+       (if arrow?
+           (list definition-of-plus-one-acceptor)
+           (list))))
+    (when lift-to-end?
+      (syntax-local-lift-module-end-declaration #`(begin #,@maybe-at-end)))
+
 
     #`(begin
         (define contract-id
@@ -406,7 +411,10 @@
                    (quote-syntax contract-id) (quote-syntax id)
                    #f #f
                    (quote-syntax partially-applied-id)
-                   (quote-syntax blame-id)))))))
+                   (quote-syntax blame-id))))
+        #,@(if lift-to-end?
+               '()
+               maybe-at-end))))
 
 (define-for-syntax (build-definition-of-plus-one-acceptor ctrct
                                                           id
@@ -458,17 +466,19 @@
             (raise-syntax-error #f "expected an identifier" stx #'new-id))
           (unless (identifier? #'orig-id)
             (raise-syntax-error #f "expected an identifier" stx #'orig-id))
-          (define-values (pos-blame-party-expr srcloc-expr name-for-blame context-limit)
+          (define-values (pos-blame-party-expr srcloc-expr name-for-blame context-limit lift-to-end?)
             (let loop ([kwd-args (syntax->list #'(kwd-args ...))]
                        [pos-blame-party-expr #'(quote-module-path)]
                        [srcloc-expr #f]
                        [name-for-blame #f]
-                       [context-limit #f])
+                       [context-limit #f]
+                       [lift-to-end? #t])
               (cond
                 [(null? kwd-args) (values pos-blame-party-expr
                                           (or srcloc-expr (stx->srcloc-expr stx))
                                           (or name-for-blame #'new-id)
-                                          context-limit)]
+                                          context-limit
+                                          lift-to-end?)]
                 [else
                  (define kwd (car kwd-args))
                  (cond 
@@ -480,7 +490,8 @@
                           (cadr kwd-args)
                           srcloc-expr
                           name-for-blame
-                          context-limit)]
+                          context-limit
+                          lift-to-end?)]
                    [(equal? (syntax-e kwd) '#:srcloc)
                     (when (null? (cdr kwd-args))
                       (raise-syntax-error #f "expected a keyword argument to follow #:srcloc"
@@ -489,7 +500,8 @@
                           pos-blame-party-expr
                           (cadr kwd-args)
                           name-for-blame
-                          context-limit)]
+                          context-limit
+                          lift-to-end?)]
                    [(equal? (syntax-e kwd) '#:name-for-blame)
                     (when (null? (cdr kwd-args))
                       (raise-syntax-error #f "expected a keyword argument to follow #:name-for-blame"
@@ -503,7 +515,8 @@
                           pos-blame-party-expr
                           srcloc-expr
                           name-for-blame
-                          context-limit)]
+                          context-limit
+                          lift-to-end?)]
                    [(equal? (syntax-e kwd) '#:context-limit)
                     (when (null? (cdr kwd-args))
                       (raise-syntax-error #f "expected an expression to follow #:context-limit"
@@ -512,13 +525,28 @@
                           pos-blame-party-expr
                           srcloc-expr
                           name-for-blame
-                          (cadr kwd-args))]
+                          (cadr kwd-args)
+                          lift-to-end?)]
+                   [(equal? (syntax-e kwd) '#:lift-to-end?)
+                    (when (null? (cdr kwd-args))
+                      (raise-syntax-error #f "expected a keyword argument to follow #:lift-to-end?"
+                                          stx))
+                    (define new-lift-to-end? (syntax-e (cadr kwd-args)))
+                    (unless (boolean? new-lift-to-end?)
+                      (raise-syntax-error #f "expected a (syntactic) boolean to follow #:lift-to-end?"
+                                          stx))
+                    (loop (cddr kwd-args)
+                          pos-blame-party-expr
+                          srcloc-expr
+                          name-for-blame
+                          context-limit
+                          new-lift-to-end?)]
                    [else
                     (raise-syntax-error
                      #f
                      (string-append
                       "expected one of the keywords"
-                      " #:pos-source, #:srcloc, #:name-for-blame, or #:context-limit")
+                      " #:pos-source, #:srcloc, #:name-for-blame, #:context-limit, or #:lift-to-end?")
                      stx
                      (car kwd-args))])])))
           (internal-function-to-be-figured-out #'ctrct
@@ -529,7 +557,8 @@
                                                srcloc-expr
                                                'define-module-boundary-contract
                                                pos-blame-party-expr
-                                               context-limit))])]))
+                                               context-limit
+                                               lift-to-end?))])]))
 
 ;; ... -> (values (or/c #f (-> neg-party val)) blame)
 (define (do-partial-app ctc val name pos-module-source source context-limit)
