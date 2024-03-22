@@ -2,7 +2,7 @@
 (require (for-syntax racket/base
                      racket/require-transform)
          "base.rkt"
-         "provide.rkt")
+         "module-boundary-ctc.rkt")
 (provide contract-in)
 
 (define-syntax contract-in
