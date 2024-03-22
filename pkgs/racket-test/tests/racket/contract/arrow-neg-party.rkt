@@ -6,7 +6,7 @@
                                             'racket/contract/private/guts
                                             'racket/contract/private/blame
                                             'racket/contract/private/arrow-val-first
-                                            'racket/contract/private/provide
+                                            'racket/contract/private/module-boundary-ctc
                                             'racket/contract/private/arity-checking)])
 
   (contract-eval '(require (for-syntax racket/base)))

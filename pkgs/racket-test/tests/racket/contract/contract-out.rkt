@@ -1408,6 +1408,25 @@
        (eval '(b? (b))))
    #t)
 
+  (test/spec-passed
+   'provide/contract-struct-out.2
+   '(begin
+      (eval '(module provide/contract-struct-out.2-m racket/base
+               (require racket/contract/base)
+               (provide
+                (contract-out
+                 (struct srv-rr ((priority (integer-in 0 65535))
+                                 (weight (integer-in 0 65535))
+                                 (port (integer-in 0 65535))
+                                 (target string?)))))
+               (struct srv-rr (priority
+                               weight
+                               port
+                               target)
+                 #:prefab)))
+      (eval '(module provide/contract-struct-out.2-n racket/base
+               (require 'provide/contract-struct-out.2-m)
+               (provide (struct-out srv-rr))))))
 
 
   (contract-error-test

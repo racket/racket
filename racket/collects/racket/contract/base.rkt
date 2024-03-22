@@ -13,7 +13,8 @@
          "private/struct-prop.rkt"
          "private/misc.rkt"
          "private/provide.rkt"
-         "private/require.rkt"
+         "private/in.rkt"
+         "private/module-boundary-ctc.rkt"
          "private/guts.rkt"
          "private/opters.rkt"       ;; required for effect to install the opters
          "private/basic-opters.rkt" ;; required for effect to install the opters
