@@ -132,9 +132,13 @@
                         (procedure-arity-includes? build-name 0))
              (raise-argument-error 'make-blame "(-> any)" 2
                                    source value build-name positive negative original?))
-           (unless positive
-             (raise-type-error 'make-blame "(not/c #f)" 3
-                               source value build-name positive negative original?))
+           (unless (or positive negative)
+             (raise-arguments-error 'make-blame "both `positive` and `negative` are #f"
+                                    "source" source "value" value
+                                    "build-name" build-name
+                                    "positive" positive
+                                    "negative" negative
+                                    "original?" original?))
            (unless (or (not context-limit)
                        (exact-nonnegative-integer? context-limit))
              (raise-argument-error 'make-blame
@@ -149,13 +153,13 @@
                  ans)))
            (define all-the-info
              (make-all-the-info
-              (list positive)
+              (and positive (list positive))
               (and negative (list negative))
               source
               value
               build/memo-name
               #f
-              (not negative)
+              (not (and positive negative))
               context-limit
               '()
               #f))
@@ -393,6 +397,8 @@
         (struct-copy
          all-the-info an-all-the-info
          [negative (or (all-the-info-negative an-all-the-info)
+                       (list missing-party))]
+         [positive (or (all-the-info-positive an-all-the-info)
                        (list missing-party))]
          [missing-party? #f])))]))
 

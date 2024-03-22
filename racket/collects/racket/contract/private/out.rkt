@@ -1,7 +1,8 @@
 #lang racket/base
 (require (for-syntax racket/base
                      racket/provide-transform)
-         "provide.rkt")
+         "provide.rkt"
+         "module-boundary-ctc.rkt")
 (provide contract-out
          reprovide/contract
          recontract-out)
