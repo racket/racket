@@ -1051,6 +1051,15 @@
   (do-impersonate-hash who ht ref set remove key args
                        make-hash-chaperone))
 
+(define/who (unsafe-impersonate-hash ht ref set remove key . args)
+  (check who
+         (lambda (p) (let ([p (strip-impersonator p)])
+                       (hash? p)))
+         :contract "hash?"
+         ht)
+  (do-impersonate-hash who ht ref set remove key args
+                       make-hash-impersonator))
+
 (define (do-impersonate-hash who ht ref set remove key args
                              make-hash-chaperone)
   (check who (procedure-arity-includes/c 2) ref)
