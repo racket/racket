@@ -2308,21 +2308,13 @@ The @racket[define-struct/contract] form only allows a subset of the
 @defform[(define-module-boundary-contract id
            orig-id
            contract-expr
-           pos-blame-party
-           source-loc
-           name-for-blame
-           context-limit
-           lift-to-end)
-         #:grammar ([pos-blame-party (code:line)
-                                     (code:line #:pos-source pos-source-expr)]
-                    [source-loc (code:line)
-                                (code:line #:srcloc srcloc-expr)]
-                    [name-for-blame
-                     (code:line)
-                     (code:line #:name-for-blame blame-id)]
-                    [context-limit (code:line)
-                     (code:line #:context-limit limit-expr)]
-                    [lift-to-end (code:line)
+           d-m-b-c-kwd-arg ...)
+         #:grammar ([d-m-b-c-kwd-arg
+                     (code:line #:name-for-contract name-for-contract-id)
+                     (code:line #:name-for-blame blame-id)
+                     (code:line #:srcloc srcloc-expr)
+                     (code:line #:pos-source pos-source-expr)
+                     (code:line #:context-limit limit-expr)
                      (code:line #:lift-to-end? boolean)])]{
   Defines @racket[id] to be @racket[orig-id], but with the contract
   @racket[contract-expr].
@@ -2332,9 +2324,16 @@ The @racket[define-struct/contract] form only allows a subset of the
   blame assignment (using the entire module where a reference appears
   as the negative party).
 
-  The positive party defaults to the module containing the use of
-  @racket[define-module-boundary-contract], but can be specified explicitly
-  via the @racket[#:pos-source] keyword.
+  The name used in the error messages will be @racket[orig-id], unless
+  @racket[#:name-for-blame] is supplied, in which case the identifier
+  following it is used as the name in the error messages.
+
+  The contract expression is wrapped in a @racket[let] to
+  give it a name which will be passed on to the name of the
+  wrapped value in certain situations (e.g., if the contract
+  is a function contract). If @racket[name-for-contract-id] is supplied,
+  the identifier that follows it is used to name the contract; otherwise
+  @racket[orig-id] is used.
 
   The source location used in the blame error messages for the location
   of the place where the contract was put on the value defaults to the
@@ -2343,9 +2342,9 @@ The @racket[define-struct/contract] form only allows a subset of the
   it can be any of the things that the third argument to @racket[datum->syntax]
   can be.
 
-  The name used in the error messages will be @racket[orig-id], unless
-  @racket[#:name-for-blame] is supplied, in which case the identifier
-  following it is used as the name in the error messages.
+  The positive party defaults to the module containing the use of
+  @racket[define-module-boundary-contract], but can be specified explicitly
+  via the @racket[#:pos-source] keyword.
 
   If @racket[#:context-limit] is supplied, it behaves the same as
   it does when supplied to @racket[contract].
@@ -2372,7 +2371,8 @@ The @racket[define-struct/contract] form only allows a subset of the
             (eval:error (servers-fault))]
 
   @history[#:changed "6.7.0.4" @elem{Added the @racket[#:name-for-blame] argument.}
-           #:changed "6.90.0.29" @elem{Added the @racket[#:context-limit] argument.}]
+           #:changed "6.90.0.29" @elem{Added the @racket[#:context-limit] argument.}
+           #:changed "8.12.0.14" @elem{Added the @racket[#:name-for-contract] argument.}]
 
 }
 

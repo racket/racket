@@ -128,14 +128,14 @@
                                    (syntax-e id-rename-without-source)
                                    ex-id
                                    id-rename-without-source))
-  (with-syntax ([ctrct (syntax-property 
+  (with-syntax ([ctrct (syntax-property
                         (syntax-property
                          ctrct/no-prop
                          'racket/contract:contract-on-boundary
                          (gensym 'in-out/contract-boundary))
                         'inferred-name ex-id)]
                 [external-name (or user-rename-id id)])
-    (define srcloc-id 
+    (define srcloc-id
       (if (syntax-source id)
           id
           (if (and user-rename-id
@@ -145,10 +145,11 @@
     (with-syntax ([code
                    (syntax-property
                     (quasisyntax/loc stx
-                      (begin #,(define-module-boundary-contract/proc #'ctrct id
+                      (begin #,(define-module-boundary-contract/proc id-rename
+                                 id
+                                 #'ctrct
                                  ex-id
                                  #'external-name
-                                 id-rename
                                  #`(quote-srcloc #,srcloc-id)
                                  '#,who
                                  pos-module-source
@@ -221,7 +222,7 @@
                   (eq? '#:forall (syntax-e #'exists)) (eq? '#:∀ (syntax-e #'exists)))
               (cond
                 [(null? (cdr clauses))
-                 (raise-syntax-error 
+                 (raise-syntax-error
                   who
                   (format (string-append
                            "expected either a single variable or a sequence of variables"
@@ -253,12 +254,12 @@
                                                    [x-gens (syntax->list #'(x-gen ...))])
                                           (cond
                                             [(null? xs) binders]
-                                            [else 
+                                            [else
                                              (loop (add-a-binder (car xs) (car x-gens) binders)
                                                    (cdr xs)
                                                    (cdr x-gens))]))))))]
                    [else
-                    (raise-syntax-error 
+                    (raise-syntax-error
                      who
                      (format (string-append "expected either a single variable or a sequence"
                                             " of variables to follow ~a")
@@ -298,7 +299,7 @@
                 (for ([option (in-list (syntax->list #'(options ...)))])
                   (unless (member (syntax-e option) '(#:omit-constructor))
                     (raise-syntax-error who
-                                        "malformed struct option" 
+                                        "malformed struct option"
                                         stx
                                         option)))
                 (unless (<= (length (syntax->list #'(options ...))) 1)
@@ -306,7 +307,7 @@
                                       "malformed struct option"
                                       stx))
                 (add-to-dups-table #'struct-name)
-                (define omit-constructor? 
+                (define omit-constructor?
                   (member '#:omit-constructor (map syntax-e (syntax->list #'(options ...)))))
                 (if just-check-errors?
                     (loop (cdr clauses) exists-binders)
@@ -390,7 +391,7 @@
   ;; build-struct-code : syntax syntax (listof syntax) (listof syntax) -> syntax
   ;; constructs the code for a struct clause
   ;; first arg is the original syntax object, for source locations
-  (define (build-struct-code stx struct-name-position field-names field-contracts 
+  (define (build-struct-code stx struct-name-position field-names field-contracts
                              omit-constructor?)
     (let* ([struct-name (syntax-case struct-name-position ()
                           [(a b) (syntax a)]
@@ -427,8 +428,8 @@
                                           3))])]
            [type-is-only-constructor? (free-identifier=? constructor-id struct-name)]
            ; I think there's no way to detect when the struct-name binding isn't a constructor
-           [type-is-constructor? #t] 
-           [chaperone-constructor-id 
+           [type-is-constructor? #t]
+           [chaperone-constructor-id
             (and constructor-id (car (generate-temporaries (list constructor-id))))]
            [is-id-ok?
             (λ (id i)
@@ -576,7 +577,7 @@
 
                     [(field-contract-id-definitions ...)
                      (map (λ (field-contract-id field-contract)
-                            #`(define #,field-contract-id 
+                            #`(define #,field-contract-id
                                 (coerce-contract '#,who #,field-contract)
                                 #;
                                 (opt/c field-contract #:error-name #,who)))
@@ -599,7 +600,7 @@
                                          [struct-name struct-name]
                                          [orig-struct-name orig-struct-name]
                                          [-struct:struct-name -struct:struct-name]
-                                         [super-id 
+                                         [super-id
                                           (if (boolean? super-id)
                                               super-id
                                               (with-syntax ([the-super-id
@@ -827,7 +828,7 @@
           a:mangle-id)
       (format "~a/contract-id" who)
       id)))
-       
+
   (define pos-module-source-id
     ;; Avoid context on this identifier, since it will be defined
     ;; in another module, and the definition may have to pull
