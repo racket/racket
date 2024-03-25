@@ -4037,6 +4037,8 @@ do_file_position(const char *who, int argc, Scheme_Object *argv[], int can_false
 
     op = scheme_output_port_record(argv[0]);
 
+    CHECK_PORT_CLOSED(who, "output", argv[0], op->closed);    
+
     if (SAME_OBJ(op->sub_type, file_output_port_type)) {
       f = ((Scheme_Output_File *)op->port_data)->f;
     } else if (SAME_OBJ(op->sub_type, fd_output_port_type)) {
@@ -4063,6 +4065,8 @@ do_file_position(const char *who, int argc, Scheme_Object *argv[], int can_false
 
     if (ip->input_lock)
       scheme_wait_input_allowed(ip, 0);
+
+    CHECK_PORT_CLOSED(who, "input", argv[0], ip->closed);
 
     if (SAME_OBJ(ip->sub_type, file_input_port_type)) {
       f = ((Scheme_Input_File *)ip->port_data)->f;
