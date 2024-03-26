@@ -162,7 +162,7 @@
                                     (append
                                      (make-unprotected-submodule-code
                                       (lambda ()
-                                        #`(provide (rename-out [#,upe-id external-name]))))
+                                        #`(provide (rename-out [#,id external-name]))))
                                      (list #`(provide (rename-out [#,id-rename external-name]))))
                                     null)))
                     (if provide? 'provide/contract-original-contract 'require/contract-original-contract)
