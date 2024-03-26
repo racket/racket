@@ -119,7 +119,7 @@
                                                 stx id reflect-id ctrct/no-prop user-rename-id
                                                 pos-module-source
                                                 mangle-for-maker?
-                                                upe-id
+                                                include-provide?
                                                 who
                                                 provide?)
   (define ex-id (or reflect-id id))
@@ -158,12 +158,11 @@
                              ;; `upe-id` is punned as an indicator of whether the `provide`s will be
                              ;; generated as well as the uncontracted identifier to be exported.  This
                              ;; is fine because we always need to generate both `provide`s anyway.
-                             #,@(if upe-id
-                                    (append
-                                     (make-unprotected-submodule-code
-                                      (lambda ()
-                                        #`(provide (rename-out [#,upe-id external-name]))))
-                                     (list #`(provide (rename-out [#,id-rename external-name]))))
+                             #,@(make-unprotected-submodule-code
+                                 (lambda ()
+                                   #`(provide (rename-out [#,id external-name]))))
+                             #,@(if include-provide?
+                                    (list #`(provide (rename-out [#,id-rename external-name])))
                                     null)))
                     (if provide? 'provide/contract-original-contract 'require/contract-original-contract)
                     (vector #'external-name #'ctrct))])
@@ -572,8 +571,7 @@
                                                       predicate-id)
                           constructor-id
                           #t
-                          (and (not type-is-only-constructor?)
-                               constructor-id)))]
+                          (not type-is-only-constructor?)))]
 
                     [(field-contract-id-definitions ...)
                      (map (λ (field-contract-id field-contract)
@@ -837,12 +835,12 @@
 
   (define (code-for-one-id/new-name who stx id reflect-id ctrct/no-prop user-rename-id
                                     [mangle-for-maker? #f]
-                                    [upe-id id])
+                                    [include-provide? #t])
     (tl-code-for-one-id/new-name id-for-one-id
                                  stx id reflect-id ctrct/no-prop user-rename-id
                                  pos-module-source-id
                                  mangle-for-maker?
-                                 upe-id
+                                 include-provide?
                                  who
                                  provide?))
   (define struct-id-mapping (make-free-identifier-mapping))
