@@ -213,9 +213,10 @@
                      context-limit
                      lift-to-end?)
   (with-syntax ([(partially-applied-id extra-neg-party-argument-fn contract-id blame-id) 
-                 (generate-temporaries (list 'id-partially-applied 'id-extra-neg-party-argument-fn 'id-contract 'id-blame))])
+                 (generate-temporaries (list 'id-partially-applied 'id-extra-neg-party-argument-fn 'id-contract 'id-blame))]
+                [ctrct ctrct])
     (define-values (arrow? definition-of-plus-one-acceptor the-valid-app-shapes)
-      (build-definition-of-plus-one-acceptor ctrct
+      (build-definition-of-plus-one-acceptor #'ctrct
                                              id
                                              #'extra-neg-party-argument-fn
                                              #'contract-id
@@ -240,9 +241,9 @@
         (define contract-id
           ;; let is here to give the right name.
           (let ([#,name-for-contract #,(if arrow?
-                                           ctrct
-                                           #`(coerce-contract '#,contract-error-name #,ctrct))
-                                     #;(opt/c ctrct #:error-name #,contract-error-name)])
+                               #'ctrct
+                               #`(coerce-contract '#,contract-error-name ctrct))
+                         #;(opt/c ctrct #:error-name #,contract-error-name)])
             #,name-for-contract))
         
         (define-syntax #,id-rename
