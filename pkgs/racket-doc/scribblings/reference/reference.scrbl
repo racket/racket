@@ -109,7 +109,7 @@ In addition, it re-exports @racket[for-syntax] everything from
              #:author "Olivier Danvy and Andre Filinski"
              #:title "Abstracting Control"
              #:location "LISP and Functional Programming"
-             #:url "http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.6.960&rep=rep1&type=pdf"
+             #:url "https://doi.org/10.1145/91556.91622"
              #:date "1990")
 
   (bib-entry #:key "Felleisen88a"
