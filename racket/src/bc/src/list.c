@@ -153,6 +153,7 @@ static Scheme_Object *equal_always_hash2_code(int argc, Scheme_Object *argv[]);
 static Scheme_Object *eqv_hash_code(int argc, Scheme_Object *argv[]);
 static Scheme_Object *chaperone_hash(int argc, Scheme_Object **argv);
 static Scheme_Object *impersonate_hash(int argc, Scheme_Object **argv);
+static Scheme_Object *unsafe_impersonate_hash(int argc, Scheme_Object **argv);
 
 static Scheme_Object *make_weak_box(int argc, Scheme_Object *argv[]);
 static Scheme_Object *weak_box_value(int argc, Scheme_Object *argv[]);
@@ -1074,7 +1075,6 @@ scheme_init_unsafe_list (Scheme_Startup_Env *env)
   p = scheme_make_prim_w_arity(scheme_box_cas, "unsafe-box*-cas!", 3, 3);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_NARY_INLINED);
   scheme_addto_prim_instance("unsafe-box*-cas!", p, env);
-
 }
 
 void
@@ -1216,6 +1216,13 @@ scheme_init_unsafe_hash (Scheme_Startup_Env *env)
 			     "unsafe-ephemeron-hash-iterate-pair", 
 			     2, 3);
   scheme_addto_prim_instance ("unsafe-ephemeron-hash-iterate-pair", p, env);
+
+  /* unsafe-impersonate-hash ---------------------------------------- */
+  scheme_addto_prim_instance("unsafe-impersonate-hash",
+                             scheme_make_prim_w_arity(unsafe_impersonate_hash,
+                                                      "unsafe-impersonate-hash",
+                                                      5, -1),
+                             env);
 }
 
 Scheme_Object *scheme_make_pair(Scheme_Object *car, Scheme_Object *cdr)
@@ -3720,9 +3727,9 @@ static Scheme_Object *do_chaperone_hash(const char *name, int is_impersonator, i
     val = SCHEME_CHAPERONE_VAL(val);
 
   if (!SCHEME_HASHTP(val) 
-      && (is_impersonator || !SCHEME_HASHTRP(val))
+      && ((is_impersonator == 1) || !SCHEME_HASHTRP(val))
       && !SCHEME_BUCKTP(val))
-    scheme_wrong_contract(name, is_impersonator ? "(and/c hash? (not/c immutable?))" : "hash?", 0, argc, argv);
+    scheme_wrong_contract(name, (is_impersonator == 1) ? "(and/c hash? (not/c immutable?))" : "hash?", 0, argc, argv);
   scheme_check_proc_arity(name, 2, 1, argc, argv); /* ref */
   scheme_check_proc_arity(name, 3, 2, argc, argv); /* set! */
   scheme_check_proc_arity(name, 2, 3, argc, argv); /* remove */
@@ -3777,6 +3784,11 @@ static Scheme_Object *chaperone_hash(int argc, Scheme_Object **argv)
 static Scheme_Object *impersonate_hash(int argc, Scheme_Object **argv)
 {
   return do_chaperone_hash("impersonate-hash", 1, argc, argv);
+}
+
+static Scheme_Object *unsafe_impersonate_hash(int argc, Scheme_Object **argv)
+{
+  return do_chaperone_hash("unsafe-impersonate-hash", 2, argc, argv);
 }
 
 static Scheme_Object *transfer_chaperone(Scheme_Object *chaperone, Scheme_Object *v)

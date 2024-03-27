@@ -972,6 +972,30 @@ fixnum).}
  @history[#:added "6.9.0.2"]
 }
 
+@defproc[(unsafe-impersonate-hash [hash hash?]
+                                  [ref-proc (hash? any/c . -> . (values 
+                                                                 any/c 
+                                                                 (hash? any/c any/c . -> . any/c)))]
+                                  [set-proc (hash? any/c any/c . -> . (values any/c any/c))]
+                                  [remove-proc (hash? any/c . -> . any/c)]
+                                  [key-proc (hash? any/c . -> . any/c)]
+                                  [clear-proc (or/c #f (hash? . -> . any)) #f]
+                                  [equal-key-proc (or/c #f (hash? any/c . -> . any/c)) #f]
+                                  [prop impersonator-property?]
+                                  [prop-val any/c] ... ...)
+          (and/c hash? impersonator?)]{
+
+ Like @racket[impersonate-hash], but works on immutable as well as
+ mutable hash tables.
+
+ The intent is that the original @racket[hash] table is not made
+ accessible other than through its impersonator, so the unconstrained
+ differences in behavior between @racket[hash] and its impersonator
+ are not detected.
+
+ @history[#:added "8.12.0.15"]
+}
+
 @; ------------------------------------------------------------------------
 
 @section[#:tag "unsafeassert"]{Unsafe Assertions}
