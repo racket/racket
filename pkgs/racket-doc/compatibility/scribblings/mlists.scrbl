@@ -100,6 +100,24 @@ Like @racket[mreverse], but destructively reverses the
 Like @racket[map], but for @tech[#:doc reference]{mutable lists}.}
 
 
+@defproc[(mmandmap [proc procedure?] [mlst mlist?] ...+)
+         mlist?]{
+
+Like @racket[andmap], but for @tech[#:doc reference]{mutable lists}.}
+
+
+@defproc[(mmormap [proc procedure?] [mlst mlist?] ...+)
+         mlist?]{
+
+Like @racket[ormap], but for @tech[#:doc reference]{mutable lists}.}
+
+
+@defproc[(mmremw [proc procedure?] [mlst mlist?] ...+)
+         mlist?]{
+
+Like @racket[remw], but for @tech[#:doc reference]{mutable lists}.}
+
+
 @defproc[(mfor-each [proc procedure?] [mlst mlist?] ...+)
          void?]{
 
