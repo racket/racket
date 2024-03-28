@@ -145,8 +145,8 @@
     (with-syntax ([code
                    (syntax-property
                     (quasisyntax/loc stx
-                      (begin #,(define-module-boundary-contract/proc id-rename
-                                 id
+                      (begin #,(define-module-boundary-contract/proc (if provide? id-rename id)
+                                 (if provide? id id-rename)
                                  #'ctrct
                                  ex-id
                                  #'external-name

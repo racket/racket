@@ -2,53 +2,34 @@
 (require (for-syntax racket/base
                      racket/require-transform)
          "base.rkt"
-         "module-boundary-ctc.rkt")
+         "module-boundary-ctc.rkt"
+         "in-out.rkt")
 (provide contract-in)
 
 (define-syntax contract-in
   (make-require-transformer
    (λ (stx)
      (syntax-case stx ()
-       [(_ m stx-ids ...)
+       [(_ m clauses ...)
         (let ()
-          (define module-name (gensym 'm))
-          (define-values (ids ctcs)
-            (for/fold ([ids '()]
-                       [ctcs '()])
-                      ([id-pr (in-list (syntax->list #'(stx-ids ...)))])
-              (syntax-case id-pr ()
-                [(x ctc)
-                 (let ()
-                   (unless (identifier? #'x)
-                     (raise-syntax-error 'contract-id "expected an identifier" stx #'x))
-                   (values (cons #'x ids)
-                           (cons #'ctc ctcs)))]
-                [_
-                 (raise-syntax-error 'contract-id "expected an identifier and a contract" stx id-pr)])))
-          (define gen-ids (generate-temporaries ids))
-
           (define pos-blame (car (generate-temporaries '(pos-blame))))
           (syntax-local-lift-require-top-level-form
            #`(define #,pos-blame #,(format "~s" (syntax->datum #'m))))
-          (for ([id (in-list ids)]
-                [gen-id (in-list gen-ids)]
-                [ctc (in-list ctcs)])
-            (syntax-local-lift-require-top-level-form
-             #`(define-module-boundary-contract #,id
-                 #,gen-id
-                 #,ctc
-                 #:pos-source #,pos-blame
-                 #:name-for-blame #,id
-                 #:srcloc
-                 (srcloc '#,(syntax-source id)
-                         #,(syntax-line id)
-                         #,(syntax-column id)
-                         #,(syntax-position id)
-                         #,(syntax-span id))
-                 #:lift-to-end? #f)))
 
-          (values (for/list ([id (in-list ids)]
-                             [gen-id (in-list gen-ids)])
+          (define-values (code remappings)
+            (generate-in/out-code 'contract-in
+                                  stx
+                                  (syntax->list #'(clauses ...))
+                                  #f ;; unprotected-submodule-name
+                                  #f ;; just-check-errors?
+                                  #f ;; provide?
+                                  pos-blame))
+          (syntax-local-lift-require-top-level-form code)
+          (define orig-ids (map car remappings))
+          (define export-id (map cdr remappings))
+
+          (values (for/list ([gen-id (in-list orig-ids)]
+                             [id (in-list export-id)])
                     (import gen-id
                             (syntax-e id)
                             #'m
