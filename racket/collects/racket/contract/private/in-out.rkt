@@ -119,7 +119,7 @@
                                                 stx id reflect-id ctrct/no-prop user-rename-id
                                                 pos-module-source
                                                 mangle-for-maker?
-                                                upe-id
+                                                generate-provides?
                                                 who
                                                 provide?)
   (define ex-id (or reflect-id id))
@@ -154,25 +154,50 @@
                                  '#,who
                                  pos-module-source
                                  #f
-                                 #t)
+                                 ;; if we're doing provides, we can lift to the end
+                                 ;; otherwise, when we're doing `contract-in`, we
+                                 ;; want those definitions to be part of the code
+                                 ;; that's returned.
+                                 provide?)
                              ;; `upe-id` is punned as an indicator of whether the `provide`s will be
                              ;; generated as well as the uncontracted identifier to be exported.  This
                              ;; is fine because we always need to generate both `provide`s anyway.
-                             #,@(if upe-id
-                                    (append
-                                     (make-unprotected-submodule-code
-                                      (lambda ()
-                                        #`(provide (rename-out [#,id external-name]))))
-                                     (list #`(provide (rename-out [#,id-rename external-name]))))
-                                    null)))
+                             #,@(cond
+                                  [generate-provides?
+                                   (add-remapping id-rename #'external-name)
+                                   (make-unprotected-submodule-code
+                                    (lambda ()
+                                      #`(provide (rename-out [#,id external-name]))))]
+                                  [else '()])))
                     (if provide? 'provide/contract-original-contract 'require/contract-original-contract)
                     (vector #'external-name #'ctrct))])
       #`(code #,id-rename))))
+
+(define-for-syntax current-remappings (make-parameter #f))
+(define-for-syntax (add-remapping a b)
+  (define cr (current-remappings))
+  (unless cr (error 'add-remapping "current-remappings not set"))
+  (set-box! cr (cons (cons a b) (unbox cr))))
 
 (define-for-syntax (generate-in/out-code who stx p/c-clauses unprotected-submodule-name
                                          just-check-errors?
                                          provide?
                                          pos-module-source-expression)
+  (define remappings (box '()))
+  (define code
+    (parameterize ([current-remappings remappings])
+      (generate-in/out-code/remappings
+       who stx p/c-clauses unprotected-submodule-name
+       just-check-errors?
+       provide?
+       pos-module-source-expression)))
+  (values code (unbox remappings)))
+
+(define-for-syntax (generate-in/out-code/remappings
+                    who stx p/c-clauses unprotected-submodule-name
+                    just-check-errors?
+                    provide?
+                    pos-module-source-expression)
   (define mangled-id-scope (make-syntax-introducer))
 
   ;; ids : table[id -o> (listof id)]
@@ -572,8 +597,7 @@
                                                       predicate-id)
                           constructor-id
                           #t
-                          (and (not type-is-only-constructor?)
-                               constructor-id)))]
+                          (not type-is-only-constructor?)))]
 
                     [(field-contract-id-definitions ...)
                      (map (λ (field-contract-id field-contract)
@@ -651,7 +675,7 @@
                                      (lambda ()
                                        #'(provide struct-name)))
                                  #,(if provide?
-                                       #'(provide (rename-out [id-rename struct-name]))
+                                       (add-remapping #'id-rename #'struct-name)
                                        #'(define-syntax struct-name (make-rename-transformer #'id-rename)))
                                  (define-syntax id-rename
                                    (#,mk
@@ -703,7 +727,7 @@
                       (lambda ()
                         #'(provide struct:struct-name)))
                   #,(if provide?
-                        #`(provide (rename-out [-struct:struct-name struct:struct-name]))
+                        (add-remapping #'-struct:struct-name #'struct:struct-name)
                         #`(define-syntax struct:struct-name (make-rename-transformer #'-struct:struct-name)))))))))))
 
   ;; andmap/count : (X Y int -> Z) (listof X) (listof Y) -> (listof Z)
@@ -837,7 +861,7 @@
 
   (define (code-for-one-id/new-name who stx id reflect-id ctrct/no-prop user-rename-id
                                     [mangle-for-maker? #f]
-                                    [upe-id id])
+                                    [upe-id #t])
     (tl-code-for-one-id/new-name id-for-one-id
                                  stx id reflect-id ctrct/no-prop user-rename-id
                                  pos-module-source-id

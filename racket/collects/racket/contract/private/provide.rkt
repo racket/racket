@@ -32,9 +32,17 @@
                                (car (syntax-e #'more))
                                #f))]
       [(_ p/c-ele ...) (values (syntax->list #'(p/c-ele ...)) #f)]))
-  (generate-in/out-code who provide-stx p/c-clauses unprotected-submodule-name just-check-errors?
-                        #t
-                        #'(quote-module-name)))
+
+  (define-values (code remappings)
+    (generate-in/out-code who provide-stx p/c-clauses unprotected-submodule-name just-check-errors?
+                          #t
+                          #'(quote-module-name)))
+  #`(begin
+      #,code
+      #,@(for/list ([remapping (in-list remappings)])
+           (define orig-id (car remapping))
+           (define export-id (cdr remapping))
+           #`(provide (rename-out [#,orig-id #,export-id])))))
 
 (define-for-syntax (provide/contract-for-whom stx who)
   (define s-l-c (syntax-local-context))
