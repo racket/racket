@@ -169,6 +169,8 @@
                      (at-dir (~a "racket" i ".c"))
                      (loop (+ i 1)))))
         '()))
+  (define pbchunk-objs
+    (map .c->.o pbchunk-srcs))
 
   (define boot.o (at-dir (.c->.o "boot.c")))
   (define boot-objs
@@ -187,7 +189,7 @@
                             (at-dir CS m "lz4/lib/liblz4.a")))
                   '()))
             (list librktio.a)
-            (map .c->.o pbchunk-srcs)))
+            pbchunk-objs))
 
   (define MemoryModule.o (at-dir (.c->.o "MemoryModule.c")))
 
@@ -984,6 +986,7 @@
          (unpack-lib (at-dir CS m "boot" m "libkernel.a"))
          (shell/wait (lookup 'AR) (lookup 'ARFLAGS) libracketcs.a
                      (filter (glob->matcher "*.o") (ls* repack-dir))
+                     (if pbchunk? pbchunk-objs '())
                      boot.o)
          (icp-lib config (in! libracketcs.a) (build-path libdir "libracketcs.a"))
          (strip-lib-debug config (build-path libdir "libracketcs.a")))
