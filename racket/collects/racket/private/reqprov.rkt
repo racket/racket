@@ -82,7 +82,6 @@
     (let ([t (lambda (stx)
                (check-lib-form stx)
                (let* ([stx (xlate-path stx)]
-                      [mod-path (syntax->datum stx)]
                       [namess (syntax-local-module-exports stx)])
                  (values
                   (apply
@@ -95,7 +94,7 @@
                                                  name
                                                  stx)
                                                 name
-                                                mod-path
+                                                stx
                                                 mode
                                                 0
                                                 mode
