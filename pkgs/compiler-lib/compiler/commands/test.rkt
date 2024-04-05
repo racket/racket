@@ -13,7 +13,7 @@
          compiler/find-exe
          raco/command-name
          racket/system
-         rackunit/log
+         raco/testing
          pkg/lib
          pkg/path
          setup/collects
@@ -65,7 +65,7 @@
 
 ;; Stub for running a test in a process:
 (module process racket/base
-  (require rackunit/log
+  (require raco/testing
            racket/file
            compiler/private/cm-minimal)
   ;; Arguments are a temp file to hold test results, the module
@@ -98,13 +98,13 @@
    result-file
    #:exists 'truncate
    (lambda (o)
-     (write (test-log #:display? #f #:exit? #f) o)))
+     (write (test-report #:display? #f #:exit? #f) o)))
   (exit 0))
 
 ;; Driver for running a test in a place:
 (module place racket/base
   (require racket/place
-           rackunit/log
+           raco/testing
            compiler/private/cm-minimal)
   (provide go)
   (define (go pch)
@@ -124,7 +124,7 @@
       ((executable-yield-handler) 0))
     ;; If the tests use `rackunit`, collect result stats:
     (define test-results 
-      (test-log #:display? #f #:exit? #f))
+      (test-report #:display? #f #:exit? #f))
 
     ;; Return test results. If we don't get this far, the result
     ;; code of the place determines whether it the test counts as
@@ -190,7 +190,7 @@
       (define-values (result-code test-results)
         (case mode
           [(direct)
-           (define pre (test-log #:display? #f #:exit? #f))
+           (define pre (test-report #:display? #f #:exit? #f))
            (define done? #f)
            (define t
              (parameterize ([current-output-port stdout]
@@ -208,7 +208,7 @@
              (error test-exe-name "timeout after ~a seconds" timeout))
            (unless done?
              (error test-exe-name "test raised an exception"))
-           (define post (test-log #:display? #f #:exit? #f))
+           (define post (test-report #:display? #f #:exit? #f))
            (values 0
                    (cons (- (car post) (car pre))
                          (- (cdr post) (cdr pre))))]
@@ -1199,15 +1199,15 @@
      (display-summary sum))
    (unless (or (eq? default-mode 'direct)
                (and (not default-mode) single-file?))
-     ;; Re-log failures and successes, and then report using `test-log`.
-     ;; (This is awkward; is it better to not try to use `test-log`?)
+     ;; Re-log failures and successes, and then report using `test-report`.
+     ;; (This is awkward; is it better to not try to use `test-report`?)
      (for ([s (in-list sum)])
        (for ([i (in-range (summary-failed s))])
          (test-log! #f))
        (for ([i (in-range (- (summary-total s)
                              (summary-failed s)))])
          (test-log! #t))))
-   (test-log #:display? #t #:exit? #f)
+   (test-report #:display? #t #:exit? #f)
    (define sum1 (call-with-summary #f (lambda () sum)))
    (exit (cond
            [(positive? (summary-timeout sum1)) 2]
