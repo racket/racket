@@ -323,7 +323,7 @@
      (check-treelist 'treelist-first tl)
      (cond
        [(eq? tl empty-treelist)
-        (raise-arguments-error 'treelist-first "treelist is empty")]
+        (raise-arguments-error* 'treelist-first 'racket/primitive "treelist is empty")]
        [else
         (define-values (node pos) (treelist-node-for tl 0))
         (node-ref node 0)])]))
@@ -335,7 +335,7 @@
      (check-treelist 'treelist-last tl)
      (cond
        [(eq? tl empty-treelist)
-        (raise-arguments-error 'treelist-last "treelist is empty")]
+        (raise-arguments-error* 'treelist-last 'racket/primitive "treelist is empty")]
        [else
         (define-values (node pos) (treelist-node-for tl (fx- (treelist-size tl) 1)))
         (node-ref node pos)])]))
@@ -533,7 +533,7 @@
                        (vector-copy vec-in))
                   (and (vector? vec-in) ; amounts to `vector*?`
                        vec-in)))
-  (unless vec (raise-argument-error 'vector->treelist "vector?" vec-in))
+  (unless vec (raise-argument-error* 'vector->treelist 'racket/primitive "vector?" vec-in))
   (define size (vector*-length vec))
   (cond
     [(fx= size 0) empty-treelist]
@@ -592,7 +592,7 @@ misses any sharing has 33,792 nodes and an extra 1/1055th of the
 minimum required storage. |#
 
   (unless (exact-nonnegative-integer? size)
-    (raise-argument-error 'make-treelist "natural?" size))
+    (raise-argument-error* 'make-treelist 'racket/primitive "natural?" size))
   (unless (fixnum? size)
     (raise (make-exn:fail:out-of-memory
             (format "out of memory making treelist\n  size: ~s"
@@ -642,7 +642,7 @@ minimum required storage. |#
     el))
 
 (define (list->treelist lst)
-  (unless (list? lst) (raise-argument-error 'list->treelist "list?" lst))
+  (unless (list? lst) (raise-argument-error* 'list->treelist 'racket/primitive "list?" lst))
   (if (null? lst)
       empty-treelist
       (vector->treelist (list->vector lst))))
@@ -806,7 +806,7 @@ minimum required storage. |#
      (check-treelist 'treelist-rest tl)
      (cond
        [(eq? tl empty-treelist)
-        (raise-arguments-error 'treelist-rest "treelist is empty")]
+        (raise-arguments-error* 'treelist-rest 'racket/primitive "treelist is empty")]
        [else
         (treelist-drop tl 1)])]))
 
@@ -1164,21 +1164,21 @@ minimum required storage. |#
 (define (treelist-map tl proc)
   (check-treelist 'treelist-map tl)
   (unless (and (procedure? proc) (procedure-arity-includes? proc 1))
-    (raise-argument-error 'treelist-map "(procedure-arity-includes/c 1)" proc))
+    (raise-argument-error* 'treelist-map 'racket/primitive "(procedure-arity-includes/c 1)" proc))
   (for/treelist ([v (in-treelist tl)])
     (proc v)))
 
 (define (treelist-for-each tl proc)
   (check-treelist 'treelist-for-each tl)
   (unless (and (procedure? proc) (procedure-arity-includes? proc 1))
-    (raise-argument-error 'treelist-for-each "(procedure-arity-includes/c 1)" proc))
+    (raise-argument-error* 'treelist-for-each 'racket/primitive "(procedure-arity-includes/c 1)" proc))
   (for ([v (in-treelist tl)])
     (proc v)))
 
 (define (treelist-member? tl v [eql? equal?])
   (check-treelist 'treelist-member? tl)
   (unless (and (procedure? eql?) (procedure-arity-includes? eql? 2))
-    (raise-argument-error 'treelist-member? "(procedure-arity-includes/c 2)" eql?))
+    (raise-argument-error* 'treelist-member? 'racket/primitive "(procedure-arity-includes/c 2)" eql?))
   (for/fold ([r #f]) ([el (in-treelist tl)]
                       #:when (eql? v el)
                       #:final #t)
@@ -1187,7 +1187,7 @@ minimum required storage. |#
 (define (treelist-find tl match?)
   (check-treelist 'treelist-find tl)
   (unless (and (procedure? match?) (procedure-arity-includes? match? 1))
-    (raise-argument-error 'treelist-find "(procedure-arity-includes/c 1)" match?))
+    (raise-argument-error* 'treelist-find 'racket/primitive "(procedure-arity-includes/c 1)" match?))
   (for/fold ([r #f]) ([el (in-treelist tl)]
                       #:when (match? el)
                       #:final #t)
@@ -1195,10 +1195,10 @@ minimum required storage. |#
 
 (define (check-sort-arguments who less-than? get-key)
   (unless (and (procedure? less-than?) (procedure-arity-includes? less-than? 2))
-    (raise-argument-error who "(procedure-arity-includes/c 2)" less-than?))
+    (raise-argument-error* who 'racket/primitive "(procedure-arity-includes/c 2)" less-than?))
   (unless (or (not get-key)
               (and (procedure? get-key) (procedure-arity-includes? get-key 1)))
-    (raise-argument-error who "(procedure-arity-includes/c 1)" get-key)))
+    (raise-argument-error* who 'racket/primitive "(procedure-arity-includes/c 1)" get-key)))
 
 (define (treelist-sort tl less-than?
                        #:key [get-key #f]
@@ -1235,32 +1235,32 @@ minimum required storage. |#
                                    props)
   (unless (and (procedure? ref-proc)
                (procedure-arity-includes? ref-proc 4))
-    (raise-argument-error who "(procedure-arity-includes/c 4)" ref-proc)) 
+    (raise-argument-error* who 'racket/primitive "(procedure-arity-includes/c 4)" ref-proc)) 
   (unless (and (procedure? set-proc)
                (procedure-arity-includes? set-proc 4))
-    (raise-argument-error who "(procedure-arity-includes/c 4)" set-proc))
+    (raise-argument-error* who 'racket/primitive "(procedure-arity-includes/c 4)" set-proc))
   (unless (and (procedure? insert-proc)
                (procedure-arity-includes? insert-proc 4))
-    (raise-argument-error who "(procedure-arity-includes/c 4)" insert-proc))
+    (raise-argument-error* who 'racket/primitive "(procedure-arity-includes/c 4)" insert-proc))
   (unless (and (procedure? prepend-proc)
                (procedure-arity-includes? prepend-proc 3))
-    (raise-argument-error who "(procedure-arity-includes/c 3)" prepend-proc))
+    (raise-argument-error* who 'racket/primitive "(procedure-arity-includes/c 3)" prepend-proc))
   (unless (and (procedure? append-proc)
                (procedure-arity-includes? append-proc 3))
-    (raise-argument-error who "(procedure-arity-includes/c 3)" append-proc))
+    (raise-argument-error* who 'racket/primitive "(procedure-arity-includes/c 3)" append-proc))
   (unless (or (not append2-proc)
               (and (procedure? append2-proc)
                    (procedure-arity-includes? append2-proc 4)))
-    (raise-argument-error who "(procedure-arity-includes/c 4)" append2-proc))
+    (raise-argument-error* who 'racket/primitive "(procedure-arity-includes/c 4)" append2-proc))
   (unless (and (procedure? delete-proc)
                (procedure-arity-includes? delete-proc 3))
-    (raise-argument-error who "(procedure-arity-includes/c 3)" delete-proc))
+    (raise-argument-error* who 'racket/primitive "(procedure-arity-includes/c 3)" delete-proc))
   (unless (and (procedure? take-proc)
                (procedure-arity-includes? take-proc 3))
-    (raise-argument-error who "(procedure-arity-includes/c 3)" take-proc))
+    (raise-argument-error* who 'racket/primitive "(procedure-arity-includes/c 3)" take-proc))
   (unless (and (procedure? drop-proc)
                (procedure-arity-includes? drop-proc 3))
-    (raise-argument-error who "(procedure-arity-includes/c 3)" drop-proc))
+    (raise-argument-error* who 'racket/primitive "(procedure-arity-includes/c 3)" drop-proc))
   (check-chaperone-properties who props))
 
 (define (check-chaperone-properties who props)
@@ -1360,7 +1360,7 @@ minimum required storage. |#
   (define who 'treelist-chaperone-state)
   (check-treelist who tl)
   (unless (and (procedure? fail-k) (procedure-arity-includes? fail-k 0))
-    (raise-argument-error who "(procedure-arity-includes/c 0)" fail-k))
+    (raise-argument-error* who 'racket/primitive "(procedure-arity-includes/c 0)" fail-k))
   (let loop ([tl tl])
     (define w (and tl (treelist-chaperone-ref tl #f)))
     (cond
@@ -1434,7 +1434,7 @@ minimum required storage. |#
   (check-treelist who tl)
   (cond
     [(treelist-empty? tl)
-     (raise-arguments-error who "treelist is empty")]
+     (raise-arguments-error* who 'racket/primitive "treelist is empty")]
     [else
      (treelist-ref/slow tl 0)]))
 
@@ -1443,7 +1443,7 @@ minimum required storage. |#
   (check-treelist who tl)
   (cond
     [(treelist-empty? tl)
-     (raise-arguments-error who "treelist is empty")]
+     (raise-arguments-error* who 'racket/primitive "treelist is empty")]
     [else
      (treelist-ref/slow tl (fx- (treelist-size tl) 1))]))
 
@@ -1452,7 +1452,7 @@ minimum required storage. |#
   (check-treelist who tl)
   (cond
     [(treelist-empty? tl)
-     (raise-arguments-error who "treelist is empty")]
+     (raise-arguments-error* who 'racket/primitive "treelist is empty")]
     [else
      (treelist-drop/slow tl 1)]))
 
