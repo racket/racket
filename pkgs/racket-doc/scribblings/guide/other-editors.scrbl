@@ -137,7 +137,17 @@ popular among Racketeers as well.
 @section{Vim}
 
 Many distributions of Vim ship with support for Scheme, which will mostly work
-for Racket. As of @hyperlink["https://github.com/vim/vim/commit/1aeaf8c0e0421f34e51ef674f0c9a182debe77ae"]{version 7.3.518},
+for Racket.
+
+As of @hyperlink["https://github.com/vim/vim/commit/9b03d3e75b4274493bbe76772d7b92238791964c"]{Version 9.0.0336},
+Vim ships with runtime files (but not ftdetect) from @hyperlink["https://github.com/benknoble/vim-racket"]{benknoble/vim-racket}.
+If you are using this version or versions newer than this you probably want to
+tweak the suggestions below to use the @tt{racket} filetype. You should also
+consider installing the plugin yourself to get the latest changes, since Ben is
+slow to sync changes upstream to Vim and since the plugin contains improved
+filetype detection.
+
+As of @hyperlink["https://github.com/vim/vim/commit/1aeaf8c0e0421f34e51ef674f0c9a182debe77ae"]{version 7.3.518},
 Vim detects files with the extension @tt{.rkt} as having the
 @tt{scheme} filetype. @hyperlink["https://github.com/vim/vim/commit/9cd91a1e8816d727fbdbf0b3062288e15abc5f4d"]{Version 8.2.3368}
 added support for @tt{.rktd} and @tt{.rktl}.
@@ -203,14 +213,15 @@ plugins (@tt{:help :filetype-indent-on}).
 
 @subsection{Indentation}
 
-You can enable indentation for Racket by setting both the @tt{lisp} and
+If you use @hyperlink["https://github.com/benknoble/vim-racket"]{benknoble/vim-racket}
+and Vim version 9 or greater, improved indentation for the @tt{racket} filetype
+is configured out of the box.
+
+You can manually enable indentation for Racket by setting both the @tt{lisp} and
 @tt{autoindent} options in Vim. You will want to customize the buffer-local
 @tt{lispwords} option to control how special forms are indented. See @tt{:help
-'lispwords'}. Both plugins mentioned in @secref{vim-plugins} set this option for
-you.
-
-However, the indentation can be limited and may not be as complete as what you
-can get in Emacs. You can also use Dorai Sitaram's
+'lispwords'}. However, this indentation can be limited and may not be as complete
+as what you can get in Emacs. You can also use Dorai Sitaram's
 @hyperlink["https://github.com/ds26gte/scmindent"]{scmindent} for better
 indentation of Racket code. The instructions on how to use the indenter are
 available on the website.
@@ -219,9 +230,11 @@ available on the website.
 
 The @hyperlink["http://www.vim.org/scripts/script.php?script_id=1230"]{Rainbow
 Parenthesis} script for Vim can be useful for more visible parenthesis
-matching. Syntax highlighting for Scheme is shipped with Vim on many platforms,
-which will work for the most part with Racket. The vim-racket script
-provides good default highlighting settings for you.
+matching.
+
+Syntax highlighting for Scheme is shipped with Vim on many platforms,
+which will work for the most part with Racket. Newer Vim or the mentioned
+plugins provide Racket-specific syntax highlighting.
 
 @subsection{Structured Editing}
 
