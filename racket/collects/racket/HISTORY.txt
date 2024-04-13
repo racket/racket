@@ -1,6 +1,12 @@
-Version 8.13
-Improved support for static generation of foreign-function
- bindings via machine-specific cross-module optimization
+Version 8.13, April 2024
+Add `racket/treelist` and `racket/mutable-treelist`
+Add `contract-in`
+Add `hash-filter-keys` and `hash-filter-values` to `racket/hash`
+Add `vector-extend` and `vector*-extend` ro `racket/vector`
+Add `syntax-local-lift-require-top-level-form`
+Add `syntax-local-make-definition-context-introducer`
+Improve support for static generation of foreign-function bindings via
+ machine-specific cross-module optimization
 Use Unicode 15.1 for character and string operations
 
 Version 8.12, January 2024
