@@ -1005,45 +1005,6 @@ one for the result.
 
 @history[#:added "7.9.0.1"]}
 
-@defproc[(hash-filter [ht hash?] [pred (-> any/c any/c boolean?)])
-         hash?]{
-
-Filters the @racket[hash?] @racket[ht] based on a predicate
-@racket[pred] applied to both its keys and values. This function
-constructs a new hash table that includes only those key-value pairs
-from the input @racket[ht] for which the predicate @racket[pred]
-returns true when applied simultaneously to the keys and values of
-@racket[ht]. The output hash table retains the mutability and the key
-comparison predicate (e.g., @racket[eqv?], @racket[equal-always?],
-@racket[equal?]) of the input hash table @racket[ht], ensuring that
-the structural and operational properties of the original hash are
-preserved in the output.
-
-@examples[
-  #:eval the-eval
-  ;; Filtering key-value pairs where the key is less than 3 and value is even
-  (hash-filter (for/hash ([num '(1 2 3 4 5)]) (values num (* num 2)))
-               (λ (k v) (and (< k 3) (even? v))))
-
-  ;; Filtering key-value pairs from an empty hash table
-  (hash-filter (make-hash) (λ (k v) (< k 3)))
-
-  ;; Filtering with eq? hash table based on specific key-value conditions
-  (hash-filter (make-hasheq '([#f . "false"] [#t . "true"]))
-               (λ (k v) (and (eq? k #t) (string=? v "true"))))
-
-  ;; Filtering key-value pairs where the key is a list and the value is a symbol
-  (hash-filter (hash (list 1 2) 'pair (vector 3 4) 'vector)
-               (λ (k v) (and (list? k) (symbol? v))))
-
-  ;; Filtering key-value pairs of mixed types based on custom logic
-  (hash-filter (hash "one" 1 2 "two" "three" 3)
-               (λ (k v) (and (not (number? k)) (number? v) (> v 1))))
-]
-
-@history[#:added "8.12.0.9"]
-}
-
 @defproc[(hash-filter-keys [ht hash?] [pred procedure?])
          hash?]{
 

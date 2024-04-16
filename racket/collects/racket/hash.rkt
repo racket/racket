@@ -103,6 +103,5 @@
                         (-> any/c any/c any/c any/c)]
                        #:rest (listof hash?)
                        (and/c hash? immutable?))]
- [hash-filter (-> hash? procedure? hash?)]
  [hash-filter-values (-> hash? procedure? hash?)]
  [hash-filter-keys (-> hash? procedure? hash?)])
