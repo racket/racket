@@ -57,7 +57,8 @@ opaque), @racket[#f] otherwise.}
                        [password (or/c string? bytes?)]
                        [mailbox (or/c string? bytes?)]
                        [#:tls? tls? any/c #f]
-                       [#:try-tls? try-tls? any/c #t])
+                       [#:try-tls? try-tls? any/c #t]
+                       [#:xoauth2? xoauth2? any/c #f])
          (values imap-connection? exact-nonnegative-integer? exact-nonnegative-integer?)]{
 
 Establishes an IMAP connection to the given server using the given
@@ -66,7 +67,10 @@ username and password, and selects the specified mailbox. If
 communicating using the IMAP protocol. If @racket[tls?] is @racket[#f]
 but @racket[try-tls?] is true, then after the IMAP connection is
 initially established, the connection is switched to a TLS connection
-if the server supports it.
+if the server supports it. If @racket[xoauth2?] is true, then
+authentication uses @tt{XOAUTH2}, and @racket[password] is used
+as an access token (which must obtained somehow before
+calling @racket[imap-connect]).
 
 The first result value represents the connection.
 The second and third return values indicate the total number of
@@ -81,7 +85,9 @@ name.)
 
 Updated message-count and recent-count values are available through
 @racket[imap-messages] and @racket[imap-recent]. See also @racket[imap-new?] and
-@racket[imap-reset-new!].}
+@racket[imap-reset-new!].
+
+@history[#:changed "1.2" @elem{Added the @racket[xoauth2?] argument.}]}
 
 
 @defparam[imap-port-number k (integer-in 0 65535)]{
@@ -96,11 +102,14 @@ is @racket[143].}
                         [password (or/c string? bytes?)]
                         [mailbox (or/c string? bytes?)]
                         [#:tls? tls? any/c #f]
-                        [#:try-tls? try-tls? any/c #t])
+                        [#:try-tls? try-tls? any/c #t]
+                        [#:xoauth2? xoauth2? any/c #f])
          (values imap-connection? exact-nonnegative-integer? exact-nonnegative-integer?)]{
 
 Like @racket[imap-connect], but given input and output ports (e.g.,
-ports for an SSL session) instead of a server address.}
+ports for an SSL session) instead of a server address.
+
+@history[#:changed "1.2" @elem{Added the @racket[xoauth2?] argument.}]}
 
 
 @defproc[(imap-disconnect [imap imap-connection?]) void?]{

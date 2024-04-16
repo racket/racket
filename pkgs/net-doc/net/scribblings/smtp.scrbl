@@ -27,6 +27,7 @@ module assume that the given string arguments are well-formed.
                             [#:port-no port-no/k (integer-in 0 65535) 25]
                             [#:auth-user user (or/c string? #f) #f]
                             [#:auth-passwd pw (or/c string? #f) #f]
+                            [#:xoauth2? xoauth2? any/c #f]
                             [#:tcp-connect connect
                                            (string? (integer-in 0 65535)
                                             . -> . (values input-port? output-port?))
@@ -63,8 +64,11 @@ an extra argument after keywords---specifies the IP port to use in
 contacting the SMTP server.
 
 The optional @racket[user] and @racket[pw]
-arguments supply a username and password for authenticated SMTP (using
-the AUTH PLAIN protocol).
+arguments supply a username and password for authenticated SMTP using
+the AUTH PLAIN protocol. If @racket[xoauth2?] is true, then
+authentication uses the AUTH XOAUTH2 protocol, instead, and @racket[pw] is used
+as an access token (which must obtained somehow before
+calling @racket[smtp-send-message]).
 
 The optional @racket[connect] argument supplies a
 connection procedure to be used in place of @racket[tcp-connect]. For
@@ -87,7 +91,9 @@ For encrypted communication, normally either @racket[ssl-connect]
 should be supplied for @racket[connect], or
 @racket[ports->ssl-ports] should be supplied for
 @racket[encode]---one or the other (depending on what the server
-expects), rather than both.}
+expects), rather than both.
+
+@history[#:changed "1.2" @elem{Added the @racket[xoauth2?] argument.}]}
 
 @defparam[smtp-sending-end-of-message proc (-> any)]{
 
