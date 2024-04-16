@@ -4,7 +4,8 @@
          racket/tcp
          openssl
          racket/format
-         "private/rbtree.rkt")
+         "private/rbtree.rkt"
+         "private/xoauth2.rkt")
 
 ;; define the imap struct and its predicate here, for use in the contract, below
 (define-struct imap (r w exists recent unseen uidnext uidvalidity
@@ -326,12 +327,17 @@
                              (set! has? #t)))))
     has?))
 
-(define (imap-login imap username password inbox)
-  (let ([reply (imap-send imap (list "LOGIN" username password) void)])
+(define (imap-login imap username password inbox #:xoauth2? [xoauth2? #f])
+  (let ([reply
+         (cond
+           [xoauth2?
+            (imap-send imap (list "AUTHENTICATE" "XOAUTH2" (xoauth2-encode username password)) void)]
+           [else
+            (imap-send imap (list "LOGIN" username password) void)])])
     (if (and (pair? reply) (tag-eq? 'NO (car reply)))
-      (error 'imap-connect
-        "username or password rejected by server: ~s" reply)
-      (check-ok reply)))
+        (error 'imap-connect
+               "username or password rejected by server: ~s" reply)
+        (check-ok reply)))
   (let-values ([(init-count init-recent) (imap-reselect imap inbox)])
     (values imap init-count init-recent)))
 
@@ -340,7 +346,8 @@
 
 (define (imap-connect* r w username password inbox
                        #:tls? [tls? #f]
-                       #:try-tls? [try-tls? #t])
+                       #:try-tls? [try-tls? #t]
+                       #:xoauth2? [xoauth2? #f])
   (with-handlers ([void
                    (lambda (x)
                      (close-input-port r)
@@ -360,11 +367,12 @@
                 (let-values ([(ssl-in ssl-out) (ports->tls-ports r w)])
                   (make-imap ssl-in ssl-out #f #f #f #f #f (new-tree) (new-tree) #f)))
               imap))
-        (imap-login imap-maybe-tls username password inbox)))))
+        (imap-login imap-maybe-tls username password inbox #:xoauth2? xoauth2?)))))
 
 (define (imap-connect server username password inbox 
                        #:tls? [tls? #f]
-                       #:try-tls? [try-tls? #t])
+                       #:try-tls? [try-tls? #t]
+                       #:xoauth2? [xoauth2? #f])
   ;; => imap count-k recent-k
   (let-values ([(r w)
                 (if debug-via-stdio?
@@ -372,7 +380,7 @@
                       (printf "stdin == ~a\n" server)
                       (values  (current-input-port) (current-output-port)))
                     (tcp-connect server (imap-port-number)))])
-    (imap-connect* r w username password inbox #:tls? tls? #:try-tls? try-tls?)))
+    (imap-connect* r w username password inbox #:tls? tls? #:try-tls? try-tls? #:xoauth2? xoauth2?)))
 
 (define (imap-reselect imap inbox)
   (imap-selectish-command imap (list "SELECT" inbox) #t))
