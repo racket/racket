@@ -35,7 +35,7 @@ typedef struct zuo_t zuo_ext_t;
    primitives will effectively remove them by using the image's
    `kernel-env`.
  */
-ZUO_EXPORT void zuo_ext_primitive_init();
+ZUO_EXPORT void zuo_ext_primitive_init(void);
 
 /* Add more primitives only after calling `zuo_ext_primitive_init`: */
 typedef zuo_ext_t *(*zuo_ext_primitive_t)(zuo_ext_t *args_list);
@@ -51,12 +51,12 @@ ZUO_EXPORT void zuo_ext_image_init(char *boot_image_file);
 /* After calling `zuo_ext_image_init`, the following functions are available: */
 
 /* Functions that get a constant: */
-ZUO_EXPORT zuo_ext_t *zuo_ext_false();
-ZUO_EXPORT zuo_ext_t *zuo_ext_true();
-ZUO_EXPORT zuo_ext_t *zuo_ext_null();
-ZUO_EXPORT zuo_ext_t *zuo_ext_void();
-ZUO_EXPORT zuo_ext_t *zuo_ext_eof();
-ZUO_EXPORT zuo_ext_t *zuo_ext_empty_hash();
+ZUO_EXPORT zuo_ext_t *zuo_ext_false(void);
+ZUO_EXPORT zuo_ext_t *zuo_ext_true(void);
+ZUO_EXPORT zuo_ext_t *zuo_ext_null(void);
+ZUO_EXPORT zuo_ext_t *zuo_ext_void(void);
+ZUO_EXPORT zuo_ext_t *zuo_ext_eof(void);
+ZUO_EXPORT zuo_ext_t *zuo_ext_empty_hash(void);
 
 /* Other data constructors and accessors: */
 ZUO_EXPORT zuo_ext_t *zuo_ext_integer(long long i);
@@ -74,7 +74,7 @@ ZUO_EXPORT zuo_ext_t *zuo_ext_hash_set(zuo_ext_t *ht, zuo_ext_t *key, zuo_ext_t 
 /* To get more functions, use a symbol key to look them up in the
    kernel environment via `zuo_ext_hash_ref` --- but don't try to
    load, evaluate, or use any modules, yet: */
-ZUO_EXPORT zuo_ext_t *zuo_ext_kernel_env();
+ZUO_EXPORT zuo_ext_t *zuo_ext_kernel_env(void);
 
 /* At this stage, use `zuo_ext_apply` to apply primitives that don't
    evaluate. After `zuo_ext_runtime_init`, use this to apply and
@@ -115,7 +115,7 @@ ZUO_EXPORT zuo_ext_t *zuo_ext_eval_module(zuo_ext_t *as_module_path, const char 
 /* For saving and retriving a value across an evaluation, which is
    when a GC might happen: */
 ZUO_EXPORT void zuo_ext_stash_push(zuo_ext_t *v);
-ZUO_EXPORT zuo_ext_t *zuo_ext_stash_pop();
+ZUO_EXPORT zuo_ext_t *zuo_ext_stash_pop(void);
 
 #endif
 
