@@ -292,7 +292,8 @@ list, @racket[#t] otherwise.}
                             [fields (listof (or/c 'uid
                                                   'header
                                                   'body
-                                                  'flags))])
+                                                  'flags
+                                                  'date))])
          (listof list?)]{
 
 Downloads information for a set of messages. The @racket[msg-nums]
@@ -313,6 +314,10 @@ information to download for each message. The available fields are:
  @item{@racket['flags] --- the value is a list of symbols that
        correspond to IMAP flags; see @racket[imap-flag->symbol]}
 
+ @item{@racket['date] --- the value is a byte string following IMAP's
+       format for internal message dates (which is distinct
+       from any date field in the message's header)}
+
 ]
 
 The return value is a list of entry items in parallel to
@@ -327,7 +332,9 @@ Pending expunges must be handled before calling this function; see
            '((107 #"From: larry@stooges.com ...")
              (110 #"From: moe@stooges.com ...")
              (112 #"From: curly@stooges.com ...")))
-]}
+]
+
+@history[#:changed "1.2" @elem{Added the @racket['date] field option.}]}
 
 @deftogether[(
 @defproc[(imap-flag->symbol [flag symbol?]) symbol?]
@@ -428,11 +435,19 @@ Pending expunges must be handled before calling this function; see
                       [message (or/c string? bytes?)]
                       [flags (listof (or/c 'seen 'answered 'flagged 
                                            'deleted 'draft 'recent)) 
-                             '(seen)])
+                             '(seen)]
+                      [#:date date (or/c string? bytes? #f) #f])
          void?]{
 
 Adds a new message (containing @racket[message]) to the given
-mailbox.}
+mailbox.
+
+The @racket[date] string, if provided, determines the internal date
+associated with the message, as opposed to the date in the message
+header. The date-string format is defined by IMAP, and the same format
+is used for a @racket['date] result from @racket[imap-get-messages].
+
+@history[#:changed "1.2" @elem{Added the optional @racket[date] argument.}]}
 
 
 @defproc[(imap-status [imap imap-connection?]
