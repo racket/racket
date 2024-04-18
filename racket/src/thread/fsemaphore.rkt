@@ -76,7 +76,7 @@
         (set-fsemaphore-dependents! fs (hash-set (fsemaphore-dependents fs) me-f #t))
         (set-future*-state! me-f 'fsema)
         (lock-release (fsemaphore-lock fs))
-        (future-suspend) ; expects lock on f and releases it
+        (future-suspend) ; expects lock on me-f and releases it
         (void)]
        [else
         (define dep-box (or (fsemaphore-dep-box fs)

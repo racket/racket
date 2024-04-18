@@ -11107,11 +11107,13 @@
        (loop_0)))))
 (define lock-release
   (lambda (lock_0)
-    (if (unsafe-box*-cas! lock_0 1 0)
-      (begin (memory-order-release) (end-future-uninterrupted))
-      (if (eq? (unbox lock_0) 0)
-        (internal-error "lock release failed!")
-        (lock-release lock_0)))))
+    (begin
+      (memory-order-release)
+      (if (unsafe-box*-cas! lock_0 1 0)
+        (end-future-uninterrupted)
+        (if (eq? (unbox lock_0) 0)
+          (internal-error "lock release failed!")
+          (lock-release lock_0))))))
 (define finish_2387
   (make-struct-type-install-properties
    '(future-event)

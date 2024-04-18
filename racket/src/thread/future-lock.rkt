@@ -58,9 +58,9 @@
         (loop))))
 
 (define (lock-release lock)
+  (memory-order-release)
   (cond
     [(box-cas! lock 1 0)
-     (memory-order-release)
      (end-future-uninterrupted)]
     [(eq? (unbox lock) 0)
      ;; not just a spurious failure...
