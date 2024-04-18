@@ -21,7 +21,8 @@
        (listof (list/c (listof symbol?) bytes?)))]
  [imap-append ((imap? string? (or/c string? bytes?))
                ((listof
-                 (or/c 'seen 'answered 'flagged 'deleted 'draft 'recent)))
+                 (or/c 'seen 'answered 'flagged 'deleted 'draft 'recent))
+                #:date (or/c string? bytes? #f))
               . ->* .
               void?)])
 
@@ -76,7 +77,8 @@
         (list 'header (string->symbol "RFC822.HEADER"))
         (list 'body (string->symbol "RFC822.TEXT"))
         (list 'size (string->symbol "RFC822.SIZE"))
-        (list 'flags (string->symbol "FLAGS"))))
+        (list 'flags (string->symbol "FLAGS"))
+        (list 'date (string->symbol "INTERNALDATE"))))
 
 (define flag-names
   (list (list 'seen (string->symbol "\\Seen"))
@@ -556,14 +558,19 @@
   (check-ok
    (imap-send imap (list "COPY" (box (msg-set msgs)) dest-mailbox) void)))
 
-(define (imap-append imap dest-mailbox msg [flags '(seen)])
+(define (imap-append imap dest-mailbox msg [flags '(seen)]
+                     #:date [date #f])
   (no-expunges 'imap-append imap)
   (let ([msg (if (bytes? msg) msg (string->bytes/utf-8 msg))])
     (check-ok
-     (imap-send imap (list "APPEND"
-                           dest-mailbox
-                           (box (~a (map symbol->imap-flag flags)))
-                           (box (format "{~a}" (bytes-length msg))))
+     (imap-send imap (append
+                      (list "APPEND"
+                            dest-mailbox
+                            (box (~a (map symbol->imap-flag flags))))
+                      (if date
+                          (list date)
+                          null)
+                      (list (box (format "{~a}" (bytes-length msg)))))
                 void
                 (lambda (loop contin)
                   (fprintf (imap-w imap) "~a\r\n" msg)
