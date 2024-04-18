@@ -149,10 +149,10 @@ Terminates the specified thread immediately, or suspends the thread if
 @racket[thd] was created with
 @racket[thread/suspend-to-kill]. Terminating the main thread exits the
 application.  If @racket[thd] has already terminated,
-@racket[kill-thread] does nothing.  If the @tech{current custodian}
-does not manage @racket[thd] (and none of its subordinates manages
-@racket[thd]), the @exnraise[exn:fail:contract], and the thread is not
-killed or suspended.
+@racket[kill-thread] does nothing.  If the @tech{current custodian} 
+does not solely manage @racket[thd] (i.e., some custodian of @racket[thd]
+is not the current custodian or a subordinate), the 
+@exnraise[exn:fail:contract], and the thread is not killed or suspended.
 
 Unless otherwise noted, procedures provided by Racket (and GRacket) are
 kill-safe and suspend-safe; that is, killing or suspending a thread
