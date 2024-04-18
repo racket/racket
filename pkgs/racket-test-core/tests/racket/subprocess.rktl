@@ -679,6 +679,11 @@
   (try-arg "a\\\\\\\\\"b" "a\\\\b")
   (try-arg "a\\\\\\\\\\\"b" "a\\\\\"b"))
 
+(unless (eq? 'windows (system-type))
+  (err/rt-test (subprocess #f #f #f "anything" 'exact "make sure this is disallowed")
+               exn:fail:contract?
+               #rx"exact command line not supported"))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; check file-descriptor sharing
 

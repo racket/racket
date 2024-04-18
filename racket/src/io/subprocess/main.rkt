@@ -103,6 +103,10 @@
                               "(or/c path? string-no-nuls? bytes-no-nuls?)")
                arg))
 
+      (when (and exact? (not (eq? 'windows (system-type))))
+        (raise-arguments-error who "exact command line not supported on this platform"
+                               "exact command" (car args)))
+
       (define cust-mode (current-subprocess-custodian-mode))
       (define env-vars (current-environment-variables))
 
