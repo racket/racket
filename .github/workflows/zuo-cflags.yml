@@ -1,0 +1,31 @@
+---
+name: Zuo with Strict Compiler Flags
+
+on:  # yamllint disable-line rule:truthy
+  push:
+    branches:
+      - master
+    paths:
+      - "racket/src/zuo/**"
+  pull_request:
+    paths:
+      - "racket/src/zuo/**"
+
+jobs:
+  build-linux:
+    runs-on: ubuntu-20.04
+    defaults:
+      run:
+        working-direcotry: "racket/src/zuo"
+
+    env:
+      CFLAGS: "-Werror -Wall -Wextra -Wstrict-prototypes -Wold-style-definition -Wshadow -Wpointer-arith -Wcast-qual -pedantic -O2 -std=c11"
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 100
+      - name: Compile
+        run: cc $CFLAGS zuo.c -o zuo
+      - name: Check
+        run: ./zuo build.zuo check
