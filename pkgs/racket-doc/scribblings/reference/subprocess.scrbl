@@ -1,6 +1,10 @@
 #lang scribble/doc
 @(require "mz.rkt" (for-label racket/system))
 
+@(define microsoft-argument-doc-src
+  @hyperlink["https://github.com/MicrosoftDocs/cpp-docs/blob/e5bdbb71e7b09a58e70ca8758caec68bb9a6cc9c/docs/c-language/parsing-c-command-line-arguments.md"
+             "Microsoft's documentation source"])
+
 @title[#:tag "subprocess"]{Processes}
 
 @defproc*[([(subprocess [stdout (or/c (and/c output-port? file-stream-port?) #f)]
@@ -48,18 +52,27 @@ encoding (see @secref["encodings"]). On Windows, command-line
 arguments are passed as strings, and byte strings are converted using
 UTF-8.
 
-On Windows, the first @racket[arg] can be replaced with
+On Windows, a process natively receives a single command-line argument
+string, unlike Unix and Mac OS processes that natively receive an
+array of arguments. A Windows command-line string is constructed from
+@racket[command] and @racket[arg]s following a Windows convention so
+that a typical application can parse it back to an array of arguments,
+@margin-note*{For information on the Windows command-line conventions,
+see @microsoft-argument-doc-src or search for ``command line parsing'' at
+@tt{http://msdn.microsoft.com/}.} but beware that an application may
+parse the command line in a different way. In particular, @emph{take
+special care when supplying a @racket[command] that refers to a
+@filepath{.bat} or @filepath{.cmd} file}, because the command-line
+string delivered to the process will be parsed as a @exec{cmd.exe}
+command, which is effectively a different syntax than the convention
+that @racket[subprocess] uses to encode command-line arguments;
+supplying unsanitized @racket[arg]s could enable parsing of arguments
+as commands. To enable more control over the command-line string that
+is delivered to a process, the first @racket[arg] can be replaced with
 @indexed-racket['exact], which triggers a Windows-specific behavior:
 the sole @racket[arg] is used exactly as the command-line for the
-subprocess. Otherwise, on Windows, a command-line string is
-constructed from @racket[command] and @racket[arg] so that a typical
-Windows console application can parse it back to an array of
-arguments. If @racket['exact] is provided on a non-Windows platform,
+subprocess. If @racket['exact] is provided on a non-Windows platform,
 the @exnraise[exn:fail:contract].
-
-@margin-note{For information on the Windows command-line conventions,
-search for ``command line parsing'' at
-@tt{http://msdn.microsoft.com/}.}
 
 When provided as a port, @racket[stdout] is used for the launched
 process's standard output, @racket[stdin] is used for the process's
@@ -415,9 +428,11 @@ real process ID).}
                  [#:set-pwd? set-pwd? any/c (member (system-type) '(unix macosx))])
          boolean?]{
 
-Executes a Unix, Mac OS, or Windows shell command synchronously
-(i.e., the call to @racket[system] does not return until the
-subprocess has ended). The @racket[command] argument is a string or
+Executes a shell command synchronously (i.e., the call to
+@racket[system] does not return until the subprocess has ended). On
+Unix and Mac OS, @exec{/bin/sh} is used as the shell, while
+@exec{cmd.exe} or @exec{command.com} (if @exec{cmd.exe} is not found)
+is used on Windows. The @racket[command] argument is a string or
 byte string containing no nul characters. If the command succeeds, the
 return value is @racket[#t], @racket[#f] otherwise.
 
@@ -462,7 +477,9 @@ characters).
 
 On Windows, the first argument after @racket[command] can be
 @racket['exact], and the final @racket[arg] is a complete command
-line. See @racket[subprocess] for details.}
+line. See @racket[subprocess] for details and for a specific warning
+about using a @racket[command] that refers to a @filepath{.bat} or
+@filepath{.cmd} file.}
 
 
 @defproc[(system/exit-code [command (or/c string-no-nuls? bytes-no-nuls?)]
@@ -494,8 +511,8 @@ Like @racket[system*], but returns the exit code like
                input-port?
                ((or/c 'status 'wait 'interrupt 'kill) . -> . any))]{
 
-Executes a shell command asynchronously (using @exec{sh} on Unix
-and Mac OS, @exec{cmd} on Windows). The result is a list of five
+Executes a shell command asynchronously (using @exec{/bin/sh} on Unix
+and Mac OS, @exec{cmd.exe} or @exec{command.com} on Windows). The result is a list of five
 values:
 
 @margin-note{See also @racket[subprocess] for notes about error
@@ -532,8 +549,8 @@ handling and the limited buffer capacity of subprocess pipes.}
     @|void-const|.
 
      @margin-note{On Unix and Mac OS, if @racket[command] runs a
-     single program, then @exec{sh} typically runs the program in
-     such a way that it replaces @exec{sh} in the same process. For
+     single program, then @exec{/bin/sh} typically runs the program in
+     such a way that it replaces @exec{/bin/sh} in the same process. For
      reliable and precise control over process creation, however, use
      @racket[process*].}}
 
@@ -571,9 +588,12 @@ of a single process.}
             list?])]{
 
 Like @racket[process], except that @racket[command] is a filename that
-is executed directly like @racket[system*], and the @racket[arg]s are the arguments. On
-Windows, as for @racket[system*], the first @racket[arg] can be
-replaced with @racket['exact].}
+is executed directly like @racket[system*], and the @racket[arg]s are the arguments.
+
+On Windows, as for @racket[system*], the first @racket[arg] can be
+replaced with @racket['exact]. See also @racket[subprocess] for a
+specific warning about using a @racket[command] that refers to a
+@filepath{.bat} or @filepath{.cmd} file.}
 
 
 @defproc[(process/ports [out (or/c #f output-port?)]
