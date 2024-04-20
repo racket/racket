@@ -128,7 +128,15 @@
       (syntax-case ids ()
        [(id) #'id]
        [(id . ids) (format-id #'id "~a~a~a" #'id sep (join-ids #'ids sep))])))
-  
+
+  ;; Raise run-time errors from this module as 'racket/primitive
+  (define (raise-argument-error who . args)
+    (apply raise-argument-error* who 'racket/primitive args))
+  (define (raise-arguments-error who . args)
+    (apply raise-arguments-error* who 'racket/primitive args))
+  (define (raise-range-error who . args)
+    (apply raise-range-error* who 'racket/primitive args))
+
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;; sequence transformers:
 
@@ -995,7 +1003,7 @@
   (define (normalise-inputs who type-name vector? unsafe-vector-length
                             vec start stop step)
     (unless (vector? vec)
-      (raise-argument-error who type-name vec))
+      (raise-argument-error who (string-append type-name "?") vec))
     (let* ([len (unsafe-vector-length vec)]
            [stop* (if stop stop len)])
       (check-ranges who type-name vec start stop* step len)
@@ -1021,7 +1029,7 @@
                 (make-do-sequence (lambda () (:vector-gen-id v start stop step))))]))
          (define (check-vector-name v)
            (unless (vector?-id v)
-             (raise-argument-error 'in-vector-name type-name-str v))))]))
+             (raise-argument-error 'in-vector-name (string-append type-name-str "?") v))))]))
 
   (define-syntax define-:vector-like-gen
     (syntax-rules ()
