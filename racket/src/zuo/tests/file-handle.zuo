@@ -155,9 +155,10 @@
                          'stdout 'pipe))])
   (define in (hash-ref ht 'stdout))
   (define out (hash-ref ht 'stdin))
-  (check (fd-poll (list in) 0) #f)
-  (check (fd-poll (list in out) 0) out)
-  (check (fd-poll (list in out)) out)
+  (unless (eq? 'windows (system-type)) ;; polling doesn't work on Windows pipes
+    (check (fd-poll (list in) 0) #f)
+    (check (fd-poll (list in out) 0) out)
+    (check (fd-poll (list in out)) out))
   (fd-write out "x")
   (check (fd-poll (list in)) in)
   (check (fd-poll (list in) 0) in)

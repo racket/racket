@@ -91,7 +91,7 @@
                           (lambda ()
                             (unless (= 0 (process-status
                                           (thread-process-wait
-                                           (hash-ref (process "to-run/zuo"
+                                           (hash-ref (process (.exe "to-run/zuo")
                                                               (at-source "tests/main.zuo"))
                                                      'process))))
                               (error "check failed")))))))

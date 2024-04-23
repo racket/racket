@@ -1029,7 +1029,9 @@ until at least one is ready, and then it returns the first element of
 @racket[handles] that is ready. If @racket[timeout-msecs] is a number,
 then it specifies a number of milliseconds to wait; the result is
 @racket[#f] if no handle in @racket[handles] is ready before
-@racket[timeout-msecs] milliseconds pass.
+@racket[timeout-msecs] milliseconds pass. Polling typically does not
+work on Windows, because pipe handles claim to be ready for reading even
+when no data is available.
 
 @history[#:added "1.1"]}
 

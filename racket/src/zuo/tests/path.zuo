@@ -102,7 +102,7 @@
        ".")
 (check (find-relative-path "home/zuo/src" "tmp/cache")
        (build-path ".." ".." ".." "tmp" "cache"))
-(check (find-relative-path "." "tmp/cache")
+(check (find-relative-path "." (build-path "tmp" "cache"))
        (build-path "tmp" "cache"))
 (check (find-relative-path "tmp/cache" ".")
        (build-path ".." ".."))
@@ -148,7 +148,7 @@
 (check-arg-fail (file-name-from-path 10) not-path)
 
 (check (path-replace-extension "a.c" ".o") "a.o")
-(check (path-replace-extension "p/a.c" ".o") (build-path "p" "a.o"))
-(check (path-replace-extension "p/.rc" ".o") (build-path "p" ".rc.o"))
+(check (path-replace-extension "p/a.c" ".o") (build-path "p/a.o"))
+(check (path-replace-extension "p/.rc" ".o") (build-path "p/.rc.o"))
 (check-arg-fail (path-replace-extension 10 "x") not-path)
 (check-arg-fail (path-replace-extension "x" 10) not-string)
