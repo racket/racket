@@ -389,24 +389,24 @@ Like @racket[for/list] and @racket[for*/list], but generating
 @defproc[(chaperone-treelist [tl treelist?]
                              [#:state state any/c]
                              [#:state-key state-key any/c (list 'fresh)]
-                             [#:ref ref-proc (or/c #f (treelist? exact-nonnegative-integer? any/c any/c
-                                                       . -> . any/c))]
+                             [#:ref ref-proc (treelist? exact-nonnegative-integer? any/c any/c
+                                              . -> . any/c)]
                              [#:set set-proc (treelist? exact-nonnegative-integer? any/c any/c
                                               . -> . (values any/c any/c))]
                              [#:insert insert-proc (treelist? exact-nonnegative-integer? any/c any/c
                                                     . -> . (values any/c any/c))]
-                             [#:append append-proc (treelist? treelist? any/c
-                                                    . -> . (values treelist? any/c))]
-                             [#:prepend prepend-proc (treelist? treelist? any/c
-                                                      . -> . (values treelist? any/c))]
-                             [#:append2 append2-proc (or/c #f (treelist? treelist? any/c
-                                                               . -> . (values treelist? any/c any/c))) #f]
                              [#:delete delete-proc (treelist? exact-nonnegative-integer? any/c
                                                     . -> . any/c)]
                              [#:take take-proc (treelist? exact-nonnegative-integer? any/c
                                                 . -> . any/c)]
                              [#:drop drop-proc (treelist? exact-nonnegative-integer? any/c
                                                 . -> . any/c)]
+                             [#:append append-proc (treelist? treelist? any/c
+                                                    . -> . (values treelist? any/c))]
+                             [#:prepend prepend-proc (treelist? treelist? any/c
+                                                      . -> . (values treelist? any/c))]
+                             [#:append2 append2-proc (or/c #f (treelist? treelist? any/c any/c
+                                                               . -> . (values treelist? any/c any/c))) #f]
                              [prop impersonator-property?]
                              [prop-val any/c] ... ...)
           (and/c treelist? chaperone?)]{
@@ -444,6 +444,14 @@ same procedures and properties as @racket[tl], but with the updated state.
 The @racket[insert-proc] procedure is like @racket[set-proc], but for
 inserting via @racket[treelist-insert].
 
+The @racket[delete-proc], @racket[take-proc], and @racket[drop-proc]
+procedures must accept @racket[tl], the index or count for deleting,
+taking or dropping, and the current chaperone state; they
+must produce an updated state. The result of @racket[treelist-delete],
+@racket[treelist-take], or @racket[treelist-drop] is chaperoned
+with the same procedures and properties as @racket[tl], but with the
+updated state.
+
 The @racket[append-proc] procedure must accept @racket[tl], a treelist
 to append onto @racket[tl], and the current chaperone state; it must
 produce a chaperone replacement for the second treelist, which is
@@ -472,28 +480,44 @@ argument to @racket[append2-proc].
 When two chaperoned treelists are given to @racket[treelist-append]
 and @racket[append2-proc] is not used, then the @racket[append-proc]
 of the first treelist is used, and the result of @racket[append-proc] will
-stil be a chaperone whose @racket[prepend-proc] is used. If the result
+still be a chaperone whose @racket[prepend-proc] is used. If the result
 of @racket[prepend-proc] is a chaperone, then that chaperone's
 @racket[append-proc] is used, and so on. If @racket[prepend-proc] and
 @racket[append-proc] keep returning chaperones, it is possible that
 no progress will be made.
 
-The @racket[delete-proc], @racket[take-proc], and @racket[drop-proc]
-procedures must accept @racket[tl], the index or count for deleting,
-taking or dropping, and the current chaperone state; they
-must produce an updated state. The result of @racket[treelist-delete],
-@racket[treelist-take], or @racket[treelist-drop] is chaperoned
-with the same procedures and properties as @racket[tl], but with the
-updated state.
-
-}
+@examples[
+#:eval the-eval
+(chaperone-treelist
+ (treelist 1 "a" 'apple)
+ #:state 'ignored-state
+ #:ref (λ (tl _pos _v state)
+         _v)
+ #:set (λ (tl _pos _v state)
+         (values _v state))
+ #:insert (λ (tl _pos _v state)
+            (values _v state))
+ #:delete (λ (tl _pos state)
+            state)
+ #:take (λ (tl _pos state)
+          state)
+ #:drop (λ (tl _pos state)
+          state)
+ #:append2 (λ (tl _other state _other-state) (code:comment @#,elem{or @racket[#f]})
+             (values _other state))
+ #:append (λ (tl _other state)
+            (values _other state))
+ #:prepend (λ (_other tl state)
+             (values _other state)))
+ ]}
 
 @defproc[(treelist-chaperone-state [tl treelist?]
                                    [state-key any/c]
                                    [fail-k (procedure-arity-includes/c 0) _key-error]) any/c]{
 
 Extracts state associated with a treelist chaperone where
-@racket[state-key] was provided along with the initial state to
+@racket[state-key] (compared using @racket[eq?])
+was provided along with the initial state to
 @racket[chaperone-treelist]. If @racket[tl] is not a chaperone with
 state keyed by @racket[state-key], then @racket[fail-k] is called,
 and the default @racket[fail-k] raises @racket[exn:fail:contract].
@@ -852,8 +876,8 @@ Like @racket[for/list] and @racket[for*/list], but generating
 ]}
 
 @defproc[(chaperone-mutable-treelist [tl mutable-treelist?]
-                                     [#:ref ref-proc (or/c #f (mutable-treelist? exact-nonnegative-integer? any/c
-                                                               . -> . any/c))]
+                                     [#:ref ref-proc (mutable-treelist? exact-nonnegative-integer? any/c
+                                                      . -> . any/c)]
                                      [#:set set-proc (mutable-treelist? exact-nonnegative-integer? any/c
                                                       . -> . any/c)]
                                      [#:insert insert-proc (mutable-treelist? exact-nonnegative-integer? any/c
@@ -873,8 +897,8 @@ separate from the treelist itself, and procedures like
 @racket[set-proc] do not consume or return a state.}
 
 @defproc[(impersonate-mutable-treelist [tl mutable-treelist?]
-                                       [#:ref ref-proc (or/c #f (mutable-treelist? exact-nonnegative-integer? any/c
-                                                                 . -> . any/c))]
+                                       [#:ref ref-proc (mutable-treelist? exact-nonnegative-integer? any/c
+                                                        . -> . any/c)]
                                        [#:set set-proc (mutable-treelist? exact-nonnegative-integer? any/c
                                                         . -> . any/c)]
                                        [#:insert insert-proc (mutable-treelist? exact-nonnegative-integer? any/c
@@ -883,7 +907,7 @@ separate from the treelist itself, and procedures like
                                                               . -> . treelist?)]
                                        [prop impersonator-property?]
                                        [prop-val any/c] ... ...)
-          (and/c mutable-treelist? chaperone?)]{
+          (and/c mutable-treelist? impersonator?)]{
 
 Like @racket[chaperone-mutable-treelist], but @racket[ref-proc],
 @racket[set-proc], @racket[insert-proc], and @racket[append-proc]
