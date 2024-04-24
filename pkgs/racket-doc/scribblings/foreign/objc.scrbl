@@ -323,6 +323,15 @@ retained as long as the block remains in use.
 @history[#:added "6.3"]}
 
 
+@defproc[(objc-block-function-pointer [block cpointer?]) fpointer?]{
+
+Extracts the function pointer of an Objective-C block. Cast this
+function pointer to a suitable function type to call it, where the
+block itself must be passed as the first argument to the function.
+
+@history[#:added "8.13.0.1"]}
+
+
 @defform[(with-blocking-tell form ...+)]{
 
 Causes any @racket[tell], @racket[tellv], or @racket[super-tell]

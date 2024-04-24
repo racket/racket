@@ -1004,7 +1004,8 @@
 
 ;; --------------------------------------------------
 
-(provide objc-block)
+(provide objc-block
+         objc-block-function-pointer)
 
 (define-cstruct _block ([isa _pointer]
                         [flags _int]
@@ -1034,3 +1035,6 @@
                 desc))
   (set-box! keep (list* blk desc (unbox keep)))
   blk)
+
+(define (objc-block-function-pointer id)
+  (block-invoke (cast id _pointer _block-pointer)))
