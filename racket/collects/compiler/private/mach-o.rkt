@@ -450,7 +450,8 @@
   (add-plt-segment file #f))
 
 ;; requires that a signature is not already present
-(define (add-ad-hoc-signature file)
+(define (add-ad-hoc-signature file
+                              #:entitlements [entitlements #f])
   (let-values ([(p out) (open-input-output-file file #:exists 'update)])
     (dynamic-wind
      void
@@ -507,10 +508,22 @@
                    [hash-code-size 32]
                    [padded-size (mult-of-16 orig-size)]
                    [num-slots (quotient (+ padded-size (sub1 page-size)) page-size)]
-                   [data-size (+ 20
-                                 88
-                                 (bytes-length file-identity)
-                                 (* num-slots hash-code-size))])
+                   [super-blob-size (+ 20
+                                       (if entitlements
+                                           8
+                                           0))]
+                   [num-special-slots (if entitlements 5 0)] ; need to write entitlements hash
+                   [code-dir-pre-size 88]
+                   [code-dir-size (+ code-dir-pre-size
+                                     (bytes-length file-identity)
+                                     (* (+ num-slots num-special-slots)
+                                        hash-code-size))]
+                   [entitlements-size (if entitlements
+                                          (+ 8 (bytes-length entitlements))
+                                          0)]
+                   [data-size (+ super-blob-size
+                                 code-dir-size
+                                 entitlements-size)])
               (unless ((+ end-cmd new-cmd-sz) . < . min-used)
                 (error 'check-header 
                        "no room for a new section load command (current end is ~a; min used is ~a; need ~a)"
@@ -554,30 +567,54 @@
               (file-position out padded-size)
               (write-be-ulong #xfade0cc0 out) ; CSMAGIC_EMBEDDED_SIGNATURE
               (write-be-ulong data-size out)
-              (write-be-ulong 1 out) ; count
+              (write-be-ulong (if entitlements 2 1) out) ; count
               (write-be-ulong 0 out) ; type
-              (write-be-ulong 20 out) ; offset
+              (write-be-ulong super-blob-size out) ; offset
+              (when entitlements
+                (write-be-ulong 5 out) ; type CSSLOT_ENTITLEMENTS
+                (write-be-ulong (+ super-blob-size code-dir-size) out)) ; offset
 
               (write-be-ulong #xfade0c02 out) ; CSMAGIC_CODEDIRECTORY
-              (write-be-ulong (- data-size 20) out) ; length (remaining)
+              (write-be-ulong code-dir-size out) ; length
               (write-be-ulong #x20400 out) ; version
               (write-be-ulong #x20002 out) ; flags = CS_ADHOC #x0000002 + ???
-              (write-be-ulong (+ 88 (bytes-length file-identity)) out) ; hash array offset
-              (write-be-ulong 88 out) ; identity offset
-              (write-be-ulong 0 out) ; special slots
-              (write-be-ulong num-slots out) ; special slots
+              (write-be-ulong (+ code-dir-pre-size
+                                 (* num-special-slots hash-code-size)
+                                 (bytes-length file-identity))
+                              out) ; hash array offset (after special slots)
+              (write-be-ulong code-dir-pre-size out) ; identity offset
+              (write-be-ulong num-special-slots out) ; special slots
+              (write-be-ulong num-slots out) ; ordinary slots
               (write-be-ulong padded-size out) ; limit (i.e., original file size plus padding)
               (write-byte hash-code-size out)
               (write-byte 2 out) ; SHA-256
               (write-byte 0 out) ; spare
               (write-byte log-page-size out)
               ;; etc.:
-              (write-bytes #"\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0" out)
-              (write-bytes #"\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0@\0\0\0\0\0\0\0\0\1" out)
+              (write-bytes #"\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0" out) ; 24 bytes
+              (write-bytes #"\0\0\0\0\0\0\0\0\0\0\0\0\0\0@\0\0\0\0\0\0\0\0\1" out) ; 24 bytes
 
               (write-bytes file-identity out)
+
+              (define (write-entitlements out)
+                (write-be-ulong #xfade7171 out) ; CSMAGIC_EMBEDDED_ENTITLEMENTS
+                (write-be-ulong entitlements-size out) ; length
+                (write-bytes entitlements out))
+
+              (when entitlements
+                ;; special slots, where -5 is entitlements hash
+                (define e (open-output-bytes))
+                (write-entitlements e)
+                (write-bytes (sha256-bytes (get-output-bytes e)) out)
+                (for ([i (in-range (sub1 num-special-slots))])
+                  (write-bytes (make-bytes hash-code-size 0) out)))
               (for ([hash-code (in-list hash-codes)])
-                (write-bytes hash-code out))))]
+                (write-bytes hash-code out))
+
+              (when entitlements
+                (write-entitlements out))
+
+              ))]
          [else
           ;; no signing
           (void)]))
