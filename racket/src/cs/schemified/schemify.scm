@@ -1528,6 +1528,21 @@
                           (vector-copy! vec_0 start_0 work-vec_0 0 n_0)))))))
               (void)))
           (|#%app| vector-sort! vec_0 less-than?_0 start_0 end_0))))))))
+(define 1/raise-argument-error
+  (|#%name|
+   raise-argument-error
+   (lambda (who_0 . args_0)
+     (begin (apply raise-argument-error* who_0 'racket/primitive args_0)))))
+(define 1/raise-arguments-error
+  (|#%name|
+   raise-arguments-error
+   (lambda (who_0 . args_0)
+     (begin (apply raise-arguments-error* who_0 'racket/primitive args_0)))))
+(define 1/raise-range-error
+  (|#%name|
+   raise-range-error
+   (lambda (who_0 . args_0)
+     (begin (apply raise-range-error* who_0 'racket/primitive args_0)))))
 (define-values
  (prop:stream stream-via-prop? stream-ref)
  (make-struct-type-property
@@ -1550,7 +1565,7 @@
               #f)
             #f)
         (void)
-        (raise-argument-error
+        (1/raise-argument-error
          'guard-for-prop:stream
          (string-append
           "(vector/c (procedure-arity-includes/c 1)\n"
@@ -1568,7 +1583,7 @@
     (begin
       (if (if (procedure? v_0) (procedure-arity-includes? v_0 1) #f)
         (void)
-        (raise-argument-error
+        (1/raise-argument-error
          'guard-for-prop:sequence
          "(procedure-arity-includes/c 1)"
          v_0))
@@ -1606,14 +1621,16 @@
 (define check-range-generic
   (lambda (who_0 a_0 b_0 step_0)
     (begin
-      (if (real? a_0) (void) (raise-argument-error who_0 "real?" a_0))
-      (if (real? b_0) (void) (raise-argument-error who_0 "real?" b_0))
-      (if (real? step_0) (void) (raise-argument-error who_0 "real?" step_0)))))
+      (if (real? a_0) (void) (1/raise-argument-error who_0 "real?" a_0))
+      (if (real? b_0) (void) (1/raise-argument-error who_0 "real?" b_0))
+      (if (real? step_0)
+        (void)
+        (1/raise-argument-error who_0 "real?" step_0)))))
 (define check-naturals
   (lambda (n_0)
     (if (if (integer? n_0) (if (exact? n_0) (>= n_0 0) #f) #f)
       (void)
-      (raise-argument-error 'in-naturals "exact-nonnegative-integer?" n_0))))
+      (1/raise-argument-error 'in-naturals "exact-nonnegative-integer?" n_0))))
 (define-values
  (struct:list-stream
   make-list-stream
@@ -1639,25 +1656,25 @@
       (values car cdr values (|#%app| list-stream-ref v_0 0) pair? #f #f))))))
 (define check-list
   (lambda (l_0)
-    (if (list? l_0) (void) (raise-argument-error 'in-list "list?" l_0))))
+    (if (list? l_0) (void) (1/raise-argument-error 'in-list "list?" l_0))))
 (define check-in-hash
   (lambda (ht_0)
-    (if (hash? ht_0) (void) (raise-argument-error 'in-hash "hash?" ht_0))))
+    (if (hash? ht_0) (void) (1/raise-argument-error 'in-hash "hash?" ht_0))))
 (define check-in-hash-keys
   (lambda (ht_0)
     (if (hash? ht_0)
       (void)
-      (raise-argument-error 'in-hash-keys "hash?" ht_0))))
+      (1/raise-argument-error 'in-hash-keys "hash?" ht_0))))
 (define check-ranges
   (lambda (who_0 type-name_0 vec_0 start_0 stop_0 step_0 len_0)
     (begin
       (if (exact-nonnegative-integer? start_0)
         (void)
-        (raise-argument-error who_0 "exact-nonnegative-integer?" start_0))
+        (1/raise-argument-error who_0 "exact-nonnegative-integer?" start_0))
       (if (let ((or-part_0 (< start_0 len_0)))
             (if or-part_0 or-part_0 (= len_0 start_0 stop_0)))
         (void)
-        (raise-range-error
+        (1/raise-range-error
          who_0
          type-name_0
          "starting "
@@ -1667,10 +1684,10 @@
          (sub1 len_0)))
       (if (exact-integer? stop_0)
         (void)
-        (raise-argument-error who_0 "exact-integer?" stop_0))
+        (1/raise-argument-error who_0 "exact-integer?" stop_0))
       (if (if (<= -1 stop_0) (<= stop_0 len_0) #f)
         (void)
-        (raise-range-error
+        (1/raise-range-error
          who_0
          type-name_0
          "stopping "
@@ -1680,12 +1697,12 @@
          len_0))
       (if (if (exact-integer? step_0) (not (zero? step_0)) #f)
         (void)
-        (raise-argument-error
+        (1/raise-argument-error
          who_0
          "(and/c exact-integer? (not/c zero?))"
          step_0))
       (if (if (< start_0 stop_0) (< step_0 0) #f)
-        (raise-arguments-error
+        (1/raise-arguments-error
          who_0
          "starting index less than stopping index, but given a negative step"
          "starting index"
@@ -1696,7 +1713,7 @@
          step_0)
         (void))
       (if (if (< stop_0 start_0) (> step_0 0) #f)
-        (raise-arguments-error
+        (1/raise-arguments-error
          who_0
          "starting index more than stopping index, but given a positive step"
          "starting index"
@@ -1718,7 +1735,7 @@
     (begin
       (if (|#%app| vector?_0 vec_0)
         (void)
-        (raise-argument-error who_0 type-name_0 vec_0))
+        (1/raise-argument-error who_0 (string-append type-name_0 "?") vec_0))
       (let ((len_0 (|#%app| unsafe-vector-length_0 vec_0)))
         (let ((stop*_0 (if stop_0 stop_0 len_0)))
           (begin
@@ -1733,7 +1750,9 @@
      step_0)))
 (define check-vector
   (lambda (v_0)
-    (if (vector? v_0) (void) (raise-argument-error 'in-vector "vector" v_0))))
+    (if (vector? v_0)
+      (void)
+      (1/raise-argument-error 'in-vector (string-append "vector" "?") v_0))))
 (define-values
  (struct:do-stream make-do-stream do-stream? do-stream-ref do-stream-set!)
  (make-struct-type
@@ -5082,7 +5101,10 @@
   (lambda (v_0)
     (if (fxvector? v_0)
       (void)
-      (raise-argument-error 'in-fxvector* "fxvector" v_0))))
+      (1/raise-argument-error
+       'in-fxvector*
+       (string-append "fxvector" "?")
+       v_0))))
 (define not-an-fX.1$1
   (|#%name|
    not-an-fX
@@ -25529,7 +25551,7 @@
                                                         (if (exact-nonnegative-integer?
                                                              len_0)
                                                           (void)
-                                                          (raise-argument-error
+                                                          (1/raise-argument-error
                                                            'for/vector
                                                            "exact-nonnegative-integer?"
                                                            len_0))
@@ -39741,7 +39763,10 @@
   (lambda (v_0)
     (if (flvector? v_0)
       (void)
-      (raise-argument-error 'in-flvector* "flvector" v_0))))
+      (1/raise-argument-error
+       'in-flvector*
+       (string-append "flvector" "?")
+       v_0))))
 (define not-an-fX.1
   (|#%name|
    not-an-fX
@@ -41645,7 +41670,7 @@
                                                             (if (exact-nonnegative-integer?
                                                                  len_1)
                                                               (void)
-                                                              (raise-argument-error
+                                                              (1/raise-argument-error
                                                                'for/vector
                                                                "exact-nonnegative-integer?"
                                                                len_1))
@@ -44110,7 +44135,7 @@
                                                  (if (exact-nonnegative-integer?
                                                       len_0)
                                                    (void)
-                                                   (raise-argument-error
+                                                   (1/raise-argument-error
                                                     'for/vector
                                                     "exact-nonnegative-integer?"
                                                     len_0))

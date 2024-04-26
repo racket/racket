@@ -22,6 +22,11 @@
           (raise-argument-error name_0 "(or/c struct-type? #f)" what_0))
         (void))
       what_0)))
+(define 1/raise-argument-error
+  (|#%name|
+   raise-argument-error
+   (lambda (who_0 . args_0)
+     (begin (apply raise-argument-error* who_0 'racket/primitive args_0)))))
 (define-values
  (prop:stream stream-via-prop? stream-ref)
  (make-struct-type-property
@@ -44,7 +49,7 @@
               #f)
             #f)
         (void)
-        (raise-argument-error
+        (1/raise-argument-error
          'guard-for-prop:stream
          (string-append
           "(vector/c (procedure-arity-includes/c 1)\n"
@@ -62,7 +67,7 @@
     (begin
       (if (if (procedure? v_0) (procedure-arity-includes? v_0 1) #f)
         (void)
-        (raise-argument-error
+        (1/raise-argument-error
          'guard-for-prop:sequence
          "(procedure-arity-includes/c 1)"
          v_0))
