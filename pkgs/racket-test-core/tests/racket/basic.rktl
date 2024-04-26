@@ -118,6 +118,10 @@
 (test #t equal? 2 2)
 (test #t equal? (make-vector 5 'a) (make-vector 5 'a))
 (test #t equal? (box "a") (box "a"))
+(test #t equal? (make-flvector 5 0.0) (make-flvector 5 0.0))
+(test #t equal? (make-fxvector 5 0) (make-fxvector 5 0))
+(test #t equal? (stencil-vector #b10010 'a 'b) (stencil-vector #b10010 'a 'b))
+
 (test #f equal? "" (string #\null))
 
 (test #f equal? 'a "a")
@@ -158,6 +162,9 @@
 (test #f equal-always? (make-hash '((a . 1))) (make-hash '((a . 1))))
 (test #f equal-always? (mcons 'a '()) (mcons 'a '()))
 (test #f equal-always? (string #\a) (string #\a))
+(test #f equal-always? (make-flvector 5 0.0) (make-flvector 5 0.0))
+(test #f equal-always? (make-fxvector 5 0) (make-fxvector 5 0))
+(test #f equal-always? (stencil-vector #b10010 'a 'b) (stencil-vector #b10010 'a 'b))
 
 (let ()
   (struct s (x) #:property prop:procedure 0)
