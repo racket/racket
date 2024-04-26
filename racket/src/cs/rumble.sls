@@ -330,6 +330,7 @@
 
           impersonate-hash
           chaperone-hash
+          unsafe-impersonate-hash
 
           true-object?
 

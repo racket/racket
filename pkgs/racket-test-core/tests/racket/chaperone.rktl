@@ -7,7 +7,9 @@
                   unsafe-chaperone-vector
                   unsafe-impersonate-vector
                   unsafe-impersonate-procedure
-                  unsafe-chaperone-procedure))
+                  unsafe-chaperone-procedure)
+         (only-in '#%unsafe
+                  unsafe-impersonate-hash))
 
 (define secondary-hash-unused? (eq? 'cs (system-type 'gc)))
 
@@ -2131,94 +2133,100 @@
    make-weak-hash make-weak-hasheq make-weak-hasheqv make-weak-hashalw
    make-ephemeron-hash make-ephemeron-hasheq make-ephemeron-hasheqv make-ephemeron-hashalw)))
 
-(for-each
- (lambda (h1)   
-   (let* ([get-k #f]
-          [get-v #f]
-          [set-k #f]
-          [set-v #f]
-          [remove-k #f]
-          [access-k #f]
-          [h2 (chaperone-hash h1
-                              (lambda (h k) 
-                                (set! get-k k)
-                                (values k
-                                        (lambda (h k v)
-                                          (set! get-v v)
-                                          v)))
-                              (lambda (h k v) 
-                                (set! set-k k)
-                                (set! set-v v)
-                                (values k v))
-                              (lambda (h k) 
-                                (set! remove-k k)
-                                k) 
-                              (lambda (h k) 
-                                (set! access-k k)
-                                k))]
-          [test (lambda (val proc . args)
-                  ;; Avoid printing hash-table argument, which implicitly uses `ref':
-                  (let ([got (apply proc args)])
-                    (test #t (format "~s ~s ~s" proc val got) (equal? val got))))])
-     (test #f hash-ref h1 'key #f)
-     (test '(#f #f #f #f #f #f) list get-k get-v set-k set-v remove-k access-k)
-     (test 'nope hash-ref h2 'key 'nope)
-     (test '(key #f #f #f #f #f) list get-k get-v set-k set-v remove-k access-k)
-     (let ([h2 (hash-set h2 'key 'val)])
-       (test '(key #f key val #f #f) list get-k get-v set-k set-v remove-k access-k)
-       (test 'val hash-ref h2 'key #f)
-       (test '(key val key val #f #f) list get-k get-v set-k set-v remove-k access-k)
-       (let ([h2 (hash-set h2 'key2 'val2)])
-         (test '(key val key2 val2 #f #f) list get-k get-v set-k set-v remove-k access-k)
-         (test 'val2 hash-ref h2 'key2 #f)
-         (test '(key2 val2 key2 val2 #f #f) list get-k get-v set-k set-v remove-k access-k)
-         (test 'key2 hash-ref-key h2 'key2)
-         (test '(key2 val2 key2 val2 #f key2) list get-k get-v set-k set-v remove-k access-k)
-         (let ([h2 (hash-remove h2 'key3)])
-           (test '(key2 val2 key2 val2 key3 key2) list get-k get-v set-k set-v remove-k access-k)
-           (test 'val2 hash-ref h2 'key2)
-           (test '(key2 val2 key2 val2 key3 key2) list get-k get-v set-k set-v remove-k access-k)
-           (let ([h2 (hash-remove h2 'key2)])
-             (test '(key2 val2 key2 val2 key2 key2) list get-k get-v set-k set-v remove-k access-k)
-             (test #f hash-ref h2 'key2 #f)
-             (test '(key2 val2 key2 val2 key2 key2) list get-k get-v set-k set-v remove-k access-k)
-             (hash-for-each h2 void)
-             (test '(mid key val key2 val2 key2 key) list 'mid get-k get-v set-k set-v remove-k access-k)
-             (set! get-k #f)
-             (set! get-v #f)
-             (void (equal-hash-code h2))
-             (test '(key val key2 val2 key2 key) list get-k get-v set-k set-v remove-k access-k)
-             (unless secondary-hash-unused?
-               (set! get-k #f)
-               (set! get-v #f)
-               (void (equal-secondary-hash-code h2)))
-             (test '(key val key2 val2 key2 key) list get-k get-v set-k set-v remove-k access-k)
-             (set! get-k #f)
-             (set! get-v #f)
-             (test #t values (equal? h2 (hash-set h1 'key 'val)))
-             (test '(equal?2 key val key2 val2 key2 key) list 'equal?2 get-k get-v set-k set-v remove-k access-k)
-             (void))))))
-   ;; Check that `hash-set` propagates in a way that allows
-   ;; `chaperone-of?` to work recursively:
-   (let ()
-     (define proc (lambda (x) (add1 x)))
-     (define h2 (hash-set h1 1 proc))
-     (define (add-chap h2)
-       (chaperone-hash h2
-                       (λ (h k) (values k (λ (h k v) v)))
-                       (λ (h k v) (values k v))
-                       (λ _ #f)
-                       (λ (h k) k)))
-     (define h3 (add-chap h2))
-     (test #t chaperone-of? h3 h2)
-     (test #f chaperone-of? h3 (add-chap h2))
-     (define h4 (hash-set h3 1 proc))
-     (test #t chaperone-of? h4 h3)
-     (define h5 (hash-set h3 1 (chaperone-procedure proc void)))
-     (test #t chaperone-of? h5 h3)
-     (test #f chaperone-of? (hash-set h3 1 sub1) h3)
-     (test #f chaperone-of? (hash-set h3 2 sub1) h3)))
- (list #hash() #hasheq() #hasheqv() #hashalw()))
+(define (unsafe-impersonate-hash* ht ref set remove key)
+  (unsafe-impersonate-hash #f ht ref set remove key))
+
+(as-chaperone-or-impersonator
+ ([chaperone-hash unsafe-impersonate-hash*]
+  [chaperone-of? impersonator-of?])
+ (for-each
+  (lambda (h1)
+    (let* ([get-k #f]
+           [get-v #f]
+           [set-k #f]
+           [set-v #f]
+           [remove-k #f]
+           [access-k #f]
+           [h2 (chaperone-hash h1
+                               (lambda (h k)
+                                 (set! get-k k)
+                                 (values k
+                                         (lambda (h k v)
+                                           (set! get-v v)
+                                           v)))
+                               (lambda (h k v)
+                                 (set! set-k k)
+                                 (set! set-v v)
+                                 (values k v))
+                               (lambda (h k)
+                                 (set! remove-k k)
+                                 k) 
+                               (lambda (h k)
+                                 (set! access-k k)
+                                 k))]
+           [test (lambda (val proc . args)
+                   ;; Avoid printing hash-table argument, which implicitly uses `ref':
+                   (let ([got (apply proc args)])
+                     (test #t (format "~s ~s ~s" proc val got) (equal? val got))))])
+      (test #f hash-ref h1 'key #f)
+      (test '(#f #f #f #f #f #f) list get-k get-v set-k set-v remove-k access-k)
+      (test 'nope hash-ref h2 'key 'nope)
+      (test '(key #f #f #f #f #f) list get-k get-v set-k set-v remove-k access-k)
+      (let ([h2 (hash-set h2 'key 'val)])
+        (test '(key #f key val #f #f) list get-k get-v set-k set-v remove-k access-k)
+        (test 'val hash-ref h2 'key #f)
+        (test '(key val key val #f #f) list get-k get-v set-k set-v remove-k access-k)
+        (let ([h2 (hash-set h2 'key2 'val2)])
+          (test '(key val key2 val2 #f #f) list get-k get-v set-k set-v remove-k access-k)
+          (test 'val2 hash-ref h2 'key2 #f)
+          (test '(key2 val2 key2 val2 #f #f) list get-k get-v set-k set-v remove-k access-k)
+          (test 'key2 hash-ref-key h2 'key2)
+          (test '(key2 val2 key2 val2 #f key2) list get-k get-v set-k set-v remove-k access-k)
+          (let ([h2 (hash-remove h2 'key3)])
+            (test '(key2 val2 key2 val2 key3 key2) list get-k get-v set-k set-v remove-k access-k)
+            (test 'val2 hash-ref h2 'key2)
+            (test '(key2 val2 key2 val2 key3 key2) list get-k get-v set-k set-v remove-k access-k)
+            (let ([h2 (hash-remove h2 'key2)])
+              (test '(key2 val2 key2 val2 key2 key2) list get-k get-v set-k set-v remove-k access-k)
+              (test #f hash-ref h2 'key2 #f)
+              (test '(key2 val2 key2 val2 key2 key2) list get-k get-v set-k set-v remove-k access-k)
+              (hash-for-each h2 void)
+              (test '(mid key val key2 val2 key2 key) list 'mid get-k get-v set-k set-v remove-k access-k)
+              (set! get-k #f)
+              (set! get-v #f)
+              (void (equal-hash-code h2))
+              (test '(key val key2 val2 key2 key) list get-k get-v set-k set-v remove-k access-k)
+              (unless secondary-hash-unused?
+                (set! get-k #f)
+                (set! get-v #f)
+                (void (equal-secondary-hash-code h2)))
+              (test '(key val key2 val2 key2 key) list get-k get-v set-k set-v remove-k access-k)
+              (set! get-k #f)
+              (set! get-v #f)
+              (test #t values (equal? h2 (hash-set h1 'key 'val)))
+              (test '(equal?2 key val key2 val2 key2 key) list 'equal?2 get-k get-v set-k set-v remove-k access-k)
+              (void))))))
+    ;; Check that `hash-set` propagates in a way that allows
+    ;; `chaperone-of?` to work recursively:
+    (let ()
+      (define proc (lambda (x) (add1 x)))
+      (define h2 (hash-set h1 1 proc))
+      (define (add-chap h2)
+        (chaperone-hash h2
+                        (λ (h k) (values k (λ (h k v) v)))
+                        (λ (h k v) (values k v))
+                        (λ _ #f)
+                        (λ (h k) k)))
+      (define h3 (add-chap h2))
+      (test #t chaperone-of? h3 h2)
+      (test #f chaperone-of? h3 (add-chap h2))
+      (define h4 (hash-set h3 1 proc))
+      (test #t chaperone-of? h4 h3)
+      (define h5 (hash-set h3 1 (chaperone-procedure proc void)))
+      (test #t chaperone-of? h5 h3)
+      (test #f chaperone-of? (hash-set h3 1 sub1) h3)
+      (test #f chaperone-of? (hash-set h3 2 sub1) h3)))
+  (list #hash() #hasheq() #hasheqv() #hashalw())))
 
 ;; Make sure that multiple chaperone/impersonator layers
 ;; are allowed by `chaperone-of?` and `impersonator-of?`

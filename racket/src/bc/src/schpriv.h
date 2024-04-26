@@ -465,6 +465,7 @@ Scheme_Object *scheme_read_linklet(Scheme_Object *obj, int unsafe_ok);
 extern Scheme_Equal_Proc *scheme_type_equals;
 extern Scheme_Primary_Hash_Proc *scheme_type_hash1s;
 extern Scheme_Secondary_Hash_Proc *scheme_type_hash2s;
+extern Scheme_Object *scheme_hash_kind_key;
 
 void scheme_init_port_config(void);
 void scheme_init_port_fun_config(void);
@@ -1329,7 +1330,7 @@ Scheme_Object *scheme_apply_chaperone(Scheme_Object *o, int argc, Scheme_Object 
                                       Scheme_Object *auto_val, int checks);
 
 Scheme_Object *scheme_parse_chaperone_props(const char *who, int start_at, int argc, Scheme_Object **argv);
-Scheme_Object *scheme_chaperone_props_get(Scheme_Object *props, Scheme_Object *prop);
+XFORM_NONGCING Scheme_Object *scheme_chaperone_props_get(Scheme_Object *props, Scheme_Object *prop);
 Scheme_Object *scheme_chaperone_props_remove(Scheme_Object *props, Scheme_Object *prop);
 
 Scheme_Object *scheme_chaperone_hash_get(Scheme_Object *table, Scheme_Object *key);
