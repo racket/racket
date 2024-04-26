@@ -104,6 +104,7 @@
                                      (equal? a b ctx)))))))]
            [(stencil-vector? a)
             (and (stencil-vector? b)
+                 (not (or (eq? mode 'chaperone-of?) (eq? mode 'equal-always?)))
                  (fx= (stencil-vector-mask a) (stencil-vector-mask b))
                  (let ([len (stencil-vector-length a)]
                        [ctx (deeper-context ctx)])
