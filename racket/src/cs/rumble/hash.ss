@@ -660,14 +660,23 @@
          (eq? (intmap? (strip-impersonator ht1))
               (intmap? (strip-impersonator ht2)))
          ;; Same key comparison?
-         (or (and (hash-eq? ht1)
-                  (hash-eq? ht2))
-             (and (hash-eqv? ht1)
-                  (hash-eqv? ht2))
-             (and (hash-equal? ht1)
-                  (hash-equal? ht2))
-             (and (hash-equal-always? ht1)
-                  (hash-equal-always? ht2)))
+         (cond
+           [(and (impersonator? ht1)
+                 (hash-ref (impersonator-props ht1) 'kind #f))
+            => (lambda (kind)
+                 (eq? kind (and (impersonator? ht2)
+                                (hash-ref (impersonator-props ht2) 'kind #f))))]
+           [(and (impersonator? ht2)
+                 (hash-ref (impersonator-props ht2) 'kind #f))
+            #false]
+           [(hash-eq? ht1)
+            (hash-eq? ht2)]
+           [(hash-eqv? ht1)
+            (hash-eqv? ht2)]
+           [(hash-equal? ht1)
+            (hash-equal? ht2)]
+           [else ; (hash-equal-always? ht1)
+            (hash-equal-always? ht2)])
          ;; Same weakness?
          (eq? (hash-weak? ht1) (hash-weak? ht2))
          (eq? (hash-ephemeron? ht1) (hash-ephemeron? ht2)))
@@ -1043,15 +1052,24 @@
                        (mutable-hash? p)))
          :contract "(and/c hash? (not/c immutable?))"
          ht)
-  (do-impersonate-hash who ht ref set remove key args
+  (do-impersonate-hash who ht ref set remove key args #f
                        make-hash-impersonator))
 
 (define/who (chaperone-hash ht ref set remove key . args)
   (check who hash? ht)
-  (do-impersonate-hash who ht ref set remove key args
+  (do-impersonate-hash who ht ref set remove key args #f
                        make-hash-chaperone))
 
-(define (do-impersonate-hash who ht ref set remove key args
+(define/who (unsafe-impersonate-hash kind ht ref set remove key . args)
+  (check who
+         (lambda (p) (let ([p (strip-impersonator p)])
+                       (hash? p)))
+         :contract "hash?"
+         ht)
+  (do-impersonate-hash who ht ref set remove key args kind
+                       make-hash-impersonator))
+
+(define (do-impersonate-hash who ht ref set remove key args kind
                              make-hash-chaperone)
   (check who (procedure-arity-includes/c 2) ref)
   (check who (procedure-arity-includes/c 3) set)
@@ -1079,9 +1097,12 @@
                          ht
                          (add-impersonator-properties who
                                                       args
-                                                      (if (impersonator? ht)
-                                                          (impersonator-props ht)
-                                                          empty-hasheq))
+                                                      (let ([props (if (impersonator? ht)
+                                                                       (impersonator-props ht)
+                                                                       empty-hasheq)])
+                                                        (if kind
+                                                            (hash-set props 'kind kind)
+                                                            props)))
                          (make-hash-procs ref set remove key clear equal-key))))
 
 ;; ----------------------------------------

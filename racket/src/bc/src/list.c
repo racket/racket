@@ -32,6 +32,8 @@ READ_ONLY Scheme_Object *scheme_unsafe_unbox_proc;
 READ_ONLY Scheme_Object *scheme_unsafe_unbox_star_proc;
 READ_ONLY Scheme_Object *scheme_unsafe_set_box_star_proc;
 
+ROSYM Scheme_Object *scheme_hash_kind_key;
+
 /* read only locals */
 ROSYM static Scheme_Hash_Tree *empty_hash;
 ROSYM static Scheme_Hash_Tree *empty_hasheq;
@@ -153,6 +155,7 @@ static Scheme_Object *equal_always_hash2_code(int argc, Scheme_Object *argv[]);
 static Scheme_Object *eqv_hash_code(int argc, Scheme_Object *argv[]);
 static Scheme_Object *chaperone_hash(int argc, Scheme_Object **argv);
 static Scheme_Object *impersonate_hash(int argc, Scheme_Object **argv);
+static Scheme_Object *unsafe_impersonate_hash(int argc, Scheme_Object **argv);
 
 static Scheme_Object *make_weak_box(int argc, Scheme_Object *argv[]);
 static Scheme_Object *weak_box_value(int argc, Scheme_Object *argv[]);
@@ -223,6 +226,9 @@ scheme_init_list (Scheme_Startup_Env *env)
   Scheme_Object *p;
   
   scheme_null->type = scheme_null_type;
+
+  REGISTER_SO(scheme_hash_kind_key);
+  scheme_hash_kind_key = scheme_intern_symbol("kind");
 
   scheme_addto_prim_instance ("null", scheme_null, env);
 
@@ -1074,7 +1080,6 @@ scheme_init_unsafe_list (Scheme_Startup_Env *env)
   p = scheme_make_prim_w_arity(scheme_box_cas, "unsafe-box*-cas!", 3, 3);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_NARY_INLINED);
   scheme_addto_prim_instance("unsafe-box*-cas!", p, env);
-
 }
 
 void
@@ -1216,6 +1221,13 @@ scheme_init_unsafe_hash (Scheme_Startup_Env *env)
 			     "unsafe-ephemeron-hash-iterate-pair", 
 			     2, 3);
   scheme_addto_prim_instance ("unsafe-ephemeron-hash-iterate-pair", p, env);
+
+  /* unsafe-impersonate-hash ---------------------------------------- */
+  scheme_addto_prim_instance("unsafe-impersonate-hash",
+                             scheme_make_prim_w_arity(unsafe_impersonate_hash,
+                                                      "unsafe-impersonate-hash",
+                                                      6, -1),
+                             env);
 }
 
 Scheme_Object *scheme_make_pair(Scheme_Object *car, Scheme_Object *cdr)
@@ -2806,7 +2818,7 @@ Scheme_Object *scheme_hash_eq_p(int argc, Scheme_Object *argv[])
 {
   Scheme_Object *o = argv[0];
 
-  if (SCHEME_CHAPERONEP(o)) 
+  if (SCHEME_CHAPERONEP(o))
     o = SCHEME_CHAPERONE_VAL(o);
 
   if (SCHEME_HASHTP(o)) {
@@ -2833,7 +2845,7 @@ Scheme_Object *scheme_hash_eqv_p(int argc, Scheme_Object *argv[])
 {
   Scheme_Object *o = argv[0];
 
-  if (SCHEME_CHAPERONEP(o)) 
+  if (SCHEME_CHAPERONEP(o))
     o = SCHEME_CHAPERONE_VAL(o);
 
   if (SCHEME_HASHTP(o)) {
@@ -2856,7 +2868,7 @@ Scheme_Object *scheme_hash_equal_p(int argc, Scheme_Object *argv[])
 {
   Scheme_Object *o = argv[0];
 
-  if (SCHEME_CHAPERONEP(o)) 
+  if (SCHEME_CHAPERONEP(o))
     o = SCHEME_CHAPERONE_VAL(o);
 
   if (SCHEME_HASHTP(o)) {
@@ -2879,7 +2891,7 @@ Scheme_Object *scheme_hash_equal_always_p(int argc, Scheme_Object *argv[])
 {
   Scheme_Object *o = argv[0];
 
-  if (SCHEME_CHAPERONEP(o)) 
+  if (SCHEME_CHAPERONEP(o))
     o = SCHEME_CHAPERONE_VAL(o);
 
   if (SCHEME_HASHTP(o)) {
@@ -3708,10 +3720,10 @@ static Scheme_Object *hash_keys_subset_p(int argc, Scheme_Object *argv[]) XFORM_
 }
 
 
-static Scheme_Object *do_chaperone_hash(const char *name, int is_impersonator, int argc, Scheme_Object **argv)
+static Scheme_Object *do_chaperone_hash(const char *name, int is_impersonator, int delta, int argc, Scheme_Object **argv)
 {
   Scheme_Chaperone *px;
-  Scheme_Object *val = argv[0];
+  Scheme_Object *val = argv[delta];
   Scheme_Object *redirects, *clear, *equal_key_wrap;
   Scheme_Object *props;
   int start_props = 5;
@@ -3720,24 +3732,24 @@ static Scheme_Object *do_chaperone_hash(const char *name, int is_impersonator, i
     val = SCHEME_CHAPERONE_VAL(val);
 
   if (!SCHEME_HASHTP(val) 
-      && (is_impersonator || !SCHEME_HASHTRP(val))
+      && ((is_impersonator == 1) || !SCHEME_HASHTRP(val))
       && !SCHEME_BUCKTP(val))
-    scheme_wrong_contract(name, is_impersonator ? "(and/c hash? (not/c immutable?))" : "hash?", 0, argc, argv);
-  scheme_check_proc_arity(name, 2, 1, argc, argv); /* ref */
-  scheme_check_proc_arity(name, 3, 2, argc, argv); /* set! */
-  scheme_check_proc_arity(name, 2, 3, argc, argv); /* remove */
-  scheme_check_proc_arity(name, 2, 4, argc, argv); /* key */
+    scheme_wrong_contract(name, (is_impersonator == 1) ? "(and/c hash? (not/c immutable?))" : "hash?", delta, argc, argv);
+  scheme_check_proc_arity(name, 2, 1+delta, argc, argv); /* ref */
+  scheme_check_proc_arity(name, 3, 2+delta, argc, argv); /* set! */
+  scheme_check_proc_arity(name, 2, 3+delta, argc, argv); /* remove */
+  scheme_check_proc_arity(name, 2, 4+delta, argc, argv); /* key */
 
-  if ((argc > 5) && (SCHEME_FALSEP(argv[5]) || SCHEME_PROCP(argv[5]))) {
-    scheme_check_proc_arity2(name, 1, 5, argc, argv, 1); /* clear */
-    clear = argv[5];
+  if ((argc > 5+delta) && (SCHEME_FALSEP(argv[5+delta]) || SCHEME_PROCP(argv[5+delta]))) {
+    scheme_check_proc_arity2(name, 1, 5+delta, argc, argv, 1); /* clear */
+    clear = argv[5+delta];
     start_props++;
   } else
     clear = scheme_false;
 
-  if ((argc > 6) && (SCHEME_FALSEP(argv[6]) || SCHEME_PROCP(argv[6]))) {
-    scheme_check_proc_arity2(name, 2, 6, argc, argv, 1); /* clear */
-    equal_key_wrap = argv[6];
+  if ((argc > 6+delta) && (SCHEME_FALSEP(argv[6+delta]) || SCHEME_PROCP(argv[6+delta]))) {
+    scheme_check_proc_arity2(name, 2, 6+delta, argc, argv, 1); /* clear */
+    equal_key_wrap = argv[6+delta];
     start_props++;
   } else
     equal_key_wrap = scheme_false;
@@ -3746,20 +3758,29 @@ static Scheme_Object *do_chaperone_hash(const char *name, int is_impersonator, i
      chaperoned immutable hash tables can be
      `{chaperone,impersonator}-of?` when they're not eq. */
   redirects = scheme_make_vector(6, NULL);
-  SCHEME_VEC_ELS(redirects)[0] = argv[1];
-  SCHEME_VEC_ELS(redirects)[1] = argv[2];
-  SCHEME_VEC_ELS(redirects)[2] = argv[3];
-  SCHEME_VEC_ELS(redirects)[3] = argv[4];
+  SCHEME_VEC_ELS(redirects)[0] = argv[1+delta];
+  SCHEME_VEC_ELS(redirects)[1] = argv[2+delta];
+  SCHEME_VEC_ELS(redirects)[2] = argv[3+delta];
+  SCHEME_VEC_ELS(redirects)[3] = argv[4+delta];
   SCHEME_VEC_ELS(redirects)[4] = clear;
   SCHEME_VEC_ELS(redirects)[5] = equal_key_wrap;
   redirects = scheme_box(redirects); /* so it doesn't look like a struct chaperone */
 
-  props = scheme_parse_chaperone_props(name, start_props, argc, argv);
+  if (delta && SCHEME_TRUEP(argv[0])) {
+    Scheme_Object **args;
+    int n = argc - (start_props+delta);
+    args = MALLOC_N(Scheme_Object*, n + 2);
+    memcpy(args, &(argv[start_props+delta]), sizeof(Scheme_Object *) * n);
+    args[n] = scheme_hash_kind_key;
+    args[n+1] = argv[0];
+    props = scheme_parse_chaperone_props(name, 0, n+2, args);
+  } else
+    props = scheme_parse_chaperone_props(name, start_props+delta, argc, argv);
   
   px = MALLOC_ONE_TAGGED(Scheme_Chaperone);
   px->iso.so.type = scheme_chaperone_type;
   px->val = val;
-  px->prev = argv[0];
+  px->prev = argv[delta];
   px->props = props;
   px->redirects = redirects;
 
@@ -3771,12 +3792,17 @@ static Scheme_Object *do_chaperone_hash(const char *name, int is_impersonator, i
 
 static Scheme_Object *chaperone_hash(int argc, Scheme_Object **argv)
 {
-  return do_chaperone_hash("chaperone-hash", 0, argc, argv);
+  return do_chaperone_hash("chaperone-hash", 0, 0, argc, argv);
 }
 
 static Scheme_Object *impersonate_hash(int argc, Scheme_Object **argv)
 {
-  return do_chaperone_hash("impersonate-hash", 1, argc, argv);
+  return do_chaperone_hash("impersonate-hash", 1, 0, argc, argv);
+}
+
+static Scheme_Object *unsafe_impersonate_hash(int argc, Scheme_Object **argv)
+{
+  return do_chaperone_hash("unsafe-impersonate-hash", 2, 1, argc, argv);
 }
 
 static Scheme_Object *transfer_chaperone(Scheme_Object *chaperone, Scheme_Object *v)

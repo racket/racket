@@ -124,6 +124,7 @@
   [unsafe-immutable-hash-iterate-value (known-procedure/then-pure 12)]
   [unsafe-impersonate-procedure (known-procedure -4)]
   [unsafe-impersonate-vector (known-procedure -4)]
+  [unsafe-impersonate-hash (known-procedure/single-valued -64)]
   [unsafe-in-atomic? (known-procedure 1)]
   [unsafe-list-ref (known-procedure/then-pure 4)]
   [unsafe-list-tail (known-procedure/then-pure 4)]

@@ -962,7 +962,7 @@ Scheme_Object *scheme_chaperone_props_get(Scheme_Object *props, Scheme_Object *p
     }
     return NULL;
   } else
-    return (Scheme_Object *)scheme_hash_tree_get((Scheme_Hash_Tree *)props, prop);
+    return (Scheme_Object *)scheme_eq_hash_tree_get((Scheme_Hash_Tree *)props, prop);
 }
 
 Scheme_Object *scheme_chaperone_props_remove(Scheme_Object *props, Scheme_Object *prop)

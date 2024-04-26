@@ -3,7 +3,8 @@
 
 (Section 'hash)
 
-(require racket/hash)
+(require racket/hash
+         (only-in '#%unsafe unsafe-impersonate-hash))
 
 ;; ----------------------------------------
 ;; Hash-key sorting:
@@ -326,6 +327,14 @@
               (lambda (h k v) values k v) ; set-proc
               (lambda (h k) k) ; remove-proc
               (lambda (h k) k))) ; key-proc
+          (define fake-ht/immut-unsafe
+            (unsafe-impersonate-hash
+                #f
+                ht/immut
+              (lambda (h k) (values k (lambda (h k v) v))) ; ref-proc
+              (lambda (h k v) values k v) ; set-proc
+              (lambda (h k) k) ; remove-proc
+              (lambda (h k) k))) ; key-proc
           (define fake-ht/mut
             (impersonate-hash
                 ht/mut
@@ -371,6 +380,7 @@
            (for/sum ([(k v) (-in-weak-hash ht/weak)]) (+ k v))
            (for/sum ([(k v) (-in-ephemeron-hash ht/ephemeron)]) (+ k v))
            (for/sum ([(k v) (-in-immut-hash fake-ht/immut)]) (+ k v))
+           (for/sum ([(k v) (-in-immut-hash fake-ht/immut-unsafe)]) (+ k v))
            (for/sum ([(k v) (-in-mut-hash fake-ht/mut)]) (+ k v))
            (for/sum ([(k v) (-in-weak-hash fake-ht/weak)]) (+ k v))
            (for/sum ([(k v) (-in-ephemeron-hash fake-ht/ephemeron)]) (+ k v))
@@ -387,6 +397,8 @@
            (for/sum ([k+v (-in-ephemeron-hash-pairs ht/ephemeron)])
              (+ (car k+v) (cdr k+v)))
            (for/sum ([k+v (-in-immut-hash-pairs fake-ht/immut)])
+             (+ (car k+v) (cdr k+v)))
+           (for/sum ([k+v (-in-immut-hash-pairs fake-ht/immut-unsafe)])
              (+ (car k+v) (cdr k+v)))
            (for/sum ([k+v (-in-mut-hash-pairs fake-ht/mut)])
              (+ (car k+v) (cdr k+v)))
@@ -408,6 +420,8 @@
               (for/sum ([v (-in-ephemeron-hash-values ht/ephemeron)]) v))
            (+ (for/sum ([k (-in-immut-hash-keys fake-ht/immut)]) k)
               (for/sum ([v (-in-immut-hash-values fake-ht/immut)]) v))
+           (+ (for/sum ([k (-in-immut-hash-keys fake-ht/immut-unsafe)]) k)
+              (for/sum ([v (-in-immut-hash-values fake-ht/immut-unsafe)]) v))
            (+ (for/sum ([k (-in-mut-hash-keys fake-ht/mut)]) k)
               (for/sum ([v (-in-mut-hash-values fake-ht/mut)]) v))
            (+ (for/sum ([k (-in-weak-hash-keys fake-ht/weak)]) k)
@@ -429,6 +443,7 @@
            (for/sum ([(k v) (-in-weak-hash ht/weak)]) k)
            (for/sum ([(k v) (-in-ephemeron-hash ht/ephemeron)]) k)
            (for/sum ([(k v) (-in-immut-hash fake-ht/immut)]) k)
+           (for/sum ([(k v) (-in-immut-hash fake-ht/immut-unsafe)]) k)
            (for/sum ([(k v) (-in-mut-hash fake-ht/mut)]) k)
            (for/sum ([(k v) (-in-weak-hash fake-ht/weak)]) k)
            (for/sum ([(k v) (-in-ephemeron-hash fake-ht/ephemeron)]) k)
@@ -441,6 +456,7 @@
            (for/sum ([k+v (-in-weak-hash-pairs ht/weak)]) (car k+v))
            (for/sum ([k+v (-in-ephemeron-hash-pairs ht/ephemeron)]) (car k+v))
            (for/sum ([k+v (-in-immut-hash-pairs fake-ht/immut)]) (car k+v))
+           (for/sum ([k+v (-in-immut-hash-pairs fake-ht/immut-unsafe)]) (car k+v))
            (for/sum ([k+v (-in-mut-hash-pairs fake-ht/mut)]) (car k+v))
            (for/sum ([k+v (-in-weak-hash-pairs fake-ht/weak)]) (car k+v))
            (for/sum ([k+v (-in-ephemeron-hash-pairs fake-ht/ephemeron)]) (car k+v))
@@ -453,6 +469,7 @@
            (for/sum ([k (-in-weak-hash-keys ht/weak)]) k)
            (for/sum ([k (-in-ephemeron-hash-keys ht/ephemeron)]) k)
            (for/sum ([k (-in-immut-hash-keys fake-ht/immut)]) k)
+           (for/sum ([k (-in-immut-hash-keys fake-ht/immut-unsafe)]) k)
            (for/sum ([k (-in-mut-hash-keys fake-ht/mut)]) k)
            (for/sum ([k (-in-weak-hash-keys fake-ht/weak)]) k)
            (for/sum ([k (-in-ephemeron-hash-keys fake-ht/ephemeron)]) k)
@@ -467,6 +484,7 @@
            (for/sum ([(k v) (-in-weak-hash ht/weak)]) v)
            (for/sum ([(k v) (-in-ephemeron-hash ht/ephemeron)]) v)
            (for/sum ([(k v) (-in-immut-hash fake-ht/immut)]) v)
+           (for/sum ([(k v) (-in-immut-hash fake-ht/immut-unsafe)]) v)
            (for/sum ([(k v) (-in-mut-hash fake-ht/mut)]) v)
            (for/sum ([(k v) (-in-weak-hash fake-ht/weak)]) v)
            (for/sum ([(k v) (-in-ephemeron-hash fake-ht/ephemeron)]) v)
@@ -479,6 +497,7 @@
            (for/sum ([k+v (-in-weak-hash-pairs ht/weak)]) (cdr k+v))
            (for/sum ([k+v (-in-ephemeron-hash-pairs ht/ephemeron)]) (cdr k+v))
            (for/sum ([k+v (-in-immut-hash-pairs fake-ht/immut)]) (cdr k+v))
+           (for/sum ([k+v (-in-immut-hash-pairs fake-ht/immut-unsafe)]) (cdr k+v))
            (for/sum ([k+v (-in-mut-hash-pairs fake-ht/mut)]) (cdr k+v))
            (for/sum ([k+v (-in-weak-hash-pairs fake-ht/weak)]) (cdr k+v))
            (for/sum ([k+v (-in-ephemeron-hash-pairs fake-ht/ephemeron)]) (cdr k+v))
@@ -491,6 +510,7 @@
            (for/sum ([v (-in-weak-hash-values ht/weak)]) v)
            (for/sum ([v (-in-ephemeron-hash-values ht/ephemeron)]) v)
            (for/sum ([v (-in-immut-hash-values fake-ht/immut)]) v)
+           (for/sum ([v (-in-immut-hash-values fake-ht/immut-unsafe)]) v)
            (for/sum ([v (-in-mut-hash-values fake-ht/mut)]) v)
            (for/sum ([v (-in-weak-hash-values fake-ht/weak)]) v)
            (for/sum ([v (-in-ephemeron-hash-values fake-ht/ephemeron)]) v)

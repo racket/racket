@@ -12,6 +12,7 @@
                      chaperone-struct-unsafe-undefined
                      unsafe-chaperone-procedure
                      unsafe-impersonate-procedure
+                     unsafe-impersonate-hash
                      unsafe-start-atomic unsafe-end-atomic
                      unsafe-start-breakable-atomic unsafe-end-breakable-atomic
                      unsafe-in-atomic?

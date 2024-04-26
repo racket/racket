@@ -230,6 +230,24 @@ static int equal_always_w_key_wraps(Scheme_Object *ekey, Scheme_Object *tkey, Sc
   return scheme_equal_always(ekey, tkey);
 }
 
+XFORM_NONGCING static int same_kind_via_impersonator(Scheme_Object *orig_t1,
+                                                     Scheme_Object *orig_t2)
+{
+  Scheme_Object *v, *v2;
+  
+  if (SCHEME_NP_CHAPERONEP(orig_t1))
+    v = scheme_chaperone_props_get(((Scheme_Chaperone *)orig_t1)->props, scheme_hash_kind_key);
+  else
+    v = NULL;
+
+  if (SCHEME_NP_CHAPERONEP(orig_t2))
+    v2 = scheme_chaperone_props_get(((Scheme_Chaperone *)orig_t2)->props, scheme_hash_kind_key);
+  else
+    v2 = NULL;
+
+  return SAME_OBJ(v, v2);
+}
+    
 /*========================================================================*/
 /*                      normal mutable hash table                         */
 /*========================================================================*/
@@ -633,6 +651,9 @@ int scheme_hash_table_equal_rec(Scheme_Hash_Table *t1, Scheme_Object *orig_t1,
   if ((t1->count != t2->count)
       || (t1->make_hash_indices != t2->make_hash_indices)
       || (t1->compare != t2->compare))
+    return 0;
+  
+  if (!same_kind_via_impersonator(orig_t1, orig_t2))
     return 0;
     
   keys = t1->keys;
@@ -1118,6 +1139,9 @@ int scheme_bucket_table_equal_rec(Scheme_Bucket_Table *t1, Scheme_Object *orig_t
   if ((t1->weak != t2->weak)
       || (t1->make_hash_indices != t2->make_hash_indices)
       || (t1->compare != t2->compare))
+    return 0;
+
+  if (!same_kind_via_impersonator(orig_t1, orig_t2))
     return 0;
   
   buckets = t1->buckets;
@@ -4009,7 +4033,10 @@ int scheme_hash_tree_equal_rec(Scheme_Hash_Tree *t1, Scheme_Object *orig_t1,
   if (SAME_OBJ((Scheme_Object *)t1, orig_t1)
       && SAME_OBJ((Scheme_Object *)t2, orig_t2))
     return hamt_subset_of(t1, t2, 0, SCHEME_TYPE(t1), eql);
-    
+
+  if (!same_kind_via_impersonator(orig_t1, orig_t2))
+    return 0;
+
   for (i = scheme_hash_tree_next(t1, -1); i != -1; i = scheme_hash_tree_next(t1, i)) {
     scheme_hash_tree_index(t1, i, &k, &v);
 
