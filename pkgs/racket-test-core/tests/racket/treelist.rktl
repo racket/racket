@@ -179,6 +179,7 @@
   (test-bad (treelist-sort small-treelist cons #:key cons))
   (test-bad (chaperone-treelist 0 #:state #f #:ref void #:set void #:insert void #:append void #:prepend void #:delete void #:take void #:drop void))
   (test-bad (chaperone-treelist small-treelist #f #:state #f #:ref #f #:set void #:insert void #:append void #:prepend void #:delete void #:take void #:drop void))
+  (test-bad (chaperone-treelist small-treelist #:state #f #:ref #f #:set void #:insert void #:append void #:prepend void #:delete void #:take void #:drop void))
   (test-bad (chaperone-treelist small-treelist #:state #f #:ref (lambda (x) x) #:set void #:insert void #:append void #:prepend void #:delete void #:take void #:drop void))
   (test-bad (chaperone-treelist small-treelist #:state #f #:ref void #:set (lambda (x) x) #:insert void #:append void #:prepend void #:delete void #:take void #:drop void))
   (test-bad (chaperone-treelist small-treelist #:state #f #:ref void #:set void #:insert (lambda (x) x) #:append void #:prepend void #:delete void #:take void #:drop void))
@@ -353,6 +354,10 @@
   (test-bad (mutable-treelist-sort! small-treelist 0))
   (test-bad (mutable-treelist-sort! small-treelist add1))
   (test-bad (mutable-treelist-sort! small-treelist cons #:key cons))
+  (test-bad (chaperone-mutable-treelist (treelist 1 2 3 5) #:ref void #:set void #:insert void #:append void))
+  (test-bad (chaperone-mutable-treelist small-treelist #:ref #f #:set void #:insert void #:append void))
+  (test-bad (impersonate-mutable-treelist (treelist 1 2 3 5) #:ref void #:set void #:insert void #:append void))
+  (test-bad (impersonate-mutable-treelist small-treelist #:ref #f #:set void #:insert void #:append void))
 
   (void))
 
