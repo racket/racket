@@ -17146,7 +17146,7 @@
        (bytes->string/locale_0 in-bstr_0 err-char_0 start6_0 unsafe-undefined))
       ((in-bstr_0 err-char5_0)
        (bytes->string/locale_0 in-bstr_0 err-char5_0 0 unsafe-undefined))))))
-(define finish_2294
+(define finish_2782
   (make-struct-type-install-properties
    '(path)
    2
@@ -17158,13 +17158,12 @@
      prop:equal+hash
      (list
       (lambda (p1_0 p2_0 eql?_0)
-        (if (let ((app_0 (path-bytes p1_0)))
-              (|#%app| eql?_0 app_0 (path-bytes p2_0)))
+        (if (let ((app_0 (path-bytes p1_0))) (bytes=? app_0 (path-bytes p2_0)))
           (let ((app_0 (path-convention p1_0)))
             (eq? app_0 (path-convention p2_0)))
           #f))
-      (lambda (p_0 hc_0) (|#%app| hc_0 (path-bytes p_0)))
-      (lambda (p_0 hc_0) (|#%app| hc_0 (path-bytes p_0)))))
+      (lambda (p_0 hc_0) (equal-hash-code (path-bytes p_0)))
+      (lambda (p_0 hc_0) (equal-secondary-hash-code (path-bytes p_0)))))
     (cons
      1/prop:custom-write
      (lambda (p_0 port_0 mode_0)
@@ -17194,7 +17193,7 @@
    #f
    #f
    '(2 . 0)))
-(define effect_2995 (finish_2294 struct:path))
+(define effect_2995 (finish_2782 struct:path))
 (define path1.1
   (|#%name|
    path

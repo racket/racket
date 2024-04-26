@@ -1525,6 +1525,7 @@ XFORM_NONGCING static uintptr_t fast_equal_hash_key(Scheme_Object *o, uintptr_t 
   case scheme_windows_path_type:
     {
       if ((mode == EQUAL_MODE_EQUAL)
+          || (t != scheme_byte_string_type)
           || SCHEME_IMMUTABLEP(o)) {
         int i = SCHEME_BYTE_STRLEN_VAL(o);
         char *s = SCHEME_BYTE_STR_VAL(o);
@@ -2445,6 +2446,7 @@ static uintptr_t equal_hash_key2(Scheme_Object *o, Hash_Info *hi)
       char *s = SCHEME_BYTE_STR_VAL(o);
     
       if ((hi->mode == EQUAL_MODE_EQUAL)
+          || (t != scheme_byte_string_type)
           || SCHEME_IMMUTABLEP(o)) {
         while (i--) {
           k += s[i];

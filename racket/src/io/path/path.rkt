@@ -29,12 +29,12 @@
   #:property prop:equal+hash
   (list
    (lambda (p1 p2 eql?)
-     (and (eql? (path-bytes p1) (path-bytes p2))
+     (and (bytes=? (path-bytes p1) (path-bytes p2))
           (eq? (path-convention p1) (path-convention p2))))
    (lambda (p hc)
-     (hc (path-bytes p)))
+     (equal-hash-code (path-bytes p)))
    (lambda (p hc)
-     (hc (path-bytes p))))
+     (equal-secondary-hash-code (path-bytes p))))
   #:property prop:place-message (lambda (self)
                                   (lambda ()
                                     (lambda () self))))

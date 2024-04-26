@@ -436,7 +436,7 @@ XFORM_NONGCING int is_fast_equal (Scheme_Object *obj1, Scheme_Object *obj2, int 
  case scheme_windows_path_type:
    {
      intptr_t l1, l2;
-     if (for_chaperone_alw) return -1;
+     if (for_chaperone_alw && (t1 == scheme_byte_string_type)) return -1;
      l1 = SCHEME_BYTE_STRTAG_VAL(obj1);
      l2 = SCHEME_BYTE_STRTAG_VAL(obj2);
      return ((l1 == l2)
@@ -754,7 +754,8 @@ int is_equal (Scheme_Object *obj1, Scheme_Object *obj2, Equal_Info *eql)
     case scheme_windows_path_type:
       {
         intptr_t l1, l2;
-        if (((eql->mode == EQUAL_MODE_CHAPERONE_OF) || (eql->mode == EQUAL_MODE_EQUAL_ALWAYS))
+        if ((t1 == scheme_byte_string_type)
+            && ((eql->mode == EQUAL_MODE_CHAPERONE_OF) || (eql->mode == EQUAL_MODE_EQUAL_ALWAYS))
             && (!SCHEME_IMMUTABLEP(obj1) || !SCHEME_IMMUTABLEP(obj2)))
           return 0;
         l1 = SCHEME_BYTE_STRTAG_VAL(obj1);

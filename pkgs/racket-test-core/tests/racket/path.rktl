@@ -5,6 +5,12 @@
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(test #f equal? (bytes->path #"a") (bytes->path #"b"))
+(test #t equal? (bytes->path #"a") (bytes->path #"a"))
+(test #t equal-always? (bytes->path #"a") (bytes->path #"a"))
+(test (equal-hash-code (bytes->path #"a")) equal-hash-code (bytes->path #"a"))
+(test (equal-always-hash-code (bytes->path #"a")) equal-always-hash-code (bytes->path #"a"))
+
 (test #t path<? (bytes->path #"a") (bytes->path #"b"))
 (test #f path<? (bytes->path #"b") (bytes->path #"a"))
 (test #t path<? (bytes->path #"a") (bytes->path #"b") (bytes->path #"c"))

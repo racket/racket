@@ -396,6 +396,9 @@
         (error))
       (loop (add1 x) (cdr content) (list* bstr bstr accum))])))
 
+(test #t (equal? (build-path "a" "b") (build-path "a" "b")))
+(test #t (equal-always? (build-path "a" "b") (build-path "a" "b")))
+
 (let ()
   (define path (build-path "compiled" "demo-out"))
   (define o (open-output-file path 'truncate))
