@@ -169,15 +169,11 @@
                                            (|#%app| rec-equal? orig-a orig-b eql? (or (eq? mode 'equal?)
                                                                                       (eq? mode 'impersonator-of?)))
                                            (|#%app| rec-equal? orig-a orig-b eql?)))])))))])))]
-           [(and (or (eq? mode 'chaperone-of?) (eq? mode 'equal-always?))
-                 ;; Mutable strings and bytevectors must be `eq?` for `chaperone-of?` and `equal-always?`
-                 (or (mutable-string? a)
-                     (mutable-string? b)
-                     (mutable-bytevector? a)
-                     (mutable-bytevector? b)))
-            #f]
            [else
-            (#%equal? a b)])))))
+            (and (or (not (or (eq? mode 'chaperone-of?) (eq? mode 'equal-always?)))
+                     (and (immutable-string? a) (immutable-string? b))
+                     (and (immutable-bytevector? a) (immutable-bytevector? b)))
+                 (#%equal? a b))])))))
 
 (define (equal? a b) (do-equal? a b 'equal? #f))
 (define (impersonator-of? a b) (do-equal? a b 'impersonator-of? #f))
