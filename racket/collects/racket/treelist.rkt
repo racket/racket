@@ -1425,9 +1425,10 @@ minimum required storage. |#
   (define prev (treelist-wrapper-prev w))
   (define v (treelist-ref prev index))
   (define ref (procs-ref (treelist-wrapper-procs w)))
-  (if ref
-      (check-chaperone who (treelist-wrapper-chaperone? w) (ref prev index v (treelist-wrapper-state w)) v)
-      v))
+  (check-chaperone who
+                   (treelist-wrapper-chaperone? w)
+                   (ref prev index v (treelist-wrapper-state w))
+                   v))
 
 (define (treelist-first/slow tl)
   (define who 'treelist-first)
