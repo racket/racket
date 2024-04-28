@@ -41,6 +41,9 @@
   (test (/ 23318339437 (expt 2 16443)) extfl->exact 3.4t-4940)
   (test 3.40000000000116185t-4940 real->extfl (extfl->exact 3.40000000000116185t-4940))
 
+  (test #t equal? (extflvector 1.0t0 2.0t0 3.0t0) (extflvector 1.0t0 2.0t0 3.0t0))
+  (test #f equal-always? (extflvector 1.0t0 2.0t0 3.0t0) (extflvector 1.0t0 2.0t0 3.0t0))
+
   ;; in-extflvector tests.
   (let ((flv (extflvector 1.0t0 2.0t0 3.0t0)))
     (let ((flv-seq (in-extflvector flv)))
