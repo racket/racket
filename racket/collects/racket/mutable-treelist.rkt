@@ -119,14 +119,14 @@
   (check-mutable-treelist 'mutable-treelist-first mtl)
   (define tl (mutable-treelist-tl mtl))
   (when (treelist-empty? tl)
-    (raise-arguments-error 'mutable-treelist-first "mutable treelist is empty"))
+    (raise-arguments-error* 'mutable-treelist-first 'racket/primitive "mutable treelist is empty"))
   (treelist-first tl))
 
 (define (mutable-treelist-last mtl)
   (check-mutable-treelist 'mutable-treelist-last mtl)
   (define tl (mutable-treelist-tl mtl))
   (when (treelist-empty? tl)
-    (raise-arguments-error 'mutable-treelist-last "mutable treelist is empty"))
+    (raise-arguments-error* 'mutable-treelist-last 'racket/primitive "mutable treelist is empty"))
   (treelist-last tl))
 
 (define (mutable-treelist-set! mtl index val)
@@ -219,18 +219,18 @@
 
 (define (vector->mutable-treelist vec)
   (unless (vector? vec)
-    (raise-argument-error 'vector->mutable-treelist "vector?" vec))
+    (raise-argument-error* 'vector->mutable-treelist 'racket/primitive "vector?" vec))
   (mutable-treelist (vector->treelist vec)))
 
 (define (list->mutable-treelist lst)
   (unless (list? lst)
-    (raise-argument-error 'list->mutable-treelist "list?" lst))
+    (raise-argument-error* 'list->mutable-treelist 'racket/primitive "list?" lst))
   (mutable-treelist (list->treelist lst)))
 
 (define (mutable-treelist-map! mtl proc)
   (check-mutable-treelist 'mutable-treelist-map! mtl)
   (unless (and (procedure? proc) (procedure-arity-includes? proc 1))
-    (raise-argument-error 'mutable-treelist-map! "(procedure-arity-includes/c 1)" proc)) 
+    (raise-argument-error* 'mutable-treelist-map! 'racket/primitive "(procedure-arity-includes/c 1)" proc))
   (define tl (mutable-treelist-tl mtl))
   (cond
     [(impersonator? mtl)
@@ -243,19 +243,19 @@
 (define (mutable-treelist-for-each mtl proc)
   (check-mutable-treelist 'mutable-treelist-for-each mtl)
   (unless (and (procedure? proc) (procedure-arity-includes? proc 1))
-    (raise-argument-error 'mutable-treelist-for-each "(procedure-arity-includes/c 1)" proc))
+    (raise-argument-error* 'mutable-treelist-for-each 'racket/primitive "(procedure-arity-includes/c 1)" proc))
   (treelist-for-each (mutable-treelist-tl mtl) proc))
 
 (define (mutable-treelist-member? mtl v [eql? equal?])
   (check-mutable-treelist 'mutable-treelist-member? mtl)
   (unless (and (procedure? eql?) (procedure-arity-includes? eql? 2))
-    (raise-argument-error 'mutable-treelist-member? "(procedure-arity-includes/c 2)" eql?))
+    (raise-argument-error* 'mutable-treelist-member? 'racket/primitive "(procedure-arity-includes/c 2)" eql?))
   (treelist-member? (mutable-treelist-tl mtl) v eql?))
 
 (define (mutable-treelist-find mtl match?)
   (check-mutable-treelist 'mutable-treelist-find mtl)
   (unless (and (procedure? match?) (procedure-arity-includes? match? 1))
-    (raise-argument-error 'mutable-treelist-find "(procedure-arity-includes/c 1)" match?))
+    (raise-argument-error* 'mutable-treelist-find 'racket/primitive "(procedure-arity-includes/c 1)" match?))
   (treelist-find (mutable-treelist-tl mtl) match?))
 
 (define (mutable-treelist-sort! mtl less-than?
@@ -295,16 +295,16 @@
                                    props)
   (unless (and (procedure? ref-proc)
                (procedure-arity-includes? ref-proc 3))
-    (raise-argument-error who "(procedure-arity-includes/c 3)" ref-proc)) 
+    (raise-argument-error* who 'racket/primitive "(procedure-arity-includes/c 3)" ref-proc))
   (unless (and (procedure? set-proc)
                (procedure-arity-includes? set-proc 3))
-    (raise-argument-error who "(procedure-arity-includes/c 3)" set-proc))
+    (raise-argument-error* who 'racket/primitive "(procedure-arity-includes/c 3)" set-proc))
   (unless (and (procedure? insert-proc)
                (procedure-arity-includes? insert-proc 3))
-    (raise-argument-error who "(procedure-arity-includes/c 3)" insert-proc))
+    (raise-argument-error* who 'racket/primitive "(procedure-arity-includes/c 3)" insert-proc))
   (unless (and (procedure? append-proc)
                (procedure-arity-includes? append-proc 2))
-    (raise-argument-error who "(procedure-arity-includes/c 2)" append-proc))
+    (raise-argument-error* who 'racket/primitive "(procedure-arity-includes/c 2)" append-proc))
   (check-chaperone-properties who props))
 
 (define (chaperone-mutable-treelist mtl
