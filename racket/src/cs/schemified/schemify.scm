@@ -25667,7 +25667,11 @@
                                                                                                                               (if (known-procedure?
                                                                                                                                    k_0)
                                                                                                                                 'proc
-                                                                                                                                #t)
+                                                                                                                                (if (known-struct-type?
+                                                                                                                                     k_0)
+                                                                                                                                  (known-struct-type-field-count
+                                                                                                                                   k_0)
+                                                                                                                                  #t))
                                                                                                                               #f))
                                                                                                                           #f)
                                                                                                                         fold-var_1)))

@@ -170,11 +170,18 @@
             (and im-ready?
                  (let ([k (import-group-lookup grp (import-ext-id im))])
                    (and (known-constant? k)
-                        (if (known-procedure? k)
-                            ;; A call to the procedure is probably in unsafe form:
-                            'proc
-                            ;; Otherwise, accept any value:
-                            #t))))))
+                        (cond
+                          [(known-procedure? k)
+                           ;; A call to the procedure is probably in unsafe form:
+                           'proc]
+                          [(known-struct-type? k)
+                           ;; Struct-type operations turn into references of the struct type
+                           ;; and unsafe accesses based on a known size, so make sure the size
+                           ;; hasn't changed
+                           (known-struct-type-field-count k)]
+                          [else
+                           ;; Otherwise, accept any value:
+                           #t]))))))
         ;; Convert internal to external identifiers for known-value info
         (for/fold ([knowns (hasheq)]) ([ex-id (in-list ex-ids)])
           (define id (ex-int-id ex-id))
