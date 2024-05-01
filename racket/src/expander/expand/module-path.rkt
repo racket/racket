@@ -14,7 +14,7 @@
          (eq? 'quote (car mod-path))
          (symbol? (cadr mod-path))
          (hash-ref declared-submodule-names (cadr mod-path) #f))
-    (module-path-index-join `(submod "." ,(cadr mod-path)) self)]
+    (module-path-index-join* `(submod "." ,(cadr mod-path)) self)]
    [(and (list? mod-path)
          (eq? 'submod (car mod-path))
          (let ([mod-path (cadr mod-path)])
@@ -23,9 +23,9 @@
                 (eq? 'quote (car mod-path))
                 (symbol? (cadr mod-path))
                 (hash-ref declared-submodule-names (cadr mod-path) #f))))
-    (module-path-index-join `(submod "." ,(cadr (cadr mod-path)) ,@(cddr mod-path)) self)]
+    (module-path-index-join* `(submod "." ,(cadr (cadr mod-path)) ,@(cddr mod-path)) self)]
    [else
-    (module-path-index-join mod-path self)]))
+    (module-path-index-join* mod-path self)]))
 
 (define (module-path->mpi/context mod-path ctx)
   (module-path->mpi mod-path

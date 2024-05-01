@@ -99,6 +99,7 @@
    (define self (parsed-module-self p))
    (define requires (parsed-module-requires p))
    (define recur-requires (parsed-module-recur-requires p))
+   (define flattened-requires (parsed-module-flattened-requires p))
    (define provides (parsed-module-provides p))
    (define encoded-root-expand-ctx-box (box (parsed-module-encoded-root-ctx p))) ; for `module->namespace`
    (define body-context-simple? (parsed-module-root-ctx-simple? p))
@@ -214,7 +215,7 @@
                   ['compile 'module 'linklet]
                   (compile-linklet s (hasheq 'module full-module-name
                                              'name 'decl)))))
-           (generate-module-declaration-linklet mpis self requires recur-requires provides
+           (generate-module-declaration-linklet mpis self requires recur-requires flattened-requires provides
                                                 phase-to-link-module-uses-expr
                                                 portal-stxes))))
    
@@ -380,6 +381,7 @@
                       self
                       requires
                       recur-requires
+                      flattened-requires
                       provides
                       phase-to-link-module-uses
                       (current-code-inspector)

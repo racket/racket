@@ -14,6 +14,7 @@
      (do-raise v))))
   
 (define (do-raise v)
+  #;(#%printf "~s\n" (exn->string v))
   (let ([get-next-h (continuation-mark-set->iterator (current-continuation-marks/no-trace)
                                                      (list exception-handler-key)
                                                      #f

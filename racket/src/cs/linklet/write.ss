@@ -25,7 +25,7 @@
          (when (linklet? v) (check-fasl-preparation v))
          (let ([new-v (cond
                         [(linklet? v)
-                         (adjust-cross-perparation
+                         (adjust-cross-preparation
                           (let ([literals (linklet-literals v)])
                             (cond
                               [(and (#%vector? literals)
@@ -47,7 +47,7 @@
                               (and (pair? prep) (cdr prep)))))))))])))
 
 ;; Before fasl conversion, change 'cross or 'faslable-unsafe to 'faslable
-(define (adjust-cross-perparation l)
+(define (adjust-cross-preparation l)
   (let ([p (linklet-preparation l)])
     (if (or (pair? p) (eq? p 'faslable-unsafe))
         (set-linklet-preparation l 'faslable)

@@ -126,7 +126,7 @@
         (module-path? req))
     (perform-require! (if (module-path-index? req)
                           req
-                          (module-path-index-join req #f))
+                          (module-path-index-join* req #f))
                       #f #f
                       ctx-stx ns
                       #:run? run?

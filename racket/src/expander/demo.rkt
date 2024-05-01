@@ -1225,7 +1225,7 @@
 ;; cross-phase persistent declaration
 
 (eval-module-declaration '(module cross-phase-persistent '#%kernel
-                           (#%declare #:cross-phase-persistent)
+                           (#%declare #:cross-phase-persistent #:flatten-requires)
                            (#%require '#%kernel)
                            (#%provide gen)
                            (define-values (gen) (gensym "g"))

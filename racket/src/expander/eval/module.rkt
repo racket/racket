@@ -99,6 +99,7 @@
 
    (define requires (decl 'requires))
    (define recur-requires (decl 'recur-requires))
+   (define flattened-requires (decl 'flattened-requires))
    (define provides (decl 'provides))
    (define original-self (decl 'self-mpi))
    (define phase-to-link-modules (decl 'phase-to-link-modules))
@@ -111,7 +112,7 @@
      ;; If there's no `dh`, then it's important not to retain a reference to
      ;; `c`, which could cause the serialized form of syntax objects to
      ;; be retained after deserialization and reachable from the module cache;
-     ;; if it's there's a `dh`, though, then we won't be in the module cache
+     ;; if it's there's a `dh`, though, then it won't be in the module cache
      (if dh
          ;; Callback to declare submodules:
          (lambda (ns names declare-name pre?)
@@ -137,6 +138,7 @@
                               #:self original-self
                               #:requires requires
                               #:recur-requires recur-requires
+                              #:flattened-requires flattened-requires
                               #:provides provides
                               #:language-info language-info
                               #:realm realm
@@ -421,6 +423,7 @@
                  'self-mpi (compiled-in-memory-original-self cim)
                  'requires (compiled-in-memory-requires cim)
                  'recur-requires (compiled-in-memory-recur-requires cim)
+                 'flattened-requires (compiled-in-memory-flattened-requires cim)
                  'provides (compiled-in-memory-provides cim)
                  'phase-to-link-modules (compiled-in-memory-phase-to-link-module-uses cim)
                  'portal-stxes (compiled-in-memory-portal-stxes cim)))

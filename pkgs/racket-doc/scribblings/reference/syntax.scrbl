@@ -410,6 +410,7 @@ Legal only in a @tech{module begin context}, and handled by the
          ([declaration-keyword #:cross-phase-persistent
                                #:empty-namespace
                                #:require=define
+                               #:flatten-requires
                                #:unsafe
                                (code:line #:realm identifier)])]{
 
@@ -434,6 +435,16 @@ module:
        allowed to shadow a @racket[#%require] (or @racket[require])
        binding. This declaration does not affect shadowing of a
        module's initial imports (i.e., the module's language).}
+
+@item{@indexed-racket[#:flatten-requires] --- declares the performance
+       hint that a compiled form of the module should gather
+       transitive imports into a single, flattened list, which can
+       improve performance when the module is @tech{instantiate}d or
+       when it is attached via @racket[namespace-attach-module] or
+       @racket[namespace-attach-module-declaration]. Flattening
+       imports can be counterproductive, however, when it is applied
+       to multiple modules that are both use by another and that have
+       overlapping transitive-import subtrees.}
 
 @item{@indexed-racket[#:unsafe] --- declares that the module can be
        compiled without checks that could trigger
@@ -465,7 +476,8 @@ context} or a @tech{module-begin context}. Each
 @history[#:changed "6.3" @elem{Added @racket[#:empty-namespace].}
          #:changed "7.9.0.5" @elem{Added @racket[#:unsafe].}
          #:changed "8.4.0.2" @elem{Added @racket[#:realm].}
-         #:changed "8.6.0.9" @elem{Added @racket[#:require=define].}]}
+         #:changed "8.6.0.9" @elem{Added @racket[#:require=define].}
+         #:changed "8.13.0.4" @elem{Added @racket[#:flatten-requires].}]}
 
 
 @;------------------------------------------------------------------------

@@ -83,6 +83,15 @@
               (define-values (a a-rest) (loop r))
               (values (cons a accum) a-rest)))
           (values (reverse rev) rest)]
+         [(#:vector)
+          (define-values (rev rest)
+            (for/fold ([accum '()] [r (cddr r)]) ([i (in-range (cadr r))])
+              (define-values (a a-rest) (loop r))
+              (values (cons a accum) a-rest)))
+          (values (vector->immutable-vector (list->vector (reverse rev))) rest)]
+         [(#:box)
+          (define-values (v rest) (loop (cdr r)))
+          (values (box-immutable v) rest)]
          [(#:mpi)
           (values (vector-ref mpis (cadr r)) (cddr r))]
          [(#:hash #:hashalw #:hasheq #:hasheqv #:hasheqv/phase+space)
@@ -119,7 +128,9 @@
                  (boolean? i)
                  (and (pair? i)
                       (phase? (car i))
-                      (symbol? (cdr i))))
+                      (symbol? (cdr i)))
+                 (and (list? i)
+                      (andmap phase? i)))
              (values i (cdr r))]
             [else
              (error 'deserialize "unsupported instruction: ~s" i)])])])))
@@ -178,6 +189,7 @@
        (values (instance-variable-value data-i '.mpi-vector)
                (instance-variable-value decl-i 'requires)
                (instance-variable-value decl-i 'recur-requires)
+               (instance-variable-value decl-i 'flattened-requires)
                (instance-variable-value decl-i 'provides)
                (instance-variable-value decl-i 'phase-to-link-modules))]
       [link-l
@@ -187,6 +199,7 @@
        (values (instance-variable-value link-i '.mpi-vector)
                '()
                '()
+               #f
                '#hasheqv()
                (instance-variable-value link-i 'phase-to-link-modules))]
       [else (values '#() '() '() '#hasheqv() '#hasheqv())])))

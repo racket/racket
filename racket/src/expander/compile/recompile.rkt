@@ -219,6 +219,7 @@
     (compile-linklet (generate-module-declaration-linklet mpis self 
                                                           (decl 'requires)
                                                           (decl 'recur-requires)
+                                                          (decl 'flattened-requires)
                                                           (decl 'provides)
                                                           phase-to-link-module-uses-expr
                                                           portal-stxes)

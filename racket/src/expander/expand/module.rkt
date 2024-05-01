@@ -438,6 +438,8 @@
                          (syntax-e realm-stx)
                          (current-compile-realm))))
 
+     (define flatten-requires? (hash-ref declared-keywords '#:flatten-requires #f))
+     
      ;; - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
      ;; Pass 4: expand `module*` submodules
      
@@ -464,6 +466,7 @@
                                             #:root-ctx root-ctx
                                             #:ctx submod-ctx
                                             #:modules-being-compiled modules-being-compiled
+                                            #:flatten-requires? flatten-requires?
                                             #:realm realm
                                             #:portal-syntaxes portal-syntaxes
                                             #:fill compiled-module-box)))
@@ -492,7 +495,7 @@
      ;; Assemble the `#%module-begin` result:
      (cond
       [(expand-context-to-parsed? submod-ctx)
-       (parsed-#%module-begin rebuild-mb-s (parsed-only fully-expanded-bodys) realm)]
+       (parsed-#%module-begin rebuild-mb-s (parsed-only fully-expanded-bodys) realm flatten-requires?)]
       [else
        (define mb-result-s
          (rebuild
@@ -501,7 +504,7 @@
        (cond
         [(not (expand-context-in-local-expand? submod-ctx))
          (expanded+parsed mb-result-s
-                          (parsed-#%module-begin rebuild-mb-s (parsed-only fully-expanded-bodys) realm))]
+                          (parsed-#%module-begin rebuild-mb-s (parsed-only fully-expanded-bodys) realm flatten-requires?))]
         [else mb-result-s])]))
 
    ;; - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -563,11 +566,14 @@
    ;; - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
    ;; Assemble the `module` result
 
-   (define-values (requires recur-requires provides) (extract-requires-and-provides requires+provides self self))
-
    (define parsed-mb (if (expanded+parsed? expanded-mb)
                          (expanded+parsed-parsed expanded-mb)
                          expanded-mb))
+
+   (define-values (requires recur-requires flattened-requires provides)
+     (extract-requires-and-provides requires+provides self self
+                                    #:flatten-requires? (parsed-#%module-begin-flatten-requires? parsed-mb)
+                                    #:namespace m-ns))
 
    (define result-form
      (and (or (expand-context-to-parsed? init-ctx)
@@ -578,6 +584,7 @@
                          self
                          requires
                          recur-requires
+                         flattened-requires
                          provides
                          (requires+provides-all-bindings-simple? requires+provides)
                          (root-expand-context-encode-for-module root-ctx self self)
@@ -957,7 +964,8 @@
               (define kw (car kws))
               (unless (keyword? (syntax-e kw))
                 (raise-syntax-error #f "expected a keyword" exp-body kw))
-              (unless (memq (syntax-e kw) '(#:cross-phase-persistent #:empty-namespace #:unsafe #:realm #:require=define))
+              (unless (memq (syntax-e kw) '(#:cross-phase-persistent #:empty-namespace #:unsafe #:realm
+                                            #:require=define #:flatten-requires))
                 (raise-syntax-error #f "not an allowed declaration keyword" exp-body kw))
               (define has-arg? (eq? (syntax-e kw) '#:realm))
               (when (hash-ref declared-keywords (syntax-e kw) #f)
@@ -1233,10 +1241,14 @@
                                       #:ctx ctx
                                       #:modules-being-compiled modules-being-compiled
                                       #:realm realm
+                                      #:flatten-requires? flatten-requires?
                                       #:portal-syntaxes portal-syntaxes
                                       #:fill compiled-module-box)
 
-  (define-values (requires recur-requires provides) (extract-requires-and-provides requires+provides self self))
+  (define-values (requires recur-requires flattened-requires provides)
+    (extract-requires-and-provides requires+provides self self
+                                   #:flatten-requires? flatten-requires?
+                                   #:namespace m-ns))
 
   (define parsed-mod
     (parsed-module rebuild-s
@@ -1245,6 +1257,7 @@
                    self
                    requires
                    recur-requires
+                   flattened-requires
                    provides
                    (requires+provides-all-bindings-simple? requires+provides)
                    (root-expand-context-encode-for-module root-ctx self self)

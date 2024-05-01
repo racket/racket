@@ -58,10 +58,15 @@
 
 (struct region (path
                 [start #:mutable]        ; start time
+                [start-gc #:mutable]
                 [start-memory #:mutable] ; memory allocated before start time
                 [as-nested #:mutable]    ; time accumulated for nested regions
+                [as-nested-gc #:mutable]    ; time accumulated for nested regions
                 [as-nested-memory #:mutable])) ; ditto, for memory
-(struct stat ([msecs #:mutable] [memory #:mutable] [count #:mutable]))
+(struct stat ([msecs #:mutable]
+              [msecs-gc #:mutable]
+              [memory #:mutable]
+              [count #:mutable]))
 
 (define stat-key (gensym))
 
@@ -82,19 +87,25 @@
                                                              null)))))
                                        path)
                                    (current-inexact-monotonic-milliseconds)
+                                   (current-gc-milliseconds)
                                    (current-memory-use 'cumulative)
                                    0.0
+                                   0
                                    0)
                            region-stack)))
 
 (define (end-performance-region)
   (define now (current-inexact-monotonic-milliseconds))
+  (define now-gc (current-gc-milliseconds))
   (define now-memory (current-memory-use 'cumulative))
   (define r (car region-stack))
   (set! region-stack (cdr region-stack))
 
   (define full-delta (- now (region-start r)))
   (define delta (- full-delta (region-as-nested r)))
+
+  (define full-delta-gc (- now-gc (region-start-gc r)))
+  (define delta-gc (- full-delta-gc (region-as-nested-gc r)))
 
   (define full-delta-memory (- now-memory (region-start-memory r)))
   (define delta-memory (- full-delta-memory (region-as-nested-memory r)))
@@ -106,10 +117,11 @@
                        (hash-set! accums key accum)
                        accum))])
       (define s (or (hash-ref accum stat-key #f)
-                    (let ([s (stat 0.0 0 0)])
+                    (let ([s (stat 0.0 0 0 0)])
                       (hash-set! accum stat-key s)
                       s)))
       (set-stat-msecs! s (+ delta (stat-msecs s)))
+      (set-stat-msecs-gc! s (+ delta-gc (stat-msecs-gc s)))
       (set-stat-memory! s (+ delta-memory (stat-memory s)))
       (when (null? (cdr path))
         (set-stat-count! s (add1 (stat-count s))))
@@ -120,6 +132,9 @@
     (set-region-as-nested! (car region-stack)
                            (+ (region-as-nested (car region-stack))
                               full-delta))
+    (set-region-as-nested-gc! (car region-stack)
+                              (+ (region-as-nested-gc (car region-stack))
+                                 full-delta-gc))
     (set-region-as-nested-memory! (car region-stack)
                                   (+ (region-as-nested-memory (car region-stack))
                                      full-delta-memory))))
@@ -139,10 +154,11 @@
                                 [(and (positive? i) (zero? (modulo i 3)))
                                  (list* c #\, l)]
                                 [else (cons c l)]))))
-                         (define-values (label-max-len value-max-len memory-max-len count-max-len)
-                           (let loop ([accums accums] [label-len 6] [value-len 5] [memory-len 4] [count-len 5] [indent 2])
+                         (define-values (label-max-len value-max-len value-gc-max-len memory-max-len count-max-len)
+                           (let loop ([accums accums] [label-len 6] [value-len 5] [value-gc-len 2] [memory-len 4] [count-len 5] [indent 2])
                              (for/fold ([label-len label-len]
                                         [value-len value-len]
+                                        [value-gc-len value-gc-len]
                                         [memory-len memory-len]
                                         [count-len count-len])
                                        ([(k v) (in-hash accums)])
@@ -150,16 +166,20 @@
                                  [(eq? k stat-key)
                                   (values label-len
                                           (max value-len (whole-len (format "~a" (stat-msecs v))))
+                                          (max value-gc-len (string-length (format "~a" (stat-msecs-gc v))))
                                           (max memory-len (string-length (format "~a" (kb (stat-memory v)))))
                                           (max count-len (string-length (format "~a" (stat-count v)))))]
                                  [else (loop v
                                              (max label-len (+ indent (string-length (format "~a" k))))
                                              value-len
+                                             value-gc-len
                                              memory-len
                                              count-len
                                              (+ 2 indent))]))))
-                         (log-error "REGION      ~aMSECS   ~aMEMK   ~aCOUNT"
+                         (log-error "REGION      ~aMSECS   ~aGC   ~aMEMK   ~aCOUNT"
                                     (make-string (- (+ label-max-len value-max-len) 11)
+                                                 #\space)
+                                    (make-string (- value-gc-max-len 2)
                                                  #\space)
                                     (make-string (- memory-max-len 4)
                                                  #\space)
@@ -168,13 +188,16 @@
                          (let loop ([name #f] [accums accums] [indent ""] [newline? #t])
                            (when name
                              (define v (hash-ref accums stat-key))
-                             (log-error "~a~a   ~a~a   ~a~a   ~a~a"
+                             (log-error "~a~a   ~a~a   ~a~a   ~a~a   ~a~a"
                                         indent
                                         name
                                         (make-string (+ (- label-max-len (string-length (format "~a" name)) (string-length indent))
                                                         (- value-max-len (whole-len (format "~a" (stat-msecs v)))))
                                                      #\space)
                                         (regexp-replace #rx"[.](..).*" (format "~a00" (stat-msecs v)) ".\\1")
+                                        (make-string (- value-gc-max-len (string-length (format "~a" (stat-msecs-gc v))))
+                                                     #\space)
+                                        (format "~a" (stat-msecs-gc v))
                                         (make-string (- memory-max-len (string-length (format "~a" (kb (stat-memory v)))))
                                                      #\space)
                                         (kb (stat-memory v))

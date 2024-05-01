@@ -300,6 +300,35 @@
     (test '(mma ma pma a) values l)
     (void)))
 
+(module provides-variable-m-at-phase-1 racket/base
+  (require (for-syntax racket/base))
+  (provide (for-syntax m))
+  (define-for-syntax m 10))
+
+(module uses-m-at-phase-1-shifted-to-0 racket/base
+  (require (for-template 'provides-variable-m-at-phase-1))
+  (provide n)
+  (define n #'m))
+
+(err/rt-test/once
+ (let ([orig (current-namespace)])
+   (parameterize ([current-namespace (make-base-namespace)])
+     (namespace-attach-module orig ''uses-m-at-phase-1-shifted-to-0)))
+ exn:fail?
+ #rx"module not instantiated .in the source namespace.")
+
+(test #t syntax? (dynamic-require ''uses-m-at-phase-1-shifted-to-0 'n))
+
+(test 10
+      'eval-in-attached
+      (let ([orig (current-namespace)])
+        (parameterize ([current-namespace (make-base-namespace)])
+          (namespace-attach-module orig ''uses-m-at-phase-1-shifted-to-0)
+          (define stx (dynamic-require ''uses-m-at-phase-1-shifted-to-0 'n))
+          ;; Using `eval` works only when `provides-variable-m-at-phase-1`
+          ;; is correctly attached as instantiated in this namespace
+          (eval stx))))
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Check redundant import and re-provide
 

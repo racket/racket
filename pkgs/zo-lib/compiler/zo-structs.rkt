@@ -73,7 +73,7 @@
 
 (define-form-struct (linkl-directory zo) ([table (hash/c (listof symbol?) linkl-bundle?)]))
 (define-form-struct (linkl-bundle zo)    ([table (hash/c (or/c symbol? fixnum?)
-                                                         any/c)])) ; can be anythingv, but especially a linklet
+                                                         any/c)])) ; can be anything, but especially a linklet
 
 (define-form-struct (lam expr) ([name (or/c symbol? vector? empty?)]
                                 [flags (listof (or/c 'preserves-marks 'is-method 'single-result

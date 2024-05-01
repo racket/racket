@@ -28,10 +28,11 @@
         (loop (cddr ls)
               (hash-set ht
                         key
-                        (if (linklet? val)
-                            (adjust-linklet-laziness
-                             (decode-linklet-literals val))
-                            val))))])))
+                        (cond
+                          [(linklet? val)
+                           (adjust-linklet-laziness
+                            (decode-linklet-literals val))]
+                          [else val]))))])))
 
 (define (adjust-linklet-laziness linklet)
   (set-linklet-code linklet

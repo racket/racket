@@ -3699,7 +3699,9 @@
     (check-random-pairs check-shift-plus-bits-to-even)))
   
 (check-conversion max-53-bit-number)
-(for ([i 100])
+(for ([i (if (eq? (system-type 'gc) 'cgc)
+             10
+             100)])
   (check-conversion
    ;; Random 53-bit number:
    (+ (arithmetic-shift 1 52)

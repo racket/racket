@@ -21,6 +21,7 @@
          module-path-index-resolve
          module-path-index-fresh
          module-path-index-join
+         module-path-index-join*
          module-path-index-split
          module-path-index-submodule
          make-self-module-path-index
@@ -28,6 +29,7 @@
          imitate-generic-module-path-index!
          module-path-index-shift
          module-path-index-resolved ; returns #f if not yet resolved
+         module-path-index-shift/resolved
 
          top-level-module-path-index
          top-level-module-path-index?
@@ -208,7 +210,7 @@
 ;; must be shared across phases of a module
 (define deserialize-module-path-index
   (case-lambda
-    [(path base) (module-path-index-join path base)]
+    [(path base) (module-path-index-join* path base)]
     [(name) (make-self-module-path-index (make-resolved-module-path name))]
     [() top-level-module-path-index]))
 
@@ -239,7 +241,7 @@
 
 (define (module-path-index-fresh mpi)
   (define-values (path base) (module-path-index-split mpi))
-  (module-path-index-join path base))
+  (module-path-index-join* path base))
 
 (define/who (module-path-index-join mod-path base [submod #f])
   (check who #:or-false module-path? mod-path)
@@ -267,16 +269,20 @@
     (make-self-module-path-index (make-resolved-module-path
                                   (cons generic-module-name submod)))]
    [else
-    (define keep-base
-      (let loop ([mod-path mod-path])
-        (cond
-         [(path? mod-path) #f]
-         [(and (pair? mod-path) (eq? 'quote (car mod-path))) #f]
-         [(symbol? mod-path) #f]
-         [(and (pair? mod-path) (eq? 'submod (car mod-path)))
-          (loop (cadr mod-path))]
-         [else base])))
-    (module-path-index mod-path keep-base #f empty-shift-cache)]))
+    (module-path-index-join* mod-path base)]))
+
+(define (module-path-index-join* mod-path base)
+  (define keep-base
+    (let loop ([mod-path mod-path])
+      (cond
+        [(path? mod-path) #f]
+        [(and (pair? mod-path) (eq? 'quote (car mod-path))) #f]
+        [(symbol? mod-path) #f]
+        [(and (pair? mod-path) (eq? 'lib (car mod-path))) #f]
+        [(and (pair? mod-path) (eq? 'submod (car mod-path)))
+         (loop (cadr mod-path))]
+        [else base])))
+  (module-path-index mod-path keep-base #f empty-shift-cache))
 
 (define (module-path-index-resolve/maybe base load?)
   (if (module-path-index? base)
@@ -363,9 +369,27 @@
        [(shift-cache-ref (module-path-index-shift-cache shifted-base) mpi)]
        [else
         (define shifted-mpi
-          (module-path-index (module-path-index-path mpi) shifted-base #f empty-shift-cache))
+          (module-path-index-join* (module-path-index-path mpi) shifted-base))
         (shift-cache-set! shifted-base shifted-mpi)
         shifted-mpi])])]))
+
+;; ensures that the result module-path index is fresh enough, so that
+;; resolving will go through the module name resolver
+(define (module-path-index-shift/resolved mpi from-mpi to-mpi rp)
+  (define maybe-new-mpi (module-path-index-shift mpi from-mpi to-mpi))
+  (define new-mpi (if (and (eq? maybe-new-mpi mpi)
+                           (let ([p (module-path-index-path mpi)])
+                             (not (and (pair? p)
+                                       (eq? 'quote (car p))))))
+                      (module-path-index (module-path-index-path mpi)
+                                         (module-path-index-base mpi)
+                                         #f
+                                         empty-shift-cache)
+                      maybe-new-mpi))
+  (when rp
+    (unless (module-path-index-resolved new-mpi)
+      (set-module-path-index-resolved! new-mpi rp)))
+  new-mpi)
 
 (define (shift-cache-ref cache mpi)
   (for/or ([wb (in-list cache)])
@@ -458,7 +482,7 @@
        (error 'core-module-name-resolver
               "not a supported module path: ~v" p)])]))
 
-;; Build a submodule name given an enclosing module name, if cany
+;; Build a submodule name given an enclosing module name, if any
 (define (build-module-name name ; a symbol
                            enclosing ; #f => no enclosing module
                            #:original [orig-name name]) ; for error reporting

@@ -14,6 +14,7 @@
          "../syntax/space-scope.rkt"
          "../namespace/namespace.rkt"
          "../namespace/provided.rkt"
+         "../namespace/module.rkt"
          "../common/module-path.rkt"
          "../common/module-path-intern.rkt"
          "env.rkt")
@@ -612,7 +613,9 @@
 
 ;; ----------------------------------------
 
-(define (extract-requires-and-provides r+p old-self new-self)
+(define (extract-requires-and-provides r+p old-self new-self
+                                       #:flatten-requires? [flatten-requires? #f]
+                                       #:namespace [ns #f])
   (define (extract-requires #:recurs? [recurs? #f])
     ;; Extract from the in-order record, so that instantiation can use the original order
     (define phase-to-mpis-in-order (requires+provides-require-mpis-in-order r+p))
@@ -634,11 +637,81 @@
       (if recurs?
           elems
           (cons phase elems))))
+  (define (extract-flattened-requires)
+    ;; accumulate mapping from phases to reversed list of mpis (or recurs)
+    (define phase-to-mpis-in-order (requires+provides-require-mpis-in-order r+p))
+    (define phases-in-order (sort (hash-keys phase-to-mpis-in-order) phase<?))
+    (define-values (name-to-phases all-mpis)
+      (for*/fold ([name-to-phases #hasheq()]
+                  [all-mpis '()]) ; list of (cons name mpi)
+                 ([phase (in-list phases-in-order)]
+                  [mpi (in-list (reverse (hash-ref phase-to-mpis-in-order phase)))]
+                  #:unless (eq? mpi old-self))
+        (let loop ([name-to-phases name-to-phases]
+                   [all-mpis all-mpis]
+                   [mpi (module-path-index-shift mpi old-self new-self)]
+                   [phase phase])
+          (define name (module-path-index-resolve mpi))          
+          (define at-name (hash-ref name-to-phases name #hasheq()))
+          (cond
+            [(hash-ref at-name phase #f)
+             ;; done already
+             (values name-to-phases all-mpis)]
+            [else
+             ;; Mark `name` as done to avoid re-traversing:
+             (define done-name-to-phases (hash-set name-to-phases name (hash-set at-name phase #t)))
+             (define (add mpi all-mpis)
+               (if (hash-ref name-to-phases name #f)
+                   all-mpis
+                   (cons (cons name mpi) all-mpis)))
+             (define m (namespace->module ns name))
+             (unless m
+               (raise-arguments-error 'module
+                                      "cannot find module while flattening requires"
+                                      "module" name))
+             (cond
+               [(and (module-cross-phase-persistent? m)
+                     (not (eqv? phase 0))
+                     (not (label-phase? phase)))
+                ;; Only need to keep phase 0 for a cross-phase persistent module
+                (loop name-to-phases all-mpis mpi 0)]
+               [else
+                (define-values (new-name-to-phases new-all-mpis)
+                  (for/fold ([name-to-phases done-name-to-phases]
+                             [all-mpis all-mpis])
+                            ([phase+reqs (in-list (module-requires m))]
+                             [recurs (in-list (module-recur-requires m))]
+                             #:do [(define new-phase (phase+ (car phase+reqs) phase))]
+                             [req (in-list (cdr phase+reqs))]
+                             [recur (in-list recurs)]
+                             #:when recur)
+                    (loop name-to-phases
+                          all-mpis
+                          (module-path-index-shift req
+                                                   (module-self m)
+                                                   mpi)                           
+                          new-phase)))
+                (values new-name-to-phases
+                        (add mpi new-all-mpis))])]))))
+    (define interned (make-hash))
+    (define (intern-phases phases)
+      (or (hash-ref interned phases #f)
+          (let ([lst (hash-keys phases #t)])
+            (hash-set! interned phases lst)
+            lst)))
+    (for/list ([name+mpi (in-list (reverse all-mpis))])
+      (define name (car name+mpi))
+      (define mpi (cdr name+mpi))
+      (vector-immutable mpi
+                        (intern-phases (hash-ref name-to-phases name)))))
+
   (define (extract-provides)
     (shift-provides-module-path-index (requires+provides-provides r+p)
                                       old-self
                                       new-self))
-  (values (extract-requires) (extract-requires #:recurs? #t) (extract-provides)))
+  (values (extract-requires) (extract-requires #:recurs? #t)
+          (and flatten-requires? (extract-flattened-requires))
+          (extract-provides)))
 
 ;; ----------------------------------------
 

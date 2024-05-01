@@ -62,7 +62,7 @@
                                     #:protected? [protected? #f]
                                     #:protected [protected-syms null]
                                     #:register-builtin? [register-builtin? #f])
-  (define mpi (module-path-index-join (list 'quote name) #f))
+  (define mpi (module-path-index-join* (list 'quote name) #f))
   (declare-module!
    ns
    (make-module #:cross-phase-persistent? #t
@@ -91,9 +91,9 @@
 (define (declare-reexporting-module! name require-names
                                      #:reexport? [reexport? #t]
                                      #:namespace ns)
-  (define mpi (module-path-index-join (list 'quote name) #f))
+  (define mpi (module-path-index-join* (list 'quote name) #f))
   (define require-mpis (for/list ([require-name (in-list require-names)])
-                         (module-path-index-join (list 'quote require-name) #f)))
+                         (module-path-index-join* (list 'quote require-name) #f)))
   (declare-module!
    ns
    (make-module #:cross-phase-persistent? #t
