@@ -724,7 +724,7 @@ int is_equal (Scheme_Object *obj1, Scheme_Object *obj2, Equal_Info *eql)
       {
 #   include "mzeqchk.inc"
         if ((((eql->mode == EQUAL_MODE_CHAPERONE_OF) || (eql->mode == EQUAL_MODE_EQUAL_ALWAYS)))
-            && (!SCHEME_IMMUTABLEP(obj1) || !SCHEME_IMMUTABLEP(obj2)))
+            && ((t1 != scheme_vector_type) || !SCHEME_IMMUTABLEP(obj1) || !SCHEME_IMMUTABLEP(obj2)))
           return 0;
         if (union_check(obj1, obj2, eql))
           return 1;

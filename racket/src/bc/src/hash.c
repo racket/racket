@@ -1714,7 +1714,7 @@ static uintptr_t equal_hash_key(Scheme_Object *o, uintptr_t k, Hash_Info *hi)
 #     include "mzhashchk.inc"
 
       if ((hi->mode == EQUAL_MODE_EQUAL)
-          || SCHEME_IMMUTABLEP(o)) {
+          || ((t == scheme_vector_type) && SCHEME_IMMUTABLEP(o))) {
         if (!len)
           return k + 1;
 
@@ -1745,8 +1745,7 @@ static uintptr_t equal_hash_key(Scheme_Object *o, uintptr_t k, Hash_Info *hi)
       intptr_t len = SCHEME_FLVEC_SIZE(o), i;
       double d;
 
-      if ((hi->mode == EQUAL_MODE_EQUAL)
-          || SCHEME_IMMUTABLEP(o)) {
+      if (hi->mode == EQUAL_MODE_EQUAL) {
         if (!len)
           return k + 1;
 
@@ -1767,8 +1766,7 @@ static uintptr_t equal_hash_key(Scheme_Object *o, uintptr_t k, Hash_Info *hi)
       intptr_t len = SCHEME_EXTFLVEC_SIZE(o), i;
       long_double d;
 
-      if ((hi->mode == EQUAL_MODE_EQUAL)
-          || SCHEME_IMMUTABLEP(o)) {
+      if (hi->mode == EQUAL_MODE_EQUAL) {
         if (!len)
           return k + 1;
 
@@ -2376,7 +2374,7 @@ static uintptr_t equal_hash_key2(Scheme_Object *o, Hash_Info *hi)
 #     include "mzhashchk.inc"
 
       if ((hi->mode == EQUAL_MODE_EQUAL)
-          || SCHEME_IMMUTABLEP(o)) {
+          || ((t == scheme_vector_type) && SCHEME_IMMUTABLEP(o))) {
         hi->depth += 2;
 
         for (i = 0; i < len; i++) {
@@ -2399,8 +2397,7 @@ static uintptr_t equal_hash_key2(Scheme_Object *o, Hash_Info *hi)
       double d;
       uintptr_t k = 0;
 
-      if ((hi->mode == EQUAL_MODE_EQUAL)
-          || SCHEME_IMMUTABLEP(o)) {
+      if (hi->mode == EQUAL_MODE_EQUAL) {
         if (!len)
           return k + 1;
 
@@ -2422,8 +2419,7 @@ static uintptr_t equal_hash_key2(Scheme_Object *o, Hash_Info *hi)
       long_double d;
       uintptr_t k = 0;
 
-      if ((hi->mode == EQUAL_MODE_EQUAL)
-          || SCHEME_IMMUTABLEP(o)) {
+      if (hi->mode == EQUAL_MODE_EQUAL) {
         if (!len)
           return k + 1;
 

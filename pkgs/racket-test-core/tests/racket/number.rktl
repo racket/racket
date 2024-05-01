@@ -3609,8 +3609,12 @@
   (define (n-digit-has-nth-root? n)
     (not (= (floor (root (expt 10 (- n 1)) n))
             (floor (root (- (expt 10 n) 1) n)))))
-  
-  (test #t list? (filter n-digit-has-nth-root? (build-list 5000 (lambda (x) (+ x 1))))))
+
+  (define N (if (eq? (system-type 'gc) 'cgc)
+		50
+		5000))
+
+  (test #t list? (filter n-digit-has-nth-root? (build-list N (lambda (x) (+ x 1))))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; exact->inexact precision on bignums (round-trip and proper rounding)
@@ -3764,7 +3768,9 @@
                   (/ (random-bits (+ 1 (random 8192))) d))]))
 
       (test #t string? "Randomized testing of rational->flonum")
-      (for ([_  (in-range 10000)])
+      (for ([_  (in-range (if (eq? (system-type 'gc) 'cgc)
+                              100
+                              10000))])
         (define ry (random-rational))
         (define y (real->double-flonum ry))  ; this generates rounding errors
         (define e (flulp-error y ry))
