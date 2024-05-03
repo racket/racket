@@ -14,6 +14,7 @@
                          "stx.rkt"
                          "qqstx.rkt"
                          "define.rkt"
+                         "fixnum.rkt"
                          "member.rkt"
                          "define-et-al.rkt" "qq-and-or.rkt" "cond.rkt"
                          "stxcase-scheme.rkt"
@@ -2329,8 +2330,8 @@
            (generate-for-clause-for-in-range-like
             #'id #'a #'b #'step
             (and (memq (syntax-e #'step) '(1 -1))
-                 (fixnum? (syntax-e #'a))
-                 (fixnum? (syntax-e #'b)))
+                 (fixnum-for-every-system? (syntax-e #'a))
+                 (fixnum-for-every-system? (syntax-e #'b)))
             #'(check-range)
             #'unsafe-fx< #'unsafe-fx> #'< #'>)]
           [[(id) (_ a b)] (loop #'[(id) (_ a b 1)])]
@@ -2346,10 +2347,10 @@
            (generate-for-clause-for-in-range-like
             #'id #'a #'b #'step
             (and (memq (syntax-e #'step) '(1 -1))
-                 (fixnum? (syntax-e #'a))
-                 (fixnum? (syntax-e #'b))
-                 (fixnum? ((if (eq? (syntax-e #'step) 1) add1 sub1)
-                           (syntax-e #'b))))
+                 (fixnum-for-every-system? (syntax-e #'a))
+                 (fixnum-for-every-system? (syntax-e #'b))
+                 (fixnum-for-every-system? ((if (eq? (syntax-e #'step) 1) add1 sub1)
+                                            (syntax-e #'b))))
             #'(check-range-generic 'in-inclusive-range)
             #'unsafe-fx<= #'unsafe-fx>= #'<= #'>=)]
           [[(id) (_ a b)] (loop #'[(id) (_ a b 1)])]
