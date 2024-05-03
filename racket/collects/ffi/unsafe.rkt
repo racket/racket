@@ -2284,7 +2284,9 @@
                                             (exn-message exn)
                                             (format "~s" exn))
                                         #f)
-                           (abort-current-continuation void))
+                           (abort-current-continuation
+                            (default-continuation-prompt-tag)
+                            void))
                          (lambda ()
                            (let loop () (will-execute killer-executor) (loop))))))
                      (retry-loop)))))))
