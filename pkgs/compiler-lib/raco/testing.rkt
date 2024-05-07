@@ -4,10 +4,25 @@
 
 (provide test-log-enabled?
          test-log!
-         test-report)
+         test-report
+         current-test-invocation-directory)
+
+;; records the original "raco test" directory while raco test changes directory
+;; to invoke tests
+(define current-test-invocation-directory
+  (make-parameter
+   #f
+   (λ (path)
+     (cond
+       [(path-string? path) (path->directory-path (simplify-path path))]
+       [(not path) path]
+       [else (raise-argument-error 'current-test-invocation-directory
+                                   "(or/c #f path-string?)"
+                                   path)]))
+   'current-test-invocation-directory))
 
 (define test-log-enabled?
-  (make-parameter #t (lambda (v) (and v #t))))
+  (make-parameter #t (lambda (v) (and v #t)) 'test-log-enabled?))
 
 (define TOTAL 0)
 (define FAILED 0)

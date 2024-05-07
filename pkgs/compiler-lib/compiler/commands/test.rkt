@@ -1151,6 +1151,7 @@
   "Save stdout and stderr to file, overwrite if it exists."
   (set! default-output-file file)]
  #:args file-or-directory-or-collects-or-pkgs
+ (current-test-invocation-directory (current-directory))
  (define (test)
    (define file-or-directory
      (maybe-expand-package-deps file-or-directory-or-collects-or-pkgs))
