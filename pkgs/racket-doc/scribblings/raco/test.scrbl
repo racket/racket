@@ -407,4 +407,19 @@ with @exec{raco test} should also use this library to log test results.
  counted in the test log, such as when testing a custom check's failure
  behavior.}
 
+@defparam*[current-test-invocation-directory
+            path
+            (or/c #f path-string?)
+            (or/c #f path?)
+            #:value #f]{
+Contains the directory from which tests were invoked by, @emph{e.g.}, @exec{raco
+test}. This may differ from @racket[current-directory] when the test runner
+changes directory before invoking a specific test file and should be set by test
+runners to reflect the directory from which they were originally invoked.
+
+This should be used by test reports to display appropriate path names.
+
+@history[#:added "1.14"]
+}
+
 @history[#:added "1.13"]
