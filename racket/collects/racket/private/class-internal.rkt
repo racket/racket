@@ -331,9 +331,8 @@
               (append
                (kernel-form-identifier-list)
                (list
-                (quote-syntax #%app) ; racket/base #%app, as opposed to #%plain-app
+                (quote-syntax #%app) ; racket/base app, as opposed to #%plain-app
                 (quote-syntax lambda) ; racket/base lambda, as opposed to #%plain-lambda
-                (quote-syntax λ) ; racket/base λ, as opposed to #%plain-λ
                 (quote-syntax -init)
                 (quote-syntax -init-rest)
                 (quote-syntax -field)
@@ -512,12 +511,9 @@
          #f))
       ;; -- transform loop starts here --
       (let loop ([stx orig-stx][can-expand? #t][name name][locals null])
-        (syntax-case (disarm stx) (#%plain-lambda lambda case-lambda
-                                   #%plain-λ      λ      case-λ
-                                   letrec-values let-values)
+        (syntax-case (disarm stx) (#%plain-lambda lambda λ case-lambda letrec-values let-values)
           [(lam vars body1 body ...)
-           (or (and (or (free-identifier=? #'lam #'#%plain-lambda)
-                        (free-identifier=? #'lam #'#%plain-λ))
+           (or (and (free-identifier=? #'lam #'#%plain-lambda)
                     (vars-ok? (syntax vars)))
                (and (or (free-identifier=? #'lam #'lambda)
                         (free-identifier=? #'lam #'λ))
@@ -564,15 +560,12 @@
                stx)]
           [(#%plain-lambda . _)
            (bad "ill-formed lambda expression for method" stx)]
-          [(#%plain-λ . _)
-           (bad "ill-formed lambda expression for method" stx)]
           [(lambda . _)
            (bad "ill-formed lambda expression for method" stx)]
           [(λ . _)
            (bad "ill-formed lambda expression for method" stx)]
           [(case-lam [vars body1 body ...] ...)
-           (and (or (free-identifier=? #'case-lam #'case-lambda)
-                    (free-identifier=? #'case-lam #'case-λ))
+           (and (free-identifier=? #'case-lam #'case-lambda)
                 (andmap vars-ok? (syntax->list (syntax (vars ...)))))
            (if xform?
                (with-syntax ([the-obj the-obj]
@@ -590,8 +583,6 @@
                     (syntax-local-introduce #'case-lam))))
                stx)]
           [(case-lambda . _)
-           (bad "ill-formed case-lambda expression for method" stx)]
-          [(case-λ . _)
            (bad "ill-formed case-lambda expression for method" stx)]
           [(let- ([(id) expr] ...) let-body)
            (and (or (free-identifier=? (syntax let-) 
