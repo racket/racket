@@ -14,21 +14,29 @@
 (provide define-forms)
 
 (define-syntax-rule (define-forms parse-id
-                      match match* match-lambda match-lambda*
-		      match-lambda** match-let match-let*
+                      match match* match/values
+                      match-lambda match-lambda* match-lambda**
+                      match-λ match-λ* match-λ**
+                      match-let match-let*
                       match-let-values match-let*-values
-		      match-define match-define-values
+                      match-define match-define-values
                       match-letrec match-letrec-values
-		      match/values match/derived match*/derived
+                      match/derived match*/derived
                       define/match)
   (...
    (begin
-     (provide match match* match-lambda match-lambda* match-lambda**
-	      match-let match-let* match-let-values match-let*-values
+     (provide match match* match/values
+              match-lambda match-lambda* match-lambda**
+              (rename-out [match-lambda   match-λ]
+                          [match-lambda*  match-λ*]
+                          [match-lambda** match-λ**])
+              match-let match-let*
+              match-let-values match-let*-values
               match-define match-define-values
               match-letrec match-letrec-values
-	      match/values match/derived match*/derived match-define-values
+              match/derived match*/derived
               define/match)
+
      (define-syntax (match* stx)
        (syntax-parse stx
          [(_ es . clauses)

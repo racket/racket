@@ -662,17 +662,20 @@ many values to expect from @racket[expr].
   ]
 }
 
-@defform[(match-lambda clause ...)]{
+@deftogether[(@defform[(match-lambda clause ...)]
+              @defform[(match-λ clause ...)])]{
 
 Equivalent to @racket[(lambda (id) (match id clause ...))].
 }
 
-@defform[(match-lambda* clause ...)]{
+@deftogether[(@defform[(match-lambda* clause ...)]
+              @defform[(match-λ* clause ...)])]{
 
 Equivalent to @racket[(lambda lst (match lst clause ...))].
 }
 
-@defform[(match-lambda** clause* ...)]{
+@deftogether[(@defform[(match-lambda** clause* ...)]
+              @defform[(match-λ** clause ...)])]{
 
 Equivalent to @racket[(lambda (args ...) (match* (args ...) clause* ...))],
 where the number of @racket[args ...] is computed from the number of patterns

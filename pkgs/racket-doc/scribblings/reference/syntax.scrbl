@@ -2094,11 +2094,14 @@ followed by a parallel sequence of booleans to indicate whether each
 optional-argument value was provided.}
 
 
-@defform/subs[(case-lambda [formals body ...+] ...)
+@deftogether[(
+@defform[(case-lambda [formals body ...+] ...)]
+@defform/subs[(case-λ [formals body ...+] ...)
               ([formals (id ...)
                         (id ...+ . rest-id)
-                        rest-id])]{
-               
+                        rest-id])]
+)]{
+
 Produces a procedure. Each @racket[[formals body ...+]]
 clause is analogous to a single @racket[lambda] procedure; applying
 the @racket[case-lambda]-generated procedure is the same as applying a
@@ -2124,7 +2127,11 @@ support keyword and optional arguments.
         (f 1 2 3)))
 ]}
 
-@defform[(#%plain-lambda formals body ...+)]{
+@deftogether[(
+@defform[(#%plain-lambda formals body ...+)]
+@defform[(#%plain-λ formals body ...+)]
+)]{
+
 Like @racket[lambda], but without support for keyword or optional arguments.
 }
 

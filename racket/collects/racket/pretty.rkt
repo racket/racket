@@ -1525,7 +1525,7 @@
         ((if set! set!-values)
          (and (no-sharing? expr 1 apair? acdr)
               pp-if))
-        ((cond case-lambda)
+        ((cond case-lambda case-λ)
          (and (no-sharing? expr 0 apair? acdr)
               pp-cond))
         ((case class) 
