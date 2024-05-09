@@ -2098,7 +2098,7 @@ optional-argument value was provided.}
               ([formals (id ...)
                         (id ...+ . rest-id)
                         rest-id])]{
-                                   
+               
 Produces a procedure. Each @racket[[formals body ...+]]
 clause is analogous to a single @racket[lambda] procedure; applying
 the @racket[case-lambda]-generated procedure is the same as applying a
