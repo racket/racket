@@ -2094,13 +2094,10 @@ followed by a parallel sequence of booleans to indicate whether each
 optional-argument value was provided.}
 
 
-@deftogether[(
-@defform[(case-lambda [formals body ...+] ...)]
-@defform/subs[(case-λ [formals body ...+] ...)
+@defform/subs[(case-lambda [formals body ...+] ...)
               ([formals (id ...)
                         (id ...+ . rest-id)
-                        rest-id])]
-)]{
+                        rest-id])]{
 
 Produces a procedure. Each @racket[[formals body ...+]]
 clause is analogous to a single @racket[lambda] procedure; applying
