@@ -200,7 +200,6 @@
              (rename new-prop:procedure prop:procedure)
              (rename #%app #%plain-app)
              (rename lambda #%plain-lambda)
-             (rename λ #%plain-λ)
              (rename case-lambda case-λ)
              (rename #%module-begin #%plain-module-begin)
              (rename printing:module-begin #%printing-module-begin)

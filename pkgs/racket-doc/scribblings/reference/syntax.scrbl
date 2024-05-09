@@ -2127,11 +2127,7 @@ support keyword and optional arguments.
         (f 1 2 3)))
 ]}
 
-@deftogether[(
-@defform[(#%plain-lambda formals body ...+)]
-@defform[(#%plain-λ formals body ...+)]
-)]{
-
+@defform[(#%plain-lambda formals body ...+)]{
 Like @racket[lambda], but without support for keyword or optional arguments.
 }
 

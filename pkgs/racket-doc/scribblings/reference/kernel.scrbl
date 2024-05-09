@@ -23,8 +23,8 @@ create compatibility problems.
 
 The @racketmodname[racket/kernel] module exports all of the bindings in the
 grammar of fully expanded programs (see @secref["fully-expanded"]),
-but it provides @racket[#%plain-lambda] and @racket[#%plain-λ] as
-@racket[lambda] and @racket[λ], @racket[#%plain-app] as @racket[#%app], and
+but it provides @racket[#%plain-lambda] as @racket[lambda] and @racket[λ],
+@racket[#%plain-app] as @racket[#%app], and
 @racket[#%plain-module-begin] as @racket[#%module-begin]. Aside from
 @racket[#%datum] (which expands to @racket[quote]),
 @racketmodname[racket/kernel] provides no other syntactic bindings.
