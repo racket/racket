@@ -469,7 +469,7 @@
         (local-expand
          expr
          'expression
-         (append locals (list #'lambda #'λ) expand-stop-names)
+         (append locals (list #'lambda) expand-stop-names)
          def-ctx))
       ;; Checks whether the vars sequence is well-formed
       (define (vars-ok? vars)
@@ -511,19 +511,17 @@
          #f))
       ;; -- transform loop starts here --
       (let loop ([stx orig-stx][can-expand? #t][name name][locals null])
-        (syntax-case (disarm stx) (#%plain-lambda lambda λ case-lambda letrec-values let-values)
+        (syntax-case (disarm stx) (#%plain-lambda lambda case-lambda letrec-values let-values)
           [(lam vars body1 body ...)
            (or (and (free-identifier=? #'lam #'#%plain-lambda)
                     (vars-ok? (syntax vars)))
-               (and (or (free-identifier=? #'lam #'lambda)
-                        (free-identifier=? #'lam #'λ))
+               (and (free-identifier=? #'lam #'lambda)
                     (kw-vars-ok? (syntax vars))))
            (if xform?
                (with-syntax ([the-obj the-obj]
                              [the-finder the-finder]
                              [name (mk-name name)])
-                 (with-syntax ([vars (if (or (free-identifier=? #'lam #'lambda)
-                                             (free-identifier=? #'lam #'λ))
+                 (with-syntax ([vars (if (free-identifier=? #'lam #'lambda)
                                          (let loop ([vars #'vars])
                                            (cond
                                              [(identifier? vars) vars]
@@ -561,8 +559,6 @@
           [(#%plain-lambda . _)
            (bad "ill-formed lambda expression for method" stx)]
           [(lambda . _)
-           (bad "ill-formed lambda expression for method" stx)]
-          [(λ . _)
            (bad "ill-formed lambda expression for method" stx)]
           [(case-lam [vars body1 body ...] ...)
            (and (free-identifier=? #'case-lam #'case-lambda)

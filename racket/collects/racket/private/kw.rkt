@@ -29,7 +29,8 @@
                        "stxcase-scheme.rkt"
                        "qqstx.rkt"))
 
-  (#%provide new-lambda new-λ
+  (#%provide new-lambda
+             (rename new-lambda new-λ)
              new-define
              new-app
              make-keyword-procedure
@@ -916,23 +917,20 @@
                            'needed-kws
                            'kws))))]))))))]))
   
-  (define-syntaxes (new-lambda new-λ)
-    (let ([new-lambda
-           (lambda (stx)
-             (if (eq? (syntax-local-context) 'expression)
-                 (parse-lambda
-                  stx
-                  #f
-                  (lambda (e) e)
-                  (lambda (impl kwimpl wrap core-id unpack-id n-req
-                                opt-not-supplieds opt-not-supplied-srclocs
-                                rest? req-kws all-kws all-kw-not-supplied-srclocs)
-                    (quasisyntax/loc stx
-                      (let ([#,core-id #,impl])
-                        (let ([#,unpack-id #,kwimpl])
-                          #,wrap)))))
-                 (quasisyntax/loc stx (#%expression #,stx))))])
-      (values new-lambda new-lambda)))
+  (define-syntax (new-lambda stx)
+    (if (eq? (syntax-local-context) 'expression)
+        (parse-lambda
+         stx
+         #f
+         (lambda (e) e)
+         (lambda (impl kwimpl wrap core-id unpack-id n-req
+                       opt-not-supplieds opt-not-supplied-srclocs
+                       rest? req-kws all-kws all-kw-not-supplied-srclocs)
+           (quasisyntax/loc stx
+             (let ([#,core-id #,impl])
+               (let ([#,unpack-id #,kwimpl])
+                 #,wrap)))))
+        (quasisyntax/loc stx (#%expression #,stx))))
   
   (define (missing-kw proc . args)
     (apply
@@ -1176,8 +1174,7 @@
                         (define #,id #,rhs)))]
              [can-opt? (lambda (lam-id)
                          (and (identifier? lam-id)
-                              (or (free-identifier=? lam-id #'new-lambda)
-                                  (free-identifier=? lam-id #'new-λ))
+                              (free-identifier=? lam-id #'new-lambda)
                               (let ([ctx (syntax-local-context)])
                                 (or (and (memq ctx '(module module-begin))
                                          (compile-enforce-module-constants))
