@@ -408,7 +408,8 @@
   ((module-force-bulk-binding m) (namespace-bulk-binding-registry ns)))
 
 (define (module-instantiates-at-level? m phase-level)
-  (<= (module-min-phase-level m) phase-level (module-max-phase-level m)))
+  (and (not (label-phase? phase-level))
+       (<= (module-min-phase-level m) phase-level (module-max-phase-level m))))
 
 ;; ----------------------------------------
 

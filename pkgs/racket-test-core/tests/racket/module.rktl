@@ -329,6 +329,14 @@
           ;; is correctly attached as instantiated in this namespace
           (eval stx))))
 
+(module uses-m-at-label-phase racket/base
+  (require (for-label 'provides-variable-m-at-phase-1)))
+(test #t void? (dynamic-require ''uses-m-at-label-phase #f))
+(let ([orig (current-namespace)])
+  (parameterize ([current-namespace (make-base-namespace)])
+    (namespace-attach-module orig ''uses-m-at-label-phase)))
+
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Check redundant import and re-provide
 
