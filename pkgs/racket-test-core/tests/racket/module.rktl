@@ -338,6 +338,39 @@
 
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check on-demand instantiation of available cross-phase specific module
+
+(let ()
+  (define m1
+    (compile
+     '(module defines-prop-as-cross-phase-persistent-module '#%kernel
+        (#%declare #:cross-phase-persistent)
+        (#%provide serializable-struct?)
+        (define-values (prop:serializable serializable-struct? serializable-info)
+          (make-struct-type-property 'serializable #f)))))
+  (eval m1)
+
+  (define m2
+    (compile
+     '(module uses-cross-phase-persistent racket/base
+        (require 'defines-prop-as-cross-phase-persistent-module)
+        (provide ok?)
+        (define (ok? x) (or (serializable-struct? x) (eq? x 'ok))))))
+  (eval m2)
+
+  (define m3
+    (compile
+     '(module uses-cross-phase-persistent-for-syntax racket/base
+        (require (for-syntax 'uses-cross-phase-persistent)))))
+
+  (let ([orig (current-namespace)])
+    (parameterize ([current-namespace (make-base-namespace)])
+      (eval m1)
+      (eval m2)
+      (eval m3)
+      (eval (expand '(require 'uses-cross-phase-persistent-for-syntax))))))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Check redundant import and re-provide
 
 (module m_cr racket/base

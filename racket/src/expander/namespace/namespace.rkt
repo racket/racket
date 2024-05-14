@@ -62,6 +62,7 @@
                    declaration-inspector ; declaration-time inspector
                    [inspector #:mutable] ; instantiation-time inspector
                    available-module-instances  ; phase -> list of module-instance [shared among modules]
+                   available-cross-phase-module-instances ; box of list of module-instance [shared among modules]
                    module-instances)   ; union resolved-module-path -> module-instance        [shared among modules]
   ;;                                   ;       0-phase -> resolved-module-path -> module-instance
   ;;                                   ; where the first option is for cross phase persistent modules
@@ -121,6 +122,9 @@
                (if share-from-ns
                    (namespace-available-module-instances share-from-ns)
                    (make-hasheqv))
+               (if share-from-ns
+                   (namespace-available-cross-phase-module-instances share-from-ns)
+                   (box null))
                (if share-from-ns
                    (namespace-module-instances share-from-ns)
                    (make-hasheqv))))

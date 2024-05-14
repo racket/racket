@@ -208,6 +208,7 @@
                                              ;; Fresh set of submodules:
                                              (make-small-hasheq))]
                  [available-module-instances (make-hasheqv)]
+                 [available-cross-phase-module-instances (box null)]
                  [module-instances (make-hasheqv)]
                  [declaration-inspector (current-code-inspector)]))
   (small-hash-set! (namespace-phase-to-namespace m-ns) phase m-ns)
@@ -624,10 +625,13 @@
                 (not (negative? run-phase))
                 (not (small-hash-ref (module-instance-phase-level-to-state mi) phase-level #f)))
            ;; This is a phase to merely make available
-           (hash-update! (namespace-available-module-instances ns)
-                         phase
-                         (lambda (l) (cons mi l))
-                         null)
+           (if (module-cross-phase-persistent? m)
+               (let ([bx (namespace-available-cross-phase-module-instances ns)])
+                 (set-box! bx (cons mi (unbox bx))))
+               (hash-update! (namespace-available-module-instances ns)
+                             phase
+                             (lambda (l) (cons mi l))
+                             null))
            (small-hash-set! (module-instance-phase-level-to-state mi) phase-level 'available)])))
 
      (when otherwise-available?
@@ -646,9 +650,13 @@
    (namespace-module-registry ns)
    (lambda ()
      (let loop ()
+       (define cp-mis (unbox (namespace-available-cross-phase-module-instances ns)))
        (define mis (hash-ref (namespace-available-module-instances ns) run-phase null))
-       (unless (null? mis)
+       (unless (and (null? cp-mis) (null? mis))
+         (set-box! (namespace-available-cross-phase-module-instances ns) null)
          (hash-set! (namespace-available-module-instances ns) run-phase null)
+         (for ([mi (in-list (reverse cp-mis))])
+           (run-module-instance! mi ns #:run-phase 0 #:skip-run? #f #:otherwise-available? #f #:recur? #f))
          (for ([mi (in-list (reverse mis))])
            (run-module-instance! mi ns #:run-phase run-phase #:skip-run? #f #:otherwise-available? #f #:recur? #f))
          ;; In case instantiation added more reflectively:
