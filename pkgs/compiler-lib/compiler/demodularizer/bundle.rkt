@@ -184,7 +184,7 @@
                   (.mpi-vector))
                 '((#f)
                   (#f))
-                '(self-mpi requires recur-requires provides phase-to-link-modules portal-stxes)
+                '(self-mpi requires recur-requires flattened-requires provides phase-to-link-modules portal-stxes)
                 '()
                 '()
                 #hasheq()
@@ -202,14 +202,16 @@
                                    serialized-requires))))
                  (def-values (list (toplevel 0 (+ exports-pos 2) #f #f)) ; recur-requires
                    recur-requires)
-                 (def-values (list (toplevel 0 (+ exports-pos 3) #f #f)) ; provides
+                 (def-values (list (toplevel 0 (+ exports-pos 3) #f #f)) ; flattened-requires
+                   #f)
+                 (def-values (list (toplevel 0 (+ exports-pos 4) #f #f)) ; provides
                    (application (primitive hasheqv) null))
-                 (def-values (list (toplevel 0 (+ exports-pos 4) #f #f)) ; phase-to-link-modules
+                 (def-values (list (toplevel 0 (+ exports-pos 5) #f #f)) ; phase-to-link-modules
                    (make-phase-to-link-modules application
                                                (lambda (name prim) (primitive prim))
                                                (lambda (depth) (toplevel depth module-use-pos #f #f))
                                                (lambda (depth) (toplevel depth mpi-vector-pos #f #f))))
-                 (def-values (list (toplevel 0 (+ exports-pos 5) #f #f)) ; portal-stxes
+                 (def-values (list (toplevel 0 (+ exports-pos 6) #f #f)) ; portal-stxes
                    (application (primitive hasheqv) null)))
                 (+ 32 (length import-keys))
                 #f))]
@@ -219,11 +221,12 @@
         `(linklet ((deserialize
                     module-use)
                    (.mpi-vector))
-             (self-mpi requires recur-requires provides phase-to-link-modules portal-stxes)
+             (self-mpi requires recur-requires flattened-requires provides phase-to-link-modules portal-stxes)
            (define-values (self-mpi) (vector-ref .mpi-vector 0))
            (define-values (requires) (deserialize .mpi-vector #f #f 0 '#() 0 '#() '#()
                                                   (quote ,serialized-requires)))
            (define-values (recur-requires) (quote ,recur-requires))
+           (define-values (flattened-requires) #false)
            (define-values (provides) '#hasheqv())
            (define-values (phase-to-link-modules)
              ,(make-phase-to-link-modules cons
