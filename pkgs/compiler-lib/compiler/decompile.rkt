@@ -134,14 +134,10 @@
                                                    #:when recur?)
                                           (collapse-module-path-index mpi)))))))
        ,@(if flattened-requires
-             `((quote (flattened: ,@(for/list ([mpi/boxed+phases (in-list flattened-requires)])
-                                      (define mpi/boxed (vector-ref mpi/boxed+phases 0))
-                                      (define mpi (if (box? mpi/boxed) (unbox mpi/boxed) mpi/boxed))
-                                      (cons (let ([mpi (collapse-module-path-index mpi)])
-                                              (if (box? mpi/boxed)
-                                                  (box mpi)
-                                                  mpi))
-                                            (vector-ref mpi/boxed+phases 1))))))
+             `((quote (flattened: ,@(for/list ([mpi+phases (in-list flattened-requires)])
+                                      (define mpi (vector-ref mpi+phases 0))
+                                      (cons (collapse-module-path-index mpi)
+                                            (vector-ref mpi+phases 1))))))
              null)
        (provide ,@(apply
                    append

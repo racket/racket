@@ -242,6 +242,17 @@
                            (#%current-error-port))))))
       v]))
 
+  (define (large-message info)
+    (define name (hash-ref info 'module #f))
+    (define phase (hash-ref info 'phase 0))
+    (string-append "compiling only interior functions for large linklet"
+                   (if mod
+                       (format ": ~a" name)
+                       "")
+                   (if (eqv? phase 0)
+                       ""
+                       (format " (phase ~a)" phase))))
+
   (include "linklet/trace.ss")
   (include "linklet/check.ss")
   (include "linklet/version.ss")
@@ -637,7 +648,7 @@
               (or (eq? linklet-compilation-mode 'jit)
                   (and (eq? linklet-compilation-mode 'mach)
                        (linklet-bigger-than? c linklet-compilation-limit serializable?)
-                       (log-message root-logger 'info 'linklet "compiling only interior functions for large linklet" #f)
+                       (log-message root-logger 'info 'linklet (large-message info) #f)
                        #t))))
        (define format (if (or jitify-mode?
                               quick-mode?

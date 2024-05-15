@@ -103,6 +103,7 @@
    (define provides (decl 'provides))
    (define original-self (decl 'self-mpi))
    (define phase-to-link-modules (decl 'phase-to-link-modules))
+   (define module-use-resolution-cache (make-hasheq))
    (define portal-stxes (decl 'portal-stxes))
 
    (define create-root-expand-context-from-module ; might be used to create root-expand-context
@@ -208,7 +209,8 @@
                                         #:shift-to self
                                         #:phase-shift
                                         (phase+ (phase- phase-level (module-use-phase mu))
-                                                phase-shift))))
+                                                phase-shift)
+                                        #:resolution-cache module-use-resolution-cache)))
 
                                    (check-require-access phase-linklet #:skip-imports 2
                                                          module-uses import-module-instances insp

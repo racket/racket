@@ -141,7 +141,7 @@
                      #:get-portal-syntax-callback [get-portal-syntax-callback (lambda (data-box phase sym) #f)])
   (module source-name
           self
-          (fresh-requires requires)
+          requires
           recur-requires
           flattened-requires
           provides
@@ -747,14 +747,22 @@
 (define (namespace-module-use->module+linklet-instances ns mu 
                                                         #:shift-from [shift-from #f]
                                                         #:shift-to [shift-to #f]
-                                                        #:phase-shift phase-shift)
+                                                        #:phase-shift phase-shift
+                                                        #:resolution-cache [module-use-resolution-cache #f])
   (define mod (module-use-module mu))
+  (define use-name
+    (or (and module-use-resolution-cache
+             (hash-ref module-use-resolution-cache mod #f))
+        (let ([name (module-path-index-resolve
+                     (if shift-from
+                         (module-path-index-shift mod shift-from shift-to)
+                         mod))])
+          (when module-use-resolution-cache
+            (hash-set! module-use-resolution-cache mod name))
+          name)))
   (define mi
     (namespace->module-instance ns 
-                                (module-path-index-resolve
-                                 (if shift-from
-                                     (module-path-index-shift mod shift-from shift-to)
-                                     mod))
+                                use-name
                                 phase-shift
                                 #:complain-on-failure? #t))
   (define m-ns (module-instance-namespace mi))
@@ -770,17 +778,6 @@
              (namespace-0-phase m-ns)
              (module-use-phase mu)
              (small-hash-keys (namespace-phase-level-to-definitions m-ns)))))
-
-;; ----------------------------------------
-
-;; ensure that each module path index is unresolved and does not share
-;; with other instances, so that resolving on instantiation will
-;; trigger module loads
-(define (fresh-requires requires)
-  (for/list ([phase+mpis (in-list requires)])
-    (cons (car phase+mpis)
-          (for/list ([req-mpi (in-list (cdr phase+mpis))])
-            (module-path-index-fresh req-mpi)))))
 
 ;; ----------------------------------------
 
