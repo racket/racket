@@ -396,7 +396,7 @@
                                                 #`(only #,(import-source-mod-path-stx src))))
                                    sources))))]))]
                   [transform-one
-                   (lambda (in)
+                   (lambda (in phase-shift)
                      ;; Recognize `for-syntax', etc. for simple cases:
                      (syntax-case in (for-meta)
                        [(for-meta n elem ...)
@@ -407,7 +407,7 @@
                          in
                          (apply append
                                 (map (lambda (in)
-                                       (transform-simple in (syntax-e #'n)))
+                                       (transform-one in (phase+space+ phase-shift (syntax-e #'n))))
                                      (syntax->list #'(elem ...)))))]
                        [(for-something elem ...)
                         (and (identifier? #'for-something)
@@ -418,21 +418,23 @@
                          in
                          (apply append
                                 (map (lambda (in)
-                                       (transform-simple in
-                                                         (cond
-                                                          [(free-identifier=? #'for-something #'for-syntax)
-                                                           1]
-                                                          [(free-identifier=? #'for-something #'for-template)
-                                                           -1]
-                                                          [(free-identifier=? #'for-something #'for-label)
-                                                           #f])))
+                                       (transform-one in
+                                                      (phase+space+
+                                                       phase-shift
+                                                       (cond
+                                                         [(free-identifier=? #'for-something #'for-syntax)
+                                                          1]
+                                                         [(free-identifier=? #'for-something #'for-template)
+                                                          -1]
+                                                         [(free-identifier=? #'for-something #'for-label)
+                                                          #f]))))
                                      (syntax->list #'(elem ...)))))]
-                       [_ (transform-simple in 0 #| run phase |#)]))])
+                       [_ (transform-simple in phase-shift)]))])
            (syntax-case stx ()
              [(_ in)
               (let ([lifted-require-definitions (box '())])
                 (parameterize ([syntax-local-lift-require-definition-param lifted-require-definitions])
-                  (with-syntax ([(new-in ...) (transform-one #'in)]
+                  (with-syntax ([(new-in ...) (transform-one #'in 0 #| run phase |#)]
                                 [(lifted-require-definitions ...)
                                  (reverse (unbox lifted-require-definitions))])
                     (syntax/loc stx
