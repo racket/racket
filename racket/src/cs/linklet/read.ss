@@ -1,7 +1,7 @@
 
 (define (read-linklet-bundle-hash in)
   (performance-region
-   'read-linklet
+   'read-bundle
    (let* ([len (integer-bytes->integer (read-bytes 4 in) #f #f)]
           [bstr (read-bytes len in)])
      (adjust-linklet-bundle-laziness-and-literals

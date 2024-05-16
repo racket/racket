@@ -195,8 +195,7 @@
                                    (define get-syntax-literal! (instance-variable-value syntax-literals-instance get-syntax-literal!-id))
                                    (for ([(key pos) (in-hash phase-portal-stxes)])
                                      (when (symbol? key)
-                                       (define portal-stx (get-syntax-literal! pos))
-                                       (namespace-set-transformer! ns (sub1 phase-level) key (portal-syntax portal-stx)))))
+                                       (namespace-set-transformer! ns (sub1 phase-level) key (portal-syntax get-syntax-literal! pos)))))
                                  
                                  (define phase-linklet (hash-ref phases-h phase-level #f))                                 
                                  (when phase-linklet
