@@ -387,6 +387,8 @@ and displaying a summary message. The command @exec{raco test} uses this library
 to display test results. Therefore, any testing framework that wants to integrate
 with @exec{raco test} should also use this library to log test results.
 
+@history[#:added "1.13"]
+
 @defproc[(test-log! [result any/c]) void?]{
  Adds a test result to the running log. If @racket[result] is false,
  then the test is considered a failure.}
@@ -422,4 +424,3 @@ This should be used by test reports to display appropriate path names.
 @history[#:added "1.14"]
 }
 
-@history[#:added "1.13"]
