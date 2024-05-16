@@ -4,7 +4,6 @@
 ;; Stack for "interpreter.rkt"
 
 (provide empty-stack
-         stack-count
          stack-ref
          stack-set
          stack-remove
@@ -23,9 +22,6 @@
 ;; Run-time stack
 
 (define empty-stack empty-intmap)
-
-(define (stack-count stack)
-  (intmap-count stack))
 
 ;; Returns a `value` if `tail?` is true, and
 ;; returns `(values stack value)` if `tail?` is #f.

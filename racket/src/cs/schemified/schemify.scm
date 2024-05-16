@@ -42437,280 +42437,74 @@
      'write
      "cannot marshal value that is embedded in compiled code\n  value: ~v"
      v_0)))
-(define finish_2779
-  (make-struct-type-install-properties
-   '(node)
-   5
-   0
-   #f
-   (list (cons prop:authentic #t))
-   #f
-   #f
-   '(0 1 2 3 4)
-   #f
-   'node))
-(define struct:node
-  (make-record-type-descriptor
-   'node
-   #f
-   (|#%nongenerative-uid| node)
-   #f
-   #f
-   '(5 . 0)))
-(define effect_2547 (finish_2779 struct:node))
-(define node1.1
-  (|#%name|
-   node
-   (record-constructor
-    (make-record-constructor-descriptor struct:node #f #f))))
-(define node? (|#%name| node? (record-predicate struct:node)))
-(define node-key (|#%name| node-key (record-accessor struct:node 0)))
-(define node-val (|#%name| node-val (record-accessor struct:node 1)))
-(define node-height (|#%name| node-height (record-accessor struct:node 2)))
-(define node-left (|#%name| node-left (record-accessor struct:node 3)))
-(define node-right (|#%name| node-right (record-accessor struct:node 4)))
-(define tree-height (lambda (t_0) (if (not t_0) 0 (node-height t_0))))
-(define combine
-  (lambda (key_0 val_0 left_0 right_0)
-    (node1.1
-     key_0
-     val_0
-     (fx+
-      1
-      (let ((app_0 (tree-height left_0))) (fxmax app_0 (tree-height right_0))))
-     left_0
-     right_0)))
-(define reverse-combine
-  (lambda (key_0 val_0 right_0 left_0) (combine key_0 val_0 left_0 right_0)))
-(define insert
-  (lambda (t_0 key_0 val_0)
-    (if (not t_0)
-      (combine key_0 val_0 #f #f)
-      (if (fx< key_0 (node-key t_0))
-        (let ((new-to_0 (insert (node-left t_0) key_0 val_0)))
-          (let ((new-other_0 (node-right t_0)))
-            (let ((new-t_0
-                   (combine
-                    (node-key t_0)
-                    (node-val t_0)
-                    new-to_0
-                    new-other_0)))
-              (let ((to-height_0 (tree-height new-to_0)))
-                (let ((other-height_0 (tree-height new-other_0)))
-                  (if (fx= (fx- to-height_0 other-height_0) 2)
-                    (rotate-right new-t_0)
-                    new-t_0))))))
-        (if (fx< (node-key t_0) key_0)
-          (let ((new-to_0 (insert (node-right t_0) key_0 val_0)))
-            (let ((new-other_0 (node-left t_0)))
-              (let ((new-t_0
-                     (let ((key_1 (node-key t_0)))
-                       (let ((val_1 (node-val t_0)))
-                         (begin-unsafe
-                          (combine key_1 val_1 new-other_0 new-to_0))))))
-                (let ((to-height_0 (tree-height new-to_0)))
-                  (let ((other-height_0 (tree-height new-other_0)))
-                    (if (fx= (fx- to-height_0 other-height_0) 2)
-                      (rotate-left new-t_0)
-                      new-t_0))))))
-          (node1.1
-           key_0
-           val_0
-           (node-height t_0)
-           (node-left t_0)
-           (node-right t_0)))))))
-(define delete
-  (lambda (t_0 key_0)
-    (if (not t_0)
-      #f
-      (if (fx< key_0 (node-key t_0))
-        (let ((new-to_0 (delete (node-left t_0) key_0)))
-          (let ((new-other_0 (node-right t_0)))
-            (let ((new-t_0
-                   (combine
-                    (node-key t_0)
-                    (node-val t_0)
-                    new-to_0
-                    new-other_0)))
-              (let ((to-height_0 (tree-height new-to_0)))
-                (let ((other-height_0 (tree-height new-other_0)))
-                  (if (fx= (fx- to-height_0 other-height_0) -2)
-                    (rotate-left new-t_0)
-                    new-t_0))))))
-        (if (fx< (node-key t_0) key_0)
-          (let ((new-to_0 (delete (node-right t_0) key_0)))
-            (let ((new-other_0 (node-left t_0)))
-              (let ((new-t_0
-                     (let ((key_1 (node-key t_0)))
-                       (let ((val_0 (node-val t_0)))
-                         (begin-unsafe
-                          (combine key_1 val_0 new-other_0 new-to_0))))))
-                (let ((to-height_0 (tree-height new-to_0)))
-                  (let ((other-height_0 (tree-height new-other_0)))
-                    (if (fx= (fx- to-height_0 other-height_0) -2)
-                      (rotate-right new-t_0)
-                      new-t_0))))))
-          (let ((l_0 (node-left t_0)))
-            (let ((r_0 (node-right t_0)))
-              (if (not l_0)
-                r_0
-                (if (not r_0)
-                  l_0
-                  (let ((from_0 (node-left t_0)))
-                    (let ((new-t_0
-                           (letrec*
-                            ((loop_0
-                              (|#%name|
-                               loop
-                               (lambda (end_0)
-                                 (begin
-                                   (let ((c1_0 (node-right end_0)))
-                                     (if c1_0
-                                       (loop_0 c1_0)
-                                       (let ((key_1 (node-key end_0)))
-                                         (let ((new-from_0
-                                                (delete from_0 key_1)))
-                                           (combine
-                                            key_1
-                                            (node-val end_0)
-                                            new-from_0
-                                            (node-right t_0)))))))))))
-                            (loop_0 from_0))))
-                      (let ((from-height_0 (tree-height (node-left new-t_0))))
-                        (let ((other-height_0
-                               (tree-height (node-right new-t_0))))
-                          (if (fx= (fx- from-height_0 other-height_0) -2)
-                            (rotate-left new-t_0)
-                            new-t_0))))))))))))))
-(define rotate-right
-  (lambda (t_0)
-    (let ((to_0 (node-left t_0)))
-      (let ((to-balance_0
-             (let ((app_0 (tree-height (node-left to_0))))
-               (fx- app_0 (tree-height (node-right to_0))))))
-        (if (fx< to-balance_0 0)
-          (double-rotate.1 t_0)
-          (single-rotate.1 t_0))))))
-(define double-rotate.1
-  (|#%name|
-   double-rotate
-   (lambda (t_0)
-     (begin
-       (let ((orange_0 (node-left t_0)))
-         (let ((yellow_0 (node-right orange_0)))
-           (let ((A_0 (node-left orange_0)))
-             (let ((B_0 (node-left yellow_0)))
-               (let ((C_0 (node-right yellow_0)))
-                 (let ((D_0 (node-right t_0)))
-                   (single-rotate.1
-                    (combine
-                     (node-key t_0)
-                     (node-val t_0)
-                     (combine
-                      (node-key yellow_0)
-                      (node-val yellow_0)
-                      (combine (node-key orange_0) (node-val orange_0) A_0 B_0)
-                      C_0)
-                     D_0))))))))))))
-(define single-rotate.1
-  (|#%name|
-   single-rotate
-   (lambda (t_0)
-     (begin
-       (let ((yellow_0 (node-left t_0)))
-         (combine
-          (node-key yellow_0)
-          (node-val yellow_0)
-          (node-left yellow_0)
-          (combine
-           (node-key t_0)
-           (node-val t_0)
-           (node-right yellow_0)
-           (node-right t_0))))))))
-(define rotate-left
-  (lambda (t_0)
-    (let ((to_0 (node-right t_0)))
-      (let ((to-balance_0
-             (let ((app_0 (tree-height (node-right to_0))))
-               (fx- app_0 (tree-height (node-left to_0))))))
-        (if (fx< to-balance_0 0)
-          (double-rotate.2 t_0)
-          (single-rotate.2 t_0))))))
-(define double-rotate.2
-  (|#%name|
-   double-rotate
-   (lambda (t_0)
-     (begin
-       (let ((orange_0 (node-right t_0)))
-         (let ((yellow_0 (node-left orange_0)))
-           (let ((A_0 (node-right orange_0)))
-             (let ((B_0 (node-right yellow_0)))
-               (let ((C_0 (node-left yellow_0)))
-                 (let ((D_0 (node-left t_0)))
-                   (single-rotate.2
-                    (let ((key_0 (node-key t_0)))
-                      (let ((val_0 (node-val t_0)))
-                        (let ((right_0
-                               (let ((key_1 (node-key yellow_0)))
-                                 (let ((val_1 (node-val yellow_0)))
-                                   (let ((right_0
-                                          (let ((key_2 (node-key orange_0)))
-                                            (let ((val_2 (node-val orange_0)))
-                                              (begin-unsafe
-                                               (combine
-                                                key_2
-                                                val_2
-                                                B_0
-                                                A_0))))))
-                                     (let ((val_2 val_1) (key_2 key_1))
-                                       (begin-unsafe
-                                        (combine
-                                         key_2
-                                         val_2
-                                         C_0
-                                         right_0))))))))
-                          (let ((val_1 val_0) (key_1 key_0))
-                            (begin-unsafe
-                             (combine key_1 val_1 D_0 right_0)))))))))))))))))
-(define single-rotate.2
-  (|#%name|
-   single-rotate
-   (lambda (t_0)
-     (begin
-       (let ((yellow_0 (node-right t_0)))
-         (let ((key_0 (node-key yellow_0)))
-           (let ((val_0 (node-val yellow_0)))
-             (let ((right_0 (node-right yellow_0)))
-               (let ((left_0
-                      (let ((key_1 (node-key t_0)))
-                        (let ((val_1 (node-val t_0)))
-                          (let ((right_1 (node-left yellow_0)))
-                            (let ((left_0 (node-left t_0)))
-                              (begin-unsafe
-                               (combine key_1 val_1 left_0 right_1))))))))
-                 (let ((right_1 right_0) (val_1 val_0) (key_1 key_0))
-                   (begin-unsafe
-                    (combine key_1 val_1 left_0 right_1))))))))))))
-(define empty-intmap #f)
-(define intmap-count
-  (lambda (im_0)
-    (if (not im_0)
-      0
-      (let ((app_0 (intmap-count (node-left im_0))))
-        (fx+ 1 app_0 (intmap-count (node-right im_0)))))))
+(define empty-treelist '#(0))
+(define WIDTH-BITS 4)
+(define WIDTH 16)
+(define treelist-ref
+  (lambda (v_0 i_0)
+    (let ((shift_0 (unsafe-vector*-ref v_0 0)))
+      (if (fx= 0 shift_0)
+        (unsafe-vector*-ref v_0 (fx+ i_0 1))
+        (let ((app_0
+               (unsafe-vector*-ref v_0 (fx+ (unsafe-fxrshift i_0 shift_0) 1))))
+          (treelist-ref
+           app_0
+           (fxand i_0 (fx- (unsafe-fxlshift 1 shift_0) 1))))))))
+(define treelist-maybe-set
+  (lambda (v_0 i_0 val_0)
+    (let ((shift_0 (vector-ref v_0 0)))
+      (let ((len_0 (unsafe-vector*-length v_0)))
+        (if (fx= 0 shift_0)
+          (let ((idx_0 (fx+ i_0 1)))
+            (if (fx< idx_0 len_0)
+              (unsafe-vector*-set/copy v_0 idx_0 val_0)
+              (if (fx<= idx_0 16)
+                (if (fx= idx_0 len_0)
+                  (vector*-extend v_0 (fx+ idx_0 1) val_0)
+                  (unsafe-vector*-set/copy
+                   (vector*-extend v_0 (fx+ idx_0 1) #f)
+                   idx_0
+                   val_0))
+                #f)))
+          (let ((idx_0 (fx+ (unsafe-fxrshift i_0 shift_0) 1)))
+            (if (fx< idx_0 len_0)
+              (let ((new-sub_0
+                     (let ((app_0 (unsafe-vector*-ref v_0 idx_0)))
+                       (treelist-maybe-set
+                        app_0
+                        (fxand i_0 (fx- (unsafe-fxlshift 1 shift_0) 1))
+                        val_0))))
+                (unsafe-vector*-set/copy v_0 idx_0 new-sub_0))
+              (if (fx<= idx_0 16)
+                (treelist-maybe-set
+                 (let ((app_0 (fx+ idx_0 1)))
+                   (vector*-extend v_0 app_0 (vector (fx- shift_0 4))))
+                 i_0
+                 val_0)
+                #f))))))))
+(define treelist-set
+  (lambda (v_0 i_0 val_0)
+    (let ((or-part_0 (treelist-maybe-set v_0 i_0 val_0)))
+      (if or-part_0
+        or-part_0
+        (let ((v_1 (vector (fx+ (vector-ref v_0 0) 4) v_0)))
+          (treelist-set v_1 i_0 val_0))))))
+(define empty-intmap (cons empty-treelist empty-treelist))
 (define intmap-ref
-  (lambda (im_0 key_0)
-    (if (not im_0)
-      (error 'intmap-ref "not found: ~e" key_0)
-      (if (fx< key_0 (node-key im_0))
-        (intmap-ref (node-left im_0) key_0)
-        (if (fx< (node-key im_0) key_0)
-          (intmap-ref (node-right im_0) key_0)
-          (node-val im_0))))))
-(define intmap-set (lambda (im_0 key_0 val_0) (insert im_0 key_0 val_0)))
-(define intmap-remove (lambda (im_0 key_0) (delete im_0 key_0)))
-(define empty-stack #f)
-(define stack-count (lambda (stack_0) (intmap-count stack_0)))
+  (lambda (im_0 i_0)
+    (if (fx< i_0 0)
+      (let ((app_0 (car im_0))) (treelist-ref app_0 (fx- -1 i_0)))
+      (treelist-ref (cdr im_0) i_0))))
+(define intmap-set
+  (lambda (im_0 i_0 v_0)
+    (if (fx< i_0 0)
+      (let ((app_0
+             (let ((app_0 (car im_0))) (treelist-set app_0 (fx- -1 i_0) v_0))))
+        (cons app_0 (cdr im_0)))
+      (let ((app_0 (car im_0)))
+        (cons app_0 (treelist-set (cdr im_0) i_0 v_0))))))
+(define intmap-remove (lambda (im_0 i_0) (intmap-set im_0 i_0 #f)))
+(define empty-stack empty-intmap)
 (define stack-ref
   (let ((stack-ref_0
          (|#%name|
@@ -42721,7 +42515,7 @@
                 (let ((i_0 (unsafe-unbox* i3_0)))
                   (if tail?1_0
                     (intmap-ref stack2_0 i_0)
-                    (let ((app_0 (begin-unsafe (delete stack2_0 i_0))))
+                    (let ((app_0 (begin-unsafe (intmap-set stack2_0 i_0 #f))))
                       (values app_0 (intmap-ref stack2_0 i_0)))))
                 (if tail?1_0
                   (intmap-ref stack2_0 i3_0)
@@ -42730,10 +42524,9 @@
      ((stack_0 i_0) (stack-ref_0 stack_0 i_0 #f))
      ((stack_0 i_0 tail?1_0) (stack-ref_0 stack_0 i_0 tail?1_0)))))
 (define stack-set
-  (lambda (stack_0 i_0 v_0)
-    (let ((s_0 (begin-unsafe (insert stack_0 i_0 v_0)))) s_0)))
+  (lambda (stack_0 i_0 v_0) (let ((s_0 (intmap-set stack_0 i_0 v_0))) s_0)))
 (define stack-remove
-  (lambda (stack_0 i_0) (begin-unsafe (delete stack_0 i_0))))
+  (lambda (stack_0 i_0) (begin-unsafe (intmap-set stack_0 i_0 #f))))
 (define push-stack
   (lambda (stack_0 pos_0 vals_0 mask_0)
     (let ((rest?_0 (negative? mask_0)))
@@ -47909,33 +47702,12 @@
                         (if (if (eq? 'begin hd_0) #t #f)
                           (let ((vs_0 (let ((d_0 (cdr (unwrap e_0)))) d_0)))
                             (extract-list-mutated_0 vs_0 mutated_0))
-                          (if (if (eq? 'begin0 hd_0)
-                                (let ((a_0 (cdr (unwrap e_0))))
-                                  (let ((p_0 (unwrap a_0)))
-                                    (if (pair? p_0)
-                                      (let ((a_1 (cdr p_0)))
-                                        (begin-unsafe
-                                         (let ((app_0 (unwrap '())))
-                                           (eq? app_0 (unwrap a_1)))))
-                                      #f)))
-                                #f)
-                            (let ((vs_0
-                                   (let ((d_0 (cdr (unwrap e_0))))
-                                     (let ((a_0 (car (unwrap d_0)))) a_0))))
+                          (if (if (eq? 'begin0 hd_0) #t #f)
+                            (let ((vs_0 (let ((d_0 (cdr (unwrap e_0)))) d_0)))
                               (extract-list-mutated_0 vs_0 mutated_0))
-                            (if (if (eq? 'begin-unsafe hd_0)
-                                  (let ((a_0 (cdr (unwrap e_0))))
-                                    (let ((p_0 (unwrap a_0)))
-                                      (if (pair? p_0)
-                                        (let ((a_1 (cdr p_0)))
-                                          (begin-unsafe
-                                           (let ((app_0 (unwrap '())))
-                                             (eq? app_0 (unwrap a_1)))))
-                                        #f)))
-                                  #f)
+                            (if (if (eq? 'begin-unsafe hd_0) #t #f)
                               (let ((vs_0
-                                     (let ((d_0 (cdr (unwrap e_0))))
-                                       (let ((a_0 (car (unwrap d_0)))) a_0))))
+                                     (let ((d_0 (cdr (unwrap e_0)))) d_0)))
                                 (extract-list-mutated_0 vs_0 mutated_0))
                               (if (if (eq? '$value hd_0)
                                     (let ((a_0 (cdr (unwrap e_0))))
@@ -48833,9 +48605,8 @@
                                         rest_0
                                         (+ pos_0 1)))))
                                  stack_0))))))
-                        (for-loop_0 #f args_0 0)))))
-                (let ((post-args-pos_0
-                       (begin-unsafe (intmap-count args-stack_0))))
+                        (for-loop_0 empty-intmap args_0 0)))))
+                (let ((post-args-pos_0 (length args_0)))
                   (let ((args+vars-stack_0
                          (begin
                            (letrec*
@@ -48867,7 +48638,7 @@
                                      stack_0))))))
                             (for-loop_0 args-stack_0 internal-var-syms_1 0)))))
                     (let ((post-args+vars-pos_0
-                           (begin-unsafe (intmap-count args+vars-stack_0))))
+                           (+ post-args-pos_0 (length internal-var-syms_1))))
                       (let ((stack_0
                              (begin
                                (letrec*
@@ -49802,9 +49573,10 @@
                                                                              clears_2)))
                                                                        (begin-unsafe
                                                                         (begin-unsafe
-                                                                         (delete
+                                                                         (intmap-set
                                                                           stack_1
-                                                                          i_0))))))))))))
+                                                                          i_0
+                                                                          #f))))))))))))
                                                          (loop_0
                                                           clears_1
                                                           stack65_0)))))
@@ -50701,7 +50473,7 @@
                               app_0
                               val-stack_0
                               (stack-set captured_0 (- -1 i_0) val_0)))))))))))
-               (loop_0 0 stack_1 #f)))))))
+               (loop_0 0 stack_1 empty-intmap)))))))
       (apply-function_0
        (|#%name|
         apply-function

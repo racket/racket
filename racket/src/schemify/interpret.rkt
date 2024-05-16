@@ -476,9 +476,9 @@
        (extract-list-mutated body (extract-list-mutated rhss mutated))]
       [`(begin . ,vs)
        (extract-list-mutated vs mutated)]
-      [`(begin0 ,vs)
+      [`(begin0 . ,vs)
        (extract-list-mutated vs mutated)]
-      [`(begin-unsafe ,vs)
+      [`(begin-unsafe . ,vs)
        (extract-list-mutated vs mutated)]
       [`($value ,e)
        (extract-expr-mutated e mutated)]
@@ -654,11 +654,11 @@
       (define args-stack (for/fold ([stack start-stack]) ([arg (in-list args)]
                                                           [i (in-naturals 0)])
                            (stack-set stack i arg)))
-      (define post-args-pos (stack-count args-stack))
+      (define post-args-pos (length args))
       (define args+vars-stack (for/fold ([stack args-stack]) ([var (in-list internal-var-syms)]
                                                               [i (in-naturals 0)])
                                 (stack-set stack (+ i post-args-pos) (make-internal-variable var))))
-      (define post-args+vars-pos (stack-count args+vars-stack))
+      (define post-args+vars-pos (+ post-args-pos (length internal-var-syms)))
       (define stack (for/fold ([stack args+vars-stack]) ([i (in-range num-body-vars)])
                       (stack-set stack (+ i post-args+vars-pos) (box unsafe-undefined))))
       (interpret-expr b stack))]))

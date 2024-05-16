@@ -1,254 +1,116 @@
 #lang racket/base
 (require racket/fixnum
-         (for-syntax racket/base))
+         (only-in '#%kernel
+                  vector*-set/copy vector*-extend))
+
+;; This intmap implementation is really a functional growable vector,
+;; because it's tailored to a case where we have keys near 0, where we
+;; don't need to distinguish between #f-valued keys and removed keys,
+;; and where it's ok for the intmap size to stay large after it is
+;; made large (like a growable stack). To deal with negative keys, two
+;; growable vectors are paired: one for negative keys and one for
+;; non-negative keys.
 
 (provide empty-intmap
-         intmap-count ; not constant-time
          intmap-ref
          intmap-set
          intmap-remove)
 
-;; AVL tree where keys are always fixnums
+;; Treelist-like representation: first vector index holds a number
+;; to used as a right shift, effectively indicating the tree depth.
+;; Indices 1 through `WIDTH` inclusive hold elements (in the case of 0)
+;; or subtree (in the case of a non-0 multiple of `WIDTH-BITS`).
+(define empty-treelist #(0))
+(define WIDTH-BITS 4)
+(define WIDTH (fxlshift 1 WIDTH-BITS))
 
-;; ----------------------------------------
+(define (treelist-ref v i)
+  (define shift (vector*-ref v 0))
+  (if (fx= 0 shift)
+      (vector*-ref v (fx+ i 1))
+      (treelist-ref (vector*-ref v (fx+ (fxrshift i shift) 1))
+                    (fxand i (fx- (fxlshift 1 shift) 1)))))
 
-(struct node (key val height left right)
-  #:transparent
-  #:authentic)
-
-;; ----------------------------------------
-
-(define (tree-height t)
+;; returns #f if the tree needs to be made deeper
+(define (treelist-maybe-set v i val)
+  (define shift (vector-ref v 0))
+  (define len (vector*-length v))
   (cond
-    [(not t) 0]
-    [else (node-height t)]))
-
-(define (combine key val left right)
-  (node key
-        val
-        (fx+ 1 (fxmax (tree-height left) (tree-height right)))
-        left 
-        right))
-
-(define (reverse-combine key val right left)
-  (combine key val left right))
-
-;; ----------------------------------------
-
-(define (insert t key val)
-  (cond
-    [(not t) (combine key val #f #f)]
-    [(fx< key (node-key t))
-     (insert-to t key val
-                node-left
-                node-right
-                combine
-                rotate-right)]
-    [(fx< (node-key t) key)
-     (insert-to t key val
-                node-right
-                node-left
-                reverse-combine
-                rotate-left)]
-    [else
-     (node key val
-           (node-height t)
-           (node-left t)
-           (node-right t))]))
-
-;; Like insert, but inserts to a child, where `node-to'
-;; determines the side where the child is added,`node-other'
-;; is the other side, and `comb' builds the new tree gven the
-;; two new children.
-(define-syntax-rule (insert-to t new-key new-val node-to node-other comb rotate)
-  (begin
-    ;; Insert into the `node-to' child:
-    (define new-to (insert (node-to t) new-key new-val))
-    (define new-other (node-other t))
-    
-    (define new-t (comb (node-key t) (node-val t) new-to new-other))
-    
-    ;; Check for rotation:
-    (define to-height (tree-height new-to))
-    (define other-height (tree-height new-other))
-    (if ((fx- to-height other-height) . fx= . 2)
-        (rotate new-t)
-        new-t)))
-
-(define (delete t key)
-  (cond
-    [(not t) #f]
-    [(fx< key (node-key t))
-     (delete-from t key
-                  node-left
-                  node-right
-                  combine
-                  rotate-left)]
-    [(fx< (node-key t) key)
-     (delete-from t key
-                  node-right
-                  node-left
-                  reverse-combine
-                  rotate-right)]
-    [else
-     (define l (node-left t))
-     (define r (node-right t))
+    [(fx= 0 shift)
+     (define idx (fx+ i 1))
      (cond
-       [(not l) r]
-       [(not r) l]
-       [else
-        (delete-here t node-left node-right combine rotate-left)])]))
-
-(define-syntax-rule (delete-from t key node-to node-other comb rotate)
-  (begin
-    ;; Delete from the `node-to' child:
-    (define new-to (delete (node-to t) key))
-    (define new-other (node-other t))
-    
-    (define new-t (comb (node-key t) (node-val t) new-to new-other))
-    
-    ;; Check for rotation:
-    (define to-height (tree-height new-to))
-    (define other-height (tree-height new-other))
-    (if ((fx- to-height other-height) . fx= . -2)
-        (rotate new-t)
-        new-t)))
-
-(define-syntax-rule (delete-here t node-from node-other comb rotate)
-  (begin
-    ;; Delete by moving from `from` to `other`
-    (define from (node-from t))
-    (define new-t
-      (let loop ([end from])
-        (cond
-          [(node-other end)
-           => (lambda (e) (loop e))]
-          [else
-           (define key (node-key end))
-           (define new-from (delete from key))
-           (comb key (node-val end) new-from (node-other t))])))
-
-    ;; Check for rotation:
-    (define from-height (tree-height (node-from new-t)))
-    (define other-height (tree-height (node-other new-t)))
-    (if ((fx- from-height other-height) . fx= . -2)
-        (rotate new-t)
-        new-t)))
-
-(define-syntax-rule (define-rotate rotate node-to node-other comb)
-  (begin
-    ;; Helper rotate function:
-    (define (rotate t)
-      (define to (node-to t))
-      (define to-balance (fx- (tree-height (node-to to))
-                              (tree-height (node-other to))))
-      (cond
-        [(to-balance . fx< . 0)
-         (double-rotate t)]
-        [else
-         (single-rotate t)]))
-
-    ;; Helper double-rotate function:
-    (define (double-rotate t)
-      (define orange (node-to t))
-      (define yellow (node-other orange))
-      (define A (node-to orange))
-      (define B (node-to yellow))
-      (define C (node-other yellow))
-      (define D (node-other t))
-      (single-rotate (comb (node-key t)
-                           (node-val t)
-                           (comb (node-key yellow)
-                                 (node-val yellow)
-                                 (comb (node-key orange)
-                                       (node-val orange)
-                                       A
-                                       B)
-                                 C)                   
-                           D)))
-    
-    ;; Helper single-rotate function:
-    (define (single-rotate t)
-      (define yellow (node-to t))
-      (comb (node-key yellow)
-            (node-val yellow)
-            (node-to yellow)
-            (comb (node-key t)
-                  (node-val t)
-                  (node-other yellow)
-                  (node-other t))))))
-
-(define-rotate rotate-right node-left node-right combine)
-(define-rotate rotate-left node-right node-left reverse-combine)
-
-;; ----------------------------------------
-
-(define empty-intmap #f)
-
-(define (intmap-count im)
-  (cond
-    [(not im) 0]
-    [else (fx+ 1
-               (intmap-count (node-left im))
-               (intmap-count (node-right im)))]))
-
-(define (intmap-ref im key)
-  (cond
-    [(not im)
-     (error 'intmap-ref "not found: ~e" key)]
-    [(fx< key (node-key im))
-     (intmap-ref (node-left im) key)]
-    [(fx< (node-key im) key)
-     (intmap-ref (node-right im) key)]
+       [(fx< idx len)
+        (vector*-set/copy v idx val)]
+       [(fx<= idx WIDTH)
+        (if (fx= idx len)
+            (vector*-extend v (fx+ idx 1) val)
+            (vector*-set/copy (vector*-extend v (fx+ idx 1) #f) idx val))]
+       [else #f])]
     [else
-     (node-val im)]))
-    
-(define (intmap-set im key val)
-  (insert im key val))
+     (define idx (fx+ (fxrshift i shift) 1))
+     (cond
+       [(fx< idx len)
+        ;; result cannot be #f, because `i` is in range for `v`
+        (define new-sub (treelist-maybe-set (vector*-ref v idx)
+                                            (fxand i (fx- (fxlshift 1 shift) 1))
+                                            val))
+        (vector*-set/copy v idx new-sub)]
+       [(fx<= idx WIDTH)
+        (treelist-maybe-set (vector*-extend v (fx+ idx 1) (vector (fx- shift WIDTH-BITS)))
+                            i
+                            val)]
+       [else #f])]))
 
-(define (intmap-remove im key)
-  (delete im key))
+(define (treelist-set v i val)
+  (or (treelist-maybe-set v i val)
+      ;; deepen tree and try again:
+      (let ([v (vector (fx+ (vector-ref v 0) WIDTH-BITS) v)])
+        (treelist-set v i val))))
 
 ;; ----------------------------------------
 
-#;
+;; An intmap pairs two "treelists"
+
+(define empty-intmap (cons empty-treelist empty-treelist))
+
+(define (intmap-ref im i)
+  (if (fx< i 0)
+      (treelist-ref (car im) (fx- -1 i))
+      (treelist-ref (cdr im) i)))
+
+(define (intmap-set im i v)
+  (if (fx< i 0)
+      (cons (treelist-set (car im) (fx- -1 i) v) (cdr im))
+      (cons (car im) (treelist-set (cdr im) i v))))
+
+(define (intmap-remove im i)
+  (intmap-set im i #f))
+
+;; ----------------------------------------
+
 (module+ main
-  (require racket/match
-           racket/list
-           rackunit)
-  
-  (define (inorder t accum)
-    (match t
-      [#f accum]
-      [(node k v h l r)
-       (inorder l (cons v (inorder r accum)))]))
-  
-  (define (insert-all l)
-    (for/fold ([t #f]) ([i (in-list l)])
-      (insert t i (number->string i))))
-  
-  (define (delete-all t l)
-    (let loop ([t t] [l l])
-      (cond
-        [(null? l) t]
-        [else
-         (define new-t (delete t (car l)))
-         (check-equal? (map string->number (inorder new-t null))
-                       (sort (cdr l) <))
-         (loop new-t (cdr l))])))
-  
-  (define (check-ok? l)
-    (define t (insert-all l))
-    (check-equal? (map string->number (inorder t null))
-                  (sort l <))
-    (check-equal? #f
-                  (delete-all t l)))
-  
-  
-  (check-ok? '(1 2 3 4 5 6 7 8))
-  (check-ok? '(-1 -2 -3 -4 -5 -6 -7 -8))
-  (check-ok? (for/list ([i (in-range 128)]) i))
-  (check-ok? (reverse (for/list ([i (in-range 128)]) i)))
-  (for ([i 10])
-    (check-ok? (shuffle '(1 2 3 4 5 6 7 8 9 10 11 12 13))))
-  "tests passed")
+  (define im
+    (for/fold ([im empty-intmap]) ([i (in-range 300)])
+      (intmap-set (intmap-set im i i) (- -1 i) i)))
+  (for ([i (in-range 300)])
+    (unless (equal? (intmap-ref im i) i)
+      (error "no" i))
+    (unless (equal? (intmap-ref im (- -1 i)) i)
+      (error "no" i)))
+  (define evens-im
+    (for/fold ([im im]) ([i (in-range 300)])
+      (if (even? i)
+          (intmap-remove im i)
+          (intmap-remove im (- -1 i)))))
+  (for ([i (in-range 300)])
+    (unless (if (even? i)
+                (equal? (intmap-ref im (- -1 i)) i)
+                (equal? (intmap-ref im i) i))
+      (error "no" i)))
+
+  (define sparse-im
+    (for/fold ([im empty-intmap]) ([i (in-range 10)])
+      (intmap-set im (* i 10) i)))
+  (for ([i (in-range 10)])
+    (unless (equal? (intmap-ref sparse-im (* 10 i)) i)
+      (error "no" i))))
