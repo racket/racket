@@ -10,15 +10,15 @@ typedef struct racket_boot_arguments_t {
   const char *boot1_path; /* REQUIRED unless `boot1_data`: path to "petite.boot" */
   void *boot1_data; /* REQUIRED unless `boot1_path`: content of "petite.boot" */
   long boot1_offset;
-  long boot1_len; /* 0 => unknown length */
+  long boot1_len; /* 0 => unknown length; REQUIRED non-0 when `boot1_data` */
   const char *boot2_path; /* REQUIRED unless `boot2_data`: path to "scheme.boot" */
   void *boot2_data; /* REQUIRED unless `boot2_path`: content of "scheme.boot" */
   long boot2_offset;
-  long boot2_len; /* 0 => unknown length */
+  long boot2_len; /* 0 => unknown length; REQUIRED non-0 when `boot2_data` */
   const char *boot3_path; /* REQUIRED unless `boot3_data`: path to "racket.boot" */
   void *boot3_data; /* REQUIRED unless `boot3_path`: content of "racket.boot" */
   long boot3_offset;
-  long boot3_len; /* 0 => unknown length */
+  long boot3_len; /* 0 => unknown length; REQUIRED non-0 when `boot3_data` */
 
   /* Command-line arguments are handled in the same way as the
      `racket` exectuable. The `argv` array should *not* include the

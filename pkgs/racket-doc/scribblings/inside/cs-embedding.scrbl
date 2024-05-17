@@ -62,18 +62,21 @@ To embed Racket CS in a program, follow these steps:
            @cpp{argv[0]} for the @cpp{argv} received by your program's
            @cpp{main}.}
 
-     @item{@cpp{boot1_path} or @cpp{boot1_data} --- either a path to
-           @filepath{petite.boot} or the in-memory content of
-           @filepath{petite.boot}. In the former case, use a path that
-           includes at least one directory separator.}
+     @item{@cpp{boot1_path} or @cpp{boot1_data} and @cpp{boot1_len}
+           --- either a path to @filepath{petite.boot} or the content
+           of @filepath{petite.boot} and its length in bytes. In the
+           former case, use a path that includes at least one
+           directory separator.}
 
-     @item{@cpp{boot2_path} or @cpp{boot2_data} --- either a path to
-           @filepath{scheme.boot} (with a separator) or the in-memory
-           content of @filepath{scheme.boot}.}
+     @item{@cpp{boot2_path} or @cpp{boot2_data} and @cpp{boot2_len}
+           --- either a path to @filepath{scheme.boot} (with a
+           separator) or the content of @filepath{scheme.boot} and its
+           length.}
 
-     @item{@cpp{boot3_path} or @cpp{boot3_data} --- either a path to
-           @filepath{racket.boot} (with a separator) or the in-memory
-           content of @filepath{racket.boot}.}
+     @item{@cpp{boot3_path} or @cpp{boot3_data} and @cpp{boot3_len}
+           --- either a path to @filepath{racket.boot} (with a
+           separator) or the content of @filepath{racket.boot} and its
+           length.}
 
   ]
 
