@@ -37,37 +37,56 @@ Fields in @cppdef{racket_boot_arguments_t}:
        @cpp{racket_path_replace_filename} functions may be helpful to
        construct the path.}
 
- @item{@cpp{long} @cppdef{boot1_offset} --- an offset into
-       @cpp{boot1_path} to read for the first boot image, which allows
-       boot images to be combined with other data in a single file.
-       The image as distributed is self-terminating, so no size or
-       ending offset is needed.}
+ @item{@cpp{void *} @cppdef{boot1_data} --- an alternative to
+       @cpp{boot1_path}, a pointer to the boot file's content in memory.
+       Only one of @cpp{boot1_path} and @cpp{boot1_data} can
+       be non-@cpp{NULL}.
 
- @item{@cpp{long} @cppdef{boot1_len} --- an optional length in bytes
-       for the first boot image, which is used as a hint for loading
-       the boot file if non-zero. If this hint is provided, it must be
-       at least as large as the boot image bytes, and it must be no
-       longer than the file size after the boot image offset.}
+       @history[#:added "8.13.0.4"]}
+
+ @item{@cpp{long} @cppdef{boot1_offset} --- an offset into
+       @cpp{boot1_path} or @cpp{boot1_data} to read for the first boot
+       image, which allows boot images to be combined with other data
+       in a single file. The image as distributed is self-terminating,
+       so no size or ending offset is needed.}
+
+ @item{@cpp{long} @cppdef{boot1_len} --- an length in bytes for the
+       first boot image, which is optional and used as a hint if
+       non-zero. If this hint is provided, it must be at least as
+       large as the boot image bytes, and it must be no longer than
+       the file size or readable memory range after the boot image offset.}
 
  @item{@cpp{const char *} @cppdef{boot2_path} --- like
        @cpp{boot1_path}, but for the image that contains compiler
        functionality, normally called @filepath{scheme.boot}.}
 
- @item{@cpp{long} @cppdef{boot2_offset} --- an offset into
-       @cpp{boot2_path} to read for the second boot image.}
+ @item{@cpp{void *} @cppdef{boot2_data} --- like @cpp{boot1_data},
+       but an alternative to @cpp{boot2_path}.
 
- @item{@cpp{long} @cppdef{boot2_len} --- @cpp{boot1_len}, an optional
-       length in bytes for the second boot image.}
+       @history[#:added "8.13.0.4"]}
+
+ @item{@cpp{long} @cppdef{boot2_offset} --- like @cpp{boot1_offset},
+       an offset into @cpp{boot2_path} or @cpp{boot2_data} to read for
+       the second boot image.}
+
+ @item{@cpp{long} @cppdef{boot2_len} --- like @cpp{boot1_len}, an
+       optional length in bytes for the second boot image.}
 
  @item{@cpp{const char *} @cppdef{boot3_path} --- like
        @cpp{boot1_path}, but for the image that contains Racket
        functionality, normally called @filepath{racket.boot}.}
 
- @item{@cpp{long} @cppdef{boot3_offset} --- @cpp{boot1_len}, an offset
-       into @cpp{boot2_path} to read for the third boot image.}
+ @item{@cpp{void *} @cppdef{boot3_data} --- like @cpp{boot1_data},
+       but an alternative to @cpp{boot3_path}.
 
- @item{@cpp{long} @cppdef{boot3_len} --- an optional length in bytes
-       for the third boot image.}
+       @history[#:added "8.13.0.4"]}
+
+ @item{@cpp{long} @cppdef{boot3_offset} --- like @cpp{boot1_offset},
+       an offset into @cpp{boot2_path} or @cpp{boot3_path} to read for
+       the third boot image.}
+
+ @item{@cpp{long} @cppdef{boot3_len} --- like @cpp{boot1_len}, an
+       optional length in bytes for the third boot image.}
 
  @item{@cpp{int} @cpp{argc} and @cpp{char **} @cpp{argv} ---
        command-line arguments to be processed the same as for a
