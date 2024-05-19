@@ -271,7 +271,7 @@
   (split-at list (count-from-right 'splitf-at-right list pred)))
 
 ; list-prefix? : list? list? -> boolean?
-; Is l a prefix or r?
+; Is ls a prefix of rs?
 (define (list-prefix? ls rs [same? equal?])
   (unless (list? ls)
     (raise-argument-error 'list-prefix? "list?" 0 ls rs))
@@ -280,10 +280,11 @@
   (unless (and (procedure? same?)
                (procedure-arity-includes? same? 2))
     (raise-argument-error 'list-prefix? "(any/c any/c . -> . any/c)" 2 ls rs same?))
-  (or (null? ls)
-      (and (pair? rs)
-           (same? (car ls) (car rs))
-           (list-prefix? (cdr ls) (cdr rs)))))
+  (let loop ((ls ls) (rs rs))
+    (or (null? ls)
+        (and (pair? rs)
+             (same? (car ls) (car rs))
+             (loop (cdr ls) (cdr rs))))))
 
 ;; Eli: How about a version that removes the equal prefix from two lists
 ;; and returns the tails -- this way you can tell if they're equal, or
