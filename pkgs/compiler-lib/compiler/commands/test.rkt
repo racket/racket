@@ -68,8 +68,9 @@
   (require raco/testing
            racket/file
            compiler/private/cm-minimal)
-  ;; Arguments are a temp file to hold test results, the module
-  ;; path to run, and the `dynamic-require` second argument:
+  ;; Arguments include a temp file to hold test results, the module path to run,
+  ;; and the `dynamic-require` second argument. See the 'process case of
+  ;; dynamic-require-elsewhere.
   (define argv (current-command-line-arguments))
   (define result-file (vector-ref argv 0))
   (define test-module (read (open-input-string (vector-ref argv 1))))
@@ -77,7 +78,10 @@
   (define d (read (open-input-string (vector-ref argv 3))))
   (define make? (read (open-input-string (vector-ref argv 4))))
   (define errortrace-path-or-false (read (open-input-string (vector-ref argv 5))))
-  (define args (list-tail (vector->list argv) 6))
+  (define test-invocation-path (bytes->path (read (open-input-string (vector-ref argv 6)))))
+  (define args (list-tail (vector->list argv) 7))
+
+  (current-test-invocation-directory test-invocation-path)
 
   ;; In case PLTUSERHOME is set, make sure relevant
   ;; directories exist:
@@ -111,7 +115,9 @@
     (define l (place-channel-get pch))
     (define make? (list-ref l 3))
     (define errortrace-path-or-false (list-ref l 4))
-    (define args (list-ref l 6))
+    (define test-invocation-path (list-ref l 6))
+    (define args (list-ref l 7))
+    (current-test-invocation-directory test-invocation-path)
     (when make?
       (current-load/use-compiled (make-compilation-manager-load/use-compiled-handler)))
     (when errortrace-path-or-false
@@ -228,6 +234,7 @@
                                     make?
                                     (and load-errortrace? errortrace-module-path)
                                     (current-directory)
+                                    (current-test-invocation-directory)
                                     args))
 
            ;; Wait for the place to finish:
@@ -274,9 +281,12 @@
                       (format "~s" d)
                       (format "~s" make?)
                       (format "~s" (and load-errortrace? errortrace-module-path))
+                      (format "~s" (cond
+                                     [(current-test-invocation-directory) => path->bytes]
+                                     [else #f]))
                       args)))
            (define proc (list-ref ps 4))
-           
+
            (unless (sync/timeout timeout (thread (lambda () (proc 'wait))))
              (set! timeout? #t)
              (error test-exe-name "timeout after ~a seconds" timeout))
