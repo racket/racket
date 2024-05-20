@@ -94,7 +94,9 @@
 ;; uses name for error reporting
 (define (one-arg-check f v name)
   (unless (and (procedure? f) (procedure-arity-includes? f 1))
-    (raise-argument-error name "(any/c . -> . any/c)" 0 f)))
+    (raise-argument-error name "(any/c . -> . any/c)" 0 f))
+  (unless (vector? v)
+    (raise-argument-error name "vector?" 1 v)))
 
 (define (vector-filter f v)
   (one-arg-check f v 'vector-filter)
