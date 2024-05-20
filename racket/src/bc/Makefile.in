@@ -105,6 +105,7 @@ PACKAGE = racket
 prefix = @prefix@
 exec_prefix = @exec_prefix@
 datarootdir = @datarootdir@
+datadir = @datadir@
 bindir = @bindir@
 libdir = @libdir@
 includepltdir = @includepltdir@
