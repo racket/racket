@@ -91,7 +91,7 @@ exit 0
         ;; Hack: take over "pdfdir" for "pkgsdir":
         (cond
          [(equal? l "pdfdir='${docdir}'")
-          (displayln "pkgsdir='${datarootdir}/${PACKAGE}/pkgs'")]
+          (displayln "pkgsdir='${datadir}/${PACKAGE}/pkgs'")]
          [(equal? l "  --pdfdir=DIR            pdf documentation [DOCDIR]")
           (displayln "  --pkgsdir=DIR           installed pkgs [EPREFIX/share/PACKAGE/pkgs]")]
          [else
