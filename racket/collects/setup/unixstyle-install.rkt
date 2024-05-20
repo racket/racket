@@ -322,7 +322,19 @@
      (lambda (o)
        (fprintf o "(\n")
        (for ([e (in-list entries)])
-         (define p (cadr e))
+         (define p (let ([p (cadr e)])
+                     ;; normalize to string form, which assumes that we get here
+                     ;; only for a Unix filesystem and with string-friendly
+                     ;; package paths
+                     (cond
+                       [(string? p) p]
+                       [(bytes? p) (path->string (bytes->path p))]
+                       [else (path->string
+                              (apply build-path
+                                     (for/list ([pe (in-list p)])
+                                       (if (bytes? pe)
+                                           (bytes->path-element pe)
+                                           pe))))])))
          (fprintf o " ")
          (define m (regexp-match #rx"^pkgs/(.*)$" p))
          (write
