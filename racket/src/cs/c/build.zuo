@@ -909,6 +909,7 @@
        (define config-path (shell-subst (lookup 'CONFIG_PATH) config))
        
        (mkdir-p bindir)
+       (mkdir-p libdir)
        (mkdir-p libpltdir)
        (mkdir-p includepltdir)
        (mkdir-p configdir)
