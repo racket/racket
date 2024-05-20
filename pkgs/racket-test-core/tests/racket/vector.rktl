@@ -190,6 +190,8 @@
   (err/rt-test (fn 2 #(1 2 3)))
   (err/rt-test (f cons #(1 2 3)))
   (err/rt-test (fn cons #(1 2 3)))
+  (err/rt-test (f values '(1 2 3)) exn:fail:contract? #rx"vector-filter")
+  (err/rt-test (fn values '(1 2 3)) exn:fail:contract? #rx"vector-filter-not")
   (arity-test f  2 2)
   (arity-test fn 2 2))
 
