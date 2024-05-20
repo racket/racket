@@ -29552,7 +29552,7 @@
                         app_0
                         (if secs_0 "setting" "getting")
                         (host-> host-path_0)))))
-                  r_0)))))))))
+                  (if secs_0 (void) r_0))))))))))
 (define 1/file-or-directory-permissions
   (let ((file-or-directory-permissions_0
          (|#%name|

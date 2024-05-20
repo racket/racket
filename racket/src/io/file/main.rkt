@@ -242,6 +242,7 @@
                                           "  path: ~a")
                                          (if secs "setting" "getting")
                                          (host-> host-path))))]
+    [secs (void)]
     [else r]))
 
 (define/who (file-or-directory-permissions p [mode #f])

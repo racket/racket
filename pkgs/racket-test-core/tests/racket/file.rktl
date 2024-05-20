@@ -961,8 +961,9 @@
   (close-input-port p)
   (close-input-port q))
 
-;; We should be able to install the current permissions:
+;; We should be able to install the current permissions and timestamp:
 (test (void) file-or-directory-permissions "tmp1" (file-or-directory-permissions "tmp1" 'bits))
+(test (void) file-or-directory-modify-seconds "tmp1" (file-or-directory-modify-seconds "tmp1"))
 
 (define test-file 
   (open-output-file "tmp2" #:exists 'truncate))
