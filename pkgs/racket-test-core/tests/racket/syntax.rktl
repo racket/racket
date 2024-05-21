@@ -8,6 +8,7 @@
          racket/case)
 
 ;; ----------------------------------------
+(test #t free-identifier=? #'lambda #'λ)
 
 (test 0 'with-handlers (with-handlers () 0))
 (test 1 'with-handlers (with-handlers ([void void]) 1))
