@@ -2125,7 +2125,10 @@ support keyword and optional arguments.
         (f 1)
         (f 1 2)
         (f 1 2 3)))
-]}
+]
+
+@history[#:changed "8.13.0.5" @elem{Added @racket[case-λ].}]
+}
 
 @defform[(#%plain-lambda formals body ...+)]{
 Like @racket[lambda], but without support for keyword or optional arguments.
