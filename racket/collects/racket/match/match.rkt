@@ -24,12 +24,16 @@
                      syntax-local-match-introduce)
          match-equality-test
          define-match-expander
-         struct* ==          
+         struct* ==
          exn:misc:match?)
 
 (define-forms parse
-  match match* match-lambda match-lambda* match-lambda** match-let match-let*
+  match match* match/values
+  match-lambda match-lambda* match-lambda**
+  match-λ match-λ* match-λ**
+  match-let match-let*
   match-let-values match-let*-values
-  match-define match-define-values match-letrec match-letrec-values match/values
+  match-define match-define-values
+  match-letrec match-letrec-values
   match/derived match*/derived
   define/match)
