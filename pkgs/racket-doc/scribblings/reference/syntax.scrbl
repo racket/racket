@@ -2091,7 +2091,13 @@ optional keyword argument whose value is not provided; optional
 by-position arguments include @racket[#f] for each non-provided
 argument, and then the sequence of optional-argument values is
 followed by a parallel sequence of booleans to indicate whether each
-optional-argument value was provided.}
+optional-argument value was provided.
+
+@history[#:changed "8.13.0.5" @elem{
+Adjusted binding so that @racket[(free-identifier=? #'λ #'lambda)] produces
+@racket[#t].
+}]
+}
 
 
 @defform/subs[(case-lambda [formals body ...+] ...)
