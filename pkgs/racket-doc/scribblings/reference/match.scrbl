@@ -675,7 +675,7 @@ Equivalent to @racket[(lambda (id) (match id clause ...))].
 
 Equivalent to @racket[(lambda lst (match lst clause ...))].
 
-@history[#:changed "8.13.0.5" @elem{Added @racket[match-λ].}]
+@history[#:changed "8.13.0.5" @elem{Added @racket[match-λ*].}]
 }
 
 @deftogether[(@defform[(match-lambda** clause* ...)]
@@ -685,7 +685,7 @@ Equivalent to @racket[(lambda (args ...) (match* (args ...) clause* ...))],
 where the number of @racket[args ...] is computed from the number of patterns
 appearing in each of the @racket[clause*].
 
-@history[#:changed "8.13.0.5" @elem{Added @racket[match-λ].}]
+@history[#:changed "8.13.0.5" @elem{Added @racket[match-λ**].}]
 }
 
 
