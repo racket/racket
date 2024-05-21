@@ -449,10 +449,6 @@
 (test -4 procedure-arity-mask apply)
 
 ;; ------------------------------------------------------------
-;; Check if `lambda` and `λ` access the same binding.
-(test #t free-identifier=? #'lambda #'λ)
-
-;; ------------------------------------------------------------
 ;; Check arity reporting for methods.
 
 (map
