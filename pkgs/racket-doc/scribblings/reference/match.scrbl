@@ -666,12 +666,16 @@ many values to expect from @racket[expr].
               @defform[(match-λ clause ...)])]{
 
 Equivalent to @racket[(lambda (id) (match id clause ...))].
+
+@history[#:changed "8.13.0.5" @elem{Added @racket[match-λ].}]
 }
 
 @deftogether[(@defform[(match-lambda* clause ...)]
               @defform[(match-λ* clause ...)])]{
 
 Equivalent to @racket[(lambda lst (match lst clause ...))].
+
+@history[#:changed "8.13.0.5" @elem{Added @racket[match-λ].}]
 }
 
 @deftogether[(@defform[(match-lambda** clause* ...)]
@@ -680,6 +684,8 @@ Equivalent to @racket[(lambda lst (match lst clause ...))].
 Equivalent to @racket[(lambda (args ...) (match* (args ...) clause* ...))],
 where the number of @racket[args ...] is computed from the number of patterns
 appearing in each of the @racket[clause*].
+
+@history[#:changed "8.13.0.5" @elem{Added @racket[match-λ].}]
 }
 
 
