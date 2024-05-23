@@ -1531,7 +1531,7 @@ Following the pre-condition is the optional @racket[param-value] non-terminal
 that specifies parameters to be assigned to during the dynamic extent of the
 function. Each assignment is introduced with the @racket[#:param] keyword followed
 by the list of names on which it depends, a @racket[param-expr] that determines
-the parameter to set, and a @racket[value-expr] that will be associated with
+the parameter to set, and a @racket[val-expr] that will be associated with
 the parameter.
 
 The @racket[dependent-range] non-terminal specifies the possible result
