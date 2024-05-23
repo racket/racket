@@ -55,7 +55,7 @@ once during compilation as in @racket[let-syntax], etc.
 
 If a definition within a splicing form is intended to be local to the
 splicing body, then the identifier should have a true value for the
-@racket['definition-intended-as-local] @tech{syntax property}. For
+@indexed-racket['definition-intended-as-local] @tech{syntax property}. For
 example, @racket[splicing-let] itself adds the property to
 locally-bound identifiers as it expands to a sequence of definitions,
 so that nesting @racket[splicing-let] within a splicing form works as

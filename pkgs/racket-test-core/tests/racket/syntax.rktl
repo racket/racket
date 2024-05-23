@@ -1650,23 +1650,24 @@
                                                           (define x 10))
                                   (abcdefg)))
 
-(test '(1 2)
+(test 'inner
       'nested-splicing-expr
-      (splicing-let ([a 1])
-                    (list a
-                          (splicing-let ([a 2])
-                                        a))))
+      (let ()
+        (splicing-let ([a 'outer])
+          (splicing-let ([a 'inner])
+            a))))
 
 (test '(1 2)
       'nested-splicing-def
       (let ()
         (splicing-let ([a 1])
-                      (define x a)
-                      (splicing-let ([a 2])
-                                    (define y a)))
+          (define x a)
+          (splicing-let ([a 2])
+            (define y a)))
         (list x y)))
 
-(test 11 'nested-splicing-def-use-site
+(test 11
+      'nested-splicing-def-use-site
       (let ()
         (splicing-let ([z 1])
           (define-syntax-rule (m a b)
@@ -1679,10 +1680,109 @@
       'nested-splicing-syntax
       (let ()
         (splicing-let-syntax ([a (syntax-rules () [(_) 1])])
-                             (define x (a))
-                             (splicing-let-syntax ([a (syntax-rules () [(_) 2])])
-                                                  (define y (a))))
+          (define x (a))
+          (splicing-let-syntax ([a (syntax-rules () [(_) 2])])
+            (define y (a))))
         (list x y)))
+
+(test 'inner
+      'nested-splicing-expr/letrec-syntaxes+values
+      (let ()
+        (splicing-letrec-syntaxes+values () ([(a) 'outer])
+          (splicing-letrec-syntaxes+values () ([(a) 'inner])
+            a))))
+
+(test '(1 2)
+      'nested-splicing-def/letrec-syntaxes+values
+      (let ()
+        (splicing-letrec-syntaxes+values () ([(a) 1])
+          (define x a)
+          (splicing-letrec-syntaxes+values () ([(a) 2])
+            (define y a)))
+        (list x y)))
+
+(test 11
+      'nested-splicing-def-use-site/letrec-syntaxes+values1
+      (let ()
+        (splicing-letrec-syntaxes+values () ([(z) 1])
+          (define-syntax-rule (m a b)
+            (splicing-letrec-syntaxes+values () ([(a) 10])
+              (define b (+ a z))))
+          (m x y))
+        y))
+
+(test 11
+      'nested-splicing-def-use-site/letrec-syntaxes+values2
+      (let ()
+        (splicing-letrec-syntaxes+values ([(m) (syntax-rules ()
+                                                 [(_ a b)
+                                                  (splicing-letrec-syntaxes+values () ([(a) 10])
+                                                    (define b (+ a z)))])])
+                                         ([(z) 1])
+          (m x y))
+        y))
+
+(test '(1 2)
+      'nested-splicing-syntax/letrec-syntaxes+values
+      (let ()
+        (splicing-letrec-syntaxes+values ([(a) (syntax-rules () [(_) 1])]) ()
+          (define x (a))
+          (splicing-letrec-syntaxes+values ([(a) (syntax-rules () [(_) 2])]) ()
+            (define y (a))))
+        (list x y)))
+
+(test 'inner
+      'nested-splicing-expr/local
+      (let ()
+        (splicing-local [(define a 'outer)]
+          (splicing-local [(define a 'inner)]
+            a))))
+
+(test '(1 2)
+      'nested-splicing-def/local
+      (let ()
+        (splicing-local [(define a 1)]
+          (define x a)
+          (splicing-local [(define a 2)]
+            (define y a)))
+        (list x y)))
+
+(test 11
+      'nested-splicing-def-use-site/local1
+      (let ()
+        (splicing-local [(define z 1)]
+          (define-syntax-rule (m a b)
+            (splicing-local [(define a 10)]
+              (define b (+ a z))))
+          (m x y))
+        y))
+
+(test 11
+      'nested-splicing-def-use-site/local2
+      (let ()
+        (splicing-local [(define z 1)
+                         (define-syntax-rule (m a b)
+                           (splicing-local [(define a 10)]
+                             (define b (+ a z))))]
+          (m x y))
+        y))
+
+(test '(1 2)
+      'nested-splicing-syntax/local
+      (let ()
+        (splicing-local [(define-syntax-rule (a) 1)]
+          (define x (a))
+          (splicing-local [(define-syntax-rule (a) 2)]
+            (define y (a))))
+        (list x y)))
+
+(test '(1 2 3)
+      'nested-splicing-issue#4993
+      (let ()
+        (splicing-local []
+          (splicing-local [(define one 1)
+                           (define (two) (add1 one))]
+            (list one (two) 3)))))
 
 ;; ----------------------------------------
 
