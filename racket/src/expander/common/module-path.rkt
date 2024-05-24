@@ -34,6 +34,7 @@
          top-level-module-path-index
          top-level-module-path-index?
          non-self-module-path-index?
+         non-self-derived-module-path-index?
 
          inside-module-context?
 
@@ -348,7 +349,7 @@
 ;; Mutate the resolved path in `mpi` to use the root module name of a
 ;; generic module path index, which means that future
 ;; `free-identifier=?` comparisons with the generic module path index
-;; will succeed
+;; will succeed<
 (define (imitate-generic-module-path-index! mpi)
   (define r (module-path-index-resolved mpi))
   (when r
@@ -427,6 +428,12 @@
 
 (define (non-self-module-path-index? mpi)
   (and (module-path-index-path mpi) #t))
+
+(define (non-self-derived-module-path-index? mpi)
+  (and (non-self-module-path-index? mpi)
+       (let ([base (module-path-index-base mpi)])
+         (or (not base)
+             (non-self-derived-module-path-index? base)))))
 
 (define (inside-module-context? mpi inside-mpi)
   (or (eq? mpi inside-mpi)

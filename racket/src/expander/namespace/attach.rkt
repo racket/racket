@@ -150,7 +150,8 @@
                         attach-phase
                         #f))))
 
-          (namespace-save-shifted-requires! src-namespace m mod-name shifted-requires)
+          (when (non-self-derived-module-path-index? mpi)
+            (namespace-save-shifted-requires! src-namespace m mod-name shifted-requires))
 
           (for ([submod-name (in-list (module-submodule-names m))])
             (loop (module-path-index-join* `(submod "." ,submod-name) mpi)

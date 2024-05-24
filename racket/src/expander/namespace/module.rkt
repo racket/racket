@@ -568,7 +568,8 @@
             (define name (module-path-index-resolve mpi))
             (define shifted-requires (build-module-instance-shifted-requires ns m mpi name))
             (set-module-instance-shifted-requires! mi shifted-requires)
-            name]))
+            (and (non-self-derived-module-path-index? mpi)
+                 name)]))
 
        ;; Recur for required modules:
        (define new-seen (hash-set seen mi #t))
