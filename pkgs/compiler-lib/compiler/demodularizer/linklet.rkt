@@ -2,7 +2,8 @@
 (require racket/match
          racket/linklet
          compiler/zo-structs
-         compiler/private/deserialize)
+         compiler/private/deserialize
+         compiler/faslable-correlated)
 
 (provide linklet*-exports
          linklet*-internals
@@ -12,7 +13,8 @@
          linklet*-import-shapess
          linklet*-lifts
          linklet*-body
-         s-exp->linklet)
+         s-exp->linklet
+         linklet->s-exp)
 
 (define (get-exports linkl select)
   (cond
@@ -83,13 +85,34 @@
 (define (linklet*-body linkl)
   (cond
     [(faslable-correlated-linklet? linkl)
+     ;; keep correlated wrappers only on `lambda` and `case-lambda` forms:
      (match (faslable-correlated-linklet-expr linkl)
        [`(linklet ,imports ,exports . ,body)
-        (strip-correlated body)])]
+        (let loop ([v body])
+          (cond
+            [(faslable-correlated? v)
+             (define e (faslable-correlated-e v))
+             (cond
+               [(and (pair? e)
+                     (or (eq? (car e) 'lambda)
+                         (eq? (car e) 'case-lambda)))
+                (struct-copy faslable-correlated v
+                             [e (loop (faslable-correlated-e v))])]
+               [else
+                (loop (faslable-correlated-e v))])]
+            [(pair? v)
+             (define a (loop (car v)))
+             (if (eq? a 'quote)
+                 (cons a (strip-correlated (cdr v)))
+                 (cons a (loop (cdr v))))]
+            [else v]))])]
     [else #f]))
 
 (define (s-exp->linklet name expr)
   (faslable-correlated-linklet expr name))
+
+(define (linklet->s-exp linkl)
+  (faslable-correlated-linklet-expr linkl))
 
 (define (unsupported linkl)
   (error 'demodularize "unsupported linklet format"))

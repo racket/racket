@@ -1763,6 +1763,8 @@ bread-and-butter2
 
 ;; ----------------------------------------
 
+(set! check-serialize? #f)
+
 (define ci (make-inspector (current-code-inspector)))
 
 (define ns (make-namespace))

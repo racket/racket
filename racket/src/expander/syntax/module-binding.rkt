@@ -1,5 +1,6 @@
 #lang racket/base
 (require "../compile/serialize-property.rkt"
+         "../compile/serialize-state.rkt"
          "full-binding.rkt"
          "../common/phase+space.rkt")
 
@@ -95,7 +96,9 @@
       [(full-module-binding? simplified-b)
        (ser-push! 'tag '#:module-binding)
        (ser-push! (full-module-binding-module b))
-       (ser-push! (full-module-binding-sym b))
+       (ser-push! ((serialize-state-map-binding-symbol state) (full-module-binding-module b)
+                                                              (full-module-binding-phase b)
+                                                              (full-module-binding-sym b)))
        (ser-push! (full-module-binding-phase b))
        (ser-push! (full-module-binding-nominal-module b))
        (ser-push! (full-module-binding-nominal-phase+space b))
@@ -107,7 +110,14 @@
            (ser-push! #f))
        (ser-push! (full-module-binding-extra-nominal-bindings b))]
       [else
-       (ser-push! simplified-b)])))
+       (ser-push! simplified-b)]))
+  #:property prop:binding-shift-report
+  (lambda (b bulk-shifts report-shifts)
+    (report-shifts (full-module-binding-module b) bulk-shifts)
+    (report-shifts (full-module-binding-nominal-module b) bulk-shifts)
+    (for ([b (in-list (full-module-binding-extra-nominal-bindings b))])
+      (when (binding-shift-report? b)
+        ((binding-shift-report-ref b) b bulk-shifts report-shifts)))))
 
 (struct simple-module-binding (module phase sym nominal-module)
   #:authentic
@@ -116,9 +126,15 @@
   (lambda (b ser-push! state)
     (ser-push! 'tag '#:simple-module-binding)
     (ser-push! (simple-module-binding-module b))
-    (ser-push! (simple-module-binding-sym b))
+    (ser-push! ((serialize-state-map-binding-symbol state) (simple-module-binding-module b)
+                                                           (simple-module-binding-phase b)
+                                                           (simple-module-binding-sym b)))
     (ser-push! (simple-module-binding-phase b))
-    (ser-push! (simple-module-binding-nominal-module b))))
+    (ser-push! (simple-module-binding-nominal-module b)))
+  #:property prop:binding-shift-report
+  (lambda (b bulk-shifts report-shifts)
+    (report-shifts (simple-module-binding-module b) bulk-shifts)
+    (report-shifts (simple-module-binding-nominal-module b) bulk-shifts)))
 
 (define (deserialize-full-module-binding module sym phase
                                          nominal-module

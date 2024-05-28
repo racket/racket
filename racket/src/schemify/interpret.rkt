@@ -40,13 +40,15 @@
 (define variable-set! (lambda (var v) (set-box! var v)))
 (define variable-set!/define (lambda (var v) (set-box! var v)))
 (define make-interp-procedure* (lambda (proc mask name+realm) proc))
+(define decode-procedure-name (lambda (name) name))
 
 (define (interpreter-link! prims
                            strip
                            make-var
                            var-ref var-ref/no-check
                            var-set! var-set!/def
-                           make-proc)
+                           make-proc
+                           decode-proc-name)
   (set! primitives prims)
   (set! strip-annotations strip)
   (set! make-internal-variable make-var)
@@ -54,7 +56,8 @@
   (set! variable-ref/no-check var-ref/no-check)
   (set! variable-set! var-set!)
   (set! variable-set!/define var-set!/def)
-  (set! make-interp-procedure* make-proc))
+  (set! make-interp-procedure* make-proc)
+  (set! decode-procedure-name decode-proc-name))
 
 (define (interpretable-jitified-linklet linklet-e serializable? realm)
   ;; Return a compiled linklet as an expression for the linklet body.
@@ -586,21 +589,7 @@
   (define (extract-procedure-wrap-data e realm)
     ;; Get name and method-arity information
     (define encoded-name (wrap-property e 'inferred-name))
-    (define name
-      (cond
-        [(eq? encoded-name '|[|) #f]
-        [(symbol? encoded-name)
-         (define s (symbol->immutable-string encoded-name))
-         (cond
-           [(fx= 0 (string-length s)) encoded-name]
-           [else
-            (define ch (string-ref s 0))
-            (cond
-              [(or (char=? #\[ ch)
-                   (char=? #\] ch))
-               (string->symbol (substring s 1 (string-length s)))]
-              [else encoded-name])])]
-        [else encoded-name]))
+    (define name (decode-procedure-name encoded-name))
     (define name+realm (if realm (cons name realm) name))
     (if (wrap-property e 'method-arity-error)
         (box name+realm)
@@ -1111,7 +1100,8 @@
                      var
                      var-val var-val
                      (lambda (b v) (set-var-val! b v)) (lambda (b v c) (set-var-val! b v))
-                     (lambda (proc mask name) proc))
+                     (lambda (proc mask name) proc)
+                     (lambda (name) name))
   (define b
     (interpretable-jitified-linklet '(lambda (x two-box)
                                        (define other 5)

@@ -2,7 +2,7 @@
 
 (define collection 'multi)
 
-(define deps '(["base" #:version "8.1.0.2"]
+(define deps '(["base" #:version "8.13.0.6"]
                "scheme-lib"
                ["zo-lib" #:version "1.3"]))
 
@@ -12,7 +12,7 @@
 
 (define pkg-authors '(mflatt))
 
-(define version "1.14")
+(define version "1.15")
 
 (define license
   '(Apache-2.0 OR MIT))

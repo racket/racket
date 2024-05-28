@@ -1015,11 +1015,14 @@
   ;; imports
   (define (extract-imported-variabless target-inst insts symss imports-abis accum)
     (cond
-     [(null? insts) accum]
-     [else (extract-imported-variables
-            target-inst (car insts) (car symss) (car imports-abis)
-            (extract-imported-variabless target-inst (cdr insts) (cdr symss) (cdr imports-abis)
-                                         accum))]))
+      [(null? insts)
+       (unless (null? symss) (raise-import-count-mismatch target-inst))
+       accum]
+      [(null? symss) (raise-import-count-mismatch target-inst)]
+      [else (extract-imported-variables
+             target-inst (car insts) (car symss) (car imports-abis)
+             (extract-imported-variabless target-inst (cdr insts) (cdr symss) (cdr imports-abis)
+                                          accum))]))
   (define (extract-imported-variables target-inst inst syms imports-abi accum)
     (cond
      [(null? syms) accum]
@@ -1061,6 +1064,12 @@
                                               "modules need to be recompiled because dependencies changed")
                            "possible solution" (unquoted-printing-string
                                                 "running `racket -y`, `raco make`, or `raco setup`")))
+
+  (define (raise-import-count-mismatch inst)
+    (raise-arguments-error 'instantiate-linklet
+                           (string-append "mismatch;\n"
+                                          " given import instance count does not match expected")
+                           "importing instance name" (unquoted-printing-string (format "~a" (instance-name inst)))))
 
   (define (identify-module var)
     (cond
@@ -1426,7 +1435,8 @@
                      make-internal-variable
                      variable-ref variable-ref/no-check
                      variable-set! variable-set!/define
-                     make-interp-procedure)
+                     make-interp-procedure
+                     decode-procedure-name)
 
   (set-foreign-eval! eval/foreign)
 

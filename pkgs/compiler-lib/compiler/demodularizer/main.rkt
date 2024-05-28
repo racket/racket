@@ -14,18 +14,23 @@
          garbage-collect-toplevels-enabled
          current-excluded-modules
          recompile-enabled
-         current-work-directory)
+         current-work-directory
+         syntax-object-preservation-enabled
+         current-maximum-phase
+         current-merged-output-file)
 
 (define garbage-collect-toplevels-enabled (make-parameter #f))
 (define recompile-enabled (make-parameter 'auto))
 (define current-work-directory (make-parameter #f))
+(define syntax-object-preservation-enabled (make-parameter #f))
 
 (define logger (make-logger 'demodularizer (current-logger)))
 
 (define (demodularize input-file [given-output-file #f])
   (define given-work-directory (current-work-directory))
   (define work-directory (and (or (not (recompile-enabled))
-                                  (not (eq? 'racket (system-type 'vm))))
+                                  (not (eq? 'racket (system-type 'vm)))
+                                  (syntax-object-preservation-enabled))
                               (or given-work-directory
                                   (make-temporary-file "demod-work-~a" 'directory))))
 
@@ -49,33 +54,46 @@
          (managed-compile-zo input-file))])
 
     (log-info "Finding modules")
-    (define-values (runs excluded-module-mpis)
+    (define-values (phase-runs excluded-modules-to-require excluded-module-mpis provides)
       (parameterize ([current-compiled-file-roots (if work-directory
                                                       (list (build-path work-directory "linklet"))
                                                       (current-compiled-file-roots))])
-        (find-modules input-file)))
+        (find-modules input-file
+                      #:keep-syntax? (syntax-object-preservation-enabled)
+                      #:all-phases? (syntax-object-preservation-enabled))))
 
     (when (and work-directory (not given-work-directory))
       (delete-directory/files work-directory))
 
     (log-info "Selecting names")
-    (define-values (names internals lifts imports) (select-names runs))
+    (define-values (names phase-internals phase-lifts phase-imports) (select-names phase-runs))
 
     (log-info "Merging linklets")
-    (define-values (body first-internal-pos merged-internals linkl-mode get-merge-info)
-      (merge-linklets runs names internals lifts imports))
+    (define-values (phase-body phase-first-internal-pos phase-merged-internals linkl-mode phase-import-keys
+                               portal-stxes phase-defined-names
+                               get-merge-info)
+      (merge-linklets phase-runs names phase-internals phase-lifts phase-imports))
 
     (log-info "GCing definitions")
-    (define-values (new-body new-internals new-lifts)
-      (gc-definitions linkl-mode body internals lifts first-internal-pos merged-internals
-                      #:assume-pure? (garbage-collect-toplevels-enabled)))
+    (define-values (phase-new-body phase-new-internals phase-new-lifts phase-new-defined-names)
+      (cond
+        [(syntax-object-preservation-enabled)
+         ;; any definition might be referenced reflectively
+         (values phase-body phase-internals phase-lifts phase-defined-names)]
+        [else
+         (gc-definitions linkl-mode phase-body phase-internals phase-lifts phase-first-internal-pos phase-merged-internals
+                         phase-defined-names
+                         #:keep-defines? (syntax-object-preservation-enabled)
+                         #:assume-pure? (garbage-collect-toplevels-enabled))]))
 
     (log-info "Bundling linklet")
-    (define bundle (wrap-bundle linkl-mode new-body new-internals new-lifts
-                                excluded-module-mpis
+    (define bundle (wrap-bundle linkl-mode phase-new-body phase-new-internals phase-new-lifts phase-import-keys
+                                portal-stxes phase-new-defined-names
+                                excluded-modules-to-require excluded-module-mpis provides names
                                 get-merge-info
                                 (let-values ([(base name dir?) (split-path input-file)])
-                                  (string->symbol (path->string name)))))
+                                  (string->symbol (path->string name)))
+                                #:export? (syntax-object-preservation-enabled)))
 
     (log-info "Writing bytecode")
     (define output-file (or given-output-file

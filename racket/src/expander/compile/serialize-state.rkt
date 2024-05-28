@@ -24,18 +24,22 @@
                          shifted-multi-scopes   ; interned shifted multi-scope sets
                          multi-scope-tables     ; interned phase -> scope tables
                          mpi-shifts             ; interned module path index shifts
+                         drop-shifts?           ; true => shifts are flattened via `report-shifts`
                          context-triples        ; combinations of the previous three
                          props                  ; map full props to previously calculated
                          interned-props         ; intern filtered props
                          syntax-context         ; used to collapse encoding of syntax literals
                          sharing-syntaxes       ; record which syntax objects are `datum->syntax` form
                          preserve-prop-keys     ; property keys to preserve (that otherwise wouldn't be)
-                         keep-provides?)        ; non-#f => predicate for when to keep bulk provides
+                         keep-provides?         ; non-#f => predicate for when to keep bulk provides
+                         map-binding-symbol)    ; mpi symbol -> symbol, needed by demodularizer
   #:authentic)
 
 (define (make-serialize-state reachable-scopes
                               preserve-prop-keys
-                              keep-provides?)
+                              keep-provides?
+                              drop-shifts?
+                              map-binding-symbol)
   (define state
     (serialize-state reachable-scopes
                      (make-hasheq)   ; bindings-intern
@@ -44,13 +48,15 @@
                      (make-hash)     ; shifted-multi-scopes
                      (make-hasheq)   ; multi-scope-tables
                      (make-hasheq)   ; mpi-shifts
+                     drop-shifts?
                      (make-hasheq)   ; context-triples
                      (make-hasheq)   ; props
                      (make-hash)     ; interned-props
                      (box null)      ; syntax-context
                      (make-hasheq)   ; sharing-syntaxes
                      preserve-prop-keys
-                     keep-provides?))
+                     keep-provides?
+                     map-binding-symbol)) ; mpi symbol -> symbol
   ;; Seed intern tables for sets and hashes to use the canonical
   ;; empty version for consistent sharing:
   (define empty-seteq (seteq))

@@ -116,12 +116,13 @@
     ;; the `bindings` field is handled via `prop:scope-with-bindings`
     (void))
   #:property prop:scope-with-bindings
-  (lambda (s get-reachable-scopes extra-shifts reach register-trigger)
+  (lambda (s get-reachable-scopes extra-shifts reach register-trigger report-shifts)
     (binding-table-register-reachable (scope-binding-table s)
                                       get-reachable-scopes
                                       extra-shifts
                                       reach
-                                      register-trigger)))
+                                      register-trigger
+                                      report-shifts)))
 
 (define deserialize-scope
   (case-lambda
@@ -190,7 +191,7 @@
     ;; the `scopes` field is handled via `prop:scope-with-bindings`
     (void))
   #:property prop:scope-with-bindings
-  (lambda (ms get-reachable-scopes bulk-shifts reach register-trigger)
+  (lambda (ms get-reachable-scopes bulk-shifts reach register-trigger report-shifts)
     ;; This scope is reachable via its multi-scope, but it only
     ;; matters if it's reachable through a binding (otherwise it
     ;; can be re-generated later). We don't want to keep a scope

@@ -74,6 +74,7 @@
 (provide make-module-path-index-table
          add-module-path-index!
          add-module-path-index!/pos
+         module-path-index-table-mpis
          generate-module-path-index-deserialize
          deserialize-module-path-index-data
          mpis-as-vector
@@ -86,7 +87,7 @@
 
          deserialize-instance
          deserialize-imports
-         
+
          serialize-module-uses
          serialize-phase-to-link-module-uses)
 
@@ -115,6 +116,13 @@
           (let ([pos (hash-count positions)])
             (hash-set! positions mpi pos)
             pos)))]))
+
+(define (module-path-index-table-mpis mpis)
+  (define pos->mpi
+    (for/hasheqv ([(mpi pos) (in-hash (module-path-index-table-positions mpis))])
+      (values pos mpi)))
+  (for/vector ([i (in-range (hash-count pos->mpi))])
+    (hash-ref pos->mpi i)))
 
 (define (generate-module-path-index-deserialize mpis
                                                 #:as-data? [as-data? #f])
@@ -293,10 +301,13 @@
                               #:syntax-support? [syntax-support? #t]
                               #:preserve-prop-keys [preserve-prop-keys #hasheq()]
                               #:keep-provides? [keep-provides? #f]
-                              #:phase+space-hasheqv [phase+space-hasheqv #f]) ; keys of this value must be interned
+                              #:phase+space-hasheqv [phase+space-hasheqv #f] ; keys of this value must be interned
+                              #:map-mpi [map-mpi (lambda (mpi) mpi)]
+                              #:map-binding-symbol [map-binding-symbol (lambda (mpi phase sym) sym)]
+                              #:report-mpi-shifts [report-mpi-shifts #f])
   (define bulk-shifts (and keep-provides? (list (make-hasheq))))
 
-  (define reachable-scopes (find-reachable-scopes v bulk-shifts))
+  (define reachable-scopes (find-reachable-scopes v bulk-shifts report-mpi-shifts))
 
   (define state (make-serialize-state reachable-scopes
                                       preserve-prop-keys
@@ -304,7 +315,9 @@
                                            (lambda (b)
                                              (define name (hash-ref (car bulk-shifts) b #f))
                                              (or (not name) ; shouldn't happen
-                                                 (keep-provides? name))))))
+                                                 (keep-provides? name))))
+                                      (and report-mpi-shifts #t)
+                                      map-binding-symbol))
 
   (define mutables (make-hasheq)) ; v -> pos
   (define objs (make-hasheq))     ; v -> step
@@ -458,7 +471,7 @@
       (ser-push! 'exact v)]
      [(module-path-index? v)
       (ser-push! 'tag '#:mpi)
-      (ser-push! 'exact (add-module-path-index!/pos mpis v))]
+      (ser-push! 'exact (add-module-path-index!/pos mpis (map-mpi v)))]
      [(serialize? v)
       ((serialize-ref v) v ser-push! state)]
      [(and (list? v)
@@ -945,11 +958,18 @@
 ;; ----------------------------------------
 ;; For pruning unreachable scopes in serialization
 
-(define (find-reachable-scopes v bulk-shifts)
+(define (find-reachable-scopes v bulk-shifts report-mpi-shifts)
   (define seen (make-hasheq))
   (define reachable-scopes (interned-scopes))
   (define (get-reachable-scopes) reachable-scopes)
   (define scope-triggers (make-hasheq))
+
+  (define report-shifts
+    (and report-mpi-shifts
+         ;; Serialization context wants to know how reachable mpis are resolved
+         ;; by their context, so report as we discover them
+         (lambda (mpi bulk-shifts)
+           (report-mpi-shifts mpi (apply-syntax-shifts mpi (cdr bulk-shifts))))))
 
   ;; `bulk-shifts` is used to propagate shifts from a syntax object to
   ;; binding tables when bulk-binding provides will be preserved, in
@@ -990,7 +1010,8 @@
            (hash-update! scope-triggers
                          sc-unreachable
                          (lambda (l) (cons b l))
-                         null)))]
+                         null))
+         report-shifts)]
        [(reach-scopes? v)
         ((reach-scopes-ref v) v bulk-shifts loop)]
        [(pair? v)
@@ -1016,12 +1037,38 @@
   reachable-scopes)
 
 ;; ----------------------------------------
+
+;; See `generate-lazy-syntax-literals!`. This function is called on demand to
+;; shift a syntax-object literal for a given module instantiation.
+(define (force-syntax-object syntax-literals pos
+                             mpi self-mpi phase-shift inspector
+                             deserialized-syntax-vector bulk-binding-registry
+                             deserialize-syntax)
+  (unless (vector*-ref deserialized-syntax-vector 0)
+    (deserialize-syntax bulk-binding-registry))
+  (define stx (syntax-module-path-index-shift
+               (syntax-shift-phase-level
+                (vector*-ref deserialized-syntax-vector pos)
+                phase-shift)
+               mpi
+               self-mpi
+               inspector))
+  ;; loop in case of spurious CAS failure
+  (let loop ()
+    (vector-cas! syntax-literals pos #f stx)
+    (define new-stx (vector*-ref syntax-literals pos))
+    (if new-stx
+        new-stx
+        (loop))))
+
+;; ----------------------------------------
 ;; Set up the instance to import into deserializing linklets
 
 (define deserialize-imports
   '(deserialize-module-path-indexes
     syntax-module-path-index-shift
     syntax-shift-phase-level
+    force-syntax-object
     module-use
     deserialize))
 
@@ -1037,5 +1084,6 @@
                  'deserialize-module-path-indexes deserialize-module-path-indexes
                  'syntax-module-path-index-shift syntax-module-path-index-shift/no-keywords
                  'syntax-shift-phase-level syntax-shift-phase-level
+                 'force-syntax-object force-syntax-object
                  'module-use module-use
                  'deserialize deserialize))

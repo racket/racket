@@ -131,9 +131,22 @@
       #:phase+space-shift (bulk-binding-phase+space-shift b)))
    ;; modname
    (lambda (b mpi-shifts)
-     (bulk-binding-module-name b mpi-shifts)))
+     (bulk-binding-module-name b mpi-shifts))
+   ;; report-shifts
+   (lambda (b bulk-shifts report-shifts)
+     (report-shifts (bulk-binding-mpi b) bulk-shifts)
+     (define more-bulk-shifts (append bulk-shifts
+                                      (list (cons (bulk-binding-self b)
+                                                  (bulk-binding-mpi b)))))
+     (report-shifts (bulk-binding-self b) more-bulk-shifts)
+     (define provides (bulk-binding-provides b))
+     (when provides
+       (for* ([binding/p (in-hash-values provides)])
+         (define binding (provided-as-binding binding/p))
+         (when (binding-shift-report? binding)
+           ((binding-shift-report-ref binding) binding more-bulk-shifts report-shifts))))))
   #:property prop:serialize
-  ;; Serialization drops the `provides` table and the providing module's `self`
+  ;; Serialization normally drops the `provides` table and the providing module's `self`
   (lambda (b ser-push! state)
     (cond
       [(and (serialize-state-keep-provides? state)

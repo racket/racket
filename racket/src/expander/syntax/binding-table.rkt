@@ -83,9 +83,10 @@
   (make-struct-type-property 'bulk-binding))
 
 ;; Value of `prop:bulk-binding`
-(struct bulk-binding-class (get-symbols ; bulk-binding list-of-shift -> sym -> binding-info
-                            create      ; bulk-binding -> binding-info sym -> binding
-                            modname))   ; bulk-binding list-of-shift -> resolved-module-path
+(struct bulk-binding-class (get-symbols     ; bulk-binding list-of-shift -> sym -> binding-info
+                            create          ; bulk-binding -> binding-info sym -> binding
+                            modname         ; bulk-binding list-of-shift -> resolved-module-path
+                            report-shifts)) ; bulk-binding list-of-shift report-callback -> any
 (define (bulk-binding-symbols b s extra-shifts)
   ;; Providing the identifier `s` supports its shifts
   ((bulk-binding-class-get-symbols (bulk-binding-ref b))
@@ -101,6 +102,9 @@
   (hash-set! modname-ht b ((bulk-binding-class-modname (bulk-binding-ref b)) b extra-shifts))
   ;; getting symbols has the effect of forcing:
   (bulk-binding-symbols b #f extra-shifts))
+
+(define (bulk-binding-report-shifts b bulk-shifts report-shifts)
+  ((bulk-binding-class-report-shifts (bulk-binding-ref b)) b bulk-shifts report-shifts))
 
 ;; ----------------------------------------
 
@@ -361,13 +365,15 @@
         (hash-set! (serialize-state-bulk-bindings-intern state) bt new-bt)
         new-bt)))
 
-(define (binding-table-register-reachable bt get-reachable-scopes bulk-shifts reach register-trigger)
+(define (binding-table-register-reachable bt get-reachable-scopes bulk-shifts reach register-trigger report-shifts)
   ;; Check symbol-specific scopes for both `free-id=?` reachability and
   ;; for implicitly reachable scopes
   (for* ([(sym bindings-for-sym) (in-immutable-hash (if (hash? bt)
                                                         bt
                                                         (table-with-bulk-bindings-syms/serialize bt)))]
          [(scopes binding) (in-immutable-hash bindings-for-sym)])
+    (when (and report-shifts (binding-shift-report? binding))
+      ((binding-shift-report-ref binding) binding bulk-shifts report-shifts))
     (define v (and (binding-reach-scopes? binding)
                    ((binding-reach-scopes-ref binding) binding)))
     (scopes-register-reachable scopes v get-reachable-scopes bulk-shifts reach register-trigger))
@@ -376,6 +382,9 @@
     (for ([bba (in-list (table-with-bulk-bindings-bulk-bindings bt))])
       (when bulk-shifts ; indicates that bulk bindings will be retained, and maybe they need to be reified
         (force-bulk-bindings (bulk-binding-at-bulk bba) bulk-shifts))
+      (when report-shifts
+        ;; report shifts after forcing
+        (bulk-binding-report-shifts (bulk-binding-at-bulk bba) bulk-shifts report-shifts))
       (scopes-register-reachable (bulk-binding-at-scopes bba) #f get-reachable-scopes bulk-shifts reach register-trigger))))
 
 (define (scopes-register-reachable scopes v get-reachable-scopes bulk-shifts reach register-trigger)

@@ -2,6 +2,7 @@
 (require racket/match
          racket/set
          compiler/zo-structs
+         compiler/faslable-correlated
          "remap.rkt")
 
 ;; Prune unnused definitions,
@@ -10,8 +11,34 @@
 
 (provide gc-definitions)
 
-(define (gc-definitions linkl-mode body internals lifts internals-pos new-internals
+(define (gc-definitions linkl-mode phase-body phase-internals phase-lifts phase-internals-pos phase-merged-internals
+                        phase-defined-names
+                        #:keep-defines? keep-defines?
                         #:assume-pure? assume-pure?)
+  (for/fold ([phase-new-body (hasheqv)]
+             [phase-new-internals (hasheqv)]
+             [phase-new-lifts (hasheqv)]
+             [phase-new-defined-names (hasheqv)])
+            ([(phase body) (in-hash phase-body)])
+    (define internals (hash-ref phase-internals phase))
+    (define lifts (hash-ref phase-lifts phase))
+    (define internals-pos (hash-ref phase-internals-pos phase))
+    (define merged-internals (hash-ref phase-merged-internals phase))
+    (define new-defined-names (make-hasheq))
+    (define-values (new-body new-internals new-lifts)
+      (gc-definitions-one-phase linkl-mode body internals lifts internals-pos merged-internals new-defined-names
+                                phase
+                                #:keep-defines? keep-defines?
+                                #:assume-pure? assume-pure?))
+    (values (hash-set phase-new-body phase new-body)
+            (hash-set phase-new-internals phase new-internals)
+            (hash-set phase-new-lifts phase new-lifts)
+            (hash-set phase-new-defined-names phase new-defined-names))))
+
+(define (gc-definitions-one-phase linkl-mode body internals lifts internals-pos new-internals new-defined-names
+                                  phase
+                                  #:keep-defines? keep-defines?
+                                  #:assume-pure? assume-pure?)
   (case linkl-mode
     [(linkl)
      (define used (make-hasheqv)) ; pos -> 'used or thunk
@@ -182,44 +209,48 @@
          (v)))
 
      (define (used! b)
-       (match b
-         [`(lambda ,args . ,body)
-          (for-each used! body)]
-         [`(case-lambda [,argss . ,bodys] ...)
-          (for ([body (in-list bodys)])
-            (for-each used! body))]
-         [`(let-values ([,idss ,rhss] ...) ,body)
-          (for-each used! rhss)
-          (used! body)]
-         [`(letrec-values ([,idss ,rhss] ...) ,body)
-          (for-each used! rhss)
-          (used! body)]
-         [`(if ,tst ,thn ,els)
-          (used! tst)
-          (used! thn)
-          (used! els)]
-         [`(begin . ,body)
-          (for-each used! body)]
-         [`(begin0 ,e . ,body)
-          (used! e)
-          (for-each used! body)]
-         [`(set! ,id ,rhs)
-          (used-name! id)
-          (used! rhs)]
-         [`(quote . _) (void)]
-         [`(with-continuation-mark ,key ,val ,body)
-          (used! key)
-          (used! val)
-          (used! body)]
-         [`(#%variable-reference ,id)
-          (used-name! id)]
-         [`(#%variable-reference . ,_) (void)]
-         [`(,rator ,rands ...)
-          (used! rator)
-          (for-each used! rands)]
-         [_
-          (when (symbol? b)
-            (used-name! b))]))
+       (cond
+         [(faslable-correlated? b)
+          (used! (faslable-correlated-e b))]
+         [else
+          (match b
+            [`(lambda ,args . ,body)
+             (for-each used! body)]
+            [`(case-lambda [,argss . ,bodys] ...)
+             (for ([body (in-list bodys)])
+               (for-each used! body))]
+            [`(let-values ([,idss ,rhss] ...) ,body)
+             (for-each used! rhss)
+             (used! body)]
+            [`(letrec-values ([,idss ,rhss] ...) ,body)
+             (for-each used! rhss)
+             (used! body)]
+            [`(if ,tst ,thn ,els)
+             (used! tst)
+             (used! thn)
+             (used! els)]
+            [`(begin . ,body)
+             (for-each used! body)]
+            [`(begin0 ,e . ,body)
+             (used! e)
+             (for-each used! body)]
+            [`(set! ,id ,rhs)
+             (used-name! id)
+             (used! rhs)]
+            [`(quote . _) (void)]
+            [`(with-continuation-mark ,key ,val ,body)
+             (used! key)
+             (used! val)
+             (used! body)]
+            [`(#%variable-reference ,id)
+             (used-name! id)]
+            [`(#%variable-reference . ,_) (void)]
+            [`(,rator ,rands ...)
+             (used! rator)
+             (for-each used! rands)]
+            [_
+             (when (symbol? b)
+               (used-name! b))])]))
 
      (define (pure? b)
        (match b
@@ -250,8 +281,9 @@
                (used-rhs!)]
               [else
                (hash-set! used id used-rhs!)]))
-          (unless (or assume-pure?
-                      (pure? rhs))
+          (unless (and (not keep-defines?)
+                       (or assume-pure?
+                           (pure? rhs)))
             (used-rhs!))]
          [_ (unless (pure? b)
               (used! b))]))
@@ -263,8 +295,13 @@
        (for/list ([b (in-list body)]
                   #:when (match b
                            [`(define-values ,ids ,rhs)
-                            (for/or ([id (in-list ids)])
-                              (eq? 'used (hash-ref used id #f)))]
+                            (define drop?
+                              (for/or ([id (in-list ids)])
+                                (eq? 'used (hash-ref used id #f))))
+                            (unless drop?
+                              (for ([id (in-list ids)])
+                                (hash-set! new-defined-names id #t)))
+                            drop?]
                            [_ (not (pure? b))]))
          b))
 

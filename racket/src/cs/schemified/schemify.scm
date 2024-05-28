@@ -42881,6 +42881,7 @@
    variable-set!/define
    (lambda (var_0 v_0) (begin (set-box! var_0 v_0)))))
 (define make-interp-procedure* (lambda (proc_0 mask_0 name+realm_0) proc_0))
+(define decode-procedure-name (lambda (name_0) name_0))
 (define interpreter-link!
   (lambda (prims_0
            strip_0
@@ -42889,7 +42890,8 @@
            var-ref/no-check_0
            var-set!_0
            var-set!/def_0
-           make-proc_0)
+           make-proc_0
+           decode-proc-name_0)
     (begin
       (set! primitives prims_0)
       (set! strip-annotations strip_0)
@@ -42898,7 +42900,8 @@
       (set! 1/variable-ref/no-check var-ref/no-check_0)
       (set! 1/variable-set! var-set!_0)
       (set! 1/variable-set!/define var-set!/def_0)
-      (set! make-interp-procedure* make-proc_0))))
+      (set! make-interp-procedure* make-proc_0)
+      (set! decode-procedure-name decode-proc-name_0))))
 (define interpretable-jitified-linklet
   (lambda (linklet-e_0 serializable?_0 realm_0)
     (letrec*
@@ -48507,22 +48510,7 @@
         (lambda (e_0 realm_1)
           (begin
             (let ((encoded-name_0 (wrap-property e_0 'inferred-name)))
-              (let ((name_0
-                     (if (eq? encoded-name_0 '|[|)
-                       #f
-                       (if (symbol? encoded-name_0)
-                         (let ((s_0 (symbol->immutable-string encoded-name_0)))
-                           (if (fx= 0 (string-length s_0))
-                             encoded-name_0
-                             (let ((ch_0 (string-ref s_0 0)))
-                               (if (let ((or-part_0 (char=? '#\x5b ch_0)))
-                                     (if or-part_0
-                                       or-part_0
-                                       (char=? '#\x5d ch_0)))
-                                 (string->symbol
-                                  (substring s_0 1 (string-length s_0)))
-                                 encoded-name_0))))
-                         encoded-name_0))))
+              (let ((name_0 (|#%app| decode-procedure-name encoded-name_0)))
                 (let ((name+realm_0 (if realm_1 (cons name_0 realm_1) name_0)))
                   (if (wrap-property e_0 'method-arity-error)
                     (box name+realm_0)
