@@ -23,7 +23,7 @@
 A Racket @deftech{port} represents a source or sink of data, such as a
 file, a terminal, a TCP connection, or an in-memory string.  Ports
 provide sequential access in which data can be read or written a piece
-of a time, without requiring the data to be consumed or produced all
+at a time, without requiring the data to be consumed or produced all
 at once.  More specifically, an @defterm{input port} represents a
 source from which a program can read data, and an @defterm{output
 port} represents a sink to which a program can write data.
