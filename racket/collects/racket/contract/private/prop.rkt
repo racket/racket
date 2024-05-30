@@ -337,6 +337,19 @@
          #:exercise [exercise (λ (ctc) (λ (fuel) (values void '())))]
          #:list-contract? [list-contract? (λ (c) #f)]
          #:trusted [trusted #f])
+
+  (unless (or (not get-name)
+              (and (procedure? get-name)
+                   (procedure-arity-includes? get-name 1)))
+    (error proc-name
+           (string-append
+            "contract violation:\n"
+            "  expected: ~s\n"
+            "  given: ~e\n"
+            "  in: the #:get-name argument")
+           '(or/c #f (-> contract? any/c))
+           get-name))
+
   (unless (or get-first-order
               get-projection
               get-val-first-projection
