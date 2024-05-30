@@ -3058,7 +3058,7 @@ returns @racket[#f] but @racket[value-blame] returns @racket[#f].
 @defproc[(build-flat-contract-property
           [#:name
            get-name
-           (-> contract? any/c)
+           (or/c #f (-> contract? any/c))
            (λ (c) 'anonymous-flat-contract)]
           [#:first-order
            get-first-order
@@ -3108,7 +3108,7 @@ returns @racket[#f] but @racket[value-blame] returns @racket[#f].
 @defproc[(build-chaperone-contract-property
           [#:name
            get-name
-           (-> contract? any/c)
+           (or/c #f (-> contract? any/c))
            (λ (c) 'anonymous-chaperone-contract)]
           [#:first-order
            get-first-order
@@ -3168,7 +3168,7 @@ returns @racket[#f] but @racket[value-blame] returns @racket[#f].
 @defproc[(build-contract-property
           [#:name
            get-name
-           (-> contract? any/c)
+           (or/c #f (-> contract? any/c))
            (λ (c) 'anonymous-contract)]
           [#:first-order
            get-first-order
@@ -3233,7 +3233,9 @@ A @deftech{contract property} specifies the behavior of a structure when used as
 a contract.  It is specified in terms of seven properties:
 @itemlist[
   @item{@racket[get-name] which produces a description to @racket[write] as part
-   of a contract violation;}
+   of a contract violation and defaults to a function that always produces
+   @racket['anonymous-contract], @racket['anonymous-chaperone-contract],
+   or @racket['anonymous-flat-contract];}
   @item{@racket[get-first-order], which produces a first-order predicate to be
    used by @racket[contract-first-order-passes?];}
   @item{@racket[late-neg-proj], which produces a blame-tracking projection
