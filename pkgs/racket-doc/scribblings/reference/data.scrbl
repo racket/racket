@@ -132,7 +132,7 @@ boxes that are not @tech{impersonators}.
 
   When Racket is compiled with support for @tech{futures},
   @racket[box-cas!] is guaranteed to use a hardware @emph{compare and
-  set} operation. Uses of @racket[box-cas!] be performed safely in a
+  set} operation. Uses of @racket[box-cas!] can be performed safely in a
   @tech{future} (i.e., allowing the future thunk to continue in
   parallel). See also @secref["memory-order"].}
 
