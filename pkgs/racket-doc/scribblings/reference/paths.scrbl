@@ -23,7 +23,7 @@ sensitive to the kind of path that is supplied. Unless otherwise
 specified, a procedure that requires a path accepts only paths for the
 current platform.
 
-Two @tech{path} values are @racket[equal?] when they are use the same
+Two @tech{path} values are @racket[equal?] when they use the same
 convention type and when their byte-string representations are
 @racket[equal?]. A path string (or byte string) cannot be empty, and
 it cannot contain a nul character or byte. When an empty string or a
@@ -559,7 +559,7 @@ then the result is always a list of paths, and the first element of
 the list is a root.
 
 The @racket[explode-path] function computes its result in time
-proportional to the length of @racket[path] (unlike a loop in that
+proportional to the length of @racket[path] (unlike a loop that
 uses @racket[split-path], which must allocate intermediate paths).}
 
 
