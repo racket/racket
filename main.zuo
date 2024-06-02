@@ -52,7 +52,11 @@
     (define cpus (let ([s (lookup 'CPUS)])
                    (and (not (equal? s ""))
                         s)))
-    (define simple-jobs (or cpus
+
+    (define env-jobs-pair (assoc "JOBS" (hash-ref (runtime-env) 'env)))
+    (define env-jobs (and env-jobs-pair (cdr env-jobs-pair)))
+
+    (define simple-jobs (or env-jobs cpus
                             (let ([s (lookup 'JOBS)])
                               (and (not (equal? s ""))
                                    s))))
@@ -65,8 +69,12 @@
     (when (and jobs
                (or (not n-jobs)
                    (< n-jobs 1)))
-      (error (~a (if cpus "CPUS" (if simple-jobs "JOBS" "JOB_OPTIONS argument"))
-                 "is not a positive integer"
+      (error (~a (cond 
+                   [env-jobs "$JOBS environment variable"]
+                   [simple-jobs "JOBS"]
+                   [cpus "CPUS"]
+                   [else "JOB_OPTIONS argument"])
+                 " is not a positive integer: "
                  jobs)))
     (or n-jobs
         (infer-gnu-make-jobs)))
