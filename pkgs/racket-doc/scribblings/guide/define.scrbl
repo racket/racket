@@ -80,7 +80,7 @@ string and returns another function that takes a string:
     (lambda (s) (string-append s s2))))
 ]
 
-Although it's not common, result of @racket[make-add-suffix] could be
+Although it's not common, the result of @racket[make-add-suffix] could be
 called directly, like this:
 
 @interaction[
