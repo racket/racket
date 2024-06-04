@@ -154,6 +154,8 @@
                                 [(and (positive? i) (zero? (modulo i 3)))
                                  (list* c #\, l)]
                                 [else (cons c l)]))))
+                         (define (stat-msecs-nongc v)
+                           (- (stat-msecs v) (stat-msecs-gc v)))
                          (define-values (label-max-len value-max-len value-gc-max-len memory-max-len count-max-len)
                            (let loop ([accums accums] [label-len 6] [value-len 5] [value-gc-len 2] [memory-len 4] [count-len 5] [indent 2])
                              (for/fold ([label-len label-len]
@@ -165,7 +167,7 @@
                                (cond
                                  [(eq? k stat-key)
                                   (values label-len
-                                          (max value-len (whole-len (format "~a" (stat-msecs v))))
+                                          (max value-len (whole-len (format "~a" (stat-msecs-nongc v))))
                                           (max value-gc-len (string-length (format "~a" (stat-msecs-gc v))))
                                           (max memory-len (string-length (format "~a" (kb (stat-memory v)))))
                                           (max count-len (string-length (format "~a" (stat-count v)))))]
@@ -176,7 +178,7 @@
                                              memory-len
                                              count-len
                                              (+ 2 indent))]))))
-                         (log-error "REGION      ~aMSECS   ~aGC   ~aMEMK   ~aCOUNT"
+                         (log-error "REGION      ~aMSECS  ~a+GC   ~aMEMK   ~aCOUNT"
                                     (make-string (- (+ label-max-len value-max-len) 11)
                                                  #\space)
                                     (make-string (- value-gc-max-len 2)
@@ -192,9 +194,9 @@
                                         indent
                                         name
                                         (make-string (+ (- label-max-len (string-length (format "~a" name)) (string-length indent))
-                                                        (- value-max-len (whole-len (format "~a" (stat-msecs v)))))
+                                                        (- value-max-len (whole-len (format "~a" (stat-msecs-nongc v)))))
                                                      #\space)
-                                        (regexp-replace #rx"[.](..).*" (format "~a00" (stat-msecs v)) ".\\1")
+                                        (regexp-replace #rx"[.](..).*" (format "~a00" (stat-msecs-nongc v)) ".\\1")
                                         (make-string (- value-gc-max-len (string-length (format "~a" (stat-msecs-gc v))))
                                                      #\space)
                                         (format "~a" (stat-msecs-gc v))
@@ -206,7 +208,7 @@
                                         (stat-count v)))
                            (define keys (sort (for/list ([k (in-hash-keys accums)] #:when (not (eq? k stat-key))) k)
                                               >
-                                              #:key (lambda (key) (stat-msecs (hash-ref (hash-ref accums key) stat-key)))))
+                                              #:key (lambda (key) (stat-msecs-nongc (hash-ref (hash-ref accums key) stat-key)))))
                            (for ([k (in-list keys)]
                                  [i (in-naturals)])
                              (when (and newline? (positive? i)) (log-error ""))
