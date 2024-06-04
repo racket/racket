@@ -322,8 +322,16 @@
   (define mutables (make-hasheq)) ; v -> pos
   (define objs (make-hasheq))     ; v -> step
   (define shares (make-hasheq))   ; v -> #t
+  (define binding-interns (make-hash))
   (define obj-step 0)
-  
+
+  (define (serialize-maybe-intern v)
+    (cond
+      [(module-binding? v)
+       (module-binding-maybe-intern v binding-interns
+                                    (lambda (mpi) (add-module-path-index!/pos mpis (map-mpi mpi))))]
+      [else #f]))
+
   ;; Build table of sharing and mutable values
   (define frontier null)
   (define add-frontier!
@@ -337,6 +345,8 @@
             (module-path-index? v))
         ;; no need to find sharing
         (void)]
+       [(serialize-maybe-intern v)
+        => (lambda (v) (loop v))]
        [(hash-ref objs v #f)
         (unless (hash-ref mutables v #f)
           (hash-set! shares v #t))]
@@ -390,7 +400,7 @@
          [else
           (void)])
         ;; `v` may already be in `objs`, but to get the order right
-        ;; for unmarshaling, we need to map it to ka new step number
+        ;; for unmarshaling, we need to map it to a new step number
         (hash-set! objs v obj-step)
         (set! obj-step (add1 obj-step))]))
     (unless (null? frontier)
@@ -399,7 +409,7 @@
       (for ([v (in-list l)])
         (frontier-loop v))))
 
-  ;; Maybe object steps to positions in a vector after mutables
+  ;; Map object steps to positions in a vector after mutables
   (define num-mutables (hash-count mutables))
   (define share-step-positions
     (let ([share-steps (for/list ([obj (in-hash-keys shares)])
@@ -466,6 +476,8 @@
   ;; Handle an immutable, not-shared (or on RHS of binding) value
   (define (ser-push-encoded! v)
     (cond
+     [(serialize-maybe-intern v)
+      => (lambda (v) (ser-push! v))]
      [(keyword? v)
       (ser-push! 'tag '#:quote)
       (ser-push! 'exact v)]

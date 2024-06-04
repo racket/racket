@@ -17,6 +17,8 @@
          module-binding-nominal-require-phase+space-shift
          module-binding-extra-inspector
          module-binding-extra-nominal-bindings
+
+         module-binding-maybe-intern
          
          deserialize-full-module-binding
          deserialize-simple-module-binding)
@@ -155,6 +157,41 @@
 
 (define (deserialize-simple-module-binding module sym phase nominal-module)
   (simple-module-binding module phase sym nominal-module))
+
+;; ----------------------------------------
+
+(define (module-binding-to-intern? v)
+  (or (module-binding? v) (full-module-binding? v)))
+
+;; Binding resolution might or might not use cache, so we need to intern
+;; for serialization to make the result deterministic
+(define (module-binding-maybe-intern v interns mpi->index)
+  (define key
+    (cond
+      [(simple-module-binding? v)
+       (list (mpi->index (simple-module-binding-module v))
+             (simple-module-binding-phase v)
+             (simple-module-binding-sym v)
+             (mpi->index (simple-module-binding-nominal-module v)))]
+      [(full-module-binding? v)
+       (list (mpi->index (full-module-binding-module v))
+             (full-module-binding-phase v)
+             (full-module-binding-sym v)
+             (mpi->index (full-module-binding-nominal-module v))
+             (full-module-binding-nominal-phase+space v)
+             (full-module-binding-nominal-sym v)
+             (full-module-binding-nominal-require-phase+space-shift v)
+             (full-module-binding-extra-inspector v)
+             (for/list ([b (full-module-binding-extra-nominal-bindings v)])
+               (or (module-binding-maybe-intern b interns mpi->index)
+                   b)))]))
+  (define new-v (hash-ref interns key #f))
+  (cond
+    [(not new-v)
+     (hash-set! interns key v)
+     #f]
+    [(eq? new-v v) #f]
+    [else new-v]))
 
 ;; ----------------------------------------
 
