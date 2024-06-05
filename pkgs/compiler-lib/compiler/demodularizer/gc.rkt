@@ -3,309 +3,143 @@
          racket/set
          compiler/zo-structs
          compiler/faslable-correlated
-         "remap.rkt")
+         "remap.rkt"
+         "import.rkt"
+         "merged.rkt")
 
 ;; Prune unnused definitions,
 ;;  * soundly, with a simple approximation of `pure?`, by default
 ;;  * unsoundly, assuming all definitions are pure, optionally
 
-(provide gc-definitions)
+(provide gc-find-uses!
+         gc-definitions)
 
-(define (gc-definitions linkl-mode phase-body phase-internals phase-lifts phase-internals-pos phase-merged-internals
-                        phase-defined-names
-                        #:keep-defines? keep-defines?
-                        #:assume-pure? assume-pure?)
-  (for/fold ([phase-new-body (hasheqv)]
-             [phase-new-internals (hasheqv)]
-             [phase-new-lifts (hasheqv)]
-             [phase-new-defined-names (hasheqv)])
-            ([(phase body) (in-hash phase-body)])
-    (define internals (hash-ref phase-internals phase))
-    (define lifts (hash-ref phase-lifts phase))
-    (define internals-pos (hash-ref phase-internals-pos phase))
-    (define merged-internals (hash-ref phase-merged-internals phase))
+(define (gc-find-uses! used  ; symbol -> 'used or thunk
+                       used-externally ; symbol -> #t
+                       phase-merged
+                       provided-names
+                       #:keep-defines? keep-defines?
+                       #:assume-pure? assume-pure?)
+  (for ([(root-phase mgd) (in-hash phase-merged)])
+    (define body (merged-body mgd))
+    (define defined-names (merged-defined-names mgd))
+    
+    (define (used-name! name)
+      (define v (hash-ref used name #f))
+      (hash-set! used name 'used)
+      (unless (hash-ref defined-names name #f)
+        (hash-set! used-externally name #t))
+      (when (procedure? v)
+        (v)))
+
+    (for ([name (in-list (hash-ref provided-names root-phase null))])
+      (used-name! name)
+      (hash-set! used-externally name #t))
+
+    (define (used! b)
+      (cond
+        [(faslable-correlated? b)
+         (used! (faslable-correlated-e b))]
+        [else
+         (match b
+           [`(lambda ,args . ,body)
+            (for-each used! body)]
+           [`(case-lambda [,argss . ,bodys] ...)
+            (for ([body (in-list bodys)])
+              (for-each used! body))]
+           [`(let-values ([,idss ,rhss] ...) ,body)
+            (for-each used! rhss)
+            (used! body)]
+           [`(letrec-values ([,idss ,rhss] ...) ,body)
+            (for-each used! rhss)
+            (used! body)]
+           [`(if ,tst ,thn ,els)
+            (used! tst)
+            (used! thn)
+            (used! els)]
+           [`(begin . ,body)
+            (for-each used! body)]
+           [`(begin0 ,e . ,body)
+            (used! e)
+            (for-each used! body)]
+           [`(set! ,id ,rhs)
+            (used-name! id)
+            (used! rhs)]
+           [`(quote . _) (void)]
+           [`(with-continuation-mark ,key ,val ,body)
+            (used! key)
+            (used! val)
+            (used! body)]
+           [`(#%variable-reference ,id)
+            (used-name! id)]
+           [`(#%variable-reference . ,_) (void)]
+           [`(,rator ,rands ...)
+            (used! rator)
+            (for-each used! rands)]
+           [_
+            (when (symbol? b)
+              (used-name! b))])]))
+
+    (for ([b (in-list body)])
+      (match b
+        [`(define-values ,ids ,rhs)
+         (define done? #f)
+         (define (used-rhs!)
+           (unless done?
+             (set! done? #t)
+             (used! rhs))
+           ;; All in group are used together:
+           (for-each used! ids))
+         (for ([id (in-list ids)])
+           (cond
+             [(eq? 'used (hash-ref used id #f))
+              (used-rhs!)]
+             [else
+              (hash-set! used id used-rhs!)]))
+         (unless (and (not keep-defines?)
+                      (or assume-pure?
+                          (pure? rhs)))
+           (used-rhs!))]
+        [_ (unless (pure? b)
+             (used! b))]))))
+
+(define (gc-definitions used phase-merged)
+  ;; Anything not marked as used at this point can be dropped
+  (for/hasheqv ([(root-phase mgd) (in-hash phase-merged)])
+    (define body (merged-body mgd))
+     
     (define new-defined-names (make-hasheq))
-    (define-values (new-body new-internals new-lifts)
-      (gc-definitions-one-phase linkl-mode body internals lifts internals-pos merged-internals new-defined-names
-                                phase
-                                #:keep-defines? keep-defines?
-                                #:assume-pure? assume-pure?))
-    (values (hash-set phase-new-body phase new-body)
-            (hash-set phase-new-internals phase new-internals)
-            (hash-set phase-new-lifts phase new-lifts)
-            (hash-set phase-new-defined-names phase new-defined-names))))
-
-(define (gc-definitions-one-phase linkl-mode body internals lifts internals-pos new-internals new-defined-names
-                                  phase
-                                  #:keep-defines? keep-defines?
-                                  #:assume-pure? assume-pure?)
-  (case linkl-mode
-    [(linkl)
-     (define used (make-hasheqv)) ; pos -> 'used or thunk
-     (define graph (make-hasheq))
-
-     (define (used-pos! pos)
-       (when (pos . >= .  internals-pos)
-         (define v (hash-ref used pos #f))
-         (hash-set! used pos 'used)
-         (when (procedure? v)
-           (v))))
-
-     (define (used! b)
-       (match b
-         [(toplevel depth pos const? ready?)
-          (used-pos! pos)]
-         [(inline-variant direct inline)
-          (used! direct)
-          (used! inline)]
-         [(closure code gen-id)
-          (unless (hash-ref graph gen-id #f)
-            (hash-set! graph gen-id #t)
-            (used! code))]
-         [(let-one rhs body type unused?)
-          (used! rhs)
-          (used! body)]
-         [(let-void count boxes? body)
-          (used! body)]
-         [(install-value count pos boxes? rhs body)
-          (used! rhs)
-          (used! body)]
-         [(let-rec procs body)
-          (for-each used! procs)
-          (used! body)]
-         [(boxenv pos body)
-          (used! body)]
-         [(application rator rands)
-          (used! rator)
-          (for-each used! rands)]
-         [(branch tst thn els)
-          (used! tst)
-          (used! thn)
-          (used! els)]
-         [(with-cont-mark key val body)
-          (used! key)
-          (used! val)
-          (used! body)]
-         [(beg0 forms)
-          (for-each used! forms)]
-         [(seq forms)
-          (for-each used! forms)]
-         [(varref toplevel dummy constant? unsafe?)
-          (used! toplevel)
-          (used! dummy)]
-         [(assign id rhs undef-ok?)
-          (used! id)
-          (used! rhs)]
-         [(apply-values proc args-expr)
-          (used! proc)
-          (used! args-expr)]
-         [(with-immed-mark key def-val body)
-          (used! key)
-          (used! def-val)
-          (used! body)]
-         [(case-lam name clauses)
-          (for-each used! clauses)]
-         [_
-          (cond
-            [(lam? b)
-             (define tl-map (lam-toplevel-map b))
-             (when tl-map
-               (for/set ([pos (in-set tl-map)])
-                 (when (pos . >= .  internals-pos)
-                   (used-pos! pos))))
-             (used! (lam-body b))]
-            [else (void)])]))
-
-     (define (pure? b)
-       (match b
-         [(closure code gen-id) #t]
-         [(inline-variant direct inline) #t]
-         [(case-lam name clauses) #t]
-         [(let-one rhs body type unused?)
-          (and (pure? rhs)
-               (pure? body))]
-         [(seq forms)
-          (for/and ([form (in-list forms)])
-            (pure? form))]
-         [_ (or (lam? b)
-                (void? b))]))
-
-     (for ([b (in-list body)])
-       (match b
-         [(def-values ids rhs)
-          (define done? #f)
-          (define (used-rhs!)
-            (unless done?
-              (set! done? #t)
-              (used! rhs))
-            ;; All in group are used together:
-            (for-each used! ids))
-          (for ([id (in-list ids)])
-            (define pos (toplevel-pos id))
-            (cond
-              [(eq? 'used (hash-ref used pos #f))
-               (used-rhs!)]
-              [else
-               (hash-set! used pos used-rhs!)]))
-          (unless (or assume-pure?
-                      (pure? rhs))
-            (used-rhs!))]
-         [_ (unless (pure? b)
-              (used! b))]))
-     
-     ;; Anything not marked as used at this point can be dropped
-     (define new-internals
-       (for/list ([name (in-list internals)]
-                  [pos (in-naturals internals-pos)]
-                  #:when (or (eq? 'used (hash-ref used pos #f))
-                             (begin
-                               (log-debug "drop ~s" name)
-                               #f)))
-         name))
-
-     (define lifts-pos (+ internals-pos (length internals)))
-     (define new-lifts
-       (for/list ([name (in-list lifts)]
-                  [pos (in-naturals lifts-pos)]
-                  #:when (or (eq? 'used (hash-ref used pos #f))
-                             (begin
-                               (log-debug "drop ~s" name)
-                               #f)))
-         name))
-
-     (define old-pos-to-new-pos (make-hasheqv))
-     (for/fold ([new-pos internals-pos]) ([name (in-list (append internals lifts))]
-                                          [pos (in-naturals internals-pos)])
-       (cond
-         [(eq? 'used (hash-ref used pos #f))
-          (hash-set! old-pos-to-new-pos pos new-pos)
-          (add1 new-pos)]
-         [else new-pos]))
-
-     (define used-body
-       ;; Drop unused definitions
-       (for/list ([b (in-list body)]
-                  #:when (match b
-                           [(def-values ids rhs)
-                            (for/or ([id (in-list ids)])
-                              (eq? 'used (hash-ref used (toplevel-pos id) #f)))]
-                           [_ (not (pure? b))]))
-         b))
-
-     (define new-body (remap-positions used-body
-                                       (lambda (pos)
-                                         (if (pos . < . internals-pos)
-                                             pos
-                                             (hash-ref old-pos-to-new-pos pos)))))
-
-     (values new-body new-internals new-lifts)]
-    [(s-exp)
-     (define used (make-hasheqv)) ; symbol -> 'used or thunk
-
-     (define (used-name! name)
-       (define v (hash-ref used name #f))
-       (hash-set! used name 'used)
-       (when (procedure? v)
-         (v)))
-
-     (define (used! b)
-       (cond
-         [(faslable-correlated? b)
-          (used! (faslable-correlated-e b))]
-         [else
-          (match b
-            [`(lambda ,args . ,body)
-             (for-each used! body)]
-            [`(case-lambda [,argss . ,bodys] ...)
-             (for ([body (in-list bodys)])
-               (for-each used! body))]
-            [`(let-values ([,idss ,rhss] ...) ,body)
-             (for-each used! rhss)
-             (used! body)]
-            [`(letrec-values ([,idss ,rhss] ...) ,body)
-             (for-each used! rhss)
-             (used! body)]
-            [`(if ,tst ,thn ,els)
-             (used! tst)
-             (used! thn)
-             (used! els)]
-            [`(begin . ,body)
-             (for-each used! body)]
-            [`(begin0 ,e . ,body)
-             (used! e)
-             (for-each used! body)]
-            [`(set! ,id ,rhs)
-             (used-name! id)
-             (used! rhs)]
-            [`(quote . _) (void)]
-            [`(with-continuation-mark ,key ,val ,body)
-             (used! key)
-             (used! val)
-             (used! body)]
-            [`(#%variable-reference ,id)
-             (used-name! id)]
-            [`(#%variable-reference . ,_) (void)]
-            [`(,rator ,rands ...)
-             (used! rator)
-             (for-each used! rands)]
-            [_
-             (when (symbol? b)
-               (used-name! b))])]))
-
-     (define (pure? b)
-       (match b
-         [`(lambda . ,_) #t]
-         [`(case-lambda . ,_) #t]
-         [`(quote . ,_) #t]
-         [`(let-values ([,idss ,rhss] ...) ,body)
-          (and (andmap pure? rhss)
-               (pure? body))]
-         [`(#%variable-reference . ,_) #t]
-         [`(void) #t]
-         [_ (not (or (pair? b)
-                     (symbol? b)))]))
-
-     (for ([b (in-list body)])
-       (match b
-         [`(define-values ,ids ,rhs)
-          (define done? #f)
-          (define (used-rhs!)
-            (unless done?
-              (set! done? #t)
-              (used! rhs))
-            ;; All in group are used together:
-            (for-each used! ids))
-          (for ([id (in-list ids)])
-            (cond
-              [(eq? 'used (hash-ref used id #f))
-               (used-rhs!)]
-              [else
-               (hash-set! used id used-rhs!)]))
-          (unless (and (not keep-defines?)
-                       (or assume-pure?
-                           (pure? rhs)))
-            (used-rhs!))]
-         [_ (unless (pure? b)
-              (used! b))]))
-     
-     ;; Anything not marked as used at this point can be dropped
-
-     (define new-body
-       ;; Drop unused definitions
-       (for/list ([b (in-list body)]
-                  #:when (match b
-                           [`(define-values ,ids ,rhs)
-                            (define drop?
-                              (for/or ([id (in-list ids)])
-                                (eq? 'used (hash-ref used id #f))))
-                            (unless drop?
+    
+    (define new-body
+      ;; Drop unused definitions
+      (for/list ([b (in-list body)]
+                 #:when (match b
+                          [`(define-values ,ids ,rhs)
+                           (define keep?
+                             (for/or ([id (in-list ids)])
+                               (eq? 'used (hash-ref used id #f))))
+                            (when keep?
                               (for ([id (in-list ids)])
                                 (hash-set! new-defined-names id #t)))
-                            drop?]
-                           [_ (not (pure? b))]))
-         b))
+                           keep?]
+                          [_ (not (pure? b))]))
+        b))
 
-     (values new-body internals lifts)]
-    [else
-     (error "internal error: unrecognized linklet-representation mode")]))
-    
+    (values root-phase (struct-copy merged mgd
+                                    [body new-body]
+                                    [defined-names new-defined-names]))))
+
+(define (pure? b)
+  (match b
+    [`(lambda . ,_) #t]
+    [`(case-lambda . ,_) #t]
+    [`(quote . ,_) #t]
+    [`(let-values ([,idss ,rhss] ...) ,body)
+     (and (andmap pure? rhss)
+          (pure? body))]
+    [`(#%variable-reference . ,_) #t]
+    [`(void) #t]
+    [_ (not (or (pair? b)
+                (symbol? b)))]))
+
+

@@ -2,7 +2,10 @@
 (require (only-in '#%kernel [syntax-serialize kernel:syntax-serialize])
          racket/linklet
          syntax/modcollapse
-         "linklet.rkt")
+         "path-submod.rkt"
+         "linklet.rkt"
+         "import.rkt"
+         "binding-lookup.rkt")
 
 (provide register-provides-for-syntax
          deserialize-syntax
@@ -11,14 +14,11 @@
          build-stx-linklet)
 
 (define (register-provides-for-syntax register! bulk-binding-registry
-                                      orig-path submod
+                                      path/submod
                                       decl
                                       real-decl)
   (register! bulk-binding-registry
-             (make-resolved-module-path (let ([p (if (string? orig-path)
-                                                     (string->path orig-path)
-                                                     orig-path)])
-                                          (if (pair? submod) (cons p submod) p)))
+             (path/submod->resolved-module-path path/submod)
              (instance-variable-value decl 'self-mpi)
              (instance-variable-value real-decl 'provides)))
 
@@ -46,31 +46,24 @@
        [else (values #f #f)])]
     [else (values #f #f)]))
 
-(define (serialize-syntax stx-vec import-paths excluded-module-mpis names)
-  (define self-mpi (module-path-index-join #f #f))
-
-  (define import-mpis
-    (for/list ([path (in-list import-paths)])
-      (cond
-        [(symbol? path) (module-path-index-join `(quote ,path) #f)]
-        [else
-         ;; collapse to a simplified MPI early
-         (define mpi (or (hash-ref excluded-module-mpis path #f)
-                         (error 'import-mpis "cannot find module: ~s" path)))
-         (module-path-index-join (collapse-module-path-index mpi)
-                                 ;; keep the "self" mpi, if any:
-                                 (let loop ([mpi mpi])
-                                   (define-values (name base) (module-path-index-split mpi))
-                                   (if (not name)
-                                       mpi
-                                       (and (module-path-index? base) (loop base)))))])))
-
+(define (serialize-syntax stx-vec self-mpi
+                          import-mpis excluded-module-mpis included-module-phases
+                          names transformer-names one-mods)
   (define (derived-from-self? mpi)
     (define-values (name base) (module-path-index-split mpi))
     (if base
         (and (module-path-index? base)
              (derived-from-self? base))
         (not name)))
+
+  (for ([top-mpi (in-list import-mpis)])
+    (let loop ([mpi top-mpi])
+      (unless (eq? mpi self-mpi)
+        (define-values (name base) (module-path-index-split mpi))
+        (if base
+            (loop base)
+            (unless name
+              (error "import MPI is not based on self" top-mpi))))))
 
   ;; Bindings inside of scopes inside of syntax objects each have a
   ;; module path index (MPI) to specify what the binding refers to.
@@ -96,7 +89,7 @@
        (kernel:syntax-serialize stx-vec
                                 #f ; base-mpi
                                 '() ; preserve-prop-keys
-                                #f ; provides-namespace
+                                #f ; provides-namespace; #f => inline bulk bindings
                                 #f ; as-data?
                                 (cons self-mpi import-mpis) ;; these mpis first, needed for imports
                                 ;; report-shift
@@ -122,13 +115,16 @@
                                      ;; If the result path is to an excluded module, then
                                      ;; we have a replacement mpi to supply the right form
                                      ;; of reference for the excluded module
-                                     (define exp-mpi (if (symbol? path/submod)
-                                                         (module-path-index-join `(quote ,path/submod) #f)
-                                                         (hash-ref excluded-module-mpis path/submod #f)))
+                                     (define exp-mpi+phase (if (symbol? path/submod)
+                                                               (cons (module-path-index-join `(quote ,path/submod) #f) 0)
+                                                               ;; Note: don't need to check for `in-phase-level` mapping,
+                                                               ;; because that's only for a slice mode that doesn't keep
+                                                               ;; syntax objects
+                                                               (hash-ref excluded-module-mpis path/submod #f)))
                                      (define new-mpi
                                        (cond
-                                         [exp-mpi
-                                          (module-path-index-join (collapse-module-path-index exp-mpi)
+                                         [exp-mpi+phase
+                                          (module-path-index-join (collapse-module-path-index (car exp-mpi+phase))
                                                                   self-mpi)]
                                          [else
                                           ;; Otherwise, it must be one we want to refer to this module
@@ -141,34 +137,27 @@
                                                                   "found module path index in syntax without reported resolution"
                                                                   "module path index" mpi))))
                                 ;; map-binding-symbol
-                                (lambda (mpi phase sym)
+                                (lambda (mpi sym phase)
                                   (define new-mpi+path/submod (hash-ref mpi-map mpi #f))
                                   (unless new-mpi+path/submod
                                     (raise-arguments-error 'demodularize
                                                            "found module path index in syntax binding without reported resolution"
                                                            "module path index" mpi))
                                   (define path/submod (cdr new-mpi+path/submod))
-                                  (cond
-                                    [(hash-ref excluded-module-mpis path/submod #f)
-                                     sym]
-                                    [(symbol? path/submod)
-                                     sym]
-                                    [else
-                                     (or (hash-ref names (cons (cons path/submod phase) sym) #f)
-                                         (raise-arguments-error 'demodularize
-                                                                "did not find new name for binding in syntax"
-                                                                "module path" path/submod
-                                                                "name" sym
-                                                                "phase level" phase))])))]))
+                                  (binding-lookup path/submod phase sym
+                                                  names transformer-names
+                                                  one-mods
+                                                  excluded-module-mpis included-module-phases)))]))
 
   (for ([stx-mpi (in-vector stx-mpis-vec)]
-        [orig-mpi (in-list (cons self-mpi import-mpis))])
+        [orig-mpi (in-list (cons self-mpi import-mpis))]
+        [i (in-naturals)])
     (unless (eq? stx-mpi orig-mpi)
-      (error "unexpected MPI for import")))
+      (error 'syntax-bundle "unexpected MPI for import: ~s versus ~s, index ~a" stx-mpi orig-mpi i)))
 
   (define all-mpis (vector->list stx-mpis-vec))
 
-  (values self-mpi all-mpis serialized-stx))
+  (values all-mpis serialized-stx))
 
 (define (build-stx-data-linklet stx-vec serialized-stx)
   (s-exp->linklet

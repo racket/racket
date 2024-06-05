@@ -4,8 +4,10 @@
 (provide write-module)
 
 (define (write-module output-file bundle)
-  (call-with-output-file*
-   output-file
-   #:exists 'truncate/replace
-   (lambda (o)
-     (zo-marshal-to bundle o))))
+  (if (output-port? output-file)
+       (zo-marshal-to bundle output-file)
+       (call-with-output-file*
+        output-file
+        #:exists 'truncate/replace
+        (lambda (o)
+          (zo-marshal-to bundle o)))))

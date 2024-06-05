@@ -10,7 +10,7 @@
            namespace-anchor?
            namespace-anchor->empty-namespace
            namespace-anchor->namespace)
-  
+
   ;; ----------------------------------------
 
   (define orig-varref (#%variable-reference orig-varref))

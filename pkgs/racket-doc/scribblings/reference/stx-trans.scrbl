@@ -1161,6 +1161,16 @@ transformer} application by the expander for an expression
 within a @racket[module] form, @racket[#f] otherwise.}
 
 
+@defproc[(syntax-local-compiling-module?) boolean?]{
+
+Returns @racket[#t] during the dynamic extent of a @tech{syntax
+transformer} application by the expander in a @tech{module-begin
+context} and when the expansion is part of a compilation process where
+a compiled module can be returned directly. See also @racket[module].
+
+@history[#:added "6.13.0.7"]}
+
+
 @defproc[(syntax-local-identifier-as-binding [id-stx identifier?]
                                              [intdef-ctx (or/c internal-definition-context? #f) #f])
          identifier?]{

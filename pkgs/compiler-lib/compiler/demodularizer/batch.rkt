@@ -25,17 +25,10 @@
                 #:once-each
                 [("-s" "--syntax") "Preserve syntax objects, macros, and provides"
                  (syntax-object-preservation-enabled #t)]
-                [("--max-phase") phase "Preserve only phases through <phase>"
-                 (define ph (string->number phase))
-                 (unless (exact-nonnegative-integer? ph)
-                   (raise-user-error (format "~a: invalid phase: ~s"
-                                             (short-program+command-name)
-                                             phase)))
-                 (current-maximum-phase ph)]
                 [("-M" "--compile-any") "Keep in machine-independent form instead of recompiling"
                  (recompile-enabled #f)]
                 [("-r" "--recompile") "Recompile final module to re-run optimizations"
-                                      (recompile-enabled #t)]
+                 (recompile-enabled #t)]
                 [("--work") dir "Cache intermediate compilations in <dir>"
                  (unless (path-string? dir)
                    (raise-user-error (format "~a: invalid work directory: ~a"
@@ -43,9 +36,11 @@
                                              dir)))
                  (current-work-directory dir)]
                 [("-g" "--garbage-collect") "Garbage-collect final module (unsound)"
-                 (garbage-collect-toplevels-enabled #t)]                         
+                 (garbage-collect-toplevels-enabled #t)]
                 [("--dump") dest-filename "Dump S-expression form to <dest-filename>"
                  (current-merged-output-file dest-filename)]
+                [("--dump-mi") dest-filename "Save machine-independent form to <dest-filename>"
+                 (current-merged-machine-independent-output-file dest-filename)]
                 #:args (filename)
                 (demodularize filename (output-file))))
 

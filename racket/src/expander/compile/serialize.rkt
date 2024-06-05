@@ -303,7 +303,7 @@
                               #:keep-provides? [keep-provides? #f]
                               #:phase+space-hasheqv [phase+space-hasheqv #f] ; keys of this value must be interned
                               #:map-mpi [map-mpi (lambda (mpi) mpi)]
-                              #:map-binding-symbol [map-binding-symbol (lambda (mpi phase sym) sym)]
+                              #:map-binding-symbol [map-binding-symbol (lambda (mpi sym phase) (values sym phase))]
                               #:report-mpi-shifts [report-mpi-shifts #f])
   (define bulk-shifts (and keep-provides? (list (make-hasheq))))
 
@@ -329,6 +329,7 @@
     (cond
       [(module-binding? v)
        (module-binding-maybe-intern v binding-interns
+                                    map-binding-symbol
                                     (lambda (mpi) (add-module-path-index!/pos mpis (map-mpi mpi))))]
       [else #f]))
 

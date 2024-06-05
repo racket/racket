@@ -1,12 +1,16 @@
 #lang racket/base
-(require syntax/modresolve)
+(require syntax/modresolve
+         "path-submod.rkt")
 
-(provide module-path-index->path
+(provide module-path-index->path/submod
          module-path-index-reroot)
 
-(define (module-path-index->path req path submod)
-  (define mpi (module-path-index-build req path submod))
+(define (module-path-index->path/submod req path/submod)
+  (define path (path/submod-path path/submod))
+  (define submod (path/submod-submod path/submod))
   
+  (define mpi (module-path-index-build req submod))
+
   (define p (resolve-module-path-index mpi path))
 
   ;; Make sure a path name is normalized
@@ -19,9 +23,9 @@
   ;; Combine path back with submod
   (if (null? p-submod)
       p-simple-path
-      (cons p-simple-path p-submod)))
+      (path/submod-join p-simple-path p-submod)))
 
-(define (module-path-index-build req path submod)
+(define (module-path-index-build req submod)
   (module-path-index-reroot req
                             (if (null? submod)
                                 (module-path-index-join #f #f)

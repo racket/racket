@@ -53,3 +53,6 @@
                               compiled-module       ; #f or already-compiled module
                               compiled-submodules)  ; already-compiled submodules
   #:authentic)
+
+(struct parsed-bundle parsed (bundle)
+  #:authentic)

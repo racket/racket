@@ -290,7 +290,8 @@
               [(and cross-deps
                     (not sha1-only?)
                     (not (and (deps-has-machine? cross-deps)
-                              (eq? (cross-system-type 'target-machine) (deps-machine cross-deps)))))
+                              (eq? (cross-system-type-target-machine)
+                                   (deps-machine cross-deps)))))
                (trace-printf "different machine ~a for cross ~a..."
                              (and (deps-has-machine? cross-deps)
                                   (deps-machine cross-deps))
@@ -574,7 +575,7 @@
                                       (eq? (system-type 'target-machine) (deps-machine deps))))
                              (trace-printf "wrong machine: ~a" path))
                     (explain (or (not cross-deps)
-                                 (eq? (deps-machine cross-deps) (cross-system-type 'target-machine))
+                                 (eq? (deps-machine cross-deps) (cross-system-type-target-machine))
                                  (not (deps-machine cross-deps)))
                              (trace-printf "wrong machine for cross: ~a" path))
                     (let ([imports-sha1
@@ -666,9 +667,8 @@
                       #:compile-dependency compile-dependency)))
      ;; Recompile to cross-compile target form (maybe):
      (define-values (target-zo-name target-code)
-       (if (and (not (current-multi-compile-any))
-                (cross-system-type 'target-machine))
-           (parameterize ([current-compile-target-machine (cross-system-type 'target-machine)])
+       (if (cross-system-type-target-machine)
+           (parameterize ([current-compile-target-machine (cross-system-type-target-machine)])
              (compile-zo* path->mode (list target-root) path src-sha1 read-src-syntax #f up-to-date collection-cache
                           #:recompile-from mi-zo-name
                           #:assume-compiled-sha1 mi-sha1
@@ -845,6 +845,14 @@
                        external-deps external-module-deps reader-deps 
                        up-to-date collection-cache read-src-syntax)])))
     (trace-printf "wrote zo file: ~a" zo-name))
+
+  (unless code
+    ;; If we didn't get any code back, then we could be in a situation where
+    ;; a touch is expected instead of a recompile. Touch the compiled file if
+    ;; its date is older than the source
+    (when (and (file-exists? zo-name) (file-exists? path))
+      (when ((file-or-directory-modify-seconds zo-name) . < . (file-or-directory-modify-seconds path))
+        (touch zo-name))))
 
   ;; Return generated ".zo" path along with code:
   (values zo-name code))
@@ -1155,3 +1163,7 @@
 
 (define (get-file-sha1 path)
   (get-source-sha1 path))
+
+(define (cross-system-type-target-machine)
+  (and (not (current-multi-compile-any))
+       (cross-system-type 'target-machine)))

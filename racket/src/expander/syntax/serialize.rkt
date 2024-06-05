@@ -25,7 +25,7 @@
                               [init-mpis '()]
                               [report-mpi-shifts #f] ; #f or (mpi -> any)
                               [map-mpi (lambda (mpi) mpi)]
-                              [map-binding-symbol (lambda (mpi phase sym) sym)])
+                              [map-binding-symbol (lambda (mpi sym phase) (values sym phase))])
   (if as-data?
       (check who syntax? stx)
       (check who vector? stx))

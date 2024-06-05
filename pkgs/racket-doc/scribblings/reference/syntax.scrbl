@@ -147,7 +147,13 @@ expansion leads to any other primitive form, then the form is wrapped
 with @racketidfont{#%module-begin} using the lexical context of the
 module body; this identifier must be bound by the initial
 @racket[module-path] import, and its expansion must produce a
-@racket[#%plain-module-begin] to supply the module body. Finally, if
+@racket[#%plain-module-begin] to supply the module body. If partial
+expansion produces a compiled module in the sense of
+@racket[compiled-module-expression?], that compiled module is used
+for the enclosing module (skipping all other expansion and compilation
+steps), but such a result is allowed only in a compilation mode
+where @racket[syntax-local-compiling-module?] produces true and
+when the current @tech{code inspector} is the initial one. Finally, if
 multiple @racket[form]s are provided, they are wrapped with
 @racketidfont{#%module-begin}, as in the case where a single
 @racket[form] does not expand to @racket[#%plain-module-begin].

@@ -135,8 +135,12 @@
 
   (define mpis (make-module-path-index-table))
   ;; Add current mpis in order, so existing references will stay correct
-  (for ([mpi (in-vector (instance-variable-value data-instance mpi-vector-id))])
-    (add-module-path-index! mpis mpi))
+  (for ([mpi (in-vector (instance-variable-value data-instance mpi-vector-id))]
+        [i (in-naturals)])
+    (unless (eqv? (add-module-path-index!/pos mpis mpi) i)
+      (raise-arguments-error 'compiled-expression-recompile
+                             "invalid or duplicate entry in MPI vector"
+                             "entry" mpi)))
 
   (define self (decl 'self-mpi))
   (define phase-to-link-modules (decl 'phase-to-link-modules))
@@ -153,7 +157,8 @@
     (define (root-of l) (if (pair? l) (car l) l))
     (cond
       [(equal? (root-of find-l) (root-of self-l))
-       (define r (get-submodule-recompiled (if (pair? find-l) (cdr find-l) '())))
+       (define submod (if (pair? find-l) (cdr find-l) '()))
+       (define r (get-submodule-recompiled submod))
        (when (eq? r 'in-process)
          (raise-arguments-error 'compiled-expression-recompile
                                 "cycle in linklet imports"))
@@ -161,8 +166,8 @@
        (define linklet
          (or (hash-ref (linklet-bundle->hash b) phase #f)
              (raise-arguments-error 'compiled-expression-recompile
-                                    "cannot find submodule at phase"
-                                    "submodule" mod-name
+                                    "cannot find (sub)module at phase"
+                                    "module" (unquoted-printing-string (format "~a" mod-name))
                                     "phase" phase)))
        (module-linklet-info linklet
                             (hash-ref (recompiled-phase-to-link-module-uses r) phase #f)

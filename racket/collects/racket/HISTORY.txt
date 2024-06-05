@@ -1,3 +1,7 @@
+Version 8.14
+Added the `compiler/demod` language and improved `raco demod` to
+ support the preservation of syntax, provides, macros, and submodules
+
 Version 8.13, April 2024
 Add `racket/treelist` and `racket/mutable-treelist`
 Add `contract-in`

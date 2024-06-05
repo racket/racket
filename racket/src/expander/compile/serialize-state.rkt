@@ -56,7 +56,7 @@
                      (make-hasheq)   ; sharing-syntaxes
                      preserve-prop-keys
                      keep-provides?
-                     map-binding-symbol)) ; mpi symbol -> symbol
+                     map-binding-symbol)) ; mpi symbol phase -> symbol phase
   ;; Seed intern tables for sets and hashes to use the canonical
   ;; empty version for consistent sharing:
   (define empty-seteq (seteq))

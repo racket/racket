@@ -82,7 +82,7 @@
                       mpi                  ; this binding's view of the providing module
                       provide-phase+space  ; providing module's import phase and space
                       phase+space-shift    ; providing module's instantiation phase and space level
-                      bulk-binding-registry) ; a registry for finding bulk bindings lazily
+                      bulk-binding-registry) ; a registry for finding bulk bindings lazily; #f keeps provides
   #:authentic
   #:property prop:bulk-binding
   (bulk-binding-class
@@ -146,22 +146,32 @@
          (when (binding-shift-report? binding)
            ((binding-shift-report-ref binding) binding more-bulk-shifts report-shifts))))))
   #:property prop:serialize
-  ;; Serialization normally drops the `provides` table and the providing module's `self`
+  ;; Serialization normally drops the `provides` table and the providing module's `self`,
+  ;; but we can perserve the `provides` table (making the bulk binding no longer dependent
+  ;; on the providing module) if `(serialize-state-keep-provides? state)` says to. When
+  ;; a bulk-binding table is put into that mode, it is kept there by having the registry
+  ;; set to `#f`.
   (lambda (b ser-push! state)
-    (cond
-      [(and (serialize-state-keep-provides? state)
-            ((serialize-state-keep-provides? state) b))
-       (ser-push! 'tag '#:bulk-binding+provides)
-       (ser-push! (bulk-binding-provides b))
-       (ser-push! (bulk-binding-self b))]
-      [else
-       (ser-push! 'tag '#:bulk-binding)])
+    (define clear-registry?
+      (cond
+        [(or (not (bulk-binding-bulk-binding-registry b))
+             (and (serialize-state-keep-provides? state)
+                  ((serialize-state-keep-provides? state) b)))
+         (ser-push! 'tag '#:bulk-binding+provides)
+         (ser-push! (bulk-binding-provides b))
+         (ser-push! (bulk-binding-self b))
+         #t]
+        [else
+         (ser-push! 'tag '#:bulk-binding)
+         #f]))
     (ser-push! (bulk-binding-prefix b))
     (ser-push! (bulk-binding-excepts b))
     (ser-push! (bulk-binding-mpi b))
     (ser-push! (bulk-binding-provide-phase+space b))
     (ser-push! (bulk-binding-phase+space-shift b))
-    (ser-push! 'tag '#:bulk-binding-registry)))
+    (if clear-registry?
+        (ser-push! #f)
+        (ser-push! 'tag '#:bulk-binding-registry))))
 
 (define (deserialize-bulk-binding prefix excepts mpi provide-phase+space phase-level bulk-binding-registry)
   (bulk-binding #f prefix excepts #f mpi (intern-phase+space provide-phase+space) phase-level bulk-binding-registry))

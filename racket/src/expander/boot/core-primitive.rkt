@@ -140,6 +140,7 @@
                       syntax-transforming-with-lifts?
                       syntax-transforming-module-expression?
                       syntax-local-transforming-module-provides?
+                      syntax-local-compiling-module?
                       
                       syntax-local-context
                       syntax-local-introduce

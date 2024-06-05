@@ -1,5 +1,8 @@
 #lang scribble/doc
-@(require scribble/manual scribble/bnf "common.rkt" (for-label racket/base))
+@(require scribble/manual scribble/bnf "common.rkt"
+          (for-label (except-in racket/base #%module-begin)
+                     compiler/demod
+                     racket/include))
 
 @title[#:tag "demod"]{@exec{raco demod}: Demodularizing Programs}
 
@@ -7,20 +10,27 @@
 
 The @exec{raco demodularize} command (usually used with the shorthand
 @exec{raco demod}) takes a Racket module and flattens its
-dependencies into a single compiled module. A file
+dependencies into a single compiled module, potentially with submodules. A file
 @filepath{@nonterm{name}.rkt} is demodularized into
 @filepath{@nonterm{name}_rkt_merged.zo}.
 
+See @racketmodname[compiler/demod] for an alternative way to use the
+demodularizer. Using @racket[@#,hash-lang[] @#,racketmodname[compiler/demod]]
+can cooperate with tools like @seclink["make"]{@exec{raco make}} and
+@seclink["setup"]{@exec{raco setup}}, which is especially important
+for library modules (as opposed to end-user programs).
+
 In its default configuration, @exec{raco demod} supports flattening a
-module that represents an end-user program, so it discarding all
-syntax, provides, and compile-time support in the module and its
-dependencies. In that case,
-the demodularized @filepath{.zo} file can be run by passing it as an
+module that represents an end-user program, so it discards all
+syntax and compile-time support in the module and its
+dependencies. Submodules are preserved, but their syntax
+and compile-time support are similarly discarded. The
+demodularized @filepath{.zo} file can be run by passing it as an
 argument to the @exec{racket} command-line program, or it can be
 turned into an executable with @seclink["exe"]{@exec{raco exe}}.
 
-Supply the @Flag{s} or @DFlag{syntax} flag to preserve syntax,
-provides, and compile-time components of the module, so that it can be
+Supply the @Flag{s} or @DFlag{syntax} flag to preserve syntax
+and compile-time components of the module, so that it can be
 @racket[require]d the same as the original module. In that case,
 modules whose instances need to be shared with other librraies should
 be omitted from the demodularization using @Flag{x} or
@@ -51,30 +61,23 @@ The @exec{raco demod} command accepts these flags:
        excludes the module in relative-file @nonterm{path} from flattening, as well
        as all of its dependencies.}
 
- @item{@Flag{s} or @DFlag{syntax} --- preserve syntax objects,
-       provides, and phase levels greater than the run-time phase in
+ @item{@Flag{s} or @DFlag{syntax} --- preserve syntax objects
+       and phase levels greater than the run-time phase in
        the flattened result. Otherwise, only the run-time phase is
        preserved, and unused (or merely exported) definitions are
        pruned as possible.}
-
- @item{@DFlag{max-phase} @nonterm{phase} --- selects the maximum phase
-       level to be preserved in the flattened module. For example, if
-       a module exports macros, but those macros never expand to
-       compile-time macros (other than ones provided by excluded
-       modules), then a maximum phase level of 1 is sufficient.}
 
  @item{@Flag{M} or @DFlag{compile-any} --- flattens the module to
        machine-independent form, instead of recompiling the flattened
        module to the current platform and Racket virtual machine; the
        output generated with @Flag{M} loads more slowly than a
-       machine-specific form, but @seclink["decompile"]{raco
-       decompile} can show the flattened module in a format that is
-       closer to source.}
+       machine-specific form, but @seclink["decompile"]{@exec{raco
+       decompile}} can show the flattened module in a format that is
+       closer to source. See also @DFlag{dump-mi}.}
 
  @item{@Flag{r} or @DFlag{recompile} --- (re)compiles the module to
         machine-dependent form after flattening; this mode is the
-        default except on @BC, where flattening
-        can work in terms of bytecode files.}
+        default.}
 
  @item{@DFlag{work} @nonterm{dir} --- uses @nonterm{dir} to cache
        compiled modules in an intermediate form for flattening; using
@@ -95,10 +98,164 @@ The @exec{raco demod} command accepts these flags:
        can be helpful for understanding the content that is in the
        compiled flatten module.}
 
+ @item{@DFlag{dump-mi} @nonterm{file} --- writes a machine-independent
+       form of the flattened module to @nonterm{file}, the same as
+       @Flag{M} would write, but useful when @Flag{M} is not used.}
+
 ]
+
+In addition to preserving submodules or of the source module,
+demodularization may introduce new submodules to hold portions of the
+flattening. The introduced submodules have names
+@racketidfont{demod-pane-} followed by an integer.
 
 @history[#:changed "1.10" @elem{Added @Flag{M}/@DFlag{compile-any},
                                 @DFlag{work}, and support for Racket CS.}
          #:changed "1.15" @elem{Added @Flag{x}/@DFlag{exclude-library},
-                                @Flag{s}/@DFlag{syntax},
-                                @DFlag{max-phase}, and @DFlag{dump}.}]
+                                @Flag{s}/@DFlag{syntax}, @DFlag{dump},
+                                @DFlag{dump-mi}, and preservation of submodules.}]
+
+@section[#:tag "lib-demod"]{Demodularizing Libraries}
+
+Demodularization of a library module with
+@racketmodname[compiler/demod] can create a module whose meaning is
+different than the original, since transitive dependencies (that are
+not specified as excluded) are copied into the flattened module. That
+copying can break sharing as needed for generated structure types or
+bindings. As a specific example, separate copies of
+@racketmodname[racket/base] will have distinct and incompatible
+implementations of keyword arguments for procedures.
+
+To avoid problems, a good general strategy for flattening is
+
+@itemlist[
+
+ @item{put all modules to be flattened into an
+        @filepath{private/amalgam} subcollection of, where modules
+        within @filepath{private/amalgam} can freely refer to each
+        other;}
+
+ @item{create a module @filepath{private/amalgam-src.rkt} that
+       requires modules from @filepath{private/amalgam} that need to
+       be accessible from outside, where submodules in
+       @filepath{private/amalgam-src.rkt} can provided different
+       subsets of bindings from @filepath{private/amalgam};}
+
+ @item{create a module @filepath{mine/private/amalgam.rkt} as
+
+       @racketmod[
+         @#,racketmodname[compiler/demod]
+         "amalgam-src.rkt"
+         #:include (#:dir "amalgam")
+       ]
+
+       and}
+
+ @item{from outside @filepath{private/amalgam}, use only
+       @filepath{private/amalgam.rkt}, perhaps via public modules that
+       reprovide from @filepath{private/amalgam.rkt}.}
+
+]
+
+@section[#:tag "lang-demod"]{Language for Demodularizing}
+
+@defmodulelang[compiler/demod]
+
+A module using @racketmodname[compiler/demod] language compiles to a
+form that is the flattened (in the same sense as
+@seclink["demod"]{@exec{raco demod}}) version of a source module. See
+also @secref["lib-demod"].
+
+A @racket[@#,hash-lang[] @#,racketmodname[compiler/demod]] module body
+starts with a @racket[_module-path] to flatten, it may be followed by
+options:
+
+@defsubform[#:link-target? #f
+            #:id module-begin
+            (code:line module-path
+                       option
+                       ...)
+            #:grammar ([option mode
+                               (code:line #:include (mod-spec ...))
+                               (code:line #:exclude (mod-spec ...))
+                               (code:line #:submodule-include (submod-spec ...))
+                               (code:line #:submodule-exclude (submod-spec ...))
+                               (code:line #:dump-demod file)
+                               (code:line #:dump-demod-mi file)
+                               #:no-demod]
+                       [mode #:exe
+                             #:dynamic
+                             #:static]
+                       [mod-spec (code:line #:module module-path)
+                                 (code:line #:dir dir-path)
+                                 (code:line #:collect collect-name)]
+                       [submod-spec identifier
+                                    (identifier ...)])]
+
+The default @racket[_mode] is @racket[#:dynamic], which preserves
+syntax objects and compile-time support (like macros), but does not
+insist that all modules are copied into the flattened module. For
+example, if a module is referenced by a combination of submodules
+within @racket[_module-path] and no other module is reached by the
+same combination, then the benefit of copying the module into a
+submodule is limited. The @racket[#:static] mode is like
+@racket[#:dynamic], but it ensures that all modules are included
+unless they are specified as excluded. The @racket[#:exe] mode
+discards syntax and compile-time support, so it may be suitable for
+flattening a module that implements an end-user program.
+
+When the @racket[#:include] option is specified, then only modules
+covered by a @racket[_mod-spec] will be included in the flattened
+form; otherwise, all modules are candidates for inclusion. When the
+@racket[#:exclude] option is specified, the modules covered by the
+@racket[_mod-spec]s are excluded, even if they would otherwise be
+included according to a @racket[#:include] specification. In other
+words, @racket[#:exclude] is applied after @racket[#:include].
+
+The @racket[#:submodule-include] and @racket[#:submodule-exclude]
+specifications are analogous to @racket[#:include] and
+@racket[#:exclude], but for submodules immediately with
+#racket[_module-path]. If @racket[_mode] is @racket[#:exe], then the
+list of inclusions defaults to @racketidfont{main} and
+@racketidfont{configure-runtime}, otherwise the default is to have no
+specific inclusions.
+
+A @racket[_mod-spec] either indicates a specific module with
+@racket[#:module] or it indicates all modules in a given collection
+(and its subcollections) with @racket[#:collect]. A
+@racket[_collect-name] is always a string with @litchar{/}-separated
+components.
+
+If the @racket[#:no-demod] option is specified, then
+@racket[_mod-spec] is not flattened, after all. Instead, the new
+module @racket[require]s and re@racket[provide]s @racket[_mod-spec]
+and each of its submodules. This mode is always used when a
+@racketmodname[compiler/demod] module is expanded, since expansion
+must produce syntax instead of a compiled module. This mode also may
+be useful during for development to avoid longer compile times from
+flattening or to check whether copying of modules for flattening
+creates any trouble.
+
+A flattened module using @racketmodname[compiler/demod] has a build
+dependency on the original module, so a tool like
+@seclink["make"]{@exec{raco make}} or @seclink["setup"]{@exec{raco
+setup}} will trigger reflattening if the source module changes, but
+the flattened module does not have a run-time or expand-time
+dependency on the original module. Modules excluded from the
+flattening via @racket[#:include] and @racket[#:exclude] remain as
+run-time and expand-time dependencies of the flattened module. In the
+default @racket[#:dynamic] mode, additional dependencies may be
+preserved for modules that cannot be usefully merged, but
+@racket[#:static] or @racket[#:exe] mode copies even those modules
+into new submodules.
+
+Compilation and expansion of a @racketmodname[compiler/demod] module
+creates a @filepath{compiled/demod} subdirectory in the same directory
+as the module. That subdirectory that holds freshly compiled versions
+of all dependencies of the flattened module in a form that is suitable
+for demodularization. This extra compilation is managed using
+@racketmodname[compiler/cm], so changes to dependencies can be handled
+incrementally, but still separate from normal compilation of the
+dependencies.
+
+@history[#:added "1.15"]

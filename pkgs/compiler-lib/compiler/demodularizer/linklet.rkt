@@ -1,7 +1,6 @@
 #lang racket/base
 (require racket/match
          racket/linklet
-         compiler/zo-structs
          compiler/private/deserialize
          compiler/faslable-correlated)
 
@@ -11,14 +10,12 @@
          linklet*-internal-exports
          linklet*-internal-importss
          linklet*-import-shapess
-         linklet*-lifts
          linklet*-body
          s-exp->linklet
          linklet->s-exp)
 
 (define (get-exports linkl select)
   (cond
-    [(linkl? linkl) (linkl-exports linkl)]
     [(faslable-correlated-linklet? linkl)
      (match (faslable-correlated-linklet-expr linkl)
        [`(linklet ,imports ,exports . ,_) (for/list ([ex (in-list exports)])
@@ -36,7 +33,6 @@
 
 (define (linklet*-internals linkl)
   (cond
-    [(linkl? linkl) (linkl-internals linkl)]
     [(faslable-correlated-linklet? linkl)
      (match (faslable-correlated-linklet-expr linkl)
        [`(linklet ,imports ,exports . ,body)
@@ -55,7 +51,6 @@
 
 (define (get-importss linkl select)
   (cond
-    [(linkl? linkl) (linkl-importss linkl)]
     [(faslable-correlated-linklet? linkl)
      (match (faslable-correlated-linklet-expr linkl)
        [`(linklet ,importss ,exports . ,_) (for/list ([imports (in-list importss)])
@@ -68,18 +63,11 @@
 
 (define (linklet*-import-shapess linkl)
   (cond
-    [(linkl? linkl) (linkl-import-shapess linkl)]
     [(faslable-correlated-linklet? linkl)
      (match (faslable-correlated-linklet-expr linkl)
        [`(linklet ,importss ,exports . ,_) (for/list ([imports (in-list importss)])
                                              (for/list ([im (in-list imports)])
                                                #f))])]
-    [else (unsupported linkl)]))
-
-(define (linklet*-lifts linkl)
-  (cond
-    [(linkl? linkl) (linkl-lifts linkl)]
-    [(faslable-correlated-linklet? linkl) '()]
     [else (unsupported linkl)]))
 
 (define (linklet*-body linkl)

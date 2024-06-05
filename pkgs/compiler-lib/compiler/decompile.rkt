@@ -547,6 +547,7 @@
                                                'mutable
                                                'shared)
                                            i))))
+  
   (define (infer-name! d i)
     (when (pair? d)
       (define new-name
@@ -709,6 +710,8 @@
      (decode* (deserialize-multi-scope name scopes))]
     [(#:shifted-multi-scope)
      (decode* (deserialize-shifted-multi-scope phase multi-scope))]
+    [(#:interned-scope)
+     (decode* (make-interned-scope id))]
     [(#:table-with-bulk-bindings)
      (decode* (deserialize-table-with-bulk-bindings syms bulk-bindings))]
     [(#:bulk-binding-at)
@@ -731,6 +734,10 @@
      (decode* (deserialize-full-local-binding key free=id))]
     [(#:bulk-binding)
      (decode* (deserialize-bulk-binding prefix excepts mpi provide-phase-level phase-shift bulk-binding-registry))]
+    [(#:like-ambiguous-binding)
+     (decode* (like-ambiguous-binding))]
+    [(#:bulk-binding+provides)
+     (decode* (deserialize-bulk-binding+provides provides self prefix excepts mpi provide-phase-level phase-shift bulk-binding-registry))]    
     [(#:provided)
      (decode* (deserialize-provided binding protected? syntax?))]
     [else
