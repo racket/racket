@@ -1168,7 +1168,7 @@ transformer} application by the expander in a @tech{module-begin
 context} and when the expansion is part of a compilation process where
 a compiled module can be returned directly. See also @racket[module].
 
-@history[#:added "6.13.0.7"]}
+@history[#:added "8.13.0.7"]}
 
 
 @defproc[(syntax-local-identifier-as-binding [id-stx identifier?]
