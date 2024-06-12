@@ -308,7 +308,7 @@
 
       (define new-linkl
         (s-exp->linklet
-         module-name
+         'module
          (deshadow-linklet
           root-phase
           `(linklet ,(list* (if any-syntax-literals? '(.get-syntax-literal!) '())
