@@ -187,7 +187,16 @@
 ;; various possible errors with the result.
 ;; If the tests pass, it tail-calls `internal-make-temporary-file/directory`.
 
-(define (internal-make-temporary-file/directory who copy-from base-dir make-name)
+(define (internal-make-temporary-file/directory who copy-from base-dir raw-permissions make-name)
+  (define permissions
+    (or raw-permissions
+        (case copy-from
+          [(directory)
+           #o700]
+          [(#f)
+           #o600]
+          [else
+           #f])))
   (define tmpdir (find-system-path 'temp-dir))
   (let loop ([s (current-seconds)]
              [ms (inexact->exact (truncate (current-inexact-milliseconds)))]
@@ -230,9 +239,9 @@
                              (add1 tries)))])
       (if copy-from
           (if (eq? copy-from 'directory)
-              (make-directory pth)
-              (copy-file copy-from pth))
-          (close-output-port (open-output-file pth)))
+              (make-directory pth permissions)
+              (copy-file copy-from pth #:permissions permissions))
+          (close-output-port (open-output-file pth #:permissions permissions)))
       pth)))
 
 (define (check-base-dir who base-dir)
@@ -244,10 +253,16 @@
     (raise-argument-error who "bytes?" x)))
 
 (define (do-make-temporary-file/directory:check-make-name
-         who copy-from base-dir make-name
+         who copy-from base-dir permissions make-name
          #:wrapped-make-name wraped-make-name
          #:complete-with-base-error complete-with-base-error
          #:syntactic-directory-error syntactic-directory-error)
+  ;; check permissions here, since this is the same for all variants
+  (when permissions
+    (unless (and (exact-nonnegative-integer? permissions)
+                 (<= permissions 65535))
+      (raise-argument-error who "(or/c (integer-in 0 65535) #f)" permissions)))
+  ;; check make name
   (define result
     ;; docs promise argument will be a string containing only digits
     (wraped-make-name "0"))
@@ -260,9 +275,9 @@
                         (split-path result)])
             must-be-dir?)
       (syntactic-directory-error result)))
-  (internal-make-temporary-file/directory who copy-from base-dir make-name))
+  (internal-make-temporary-file/directory who copy-from base-dir permissions make-name))
 
-(define (do-make-temporary-file/directory:format who template copy-from base-dir)
+(define (do-make-temporary-file/directory:format who template copy-from base-dir permissions)
   (unless (or (not copy-from)
               (path-string? copy-from)
               (eq? copy-from 'directory))
@@ -278,7 +293,7 @@
     ;; i.e. the result is valid as path, but not for our purposes
     (string-append "given template produced an invalid result;\n " details))
   (do-make-temporary-file/directory:check-make-name
-   who copy-from base-dir make-name
+   who copy-from base-dir permissions make-name
    #:wrapped-make-name
    (λ (digits-str)
      (define result
@@ -320,7 +335,7 @@
       "copy-from" copy-from))))
 
 (define (do-make-temporary-file/directory:bytes-append
-         ctxt prefix suffix copy-from base-dir
+         ctxt prefix suffix copy-from base-dir permissions
          #:directory? directory?)
   (define who
     (if directory?
@@ -344,7 +359,7 @@
     ;; i.e. the result is valid as path, but not for our purposes
     (string-append "given prefix and suffix produced an invalid result;\n " details))
   (do-make-temporary-file/directory:check-make-name
-   who copy-from base-dir
+   who copy-from base-dir permissions
    (λ (digits-str)
      (bytes->path (make-name/bytes digits-str)))
    #:wrapped-make-name
@@ -503,55 +518,65 @@
   (λ ([template "rkttmp~a"]
       #:copy-from [copy-from #f]
       #:base-dir [base-dir #f]
+      #:permissions [permissions #f]
       [compat-copy-from copy-from]
       [compat-base-dir base-dir])
     (do-make-temporary-file/directory:format 'make-temporary-file
-                                             template compat-copy-from compat-base-dir))
+                                             template compat-copy-from compat-base-dir permissions))
   (λ (#:copy-from [copy-from #''#f]
       #:base-dir [base-dir #''#f]
+      #:permissions [permissions #''#f]
       stx proc-id)
     #`(#%app #,proc-id
              '#,(infer-temporary-file-template stx)
              #,copy-from
-             #,base-dir)))
+             #,base-dir
+             #:permissions #,permissions)))
 
 (define-temporary-file/directory-transformer make-temporary-directory
   (λ ([template "rkttmp~a"]
-      #:base-dir [base-dir #f])
+      #:base-dir [base-dir #f]
+      #:permissions [permissions #f])
     (do-make-temporary-file/directory:format 'make-temporary-directory
-                                             template 'directory base-dir))
+                                             template 'directory base-dir permissions))
    (λ (#:base-dir [base-dir #''#f]
+      #:permissions [permissions #''#f]
        stx proc-id)
      #`(#%app #,proc-id
               '#,(infer-temporary-file-template stx)
+              #:permissions #,permissions
               #:base-dir #,base-dir)))
 
 (define-temporary-file/directory-transformer make-temporary-file*
   (λ (#:copy-from [copy-from #f]
       #:base-dir [base-dir #f]
+      #:permissions [permissions #f]
       prefix suffix)
     (do-make-temporary-file/directory:bytes-append
-     #"" prefix suffix copy-from base-dir
+     #"" prefix suffix copy-from base-dir permissions
      #:directory? #f))
   (λ (#:copy-from [copy-from #''#f]
       #:base-dir [base-dir #''#f]
+      #:permissions [permissions #''#f]
       stx proc-id prefix suffix)
     #`(#%app do-make-temporary-file/directory:bytes-append
              #,(infer-temporary-file-context-bytes stx)
-             #,prefix #,suffix #,copy-from #,base-dir
+             #,prefix #,suffix #,copy-from #,base-dir #,permissions
              #:directory? #f)))
 
 (define-temporary-file/directory-transformer make-temporary-directory*
   (λ (#:base-dir [base-dir #f]
+      #:permissions [permissions #f]
       prefix suffix)
     (do-make-temporary-file/directory:bytes-append
-     #"" prefix suffix 'directory base-dir
+     #"" prefix suffix 'directory base-dir permissions
      #:directory? #t))
   (λ (#:base-dir [base-dir #''#f]
+      #:permissions [permissions #''#f]
       stx proc-id prefix suffix)
     #`(#%app do-make-temporary-file/directory:bytes-append
              #,(infer-temporary-file-context-bytes stx)
-             #,prefix #,suffix 'directory #,base-dir
+             #,prefix #,suffix 'directory #,base-dir #,permissions
              #:directory? #t)))
 
 
