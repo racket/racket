@@ -233,7 +233,7 @@
                   (define-values (linklet new-keys)
                     (compile-linklet s
                                      (hasheq 'module full-module-name
-                                             'name '<syntax-literals)
+                                             'name 'syntax-literals)
                                      (vector deserialize-instance
                                              empty-top-syntax-literal-instance
                                              empty-syntax-literals-data-instance

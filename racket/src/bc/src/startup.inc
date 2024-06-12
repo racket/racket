@@ -45870,7 +45870,7 @@ static const char *startup_source =
 " 'module"
 " full-module-name_0"
 " 'name"
-" '<syntax-literals)"
+" 'syntax-literals)"
 "(vector"
 " deserialize-instance"
 " empty-top-syntax-literal-instance"
