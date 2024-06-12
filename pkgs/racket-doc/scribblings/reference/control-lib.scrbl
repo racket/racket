@@ -293,7 +293,7 @@ In this library, @racket[new-prompt] is an alias for
 @racket[make-continuation-prompt-tag], @racket[set] is an alias for
 @racket[prompt0-at], and @racket[cupto] is an alias for @racket[control0-at].
 
-@history[#:changed "8.10.0.5" @elem{The @racket[new-prompt] function is now
+@history[#:changed "8.11.0.3" @elem{The @racket[new-prompt] function is now
           really an alias for @racket[make-continuation-prompt-tag].}]
 }
 
