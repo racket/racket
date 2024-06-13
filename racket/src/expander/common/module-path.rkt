@@ -356,41 +356,54 @@
     (set-module-path-index-resolved! mpi
                                      (resolved-module-path-to-generic-resolved-module-path r))))
 
-(define (module-path-index-shift mpi from-mpi to-mpi)
+(define (module-path-index-shift* mpi from-mpi to-mpi freshen-cache)
   (cond
    [(eq? mpi from-mpi) to-mpi]
    [else
     (define base (module-path-index-base mpi))
-    (cond
-     [(not base) mpi]
-     [else
-      (define shifted-base (module-path-index-shift base from-mpi to-mpi))
+    (define result-mpi
       (cond
-       [(eq? shifted-base base) mpi]
-       [(shift-cache-ref (module-path-index-shift-cache shifted-base) mpi)]
-       [else
-        (define shifted-mpi
-          (module-path-index-join* (module-path-index-path mpi) shifted-base))
-        (shift-cache-set! shifted-base shifted-mpi)
-        shifted-mpi])])]))
+        [(not base) mpi]
+        [else
+         (define shifted-base (module-path-index-shift* base from-mpi to-mpi freshen-cache))
+         (cond
+           [(eq? shifted-base base) mpi]
+           [(shift-cache-ref (module-path-index-shift-cache shifted-base) mpi)]
+           [else
+            (define shifted-mpi
+              (module-path-index-join* (module-path-index-path mpi) shifted-base))
+            (shift-cache-set! shifted-base shifted-mpi)
+            shifted-mpi])]))
+    (when (and freshen-cache
+               (not (hash-ref freshen-cache result-mpi #f)))
+      ;; Create a fresh mpi, but return `result-mpi` to take advantage
+      ;; of its caching, instead of re-caching the shift at `fresh-mpi`
+      (define result-base (module-path-index-base result-mpi))
+      (define fresh-base (hash-ref freshen-cache result-base #f))
+      (define fresh-mpi
+        (module-path-index (module-path-index-path result-mpi)
+                           (or fresh-base result-base)
+                           #f
+                           empty-shift-cache))
+      (when fresh-base
+        (shift-cache-set! fresh-base fresh-mpi))
+      (hash-set! freshen-cache result-mpi fresh-mpi))
+    result-mpi]))
+
+(define (module-path-index-shift mpi from-mpi to-mpi)
+  (module-path-index-shift* mpi from-mpi to-mpi #f))
 
 ;; ensures that the result module-path index is fresh enough, so that
-;; resolving will go through the module name resolver
-(define (module-path-index-shift/resolved mpi from-mpi to-mpi rp)
-  (define maybe-new-mpi (module-path-index-shift mpi from-mpi to-mpi))
-  (define new-mpi (if (and (eq? maybe-new-mpi mpi)
-                           (let ([p (module-path-index-path mpi)])
-                             (not (and (pair? p)
-                                       (eq? 'quote (car p))))))
-                      (module-path-index (module-path-index-path mpi)
-                                         (module-path-index-base mpi)
-                                         #f
-                                         empty-shift-cache)
-                      maybe-new-mpi))
+;; resolving will go through the module name resolver; the `freshen-cache`
+;; hash table ensures that sharing in the original is preserved through
+;; sharing of fresh MPIs
+(define (module-path-index-shift/resolved mpi from-mpi to-mpi freshen-cache rp)
+  (define new-mpi (module-path-index-shift* mpi from-mpi to-mpi freshen-cache))
+  (define fresh-mpi (hash-ref freshen-cache new-mpi))
   (when rp
-    (unless (module-path-index-resolved new-mpi)
-      (set-module-path-index-resolved! new-mpi rp)))
-  new-mpi)
+    (unless (module-path-index-resolved fresh-mpi)
+      (set-module-path-index-resolved! fresh-mpi rp)))
+  fresh-mpi)
 
 (define (shift-cache-ref cache mpi)
   (for/or ([wb (in-list cache)])

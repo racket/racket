@@ -674,6 +674,7 @@
   (define requires (module-requires m))
   (define recur-requires (module-recur-requires m))
   (define flattened-requires (module-flattened-requires m))
+  (define freshen-cache (make-hasheq))
   (if (not flattened-requires)
       (for/list ([phase+mpis (in-list requires)]
                  [recurs (in-list recur-requires)]
@@ -686,6 +687,7 @@
                      (module-path-index-shift/resolved req-mpi
                                                        (module-self m)
                                                        mpi
+                                                       freshen-cache
                                                        resolved-path)))))
       (for/list ([mpi+phases (in-list flattened-requires)]
                  [resolved-path (in-list (namespace-find-shifted-requires ns name flattened-requires
@@ -694,6 +696,7 @@
         (define new-req-mpi (module-path-index-shift/resolved req-mpi
                                                               (module-self m)
                                                               mpi
+                                                              freshen-cache
                                                               resolved-path))
         (vector-immutable new-req-mpi
                           (vector-ref mpi+phases 1)))))
