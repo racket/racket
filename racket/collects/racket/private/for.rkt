@@ -3,7 +3,6 @@
   (#%require "misc.rkt"
              "define.rkt"
              "letstx-scheme.rkt"
-             "member.rkt"
              "reverse.rkt"
              "sort.rkt"
              "performance-hint.rkt"
@@ -15,7 +14,6 @@
                          "qqstx.rkt"
                          "define.rkt"
                          "fixnum.rkt"
-                         "member.rkt"
                          "define-et-al.rkt" "qq-and-or.rkt" "cond.rkt"
                          "stxcase-scheme.rkt"
                          "more-scheme.rkt"))
@@ -1983,7 +1981,7 @@
                                       ;; handle it, and no need to wrap any more:
                                       bs])))]
                             [(not (free-identifier=? derived-id-stx nonnested-id-stx))
-                             ;; add `#:when? #t` after each binding clause to trigger nesting
+                             ;; add `#:when #t` after each binding clause to trigger nesting
                              (let loop ([bs bs])
                                (if (null? bs)
                                    null
@@ -2193,7 +2191,7 @@
     (lambda (rhs) #`(stop-after #,rhs (lambda x (not result))))
     (lambda (x) x)
     (lambda (x) #`((define result #,x)
-                   #:final? (not result)
+                   #:final (not result)
                    result)))
 
   (define-for-variants (for/or for*/or)
@@ -2202,7 +2200,7 @@
     (lambda (rhs) #`(stop-after #,rhs (lambda x result)))
     (lambda (x) x)
     (lambda (x) #`((define result #,x)
-                   #:final? result
+                   #:final result
                    result)))
 
   (define-for-variants (for/first for*/first)
@@ -2210,8 +2208,8 @@
     (lambda (x) #`(let-values ([(val _) #,x]) val))
     (lambda (rhs) #`(stop-after #,rhs (lambda x stop?)))
     (lambda (x) #`(values #,x #t))
-    (lambda (x) #`(#:final? #t
-                   (values x #t))))
+    (lambda (x) #`(#:final #t
+                   (values #,x #t))))
 
   (define-for-variants (for/last for*/last)
     ([result #f])
