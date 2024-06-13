@@ -72,8 +72,16 @@
   (for ([submod (in-list (cons '() submods))])
     (traverse! (path/submod-join top-path submod) submod 0))
 
+  (log-demodularizer-debug " Uses:")
+  (for ([(origin entries-and-phases) (in-hash uses)])
+    (log-demodularizer-debug " ~a: ~a ~a"
+                             origin
+                             (hash-keys (car entries-and-phases))
+                             (hash-keys (cdr entries-and-phases))))
+
   (define pre-panes ; pane -> (set origin ...)
-    (for/fold ([panes (hash)]) ([(origin entries-and-phases) (in-hash uses)])
+    (for/fold ([panes (hash)])
+              ([(origin entries-and-phases) (in-hash uses)])
       (hash-set panes entries-and-phases
                 (hash-set (hash-ref panes entries-and-phases (hash))
                           origin
