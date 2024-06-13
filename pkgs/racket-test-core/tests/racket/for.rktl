@@ -1401,6 +1401,71 @@
       'final-if-7
       (for/list ([i (in-range 10)] #:splice (final-if-7 i)) i))
 
+;; splicing clauses in `for/and`, `for/or`, and `for/first`
+;; These expand differently than in non-splicing cases
+
+(test #f
+      'parallel3/and
+      (for/and (#:splice (parallel3 n m))
+        (and (not (= n m))
+             (list n m))))
+(test #f
+      'parallel3/and
+      (for*/and (#:splice (parallel3 n m))
+        (and (not (= n m))
+             (list n m))))
+
+(test #f
+      'cross3/and
+      (for/and (#:splice (cross3 n m))
+        (and (not (= n m))
+             (list n m))))
+(test #f
+      'cross3/and
+      (for*/and (#:splice (cross3 n m))
+        (and (not (= n m))
+             (list n m))))
+
+(test #f
+      'parallel3/or
+      (for/or (#:splice (parallel3 n m))
+        (and (not (= n m))
+             (list n m))))
+(test #f
+      'parallel3/or
+      (for*/or (#:splice (parallel3 n m))
+        (and (not (= n m))
+             (list n m))))
+
+(test '(0 1)
+      'cross3/or
+      (for/or (#:splice (cross3 n m))
+        (and (not (= n m))
+             (list n m))))
+(test '(0 1)
+      'cross3/or
+      (for*/or (#:splice (cross3 n m))
+        (and (not (= n m))
+             (list n m))))
+
+(test '(0 0)
+      'parallel3/first
+      (for/first (#:splice (parallel3 n m))
+        (list n m)))
+(test '(0 0)
+      'parallel3/first
+      (for*/first (#:splice (parallel3 n m))
+        (list n m)))
+
+(test '(0 0)
+      'cross3/first
+      (for/first (#:splice (cross3 n m))
+        (list n m)))
+(test '(0 0)
+      'cross3/first
+      (for*/first (#:splice (cross3 n m))
+        (list n m)))
+
 ;; ----------------------------------------
 ;; defining sequence syntax
 
