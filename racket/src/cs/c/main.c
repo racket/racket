@@ -158,6 +158,16 @@ static int bytes_main(int argc, char **argv,
   racket_boot_t racket_boot_p;
   long boot_rsrc_offset = 0;
 #endif
+#ifdef __COSMOPOLITAN__
+  #define CZIP_PETITE_BOOT "/zip/usr/lib/racket/petite.boot"
+  #define CZIP_SCHEME_BOOT "/zip/usr/lib/racket/scheme.boot"
+  #define CZIP_RACKET_BOOT "/zip/usr/lib/racket/racket.boot"
+
+  char use_central_zip_boot_image = (getenv("COSMOPOLITAN_DISABLE_ZIPOS") == NULL &&
+				     access(CZIP_PETITE_BOOT, R_OK) == 0 &&
+    				     access(CZIP_SCHEME_BOOT, R_OK) == 0 &&
+    				     access(CZIP_RACKET_BOOT, R_OK) == 0);
+#endif
 
   if (argc) {
     argc--;
@@ -207,6 +217,9 @@ static int bytes_main(int argc, char **argv,
   else
     boot_offset = 0;
 #else
+  #ifdef __COSMOPOLITAN__
+  if (!use_central_zip_boot_image)
+  #endif
   boot_offset = find_boot_section(boot_exe,
                                   /* If the first offset is 0 and the second is not,
                                      then the intent must be for those offsets to
@@ -230,6 +243,15 @@ static int bytes_main(int argc, char **argv,
       boot3_path = path_append_2(fw_path, "racket.boot");
       boot1_offset = boot2_offset = boot3_offset = boot_end_offset = 0;
     }
+  }
+#endif
+
+#ifdef __COSMOPOLITAN__
+  if (use_central_zip_boot_image) {
+    boot1_path = CZIP_PETITE_BOOT;
+    boot2_path = CZIP_SCHEME_BOOT;
+    boot3_path = CZIP_RACKET_BOOT;
+    boot1_offset = boot2_offset = boot3_offset = boot_end_offset = 0;
   }
 #endif
 

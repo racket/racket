@@ -18,6 +18,30 @@ static void free_dll(rktio_dll_t *dll);
 #ifdef RKTIO_SYSTEM_UNIX
 #include <dlfcn.h>
 typedef void *dll_handle_t;
+
+/* NOTE: dlopen support is experimental [1] in cosmopolitan libc
+
+   libffi does wrap function call convention ABI details, which may
+   need to be considered when using the foreign package [2][3] on non-posix
+   operating systems.
+
+   As a lot of the racket distribution outside of minimal racket
+   relies on foreign, dlopen is enabled when building with
+   cosmopolitan. Correct usage on non-posix will require further
+   patching, but building the main distribution does work on
+   linux-amd64.
+
+   [1] https://github.com/jart/cosmopolitan/blob/3.3.10/libc/dlopen/dlopen.c#L864
+   [2] https://docs.racket-lang.org/foreign/foreign_c-only.html#%28def._%28%28quote._~23~25foreign%29._ffi-call%29%29
+   [3] https://docs.racket-lang.org/foreign/foreign_procedures.html#%28form._%28%28lib._ffi%2Funsafe..rkt%29.__fun%29%29
+ */
+#ifdef __COSMOPOLITAN__
+  #define dlopen cosmo_dlopen
+  #define dlerror cosmo_dlerror
+  #define dlsym cosmo_dlsym
+  #define dlclose cosmo_dlclose
+#endif
+
 #endif
 
 #ifdef RKTIO_SYSTEM_WINDOWS
