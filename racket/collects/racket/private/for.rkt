@@ -1275,7 +1275,7 @@
                                        (lambda (pos vals) (apply post-cont? pos vals))))))))
 
   (define (in-values*-sequence g)
-    (unless (sequence? g) (raise-argument-error 'in-values-sequence "sequence?" g))
+    (unless (sequence? g) (raise-argument-error 'in-values*-sequence "sequence?" g))
     (make-do-sequence (lambda ()
                         (let-values ([(pos->val pre-pos-next pos-next init pos-cont? pre-cont? post-cont?)
                                       (make-sequence #f g)])
