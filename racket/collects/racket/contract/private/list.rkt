@@ -1077,13 +1077,18 @@
      (chaperone-*list/c (car ctcs) (cdr ctcs))]
     [else
      (impersonator-*list/c (car ctcs) (cdr ctcs))]))
-     
+
+(define listof-any (listof any/c))
+(define consc-anyany (cons/c any/c any/c))
+(define list/c-empty (list/c))
+
 ;; this is a hack to work around cyclic linking issues;
-;; see definition of set-some-basic-list-contracts!
+;; see definition of set-some-basic-list-contracts!;
+;; passing only defined names here gives the demodularizer license to prune
 (set-some-basic-list-contracts!
- (listof any/c)
- (cons/c any/c any/c)
- (list/c))
+ listof-any
+ consc-anyany
+ list/c-empty)
 
 ;; used by -> when it gets an ellipsis. This
 ;; contract turns into the equivalent of the #:rest

@@ -5,6 +5,7 @@
          "path-submod.rkt"
          "linklet.rkt"
          "import.rkt"
+         "one-mod.rkt"
          "binding-lookup.rkt")
 
 (provide register-provides-for-syntax
@@ -48,7 +49,8 @@
 
 (define (serialize-syntax stx-vec self-mpi
                           import-mpis excluded-module-mpis included-module-phases
-                          names transformer-names one-mods)
+                          names transformer-names one-mods
+                          symbol-module-paths)
   (define (derived-from-self? mpi)
     (define-values (name base) (module-path-index-split mpi))
     (if base
@@ -86,10 +88,16 @@
       [(= 0 (vector-length stx-vec))
        (values #f (list->vector (cons self-mpi import-mpis)))]
       [else
+       (define keep-bulk-module-names (make-hash))
+       (for ([(path/submod one-mod) (in-hash one-mods)])
+         (when (one-mod-excluded? one-mod)
+           (hash-set! keep-bulk-module-names (path/submod->resolved-module-path path/submod) #t)))
+       (for ([mod-path (in-hash-keys symbol-module-paths)])
+         (hash-set! keep-bulk-module-names (make-resolved-module-path mod-path) #t))
        (kernel:syntax-serialize stx-vec
                                 #f ; base-mpi
                                 '() ; preserve-prop-keys
-                                #f ; provides-namespace; #f => inline bulk bindings
+                                keep-bulk-module-names
                                 #f ; as-data?
                                 (cons self-mpi import-mpis) ;; these mpis first, needed for imports
                                 ;; report-shift

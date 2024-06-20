@@ -59,7 +59,8 @@ The @exec{raco demod} command accepts these flags:
 
  @item{@Flag{e} @nonterm{path} or @DFlag{exclude-module} @nonterm{path} ---
        excludes the module in relative-file @nonterm{path} from flattening, as well
-       as all of its dependencies.}
+       as all of its dependencies. For backward compatibility, @DFlag{exclude-modules}
+       is an alias for @DFlag{exclude-module}.}
 
  @item{@Flag{s} or @DFlag{syntax} --- preserve syntax objects
        and phase levels greater than the run-time phase in
@@ -87,11 +88,16 @@ The @exec{raco demod} command accepts these flags:
        with different input files or when modules to be flattened have
        changed since the last use of the cache.}
 
- @item{@Flag{g} or @DFlag{garbage-collect} --- aggressively prunes
+ @item{@Flag{g} or @DFlag{prune-definitions} --- aggressively prunes
        definitions that are unreferenced on the assumption that the
-       right-hand side of a definition has no side effect; due to that
-       unchecked assumption, this conversion may not preserve the
-       behavior of the input module.}
+       right-hand side of a definition has no side effect and, when
+       syntax is preserved, that a definition needs to be preserved
+       for reference only if a syntax object literal includes an
+       identifier bound to the definition. Due to the unchecked
+       assumptions, this conversion may not preserve the behavior of
+       the input module. For backward compatibility,
+       @DFlag{garbage-collect} is an alias for
+       @DFlag{prune-definitions}.}
 
  @item{@DFlag{dump} @nonterm{file} --- writes an S-expression
        representation of the module's content to @nonterm{file}, which
@@ -113,7 +119,9 @@ flattening. The introduced submodules have names
                                 @DFlag{work}, and support for Racket CS.}
          #:changed "1.15" @elem{Added @Flag{x}/@DFlag{exclude-library},
                                 @Flag{s}/@DFlag{syntax}, @DFlag{dump},
-                                @DFlag{dump-mi}, and preservation of submodules.}]
+                                @DFlag{dump-mi}, @DFlag{prune-definitions}
+                                (as a new name for @DFlag{garbage-collect}),
+                                and preservation of submodules.}]
 
 @section[#:tag "lib-demod"]{Demodularizing Libraries}
 
@@ -180,8 +188,9 @@ options:
                                (code:line #:exclude (mod-spec ...))
                                (code:line #:submodule-include (submod-spec ...))
                                (code:line #:submodule-exclude (submod-spec ...))
-                               (code:line #:dump-demod file)
-                               (code:line #:dump-demod-mi file)
+                               #:prune-definitions
+                               (code:line #:dump file)
+                               (code:line #:dump-mi file)
                                #:no-demod]
                        [mode #:exe
                              #:dynamic
@@ -225,6 +234,17 @@ A @racket[_mod-spec] either indicates a specific module with
 (and its subcollections) with @racket[#:collect]. A
 @racket[_collect-name] is always a string with @litchar{/}-separated
 components.
+
+If the @racket[#:prune-definitions] option is specified, then
+definitions that are unreferenced can be pruned on the assumption that
+the right-hand side of the definition has no side effect. When syntax
+is preserved for @racket[#:dynamic] or @racket[#:static] mode,
+@racket[#:prune-definitions] assumes that a definition needs to be
+preserved for reference only if a syntax object literal includes an
+identifier bound to the definition; that is, a reference to the
+definition will not be created solely through @racket[datum->syntax].
+Due to the unchecked assumptions, this conversion may not preserve the
+behavior of the input module.
 
 If the @racket[#:no-demod] option is specified, then
 @racket[_mod-spec] is not flattened, after all. Instead, the new

@@ -325,7 +325,10 @@
                           1
                           arg1 arg2)))
 
-(set-some-basic-misc-contracts! (renamed-between/c -inf.0 +inf.0 'real?)
+(define between/c-inf+inf-as-real? (renamed-between/c -inf.0 +inf.0 'real?))
+
+;; passing only defined names here gives the demodularizer license to prune:
+(set-some-basic-misc-contracts! between/c-inf+inf-as-real?
                                 renamed-between/c
                                 between/c-s?
                                 between/c-s-low

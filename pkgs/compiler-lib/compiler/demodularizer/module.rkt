@@ -36,6 +36,7 @@
   (define mods (make-hash))                 ; path -> mod
   (define one-mods (make-hash))             ; path+submod -> one-mod
   (define excluded-module-mpis (make-hash)) ; path/submod -> (cons mpi phase)
+  (define symbol-module-paths (make-hasheq))
 
   (define collects-cache (make-hash))
 
@@ -116,6 +117,7 @@
                  [req (in-list (cdr phase+reqs))])
         (define req-path/submod (module-path-index->path/submod req path/submod))
         (define req-path (path/submod-path req-path/submod))
+        (when (symbol? req-path) (hash-set! symbol-module-paths req-path #t))
         (define exclude-req?
           ;; Even if this module is excluded, traverse it to get all
           ;; modules that it requires, so that we don't duplicate those
@@ -334,7 +336,8 @@
   (values one-mods
           kept-submods
           (for/hash ([(path/submod mpi+phase) (in-hash excluded-module-mpis)])
-            (values path/submod mpi+phase))))
+            (values path/submod mpi+phase))
+          symbol-module-paths))
 
 (define (normalize-modules-and-collects elems)
   (for/fold ([modules (set)]

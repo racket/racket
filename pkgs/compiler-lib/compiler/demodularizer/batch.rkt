@@ -35,7 +35,9 @@
                                              (short-program+command-name)
                                              dir)))
                  (current-work-directory dir)]
-                [("-g" "--garbage-collect") "Garbage-collect final module (unsound)"
+                [("-g" "--prune-definitions") "Assume definitions are pure to prune unused"
+                 (garbage-collect-toplevels-enabled #t)]
+                [("--garbage-collect") "Compatibility alias for --prune-definitions"
                  (garbage-collect-toplevels-enabled #t)]
                 [("--dump") dest-filename "Dump S-expression form to <dest-filename>"
                  (current-merged-output-file dest-filename)]

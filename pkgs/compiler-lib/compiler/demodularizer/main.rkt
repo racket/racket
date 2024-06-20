@@ -11,6 +11,7 @@
          "import-name.rkt"
          "merge.rkt"
          "provide.rkt"
+         "simplify.rkt"
          "gc.rkt"
          "bundle.rkt"
          "write.rkt"
@@ -49,7 +50,7 @@
                                                                 '((main) (configure-runtime)))]
                       #:exclude-submodules [exclude-submods '()]
                       #:work-directory [given-work-directory (current-work-directory)]
-                      #:gc-toplevels? [gc-toplevels? (garbage-collect-toplevels-enabled)]
+                      #:prune-definitions? [prune-definitions? (garbage-collect-toplevels-enabled)]
                       #:recompile [recompile-mode (recompile-enabled)]
                       #:return-bundle? [return-bundle? #f]
                       #:dump-output-file [dump-output-file (current-merged-output-file)]
@@ -71,10 +72,8 @@
     (managed-compile-zo input-path))
 
   (log-demodularizer-info "Finding modules")
-  (define-values (all-one-mods submods common-excluded-module-mpis)
-    (parameterize ([current-compiled-file-roots (if work-directory
-                                                    (list (build-path work-directory "linklet"))
-                                                    (current-compiled-file-roots))])
+  (define-values (all-one-mods submods common-excluded-module-mpis symbol-module-paths)
+    (parameterize ([current-compiled-file-roots (list (build-path work-directory "linklet"))])
       (find-modules input-path
                     #:includes given-includes
                     #:excludes given-excludes
@@ -126,25 +125,34 @@
       (provides-to-names (one-mod-provides (hash-ref one-mods top-path/submod))
                          names)))
 
+  (log-demodularizer-info "Simplifying merged linklet")
+  (define simplified-phase-mergeds
+    (for/list ([phase-merged (in-list phase-mergeds)])
+      (simplify-linklet phase-merged)))
+
   ;; Connects GC to needed exports in bundle
-  (define used-externally (make-hasheqv)) ; symbol -> 'used or thunk
+  (define used-externally (make-hasheqv)) ; symbol -> #t
 
   (define new-phase-mergeds
     (cond
-      [keep-syntax?
+      [(and keep-syntax?
+            (not prune-definitions?))
        ;; any definition might be referenced reflectively
-       phase-mergeds]
+       simplified-phase-mergeds]
       [else
        (log-demodularizer-info "GCing definitions")
        (define used (make-hasheqv)) ; symbol -> 'used or thunk
-       (for ([phase-merged (in-list phase-mergeds)]
-             [provided-names (in-list provided-namess)])
+       (for ([phase-merged (in-list simplified-phase-mergeds)]
+             [provided-names (in-list provided-namess)]
+             [stx-vec (in-list stx-vecs)])
          (gc-find-uses! used used-externally
                         phase-merged
                         provided-names
-                        #:keep-defines? keep-syntax?
-                        #:assume-pure? gc-toplevels?))
-       (for/list ([phase-merged (in-list phase-mergeds)]) 
+                        stx-vec names
+                        #:keep-defines? (and keep-syntax?
+                                             (not prune-definitions?))
+                        #:prune-definitions? prune-definitions?))
+       (for/list ([phase-merged (in-list simplified-phase-mergeds)])
          (gc-definitions used phase-merged))]))
 
   (log-demodularizer-info "Bundling linklet")
@@ -174,7 +182,9 @@
                      excluded-modules-to-require excluded-module-mpis included-module-phases
                      (one-mod-provides m)
                      names transformer-names one-mods
-                     #:import/export-only (and (not keep-syntax?)
+                     symbol-module-paths
+                     #:import/export-only (and (or (not keep-syntax?)
+                                                   prune-definitions?)
                                                used-externally)
                      #:pre-submodules (append
                                        (if (null? submod)
