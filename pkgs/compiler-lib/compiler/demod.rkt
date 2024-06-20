@@ -35,7 +35,8 @@
               (~optional (~seq #:submodule-exclude (exclude-submod ...))
                          #:defaults ([(exclude-submod 1) '()]))
               (~optional (~seq #:dump-demod dump-demod))
-              (~optional (~seq #:dump-mi-demod dump-mi-demod)))
+              (~optional (~seq #:dump-mi-demod dump-mi-demod))
+	      (~optional (~seq #:gc-toplevels? gc-toplevels?)))
         ...)
      (unless (module-path? (syntax->datum #'mod-path))
        (raise-syntax-error #f "not a module path" stx #'mod-path))
@@ -117,6 +118,7 @@
                         #:work-directory (build-path (or (current-load-relative-directory)
                                                          (current-directory))
                                                      "compiled/demod")
+			#:gc-toplevels? (and (attribute gc-toplevels?) (syntax->datum #'gc-toplevels?))
                         #:includes includes
                         #:excludes excludes
                         #:include-submodules include-submodules
