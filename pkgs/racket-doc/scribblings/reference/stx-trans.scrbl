@@ -1242,7 +1242,7 @@ and different result procedures use distinct scopes.
 @defproc[(make-interned-syntax-introducer [key (and/c symbol? symbol-interned?)])
          ((syntax?) ((or/c 'flip 'add 'remove)) . ->* . syntax?)]{
 
-Like @racket[make-syntax-introducer], but the encapsulated @tech{scope} is interned. Multiple calls to
+Like @racket[make-syntax-introducer], but the encapsulated @tech{scope} is an @deftech{interned scope}. Multiple calls to
 @racket[make-interned-syntax-introducer] with the same @racket[key] will produce procedures that flip,
 add, or remove the same scope, even across @tech{phases} and module @tech{instantiations}.
 Furthermore, the scope remains consistent even when embedded in @tech{compiled} code, so a scope

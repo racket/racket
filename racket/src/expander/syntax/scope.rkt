@@ -61,6 +61,9 @@
          shifted-multi-scope?
          shifted-multi-scope<?
 
+         interned-scope?
+         interned-scope-key
+
          interned-scope-symbols
          interned-scopes
          syntax-has-interned-scope?
@@ -136,7 +139,7 @@
 ;; An "interned scope" is a scope identified by an interned symbol that is
 ;; consistent across both module instantiations and bytecode unmarshalling.
 ;; Creating an interned scope with the same symbol will always produce the
-;; same scope.
+;; same scope.<
 (struct interned-scope scope (key)  ; symbolic key used for interning
   #:authentic
   #:property prop:custom-write

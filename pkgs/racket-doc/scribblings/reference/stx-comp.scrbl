@@ -339,6 +339,22 @@ of the result list.
 @history[#:added "8.6.0.6"
          #:changed "8.6.0.9" @elem{Added the @racket[exact-scopes?] argument.}]}
 
+
+@defproc[(syntax-bound-interned-scope-symbols [stx stx?]
+                                              [phase-level (or/c exact-integer? #f)
+                                                           (syntax-local-phase-level)]
+                                              [exact-scopes? any/c #f])
+         (listof symbol?)]{
+
+Returns a list of @racket[_sym] names of @tech{interned scopes} for which
+@racket[(identifier-binding ((make-interned-syntax-introducer _sym) stx) phase-level #f exact-scopes?)]
+could produce a non-@racket[#f] value. This procedure takes time
+proportional to the number of scopes on @racket[stx] plus the length
+of the result list.
+
+@history[#:added "8.13.0.8"]}
+
+
 @defproc[(syntax-bound-phases [stx stx?])
          (listof (or/c exact-integer? #f))]{
 

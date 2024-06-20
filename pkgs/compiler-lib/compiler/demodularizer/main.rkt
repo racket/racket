@@ -121,9 +121,14 @@
         ([phase-runs (in-list new-phase-runss)])
       (merge-linklets phase-runs names transformer-names)))
   (define provided-namess ; (list (root-phase -> (list sym ...)))
-    (for/list ([top-path/submod (in-list top-path/submods)])
+    (for/list ([top-path/submod (in-list top-path/submods)]
+               [excluded-module-mpis (in-list excluded-module-mpiss)]
+               [included-module-phases (in-list included-module-phasess)])
       (provides-to-names (one-mod-provides (hash-ref one-mods top-path/submod))
-                         names)))
+                         names transformer-names
+                         one-mods
+                         excluded-module-mpis included-module-phases
+                         #:keep-syntax? keep-syntax?)))
 
   (log-demodularizer-info "Simplifying merged linklet")
   (define simplified-phase-mergeds
@@ -141,14 +146,19 @@
        simplified-phase-mergeds]
       [else
        (log-demodularizer-info "GCing definitions")
-       (define used (make-hasheqv)) ; symbol -> 'used or thunk
+       (define used (make-hasheq)) ; symbol -> 'used or thunk
        (for ([phase-merged (in-list simplified-phase-mergeds)]
              [provided-names (in-list provided-namess)]
-             [stx-vec (in-list stx-vecs)])
+             [stx-vec (in-list stx-vecs)]
+             [excluded-module-mpis (in-list excluded-module-mpiss)]
+             [included-module-phases (in-list included-module-phasess)])
          (gc-find-uses! used used-externally
                         phase-merged
                         provided-names
-                        stx-vec names
+                        stx-vec
+                        names transformer-names
+                        one-mods
+                        excluded-module-mpis included-module-phases
                         #:keep-defines? (and keep-syntax?
                                              (not prune-definitions?))
                         #:prune-definitions? prune-definitions?))

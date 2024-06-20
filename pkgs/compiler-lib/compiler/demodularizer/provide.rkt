@@ -1,18 +1,28 @@
 #lang racket/base
-(require "binding.rkt"
+(require racket/phase+space
+         "binding.rkt"
+         "binding-lookup.rkt"
          "name.rkt")
 
 (provide provides-to-names)
 
-(define (provides-to-names provides names)
-  (for/hasheqv ([(root-phase binds) (in-hash provides)])
-    (values root-phase
-            (for/list ([bind (in-hash-values binds)]
-                       #:unless (binding-syntax? bind)
-                       #:do [(define-values (sym path/submod phase) (binding-sym-path/submod-phase bind))
-                             (define name
-                               ;; If we don't find the name, then assume it's from a globally
-                               ;; excluded module, so there's no name mapping
-                               (maybe-find-name names (cons path/submod phase) sym))]
-                       #:when name)
-              name))))
+(define (provides-to-names provides
+                           names transformer-names
+                           one-mods
+                           excluded-module-mpis included-module-phases
+                           #:keep-syntax? keep-syntax?)
+  (for/fold ([ht #hasheqv()]) ([(phase+space binds) (in-hash provides)])
+    (define root-phase (phase+space-phase phase+space))
+    (hash-set ht
+              root-phase
+              (append
+               (for/list ([bind (in-hash-values binds)]
+                          #:unless (and (not keep-syntax?) (binding-syntax? bind))
+                          #:do [(define-values (sym path/submod phase) (binding-sym-path/submod-phase bind))
+                                (define-values (name at-phase)
+                                  (binding-lookup path/submod phase sym
+                                                  names transformer-names
+                                                  one-mods
+                                                  excluded-module-mpis included-module-phases))])
+                 name)
+               (hash-ref ht root-phase null)))))
