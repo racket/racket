@@ -34,8 +34,9 @@
               (~optional (~seq #:submodule-include (include-submod ...)))
               (~optional (~seq #:submodule-exclude (exclude-submod ...))
                          #:defaults ([(exclude-submod 1) '()]))
-              (~optional (~seq #:dump-demod dump-demod))
-              (~optional (~seq #:dump-mi-demod dump-mi-demod)))
+              (~optional (~and prune-definitions #:prune-definitions))
+              (~optional (~seq #:dump dump-demod))
+              (~optional (~seq #:dump-mi dump-mi-demod)))
         ...)
      (unless (module-path? (syntax->datum #'mod-path))
        (raise-syntax-error #f "not a module path" stx #'mod-path))
@@ -121,6 +122,7 @@
                         #:excludes excludes
                         #:include-submodules include-submodules
                         #:exclude-submodules exclude-submodules
+                        #:prune-definitions? (and (attribute prune-definitions) #t)
                         #:dump-output-file (and (attribute dump-demod) (syntax->datum #'dump-demod))
                         #:return-bundle? #t))
         (register-external-module src-module)

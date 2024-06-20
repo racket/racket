@@ -7,9 +7,10 @@
 (provide remap-names)
 
 (define (remap-names body
-                     remap-name ; symbol -> symbol-or-import
+                     remap-name ; symbol -> symbol
                      #:remap-defined-name [remap-defined-name remap-name]
-                     #:application-hook [application-hook (lambda (rator rands remap) #f)])
+                     #:application-hook [application-hook (lambda (rator rands remap) #f)]
+                     #:set!-keep [set!-keep (lambda (id rhs) 'keep)])
   (for/list ([b (in-list body)])
     (let loop ([b b])
       (cond
@@ -43,8 +44,12 @@
            [`(begin0 ,e . ,body)
             `(begin0 ,(loop e) ,@(map loop body))]
            [`(set! ,id ,rhs)
-            `(set! ,(remap-name id) ,(loop rhs))]
-           [`(quote . _) b]
+            (define k (set!-keep id rhs))
+            (cond
+              [(not k) '(void)]
+              [(eq? k 'rhs-only) `(begin ,(loop rhs) (void))]
+              [else `(set! ,(remap-name id) ,(loop rhs))])]
+           [`(quote . ,_) b]
            [`(with-continuation-mark ,key ,val ,body)
             `(with-continuation-mark ,(loop key) ,(loop val) ,(loop body))]
            [`(#%variable-reference ,id)

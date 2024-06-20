@@ -33,7 +33,8 @@
   (check who (lambda (l) (and (list? l) (andmap symbol? l)))
          #:contract "(listof symbol?)"
          preserve-prop-keys)
-  (check who namespace? #:or-false provides-namespace)
+  (unless (and (not as-data?) (hash? provides-namespace))
+    (check who namespace? #:or-false provides-namespace))
   (unless (or as-data?
               (eq? (current-code-inspector) initial-code-inspector))
     (error who "internal serialization disallowed by code inspector"))
@@ -50,7 +51,9 @@
                                      #:keep-provides?
                                      (if provides-namespace
                                          (lambda (modname)
-                                           (not (namespace->module provides-namespace modname)))
+                                           (if (hash? provides-namespace)
+                                               (not (hash-ref provides-namespace modname #f))
+                                               (not (namespace->module provides-namespace modname))))
                                          (lambda (modname) #t))
                                      #:map-mpi map-mpi
                                      #:map-binding-symbol map-binding-symbol

@@ -22,6 +22,7 @@
                      excluded-modules-to-require excluded-module-mpis included-module-phases
                      provides
                      names transformer-names one-mods
+                     symbol-module-paths
                      #:import/export-only import/export-only
                      #:pre-submodules pre-submodules
                      #:post-submodules post-submodules
@@ -97,7 +98,8 @@
   (define-values (all-mpis serialized-stx)
     (serialize-syntax stx-vec self-mpi
                       external-mpis excluded-module-mpis included-module-phases
-                      names transformer-names one-mods))
+                      names transformer-names one-mods
+                      symbol-module-paths))
 
   (define serialized-mpis
     ;; Construct two vectors: one for mpi construction, and
