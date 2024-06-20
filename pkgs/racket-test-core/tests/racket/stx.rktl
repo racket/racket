@@ -2881,6 +2881,20 @@
 (test '() syntax-bound-symbols ((make-syntax-introducer) (datum->syntax #f 'nothing)))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; syntax-bound-interned-scope-symbols
+
+(define-syntax (define-weird stx)
+  (syntax-case stx ()
+    [(_ id)
+     #`(define #,((make-interned-syntax-introducer 'racket/weird) #'id) "weird")]))
+
+(define-weird lambda)
+
+(test '(racket/weird) syntax-bound-interned-scope-symbols #'lambda)
+(test '() syntax-bound-interned-scope-symbols #'lambda 1)
+(test '() syntax-bound-interned-scope-symbols #'non-weird-lambda)
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; syntax-bound-phases
 
 (let ([check (lambda (reqs phase shift)

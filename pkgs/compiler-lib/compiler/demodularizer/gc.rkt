@@ -7,7 +7,8 @@
          "import.rkt"
          "merged.rkt"
          "name.rkt"
-         "remap.rkt")
+         "remap.rkt"
+         "binding-lookup.rkt")
 
 ;; Prune unnused definitions,
 ;;  * soundly, with a simple approximation of `pure?`, by default
@@ -20,48 +21,66 @@
                        used-externally ; symbol -> #t
                        phase-merged
                        provided-names
-                       stx-vec names
+                       stx-vec
+                       names transformer-names
+                       one-mods
+                       excluded-module-mpis included-module-phases
                        #:keep-defines? keep-defines?
                        #:prune-definitions? prune-definitions?)
-  (for ([(root-phase mgd) (in-hash phase-merged)])
-    (define body (merged-body mgd))
-    (define defined-names (merged-defined-names mgd))
 
-    (define in-defns #f)
-    
-    (define (used-name! name)
-      (define v (hash-ref used name #f))
-      (hash-set! used name 'used)
-      (unless (hash-ref defined-names name #f)
-        (hash-set! used-externally name #t))
-      (when (procedure? v)
-        (v)))
-
-    (for ([name (in-list (hash-ref provided-names root-phase null))])
-      (used-name! name)
+  (define (used-name-at-defined-names! name defined-names)
+    (define v (hash-ref used name #f))
+    (hash-set! used name 'used)
+    (unless (and defined-names (hash-ref defined-names name #f))
       (hash-set! used-externally name #t))
+    (when (procedure? v)
+      (v)))
 
-    (let loop ([stx stx-vec])
-      (cond
-        [(identifier? stx)
-         (define b (identifier-binding stx))
+  (define (used-name-externally! name)
+    (used-name-at-defined-names! name #f))
+
+  (for* ([(phase provided) (in-hash provided-names)]
+         [name (in-list provided)])
+    (used-name-externally! name))
+
+  ;; This traversal is relatively slow, since we extract a list of interned
+  ;; scope symbols and phases and then loop over that list
+  (let loop ([stx stx-vec])
+    (cond
+      [(identifier? stx)
+       (for* ([phase (in-list (syntax-bound-phases stx))]
+              [space-sym (in-list (cons #f (syntax-bound-interned-scope-symbols stx phase)))])
+         (define intro (if space-sym
+                           (make-interned-syntax-introducer space-sym)
+                           (lambda (s mode) s)))
+         (define b (identifier-binding (intro stx 'add) phase))
          (when (list? b)
            (define mpi (car b))
            (define path/submod (resolved-module-path-name (module-path-index-resolve mpi)))
            (define sym (cadr b))
            (define phase (list-ref b 4))
-           (define new-name (maybe-find-name names (cons path/submod phase) sym))
-           (when new-name
-             (used-name! new-name)))]
-        [(syntax? stx) (loop (syntax-e stx))]
-        [(pair? stx) (loop (car stx)) (loop (cdr stx))]
-        [(vector? stx) (for ([e (in-vector stx)])
-                         (loop e))]
-        [(hash? stx) (for ([e (in-hash-values stx)])
+           (define-values (new-name at-phase)
+             (binding-lookup path/submod phase sym
+                             names transformer-names
+                             one-mods
+                             excluded-module-mpis included-module-phases))
+           (used-name-externally! new-name)))]
+      [(syntax? stx) (loop (syntax-e stx))]
+      [(pair? stx) (loop (car stx)) (loop (cdr stx))]
+      [(vector? stx) (for ([e (in-vector stx)])
                        (loop e))]
-        [(prefab-struct-key stx) (loop (struct->vector stx))]
-        [(box? stx) (loop (unbox stx))]
-        [else (void)]))
+      [(hash? stx) (for ([e (in-hash-values stx)])
+                     (loop e))]
+      [(prefab-struct-key stx) (loop (struct->vector stx))]
+      [(box? stx) (loop (unbox stx))]
+      [else (void)]))
+
+  (for ([(root-phase mgd) (in-hash phase-merged)])
+    (define body (merged-body mgd))
+    (define defined-names (merged-defined-names mgd))
+
+    (define (used-name! name)
+      (used-name-at-defined-names! name defined-names))
 
     (define (used! b)
       (cond
@@ -139,8 +158,16 @@
                       (or prune-definitions?
                           (pure? rhs)))
            (used-rhs!))]
-        [_ (unless (pure? b)
-             (used! b))]))))
+        [_
+         (cond
+           [(transformer-definition-name b)
+            => (lambda (name)
+                 (define (used-trans!) (used! b))
+                 (if (hash-ref used name #f)
+                     (used-trans!)
+                     (hash-set! used name used-trans!)))]
+           [(pure? b) (void)]
+           [else (used! b)])]))))
 
 (define (gc-definitions used phase-merged)
   ;; Anything not marked as used at this point can be dropped
@@ -161,8 +188,14 @@
                             (when keep?
                               (for ([id (in-list ids)])
                                 (hash-set! new-defined-names id #t)))
-                           keep?]
-                          [_ (not (pure? b))]))
+                            keep?]
+                          [_
+                           (cond
+                             [(transformer-definition-name b)
+                              => (lambda (name)
+                                   (eq? 'used (hash-ref used name #f)))]
+                             [else (not (pure? b))])]))
+                                 
         b))
 
     ;; drop assignments to unused definitions
@@ -194,4 +227,20 @@
     [_ (not (or (pair? b)
                 (symbol? b)))]))
 
-
+(define (transformer-definition-name b)
+  (match b
+    [`(let-values ([(,id) ,rhs])
+        (begin
+          (.set-transformer! ',name ,id-use)
+          (void)))
+     (and (eq? id id-use)
+          (match rhs
+            [`(make-rename-transformer . ,_)
+             ;; `identifier-binding` tells us whether to keep the target
+             ;; of the rename; we don't know that target here, and we don't
+             ;; know whether this name is used directly anyway; it's ok
+             ;; to just keep it
+             #f]
+            [_ #t])
+          name)]
+    [_ #f]))

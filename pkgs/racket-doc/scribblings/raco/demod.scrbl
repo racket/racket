@@ -2,7 +2,8 @@
 @(require scribble/manual scribble/bnf "common.rkt"
           (for-label (except-in racket/base #%module-begin)
                      compiler/demod
-                     racket/include))
+                     racket/include
+                     syntax/parse))
 
 @title[#:tag "demod"]{@exec{raco demod}: Demodularizing Programs}
 
@@ -66,7 +67,7 @@ The @exec{raco demod} command accepts these flags:
        and phase levels greater than the run-time phase in
        the flattened result. Otherwise, only the run-time phase is
        preserved, and unused (or merely exported) definitions are
-       pruned as possible.}
+       pruned, since they cannot be referenced through syntax.}
 
  @item{@Flag{M} or @DFlag{compile-any} --- flattens the module to
        machine-independent form, instead of recompiling the flattened
@@ -88,15 +89,14 @@ The @exec{raco demod} command accepts these flags:
        with different input files or when modules to be flattened have
        changed since the last use of the cache.}
 
- @item{@Flag{g} or @DFlag{prune-definitions} --- aggressively prunes
-       definitions that are unreferenced on the assumption that the
-       right-hand side of a definition has no side effect and, when
-       syntax is preserved, that a definition needs to be preserved
-       for reference only if a syntax object literal includes an
-       identifier bound to the definition. Due to the unchecked
-       assumptions, this conversion may not preserve the behavior of
-       the input module. For backward compatibility,
-       @DFlag{garbage-collect} is an alias for
+ @item{@Flag{g} or @DFlag{prune-definitions} --- increases pruning of
+       definitions that are unreferenced on the unsound assumption
+       that the right-hand side of a definition has no side effect.
+       When syntax is preserved, a definition can be pruned as long as
+       no syntax literal includes an identifier that is bound to the
+       definition. Since these assumptions are unchecked, conversion
+       may not preserve the behavior of the input module. For backward
+       compatibility, @DFlag{garbage-collect} is an alias for
        @DFlag{prune-definitions}.}
 
  @item{@DFlag{dump} @nonterm{file} --- writes an S-expression
@@ -235,16 +235,32 @@ A @racket[_mod-spec] either indicates a specific module with
 @racket[_collect-name] is always a string with @litchar{/}-separated
 components.
 
-If the @racket[#:prune-definitions] option is specified, then
-definitions that are unreferenced can be pruned on the assumption that
-the right-hand side of the definition has no side effect. When syntax
-is preserved for @racket[#:dynamic] or @racket[#:static] mode,
-@racket[#:prune-definitions] assumes that a definition needs to be
-preserved for reference only if a syntax object literal includes an
-identifier bound to the definition; that is, a reference to the
-definition will not be created solely through @racket[datum->syntax].
-Due to the unchecked assumptions, this conversion may not preserve the
-behavior of the input module.
+If the @racket[#:prune-definitions] option is specified, then unused
+definitions from the original module and its dependencies are more
+aggressively pruned, but unsoundly. When syntax is preserved for
+@racket[#:dynamic] or @racket[#:static] mode, then all definitions are
+normally preserved from the original module, because they might be
+reachable via @racket[datum->syntax]; when
+@racket[#:prune-definitions] is specified, a definition can be pruned
+if no syntax object literal includes an identifier bound to the
+definition. Meanwhile, in all modes including @racket[#:exe], a
+definition is normally preserved if its right-hand side might have a
+side effect, but @racket[#:prune-definitions] allows pruning on the
+unchecked assumption that a definition has no side effect. Due to its
+unchecked assumptions, @racket[#:prune-definitions] may not preserve
+the behavior of the input module. @margin-note*{As an example of where
+@racket[#:prune-definitions] can go wrong, a module could export a
+macro that expands to a use of @racket[syntax-parse], and that use
+could include a @litchar{:} shorthand to combine a pattern variable
+and a syntax class (also defined in the module) as one identifier. The
+identifier would be split into variable and syntax-class components
+only when the macro is used, so the shorthand does not count as a
+literal that is bound to the syntax class. In that particular
+situation, use @racket[~var] instead of the shorthand, and then the
+syntax class is referenced by its own identifier. Meanwhile, a macro
+that is not exported (directly or indirectly through another macro)
+can safely use the @litchar{:} shorthand, since its expansions are
+part of the module's implementation.}
 
 If the @racket[#:no-demod] option is specified, then
 @racket[_mod-spec] is not flattened, after all. Instead, the new

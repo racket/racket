@@ -78,7 +78,8 @@
          syntax-track-origin
          syntax-debug-info
          syntax-bound-symbols
-         syntax-bound-phases)
+         syntax-bound-phases
+         syntax-bound-interned-scope-symbols)
 
 (define/who (syntax-e s)
   (check who syntax? s)
@@ -274,3 +275,7 @@
 (define/who (syntax-bound-phases stx)
   (check who syntax? stx)
   (set->list (syntax-mapped-phases stx)))
+
+(define/who (syntax-bound-interned-scope-symbols stx [phase (syntax-local-phase-level)] [exactly? #f])
+  (check who syntax? stx)
+  (set->list (syntax-mapped-interned-scope-symbols stx phase #:exactly? exactly?)))

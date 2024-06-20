@@ -30,7 +30,8 @@
          in-full-non-bulk-binding-table
          
          binding-table-symbols
-         
+         binding-table-interned-scope-keys
+
          prop:bulk-binding
          (struct-out bulk-binding-class)
          
@@ -332,6 +333,39 @@
                       (bulk-binding-symbols (bulk-binding-at-bulk bba) s extra-shifts))]
                 #:when (or (not only-interned?) (symbol-interned? sym)))
      sym)))
+
+;; ----------------------------------------
+
+;; Return a set of interned scopes that can be added to `scs` to reach some binding
+(define (binding-table-interned-scope-keys table scs sym s extra-shifts
+                                           interned-scope? interned-scope-key
+                                           #:exactly? [exactly? #f])
+  (define-values (ht bulk-bindings)
+    (if (hash? table)
+        (values table null)
+        (values (table-with-bulk-bindings-syms table)
+                (table-with-bulk-bindings-bulk-bindings table))))
+  (set-union
+   (for*/seteq ([an-scs (in-hash-keys (hash-ref ht sym #hasheq()))]
+                [sc (in-set an-scs)]
+                #:when (and (interned-scope? sc)
+                            (not (set-member? scs sc))
+                            (if exactly?
+                                (set=? an-scs (set-add scs sc))
+                                (subset? an-scs (set-add scs sc)))))
+     (interned-scope-key sc))
+   (for*/seteq ([bba (in-list bulk-bindings)]
+                #:when (hash-ref (bulk-binding-symbols (bulk-binding-at-bulk bba) s extra-shifts)
+                                 sym
+                                 #f)
+                #:do [(define an-scs (bulk-binding-at-scopes bba))]
+                [sc (in-set an-scs)]
+                #:when (and (interned-scope? sc)
+                            (not (set-member? scs sc))
+                            (if exactly?
+                                (set=? an-scs (set-add scs sc))
+                                (subset? an-scs (set-add scs sc)))))
+     (interned-scope-key sc))))
 
 ;; ----------------------------------------
 ;; Pruning functions are called by scope serialization

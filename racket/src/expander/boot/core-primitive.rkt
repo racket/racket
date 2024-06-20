@@ -81,6 +81,7 @@
                       identifier-prune-to-source-module
                       syntax-bound-symbols
                       syntax-bound-phases
+                      syntax-bound-interned-scope-symbols
 
                       syntax-srcloc
                       syntax-source
