@@ -158,9 +158,7 @@
             (lambda () (proc p))
             (lambda () (close-output-port p)))))
 
-  ;; Using `define-values' to avoid the inlining expansion for keyword
-  ;; arguments, because that expansion confuses Typed Racket:
-  (define-values (directory-list)
+  (define directory-list
     (lambda ([dir (current-directory)] #:build? [build? #f])
       (unless (path-string? dir)
         (raise-argument-error 'directory-list "path-string?" dir))
@@ -170,24 +168,23 @@
             (map (lambda (i) (build-path dir i)) content)
             content))))
 
-  (define-values (copy-file)
-    (let ([not-supplied exists-syms])
-      (lambda (src dest [exists-ok? not-supplied]
-                   #:exists-ok? [exists-ok?/kw not-supplied]
-                   #:permissions [perms #f]
-                   #:replace-permissions? [replace-permissions? #t])
-        (unless (or (eq? exists-ok? not-supplied)
-                    (eq? exists-ok?/kw not-supplied))
-          (raise-arguments-error 'copy-file "cannot supply both non-keyword and keyword `exists-ok?` argument"
-                                 "by-position argument" exists-ok?
-                                 "keyword argument" exists-ok?/kw))
-        (k:copy-file src dest
-                     (if (eq? exists-ok? not-supplied)
-                         (if (eq? exists-ok?/kw not-supplied)
-                             #f
-                             exists-ok?/kw)
-                         exists-ok?)
-                     perms replace-permissions?))))
+  (define copy-file
+    (lambda (src dest [exists-ok? exists-syms]
+		 #:exists-ok? [exists-ok?/kw exists-syms]
+		 #:permissions [perms #f]
+		 #:replace-permissions? [replace-permissions? #t])
+      (unless (or (eq? exists-ok? exists-syms)
+		  (eq? exists-ok?/kw exists-syms))
+	(raise-arguments-error 'copy-file "cannot supply both non-keyword and keyword `exists-ok?` argument"
+			       "by-position argument" exists-ok?
+			       "keyword argument" exists-ok?/kw))
+      (k:copy-file src dest
+		   (if (eq? exists-ok? exists-syms)
+		       (if (eq? exists-ok?/kw exists-syms)
+			   #f
+			   exists-ok?/kw)
+		       exists-ok?)
+		   perms replace-permissions?)))
 
   (define (raise-syntax-error given-name message
                               [expr #f] [sub-expr #f]
