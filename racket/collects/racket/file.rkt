@@ -10,10 +10,11 @@
          make-directory*
          make-parent-directory*
 
-         make-temporary-file
-         make-temporary-directory
-         make-temporary-file*
-         make-temporary-directory*
+         ;; These are provided by the macro that defines them:
+         ;make-temporary-file
+         ;make-temporary-directory
+         ;make-temporary-file*
+         ;make-temporary-directory*
 
          get-preference
          put-preferences
@@ -446,6 +447,7 @@
 ;; the supplied keyword and by-position argument expressions. Otherwise, when the
 ;; resulting macro is used with an unsupported combination of arguments, it expands
 ;; to a use of the run-time identifier.
+
 (define-for-syntax ((temporary-file/directory-transformer proc-id infer-proc) stx)
   (define-values (_required-kws allowed-kws)
     (procedure-keywords infer-proc))
@@ -491,13 +493,11 @@
 (define-syntax (define-temporary-file/directory-transformer stx)
   (syntax-case stx ()
     [(_ name runtime-proc-expr infer-proc-expr)
-     (with-syntax ([tmp (datum->syntax #'name (string->symbol (format "~a/proc" (syntax-e #'name))))])
+     (with-syntax ([(stx-name) (generate-temporaries #'(name))])
        #`(begin
-           (define tmp
-             (let ([name runtime-proc-expr])
-               name))
-           (define-syntax name
-             (temporary-file/directory-transformer #'tmp infer-proc-expr))))]))
+           (define name runtime-proc-expr)
+           (define-syntax stx-name (temporary-file/directory-transformer #'name infer-proc-expr))
+           (provide (rename-out [stx-name name]))))]))
 
 (define-temporary-file/directory-transformer make-temporary-file
   (λ ([template "rkttmp~a"]
@@ -510,10 +510,10 @@
   (λ (#:copy-from [copy-from #''#f]
       #:base-dir [base-dir #''#f]
       stx proc-id)
-    #`(#%app #,proc-id
-             '#,(infer-temporary-file-template stx)
-             #,copy-from
-             #,base-dir)))
+    #`(#,proc-id
+       '#,(infer-temporary-file-template stx)
+       #,copy-from
+       #,base-dir)))
 
 (define-temporary-file/directory-transformer make-temporary-directory
   (λ ([template "rkttmp~a"]
