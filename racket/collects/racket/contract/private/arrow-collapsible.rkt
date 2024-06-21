@@ -134,7 +134,7 @@
        (bail "has keyword args"))
    ;; TODO: we can maybe support non single return value functions
    (or (equal? (procedure-result-arity val) 1)
-       (bail "can't prove single-return-value"))))
+       (bail (format "can't prove single-return-value for ~a" val)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Wrapper management and contract checking
