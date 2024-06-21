@@ -35,8 +35,7 @@
                     [heres (map (lambda (x)
                                   (datum->syntax
                                    x
-                                   'here
-                                   x))
+                                   'here))
                                 ins)]
                     [outs (syntax->list (syntax (out ...)))])
                 ;; Let-bind RHSs, then build up nested syntax-cases:
