@@ -90,7 +90,8 @@
                                         #f)))
      (define exclude-submodules (convert-submods #'(exclude-submod ...)))
      (cond
-       [(attribute disable)
+       [(or (attribute disable)
+            (not (syntax-local-compiling-module?)))
         (define compiled (get-module-code src-module))
         #`(#%module-begin
            (require mod-path)

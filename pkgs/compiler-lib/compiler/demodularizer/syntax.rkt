@@ -105,7 +105,7 @@
                                   #;(log-error "report ~s ~s" (eq-hash-code mpi) mpi)
                                   (when (derived-from-self? shifted-mpi)
                                     (raise-arguments-error 'demodularize
-                                                           "a binding's mpdule path index has no resolution in context"
+                                                           "a binding's module path index has no resolution in context"
                                                            "binding module path index" mpi
                                                            "in-context module path index" shifted-mpi))
                                   (define p (module-path-index-resolve shifted-mpi))
@@ -116,7 +116,7 @@
                                           (unless (equal? path/submod (cdr new-mpi+path/submod))
                                             (raise-arguments-error
                                              'demodularize
-                                             "a binding's mpdule path index has different resolution in different contexts"
+                                             "a binding's module path index has different resolution in different contexts"
                                              "resolution" (cdr new-mpi+path/submod)
                                              "other resolution" path/submod)))]
                                     [else
