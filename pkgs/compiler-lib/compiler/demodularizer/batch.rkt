@@ -35,7 +35,7 @@
                                              (short-program+command-name)
                                              dir)))
                  (current-work-directory dir)]
-                [("-g" "--prune-definitions") "Assume definitions are pure to prune unused"
+                [("-g" "--prune-definitions") "Assume (unsoundly) that unused definitions have no side effects"
                  (garbage-collect-toplevels-enabled #t)]
                 [("--garbage-collect") "Compatibility alias for --prune-definitions"
                  (garbage-collect-toplevels-enabled #t)]
