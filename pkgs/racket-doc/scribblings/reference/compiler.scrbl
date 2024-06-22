@@ -53,7 +53,12 @@ especially large linklet, and machine-code mode is used for functions
 that are small enough within that outer contour. ``Small enough'' is
 determined by the @envvar-indexed{PLT_CS_COMPILE_LIMIT} environment
 variable, and the default value of 10000 means that most Racket
-modules have no interpreted component.
+modules have no interpreted component. The
+@racket[#:unlimited-compile] option for @racket[#%declare] disables
+interpreted mode for the enclosing module. Check @racket['info]
+logging at the @racket['linklet] topic (e.g., set @envvar{PLTSTDERR}
+to @tt["info@linklet"]) to discover when compilation is restricted to
+smaller functions by @envvar{PLT_CS_COMPILE_LIMIT}.
 
 JIT compilation mode is used only if the @envvar-indexed{PLT_CS_JIT}
 environment variable is set on startup, otherwise pure interpreter

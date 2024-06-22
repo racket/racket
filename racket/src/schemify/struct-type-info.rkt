@@ -139,7 +139,7 @@
     [`'() null]
     [`,_ #f]))
 
-;; Recognide
+;; Recognize
 ;;  (let ((<tmp> <id>))
 ;;     (if (struct-type? <tmp?)
 ;;         <tmp>

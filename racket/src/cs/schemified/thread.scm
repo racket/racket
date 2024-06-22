@@ -1848,8 +1848,7 @@
           (- app_0 (current-inexact-monotonic-milliseconds)))
         1000.0))))
    (lambda (wakeup_0)
-     (if (let ((t_0 (unsafe-place-local-ref cell.3$1)))
-           (begin-unsafe (not t_0)))
+     (if (let ((t_0 (unsafe-place-local-ref cell.3$1))) (not t_0))
        (void)
        (call-with-values
         (lambda () (min-key+value (unsafe-place-local-ref cell.3$1)))
@@ -1877,14 +1876,9 @@
             (void))))))
    (lambda () (|#%app| host:get-wakeup-handle))
    (lambda (h_0) (|#%app| host:wakeup h_0))
+   (lambda () (not (let ((t_0 (unsafe-place-local-ref cell.3$1))) (not t_0))))
    (lambda ()
-     (not
-      (let ((t_0 (unsafe-place-local-ref cell.3$1)))
-        (begin-unsafe (not t_0)))))
-   (lambda ()
-     (if (not
-          (let ((t_0 (unsafe-place-local-ref cell.3$1)))
-            (begin-unsafe (not t_0))))
+     (if (not (let ((t_0 (unsafe-place-local-ref cell.3$1))) (not t_0)))
        (call-with-values
         (lambda () (min-key+value (unsafe-place-local-ref cell.3$1)))
         (lambda (timeout-at_0 threads_0) timeout-at_0))
@@ -4112,12 +4106,11 @@
                                   "starting value "
                                   (number->string init5_0)
                                   " is too large")))
-                            (begin-unsafe
-                             (error-message->adjusted-string
-                              'make-semaphore
-                              'racket/primitive
-                              msg_0
-                              'racket/primitive)))))
+                            (error-message->adjusted-string
+                             'make-semaphore
+                             'racket/primitive
+                             msg_0
+                             'racket/primitive))))
                      (|#%app| exn:fail app_0 (current-continuation-marks)))))
                 (semaphore1.1 #f #f init5_0)))))))
     (|#%name|
@@ -4128,7 +4121,7 @@
 (define cell.1$8 (unsafe-make-place-local (hasheq)))
 (define ready-nonempty-queue
   (lambda (s_0)
-    (if (begin-unsafe (not (queue-start s_0)))
+    (if (not (queue-start s_0))
       (begin
         (set-semaphore-count! s_0 -1)
         (if (custodian-accessible-semaphore? s_0)
@@ -4139,7 +4132,7 @@
       (void))))
 (define ready-empty-queue
   (lambda (s_0)
-    (if (begin-unsafe (not (queue-start s_0)))
+    (if (not (queue-start s_0))
       (begin
         (set-semaphore-count! s_0 0)
         (if (custodian-accessible-semaphore? s_0)
@@ -4180,8 +4173,7 @@
               (if (not w_0)
                 (set-semaphore-count! s_0 (add1 (semaphore-count s_0)))
                 (begin
-                  (begin-unsafe
-                   (|#%app| (waiter-methods-resume (waiter-ref w_0)) w_0 s_0))
+                  (|#%app| (waiter-methods-resume (waiter-ref w_0)) w_0 s_0)
                   (ready-empty-queue s_0)
                   (if (semaphore-peek-select-waiter? w_0)
                     (loop_0)
@@ -4194,8 +4186,7 @@
       (queue-remove-all!
        s_0
        (lambda (w_0)
-         (begin-unsafe
-          (|#%app| (waiter-methods-resume (waiter-ref w_0)) w_0 s_0))))
+         (|#%app| (waiter-methods-resume (waiter-ref w_0)) w_0 s_0)))
       (if (custodian-accessible-semaphore? s_0)
         (unsafe-place-local-set!
          cell.1$8
@@ -4204,8 +4195,7 @@
 (define semaphore-post-all
   (lambda (s_0)
     (begin (start-atomic) (semaphore-post-all/atomic s_0) (end-atomic))))
-(define semaphore-any-waiters?
-  (lambda (s_0) (not (begin-unsafe (not (queue-start s_0))))))
+(define semaphore-any-waiters? (lambda (s_0) (not (not (queue-start s_0)))))
 (define 1/semaphore-try-wait?
   (|#%name|
    semaphore-try-wait?
@@ -4260,11 +4250,10 @@
                                   (queue-remove-node! s_0 n_0)
                                   (ready-empty-queue s_0)
                                   (lambda () (unsafe-semaphore-wait s_0))))))
-                         (begin-unsafe
-                          (|#%app|
-                           (waiter-methods-suspend (waiter-ref w_0))
-                           w_0
-                           interrupt-cb_0))))))))
+                         (|#%app|
+                          (waiter-methods-suspend (waiter-ref w_0))
+                          w_0
+                          interrupt-cb_0)))))))
              (end-atomic))))))))
 (define semaphore-wait/poll.1
   (|#%name|
@@ -4448,62 +4437,56 @@
           (if (not n_1)
             #f
             (begin (set-thread-group-chain! tg_0 (node-next n_1)) n_1)))
-        (begin
-          (set-thread-group-chain! tg_0 (node-next n_0))
-          (begin-unsafe n_0))))))
+        (begin (set-thread-group-chain! tg_0 (node-next n_0)) n_0)))))
 (define thread-group-add!
   (lambda (parent_0 child_0)
     (let ((t_0 (thread-group-chain-start parent_0)))
       (let ((was-empty?_0 (not t_0)))
-        (let ((n_0 (begin-unsafe child_0)))
-          (begin
-            (begin-unsafe (void))
-            (set-node-next! n_0 t_0)
-            (set-node-prev! n_0 #f)
-            (if t_0
-              (set-node-prev! t_0 n_0)
-              (set-thread-group-chain-end! parent_0 n_0))
-            (set-thread-group-chain-start! parent_0 n_0)
-            (if (1/thread-group? child_0)
-              (void)
-              (unsafe-place-local-set!
-               cell.2
-               (add1 (unsafe-place-local-ref cell.2))))
-            (if was-empty?_0
-              (let ((parent-parent_0 (thread-group-parent parent_0)))
-                (if parent-parent_0
-                  (thread-group-add! parent-parent_0 parent_0)
-                  (void)))
-              (void))))))))
+        (begin
+          (set-node-next! child_0 t_0)
+          (set-node-prev! child_0 #f)
+          (if t_0
+            (set-node-prev! t_0 child_0)
+            (set-thread-group-chain-end! parent_0 child_0))
+          (set-thread-group-chain-start! parent_0 child_0)
+          (if (1/thread-group? child_0)
+            (void)
+            (unsafe-place-local-set!
+             cell.2
+             (add1 (unsafe-place-local-ref cell.2))))
+          (if was-empty?_0
+            (let ((parent-parent_0 (thread-group-parent parent_0)))
+              (if parent-parent_0
+                (thread-group-add! parent-parent_0 parent_0)
+                (void)))
+            (void)))))))
 (define thread-group-remove!
   (lambda (parent_0 child_0)
-    (let ((n_0 (begin-unsafe child_0)))
-      (begin
-        (begin-unsafe (void))
-        (if (node-next n_0)
-          (let ((app_0 (node-next n_0)))
-            (set-node-prev! app_0 (node-prev n_0)))
-          (set-thread-group-chain-end! parent_0 (node-prev n_0)))
-        (if (node-prev n_0)
-          (let ((app_0 (node-prev n_0)))
-            (set-node-next! app_0 (node-next n_0)))
-          (set-thread-group-chain-start! parent_0 (node-next n_0)))
-        (if (eq? n_0 (thread-group-chain parent_0))
-          (set-thread-group-chain! parent_0 (node-next n_0))
-          (void))
-        (set-node-next! n_0 #f)
-        (set-node-prev! n_0 #f)
-        (if (1/thread-group? child_0)
-          (void)
-          (unsafe-place-local-set!
-           cell.2
-           (sub1 (unsafe-place-local-ref cell.2))))
-        (if (not (thread-group-chain-end parent_0))
-          (let ((parent-parent_0 (thread-group-parent parent_0)))
-            (if parent-parent_0
-              (thread-group-remove! parent-parent_0 parent_0)
-              (void)))
-          (void))))))
+    (begin
+      (if (node-next child_0)
+        (let ((app_0 (node-next child_0)))
+          (set-node-prev! app_0 (node-prev child_0)))
+        (set-thread-group-chain-end! parent_0 (node-prev child_0)))
+      (if (node-prev child_0)
+        (let ((app_0 (node-prev child_0)))
+          (set-node-next! app_0 (node-next child_0)))
+        (set-thread-group-chain-start! parent_0 (node-next child_0)))
+      (if (eq? child_0 (thread-group-chain parent_0))
+        (set-thread-group-chain! parent_0 (node-next child_0))
+        (void))
+      (set-node-next! child_0 #f)
+      (set-node-prev! child_0 #f)
+      (if (1/thread-group? child_0)
+        (void)
+        (unsafe-place-local-set!
+         cell.2
+         (sub1 (unsafe-place-local-ref cell.2))))
+      (if (not (thread-group-chain-end parent_0))
+        (let ((parent-parent_0 (thread-group-parent parent_0)))
+          (if parent-parent_0
+            (thread-group-remove! parent-parent_0 parent_0)
+            (void)))
+        (void)))))
 (define thread-group-all-threads
   (lambda (parent_0 accum_0)
     (if (not (1/thread-group? parent_0))
@@ -4517,11 +4500,7 @@
               (if (not n_0)
                 accum_1
                 (let ((app_0 (node-next n_0)))
-                  (loop_0
-                   app_0
-                   (thread-group-all-threads
-                    (begin-unsafe n_0)
-                    accum_1)))))))))
+                  (loop_0 app_0 (thread-group-all-threads n_0 accum_1)))))))))
        (loop_0 (thread-group-chain-start parent_0) accum_0)))))
 (define finish_2546
   (make-struct-type-install-properties
@@ -4640,11 +4619,7 @@
     (let ((exts_0 (schedule-info-exts sched-info_0)))
       (set-schedule-info-exts!
        sched-info_0
-       (begin-unsafe
-        (|#%app|
-         (sandman-do-merge-timeout the-sandman)
-         exts_0
-         timeout-at_0))))))
+       (|#%app| (sandman-do-merge-timeout the-sandman) exts_0 timeout-at_0)))))
 (define schedule-info-did-work!
   (lambda (sched-info_0) (set-schedule-info-did-work?! sched-info_0 #t)))
 (define schedule-info-repoll?
@@ -5208,12 +5183,11 @@
                           (set-custodian-parent-reference! c_0 cref_0)
                           (if cref_0
                             (void)
-                            (begin-unsafe
-                             (raise-arguments-error
-                              'make-custodian
-                              "the custodian has been shut down"
-                              "custodian"
-                              parent_0)))
+                            (raise-arguments-error
+                             'make-custodian
+                             "the custodian has been shut down"
+                             "custodian"
+                             parent_0))
                           (|#%app|
                            host:will-register
                            (unsafe-place-local-ref cell.1$7)
@@ -5841,12 +5815,11 @@
          (raise
           (let ((app_0
                  (let ((msg_0 "unsupported"))
-                   (begin-unsafe
-                    (error-message->adjusted-string
-                     'custodian-require-memory
-                     'racket/primitive
-                     msg_0
-                     'racket/primitive)))))
+                   (error-message->adjusted-string
+                    'custodian-require-memory
+                    'racket/primitive
+                    msg_0
+                    'racket/primitive))))
             (|#%app|
              exn:fail:unsupported
              app_0
@@ -5964,12 +5937,11 @@
              (if (let ((temp75_0 (lambda (b_1) (set-custodian-box-v! b_1 #f))))
                    (do-custodian-register.1 #f #f #t #f #t c_0 b_0 temp75_0))
                (void)
-               (begin-unsafe
-                (raise-arguments-error
-                 'make-custodian-box
-                 "the custodian has been shut down"
-                 "custodian"
-                 c_0)))
+               (raise-arguments-error
+                'make-custodian-box
+                "the custodian has been shut down"
+                "custodian"
+                c_0))
              b_0)))))))
 (define 1/custodian-box-value
   (|#%name|
@@ -6441,12 +6413,11 @@
                           (raise
                            (let ((app_0
                                   (let ((msg_0 "out of memory"))
-                                    (begin-unsafe
-                                     (error-message->adjusted-string
-                                      #f
-                                      'racket/primitive
-                                      msg_0
-                                      'racket/primitive)))))
+                                    (error-message->adjusted-string
+                                     #f
+                                     'racket/primitive
+                                     msg_0
+                                     'racket/primitive))))
                              (|#%app|
                               exn:fail:out-of-memory
                               app_0
@@ -6687,12 +6658,11 @@
                               (thread-group-add! p_0 t_0)
                               void)
                             (lambda ()
-                              (begin-unsafe
-                               (raise-arguments-error
-                                who10_0
-                                "the custodian has been shut down"
-                                "custodian"
-                                c_0)))))
+                              (raise-arguments-error
+                               who10_0
+                               "the custodian has been shut down"
+                               "custodian"
+                               c_0))))
                         (end-atomic))))
                    t_0))))))))))
 (define make-thread
@@ -6888,7 +6858,7 @@
                    (void))
                  (engine-block))
                (void))
-             (begin-unsafe (1/check-for-break)))))))))
+             (1/check-for-break))))))))
 (define do-kill-thread
   (lambda (t_0) (if (1/thread-dead? t_0) (void) (thread-dead! t_0))))
 (define remove-thread-custodian
@@ -7045,7 +7015,7 @@
       (void)
       (set-thread-kill-callbacks! t_0 null))))
 (define check-for-break-after-kill (lambda () (1/check-for-break)))
-(define effect_2749
+(define effect_2660
   (begin
     (void
      (let ((proc_0
@@ -7059,9 +7029,9 @@
                             (null? (thread-custodian-references t_0))))
                       (engine-block)
                       (void))
-                    (begin-unsafe (1/check-for-break)))
+                    (1/check-for-break))
                   (void))))))
-       (begin-unsafe (set! post-shutdown-action proc_0))))
+       (set! post-shutdown-action proc_0)))
     (void)))
 (define 1/thread-wait
   (|#%name|
@@ -7203,14 +7173,12 @@
       (if sleeping_0
         (begin
           (set-thread-sleeping! t_0 #f)
-          (begin-unsafe
-           (|#%app| (sandman-do-remove-thread! the-sandman) t_0 sleeping_0)))
+          (|#%app| (sandman-do-remove-thread! the-sandman) t_0 sleeping_0))
         (void)))))
 (define add-to-sleeping-threads!
   (lambda (t_0 ext-events_0)
     (let ((sleeping_0
-           (begin-unsafe
-            (|#%app| (sandman-do-add-thread! the-sandman) t_0 ext-events_0))))
+           (|#%app| (sandman-do-add-thread! the-sandman) t_0 ext-events_0)))
       (set-thread-sleeping! t_0 sleeping_0))))
 (define force-atomic-timeout-callback void)
 (define set-force-atomic-timeout-callback!
@@ -7231,11 +7199,7 @@
           (if timeout-at_0
             (add-to-sleeping-threads!
              t_0
-             (begin-unsafe
-              (|#%app|
-               (sandman-do-merge-timeout the-sandman)
-               #f
-               timeout-at_0)))
+             (|#%app| (sandman-do-merge-timeout the-sandman) #f timeout-at_0))
             (void))
           (if (eq? t_0 (current-thread/in-atomic)) (thread-did-work!) (void))))
       (lambda ()
@@ -7354,12 +7318,11 @@
                         (do-thread-resume t16_0 benefactor15_0)
                         (end-atomic)))
                   (void)
-                  (begin-unsafe
-                   (raise-arguments-error
-                    'thread-resume
-                    "the custodian has been shut down"
-                    "custodian"
-                    benefactor15_0)))))))))
+                  (raise-arguments-error
+                   'thread-resume
+                   "the custodian has been shut down"
+                   "custodian"
+                   benefactor15_0))))))))
     (|#%name|
      thread-resume
      (case-lambda
@@ -8010,12 +7973,11 @@
                              (raise
                               (let ((app_0
                                      (let ((msg_0 "user break"))
-                                       (begin-unsafe
-                                        (error-message->adjusted-string
-                                         #f
-                                         'racket/primitive
-                                         msg_0
-                                         'racket/primitive)))))
+                                       (error-message->adjusted-string
+                                        #f
+                                        'racket/primitive
+                                        msg_0
+                                        'racket/primitive))))
                                 (|#%app|
                                  exn:break*_0
                                  app_0
@@ -8149,14 +8111,12 @@
 (define dequeue-mail!
   (lambda (thd_0)
     (let ((mbx_0 (thread-mailbox thd_0)))
-      (if (begin-unsafe (not (queue-start mbx_0)))
+      (if (not (queue-start mbx_0))
         (internal-error "no mail!")
         (queue-remove! mbx_0)))))
 (define is-mail?
   (lambda (thd_0)
-    (not
-     (let ((q_0 (thread-mailbox thd_0)))
-       (begin-unsafe (not (queue-start q_0)))))))
+    (not (let ((q_0 (thread-mailbox thd_0))) (not (queue-start q_0))))))
 (define push-mail!
   (lambda (thd_0 v_0) (queue-add-front! (thread-mailbox thd_0) v_0)))
 (define 1/thread-send
@@ -8196,8 +8156,7 @@
                      (begin0
                        (if (not (1/thread-dead? thd26_0))
                          (begin
-                           (begin-unsafe
-                            (queue-add! (thread-mailbox thd26_0) v27_0))
+                           (queue-add! (thread-mailbox thd26_0) v27_0)
                            (let ((wakeup_0 (thread-mailbox-wakeup thd26_0)))
                              (begin
                                (set-thread-mailbox-wakeup! thd26_0 void)
@@ -8261,8 +8220,7 @@
          (begin0
            (let ((t_0 (current-thread/in-atomic)))
              (for-each_2380
-              (lambda (msg_0)
-                (begin-unsafe (queue-add-front! (thread-mailbox t_0) msg_0)))
+              (lambda (msg_0) (queue-add-front! (thread-mailbox t_0) msg_0))
               lst_0))
            (end-atomic)))))))
 (define finish_2918
@@ -8364,7 +8322,7 @@
                 (custodian-check-immediate-limit (car mrefs_0) n_0)))
             (void))))))
     (void)))
-(define effect_2829
+(define effect_2552
   (begin
     (void
      (let ((thread-engine_0
@@ -8375,7 +8333,7 @@
                     (if (not (eq? e_0 'running)) e_0 #f)
                     #f))
                 #f))))
-       (begin-unsafe (set! thread-engine-for-roots thread-engine_0))))
+       (set! thread-engine-for-roots thread-engine_0)))
     (void)))
 (define finish_2800
   (make-struct-type-install-properties
@@ -8617,20 +8575,18 @@
                                             (begin
                                               (queue-remove-node! gq_0 n_0)
                                               (lambda () (receive_0))))))
-                                     (begin-unsafe
-                                      (|#%app|
-                                       (waiter-methods-suspend
-                                        (waiter-ref gw_0))
-                                       gw_0
-                                       interrupt-cb_0)))))
+                                     (|#%app|
+                                      (waiter-methods-suspend
+                                       (waiter-ref gw_0))
+                                      gw_0
+                                      interrupt-cb_0))))
                                (begin
                                  (set-box! b_0 (cdr pw+v_0))
                                  (let ((w_0 (car pw+v_0)))
-                                   (begin-unsafe
-                                    (|#%app|
-                                     (waiter-methods-resume (waiter-ref w_0))
-                                     w_0
-                                     (void))))
+                                   (|#%app|
+                                    (waiter-methods-resume (waiter-ref w_0))
+                                    w_0
+                                    (void)))
                                  void))))
                          (end-atomic)))))))))
              (receive_0))
@@ -8642,8 +8598,7 @@
         (if pw+v_0
           (begin
             (let ((w_0 (car pw+v_0)))
-              (begin-unsafe
-               (|#%app| (waiter-methods-resume (waiter-ref w_0)) w_0 (void))))
+              (|#%app| (waiter-methods-resume (waiter-ref w_0)) w_0 (void)))
             (values (list (cdr pw+v_0)) #f))
           (if (poll-ctx-poll? poll-ctx_0)
             (values #f ch_0)
@@ -8669,11 +8624,10 @@
                           (if pw+v_1
                             (begin
                               (let ((w_0 (car pw+v_1)))
-                                (begin-unsafe
-                                 (|#%app|
-                                  (waiter-methods-resume (waiter-ref w_0))
-                                  w_0
-                                  (void))))
+                                (|#%app|
+                                 (waiter-methods-resume (waiter-ref w_0))
+                                 w_0
+                                 (void)))
                               (set-box! b_0 (cdr pw+v_1))
                               (values #t #t))
                             (begin
@@ -8701,19 +8655,17 @@
                                 (begin
                                   (queue-remove-node! pq_0 n_0)
                                   (lambda () (channel-put ch_0 v_0))))))
-                         (begin-unsafe
-                          (|#%app|
-                           (waiter-methods-suspend (waiter-ref pw_0))
-                           pw_0
-                           interrupt-cb_0)))))
+                         (|#%app|
+                          (waiter-methods-suspend (waiter-ref pw_0))
+                          pw_0
+                          interrupt-cb_0))))
                    (begin
                      (set-box! (cdr gw+b_0) v_0)
                      (let ((w_0 (car gw+b_0)))
-                       (begin-unsafe
-                        (|#%app|
-                         (waiter-methods-resume (waiter-ref w_0))
-                         w_0
-                         v_0)))
+                       (|#%app|
+                        (waiter-methods-resume (waiter-ref w_0))
+                        w_0
+                        v_0))
                      void))))
              (end-atomic))))))))
 (define channel-put/poll
@@ -8724,8 +8676,7 @@
           (begin
             (set-box! (cdr gw+b_0) v_0)
             (let ((w_0 (car gw+b_0)))
-              (begin-unsafe
-               (|#%app| (waiter-methods-resume (waiter-ref w_0)) w_0 v_0)))
+              (|#%app| (waiter-methods-resume (waiter-ref w_0)) w_0 v_0))
             (values (list self_0) #f))
           (if (poll-ctx-poll? poll-ctx_0)
             (values #f self_0)
@@ -8749,11 +8700,10 @@
                           (begin
                             (set-box! (cdr gw+b_1) v_0)
                             (let ((w_0 (car gw+b_1)))
-                              (begin-unsafe
-                               (|#%app|
-                                (waiter-methods-resume (waiter-ref w_0))
-                                w_0
-                                v_0)))
+                              (|#%app|
+                               (waiter-methods-resume (waiter-ref w_0))
+                               w_0
+                               v_0))
                             (values self_0 #t))
                           (begin
                             (set! n_0 (queue-add! pq_0 (cons pw_0 v_0)))
@@ -8888,12 +8838,11 @@
                                             (number->string
                                              (length new-rs_0))))))
                                     (let ((who_2 who_1))
-                                      (begin-unsafe
-                                       (error-message->adjusted-string
-                                        who_2
-                                        'racket/primitive
-                                        msg_0
-                                        'racket/primitive)))))))
+                                      (error-message->adjusted-string
+                                       who_2
+                                       'racket/primitive
+                                       msg_0
+                                       'racket/primitive))))))
                            (|#%app|
                             exn:fail:contract:arity
                             app_0
@@ -8938,12 +8887,11 @@
                               "  returned count: "
                               (number->string (length args_1)))))
                         (let ((who_2 who_1))
-                          (begin-unsafe
-                           (error-message->adjusted-string
-                            who_2
-                            'racket/primitive
-                            msg_0
-                            'racket/primitive)))))))
+                          (error-message->adjusted-string
+                           who_2
+                           'racket/primitive
+                           msg_0
+                           'racket/primitive))))))
                (|#%app|
                 exn:fail:contract:arity
                 app_0
@@ -9522,8 +9470,7 @@
 (define make-syncer
   (lambda (evt_0 wraps_0 prev_0)
     (syncer2.1 evt_0 wraps_0 null #f #f null #f prev_0 #f)))
-(define none-syncer
-  (begin-unsafe (syncer2.1 #f null null #f #f null #f #f #f)))
+(define none-syncer (syncer2.1 #f null null #f #f null #f #f #f))
 (define make-syncing.1
   (|#%name|
    make-syncing
@@ -9531,7 +9478,7 @@
      (begin (syncing1.1 #f syncers5_0 void disable-break3_0 #f)))))
 (define sync-atomic-poll-evt?
   (lambda (evt_0)
-    (let ((or-part_0 (begin-unsafe (channel-put-evt*? evt_0))))
+    (let ((or-part_0 (channel-put-evt*? evt_0)))
       (if or-part_0
         or-part_0
         (let ((or-part_1 (1/channel? evt_0)))
@@ -9608,9 +9555,7 @@
                                  (lambda () (syncing-abandon! s_0)))
                                 (thread-push-suspend+resume-callbacks!
                                  (lambda () (syncing-interrupt! s_0))
-                                 (lambda ()
-                                   (begin-unsafe
-                                    (set-syncing-need-retry?! s_0 #t))))
+                                 (lambda () (set-syncing-need-retry?! s_0 #t)))
                                 (end-atomic)))
                             (lambda ()
                               (begin
@@ -9801,7 +9746,7 @@
            (begin (1/semaphore-wait evt_0) evt_0)
            (if (1/channel? evt_0)
              (channel-get evt_0)
-             (if (begin-unsafe (channel-put-evt*? evt_0))
+             (if (channel-put-evt*? evt_0)
                (begin (channel-put-do evt_0) evt_0)
                (let ((temp61_0 (list evt_0)))
                  (do-sync.1 #f 'sync #f temp61_0))))))))
@@ -9826,7 +9771,7 @@
                (begin (1/semaphore-wait evt_0) evt_0)
                (if (1/channel? evt_0)
                  (channel-get evt_0)
-                 (if (begin-unsafe (channel-put-evt*? evt_0))
+                 (if (channel-put-evt*? evt_0)
                    (begin (channel-put-do evt_0) evt_0)
                    (let ((temp70_0 (list evt_0)))
                      (do-sync.1 #f 'sync/timeout #f temp70_0)))))
@@ -9860,8 +9805,7 @@
    sync/timeout/enable-break
    (lambda (timeout_0 . args_0)
      (begin (do-sync.1 #t 'sync/timeout/enable-break timeout_0 args_0)))))
-(define effect_2689
-  (begin (void (begin-unsafe (set! sync-on-channel 1/sync))) (void)))
+(define effect_2330 (begin (void (set! sync-on-channel 1/sync)) (void)))
 (define evts->syncers
   (let ((evts->syncers_0
          (|#%name|
@@ -9894,17 +9838,16 @@
                                   first_0
                                   last_0)
                                  (let ((sr_0
-                                        (begin-unsafe
-                                         (syncer2.1
-                                          arg_0
-                                          wraps13_0
-                                          null
-                                          #f
-                                          #f
-                                          null
-                                          #f
-                                          last_0
-                                          #f))))
+                                        (syncer2.1
+                                         arg_0
+                                         wraps13_0
+                                         null
+                                         #f
+                                         #f
+                                         null
+                                         #f
+                                         last_0
+                                         #f)))
                                    (begin
                                      (if (if (null? extended-commits_0)
                                            (null? guarded-abandons_0)
@@ -10074,8 +10017,7 @@
                             no-wrappers?_0))
                          (if (= retries_0 10)
                            (begin
-                             (begin-unsafe
-                              (set-schedule-info-did-work?! sched-info_0 #t))
+                             (set-schedule-info-did-work?! sched-info_0 #t)
                              (end-atomic)
                              (loop_0 (syncer-next sr_0) 0 #f #f))
                            (if (nested-sync-evt? (syncer-evt sr_0))
@@ -11013,11 +10955,11 @@
 (define any-idle-waiters?
   (lambda ()
     (let ((s_0 (unsafe-place-local-ref cell.1$5)))
-      (begin-unsafe (not (begin-unsafe (not (queue-start s_0))))))))
+      (not (not (queue-start s_0))))))
 (define post-idle
   (lambda ()
     (if (let ((s_0 (unsafe-place-local-ref cell.1$5)))
-          (begin-unsafe (not (begin-unsafe (not (queue-start s_0))))))
+          (not (not (queue-start s_0))))
       (begin (semaphore-post/atomic (unsafe-place-local-ref cell.1$5)) #t)
       #f)))
 (define init-system-idle-evt!
@@ -11295,7 +11237,7 @@
                          (void)
                          (loop_0))))))))
               (loop_0)))
-           (if (begin-unsafe (|#%app| logging-future-events?))
+           (if (|#%app| logging-future-events?)
              (begin
                (flush-future-log)
                (let ((id_0
@@ -11322,7 +11264,7 @@
              (unsafe-place-local-ref cell.1$4)
              new-events_0
              null)
-          (if (begin-unsafe (|#%app| logging-future-events?))
+          (if (|#%app| logging-future-events?)
             (begin
               (let ((lst_0 (reverse$1 new-events_0)))
                 (begin
@@ -11518,7 +11460,7 @@
                (lock-release (future*-lock f4_0))
                (begin
                  (if was-blocked?2_0
-                   (if (begin-unsafe (|#%app| logging-future-events?))
+                   (if (|#%app| logging-future-events?)
                      (begin
                        (let ((temp17_0 (future*-id f4_0)))
                          (let ((temp18_0
@@ -11708,12 +11650,11 @@
                    (raise
                     (let ((app_0
                            (let ((msg_0 "future previously aborted"))
-                             (begin-unsafe
-                              (error-message->adjusted-string
-                               'touch
-                               'racket/primitive
-                               msg_0
-                               'racket/primitive)))))
+                             (error-message->adjusted-string
+                              'touch
+                              'racket/primitive
+                              msg_0
+                              'racket/primitive))))
                       (|#%app| exn:fail app_0 (current-continuation-marks)))))
                  (if (eq? s_0 'blocked)
                    (if (current-future$1)
@@ -11750,7 +11691,7 @@
                            (let ((temp40_0 (future*-id f_0)))
                              (log-future.1 #f #f 'touch-resume temp40_0))
                            (1/touch f_0)))
-                       (if (begin-unsafe (future*? s_0))
+                       (if (future*? s_0)
                          (if (current-future$1)
                            (dependent-on-future f_0)
                            (begin
@@ -12404,10 +12345,8 @@
     (begin
       (set! wakeup-this-place wakeup_0)
       (set! ensure-place-wakeup-handle ensure_0))))
-(define effect_1869
-  (begin
-    (void (begin-unsafe (set! future-block-for-atomic future-block)))
-    (void)))
+(define effect_2150
+  (begin (void (set! future-block-for-atomic future-block)) (void)))
 (define effect_2841
   (begin
     (void
@@ -12430,7 +12369,7 @@
       (make-another-initial-thread-group)
       (set-root-custodian! c_0)
       (init-system-idle-evt!)
-      (begin-unsafe (init-future-logging-place!))
+      (init-future-logging-place!)
       (init-schedule-counters!)
       (init-sync-place!)
       (call-in-new-main-thread thunk_0))))
@@ -12632,8 +12571,7 @@
                  (begin
                    (if t_0 (thread-reschedule! t_0) (void))
                    (set! did?_0 #t)))))
-          (begin-unsafe
-           (|#%app| (sandman-do-poll the-sandman) thread-wakeup_0)))
+          (|#%app| (sandman-do-poll the-sandman) thread-wakeup_0))
         (if did?_0 (thread-did-work!) (void))
         did?_0))))
 (define run-callbacks-in-engine
@@ -12716,18 +12654,17 @@
                                                         (schedule-info-exts
                                                          sched-info_0)
                                                         #f)))
-                                                 (begin-unsafe
-                                                  (|#%app|
-                                                   (sandman-do-merge-external-event-sets
-                                                    the-sandman)
-                                                   exts_0
-                                                   t-exts_0))))))
+                                                 (|#%app|
+                                                  (sandman-do-merge-external-event-sets
+                                                   the-sandman)
+                                                  exts_0
+                                                  t-exts_0)))))
                                         (values exts_1))))
                                  (for-loop_0 exts_1 rest_0))))
                            exts_0))))))
                   (for-loop_0 sleeping-exts_0 ts_0)))))
           (begin
-            (begin-unsafe (|#%app| (sandman-do-sleep the-sandman) exts_0))
+            (|#%app| (sandman-do-sleep the-sandman) exts_0)
             (thread-did-work!)))))))
 (define try-post-idle
   (lambda () (if (post-idle) (begin (thread-did-work!) #t) #f)))
@@ -12755,7 +12692,7 @@
       (unsafe-place-local-ref cell.4)
       (unsafe-place-local-set! cell.5 (current-atomic))
       (unsafe-place-local-set! cell.4 cb_0))))
-(define effect_2825
+(define effect_2472
   (begin
     (void
      (let ((proc_0
@@ -12765,7 +12702,7 @@
                   (begin (|#%app| (unsafe-place-local-ref cell.4) #t) #t)
                   #f)
                 #f))))
-       (begin-unsafe (set! force-atomic-timeout-callback proc_0))))
+       (set! force-atomic-timeout-callback proc_0)))
     (void)))
 (define check-place-activity void)
 (define set-check-place-activity!
@@ -13917,12 +13854,11 @@
                                       (begin
                                         (end-atomic)
                                         (let ((c_0 (1/current-custodian)))
-                                          (begin-unsafe
-                                           (raise-arguments-error
-                                            'dynamic-place
-                                            "the custodian has been shut down"
-                                            "custodian"
-                                            c_0)))))
+                                          (raise-arguments-error
+                                           'dynamic-place
+                                           "the custodian has been shut down"
+                                           "custodian"
+                                           c_0))))
                                     (begin
                                       (set-place-custodian-ref!
                                        new-place_0
@@ -14174,8 +14110,8 @@
     (begin
       (set-box! (place-activity-canary p_0) #t)
       (let ((h_0 (place-wakeup-handle p_0)))
-        (begin-unsafe (|#%app| (sandman-do-wakeup the-sandman) h_0))))))
-(define effect_2163
+        (|#%app| (sandman-do-wakeup the-sandman) h_0)))))
+(define effect_2845
   (begin
     (void
      (let ((proc_0
@@ -14252,7 +14188,7 @@
                                    #f))
                                 (void))))))))
                   (void))))))
-       (begin-unsafe (set! check-place-activity proc_0))))
+       (set! check-place-activity proc_0)))
     (void)))
 (define do-place-kill
   (lambda (p_0)
@@ -14359,8 +14295,7 @@
                     (if result_0
                       (void)
                       (begin
-                        (begin-unsafe
-                         (|#%app| (sandman-do-sleep the-sandman) #f))
+                        (|#%app| (sandman-do-sleep the-sandman) #f)
                         (loop_0)))))))))))
        (loop_0)))))
 (define finish_3022
@@ -14868,12 +14803,12 @@
       (if (place-result pl_0)
         (void)
         (let ((h_0 (place-wakeup-handle pl_0)))
-          (begin-unsafe (|#%app| (sandman-do-wakeup the-sandman) h_0))))
+          (|#%app| (sandman-do-wakeup the-sandman) h_0)))
       (|#%app| host:mutex-release (place-lock pl_0)))))
 (define wakeup-initial-place
   (lambda ()
     (let ((h_0 (place-wakeup-handle initial-place)))
-      (begin-unsafe (|#%app| (sandman-do-wakeup the-sandman) h_0)))))
+      (|#%app| (sandman-do-wakeup the-sandman) h_0))))
 (define make-place-ports+fds
   (lambda (in_0 out_0 err_0) (values #f #f #f in_0 out_0 err_0)))
 (define set-make-place-ports+fds!
@@ -15246,10 +15181,9 @@
     (raise
      (let ((app_0
             (let ((msg_0 "unsupported on this platform"))
-              (begin-unsafe
-               (error-message->adjusted-string
-                who_0
-                'racket/primitive
-                msg_0
-                'racket/primitive)))))
+              (error-message->adjusted-string
+               who_0
+               'racket/primitive
+               msg_0
+               'racket/primitive))))
        (|#%app| exn:fail:unsupported app_0 (current-continuation-marks))))))

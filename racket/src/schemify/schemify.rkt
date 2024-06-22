@@ -497,8 +497,8 @@
                   compiler-query
                   wcm-state)
   ;; `wcm-state` is one of: 'tail (= unknown), 'fresh (= no marks), or 'marked (= some marks)
-  (let schemify/knowns ([knowns knowns] [inline-fuel init-inline-fuel] [wcm-state wcm-state] [v v])
-    (define (schemify v wcm-state)
+  (let schemify/knowns ([knowns knowns] [inline-fuel init-inline-fuel] [wcm-state wcm-state] [unsafe-mode? unsafe-mode?] [v v])
+    (define (schemify v wcm-state [unsafe-mode? unsafe-mode?])
       (define s-v
         (reannotate
          v 
@@ -524,7 +524,7 @@
             #:guard (not (or (aim? target 'interp) (aim? target 'cify)))
             (define new-seq
               (struct-convert v prim-knowns knowns imports exports mutated
-                              (lambda (v knowns) (schemify/knowns knowns inline-fuel 'fresh v))
+                              (lambda (v knowns) (schemify/knowns knowns inline-fuel 'fresh unsafe-mode? v))
                               target no-prompt? #t))
             (or new-seq
                 (match v
@@ -598,7 +598,7 @@
                                               #:unless (eq? copy-rhs rhs))
                                      rhs)
                                    (for/list ([body (in-list bodys)])
-                                     (schemify/knowns new-knowns inline-fuel wcm-state body))
+                                     (schemify/knowns new-knowns inline-fuel wcm-state unsafe-mode? body))
                                    prim-knowns knowns imports mutated simples unsafe-mode?)
                 prim-knowns knowns imports mutated simples unsafe-mode?)])]
            [`(let-values ([() (begin ,rhs (values))]) ,bodys ...)
@@ -606,7 +606,7 @@
            [`(let-values ([,idss ,rhss] ...) ,bodys ...)
             (or (and (not (or (aim? target 'interp) (aim? target 'cify)))
                      (struct-convert-local v prim-knowns knowns imports mutated simples
-                                           (lambda (v knowns) (schemify/knowns knowns inline-fuel 'fresh v))
+                                           (lambda (v knowns) (schemify/knowns knowns inline-fuel 'fresh unsafe-mode? v))
                                            #:unsafe-mode? unsafe-mode?
                                            #:target target))
                 (unnest-let
@@ -641,14 +641,14 @@
               ids mutated target
               `(letrec* ,(for/list ([id (in-list ids)]
                                     [rhs (in-list rhss)])
-                           `[,id ,(schemify/knowns rhs-knowns inline-fuel 'fresh rhs)])
+                           `[,id ,(schemify/knowns rhs-knowns inline-fuel 'fresh unsafe-mode? rhs)])
                  ,@(for/list ([body (in-list bodys)])
-                     (schemify/knowns body-knowns inline-fuel wcm-state body))))
+                     (schemify/knowns body-knowns inline-fuel wcm-state unsafe-mode? body))))
              prim-knowns knowns imports mutated simples unsafe-mode?)]
            [`(letrec-values ([,idss ,rhss] ...) ,bodys ...)
             (cond
               [(struct-convert-local v #:letrec? #t prim-knowns knowns imports mutated simples
-                                     (lambda (v knowns) (schemify/knowns knowns inline-fuel 'fresh v))
+                                     (lambda (v knowns) (schemify/knowns knowns inline-fuel 'fresh unsafe-mode? v))
                                      #:unsafe-mode? unsafe-mode?
                                      #:target target)
                => (lambda (form) form)]
@@ -742,7 +742,9 @@
            [`(begin ,exps ...)
             `(begin . ,(schemify-body exps wcm-state))]
            [`(begin-unsafe ,exps ...)
-            `(begin-unsafe . ,(schemify-body exps wcm-state))]
+            (if unsafe-mode?
+                (schemify `(begin . ,exps) wcm-state)
+                `(begin-unsafe . ,(schemify-body exps wcm-state #t)))]
            [`(begin0 ,exp)
             (schemify exp wcm-state)]
            [`(begin0 ,exp ,exps ...)
@@ -859,6 +861,7 @@
                            (let ([r (schemify/knowns knowns
                                                      inline-fuel
                                                      wcm-state
+                                                     unsafe-mode?
                                                      `(let-values ,(reverse binds) . ,bodys))])
                              ;; make suure constant-fold to #f counts as success:
                              (or r `(quote #f))))]
@@ -885,6 +888,8 @@
                    (symbol? u-rator)
                    (let-values ([(k im) (find-known+import u-rator prim-knowns knowns imports mutated)])
                      (and (known-procedure/can-inline? k)
+                          (or (not unsafe-mode?)
+                              (unsafe-body? (known-procedure/can-inline-expr k)))
                           (left-left-lambda-convert
                            (inline-clone k im add-import! mutated imports)
                            (sub1 inline-fuel))))))
@@ -1096,13 +1101,13 @@
                    [else v])]))])))
       (optimize s-v prim-knowns primitives knowns imports mutated target compiler-query))
 
-    (define (schemify-body l wcm-state)
+    (define (schemify-body l wcm-state [unsafe-mode? unsafe-mode?])
       (cond
         [(null? l) null]
         [(null? (cdr l))
-         (list (schemify (car l) wcm-state))]
+         (list (schemify (car l) wcm-state unsafe-mode?))]
         [else
-         (cons (schemify (car l) 'fresh)
-               (schemify-body (cdr l) wcm-state))]))
+         (cons (schemify (car l) 'fresh unsafe-mode?)
+               (schemify-body (cdr l) wcm-state unsafe-mode?))]))
 
     (schemify v wcm-state)))

@@ -121,6 +121,7 @@
    
    (define cross-phase-persistent? #f)
    (define unsafe?-box (box #f))
+   (define unlimited-compile?-box (box #f))
    
    ;; Callback to track phases that have side effects
    (define side-effects (make-hasheqv))
@@ -164,13 +165,16 @@
                                               [(parsed-#%declare? body)
                                                (define-match m (parsed-s body) '(_ kw ...))
                                                (for ([kw (in-list (m 'kw))])
-                                                 (when (eq? (syntax-e kw) '#:cross-phase-persistent)
-                                                   (set! cross-phase-persistent? #t))
-                                                 (when (eq? (syntax-e kw) '#:empty-namespace)
-                                                   (set! empty-result-for-module->namespace? #t)
-                                                   (set-box! encoded-root-expand-ctx-box #f))
-                                                 (when (eq? (syntax-e kw) '#:unsafe)
-                                                   (set-box! unsafe?-box #t)))
+                                                 (case (syntax-e kw)
+                                                   [(#:cross-phase-persistent)
+                                                    (set! cross-phase-persistent? #t)]
+                                                   [(#:empty-namespace)
+                                                    (set! empty-result-for-module->namespace? #t)
+                                                    (set-box! encoded-root-expand-ctx-box #f)]
+                                                   [(#:unsafe)
+                                                    (set-box! unsafe?-box #t)]
+                                                   [(#:unlimited-compile)
+                                                    (set-box! unlimited-compile?-box #t)]))
                                                #f]
                                               [else #f]))
                     #:get-module-linklet-info (lambda (mod-name phase)
@@ -179,6 +183,7 @@
                                                 (and ht (hash-ref ht phase #f)))
                     #:serializable? serializable?
                     #:module-prompt? #t
+                    #:unlimited-compile?-box unlimited-compile?-box
                     #:to-correlated-linklet? to-correlated-linklet?
                     #:unsafe?-box unsafe?-box
                     #:realm realm))

@@ -984,7 +984,8 @@
               (define kw (car kws))
               (unless (keyword? (syntax-e kw))
                 (raise-syntax-error #f "expected a keyword" exp-body kw))
-              (unless (memq (syntax-e kw) '(#:cross-phase-persistent #:empty-namespace #:unsafe #:realm
+              (unless (memq (syntax-e kw) '(#:cross-phase-persistent #:empty-namespace #:unsafe
+                                            #:unlimited-require #:realm
                                             #:require=define #:flatten-requires))
                 (raise-syntax-error #f "not an allowed declaration keyword" exp-body kw))
               (define has-arg? (eq? (syntax-e kw) '#:realm))

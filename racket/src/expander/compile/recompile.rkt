@@ -147,6 +147,8 @@
   (define portal-stxes (decl 'portal-stxes))
 
   (define unsafe? (hash-ref orig-h 'unsafe? #f))
+  (define module-prompt? (hash-ref orig-h 'module-prompt? #t))
+  (define unlimited-compile? (hash-ref orig-h 'unlimited-compile? #f))
   (define realm (hash-ref orig-h 'realm 'racket))
 
   (define (find-submodule mod-name phase)
@@ -197,7 +199,8 @@
                                                               empty-module-body-instance)
                                 #:get-module-linklet-info find-submodule
                                 #:serializable? #t
-                                #:module-prompt? #t
+                                #:module-prompt? module-prompt?
+                                #:unlimited-compile? unlimited-compile?
                                 #:module-use*s module-use*s
                                 #:optimize-linklet? #t
                                 #:unsafe? unsafe?

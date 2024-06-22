@@ -14,6 +14,7 @@ static Scheme_Object *serializable_symbol;
 static Scheme_Object *unsafe_symbol;
 static Scheme_Object *static_symbol;
 static Scheme_Object *use_prompt_symbol;
+static Scheme_Object *unlimited_compile_symbol;
 static Scheme_Object *uninterned_literal_symbol;
 static Scheme_Object *quick_symbol;
 static Scheme_Object *constant_symbol;
@@ -104,12 +105,14 @@ void scheme_init_linklet(Scheme_Startup_Env *env)
   REGISTER_SO(unsafe_symbol);
   REGISTER_SO(static_symbol);
   REGISTER_SO(use_prompt_symbol);
+  REGISTER_SO(unlimited_compile_symbol);
   REGISTER_SO(uninterned_literal_symbol);
   REGISTER_SO(quick_symbol);
   serializable_symbol = scheme_intern_symbol("serializable");
   unsafe_symbol = scheme_intern_symbol("unsafe");
   static_symbol = scheme_intern_symbol("static");
   use_prompt_symbol = scheme_intern_symbol("use-prompt");
+  unlimited_compile_symbol = scheme_intern_symbol("unlimited-compile");
   uninterned_literal_symbol = scheme_intern_symbol("uninterned-literal");
   quick_symbol = scheme_intern_symbol("quick");
 
@@ -382,6 +385,7 @@ static void parse_compile_options(const char *who, int arg_pos,
   int unsafe = *_unsafe;
   int static_mode = *_static_mode;
   int use_prompt_mode = 0;
+  int unlimited_compile_mode = 0;
   int uninterned_literal_mode = 0;
   int quick_mode = 0;
   
@@ -403,6 +407,10 @@ static void parse_compile_options(const char *who, int arg_pos,
       if (use_prompt_mode && !redundant)
         redundant = flag;
       use_prompt_mode = 1;
+    } else if (SAME_OBJ(flag, unlimited_compile_symbol)) {
+      if (unlimited_compile_mode && !redundant)
+        redundant = flag;
+      unlimited_compile_mode = 1;
     } else if (SAME_OBJ(flag, uninterned_literal_symbol)) {
       if (uninterned_literal_mode && !redundant)
         redundant = flag;

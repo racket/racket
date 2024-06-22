@@ -18,7 +18,8 @@
 
 (provide infer-known
          can-improve-infer-known?
-         lambda?)
+         lambda?
+         unsafe-body?)
 
 ;; For definitions, it's useful to infer `a-known-constant` to reflect
 ;; that the variable will get a value without referencing anything
@@ -139,3 +140,9 @@
                                  [body (in-list bodys)])
                         `[,args (begin-unsafe . ,body)]))]
      [`,_ lam])))
+
+(define (unsafe-body? expr)
+  (match expr
+    [`(lambda ,_ (begin-unsafe . ,_)) #t]
+    [`(case-lambda [,_ (begin-unsafe . ,_)] ...) #t]
+    [`,_ #f]))

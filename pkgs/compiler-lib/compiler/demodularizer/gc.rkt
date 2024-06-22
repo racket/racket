@@ -105,6 +105,8 @@
             (used! els)]
            [`(begin . ,body)
             (for-each used! body)]
+           [`(begin-unsafe . ,body)
+            (for-each used! body)]
            [`(begin0 ,e . ,body)
             (used! e)
             (for-each used! body)]
@@ -218,6 +220,8 @@
   (match b
     [`(lambda . ,_) #t]
     [`(case-lambda . ,_) #t]
+    [`(begin ,b) (pure? b)]
+    [`(begin-unsafe ,b) (pure? b)]
     [`(quote . ,_) #t]
     [`(let-values ([,idss ,rhss] ...) ,body)
      (and (andmap pure? rhss)

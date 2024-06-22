@@ -1126,5 +1126,20 @@
   (test 7 (dynamic-require ''claims-unreachable-parts/unsafe 'f2) (arity-at-least 7)))
   
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Make sure safe code is not inclined into an unsafe context
+
+(module unsafe-module-that-provides-do-unsafe racket/base
+  (#%declare #:unsafe)
+  (provide do-unsafe)
+  (define (do-unsafe f) (f)))
+
+(module safe-module-that-uses-do-unsafe racket/base
+  (require 'unsafe-module-that-provides-do-unsafe)
+  (do-unsafe (lambda () (car 5))))
+
+(err/rt-test/once (dynamic-require ''safe-module-that-uses-do-unsafe #f)
+                  exn:fail:contract?)
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)

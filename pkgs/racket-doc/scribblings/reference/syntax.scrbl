@@ -417,6 +417,7 @@ Legal only in a @tech{module begin context}, and handled by the
                                #:empty-namespace
                                #:require=define
                                #:flatten-requires
+                               #:unlimited-compile
                                #:unsafe
                                (code:line #:realm identifier)])]{
 
@@ -452,6 +453,13 @@ module:
        to multiple modules that are both use by another and that have
        overlapping transitive-import subtrees.}
 
+@item{@indexed-racket[#:unlimited-compile] --- declares that
+       compilation should not fall back to interpreted mode for an
+       especially large module body. Otherwise, a compilation mode is
+       selected based on the size of the module body (as converted to
+       a @tech{linklet}) and the @envvar{PLT_CS_COMPILE_LIMIT} environment
+       variable (see @secref["cs-compiler-modes"]).}
+
 @item{@indexed-racket[#:unsafe] --- declares that the module can be
        compiled without checks that could trigger
        @racket[exn:fail:contract], and the resulting behavior is
@@ -483,7 +491,8 @@ context} or a @tech{module-begin context}. Each
          #:changed "7.9.0.5" @elem{Added @racket[#:unsafe].}
          #:changed "8.4.0.2" @elem{Added @racket[#:realm].}
          #:changed "8.6.0.9" @elem{Added @racket[#:require=define].}
-         #:changed "8.13.0.4" @elem{Added @racket[#:flatten-requires].}]}
+         #:changed "8.13.0.4" @elem{Added @racket[#:flatten-requires].}
+         #:changed "8.13.0.9" @elem{Added @racket[#:unlimited-compile].}]}
 
 
 @;------------------------------------------------------------------------

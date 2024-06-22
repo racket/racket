@@ -616,6 +616,7 @@
       (define serializable? (#%memq 'serializable options))
       (define use-prompt? (#%memq 'use-prompt options))
       (define unsafe? (and (#%memq 'unsafe options) #t))
+      (define unlimited-compile? (#%memq 'unlimited-compile options))
       (define cross-machine (and serializable?
                                  (let ([m (|#%app| current-compile-target-machine)])
                                    (and (not (eq? m (machine-type)))
@@ -647,6 +648,7 @@
               (not quick-mode?)
               (or (eq? linklet-compilation-mode 'jit)
                   (and (eq? linklet-compilation-mode 'mach)
+                       (not unlimited-compile?)
                        (linklet-bigger-than? c linklet-compilation-limit serializable?)
                        (log-message root-logger 'info 'linklet (large-message info) #f)
                        #t))))

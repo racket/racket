@@ -68,6 +68,7 @@
 
            (remap-names body
                         remap-name
+                        #:unsafe? (run-unsafe? r)
                         #:remap-defined-name remap-defined-name
                         #:application-hook
                         (lambda (rator rands remap)

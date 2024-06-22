@@ -5,6 +5,7 @@
          "struct-type-info.rkt"
          "mutated-state.rkt"
          "find-definition.rkt"
+         "unwrap-let.rkt"
          "gensym.rkt"
          "known.rkt"
          "aim.rkt")
@@ -34,7 +35,7 @@
                           (match contract
                             [`',sym (symbol? sym)]
                             [`,_ (or (not contract) (string? contract))]))
-                        (match make-acc/mut
+                        (match (unwrap-let make-acc/mut)
                           [`(make-struct-field-accessor ,ref-id ,pos ',field-name)
                            (and (wrap-eq? ref-id -ref)
                                 (symbol? field-name)
@@ -71,7 +72,7 @@
        [(and sti
              ;; make sure all accessor/mutator positions are in range:
              (for/and ([make-acc/mut (in-list make-acc/muts)])
-               (match make-acc/mut
+               (match (unwrap-let make-acc/mut)
                  [`(,_ ,_ ,pos . ,_) (pos . < . (struct-type-info-immediate-field-count sti))]))
              ;; make sure `struct:` isn't used too early, since we're
              ;; reordering it's definition with respect to some arguments
@@ -253,7 +254,7 @@
                                  p
                                  `(#%struct-field-mutator ,p ,struct:s ,pos)))))
                      raw-def))
-               (match make-acc/mut
+               (match (unwrap-let make-acc/mut)
                  [`(make-struct-field-accessor ,_ ,pos ',field-name)
                   (build-accessor pos field-name #f 'racket)]
                  [`(make-struct-field-accessor ,_ ,pos ',field/proc-name ,contract)

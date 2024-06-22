@@ -360,7 +360,8 @@
                     'name module-name
                     'min-phase min-phase
                     'max-phase max-phase
-                    'vm  #"linklet")]
+                    'vm  #"linklet"
+                    'unlimited-compile? #t)]
            [metadata-ht (if (null? pre-submodules)
                             metadata-ht
                             (hash-set metadata-ht 'pre pre-submodules))]

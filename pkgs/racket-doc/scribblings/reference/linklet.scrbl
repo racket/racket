@@ -89,7 +89,9 @@ with some exceptions: @racket[quote-syntax] and @racket[#%top] are not allowed;
 @racket[#%plain-lambda] is spelled @racket[lambda];
 @racket[#%plain-app] is omitted (i.e., application is implicit);
 @racket[lambda], @racket[case-lambda], @racket[let-values], and
-@racket[letrec-values] can have only a single body expression; and
+@racket[letrec-values] can have only a single body expression;
+@racket[begin-unsafe] is like @racket[begin] in an expression position,
+but its body is compiled in @tech{unsafe mode}; and
 numbers, booleans, strings, and byte strings are self-quoting.
 Primitives are accessed directly by name, and shadowing is not allowed
 within a @racketidfont{linklet} form for primitive names (see
@@ -121,7 +123,8 @@ otherwise.}
                              [import-keys #f #f]
                              [get-import #f #f]
                              [options (listof (or/c 'serializable 'unsafe 'static 'quick
-                                                     'use-prompt 'uninterned-literal))
+                                                     'use-prompt 'unlimited-compile
+                                                     'uninterned-literal))
                                       '(serializable)])
             linklet?]
            [(compile-linklet [form (or/c correlated? any/c)]
@@ -131,7 +134,8 @@ otherwise.}
                                                                         (or/c vector? #f))))
                                          #f]
                              [options (listof (or/c 'serializable 'unsafe 'static 'quick
-                                                    'use-prompt 'uninterned-literal))
+                                                    'use-prompt 'unlimited-compile
+                                                    'uninterned-literal))
                                       '(serializable)])
             (values linklet? vector?)])]{
 
@@ -191,7 +195,10 @@ contract is subsumed by the safe operation's contract. The fact that
 the linklet is compiled in @tech{unsafe mode} can be exposed through
 @racket[variable-reference-from-unsafe?] using a variable reference
 produced by a @racket[#%variable-reference] form within the module
-body.
+body. Within a linklet an individual expression can be compiled in
+unsafe mode by wrapping it in @racket[begin-unsafe]; when a whole
+linklet is compiled in unsafe mode, @racket[begin-unsafe] is redundant
+and ignored.
 
 If @racket['static] is included in @racket[options], then the linklet
 must be instantiated only once; if the linklet is serialized, then any
@@ -212,6 +219,10 @@ supplying @racket[#t] as the @racket[_use-prompt?] argument to
 @racket[instantiate-linklet] may only wrap a prompt around the entire
 instantiation.
 
+If @racket['unlimited-compile] is included in @racket[options], then
+compilation never falls back to interpreted mode for an especially
+large linklet. See also @secref["cs-compiler-modes"].
+
 If @racket['uninterned-literal] is included in @racket[options], then
 literals in @racket[form] will not necessarily be interned via
 @racket[datum-intern-literal] when compiling or loading the linklet.
@@ -225,7 +236,8 @@ The symbols in @racket[options] must be distinct, otherwise
 @history[#:changed "7.1.0.8" @elem{Added the @racket['use-prompt] option.}
          #:changed "7.1.0.10" @elem{Added the @racket['uninterned-literal] option.}
          #:changed "7.5.0.14" @elem{Added the @racket['quick] option.}
-         #:changed "8.11.1.2" @elem{Changed @racket[info] to a hash.}]}
+         #:changed "8.11.1.2" @elem{Changed @racket[info] to a hash.}
+         #:changed "8.13.0.9" @elem{Added the @racket['unlimited-compile] option.}]}
 
 
 @defproc*[([(recompile-linklet [linklet linklet?]

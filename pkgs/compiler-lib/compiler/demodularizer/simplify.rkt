@@ -67,6 +67,8 @@
               (loop els)]
              [`(begin . ,body)
               (for-each loop body)]
+             [`(begin-unsafe . ,body)
+              (for-each loop body)]
              [`(begin0 ,e . ,body)
               (loop e)
               (for-each loop body)]
@@ -257,6 +259,8 @@
                    `(if ,new-tst ,(loop thn) ,(loop els))])]
                [`(begin . ,body)
                 `(begin ,@(map loop body))]
+               [`(begin-unsafe . ,body)
+                `(begin-unsafe ,@(map loop body))]
                [`(begin0 ,e . ,body)
                 `(begin0 ,(loop e) ,@(map loop body))]
                [`(set! ,id ,rhs)

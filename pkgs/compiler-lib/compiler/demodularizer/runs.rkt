@@ -61,6 +61,7 @@
            (define linkl (hash-ref linkl-table phase-level #f))
            (define meta-linkl (hash-ref linkl-table (add1 phase-level) #f))
            (define uses (hash-ref (one-mod-phase-uses one-m) phase-level null))
+           (define unsafe? (hash-ref linkl-table 'unsafe? #f))
 
            (define shifted-stx-vec
              (let ([phase-shift (- root-phase phase-level)])
@@ -75,7 +76,8 @@
                           uses
                           #f ; import-map filled in later
                           shifted-stx-vec stx-mpi
-                          portal-stxes))
+                          portal-stxes
+                          unsafe?))
            (hash-set! runs-done (cons path/submod phase-level) #t)
 
            (for* ([(phase-shift req-path/submods) (in-hash (one-mod-reqs one-m))]
