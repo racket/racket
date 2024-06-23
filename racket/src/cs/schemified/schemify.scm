@@ -32361,13 +32361,19 @@
                                                                                                                                (if (known-procedure/can-inline?
                                                                                                                                     k_0)
                                                                                                                                  (if (let ((or-part_0
-                                                                                                                                            (not
-                                                                                                                                             unsafe-mode?_2)))
+                                                                                                                                            (eq?
+                                                                                                                                             target_0
+                                                                                                                                             'cify)))
                                                                                                                                        (if or-part_0
                                                                                                                                          or-part_0
-                                                                                                                                         (unsafe-body?
-                                                                                                                                          (known-procedure/can-inline-expr
-                                                                                                                                           k_0))))
+                                                                                                                                         (let ((or-part_1
+                                                                                                                                                (not
+                                                                                                                                                 unsafe-mode?_2)))
+                                                                                                                                           (if or-part_1
+                                                                                                                                             or-part_1
+                                                                                                                                             (unsafe-body?
+                                                                                                                                              (known-procedure/can-inline-expr
+                                                                                                                                               k_0))))))
                                                                                                                                    (let ((app_0
                                                                                                                                           (inline-clone
                                                                                                                                            k_0

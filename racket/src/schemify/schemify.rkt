@@ -888,7 +888,8 @@
                    (symbol? u-rator)
                    (let-values ([(k im) (find-known+import u-rator prim-knowns knowns imports mutated)])
                      (and (known-procedure/can-inline? k)
-                          (or (not unsafe-mode?)
+                          (or (aim? target 'cify)
+                              (not unsafe-mode?)
                               (unsafe-body? (known-procedure/can-inline-expr k)))
                           (left-left-lambda-convert
                            (inline-clone k im add-import! mutated imports)
