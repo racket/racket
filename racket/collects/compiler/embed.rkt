@@ -521,11 +521,18 @@
                                      (if (pair? l)
                                          (car l)
                                          "compiled"))
-                                   (if (and host? (cross-compiling?))
-                                       (lambda (e)
-                                         (parameterize ([current-compile-target-machine (system-type 'target-machine)])
-                                           (compiler e)))
-                                       compiler)
+                                   (cond
+                                     [(and host? (cross-compiling?))
+                                      (lambda (e)
+                                        (parameterize ([current-compile-target-machine (system-type 'target-machine)])
+                                          (compiler e)))]
+                                     [(not host?)
+                                      (lambda (e)
+                                        ;; point at host compiled code for dependencies
+                                        (parameterize ([current-compiled-file-roots (list (car (current-compiled-file-roots)))])
+                                          (compiler e)))]
+                                     [else
+                                      compiler])
                                    (if on-extension
                                        (lambda (f l?)
                                          (on-extension f l?)
