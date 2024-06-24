@@ -579,7 +579,7 @@ to wait until at least a certain number of items have been produced.
            (code:comment "we check to see if there has been enough")
            (code:comment "production")
            (cond
-             [(>= (car waiter) total-items-seen)
+             [(<= (car waiter) total-items-seen)
               (code:comment "if so, we send a message back on the channel")
               (code:comment "and continue the loop without that item")
               (handle-evt
