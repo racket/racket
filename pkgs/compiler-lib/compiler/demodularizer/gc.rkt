@@ -120,9 +120,9 @@
             (cond
               [(and (procedure? u) (or (symbol? rhs)
                                        (pure? rhs)))
-               (hash-set! used u (lambda ()
-                                   (u)
-                                   (used! rhs)))]
+               (hash-set! used id (lambda ()
+                                    (u)
+                                    (used! rhs)))]
               [else
                (used! rhs)])]
            [`(quote . ,_) (void)]
