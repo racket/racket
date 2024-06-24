@@ -258,8 +258,11 @@
                                                            #""
                                                            r))))])
     (cond [(or (regexp-match #rx#"^\177ELF" magic)
+               ;; Mach-O magic numbers for LE/BE, 32/64-bit
                (regexp-match #rx#"^\316\372\355\376" magic)
-               (regexp-match #rx#"^\317\372\355\376" magic))
+               (regexp-match #rx#"^\317\372\355\376" magic)
+               (regexp-match #rx#"^\376\355\372\316" magic)
+               (regexp-match #rx#"^\376\355\372\317" magic))
            (let ([temp (format "~a-temp-for-install"
                                (regexp-replace* #rx"/" file "_"))])
              (with-handlers ([exn? (lambda (e) (rm temp) (raise e))])
