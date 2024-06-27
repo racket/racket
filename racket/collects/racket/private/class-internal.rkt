@@ -3323,58 +3323,64 @@ An example
         (recur (vector (object-ref obj) vec))
         (eq-hash-code obj))))
 
-(define object<%> ((make-naming-constructor struct:interface 'interface:object% #f)
-                   'object% null #f null (make-immutable-hash) #f null))
-(setup-all-implemented! object<%>)
-(define object% ((make-naming-constructor struct:class 'object% "class")
-                 'object%
-                 0 (vector #f) 
-                 object<%>
-                 void ; never inspectable
-                 #f   ; this is for the inspector on the object
-                 
-                 0 (make-hasheq) null null null
-                 #f
-                 (vector) (vector) (vector) (vector) (vector)
+(define object<%> (let ([object<%>
+			 ((make-naming-constructor struct:interface 'interface:object% #f)
+			  'object% null #f null (make-immutable-hash) #f null)])
+		    (setup-all-implemented! object<%>)
+		    object<%>))
+(define object%
+  (let ([object%
+	 ((make-naming-constructor struct:class 'object% "class")
+	  'object%
+	  0 (vector #f)
+	  object<%>
+	  void ; never inspectable
+	  #f   ; this is for the inspector on the object
 
-                 (vector) (vector) (vector)
-                 
-                 0 0 (make-hasheq) null null
-                 
-                 'struct:object object? 'make-object
-                 'field-ref-not-needed 'field-set!-not-needed
-                 
-                 null
-                 'normal
-                 
-                 (lambda (this super-init si_c si_inited? si_leftovers args) 
-                   (unless (null? args)
-                     (unused-args-error this args))
-                   (void))
-                 
-                 #f
-                 (lambda (obj) #(()))        ; serialize
-                 (lambda (obj args) (void))  ; deserialize-fixup
+	  0 (make-hasheq) null null null
+	  #f
+	  (vector) (vector) (vector) (vector) (vector)
 
-                 #f   ; no chaperone to guard against unsafe-undefined
-                 
-                 #t)) ; no super-init
+	  (vector) (vector) (vector)
 
-(vector-set! (class-supers object%) 0 object%)
-(set-class-orig-cls! object% object%)
-(let*-values ([(struct:obj make-obj obj? -get -set!)
-               (make-struct-type 'object #f 0 0 #f
-                                 (list (cons prop:object object%)
-                                       (cons prop:equal+hash
-                                             (list object-equal?
-                                                   object-hash-code
-                                                   object-hash-code)))
-                                 #f)])
-  (set-class-struct:object! object% struct:obj)
-  (set-class-make-object! object% make-obj))
-(set-class-object?! object% object?) ; don't use struct pred; it wouldn't work with prim classes
+	  0 0 (make-hasheq) null null
 
-(set-interface-class! object<%> object%)
+	  'struct:object object? 'make-object
+	  'field-ref-not-needed 'field-set!-not-needed
+
+	  null
+	  'normal
+
+	  (lambda (this super-init si_c si_inited? si_leftovers args)
+	    (unless (null? args)
+	      (unused-args-error this args))
+	    (void))
+
+	  #f
+	  (lambda (obj) #(()))        ; serialize
+	  (lambda (obj args) (void))  ; deserialize-fixup
+
+	  #f   ; no chaperone to guard against unsafe-undefined
+
+	  #t)]) ; no super-init
+
+
+    (vector-set! (class-supers object%) 0 object%)
+    (set-class-orig-cls! object% object%)
+    (let*-values ([(struct:obj make-obj obj? -get -set!)
+		   (make-struct-type 'object #f 0 0 #f
+				     (list (cons prop:object object%)
+					   (cons prop:equal+hash
+						 (list object-equal?
+						       object-hash-code
+						       object-hash-code)))
+				     #f)])
+      (set-class-struct:object! object% struct:obj)
+      (set-class-make-object! object% make-obj))
+    (set-class-object?! object% object?) ; don't use struct pred; it wouldn't work with prim classes
+
+    (set-interface-class! object<%> object%)
+    object%))
 
 ;;--------------------------------------------------------------------
 ;;  instantiation
