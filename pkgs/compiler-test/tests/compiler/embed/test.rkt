@@ -2,6 +2,7 @@
 
 (require compiler/embed
          racket/file
+	 racket/format
 	 racket/system
          racket/port
          launcher
@@ -61,6 +62,7 @@
       (thunk))))
 
 (define (printf/flush . args)
+  (printf "~a " (~r #:min-width 10 #:precision '(= 2) (/ (current-process-milliseconds) 1000.)))
   (apply printf args)
   (flush-output))
 
