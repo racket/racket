@@ -266,7 +266,7 @@ syntax in @secref["regexp-syntax"]) and compiles it into a
 byte-@tech{regexp value}.
 
 If @racket[handler] is provided, it is called and its result is returned
-if @racket[str] is not a valid representation of a regular expression.
+if @racket[bstr] is not a valid representation of a regular expression.
 
 The @racket[object-name] procedure
 returns the source byte string for a @tech{regexp value}.
@@ -304,7 +304,7 @@ Produces a string or byte string suitable for use with @racket[regexp]
 to match the literal sequence of characters in @racket[str] or
 sequence of bytes in @racket[bstr]. If @racket[case-sensitive?] is
 true (the default), the resulting regexp matches letters in
-@racket[str] or @racket[bytes] case-sensitively, otherwise it matches
+@racket[str] or @racket[bstr] case-sensitively, otherwise it matches
 case-insensitively.
 
 @examples[
