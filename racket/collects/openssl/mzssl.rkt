@@ -36,6 +36,7 @@ TO DO:
          racket/string
          racket/lazy-require
          racket/include
+         racket/promise
          "libcrypto.rkt"
          "libssl.rkt"
          "private/ffi.rkt"
@@ -294,17 +295,24 @@ TO DO:
   (complain-on-cert)
   (set! complain-on-cert void))
 
-(define ssl-default-verify-sources
+(define ssl-default-verify-sources*
   (make-parameter
-   (case (system-type 'os*)
-     [(windows)
-      ;; On Windows, x509-root-sources produces paths like "/usr/local/ssl/certs", which
-      ;; aren't useful. So just skip them.
-      '((win32-store "ROOT"))]
-     [(macosx darwin)
-      '((macosx-keychain #f))]
-     [else
-      (x509-root-sources)])))
+   (delay
+     (case (system-type 'os*)
+       [(windows)
+        ;; On Windows, x509-root-sources produces paths like "/usr/local/ssl/certs", which
+        ;; aren't useful. So just skip them.
+        '((win32-store "ROOT"))]
+       [(macosx darwin)
+        '((macosx-keychain #f))]
+       [else
+        (x509-root-sources)]))))
+
+(define ssl-default-verify-sources
+  (make-derived-parameter
+   ssl-default-verify-sources*
+   (λ (p) (delay p))
+   force))
 
 (define ssl-dh4096-param-bytes
   (include/reader "dh4096.pem" (lambda (src port)
