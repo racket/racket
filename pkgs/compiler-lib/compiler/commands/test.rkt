@@ -366,15 +366,15 @@
      (close-output-port p2))))
 
 (define (extract-file-name p)
-  (cond
-   [(and (pair? p) (eq? 'submod (car p)))
-    (cadr p)]
-   [else p]))
+  (match p
+    [`(submod (file ,m) . ,_) m]
+    [`(submod ,m . ,_) m]
+    [_ p]))
 
-(define (add-submod mod sm)
-  (if (and (pair? mod) (eq? 'submod (car mod)))
-      (append mod '(config))
-      (error test-exe-name "cannot add test-config submodule to path: ~s" mod)))
+(define (add-submod mod)
+  (match mod
+    [`(submod ,m . ,e*) `(submod ,m config . ,e*)]
+    [_ (error test-exe-name "cannot add test-config submodule to path: ~s" mod)]))
 
 (define (dynamic-require* p rt-p d
                           #:id id
@@ -388,8 +388,8 @@
   (define lookup
     (or (cond
          [(not try-config?) #f]
-         [(module-declared? (add-submod p 'config) #t)
-          (define submod (add-submod p 'config))
+         [(module-declared? (add-submod p) #t)
+          (define submod (add-submod p))
           (dynamic-require submod
                            '#%info-lookup
                            (lambda ()
@@ -517,11 +517,10 @@
           v))]))
 
 (define (normalize-module-path p)
-  (cond
-   [(path? p) (path->string p)]
-   [(and (pair? p) (eq? 'submod (car p)))
-    (list* 'submod (normalize-module-path (cadr p)) (cddr p))]
-   [else p]))
+  (match p
+    [(? path?) `(file ,(path->string p))]
+    [`(submod ,m . ,e*) `(submod ,(normalize-module-path m) . ,e*)]
+    [_ p]))
 
 (define ids '(1))
 (define ids-lock (make-semaphore 1))
@@ -559,9 +558,9 @@
                         ""
                         (format "~a " id))
                     (let ([m (normalize-module-path p)])
-                      (if (and (pair? mod) (eq? 'submod (car mod)))
-                          (list* 'submod m (cddr mod))
-                          m))
+                      (match mod
+                        [`(submod ,_ . ,e*) `(submod ,m . ,e*)]
+                        [_ m]))
                     (apply string-append
                            (for/list ([a (in-list args)])
                              (format " ~s" (format "~a" a)))))
@@ -581,9 +580,9 @@
                                          ""
                                          (format "~a " id))
                                      (let ([m (normalize-module-path p)])
-                                       (if (and (pair? mod) (eq? 'submod (car mod)))
-                                           (list* 'submod m (cddr mod))
-                                           m)))))
+                                       (match mod
+                                         [`(submod ,_ . ,e*) `(submod ,m . ,e*)]
+                                         [_ m])))))
                           (loop)))))))
      (begin0
       (dynamic-require* mod rt-mod 0
