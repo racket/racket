@@ -62,7 +62,7 @@
       (thunk))))
 
 (define (printf/flush . args)
-  (printf "~a " (~r #:min-width 10 #:precision '(= 2) (/ (current-process-milliseconds) 1000.)))
+  (printf "~a " (~r #:min-width 10 #:precision '(= 2) (/ (current-process-milliseconds 'subprocesses) 1000.)))
   (apply printf args)
   (flush-output))
 
