@@ -369,6 +369,7 @@
   (match p
     [`(submod (file ,m) . ,_) m]
     [`(submod ,m . ,_) m]
+    [`(file ,p) p]
     [_ p]))
 
 (define (add-submod mod)
