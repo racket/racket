@@ -724,6 +724,15 @@ rktio_addrinfo_lookup_t *rktio_start_addrinfo_lookup(rktio_t *rktio,
   if (passive) {
     RKTIO_AS_ADDRINFO(hints)->ai_flags |= rktio_AI_PASSIVE;
   }
+  /* On modern systems, `AI_ADDRCONFIG` and `AI_V4MAPPED` tend to be
+     the defaults when `hints` is NULL, so add them if they seem
+     available. */
+#ifdef AI_ADDRCONFIG
+  RKTIO_AS_ADDRINFO(hints)->ai_flags |= AI_ADDRCONFIG;
+#endif
+#ifdef AI_V4MAPPED
+  RKTIO_AS_ADDRINFO(hints)->ai_flags |= AI_V4MAPPED;
+#endif
   if (tcp) {
     RKTIO_AS_ADDRINFO(hints)->ai_socktype = SOCK_STREAM;
 # ifndef PROTOENT_IS_INT
