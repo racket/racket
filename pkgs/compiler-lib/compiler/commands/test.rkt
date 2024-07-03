@@ -375,7 +375,7 @@
     [`(file ,p) p]
     [_ p]))
 
-(define (add-submod mod)
+(define (add-config mod)
   (match mod
     [`(submod ,m . ,e*) `(submod ,m config . ,e*)]
     [_ (error test-exe-name "cannot add test-config submodule to path: ~s" mod)]))
@@ -392,8 +392,8 @@
   (define lookup
     (or (cond
          [(not try-config?) #f]
-         [(module-declared? (add-submod p) #t)
-          (define submod (add-submod p))
+         [(module-declared? (add-config p) #t)
+          (define submod (add-config p))
           (dynamic-require submod
                            '#%info-lookup
                            (lambda ()
