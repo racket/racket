@@ -76,8 +76,7 @@
   (define argv (current-command-line-arguments))
   (define result-file (vector-ref argv 0))
   (define test-module (deserialize (read (open-input-string (vector-ref argv 1)))))
-  (define rt-module (let ([p (read (open-input-string (vector-ref argv 2)))])
-                      (and p (deserialize p))))
+  (define rt-module (deserialize (read (open-input-string (vector-ref argv 2)))))
   (define d (read (open-input-string (vector-ref argv 3))))
   (define make? (read (open-input-string (vector-ref argv 4))))
   (define errortrace-path-or-false (read (open-input-string (vector-ref argv 5))))
@@ -284,9 +283,7 @@
                       (format "~s" d)
                       (format "~s" make?)
                       (format "~s" (and load-errortrace? errortrace-module-path))
-                      (format "~s" (cond
-                                     [(current-test-invocation-directory) => serialize]
-                                     [else #f]))
+                      (format "~s" (serialize (current-test-invocation-directory)))
                       args)))
            (define proc (list-ref ps 4))
 
