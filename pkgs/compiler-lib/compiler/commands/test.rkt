@@ -10,6 +10,7 @@
          racket/future
          racket/file
          racket/string
+         racket/serialize
          compiler/find-exe
          raco/command-name
          racket/system
@@ -67,18 +68,19 @@
 (module process racket/base
   (require raco/testing
            racket/file
+           racket/serialize
            compiler/private/cm-minimal)
   ;; Arguments include a temp file to hold test results, the module path to run,
   ;; and the `dynamic-require` second argument. See the 'process case of
   ;; dynamic-require-elsewhere.
   (define argv (current-command-line-arguments))
   (define result-file (vector-ref argv 0))
-  (define test-module (read (open-input-string (vector-ref argv 1))))
-  (define rt-module (read (open-input-string (vector-ref argv 2))))
+  (define test-module (deserialize (read (open-input-string (vector-ref argv 1)))))
+  (define rt-module (deserialize (read (open-input-string (vector-ref argv 2)))))
   (define d (read (open-input-string (vector-ref argv 3))))
   (define make? (read (open-input-string (vector-ref argv 4))))
   (define errortrace-path-or-false (read (open-input-string (vector-ref argv 5))))
-  (define test-invocation-path (bytes->path (read (open-input-string (vector-ref argv 6)))))
+  (define test-invocation-path (deserialize (read (open-input-string (vector-ref argv 6)))))
   (define args (list-tail (vector->list argv) 7))
 
   (current-test-invocation-directory test-invocation-path)
@@ -276,13 +278,13 @@
                       "-e"
                       "(dynamic-require '(submod compiler/commands/test process) #f)"
                       tmp-file
-                      (format "~s" (normalize-module-path p))
-                      (format "~s" (normalize-module-path rt-p))
+                      (format "~s" (serialize p))
+                      (format "~s" (serialize rt-p))
                       (format "~s" d)
                       (format "~s" make?)
                       (format "~s" (and load-errortrace? errortrace-module-path))
                       (format "~s" (cond
-                                     [(current-test-invocation-directory) => path->bytes]
+                                     [(current-test-invocation-directory) => serialize]
                                      [else #f]))
                       args)))
            (define proc (list-ref ps 4))
