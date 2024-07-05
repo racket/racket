@@ -222,7 +222,7 @@ words, @racket[#:exclude] is applied after @racket[#:include].
 The @racket[#:submodule-include] and @racket[#:submodule-exclude]
 specifications are analogous to @racket[#:include] and
 @racket[#:exclude], but for submodules immediately with
-#racket[_module-path]. If @racket[_mode] is @racket[#:exe], then the
+@racket[_module-path]. If @racket[_mode] is @racket[#:exe], then the
 list of inclusions defaults to @racketidfont{main} and
 @racketidfont{configure-runtime}, otherwise the default is to have no
 specific inclusions.
