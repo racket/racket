@@ -10,6 +10,7 @@
          racket/future
          racket/file
          racket/string
+         racket/serialize
          compiler/find-exe
          raco/command-name
          racket/system
@@ -67,18 +68,19 @@
 (module process racket/base
   (require raco/testing
            racket/file
+           racket/serialize
            compiler/private/cm-minimal)
   ;; Arguments include a temp file to hold test results, the module path to run,
   ;; and the `dynamic-require` second argument. See the 'process case of
   ;; dynamic-require-elsewhere.
   (define argv (current-command-line-arguments))
   (define result-file (vector-ref argv 0))
-  (define test-module (read (open-input-string (vector-ref argv 1))))
-  (define rt-module (read (open-input-string (vector-ref argv 2))))
+  (define test-module (deserialize (read (open-input-string (vector-ref argv 1)))))
+  (define rt-module (deserialize (read (open-input-string (vector-ref argv 2)))))
   (define d (read (open-input-string (vector-ref argv 3))))
   (define make? (read (open-input-string (vector-ref argv 4))))
   (define errortrace-path-or-false (read (open-input-string (vector-ref argv 5))))
-  (define test-invocation-path (bytes->path (read (open-input-string (vector-ref argv 6)))))
+  (define test-invocation-path (deserialize (read (open-input-string (vector-ref argv 6)))))
   (define args (list-tail (vector->list argv) 7))
 
   (current-test-invocation-directory test-invocation-path)
@@ -276,14 +278,12 @@
                       "-e"
                       "(dynamic-require '(submod compiler/commands/test process) #f)"
                       tmp-file
-                      (format "~s" (normalize-module-path p))
-                      (format "~s" (normalize-module-path rt-p))
+                      (format "~s" (serialize p))
+                      (format "~s" (serialize rt-p))
                       (format "~s" d)
                       (format "~s" make?)
                       (format "~s" (and load-errortrace? errortrace-module-path))
-                      (format "~s" (cond
-                                     [(current-test-invocation-directory) => path->bytes]
-                                     [else #f]))
+                      (format "~s" (serialize (current-test-invocation-directory)))
                       args)))
            (define proc (list-ref ps 4))
 
@@ -366,15 +366,16 @@
      (close-output-port p2))))
 
 (define (extract-file-name p)
-  (cond
-   [(and (pair? p) (eq? 'submod (car p)))
-    (cadr p)]
-   [else p]))
+  (match p
+    [`(submod (file ,m) . ,_) m]
+    [`(submod ,m . ,_) m]
+    [`(file ,p) p]
+    [_ p]))
 
-(define (add-submod mod sm)
-  (if (and (pair? mod) (eq? 'submod (car mod)))
-      (append mod '(config))
-      (error test-exe-name "cannot add test-config submodule to path: ~s" mod)))
+(define (add-config mod)
+  (match mod
+    [`(submod ,m . ,e*) `(submod ,m config . ,e*)]
+    [_ (error test-exe-name "cannot add test-config submodule to path: ~s" mod)]))
 
 (define (dynamic-require* p rt-p d
                           #:id id
@@ -388,8 +389,8 @@
   (define lookup
     (or (cond
          [(not try-config?) #f]
-         [(module-declared? (add-submod p 'config) #t)
-          (define submod (add-submod p 'config))
+         [(module-declared? (add-config p) #t)
+          (define submod (add-config p))
           (dynamic-require submod
                            '#%info-lookup
                            (lambda ()
@@ -517,11 +518,10 @@
           v))]))
 
 (define (normalize-module-path p)
-  (cond
-   [(path? p) (path->string p)]
-   [(and (pair? p) (eq? 'submod (car p)))
-    (list* 'submod (normalize-module-path (cadr p)) (cddr p))]
-   [else p]))
+  (match p
+    [(? path?) `(file ,(path->string p))]
+    [`(submod ,m . ,e*) `(submod ,(normalize-module-path m) . ,e*)]
+    [_ p]))
 
 (define ids '(1))
 (define ids-lock (make-semaphore 1))
@@ -559,9 +559,9 @@
                         ""
                         (format "~a " id))
                     (let ([m (normalize-module-path p)])
-                      (if (and (pair? mod) (eq? 'submod (car mod)))
-                          (list* 'submod m (cddr mod))
-                          m))
+                      (match mod
+                        [`(submod ,_ . ,e*) `(submod ,m . ,e*)]
+                        [_ m]))
                     (apply string-append
                            (for/list ([a (in-list args)])
                              (format " ~s" (format "~a" a)))))
@@ -581,9 +581,9 @@
                                          ""
                                          (format "~a " id))
                                      (let ([m (normalize-module-path p)])
-                                       (if (and (pair? mod) (eq? 'submod (car mod)))
-                                           (list* 'submod m (cddr mod))
-                                           m)))))
+                                       (match mod
+                                         [`(submod ,_ . ,e*) `(submod ,m . ,e*)]
+                                         [_ m])))))
                           (loop)))))))
      (begin0
       (dynamic-require* mod rt-mod 0
