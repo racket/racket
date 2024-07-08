@@ -1,6 +1,19 @@
-Version 8.14
-Added the `compiler/demod` language and improved `raco demod` to
- support the preservation of syntax, provides, macros, and submodules
+Version 8.14, July 2024
+Add `case-λ`, add `match-λ` (and variants) to `racket/match`, and
+ change the binding of `λ` to be `free-identifier=?` to `lambda`
+Add the `compiler/demod` language, improve `raco demod` to support
+ the preservation of syntax, provides, macros, and submodules, and
+ improve the effectiveness of definition pruning
+Generalize `contract-in` to have the same features as `contract-out`
+Add `hash-filter` to `racket/hash`
+Add `#:flatten-requires` and `#:unlimited-compile` keywords for
+ `#%declare`
+Adjust `raco test` to use `current-test-invocation-directory`, and
+ adjust `raco test` output to show well-formed module paths
+Support an embedding of Racket CS where boot files are provided in
+ memory, instead of requiring a file
+Fix `equal-always?` on paths, fxvectors, flvectors, extflvectors,
+ and stencil vectors
 
 Version 8.13, April 2024
 Add `racket/treelist` and `racket/mutable-treelist`
