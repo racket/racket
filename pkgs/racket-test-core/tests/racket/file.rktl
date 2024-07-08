@@ -1952,7 +1952,7 @@
                                              ;; In case IPv6 is supported by the OS but not for the loopback
                                              ;; devce, we also catch "Cannot assign requested address"
                                              (unless (regexp-match?
-                                                      #rx"family not supported by protocol|no address associated with name|Cannot assign requested address"
+                                                      #rx"family not supported by protocol|no address associated with name|Cannot assign requested address|Address family for hostname not supported"
                                                       (exn-message e))
                                                (raise e)))])
     ;; Supply listener hostname, so we can check whether `listen` receives IPv6 connections
