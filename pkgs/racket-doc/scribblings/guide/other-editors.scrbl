@@ -52,7 +52,8 @@ popular among Racketeers as well.
        @hyperlink["http://www.nongnu.org/geiser/"]{Geiser manual}.
 
        Debian and Ubuntu packages for Geiser are available under the
-       name @tt{geiser}.}
+       name @tt{geiser}. A Gentoo port is also available (under the
+       name @tt{app-emacs/geiser}).}
 
  @item{Emacs ships with a major mode for Scheme, @tt{scheme-mode},
        that while not as featureful as the above options, works
