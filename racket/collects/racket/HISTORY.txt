@@ -8,6 +8,8 @@ Generalize `contract-in` to have the same features as `contract-out`
 Add `hash-filter` to `racket/hash`
 Add `#:flatten-requires` and `#:unlimited-compile` keywords for
  `#%declare`
+Add `raco/testing`, now used by `rackunit/log`, as a home for general
+ testing like `test-log` and `current-test-invocation-directory`
 Adjust `raco test` to use `current-test-invocation-directory`, and
  adjust `raco test` output to show well-formed module paths
 Support an embedding of Racket CS where boot files are provided in
