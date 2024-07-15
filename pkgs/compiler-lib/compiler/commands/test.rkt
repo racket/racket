@@ -374,7 +374,7 @@
 
 (define (add-config mod)
   (match mod
-    [`(submod ,m . ,e*) `(submod ,m config . ,e*)]
+    [`(submod ,m ,@e*) `(submod ,m ,@e* config)]
     [_ (error test-exe-name "cannot add test-config submodule to path: ~s" mod)]))
 
 (define (dynamic-require* p rt-p d
