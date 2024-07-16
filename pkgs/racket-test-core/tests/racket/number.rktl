@@ -1397,10 +1397,10 @@
 (test #t bitwise-bit-set? (bitwise-not (expt 2 101)) 70)
 
 (arity-test bitwise-bit-set? 2 2)
-(err/rt-test (bitwise-bit-set? "a" 1))
-(err/rt-test (bitwise-bit-set? 13 "a"))
-(err/rt-test (bitwise-bit-set? 13 -1))
-(err/rt-test (bitwise-bit-set? 13 (- (expt 2 101))))
+(err/rt-test (bitwise-bit-set? "a" 1) exn:fail:contract? #rx"exact-integer[?]")
+(err/rt-test (bitwise-bit-set? 13 "a") exn:fail:contract? #rx"exact-(?:nonnegative-)?integer[?]") ; FIXME: CS error is imprecise
+(err/rt-test (bitwise-bit-set? 13 -1) exn:fail:contract? #rx"exact-nonnegative-integer[?]")
+(err/rt-test (bitwise-bit-set? 13 (- (expt 2 101)) exn:fail:contract? #rx"exact-nonnegative-integer[?]"))
 
 (test 0 bitwise-bit-field 13 0 0)
 (test 1 bitwise-bit-field 13 0 1)
@@ -1460,11 +1460,11 @@
 (test (sub1 (expt 2 32)) bitwise-bit-field -1 32 64)
 
 (arity-test bitwise-bit-field 3 3)
-(err/rt-test (bitwise-bit-field "a" 1 2))
-(err/rt-test (bitwise-bit-field 13 -1 2))
-(err/rt-test (bitwise-bit-field 13 0 -1))
-(err/rt-test (bitwise-bit-field 13 2 1))
-(err/rt-test (bitwise-bit-field 13 (expt 2 101) (sub1 (expt 2 101))))
+(err/rt-test (bitwise-bit-field "a" 1 2) exn:fail:contract? #rx"exact-integer[?]")
+(err/rt-test (bitwise-bit-field 13 -1 2) exn:fail:contract? #rx"exact-nonnegative-integer[?]")
+(err/rt-test (bitwise-bit-field 13 0 -1) exn:fail:contract? #rx"exact-nonnegative-integer[?]")
+(err/rt-test (bitwise-bit-field 13 2 1) exn:fail:contract? #rx"ending index|first index") ; CS message is more like `substring`, etc.
+(err/rt-test (bitwise-bit-field 13 (expt 2 101) (sub1 (expt 2 101)) exn:fail:contract? #rx"ending index|first index"))
 
 (test 4 gcd 0 4)
 (test 4 gcd -4 0)

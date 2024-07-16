@@ -203,6 +203,22 @@
                                         "  stencil vector: ~s\n"
                                         "  addition mask: ~s")
                          irritants)]
+   [(and (or (equal? str "invalid bit index ~s")
+             (equal? str "invalid start index ~s")
+             (equal? str "invalid end index ~s"))
+         (memq who '(bitwise-bit-set? bitwise-bit-field)))
+    (cond
+      [(exact-nonnegative-integer? (car irritants))
+       ;; must be an out-of-range end index
+       (format-error-values (string-append
+                             "ending index is smaller than starting index\n  ending index: ~s")
+                            irritants)]
+      [else
+       (format-error-values (string-append
+                             "contract violation\n  expected: "
+                             (error-contract->adjusted-string "exact-nonnegative-integer?" primitive-realm)
+                             "\n  given: ~s")
+                            irritants)])]
    [else
     (format-error-values str irritants)]))
 
