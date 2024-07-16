@@ -599,7 +599,9 @@ bindings of each @racket[require-spec] are visible for expanding later
  @defsubform[(only-in require-spec id-maybe-renamed ...)]{
   Like @racket[require-spec], but constrained to those exports for
   which the identifiers to bind match @racket[id-maybe-renamed]: as
-  @racket[_id] or as @racket[_orig-id] in @racket[[_orig-id _bind-id]]. If
+  @racket[_id] or as @racket[_orig-id] in @racket[[_orig-id _bind-id]].
+  When a @racket[id-maybe-renamed] has a @racket[_bind-id], the lexical
+  context of @racket[_bind-id] is used for the binding. If
   the @racket[_id] or @racket[_orig-id] of any @racket[id-maybe-renamed]
   is not in the set that @racket[require-spec] describes, a syntax
   error is reported.
@@ -647,7 +649,8 @@ bindings of each @racket[require-spec] are visible for expanding later
 
  @defsubform[(rename-in require-spec [orig-id bind-id] ...)]{
   Like @racket[require-spec], but replacing the identifier to
-  bind @racket[orig-id] with @racket[bind-id]; if any
+  bind @racket[orig-id] with @racket[bind-id]. The lexical context of
+  @racket[bind-id] is used for the binding. If any
   @racket[orig-id] is not in the set that @racket[require-spec]
   describes, a syntax error is reported.
   
