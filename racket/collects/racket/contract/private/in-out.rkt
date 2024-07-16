@@ -657,7 +657,7 @@
                               #t    ;; mangle-for-maker?
                               #f    ;; generate-provides?
                               #:lift? #f
-                              #:start-swapped? #t
+                              #:start-swapped? (not provide?)
                               )])
 
                 (define generate-make-s-binding?
