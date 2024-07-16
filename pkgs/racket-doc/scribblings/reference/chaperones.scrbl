@@ -867,7 +867,7 @@ of the original value, and @racket[set-proc] must produce the value
 that is given or a chaperone of the value. The @racket[set-proc] will
 not be used if @racket[vec] is immutable.}
 
-@defproc[(chaperone-vector* [vec (and/c vector? (not/c immutable?))]
+@defproc[(chaperone-vector* [vec vector?]
                             [ref-proc (or/c (vector? vector? exact-nonnegative-integer? any/c . -> . any/c) #f)]
                             [set-proc (or/c (vector? vector? exact-nonnegative-integer? any/c . -> . any/c) #f)]
                             [prop impersonator-property?]
