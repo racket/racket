@@ -1606,6 +1606,22 @@
    (λ (x)
      (and (exn:fail:syntax? x)
           (regexp-match #rx"point: .* cannot be used as an expression" (exn-message x)))))
+
+  (contract-error-test
+   'contract-error-test21
+   #'(begin
+       (eval '(module contract-error-test21-m1 racket/base
+                (require racket/contract)
+                (provide (contract-out
+                          (struct contract-error-test21-osc-message
+                            ([args (listof integer?)]))))
+                (struct contract-error-test21-osc-message (args))))
+       (eval '(require 'contract-error-test21-m1))
+       (eval '(contract-error-test21-osc-message 1234)))
+   (λ (x)
+     (and (exn:fail:contract:blame? x)
+          (regexp-match? #rx"^contract-error-test21-osc-message: contract violation"
+                         (exn-message x)))))
   
   (contract-eval
    `(,test
