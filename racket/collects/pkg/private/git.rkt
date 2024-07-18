@@ -4,7 +4,8 @@
          racket/promise
          "print.rkt")
 
-(provide git)
+(provide git
+         looks-like-commit?)
 
 (define git-exe (delay (find-executable-path
                         (if (eq? (system-type) 'windows)
@@ -44,3 +45,10 @@
       [(status) #f]
       [else
        (pkg-error "Git command failed")])]))
+
+;; Heuristic for working with a commit instead of a branch with `git
+;; clone`. It's ok for this to treat too many names as commits, because
+;; the places where we use a branch are just to avoid downloading
+;; unneeded branches, and so we are never required to use a branch
+(define (looks-like-commit? commit-or-branch)
+  (regexp-match? #rx"^[0-9a-f]*$" commit-or-branch))

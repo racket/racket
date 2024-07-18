@@ -249,6 +249,7 @@ The package lock must be held (allowing writes if @racket[set?] is true); see
                      [#:source source (or/c 'dir 'name)]
                      [#:mode mode (or/c 'as-is 'source 'binary 'binary-lib 'built)]
                      [#:dest dest-dir (or/c (and/c path-string? complete-path?) #f)]
+                     [#:original original-source (or/c string? #f) #f]
                      [#:quiet? quiet? boolean? #f]
                      [#:from-command-line? from-command-line? boolean? #f])
         void?]{
@@ -258,7 +259,9 @@ Implements @racket[pkg-create-command].
 Unless @racket[quiet?] is true, information about the output is
 reported to the current output port. If @racket[from-command-line?]
 is true, error messages may suggest specific command-line flags for
-@command-ref{create}.}
+@command-ref{create}.
+
+@history[#:changed "8.14.0.2" @elem{Added the @racket[#:original] argument.}]}
 
 
 @defproc[(pkg-install      [descs (listof pkg-desc?)]

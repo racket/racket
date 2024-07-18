@@ -43,7 +43,8 @@
          github-client_secret
          github-client_id)
 
-(struct install-info (name orig-pkg directory git-directory clean? checksum module-paths additional-installs))
+(struct install-info (name orig-pkg directory git-directory clean? checksum module-paths additional-installs)
+  #:prefab)
 
 (define (communication-type type)
   (if (and (eq? type 'github)
@@ -164,8 +165,12 @@
                         #:force-strip? force-strip?)]
    [(eq? type 'clone)
     (define pkg-url (string->url pkg))
-    (define-values (transport host port repo branch path)
+    (define-values (transport host port repo branch-or-commit path)
       (split-git-or-hub-url pkg-url))
+    (define branch (if (or (eq? branch-or-commit 'head)
+                           (looks-like-commit? branch-or-commit))
+                       'head
+                       branch-or-commit))
     (define pkg-no-query (real-git-url pkg-url host port repo))
     (define clone-dir (or given-at-dir
                           (current-directory)))
@@ -175,10 +180,20 @@
     (define orig-pkg (desc->orig-pkg 'clone pkg given-at-dir))
 
     (define checksum
-      (or given-checksum
-          (remote-package-checksum orig-pkg download-printf pkg-name
-                                   #:catalog-lookup-cache catalog-lookup-cache
-                                   #:remote-checksum-cache remote-checksum-cache)))
+      (cond
+        [(and (eq? branch-or-commit 'head)
+              given-checksum)
+         given-checksum]
+        [else
+         (define found-checksum
+           (remote-package-checksum orig-pkg download-printf pkg-name
+                                    #:catalog-lookup-cache catalog-lookup-cache
+                                    #:remote-checksum-cache remote-checksum-cache))
+         ;; If `found-checksum` matches `branch-or-commit`, then it must
+         ;; be a commit, and so we're pinned to that commit
+         (if (equal? found-checksum branch-or-commit)
+             branch-or-commit
+             given-checksum)]))
 
     ;; If the clone directory already exists, and if it already has
     ;; the target commit, then we use that directory. It may have
@@ -699,10 +714,20 @@
       (check-checksum given-checksum checksum "unexpected" pkg #f)
       (check-checksum checksum (install-info-checksum info) "incorrect" pkg #f))
     (define-values (new-name new-type) (package-source->name+type source #f))
-    (define repo-url (and (or (eq? new-type 'git)
-                              (eq? new-type 'git-url)
-                              (eq? new-type 'github))
-                          source))
+    (define (git-type? new-type)
+      (or (eq? new-type 'git)
+          (eq? new-type 'git-url)
+          (eq? new-type 'github)))
+    (define repo-url (or (and (git-type? new-type)
+                              source)
+                         (let* ([i (get-pkg-info (install-info-directory info)
+                                                 metadata-ns)]
+                                [source (and i
+                                             (i 'package-original-source (lambda () #f)))])
+                           (and source
+                                (let-values ([(name type) (package-source->name+type source #f)])
+                                  (and (git-type? type)
+                                       source))))))
     (case new-type
       [(link static-link clone)
        ;; The `source` must have been something like a `file://`

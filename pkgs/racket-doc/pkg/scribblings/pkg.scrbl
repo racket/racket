@@ -964,8 +964,13 @@ package is created.
  @item{@DFlag{binary-lib} --- Bundles compiled bytecode only in the package directory; see @secref["strip"].}
  @item{@DFlag{built} --- Bundles compiled sources, bytecode, and rendered
        documentation in the package directory, filtering repository elements; see @secref["strip"].}
-  @item{@DFlag{dest} @nonterm{dest-dir} --- Writes generated bundles to @nonterm{dest-dir}.}
-  ]
+ @item{@DFlag{original} @nonterm{package} --- Records @nonterm{package} as the original source in the
+       package's @filepath{info.rkt} (but not in @DFlag{as-is} mode, since recording @nonterm{package}
+       means updating @filepath{info.rkt}).}
+ @item{@DFlag{dest} @nonterm{dest-dir} --- Writes generated bundles to @nonterm{dest-dir}.}
+ ]
+
+@history[#:changed "8.14.0.2" @elem{Added the @DFlag{original} flag.}]
 }
 
 @subcommand{@command/toc{config} @nonterm{option} ... @optional[@nonterm{key}] @nonterm{val} ... --- 

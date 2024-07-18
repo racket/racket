@@ -61,7 +61,8 @@
        (no))]))
 
 (define (generate-stripped-directory mode dir dest-dir
-                                     #:check-status? [check-status? #t])
+                                     #:check-status? [check-status? #t]
+                                     #:original-source [orig-pkg-source #f])
   (unless (path-string? dir)
     (raise-argument-error 'generate-stripped-directory "path-string?" dir))
   (unless (path-string? dest-dir)
@@ -190,7 +191,7 @@
          [(binary binary-lib)
           (cond
             [(equal? #"info.rkt" bstr)
-             (fixup-info new-p src-base level mode)]
+             (fixup-info new-p src-base level mode orig-pkg-source)]
             [(regexp-match? #rx"[.]zo$" bstr)
              (fixup-zo new-p)])]
          [(built source)
@@ -198,7 +199,7 @@
                     (eq? level 'package+collection))
             (cond
               [(equal? #"info.rkt" bstr)
-               (fixup-info new-p src-base level mode)]
+               (fixup-info new-p src-base level mode orig-pkg-source)]
               [else (void)]))]
          [else (void)])]))
   
@@ -343,8 +344,8 @@
      p
      (lambda (out) (write-bytes new-bstr out)))))
 
-;; Used in binary[-lib] mode:
-(define (fixup-info new-p src-base level mode)
+;; Used in binary[-lib] mode for collection level, all modes for package level:
+(define (fixup-info new-p src-base level mode orig-pkg-source)
   (define dir (let-values ([(base name dir?) (split-path new-p)])
                 base))
   ;; check format:
@@ -370,8 +371,11 @@
           ,@(case mode
               [(source) '()]
               [else `((define package-content-state '(,mode ,(version))))])
+          ,@(if orig-pkg-source
+                `((define package-original-source ,orig-pkg-source))
+                '())
           . ,(filter values
-                     (map (fixup-info-definition get-info mode) defns)))))
+                     (map (fixup-info-definition get-info mode orig-pkg-source) defns)))))
     (define new-content
       (match content
         [`(module info ,info-lib (#%module-begin . ,defns))
@@ -395,9 +399,11 @@
         (unless (eq? level 'package)
           (managed-compile-zo new-p))))))
 
-(define ((fixup-info-definition get-info mode) defn)
+(define ((fixup-info-definition get-info mode orig-pkg-source) defn)
   (match defn
     [`(define package-content-state . ,v) #f]
+    [`(define package-original-source . ,v)
+     (if orig-pkg-source #f defn)]
     [_
      (case mode
        [(built source) defn]

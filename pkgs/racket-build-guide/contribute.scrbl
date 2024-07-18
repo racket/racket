@@ -78,39 +78,31 @@ See the @secref["contribute-guidelines"].
 If you find yourself changing a file that is in a
 @filepath{share/pkgs} subdirectory (either installed as part of a
 Racket release or as a product of an in-place build), then that file
-is not part of the main Racket Git repository. It almost certainly has
+is probably not part of the main Racket Git repository. It almost certainly has
 its own Git repository somewhere else, possibly within
 @url{https://github.com/racket}, but possibly in another user's space.
 The name of the directory in @filepath{share/pkgs} is almost certainly
 the package name.
 
-To start working on a package @nonterm{pkg-name} from a Racket release
-or snapshot, you first need to adjust the package installation to use
-the source specified by the main package catalog
-
-@commandline{raco pkg update @DFlag{no-setup} @DFlag{catalog} https://pkgs.racket-lang.org @nonterm{pkg-name}}
-
-and then in the directory you'd like to hold the package's source
+To start working on a package @nonterm{pkg-name}, in the directory
+you'd like to hold the package's source, use
 
 @commandline{raco pkg update @DFlag{clone} @nonterm{pkg-name}}
 
-will clone the package's source Git repository into
-@filepath{@nonterm{pkg-name}} within the current directory.
+@margin-note{For Racket version 13.0 as a Racket release or snapshot,
+before using @DFlag{clone}, you first need to adjust the package
+installation to use the source specified by the main package catalog:
 
-Alternatively, if you already have an in-place build of the main
-Racket repository, you can start working on a package
-@nonterm{pkg-name}, by going to the root directory of your Racket
-repository checkout and running
+@commandline{raco pkg update @DFlag{no-setup} @DFlag{catalog} https://pkgs.racket-lang.org @nonterm{pkg-name}}
+}
 
-@commandline{raco pkg update @DFlag{clone} extra-pkgs/@nonterm{pkg-name}}
-
-That will create @filepath{extra-pkgs/@nonterm{pkg-name}} as a clone
-of the package's source Git repository, it will replace the current
+That command will clone the package's source Git repository into
+@filepath{@nonterm{pkg-name}} within the current directory and
+checkout the appropriate commit. Then, it will replace the current
 installation of the package in your Racket build to point at that
 directory, and then it will rebuild (essentially by using @exec{raco
 setup}) with the new location of the package installation. Now you can
-edit in @filepath{extra-pkgs/@nonterm{pkg-name}}, and your changes
-will be live.
+edit in @filepath{@nonterm{pkg-name}}, and your changes will be live.
 
 Some information that might improve your experience:
 
@@ -121,26 +113,28 @@ Some information that might improve your experience:
        if you want to make changes and then run @exec{raco setup}
        yourself.}
 
- @item{A package is sometimes a subdirectory within a Git repository,
-       and it would be better if the checkout in @filepath{extra-pkgs}
-       matched the repository name instead of the package name. If you
-       know the repository name, you can use
+ @item{The argument after @DFlag{clone} is a directory, and by
+       default, the package name is inferred from the directory.
+       Within an in-place build of the main Racket repository, for
+       example, the conventional use
 
-       @commandline{raco pkg update @DFlag{clone} extra-pkgs/@nonterm{repo-name} @nonterm{pkg-name}}
+       @commandline{raco pkg update @DFlag{clone} extra-pkgs/@nonterm{pkg-name}}
 
-       to make the distinction.}
+       creates @filepath{extra-pkgs/@nonterm{pkg-name}} as a clone of
+       the Git repository for @nonterm{pkg-name} (and
+       @filepath{.gitignore} for the Racket repository excludes
+       @filepath{extra-pkgs}).}
 
- @item{This same approach will generally work if you're starting from
-       a distribution installer instead of the checkout of the Racket
-       sources from the main Git repository. You'll need write
-       permission to the installation, though, so that @exec{raco pkg
-       update} can redirect the package. Also, there's no particular
-       reason to use @exec{extra-pkgs} in that case.}
+ @item{To use a clone directory name that is different than the
+       package name, you can supply the package name explicitly
+       after the @DFlag{clone} directory name:
+
+       @commandline{raco pkg update @DFlag{clone} @nonterm{repo-name} @nonterm{pkg-name}}}
 
  @item{If you're done and want to go back to the normal installation
        for @nonterm{pkg-name}, use
 
-        @commandline{raco pkg update @DFlag{lookup} @nonterm{pkg-name}}}
+        @commandline{raco pkg update @DFlag{unclone} @nonterm{pkg-name}}}
 
  @item{See @secref["git-workflow" #:doc '(lib
        "pkg/scribblings/pkg.scrbl")] for more information about how

@@ -532,6 +532,7 @@
              [#:bool binary-lib () "Bundle bytecode without sources or documentation"]
              [#:bool built () "Bundle sources, bytecode and rendered documentation"]
              #:once-each
+             [(#:str package #f) original () "Record <package> as original package source"]
              [(#:str dest-dir #f) dest () "Create output files in <dest-dir>"]
              #:args (directory-or-package)
              (parameterize ([current-pkg-error (pkg-error 'create)])
@@ -548,7 +549,8 @@
                                    [binary 'binary]
                                    [binary-lib 'binary-lib]
                                    [built 'built]
-                                   [else 'as-is])))]
+                                   [else 'as-is])
+                           #:original original))]
             ;; ----------------------------------------
             [config
              "View and modify the package manager's configuration"

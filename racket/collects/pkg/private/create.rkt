@@ -133,6 +133,7 @@
 
 (define (stripped-create mode name dir
                         #:format [create:format 'zip]
+                        #:original-source [original-source #f]
                         #:quiet? [quiet? #f]
                         #:from-command-line? [from-command-line? #f]
                         #:dest [archive-dest-dir #f])
@@ -142,7 +143,8 @@
       (lambda ()
         (define dest-dir (build-path tmp-dir name))
         (make-directory dest-dir)
-        (generate-stripped-directory mode dir dest-dir)
+        (generate-stripped-directory mode dir dest-dir
+                                     #:original-source original-source)
         (create-as-is create:format name dest-dir dir 
                       #:hide-src? #t 
                       #:quiet? quiet?
@@ -158,6 +160,7 @@
                     #:dest [dest-dir #f]
                     #:source [source 'dir]
                     #:mode [mode 'as-is]
+                    #:original [original-source #f]
                     #:quiet? [quiet? #f]
                     #:from-command-line? [from-command-line? #f])
   (define pkg-name
@@ -192,5 +195,6 @@
     [else (stripped-create mode pkg-name dir
                            #:dest dest-dir
                            #:format create:format
+                           #:original-source original-source
                            #:quiet? quiet?
                            #:from-command-line? from-command-line?)]))

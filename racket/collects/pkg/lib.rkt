@@ -101,7 +101,8 @@
                   #:mode (or/c 'as-is 'source 'binary 'binary-lib 'built)
                   #:quiet? boolean?
                   #:from-command-line? boolean?
-                  #:dest (or/c (and/c path-string? complete-path?) #f))
+                  #:dest (or/c (and/c path-string? complete-path?) #f)
+                  #:original (or/c string? #f))
         void?)]
   [pkg-update
    (->* ((listof (or/c string? pkg-desc?)))

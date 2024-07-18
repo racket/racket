@@ -99,7 +99,10 @@ develops only a few of them. The intended workflow is as follows:
 
  @item{If a package's current installation is not drawn from a Git
   repository (e.g., it's drawn from a catalog of built packages for a
-  distribution or snapshot), but @nonterm{catalog} maps the package
+  distribution or snapshot), then an original Git package source might be
+  recorded in the package and found by @exec{@command{update} @DFlag{clone}}.
+
+  If not, but if @nonterm{catalog} maps the package
   name to the right Git repository, then combine @DFlag{clone} with
   @DFlag{lookup} and @DFlag{catalog}:
 
