@@ -33,7 +33,7 @@ turned into an executable with @seclink["exe"]{@exec{raco exe}}.
 Supply the @Flag{s} or @DFlag{syntax} flag to preserve syntax
 and compile-time components of the module, so that it can be
 @racket[require]d the same as the original module. In that case,
-modules whose instances need to be shared with other librraies should
+modules whose instances need to be shared with other libraries should
 be omitted from the demodularization using @Flag{x} or
 @DFlag{exclude-library}. For example, @exec{-x racket/base} is
 normally needed.
