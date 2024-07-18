@@ -146,6 +146,7 @@
          #:dep-behavior dep-behavior
          #:update-deps? update-deps?
          #:update-implies? update-implies?
+         #:lookup-for-clone? lookup-for-clone?
          #:update-cache update-cache
          #:prefetch-group prefetch-group
          #:catalog-lookup-cache catalog-lookup-cache   ; [prefetch-shared]
@@ -449,6 +450,7 @@
                                                                #:must-update? #f
                                                                #:deps? do-update-deps?
                                                                #:implies? update-implies?
+                                                               #:lookup-for-clone? lookup-for-clone?
                                                                #:update-cache update-cache
                                                                #:prefetch-group prefetch-group
                                                                #:namespace metadata-ns
@@ -561,6 +563,7 @@
                                                                   #:all-db all-db
                                                                   #:deps? update-deps? 
                                                                   #:implies? update-implies?
+                                                                  #:lookup-for-clone? lookup-for-clone?
                                                                   #:update-cache update-cache
                                                                   #:prefetch-group prefetch-group
                                                                   #:namespace metadata-ns
@@ -889,6 +892,7 @@
                      #:dep-behavior [dep-behavior #f]
                      #:update-deps? [update-deps? #f]
                      #:update-implies? [update-implies? #t]
+                     #:lookup-for-clone? [lookup-for-clone? #f]
                      #:update-cache [update-cache (make-hash)]
                      #:prefetch-group [prefetch-group (make-prefetch-group)]
                      #:catalog-lookup-cache [catalog-lookup-cache (make-hash)]   ; [prefetch-shared]
@@ -965,6 +969,7 @@
                          #:dep-behavior dep-behavior
                          #:update-deps? update-deps?
                          #:update-implies? update-implies?
+                         #:lookup-for-clone? lookup-for-clone?
                          #:update-cache update-cache
                          #:prefetch-group prefetch-group
                          #:catalog-lookup-cache catalog-lookup-cache
@@ -998,6 +1003,7 @@
         #:dep-behavior dep-behavior
         #:update-deps? update-deps?
         #:update-implies? update-implies?
+        #:lookup-for-clone? lookup-for-clone?
         #:update-cache update-cache
         #:prefetch-group prefetch-group
         #:catalog-lookup-cache catalog-lookup-cache
@@ -1054,6 +1060,7 @@
                              #:must-update? [must-update? #t]
                              #:deps? deps?
                              #:implies? implies?
+                             #:lookup-for-clone? [lookup-for-clone? #f]
                              #:namespace metadata-ns 
                              #:catalog-lookup-cache catalog-lookup-cache   ; [prefetch-shared]
                              #:remote-checksum-cache remote-checksum-cache ; [prefetch-shared]
@@ -1237,25 +1244,31 @@
                           pkg-name)
                (skip/update-dependencies "package installed locally"))]
           [_
+           ;; If we're in `--unclone` mode, try to convert a clone back to
+           ;; a source based on its name
+           (define use-orig-pkg
+             (if lookup-for-clone?
+                 (relookup-clone-source orig-pkg download-printf catalog-lookup-cache)
+                 orig-pkg))
            (define-values (orig-pkg-source orig-pkg-type orig-pkg-dir)
-             (case (car orig-pkg)
+             (case (car use-orig-pkg)
                [(clone)
-                (values (caddr orig-pkg)
+                (values (caddr use-orig-pkg)
                         'clone
-                        (enclosing-path-for-repo (caddr orig-pkg)
+                        (enclosing-path-for-repo (caddr use-orig-pkg)
                                                  (path->complete-path
-                                                  (cadr orig-pkg)
+                                                  (cadr use-orig-pkg)
                                                   (pkg-installed-dir))))]
-               [(git) (values (cadr orig-pkg) 'git-url #f)]
+               [(git) (values (cadr use-orig-pkg) 'git-url #f)]
                [else
                 ;; It would be better if the type were preseved
                 ;; from install time, but we always make the
                 ;; URL unambigious:
-                (values (cadr orig-pkg) #f #f)]))
+                (values (cadr use-orig-pkg) #f #f)]))
            (define new-checksum
              (hash-ref update-cache pkg-name
                        (lambda ()
-                         (remote-package-checksum orig-pkg download-printf pkg-name
+                         (remote-package-checksum use-orig-pkg download-printf pkg-name
                                                   #:prefetch? prefetch?
                                                   #:prefetch-group prefetch-group
                                                   #:catalog-lookup-cache catalog-lookup-cache
@@ -1329,6 +1342,7 @@
                                                           #:deps? (or update-deps? 
                                                                       all-mode?) ; avoid races
                                                           #:implies? update-implies?
+                                                          #:lookup-for-clone? lookup-for-clone?
                                                           #:update-cache update-cache
                                                           #:prefetch-group prefetch-group
                                                           #:namespace metadata-ns
@@ -1402,6 +1416,7 @@
         #:dep-behavior dep-behavior
         #:update-deps? update-deps?
         #:update-implies? update-implies?
+        #:lookup-for-clone? lookup-for-clone?
         #:update-cache update-cache
         #:prefetch-group prefetch-group
         #:catalog-lookup-cache catalog-lookup-cache

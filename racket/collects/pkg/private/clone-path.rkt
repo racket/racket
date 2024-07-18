@@ -10,12 +10,14 @@
          "catalog.rkt"
          "repo-path.rkt"
          "git-url-scheme.rkt"
+         "orig-pkg.rkt"
          "desc.rkt"
          "dirs.rkt"
          "print.rkt")
 
 (provide initial-repo-descs
          adjust-to-normalize-repos
+         relookup-clone-source
          convert-clone-name-to-clone-repo/update
          convert-clone-name-to-clone-repo/install
          convert-directory-to-installed-clone
@@ -273,6 +275,16 @@
                        name
                        src)]))]
    [else desc]))
+
+(define (relookup-clone-source orig-pkg download-printf catalog-lookup-cache)
+  (case (car orig-pkg)
+    [(clone)
+     (define source (caddr orig-pkg))
+     (define-values (name type) (package-source->name+type source 'git))
+     (cond
+       [name (desc->orig-pkg 'name name #f)]
+       [else orig-pkg])]
+    [else orig-pkg]))
 
 ;; If `pkg-name` is a description with the type 'clone, but its syntax
 ;; matches a package name, then infer a repo from the current package
