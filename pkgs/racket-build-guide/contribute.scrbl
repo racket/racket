@@ -89,7 +89,7 @@ you'd like to hold the package's source, use
 
 @commandline{raco pkg update @DFlag{clone} @nonterm{pkg-name}}
 
-@margin-note{For Racket version 8.13 and earlier as a release or snapshot,
+@margin-note{For Racket version 8.14 and earlier as a release or snapshot,
 before using @DFlag{clone}, you first need to adjust the package
 installation to use the source specified by the main package catalog:
 
