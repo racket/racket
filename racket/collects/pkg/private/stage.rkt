@@ -193,7 +193,8 @@
          ;; be a commit, and so we're pinned to that commit
          (if (equal? found-checksum branch-or-commit)
              branch-or-commit
-             given-checksum)]))
+             (or given-checksum
+                 found-checksum))]))
 
     ;; If the clone directory already exists, and if it already has
     ;; the target commit, then we use that directory. It may have
@@ -261,7 +262,7 @@
                     [else (list branch)])))
          (lift-git-directory-content tmp-dir path)]
         [else
-         (download-printf "Using clone directory directly for metadata\n")])
+         (download-printf "Using ~s clone directory directly for metadata\n" pkg-name)])
 
        (begin0
         (update-install-info-checksum
