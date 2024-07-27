@@ -64,7 +64,7 @@ has the same meaning as @racket['("foo.rkt" "bar.rkt")].
 }
 ]
 
-@defproc[(glob [pattern glob/c] [#:capture-dotfiles? capture-dotfiles? boolean? (glob-capture-dotfiles?)]) (listof path-string?)]{
+@defproc[(glob [pattern glob/c] [#:capture-dotfiles? capture-dotfiles? boolean? (glob-capture-dotfiles?)]) (listof path?)]{
   Builds a list of all paths on the current filesystem that match any glob
   in @racket[pattern]. The order of paths in the result is unspecified.
 
@@ -100,7 +100,7 @@ Examples:
 }
 }
 
-@defproc[(in-glob [pattern glob/c] [#:capture-dotfiles? capture-dotfiles? boolean? (glob-capture-dotfiles?)]) (sequence/c path-string?)]{
+@defproc[(in-glob [pattern glob/c] [#:capture-dotfiles? capture-dotfiles? boolean? (glob-capture-dotfiles?)]) (sequence/c path?)]{
   Returns a stream of all paths matching the glob @racket[pattern],
   instead of eagerly building a list.
 }

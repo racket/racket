@@ -595,7 +595,7 @@ each element in the sequence.
 @defproc[(in-directory [dir (or/c #f path-string?) #f]
                        [use-dir? ((and/c path? complete-path?) . -> . any/c)
                                  (lambda (dir-path) #t)])
-         sequence?]{
+         (sequence/c path?)]{
   Returns a sequence that produces all of the paths for files,
   directories, and links within @racket[dir], except for the
   contents of any directory for which @racket[use-dir?] returns
