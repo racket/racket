@@ -1,7 +1,6 @@
 #lang racket/base
 
-(require (for-syntax racket/base
-                     setup/cross-system)
+(require (for-syntax racket/base)
          racket/runtime-path)
 
 ;; Unifies osx-ssl.rkt and win32-ssl.rkt, without loading either module
@@ -45,18 +44,14 @@
 
 (define-syntax (define-platform-ssl-procedures stx)
   (syntax-case stx ()
-    [(_ triple ...)
-     (let ([by-platform (for/hasheqv ([triple-stx (in-list (syntax-e #'(triple ...)))])
-                          (values (syntax->datum (car (syntax-e triple-stx))) triple-stx))])
-       (define target-system-stx
-         (hash-ref by-platform (cross-system-type) #f))
-       (if target-system-stx
-           (syntax-case target-system-stx ()
-             [{_ mod-expr (export-id ...)}
-              #'(begin
-                  (let ([mod mod-expr])
-                    (set! export-id (dynamic-require mod 'export-id)) ...))])
-           #'(begin)))]))
+    [(_ (platform mod-expr (export-id ...)) ...)
+     #'(case (system-type)
+         [(platform)
+          (let ([mod mod-expr])
+            (set! export-id (dynamic-require mod 'export-id)) ...)
+          (void)] ...
+         [else
+          (void)])]))
 
 (define-platform-ssl-procedures
   {macosx osx-ssl.rkt (osx-ssl-connect
