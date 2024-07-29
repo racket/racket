@@ -36,7 +36,7 @@
 
 (define-syntax (svn-style-command-line stx)
   (syntax-case stx ()
-    [(_ #:program prog 
+    [(_ #:program prog
         #:argv args
         general-description
         clause ...)
@@ -54,11 +54,28 @@
                               #'((name description long-description body ...)
                                  accum formals arg-help-strs final-expr)]))
                          (syntax->list #'(clause ...)))])
-       (with-syntax ([(n ...) (generate-temporaries #'(name ...))])
+       (with-syntax ([(n ...) (generate-temporaries #'(name ...))]
+                     [(impl ...) (generate-temporaries #'(name ...))])
          #'(let* ([p prog]
                   [a args]
                   [n name] ...
-                  [argslist (cond 
+                  [impl
+                   (λ (remainder)
+                     (parameterize ([current-svn-style-command n])
+                       (command-line
+                        #:program (format "~a ~a" p n)
+                        #:argv remainder
+                        body ...
+                        #:handlers
+                        (λ (accum . formals) final-expr)
+                        arg-help-strs
+                        (λ (help-string)
+                          (for-each (λ (l) (display l) (newline)) (wrap-to-count long-description 80))
+                          (newline)
+                          (display help-string)
+                          (exit)))))]
+                  ...
+                  [argslist (cond
                              [(list? a) a]
                              [(vector? a) (vector->list a)]
                              [else (error 'command "expected a vector or list for arguments, received ~e" a)])]
@@ -79,20 +96,7 @@
                                                            string-append
                                                            (for/list ([opt (in-list opts)])
                                                              (format "\n   ~a" opt))))))
-                            [n 
-                             (parameterize ([current-svn-style-command n])
-                               (command-line 
-                                #:program (format "~a ~a" p n)
-                                #:argv remainder 
-                                body ...
-                                #:handlers
-                                (λ (accum . formals) final-expr)
-                                arg-help-strs
-                                (λ (help-string)
-                                  (for-each (λ (l) (display l) (newline)) (wrap-to-count long-description 80))
-                                  (newline)
-                                  (display help-string)
-                                  (exit))))]
+                            [n (impl remainder)]
                             ...
                             ["help" (help)]
                             [else (begin (help) (exit 1))])))))]))
@@ -109,7 +113,7 @@
             ,@(wrap-to-count general-description 80)
             ""
             ,(format "For help on a particular subcommand, use '~a <subcommand> --help'" prog)
-            ,@(map (λ (command) 
+            ,@(map (λ (command)
                      (let* ([padded-name (pad (car command) maxlen)]
                             [desc        (cadr command)]
                             [msg         (format "  ~a ~a    ~a" prog padded-name desc)])
@@ -127,7 +131,7 @@
          [extra (build-string (- n l) (λ (n) #\space))])
     (string-append str extra)))
 
-;; pimap : (A -> B) improper-listof A -> listof B 
+;; pimap : (A -> B) improper-listof A -> listof B
 (define (pimap f pil)
   (cond
     [(null? pil) '()]
@@ -146,7 +150,7 @@
      =>
      (λ (posn)
        (let-values ([(x y) (values (car (car posn)) (cdr (car posn)))])
-         (cons (substring str 0 x) (wrap-to-count (substring str y) n))))] 
+         (cons (substring str 0 x) (wrap-to-count (substring str y) n))))]
     [else
      ;; iterate backwards from char n looking for a good break
      (let loop ([k n])
