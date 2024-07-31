@@ -1398,7 +1398,7 @@
 
 (arity-test bitwise-bit-set? 2 2)
 (err/rt-test (bitwise-bit-set? "a" 1) exn:fail:contract? #rx"exact-integer[?]")
-(err/rt-test (bitwise-bit-set? 13 "a") exn:fail:contract? #rx"exact-(?:nonnegative-)?integer[?]") ; FIXME: CS error is imprecise
+(err/rt-test (bitwise-bit-set? 13 "a") exn:fail:contract? #rx"exact-nonnegative-integer[?]")
 (err/rt-test (bitwise-bit-set? 13 -1) exn:fail:contract? #rx"exact-nonnegative-integer[?]")
 (err/rt-test (bitwise-bit-set? 13 (- (expt 2 101)) exn:fail:contract? #rx"exact-nonnegative-integer[?]"))
 
