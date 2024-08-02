@@ -1,7 +1,8 @@
 #lang racket/base
 (require "prefix-dispatcher.rkt"
          racket/cmdline
-         (for-syntax racket/base))
+         (for-syntax racket/base
+                     racket/syntax))
 
 (provide svn-style-command-line
          current-svn-style-command)
@@ -26,11 +27,13 @@
 ;;    program command1 ... args ...
 ;;    program command2 ... args ...
 ;; etc.
-;; It provides two nonobvious features:
+;; It provides three nonobvious features:
 ;;   1. It automatically includes a help feature that prints out all available subcommands
 ;;   2. It automatically lets users use any unambiguous prefix of any command.
 ;;      This means that no command name may be a prefix of any other command name, because it
 ;;      would mean there was no way to unambiguously name the shorter one.
+;;   3. A clause [#:alias <command-name> <redirect-to>] automatically forwards
+;;      arguments from "program command-name args …" to "program redirect-to args …".
 
 (define current-svn-style-command (make-parameter #f))
 
@@ -40,66 +43,80 @@
         #:argv args
         general-description
         clause ...)
-     (with-syntax ([(((name description long-description body ...)
-                      accum formals arg-help-strs final-expr)
-                     ...)
-                    (map (lambda (clause)
-                           (syntax-case clause ()
-                             [[name description long-description body ...
-                                    #:args formals final-expr]
-                              #'((name description long-description body ...)
-                                 ignored formals (pimap symbol->string 'formals) final-expr)]
-                             [(name description long-description body ...
-                                    #:handlers (lambda (accum . formals) final-expr) arg-help-strs)
-                              #'((name description long-description body ...)
-                                 accum formals arg-help-strs final-expr)]))
-                         (syntax->list #'(clause ...)))])
-       (with-syntax ([(n ...) (generate-temporaries #'(name ...))]
-                     [(impl ...) (generate-temporaries #'(name ...))])
-         #'(let* ([p prog]
+     (with-syntax* ([impl-table (generate-temporary #'impl-table)]
+                    [(((name description long-description body ...)
+                       accum formals arg-help-strs final-expr
+                       input argv)
+                      ...)
+                     (map (lambda (clause)
+                            (syntax-case clause ()
+                              [[#:alias alias invoke]
+                               #'((alias ,(format "Redirects to ~a ~a" p invoke)
+                                         (format "Redirects to ~a ~a" p invoke)
+                                         #| no command-line body |#)
+                                  ignored remainder '("remainder")
+                                  (begin
+                                    (eprintf "Redirecting to `~a ~a`\n" p invoke)
+                                    ((hash-ref impl-table invoke) remainder))
+                                  remainder (cons "--" remainder))]
+                              [[name description long-description body ...
+                                     #:args formals final-expr]
+                               #'((name description long-description body ...)
+                                  ignored formals (pimap symbol->string 'formals) final-expr
+                                  remainder remainder)]
+                              [(name description long-description body ...
+                                     #:handlers (lambda (accum . formals) final-expr) arg-help-strs)
+                               #'((name description long-description body ...)
+                                  accum formals arg-help-strs final-expr
+                                  remainder remainder)]))
+                          (syntax->list #'(clause ...)))]
+                    [(n ...) (generate-temporaries #'(name ...))]
+                    [(impl ...) (generate-temporaries #'(name ...))])
+       #'(letrec ([p prog]
                   [a args]
                   [n name] ...
                   [impl
-                   (λ (remainder)
+                   (λ (input)
                      (parameterize ([current-svn-style-command n])
                        (command-line
                         #:program (format "~a ~a" p n)
-                        #:argv remainder
+                        #:argv argv
                         body ...
                         #:handlers
                         (λ (accum . formals) final-expr)
                         arg-help-strs
                         (λ (help-string)
-                          (for-each (λ (l) (display l) (newline)) (wrap-to-count long-description 80))
+                          (for-each displayln (wrap-to-count long-description 80))
                           (newline)
                           (display help-string)
                           (exit)))))]
                   ...
+                  [impl-table (make-immutable-hash (list (cons n impl) ...))]
                   [argslist (cond
                              [(list? a) a]
                              [(vector? a) (vector->list a)]
                              [else (error 'command "expected a vector or list for arguments, received ~e" a)])]
                   [help (λ () (display-help-message p general-description `((name description) ...)))])
-             (let-values ([(the-command remainder)
-                           (if (null? argslist)
-                               (values "help" '())
-                               (values (car argslist) (cdr argslist)))])
-               (prefix-case the-command
-                            #:ambiguous (lambda (opts)
-                                          (raise-user-error
-                                           (string->symbol (format "~a ~a" p the-command))
-                                           (string-append "does not identify a unique subcommand;\n"
-                                                          " please use a longer name for the intended subcommand\n"
-                                                          "  given: " the-command "\n"
-                                                          "  subcommands with a matching prefix:"
-                                                          (apply
-                                                           string-append
-                                                           (for/list ([opt (in-list opts)])
-                                                             (format "\n   ~a" opt))))))
-                            [n (impl remainder)]
-                            ...
-                            ["help" (help)]
-                            [else (begin (help) (exit 1))])))))]))
+           (let-values ([(the-command remainder)
+                         (if (null? argslist)
+                             (values "help" '())
+                             (values (car argslist) (cdr argslist)))])
+             (prefix-case the-command
+                          #:ambiguous (lambda (opts)
+                                        (raise-user-error
+                                         (string->symbol (format "~a ~a" p the-command))
+                                         (string-append "does not identify a unique subcommand;\n"
+                                                        " please use a longer name for the intended subcommand\n"
+                                                        "  given: " the-command "\n"
+                                                        "  subcommands with a matching prefix:"
+                                                        (apply
+                                                         string-append
+                                                         (for/list ([opt (in-list opts)])
+                                                           (format "\n   ~a" opt))))))
+                          [n (impl remainder)]
+                          ...
+                          ["help" (help)]
+                          [else (begin (help) (exit 1))]))))]))
 
 
 ;; display-help-message : string string (listof (list string string)) -> void
