@@ -10,9 +10,9 @@
 @(define @|Planet1| @|PLaneT|)
 
 @(define package-name-chars
-   @list{@litchar{a} through @litchar{z}, 
-         @litchar{A} through @litchar{Z}, 
-         @litchar{0} through @litchar{9}, 
+   @list{@litchar{a} through @litchar{z},
+         @litchar{A} through @litchar{Z},
+         @litchar{0} through @litchar{9},
          @litchar{_}, and @litchar{-}})
 
 @(define raco-doc '(lib "scribblings/raco/raco.scrbl"))
@@ -132,7 +132,7 @@ The @tech{package source} types are:
 is the basename of the archive file. The @tech{checksum} for archive
 @filepath{f.@nonterm{ext}} is given by the file @filepath{f.@nonterm{ext}.CHECKSUM}.
 The valid archive formats
-are (currently) @filepath{.zip}, @filepath{.tar}, @filepath{.tgz}, 
+are (currently) @filepath{.zip}, @filepath{.tar}, @filepath{.tgz},
 @filepath{.tar.gz}, and
 @filepath{.plt}.
 Other than a @litchar{type} query, which affects inference as described below,
@@ -440,7 +440,7 @@ to @racket['user].
 The @exec{raco pkg} command provides package-management tools via
 sub-commands.
 
-@subcommand{@command/toc{install} @nonterm{option} ... @nonterm{pkg-source} ... 
+@subcommand{@command/toc{install} @nonterm{option} ... @nonterm{pkg-source} ...
  --- Installs the given @tech{package sources} (eliminating exact-duplicate @nonterm{pkg-source}s).
      If a given @nonterm{pkg-source} is @seclink["concept:auto"]{auto-installed} (to satisfy some other package's
      dependency), then it is promoted to explicitly installed.
@@ -454,7 +454,7 @@ sub-commands.
      only @nonterm{pkg-source} argument. See the @DFlag{clone} flag
      below for more details.
 
- The @exec{install} sub-command accepts 
+ The @exec{install} sub-command accepts
  the following @nonterm{option}s:
 
  @itemlist[
@@ -478,7 +478,7 @@ sub-commands.
 
  @item{@DFlag{deps} @nonterm{behavior} --- Selects the behavior for dependencies, where @nonterm{behavior} is one of
   @itemlist[
-   @item{@exec{fail} --- Cancels the installation if dependencies are uninstalled or version requirements are unmet. 
+   @item{@exec{fail} --- Cancels the installation if dependencies are uninstalled or version requirements are unmet.
         This behavior is the default for non-@tech{interactive mode}.}
    @item{@exec{force} --- Installs the package(s) despite missing dependencies or version requirements.
          Forcing an installation may leave package content in an inconsistent state. Implied packages
@@ -519,7 +519,7 @@ sub-commands.
         The package is identified
         as a @tech{single-collection package} or a @tech{multi-collection package} at the
         time that it is installed, and that categorization does not change even if the @schemeidfont{collection}
-        definition in @filepath{info.rkt} is changed (i.e., the package must be removed and re-installed
+        definition in @filepath{info.rkt} is changed (i.e., the package must be uninstalled and re-installed
         for the change to take effect).}
 
   @item{@DFlag{static-link} --- Implies @DFlag{link}, and also indicates that subdirectories
@@ -567,7 +567,7 @@ sub-commands.
  @item{@Flag{i} or @DFlag{installation} --- Shorthand for @exec{--scope installation}.}
  @item{@Flag{u} or @DFlag{user} --- Shorthand for @exec{--scope user}.}
  @item{@DFlag{scope-dir} @nonterm{dir} --- Select @nonterm{dir} as the @tech{package scope}.}
- 
+
  @item{@DFlag{catalog} @nonterm{catalog} --- Uses @nonterm{catalog}s instead of of the currently configured
        @tech{package catalogs}. This flag can be provided multiple times. The catalogs are tried in the order provided.}
 
@@ -640,7 +640,7 @@ sub-commands.
   @item{@DFlag{no-setup} --- Does not run @exec{raco setup} after installation. This behavior is also the case if the
         environment variable @envvar{PLT_PKG_NOSETUP} is set to any non-empty value.}
 
-  @item{@DFlag{no-docs} or @Flag{D} --- Does not render documentation during setup after installation. This flag has no effect 
+  @item{@DFlag{no-docs} or @Flag{D} --- Does not render documentation during setup after installation. This flag has no effect
         with @DFlag{no-setup}.}
 
   @item{@DFlag{recompile-only} ---Constrains @exec{raco setup} to at most recompile a module from
@@ -654,7 +654,7 @@ sub-commands.
   @item{@DFlag{batch} --- Disables @deftech{interactive mode}, suppressing potential prompts for a user
                           (e.g., about package dependencies or clone sharing).}
 
-  @item{@DFlag{no-trash} --- Refrains from moving updated or removed packages to a trash folder.}
+  @item{@DFlag{no-trash} --- Refrains from moving updated or uninstalled packages to a trash folder.}
 
   @item{@DFlag{fail-fast} --- Breaks @exec{raco setup} as soon as any error is encountered.}
  ]
@@ -671,7 +671,7 @@ sub-commands.
          #:changed "8.0.0.13" @elem{Added @litchar{git-url} as a @DFlag{type} option.}]}
 
 
-@subcommand{@command/toc{update} @nonterm{option} ... @nonterm{pkg-source} ... 
+@subcommand{@command/toc{update} @nonterm{option} ... @nonterm{pkg-source} ...
 --- Checks the specified package names for @tech{package updates} or
 replaces existing package installations with the given sources. If an
 update or replacement cannot be installed (e.g. it conflicts with
@@ -709,7 +709,7 @@ argument.
 If a @tech{package scope} is not specified, the scope is inferred from
 the given @nonterm{pkg-source}s.
 
- The @exec{update} sub-command accepts 
+ The @exec{update} sub-command accepts
  the following @nonterm{option}s:
 
  @itemlist[
@@ -759,7 +759,7 @@ the given @nonterm{pkg-source}s.
     a replacement @tech{package source} that is not a package name.}
 @item{@DFlag{unclone} --- An alias for @DFlag{lookup}, which (absent
     @DFlag{clone}) has the effect of replacing a link to a repository
-    clone with a normal package installation.}    
+    clone with a normal package installation.}
  @item{@DFlag{binary} --- Same as for @command-ref{install}.}
  @item{@DFlag{source} --- Same as for @command-ref{install}.}
  @item{@DFlag{scope} @nonterm{scope} --- Selects a @tech{package scope}, the same as for @command-ref{install}.}
@@ -767,7 +767,7 @@ the given @nonterm{pkg-source}s.
  @item{@Flag{u} or @DFlag{user} --- Shorthand for @exec{--scope user}.}
  @item{@DFlag{scope-dir} @nonterm{dir} --- Selects @nonterm{dir} as the @tech{package scope}, the same as for @command-ref{install}.}
  @item{@DFlag{catalog} @nonterm{catalog} --- Same as for @command-ref{install}.}
- @item{@DFlag{skip-uninstalled} --- Ignores any @nonterm{pkg-source} that does not correspond to an installed package.} 
+ @item{@DFlag{skip-uninstalled} --- Ignores any @nonterm{pkg-source} that does not correspond to an installed package.}
  @item{@DFlag{all-platforms} --- Same as for @command-ref{install}.}
  @item{@DFlag{force} --- Same as for @command-ref{install}.}
  @item{@DFlag{ignore-checksums} --- Same as for @command-ref{install}.}
@@ -803,24 +803,24 @@ the given @nonterm{pkg-source}s.
          #:changed "7.4.0.4" @elem{Added the @DFlag{no-docs}, @Flag{D} flags.}
          #:changed "7.6.0.14" @elem{Allowed multiple @DFlag{catalog} flags.}]}
 
-@subcommand{@command/toc{remove} @nonterm{option} ... @nonterm{pkg} ... 
---- Attempts to remove the given packages. By default, if a package is the dependency
-of another package that is not listed, this command fails without 
+@subcommand{@command/toc{uninstall} @nonterm{option} ... @nonterm{pkg} ...
+--- Attempts to uninstall the given packages. By default, if a package is the dependency
+of another package that is not listed, this command fails without
 removing any of the @nonterm{pkg}s.
 
 If a @tech{package scope} is not specified, the scope is inferred from
 the given @nonterm{pkg}s.
 
- The @exec{remove} sub-command accepts 
+ The @exec{uninstall} sub-command accepts
  the following @nonterm{option}s:
 
  @itemlist[
- @item{@DFlag{demote} --- ``Removes'' explicitly installed packages by demoting them to @seclink["concept:auto"]{auto-installed}
-                            (leaving auto-installed packages as such). Combined with @DFlag{auto}, removes
+ @item{@DFlag{demote} --- ``Uninstalls'' explicitly installed packages by demoting them to @seclink["concept:auto"]{auto-installed}
+                            (leaving auto-installed packages as such). Combined with @DFlag{auto}, uninstalls
                             packages for which there are no dependencies.}
  @item{@DFlag{force} --- Ignores dependencies when removing packages.}
  @item{@DFlag{auto} --- In addition to removing each @nonterm{pkg},
-                        removes @seclink["concept:auto"]{auto-installed} packages (i.e., installed by the @exec{search-auto} or @exec{search-ask}
+                        uninstalls @seclink["concept:auto"]{auto-installed} packages (i.e., installed by the @exec{search-auto} or @exec{search-ask}
                         dependency behavior, or demoted via @DFlag{demote}) that are no longer required by any
                         explicitly installed package.}
  @item{@DFlag{scope} @nonterm{scope} --- Selects a @tech{package scope}, the same as for @command-ref{install}.}
@@ -840,8 +840,12 @@ the given @nonterm{pkg}s.
          #:changed "6.1.1.6" @elem{Added the @DFlag{no-trash} flag.}
          #:changed "6.4.0.14" @elem{Added the @DFlag{dry-run} flag.}
          #:changed "7.2.0.8" @elem{Added the @DFlag{recompile-only} flag.}
-         #:changed "7.4.0.4" @elem{Added the @DFlag{no-docs}, @Flag{D} flags.}]}
+         #:changed "7.4.0.4" @elem{Added the @DFlag{no-docs}, @Flag{D} flags.}
+         #:changed "8.14.0.2" @elem{Renamed from @command-ref{remove} to @command-ref{uninstall}.}]}
 
+@subcommand{@command/toc{remove} --- A synonym for @command-ref{uninstall}.
+
+@history[#:changed "8.14.0.2" @elem{Made @command-ref{remove} an alias.}]}
 
 @subcommand{@command/toc{new} @nonterm{pkg} ---
 Populates a directory with the stubs for a new package, where
@@ -863,12 +867,12 @@ package is created.
  environment variable. Unless @DFlag{full-checksum} is specified,
  checksums are abbreviated to 8 characters.
 
- The @exec{show} sub-command accepts 
+ The @exec{show} sub-command accepts
  the following @nonterm{option}s:
 
  @itemlist[
 
- @item{@Flag{a} or @DFlag{all} --- Includes @seclink["concept:auto"]{auto-installed} packages in the listing.} 
+ @item{@Flag{a} or @DFlag{all} --- Includes @seclink["concept:auto"]{auto-installed} packages in the listing.}
  @item{@Flag{l} or @DFlag{long} --- Shows complete columns, instead of abbreviating to a width,
                                     and use a more regular (but less
  human-readable) format for some columns.}
@@ -876,7 +880,7 @@ package is created.
  for displaying specific packages.}
  @item{@DFlag{full-checksum} --- Prints the full instead of the
  abbreviated checksum.}
- @item{@Flag{d} or @DFlag{dir} --- Adds a column in the output to show the directory where the package is installed.} 
+ @item{@Flag{d} or @DFlag{dir} --- Adds a column in the output to show the directory where the package is installed.}
 
  @item{@DFlag{scope} @nonterm{scope} --- Shows only packages in @nonterm{scope}, which is one of
   @itemlist[
@@ -888,27 +892,27 @@ package is created.
  @item{@Flag{i} or @DFlag{installation} --- Shorthand for @exec{--scope installation}.}
  @item{@Flag{u} or @DFlag{user} --- Shorthand for @exec{--scope user}.}
  @item{@DFlag{scope-dir} @nonterm{dir} --- Shows only packages installed in @nonterm{dir}.}
- @item{@DFlag{version} @nonterm{vers} or @Flag{v} @nonterm{vers} --- Show only user-specific packages for 
+ @item{@DFlag{version} @nonterm{vers} or @Flag{v} @nonterm{vers} --- Show only user-specific packages for
        the installation name/version @nonterm{vers}.}
  ]
 
 @history[#:changed "6.1.1.5" @elem{Added @Flag{l}/@DFlag{long} and
 @envvar{COLUMNS} support.}
          #:changed "6.1.1.6" @elem{Added explicit @nonterm{pkg}s and
-         @DFlag{rx} and @DFlag{full-sha}.}]} 
+         @DFlag{rx} and @DFlag{full-sha}.}]}
 
 @subcommand{@command/toc{migrate} @nonterm{option} ... @nonterm{from-version}
  --- Installs packages that were previously installed in @exec{user}
      @tech{package scope} for @nonterm{from-version}, where
      @nonterm{from-version} is an installation name/version.
 
- The @exec{migrate} sub-command accepts 
+ The @exec{migrate} sub-command accepts
  the following @nonterm{option}s:
  @itemlist[
 
  @item{@DFlag{deps} @nonterm{behavior} --- Same as for @command-ref{install}, except that @exec{search-auto} is
        the default.}
-  
+
   @item{@DFlag{source} --- Same as for @command-ref{install}.}
   @item{@DFlag{binary} --- Same as for @command-ref{install}.}
   @item{@DFlag{binary-lib} --- Same as for @command-ref{install}.}
@@ -945,15 +949,15 @@ package is created.
     normally provided as source and converted to binary form by an
     automatic service, instead of by a package author.
 
- The @exec{create} sub-command accepts 
+ The @exec{create} sub-command accepts
  the following @nonterm{option}s:
 
  @itemlist[
  @item{@DFlag{from-dir} --- Treats @nonterm{directory-or-package} as a directory path; this is the default mode.}
- @item{@DFlag{from-install} --- Treats @nonterm{directory-or-package} as the name of an installed package 
+ @item{@DFlag{from-install} --- Treats @nonterm{directory-or-package} as the name of an installed package
        (instead of a directory).}
- @item{@DFlag{format} @nonterm{format} --- Specifies the archive format. 
-      The allowed @nonterm{format}s are: @exec{zip} (the default), @exec{tgz}, and @exec{plt}. 
+ @item{@DFlag{format} @nonterm{format} --- Specifies the archive format.
+      The allowed @nonterm{format}s are: @exec{zip} (the default), @exec{tgz}, and @exec{plt}.
       This option must be specified if @DFlag{manifest} is not present.}
  @item{@DFlag{manifest} --- Creates a manifest file for a directory, rather than an archive.}
  @item{@DFlag{as-is} --- Bundles all content of the package directory as is, with no filtering
@@ -973,13 +977,13 @@ package is created.
 @history[#:changed "8.14.0.2" @elem{Added the @DFlag{original} flag.}]
 }
 
-@subcommand{@command/toc{config} @nonterm{option} ... @optional[@nonterm{key}] @nonterm{val} ... --- 
+@subcommand{@command/toc{config} @nonterm{option} ... @optional[@nonterm{key}] @nonterm{val} ... ---
 Views and modifies the configuration of the package manager. If @nonterm{key} is not provided,
 the values for all recognized keys are shown. The @nonterm{val} arguments are allowed
 only when @DFlag{set} is used, in which case the @nonterm{val}s are used as the new values
 for @nonterm{key}.
 
- The @exec{config} sub-command accepts 
+ The @exec{config} sub-command accepts
  with the following @nonterm{option}s:
 
  @itemlist[
@@ -1028,8 +1032,8 @@ for @nonterm{key}.
         HTTP or HTTPS protocols. The credentials are currently stored
         @bold{unencrypted} on the filesystem.}
   @item{@exec{trash-max-packages} --- A limit on the number of package implementations
-        that are kept in a trash folder when the package is removed or updated.}
-  @item{@exec{trash-max-seconds} --- A limit on the time since a package is removed or
+        that are kept in a trash folder when the package is uninstalled or updated.}
+  @item{@exec{trash-max-seconds} --- A limit on the time since a package is uninstalled or
         updated that its implementation is kept in the trash folder. Package implementations are
         removed from a trash folder only when another package is potentially added
         to the trash folder or @command-ref{empty-trash} is used.}
@@ -1047,19 +1051,19 @@ for @nonterm{key}.
     and displays the catalog's information for the package, such as its source URL and
     a checksum.
 
- The @exec{catalog-show} sub-command accepts 
+ The @exec{catalog-show} sub-command accepts
  the following @nonterm{option}s:
 
  @itemlist[
  @item{@DFlag{all} --- Shows information for all available packages. When using this flag,
                       supply no @nonterm{package-name}s.}
- @item{@DFlag{only-names} --- Shows only package names. This option is mainly useful with 
+ @item{@DFlag{only-names} --- Shows only package names. This option is mainly useful with
                               @DFlag{all}, but when a @nonterm{package-name} is provided,
                               catalogs are consulted to ensure that he package is available.}
  @item{@DFlag{modules} --- Shows the modules that are implemented by a package.}
  @item{@DFlag{catalog} @nonterm{catalog} --- Queries @nonterm{catalog}s instead of the currently configured
        @tech{package catalogs}. This flag can be provided multiple times. The catalogs are tried in the order provided.}
- @item{@DFlag{version} @nonterm{version} or @Flag{v} @nonterm{version} --- Queries catalogs 
+ @item{@DFlag{version} @nonterm{version} or @Flag{v} @nonterm{version} --- Queries catalogs
        for a result specific to @nonterm{version},
        instead of the installation's Racket version.}
  ]
@@ -1075,7 +1079,7 @@ for @nonterm{key}.
     (i.e., a directory path or a SQLite database path, as inferred from the path).
     If a @nonterm{src-catalog} or @nonterm{dest-catalog} does not start with a URL scheme, it is
     treated as a filesystem path. Information from multiple @nonterm{src-catalog}s is merged,
-    with information from earlier @nonterm{src-catalog}s taking precedence over later 
+    with information from earlier @nonterm{src-catalog}s taking precedence over later
     @nonterm{src-catalog}s.
 
     The @exec{catalog-copy} sub-command accepts
@@ -1112,7 +1116,7 @@ for @nonterm{key}.
     the following @nonterm{option}s:
 
  @itemlist[
- @item{@DFlag{from-config} --- Adds the currently configured 
+ @item{@DFlag{from-config} --- Adds the currently configured
        @tech{package catalogs} to the end of the @nonterm{src-catalog}s list.}
  @item{@DFlag{state} @nonterm{state-database} --- To enable incremental
        updating, reads and writes the database @nonterm{state-database}, which must have the suffix
@@ -1185,7 +1189,7 @@ for @nonterm{key}.
 }
 
 @subcommand{@command/toc{empty-trash} @nonterm{option} ...
---- Removes or lists package implementations that were previously removed or updated and
+--- Removes or lists package implementations that were previously uninstalled or updated and
     are currently in the trash directory
     for the specified @tech{package scope}. The @exec{trash-max-packages} and
     @exec{trash-max-seconds} configuration keys (see @command-ref{config}) control
@@ -1265,10 +1269,10 @@ The following @filepath{info.rkt} fields are used by the package manager:
          @item{A list of the form
                @racketblock[(list _package-source-string
                                   _keyword-and-spec ...)]
-               where each @racket[_keyword-and-spec] has a 
+               where each @racket[_keyword-and-spec] has a
                distinct keyword in the form
                @racketgrammar*[#:literals (quote)
-                               [keyword-and-spec 
+                               [keyword-and-spec
                                 (code:line '#:version version-string)
                                 (code:line '#:platform platform-spec)]
                                [platform-spec string symbol regexp]]
@@ -1291,7 +1295,7 @@ The following @filepath{info.rkt} fields are used by the package manager:
                @racketblock[(list _package-source-string _version-string)]
                which is deprecated and equivalent to
                @racketblock[(list _package-source-string '#:version _version-string)]}
-        
+
         ]
 
        Each element of the @racketidfont{deps} list determines a
@@ -1472,7 +1476,7 @@ dependencies for the compatibility package.
 
 We do not intend to improve this compatibility system much more over
 time, because it is simply a stop-gap as developers port their @|Planet1|
-packages to the new system. Additionally, the existence of the compatibility 
+packages to the new system. Additionally, the existence of the compatibility
 server is not meant
 to imply that we will be removing @|Planet1| from existence in the near
 future.
@@ -1649,7 +1653,7 @@ whereas using the package manager, the module would simply require the module of
 interest:
 
 @racketblock[
- (require data/matrix)             
+ (require data/matrix)
 ]
 
 and would rely on the external system having the
@@ -1739,7 +1743,7 @@ on DrDr, testing during releases, provided binaries, and advertisement
 during installation.
 
 The @|Planet1| compatibility packages will also be included in
-the @reponame{ring-1} category, automatically. 
+the @reponame{ring-1} category, automatically.
 
 }
 
@@ -1759,7 +1763,7 @@ wish to automatically install @reponame{ring-0} packages but not
 @reponame{ring-1} packages, while others may not want to install
 any.)
 
-This feature will be generalized across all @tech{package catalogs}, 
+This feature will be generalized across all @tech{package catalogs},
 so users could maintain their own category definitions with
 different policies.}
 

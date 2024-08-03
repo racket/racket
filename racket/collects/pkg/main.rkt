@@ -377,12 +377,12 @@
                                     #:use-trash? (not no-trash)))))
                 (setup "updated" no-setup no-docs recompile-only #f setup-collects jobs))))]
           ;; ----------------------------------------
-          [remove
-           "Remove packages"
+          [uninstall
+           "Uninstall packages"
            #:once-each
            [#:bool demote () "Demote to auto-installed, instead of removing"]
-           [#:bool force () "Remove even if package has dependents"]
-           [#:bool auto () "Also remove auto-installed packages that have no dependents"]
+           [#:bool force () "Uninstall even if package has dependents"]
+           [#:bool auto () "Also uninstall auto-installed packages that have no dependents"]
            #:once-any
            scope-flags ...
            #:once-each
@@ -391,7 +391,7 @@
            trash-flags ...
            #:args pkg
            (call-with-package-scope
-            'remove
+            'uninstall
             scope scope-dir installation user pkg 'name #f #f
             (lambda ()
               (define setup-collects
@@ -403,7 +403,8 @@
                              #:force? force
                              #:dry-run? dry-run
                              #:use-trash? (not no-trash))))
-              (setup "removed" no-setup no-docs recompile-only #f setup-collects jobs)))]
+              (setup "uninstalled" no-setup no-docs recompile-only #f setup-collects jobs)))]
+          [#:alias remove uninstall]
           ;; ----------------------------------------
           [new
            "Populate a new directory with the stubs of a package"
