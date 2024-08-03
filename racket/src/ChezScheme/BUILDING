@@ -129,7 +129,7 @@ The source code for Chez Scheme comes in three parts:
 The "configure" script attempts to determine what type of machine it's
 on and looks for boot files for the machine in a "boot" subdirectory
 (either in the same directory as the "configure" script or the current
-directory is "configure" if run from elsewhere). If it finds suitable
+directory if "configure" is run from elsewhere). If it finds suitable
 boot files, "configure" creates several files and directories in the
 current directory (which does not have to be the same as the source
 directory):
@@ -594,7 +594,7 @@ step via `DESTDIR`:
 
 CROSS COMPILING SCHEME PROGRAMS
 
-After a non-cross build to work on the host machine, using
+After a non-cross build to work on the host platform, using
 
   make bootquick XM=<machine type>
 
