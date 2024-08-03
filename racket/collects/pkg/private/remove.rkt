@@ -34,7 +34,7 @@
     (printf/flush "~a ~a~a\n"
                   (if for-install?
                       "Uninstalling to prepare re-install of"
-                      "Removing")
+                      "Uninstalling")
                   pkg-name
                   (dry-run-explain dry-run?)))
   (define db (read-pkg-db))
@@ -192,7 +192,7 @@
              (print-loop 1 (cdr unused-pkgs))]
             [else
              (print-loop next-pos (cdr unused-pkgs))])))
-      (printf/flush "\nUse `raco pkg remove --auto` to remove them.\n")))
+      (printf/flush "\nUse `raco pkg uninstall --auto` to remove them.\n")))
 
   (cond
    [(or (null? remove-pkgs) demote? dry-run?)
