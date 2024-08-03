@@ -170,7 +170,16 @@
                 #:handlers
                 (lambda (accum . arg.args)
                   (args-app arg.arg-ids (name og.call ... ...)))
-                arg.help-strs])]))
+                arg.help-strs])]
+    [pattern (#:alias alias:id redirect-to:id)
+             #:attr function #'(define (alias . args)
+                                 (apply redirect-to args))
+             #:attr name #'alias
+             #:attr variables #'(begin)
+             #:attr command-line
+             (quasisyntax/loc #'alias
+               [#:alias #,(symbol->string (syntax-e #'alias)) #,(symbol->string (syntax-e #'redirect-to))])
+             #:attr (extra-defs 1) (list)]))
 
 (define-syntax (args-app stx)
   (syntax-parse stx
