@@ -90,6 +90,11 @@ popular among Racketeers as well.
        is a minor mode for editing s-expressions, keeping parentheses
        balanced, etc.  Similar to Paredit.}
 
+ @item{@hyperlink["https://github.com/drym-org/symex.el"]{Symex} is an
+       intuitive modal (Vim-like) way of editing code with minimum
+       keystrokes, built on top of a DSL providing advanced structural
+       editing features, and runtime integration with Racket Mode.}
+
  @item{Alex Shinn's
        @hyperlink["http://synthcode.com/wiki/scheme-complete"]{scheme-complete}
        provides intelligent, context-sensitive code completion. It
@@ -113,6 +118,12 @@ popular among Racketeers as well.
        should be displayed. Choosing an alternate face makes it
        possible to make ``tone down'' parentheses.}
 
+ @item{@hyperlink["https://github.com/countvajhula/mindstream"]{Mindstream}
+       lets you enter an interactive programming session (similar
+       to DrRacket's Definitions and Interactions workflow) at any time,
+       starting from templates you provide. Sessions are implicitly
+       versioned, freeing you to experiment without fear of losing work,
+       growing organically from throwaway scratch buffers to full projects.}
 ]
 
 @subsection{Packages specific to Evil Mode}
