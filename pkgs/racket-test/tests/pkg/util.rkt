@@ -218,7 +218,7 @@
     $ (format "raco pkg install --copy ~a" pkg)
     $ "racket -e '(require pkg-test1)'"
     more ...
-    $ (format "raco pkg remove ~a" rm-pkg)
+    $ (format "raco pkg uninstall ~a" rm-pkg)
     $ "racket -e '(require pkg-test1)'" =exit> 1)))
 
 (define-syntax-rule (shelly-install* message pkg rm-pkg more ...)

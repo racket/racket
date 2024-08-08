@@ -55,8 +55,8 @@
     $ "racket -l pkg-test1"  =stdout> #rx"main loaded"
     $ "raco pkg install -i --copy test-pkgs/pkg-test1"
     $ "raco pkg install --skip-installed -u --copy test-pkgs/pkg-test1"
-    $ "raco pkg remove -i --no-trash pkg-test1" =stdout> "Removing pkg-test1\n"
-    $ "raco pkg remove --no-trash pkg-test1" =stdout> "Removing pkg-test1\n")
+    $ "raco pkg remove -i --no-trash pkg-test1" =stdout> "Uninstalling pkg-test1\n"
+    $ "raco pkg remove --no-trash pkg-test1" =stdout> "Uninstalling pkg-test1\n")
 
    (shelly-case
     "override conflist, installation first"
@@ -65,7 +65,7 @@
     $ "raco pkg install -u --name pkg-test1 --copy test-pkgs/pkg-test1-v2" =exit> 1
     $ "raco pkg install --force -u --name pkg-test1 --copy test-pkgs/pkg-test1-v2"
     $ "racket -l racket/base -l pkg-test1/number -e '(number)'"  =stdout> "2\n"
-    $ "raco pkg remove --no-trash pkg-test1" =stdout> "Removing pkg-test1\n"
+    $ "raco pkg remove --no-trash pkg-test1" =stdout> "Uninstalling pkg-test1\n"
     $ "racket -l racket/base -l pkg-test1/number -e '(number)'"  =stdout> "1\n"
     $ "raco pkg remove pkg-test1" =stdout> #rx"Inferred package scope: installation")
 
@@ -75,7 +75,7 @@
     $ "racket -l racket/base -l pkg-test1/number -e '(number)'"  =stdout> "1\n"
     $ "raco pkg install -i --name pkg-test1 --copy test-pkgs/pkg-test1-v2"
     $ "racket -l racket/base -l pkg-test1/number -e '(number)'"  =stdout> "1\n"
-    $ "raco pkg remove --no-trash pkg-test1" =stdout> "Removing pkg-test1\n"
+    $ "raco pkg remove --no-trash pkg-test1" =stdout> "Uninstalling pkg-test1\n"
     $ "racket -l racket/base -l pkg-test1/number -e '(number)'"  =stdout> "2\n"
     $ "raco pkg remove pkg-test1" =stdout> #rx"Inferred package scope: installation")
 
