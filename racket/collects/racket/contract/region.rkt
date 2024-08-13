@@ -480,21 +480,22 @@
                                           (syntax/loc stx
                                             (begin
                                               (define-values () (begin auto-check ... (values)))
-                                              (define (guard super-field ... non-auto-name ... struct-name)
-                                                (values super-field ... non-auto-name ...))
                                               (define blame-id
                                                 (current-contract-region))
                                               (define-values (temp-maker-name ... return-values ...) (let () (with-contract #:region struct struct-name
                                                                                                                ctc-bindings
+                                                                                                               (define guarded-values (contract (-> super-contract ... non-auto-contracts ... any)
+                                                                                                                                                values
+                                                                                                                                                (current-contract-region) blame-id
+                                                                                                                                                (quote maker)
+                                                                                                                                                (quote-srcloc maker)))
+                                                                                                                (define (guard super-field ... non-auto-name ... struct-name)
+                                                                                                                  (guarded-values super-field ... non-auto-name ...))
                                                                                                                (define-struct/derived orig struct-definition-field (field ...)
                                                                                                                  constructor-name ...
                                                                                                                  omit-stx-def ...
                                                                                                                  kwds ...
-                                                                                                                 #:guard (contract (-> super-contract ... non-auto-contracts ... symbol? any)
-                                                                                                                                   guard
-                                                                                                                                   (current-contract-region) blame-id
-                                                                                                                                   (quote maker)
-                                                                                                                                   (quote-srcloc maker))))
+                                                                                                                 #:guard guard))
                                                                                                        (values maker-value ... return-values ...)))
                                               define-returned-value-temps
                                               stx-def ...)))))))))]
