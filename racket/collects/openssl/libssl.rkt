@@ -24,8 +24,13 @@
 
 (define libssl
   (and libcrypto
-       (with-handlers ([exn:fail?
-                        (lambda (x)
-                          (set! libssl-load-fail-reason (exn-message x))
-                          #f)])
-         (ffi-lib libssl-so openssl-lib-versions))))
+       (if (eq? (system-type 'os*) 'ios)
+           ;; If libcrypto has been loaded and we're on iOS, assume
+           ;; that libssl has also been loaded. See the comment in
+           ;; libcrypto.rkt for details.
+           (ffi-lib #f)
+           (with-handlers ([exn:fail?
+                            (lambda (x)
+                              (set! libssl-load-fail-reason (exn-message x))
+                              #f)])
+             (ffi-lib libssl-so openssl-lib-versions)))))
