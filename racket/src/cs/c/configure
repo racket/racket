@@ -4589,6 +4589,9 @@ case "$host_os" in
   darwin*)
     PREFLAGS="$PREFLAGS -DOS_X"
     MACH_OS=osx
+    if test "${enable_ios}" != "" ; then
+      MACH_OS=ios
+    fi
     LIBS="${LIBS} -framework CoreFoundation"
     LDFLAGS="${LDFLAGS} -Wl,-headerpad_max_install_names"
     SIGNED_EXE="t"
