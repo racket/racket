@@ -101,3 +101,53 @@ jobs:
           --enable-scheme=${{ github.workspace }}/host-racket/src/build/cs/c
         make
         make install
+
+  build-pb-ios:
+    runs-on: macos-14
+    steps:
+    - uses: actions/checkout@v4
+    - name: Build LibFFI
+      run: |
+        set -euxo pipefail
+        brew install automake libtool
+        git clone https://github.com/libffi/libffi
+        cd libffi
+        git checkout v3.4.6
+        ./autogen.sh
+        python generate-darwin-source-and-headers.py --only-ios
+        xcodebuild \
+          -configuration release \
+          -target libffi-iOS \
+          -scheme libffi-iOS \
+          -sdk "$(xcode-select -p)/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS.sdk" \
+          -derivedDataPath dist \
+          IPHONEOS_DEPLOYMENT_TARGET=12
+    - name: Build PB iOS Racket
+      run: |
+        set -euxo pipefail
+        make fetch-pb
+        mkdir -p racket/src/build
+        cd racket/src/build
+        cat >libffi.pc <<EOF
+          prefix=${GITHUB_WORKSPACE}/libffi/dist/Build/Products/Release-iphoneos
+          exec_prefix=\${prefix}
+          libdir=\${exec_prefix}
+          toolexeclibdir=\${libdir}
+          includedir=\${prefix}/include/ffi
+
+          Name: libffi
+          Description: Library supporting Foreign Function Interfaces
+          Version: 3.4.6
+          Libs: -L\${toolexeclibdir} -lffi
+          Cflags: -I\${includedir}
+        EOF
+        cat libffi.pc
+        env PKG_CONFIG_PATH="$(pwd)" \
+          ../configure \
+            --host=aarch64-apple-darwin \
+            --enable-ios=iPhoneOS \
+            --enable-pb \
+            --enable-racket=auto \
+            --enable-libffi
+        make
+        make install
