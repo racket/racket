@@ -29,14 +29,17 @@
 
 (define os-symbol
   (case (reflect-machine-type)
-    [(a6osx ta6osx i3osx ti3osx arm64osx tarm64osx ppc32osx tppc32osx)
+    [(a6ios ta6ios arm64ios tarm64ios a6osx ta6osx i3osx ti3osx arm64osx tarm64osx ppc32osx tppc32osx)
      (if unix-style-macos? 'unix 'macosx)]
     [(a6nt ta6nt i3nt ti3nt arm64nt tarm64nt) 'windows]
     [else 'unix]))
 
 (define os*-symbol
   (case (reflect-machine-type)
-    [(a6ios ta6ios arm64ios tarm64ios) 'ios]
+    [(a6ios ta6ios arm64ios tarm64ios)
+     (if unix-style-macos?
+         'unix
+         'ios)]
     [(a6osx ta6osx
             i3osx ti3osx
             arm64osx tarm64osx
