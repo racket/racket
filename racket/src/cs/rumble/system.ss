@@ -36,6 +36,7 @@
 
 (define os*-symbol
   (case (reflect-machine-type)
+    [(a6ios ta6ios arm64ios tarm64ios) 'ios]
     [(a6osx ta6osx
             i3osx ti3osx
             arm64osx tarm64osx
@@ -74,6 +75,10 @@
 
 (define arch-symbol
   (case (reflect-machine-type)
+    [(a6ios ta6ios)
+     'x86_64]
+    [(arm64ios tarm64ios)
+     'aarch64]
     [(a6osx ta6osx
             a6nt ta6nt
             a6le ta6le
@@ -122,6 +127,8 @@
 
 (define link-symbol
   (case (reflect-machine-type)
+    [(a6ios ta6ios arm64ios tarm64ios)
+     'framework]
     [(a6osx ta6osx i3osx ti3osx arm64osx tarm64osx)
      (if unix-style-macos?
          'static
@@ -133,6 +140,7 @@
 
 (define so-suffix-bytes
   (case (reflect-machine-type)
+    [(a6ios ta6ios arm64ios tarm64ios) (string->utf8 ".dylib")]
     [(a6osx ta6osx i3osx ti3osx arm64osx tarm64osx ppc32osx tppc32osx) (string->utf8 ".dylib")]
     [(a6nt ta6nt i3nt ti3nt arm64nt tarm64nt) (string->utf8 ".dll")]
     [else (string->utf8 ".so")]))
