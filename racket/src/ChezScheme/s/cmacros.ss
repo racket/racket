@@ -391,6 +391,7 @@
   i3gnu     ti3gnu
   a6nt      ta6nt
   a6osx     ta6osx
+  a6ios     ta6ios
   a6le      ta6le
   a6fb      ta6fb
   a6ob      ta6ob
@@ -407,6 +408,7 @@
   arm32nb   tarm32nb
   arm64nt   tarm64nt
   arm64osx  tarm64osx
+  arm64ios  tarm64ios
   arm64le   tarm64le
   arm64fb   tarm64fb
   arm64ob   tarm64ob
