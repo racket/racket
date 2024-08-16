@@ -278,7 +278,7 @@ TO DO:
         '((macosx-keychain #f))]
        [(ios)
         ;; On iOS, the function SecTrustCopyAnchorCertificates is not
-        ;; available in the Security framework, so applications must
+        ;; provided by the Security framework, so applications must
         ;; bundle and provide their own certificates. Log an error here
         ;; if the sources have not been changed.
         (log-openssl-error "ssl-default-verify-sources must be set on iOS")
