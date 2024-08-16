@@ -87,11 +87,11 @@
 
 (define libcrypto
   (cond
-    ;; On iOS, linking to regular shared objects is not supported.
-    ;; Instead, the library must be linked via an XCFramework containing
-    ;; a position-independent library such as the one provided by [1].
-    ;; Here, we assume the library has been loaded if we can get the
-    ;; OpenSSL_version_num function.
+    ;; On iOS, linking to regular shared objects (except those provided
+    ;; by Apple) is not supported. Instead, the library must be linked
+    ;; via an XCFramework containing a position-independent library such
+    ;; as the one provided by [1]. Here, we assume the library has been
+    ;; loaded if we can get the OpenSSL_version_num function.
     ;;
     ;; [1]: https://github.com/krzyzanowskim/OpenSSL-Package
     [(eq? (system-type 'os*) 'ios)
