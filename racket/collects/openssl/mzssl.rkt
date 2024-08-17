@@ -500,6 +500,8 @@ TO DO:
        ctx)))
   (SSL_CTX_set_mode ctx (bitwise-ior SSL_MODE_ENABLE_PARTIAL_WRITE
                                      SSL_MODE_ACCEPT_MOVING_WRITE_BUFFER))
+  (when v3.0.0/later?
+    (SSL_CTX_set_options ctx SSL_OP_IGNORE_UNEXPECTED_EOF))
   (when v1.1.0/later?
     (define proto-info (assq protocol-symbol protocol-versions))
     (let ([security-level (max (cadr proto-info) (SSL_CTX_get_security_level ctx))]
