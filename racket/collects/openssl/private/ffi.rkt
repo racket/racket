@@ -176,8 +176,14 @@
 (define-ssl SSL_CTX_ctrl (_fun _SSL_CTX* _int _long _pointer -> _long))
 (define (SSL_CTX_set_mode ctx m)
   (SSL_CTX_ctrl ctx SSL_CTRL_MODE m #f))
-(define (SSL_CTX_set_options ctx opts)
-  (SSL_CTX_ctrl ctx SSL_CTRL_OPTIONS opts #f))
+
+(begin ;; function added in v1.1.0, previously macro
+  (define-ssl SSL_CTX_set_options
+    (if v3.0.0/later?
+        (_fun _SSL_CTX* _uint64 -> _void)
+        (_fun _SSL_CTX* _ulong -> _void))
+    #:fail (lambda ()
+             (lambda (ctx opts) (SSL_CTX_ctrl ctx SSL_CTRL_OPTIONS opts #f)))))
 
 (define-ssl SSL_CTX_use_RSAPrivateKey (_fun _SSL_CTX* _RSA* -> _int))
 (define-crypto PEM_read_bio_RSAPrivateKey (_fun _BIO* _pointer _int _pointer -> _RSA*))
