@@ -106,13 +106,20 @@ jobs:
     runs-on: macos-14
     steps:
     - uses: actions/checkout@v4
-    - name: Fetch LibFFI
+    - name: Build LibFFI
       run: |
         set -euxo pipefail
-        curl -O https://racket.defn.io/libffi-aarch64-ios-3.4.6.tar.gz
-        echo '1a312af2ef169f40bbc9a2e9bdbd52b9e8de35e7  libffi-aarch64-ios-3.4.6.tar.gz' | shasum --check -
-        mkdir libffi
-        tar xvzf libffi-aarch64-ios-3.4.6.tar.gz -C libffi
+        git clone https://github.com/libffi/libffi
+        cd libffi
+        sed -i.old '/build.*simulator/d' generate-darwin-source-and-headers.py
+        python generate-darwin-source-and-headers.py --only-ios
+        xcodebuild \
+          -configuration release \
+          -target libffi-iOS \
+          -scheme libffi-iOS \
+          -sdk "$(xcode-select -p)/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS.sdk" \
+          -derivedDataPath dist \
+          IPHONEOS_DEPLOYMENT_TARGET=12
     - name: Build PB iOS Racket
       run: |
         set -euxo pipefail
@@ -120,7 +127,7 @@ jobs:
         mkdir -p racket/src/build
         cd racket/src/build
         cat >libffi.pc <<EOF
-          prefix=${GITHUB_WORKSPACE}/libffi
+          prefix=${GITHUB_WORKSPACE}/libffi/dist/Build/Products/Release-iphoneos
           exec_prefix=\${prefix}
           libdir=\${exec_prefix}
           toolexeclibdir=\${libdir}
