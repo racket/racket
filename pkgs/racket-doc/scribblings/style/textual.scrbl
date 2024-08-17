@@ -119,7 +119,7 @@ for how to implement tabbing.
 @section{Tabs}
 
 Do not use tab characters in your code.  Tabs make it hard to use textual
- tools like git or diff effectively.  To disable tabs,
+ tools like Git or diff effectively.  To disable tabs,
 @itemlist[
 @item{in DrRacket: you are all set. It doesn't insert tabs.}
 @item{in Emacs: add @tt{(setq indent-tabs-mode nil)} to your emacs initialization file.}
