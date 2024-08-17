@@ -103,7 +103,7 @@ racket
               (λ (x) b))]))
 
 (define (sar/λ l p)
-  (for ([a '()]) ([y l])
+  (for/fold ([a '()]) ([y l])
     (unless (bad? y)
       (cons (p y) a))))
 
@@ -123,8 +123,8 @@ racket
          (define (bad? x)
            ... many lines ...)
          (define l
-	   (list e ...))
-         (for ([a '()]) ([x l])
+           (list e ...))
+         (for/fold ([a '()]) ([x l])
            (unless (bad? x)
              (cons b a))))]))
 ]
