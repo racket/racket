@@ -1,7 +1,9 @@
 #lang scribble/base
 
 @(require "shared.rkt"
-          (for-label syntax/parse))
+          (for-label syntax/parse
+                     racket/fixnum
+                     racket/unsafe/ops))
 
 @; -----------------------------------------------------------------------------
 
