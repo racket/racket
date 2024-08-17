@@ -58,7 +58,7 @@ Write meaningful commit messages. The first line (say 72 chars) should
 The message for bug report fixes should contain ``Close PR NNNNN'' so that
  bug reports are automatically closed.
 
-To avoid `merge commits', update your repository with
+To avoid merge commits, update your repository with
 @element['tt @list{git pull --rebase}].
 
 @; -----------------------------------------------------------------------------
