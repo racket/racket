@@ -2135,5 +2135,15 @@
              exn:fail:contract:arity?)
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check that empty ranges don't match
+
+(test #f regexp-match #rx"[^\0-\U10FFFF]" "\0")
+(test #f regexp-match #rx"[^\0-\U10FFFF]" "a")
+(test #f regexp-match #rx"[^\0-\U10FFFF]" "")
+(test #f regexp-match #rx#"[^\0-\xFF]" #"\0")
+(test #f regexp-match #rx#"[^\0-\xFF]" #"a")
+(test #f regexp-match #rx#"[^\0-\xFF]" #"")
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)

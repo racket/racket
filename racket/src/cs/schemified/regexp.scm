@@ -826,7 +826,7 @@
 (define range-includes?
   (lambda (range_0 low_0 hi_0)
     (if (null? range_0)
-      null
+      #f
       (if (> low_0 (cdar range_0))
         (range-includes? (cdr range_0) low_0 hi_0)
         (if (>= low_0 (caar range_0)) (<= hi_0 (cdar range_0)) #f)))))

@@ -83,7 +83,7 @@
 
 (define (range-includes? range low hi)
   (cond
-   [(null? range) null]
+   [(null? range) #f]
    [(low . > . (cdar range)) (range-includes? (cdr range) low hi)]
    [else
     (and (low . >= . (caar range))
