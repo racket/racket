@@ -37,6 +37,8 @@
       [(drracket:default-extension) "scrbl"]
       [(drracket:comment-delimiters)
        '((line "@;" " "))]
+      [(drracket:define-popup)
+       (try-dynamic-require 'scribble/private/define-popup 'define-popup)]
       [else (default key defval)])))
 
 ;; Settings that apply to Scribble-renderable docs:
