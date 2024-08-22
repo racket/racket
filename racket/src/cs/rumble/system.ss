@@ -29,7 +29,8 @@
 
 (define os-symbol
   (case (reflect-machine-type)
-    [(a6ios ta6ios arm64ios tarm64ios a6osx ta6osx i3osx ti3osx arm64osx tarm64osx ppc32osx tppc32osx)
+    [(a6ios ta6ios arm64ios tarm64ios
+            a6osx ta6osx i3osx ti3osx arm64osx tarm64osx ppc32osx tppc32osx)
      (if unix-style-macos? 'unix 'macosx)]
     [(a6nt ta6nt i3nt ti3nt arm64nt tarm64nt) 'windows]
     [else 'unix]))
@@ -37,9 +38,7 @@
 (define os*-symbol
   (case (reflect-machine-type)
     [(a6ios ta6ios arm64ios tarm64ios)
-     (if unix-style-macos?
-         'unix
-         'ios)]
+     'ios]
     [(a6osx ta6osx
             i3osx ti3osx
             arm64osx tarm64osx
@@ -78,11 +77,8 @@
 
 (define arch-symbol
   (case (reflect-machine-type)
-    [(a6ios ta6ios)
-     'x86_64]
-    [(arm64ios tarm64ios)
-     'aarch64]
     [(a6osx ta6osx
+            a6ios ta6ios
             a6nt ta6nt
             a6le ta6le
             a6ob ta6ob
@@ -107,6 +103,7 @@
      'arm]
     [(arm64le tarm64le
               arm64osx tarm64osx
+              arm64ios tarm64ios
               arm64fb tarm64fb
               arm64ob tarm64ob
               arm64nb tarm64nb
@@ -130,9 +127,8 @@
 
 (define link-symbol
   (case (reflect-machine-type)
-    [(a6ios ta6ios arm64ios tarm64ios)
-     'framework]
-    [(a6osx ta6osx i3osx ti3osx arm64osx tarm64osx)
+    [(a6ios ta6ios arm64ios tarm64ios
+            a6osx ta6osx i3osx ti3osx arm64osx tarm64osx)
      (if unix-style-macos?
          'static
          'framework)]
@@ -143,10 +139,13 @@
 
 (define so-suffix-bytes
   (case (reflect-machine-type)
-    [(a6ios ta6ios arm64ios tarm64ios) (string->utf8 ".dylib")]
-    [(a6osx ta6osx i3osx ti3osx arm64osx tarm64osx ppc32osx tppc32osx) (string->utf8 ".dylib")]
-    [(a6nt ta6nt i3nt ti3nt arm64nt tarm64nt) (string->utf8 ".dll")]
-    [else (string->utf8 ".so")]))
+    [(a6ios ta6ios arm64ios tarm64ios
+            a6osx ta6osx i3osx ti3osx arm64osx tarm64osx ppc32osx tppc32osx)
+     (string->utf8 ".dylib")]
+    [(a6nt ta6nt i3nt ti3nt arm64nt tarm64nt)
+     (string->utf8 ".dll")]
+    [else
+     (string->utf8 ".so")]))
 
 (define so-mode
   (case (reflect-machine-type)
