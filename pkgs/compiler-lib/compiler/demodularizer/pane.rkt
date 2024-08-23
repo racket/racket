@@ -158,8 +158,17 @@
                     #:key (lambda (path/submod+delta)
                             (one-mod-order (hash-ref one-mods (car path/submod+delta))))))))
 
+  (define (any-pane-dependency? path/submod)
+    (define one-m (hash-ref one-mods path/submod))
+    (for*/or ([uses (in-hash-values (one-mod-phase-uses one-m))]
+              [path/submod+phase-level (in-list uses)])
+      (define dep-path/submod (car path/submod+phase-level))
+      (and (not (symbol? dep-path/submod))
+           (not (one-mod-excluded? (hash-ref one-mods dep-path/submod))))))
+
   ;; Name the panes, using an existing submodule name if one is within the pane,
-  ;; or an external module if there's only one module in the pane
+  ;; or an external module if there's only one module in the pane and it does
+  ;; not refer to any other panes
   (define-values (named-panes ; (list (cons path/submod-or-#f (list (cons path/submod delta) ...)) ...)
                   added-submods)
     (for/fold ([named-panes null]
@@ -184,8 +193,9 @@
            (values (path/submod-join top-path unique-submod)
                    #f)]
           [(and (null? (cdr path/submod+deltas))
-                external-singletons?)
-           ;; one none-submodule; no demodularization is useful
+                external-singletons?
+                (not (any-pane-dependency? (caar path/submod+deltas))))
+           ;; one non-submodule; no demodularization is useful
            (values #f #f)]
           [else
            (define added-submod (string->symbol (format "demod-pane-~a" i)))
