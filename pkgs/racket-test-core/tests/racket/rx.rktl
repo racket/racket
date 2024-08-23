@@ -2145,5 +2145,13 @@
 (test #f regexp-match #rx#"[^\0-\xFF]" #"")
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check for empty cases in conditional
+
+(test '("xxs" "x") regexp-match #rx"(x)*(?(1)s|)" "xxs")
+(test '("" #f) regexp-match #rx"(x)*(?(1)s|)" "")
+(test '("xx" "x") regexp-match #rx"(x)*(?(1)|=)" "xx")
+(test '("=" #f) regexp-match #rx"(x)*(?(1)|=)" "=")
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)

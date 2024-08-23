@@ -2614,7 +2614,15 @@
                    "missing closing parenthesis in pattern")
                   (if (eqv? tmp_0 '#\x7c)
                     (call-with-values
-                     (lambda () (parse-pces s_0 (add1 pos3_0) config_0))
+                     (lambda ()
+                       (let ((pos_1 (add1 pos3_0)))
+                         (let ((tmp_1
+                                (if (= pos_1 (chytes-length$1 s_0))
+                                  'eos
+                                  (chytes-ref/char s_0 pos_1))))
+                           (if (eqv? tmp_1 '#\x29)
+                             (values null (add1 pos3_0))
+                             (parse-pces s_0 (add1 pos3_0) config_0)))))
                      (lambda (pces2_0 pos4_0)
                        (let ((tmp_1
                               (if (= pos4_0 (chytes-length$1 s_0))

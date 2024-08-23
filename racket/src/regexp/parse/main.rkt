@@ -235,7 +235,13 @@
    [(eos)
     (missing-closing-error s pos3 config)]
    [(#\|)
-    (define-values (pces2 pos4) (parse-pces s (add1 pos3) config))
+    (define-values (pces2 pos4)
+      (chyte-case/eos
+       s (add1 pos3)
+       [(#\)) ; empty second alternative
+        (values null (add1 pos3))]
+       [else
+        (parse-pces s (add1 pos3) config)]))
     (chyte-case/eos
      s pos4
      [(eos)
