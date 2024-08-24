@@ -275,11 +275,12 @@
       [[(d) (_ mtl-expr)]
        #'[(d) (in-treelist
                (let ([mtl mtl-expr])
-                 (check-mutable-treelist 'in-mutable-terelist mtl)
+                 (unless (variable-reference-from-unsafe? (#%variable-reference))
+                   (check-mutable-treelist 'in-mutable-treelist mtl))
                  (mutable-treelist-tl mtl)))]])))
 
 (define (in-mutable-treelist/proc mtl)
-  (check-mutable-treelist 'in-mutable-terelist mtl)
+  (check-mutable-treelist 'in-mutable-treelist mtl)
   (in-treelist (mutable-treelist-tl mtl)))
 
 (define-syntax for/mutable-treelist
