@@ -256,6 +256,7 @@
 (define (find-section-by-offset offset sections)
   (for/or ([s (in-list sections)])
     (and (section-alloc? s)
+         (not (= SHT_NOBITS (section-type s)))
          (offset . >= . (section-offset s))
          (offset . < . (+ (section-offset s)
                           (section-size s)))
