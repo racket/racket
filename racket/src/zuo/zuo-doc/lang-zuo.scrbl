@@ -198,8 +198,7 @@ Produces the module path of the enclosing module.}
            (define (id . formals) body ...++)]]{
 
 Like @realracket*[define] from @racketmodname[racket], but without
-keyword arguments, optional arguments, or header nesting for curried
-functions.}
+keyword arguments and header nesting for curried functions.}
 
 @defform*[[(define-syntax id expr)
            (define-syntax (id . formals) body ...++)]]{
