@@ -181,6 +181,9 @@ Use @racket[etc] for ``@|etc|'' when it does not end a sentence, and
 include a comma after ``@|etc|'' unless it ends a sentence that is
 followed by other punctuation (such as a parenthesis).
 
+Do not italicize common Latin phrases and abbreviations, such as ``e.g.'' and
+``i.e.''.
+
 @section{Section Titles}
 
 Capitalize all words except articles (``the,'' ``a,'' etc.),
