@@ -26,7 +26,7 @@
   (|#%name|
    raise-argument-error
    (lambda (who_0 . args_0)
-     (begin (apply raise-argument-error* who_0 'racket/primitive args_0)))))
+     (apply raise-argument-error* who_0 'racket/primitive args_0))))
 (define-values
  (prop:stream stream-via-prop? stream-ref)
  (make-struct-type-property
