@@ -875,8 +875,9 @@ minimum required storage. |#
                (and left
                     (Node (vector*-set/copy (node-children a) 0 left)
                           (let ([sizes (node-sizes a)])
-                            (for/vector #:length (vector*-length sizes) ([n (in-vector sizes)])
-                                        (fx+ n 1)))))])))
+                            (and sizes
+                                 (for/vector #:length (vector*-length sizes) ([n (in-vector sizes)])
+                                             (fx+ n 1))))))])))
         (cond
           [new-root
            (treelist new-root (fx+ size 1) height)]

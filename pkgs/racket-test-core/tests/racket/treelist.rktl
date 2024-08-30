@@ -203,6 +203,16 @@
                                     #:take (lambda (t i state) state)
                                     #:drop (lambda (t i state) state)))
 
+;; regression test by @6cdh
+(let ([tl (for/fold ([tl (treelist)])
+                    ([_ 1025])
+            (treelist-insert tl 0 0))])
+  (define tl2
+    (for/fold ([tl tl])
+              ([_ 962])
+      (treelist-delete tl 0)))
+  (test 64 treelist-length (treelist-insert tl2 0 0)))
+
 ;; ----------------------------------------
 
 (define small-mutable-treelist (make-mutable-treelist 4))
