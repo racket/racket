@@ -219,6 +219,13 @@
                              (error-contract->adjusted-string "exact-nonnegative-integer?" primitive-realm)
                              "\n  given: ~s")
                             irritants)])]
+   [(and (equal? str "invalid value ~s")
+         (eq? who 'bytevector-u8-set!))
+    (format-error-values (string-append
+                          "contract violation\n  expected: "
+                          (error-contract->adjusted-string "byte?" primitive-realm)
+                          "\n  given: ~s")
+                         irritants)]
    [else
     (format-error-values str irritants)]))
 
