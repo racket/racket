@@ -1376,9 +1376,9 @@ TO DO:
            (if connect? 'connect 'accept)
            (if connect? "client" "server")
            context-or-encrypt-method))
-  (atomically ;; connect functions to subsequent check-valid (ie, ERR_get_error)
-   (let-values ([(mzctx ctx) (get-context who context-or-encrypt-method connect?)])
-     (check-valid ctx who "context creation")
+  (let-values ([(mzctx ctx) (get-context who context-or-encrypt-method connect?)])
+    ;; note: `get-context` above should report any failures itself, so assume `ctx` is valid
+    (atomically ;; ensure finaization and connect functions to subsequent check-valid (ie, ERR_get_error)
      (with-failure
       (lambda () (when (and ctx
                        (need-ctx-free? context-or-encrypt-method))
