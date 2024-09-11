@@ -771,7 +771,8 @@
 
 ;; ----------------------------------------
 
-(define (package-url->checksum pkg-url-str [query empty]
+(define (package-url->checksum pkg-url-str
+                               [query empty]
                                #:type [given-type #f]
                                #:download-printf [download-printf void]
                                #:pkg-name [pkg-name "package"]
@@ -881,11 +882,21 @@
            branch))]
     [else
      (define u (string-append pkg-url-str ".CHECKSUM"))
-     (download-printf "Downloading checksum for ~a\n" pkg-name)
-     (log-pkg-debug "Downloading checksum as ~a" u)
-     (call/input-url+200 (string->url u)
-                         port->string
-                         #:who 'download-checksum)]))
+     (define key u)
+     (cond
+       [(and cache
+             (hash-ref cache key #f))
+        => (lambda (checksum)
+             checksum)]
+       [else
+        (download-printf "Downloading checksum for ~a\n" pkg-name)
+        (log-pkg-debug "Downloading checksum as ~a" u)
+        (define checksum
+          (call/input-url+200 (string->url u)
+                              port->string
+                              #:who 'download-checksum))
+        (when cache (hash-set! cache key checksum))
+        checksum])]))
 
 (define (check-checksum given-checksum checksum what pkg-src cached-url)
   (when (and given-checksum
