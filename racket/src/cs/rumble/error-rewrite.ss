@@ -94,30 +94,33 @@
                                                 s)))
             null)]
    [(equal? str "~s is not a pair")
-    (format-error-values (string-append
-                          "contract violation\n  expected: "
-                          (error-contract->adjusted-string "pair?" primitive-realm)
-                          "\n  given: ~s")
-                         irritants)]
+    (format-contract-violation "pair?" irritants)]
    [(and (equal? str "incorrect list structure ~s")
          (cxr->contract who))
     => (lambda (ctc)
-         (format-error-values (string-append "contract violation\n  expected: "
-                                             (error-contract->adjusted-string ctc primitive-realm)
-                                             "\n  given: ~s")
-                              irritants))]
+         (format-contract-violation ctc irritants))]
    [(and (or (eq? who 'list-ref) (eq? who 'list-tail))
          (equal? str "index ~s is out of range for list ~s"))
-    (format-error-values (string-append "index too large for list\n"
-                                        "  index: ~s\n"
-                                        "  in: ~s")
-                         irritants)]
+    (cond
+      [(and (eq? who 'list-ref)
+            (not (pair? (cadr irritants))))
+       (format-contract-violation "pair?" (list (cadr irritants)))]
+      [else
+       (format-error-values (string-append "index too large for list\n"
+                                           "  index: ~s\n"
+                                           "  in: ~s")
+                            irritants)])]
    [(and (or (eq? who 'list-ref) (eq? who 'list-tail))
          (equal? str "index ~s reaches a non-pair in ~s"))
-    (format-error-values (string-append "index reaches a non-pair\n"
-                                        "  index: ~s\n"
-                                        "  in: ~s")
-                         irritants)]
+    (cond
+      [(and (eq? who 'list-ref)
+            (not (pair? (cadr irritants))))
+       (format-contract-violation "pair?" (list (cadr irritants)))]
+      [else
+       (format-error-values (string-append "index reaches a non-pair\n"
+                                           "  index: ~s\n"
+                                           "  in: ~s")
+                            irritants)])]
    [(or (eq? who 'memq) (eq? who 'memv))
     (format-error-values "not a proper list\n  in: ~s" irritants)]
    [(equal? str  "~s is not a valid index for ~s")
@@ -158,10 +161,11 @@
          (equal? (substring str 0 (string-length is-not-a-str)) is-not-a-str)
          (= 1 (length irritants)))
     (let ([ctc (desc->contract (substring str (string-length is-not-a-str) (string-length str)))])
-      (format-error-values (string-append "contract violation\n  expected: "
-                                          (error-contract->adjusted-string ctc primitive-realm)
-                                          "\n  given: ~s")
-                           irritants))]
+      (format-contract-violation ctc irritants))]
+   [(equal? str "index ~s is not an exact nonnegative integer") ; doesn't match `is-not-a-str`
+    (format-error-values (string-append "contract violation\n  expected: exact-nonnegative-integer?"
+                                        "\n  given: ~s")
+                         irritants)]
    [(equal? str "cannot extend sealed record type ~s as ~s")
     (format-error-values (string-append "cannot make a subtype of a sealed type\n"
                                         "  type name: ~s\n"
@@ -214,20 +218,19 @@
                              "ending index is smaller than starting index\n  ending index: ~s")
                             irritants)]
       [else
-       (format-error-values (string-append
-                             "contract violation\n  expected: "
-                             (error-contract->adjusted-string "exact-nonnegative-integer?" primitive-realm)
-                             "\n  given: ~s")
-                            irritants)])]
+       (format-contract-violation "exact-nonnegative-integer?" irritants)])]
    [(and (equal? str "invalid value ~s")
          (eq? who 'bytevector-u8-set!))
-    (format-error-values (string-append
-                          "contract violation\n  expected: "
-                          (error-contract->adjusted-string "byte?" primitive-realm)
-                          "\n  given: ~s")
-                         irritants)]
+    (format-contract-violation "byte?" irritants)]
    [else
     (format-error-values str irritants)]))
+
+(define (format-contract-violation contract-str irritants)
+  (format-error-values (string-append
+                        "contract violation\n  expected: "
+                        (error-contract->adjusted-string contract-str primitive-realm)
+                        "\n  given: ~s")
+                       irritants))
 
 (define (format-error-values str irritants)
   (let ([str (string-copy str)]
