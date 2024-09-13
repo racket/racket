@@ -113,3 +113,6 @@ jobs:
     - name: Run syntax tests
       shell: cmd
       run: racket\raco.exe test -c tests/syntax
+    - name: Run demod tests
+      shell: cmd
+      run: racket\raco.exe test  -l tests/compiler/demodularizer/demod-test.rkt

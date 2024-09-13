@@ -35,7 +35,7 @@
                          ;; from any pane, leaving a reference to the original
                          ;; external module, instead
                          #:external-singetons? external-singletons?)
-  (define top-path (normalize-path orig-top-path))
+  (define top-path (simple-form-path orig-top-path))
 
   ;; pane = (cons (set entry ...) (set phase ...))
   ;; Non-slice mode:

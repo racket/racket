@@ -109,7 +109,7 @@
                                                            "binding module path index" mpi
                                                            "in-context module path index" shifted-mpi))
                                   (define p (module-path-index-resolve shifted-mpi))
-                                  (define path/submod (resolved-module-path-name p))
+                                  (define path/submod (resolved-module-path->path/submod p))
                                   (cond
                                     [(hash-ref mpi-map mpi #f)
                                      => (lambda (new-mpi+path/submod)

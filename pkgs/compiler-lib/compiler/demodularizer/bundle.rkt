@@ -13,7 +13,8 @@
          "binding.rkt"
          "deshadow.rkt"
          "merged.rkt"
-         "at-phase-level.rkt")
+         "at-phase-level.rkt"
+         "path-submod.rkt")
 
 (provide wrap-bundle)
 
@@ -87,7 +88,7 @@
                     #:do [(define mpi (car mpi+phase))
                           (define phase (cdr mpi+phase))
                           (define r (module-path-index-resolve mpi))
-                          (define path/submod (resolved-module-path-name r))]
+                          (define path/submod (resolved-module-path->path/submod r))]
                     #:when (or (symbol? path/submod)
                                (hash-ref excluded-module-mpis path/submod #f)
                                (hash-ref excluded-module-mpis (at-phase-level path/submod phase) #f)))

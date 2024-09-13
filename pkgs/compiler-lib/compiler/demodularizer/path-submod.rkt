@@ -4,7 +4,8 @@
          path/submod-path
          path/submod-submod
          path/submod->module-path
-         path/submod->resolved-module-path)
+         path/submod->resolved-module-path
+         resolved-module-path->path/submod)
 
 (define (path/submod-join p submod)
   (if (null? submod)
@@ -38,3 +39,7 @@
   (make-resolved-module-path (if (null? submod)
                                  path
                                  (cons path submod))))
+
+(define (resolved-module-path->path/submod rp)
+  ;; result matches the `path/submod` encoding
+  (resolved-module-path-name rp))

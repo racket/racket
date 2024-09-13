@@ -57,7 +57,7 @@
                       #:dump-mi-output-file [dump-linklet-file (current-merged-machine-independent-output-file)]
                       #:keep-submodules? [keep-submodules? (submodule-preservation-enabled)]
                       #:external-singetons? [external-singletons? keep-syntax?])
-  (define input-path (normalize-path given-input-file))
+  (define input-path (simple-form-path given-input-file))
 
   (define work-directory (or given-work-directory
                              (make-temporary-file "demod-work-~a" 'directory)))

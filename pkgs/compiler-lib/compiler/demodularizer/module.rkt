@@ -30,7 +30,7 @@
                       #:include-submods include-submods
                       #:exclude-submods exclude-submods
                       #:keep-syntax? keep-syntax?)
-  (define top-path (normalize-path orig-top-path))
+  (define top-path (simple-form-path orig-top-path))
   (define top-path/submod (path/submod-join top-path '()))
 
   (define mods (make-hash))                 ; path -> mod
@@ -346,12 +346,12 @@
             ([elem (in-list elems)])
     (match elem
       [`(module ,path)
-       (values (set-add modules (normalize-path path))
+       (values (set-add modules (simple-form-path path))
                dirs
                collects)]
       [`(dir ,path)
        (values modules
-               (set-add dirs (path->directory-path (normalize-path path)))
+               (set-add dirs (path->directory-path (simple-form-path path)))
                collects)]
       [`(collect ,collect)
        (values modules

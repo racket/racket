@@ -1,5 +1,6 @@
 #lang racket/base
 (require syntax/modresolve
+         racket/path
          "path-submod.rkt")
 
 (provide module-path-index->path/submod
@@ -17,7 +18,7 @@
   (define p-path (if (pair? p) (cadr p) p))
   (define p-submod (if (pair? p) (cddr p) '()))
   (define p-simple-path (if (path? p-path)
-                            (normal-case-path (simplify-path p-path))
+                            (simple-form-path p-path)
                             p-path))
 
   ;; Combine path back with submod
