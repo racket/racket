@@ -320,6 +320,10 @@
   (define (restore-signature dest)
     (when signed-exe?
       (restore-signature* cross? bootstrap-racket dest)))
+  (define entitlements
+    (if (and mac? signed-exe?)
+        (list (at-source "../../mac/entitlements.plist"))
+        '()))
 
   (define (install_name_tool . args)
     (install_name_tool* cross? bootstrap-racket args))
@@ -482,6 +486,7 @@
                                                      (list framework)
                                                      embed+boot-deps)
                                                ,(input-data-target 'mac-fw mac-fw?)
+                                               ,@entitlements
                                                ,link-config)
                       ,(lambda (path token)
                          (cond
@@ -512,6 +517,7 @@
                                                                   embed+boot-deps))
                                               boot-objs)
                                         ,(input-data-target 'mac-fw mac-fw?)
+                                        ,@entitlements
                                         ,@(if windows?
                                               (list MemoryModule.o res.o)
                                               '())
@@ -567,6 +573,7 @@
             `([:target ,gracketcs (,grmain.o ,@(if mac-fw?
                                                    (list framework)
                                                    boot-objs)
+                                             ,@entitlements
                                              ,gracket-app-skeleton)
                        ,(lambda (path token)
                           (c-link (~a gracketcs "_raw")
@@ -877,7 +884,8 @@
        [:target install-again (,(at-dir "install-stamp"))
                 ,(lambda (token)
                    (setup))]
-       [:target (,(at-dir "install-stamp") ,@install-files-to-check) (,install-data-to-check)
+       [:target (,(at-dir "install-stamp") ,@install-files-to-check) (,@entitlements
+                                                                      ,install-data-to-check)
                 ,(lambda (path token)
                    (install token)
                    (fd-close (fd-open-output path :truncate)))]
