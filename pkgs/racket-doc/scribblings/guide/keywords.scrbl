@@ -41,7 +41,7 @@ example below illustrates the distinct roles of keywords and symbols.
   (code:comment @#,t{optional @racket[#:mode] argument can be @racket['text] or @racket['binary]})
   #:mode 'text
   (code:comment @#,t{optional @racket[#:exists] argument can be @racket['replace], @racket['truncate], ...})
-  #:exists 'replace)
+  #:exists 'truncate)
 ]
 
 @interaction-eval[(delete-file (build-path (find-system-path 'temp-dir) "stuff.txt"))]
