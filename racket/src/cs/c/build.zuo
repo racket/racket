@@ -1019,7 +1019,7 @@
           (when (equal? (lookup 'FRAMEWORK_REL_INSTALL) "yes")
             (install-racket (at-source "../../mac/clean-fw.rkt") dest-framework-dir))
           (mkdir-p fw-vers-dir)
-          (cp framework (build-path fw-vers-dir "Racket"))
+          (cp (in! framework) (build-path fw-vers-dir "Racket"))
           (mkdir-p (build-path fw-vers-dir "boot"))
           (map (lambda (x.boot)
                  (cp (in! (build-path (at-dir framework-dir) "boot" x.boot)) (build-path fw-vers-dir "boot" x.boot)))
