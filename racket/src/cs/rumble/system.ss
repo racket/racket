@@ -4,10 +4,10 @@
    [(getenv "PLT_CS_MAKE_UNIX_STYLE_MACOS") #t]
    [else #f]))
 
-(define unix-link-shared?
+(define unix-link
   (meta-cond
-   [(getenv "PLT_CS_MAKE_LINK_SHARED") #t]
-   [else #f]))
+   [(getenv "PLT_CS_MAKE_LINK_SHARED") 'shared]
+   [else 'static]))
 
 (define cross-mode 'infer)
 (define (set-cross-mode! m) (set! cross-mode m))
@@ -130,12 +130,10 @@
     [(a6ios ta6ios arm64ios tarm64ios
             a6osx ta6osx i3osx ti3osx arm64osx tarm64osx)
      (if unix-style-macos?
-         'static
+         unix-link
          'framework)]
     [(a6nt ta6nt i3nt ti3nt arm64nt tarm64nt) 'dll]
-    [else (if unix-link-shared?
-              'shared
-              'static)]))
+    [else unix-link]))
 
 (define so-suffix-bytes
   (case (reflect-machine-type)
