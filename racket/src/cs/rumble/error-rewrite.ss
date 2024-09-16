@@ -163,9 +163,7 @@
     (let ([ctc (desc->contract (substring str (string-length is-not-a-str) (string-length str)))])
       (format-contract-violation ctc irritants))]
    [(equal? str "index ~s is not an exact nonnegative integer") ; doesn't match `is-not-a-str`
-    (format-error-values (string-append "contract violation\n  expected: exact-nonnegative-integer?"
-                                        "\n  given: ~s")
-                         irritants)]
+    (format-contract-violation "exact-nonnegative-integer?" irritants)]
    [(equal? str "cannot extend sealed record type ~s as ~s")
     (format-error-values (string-append "cannot make a subtype of a sealed type\n"
                                         "  type name: ~s\n"

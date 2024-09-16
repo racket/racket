@@ -1290,6 +1290,7 @@
                                              "      ctype? cpointer?\n"
                                              "      (or/c 'raw 'atomic 'nonatomic 'tagged\n"
                                              "            'atomic-interior 'interior\n"
+                                             "            'zeroed-atomic 'zeroed-atomic-interior\n"
                                              "            'stubborn 'uncollectable 'eternal)\n"
                                              "      'fail-ok)")
                               (car args))]))))
@@ -1314,6 +1315,10 @@
    [(eq? mode 'interior)
     ;; Ditto
     (make-cpointer (make-immobile-reference-bytevector size) #f)]
+   [(eq? mode 'zeroed-atomic)
+    (make-cpointer (make-bytevector size 0) #f)]
+   [(eq? mode 'zeroed-atomic-interior)
+    (make-cpointer (make-immobile-bytevector size 0) #f)]
    [else
     (raise-unsupported-error 'malloc
                              (format "'~a mode is not supported" mode))]))
@@ -1360,6 +1365,7 @@
 (define (malloc-mode? v)
   (#%memq v '(raw atomic nonatomic tagged
                   atomic-interior interior
+                  zeroed-atomic zeroed-atomic-interior
                   stubborn uncollectable eternal)))
 
 (define (end-stubborn-change p)

@@ -1201,6 +1201,7 @@
      (memq (syntax-e #'mode)
            '(raw atomic nonatomic tagged
                  atomic-interior interior
+                 zeroed-atomic zeroed-atomic-interior
                  stubborn uncollectable eternal))
      #'(quote mode)]
     [(_ who mode)

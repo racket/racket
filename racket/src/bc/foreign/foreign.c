@@ -95,6 +95,8 @@ static Scheme_Object *uncollectable_sym;
 static Scheme_Object *eternal_sym;
 static Scheme_Object *interior_sym;
 static Scheme_Object *atomic_interior_sym;
+static Scheme_Object *zeroed_atomic_sym;
+static Scheme_Object *zeroed_atomic_interior_sym;
 static Scheme_Object *raw_sym;
 static Scheme_Object *tagged_sym;
 static Scheme_Object *fail_ok_sym;
@@ -2694,6 +2696,20 @@ static Scheme_Object *foreign_compiler_sizeof(int argc, Scheme_Object *argv[])
 /*****************************************************************************/
 /* Pointer type user functions */
 
+static void *malloc_zeroed_atomic(size_t size_in_bytes) {
+  void *p;
+  p = scheme_malloc_atomic(size_in_bytes);
+  memset(p, 0, size_in_bytes);
+  return p;
+}
+
+static void *malloc_zeroed_atomic_allow_interior(size_t size_in_bytes) {
+  void *p;
+  p = scheme_malloc_atomic_allow_interior(size_in_bytes);
+  memset(p, 0, size_in_bytes);
+  return p;
+}
+
 static Scheme_Malloc_Proc mode_to_allocator(const char *who, Scheme_Object *mode)
 {
   Scheme_Malloc_Proc mf;
@@ -2705,6 +2721,8 @@ static Scheme_Malloc_Proc mode_to_allocator(const char *who, Scheme_Object *mode
   else if (SAME_OBJ(mode, uncollectable_sym)) mf = scheme_malloc_uncollectable;
   else if (SAME_OBJ(mode, interior_sym))      mf = scheme_malloc_allow_interior;
   else if (SAME_OBJ(mode, atomic_interior_sym)) mf = scheme_malloc_atomic_allow_interior;
+  else if (SAME_OBJ(mode, zeroed_atomic_sym))        mf = malloc_zeroed_atomic;
+  else if (SAME_OBJ(mode, zeroed_atomic_interior_sym)) mf = malloc_zeroed_atomic_allow_interior;
   else if (SAME_OBJ(mode, raw_sym))           mf = malloc;
   else if (SAME_OBJ(mode, tagged_sym))        mf = scheme_malloc_tagged;
   else {
@@ -2788,6 +2806,7 @@ static Scheme_Object *foreign_malloc(int argc, Scheme_Object *argv[])
                             "      ctype?\n"
                             "      (or/c 'nonatomic 'stubborn 'uncollectable\n"
                             "             'eternal 'interior 'atomic-interior\n"
+                            "             'zeroed-atomic 'zeroed-atomic-interior\n"
                             "             'tagged 'raw)\n"
                             "      'fail-on\n"
                             "      (and/c cpointer? (not/c #f)))",
@@ -5082,6 +5101,10 @@ void scheme_init_foreign_globals()
   interior_sym = scheme_intern_symbol("interior");
   MZ_REGISTER_STATIC(atomic_interior_sym);
   atomic_interior_sym = scheme_intern_symbol("atomic-interior");
+  MZ_REGISTER_STATIC(zeroed_atomic_sym);
+  zeroed_atomic_sym = scheme_intern_symbol("zeroed-atomic");
+  MZ_REGISTER_STATIC(zeroed_atomic_interior_sym);
+  zeroed_atomic_interior_sym = scheme_intern_symbol("zeroed-atomic-interior");
   MZ_REGISTER_STATIC(raw_sym);
   raw_sym = scheme_intern_symbol("raw");
   MZ_REGISTER_STATIC(tagged_sym);

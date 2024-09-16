@@ -23,6 +23,9 @@
 (test #f malloc 0 _int)
 (test #f malloc _int 0)
 
+(test 0 ptr-ref (malloc 100 'zeroed-atomic) _int 10)
+(test 0 ptr-ref (malloc 100 'zeroed-atomic-interior) _int 10)
+
 (unless (eq? 'cs (system-type 'gc))
   (test 0 bytes-length (make-sized-byte-string #f 0)))
 
@@ -1408,6 +1411,13 @@
   (test #t ctype? (_vector i _int))
   (test #t ctype? (_vector o _int 10))
   (test #t ctype? (_vector io _int 10)))
+
+(test #t ctype? (_ptr i _int atomic))
+(test #t ctype? (_ptr i _int zeroed-atomic))
+(test #t ctype? (_ptr i _int atomic-interior))
+(test #t ctype? (_ptr i _int zeroed-atomic-interior))
+
+(syntax-test #'(_ptr i _int magic))
 
 ;; ----------------------------------------
 
