@@ -387,7 +387,13 @@ Legal only in a @tech{module begin context}, and handled by the
 
 The @racket[#%module-begin] form of @racketmodname[racket/base] wraps
 every top-level expression to print non-@|void-const| results using
-@racket[current-print].
+the @tech{print handler} as determined by @racket[current-print],
+and it also returns the values after printing.
+This printing is added as part of the @racket[#%module-begin] expansion, so
+the prompt that @racket[module] itself adds is outside the printing
+wrapper---and it potentially makes the values returned after printing
+relevant, because a continuation could be captured and then invoked in
+a different context.
 
 The @racket[#%module-begin] form of @racketmodname[racket/base] also
 declares a @racket[configure-runtime] submodule (before any other
