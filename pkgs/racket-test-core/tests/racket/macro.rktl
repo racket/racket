@@ -891,6 +891,28 @@
   (begin-for-syntax
     (identifier-binding-portal-syntax #'bread-and-butter #f)))
 
+;; check that `for-label` portal doesn't double-shift to the label phase
+(module has-for-label-portal-syntax racket/base
+  (#%require
+   (for-label
+    racket/promise
+    (portal x delay)))
+
+  (unless (identifier-binding-portal-syntax #'x #f)
+    (error "portl binding not found"))
+
+  (unless (equal?
+           (hash-ref (syntax-debug-info #'delay #f) 'context)
+           (hash-ref (syntax-debug-info (identifier-binding-portal-syntax #'x #f) #f) 'context))
+    (error "portal binding contexts differ"))
+
+  (unless (free-identifier=? (identifier-binding-portal-syntax #'x #f)
+                             #'delay
+                             #f)
+    (error "portal binding mismatch")))
+
+(test (void) dynamic-require ''has-for-label-portal-syntax #f)
+
 ;; ----------------------------------------
 
 (module distinct-binding-tests racket/base
