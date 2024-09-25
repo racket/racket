@@ -1795,7 +1795,27 @@ current-system paths while @racket[get-cross-lib-search-dirs] and
    that identifies an installation build, which can be used to augment
    the Racket version number to more specifically identify the
    build. An empty string is normally produced for a release build.
-   The result is @racket[#f] if no build stamp is available.}
+   The result is @racket[#f] if no build stamp is available.
+
+   @see-config[build-stamp]}
+
+@deftogether[(
+@defproc[(get-base-documentation-packages) (listof string?)]
+@defproc[(get-distribution-documentation-packages) (listof string?)]
+)]{
+
+   Returns a list of package names that represent a distribution's
+   base-language documentation and all of the documentation that is
+   part of the distribution, respectively. These lists are used to
+   classify and sort documentation search results. If a package is
+   part of the base documentation, that classification takes precedence
+   over distribution documentation.
+
+   See also @racket['base-documentation-packages] and
+   @racket['distribution-documentation-packages] in
+   @secref["config-file"].
+
+   @history[#:added "8.14.0.5"]}
 
 @defproc[(get-absolute-installation?) boolean?]{
   Returns @racket[#t] if this installation uses

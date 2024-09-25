@@ -341,12 +341,14 @@
                     (loop)))))))
 
   (log-setup-info "getting document information")
+  (define pkg-cache (make-hash))
   (define (make-sequential-get-info only-fast?)
     (get-doc-info only-dirs latex-dest
                   avoid-main? auto-main? auto-user? main-doc-exists?
                   with-record-error setup-printf #f 
                   only-fast? force-out-of-date?
-                  no-lock (if gc-after-each-sequential? gc-point void)))
+                  no-lock (if gc-after-each-sequential? gc-point void)
+                  pkg-cache))
   (define num-sequential (let loop ([docs docs])
                            (cond
                             [(null? docs) 0]
@@ -410,11 +412,12 @@
                                           ((error-display-handler) (exn-message exn) exn)
                                           (raise exn))])
                          (go)))
+                     (define pkg-cache (make-hash))
                      (s-exp->fasl (serialize 
                                    ((get-doc-info only-dirs latex-dest
                                                   avoid-main? auto-main? auto-user? main-doc-exists?
                                                   with-record-error setup-printf workerid
-                                                  #f force-out-of-date? lock void)
+                                                  #f force-out-of-date? lock void pkg-cache)
                                     (deserialize (fasl->s-exp doc))))))
                    
                    (verbose verbosev)
@@ -664,7 +667,7 @@
       (for ([info (in-list infos)])
         (when (and (info-need-in-write? info)
                    (not (info-need-run? info)))
-          (write-in/info latex-dest info no-lock main-doc-exists?)
+          (write-in/info latex-dest info no-lock main-doc-exists? pkg-cache)
           (set-info-need-in-write?! info #f)))
       ;; Iterate, if any need to run:
       (when (and (ormap info-need-run? infos) (iter . < . 30) (not only-fast?))
@@ -710,7 +713,7 @@
                 (prep-info! i)
                 (update-info! i (build-again! latex-dest i with-record-error
                                               no-lock (if gc-after-each-sequential? gc-point void)
-                                              main-doc-exists?)))
+                                              main-doc-exists? pkg-cache)))
               (parallel-do
                #:use-places? use-places?
                (min worker-count (length need-rerun))
@@ -748,6 +751,7 @@
                                       (raise x))])
                      (go)))
                  (verbose verbosev)
+                 (define pkg-cache (make-hash))
                  (match-message-loop
                   [info 
                    (send/success 
@@ -755,7 +759,8 @@
                                                           (deserialize (fasl->s-exp info))
                                                           with-record-error
                                                           (lock-via-channel lock-ch) void
-                                                          main-doc-exists?))))])))))
+                                                          main-doc-exists?
+                                                          pkg-cache))))])))))
         ;; If we only build 1, then it reaches it own fixpoint
         ;; even if the info doesn't seem to converge immediately.
         ;; This is a useful shortcut when re-building a single
@@ -774,7 +779,7 @@
     (make-loop #t 0)
     ;; cache info to disk
     (for ([i infos] #:when (info-need-in-write? i))
-      (write-in/info latex-dest i no-lock main-doc-exists?))))
+      (write-in/info latex-dest i no-lock main-doc-exists? pkg-cache))))
 
 (define shared-style-files
   (list "scribble.css"
@@ -790,7 +795,7 @@
 (define shared-empty-script-files
   (list "doc-site.js"))
 
-(define (make-renderer latex-dest doc main-doc-exists?)
+(define (make-renderer latex-dest doc main-doc-exists? pkg-cache)
   (if latex-dest
       (new (latex:render-mixin render%)
            [dest-dir latex-dest]
@@ -812,7 +817,8 @@
               (if multi?
                   contract:override-render-mixin-multi 
                   contract:override-render-mixin-single)]
-             [allow-indirect? (and (doc-pkg? doc)
+             [pkg-cache (doc-pkg doc pkg-cache)]
+             [allow-indirect? (and pkg-cache
                                    ;; (not main?)
                                    (not (memq 'no-depend-on (doc-flags doc))))]
              [local-redirect-file (build-path (if main-doc-exists?
@@ -1042,7 +1048,8 @@
 (define ((get-doc-info only-dirs latex-dest
                        avoid-main? auto-main? auto-user? main-doc-exists?
                        with-record-error setup-printf workerid 
-                       only-fast? force-out-of-date? lock gc-point)
+                       only-fast? force-out-of-date? lock gc-point
+                       pkg-cache)
          doc)
 
   ;; First, move pre-rendered documentation, if any, into place
@@ -1055,7 +1062,7 @@
                    force-out-of-date?
                    (not (file-exists? (build-path (doc-dest-dir doc) "synced.rktd")))))
       (move-documentation-into-place doc rendered-dir setup-printf workerid lock
-                                     main-doc-exists?)))
+                                     main-doc-exists? pkg-cache)))
 
   (let* ([info-out-files (for/list ([i (add1 (doc-out-count doc))])
                            (sxref-path latex-dest doc (format "out~a.sxref" i)))]
@@ -1072,7 +1079,7 @@
                            ;; need to render, so complain if no source is available:
                            path)))]
          [src-sha1 (and src-zo (get-compiled-file-sha1 src-zo))]
-         [renderer (make-renderer latex-dest doc main-doc-exists?)]
+         [renderer (make-renderer latex-dest doc main-doc-exists? pkg-cache)]
          [can-run? (can-build? only-dirs avoid-main? doc)]
          [stamp-data (with-handlers ([exn:fail:filesystem? (lambda (exn) (list "" "" ""))])
                        (let ([v (call-with-input-file* stamp-file read)])
@@ -1172,7 +1179,8 @@
                                       ((get-doc-info only-dirs latex-dest
                                                      avoid-main? auto-main? auto-user? main-doc-exists?
                                                      with-record-error setup-printf workerid 
-                                                     #f #f lock gc-point)
+                                                     #f #f lock gc-point
+                                                     pkg-cache)
                                        doc))])
            (let ([v-in  (load-sxref info-in-file)])
              (unless (equal? (car v-in) (list vers (doc-flags doc)))
@@ -1187,7 +1195,7 @@
                ;; across installations.
                (move-documentation-into-place doc #f
                                               setup-printf workerid lock
-                                              main-doc-exists?))
+                                              main-doc-exists? pkg-cache))
              (define out-hash (get-info-out-hash doc latex-dest))
              (make-info
               doc
@@ -1270,13 +1278,13 @@
                                      #f
                                      #f)])
                      (when need-out-write
-                       (render-time "xref-out" (write-out/info latex-dest info scis defss db-file lock))
+                       (render-time "xref-out" (write-out/info latex-dest info scis defss db-file lock pkg-cache))
                        (set-info-out-hash! info (get-info-out-hash doc latex-dest))
                        (set-info-need-out-write?! info #f)
                        (set-info-done-time! info (current-inexact-milliseconds)))
 
                      (when (info-need-in-write? info)
-                       (render-time "xref-in" (write-in/info latex-dest info lock main-doc-exists?))
+                       (render-time "xref-in" (write-in/info latex-dest info lock main-doc-exists? pkg-cache))
                        (set-info-need-in-write?! info #f))
 
                      (let ([data stamp-sha1s])
@@ -1331,7 +1339,7 @@
     (hash-set! done dir #t)))
 
 (define (move-documentation-into-place doc src-dir setup-printf workerid lock
-                                       main-doc-exists?)
+                                       main-doc-exists? pkg-cache)
   (with-handlers ([exn:fail? (lambda (exn)
                                ;; On any failure, log the error and give up.
                                ;; Maybe further actions are appropriate, but
@@ -1366,15 +1374,16 @@
                            provides-path
                            (lambda (in) (fasl->s-exp in))))
         (define db-file (find-db-file doc #f main-doc-exists?))
+        (define pkg (doc-pkg doc pkg-cache))
         (for ([provides (in-list providess)]
               [n (in-naturals)])
           (define filename (sxref-path #f doc (format "out~a.sxref" n)))
           (call-with-lock
            lock
            (lambda ()
-             (doc-db-clear-provides db-file filename)
-             (doc-db-add-provides db-file provides filename)
-             (doc-db-set-provides-timestamp db-file filename 
+             (doc-db-clear-provides db-file filename #:pkg pkg)
+             (doc-db-add-provides db-file provides filename #:pkg pkg)
+             (doc-db-set-provides-timestamp db-file filename #:pkg pkg
                                             (file-or-directory-modify-seconds filename)))))))
     ;; For each ".html" file, check for a reference to "local-redirect.js",
     ;; and fix up the path if there is a reference:
@@ -1470,7 +1479,7 @@
 
 (define (build-again! latex-dest info-or-list with-record-error
                       lock gc-point
-                      main-doc-exists?)
+                      main-doc-exists? pkg-cache)
   ;; If `info-or-list' is a list, then we're in a parallel build, and
   ;; it provides just enough of `info' from the main place to re-build
   ;; in this place along with the content of "in.sxref".
@@ -1490,7 +1499,7 @@
                 (load-sxref (sxref-path latex-dest doc (format "out~a.sxref" i))))))
   (define info (and (info? info-or-list) info-or-list))
   (define doc (if info (info-doc info) (car info-or-list)))
-  (define renderer (make-renderer latex-dest doc main-doc-exists?))
+  (define renderer (make-renderer latex-dest doc main-doc-exists? pkg-cache))
   (with-record-error
    (doc-src-file doc)
    (lambda ()
@@ -1533,9 +1542,9 @@
          (when (or in-delta?
                    (and info (info-need-in-write? info))
                    (and (not info) (caddr info-or-list)))
-           (render-time "xref-in" (write-in latex-dest vers doc undef ff-deps-rel searches db-file lock)))
+           (render-time "xref-in" (write-in latex-dest vers doc undef ff-deps-rel searches db-file lock pkg-cache)))
          (when out-delta?
-           (render-time "xref-out" (write-out latex-dest vers doc scis defss db-file lock)))
+           (render-time "xref-out" (write-out latex-dest vers doc scis defss db-file lock pkg-cache)))
 
          (cleanup-dest-dir doc)
          (render-time
@@ -1612,11 +1621,12 @@
                       out))))
     (final! filename)))
 
-(define (write-out latex-dest vers doc scis providess db-file lock)
+(define (write-out latex-dest vers doc scis providess db-file lock pkg-cache)
   ;; A "provides.sxref" file is used when a package is converted to binary
   ;; form, in which case cross-reference information needs to be loaded
   ;; into the database at install time:
-  (when (and (doc-pkg? doc)
+  (define pkg (doc-pkg doc pkg-cache))
+  (when (and pkg
              (not (doc-under-main? doc))
              (not latex-dest))
     (make-directory* (doc-dest-dir doc))
@@ -1635,35 +1645,36 @@
               (call-with-lock
                lock
                (lambda ()
-                 (doc-db-clear-provides db-file filename)
-                 (doc-db-add-provides db-file provides filename))))
+                 (doc-db-clear-provides db-file filename #:pkg pkg)
+                 (doc-db-add-provides db-file provides filename #:pkg pkg))))
             (lambda (filename)
               (call-with-lock
                lock
                (lambda ()
                  (doc-db-set-provides-timestamp
-                  db-file filename 
+                  db-file filename #:pkg pkg
                   (file-or-directory-modify-seconds filename))))))))
 
-(define (write-out/info latex-dest info scis providess db-file lock)
-  (write-out latex-dest (info-vers info) (info-doc info) scis providess db-file lock))
+(define (write-out/info latex-dest info scis providess db-file lock pkg-cache)
+  (write-out latex-dest (info-vers info) (info-doc info) scis providess db-file lock pkg-cache))
 
-(define (write-in latex-dest vers doc undef rels searches db-file lock)
+(define (write-in latex-dest vers doc undef rels searches db-file lock pkg-cache)
   (write- latex-dest vers doc "in.sxref" 
           (list (list rels)
                 (list (serialize (list undef
                                        searches))))
           (lambda (filename)
+            (define pkg (doc-pkg doc pkg-cache))
             (call-with-lock
              lock
              (lambda ()
-               (doc-db-clear-dependencies db-file filename)
-               (doc-db-clear-searches db-file filename)
-               (doc-db-add-dependencies db-file undef filename)
-               (doc-db-add-searches db-file searches filename))))
+               (doc-db-clear-dependencies db-file filename #:pkg pkg)
+               (doc-db-clear-searches db-file filename #:pkg pkg)
+               (doc-db-add-dependencies db-file undef filename #:pkg pkg)
+               (doc-db-add-searches db-file searches filename #:pkg pkg))))
           void))
 
-(define (write-in/info latex-dest info lock main-doc-exists?)
+(define (write-in/info latex-dest info lock main-doc-exists? pkg-cache)
   (when (eq? 'delayed (info-undef info))
     (read-delayed-in! info latex-dest))
   (write-in latex-dest
@@ -1673,7 +1684,8 @@
             (info-deps->rel-doc-src-file info)
             (info-searches info)
             (find-db-file (info-doc info) latex-dest main-doc-exists?)
-            lock))
+            lock
+            pkg-cache))
 
 (define (rel->path r)
   (if (bytes? r)
@@ -1719,8 +1731,5 @@
    [else
     (reroot-path base root)]))
 
-
-(define path-pkg-cache (make-hash))
-
-(define (doc-pkg? doc)
-  (and (path->pkg (doc-src-file doc) #:cache path-pkg-cache) #t))
+(define (doc-pkg doc path-pkg-cache)
+  (path->pkg (doc-src-file doc) #:cache path-pkg-cache))

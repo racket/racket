@@ -6,7 +6,7 @@
                ["base" #:version "6.5.0.2"]
                "net-lib"
                "sandbox-lib"
-               ["scribble-lib" #:version "1.51"]
+               ["scribble-lib" #:version "1.52"]
                "racket-index"))
 (define build-deps '("rackunit-doc"
                      "errortrace-doc"

@@ -239,6 +239,23 @@ directory}:
        @history[#:changed "8.11.1.7" @elem{Added build stamp to
                                            @racket{banner}.}]
 
+ @item{@indexed-racket['base-documentation-packages] --- a list of
+       strings, each of which names a package. Any documentation
+       provided by the package and its dependencies is consider part
+       of the distribution's base language. This classification affects
+       the way that documentation search results are sorted and reported.
+       The default is @racket['("racket-doc")].
+
+       @history[#:added "8.14.0.5"]}
+
+ @item{@indexed-racket['distribution-documentation-packages] --- like
+       @racket['base-documentation-packages], but identifies a larger set of
+       documentation that is considered part of the distribution
+       beyond (but normally including) the base language. The default
+       is @racket['("main-distribution")].
+
+       @history[#:added "8.14.0.5"]}
+
  @item{@indexed-racket['absolute-installation?] --- a boolean that is
        @racket[#t] if the installation uses absolute path names,
        @racket[#f] otherwise.}
