@@ -42,7 +42,8 @@
 ;; it's missing, then it's a page with a single version
 (define (main-page id [installation-specific? '?]
                    #:force-racket-css? [force-racket-css? #f]
-                   #:show-root-info? [show-root-info? #f])
+                   #:show-root-info? [show-root-info? #f]
+                   #:extra-additions [extra-additions '()])
   (define info (page-info id))
   (define title-string (car info))
   (define root (cadr info))
@@ -65,7 +66,8 @@
                                         null
                                         (list
                                          (make-css-addition (collection-file-path "root-info.css" "scribblings/main/private"))
-                                         (make-js-addition (collection-file-path "root-info.js" "scribblings/main/private")))))))
+                                         (make-js-addition (collection-file-path "root-info.js" "scribblings/main/private"))))
+                                    extra-additions)))
            title-string
            #;
            ;; the "(installation)" part shouldn't be visible on the web, but

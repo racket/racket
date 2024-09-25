@@ -14,6 +14,7 @@
          doc-db-clear-searches
          doc-db-add-searches
          doc-db-key->path
+         doc-db-key->path+pkg
          doc-db-check-duplicates
          doc-db-check-unsatisfied
          doc-db-get-dependencies
@@ -54,10 +55,15 @@
 
 (define select-pathid-vq
   (virtual-statement "SELECT pathid FROM documented WHERE stag=$1"))
+
+(define select-path+pkg-vq
+  (virtual-statement "SELECT atmain, path, pkg FROM pathids WHERE pathid=$1"))
+(define select-other-path+pkg-vq
+  (virtual-statement "SELECT atmain, path, pkg FROM other.pathids WHERE pathid=$1"))
 (define select-path-vq
-  (virtual-statement "SELECT atmain, path FROM pathids WHERE pathid=$1"))
+  (virtual-statement "SELECT atmain, path, '' FROM pathids WHERE pathid=$1"))
 (define select-other-path-vq
-  (virtual-statement "SELECT atmain, path FROM other.pathids WHERE pathid=$1"))
+  (virtual-statement "SELECT atmain, path, '' FROM other.pathids WHERE pathid=$1"))
 
 (define (doc-db-init-pause)
   0.01)
@@ -88,6 +94,12 @@
 
 (define (doc-db-key->path db-file key
                           #:main-doc-relative-ok? [main-doc-relative-ok? #f])
+  (define-values (path pkg) (doc-db-key->path+pkg db-file key
+                                                  #:main-doc-relative-ok? main-doc-relative-ok?))
+  path)
+
+(define (doc-db-key->path+pkg db-file key
+                              #:main-doc-relative-ok? [main-doc-relative-ok? #f])
   (call-with-database
    'doc-db-key->path
    db-file
@@ -96,55 +108,57 @@
                               (->string key)))
      (define pathid (and (pair? rows)
                          (vector-ref (car rows) 0)))
-     (and pathid
-          (pathid->filename db pathid #f main-doc-relative-ok?)))))
+     (cond
+       [pathid
+        (pathid->filename+pkg db pathid #f main-doc-relative-ok?)]
+       [else
+        (values #f #f)]))))
 
-
-(define (add who db-file elems filename callback)
+(define (add who db-file elems filename pkg callback)
   (call-with-database
    who
    db-file
    #:write? #t
    (lambda (db)
      (prepare-tables db)
-     (define pathid (filename->pathid db filename))
+     (define pathid (filename->pathid db filename #:pkg pkg))
      (for ([p (in-list elems)])
        (define stag (->string p))
        (callback db stag pathid)))))
 
-(define (clear who db-file filename statement)
+(define (clear who db-file filename pkg statement)
   (call-with-database
    who
    db-file
    #:write? #t
    (lambda (db)
      (prepare-tables db)
-     (define pathid (filename->pathid db filename))
+     (define pathid (filename->pathid db filename #:pkg pkg))
      (query-exec db statement
                  pathid))))
 
-(define (doc-db-add-provides db-file provides filename)
+(define (doc-db-add-provides db-file provides filename #:pkg [pkg #f])
   (add 'doc-db-add-provides
-       db-file provides filename
+       db-file provides filename pkg
        (lambda (db stag pathid)
          (query-exec db "INSERT INTO documented VALUES ($1, $2)"
                      stag
                      pathid))))
        
 
-(define (doc-db-clear-provides db-file filename)
+(define (doc-db-clear-provides db-file filename #:pkg [pkg #f])
   (clear 'doc-db-clear-provides
-         db-file filename
+         db-file filename pkg
          "DELETE FROM documented WHERE pathid=$1"))
 
-(define (doc-db-set-provides-timestamp db-file filename seconds)
+(define (doc-db-set-provides-timestamp db-file filename seconds #:pkg [pkg #f])
   (call-with-database
    'doc-db-set-provides-timestamp
    db-file
    #:write? #t
    (lambda (db)
      (prepare-tables db)
-     (define pathid (filename->pathid db filename))
+     (define pathid (filename->pathid db filename #:pkg pkg))
      (query-exec db "DELETE FROM timestamps WHERE pathid=$1"
                  pathid)
      (query-exec db "INSERT INTO timestamps VALUES ($1, $2)"
@@ -162,28 +176,28 @@
                         pathid))
      (and row (vector-ref row 0)))))
 
-(define (doc-db-add-dependencies db-file depends filename)
+(define (doc-db-add-dependencies db-file depends filename #:pkg [pkg #f])
   (add 'doc-db-add-dependencies
-       db-file depends filename
+       db-file depends filename pkg
        (lambda (db stag pathid)
          (query-exec db "INSERT INTO dependencies VALUES ($1, $2)"
                      pathid
                      stag))))
 
 
-(define (doc-db-clear-dependencies db-file filename)
+(define (doc-db-clear-dependencies db-file filename #:pkg [pkg #f])
   (clear 'doc-db-clear-dependencies
-         db-file filename 
+         db-file filename pkg
          "DELETE FROM dependencies WHERE pathid=$1"))
 
-(define (doc-db-add-searches db-file searches filename)
+(define (doc-db-add-searches db-file searches filename #:pkg [pkg #f])
   (call-with-database
    'doc-db-add-searches
    db-file
    #:write? #t
    (lambda (db)
      (prepare-tables db)
-     (define pathid (filename->pathid db filename))
+     (define pathid (filename->pathid db filename #:pkg pkg))
      (for ([(sk s) (in-hash searches)]
            [setid (in-naturals)])
        (query-exec db "INSERT INTO searchSets VALUES ($1, $2, $3)"
@@ -197,14 +211,14 @@
                      setid
                      stag))))))
 
-(define (doc-db-clear-searches db-file filename)
+(define (doc-db-clear-searches db-file filename #:pkg [pkg #f])
   (call-with-database
    'doc-db-clear-searches
    db-file
    #:write? #t
    (lambda (db)
      (prepare-tables db)
-     (define pathid (filename->pathid db filename))
+     (define pathid (filename->pathid db filename #:pkg pkg))
      (query-exec db "DELETE FROM searchSets WHERE pathid=$1"
                  pathid)
      (query-exec db "DELETE FROM searches WHERE pathid=$1"
@@ -396,11 +410,11 @@
                      pathid)
          (query-exec db "DELETE FROM pathids WHERE pathid=$1"
                      pathid)
-         (query-exec db "INSERT INTO pathids VALUES ($1, 'n', 'placeholder')"
+         (query-exec db "INSERT INTO pathids VALUES ($1, 'n', 'placeholder', '')"
                      pathid))))))
          
 
-(define (filename->pathid db filename [write? #t])
+(define (filename->pathid db filename [write? #t] #:pkg [pkg #f])
   (define filename* (path->main-doc-relative filename))
   (define filename-bytes (cond
                           [(pair? filename*)
@@ -408,40 +422,69 @@
                           [(path? filename*)
                            (path->bytes filename*)]
                           [else (path->bytes (string->path filename*))]))
-  (define id (query-maybe-row db (~a "SELECT pathid FROM pathids"
-                                     " WHERE atmain=$1 AND path=$2")
+  (define id (query-maybe-row db
+                              (~a "SELECT pathid, " (if write? "pkg" "''") " FROM pathids"
+                                  " WHERE atmain=$1 AND path=$2")
                               (if (pair? filename*) "y" "n")
                               filename-bytes))
   (cond
    [(not id)
     (define num (vector-ref (query-row db "SELECT COUNT(pathid) FROM pathids") 0))
     (when write?
-      (query-exec db "INSERT INTO pathids VALUES ($1, $2, $3)"
+      (query-exec db "INSERT INTO pathids VALUES ($1, $2, $3, $4)"
                   (add1 num)
                   (if (pair? filename*) "y" "n")
-                  filename-bytes))
+                  filename-bytes
+                  (or pkg "")))
     ;; If we can't write, then this result is bogus, but it should lead
     ;; to empty query results in a transaction:
     (add1 num)]
+   [(and write? pkg (let ([pkg (vector-ref id 1)])
+                      (and (not (equal? pkg ""))
+                           (not (sql-null? pkg))
+                           pkg)))
+    ;; Transitioning from table before pkg was included?
+    (define pathid (vector-ref id 0))
+    (query-exec db "DELETE FROM pathids where pathid = $1" pathid)
+    (query-exec db "INSERT INTO pathids VALUES ($1, $2, $3, $4)"
+                pathid
+                (if (pair? filename*) "y" "n")
+                filename-bytes
+                pkg)
+      pathid]
    [else (vector-ref id 0)]))
 
 (define reader-cache (make-weak-hash))
 
-(define (pathid->filename db pathid in-other? main-doc-relative-ok?)
-  (define row (query-maybe-row db 
-                               (if in-other?
-                                   select-other-path-vq
-                                   select-path-vq)
+(define (pathid->filename+pkg db pathid in-other? main-doc-relative-ok?)
+  (define row (query-maybe-row db
+                               (if (old-pathids-table? db)
+                                   (if in-other?
+                                       select-other-path-vq
+                                       select-path-vq)
+                                   (if in-other?
+                                       select-other-path+pkg-vq
+                                       select-path+pkg-vq))
                                pathid))
-  (and row
-       (let ([path (vector-ref row 1)])
+  (if row
+      (let ([path (vector-ref row 1)]
+            [pkg (vector-ref row 2)])
+        (values
          (if (equal? "y" (vector-ref row 0))
              ((if main-doc-relative-ok? values main-doc-relative->path)
               (cons 'doc (or (hash-ref reader-cache path #f)
                              (let ([v (<-string (open-input-bytes path))])
                                (hash-set! reader-cache path v)
                                v))))
-             (bytes->path path)))))
+             (bytes->path path))
+         (and (not (equal? pkg ""))
+              (not (sql-null? pkg))
+              pkg)))
+      (values #f #f)))
+
+(define (pathid->filename db pathid in-other? main-doc-relative-ok?)
+  (define-values (path pkg) (pathid->filename+pkg db pathid in-other? main-doc-relative-ok?))
+  path)
 
 (define (prepare-tables db)
   (when (null? 
@@ -469,6 +512,7 @@
                        "(pathid SMALLINT,"
                        " atmain CHAR(1),"
                        " path VARCHAR(1024),"
+                       " pkg VARCHAR(1024),"
                        " PRIMARY KEY (pathid))"))
     (query-exec db (~a "CREATE INDEX dependenciesPath "
                        "on dependencies (pathid)"))
@@ -484,7 +528,12 @@
     (query-exec db (~a "CREATE TABLE timestamps "
                        "(pathid SMALLINT,"
                        " seconds BIGINT,"
-                       " PRIMARY KEY (pathid))"))))
+                       " PRIMARY KEY (pathid))")))
+  (when (old-pathids-table? db)
+    (query-exec db "ALTER TABLE pathids ADD COLUMN pkg VARCHAR(1024)")))
+
+(define (old-pathids-table? db)
+  (= 3 (length (query-rows db (~a "pragma table_info(pathids)")))))
 
 (define (exn:fail:retry? v)
   (and (exn:fail:sql? v)

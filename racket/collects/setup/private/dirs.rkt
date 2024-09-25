@@ -91,6 +91,8 @@
 (define-config config:doc-open-url 'doc-open-url values)
 (define-config config:installation-name 'installation-name values)
 (define-config config:build-stamp 'build-stamp values)
+(define-config config:base-documentation-packages 'base-documentation-packages values)
+(define-config config:distribution-documentation-packages 'distribution-documentation-packages values)
 
 (provide get-absolute-installation?
          get-cgc-suffix
@@ -99,7 +101,9 @@
          get-doc-search-url
          get-doc-open-url
          get-installation-name
-         get-build-stamp)
+         get-build-stamp
+         get-base-documentation-packages
+         get-distribution-documentation-packages)
 
 (define (get-absolute-installation?) (force config:absolute-installation?))
 (define (get-cgc-suffix) (force config:cgc-suffix))
@@ -114,6 +118,13 @@
     [() (force installation-name)]
     [(config) (utils:get-installation-name config)]))
 (define (get-build-stamp) (force config:build-stamp))
+
+(define (get-base-documentation-packages)
+  (or (force config:base-documentation-packages)
+      (list "racket-doc")))
+(define (get-distribution-documentation-packages)
+  (or (force config:distribution-documentation-packages)
+      (list "main-distribution")))
 
 ;; ----------------------------------------
 ;;  "collects"

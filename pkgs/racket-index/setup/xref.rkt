@@ -8,7 +8,8 @@
          setup/dirs
          setup/getinfo
          "private/doc-path.rkt"
-         setup/doc-db)
+         setup/doc-db
+         pkg/path)
 
 (provide load-collections-xref
          make-collections-xref
@@ -17,10 +18,12 @@
 (define cached-xref #f)
 
 (define (get-rendered-doc-directories no-user? no-main?)
-  (append (get-dests 'scribblings no-user? no-main? #f)
-          (get-dests 'rendered-scribblings no-user? no-main? #f)))
+  (append (get-dests 'scribblings no-user? no-main? #f #f)
+          (get-dests 'rendered-scribblings no-user? no-main? #f #f)))
 
-(define (get-dests tag no-user? no-main? sxrefs?)
+(struct dest+pkg (dest pkg))
+
+(define (get-dests tag no-user? no-main? sxrefs? pkg-cache)
   (define main-dirs
     (for/hash ([k (in-list (find-relevant-directories (list tag) 'no-user))])
       (values k #t)))
@@ -48,16 +51,20 @@
                               (if no-user? 'never 'false-if-missing)
                               #:main? (not no-main?))])
              (if d
-                 (if sxrefs?
-                     (for*/list ([i (in-range (add1 out-count))]
-                                 [p (in-value (build-path d (format "out~a.sxref" i)))]
-                                 #:when (file-exists? p))
-                       p)
-                     (list d))
+                 (cond
+                   [sxrefs?
+                    (define pkg (and pkg-cache (path->pkg dir #:cache pkg-cache)))
+                    (for*/list ([i (in-range (add1 out-count))]
+                                [p (in-value (build-path d (format "out~a.sxref" i)))]
+                                #:when (file-exists? p))
+                      (dest+pkg p pkg))]
+                   [else
+                    (list d)])
                  null))
            null)))))
 
-(define ((dest->source done-ht quiet-fail?) dest)
+(define ((dest->source done-ht quiet-fail?) dest-and-pkg)
+  (define dest (dest+pkg-dest dest-and-pkg))
   (if (hash-ref done-ht dest #f)
       (lambda () #f)
       (lambda ()
@@ -70,19 +77,21 @@
                                             (exn-message exn)
                                             (format "~e" exn))))
                                      #f)])
-          (make-data+root+doc-id
+          (make-data+root+doc-id+pkg
            ;; data to deserialize:
            (cadr (call-with-input-file* dest fasl->s-exp))
            ;; provide a root for deserialization:
            (path-only dest)
            ;; Use the destination directory's name as an identifier,
            ;; which allows a faster and more compact indirection
-           ;; for installation-scaoped documentation:
+           ;; for installation-scoped documentation:
            (let-values ([(base name dir?) (split-path dest)])
              (and (path? base)
                   (let-values ([(base name dir?) (split-path base)])
                     (and (path? name)
-                         (path->string name))))))))))
+                         (path->string name)))))
+           ;; Package containing the document source
+           (dest+pkg-pkg dest-and-pkg))))))
 
 (define (make-key->source db-path no-user? no-main? quiet-fail? register-shutdown!)
   (define main-db (and (not no-main?)
@@ -138,23 +147,26 @@
                 (let ()
                   ;; The db query:
                   (begin0
-                   (doc-db-key->path db key)
-                   ;; cache the connection, if none is already cached:
-                   (or (box-cas! (cdr p) #f db)
-                       (doc-db-disconnect db))))))))
-      (define dest (or (try main-db) (try user-db)))
-      (and dest
-           (if (eq? dest #t)
+                    (let-values ([(path pkg) (doc-db-key->path+pkg db key)])
+                      (and path
+                           (dest+pkg path pkg)))
+                    ;; cache the connection, if none is already cached:
+                    (or (box-cas! (cdr p) #f db)
+                        (doc-db-disconnect db))))))))
+      (define dest-and-pkg (or (try main-db) (try user-db)))
+      (and dest-and-pkg
+           (if (eq? dest-and-pkg #t)
                (force-all use-id)
-               ((dest->source (get-done-ht use-id) quiet-fail?) dest)))]
+               ((dest->source (get-done-ht use-id) quiet-fail?) dest-and-pkg)))]
      [else
       (unless (hash-ref forced-all?s use-id #f)
         (force-all use-id))])))
 
 (define (get-reader-thunks no-user? no-main? quiet-fail? done-ht)
+  (define pkg-cache (make-hash))
   (map (dest->source done-ht quiet-fail?)
-       (filter values (append (get-dests 'scribblings no-user? no-main? #t)
-                              (get-dests 'rendered-scribblings no-user? no-main? #t)))))
+       (filter values (append (get-dests 'scribblings no-user? no-main? #t pkg-cache)
+                              (get-dests 'rendered-scribblings no-user? no-main? #t pkg-cache)))))
 
 (define (load-collections-xref [report-loading void])
   (or cached-xref
