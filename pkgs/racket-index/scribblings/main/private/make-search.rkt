@@ -116,21 +116,26 @@
   (define manual-refs (make-hash))
   (define idx -1)
   (define l-all
-    (for/list ([i (if as-empty?
-                      null
-                      (get-index-entries sec ri))] 
+    (for/list ([i (in-list (if as-empty?
+                               null
+                               (get-index-entries sec ri)))]
                ;; don't index constructors (the class itself is already indexed)
-               #:unless (constructor-index-desc? (list-ref i 3)))
+               #:unless (let ([desc (list-ref i 3)])
+                          (or (constructor-index-desc? desc)
+                              (and (exported-index-desc*? desc)
+                                   (hash-ref (exported-index-desc*-extras desc) 'hidden? #f)))))
       (set! idx (add1 idx))
       ;; i is (list tag (text ...) (element ...) index-desc pkg)
       (define-values (tag texts elts desc pre-pkg-name) (apply values i))
       (define text (string-downcase (string-join texts)))
       (define-values (href html)
         (let* ([e (add-between elts ", ")]
-               ;; !!HACK!! The index entry for methods should have the extra
-               ;; text in it (when it does, this should go away)
-               [e (if (method-index-desc? desc)
-                    `(,@e ,(make-element "smaller"
+               [e (cond
+                    [(method-index-desc? desc)
+                     ;; Old approach. It's better for the index entry to have the extra
+                     ;; text in it; `method-index-desc` isn't used in that case
+                     `(,@e ,(make-element
+                             "smaller"
                              `(" (method of "
                                ,(make-element 
                                  symbol-color
@@ -139,8 +144,8 @@
                                    value-link-color
                                    (list (symbol->string
                                           (exported-index-desc-name desc))))))
-                               ")")))
-                    e)]
+                               ")")))]
+                    [else e])]
                [e (make-link-element "indexlink" e tag)]
                [e (send renderer render-content e sec ri)])
           (match e ; should always render to a single `a'
