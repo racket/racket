@@ -176,14 +176,21 @@
           [(exported-index-desc? desc)
            (let ([libs (map lib->name (exported-index-desc-from-libs desc))])
              (string-append* `("[" ,@(add-between libs ",") "]")))]
-          [(module-path-index-desc? desc)
-            (cond
-             [(language-index-desc? desc)
-              "\"language\""]
-             [(reader-index-desc? desc)
-              "\"reader\""]
-             [else
-              "\"module\""])]
+          [(or (and (index-desc? desc)
+                    (hash-ref (index-desc-extras desc) 'module-kind #f))
+               (cond
+                 [(language-index-desc? desc) 'lang]
+                 [(reader-index-desc? desc) 'reader]
+                 [(module-path-index-desc? desc) 'mod]
+                 [else #f]))
+           => (lambda (mod-kind)
+                (case mod-kind
+                  [(lang)
+                   "\"language\""]
+                  [(reader)
+                   "\"reader\""]
+                  [else
+                   "\"module\""]))]
           [else "false"]))
       (define pkg-name (if pre-pkg-name (quote-string pre-pkg-name) "false"))
       (and href
