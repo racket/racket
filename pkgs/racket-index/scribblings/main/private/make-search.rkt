@@ -11,13 +11,20 @@
          racket/string
          racket/match
          racket/path
+         racket/file
          net/url
          (only-in racket/class send)
-         (only-in xml xexpr->string)
+         (only-in xml
+                  xexpr->string
+                  read-xml
+                  document-element
+                  xml->xexpr)
          racket/runtime-path
          syntax/location
          setup/path-to-relative
-         (only-in setup/dirs find-doc-dir)
+         (only-in setup/dirs
+                  find-doc-dir
+                  get-main-language-family)
          "utils.rkt"
          (for-syntax racket/base)
          (for-syntax racket/runtime-path)
@@ -29,6 +36,11 @@
 
 (define-runtime-path search-script "search.js")
 (define-runtime-path search-merge-script "search-merge.js")
+(define-runtime-path help-svg "help.svg")
+(define-runtime-path settings-svg "settings.svg")
+(define-runtime-path clear-svg "clear.svg")
+(define-runtime-path prev-svg "prev.svg")
+(define-runtime-path next-svg "next.svg")
 
 ;; this file is used as a trampoline to set a context (a pre-filter cookie) and
 ;; then hop over to the search page (the search page can do it itself, but it's
@@ -44,10 +56,20 @@
   (define-runtime-path search-script "search.js")
   (define-runtime-path search-merge-script "search-merge.js")
   (define-runtime-path search-context-page "search-context.html")
+  (define-runtime-path help-svg "help.svg")
+  (define-runtime-path settings-svg "settings.svg")
+  (define-runtime-path clear-svg "clear.svg")
+  (define-runtime-path prev-svg "prev.svg")
+  (define-runtime-path next-svg "next.svg")
   (register-external-file search-style)
   (register-external-file search-script)
   (register-external-file search-merge-script)
-  (register-external-file search-context-page))
+  (register-external-file search-context-page)
+  (register-external-file help-svg)
+  (register-external-file settings-svg)
+  (register-external-file clear-svg)
+  (register-external-file prev-svg)
+  (register-external-file next-svg))
 
 (define (quote-string val)
   (define (hex4 ch)
@@ -63,6 +85,13 @@
       str
       ;; Quote unicode chars:
       (regexp-replace* #px"[^[:ascii:]]" str hex4)))
+
+(define (format-list elems)
+  (apply string-append
+         (add-between #:before-first '("[")
+                      elems '(",")
+                      #:after-last '("]")
+                      #:splice? #t)))
 
 (define (make-script as-empty? user-dir? renderer sec ri)
   (define dest-dir (send renderer get-dest-directory #t))
@@ -115,10 +144,29 @@
             (string-append* `("[" ,@(add-between body ",") "]")))))))
   (define manual-refs (make-hash))
   (define idx -1)
+  (define index-entries (if as-empty?
+                            null
+                            (get-index-entries sec ri)))
+  (define ((make-lookup-extra desc) key default)
+    (cond
+      [(index-desc? desc) (hash-ref (index-desc-extras desc) key default)]
+      [(exported-index-desc*? desc) (hash-ref (exported-index-desc*-extras desc) key default)]
+      [else default]))
+  (define (get-language-families)
+    (hash-values
+     (for/fold ([ht (hash)]) ([i (in-list index-entries)])
+       (define-values (tag texts elts desc pre-pkg-name) (apply values i))
+       (define fams ((make-lookup-extra desc) 'language-family '("Racket")))
+       (for/fold ([ht ht]) ([f (in-list fams)])
+         (define norm-f (string-foldcase f))
+         (hash-set ht norm-f (let ([v (hash-ref ht norm-f #f)])
+                               (cond
+                                 [(not v) f]
+                                 ;; prefer non-case-folded
+                                 [(equal? v norm-f) f]
+                                 [else v])))))))
   (define l-all
-    (for/list ([i (in-list (if as-empty?
-                               null
-                               (get-index-entries sec ri)))]
+    (for/list ([i (in-list index-entries)]
                ;; don't index constructors (the class itself is already indexed)
                #:unless (let ([desc (list-ref i 3)])
                           (or (constructor-index-desc? desc)
@@ -128,6 +176,7 @@
       ;; i is (list tag (text ...) (element ...) index-desc pkg)
       (define-values (tag texts elts desc pre-pkg-name) (apply values i))
       (define text (string-downcase (string-join texts)))
+      (define lookup-extra (make-lookup-extra desc))
       (define-values (href html)
         (let* ([e (add-between elts ", ")]
                [e (cond
@@ -192,14 +241,31 @@
                   [else
                    "\"module\""]))]
           [else "false"]))
+      (define-values (display-from-libs key-from-libs)
+        (cond
+          [(lookup-extra 'display-from-libs #f)
+           => (lambda (display-from-libs)
+                (values
+                 (format-list
+                  (for/list ([display-from-lib (in-list display-from-libs)])
+                    (compact-body (send renderer render-content display-from-lib sec ri))))
+                 (format-list
+                  (map (lambda (c) (quote-string (content->string c))) display-from-libs))))]
+          [else (values "false" "false")]))
       (define pkg-name (if pre-pkg-name (quote-string pre-pkg-name) "false"))
+      (define sort-order (format "~a" (lookup-extra 'sort-order 0)))
+      (define language-family (format-list (map quote-string
+                                                (lookup-extra 'language-family '("Racket")))))
       (and href
            (string-append "[" (quote-string text) ","
                           (quote-string href) ","
-                          html "," from-libs "," pkg-name "]"))))
+                          html "," from-libs ","
+                          pkg-name "," sort-order "," language-family ","
+                          display-from-libs "," key-from-libs "]"))))
   (define l (filter values l-all))
 
   (define user (if user-dir? "user_" ""))
+  (define main-language-family (get-main-language-family))
 
   (with-output-to-file (build-path dest-dir "plt-index.js") #:exists 'truncate
     (lambda ()
@@ -242,14 +308,23 @@
                  (add-between ms ",\n  "))
           };
           @||
+          // an array of language families
+          var plt_@,|user|language_families = [
+            @,@(add-between (map quote-string (get-language-families)) ",\n  ")
+          ];
+          @||
           // an array of (transitive) dependencies of base documentation
           var plt_base_pkgs = [
             @,@(add-between (map quote-string (get-base-pkgs)) ",\n  ")
           ];
+          @||
           // an array of (transitive) dependencies of main-distribution
           var plt_main_dist_pkgs = [
             @,@(add-between (map quote-string (get-main-dist-pkgs)) ",\n  ")
           ];
+          @||
+          // an array of (transitive) dependencies of main-distribution
+          var plt_main_language_family = @,(quote-string main-language-family);
           @||})))
 
   (for ([src (append (list search-script search-context-page)
@@ -257,6 +332,17 @@
     (define dest (build-path dest-dir (file-name-from-path src)))
     (when (file-exists? dest) (delete-file dest))
     (copy-file src dest)))
+
+(define (svg-icon name svg)
+  (define x (xml->xexpr (document-element (call-with-input-file svg read-xml))))
+  (match x
+    [`(svg ,attrs ,@content)
+     (element (style #f
+                (list (xexpr-property `(svg ([style "display: none"])
+                                            (symbol ([id ,name])
+                                                    ,@content))
+                                      "")))
+       "")]))
 
 (define (make-search in-user-dir?)
   (define main-at-user? (index-at-user?))
@@ -279,6 +365,12 @@
       (if user-dir?
           (list (script-ref "search-merge.js"))
           null)
+      (list
+       (svg-icon "help" help-svg)
+       (svg-icon "settings" settings-svg)
+       (svg-icon "clear" clear-svg)
+       (svg-icon "next" next-svg)
+       (svg-icon "prev" prev-svg))
       (list
        (make-render-element #f null
                             (lambda (r s i) (make-script

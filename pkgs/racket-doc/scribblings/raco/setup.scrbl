@@ -17,6 +17,8 @@
                     setup/cross-system
                     setup/path-to-relative
                     setup/xref scribble/xref
+                    (only-in scribble/core part)
+                    (only-in scribble/base title)
                     ;; info -- no bindings from this are used
                     (only-in info)
                     setup/pack
@@ -463,7 +465,9 @@ Optional @filepath{info.rkt} fields trigger additional actions by
           (list src-string flags category name out-k order-n)]
      [flags (list mode-symbol ...)]
      [category (list category-string-or-symbol)
-               (list category-string-or-symbol sort-number)]
+               (list category-string-or-symbol sort-number)
+               (list category-string-or-symbol sort-number lang-fam)]
+     [lang-fam (list string ...)]
      [name string
            #f]
    ]
@@ -552,7 +556,9 @@ Optional @filepath{info.rkt} fields trigger additional actions by
     ]
 
     The @racket[_category] list specifies how to show the document in
-    the root table of contents. The list must start with a category,
+    the root table of contents and, for the @racket[_lang-fam] part,
+    how to classify the documentation's content for searching.
+    The list must start with a category,
     which determines where the manual appears in the root
     documentation page. A category is either a string or a symbol. If
     it is a string, then the string is the category label on the root
@@ -614,13 +620,27 @@ Optional @filepath{info.rkt} fields trigger additional actions by
    If the @racket[_category] list is not given, or if the category symbol is unrecognized,
    the documentation is added to the Miscellaneous Libraries (@racket['library]) category.
 
-   If the category list has a second element, it must be a real number
+   If the category list has a second element, @racket[_sort-number], it must be a real number
    that designates the manual's sorting position with the category;
    manuals with the same sorting position are ordered
    alphabetically. For a pair of manuals with sorting numbers
    @racket[_n] and @racket[_m], the groups for the manuals are
    separated by space if @racket[(truncate (/ _n 10))]and
    @racket[(truncate (/ _m 10))] are different.
+
+   If the category list has a third element, @racket[_lang-fam], then
+   it must be a list of strings, where each string names a language
+   family. This language family list is used for index entries that
+   are extracted from the document and used for searching. The
+   document, a part within the document, or an individual index
+   entries may specify its own language family, and @racket[_lang-fam]
+   provides only a default for entries that do not otherwise specify a
+   language family. Alternatively, a document may specify a default
+   that can be overridden by @racket[_lang-fam] through a
+   @racket['default-language-family] key in @racket[tag-prefix] of the
+   document's @racket[part]; that specification, in turn, might be
+   supplied in the document's source via the @racket[#:tag-prefix]
+   argument to @racket[title].
 
    The @racket[_out-k] specification is a hint on whether to break the
    document's cross-reference information into multiple parts, which
@@ -651,7 +671,9 @@ Optional @filepath{info.rkt} fields trigger additional actions by
    @history[#:changed "6.4" @elem{Allow a category to be a string
                                  instead of a symbol.}
             #:changed "8.9.0.6" @elem{Add the @racket['drracket-plugin]
-                                      category symbol.}]}
+                                      category symbol.}
+            #:changed "8.14.0.5" @elem{Added optional @racket[_lang-fam]
+                                       within @racket[_category].}]}
 
  @item{@as-index{@racketidfont{release-note-files}} : @racket[(listof (cons/c string? (cons/c string? list?)))] ---
    A list of release-notes text files to link from the main documentation pages.
@@ -1798,6 +1820,23 @@ current-system paths while @racket[get-cross-lib-search-dirs] and
    The result is @racket[#f] if no build stamp is available.
 
    @see-config[build-stamp]}
+
+@defproc[(get-main-language-family) string?]{
+
+  Returns a string that names the installation's main language family.
+  A @deftech{language family} is a classification used in
+  documentation, and the main language family configuration affects
+  the way that documentation search results are printed. A language
+  family is not merely a module-based language, but instead stands
+  for a set of languages that share a module-naming convention; as a
+  rule of thumb, a language family is distinct enough that it might
+  have its own downloadable distribution. The default is
+  @racket["Racket"].
+
+  @see-config[main-language-family]
+
+  @history[#:added "8.14.0.5"]}
+}
 
 @deftogether[(
 @defproc[(get-base-documentation-packages) (listof string?)]

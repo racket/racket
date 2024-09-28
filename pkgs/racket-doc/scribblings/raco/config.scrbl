@@ -239,9 +239,14 @@ directory}:
        @history[#:changed "8.11.1.7" @elem{Added build stamp to
                                            @racket{banner}.}]
 
+ @item{@indexed-racket['main-language-family] --- a string that names
+       the main @tech{language family}. The default is @racket["Racket"].
+
+       @history[#:added "8.14.0.5"]}
+
  @item{@indexed-racket['base-documentation-packages] --- a list of
        strings, each of which names a package. Any documentation
-       provided by the package and its dependencies is consider part
+       provided by the package and its dependencies is considered part
        of the distribution's base language. This classification affects
        the way that documentation search results are sorted and reported.
        The default is @racket['("racket-doc")].

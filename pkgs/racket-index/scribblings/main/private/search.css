@@ -23,3 +23,19 @@
     padding: 0.25em 1em;
     cursor: default;
 }
+
+.search-status {
+    font-weight: bold;
+    color: #601515;
+    padding: 2pt;
+}
+
+.context-line {
+}
+
+.language-family {
+    float: right;
+    clear: both;
+    text-align: right;
+    color: #A0A0A0;
+}

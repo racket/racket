@@ -93,6 +93,7 @@
 (define-config config:build-stamp 'build-stamp values)
 (define-config config:base-documentation-packages 'base-documentation-packages values)
 (define-config config:distribution-documentation-packages 'distribution-documentation-packages values)
+(define-config config:main-language-family 'main-language-family values)
 
 (provide get-absolute-installation?
          get-cgc-suffix
@@ -103,7 +104,8 @@
          get-installation-name
          get-build-stamp
          get-base-documentation-packages
-         get-distribution-documentation-packages)
+         get-distribution-documentation-packages
+         get-main-language-family)
 
 (define (get-absolute-installation?) (force config:absolute-installation?))
 (define (get-cgc-suffix) (force config:cgc-suffix))
@@ -125,6 +127,10 @@
 (define (get-distribution-documentation-packages)
   (or (force config:distribution-documentation-packages)
       (list "main-distribution")))
+
+(define (get-main-language-family)
+  (or (force config:main-language-family)
+      "Racket"))
 
 ;; ----------------------------------------
 ;;  "collects"

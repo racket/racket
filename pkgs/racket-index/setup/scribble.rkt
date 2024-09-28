@@ -60,6 +60,7 @@
                                  under-main?
                                  via-search?
                                  category
+                                 language-family
                                  out-count
                                  name
                                  order-hint)
@@ -165,11 +166,15 @@
            (list? flags) (andmap scribblings-flag? flags)
            (or (not name) (collection-name-element? name))
            (and (list? cat)
-                (<= 1 (length cat) 2)
+                (<= 1 (length cat) 3)
                 (or (symbol? (car cat))
                     (string? (car cat)))
                 (or (null? (cdr cat))
-                    (real? (cadr cat))))
+                    (and (real? (cadr cat))
+                         (or (null? (cddr cat))
+                             (let ([fam (caddr cat)])
+                               (and (list? fam)
+                                    (andmap string? fam)))))))
            (and (exact-positive-integer? out-count))
            (and (real? order-hint))
            (list path flags cat
@@ -199,6 +204,8 @@
 				    (hash-ref main-dirs dir #f)))])
 		     (define src (simplify-path (build-path dir (car d)) #f))
 		     (define name (cadddr d))
+                     (define cat (caddr d))
+                     (define lang-fam (and ((length cat) . >= . 3) (list-ref cat 2)))
 		     (define dest (doc-path dir name flags under-main?))
 		     (define via-search? (and under-main?
 					      (not (or (equal? (find-doc-dir) dest)
@@ -217,7 +224,8 @@
 			       src
 			       dest
 			       flags under-main? via-search?
-			       (caddr d)
+			       cat
+                               lang-fam
 			       (list-ref d 4)
 			       (if (path? name) (path-element->string name) name)
 			       (list-ref d 5))))
@@ -958,16 +966,36 @@
                   only-dirs))))
 
 (define (load-doc/ensure-prefix doc)
+  ;; also transfers 'default-language-family to 'language-family
   (define (ensure-doc-prefix v src-spec)
     (let ([p (module-path-prefix->string src-spec)])
-      (when (and (part-tag-prefix v)
-                 (not (equal? p (part-tag-prefix v))))
+      (define old-prefix (part-tag-prefix v))
+      (define old-tag-prefix (or (and (string? old-prefix)
+                                      old-prefix)
+                                 (and (hash? old-prefix)
+                                      (hash-ref old-prefix 'tag-prefix #f))))
+      (when (or (and old-tag-prefix
+                     (not (equal? p old-tag-prefix))))
         (error 'setup
                "bad tag prefix: ~e for: ~a expected: ~e"
-               (part-tag-prefix v)
+               old-tag-prefix
                src-spec
                p))
-      (let ([tag-prefix p]
+      (let ([tag-prefix (let* ([ht (if (hash? old-prefix)
+                                       old-prefix
+                                       #hash())]
+                               [ht (hash-set ht 'tag-prefix p)]
+                               [fam (or (doc-language-family doc)
+                                        (hash-ref ht 'default-language-family #f))]
+                               [ht (if fam
+                                       (hash-set ht 'index-extras
+                                                 (cons
+                                                  ;; keep any existing mappings
+                                                  (hash-ref ht 'index-extras #hash())
+                                                  ;; add lower-precedence default
+                                                  (hash 'language-family fam)))
+                                       ht)])
+                          ht)]
             [tags (if (member '(part "top") (part-tags v))
                       (part-tags v)
                       (cons '(part "top") (part-tags v)))]

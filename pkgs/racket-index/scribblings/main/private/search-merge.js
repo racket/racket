@@ -54,4 +54,13 @@
     }
   }
   plt_search_data = result;
+
+  var rev_fam_map = [];
+  for (name in plt_language_families)
+      rev_fam_map[name.toLowerCase()] = name;
+
+  for (name in plt_user_language_families) {
+      if (!rev_fam_map[name.toLowerCase()])
+          plt_language_families.push(name);
+  }
 }
