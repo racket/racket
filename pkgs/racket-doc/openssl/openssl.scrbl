@@ -422,7 +422,7 @@ current platform for server connections.
 @defproc[(ports->ssl-ports
            [input-port input-port?]
 	   [output-port output-port?]
-           [#:mode mode (or/c 'connect 'accept) 'accept]
+           [#:mode mode (or/c 'connect 'accept) 'connect]
 	   [#:context context
                       (or/c ssl-client-context? ssl-server-context?)
                       ((if (eq? mode 'accept)
