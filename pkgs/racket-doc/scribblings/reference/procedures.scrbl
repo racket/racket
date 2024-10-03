@@ -335,7 +335,12 @@ the first two arguments, but that correspondence is in no way
 enforced.
 
 The result of @racket[procedure-arity] and @racket[object-name] on the
-new procedure is the same as for @racket[plain-proc]. See also
+new procedure is the same as for @racket[plain-proc], if
+@racket[plain-proc] is provided. Otherwise, the result of
+@racket[object-name] is the same as for @racket[proc],
+but the result of @racket[procedure-arity] is derived from that of
+@racket[proc] by reducing its arity by 2 (i.e., without the two prefix
+arguments that handle keyword arguments). See also
 @racket[procedure-reduce-keyword-arity] and @racket[procedure-rename].
 
 @examples[
