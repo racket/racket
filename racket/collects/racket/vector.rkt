@@ -15,7 +15,7 @@
                   vector-copy vector-append vector-set/copy
                   vector*-copy vector*-append vector*-set/copy
 		  vector-extend vector*-extend)
-         (for-syntax racket/base racket/list)
+         (for-syntax racket/base)
          (rename-in (except-in "private/sort.rkt" sort)
                     [vector-sort! raw-vector-sort!]
                     [vector-sort raw-vector-sort]))
@@ -185,7 +185,8 @@
 (define-syntax (vm-mk stx)
   (syntax-case stx ()
     ((_ name cmp (opt-arg default check contract) ...)
-     (with-syntax (((index ...) (range 2 (+ 2 (length (syntax->datum #'(opt-arg ...)))))))
+     (with-syntax (((index ...) (build-list (length (syntax->datum #'(opt-arg ...)))
+                                            (lambda (n) (+ 2 n)))))
        #'(define (name val vec (opt-arg default) ...)
            (unless (vector? vec)
              (raise-argument-error 'name "vector?" 1 val vec opt-arg ...))
