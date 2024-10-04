@@ -107,15 +107,15 @@
   (list->vector (for/list ([i (in-vector v)] #:unless (f i)) i)))
 
 (define (vector-count f v . vs)
+  (define len (varargs-check f v vs 'vector-count #f))
   (if (pair? vs)
-      (let ([len (varargs-check f v vs 'vector-count #f)])
-        (for/fold ([c 0])
-                  ([i (in-range len)]
-                   #:when
-                   (apply f
-                          (unsafe-vector-ref v i)
-                          (map (lambda (v) (unsafe-vector-ref v i)) vs)))
-          (add1 c)))
+      (for/fold ([c 0])
+                ([i (in-range len)]
+                 #:when
+                 (apply f
+                        (unsafe-vector-ref v i)
+                        (map (lambda (v) (unsafe-vector-ref v i)) vs)))
+        (add1 c))
       (for/fold ([cnt 0]) ([i (in-vector v)] #:when (f i))
         (add1 cnt))))
 
