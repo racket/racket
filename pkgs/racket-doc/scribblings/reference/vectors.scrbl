@@ -433,7 +433,7 @@ the result of @racket[proc].
 }
 
 
-@defproc[(vector-member [v any/c] [vec vector?])
+@defproc[(vector-member [v any/c] [vec vector?] [is-equal? (-> any/c any/c any/c) equal?])
          (or/c natural-number/c #f)]{
 
 Locates the first element of @racket[vec] that is equal to @racket[v] according
