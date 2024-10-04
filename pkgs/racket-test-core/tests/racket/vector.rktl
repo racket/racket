@@ -290,7 +290,7 @@
 ;; vector-mem{ber,v,q}
 
   (test 0 vector-member 1 #(1 2 3 4) =)
-  (err/rt-test (vector-member 1 #(1 2 3 4) (lambda (a) a)) (check-regs #rx"vector-member" #rx"(-> any/c any/c any/c)"))
+  (err/rt-test (vector-member 1 #(1 2 3 4) (lambda (a) a)) exn:fail:contract? #rx"(-> any/c any/c any/c)")
   (test 0 vector-member 7 #(7 1 2))
   (test #f vector-member 7 #(0 1 2))
   (test 1 vector-memq 'x #(7 x 2))
