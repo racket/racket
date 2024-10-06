@@ -1,7 +1,6 @@
 #lang racket/base
-(require racket/contract
+(require racket/contract/base
          racket/list
-         racket/match
          "structures.rkt")
 
 (provide/contract
@@ -66,7 +65,7 @@
   (cond
     [(start-tag? start) (read-element start in pos)]
     [(element? start) start]
-    [else 
+    [else
      (parse-error
       (list
        (make-srcloc
@@ -239,7 +238,7 @@
                 (unless (string=? (read-string 6 in) "CDATA[")
                   (lex-error in pos "expected CDATA following <["))
                 (let ([data (lex-cdata-contents in pos)])
-                  (make-cdata start (pos) (format "<![CDATA[~a]]>" data)))]
+                  (make-cdata start (pos) (string-append "<![CDATA[" data "]]>")))]
          [else (skip-dtd in pos)
                (skip-space in)
                (unless (eq? (peek-char-or-special in) #\<)
@@ -270,7 +269,7 @@
 
 ;; lex-attributes : Input-port (-> Location) -> (listof Attribute)
 (define (lex-attributes in pos)
-  (let* ([result_list 
+  (let* ([result_list
           (let loop ()
             (skip-space in)
             (cond [(name-start? (peek-char-or-special in))
@@ -332,7 +331,7 @@
         (loop)))))
 
 ;; lex-pcdata : Input-port (-> Location) -> Pcdata
-;; deviation - disallow ]]> "for compatibility" with SGML, sec 2.4 XML spec 
+;; deviation - disallow ]]> "for compatibility" with SGML, sec 2.4 XML spec
 (define (lex-pcdata in pos)
   (let ([start (pos)]
         [data (let ()
@@ -426,53 +425,13 @@
       [(eof-object? c) (lex-error in pos "unexpected eof")]
       [else c])))
 
-;; gen-read-until-string : String -> Input-port (-> Location) -> String
-;; uses Knuth-Morris-Pratt from
-;; Introduction to Algorithms, Cormen, Leiserson, and Rivest, pages 869-876
-;; discards stop from input
-;; ---
-;; Modified by Jay to look more like the version on Wikipedia after discovering a bug when parsing CDATA
-;; The use of the hasheq table and the purely numeric code trades hash efficiency for stack/ec capture efficiency
-(struct hash-string (port pos ht))
-(define (hash-string-ref hs k)
-  (match-define (hash-string port pos ht) hs)
-  (hash-ref! ht k (lambda () (non-eof read-char port pos))))
-
+;; gen-read-until-string : String -> (Input-port (-> Location) -> String)
 (define (gen-read-until-string W)
-  (define Wlen (string-length W))
-  (define T (make-vector Wlen #f))
-  (vector-set! T 0 -1)
-  (vector-set! T 1 0)
-  (let kmp-table ([pos 2] [cnd 0])
-    (when (pos . < . Wlen)
-      (cond
-        [(char=? (string-ref W (sub1 pos)) (string-ref W cnd))
-         (vector-set! T pos (add1 cnd))
-         (kmp-table (add1 pos) (add1 cnd))]
-        [(cnd . > . 0)
-         (kmp-table pos (vector-ref T cnd))]
-        [(zero? cnd)
-         (vector-set! T pos 0)
-         (kmp-table (add1 pos) 0)])))
-  (lambda (S-as-port S-pos)
-    (define S (hash-string S-as-port S-pos (make-hasheq)))
-    (define W-starts-at
-      (let kmp-search ([m 0] [i 0])
-        (if (char=? (string-ref W i) (hash-string-ref S (+ m i)))
-            (let ([i (add1 i)])
-              (if (= i Wlen)
-                  m
-                  (kmp-search m i)))
-            (let* ([Ti (vector-ref T i)]
-                   [m (+ m i (* -1 Ti))])
-              (if (Ti . > . -1)
-                  (let ([i Ti])
-                    (kmp-search m i))
-                  (let ([i 0])
-                    (kmp-search m i)))))))
+  (define re (regexp (regexp-quote W)))
+  (lambda (in pos)
     (define out (open-output-string))
-    (for ([i (in-range 0 W-starts-at)])
-      (write-char (hash-string-ref S i) out))
+    (unless (regexp-match-positions re in 0 #f out)
+      (lex-error in pos "unexpected eof"))
     (get-output-string out)))
 
 ;; "-->" makes more sense, but "--" follows the spec.
