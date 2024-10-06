@@ -1,7 +1,6 @@
 #lang racket/base
-(require racket/contract
+(require racket/contract/base
          racket/list
-         racket/match
          "structures.rkt")
 
 (provide/contract
