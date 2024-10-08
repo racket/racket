@@ -11,7 +11,7 @@
 
 (#%declare #:unsafe)
 
-;; RRB tree implemention
+;; RRB tree implementation
 ;;
 ;; Based on
 ;;
