@@ -1,7 +1,8 @@
 #lang racket/base
 (require racket/contract/base
          racket/list
-         "structures.rkt")
+         (only-in "structures.rkt" make-document make-prolog)
+         (except-in (submod "structures.rkt" unsafe) make-document make-prolog))
 
 (provide/contract
  [read-xml (() (input-port?) . ->* . document?)]
