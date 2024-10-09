@@ -307,9 +307,11 @@
                               #:report-mpi-shifts [report-mpi-shifts #f])
   (define bulk-shifts (and keep-provides? (list (make-hasheq))))
 
-  (define reachable-scopes (find-reachable-scopes v bulk-shifts report-mpi-shifts))
+  (define-values (reachable-scopes implicitly-reachable-scopes)
+    (find-reachable-scopes v bulk-shifts report-mpi-shifts))
 
   (define state (make-serialize-state reachable-scopes
+                                      implicitly-reachable-scopes
                                       preserve-prop-keys
                                       (and keep-provides?
                                            (lambda (b)
@@ -974,6 +976,7 @@
 (define (find-reachable-scopes v bulk-shifts report-mpi-shifts)
   (define seen (make-hasheq))
   (define reachable-scopes (interned-scopes))
+  (define implicitly-reachable-scopes (interned-scopes))
   (define (get-reachable-scopes) reachable-scopes)
   (define scope-triggers (make-hasheq))
 
@@ -1024,6 +1027,9 @@
                          sc-unreachable
                          (lambda (l) (cons b l))
                          null))
+         (lambda (sc)
+           (unless (set-member? reachable-scopes sc)
+             (set! implicitly-reachable-scopes (set-add implicitly-reachable-scopes sc))))
          report-shifts)]
        [(reach-scopes? v)
         ((reach-scopes-ref v) v bulk-shifts loop)]
@@ -1047,7 +1053,8 @@
        [else
         (void)])]))
   
-  reachable-scopes)
+  (values reachable-scopes
+          implicitly-reachable-scopes))
 
 ;; ----------------------------------------
 

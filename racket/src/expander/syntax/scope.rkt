@@ -119,12 +119,13 @@
     ;; the `bindings` field is handled via `prop:scope-with-bindings`
     (void))
   #:property prop:scope-with-bindings
-  (lambda (s get-reachable-scopes extra-shifts reach register-trigger report-shifts)
+  (lambda (s get-reachable-scopes extra-shifts reach register-trigger reach-implicitly report-shifts)
     (binding-table-register-reachable (scope-binding-table s)
                                       get-reachable-scopes
                                       extra-shifts
                                       reach
                                       register-trigger
+                                      reach-implicitly
                                       report-shifts)))
 
 (define deserialize-scope
@@ -139,7 +140,7 @@
 ;; An "interned scope" is a scope identified by an interned symbol that is
 ;; consistent across both module instantiations and bytecode unmarshalling.
 ;; Creating an interned scope with the same symbol will always produce the
-;; same scope.<
+;; same scope.
 (struct interned-scope scope (key)  ; symbolic key used for interning
   #:authentic
   #:property prop:custom-write
@@ -185,7 +186,8 @@
     (define multi-scope-tables (serialize-state-multi-scope-tables state))
     (ser-push! (or (hash-ref multi-scope-tables (multi-scope-scopes ms) #f)
                    (let ([ht (for/hasheqv ([(phase sc) (in-hash (unbox (multi-scope-scopes ms)))]
-                                           #:when (set-member? (serialize-state-reachable-scopes state) sc))
+                                           #:when (or (set-member? (serialize-state-reachable-scopes state) sc)
+                                                      (set-member? (serialize-state-implicitly-reachable-scopes state) sc)))
                                (values phase sc))])
                      (hash-set! multi-scope-tables (multi-scope-scopes ms) ht)
                      ht))))
@@ -194,7 +196,7 @@
     ;; the `scopes` field is handled via `prop:scope-with-bindings`
     (void))
   #:property prop:scope-with-bindings
-  (lambda (ms get-reachable-scopes bulk-shifts reach register-trigger report-shifts)
+  (lambda (ms get-reachable-scopes bulk-shifts reach register-trigger reach-implicitly report-shifts)
     ;; This scope is reachable via its multi-scope, but it only
     ;; matters if it's reachable through a binding (otherwise it
     ;; can be re-generated later). We don't want to keep a scope
@@ -237,7 +239,10 @@
   #:property prop:serialize-fill!
   (lambda (s ser-push! state)
     (ser-push! 'tag '#:representative-scope-fill!)
-    (ser-push! (binding-table-prune-to-reachable (scope-binding-table s) state))
+    (if (set-member? (serialize-state-reachable-scopes state) s)
+        (ser-push! (binding-table-prune-to-reachable (scope-binding-table s) state))
+        ;; only implicitly reachable, so we don't need bindings
+        (ser-push! empty-binding-table))
     (ser-push! (representative-scope-owner s)))
   #:property prop:reach-scopes
   (lambda (s bulk-shifts reach)

@@ -1254,9 +1254,9 @@
     ;; Drop elements of `codes' that just record copied libs:
     (set-box! codes (filter mod-code (unbox codes)))
     ;; As an accomodation to `raco demod`, make sure sibling modules of a top-level module
-    ;; are reachable from each other, because `raco demod` generates relative references
-    ;; directly (e.g., in bindings in scopes in syntax objects) instead of going through
-    ;; a sequence of `require` paths:
+    ;; are reachable from each other, and submodules are reachable from the root,
+    ;; because `raco demod` generates relative references directly (e.g., in bindings in
+    ;; scopes in syntax objects) instead of going through a sequence of `require` paths:
     (saturate-immediate-submodule-mappings! (unbox codes))
     ;; Bind `module' to get started:
     (write (compile-using-kernel '(namespace-require '(only '#%kernel module))) outp)
@@ -2000,12 +2000,12 @@
 
 ;; See note at call site for this function:
 (define (saturate-immediate-submodule-mappings! mods)
-  (define submods (make-hash))
+  (define submods (make-hash)) ; root module name -> submod sym -> full name
   (define (immediate-submod? mp)
     (and (pair? mp)
-               (eq? (car mp) 'submod)
-               (pair? (cddr mp))
-               (null? (cdddr mp))))
+         (eq? (car mp) 'submod)
+         (pair? (cddr mp))
+         (null? (cdddr mp))))
   (for ([m (in-list mods)])
     (define mp (mod-mod-path m))
     (when (immediate-submod? mp)
@@ -2014,14 +2014,19 @@
                     #hasheq())))
   (for ([m (in-list mods)])
     (define mp (mod-mod-path m))
-    (when (immediate-submod? mp)
+    (define (add-submods! root-name make-submod-path)
       (define avail (for/hash ([m (in-list (mod-mappings m))])
                       (values (car m) #t)))
       (define additions
-        (for/list ([(subm name) (in-hash (hash-ref submods (cadr mp)))]
-                   #:do [(define rel-mp `(submod ".." ,subm))]
+        (for/list ([(subm name) (in-hash (hash-ref submods root-name #hasheq()))]
+                   #:do [(define rel-mp (make-submod-path subm))]
                    #:when (not (hash-ref avail rel-mp #f)))
           (cons rel-mp name)))
       (unless (null? additions)
         (define bx (mod-mappings-box m))
-        (set-box! bx (append (unbox bx) additions))))))
+        (set-box! bx (append (unbox bx) additions))))
+    (cond
+      [(immediate-submod? mp)
+       (add-submods! (cadr mp) (lambda (subm) `(submod ".." ,subm)))]
+      [(not (and (pair? mp) (eq? (car mp) 'submod)))
+       (add-submods! mp (lambda (subm) `(submod "." ,subm)))])))
