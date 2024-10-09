@@ -1,7 +1,7 @@
 #lang racket/base
 (require racket/contract/base
          racket/list
-         "structures.rkt")
+         (submod "structures.rkt" unsafe))
 
 (provide/contract
  [read-xml (() (input-port?) . ->* . document?)]
