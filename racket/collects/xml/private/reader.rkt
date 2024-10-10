@@ -353,24 +353,18 @@
 
 ;; lex-name : Input-port (-> Location) -> Symbol
 (define (lex-name in pos)
-  (let ([c (non-eof read-char-or-special in pos)])
-    (unless (name-start? c)
-      (lex-error in pos "expected name, received ~e" c))
-    (string->symbol
-     (let ()
-       (define out (open-output-string))
-       (write-char c out)
-       (let lex-rest ()
-         (let ([c (non-eof peek-char-or-special in pos)])
-           (cond
-             [(eq? c 'special)
-              (lex-error in pos "names cannot contain non-text values")]
-             [(name-char? c)
-              (write-char c out)
-              (void (read-char in))
-              (lex-rest)]
-             [else (void)])))
-       (get-output-string out)))))
+  (define c (non-eof read-char-or-special in pos))
+  (unless (name-start? c)
+    (lex-error in pos "expected name, received ~e" c))
+  (let loop ([chars (list c)])
+    (define c (non-eof peek-char-or-special in pos))
+    (cond
+      [(eq? c 'special)
+       (lex-error in pos "names cannot contain non-text values")]
+      [(name-char? c)
+       (loop (cons (read-char in) chars))]
+      [else
+       (string->symbol (apply string (reverse chars)))])))
 
 ;; skip-dtd : Input-port (-> Location) -> Void
 (define (skip-dtd in pos)
@@ -406,13 +400,12 @@
 ;; read-until : Char Input-port (-> Location) -> String
 ;; discards the stop character, too
 (define (read-until char in pos)
-  (define out (open-output-string))
-  (let read-more ()
-    (let ([c (non-eof read-char in pos)])
-      (cond
-        [(eq? c char) (void)]
-        [else (write-char c out) (read-more)])))
-  (get-output-string out))
+  (let loop ([chars null])
+    (define c
+      (non-eof read-char in pos))
+    (if (eq? c char)
+        (apply string (reverse chars))
+        (loop (cons c chars)))))
 
 ;; non-eof : (Input-port -> (U Char Eof)) Input-port (-> Location) -> Char
 (define (non-eof f in pos)
