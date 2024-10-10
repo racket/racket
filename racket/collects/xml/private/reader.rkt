@@ -270,16 +270,16 @@
 
 ;; lex-attributes : Input-port (-> Location) -> (listof Attribute)
 (define (lex-attributes in pos)
-  (let* ([result_list
+  (let* ([result-list
           (let loop ()
             (skip-space in)
             (cond [(name-start? (peek-char-or-special in))
                    (cons (lex-attribute in pos) (loop))]
                   [else null]))]
-         [check_dup (check-duplicates result_list (lambda (a b) (eq? (attribute-name a) (attribute-name b))))])
-    (if check_dup
-        (lex-error in pos "duplicated attribute name ~a" (attribute-name check_dup))
-        result_list)))
+         [check-dup (check-duplicates result-list eq? #:key attribute-name)])
+    (if check-dup
+        (lex-error in pos "duplicated attribute name ~a" (attribute-name check-dup))
+        result-list)))
 
 ;; lex-attribute : Input-port (-> Location) -> Attribute
 (define (lex-attribute in pos)
@@ -334,48 +334,37 @@
 ;; lex-pcdata : Input-port (-> Location) -> Pcdata
 ;; deviation - disallow ]]> "for compatibility" with SGML, sec 2.4 XML spec
 (define (lex-pcdata in pos)
-  (let ([start (pos)]
-        [data (let ()
-                (define out (open-output-string))
-                (let loop ()
-                  (let ([next (peek-char-or-special in)])
-                    (cond
-                      [(or (eof-object? next)
-                           (not (char? next))
-                           (eq? next #\&)
-                           (eq? next #\<))
-                       (void)]
-                      [(and (char-whitespace? next) (collapse-whitespace))
-                       (skip-space in)
-                       (write-char #\space out)
-                       (loop)]
-                      [else
-                       (write-char next out)
-                       (void (read-char in))
-                       (loop)])))
-                (get-output-string out))])
-    (make-pcdata start (pos) data)))
+  (define start (pos))
+  (define data
+    (let loop ([chars null])
+      (let ([next (peek-char-or-special in)])
+        (cond
+          [(or (eof-object? next)
+               (not (char? next))
+               (eq? next #\&)
+               (eq? next #\<))
+           (apply string (reverse chars))]
+          [(and (char-whitespace? next) (collapse-whitespace))
+           (skip-space in)
+           (loop (cons #\space chars))]
+          [else
+           (loop (cons (read-char in) chars))]))))
+  (make-pcdata start (pos) data))
 
 ;; lex-name : Input-port (-> Location) -> Symbol
 (define (lex-name in pos)
-  (let ([c (non-eof read-char-or-special in pos)])
-    (unless (name-start? c)
-      (lex-error in pos "expected name, received ~e" c))
-    (string->symbol
-     (let ()
-       (define out (open-output-string))
-       (write-char c out)
-       (let lex-rest ()
-         (let ([c (non-eof peek-char-or-special in pos)])
-           (cond
-             [(eq? c 'special)
-              (lex-error in pos "names cannot contain non-text values")]
-             [(name-char? c)
-              (write-char c out)
-              (void (read-char in))
-              (lex-rest)]
-             [else (void)])))
-       (get-output-string out)))))
+  (define c (non-eof read-char-or-special in pos))
+  (unless (name-start? c)
+    (lex-error in pos "expected name, received ~e" c))
+  (let loop ([chars (list c)])
+    (define c (non-eof peek-char-or-special in pos))
+    (cond
+      [(eq? c 'special)
+       (lex-error in pos "names cannot contain non-text values")]
+      [(name-char? c)
+       (loop (cons (read-char in) chars))]
+      [else
+       (string->symbol (apply string (reverse chars)))])))
 
 ;; skip-dtd : Input-port (-> Location) -> Void
 (define (skip-dtd in pos)
@@ -411,13 +400,12 @@
 ;; read-until : Char Input-port (-> Location) -> String
 ;; discards the stop character, too
 (define (read-until char in pos)
-  (define out (open-output-string))
-  (let read-more ()
-    (let ([c (non-eof read-char in pos)])
-      (cond
-        [(eq? c char) (void)]
-        [else (write-char c out) (read-more)])))
-  (get-output-string out))
+  (let loop ([chars null])
+    (define c
+      (non-eof read-char in pos))
+    (if (eq? c char)
+        (apply string (reverse chars))
+        (loop (cons c chars)))))
 
 ;; non-eof : (Input-port -> (U Char Eof)) Input-port (-> Location) -> Char
 (define (non-eof f in pos)
