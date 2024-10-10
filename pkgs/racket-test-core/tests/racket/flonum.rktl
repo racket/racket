@@ -59,6 +59,18 @@
 (err/rt-test (fl->exact-integer 1/3))
 (err/rt-test (fl->exact-integer 1.0+2.0i))
 
+(define 64-bit-machine? (eq? (expt 2 40) (eq-hash-code (expt 2 40))))
+
+(test (flvector 0.0 0.0 0.0 0.0 0.0) make-flvector 5)
+(test (flvector 0.0 0.0 0.0 0.0 0.0) make-flvector 5 0.0)
+(err/rt-test (make-flvector "oops") exn:fail:contract? "exact-nonnegative-integer[?]")
+(err/rt-test (make-flvector 5.0 0.0) exn:fail:contract? "exact-nonnegative-integer[?]")
+(err/rt-test (make-flvector 5.2 0.0) exn:fail:contract? "exact-nonnegative-integer[?]")
+(err/rt-test (make-flvector -5 0.0) exn:fail:contract? "exact-nonnegative-integer[?]")
+(unless 64-bit-machine?
+  (err/rt-test (make-flvector 500000000000000 0) exn:fail:out-of-memory?))
+(err/rt-test (make-flvector 50000000000000000000 0) exn:fail:out-of-memory?)
+
 (err/rt-test (flvector-ref (flvector 4.0 5.0 6.0) 4) exn:fail:contract? #rx"[[]0, 2[]]")
 (err/rt-test (flvector-set! (flvector 4.0 5.0 6.0) 4 0.0) exn:fail:contract? #rx"[[]0, 2[]]")
 

@@ -33,6 +33,13 @@
    [(and (who-condition? v)
          (eq? 'time-utc->date (condition-who v)))
     exn:fail]
+   [(and (format-condition? v)
+         (who-condition? v)
+         (#%memq (condition-who v) '(make-string make-vector make-fxvector make-flvector make-bytevector))
+         (string-prefix? "~s is not a valid " (condition-message v))
+         (string-suffix? " length" (condition-message v))
+         (exact-nonnegative-integer? (car (condition-irritants v))))
+    exn:fail:out-of-memory]
    [else
     exn:fail:contract]))
 
@@ -52,8 +59,9 @@
                 bytevector-u8-set! bytes-set!
                 bytevector-length bytes-length
                 bytevector-copy bytes-copy
+                make-bytevector make-bytes
                 bitwise-arithmetic-shift arithmetic-shift
-                fixnum->flonum fx->fl 
+                fixnum->flonum fx->fl
                 flonum->fixnum fl->fx
                 fxarithmetic-shift-right fxrshift
                 fxarithmetic-shift-left fxlshift
@@ -157,6 +165,22 @@
                                           "  first argument...:\n"
                                           "   ~s")
                            irritants)])]
+   [(equal? str "~s is not a valid unicode scalar value")
+    (format-contract-violation "(and/c (integer-in 0 #x10FFFF) (not/c (integer-in #xD800 #xDFFF)))" irritants)]
+   [(and (string-prefix? "~s is not a valid " str)
+         (string-suffix? " length" str)
+         (#%memq who '(make-string make-vector make-fxvector make-flvector make-bytevector)))
+    (if (exact-nonnegative-integer? (car irritants))
+        (values (string-append "out of memory making "
+                               (case who
+                                 [(make-string) "string"]
+                                 [(make-vector) "vector"]
+                                 [(make-fxvector) "fxvector"]
+                                 [(make-flvector) "flvector"]
+                                 [(make-bytevector) "byte string"])
+                               "\n  length: ~s")
+                irritants)
+        (format-contract-violation "exact-nonnegative-integer?" irritants))]
    [(and (> (string-length str) (string-length is-not-a-str))
          (equal? (substring str 0 (string-length is-not-a-str)) is-not-a-str)
          (= 1 (length irritants)))
@@ -208,7 +232,7 @@
    [(and (or (equal? str "invalid bit index ~s")
              (equal? str "invalid start index ~s")
              (equal? str "invalid end index ~s"))
-         (memq who '(bitwise-bit-set? bitwise-bit-field)))
+         (#%memq who '(bitwise-bit-set? bitwise-bit-field)))
     (cond
       [(exact-nonnegative-integer? (car irritants))
        ;; must be an out-of-range end index
