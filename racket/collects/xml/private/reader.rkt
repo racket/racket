@@ -334,27 +334,22 @@
 ;; lex-pcdata : Input-port (-> Location) -> Pcdata
 ;; deviation - disallow ]]> "for compatibility" with SGML, sec 2.4 XML spec
 (define (lex-pcdata in pos)
-  (let ([start (pos)]
-        [data (let ()
-                (define out (open-output-string))
-                (let loop ()
-                  (let ([next (peek-char-or-special in)])
-                    (cond
-                      [(or (eof-object? next)
-                           (not (char? next))
-                           (eq? next #\&)
-                           (eq? next #\<))
-                       (void)]
-                      [(and (char-whitespace? next) (collapse-whitespace))
-                       (skip-space in)
-                       (write-char #\space out)
-                       (loop)]
-                      [else
-                       (write-char next out)
-                       (void (read-char in))
-                       (loop)])))
-                (get-output-string out))])
-    (make-pcdata start (pos) data)))
+  (define start (pos))
+  (define data
+    (let loop ([chars null])
+      (let ([next (peek-char-or-special in)])
+        (cond
+          [(or (eof-object? next)
+               (not (char? next))
+               (eq? next #\&)
+               (eq? next #\<))
+           (apply string (reverse chars))]
+          [(and (char-whitespace? next) (collapse-whitespace))
+           (skip-space in)
+           (loop (cons #\space chars))]
+          [else
+           (loop (cons (read-char in) chars))]))))
+  (make-pcdata start (pos) data))
 
 ;; lex-name : Input-port (-> Location) -> Symbol
 (define (lex-name in pos)
