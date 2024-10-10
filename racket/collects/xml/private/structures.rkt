@@ -28,7 +28,7 @@
 ; Attribute = (make-attribute Location Location Symbol String)
 (define-struct (attribute source) (name value) #:transparent)
 
-; Content = Pcdata  
+; Content = Pcdata
 ;         |  Element
 ;         |  Entity
 ;         |  Misc
@@ -64,6 +64,7 @@
 (define location/c
   (or/c location? symbol? false/c))
 (provide/contract
+ #:unprotected-submodule unsafe
  (struct location ([line (or/c false/c exact-nonnegative-integer?)]
                    [char (or/c false/c exact-nonnegative-integer?)]
                    [offset exact-nonnegative-integer?]))
@@ -81,12 +82,12 @@
  (struct (p-i source) ([start location/c]
                        [stop location/c]
                        [target-name symbol?]
-                       [instruction string?])) 
+                       [instruction string?]))
  [misc/c contract?]
  (struct prolog ([misc (listof misc/c)]
                  [dtd (or/c document-type? false/c)]
                  [misc2 (listof misc/c)]))
- (struct document ([prolog prolog?] 
+ (struct document ([prolog prolog?]
                    [element element?]
                    [misc (listof misc/c)]))
  (struct (element source) ([start location/c]
@@ -100,13 +101,13 @@
                              [value (or/c string? permissive/c)]))
  [permissive-xexprs (parameter/c boolean?)]
  [permissive/c contract?]
- [content/c contract?] 
+ [content/c contract?]
  (struct (pcdata source) ([start location/c]
                           [stop location/c]
                           [string string?]))
  (struct (cdata source) ([start location/c]
                          [stop location/c]
-                         [string string?])) 
+                         [string string?]))
  [valid-char? (any/c . -> . boolean?)]
  (struct (entity source) ([start location/c]
                           [stop location/c]
