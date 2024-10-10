@@ -270,16 +270,16 @@
 
 ;; lex-attributes : Input-port (-> Location) -> (listof Attribute)
 (define (lex-attributes in pos)
-  (let* ([result_list
+  (let* ([result-list
           (let loop ()
             (skip-space in)
             (cond [(name-start? (peek-char-or-special in))
                    (cons (lex-attribute in pos) (loop))]
                   [else null]))]
-         [check_dup (check-duplicates result_list (lambda (a b) (eq? (attribute-name a) (attribute-name b))))])
-    (if check_dup
-        (lex-error in pos "duplicated attribute name ~a" (attribute-name check_dup))
-        result_list)))
+         [check-dup (check-duplicates result-list eq? #:key attribute-name)])
+    (if check-dup
+        (lex-error in pos "duplicated attribute name ~a" (attribute-name check-dup))
+        result-list)))
 
 ;; lex-attribute : Input-port (-> Location) -> Attribute
 (define (lex-attribute in pos)
