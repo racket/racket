@@ -443,8 +443,10 @@ Locates the first element of @racket[vec] that is equal to @racket[v] according
 @mz-examples[#:eval vec-eval
 (vector-member 2 (vector 1 2 3 4))
 (vector-member 9 (vector 1 2 3 4))
-(vector-member 1 (vector 1 2 3 4) =)
-]}
+(vector-member 1.0 (vector 1 2 3 4) =)
+]
+
+@history[#:changed "8.15.0.1" @elem{Added the @racket[is-equal?] argument.}]}
 
 
 @defproc[(vector-memv [v any/c] [vec vector?])

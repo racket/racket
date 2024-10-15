@@ -204,7 +204,7 @@
 (vm-mk vector-member is-equal?
        (is-equal? equal?
         (and (procedure? is-equal?) (procedure-arity-includes? is-equal? 2))
-        "(-> any/c any/c any/c)"))
+        "(procedure-arity-includes/c 2)"))
 (vm-mk vector-memq eq?)
 (vm-mk vector-memv eqv?)
 
