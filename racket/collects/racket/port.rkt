@@ -28,6 +28,7 @@
 
          ;; `mzlib/port` exports
          open-output-nowhere
+         open-input-nowhere
          make-pipe-with-specials
          make-input-port/read-to-peek
          peeking-input-port
@@ -732,7 +733,7 @@
      (let ([delta (- pos (or (file-position* p) pos))])
        (if (= delta 1)
            p
-           (lambda () 
+           (lambda ()
              (define v (file-position* p))
              (+ delta v))))
      (case-lambda
@@ -1143,13 +1144,13 @@
       (make-input-port
        (object-name port)
        (lambda (str)
-         (call-with-semaphore 
+         (call-with-semaphore
           lock-semaphore
           do-read
           try-again
           str))
        (lambda (str skip progress-evt)
-         (call-with-semaphore 
+         (call-with-semaphore
           lock-semaphore
           do-peek
           try-again
@@ -1160,7 +1161,7 @@
        (and (port-provides-progress-evts? port)
             (lambda () (port-progress-evt port)))
        (and (port-provides-progress-evts? port)
-            (lambda (n evt target-evt) 
+            (lambda (n evt target-evt)
               (let loop ()
                 (if (semaphore-try-wait? lock-semaphore)
                     (let ([ok? (port-commit-peeked n evt target-evt port)])
@@ -1245,11 +1246,11 @@
     ;; Beware that the input port might become closed at any time.
     ;; For the most part, progress evts should take care of that.
     (let try-again ([pos 0] [bstr orig-bstr] [progress-evt #f])
-      (let* ([progress-evt 
+      (let* ([progress-evt
               ;; if no progress event is given, get one to ensure that
               ;; consecutive bytes are read and can be committed:
               (or progress-evt prog-evt (port-progress-evt input-port))]
-             [v (and 
+             [v (and
                  ;; to implement weak support for reusing the buffer in `read-bytes!-evt',
                  ;; need to check nack after getting progress-evt:
                  (not (sync/timeout 0 nack))
