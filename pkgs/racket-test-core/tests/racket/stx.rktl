@@ -2436,6 +2436,15 @@
 (test "(lambda (x) x)" (error-syntax->string-handler) '(lambda (x) x) #f)
 (test "(lambda..." (error-syntax->string-handler) '(lambda (x) x) 10)
 
+(test #t procedure? error-syntax->name-handler)
+(test 'lambda (error-syntax->name-handler) #'(lambda (x) x))
+(test #f (error-syntax->name-handler) #'((lambda (x) x)))
+(parameterize ([error-syntax->name-handler (lambda (stx)
+                                             'whatever)])
+  (err/rt-test (raise-syntax-error #f "oops" #'(bad syntax))
+               exn:fail:syntax?
+               #rx"whatever: "))
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Test prop:rename-transformer with procedure content
 

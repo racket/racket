@@ -812,6 +812,21 @@ not syntax objects.
 @history[#:added "8.2.0.8"]}
 
 
+@defparam[error-syntax->name-handler proc (syntax? . -> . (or/c symbol? #f))]{
+
+A @tech{parameter} that determines the @deftech{error syntax name
+handler}, which is used to extract the name of a syntactic form when
+@racket[raise-syntax-error] is called with @racket[#f] as its first
+argument and a syntax object as its third argument.
+
+The argument to the handler is a the syntax object provided to
+@racket[raise-syntax-error] as its third argument. The result must be
+a symbol if a name can be extracted from the syntax object,
+@racket[#f] otherwise.
+
+@history[#:added "8.15.0.2"]}
+
+
 @;------------------------------------------------------------------------
 @section{Built-in Exception Types}
 
