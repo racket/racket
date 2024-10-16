@@ -14,9 +14,10 @@
 (provide optimize
          optimize*)
 
-;; Perform shallow optimizations. The `schemify` pass calls `optimize`
-;; on each schemified form, which means that subexpressions of the
-;; immediate expression have already been optimized.
+;; Perform shallow optimizations on schemified or pre-schemified
+;; forms. The `schemify` pass calls `optimize` on each schemified
+;; form, which means that subexpressions of the immediate expression
+;; have already been optimized.
 
 (define (optimize v prim-knowns primitives knowns imports mutated target compiler-query)
   (let ([v (unwrap-let v)])
@@ -161,11 +162,56 @@
 
 ;; Recursive optimization on pre-schemified --- useful when not fused with
 ;; schemify, such as for an initial optimization pass on a definition of a
-;; function that can be inlined (where converting away
+;; function that can be inlined (where simple copy propagation and converting away
 ;; `variable-reference-from-unsafe?` is particularly important)
-
 (define (optimize* v prim-knowns primitives knowns imports mutated unsafe-mode? target compiler-query)
-  (define (optimize* v)
+  (define (do-optimize v unsafe-mode? env)
+    (define (optimize* v)
+      (do-optimize v unsafe-mode? env))
+
+    (define (optimize*-body body)
+      (for/list ([v (in-wrap-list body)])
+        (optimize* v)))
+
+    (define (optimize*-body/unsafe body)
+      (for/list ([v (in-wrap-list body)])
+        (do-optimize v #t env)))
+
+    (define (optimize*-let v)
+      (match v
+        [`(,let-id () ,body)
+         (optimize* body)]
+        [`(,let-id ([,idss ,rhss] ...) ,body ...)
+         ;; check for simple copy propagation
+         (define new-env
+           (for/fold ([env env]) ([ids (in-list idss)]
+                                  [rhs (in-list rhss)])
+             (match ids
+               [`(,id)
+                (define u (unwrap rhs))
+                (cond
+                  [(and (symbol? u)
+                        (simple-mutated-state? (hash-ref mutated u #f)))
+                   (hash-set env (unwrap id) (hash-ref env u rhs))]
+                  [else env])]
+               [`,_ env])))
+         (cond
+           [(eq? new-env env)
+            `(,let-id ,(for/list ([ids (in-list idss)]
+                                  [rhs (in-list rhss)])
+                         `[,ids ,(optimize* rhs)])
+                      ,@(optimize*-body body))]
+           [else
+            (do-optimize `(,let-id ,(for/list ([ids (in-list idss)]
+                                               [rhs (in-list rhss)]
+                                               #:unless (match ids
+                                                          [`(,id) (hash-ref new-env (unwrap id) #f)]
+                                                          [`,_ #f]))
+                                      `[,ids ,rhs])
+                                   ,@body)
+                         unsafe-mode?
+                         new-env)])]))
+
     (define new-v
       (reannotate
        v
@@ -182,10 +228,16 @@
           `(if ,(optimize* tst) ,(optimize* thn) ,(optimize* els))]
          [`(with-continuation-mark ,key ,val ,body)
           `(with-continuation-mark ,(optimize* key) ,(optimize* val) ,(optimize* body))]
+         [`(begin ,body)
+          (optimize* body)]
+         [`(begin (quote ,_) ,body)
+          (optimize* body)]
          [`(begin ,body ...)
           `(begin ,@(optimize*-body body))]
          [`(begin-unsafe ,body ...)
-          `(begin-unsafe ,@(optimize*-body body))]
+          `(begin-unsafe ,@(optimize*-body/unsafe body))]
+         [`(begin0 ,e)
+          `(optimize* e)]
          [`(begin0 ,e ,body ...)
           `(begin0 ,(optimize* e) ,@(optimize*-body body))]
          [`(set! ,id ,rhs)
@@ -197,19 +249,12 @@
          [`(quote ,_) v]
          [`(,rator ,exps ...)
           `(,(optimize* rator) ,@(optimize*-body exps))]
-         [`,_ v])))
+         [`,_
+          (define u (unwrap v))
+          (or (and (symbol? u)
+                   (hash-ref env u #f))
+              v)])))
+
     (optimize new-v prim-knowns primitives knowns imports mutated target (lambda (v) #f)))
 
-  (define (optimize*-body body)
-    (for/list ([v (in-wrap-list body)])
-      (optimize* v)))
-
-  (define (optimize*-let v)
-    (match v
-      [`(,let-id ([,idss ,rhss] ...) ,body ...)
-       `(,let-id ,(for/list ([ids (in-list idss)]
-                             [rhs (in-list rhss)])
-                    `[,ids ,(optimize* rhs)])
-                 ,@(optimize*-body body))]))
-
-  (optimize* v))
+  (do-optimize v unsafe-mode? #hasheq()))
