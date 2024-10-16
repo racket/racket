@@ -79,7 +79,7 @@ lines like @racket[read-bytes-line].
 The input port is closed unless @racket[close?] is @racket[#f].
 
 @examples[#:eval port-eval
-(port->bytes-lines 
+(port->bytes-lines
  (open-input-string "line 1\nline 2\n  line 3\nline 4"))
 ]
 
@@ -179,9 +179,9 @@ input ports as it becomes available.
 @history[#:changed "6.90.0.19" @elem{Added the @racket[name] argument.}]}
 
 
-@defproc[(make-input-port/read-to-peek 
+@defproc[(make-input-port/read-to-peek
           [name any/c]
-          [read-in (bytes? 
+          [read-in (bytes?
                     . -> . (or/c exact-nonnegative-integer?
                                  eof-object?
                                  procedure?
@@ -200,7 +200,7 @@ input ports as it becomes available.
                                          evt?
                                          #f)))]
           [close (-> any)]
-          [get-location (or/c 
+          [get-location (or/c
                          (->
                           (values
                            (or/c exact-positive-integer? #f)
@@ -215,8 +215,8 @@ input ports as it becomes available.
                              #f)
                        #f]
           [buffering? any/c #f]
-          [on-consumed (or/c ((or/c exact-nonnegative-integer? eof-object? 
-                                    procedure? evt?) 
+          [on-consumed (or/c ((or/c exact-nonnegative-integer? eof-object?
+                                    procedure? evt?)
                               . -> . any)
                              #f)
                        #f])
@@ -279,7 +279,7 @@ contiguous parts of the original port's stream.}
 
 @defproc[(make-pipe-with-specials [limit exact-nonnegative-integer? #f]
                                   [in-name any/c 'pipe]
-                                  [out-name any/c 'pipe]) 
+                                  [out-name any/c 'pipe])
          (values input-port? output-port?)]{
 
 Returns two ports: an input port and an output port. The ports behave
@@ -346,11 +346,22 @@ instead of interleaving them.}
 @index*['("discard-output" "null-output" "null-output-port" "dev-null"
           "/dev/null")
 	'("Opening a null output port")]{
-	
+
 Creates} and returns an output port that discards all output sent to it
 (without blocking). The @racket[name] argument is used as the port's
 name. If the @racket[special-ok?]  argument is true, then the
 resulting port supports @racket[write-special], otherwise it does not.}
+
+
+@defproc[(open-input-nowhere [name any/c 'nowhere])
+         input-port?]{
+@index*['("null-input" "null-input-port" "dev-null"
+          "/dev/null")
+	'("Opening a null input port")]{
+
+Creates} and returns an input port that always returns @racket[eof]
+(without blocking). The @racket[name] argument is used as the port's
+name.}
 
 
 @defproc[(peeking-input-port [in input-port?]
@@ -420,7 +431,7 @@ a result of buffering bytes from @racket[an-original-port] earlier.
                               [close? any/c #f]
                               [name any/c (object-name in)]
                               [convert-newlines? any/c #f]
-                              [enc-error (string? input-port? . -> . any) 
+                              [enc-error (string? input-port? . -> . any)
                                          (lambda (msg port) (error ...))])
          input-port?]{
 
@@ -430,7 +441,7 @@ the byte stream using @racket[(bytes-open-converter encoding-str
 decoded sequences that correspond to UTF-8 encodings of @racket["\r\n"],
 @racket["\r\x85"], @racket["\r"], @racket["\x85"], and @racket["\u2028"]
 are all converted to the UTF-8 encoding of @racket["\n"].
- 
+
 If @racket[error-bytes] is provided and not @racket[#f], then the
 given byte sequence is used in place of bytes from @racket[in] that
 trigger conversion errors.  Otherwise, if a conversion is encountered,
@@ -454,7 +465,7 @@ incomplete encoding sequence.)}
                                [close? any/c #f]
                                [name any/c (object-name out)]
                                [newline-bytes (or/c #f bytes?) #f]
-                               [enc-error (string? output-port? . -> . any) 
+                               [enc-error (string? output-port? . -> . any)
                                           (lambda (msg port) (error ...))])
          output-port?]{
 
@@ -465,7 +476,7 @@ encoding-str)]. In addition, if @racket[newline-bytes] is not
 encoding of @racket["\n"] are first converted to
 @racket[newline-bytes] (before applying the convert from UTF-8 to
 @racket[encoding-str]).
- 
+
 If @racket[error-bytes] is provided and not @racket[#f], then the
 given byte sequence is used in place of bytes that have been sent to the output port
 and that trigger conversion errors. Otherwise, @racket[enc-error] is
@@ -566,7 +577,7 @@ Like @racket[relocate-input-port], but for output ports.}
 
 
 @defproc[(transplant-input-port [in input-port?]
-                                [get-location (or/c 
+                                [get-location (or/c
                                                (->
                                                 (values
                                                  (or/c exact-positive-integer? #f)
@@ -590,7 +601,7 @@ If @racket[count-lines!] is supplied, it is called when line counting
 is enabled for the resulting port. The default is @racket[void].}
 
 @defproc[(transplant-output-port [out output-port?]
-                                 [get-location (or/c 
+                                 [get-location (or/c
                                                 (->
                                                  (values
                                                   (or/c exact-positive-integer? #f)
@@ -631,7 +642,7 @@ Like @racket[transplant-input-port], but for output ports.}
          input-port?]{
 
 Creates a port that draws from @racket[in], but each result from the
-port's read and peek procedures (in the sense of @racket[make-input-port]) 
+port's read and peek procedures (in the sense of @racket[make-input-port])
 is filtered by @racket[read-wrap] and
 @racket[peek-wrap]. The filtering procedures each receive both the
 arguments and results of the read and peek procedures on @racket[in]
@@ -642,9 +653,9 @@ closes @racket[in].}
 
 
 @defproc[(special-filter-input-port [in input-port?]
-                                    [proc (procedure? bytes? . -> . (or/c exact-nonnegative-integer? 
+                                    [proc (procedure? bytes? . -> . (or/c exact-nonnegative-integer?
                                                                           eof-object?
-                                                                          procedure? 
+                                                                          procedure?
                                                                           evt?))]
                                     [close? any/c #t])
           input-port?]{
@@ -687,7 +698,7 @@ raises an exception first.
                                    background thread.}]}
 
 
-@defproc[(read-bytes-evt [k exact-nonnegative-integer?] [in input-port?]) 
+@defproc[(read-bytes-evt [k exact-nonnegative-integer?] [in input-port?])
          evt?]{
 
 Returns a @tech{synchronizable event} that is ready when @racket[k]
@@ -740,7 +751,7 @@ Exceptions attempting to read from @racket[in] are handled in the same
 way as by @racket[eof-evt].}
 
 
-@defproc[(read-bytes-avail!-evt [bstr (and/c bytes? (not/c immutable?))] [in input-port?]) 
+@defproc[(read-bytes-avail!-evt [bstr (and/c bytes? (not/c immutable?))] [in input-port?])
          evt?]{
 
 Like @racket[read-bytes!-evt], except that the event reads only as
@@ -748,7 +759,7 @@ many bytes as are immediately available, after at least one byte or
 one @racket[eof] becomes available.}
 
 
-@defproc[(read-string-evt [k exact-nonnegative-integer?] [in input-port?]) 
+@defproc[(read-string-evt [k exact-nonnegative-integer?] [in input-port?])
          evt?]{
 
 Like @racket[read-bytes-evt], but for character strings instead of
@@ -756,7 +767,7 @@ byte strings.}
 
 
 @defproc[(read-string!-evt [str (and/c string? (not/c immutable?))]
-                           [in input-port?]) 
+                           [in input-port?])
          evt?]{
 
 Like @racket[read-bytes!-evt], but for a character string instead of
@@ -784,7 +795,7 @@ way as by @racket[eof-evt].}
 @defproc[(read-bytes-line-evt [in input-port?]
                               [mode (or/c 'linefeed 'return 'return-linefeed 'any 'any-one) 'linefeed])
          evt?]{
- 
+
 Like @racket[read-line-evt], but returns a byte string instead of a
 string.}
 
