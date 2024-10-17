@@ -107,29 +107,17 @@
   (list->vector (for/list ([i (in-vector v)] #:unless (f i)) i)))
 
 (define (vector-count f v . vs)
-  (unless (procedure? f)
-    (raise-argument-error 'vector-count "procedure?" f))
-  (unless (procedure-arity-includes? f (add1 (length vs)))
-    (raise-arguments-error 'vector-count "mismatch between procedure arity and argument count"
-                           "procedure" f
-                           "expected arity" (add1 (length vs))))
-  (unless (and (vector? v) (andmap vector? vs))
-    (raise-argument-error
-     'vector-count "vector?"
-     (ormap (lambda (x) (and (not (list? x)) x)) (cons v vs))))
+  (define len (varargs-check f v vs 'vector-count #f))
   (if (pair? vs)
-    (let ([len (vector-length v)])
-      (if (andmap (lambda (v) (= len (vector-length v))) vs)
-        (for/fold ([c 0])
-            ([i (in-range len)]
-             #:when
-             (apply f
-                    (unsafe-vector-ref v i)
-                    (map (lambda (v) (unsafe-vector-ref v i)) vs)))
-          (add1 c))
-        (raise-arguments-error 'vector-count "all vectors must have same size")))
-    (for/fold ([cnt 0]) ([i (in-vector v)] #:when (f i))
-      (add1 cnt))))
+      (for/fold ([c 0])
+                ([i (in-range len)]
+                 #:when
+                 (apply f
+                        (unsafe-vector-ref v i)
+                        (map (lambda (v) (unsafe-vector-ref v i)) vs)))
+        (add1 c))
+      (for/fold ([cnt 0]) ([i (in-vector v)] #:when (f i))
+        (add1 cnt))))
 
 (define (check-vector/index v n name)
   (unless (vector? v)
@@ -194,19 +182,29 @@
 (define (vector-argmin f xs) (mk-min < 'vector-argmin f xs))
 (define (vector-argmax f xs) (mk-min > 'vector-argmax f xs))
 
-(define-syntax-rule (vm-mk name cmp)
-  (define (name val vec)
-    (unless (vector? vec)
-      (raise-argument-error 'name "vector?" 1 val vec))
-    (let ([sz (unsafe-vector-length vec)])
-      (let loop ([k 0])
-        (cond [(= k sz) #f]
-              [(cmp val
-                    (unsafe-vector-ref vec k))
-               k]
-              [else (loop (unsafe-fx+ 1 k))])))))
+(define-syntax (vm-mk stx)
+  (syntax-case stx ()
+    ((_ name cmp (opt-arg default check contract) ...)
+     (with-syntax (((index ...) (build-list (length (syntax->datum #'(opt-arg ...)))
+                                            (lambda (n) (+ 2 n)))))
+       #'(define (name val vec (opt-arg default) ...)
+           (unless (vector? vec)
+             (raise-argument-error 'name "vector?" 1 val vec opt-arg ...))
+           (unless check
+             (raise-argument-error 'name contract index val vec opt-arg ...))
+           ...
+           (let ([sz (unsafe-vector-length vec)])
+             (let loop ([k 0])
+               (cond [(= k sz) #f]
+                     [(cmp val
+                           (unsafe-vector-ref vec k))
+                      k]
+                     [else (loop (unsafe-fx+ 1 k))]))))))))
 
-(vm-mk vector-member equal?)
+(vm-mk vector-member is-equal?
+       (is-equal? equal?
+        (and (procedure? is-equal?) (procedure-arity-includes? is-equal? 2))
+        "(procedure-arity-includes/c 2)"))
 (vm-mk vector-memq eq?)
 (vm-mk vector-memv eqv?)
 
