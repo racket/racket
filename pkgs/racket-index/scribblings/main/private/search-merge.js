@@ -27,7 +27,7 @@
   }
 
   function convert(line) {
-    return [line[0], line[1], convert_span(line[2]), line[3]];
+    return [line[0], line[1], convert_span(line[2]), line[3], line[4], line[5], line[6]];
   }
 
   var i = 0, j = 0;
