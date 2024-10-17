@@ -147,7 +147,7 @@
 ;; A port with no input...
 ;; Easy: \scheme{(open-input-bytes #"")}
 ;; Hard:
-(define /dev/null-in 
+(define /dev/null-in
   (make-input-port 'null
 		   (lambda (s) eof)
 		   (lambda (skip s progress-evt) eof)
@@ -190,18 +190,18 @@
   (test stubborn-infinite-ones sync/timeout 0 stubborn-infinite-ones))
 
 ;; A port that produces a stream of 1s:
-(define infinite-ones 
+(define infinite-ones
   (make-input-port
    'ones
-   (lambda (s) 
+   (lambda (s)
      (bytes-set! s 0 (char->integer #\1)) 1)
    #f
    void))
 (test "11111" read-string 5 infinite-ones)
 
 ;; An infinite stream of 1s with a specific peek procedure:
-(define infinite-ones 
-  (let ([one! (lambda (s) 
+(define infinite-ones
+  (let ([one! (lambda (s)
 	        (bytes-set! s 0 (char->integer #\1)) 1)])
     (make-input-port
      'ones
@@ -261,7 +261,7 @@
 	(cons (car l) (remq v (cdr l)))))
   ;; ----------------------------------------
   ;; The server has a list of outstanding commit requests,
-  ;;  and it also must service each port operation (read, 
+  ;;  and it also must service each port operation (read,
   ;;  progress-evt, etc.)
   (define (serve commit-reqs response-evts)
     (apply
@@ -291,11 +291,11 @@
 	;; Add an event to respond:
 	(serve commit-reqs
 	       (cons (choice-evt nack
-				 (channel-put-evt ch (if nothing? 
+				 (channel-put-evt ch (if nothing?
 							 #f
 							 (if closed? 0 1))))
 		     response-evts)))))
-  ;; Progress request: send a peek evt for the current 
+  ;; Progress request: send a peek evt for the current
   ;;  progress-sema
   (define ((handle-progress commit-reqs response-evts) r)
     (let ([ch (car r)]
@@ -327,7 +327,7 @@
       ;;  known, but we could send an exception in that case.
       (choice-evt
        (handle-evt progress-evt
-		   (lambda (x) 
+		   (lambda (x)
 		     (sync nack (channel-put-evt ch #f))
 		     (serve (remq r commit-reqs) response-evts)))
        ;; Only create an event to satisfy done-evt if progress-evt
@@ -418,13 +418,13 @@
 	[progress-evt (port-progress-evt mod3-cycle)])
     (test 1 peek-bytes-avail! s 0 progress-evt mod3-cycle)
     (test #"1" values s)
-    (test #t 
+    (test #t
 	  port-commit-peeked 1 progress-evt (make-semaphore 1)
 	  mod3-cycle)
     (test #t evt? (sync/timeout 0 progress-evt))
     (test 0 peek-bytes-avail! s 0 progress-evt mod3-cycle)
-    (test #f 
-	  port-commit-peeked 1 progress-evt (make-semaphore 1) 
+    (test #f
+	  port-commit-peeked 1 progress-evt (make-semaphore 1)
 	  mod3-cycle))
   (close-input-port mod3-cycle))
 
@@ -475,14 +475,14 @@
 (define should-be-breakable? #t)
 
 (define /dev/null-out
-  (make-output-port 
+  (make-output-port
    'null
    always-evt
    (lambda (s start end non-block? breakable?)
      (test should-be-breakable? 'breakable breakable?)
      (- end start))
    void
-   (lambda (special non-block? breakable?) 
+   (lambda (special non-block? breakable?)
      (test should-be-breakable? 'spec-breakable breakable?)
      #t)
    (lambda (s start end) (wrap-evt
@@ -522,7 +522,7 @@
 ;;  but not in a thread-safe way:
 (define accum-list null)
 (define accumulator/not-thread-safe
-  (make-output-port 
+  (make-output-port
    'accum/not-thread-safe
    always-evt
    (lambda (s start end non-block? breakable?)
@@ -537,7 +537,7 @@
 
 ;; Same as before, but with simple thread-safety:
 (define accum-list null)
-(define accumulator 
+(define accumulator
   (let* ([lock (make-semaphore 1)]
 	 [lock-peek-evt (semaphore-peek-evt lock)])
     (make-output-port
@@ -698,7 +698,7 @@
     (test-values '(2 0 2) (lambda () (port-next-location double)))
     (test-values '(#f #f #f) (lambda () (port-next-location none)))
     (err/rt-test (port-next-location bad) exn:fail:contract:arity?)
-    
+
     (test 'Hello read plain)
     (test 'Hello read double)
     (test 'Hello read none)
@@ -733,7 +733,7 @@
       (test #f syntax-column stx)
       (test #f syntax-position stx))
     (err/rt-test (read-syntax #f bad) exn:fail:contract:arity?)
-    
+
     (test-values '(3 6 14) (lambda () (port-next-location plain)))
     (test-values '(6 12 28) (lambda () (port-next-location double)))
     (test-values '(#f #f #f) (lambda () (port-next-location none)))
@@ -908,8 +908,8 @@
   (try peek-char)
   (try (lambda (x) (read-bytes-avail! (make-bytes 10) x)))
   (try (lambda (x) (read-bytes-avail!/enable-break (make-bytes 10) x)))
-  (parameterize-break 
-   #f 
+  (parameterize-break
+   #f
    (try (lambda (x) (read-bytes-avail!/enable-break (make-bytes 10) x)))))
 
 ;; Check nonblock? and break? interaction (again):
@@ -961,12 +961,12 @@
   (test i2 sync/timeout 0 i2)
   (test #"01234" read-bytes 5 i2)
   (test 0 read-bytes-avail!* (make-bytes 3) i2)
-  (thread (lambda () 
+  (thread (lambda ()
             (sync (system-idle-evt))
             (write-bytes #"5" o2)))
   (test #\5 read-char i2)
   (let ([s (make-bytes 6)])
-    (thread (lambda () 
+    (thread (lambda ()
               (sync (system-idle-evt))
               (test 5 write-bytes-avail #"6789ab" o2)))
     (test 5 read-bytes-avail! s i2)
@@ -984,7 +984,7 @@
                                    never-evt)
                                  void)]
             [t (current-thread)])
-        (thread (lambda () 
+        (thread (lambda ()
                   (sync (system-idle-evt))
                   (break-thread t)))
         (with-handlers ([exn:break? (lambda (exn) 'ok)])
@@ -1006,7 +1006,7 @@
            (port-commit-peeked 3 (port-progress-evt in) always-evt in)
            (test (+ d 3) file-position in)
            (let-values ([(l2 c2 p2) (port-next-location in)])
-             (test (list l (and c (+ c char-len)) (+ p (if c char-len 3))) 
+             (test (list l (and c (+ c char-len)) (+ p (if c char-len 3)))
                    list l2 c2 p2))
            (test #\4 read-char in)))])
   (define (check-all count-lines!)
@@ -1031,7 +1031,7 @@
     (let ()
       (call-in-temporary-directory
        (lambda ()
-         (with-output-to-file "tmp8" 
+         (with-output-to-file "tmp8"
            #:exists 'truncate/replace
            (lambda () (display "12345")))
          (define in (open-input-file "tmp8"))
@@ -1111,7 +1111,7 @@
     (test eof read-byte i)
     (test 1 file-position i))
   (check read-byte)
-  (check (lambda (i) 
+  (check (lambda (i)
            (define c (read-char i))
            (if (char? c)
                (char->integer c)
@@ -1167,7 +1167,7 @@
     (close-input-port ifile))
 
   (let* ([bs (call-with-input-file path
-	       #:mode 'text 
+	       #:mode 'text
 	       (lambda (p) (read-bytes (file-size path) p)))])
     ;; Check text-mode conversion at every boundary:
     (for ([i (in-range (add1 (bytes-length bs)))])
@@ -1219,7 +1219,7 @@
 ;; (because `read` may cheat internally with a private "unget")
 
 (let ()
-  (define p 
+  (define p
     (let ([in (open-input-string "(…)abcdef")])
       (make-input-port
        "unicode"
@@ -1308,6 +1308,18 @@
   (define str (make-string 10))
   (test 5 peek-string! str 0 in)
   (test "hello" substring str 0 5))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(parameterize ([current-input-port (open-input-nowhere)])
+  (test eof read)
+  (test eof read-char)
+  (test eof read-byte)
+  (test eof read-line)
+  (test eof read-char-or-special))
+
+(test 'nowhere object-name (open-input-nowhere))
+(test 'apple   object-name (open-input-nowhere 'apple))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
