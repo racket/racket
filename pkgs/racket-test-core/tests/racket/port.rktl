@@ -1311,4 +1311,16 @@
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(parameterize ([current-input-port (open-input-nowhere)])
+  (test eof read)
+  (test eof read-char)
+  (test eof read-byte)
+  (test eof read-line)
+  (test eof read-char-or-special))
+
+(test 'nowhere object-name (open-input-nowhere))
+(test 'apple   object-name (open-input-nowhere 'apple))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (report-errs)
