@@ -33,13 +33,7 @@
 
 (define open-input-nowhere
   (lambda ([name 'nowhere])
-    (make-input-port name
-                     (lambda (s) eof)
-                     (lambda (skip s progress-evt) eof)
-                     void
-                     (lambda () never-evt)
-                     (lambda (k progress-evt done-evt)
-                       (error "no successful peeks!")))))
+    (open-input-bytes #"" name)))
 
 (define (transplant-to-relocate transplant p line col pos close? name)
   (let-values ([(init-l init-c init-p) (port-next-location p)])
