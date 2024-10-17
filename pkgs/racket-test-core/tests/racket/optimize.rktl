@@ -6713,11 +6713,12 @@
    (define add1
      (lambda (x)
        (let ([x1 x])
-         (letrec ([x2 x1]
-                  [x3 x1])
-           (begin
-             (quote-syntax ignore-me)
-             (+ x2 1))))))))
+         (begin0
+           (letrec ([x2 x1]
+                    [x3 x1])
+             (begin
+               (quote-syntax ignore-me)
+               (+ x2 1)))))))))
 
 (when (eq? (system-type 'vm) 'chez-scheme)
   (test-comp `(module m racket/base

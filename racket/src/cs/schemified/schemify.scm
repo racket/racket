@@ -11935,7 +11935,7 @@
                                                                    (unwrap
                                                                     d_0))))
                                                              a_0))))
-                                                    '(optimize* e))
+                                                    (optimize*_0 e_0))
                                                   (if (if (eq? 'begin0 hd_0)
                                                         (let ((a_0
                                                                (cdr

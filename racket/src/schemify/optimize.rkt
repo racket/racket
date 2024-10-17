@@ -237,7 +237,7 @@
          [`(begin-unsafe ,body ...)
           `(begin-unsafe ,@(optimize*-body/unsafe body))]
          [`(begin0 ,e)
-          `(optimize* e)]
+          (optimize* e)]
          [`(begin0 ,e ,body ...)
           `(begin0 ,(optimize* e) ,@(optimize*-body body))]
          [`(set! ,id ,rhs)
