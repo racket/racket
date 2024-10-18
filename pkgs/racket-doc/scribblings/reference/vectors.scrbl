@@ -433,17 +433,20 @@ the result of @racket[proc].
 }
 
 
-@defproc[(vector-member [v any/c] [vec vector?])
+@defproc[(vector-member [v any/c] [vec vector?] [is-equal? (-> any/c any/c any/c) equal?])
          (or/c natural-number/c #f)]{
 
-Locates the first element of @racket[vec] that is @racket[equal?] to
- @racket[v]. If such an element exists, the index of that element in
+Locates the first element of @racket[vec] that is equal to @racket[v] according
+ to @racket[is-equal?]. If such an element exists, the index of that element in
  @racket[vec] is returned. Otherwise, the result is @racket[#f].
 
 @mz-examples[#:eval vec-eval
 (vector-member 2 (vector 1 2 3 4))
 (vector-member 9 (vector 1 2 3 4))
-]}
+(vector-member 1.0 (vector 1 2 3 4) =)
+]
+
+@history[#:changed "8.15.0.1" @elem{Added the @racket[is-equal?] argument.}]}
 
 
 @defproc[(vector-memv [v any/c] [vec vector?])
