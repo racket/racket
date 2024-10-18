@@ -596,8 +596,8 @@ function packageAndOrderCompare(a, b) {
   if (a_in_main) return -1;
   if (b_in_main) return 1;
 
-  // Same name from same module: sort using `sort-order`
-  if (a[0] == b[0] && a[3] == b[3]) {
+  // Same name: sort using `sort-order`
+  if (a[0] == b[0]) {
       if (a[5] < b[5]) return -1;
       if (b[5] < a[5]) return 1;
   }
