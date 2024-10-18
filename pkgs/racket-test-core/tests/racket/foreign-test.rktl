@@ -1541,7 +1541,7 @@
     (go (- (expt 2 63)) (- 256 (expt 2 63))))
 
   (let ()
-    (define p (cast bstr _pointer _pointer))
+    (define p (malloc 'atomic-interior))
     (for ([i (in-range 100)])
       (ptr-set! bstr _pointer (ptr-add p i))
       (ptr-set! bstr _pointer 2 p)
