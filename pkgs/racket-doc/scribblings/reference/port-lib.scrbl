@@ -361,7 +361,9 @@ resulting port supports @racket[write-special], otherwise it does not.}
 
 Creates} and returns an input port that always returns @racket[eof]
 (without blocking). The @racket[name] argument is used as the port's
-name.}
+name.
+
+@history[#:added "8.15.0.2"]}
 
 
 @defproc[(peeking-input-port [in input-port?]
