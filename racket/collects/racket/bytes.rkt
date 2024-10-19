@@ -8,7 +8,7 @@
 
 (define bytes-append*
   (case-lambda [(strs) (apply bytes-append (check-bytes-list strs 'bytes-append*))] ; optimize common case
-               [(str . strss) (apply bytes-append (check-bytes-list (cons str strss) 'bytes-append*))]))
+               [(str . strss) (apply bytes-append (check-bytes-list (apply list* str strss) 'bytes-append*))]))
 
 (require (only-in racket/list add-between))
 
