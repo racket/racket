@@ -701,7 +701,7 @@ one between @racket[list] and @racket[list*].
 @defproc[(bytes-join [strs (listof bytes?)] [sep bytes?]) bytes?]{
 
 Appends the byte strings in @racket[strs], inserting @racket[sep] between
-each pair of bytes in @racket[strs].
+each pair of bytes in @racket[strs]. A new mutable byte string is returned.
 
 @mz-examples[#:eval string-eval
  (bytes-join '(#"one" #"two" #"three" #"four") #" potato ")
