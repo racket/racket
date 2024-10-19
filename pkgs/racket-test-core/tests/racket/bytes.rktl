@@ -9,7 +9,7 @@
 (err/rt-test (bytes-append* (vector)) exn:fail:contract? #rx"(listof bytes?)")
 (err/rt-test (bytes-append* (list "a")) exn:fail:contract? #rx"(listof bytes?)")
 (err/rt-test (bytes-append* "a" (list #"b")) exn:fail:contract? #rx"bytes?")
-(test #"ab" bytes-append* #"a" (list #"b"))
+(test #"abc" bytes-append* #"a" #"b" (list #"c"))
 
 ;; ---------- bytes-join ----------
 (let ()

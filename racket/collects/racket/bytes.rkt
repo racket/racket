@@ -25,6 +25,6 @@
          (raise-argument-error 'bytes-join "(listof bytes?)" strs)]
         [(not (bytes? sep))
          (raise-argument-error 'bytes-join "bytes?" sep)]
-        [(null? strs) #""]
+        [(null? strs) (bytes)]
         [(null? (cdr strs)) (bytes-copy (car strs))]
         [else (apply bytes-append (add-between strs sep))]))
