@@ -1258,6 +1258,8 @@
     (let loop ([args args] [count #f] [type #f] [copy-from #f] [mode #f] [fail-mode #f])
       (cond
        [(null? args)
+        (unless (or count type)
+          (raise-arguments-error 'malloc "no size given"))
         (let* ([len (* (or count 1) (if type (ctype-sizeof type) 1))]
                [p (normalized-malloc len
                                      (or mode (if type (ctype-malloc-mode type) 'atomic)))])

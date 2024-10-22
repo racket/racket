@@ -2814,7 +2814,7 @@ static Scheme_Object *foreign_malloc(int argc, Scheme_Object *argv[])
     }
   }
   if (!num) return scheme_false;
-  if ((num == -1) && (size == 0)) scheme_signal_error(MYNAME": no size given");
+  if ((num == -1) && (size == 0)) scheme_contract_error(MYNAME, "no size given", NULL);
   size = mult_check_overflow(MYNAME, ((size==0) ? 1 : size), ((num==-1) ? 1 : num));
   if (mode == NULL)
     mf = (base != NULL && CTYPE_PRIMTYPE(base) == &ffi_type_gcpointer)

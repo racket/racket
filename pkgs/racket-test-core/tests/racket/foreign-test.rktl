@@ -29,6 +29,8 @@
 (unless (eq? 'cs (system-type 'gc))
   (test 0 bytes-length (make-sized-byte-string #f 0)))
 
+(err/rt-test (malloc 'atomic) exn:fail:contract? #rx"no size given")
+
 ;; Check integer-range checking:
 (let ()
   (define (try-int-boundary N _int _uint)
