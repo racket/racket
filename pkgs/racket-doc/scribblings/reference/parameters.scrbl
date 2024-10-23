@@ -50,6 +50,22 @@ applied to the initial @racket[v].
 The @racket[name] argument is used as the parameter procedure's name
 as reported by @racket[object-name].
 
+@examples[
+(define p (make-parameter 1))
+(p)
+(p 3)
+(p)
+(define q (make-parameter "a"
+                          (λ (v)
+                            (unless (string? v)
+                              (error 'non-string))
+                            (string-upcase v))))
+(q)
+(eval:error (q 5))
+(q "hello world")
+(q)
+]
+
 @history[#:changed "7.4.0.6" @elem{Added the @racket[name] argument.}]}
 
 @defform[(parameterize ([parameter-expr value-expr] ...)
