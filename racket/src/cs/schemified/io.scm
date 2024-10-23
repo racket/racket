@@ -33037,7 +33037,11 @@
               (call-with-values
                (lambda ()
                  (if (if (pair? exact/args_0)
-                       (eq? 'exact (car exact/args_0))
+                       (if (eq? 'exact (car exact/args_0))
+                         (if (pair? (cdr exact/args_0))
+                           (null? (cddr exact/args_0))
+                           #f)
+                         #f)
                        #f)
                    (values #t (cdr exact/args_0))
                    (values #f exact/args_0)))

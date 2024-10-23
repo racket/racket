@@ -88,7 +88,9 @@
       (define-values (exact? args)
         (cond
           [(and (pair? exact/args)
-                (eq? 'exact (car exact/args)))
+                (eq? 'exact (car exact/args))
+                (pair? (cdr exact/args))
+                (null? (cddr exact/args)))
            (values #t (cdr exact/args))]
           [else
            (values #f exact/args)]))
