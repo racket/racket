@@ -957,9 +957,9 @@
      ": arity mismatch;\n"
      " expected number of results not received from wrapper on the original\n"
      " procedure's arguments\n"
-     "  original: " (error-value->string proc)
+     "  original: " (reindent/newline (error-value->string proc))
      "\n"
-     "  wrapper: " (error-value->string wrapper)
+     "  wrapper: " (reindent/newline (error-value->string wrapper))
      "\n"
      "  expected: " (number->string expected-n) " or more\n"
      "  received: " (number->string got-n))

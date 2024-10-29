@@ -269,7 +269,7 @@
           [(#\s)
            (string-set! str (fx+ i 1) #\a)
            (loop (fx+ i 2)
-                 (cons (error-value->string (car irritants))
+                 (cons (reindent/newline (error-value->string (car irritants)))
                        accum-irritants)
                  (cdr irritants))]
           [else (loop (fx+ i 2)

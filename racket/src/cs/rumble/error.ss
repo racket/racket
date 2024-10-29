@@ -151,6 +151,45 @@
 
 ;; ----------------------------------------
 
+(define (string-has-newline? str)
+  (let loop ([i 0])
+    (if (fx= i (string-length str))
+        #f
+        (or (eqv? #\newline (string-ref str i))
+            (loop (fx+ i 1))))))
+
+(define (string-starts-newline? str)
+  (eqv? #\newline (string-ref str 0)))
+
+(define (string-insert-indentation str i-str)
+  (apply
+   string-append
+   (let loop ([start 0] [i 0])
+     (cond
+       [(fx= i (string-length str))
+        (list (substring str start i))]
+       [(eqv? #\newline (string-ref str i))
+        (list* (substring str start i)
+               "\n"
+               i-str
+               (loop (fx+ i 1) (fx+ i 1)))]
+       [else
+        (loop start (fx+ i 1))]))))
+
+(define (reindent s amt)
+  (if (and (string-has-newline? s)
+           (not (string-starts-newline? s)))
+      (string-insert-indentation s (make-string amt #\space))
+      s))
+
+(define (reindent/newline str)
+  (if (and (string-has-newline? str)
+           (not (string-starts-newline? str)))
+      (string-append "\n   " (string-insert-indentation str "   "))
+      str))
+
+;; ----------------------------------------
+
 ;; this is the real `raise-arguments-error`:
 (define raise-arguments-error/user
   (|#%name|
@@ -191,9 +230,10 @@
               (cons (string-append "\n  "
                                    (car more) ": "
                                    (let ([val (cadr more)])
-                                     (if (unquoted-printing-string? val)
-                                         (unquoted-printing-string-value val)
-                                         (error-value->string val))))
+                                     (reindent/newline
+                                      (if (unquoted-printing-string? val)
+                                          (unquoted-printing-string-value val)
+                                          (error-value->string val)))))
                     (loop (cddr more)))])]
           [else
            (raise-argument-error e-who "string?" (car more))])))
@@ -257,8 +297,9 @@
                     (reindent (error-contract->adjusted-string what realm)
                               (string-length "  expected: "))
                     "\n  " tag ": "
-                    (error-value->string
-                     (if pos (list-ref (cons arg args) pos) arg))
+                    (reindent/newline
+                     (error-value->string
+                      (if pos (list-ref (cons arg args) pos) arg)))
                     (if (and pos (pair? args))
                         (apply
                          string-append
@@ -269,29 +310,11 @@
                            (cond
                              [(null? args) '()]
                              [(zero? pos) (loop (sub1 pos) (cdr args))]
-                             [else (cons (string-append "\n   " (error-value->string (car args)))
+                             [else (cons (string-append "\n   " (reindent (error-value->string (car args)) 3))
                                          (loop (sub1 pos) (cdr args)))])))
                         ""))
      realm)
     (current-continuation-marks))))
-
-(define (reindent s amt)
-  (let loop ([i (string-length s)] [s s] [end (string-length s)])
-    (cond
-     [(zero? i)
-      (if (= end (string-length s))
-          s
-          (substring s 0 end))]
-     [else
-      (let ([i (fx1- i)])
-        (cond
-         [(eqv? #\newline (string-ref s i))
-          (string-append
-           (loop i s (fx1+ i))
-           (#%make-string amt #\space)
-           (substring s (fx1+ i) end))]
-         [else
-          (loop i s end)]))])))
 
 (define error-value->string
   (lambda (v)
@@ -527,7 +550,7 @@
           "  valid range: ["
           (number->string (or alt-lower-bound lower-bound)) ", "
           (number->string upper-bound) "]" "\n"
-          "  " type-description ": " (error-value->string in-value))]))
+          "  " type-description ": " (reindent/newline (error-value->string in-value)))]))
      realm)
     (current-continuation-marks))))
 
@@ -540,7 +563,7 @@
            (let loop ([args args])
              (cond
               [(null? args) '()]
-              [else (cons (string-append "\n   " (error-value->string (car args)))
+              [else (cons (string-append "\n   " (reindent (error-value->string (car args)) 3))
                           (loop (cdr args)))])))]))
 
 (define/who (raise-arity-error name arity . args)

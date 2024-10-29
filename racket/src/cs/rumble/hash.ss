@@ -457,7 +457,7 @@
                     "arity mismatch for failure procedure;\n"
                     " given procedure does not accept zero arguments\n"
                     "  procedure: "
-                    (error-value->string default))
+                    (reindent/newline (error-value->string default)))
                    primitive-realm)
                   (current-continuation-marks))))
       default))

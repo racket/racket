@@ -2584,6 +2584,51 @@
                exn:fail:contract? #rx"argument position: 125th")
   )
 
+(parameterize ([error-value->string-handler
+                (lambda (v len)
+                  (if (string? v)
+                      v
+                      (format "~s" v)))])
+  (err/rt-test/once (raise-argument-error 'f "something" "one line")
+                    exn:fail:contract?
+                    #rx"given: one line")
+  (err/rt-test/once (raise-argument-error 'f "something" "two\n lines")
+                    exn:fail:contract?
+                    #rx"given: \n   two\n    lines")
+  (err/rt-test/once (raise-argument-error 'f "something" "\ntwo\n lines")
+                    exn:fail:contract?
+                    #rx"given: \ntwo\n lines")
+  (err/rt-test/once (raise-arguments-error
+                     'f
+                     "fail"
+                     "something" "two\n lines"
+                     "more" "three\nmore\nlines")
+                    exn:fail:contract?
+                    #rx"something: \n   two\n    lines.*more: \n   three\n   more\n   lines")
+  (err/rt-test/once (raise-arguments-error
+                     'f
+                     "fail"
+                     "something" "two\n lines"
+                     "more" (unquoted-printing-string "three\nmore\nlines"))
+                    exn:fail:contract?
+                    #rx"something: \n   two\n    lines.*more: \n   three\n   more\n   lines")
+  (err/rt-test/once (raise-argument-error
+                     'f
+                     "something"
+                     0
+                     "whatever"
+                     "two\n lines"
+                     "three\nmore\nlines")
+                    exn:fail:contract?
+                    #rx"other arguments[.][.][.]:\n   two\n    lines\n   three\n   more\n   lines")
+  (err/rt-test/once (+ 1 "two\n lines")
+                    exn:fail:contract?
+                    #rx"given: \n   two\n    lines")
+  (err/rt-test/once ("two\n lines" 1)
+                    exn:fail:contract?
+                    #rx"given: \n   two\n    lines")
+)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; continuations
 
