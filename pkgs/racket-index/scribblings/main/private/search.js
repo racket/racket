@@ -769,10 +769,16 @@ function StripQArg(args) {
 }
 
 function UpdateResults() {
+  // Change the URL query param to reflect the current search term
+  var term = query.value;
+  var new_url = GetURL();
+  new_url.searchParams.set("q", term);
+  window.history.replaceState({}, "", new_url);
+
   if (first_search_result < 0 ||
       first_search_result >= search_results.length)
     first_search_result = 0;
-  var link_args = page_query_string && StripQArg("?"+page_query_string);
+  var link_args = GetPageQueryString() && StripQArg("?" + GetPageQueryString());
   var show_family = (plt_language_families.length > 1) && !(ctx_query.includes("F:"))
   for (var i=0; i<result_links.length; i++) {
     var n = i + first_search_result;
@@ -889,7 +895,7 @@ function UpdateResults() {
   saved_status = false;
 
   document.getElementById("redo_search_global").innerHTML =
-        "<a href=\"http://docs.racket-lang.org/search/index.html?" + page_query_string + "\">Click here to repeat your search globally</a>.";
+        "<a href=\"http://docs.racket-lang.org/search/index.html?" + GetPageQueryString() + "\">Click here to repeat your search globally</a>.";
 }
 
 function HandleKeyEvent(event) {
