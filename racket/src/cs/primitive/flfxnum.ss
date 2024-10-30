@@ -16,6 +16,7 @@
   [flacos (known-procedure/folding 2)]
   [flasin (known-procedure/folding 2)]
   [flatan (known-procedure/folding 2)]
+  [flbit-field (known-procedure/folding 8)]
   [flceiling (known-procedure/folding 2)]
   [flcos (known-procedure/folding 2)]
   [flexp (known-procedure/folding 2)]

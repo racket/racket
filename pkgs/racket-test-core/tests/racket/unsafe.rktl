@@ -167,6 +167,7 @@
   (test-bin 1.5 'unsafe-fl+ 1.5 0.0)
   (test-bin 1.7 'unsafe-fl+ 0.0 1.7)
   (test-tri 1.25 'unsafe-fl* 1.0 2.5 0.5)
+  (test-tri #xB43544F2 'unsafe-flbit-field 3.141579e132 16 48)
 
   (test-un #t unsafe-fx= 1 #:branch? #t)
   (test-bin #f unsafe-fx= 1 2 #:branch? #t)

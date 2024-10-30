@@ -232,15 +232,20 @@
    [(and (or (equal? str "invalid bit index ~s")
              (equal? str "invalid start index ~s")
              (equal? str "invalid end index ~s"))
-         (#%memq who '(bitwise-bit-set? bitwise-bit-field)))
+         (#%memq who '(bitwise-bit-set? bitwise-bit-field flbit-field)))
     (cond
       [(exact-nonnegative-integer? (car irritants))
-       ;; must be an out-of-range end index
-       (format-error-values (string-append
-                             "ending index is smaller than starting index\n  ending index: ~s")
-                            irritants)]
+       (cond
+         [(and (eq? who 'flbit-field) (> (car irritants) 64))
+          ;; must be an out-of-range index
+          (format-contract-violation "(integer-in 0 64)" irritants)]
+         [else
+          ;; must be an out-of-range end index
+          (format-error-values (string-append
+                                "ending index is smaller than starting index\n  ending index: ~s")
+                               irritants)])]
       [else
-       (format-contract-violation "exact-nonnegative-integer?" irritants)])]
+       (format-contract-violation (if (eq? who 'flbit-field) "(integer-in 0 64)" "exact-nonnegative-integer?") irritants)])]
    [(and (equal? str "invalid value ~s")
          (eq? who 'bytevector-u8-set!))
     (format-contract-violation "byte?" irritants)]

@@ -404,6 +404,44 @@
 (test +nan.0 log (flsqrt -1.0))
 
 ;; ----------------------------------------
+;; `flbit-field`, based on tests in the Chez Scheme test suite
+
+(for ([i (in-range 65)])
+  (test 0 flbit-field 3.14 i i))
+
+(for ([i (in-range 64)])
+  (test 0 flbit-field 0.0 i (add1 i)))
+
+(for ([i (in-range 65)])
+  (test 0 flbit-field 0.0 0 i))
+
+(for ([i (in-range 63)])
+  (test 0 flbit-field -0.0 i (add1 i)))
+(test 1 flbit-field -0.0 63 64)
+
+(test #x5B71B43544F260A6
+      flbit-field 3.141579e132 0 64)
+(test #x5B71B43544F260A6
+      flbit-field 3.141579e132 0 63)
+(test #x2db8da1aa2793053
+      flbit-field 3.141579e132 1 64)
+(test #xB71B43544F260A
+      flbit-field 3.141579e132 4 60)
+(test #x71B43544F260
+      flbit-field 3.141579e132 8 56)
+(test #x5B71B435
+      flbit-field 3.141579e132 32 64)
+(test #x44F260A6
+      flbit-field 3.141579e132 0 32)
+(test #xB43544F2
+      flbit-field 3.141579e132 16 48)
+
+(for ([i (in-range 65)])
+  (for ([j (in-range i 65)])
+    (test (bitwise-bit-field #x5B71B43544F260A6 i j)
+          flbit-field 3.141579e132 i j)))
+
+;; ----------------------------------------
 ;; Make sure `flvector` is not incorrectly constant-folded
 
 (let ([v (flvector 1.0 2.0 3.0)])

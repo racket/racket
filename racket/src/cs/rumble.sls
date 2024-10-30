@@ -642,6 +642,7 @@
           unsafe-flsqrt
           unsafe-flexpt
 
+          unsafe-flbit-field
           unsafe-flrandom
 
           extfl* extfl+ extfl- ->extfl

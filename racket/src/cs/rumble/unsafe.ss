@@ -82,6 +82,8 @@
 (define unsafe-flsqrt (unsafe-primitive flsqrt))
 (define unsafe-flexpt (unsafe-primitive flexpt))
 
+(define unsafe-flbit-field (unsafe-primitive flbit-field))
+
 (define (unsafe-flrandom gen) (pseudo-random-generator-next! gen))
 
 (define unsafe-vector*-length (unsafe-primitive vector-length))

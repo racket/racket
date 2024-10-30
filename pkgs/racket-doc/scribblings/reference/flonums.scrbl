@@ -78,6 +78,23 @@ operation @cite{Roux14}. (For other operations, the IEEE
 floating-point specification does not make enough guarantees to say
 more about the interaction with @racket[flsingle].)
 
+
+@defproc[(flbit-field [a flonum?] [start (integer-in 0 64)] [end (integer-in 0 64)])
+         exact-nonnegative-integer?]{
+
+Extracts a range of bits from the 64-bit IEEE representation of
+@racket[a], returning the non-negative integer that has the same bits
+set in its (semi-infinite) two's complement representation.
+
+@mz-examples[
+  #:eval fl-eval
+  (flbit-field -0.0 63 64)
+  (format "~x" (flbit-field 3.141579e132 16 48))
+]
+
+@history[#:added "8.15.0.3"]}
+
+
 @history[#:added "7.8.0.7"]}
 
 

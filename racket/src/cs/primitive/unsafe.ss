@@ -72,6 +72,7 @@
   [unsafe-fl> (known-procedure/then-pure/folding-unsafe -2 'fl>)]
   [unsafe-fl>= (known-procedure/then-pure/folding-unsafe -2 'fl>=)]
   [unsafe-flabs (known-procedure/then-pure/folding-unsafe 2 'flabs)]
+  [unsafe-flbit-field (known-procedure/then-pure/folding-unsafe 8 'flbit-field)]
   [unsafe-flimag-part (known-procedure/then-pure/folding-unsafe 2 'flimag-part)]
   [unsafe-flmax (known-procedure/then-pure/folding-unsafe -2 'flmax)]
   [unsafe-flmin (known-procedure/then-pure/folding-unsafe -2 'flmin)]
