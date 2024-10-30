@@ -38,6 +38,8 @@ elements of the sequence. See also @racket[in-treelist] and
 @racket[in-mutable-treelist]. An immutable treelist can also be used
 as a @tech{stream}.
 
+@history[#:changed "8.15.0.3" @elem{Made treelists serializable.}]
+
 @section{Immutable Treelists}
 
 @note-lib-only[racket/treelist]

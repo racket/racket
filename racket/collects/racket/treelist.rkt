@@ -7,7 +7,8 @@
          '#%flfxnum
          racket/hash-code
          "private/sort.rkt"
-         (only-in "private/for.rkt" prop:stream))
+         (only-in "private/for.rkt" prop:stream)
+         "private/serialize-structs.rkt")
 
 (#%declare #:unsafe)
 
@@ -171,7 +172,24 @@
   #:property prop:stream (vector
                           (lambda (tl) (treelist-empty? tl))
                           (lambda (tl) (treelist-first tl))
-                          (lambda (tl) (treelist-rest tl))))
+                          (lambda (tl) (treelist-rest tl)))
+  #:property prop:serializable (make-serialize-info
+                                (lambda (tl) (vector (treelist->vector tl)))
+                                (cons 'deserialize-treelist
+                                      (module-path-index-join '(submod "." deserialize)
+                                                              (variable-reference->module-path-index
+                                                               (#%variable-reference))))
+                                #f
+                                (or (current-load-relative-directory)
+                                    (current-directory))))
+
+(module+ deserialize
+  (provide deserialize-treelist)
+  (define deserialize-treelist
+    (make-deserialize-info (lambda (vec) (if (vector? vec)
+                                             (vector->treelist vec)
+                                             (error 'treelist "invalid deserialization")))
+                           (lambda () (error "should not get here; cycles not supported")))))
 
 (define empty-treelist (treelist empty-node 0 0))
 

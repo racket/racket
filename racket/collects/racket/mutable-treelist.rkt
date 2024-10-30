@@ -4,7 +4,8 @@
          racket/hash-code
          "treelist.rkt"
          (submod "treelist.rkt" unsafe)
-         "private/sort.rkt")
+         "private/sort.rkt"
+         "private/serialize-structs.rkt")
 
 (provide make-mutable-treelist
          (rename-out [build-mutable-treelist mutable-treelist])
@@ -59,7 +60,28 @@
                               (lambda (v recur)
                                 (treelist-length (mutable-treelist-tl v))))
   #:property prop:sequence (lambda (mtl)
-                             (in-mutable-treelist/proc mtl)))
+                             (in-mutable-treelist/proc mtl))
+  #:property prop:serializable (make-serialize-info
+                                (lambda (mtl) (vector (mutable-treelist-tl mtl)))
+                                (cons 'deserialize-mutable-treelist
+                                      (module-path-index-join '(submod "." deserialize)
+                                                              (variable-reference->module-path-index
+                                                               (#%variable-reference))))
+                                #t
+                                (or (current-load-relative-directory)
+                                    (current-directory))))
+
+(module+ deserialize
+  (provide deserialize-mutable-treelist)
+  (define deserialize-mutable-treelist
+    (make-deserialize-info (lambda (tl) (if (treelist? tl)
+                                            (mutable-treelist tl)
+                                            (error 'mutable-treelist "invalid deserialization")))
+                           (lambda ()
+                             (define mtl (mutable-treelist empty-treelist))
+                             (values mtl
+                                     (lambda (mtl2)
+                                       (set-mutable-treelist-tl! mtl (treelist-copy-for-mutable (mutable-treelist-tl mtl2)))))))))
 
 (define (make-mutable-treelist n [v #f])
   (cond
