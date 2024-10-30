@@ -679,4 +679,16 @@ relative path with respect to the top level. Usually, it should be
 
 @; ----------------------------------------------------------------------
 
+@section{Serialization Structures}
+
+@defmodule[racket/serialize-structs]{The
+@racketmodname[racket/serialize-structs] module provides only
+@racket[prop:serializable], @racket[make-serialize-info],
+@racket[make-deserialize-info], which is useful for minimizing
+dependencies with supporting serialization.}
+
+@history[#:added "8.15.0.3"]
+
+@; ----------------------------------------------------------------------
+
 @close-eval[ser-eval]
