@@ -81,7 +81,8 @@
                              (define mtl (mutable-treelist empty-treelist))
                              (values mtl
                                      (lambda (mtl2)
-                                       (set-mutable-treelist-tl! mtl (treelist-copy-for-mutable (mutable-treelist-tl mtl2)))))))))
+                                       (set-mutable-treelist-tl! mtl (treelist-copy-for-mutable (mutable-treelist-tl mtl2))))))))
+  (module declare-preserve-for-embedding racket/kernel))
 
 (define (make-mutable-treelist n [v #f])
   (cond

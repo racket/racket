@@ -189,7 +189,8 @@
     (make-deserialize-info (lambda (vec) (if (vector? vec)
                                              (vector->treelist vec)
                                              (error 'treelist "invalid deserialization")))
-                           (lambda () (error "should not get here; cycles not supported")))))
+                           (lambda () (error "should not get here; cycles not supported"))))
+  (module declare-preserve-for-embedding racket/kernel))
 
 (define empty-treelist (treelist empty-node 0 0))
 
