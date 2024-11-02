@@ -1052,8 +1052,9 @@
 (err/rt-test (path-element->bytes (bytes->path #"\\\\?\\RED\\a" 'windows)))
 (err/rt-test (bytes->path-element #"." 'unix))
 (err/rt-test (bytes->path-element #".." 'unix))
-(err/rt-test (bytes->path-element "a/b" 'unix))
-(err/rt-test (bytes->path-element "a\\b" 'windows))
+(err/rt-test (bytes->path-element #"a/b" 'unix))
+(err/rt-test (bytes->path-element #"a\\b" 'windows))
+(test #f bytes->path-element #"a\\b" 'windows #t)
 
 (err/rt-test (bytes->path-element #""))
 (err/rt-test (string->path-element ""))

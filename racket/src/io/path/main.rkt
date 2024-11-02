@@ -128,19 +128,22 @@
                            "path" orig-arg
                            "explanation" (unquoted-printing-string
                                           "path can be split, is not relative, or names a special element")))
-  (when (eq? 'windows convention)
-    ;; Make sure we don't call `protect-path-element` on a
-    ;; byte string that contains a "\":
-    (when (for/or ([b (in-bytes bstr)])
-            (eqv? b (char->integer #\\)))
-      (bad-element)))
-  (define len (bytes-length bstr))
-  (define p (path (protect-path-element (bytes->immutable-bytes bstr) convention)
-                  convention))
   (cond
-    [(path-element? p) p]
-    [false-on-non-element? #f]
-    [else (bad-element)]))
+    [(and (eq? 'windows convention)
+          ;; Make sure we don't call `protect-path-element` on a
+          ;; byte string that contains a "\":
+          (for/or ([b (in-bytes bstr)])
+            (eqv? b (char->integer #\\))))
+     (and (not false-on-non-element?)
+          (bad-element))]
+    [else
+     (define len (bytes-length bstr))
+     (define p (path (protect-path-element (bytes->immutable-bytes bstr) convention)
+                     convention))
+     (cond
+       [(path-element? p) p]
+       [false-on-non-element? #f]
+       [else (bad-element)])]))
 
 (define/who (path-element->string p)
   (define clean-p (path-element-clean p))

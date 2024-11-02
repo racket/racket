@@ -29681,30 +29681,28 @@
                "explanation"
                (unquoted-printing-string
                 "path can be split, is not relative, or names a special element"))))))
-      (begin
-        (if (eq? 'windows convention_0)
-          (if (call-with-values
-               (lambda () (values bstr_0 (unsafe-bytes-length bstr_0)))
-               (lambda (vec_0 len_0)
-                 (letrec*
-                  ((for-loop_0
-                    (|#%name|
-                     for-loop
-                     (lambda (result_0 pos_0)
-                       (if (unsafe-fx< pos_0 len_0)
-                         (let ((b_0 (unsafe-bytes-ref vec_0 pos_0)))
-                           (let ((result_1 (eqv? b_0 92)))
-                             (let ((result_2 (values result_1)))
-                               (if (if (not (let ((x_0 (list b_0))) result_2))
-                                     #t
-                                     #f)
-                                 (for-loop_0 result_2 (unsafe-fx+ 1 pos_0))
-                                 result_2))))
-                         result_0)))))
-                  (for-loop_0 #f 0))))
-            (bad-element_0)
-            (void))
-          (void))
+      (if (if (eq? 'windows convention_0)
+            (call-with-values
+             (lambda () (values bstr_0 (unsafe-bytes-length bstr_0)))
+             (lambda (vec_0 len_0)
+               (letrec*
+                ((for-loop_0
+                  (|#%name|
+                   for-loop
+                   (lambda (result_0 pos_0)
+                     (if (unsafe-fx< pos_0 len_0)
+                       (let ((b_0 (unsafe-bytes-ref vec_0 pos_0)))
+                         (let ((result_1 (eqv? b_0 92)))
+                           (let ((result_2 (values result_1)))
+                             (if (if (not (let ((x_0 (list b_0))) result_2))
+                                   #t
+                                   #f)
+                               (for-loop_0 result_2 (unsafe-fx+ 1 pos_0))
+                               result_2))))
+                       result_0)))))
+                (for-loop_0 #f 0))))
+            #f)
+        (if (not false-on-non-element?_0) (bad-element_0) #f)
         (let ((len_0 (unsafe-bytes-length bstr_0)))
           (let ((p_0
                  (path1.1
