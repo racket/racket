@@ -20,7 +20,7 @@
     (lambda (s)
       (unless (or (path-for-some-system? s)
                   (path-string? s))
-        (raise-argument-error 'normal-path-case "(or/c path-for-some-system? path-string?)" s))
+        (raise-argument-error* 'normal-case-path 'racket/primitive "(or/c path-for-some-system? path-string?)" s))
       (cond
        [(if (path-for-some-system? s)
             (eq? (path-convention-type s) 'windows)
@@ -83,8 +83,8 @@
                       (values #f #f)])])
         (when err-msg
           (if trust-sep?
-            (raise-argument-error who err-msg err-index s sfx)
-            (raise-argument-error who err-msg err-index s sfx sep))))
+            (raise-argument-error* who 'racket/primitive err-msg err-index s sfx)
+            (raise-argument-error* who 'racket/primitive err-msg err-index s sfx sep))))
       (let-values ([(base name dir?) (split-path s)])
         (when (not base)
           (raise-mismatch-error who "cannot add an extension to a root path: " s))
@@ -141,26 +141,28 @@
   (define-values (reroot-path)
     (lambda (p root)
       (unless (or (path-string? p) (path-for-some-system? p))
-        (raise-argument-error 'reroot-path "(or/c path-string? path-for-some-system?)" 0 p root))
+        (raise-argument-error* 'reroot-path 'racket/primitive "(or/c path-string? path-for-some-system?)" 0 p root))
       (unless (or (path-string? root) (path-for-some-system? root))
-        (raise-argument-error 'reroot-path "(or/c path-string? path-for-some-system?)" 1 p root))
+        (raise-argument-error* 'reroot-path 'racket/primitive "(or/c path-string? path-for-some-system?)" 1 p root))
       (-define conv (if (path-for-some-system? p)
                         (path-convention-type p)
                         (system-path-convention-type)))
       (unless (or (complete-path? p)
                   (eq? (system-path-convention-type) conv))
-        (raise-arguments-error 'reroot-path
-                               "path is not complete and not the platform's convention"
-                               "path" p
-                               "platform convention type" (system-path-convention-type)))
+        (raise-arguments-error* 'reroot-path
+                                'racket/primitive
+                                "path is not complete and not the platform's convention"
+                                "path" p
+                                "platform convention type" (system-path-convention-type)))
       (unless (eq? (if (path-for-some-system? root)
                        (path-convention-type root)
                        (system-path-convention-type))
                    conv)
-        (raise-arguments-error 'reroot-path
-                               "given paths use different conventions"
-                               "path" p
-                               "root path" root))
+        (raise-arguments-error* 'reroot-path
+                                'racket/primitive
+                                "given paths use different conventions"
+                                "path" p
+                                "root path" root))
       (-define c-p (normal-case-path (cleanse-path (if (complete-path? p)
                                                        p
                                                        (path->complete-path p)))))
