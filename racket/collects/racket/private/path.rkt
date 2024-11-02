@@ -87,12 +87,17 @@
             (raise-argument-error* who 'racket/primitive err-msg err-index s sfx sep))))
       (let-values ([(base name dir?) (split-path s)])
         (when (not base)
-          (raise-mismatch-error who "cannot add an extension to a root path: " s))
+          (raise-arguments-error* who 'racket/primitive "cannot add an extension to a root path"
+                                  "path" s))
+        (when (or (eq? name 'same) (eq? name 'up))
+          (raise-arguments-error* who 'racket/primitive
+                                  "cannot add an extension to path that ends with a dot element"
+                                  "path" s))        
         (values base name))))
 
   (define-values (path-adjust-extension)
-    (lambda (name sep rest-bytes s sfx trust-sep?)
-      (let-values ([(base name) (check-extension-call s sfx name sep trust-sep?)])
+    (lambda (who sep rest-bytes s sfx trust-sep?)
+      (let-values ([(base name) (check-extension-call s sfx who sep trust-sep?)])
         (-define bs (path-element->bytes name))
         (-define finish
           (lambda (i sep i2)

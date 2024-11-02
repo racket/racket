@@ -39,7 +39,15 @@
   (test (string->some-system-path "p/x.zo" 'unix)
         path-add-extension (string->some-system-path "p/x" 'unix) ".zo")
   (test (string->some-system-path "p/x.zo" 'windows)
-        path-add-extension (string->some-system-path "p/x" 'windows) ".zo"))
+        path-add-extension (string->some-system-path "p/x" 'windows) ".zo")
+  (err/rt-test (path-add-extension (build-path 'same) ".zo")
+               "cannot add an extension")
+  (err/rt-test (path-add-extension (build-path/convention 'same 'windows) ".zo")
+               "cannot add an extension")
+  (err/rt-test (path-add-extension (build-path/convention "/" 'unix) ".zo")
+               "cannot add an extension")
+  (err/rt-test (path-add-extension (build-path/convention "c:" 'windows) ".zo")
+               "cannot add an extension"))
 
 (test-basic-extension path-replace-extension
                       path-add-extension)
