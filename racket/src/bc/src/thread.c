@@ -578,7 +578,7 @@ void scheme_init_thread(Scheme_Startup_Env *env)
 
   ADD_PRIM_W_ARITY("parameter?"            , parameter_p           , 1, 1, env);
   ADD_PRIM_W_ARITY("make-parameter"        , make_parameter        , 1, 4, env);
-  ADD_PRIM_W_ARITY("make-derived-parameter", make_derived_parameter, 3, 3, env);
+  ADD_PRIM_W_ARITY("make-derived-parameter", make_derived_parameter, 3, 5, env);
   ADD_PRIM_W_ARITY("parameter-procedure=?" , parameter_procedure_eq, 2, 2, env);
   ADD_PRIM_W_ARITY("parameterization?"     , parameterization_p    , 1, 1, env);
 
@@ -8069,7 +8069,8 @@ static Scheme_Object *make_parameter(int argc, Scheme_Object **argv)
 
 static Scheme_Object *make_derived_parameter(int argc, Scheme_Object **argv)
 {
-  Scheme_Object *p, *a[2], *realm = scheme_default_realm;
+  Scheme_Object *p, *a[2], *realm;
+  const char *name;
   ParamData *data;
 
   if (!SCHEME_PARAMETERP(argv[0]))
@@ -8077,6 +8078,19 @@ static Scheme_Object *make_derived_parameter(int argc, Scheme_Object **argv)
 
   scheme_check_proc_arity("make-derived-parameter", 1, 1, argc, argv);
   scheme_check_proc_arity("make-derived-parameter", 1, 2, argc, argv);
+  if (argc > 3) {
+    if (!SCHEME_SYMBOLP(argv[3]))
+      scheme_wrong_contract("make-derived-parameter?", "symbol?", 3, argc, argv);
+    name = scheme_symbol_name(argv[3]);
+  } else {
+    name = scheme_get_proc_name(argv[0], NULL, -1);
+  }
+  if (argc > 4) {
+    if (!SCHEME_SYMBOLP(argv[4]))
+      scheme_wrong_contract("make-derived-parameter?", "symbol?", 4, argc, argv);
+    realm = argv[4];
+  } else
+    realm = scheme_get_proc_realm(argv[0]);
 
   data = MALLOC_ONE_RT(ParamData);
 #ifdef MZTAG_REQUIRED
@@ -8090,7 +8104,7 @@ static Scheme_Object *make_derived_parameter(int argc, Scheme_Object **argv)
   a[0] = (Scheme_Object *)data;
   a[1] = realm;
   p = scheme_make_prim_closure_w_arity(do_param, 2, a, 
-                                       "parameter-procedure", 0, 1);
+                                       name, 0, 1);
   ((Scheme_Primitive_Proc *)p)->pp.flags |= SCHEME_PRIM_TYPE_PARAMETER;
 
   return p;

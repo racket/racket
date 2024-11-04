@@ -529,7 +529,7 @@
   [make-continuation-prompt-tag (known-procedure/no-prompt 3)]
   [make-custodian (known-procedure/no-prompt 3)]
   [make-custodian-box (known-procedure/no-prompt 4)]
-  [make-derived-parameter (known-procedure/single-valued 8)]
+  [make-derived-parameter (known-procedure/single-valued 56)]
   [make-directory (known-procedure/no-prompt 6)]
   [make-environment-variables (known-procedure/no-prompt -1)]
   [make-ephemeron (known-procedure/allocates 4)]
