@@ -955,7 +955,9 @@ Returns the tenth element of the list.
 Returns the eleventh element of the list.
 
 @mz-examples[#:eval list-eval
-  (eleventh '(1 2 3 4 5 6 7 8 9 10 11 12 13 14 15))]}
+  (eleventh '(1 2 3 4 5 6 7 8 9 10 11 12 13 14 15))]
+
+@history[#:added "8.15.0.3"]}
 
 
 @defproc[(twelfth [lst list?]) any/c]{
@@ -963,7 +965,9 @@ Returns the eleventh element of the list.
 Returns the twelfth element of the list.
 
 @mz-examples[#:eval list-eval
-  (twelfth '(1 2 3 4 5 6 7 8 9 10 11 12 13 14 15))]}
+  (twelfth '(1 2 3 4 5 6 7 8 9 10 11 12 13 14 15))]
+
+@history[#:added "8.15.0.3"]}
 
 
 @defproc[(thirteenth [lst list?]) any/c]{
@@ -971,7 +975,9 @@ Returns the twelfth element of the list.
 Returns the thirteenth element of the list.
 
 @mz-examples[#:eval list-eval
-  (thirteenth '(1 2 3 4 5 6 7 8 9 10 11 12 13 14 15))]}
+  (thirteenth '(1 2 3 4 5 6 7 8 9 10 11 12 13 14 15))]
+
+@history[#:added "8.15.0.3"]}
 
 
 @defproc[(fourteenth [lst list?]) any/c]{
@@ -979,7 +985,9 @@ Returns the thirteenth element of the list.
 Returns the fourteenth element of the list.
 
 @mz-examples[#:eval list-eval
-  (fourteenth '(1 2 3 4 5 6 7 8 9 10 11 12 13 14 15))]}
+  (fourteenth '(1 2 3 4 5 6 7 8 9 10 11 12 13 14 15))]
+
+@history[#:added "8.15.0.3"]}
 
 
 @defproc[(fifteenth [lst list?]) any/c]{
@@ -987,7 +995,9 @@ Returns the fourteenth element of the list.
 Returns the fifteenth element of the list.
 
 @mz-examples[#:eval list-eval
-  (fifteenth '(1 2 3 4 5 6 7 8 9 10 11 12 13 14 15))]}
+  (fifteenth '(1 2 3 4 5 6 7 8 9 10 11 12 13 14 15))]
+
+@history[#:added "8.15.0.3"]}
 
 
 @defproc[(last [lst list?]) any/c]{
