@@ -1,6 +1,6 @@
 #lang racket/base
 
-(provide first second third fourth fifth sixth seventh eighth ninth tenth
+(provide first second third fourth fifth sixth seventh eighth ninth tenth eleventh twelfth thirteenth fourteenth fifteenth
 
          last-pair last rest
 
@@ -82,15 +82,20 @@
                                     "list contains too few elements"
                                     "list" l0)))
          (raise-argument-error 'name "list?" l0)))]))
-(define-lgetter second  2)
-(define-lgetter third   3)
-(define-lgetter fourth  4)
-(define-lgetter fifth   5)
-(define-lgetter sixth   6)
-(define-lgetter seventh 7)
-(define-lgetter eighth  8)
-(define-lgetter ninth   9)
-(define-lgetter tenth   10)
+(define-lgetter second      2)
+(define-lgetter third       3)
+(define-lgetter fourth      4)
+(define-lgetter fifth       5)
+(define-lgetter sixth       6)
+(define-lgetter seventh     7)
+(define-lgetter eighth      8)
+(define-lgetter ninth       9)
+(define-lgetter tenth      10)
+(define-lgetter eleventh   11)
+(define-lgetter twelfth    12)
+(define-lgetter thirteenth 13)
+(define-lgetter fourteenth 14)
+(define-lgetter fifteenth  15)
 
 (define (last-pair l)
   (if (pair? l)
