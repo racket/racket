@@ -35,7 +35,7 @@ shorter than @racket[format] (with format string),
          string?]{
 
 Converts each @racket[v] to a string in @racket[display] mode---that
-is, like @racket[(format "~a" v)]---then concatentates the results
+is, like @racket[(format "~a" v)]---then concatenates the results
 with @racket[separator] between consecutive items, and then pads or
 truncates the string to be at least @racket[min-width] characters and
 at most @racket[max-width] characters.
@@ -147,7 +147,7 @@ Use @racket[~v] to produce text that talks about Racket values.
 
 @examples[#:eval the-eval
 (let ([nums (for/list ([i 10]) i)])
-  (~a "The even numbers in " (~v nums) 
+  (~a "The even numbers in " (~v nums)
       " are " (~v (filter even? nums)) "."))
 ]}
 
@@ -221,7 +221,7 @@ marker is @racket["..."].
                        10]
                [#:precision precision
                             (or/c exact-nonnegative-integer?
-                                  (list/c '= exact-nonnegative-integer?)) 
+                                  (list/c '= exact-nonnegative-integer?))
                             6]
                [#:notation notation
                            (or/c 'positional 'exponential
@@ -293,12 +293,12 @@ decimal point are used, and the decimal point is never dropped.
 (~r 123.456 #:decimal-sep ",")
 ]}
 
-@item{@racket[groups] controls how digits of the integral part of the number 
+@item{@racket[groups] controls how digits of the integral part of the number
    are separated into groups.
    Rightmost numbers of @racket[groups] are used to group rightmost digits of the integral part.
    The leftmost number of @racket[groups] is used repeatedly to group leftmost digits.
    The @racket[group-sep] argument specifies which separator to use between digit groups.
-       
+
 
    @examples[#:eval the-eval
 (~r 1234567890 #:groups '(3) #:group-sep ",")
@@ -396,7 +396,7 @@ greater than @racket[10], then upper-case letters are used.
 (~r 3735928559 #:base '(up 16) #:notation 'exponential)
 ]}
 
-@item{@racket[format-exponent] --- determines how the exponent is displayed. 
+@item{@racket[format-exponent] --- determines how the exponent is displayed.
 
 If @racket[format-exponent] is a string, the exponent is displayed with an
 explicit sign (as with a @racket[sign] of @racket['++]) and at least two
