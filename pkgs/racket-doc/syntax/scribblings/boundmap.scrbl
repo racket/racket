@@ -20,10 +20,10 @@ libraries; use @racketmodname[syntax/id-table] instead.
                                         [id identifier?]
                                         [v any/c])
          void?]
-@defproc[(bound-identifier-mapping-for-each [bound-map boud-identifier-mapping?]
+@defproc[(bound-identifier-mapping-for-each [bound-map bound-identifier-mapping?]
                                             [proc (identifier? any/c . -> . any)])
          void?]
-@defproc[(bound-identifier-mapping-map [bound-map bound-identifier-mapping?] 
+@defproc[(bound-identifier-mapping-map [bound-map bound-identifier-mapping?]
                                        [proc (identifier? any/c . -> . any)])
          (listof any?)]
 ]]{
@@ -49,7 +49,7 @@ respectively.
 @defproc[(free-identifier-mapping-for-each [free-map free-identifier-mapping?]
                                            [proc (identifier? any/c . -> . any)])
          void?]
-@defproc[(free-identifier-mapping-map [free-map free-identifier-mapping?] 
+@defproc[(free-identifier-mapping-map [free-map free-identifier-mapping?]
                                       [proc (identifier? any/c . -> . any)])
          (listof any?)]
 ]]{
@@ -75,7 +75,7 @@ respectively.
 @defproc[(module-identifier-mapping-for-each [module-map module-identifier-mapping?]
                                              [proc (identifier? any/c . -> . any)])
          void?]
-@defproc[(module-identifier-mapping-map [module-map module-identifier-mapping?] 
+@defproc[(module-identifier-mapping-map [module-map module-identifier-mapping?]
                                         [proc (identifier? any/c . -> . any)])
          (listof any?)]
 )]{
