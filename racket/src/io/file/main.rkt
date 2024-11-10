@@ -206,7 +206,7 @@
      (do-file-or-directory-modify-seconds who p #f #f)]
     [(p secs)
      (check who path-string? p)
-     (check who exact-integer? secs)
+     (check who #:or-false exact-integer? secs)
      (do-file-or-directory-modify-seconds who p secs #f)]
     [(p secs fail)
      (check who path-string? p)
