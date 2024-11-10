@@ -5577,6 +5577,9 @@ static Scheme_Object *fl_bit_field (int argc, Scheme_Object *argv[])
                           "second index", 1, argv[2],
                           NULL);
 
+  if (s == 64) /* right shift by 64 with `>>` is not allowed */
+    return scheme_make_integer(0);
+
   d = SCHEME_DBL_VAL(argv[0]);
   memcpy(&i, &d, sizeof(double));
   if ((e - s) < 64) {
