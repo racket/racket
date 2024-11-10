@@ -31,6 +31,9 @@
     (and (exact-integer? perms) (<= 0 perms 65535)))
   (define perms-desc "(integer-in 0 65535)")
 
+  (define (raise-argument-error who what v)
+    (raise-argument-error* who 'racket/primitive what v))
+
   (define (open-input-file path #:mode [mode 'binary] #:for-module? [for-module? #f])
     (unless (path-string? path)
       (raise-argument-error 'open-input-file "path-string?" path))
