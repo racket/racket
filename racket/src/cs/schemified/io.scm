@@ -28791,53 +28791,49 @@
                   (let ((new-base_0 (combine_0 base_0 accum_0)))
                     (let ((target_0
                            (do-resolve-path new-base_0 'simplify-path)))
-                      (call-with-values
-                       (lambda ()
-                         (if (eq? target_0 new-base_0)
-                           (values new-base_0 seen_0)
-                           (let ((from-base_0
-                                  (if (1/complete-path? target_0)
-                                    target_0
-                                    (call-with-values
-                                     (lambda () (1/split-path new-base_0))
-                                     (lambda (base-dir_0 name_0 dir?_0)
-                                       (path->complete-path.1
-                                        #t
-                                        target_0
-                                        base-dir_0))))))
-                             (begin
-                               (if (hash-ref seen_0 from-base_0 #f)
-                                 (raise
-                                  (let ((app_0
-                                         (let ((msg_0
-                                                (string-append
-                                                 "cycle detected at link"
-                                                 "\n  link path: "
-                                                 (path->string new-base_0))))
-                                           (error-message->adjusted-string
-                                            who_0
-                                            'racket/primitive
-                                            msg_0
-                                            'racket/primitive))))
-                                    (|#%app|
-                                     exn:fail:filesystem
-                                     app_0
-                                     (current-continuation-marks))))
-                                 (void))
-                               (values
-                                from-base_0
-                                (hash-set seen_0 from-base_0 #t))))))
-                       (lambda (from-base_0 new-seen_0)
-                         (call-with-values
-                          (lambda () (1/split-path from-base_0))
-                          (lambda (next-base_0 name_0 dir?_0)
-                            (if (not next-base_0)
-                              (loop_0 (cdr l_1) from-base_0 '() new-seen_0)
-                              (loop_0
-                               (cdr l_1)
-                               next-base_0
-                               '()
-                               new-seen_0))))))))
+                      (if (eq? target_0 new-base_0)
+                        (call-with-values
+                         (lambda () (1/split-path new-base_0))
+                         (lambda (next-base_0 name_0 dir?_0)
+                           (if (not next-base_0)
+                             (loop_0 (cdr l_1) new-base_0 '() seen_0)
+                             (loop_0 (cdr l_1) next-base_0 '() seen_0))))
+                        (begin
+                          (if (hash-ref seen_0 new-base_0 #f)
+                            (raise
+                             (let ((app_0
+                                    (let ((msg_0
+                                           (string-append
+                                            "cycle detected at link"
+                                            "\n  link path: "
+                                            (path->string new-base_0))))
+                                      (error-message->adjusted-string
+                                       who_0
+                                       'racket/primitive
+                                       msg_0
+                                       'racket/primitive))))
+                               (|#%app|
+                                exn:fail:filesystem
+                                app_0
+                                (current-continuation-marks))))
+                            (void))
+                          (let ((new-seen_0 (hash-set seen_0 new-base_0 #t)))
+                            (if (1/complete-path? target_0)
+                              (let ((new-l_0 (1/explode-path target_0)))
+                                (let ((app_0 (append (cdr new-l_0) l_1)))
+                                  (loop_0
+                                   app_0
+                                   (car new-l_0)
+                                   null
+                                   new-seen_0)))
+                              (call-with-values
+                               (lambda () (1/split-path new-base_0))
+                               (lambda (base-dir_0 name_0 dir?_0)
+                                 (loop_0
+                                  (append (1/explode-path target_0) l_1)
+                                  base-dir_0
+                                  null
+                                  new-seen_0)))))))))
                   (let ((app_0 (cdr l_1)))
                     (loop_0
                      app_0
@@ -28848,10 +28844,10 @@
          (loop_0
           app_0
           (if (1/path? (car l_0))
-            (let ((temp6_0 (car l_0)))
-              (let ((temp7_0 (current-directory$1)))
-                (let ((temp6_1 temp6_0))
-                  (path->complete-path.1 #t temp6_1 temp7_0))))
+            (let ((temp4_0 (car l_0)))
+              (let ((temp5_0 (current-directory$1)))
+                (let ((temp4_1 temp4_0))
+                  (path->complete-path.1 #t temp4_1 temp5_0))))
             (current-directory$1))
           '()
           hash2725))))))

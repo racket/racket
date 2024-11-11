@@ -37,6 +37,7 @@
                        (current-directory))]
              [accum '()]
              [seen #hash()])
+    (define (path-bytes* p) (if (eq? p 'up) p (path-bytes p)))
     (cond
       [(null? l) (combine base accum)]
       [(eq? 'same (car l))
@@ -44,32 +45,33 @@
       [(eq? 'up (car l))
        (define new-base (combine base accum))
        (define target (resolve-path-for-simplify new-base))
-       (define-values (from-base new-seen)
-         (cond
-           [(eq? target new-base) (values new-base seen)]
-           [else
-            (define from-base
-              (cond
-                [(complete-path? target) target]
-                [else
-                 (define-values (base-dir name dir?) (split-path new-base))
-                 (path->complete-path target base-dir)]))
-            (when (hash-ref seen from-base #f)
-              (raise
-               (exn:fail:filesystem
-                (error-message->string
-                 who
-                 (string-append "cycle detected at link"
-                                "\n  link path: " (path->string new-base)))
-                (current-continuation-marks))))
-            (values from-base (hash-set seen from-base #t))]))
-       (define-values (next-base name dir?) (split-path from-base))
        (cond
-         [(not next-base)
-          ;; discard ".." after a root
-          (loop (cdr l) from-base '() new-seen)]
+         [(eq? target new-base)
+          ;; not a link
+          (define-values (next-base name dir?) (split-path new-base))
+          (cond
+            [(not next-base)
+             ;; discard ".." after a root
+             (loop (cdr l) new-base '() seen)]
+            [else
+             (loop (cdr l) next-base '() seen)])]
          [else
-          (loop (cdr l) next-base '() new-seen)])]
+          (when (hash-ref seen new-base #f)
+            (raise
+             (exn:fail:filesystem
+              (error-message->string
+               who
+               (string-append "cycle detected at link"
+                              "\n  link path: " (path->string new-base)))
+              (current-continuation-marks))))
+          (define new-seen (hash-set seen new-base #t))
+          (cond
+            [(complete-path? target)
+             (define new-l (explode-path target))
+             (loop (append (cdr new-l) l) (car new-l) null new-seen)]
+            [else
+             (define-values (base-dir name dir?) (split-path new-base))
+             (loop (append (explode-path target) l) base-dir null new-seen)])])]
       [else (loop (cdr l) base (cons (car l) accum) seen)])))
 
 (void (set-simplify-path-for-directory-list! simplify-path))

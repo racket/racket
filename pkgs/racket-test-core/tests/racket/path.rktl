@@ -501,6 +501,44 @@
 (test (build-path "no-such-dir" "b") simplify-path "no-such-dir/b" #t)
 (test (path->complete-path (build-path "no-such-dir" "b")) simplify-path "no-such-dir//b" #t)
 
+(unless (eq? 'windows (system-type))
+  (for ([abs? (in-list '(#f #t))])
+    (define tmp (make-temporary-directory))
+
+    (define d (build-path tmp "d"))
+    (make-directory d)
+
+    (define e (build-path d "e"))
+    (make-directory e)
+
+    (define f (build-path e "f"))
+    (call-with-output-file*
+     f
+     (lambda (o) (display "hi\n" o)))
+
+    (define k (build-path tmp "k"))
+    (make-file-or-directory-link (if abs? e "d/e") k)
+
+    (define k2 (build-path tmp "k2"))
+    (make-file-or-directory-link "k" k2)
+
+    (define k3 (build-path e "k3"))
+    (make-file-or-directory-link "../e" k3)
+
+    (define k4 (build-path e "k4"))
+    (make-file-or-directory-link "../../d/./e" k4)
+
+    (define loop (build-path tmp "loop"))
+    (make-file-or-directory-link "loop" loop)
+
+    (test (build-path d "e" "f") simplify-path (build-path k 'up "e" "f"))
+    (test (build-path d "e" "f") simplify-path (build-path k2 'up "e" "f"))
+    (test (build-path d "e" "f") simplify-path (build-path k3 'up "e" "f"))
+    (test (build-path d "e" "f") simplify-path (build-path k4 'up "e" "f"))
+    (err/rt-test/once (simplify-path (build-path loop 'up)) exn:fail:filesystem? "cycle detected")
+
+    (delete-directory/files tmp)))
+
 (arity-test cleanse-path 1 1)
 (arity-test expand-user-path 1 1)
 (arity-test resolve-path 1 1)

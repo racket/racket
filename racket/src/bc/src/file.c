@@ -3828,6 +3828,13 @@ static Scheme_Object *simplify_qm_path(Scheme_Object *path, int *has_rel)
   }
 }
 
+static void cycle_error(char *s) {
+  scheme_raise_exn(MZEXN_FAIL_FILESYSTEM,
+                   "simplify-path: cycle detected at link\n"
+                   "  link path: %q",
+                   s);
+}
+
 static Scheme_Object *do_simplify_path(Scheme_Object *path, Scheme_Object *cycle_check, int skip, 
 				       int use_filesystem, 
                                        int force_rel_up, int already_cleansed,
@@ -4030,10 +4037,7 @@ static Scheme_Object *do_simplify_path(Scheme_Object *path, Scheme_Object *cycle
 	  if ((len == SCHEME_PATH_LEN(p))
 	      && !strcmp(s, SCHEME_PATH_VAL(p))) {
 	    /* Cycle of links detected */
-	    scheme_raise_exn(MZEXN_FAIL_FILESYSTEM,
-			     "simplify-path: cycle detected at link\n"
-                             "  link path: %q",
-			     s);
+            cycle_error(s);
 	  }
 	  l = SCHEME_CDR(l);
 	}
@@ -4103,7 +4107,7 @@ static Scheme_Object *do_simplify_path(Scheme_Object *path, Scheme_Object *cycle
 	  while (1) {
 	    a[0] = result;
 	    new_result = do_resolve_path(1, a, guards);
-	
+
 	    /* Was it a link? */
 	    if (result != new_result) {
 	      /* It was a link. Is the new result relative? */
@@ -4129,20 +4133,16 @@ static Scheme_Object *do_simplify_path(Scheme_Object *path, Scheme_Object *cycle
 		  if ((SCHEME_PATH_LEN(cp) == SCHEME_PATH_LEN(new_result))
 		      && !strcmp(SCHEME_PATH_VAL(cp), SCHEME_PATH_VAL(new_result))) {
 		    /* cycle */
-		    new_result = NULL;
-		    break;
+                    cycle_error(SCHEME_PATH_VAL(new_result));
 		  }
 		}
 	      }
 	    
-	      if (new_result) {
-		/* Simplify the new result */
-		result = do_simplify_path(new_result, cycle_check, skip,
-					  use_filesystem, force_rel_up, 0, kind,
-					  guards);
-		cycle_check = scheme_make_pair(new_result, cycle_check);
-	      } else
-		break;
+              /* Simplify the new result */
+              result = do_simplify_path(new_result, cycle_check, skip,
+                                        use_filesystem, force_rel_up, 0, kind,
+                                        guards);
+              cycle_check = scheme_make_pair(new_result, cycle_check);
 	    } else
 	      break;
 	  }
