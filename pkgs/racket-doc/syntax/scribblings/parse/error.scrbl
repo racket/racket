@@ -21,7 +21,8 @@
  by @racket[syntax-parse] for failed matches. When
  @racket[syntax-parse] needs to report that a particular datum or
  literal identifier was expected, it consults the configuration in
- this parameter.
+ this parameter. This parameter is cross-phase persistent, which means
+ that the parameter and its value are shared across phases.
 
  A configuration is a hash table with the following keys:
 
@@ -70,7 +71,7 @@
 
  ]
 
-}
+@history[#:changed "8.15.0.4" @elem{Changed parameter to cross-phase persistent.}]}
 
 
 @defproc[(report-configuration? [v any/c]) boolean?]{

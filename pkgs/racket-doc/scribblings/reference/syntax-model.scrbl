@@ -1249,7 +1249,8 @@ and only if no module-level binding is @racket[set!]ed.
             #%plain-lambda case-lambda begin
             set! quote-syntax quote with-continuation-mark
             #%plain-app
-            cons list make-struct-type make-struct-type-property
+            cons list hasheq make-struct-type make-struct-type-property
+            make-parameter
             gensym string->uninterned-symbol #%variable-reference
 	    variable-reference-from-unsafe?)
 [cross-module (module id module-path
@@ -1267,9 +1268,11 @@ and only if no module-level binding is @racket[set!]ed.
                 (case-lambda (formals expr ...+) ...)
                 (#%plain-app cons cross-expr ...+)
                 (#%plain-app list cross-expr ...+)
+                (#%plain-app hasheq cross-expr ...+)
                 (#%plain-app make-struct-type cross-expr ...+)
                 (#%plain-app make-struct-type-property
                              cross-expr ...+)
+                (#%plain-app make-parameter cross-expr ...+)
                 (#%plain-app gensym)
                 (#%plain-app gensym string)
                 (#%plain-app string->uninterned-symbol string)
@@ -1288,7 +1291,9 @@ module imports only from other cross-phase persistent modules, the only relevant
 expansion steps are the implicit introduction of
 @racket[#%plain-module-begin], implicit introduction of @racket[#%plain-app],
 and implicit introduction and/or expansion of @racket[#%datum].
-@history[#:changed "7.5.0.12" @elem{Allow @racket[(#%plain-app variable-reference-from-unsafe? (#%variable-reference))].}]
+
+@history[#:changed "7.5.0.12" @elem{Allow @racket[(#%plain-app variable-reference-from-unsafe? (#%variable-reference))].}
+         #:changed "8.15.0.4" @elem{Allow @racket[(#%plain-app hasheq cross-expr ...+)] and @racket[(#%plain-app make-parameter cross-expr ...+)].}]
 
 @;----------------------------------------
 
