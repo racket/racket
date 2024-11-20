@@ -2897,12 +2897,16 @@
 (arity-test file-or-directory-stat 1 2)
 
 ; Write regular file and check stat data.
-(let ()
+(define (check-stat via-port)
   (define temp-file-path (build-path work-dir "stat-test"))
   (define TEST-CONTENT "stat test content")
   (display-to-file TEST-CONTENT temp-file-path #:exists 'truncate)
   (void (call-with-input-file temp-file-path read-byte))
-  (define stat-result (file-or-directory-stat temp-file-path))
+  (define stat-result (if via-port
+                          (if (eq? via-port 'input)
+                              (call-with-input-file temp-file-path port-file-stat)
+                              (call-with-output-file temp-file-path #:exists 'append port-file-stat))
+                          (file-or-directory-stat temp-file-path)))
   (test #t hash-eq? stat-result)
   (define expected-stat-keys '(device-id
                                inode
@@ -2975,7 +2979,19 @@
   (test (stat-ref 'creation-time-seconds) nano->secs (stat-ref 'creation-time-nanoseconds))
   (delete-file temp-file-path))
 
+(check-stat #f)
+(check-stat 'input)
+(check-stat 'output)
+
 (err/rt-test (file-or-directory-stat "thisDoesNotExistAtAll") exn:fail:filesystem?)
+(err/rt-test (port-file-stat (open-output-bytes)))
+(err/rt-test (port-file-stat (let ()
+                               (define temp-file-path (build-path work-dir "stat-test"))
+                               (define p (open-output-file temp-file-path))
+                               (close-output-port p)
+                               (delete-file temp-file-path)
+                               p))
+             exn:fail?)
 
 ; Test symlink-related features.
 (unless (eq? (system-type) 'windows)

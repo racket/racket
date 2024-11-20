@@ -4995,33 +4995,35 @@ static Scheme_Object *make_nanoseconds(uintptr_t secs, uintptr_t nsecs) {
                          scheme_make_integer_value_from_unsigned(nsecs));
 }
 
-static Scheme_Object *file_stat(int argc, Scheme_Object *argv[])
+static Scheme_Object *file_or_fd_stat(const char *filename, Scheme_Object *filename_arg, intptr_t fd, int as_link)
 {
-  char *filename;
-  int as_link = 0;
   rktio_stat_t *r;
   Scheme_Hash_Tree *ht;
 
-  if (!SCHEME_PATH_STRINGP(argv[0]))
-    scheme_wrong_contract("file-or-directory-identity", "path-string?", 0, argc, argv);
+  if (filename) {
+    r = rktio_file_or_directory_stat(scheme_rktio, filename, !as_link);
 
-  filename = scheme_expand_string_filename(argv[0],
-					   "file-or-directory-identity",
-					   NULL,
-					   SCHEME_GUARD_FILE_EXISTS);
+    if (!r) {
+      scheme_raise_exn(MZEXN_FAIL_FILESYSTEM,
+                       "file-or-directory-stat: cannot get stat result\n"
+                       "  path: %q\n"
+                       "  system error: %R",
+                       filename_for_error(filename_arg));
+      return NULL;
+    }
+  } else {
+    rktio_fd_t *rfd;
 
-  if (argc > 1)
-    as_link = SCHEME_TRUEP(argv[1]);
+    rfd = rktio_system_fd(scheme_rktio, fd, RKTIO_OPEN_READ);
+    r = rktio_fd_stat(scheme_rktio, rfd);
+    rktio_forget(scheme_rktio, rfd);
 
-  r = rktio_file_or_directory_stat(scheme_rktio, filename, !as_link);
-
-  if (!r) {
-    scheme_raise_exn(MZEXN_FAIL_FILESYSTEM,
-                     "file-or-directory-stat: cannot get stat result\n"
-                     "  path: %q\n"
-                     "  system error: %R",
-                     filename_for_error(argv[0]));
-    return NULL;
+    if (!r) {
+      scheme_raise_exn(MZEXN_FAIL_FILESYSTEM,
+                       "port-file-stat: cannot get stat result\n"
+                       "  system error: %R");
+      return NULL;
+    }
   }
 
   ht = scheme_make_hash_tree(0);
@@ -5056,6 +5058,30 @@ static Scheme_Object *file_stat(int argc, Scheme_Object *argv[])
   rktio_free(r);
   
   return (Scheme_Object *)ht;
+}
+
+static Scheme_Object *file_stat(int argc, Scheme_Object *argv[])
+{
+  char *filename;
+  int as_link = 0;
+
+  if (!SCHEME_PATH_STRINGP(argv[0]))
+    scheme_wrong_contract("file-or-directory-identity", "path-string?", 0, argc, argv);
+
+  filename = scheme_expand_string_filename(argv[0],
+					   "file-or-directory-identity",
+					   NULL,
+					   SCHEME_GUARD_FILE_EXISTS);
+
+  if (argc > 1)
+    as_link = SCHEME_TRUEP(argv[1]);
+
+  return file_or_fd_stat(filename, argv[0], 0, as_link);
+}
+
+Scheme_Object *scheme_get_fd_stat(intptr_t fd)
+{
+  return file_or_fd_stat(NULL, NULL, fd, 0);
 }
 
 static Scheme_Object *file_size(int argc, Scheme_Object *argv[])

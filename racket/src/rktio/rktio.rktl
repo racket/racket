@@ -1145,6 +1145,12 @@
 (define-function/errno
  NULL
  ()
+ (ref rktio_stat_t)
+ rktio_fd_stat
+ (((ref rktio_t) rktio) ((ref rktio_fd_t) fd)))
+(define-function/errno
+ NULL
+ ()
  (ref rktio_identity_t)
  rktio_fd_identity
  (((ref rktio_t) rktio) ((ref rktio_fd_t) fd)))

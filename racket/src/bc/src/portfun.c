@@ -307,6 +307,7 @@ scheme_init_port_fun(Scheme_Startup_Env *env)
   ADD_NONCM_PRIM("port-try-file-lock?",            scheme_file_try_lock,           2, 2, env);
   ADD_NONCM_PRIM("port-file-unlock",               scheme_file_unlock,             1, 1, env);
   ADD_NONCM_PRIM("port-file-identity",             scheme_file_identity,           1, 1, env);
+  ADD_NONCM_PRIM("port-file-stat",                 scheme_file_stat,               1, 1, env);
   ADD_NONCM_PRIM("port-count-lines!",              port_count_lines,               1, 1, env);
   ADD_NONCM_PRIM("port-counts-lines?",             port_counts_lines_p,            1, 1, env);
           

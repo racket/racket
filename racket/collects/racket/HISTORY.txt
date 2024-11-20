@@ -1,3 +1,6 @@
+Version 8.16
+Add `port-file-stat`
+
 Version 8.15, Ocotober 2024
 Sort and highlight documentation-search results by core documentation
  and main-distribution packages

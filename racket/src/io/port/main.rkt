@@ -19,6 +19,7 @@
                   terminal-port?
                   port-waiting-peer?)
          "file-identity.rkt"
+         "file-stat.rkt"
          "file-lock.rkt"
          "bytes-port.rkt"
          "string-port.rkt"
@@ -137,6 +138,7 @@
          file-stream-buffer-mode
 
          port-file-identity
+         port-file-stat
          port-try-file-lock?
          port-file-unlock
 

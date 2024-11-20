@@ -667,6 +667,7 @@
   [port-counts-lines? (known-procedure/single-valued 2)]
   [port-display-handler (known-procedure/single-valued 6)]
   [port-file-identity (known-procedure/single-valued 2)]
+  [port-file-stat (known-procedure/single-valued 2)]
   [port-file-unlock (known-procedure/single-valued 2)]
   [port-next-location (known-procedure 2)]
   [port-print-handler (known-procedure/single-valued 6)]
