@@ -184,7 +184,7 @@
                 (1/port-counts-lines? port-counts-lines?)
                 (1/port-display-handler port-display-handler)
                 (1/port-file-identity port-file-identity)
-                (port-file-stat port-file-stat)
+                (1/port-file-stat port-file-stat)
                 (1/port-file-unlock port-file-unlock)
                 (1/port-next-location port-next-location)
                 (1/port-print-handler port-print-handler)
@@ -10912,7 +10912,13 @@
                                                      (loop_0 in_0)))
                                                  (if (evt? v_1)
                                                    (if zero-ok?20_0
-                                                     0
+                                                     (let ((r_0
+                                                            (sync/timeout
+                                                             0
+                                                             v_1)))
+                                                       (if r_0
+                                                         (result-loop_0 r_0)
+                                                         0))
                                                      (result-loop_0
                                                       (if enable-break?21_0
                                                         (sync/enable-break v_1)
@@ -25494,21 +25500,23 @@
                     (for-loop_0
                      main-hash_0
                      (hash-iterate-first ctime-hash_0)))))))))))))
-(define port-file-stat
-  (lambda (p_0)
-    (begin
-      (if (1/file-stream-port? p_0)
-        (void)
-        (raise-argument-error 'port-file-stat "file-stream-port?" p_0))
-      (let ((cp_0
-             (let ((or-part_0 (->core-input-port.1 #f p_0 #f)))
-               (if or-part_0 or-part_0 (->core-output-port.1 #f p_0 #f)))))
-        (begin
-          (unsafe-start-atomic)
-          (begin
-            (check-not-closed 'port-file-stat cp_0)
-            (let ((fd_0 (|#%app| (file-stream-ref cp_0) cp_0)))
-              (path-or-fd-stat.1 #f fd_0 #f p_0 'port-file-stat))))))))
+(define 1/port-file-stat
+  (|#%name|
+   port-file-stat
+   (lambda (p_0)
+     (begin
+       (if (1/file-stream-port? p_0)
+         (void)
+         (raise-argument-error 'port-file-stat "file-stream-port?" p_0))
+       (let ((cp_0
+              (let ((or-part_0 (->core-input-port.1 #f p_0 #f)))
+                (if or-part_0 or-part_0 (->core-output-port.1 #f p_0 #f)))))
+         (begin
+           (unsafe-start-atomic)
+           (begin
+             (check-not-closed 'port-file-stat cp_0)
+             (let ((fd_0 (|#%app| (file-stream-ref cp_0) cp_0)))
+               (path-or-fd-stat.1 #f fd_0 #f p_0 'port-file-stat)))))))))
 (define 1/port-try-file-lock?
   (|#%name|
    port-try-file-lock?

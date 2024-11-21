@@ -1323,4 +1323,31 @@
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(for ([poll-proc (in-list (list
+                           (lambda (i)
+                             (byte-ready? i))
+                           (lambda (i)
+                             (peek-bytes-avail!* (make-bytes 1) 0 #f i))))])
+  (define peeked? #f)
+  (define polled? #f)
+  (define i
+    (make-input-port
+     'test
+     (lambda (bstr)
+       never-evt)
+     (lambda (bstr skip evt)
+       (set! peeked? #t)
+       (poll-guard-evt
+        (lambda (poll?)
+          (when poll?
+            (set! polled? #t))
+          (wrap-evt always-evt (lambda (v) 0)))))
+     void))
+  ;; should trigger a poll on an evt:
+  (poll-proc i)
+  (test #t values peeked?)
+  (test #t values polled?))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (report-errs)

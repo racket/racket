@@ -211,7 +211,13 @@
                      (loop in)])]
                  [(evt? v)
                   (cond
-                    [zero-ok? 0]
+                    [zero-ok?
+                     ;; can return 0, but should poll the evt; a port might
+                     ;; take polling as a sign that it needs to make progress
+                     (define r (sync/timeout 0 v))
+                     (if r
+                         (result-loop r)
+                         0)]
                     [else (result-loop (if enable-break?
                                            (sync/enable-break v)
                                            (sync v)))])]
