@@ -63,6 +63,7 @@
          treelist-flatten-once
          treelist-sort
          in-treelist
+         sequence->treelist
          for/treelist
          for*/treelist
          chaperone-treelist
@@ -318,6 +319,11 @@
                            #f
                            #f))))])
     in-treelist))
+
+(define (sequence->treelist s)
+  (unless (sequence? s)
+    (raise-argument-error* 'sequence->treelist 'racket/primitive "sequence?" s))
+  (for/treelist ([el s]) el))
 
 (define (treelist-print type-str tl port mode)
   (case mode

@@ -475,6 +475,21 @@ Returns a @tech{sequence} equivalent to @racket[tl].
   (string-append e "!"))
 ]}
 
+@defproc[(sequence->treelist [s sequence?]) treelist?]{
+
+Returns a treelist whose elements are the elements of @racket[s],
+each of which must be a single value.
+If @racket[s] is infinite, this function does not terminate.
+
+@examples[
+#:eval the-eval
+(sequence->treelist (list 1 "a" 'apple))
+(sequence->treelist (vector 1 "a" 'apple))
+(sequence->treelist (stream 1 "a" 'apple))
+(sequence->treelist (open-input-bytes (bytes 1 2 3 4 5)))
+(sequence->treelist (in-range 0 10))
+]}
+
 @deftogether[(
 @defform[(for/treelist (for-clause ...) body-or-break ... body)]
 @defform[(for*/treelist (for-clause ...) body-or-break ... body)]

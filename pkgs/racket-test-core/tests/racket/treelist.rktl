@@ -92,6 +92,13 @@
   (test '(0 "a" b #:c) treelist->list small-treelist)
   (test small-treelist vector->treelist '#(0 "a" b #:c))
   (test small-treelist list->treelist '(0 "a" b #:c))
+  (test small-treelist sequence->treelist '#(0 "a" b #:c))
+  (test small-treelist sequence->treelist '(0 "a" b #:c))
+  (test small-treelist sequence->treelist (stream 0 "a" 'b '#:c))
+  (test (treelist 1 2 3 4 5) sequence->treelist (open-input-bytes (bytes 1 2 3 4 5)))
+  (test (treelist 0 1 2 3 4 5 6 7 8 9)
+        sequence->treelist
+        (in-range 0 10))
   (test (treelist '(0) '("a") '(b) '(#:c)) treelist-map small-treelist list)
   (let ([v #f])
     (test (void) treelist-for-each small-treelist (lambda (e)
