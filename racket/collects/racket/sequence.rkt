@@ -45,7 +45,10 @@
        #f))))
 
 (define (sequence->list s)
-  (for/list ([v s]) v))
+  (cond
+    [(list? s) s]
+    [(sequence? s) (for/list ([v s]) v)]
+    [else (raise-argument-error 'sequence->list "sequence?" s)]))
 
 (define (sequence-length s)
   (unless (sequence? s) (raise-argument-error 'sequence-length "sequence?" s))

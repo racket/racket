@@ -321,9 +321,11 @@
     in-treelist))
 
 (define (sequence->treelist s)
-  (unless (sequence? s)
-    (raise-argument-error* 'sequence->treelist 'racket/primitive "sequence?" s))
-  (for/treelist ([el s]) el))
+  (cond
+    [(treelist? s) s]
+    [(sequence? s) (for/treelist ([el s]) el)]
+    [else
+     (raise-argument-error* 'sequence->treelist 'racket/primitive "sequence?" s)]))
 
 (define (treelist-print type-str tl port mode)
   (case mode
