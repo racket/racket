@@ -5,7 +5,7 @@
                      racket/mutable-treelist))
 
 @(define the-eval (make-base-eval))
-@(the-eval '(require racket/treelist racket/mutable-treelist))
+@(the-eval '(require racket/treelist racket/mutable-treelist racket/stream))
 
 @title[#:tag "treelist"]{Treelists}
 
