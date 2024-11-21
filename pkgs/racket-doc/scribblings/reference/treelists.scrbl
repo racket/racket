@@ -347,6 +347,107 @@ found, the result is @racket[#f]. For a constant-time
 (treelist-find items symbol?)
 ]}
 
+@defproc[(treelist-index-of [tl treelist?]
+                            [v any/c]
+                            [eql? (any/c any/c . -> . any/c) equal?])
+         (or/c exact-nonnegative-integer? #f)]{
+
+Returns the index of the first element in @racket[tl] that is
+@racket[eql?] to @racket[v].
+If no such element is found, the result is @racket[#f].
+
+@examples[
+#:eval the-eval
+(define items (treelist 1 "a" 'apple))
+(treelist-index-of items 1)
+(treelist-index-of items "a")
+(treelist-index-of items 'apple)
+(treelist-index-of items 'unicorn)
+]}
+
+@defproc[(treelist-index-where [tl treelist?] [pred (any/c . -> . any/c)])
+         (or/c exact-nonnegative-integer? #f)]{
+
+Returns the index of the first element in @racket[tl] where applying
+@racket[pred] to the element produces a true value.
+If no such element is found, the result is @racket[#f].
+
+@examples[
+#:eval the-eval
+(define items (treelist 1 "a" 'apple))
+(treelist-index-where items number?)
+(treelist-index-where items string?)
+(treelist-index-where items symbol?)
+(treelist-index-where items void?)
+]}
+
+@defproc[(treelist-splitf [tl treelist?] [pred (any/c . -> . any/c)])
+         (values treelist? treelist?)]{
+
+Splits @racket[tl] into 2 treelists returned as values.
+The first treelist contains elements taken successivly from @racket[tl]
+as long as they satisfy @racket[pred].
+The second treelist the rest of the elements of @racket[tl], from the
+first element not satisfying @racket[pred] and onward.
+
+@examples[
+#:eval the-eval
+(treelist-splitf (treelist 2 4 5 8) even?)
+(treelist-splitf (treelist 2 4 5 8) odd?)
+(treelist-splitf (treelist 2 4 6 8) even?)
+(treelist-splitf (treelist 2 4 6 8) odd?)
+]}
+
+@defproc[(treelist-keep-members [tl treelist?]
+                                [other-tl treelist?]
+                                [eql? (any/c any/c . -> . any/c) equal?])
+         treelist?]{
+
+Produces a treelist with only members of @racket[tl] that are also
+members of @racket[other-tl], according to @racket[eql?].
+
+@examples[
+#:eval the-eval
+(treelist-keep-members (treelist 1 2 3 2 4 5 2) (treelist 2 1))
+(treelist-keep-members (treelist 1 2 3 2 4 5 2) (treelist 4 3 5))
+]}
+
+@defproc[(treelist-skip-members [tl treelist?]
+                                [other-tl treelist?]
+                                [eql? (any/c any/c . -> . any/c) equal?])
+         treelist?]{
+
+Produces a treelist with only members of @racket[tl] that are not
+members of @racket[other-tl], according to @racket[eql?].
+
+@examples[
+#:eval the-eval
+(treelist-skip-members (treelist 1 2 3 2 4 5 2) (treelist 4 3 5))
+(treelist-skip-members (treelist 1 2 3 2 4 5 2) (treelist 2 1))
+]}
+
+@defproc[(treelist-flatten [v any/c]) treelist?]{
+
+Flattens a tree of nested treelists into a single treelist.
+
+@examples[
+#:eval the-eval
+(treelist-flatten
+ (treelist (treelist "a") "b" (treelist "c" (treelist "d") "e") (treelist)))
+(treelist-flatten "a")
+]}
+
+@defproc[(treelist-flatten-once [tlotl (treelist/c treelist?)]) treelist?]{
+
+Flattens a treelist of treelists one level down into a treelist,
+leaving any further nested treelists alone.
+
+@examples[
+#:eval the-eval
+(treelist-flatten-once
+ (treelist (treelist "a" "b") (treelist "c" (treelist "d") "e") (treelist)))
+]}
+
 @defproc[(treelist-sort [tl treelist?]
                         [less-than? (any/c any/c . -> . any/c)]
                         [#:key key (or/c #f (any/c . -> . any/c)) #f]
