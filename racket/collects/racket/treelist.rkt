@@ -54,6 +54,13 @@
          treelist-for-each
          treelist-member?
          treelist-find
+         treelist-index-of
+         treelist-index-where
+         treelist-splitf
+         treelist-keep-members
+         treelist-skip-members
+         treelist-flatten
+         treelist-flatten-once
          treelist-sort
          in-treelist
          for/treelist
@@ -1218,6 +1225,58 @@ minimum required storage. |#
                       #:when (match? el)
                       #:final #t)
     el))
+
+(define (treelist-index-of tl v [eql? equal?])
+  (check-treelist 'treelist-index-of tl)
+  (unless (and (procedure? eql?) (procedure-arity-includes? eql? 2))
+    (raise-argument-error* 'treelist-index-of 'racket/primitive "(procedure-arity-includes/c 2)" eql?))
+  (treelist-index-where tl (λ (el) (eql? el v))))
+
+(define (treelist-index-where tl match?)
+  (check-treelist 'treelist-index-where tl)
+  (unless (and (procedure? match?) (procedure-arity-includes? match? 1))
+    (raise-argument-error* 'treelist-index-where 'racket/primitive "(procedure-arity-includes/c 1)" match?))
+  (for/first ([el (in-treelist tl)]
+              [i (in-naturals)]
+              #:when (match? el))
+    i))
+
+(define (treelist-splitf tl match?)
+  (check-treelist 'treelist-splitf tl)
+  (unless (and (procedure? match?) (procedure-arity-includes? match? 1))
+    (raise-argument-error* 'treelist-splitf 'racket/primitive "(procedure-arity-includes/c 1)" match?))
+  (define at (treelist-index-where tl (λ (el) (not (match? el)))))
+  (cond
+    [at (treelist-split tl at)]
+    [else (values tl empty-treelist)]))
+
+;; set intersect, keep only members of bs in as, preserve order of as
+(define (treelist-keep-members as bs [eql? equal?])
+  (check-treelist 'treelist-keep-members as)
+  (check-treelist 'treelist-keep-members bs)
+  (for/treelist ([a (in-treelist as)]
+                 #:when (treelist-member? bs a eql?))
+    a))
+
+;; set subtract, remove all members of bs from as, preserve order of as
+(define (treelist-skip-members as bs [eql? equal?])
+  (check-treelist 'treelist-skip-members as)
+  (check-treelist 'treelist-skip-members bs)
+  (for/treelist ([a (in-treelist as)]
+                 #:unless (treelist-member? bs a eql?))
+    a))
+
+;; input does not have to be a treelist: if so make a singleton
+(define (treelist-flatten v)
+  (cond
+    [(treelist? v) (treelist-flatten-once (treelist-map v treelist-flatten))]
+    [else (build-treelist v)]))
+
+;; append*, concat, treelist of treelists into a single treelist
+(define (treelist-flatten-once tlotl)
+  (check-treelist 'treelist-flatten-once tlotl)
+  (for/fold ([acc empty-treelist]) ([tl (in-treelist tlotl)])
+    (treelist-append acc tl)))
 
 (define (check-sort-arguments who less-than? get-key)
   (unless (and (procedure? less-than?) (procedure-arity-includes? less-than? 2))
