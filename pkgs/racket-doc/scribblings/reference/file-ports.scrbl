@@ -470,4 +470,4 @@ pipe instead of a file, the @exnraise[exn:fail:filesystem].
 Like @racket[file-or-directory-stat], but returns information for an
 open file represented by a port, instead using of the file's path.
 
-@history[#:added "8.16.0.6"]}
+@history[#:added "8.15.0.6"]}
