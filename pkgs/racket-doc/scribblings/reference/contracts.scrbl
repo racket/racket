@@ -1944,8 +1944,8 @@ earlier fields.}}
 
 @deftogether[(@defform[
  #:literals (struct rename)
- (contract-in in-out-item ...)]
-               @defform[
+ (contract-in require-spec in-out-item ...)]
+              @defform[
  #:literals (struct rename)
  (contract-out unprotected-submodule in-out-item ...)
  #:grammar
