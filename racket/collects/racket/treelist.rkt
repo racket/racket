@@ -323,6 +323,8 @@
 (define (sequence->treelist s)
   (cond
     [(treelist? s) s]
+    [(vector? s) (vector->treelist s)]
+    [(list? s) (list->treelist s)]
     [(sequence? s) (for/treelist ([el s]) el)]
     [else
      (raise-argument-error* 'sequence->treelist 'racket/primitive "sequence?" s)]))
