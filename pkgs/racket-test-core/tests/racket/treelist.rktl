@@ -56,6 +56,9 @@
                                                                       (regexp-quote (symbol->string 'op))
                                                                       ":"))))
 
+(define-syntax-rule (test-values expected actual)
+  (test (call-with-values (λ () expected) list) call-with-values (λ () actual) list))
+
 (define small-treelist (treelist 0 "a" 'b '#:c))
 (define (treelist-tests small-treelist)
   (test #f treelist-empty? small-treelist)
@@ -102,6 +105,56 @@
   (test "a" treelist-find small-treelist string?)
   (test '#:c treelist-find small-treelist keyword?)
   (test #f treelist-find small-treelist list?)
+
+  (test 0 treelist-index-of small-treelist 0)
+  (test 1 treelist-index-of small-treelist "a")
+  (test 2 treelist-index-of small-treelist 'b)
+  (test 3 treelist-index-of small-treelist '#:c)
+  (test #f treelist-index-of small-treelist 'x)
+  (test 0 treelist-index-where small-treelist number?)
+  (test 1 treelist-index-where small-treelist string?)
+  (test 2 treelist-index-where small-treelist symbol?)
+  (test 3 treelist-index-where small-treelist keyword?)
+  (test #f treelist-index-where small-treelist void?)
+
+  (test-values (values (treelist 0) (treelist "a" 'b '#:c))
+               (treelist-splitf small-treelist number?))
+  (test-values (values empty-treelist small-treelist)
+               (treelist-splitf small-treelist string?))
+  (test-values (values (treelist 2 4) (treelist 5 8))
+               (treelist-splitf (treelist 2 4 5 8) even?))
+  (test-values (values empty-treelist (treelist 2 4 5 8))
+               (treelist-splitf (treelist 2 4 5 8) odd?))
+  (test-values (values (treelist 2 4 6 8) empty-treelist)
+               (treelist-splitf (treelist 2 4 6 8) even?))
+  (test-values (values empty-treelist (treelist 2 4 6 8))
+               (treelist-splitf (treelist 2 4 6 8) odd?))
+
+  (test (treelist 1 2 2 2)
+        treelist-keep-members
+        (treelist 1 2 3 2 4 5 2)
+        (treelist 2 1))
+  (test (treelist 3 4 5)
+        treelist-keep-members
+        (treelist 1 2 3 2 4 5 2)
+        (treelist 4 3 5))
+  (test (treelist 1 2 2 2)
+        treelist-skip-members
+        (treelist 1 2 3 2 4 5 2)
+        (treelist 4 3 5))
+  (test (treelist 3 4 5)
+        treelist-skip-members
+        (treelist 1 2 3 2 4 5 2)
+        (treelist 2 1))
+
+  (test (treelist "a" "b" "c" "d" "e")
+        treelist-flatten
+        (treelist (treelist "a") "b" (treelist "c" (treelist "d") "e") (treelist)))
+  (test (treelist "a") treelist-flatten "a")
+  (test (treelist "a" "b" "c" (treelist "d") "e")
+        treelist-flatten-once
+        (treelist (treelist "a" "b") (treelist "c" (treelist "d") "e") (treelist)))
+
   (test (treelist 1 2 3 5) treelist-sort (treelist 5 3 1 2) <)
   (test (treelist 5 3 2 1) treelist-sort (treelist 5 3 1 2) < #:key -)
   (test (treelist 5 3 2 1) treelist-sort (treelist 5 3 1 2) < #:key - #:cache-keys? #t)
