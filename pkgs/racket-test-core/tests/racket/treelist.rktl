@@ -137,22 +137,26 @@
   (test-values (values empty-treelist (treelist 2 4 6 8))
                (treelist-splitf (treelist 2 4 6 8) odd?))
 
+  (test (treelist 2 2 4 2) treelist-filter (treelist 1 2 3 2 4 5 2) #:keep even?)
+  (test (treelist 1 3 5) treelist-filter (treelist 1 2 3 2 4 5 2) #:keep odd?)
+  (test (treelist 1 3 5) treelist-filter (treelist 1 2 3 2 4 5 2) #:skip even?)
+  (test (treelist 2 2 4 2) treelist-filter (treelist 1 2 3 2 4 5 2) #:skip odd?)
   (test (treelist 1 2 2 2)
-        treelist-keep-members
+        treelist-filter
         (treelist 1 2 3 2 4 5 2)
-        (treelist 2 1))
+        #:keep (λ (x) (treelist-member? (treelist 2 1) x)))
   (test (treelist 3 4 5)
-        treelist-keep-members
+        treelist-filter
         (treelist 1 2 3 2 4 5 2)
-        (treelist 4 3 5))
+        #:keep (λ (x) (treelist-member? (treelist 4 3 5) x)))
   (test (treelist 1 2 2 2)
-        treelist-skip-members
+        treelist-filter
         (treelist 1 2 3 2 4 5 2)
-        (treelist 4 3 5))
+        #:skip (λ (x) (treelist-member? (treelist 4 3 5) x)))
   (test (treelist 3 4 5)
-        treelist-skip-members
+        treelist-filter
         (treelist 1 2 3 2 4 5 2)
-        (treelist 2 1))
+        #:skip (λ (x) (treelist-member? (treelist 2 1) x)))
 
   (test (treelist "a" "b" "c" "d" "e")
         treelist-flatten

@@ -52,13 +52,12 @@
          list->treelist
          treelist-map
          treelist-for-each
+         treelist-filter
          treelist-member?
          treelist-find
          treelist-index-of
          treelist-index-where
          treelist-splitf
-         treelist-keep-members
-         treelist-skip-members
          treelist-flatten
          treelist-flatten-once
          treelist-sort
@@ -1218,6 +1217,17 @@ minimum required storage. |#
   (for ([v (in-treelist tl)])
     (proc v)))
 
+(define (treelist-filter tl #:keep [keep (λ (x) #true)] #:skip [skip (λ (x) #false)])
+  (check-treelist 'treelist-filter tl)
+  (unless (and (procedure? keep) (procedure-arity-includes? keep 1))
+    (raise-argument-error* 'treelist-filter 'racket/primitive "(procedure-arity-includes/c 1)" keep))
+  (unless (and (procedure? skip) (procedure-arity-includes? skip 1))
+    (raise-argument-error* 'treelist-filter 'racket/primitive "(procedure-arity-includes/c 1)" skip))
+  (for/treelist ([el (in-treelist tl)]
+                 #:when (keep el)
+                 #:unless (skip el))
+    el))
+
 (define (treelist-member? tl v [eql? equal?])
   (check-treelist 'treelist-member? tl)
   (unless (and (procedure? eql?) (procedure-arity-includes? eql? 2))
@@ -1259,22 +1269,6 @@ minimum required storage. |#
   (cond
     [at (treelist-split tl at)]
     [else (values tl empty-treelist)]))
-
-;; set intersect, keep only members of bs in as, preserve order of as
-(define (treelist-keep-members as bs [eql? equal?])
-  (check-treelist 'treelist-keep-members as)
-  (check-treelist 'treelist-keep-members bs)
-  (for/treelist ([a (in-treelist as)]
-                 #:when (treelist-member? bs a eql?))
-    a))
-
-;; set subtract, remove all members of bs from as, preserve order of as
-(define (treelist-skip-members as bs [eql? equal?])
-  (check-treelist 'treelist-skip-members as)
-  (check-treelist 'treelist-skip-members bs)
-  (for/treelist ([a (in-treelist as)]
-                 #:unless (treelist-member? bs a eql?))
-    a))
 
 ;; input does not have to be a treelist: if so make a singleton
 (define (treelist-flatten v)

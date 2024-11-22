@@ -317,6 +317,22 @@ results. For a constant-time @racket[proc], this operation takes
 (treelist-for-each items println)
 ]}
 
+@defproc[(treelist-filter [tl treelist?]
+                          [#:keep keep (any/c . -> . any/c) (λ (x) #true)]
+                          [#:skip skip (any/c . -> . any/c) (λ (x) #false)])
+         treelist?]{
+
+Produces a treelist with only members of @racket[tl] that satisfy
+@racket[keep] and don't satisfy @racket[skip].
+
+@examples[
+#:eval the-eval
+(treelist-filter (treelist 1 2 3 2 4 5 2) #:keep even?)
+(treelist-filter (treelist 1 2 3 2 4 5 2) #:keep odd?)
+(treelist-filter (treelist 1 2 3 2 4 5 2) #:skip even?)
+(treelist-filter (treelist 1 2 3 2 4 5 2) #:skip odd?)
+]}
+
 @defproc[(treelist-member? [tl treelist?] [v any/c] [eql? (any/c any/c . -> . any/c) equal?]) boolean?]{
 
 Checks each element of @racket[tl] with @racket[eql?] and @racket[v]
@@ -396,34 +412,6 @@ first element not satisfying @racket[pred] and onward.
 (treelist-splitf (treelist 2 4 5 8) odd?)
 (treelist-splitf (treelist 2 4 6 8) even?)
 (treelist-splitf (treelist 2 4 6 8) odd?)
-]}
-
-@defproc[(treelist-keep-members [tl treelist?]
-                                [other-tl treelist?]
-                                [eql? (any/c any/c . -> . any/c) equal?])
-         treelist?]{
-
-Produces a treelist with only members of @racket[tl] that are also
-members of @racket[other-tl], according to @racket[eql?].
-
-@examples[
-#:eval the-eval
-(treelist-keep-members (treelist 1 2 3 2 4 5 2) (treelist 2 1))
-(treelist-keep-members (treelist 1 2 3 2 4 5 2) (treelist 4 3 5))
-]}
-
-@defproc[(treelist-skip-members [tl treelist?]
-                                [other-tl treelist?]
-                                [eql? (any/c any/c . -> . any/c) equal?])
-         treelist?]{
-
-Produces a treelist with only members of @racket[tl] that are not
-members of @racket[other-tl], according to @racket[eql?].
-
-@examples[
-#:eval the-eval
-(treelist-skip-members (treelist 1 2 3 2 4 5 2) (treelist 4 3 5))
-(treelist-skip-members (treelist 1 2 3 2 4 5 2) (treelist 2 1))
 ]}
 
 @defproc[(treelist-flatten [v any/c]) treelist?]{
