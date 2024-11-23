@@ -214,7 +214,7 @@ specified foreign value, or set it.  The arguments are handled as in
 
 A parameter-like function is useful in case Racket code and library
 code interact through a library value.  Although
-@racket[make-c-parameter] can be used with any time, it is not
+@racket[make-c-parameter] can be used with any type, it is not
 recommended to use this for foreign functions, since each reference
 through the parameter will construct the low-level interface before the
 actual call.
