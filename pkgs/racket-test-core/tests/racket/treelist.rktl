@@ -145,7 +145,7 @@
         (treelist (treelist "a") "b" (treelist "c" (treelist "d") "e") (treelist)))
   (test (treelist "a") treelist-flatten "a")
   (test (treelist "a" "b" "c" (treelist "d") "e")
-        treelist-flatten-once
+        treelist-append*
         (treelist (treelist "a" "b") (treelist "c" (treelist "d") "e") (treelist)))
 
   (test (treelist 1 2 3 5) treelist-sort (treelist 5 3 1 2) <)

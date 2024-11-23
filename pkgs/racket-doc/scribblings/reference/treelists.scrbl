@@ -392,14 +392,14 @@ Flattens a tree of nested treelists into a single treelist.
 (treelist-flatten "a")
 ]}
 
-@defproc[(treelist-flatten-once [tlotl (treelist/c treelist?)]) treelist?]{
+@defproc[(treelist-append* [tlotl (treelist/c treelist?)]) treelist?]{
 
-Flattens a treelist of treelists one level down into a treelist,
+Appends elements of a treelist of treelists together into one treelist,
 leaving any further nested treelists alone.
 
 @examples[
 #:eval the-eval
-(treelist-flatten-once
+(treelist-append*
  (treelist (treelist "a" "b") (treelist "c" (treelist "d") "e") (treelist)))
 ]}
 

@@ -57,7 +57,7 @@
          treelist-find
          treelist-index-of
          treelist-flatten
-         treelist-flatten-once
+         treelist-append*
          treelist-sort
          in-treelist
          sequence->treelist
@@ -1256,12 +1256,12 @@ minimum required storage. |#
 ;; input does not have to be a treelist: if so make a singleton
 (define (treelist-flatten v)
   (cond
-    [(treelist? v) (treelist-flatten-once (treelist-map v treelist-flatten))]
+    [(treelist? v) (treelist-append* (treelist-map v treelist-flatten))]
     [else (build-treelist v)]))
 
 ;; append*, concat, treelist of treelists into a single treelist
-(define (treelist-flatten-once tlotl)
-  (check-treelist 'treelist-flatten-once tlotl)
+(define (treelist-append* tlotl)
+  (check-treelist 'treelist-append* tlotl)
   (for/fold ([acc empty-treelist]) ([tl (in-treelist tlotl)])
     (treelist-append acc tl)))
 
