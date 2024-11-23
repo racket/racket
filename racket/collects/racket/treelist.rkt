@@ -1215,15 +1215,12 @@ minimum required storage. |#
   (for ([v (in-treelist tl)])
     (proc v)))
 
-(define (treelist-filter tl #:keep [keep (λ (x) #true)] #:skip [skip (λ (x) #false)])
-  (check-treelist 'treelist-filter tl)
+(define (treelist-filter keep tl)
   (unless (and (procedure? keep) (procedure-arity-includes? keep 1))
     (raise-argument-error* 'treelist-filter 'racket/primitive "(procedure-arity-includes/c 1)" keep))
-  (unless (and (procedure? skip) (procedure-arity-includes? skip 1))
-    (raise-argument-error* 'treelist-filter 'racket/primitive "(procedure-arity-includes/c 1)" skip))
+  (check-treelist 'treelist-filter tl)
   (for/treelist ([el (in-treelist tl)]
-                 #:when (keep el)
-                 #:unless (skip el))
+                 #:when (keep el))
     el))
 
 (define (treelist-member? tl v [eql? equal?])

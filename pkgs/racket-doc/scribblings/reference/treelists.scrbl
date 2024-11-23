@@ -317,20 +317,18 @@ results. For a constant-time @racket[proc], this operation takes
 (treelist-for-each items println)
 ]}
 
-@defproc[(treelist-filter [tl treelist?]
-                          [#:keep keep (any/c . -> . any/c) (λ (x) #true)]
-                          [#:skip skip (any/c . -> . any/c) (λ (x) #false)])
+@defproc[(treelist-filter [keep (any/c . -> . any/c)] [tl treelist?])
          treelist?]{
 
 Produces a treelist with only members of @racket[tl] that satisfy
-@racket[keep] and don't satisfy @racket[skip].
+@racket[keep].
 
 @examples[
 #:eval the-eval
-(treelist-filter (treelist 1 2 3 2 4 5 2) #:keep even?)
-(treelist-filter (treelist 1 2 3 2 4 5 2) #:keep odd?)
-(treelist-filter (treelist 1 2 3 2 4 5 2) #:skip even?)
-(treelist-filter (treelist 1 2 3 2 4 5 2) #:skip odd?)
+(treelist-filter even? (treelist 1 2 3 2 4 5 2))
+(treelist-filter odd? (treelist 1 2 3 2 4 5 2))
+(treelist-filter (λ (x) (not (even? x))) (treelist 1 2 3 2 4 5 2))
+(treelist-filter (λ (x) (not (odd? x))) (treelist 1 2 3 2 4 5 2))
 ]}
 
 @defproc[(treelist-member? [tl treelist?] [v any/c] [eql? (any/c any/c . -> . any/c) equal?]) boolean?]{

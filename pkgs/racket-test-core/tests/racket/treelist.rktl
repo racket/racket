@@ -119,26 +119,26 @@
   (test 3 treelist-index-of small-treelist '#:c)
   (test #f treelist-index-of small-treelist 'x)
 
-  (test (treelist 2 2 4 2) treelist-filter (treelist 1 2 3 2 4 5 2) #:keep even?)
-  (test (treelist 1 3 5) treelist-filter (treelist 1 2 3 2 4 5 2) #:keep odd?)
-  (test (treelist 1 3 5) treelist-filter (treelist 1 2 3 2 4 5 2) #:skip even?)
-  (test (treelist 2 2 4 2) treelist-filter (treelist 1 2 3 2 4 5 2) #:skip odd?)
+  (test (treelist 2 2 4 2) treelist-filter even? (treelist 1 2 3 2 4 5 2))
+  (test (treelist 1 3 5) treelist-filter odd? (treelist 1 2 3 2 4 5 2))
+  (test (treelist 1 3 5) treelist-filter (λ (x) (not (even? x))) (treelist 1 2 3 2 4 5 2))
+  (test (treelist 2 2 4 2) treelist-filter (λ (x) (not (odd? x))) (treelist 1 2 3 2 4 5 2))
   (test (treelist 1 2 2 2)
         treelist-filter
-        (treelist 1 2 3 2 4 5 2)
-        #:keep (λ (x) (treelist-member? (treelist 2 1) x)))
+        (λ (x) (treelist-member? (treelist 2 1) x))
+        (treelist 1 2 3 2 4 5 2))
   (test (treelist 3 4 5)
         treelist-filter
-        (treelist 1 2 3 2 4 5 2)
-        #:keep (λ (x) (treelist-member? (treelist 4 3 5) x)))
+        (λ (x) (treelist-member? (treelist 4 3 5) x))
+        (treelist 1 2 3 2 4 5 2))
   (test (treelist 1 2 2 2)
         treelist-filter
-        (treelist 1 2 3 2 4 5 2)
-        #:skip (λ (x) (treelist-member? (treelist 4 3 5) x)))
+        (λ (x) (not (treelist-member? (treelist 4 3 5) x)))
+        (treelist 1 2 3 2 4 5 2))
   (test (treelist 3 4 5)
         treelist-filter
-        (treelist 1 2 3 2 4 5 2)
-        #:skip (λ (x) (treelist-member? (treelist 2 1) x)))
+        (λ (x) (not (treelist-member? (treelist 2 1) x)))
+        (treelist 1 2 3 2 4 5 2))
 
   (test (treelist "a" "b" "c" "d" "e")
         treelist-flatten
