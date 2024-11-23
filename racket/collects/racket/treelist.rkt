@@ -56,8 +56,6 @@
          treelist-member?
          treelist-find
          treelist-index-of
-         treelist-index-where
-         treelist-splitf
          treelist-flatten
          treelist-flatten-once
          treelist-sort
@@ -1250,25 +1248,10 @@ minimum required storage. |#
   (check-treelist 'treelist-index-of tl)
   (unless (and (procedure? eql?) (procedure-arity-includes? eql? 2))
     (raise-argument-error* 'treelist-index-of 'racket/primitive "(procedure-arity-includes/c 2)" eql?))
-  (treelist-index-where tl (λ (el) (eql? el v))))
-
-(define (treelist-index-where tl match?)
-  (check-treelist 'treelist-index-where tl)
-  (unless (and (procedure? match?) (procedure-arity-includes? match? 1))
-    (raise-argument-error* 'treelist-index-where 'racket/primitive "(procedure-arity-includes/c 1)" match?))
   (for/first ([el (in-treelist tl)]
               [i (in-naturals)]
-              #:when (match? el))
+              #:when (eql? v el))
     i))
-
-(define (treelist-splitf tl match?)
-  (check-treelist 'treelist-splitf tl)
-  (unless (and (procedure? match?) (procedure-arity-includes? match? 1))
-    (raise-argument-error* 'treelist-splitf 'racket/primitive "(procedure-arity-includes/c 1)" match?))
-  (define at (treelist-index-where tl (λ (el) (not (match? el)))))
-  (cond
-    [at (treelist-split tl at)]
-    [else (values tl empty-treelist)]))
 
 ;; input does not have to be a treelist: if so make a singleton
 (define (treelist-flatten v)
