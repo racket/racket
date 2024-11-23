@@ -5,6 +5,12 @@
 (parameterize ([current-contract-namespace
                 (make-basic-contract-namespace 'racket/contract 'racket/list)])
 
+  (contract-syntax-error-test
+   'contract-in-not-module-path
+   #'(require (contract-in (only-in racket add1)
+                           [add1 (-> number? number?)]))
+   #rx"expected a module-path")
+
   (test/spec-passed/result
    'contract-in1
    '(let ()

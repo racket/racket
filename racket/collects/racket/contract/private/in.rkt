@@ -18,35 +18,37 @@
    (λ (stx)
      (syntax-case stx ()
        [(_ m clauses ...)
-        (let ()
-          (define-values (code remappings)
-            (generate-in/out-code 'contract-in
-                                  stx
-                                  (syntax->list #'(clauses ...))
-                                  #f
-                                  #:unprotected-submodule-name #f
-                                  #:just-check-errors? 'contract-in
-                                  #:provide? #f))
+        (cond
+          [(module-path? (syntax->datum #'m))
+           (define-values (code remappings)
+             (generate-in/out-code 'contract-in
+                                   stx
+                                   (syntax->list #'(clauses ...))
+                                   #f
+                                   #:unprotected-submodule-name #f
+                                   #:just-check-errors? 'contract-in
+                                   #:provide? #f))
 
-          ;; when just-check-errors? is 'contact-in, then the `remappings`
-          ;; that we get is the names of the structs, so we can import
-          ;; them and then look at their values in the second stage
+           ;; when just-check-errors? is 'contact-in, then the `remappings`
+           ;; that we get is the names of the structs, so we can import
+           ;; them and then look at their values in the second stage
 
-          (syntax-local-lift-require-top-level-form
-           #`(require (contract-in-step-two #,stx #,remappings m clauses ...)))
-          (define orig-ids (map car remappings))
-          (define export-id (map cdr remappings))
+           (syntax-local-lift-require-top-level-form
+            #`(require (contract-in-step-two #,stx #,remappings m clauses ...)))
+           (define orig-ids (map car remappings))
+           (define export-id (map cdr remappings))
 
-          (values (for/list ([gen-id (in-list orig-ids)]
-                             [id (in-list export-id)])
-                    (import gen-id
-                            (syntax-e id)
-                            #'m
-                            0
-                            0
-                            0
-                            stx))
-                  (list (import-source #'m 0))))]))))
+           (values (for/list ([gen-id (in-list orig-ids)]
+                              [id (in-list export-id)])
+                     (import gen-id
+                             (syntax-e id)
+                             #'m
+                             0
+                             0
+                             0
+                             stx))
+                   (list (import-source #'m 0)))]
+          [else (raise-syntax-error #f "expected a module-path" #'m stx)])]))))
 
 (define-syntax contract-in-step-two
   (make-require-transformer
