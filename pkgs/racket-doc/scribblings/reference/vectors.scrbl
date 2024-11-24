@@ -492,10 +492,13 @@ Like @racket[vector-member], but finds an element using @racket[eq?].
 (define v1 (vector 4 3 2 1))
 v1
 (vector-sort v1 <)
+v1
 (vector-sort v1 < 2 #f #:key #f)
+v1
 (define v2 (vector '(4) '(3) '(2) '(1)))
 v2
 (vector-sort v2 < 1 3 #:key car)
+v2
 ]
 
 @history[#:added "6.6.0.5"]{}
