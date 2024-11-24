@@ -361,6 +361,7 @@ found, the result is @racket[#f]. For a constant-time
 (define items (treelist 1 "a" 'apple))
 (treelist-find items string?)
 (treelist-find items symbol?)
+(treelist-find items number->string)
 ]}
 
 @defproc[(treelist-index-of [tl treelist?]
@@ -635,7 +636,7 @@ noted.
 Returns @racket[#t] if @racket[v] is a @tech{mutable treelist},
 @racket[#f] otherwise.}
 
-@defproc[(mutable-treelist [v any/c] ...) treelist?]{
+@defproc[(mutable-treelist [v any/c] ...) mutable-treelist?]{
 
 Returns a @tech{mutable treelist} with @racket[v]s as its elements in order.
 
