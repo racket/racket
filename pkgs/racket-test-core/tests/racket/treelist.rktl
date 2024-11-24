@@ -89,6 +89,13 @@
   (test '(0 "a" b #:c) treelist->list small-treelist)
   (test small-treelist vector->treelist '#(0 "a" b #:c))
   (test small-treelist list->treelist '(0 "a" b #:c))
+  (test small-treelist sequence->treelist '#(0 "a" b #:c))
+  (test small-treelist sequence->treelist '(0 "a" b #:c))
+  (test small-treelist sequence->treelist (stream 0 "a" 'b '#:c))
+  (test (treelist 1 2 3 4 5) sequence->treelist (open-input-bytes (bytes 1 2 3 4 5)))
+  (test (treelist 0 1 2 3 4 5 6 7 8 9)
+        sequence->treelist
+        (in-range 0 10))
   (test (treelist '(0) '("a") '(b) '(#:c)) treelist-map small-treelist list)
   (let ([v #f])
     (test (void) treelist-for-each small-treelist (lambda (e)
@@ -102,6 +109,42 @@
   (test "a" treelist-find small-treelist string?)
   (test '#:c treelist-find small-treelist keyword?)
   (test #f treelist-find small-treelist list?)
+
+  (test 0 treelist-index-of small-treelist 0)
+  (test 1 treelist-index-of small-treelist "a")
+  (test 2 treelist-index-of small-treelist 'b)
+  (test 3 treelist-index-of small-treelist '#:c)
+  (test #f treelist-index-of small-treelist 'x)
+
+  (test (treelist 2 2 4 2) treelist-filter even? (treelist 1 2 3 2 4 5 2))
+  (test (treelist 1 3 5) treelist-filter odd? (treelist 1 2 3 2 4 5 2))
+  (test (treelist 1 3 5) treelist-filter (λ (x) (not (even? x))) (treelist 1 2 3 2 4 5 2))
+  (test (treelist 2 2 4 2) treelist-filter (λ (x) (not (odd? x))) (treelist 1 2 3 2 4 5 2))
+  (test (treelist 1 2 2 2)
+        treelist-filter
+        (λ (x) (treelist-member? (treelist 2 1) x))
+        (treelist 1 2 3 2 4 5 2))
+  (test (treelist 3 4 5)
+        treelist-filter
+        (λ (x) (treelist-member? (treelist 4 3 5) x))
+        (treelist 1 2 3 2 4 5 2))
+  (test (treelist 1 2 2 2)
+        treelist-filter
+        (λ (x) (not (treelist-member? (treelist 4 3 5) x)))
+        (treelist 1 2 3 2 4 5 2))
+  (test (treelist 3 4 5)
+        treelist-filter
+        (λ (x) (not (treelist-member? (treelist 2 1) x)))
+        (treelist 1 2 3 2 4 5 2))
+
+  (test (treelist "a" "b" "c" "d" "e")
+        treelist-flatten
+        (treelist (treelist "a") "b" (treelist "c" (treelist "d") "e") (treelist)))
+  (test (treelist "a") treelist-flatten "a")
+  (test (treelist "a" "b" "c" (treelist "d") "e")
+        treelist-append*
+        (treelist (treelist "a" "b") (treelist "c" (treelist "d") "e") (treelist)))
+
   (test (treelist 1 2 3 5) treelist-sort (treelist 5 3 1 2) <)
   (test (treelist 5 3 2 1) treelist-sort (treelist 5 3 1 2) < #:key -)
   (test (treelist 5 3 2 1) treelist-sort (treelist 5 3 1 2) < #:key - #:cache-keys? #t)

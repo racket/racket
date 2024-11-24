@@ -52,10 +52,15 @@
          list->treelist
          treelist-map
          treelist-for-each
+         treelist-filter
          treelist-member?
          treelist-find
+         treelist-index-of
+         treelist-flatten
+         treelist-append*
          treelist-sort
          in-treelist
+         sequence->treelist
          for/treelist
          for*/treelist
          chaperone-treelist
@@ -311,6 +316,15 @@
                            #f
                            #f))))])
     in-treelist))
+
+(define (sequence->treelist s)
+  (cond
+    [(treelist? s) s]
+    [(vector? s) (vector->treelist s)]
+    [(list? s) (list->treelist s)]
+    [(sequence? s) (for/treelist ([el s]) el)]
+    [else
+     (raise-argument-error* 'sequence->treelist 'racket/primitive "sequence?" s)]))
 
 (define (treelist-print type-str tl port mode)
   (case mode
@@ -1201,6 +1215,14 @@ minimum required storage. |#
   (for ([v (in-treelist tl)])
     (proc v)))
 
+(define (treelist-filter keep tl)
+  (unless (and (procedure? keep) (procedure-arity-includes? keep 1))
+    (raise-argument-error* 'treelist-filter 'racket/primitive "(procedure-arity-includes/c 1)" keep))
+  (check-treelist 'treelist-filter tl)
+  (for/treelist ([el (in-treelist tl)]
+                 #:when (keep el))
+    el))
+
 (define (treelist-member? tl v [eql? equal?])
   (check-treelist 'treelist-member? tl)
   (unless (and (procedure? eql?) (procedure-arity-includes? eql? 2))
@@ -1218,6 +1240,27 @@ minimum required storage. |#
                       #:when (match? el)
                       #:final #t)
     el))
+
+(define (treelist-index-of tl v [eql? equal?])
+  (check-treelist 'treelist-index-of tl)
+  (unless (and (procedure? eql?) (procedure-arity-includes? eql? 2))
+    (raise-argument-error* 'treelist-index-of 'racket/primitive "(procedure-arity-includes/c 2)" eql?))
+  (for/first ([el (in-treelist tl)]
+              [i (in-naturals)]
+              #:when (eql? v el))
+    i))
+
+;; input does not have to be a treelist: if so make a singleton
+(define (treelist-flatten v)
+  (cond
+    [(treelist? v) (treelist-append* (treelist-map v treelist-flatten))]
+    [else (build-treelist v)]))
+
+;; append*, concat, treelist of treelists into a single treelist
+(define (treelist-append* tlotl)
+  (check-treelist 'treelist-append* tlotl)
+  (for/fold ([acc empty-treelist]) ([tl (in-treelist tlotl)])
+    (treelist-append acc tl)))
 
 (define (check-sort-arguments who less-than? get-key)
   (unless (and (procedure? less-than?) (procedure-arity-includes? less-than? 2))
