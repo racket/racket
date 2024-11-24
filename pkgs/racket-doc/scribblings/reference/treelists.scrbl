@@ -556,7 +556,7 @@ noted.
 Returns @racket[#t] if @racket[v] is a @tech{mutable treelist},
 @racket[#f] otherwise.}
 
-@defproc[(mutable-treelist [v any/c] ...) treelist?]{
+@defproc[(mutable-treelist [v any/c] ...) mutable-treelist?]{
 
 Returns a @tech{mutable treelist} with @racket[v]s as its elements in order.
 
