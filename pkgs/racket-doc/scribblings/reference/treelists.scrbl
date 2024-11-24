@@ -329,7 +329,9 @@ Produces a treelist with only members of @racket[tl] that satisfy
 (treelist-filter odd? (treelist 1 2 3 2 4 5 2))
 (treelist-filter (λ (x) (not (even? x))) (treelist 1 2 3 2 4 5 2))
 (treelist-filter (λ (x) (not (odd? x))) (treelist 1 2 3 2 4 5 2))
-]}
+]
+
+@history[#:added "8.15.0.6"]}
 
 @defproc[(treelist-member? [tl treelist?] [v any/c] [eql? (any/c any/c . -> . any/c) equal?]) boolean?]{
 
@@ -377,7 +379,9 @@ If no such element is found, the result is @racket[#f].
 (treelist-index-of items "a")
 (treelist-index-of items 'apple)
 (treelist-index-of items 'unicorn)
-]}
+]
+
+@history[#:added "8.15.0.6"]}
 
 @defproc[(treelist-flatten [v any/c]) treelist?]{
 
@@ -388,7 +392,9 @@ Flattens a tree of nested treelists into a single treelist.
 (treelist-flatten
  (treelist (treelist "a") "b" (treelist "c" (treelist "d") "e") (treelist)))
 (treelist-flatten "a")
-]}
+]
+
+@history[#:added "8.15.0.6"]}
 
 @defproc[(treelist-append* [tlotl (treelist/c treelist?)]) treelist?]{
 
@@ -399,7 +405,9 @@ leaving any further nested treelists alone.
 #:eval the-eval
 (treelist-append*
  (treelist (treelist "a" "b") (treelist "c" (treelist "d") "e") (treelist)))
-]}
+]
+
+@history[#:added "8.15.0.6"]}
 
 @defproc[(treelist-sort [tl treelist?]
                         [less-than? (any/c any/c . -> . any/c)]
@@ -441,7 +449,9 @@ If @racket[s] is infinite, this function does not terminate.
 (sequence->treelist (stream 1 "a" 'apple))
 (sequence->treelist (open-input-bytes (bytes 1 2 3 4 5)))
 (sequence->treelist (in-range 0 10))
-]}
+]
+
+@history[#:added "8.15.0.6"]}
 
 @deftogether[(
 @defform[(for/treelist (for-clause ...) body-or-break ... body)]
