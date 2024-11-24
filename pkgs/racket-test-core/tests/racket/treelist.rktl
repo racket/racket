@@ -56,9 +56,6 @@
                                                                       (regexp-quote (symbol->string 'op))
                                                                       ":"))))
 
-(define-syntax-rule (test-values expected actual)
-  (test (call-with-values (λ () expected) list) call-with-values (λ () actual) list))
-
 (define small-treelist (treelist 0 "a" 'b '#:c))
 (define (treelist-tests small-treelist)
   (test #f treelist-empty? small-treelist)
