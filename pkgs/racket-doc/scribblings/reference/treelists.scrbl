@@ -336,13 +336,14 @@ operation takes @math{O(N)} time.
 @defproc[(treelist-find [tl treelist?] [pred (any/c . -> . any/c)]) any/c]{
 
 Checks each element of @racket[tl] with @racket[pred] until the result
-is a true value, and then returns that element. If no such element is
+is a non-false value, and then returns that element. If no such element is
 found, the result is @racket[#f]. For a constant-time
 @racket[pred], this operation takes @math{O(N)} time.
 
 @examples[
 #:eval the-eval
 (define items (treelist 1 "a" 'apple))
+(treelist-find items number->string)
 (treelist-find items string?)
 (treelist-find items symbol?)
 ]}
