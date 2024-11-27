@@ -912,6 +912,7 @@ package is created.
 
  @item{@DFlag{deps} @nonterm{behavior} --- Same as for @command-ref{install}, except that @exec{search-auto} is
        the default.}
+ @item{@DFlag{auto} --- Same as for @command-ref{install}; shorthand for @exec{--deps search-auto}.}
 
   @item{@DFlag{source} --- Same as for @command-ref{install}.}
   @item{@DFlag{binary} --- Same as for @command-ref{install}.}
