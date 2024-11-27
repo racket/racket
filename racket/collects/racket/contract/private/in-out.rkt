@@ -166,7 +166,7 @@
                                  name-before-contract
                                  #'ctrct
                                  ex-id
-                                 #'external-name
+                                 (if provide? #'external-name ex-id)
                                  #`(quote-srcloc #,srcloc-id)
                                  '#,who
                                  pos-module-source-id
