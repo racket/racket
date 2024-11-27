@@ -466,10 +466,11 @@
           ;; ----------------------------------------
           [migrate
            "Install packages installed for other version/name"
-           #:once-each
+           #:once-any
            [install-dep-flags ...
                               (dep-desc ...
                                         "where the default is `search-auto'")]
+           [#:bool auto () "Shorthand for `--deps search-auto'"]
            #:once-any
            [#:bool source () ("Strip built elements of the package before installing")]
            [#:bool binary () ("Strip source elements of the package before installing")]
@@ -503,7 +504,7 @@
                   (with-catalogs catalog
                    (pkg-migrate from-version
                                 #:from-command-line? #t
-                                #:dep-behavior deps
+                                #:dep-behavior (or (and auto 'search-auto) deps)
                                 #:force? force
                                 #:all-platforms? all-platforms
                                 #:ignore-checksums? ignore-checksums
