@@ -55,7 +55,7 @@
           )))
 
 (define (print-tests)
-  (for ([x (list 0 1 -1 12345 0.0 1.0 #t #f (λ(n) n) "" "abc" "abc\n\\"
+  (for ([x (list 0 1 -1 12345 0.0 1.0 +inf.0 -inf.0 #t #f (λ(n) n) "" "abc" "abc\n\\"
                  '() '(1 2 3) (λ(n) `(1 "2" (3) #t #f ,n)) '((((()))))
                  '#hasheq()
                  '#hasheq([x . 1])

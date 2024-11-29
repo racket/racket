@@ -166,6 +166,10 @@
           [(eq? x #f)     (write-bytes #"false" o)]
           [(eq? x #t)     (write-bytes #"true" o)]
           [(eq? x jsnull) (write-bytes #"null" o)]
+          ;; render "inf" as "1e+9999" and "-inf" as "-1e+9999" to to overflow the parser's
+          ;; float type and result in proper inf and -inf at the end of decoding
+          [(equal? x +inf.0) (write-bytes #"1e9999" o)]
+          [(equal? x -inf.0) (write-bytes #"-1e999" o)]
           [(string? x) (write-json-string x)]
           [(list? x)
            (write-bytes #"[" o)
