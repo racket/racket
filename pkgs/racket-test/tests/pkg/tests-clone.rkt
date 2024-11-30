@@ -78,7 +78,7 @@
         $ (~a "cd " (build-path clone-dir "a") "; git add .; git commit -m local")
         $ "racket -l a" =stdout> "2\n"
         $ "racket -l a/alt" =stdout> "'one\n"
-        $ (~a "raco pkg update a") =exit> 1 =stderr> #rx"fast-forward"
+        $ "LC_ALL=C raco pkg update a" =exit> 1 =stderr> #rx"fast-forward"
         $ (~a "cd "  (build-path clone-dir "a") "; git pull --rebase")
         $ (~a "raco pkg update a")
         $ "racket -l a" =stdout> "3\n"
