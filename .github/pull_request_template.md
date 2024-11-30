@@ -8,7 +8,7 @@ For more information about how to contribute please see
 Bug fixes and new features should include tests.
 -->
 
-##### Checklist
+## Checklist
 <!-- Remove items that do not apply. For completed items, change [ ] to [x]. -->
 
 - [ ] Bugfix
@@ -16,5 +16,5 @@ Bug fixes and new features should include tests.
 - [ ] tests included
 - [ ] documentation
 
-### Description of change
+## Description of change
 <!-- Please provide a description of the change here. -->
