@@ -29,8 +29,8 @@
 
 (define-forms parse
   match match* match/values
-  match-lambda match-lambda* match-lambda**
-  match-λ match-λ* match-λ**
+  match-lambda match-lambda* match-lambda** match-case-lambda
+  match-λ match-λ* match-λ** match-case-λ
   match-let match-let*
   match-let-values match-let*-values
   match-define match-define-values

@@ -1031,5 +1031,20 @@
                     [(forty-two-pat) #t])
                   #t))
 
+   (test-case
+       "a clojure-style reduce function"
+     (define reduce
+       (match-case-lambda
+        ((f '()) (f))
+        ((f `(,first ,@rest))
+         (reduce f first rest))
+        ((f v `(,first ,@rest))
+         (reduce f (f v first) rest))
+        ((f v '()) v)))
+     (check-equal? (reduce + '(1 2 3 4)) 10)
+     (check-equal? (reduce + 1 '(2 3 4)) 10)
+     (check-equal? (reduce + '()) 0)
+     (check-equal? (reduce + 1 '()) 1)
+     (check-equal? (reduce + '(1)) 1))
 
 ))

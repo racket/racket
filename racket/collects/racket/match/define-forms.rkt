@@ -15,8 +15,8 @@
 
 (define-syntax-rule (define-forms parse-id
                       match match* match/values
-                      match-lambda match-lambda* match-lambda**
-                      match-λ match-λ* match-λ**
+                      match-lambda match-lambda* match-lambda** match-case-lambda
+                      match-λ match-λ* match-λ** match-case-λ
                       match-let match-let*
                       match-let-values match-let*-values
                       match-define match-define-values
@@ -26,10 +26,11 @@
   (...
    (begin
      (provide match match* match/values
-              match-lambda match-lambda* match-lambda**
+              match-lambda match-lambda* match-lambda** match-case-lambda
               (rename-out [match-lambda   match-λ]
                           [match-lambda*  match-λ*]
-                          [match-lambda** match-λ**])
+                          [match-lambda** match-λ**]
+                          [match-case-lambda match-case-λ])
               match-let match-let*
               match-let-values match-let*-values
               match-define match-define-values
@@ -88,6 +89,31 @@
                          [body #`(match*/derived vars #,stx clauses ...)])
             (syntax/loc stx (lambda vars body)))]))
 
+     (define-syntax (match-case-lambda stx)
+       (syntax-parse stx
+         [(_ [(pats ...) . rhs] ...)
+          (when (null? (syntax-e #'(rhs ...)))
+            (raise-syntax-error #f "expected at least one clause to match-case-lambda" stx))
+          (define (partition lst get-key make-hash)
+            (let loop ((table (make-hash))
+                       (list lst))
+              (if (null? list)
+                  (hash-map/copy table (lambda (k v) (values k (reverse v))))
+                  (let* ((first (car list))
+                         (key (get-key first)))
+                    (loop (hash-set table key (cons first (hash-ref table key null)))
+                          (cdr list))))))
+          (with-syntax* ([((len clause ...) ...)
+                          (hash->list
+                           (partition
+                            (map syntax-e (syntax-e #'(((pats ...) . rhs) ...)))
+                            (lambda (stx-pair) (length (syntax-e (car stx-pair))))
+                            make-hasheq))]
+                         [((var ...) ...)
+                          (map (lambda (len) (build-list len (lambda (_) (generate-temporary)))) (syntax->datum #'(len ...)))]
+                         [case-lambda-clauses #`(((var ...) (match*/derived (var ...) #,stx clause ...))
+                                                 ...)])
+            (quasisyntax/loc stx (case-lambda #,@#'case-lambda-clauses)))]))
 
      (define-syntax (match-let-values stx)
        (syntax-parse stx
