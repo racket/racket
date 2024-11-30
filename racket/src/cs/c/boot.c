@@ -62,6 +62,14 @@ int boot_open(const char *path, int flags) {
 # define boot_open open
 #endif
 
+static void check_boot_open(int fd, const char *name, const char *path)
+{
+  if (fd == -1) {
+    fprintf(stderr, "failed opening %s boot file: %s\n", name, path);
+    exit(1);
+  }
+}
+
 static ptr Sbytevector(char *s)
 {
   iptr len = strlen(s);
@@ -165,6 +173,7 @@ void racket_boot(racket_boot_arguments_t *ba)
 
     if (ba->boot1_path) {
       fd1 = boot_open(ba->boot1_path, O_RDONLY | BOOT_O_BINARY);
+      check_boot_open(fd1, "petite", ba->boot1_path);
       Sregister_boot_file_fd_region("petite", fd1, ba->boot1_offset, ba->boot1_len, close_fd1);
     } else {
       Sregister_boot_file_bytes("petite", (char *)ba->boot1_data + ba->boot1_offset, ba->boot1_len);
@@ -174,8 +183,10 @@ void racket_boot(racket_boot_arguments_t *ba)
     if (ba->boot2_path) {
       if (!close_fd1)
         fd2 = fd1;
-      else
+      else {
         fd2 = boot_open(ba->boot2_path, O_RDONLY | BOOT_O_BINARY);
+        check_boot_open(fd2, "scheme", ba->boot2_path);
+      }
       Sregister_boot_file_fd_region("scheme", fd2, ba->boot2_offset, ba->boot2_len, close_fd2);
     } else {
       Sregister_boot_file_bytes("scheme", (char *)ba->boot2_data + ba->boot2_offset, ba->boot2_len);
@@ -189,8 +200,10 @@ void racket_boot(racket_boot_arguments_t *ba)
 
         if (!close_fd2)
           fd3 = fd2;
-        else
+        else {
           fd3 = boot_open(ba->boot3_path, O_RDONLY | BOOT_O_BINARY);
+          check_boot_open(fd2, "racket", ba->boot3_path);
+        }
         Sregister_boot_file_fd_region("racket", fd3, ba->boot3_offset, ba->boot3_len, 1);
       } else {
         Sregister_boot_file_bytes("racket", (char *)ba->boot3_data + ba->boot3_offset, ba->boot3_len);
