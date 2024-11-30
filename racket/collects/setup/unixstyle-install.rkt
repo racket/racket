@@ -523,7 +523,12 @@
     [(eq? missing 'error)
      (error (format "  missing source path ~s, aborting..." src))]
     [(eq? missing 'skip)
-     (printf "  missing source path ~s, skipping...\n" src)]
+     (cond
+       [(and (not merge?) (file-or-directory-type dst))
+        (printf "  missing source path ~s, deleting...\n" src)
+        (rm dst)]
+       [else
+        (printf "  missing source path ~s, skipping...\n" src)])]
     [else (error 'move/copy-tree "internal error, unknown mode: ~e" missing)]))
 
 ;; --------------------------------------------------------------------------
