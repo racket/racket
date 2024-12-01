@@ -1,4 +1,4 @@
-#   Copyright (C) 2003, 2005, 2008, 2009, 2010, 2011, 2014, 2019 Free Software Foundation, Inc.
+#   Copyright (C) 2003, 2005, 2008, 2009, 2010, 2011, 2014, 2019, 2022 Free Software Foundation, Inc.
 
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -24,6 +24,11 @@ load_lib libgloss.exp
 load_gcc_lib target-libpath.exp
 load_gcc_lib wrapper.exp
 
+proc check_effective_target_gccbug { } {
+    global has_gccbug
+    return $has_gccbug
+}
+
 # Return 1 if the target matches the effective target 'arg', 0 otherwise.
 # This can be used with any check_* proc that takes no argument and
 # returns only 1 or 0.  It could be used with check_* procs that take
@@ -40,7 +45,7 @@ proc is-effective-target { arg } {
     if { [info procs check_effective_target_${arg}] != [list] } {
 	set selected [check_effective_target_${arg}]
     } else {
-	error "unknown effective target keyword `$arg'" 
+	error "unknown effective target keyword `$arg'"
     }
     verbose "is-effective-target: $arg $selected" 2
     return $selected
@@ -191,7 +196,7 @@ if { [info procs saved-dg-process-target] == [list] } {
 		return "N"
 	    }
 	    return [dg-process-target-1 $xfail_selector]
-	    
+
 	}
 	return [dg-process-target-1 $selector]
     }
@@ -216,6 +221,13 @@ proc libffi-dg-test-1 { target_compile prog do_what extra_tool_flags } {
 	set output_match [lreplace $output_match 1 1 $x]
     }
 
+    if { [ istarget "wasm32-*-*" ] } {
+        # emscripten will get confused if told to build as .exe
+        set exec_suffix ""
+    } else {
+        set exec_suffix ".exe"
+    }
+
     # Set up the compiler flags, based on what we're going to do.
 
     set options [list]
@@ -226,7 +238,7 @@ proc libffi-dg-test-1 { target_compile prog do_what extra_tool_flags } {
 	}
 	"link" {
 	    set compile_type "executable"
-	    set output_file "[file rootname [file tail $prog]].exe"
+	    set output_file "[file rootname [file tail $prog]]$exec_suffix"
 	    # The following line is needed for targets like the i960 where
 	    # the default output file is b.out.  Sigh.
 	}
@@ -235,7 +247,7 @@ proc libffi-dg-test-1 { target_compile prog do_what extra_tool_flags } {
 	    # FIXME: "./" is to cope with "." not being in $PATH.
 	    # Should this be handled elsewhere?
 	    # YES.
-	    set output_file "./[file rootname [file tail $prog]].exe"
+	    set output_file "./[file rootname [file tail $prog]]$exec_suffix"
 	    # This is the only place where we care if an executable was
 	    # created or not.  If it was, dg.exp will try to run it.
 	    remote_file build delete $output_file;
@@ -264,6 +276,10 @@ proc libffi-dg-test { prog do_what extra_tool_flags } {
 proc libffi-dg-prune { target_triplet text } {
     # We get this with some qemu emulated systems (eg. ppc64le-linux-gnu)
     regsub -all "(^|\n)\[^\n\]*unable to perform all requested operations" $text "" text
+    # We get this from sparc64 linux systems
+    regsub -all "(^|\n)\[^\n\]*warning: .* has a LOAD segment with RWX permissions" $text "" text
+    # Ignore Emscripten INFO messages
+    regsub -all "(^|\n)(cache|shared):INFO:\[^\n\]*" $text "" text
     return $text
 }
 
@@ -287,9 +303,6 @@ proc libffi-init { args } {
     verbose "libffi $blddirffi"
 
     # Which compiler are we building with?
-    set tmp [grep "$blddirffi/config.log" "^ax_cv_c_compiler_vendor.*$"]
-    regexp -- {^[^=]*=(.*)$} $tmp nil compiler_vendor
-
     if { [string match $compiler_vendor "gnu"] } {
         set gccdir [lookfor_file $tool_root_dir gcc/libgcc.a]
         if {$gccdir != ""} {
@@ -374,7 +387,9 @@ proc libffi_target_compile { source dest type options } {
 
     if { [istarget "*-*-darwin9*"] || [istarget "*-*-darwin1*"]
 	 || [istarget "*-*-darwin2*"] } {
-	lappend options "additional_flags=-Wl,-allow_stack_execute"
+	# lappend options "additional_flags=-Wl,-allow_stack_execute"
+        lappend options "additional_flags=-Wno-unused-command-line-argument"
+        lappend options "additional_flags=-Wl,-search_paths_first"
     }
 
     # If you're building the compiler with --prefix set to a place
@@ -392,17 +407,29 @@ proc libffi_target_compile { source dest type options } {
 
     lappend options "libs= -lffi"
 
-    if { [string match "aarch64*-*-linux*" $target_triplet] } {
-	lappend options "libs= -lpthread"
+    if { ![string match "*android*" $target_triplet] } {
+
+        if { [string match "aarch64*-*-linux*" $target_triplet] } {
+            lappend options "libs= -lpthread"
+        }
+
+        # this may be required for g++, but just confused clang.
+        if { [string match "*.cc" $source] } {
+            lappend options "c++"
+            if { [string match "*-*-darwin*" $target_triplet] } {
+                lappend options "libs= -lc++"
+            }
+        }
+
+        if { [string match "arc*-*-linux*" $target_triplet] } {
+            lappend options "libs= -lpthread"
+        }
     }
 
-    # this may be required for g++, but just confused clang.
-    if { [string match "*.cc" $source] } {
-        lappend options "c++"
-    }
-
-    if { [string match "arc*-*-linux*" $target_triplet] } {
-	lappend options "libs= -lpthread"
+    # emscripten emits this warning while building the feature test
+    # which causes it to be seen as unsupported.
+    if { [string match "wasm32-*" $target_triplet] } {
+        lappend options "additional_flags=-Wno-unused-command-line-argument"
     }
 
     verbose "options: $options"
@@ -477,13 +504,14 @@ proc libffi-dg-runtest { testcases default-extra-flags } {
 
 proc run-many-tests { testcases extra_flags } {
     global compiler_vendor
+    global has_gccbug
     global env
     switch $compiler_vendor {
       "clang" {
         set common "-W -Wall"
         if [info exists env(LIBFFI_TEST_OPTIMIZATION)] {
 	  set optimizations [ list $env(LIBFFI_TEST_OPTIMIZATION) ]
-        } else { 
+        } else {
           set optimizations { "-O0" "-O2" }
         }
       }
@@ -491,7 +519,7 @@ proc run-many-tests { testcases extra_flags } {
         set common "-W -Wall -Wno-psabi"
         if [info exists env(LIBFFI_TEST_OPTIMIZATION)] {
 	  set optimizations [ list $env(LIBFFI_TEST_OPTIMIZATION) ]
-        } else { 
+        } else {
           set optimizations { "-O0" "-O2" }
         }
       }
@@ -500,7 +528,7 @@ proc run-many-tests { testcases extra_flags } {
         set common ""
         if [info exists env(LIBFFI_TEST_OPTIMIZATION)] {
 	  set optimizations [ list $env(LIBFFI_TEST_OPTIMIZATION) ]
-        } else { 
+        } else {
           set optimizations { "" }
         }
       }
@@ -538,8 +566,22 @@ proc run-many-tests { testcases extra_flags } {
         foreach opt $optimizations {
             foreach abi $abis {
                 set options [concat $common $opt $abi]
-                verbose "Testing $testname, $options" 1
-                dg-test $test $options ""
+		set has_gccbug false;
+		if { [string match $compiler_vendor "gnu"] \
+			 && [string match "*MSABI*" $abi] \
+			 && ( ( [string match "*DGTEST=57 *" $common] \
+				    && [string match "*call.c*" $testname] ) \
+				  || ( [string match "*DGTEST=54 *" $common] \
+					   && [string match "*callback*" $testname] ) \
+				  || [string match "*DGTEST=55 *" $common] \
+				  || [string match "*DGTEST=56 *" $common] ) } then {
+		    if [libffi_feature_test "#if (__GNUC__ < 9) || ((__GNUC__ == 9) && (__GNUC_MINOR__ < 3))"] {
+			set has_gccbug true;
+		    }
+		}
+		verbose "Testing $testname, $options" 1
+		verbose "has_gccbug = $has_gccbug" 1
+		dg-test $test $options ""
             }
         }
     }
@@ -575,7 +617,7 @@ proc check-flags { args } {
     # compare them to the actual options.
     if { [string compare [lindex $args 2] "*"] == 0
 	 && [string compare [lindex $args 3] "" ] == 0 } {
-	set result 1    
+	set result 1
     } else {
 	# The target list might be an effective-target keyword, so replace
 	# the original list with "*-*-*", since we already know it matches.

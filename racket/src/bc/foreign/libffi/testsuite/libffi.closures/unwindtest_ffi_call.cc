@@ -14,6 +14,7 @@ static int checking(int a __UNUSED__, short b __UNUSED__,
   throw 9;
 }
 
+extern "C"
 int main (void)
 {
   ffi_cif cif;
