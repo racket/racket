@@ -427,6 +427,7 @@
        (define old (or (and (file-exists? src)
                             (call-with-input-file src read))
                        (hash)))
+       (make-dir* configdir)
        (with-output-to-file src #:exists 'truncate/replace
          (lambda ()
            (define handled (make-hash))
