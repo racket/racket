@@ -1551,7 +1551,12 @@
             [(start-skip? e)
              (set! skipping? #t)
              null]
-            [skipping?
+            [(and skipping?
+		  (or (not (eq? 'windows (system-type)))
+		      (and
+		       (not (extern-c? e))
+		       (not (and (typedef? e)
+				 (msvc-c-assert? e))))))
              e]
 
             ;; START_XFORM_SUSPEND and END_XFORM_SUSPEND:
@@ -1583,10 +1588,7 @@
              e]
 
             ;; process 'extern "C"' blocks
-            [(and (>= (length e) 3)
-                  (eq? (tok-n (car e)) 'extern)
-                  (member (tok-n (cadr e)) '("C" "C++"))
-                  (braces? (caddr e)))
+            [(extern-c? e)
              (list* (car e)
                     (cadr e)
                     (let ([body-v (caddr e)])
@@ -1624,7 +1626,8 @@
                (printf "/* TYPEDEF */\n"))
 	     (let ([e2 (skip-declspec-align e)])
                (if (or (simple-unused-def? e2)
-                       (unused-struc-typedef? e2))
+                       (unused-struc-typedef? e2)
+		       (msvc-c-assert? e2))
                    null
                    (begin
                      (when pgc?
@@ -1731,6 +1734,12 @@
 
             [else (print-struct #t)
                   (error 'xform "unknown form: ~s" e)]))
+
+	(define (extern-c? e)
+	  (and (>= (length e) 3)
+               (eq? (tok-n (car e)) 'extern)
+               (member (tok-n (cadr e)) '("C" "C++"))
+               (braces? (caddr e))))
 
         (define (empty-decl? e)
           (and (= 1 (length e))
@@ -1891,6 +1900,11 @@
 	  (if (compiler-pragma? e)
 	      (skip-compiler-pragmas (cddr e))
 	      e))
+
+	(define (msvc-c-assert? e2)
+	  (and ((length e2) . > . 3)
+	       (eq? 'char (tok-n (cadr e2)))
+	       (eq? '__C_ASSERT__ (tok-n (caddr e2)))))
 
         (define (struct-decl? e)
 	  (let ([e (skip-declspec-align e)])
