@@ -1026,6 +1026,7 @@ user_get_or_peek_bytes(Scheme_Input_Port *port,
       uip->reuse_str = NULL;
     } else {
       char *vb;
+      if (size > 8191) size = 8191;
       vb = scheme_malloc_atomic(size + 1);
       memset(vb, 0, size + 1); /* must initialize for security */
       bstr = scheme_make_sized_byte_string(vb, size, 0);

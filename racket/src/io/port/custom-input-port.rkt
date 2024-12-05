@@ -60,14 +60,15 @@
   (define (protect-in dest-bstr dest-start dest-end copy? user-read-in)
     ;; We don't trust `user-read-in` to refrain from modifying its
     ;; byte-string argument after it returns, and the `user-read-in`
-    ;; interface doesn't deal with start and end positions, so copy`
-    ;; dest-bstr` if needed
+    ;; interface doesn't deal with start and end positions, so copy
+    ;; `dest-bstr` if needed. But because we have to make this copy,
+    ;; we may limit how much we ask for.
     (define len (- dest-end dest-start))
     (define user-bstr
       (if (or copy?
               (not (zero? dest-start))
               (not (= len dest-end)))
-          (make-bytes len)
+          (make-bytes (min len 8192))
           dest-bstr))
     (define n (user-read-in user-bstr))
     (cond

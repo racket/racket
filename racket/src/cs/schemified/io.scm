@@ -25967,7 +25967,8 @@
                                                                       (=
                                                                        len_0
                                                                        dest-end_0)))))
-                                                             (make-bytes len_0)
+                                                             (make-bytes
+                                                              (min len_0 8192))
                                                              dest-bstr_0)))
                                                       (let ((n_0
                                                              (|#%app|
