@@ -1394,7 +1394,7 @@ static int all_float_types(GC_CAN_IGNORE ffi_type *libffi_type)
     return FLOAT_KIND_DOUBLE;
   if (libffi_type == &ffi_type_float)
     return FLOAT_KIND_FLOAT;
-  if (libffi_type == &ffi_type_longdouble)
+  if (libffi_type == &ffi_type_slongdouble)
     return FLOAT_KIND_EXT;
 
   if (libffi_type->type == FFI_TYPE_STRUCT) {
