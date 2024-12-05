@@ -65,7 +65,7 @@ for arg in $*; do
             exec "$dir/cs/c/configure" --help
             ;;
         CC_FOR_BUILD=*)
-            CC_FOR_BUILD=`echo $1 | sed -e 's/^CC_FOR_BUILD=//'`
+            CC_FOR_BUILD=`echo $arg | sed -e 's/^CC_FOR_BUILD=//'`
             ;;
     esac
 done
