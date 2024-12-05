@@ -474,8 +474,8 @@
          (define auto-bc-targets
            (configured-targets-at (hash
                                    'configure (at-source "configure")
-                                   'inputs (list (at-source "Mf-config.in"))
-                                   'outputs (list (at-dir "local/Mf-config"))
+                                   'inputs (list (at-source "Makefile.in"))
+                                   'outputs (list (at-dir "local/Makefile"))
                                    'vars (hash))))
          (define auto-racket (find-target "racketcgc" auto-bc-targets))
          (build auto-racket)
