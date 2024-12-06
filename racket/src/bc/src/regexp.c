@@ -6174,6 +6174,13 @@ Scheme_Object *regexp_lookbehind(int argc, Scheme_Object *argv[])
   return scheme_make_integer(((regexp *)argv[0])->maxlookback);
 }
 
+Scheme_Object *regexp_capture_group_count(int argc, Scheme_Object *argv[])
+{
+  if (!SAME_TYPE(SCHEME_TYPE(argv[0]), scheme_regexp_type))
+    scheme_wrong_contract("regexp-capture-group-count", "(or/c regexp? byte-regexp?)", 0, argc, argv);
+  return scheme_make_integer(((regexp *)argv[0])->nsubexp - 1);
+}
+
 Scheme_Object *scheme_regexp_source(Scheme_Object *re)
 {
   return ((regexp *)re)->source;
@@ -6230,6 +6237,7 @@ void scheme_regexp_initialize(Scheme_Startup_Env *env)
   ADD_FOLDING_PRIM("byte-pregexp?",                         byte_pregexp_p,  1, 1, 1, env);
 
   ADD_FOLDING_PRIM("regexp-max-lookbehind",                 regexp_lookbehind, 1, 1, 1, env);
+  ADD_FOLDING_PRIM("regexp-capture-group-count",            regexp_capture_group_count, 1, 1, 1, env);
 }
 
 void scheme_init_regexp_places()

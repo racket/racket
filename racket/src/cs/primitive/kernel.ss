@@ -784,6 +784,7 @@
   [real-part (known-procedure/folding 2)]
   [real? (known-procedure/pure/folding 2)]
   [regexp (known-procedure/no-prompt 6)]
+  [regexp-capture-group-count (known-procedure/single-valued 2)]
   [regexp-match (known-procedure/single-valued 124)]
   [regexp-match-peek (known-procedure/single-valued 124)]
   [regexp-match-peek-immediate (known-procedure/single-valued 124)]

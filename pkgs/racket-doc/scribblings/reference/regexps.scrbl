@@ -351,6 +351,23 @@ the start of the input or of a line.
 (regexp-max-lookbehind #rx"^")
 ]}
 
+
+@defproc[(regexp-capture-group-count [pattern (or/c regexp? byte-regexp?)])
+         exact-nonnegative-integer?]{
+
+Returns the number of capture groups that are in @racket[pattern],
+which corresponds to one less than the length of the list returned by
+@racket[regexp-match] for a successful match to @racket[pattern].
+
+@examples[
+(regexp-capture-group-count #rx"abcd")
+(regexp-capture-group-count #rx"a(b*c)(d*)")
+(regexp-capture-group-count #rx"a(?:bc)*d")
+]
+
+@history[#:added "8.15.0.8"]}
+
+
 @;------------------------------------------------------------------------
 @section{Regexp Matching}
 

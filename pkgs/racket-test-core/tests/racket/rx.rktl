@@ -2177,4 +2177,26 @@
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(test 0 regexp-capture-group-count #rx"x")
+(test 1 regexp-capture-group-count #rx"(x)")
+(test 0 regexp-capture-group-count #rx"(?:x)")
+(test 3 regexp-capture-group-count #rx".((x))().")
+
+(test 0 regexp-capture-group-count #rx#"x")
+(test 1 regexp-capture-group-count #rx#"(x)")
+(test 0 regexp-capture-group-count #rx#"(?:x)")
+(test 3 regexp-capture-group-count #rx#".((x))().")
+
+(test 0 regexp-capture-group-count #px"x")
+(test 1 regexp-capture-group-count #px"(x)")
+(test 0 regexp-capture-group-count #px"(?:x)")
+(test 3 regexp-capture-group-count #px".((x))().")
+
+(test 0 regexp-capture-group-count #px#"x")
+(test 1 regexp-capture-group-count #px#"(x)")
+(test 0 regexp-capture-group-count #px#"(?:x)")
+(test 3 regexp-capture-group-count #px#".((x))().")
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (report-errs)
