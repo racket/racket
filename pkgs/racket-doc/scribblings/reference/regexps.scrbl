@@ -104,6 +104,17 @@ The Unicode categories follow.
 
 @category-table
 
+When a character regexp with @litchar{.} is used with a byte string or
+input port, the @litchar{.} matches only a valid UTF-8 encoding in the
+input. A @litchar{.} in a byte regexp matches any byte (except a
+newline in multi mode). A property specified with @litchar{\P} or
+@litchar{\p} matches only a valid UTF-8 encoding, whether it is
+written in a character regexp or byte regexp. Similarly, @litchar{\X}
+matches only valid UTF-8 encoding sequences, and it will not match a
+prefix of a sequence (even if matching only a prefix would allow the
+rest of the pattern to match remaining input), but a grapheme-cluster
+sequence can be terminated by an invalid UTF-8 encoding.
+
 @rx-examples[
 [1 #rx"a|b" "cat"]
 [2 #rx"[at]" "cat"]
@@ -143,6 +154,8 @@ The Unicode categories follow.
 [36 #rx"(?(?<=c)a|b)+" "cabal"]
 [37 #rx"[^^]+" "^cat^"]
 ]
+
+@history[#:changed "8.15.0.8" @elem{Added @litchar{\X} grapheme cluster pattern.}]
 
 @;------------------------------------------------------------------------
 @section{Additional Syntactic Constraints}

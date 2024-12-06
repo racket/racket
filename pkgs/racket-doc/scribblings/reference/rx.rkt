@@ -43,6 +43,7 @@
             |  \B                 Match where _\b_ does not                       #px 18
             |  \p{Property}       Match (UTF-8 encoded) in Property               #px 19
             |  \P{Property}       Match (UTF-8 encoded) not in Property           #px 20
+            |  \X                 Match (UTF-8 encoded) grapheme cluster          #px
   Literal  :== Any character except _(_, _)_, _*_, _+_, _?_, _[_, _._, _^_, _\_, or _|_                #rx
   Literal  :== Any character except _(_, _)_, _*_, _+_, _?_, _[_, _]_, _{_, _}_, _._, _^_, _\_, or _|_ #px
             |  \Aliteral                Match Aliteral                            #ot 21
@@ -298,7 +299,9 @@
   \B : <0,0>
 
   \p{Property} : <1,6>
-  \P{Property} : <1,6>})
+  \P{Property} : <1,6>
+
+  \X : <1,+inf.0>})
 
 (define (subscripts i)
   (regexp-case i

@@ -346,6 +346,8 @@
        c2
        [(#\p #\P)
         (parse-unicode-categories c2 s (add1 pos2) config)]
+       [(#\X)
+        (values rx:unicode-grapheme (add1 pos2))]
        [(#\b)
         (values rx:word-boundary (add1 pos2))]
        [(#\B)

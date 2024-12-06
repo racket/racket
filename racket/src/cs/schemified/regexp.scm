@@ -866,6 +866,7 @@
 (define rx:line-end 'line-end)
 (define rx:word-boundary 'word-boundary)
 (define rx:not-word-boundary 'not-word-boundary)
+(define rx:unicode-grapheme 'unicode-grapheme)
 (define finish_2124
   (make-struct-type-install-properties
    '(rx:alts)
@@ -1298,7 +1299,9 @@
                 (rx:conditional-needs-backtrack? rx_0)
                 (if (rx:cut? rx_0)
                   (rx:cut-needs-backtrack? rx_0)
-                  (if (rx:unicode-categories? rx_0) #t #f))))))))))
+                  (if (rx:unicode-categories? rx_0)
+                    #t
+                    (if (eq? rx_0 'unicode-grapheme) #t #f)))))))))))
 (define rx-range
   (lambda (range_0 limit-c_0)
     (let ((c1_0 (range-singleton range_0)))
@@ -2694,20 +2697,24 @@
             (let ((tmp_0 (integer->char c2_0)))
               (if (if (eqv? tmp_0 '#\x70) #t (eqv? tmp_0 '#\x50))
                 (parse-unicode-categories c2_0 s_0 (add1 pos2_0) config_0)
-                (if (eqv? tmp_0 '#\x62)
-                  (values 'word-boundary (add1 pos2_0))
-                  (if (eqv? tmp_0 '#\x42)
-                    (values 'not-word-boundary (add1 pos2_0))
-                    (call-with-values
-                     (lambda () (parse-class s_0 pos2_0 config_0))
-                     (lambda (success?_0 range_0 pos3_0)
-                       (if success?_0
-                         (values (rx-range range_0 (chytes-limit s_0)) pos3_0)
-                         (parse-error
-                          s_0
-                          pos2_0
-                          config_0
-                          "illegal alphabetic escape"))))))))
+                (if (eqv? tmp_0 '#\x58)
+                  (values 'unicode-grapheme (add1 pos2_0))
+                  (if (eqv? tmp_0 '#\x62)
+                    (values 'word-boundary (add1 pos2_0))
+                    (if (eqv? tmp_0 '#\x42)
+                      (values 'not-word-boundary (add1 pos2_0))
+                      (call-with-values
+                       (lambda () (parse-class s_0 pos2_0 config_0))
+                       (lambda (success?_0 range_0 pos3_0)
+                         (if success?_0
+                           (values
+                            (rx-range range_0 (chytes-limit s_0))
+                            pos3_0)
+                           (parse-error
+                            s_0
+                            pos2_0
+                            config_0
+                            "illegal alphabetic escape")))))))))
             (values c2_0 (add1 pos2_0))))))))
 (define parse-mode
   (lambda (s_0 pos_0 config_0)
@@ -3050,10 +3057,14 @@
                                                      (if (rx:unicode-categories?
                                                           rx_1)
                                                        (values 1 4 0)
-                                                       (error
-                                                        'validate
-                                                        "internal error: ~s"
-                                                        rx_1))))))))))))))))))))))
+                                                       (if (eq?
+                                                            rx_1
+                                                            'unicode-grapheme)
+                                                         (values 1 +inf.0 0)
+                                                         (error
+                                                          'validate
+                                                          "internal error: ~s"
+                                                          rx_1)))))))))))))))))))))))
                 (validate_0 rx_0)))
              (lambda (min-len_0 max-len_0 max-lookbehind_0)
                (begin
@@ -5479,6 +5490,63 @@
                       (let ((app_0 (add1 pos_1)))
                         (loop_0 app_0 (cons b_0 accum_0))))))))))))
        (loop_0 pos_0 null)))))
+(define unicode-grapheme-matcher
+  (lambda (next-m_0)
+    (lambda (s_0 pos_0 start_0 limit_0 end_0 state_0 stack_0)
+      (letrec*
+       ((loop_0
+         (|#%name|
+          loop
+          (lambda (pos_1 accum_0 end-pos_0 state_1)
+            (let ((b_0
+                   (if (bytes? s_0)
+                     (if (< pos_1 limit_0) (unsafe-bytes-ref s_0 pos_1) #f)
+                     (if (lazy-bytes-before-end? s_0 pos_1 limit_0)
+                       (lazy-bytes-ref s_0 pos_1)
+                       #f))))
+              (let ((stop_0
+                     (|#%name|
+                      stop
+                      (lambda ()
+                        (if (eqv? state_1 0)
+                          #f
+                          (|#%app|
+                           next-m_0
+                           s_0
+                           end-pos_0
+                           start_0
+                           limit_0
+                           end_0
+                           state_1
+                           stack_0))))))
+                (if (not b_0)
+                  (stop_0)
+                  (let ((c_0 (bytes->char/utf-8 b_0 accum_0)))
+                    (if (char? c_0)
+                      (call-with-values
+                       (lambda () (char-grapheme-step c_0 state_1))
+                       (lambda (ended?_0 new-state_0)
+                         (if ended?_0
+                           (|#%app|
+                            next-m_0
+                            s_0
+                            (if (eqv? new-state_0 0) (add1 pos_1) end-pos_0)
+                            start_0
+                            limit_0
+                            end_0
+                            state_1
+                            stack_0)
+                           (let ((app_0 (add1 pos_1)))
+                             (loop_0 app_0 null (add1 pos_1) new-state_0)))))
+                      (if (eq? c_0 'fail)
+                        (stop_0)
+                        (let ((app_0 (add1 pos_1)))
+                          (loop_0
+                           app_0
+                           (cons b_0 accum_0)
+                           end-pos_0
+                           state_1))))))))))))
+       (loop_0 pos_0 null #f 0)))))
 (define 1/compile
   (|#%name|
    compile
@@ -5770,10 +5838,15 @@
                                                           (rx:unicode-categories-match?
                                                            rx_1)
                                                           next-m_0)
-                                                         (error
-                                                          'compile/bt
-                                                          "internal error: unrecognized ~s"
-                                                          rx_1))))))))))))))))))))))))))))
+                                                         (if (eq?
+                                                              rx_1
+                                                              'unicode-grapheme)
+                                                           (unicode-grapheme-matcher
+                                                            next-m_0)
+                                                           (error
+                                                            'compile/bt
+                                                            "internal error: unrecognized ~s"
+                                                            rx_1)))))))))))))))))))))))))))))
       (compile_0 rx_0 done-m)))))
 (define compile*/maybe
   (lambda (rx_0 min_0 max_0)

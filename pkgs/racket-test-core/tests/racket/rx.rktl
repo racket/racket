@@ -1760,6 +1760,29 @@
 (test #f regexp-match #px"\t|\\p{Zs}" "a")
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;  Unicode grapheme cluster
+
+(test '((0 . 1)) regexp-match-positions #px"\\X" "abc")
+(test '((0 . 2)) regexp-match-positions #px"\\X" "\u30\u308")
+(test '((0 . 2)) regexp-match-positions #px"\\X" "\u30\u308 ")
+(test '((0 . 3)) regexp-match-positions #px"\\X" "\u30\u308\u300")
+(test '((0 . 3)) regexp-match-positions #px"\\X" "\u30\u308\u300 ")
+(test '((0 . 4)) regexp-match-positions #px".\\X" "x\u30\u308\u300 ")
+(test '((0 . 6)) regexp-match-positions #px"\\X" "\U1F476\U1F3FF\U0308\U200D\U1F476\U1F3FF")
+(test '((0 . 21)) regexp-match-positions #px"\\X" (string->bytes/utf-8 "\U1F476\U1F3FF\U0308\U200D\U1F476\U1F3FF"))
+
+(test '((0 . 3)) regexp-match-positions #px"\\X*" "abc")
+(test '((0 . 2)) regexp-match-positions #px"\\X" "\r\nbc")
+(test '((0 . 1)) regexp-match-positions #px"\\X" "\r\r\nbc")
+(test #f regexp-match-positions #px#"\\X" #"\x80")
+(test '((0 . 1)) regexp-match-positions #px#"\\X|." #"\x80")
+(test #f regexp-match-positions #px"\\X|." #"\x80")
+(test '((0 . 1)) regexp-match-positions #px"\\X" #"0\x80")
+(test '((0 . 2)) regexp-match-positions #px"\\X" "\u30\u308\x80")
+
+(err/rt-test (pregexp "(?<=\\X)x") exn:fail? #rx"lookbehind pattern does not match a bounded")
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Check that [\s] doesn't match \s, etc.
 (let ([test-both
