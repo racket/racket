@@ -7191,6 +7191,15 @@ static Scheme_Object *terminal_read_char(int argc, Scheme_Object **argv) {
 #endif
 }
 
+static Scheme_Object *terminal_pending_winch(int argc, Scheme_Object **argv) {
+#if MZ_EXPR_EDIT
+  /* This won't actually work unless */
+  return s_ee_pending_winch();
+#else
+  return scheme_false;
+#endif
+}
+
 static Scheme_Object *terminal_write_char(int argc, Scheme_Object **argv) {
   int width = 1;
 #if MZ_EXPR_EDIT
@@ -7384,6 +7393,7 @@ void scheme_init_terminal(Scheme_Startup_Env *env) {
 
   ADDTO_EE("terminal-init", terminal_init_term, 2);
   ADDTO_EE("terminal-read-char", terminal_read_char, 1);
+  ADDTO_EE("terminal-pending-winch?", terminal_pending_winch, 0);
   ADDTO_EE("terminal-write-char", terminal_write_char, 1);
   ADDTO_EE("terminal-char-width", terminal_char_width, 1);
   ADDTO_EE("terminal-set-color", terminal_set_color, 2);
