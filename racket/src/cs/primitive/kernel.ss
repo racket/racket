@@ -650,6 +650,7 @@
   [peek-string! (known-procedure/single-valued 60)]
   [phantom-bytes? (known-procedure/pure/folding 2)]
   [pipe-content-length (known-procedure/no-prompt 2)]
+  [pipe-port? (known-procedure/no-prompt 2)]  
   [placeholder-get (known-procedure/no-prompt 2)]
   [placeholder-set! (known-procedure/no-prompt 4)]
   [placeholder? (known-procedure/pure/folding 2)]

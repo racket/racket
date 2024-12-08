@@ -80,6 +80,8 @@
   (test-file #t))
 
 (let-values ([(r w) (make-pipe)])
+  (test #t pipe-port? r)
+  (test #t pipe-port? w)
   (write-byte 200 w)
   (test #t byte-ready? r)
   (test #f char-ready? r))
@@ -90,6 +92,9 @@
   (close-input-port i)
   (test #t evt? (sync/timeout 0 (port-progress-evt i)))
   (test 0 peek-bytes-avail! (make-bytes 10) 0 (port-progress-evt i) i))
+
+(test #f pipe-port? (open-input-string ""))
+(test #f pipe-port? (open-output-string))
 
 (test #t string-port? (open-input-string ""))
 (test #t string-port? (open-input-bytes #""))

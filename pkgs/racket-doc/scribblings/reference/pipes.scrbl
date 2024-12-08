@@ -11,10 +11,17 @@ filesystem, or starting Racket with pipes for its original input,
 output, or error port. Such pipes are @tech{file-stream ports},
 unlike the pipes produced by @racket[make-pipe].}
 
+@defproc[(pipe-port? [p port?]) boolean?]{
+
+Returns @racket[#t] if @racket[p] is either end of a pipe created by
+@racket[make-pipe], @racket[#f] otherwise.
+
+@history[#:added "8.15.0.9"]}
+
 @defproc[(make-pipe [limit exact-positive-integer? #f]
                     [input-name any/c 'pipe]
                     [output-name any/c 'pipe])
-         (values input-port? output-port?)]{
+         (values (and/c input-port? pipe-port?) (and/c output-port? pipe-port?))]{
 
 Returns two port values: the first port is an input port and the
 second is an output port. Data written to the output port is read from
@@ -33,7 +40,7 @@ port's capacity until the peeked bytes are read.)
 The optional @racket[input-name] and @racket[output-name] are used
 as the names for the returned input and output ports, respectively.}
 
-@defproc[(pipe-content-length [pipe-port port?]) exact-nonnegative-integer?]{
+@defproc[(pipe-content-length [pipe-port pipe-port?]) exact-nonnegative-integer?]{
 
 Returns the number of bytes contained in a pipe, where
 @racket[pipe-port] is either of the pipe's ports produced by

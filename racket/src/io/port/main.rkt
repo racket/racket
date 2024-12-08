@@ -128,6 +128,7 @@
          make-pipe
          pipe-input-port?
          pipe-output-port?
+         pipe-port?
          pipe-content-length
 
          port-closed?

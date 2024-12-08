@@ -9,6 +9,7 @@ static Scheme_Object *input_port_p (int, Scheme_Object *[]);
 static Scheme_Object *output_port_p (int, Scheme_Object *[]);
 static Scheme_Object *port_closed_p (int, Scheme_Object *[]);
 static Scheme_Object *string_port_p(int, Scheme_Object *[]);
+static Scheme_Object *pipe_port_p(int, Scheme_Object *[]);
 static Scheme_Object *current_input_port (int, Scheme_Object *[]);
 static Scheme_Object *current_output_port (int, Scheme_Object *[]);
 static Scheme_Object *current_error_port (int, Scheme_Object *[]);
@@ -222,6 +223,7 @@ scheme_init_port_fun(Scheme_Startup_Env *env)
   ADD_FOLDING_PRIM("string-port?",           string_port_p,              1, 1, 1, env);
   ADD_FOLDING_PRIM("terminal-port?",         scheme_terminal_port_p,     1, 1, 1, env);
   ADD_FOLDING_PRIM("port-waiting-peer?",     scheme_port_waiting_peer_p, 1, 1, 1, env);
+  ADD_FOLDING_PRIM("pipe-port?",             pipe_port_p,                1, 1, 1, env);
 
   ADD_NONCM_PRIM("port-closed?",             port_closed_p,          1, 1, env); 
   ADD_NONCM_PRIM("open-input-file",          open_input_file,        1, 3, env);
@@ -322,7 +324,7 @@ scheme_init_port_fun(Scheme_Startup_Env *env)
   scheme_addto_prim_instance("display", scheme_display_proc,  env);
   scheme_addto_prim_instance("print",   scheme_print_proc,    env);
 
-  ADD_IMMED_PRIM("pipe-content-length",              pipe_length,                1, 1, env);
+  ADD_IMMED_PRIM("pipe-content-length",  pipe_length,   1, 1, env);
 
   REGISTER_SO(scheme_default_global_print_handler);
   scheme_default_global_print_handler
@@ -2210,9 +2212,7 @@ static Scheme_Object *pipe_length(int argc, Scheme_Object **argv)
   }
 
   if (!pipe) {
-    scheme_wrong_contract("pipe-content-length",
-                          "(or/c pipe-input-port? pipe-output-port?)",
-		      0, argc, argv);
+    scheme_wrong_contract("pipe-content-length", "pipe-port?", 0, argc, argv);
     return NULL;
   }
     
@@ -2750,6 +2750,26 @@ string_port_p (int argc, Scheme_Object *argv[])
       return scheme_true;
   } else {
     scheme_wrong_contract("string-port?", "port?", 0, argc, argv);
+  }
+
+  return scheme_false;
+}
+
+static Scheme_Object *
+pipe_port_p (int argc, Scheme_Object *argv[])
+{
+  Scheme_Object *p = argv[0];
+
+  if (SCHEME_INPUT_PORTP(p)) {
+    if (SAME_OBJ(scheme_input_port_record(p)->sub_type,
+                 scheme_pipe_read_port_type))
+      return scheme_true;
+  } else if (SCHEME_OUTPUT_PORTP(p)) {
+    if (SAME_OBJ(scheme_output_port_record(p)->sub_type,
+                 scheme_pipe_write_port_type))
+      return scheme_true;
+  } else {
+    scheme_wrong_contract("pipe-port?", "port?", 0, argc, argv);
   }
 
   return scheme_false;

@@ -13,6 +13,7 @@
          make-pipe-ends
          (rename-out [pipe-input-port?* pipe-input-port?]
                      [pipe-output-port?* pipe-output-port?])
+         pipe-port?
          pipe-content-length)
 
 (define (min+1 a b) (if a (min (add1 a) b) b))
@@ -31,6 +32,13 @@
            (pipe-output-port? p))])
     pipe-output-port?))
 
+(define (pipe-port? p)
+  (cond
+    [(input-port? p) (pipe-input-port?* p)]
+    [(output-port? p) (pipe-output-port?* p)]
+    [else
+     (raise-argument-error 'pipe-port? "port?" p)]))
+
 (define (pipe-content-length p)
   (define d
     (cond
@@ -45,7 +53,7 @@
               p))
        => (lambda (p) (pipe-output-port-d p))]
       [else
-       (raise-argument-error 'pipe-contact-length "(or/c pipe-input-port? pipe-output-port?)" p)]))
+       (raise-argument-error 'pipe-content-length "pipe-port?" p)]))
   (atomically
    (with-object pipe-data d
      (sync-both)
