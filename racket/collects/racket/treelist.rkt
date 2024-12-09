@@ -139,8 +139,7 @@
 (define (node-last n) (assert-node n) (let ([cs (node-children n)])
                                         (vector*-ref cs (fx- (vector*-length cs) 1))))
 (define (node-ref n i) (assert-node n) (vector*-ref (node-children n) i))
-(define (node-set n i v) (assert-node n) (Node (vector*-set/copy (node-children n) i v)
-                                               (node-sizes n)))
+(define (node-child-set n i v) (assert-node n) (vector*-set/copy (node-children n) i v))
 (define (node-length n) (assert-node n) (vector*-length (node-children n)))
 
 ;; `node*` refers to a leftwise dense node
@@ -518,13 +517,14 @@
                  [height height])
          (cond
            [(fx= height 0)
-            (node-set node (radix index height) el)]
+            (node-child-set node (radix index height) el)]
            [(node-leftwise-dense? node)
             (define branch-index (radix index height))
             (node*-set node branch-index (set (node*-ref node branch-index) index el (fx- height 1)))]
            [else
             (define-values (branch-index subindex) (step node index height))
-            (node-set node branch-index (set (node-ref node branch-index) subindex el (fx- height 1)))])))
+            (Node (node-child-set node branch-index (set (node-ref node branch-index) subindex el (fx- height 1)))
+                  (node-sizes node))])))
      (treelist new-node size height)]))
 
 ;; add `el` to end of vector
