@@ -139,7 +139,8 @@
 (define (node-last n) (assert-node n) (let ([cs (node-children n)])
                                         (vector*-ref cs (fx- (vector*-length cs) 1))))
 (define (node-ref n i) (assert-node n) (vector*-ref (node-children n) i))
-(define (node-set n i v) (assert-node n) (vector*-set/copy (node-children n) i v))
+(define (node-set n i v) (assert-node n) (Node (vector*-set/copy (node-children n) i v)
+                                               (node-sizes n)))
 (define (node-length n) (assert-node n) (vector*-length (node-children n)))
 
 ;; `node*` refers to a leftwise dense node

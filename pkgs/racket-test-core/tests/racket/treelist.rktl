@@ -591,4 +591,22 @@
 
 ;; ----------------------------------------
 
+(let* ([N 1024]
+       [tl (vector->treelist (make-vector N 0))]
+       [rems '(2 10 55 100 500 700)]
+       [tl (for/fold ([tl tl]) ([rem (in-list rems)])
+             (treelist-delete tl rem))]
+       [n2 (- N (length rems))])
+  (test n2 values (treelist-length tl))
+  (test #t 'all-zero
+        (for/and ([i (in-range 0 n2)])
+          (= 0 (treelist-ref tl i))))
+  (let ([tl (for/fold ([tl tl])([i (in-range 0 n2)])
+              (treelist-set tl i 1))])
+    (test #t 'all-one
+          (for/and ([i (in-range 0 n2)])
+            (= 1 (treelist-ref tl i))))))
+
+;; ----------------------------------------
+
 (report-errs)
