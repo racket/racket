@@ -527,7 +527,7 @@
                                       (lambda (e)
                                         (parameterize ([current-compile-target-machine (system-type 'target-machine)])
                                           (compiler e)))]
-                                     [(not host?)
+                                     [host?
                                       (lambda (e)
                                         ;; point at host compiled code for dependencies
                                         (parameterize ([current-compiled-file-roots (list (car (current-compiled-file-roots)))])
