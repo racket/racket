@@ -789,10 +789,17 @@ Modifies @racket[tl] to change the element at @racket[pos] to
 items
 ]}
 
-@defproc[(mutable-treelist-append! [tl mutable-treelist?] [other-tl (or/c treelist? mutable-treelist?)]) void?]{
+@defproc[(mutable-treelist-append! [tl mutable-treelist?]
+                                   [other-tl (or/c treelist? mutable-treelist?)]
+                                   [#:at-end? at-end? boolean? #t])
+         void?]{
 
 Modifies @racket[tl]s by appending all of the elements of
-@racket[other-tl]. If @racket[other-tl] is a @tech{mutable treelist},
+@racket[other-tl]. The optional @racket[#:at-end?] argument specifies
+whether to append the elements to the end or to the beginning of
+@racket[tl].
+
+If @racket[other-tl] is a @tech{mutable treelist},
 it is first converted to an immutable @tech{treelist} with
 @racket[mutable-treelist-snapshot], which takes takes @math{O(N)} time
 if @racket[other-tl] has @math{N} elements. If @racket[other-tl] is an
@@ -805,6 +812,8 @@ time for @math{N} elements.
 (mutable-treelist-append! items (treelist 'more 'things))
 items
 (mutable-treelist-append! items items)
+items
+(mutable-treelist-append! items (treelist 2 "b" 'banana) #:at-end? #f)
 items
 ]}
 

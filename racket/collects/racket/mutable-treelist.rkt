@@ -172,7 +172,7 @@
   (define tl (mutable-treelist-tl mtl))
   (set-mutable-treelist-tl! mtl (treelist-cons tl val)))
 
-(define (mutable-treelist-append! mtl m/tl)
+(define (mutable-treelist-append! mtl m/tl #:at-end? [at-end? #t])
   (check-mutable-treelist 'mutable-treelist-append! mtl)
   (define tl (mutable-treelist-tl mtl))
   (define tl2
@@ -180,7 +180,10 @@
       [(treelist? m/tl) m/tl]
       [(mutable-treelist? m/tl) (mutable-treelist-snapshot m/tl)]
       [else (raise-argument-error* 'mutable-treelist-append! 'racket/primitive "mutable-treelist?" m/tl)]))
-  (define new-tl (treelist-append tl tl2))
+  (define new-tl
+    (if at-end?
+        (treelist-append tl tl2)
+        (treelist-append tl2 tl)))
   (set-mutable-treelist-tl! mtl new-tl))
 
 (define (mutable-treelist-insert! mtl index val)
