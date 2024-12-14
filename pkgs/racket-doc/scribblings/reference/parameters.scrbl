@@ -52,7 +52,8 @@ The @racket[name] argument is used as the parameter procedure's name
 as reported by @racket[object-name], and @racket[realm] is used as
 the reported as reported by @racket[procedure-realm].
 
-@history[#:changed "7.4.0.6" @elem{Added the @racket[name] argument.}]}
+@history[#:changed "7.4.0.6" @elem{Added the @racket[name] argument.}
+         #:changed "8.4.0.2" @elem{Added the @racket[realm] argument.}]}
 
 @defform[(parameterize ([parameter-expr value-expr] ...)
            body ...+)
