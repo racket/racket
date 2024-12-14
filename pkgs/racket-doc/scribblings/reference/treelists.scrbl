@@ -971,7 +971,7 @@ Like @racket[for/list] and @racket[for*/list], but generating
                                                             . -> . any/c)]
                                      [#:append append-proc (mutable-treelist? treelist?
                                                             . -> . treelist?)]
-                                     [#:prepend prepend-proc (mutable-treelist? treelist?
+                                     [#:prepend prepend-proc (treelist? mutable-treelist?
                                                               . -> . treelist?)
                                       (λ (o t) (append-proc t o))]
                                      [prop impersonator-property?]
@@ -995,7 +995,7 @@ separate from the treelist itself, and procedures like
                                                               . -> . any/c)]
                                        [#:append append-proc (mutable-treelist? treelist?
                                                               . -> . treelist?)]
-                                       [#:prepend prepend-proc (mutable-treelist? treelist?
+                                       [#:prepend prepend-proc (treelist? mutable-treelist?
                                                                 . -> . treelist?)
                                         (λ (o t) (append-proc t o))]
                                        [prop impersonator-property?]
