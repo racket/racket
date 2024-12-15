@@ -70,6 +70,9 @@ jobs:
     - name: Run tests/match/main
       continue-on-error: true
       run: raco test -l tests/match/main | tee logs/match-main.log
+    - name: Run tests/pkg/test
+      continue-on-error: true
+      run: raco test -l tests/pkg/test | tee logs/pkg-main.log
     - name: Run tests/zo-path
       continue-on-error: true
       run: raco test -l tests/zo-path | tee logs/zo-path.log

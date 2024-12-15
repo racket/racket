@@ -33,6 +33,7 @@ jobs:
         raco test -l tests/openssl/basic
         raco test -l tests/openssl/https
         raco test -l tests/match/main
+        raco test -l tests/pkg/test
         raco test -l tests/zo-path
         raco test -c tests/xml
         raco test --timeout 300 -c tests/future
@@ -63,6 +64,7 @@ jobs:
         raco test -l tests/openssl/basic
         raco test -l tests/openssl/https
         raco test -l tests/match/main
+        raco test -l tests/pkg/test
         raco test -l tests/zo-path
         raco test -c tests/xml
         raco test --timeout 300 -c tests/future

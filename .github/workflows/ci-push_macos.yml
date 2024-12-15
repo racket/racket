@@ -390,6 +390,8 @@ jobs:
         run: raco test -l tests/openssl/https
       - name: Run tests/match/main
         run: raco test -l tests/match/main
+      - name: Run tests/pkg/test
+        run: raco test -l tests/pkg/test
       - name: Run tests/zo-path
         run: raco test -l tests/zo-path
       - name: Run tests/xml
