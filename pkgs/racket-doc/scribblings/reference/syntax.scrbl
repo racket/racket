@@ -2612,8 +2612,20 @@ in @math{O(log N)} time for @math{N} @racket[datum]s.
 
 Like @racket[case], but using @racket[equal?], @racket[equal-always?],
 @racket[eq?], or @racket[eqv?] for comparing the result of
-@racket[val-expr] to the literals in the @racket[case-clause]s. The
-@racket[case/equal] form is equivalent to @racket[case].}
+@racket[val-expr] to the literals in the @racket[case-clause]s.
+@racket[case/equal] is an alias for @racket[case].}
+
+@deftogether[(
+@defform[(case* val-expr case-clause ...)]
+@defform[(case*/equal val-expr case-clause ...)]
+@defform[(case*/equal-always val-expr case-clause ...)]
+@defform[(case*/eq val-expr case-clause ...)]
+@defform[(case*/eqv val-expr case-clause ...)]
+)]{
+
+Like @racket[case], but uing @racket[quasiquote] for each @racket[datum]
+in the @racket[case-clause]s instead of @racket[quote].
+@racket[case*/equal] is an alias for @racket[case*].}
 
 @;------------------------------------------------------------------------
 @section[#:tag "define"]{Definitions: @racket[define], @racket[define-syntax], ...}

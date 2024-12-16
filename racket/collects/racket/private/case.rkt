@@ -13,7 +13,7 @@
   (module* make-case #f
     (#%provide (for-syntax make-case)))
 
-  (define-for-syntax ((make-case compare-id) stx)
+  (define-for-syntax ((make-case compare-id quote-id) stx)
     (syntax-case stx ()
       ;; Empty case
       [(_ v)
@@ -43,10 +43,10 @@
          (if (< (length (syntax-e #'(k ... ...))) *sequential-threshold*)
              (quasisyntax/loc stx
                (let ([tmp v])
-                 (case/sequential tmp #,compare-id [(k ...) e1 e2 ...] ... [else x1 x2 ...])))
+                 (case/sequential tmp #,compare-id #,quote-id [(k ...) e1 e2 ...] ... [else x1 x2 ...])))
              (quasisyntax/loc stx
                (let ([tmp v])
-                 (case/dispatch   tmp #,compare-id [(k ...) e1 e2 ...] ... [else x1 x2 ...])))))
+                 (case/dispatch   tmp #,compare-id #,quote-id [(k ...) e1 e2 ...] ... [else x1 x2 ...])))))
         'disappeared-use
         (list (syntax-local-introduce #'maybe-else)))]
 
@@ -119,35 +119,35 @@
         stx)]))
 
   (define-syntax case
-    (make-case #'equal?))
+    (make-case #'equal? #'quote))
 
 
   ;; Sequential case:
   ;; Turn the expression into a sequence of if-then-else.
   (define-syntax (case/sequential stx)
     (syntax-case stx (else)
-      [(_ v compare-id [(k ...) es ...] arms ... [else xs ...])
+      [(_ v compare-id quote-id [(k ...) es ...] arms ... [else xs ...])
        (syntax-protect
-        #'(if (case/sequential-test v compare-id (k ...))
+        #'(if (case/sequential-test v compare-id quote-id (k ...))
               (let-values () es ...)
-              (case/sequential v compare-id arms ... [else xs ...])))]
-      [(_ v compare-id [(k ...) es ...] [else xs ...])
+              (case/sequential v compare-id quote-id arms ... [else xs ...])))]
+      [(_ v compare-id quote-id [(k ...) es ...] [else xs ...])
        (syntax-protect
-        #'(if (case/sequential-test v compare-id (k ...))
+        #'(if (case/sequential-test v compare-id quote-id (k ...))
               (let-values () es ...)
               (let-values () xs ...)))]
-      [(_ v compare-id [else xs ...])
+      [(_ v compare-id quote-id [else xs ...])
        (syntax-protect
         #'(let-values () xs ...))]))
 
   (define-syntax (case/sequential-test stx)
     (syntax-protect
      (syntax-case stx ()
-       [(_ v compare-id ())         #'#f]
-       [(_ v compare-id (k))        #'(compare-id v 'k)]
-       [(_ v compare-id (k ks ...)) #'(if (compare-id v 'k)
+       [(_ v compare-id quote-id ())         #'#f]
+       [(_ v compare-id quote-id (k))        #'(compare-id v (quote-id k))]
+       [(_ v compare-id quote-id (k ks ...)) #'(if (compare-id v (quote-id k))
                                     #t
-                                    (case/sequential-test v compare-id (ks ...)))])))
+                                    (case/sequential-test v compare-id quote-id (ks ...)))])))
 
   ;; Triple-dispatch case:
   ;; (1) From the type of the value to a type-specific mechanism for
@@ -156,7 +156,7 @@
   ;; Note: the else clause is given index 0.
   (define-syntax (case/dispatch stx)
     (syntax-case stx (else)
-      [(_ v compare-id [(k ...) es ...] ... [else xs ...])
+      [(_ v compare-id quote-id [(k ...) es ...] ... [else xs ...])
        (syntax-protect
         #`(let ([index
                  #,(let* ([ks  (partition-constants #'((k ...) ...))]
@@ -164,7 +164,7 @@
                           [exp (if (null? (consts-other ks))
                                    exp
                                    (dispatch-other
-				    #'compare-id
+                                    #'compare-id #'quote-id
                                     #'v (consts-other ks) exp))]
                           [exp (if (null? (consts-char ks))
                                    exp
@@ -243,9 +243,9 @@
     ;; Symbol and "other" dispatch is either sequential or
     ;; hash-table-based, depending on how many constants we
     ;; have. Assume that `alist' does not map anything to `#f'.
-    (define (dispatch-hashable tmp-stx alist make-hashX compare-id else-exp)
+    (define (dispatch-hashable tmp-stx alist make-hashX compare-id quote-id else-exp)
       (if (< (length alist) *hash-threshold*)
-          #`(case/sequential #,tmp-stx #,compare-id
+          #`(case/sequential #,tmp-stx #,compare-id #,quote-id
                              #,@(map (λ (x)
                                        #`[(#,(car x)) #,(cdr x)])
                                      alist)
@@ -257,7 +257,7 @@
                       #,else-exp)))))
 
     (define (dispatch-symbol tmp-stx symbol-alist else-exp)
-      (dispatch-hashable tmp-stx symbol-alist make-immutable-hasheq #'eq? else-exp))
+      (dispatch-hashable tmp-stx symbol-alist make-immutable-hasheq #'eq? #'quote else-exp))
 
     (define (compare-id->mk-hash id)
       (cond [(free-identifier=? id #'equal?) make-immutable-hash]
@@ -266,9 +266,9 @@
 	    [(free-identifier=? id #'eqv?) make-immutable-hasheqv]
 	    [else (error 'case "unexpected comparison id: ~a" id)]))
 
-    (define (dispatch-other compare-id tmp-stx other-alist else-exp)
+    (define (dispatch-other compare-id quote-id tmp-stx other-alist else-exp)
       (dispatch-hashable tmp-stx other-alist (compare-id->mk-hash compare-id)
-			 compare-id else-exp))
+                         compare-id quote-id else-exp))
 
     (define (test-for-symbol tmp-stx alist)
       (define (contains? pred)
