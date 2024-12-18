@@ -690,8 +690,8 @@
               [(void) (and void-okay? `(fp-void))]
               [else
                (cond
-                [($ftd? x) `(fp-ftd ,x)]
-                [($ftd-as-box? x) `(fp-ftd& ,(unbox x))]
+                [($fptd? x) `(fp-fptd ,x)]
+                [($ftd-pair? x) `(fp-ftd& ,(car x) ,(cdr x))]
                 [else #f])])
             ($oops #f "invalid ~a ~a specifier ~s" who what x)))))
 
@@ -8903,7 +8903,7 @@
               ($syntax-match? (cdr pat) (cdr exp)))]))))
 
 (define $fp-filter-type
-  (lambda (type void-okay?)
+  (lambda (type as-result?)
    ; not the same as cmacros filter-type, which allows things like bigit
     (case type
       [(scheme-object double-float single-float
@@ -8912,7 +8912,7 @@
         integer-56 unsigned-56 integer-64 unsigned-64
         boolean stdbool fixnum char wchar u8* u16* u32* utf-8 utf-16le utf-16be utf-16
         utf-32le utf-32be utf-32) type]
-      [(void) (and void-okay? type)]
+      [(void) (and as-result? type)]
       [(ptr) 'scheme-object]
       [(iptr)
        (constant-case ptr-bits
@@ -8985,7 +8985,7 @@
             [(big) 'utf-32be]
             [(unknown) 'utf-32])])]
       [else
-       (and (or ($ftd? type) ($ftd-as-box? type))
+       (and (or ($fptd? type) ($ftd-pair? type))
             type)])))
 
 (define $fp-type->pred
@@ -9204,8 +9204,8 @@
                                     (check-floats-allowed pos)
                                     #f]
                                    [else #f])
-                                 (if (or ($ftd? type) ($ftd-as-box? type))
-                                     (let ([ftd (if ($ftd? type) type (unbox type))])
+                                 (if (or ($fptd? type) ($ftd-pair? type))
+                                     (let ([ftd (if ($fptd? type) type (cdr type))])
                                        #`(#,(if unsafe? #'() #`((unless (record? x '#,ftd) (err ($moi) x))))
                                           (x)
                                           (#,type)))
@@ -9247,7 +9247,7 @@
                          [(unsigned-56) #`((lambda (x) (mod x #x100000000000000)) unsigned-64)]
                          [else
                           (cond
-                            [($ftd-as-box? result-type)
+                            [($ftd-pair? result-type)
                              ;; Return void, since an extra first argument receives the result,
                              ;; but tell `$foreign-procedure` that the result is actually an & form
                              #`((lambda (r) (void)) #,(datum->syntax #'foreign-procedure result-type))]
@@ -9260,12 +9260,12 @@
                        ;; explicit for `$foreign-procedure`, and the return type is preserved as-is
                        ;; to let `$foreign-procedure` know that it needs to fill the first argument.
                        (cond
-                         [($ftd-as-box? result-type)
+                         [($ftd-pair? result-type)
                           #`([&-result]
-                             [#,(unbox result-type)]
+                             [#,(cdr result-type)]
                              #,(if unsafe?
                                    #`[]
-                                   #`[(unless (record? &-result '#,(unbox result-type)) (err ($moi) &-result))]))]
+                                   #`[(unless (record? &-result '#,(cdr result-type)) (err ($moi) &-result))]))]
                          [else #'([] [] [])])])
           #`(let ([p ($foreign-procedure conv* foreign-name ?foreign-addr (extra-arg ... arg ... ...) result)]
                   #,@(if unsafe?
@@ -9546,20 +9546,20 @@
                              [] [])]
                          [else
                           (cond
-                            [($ftd? result-type)
+                            [($fptd? result-type)
                              (with-syntax ([type (datum->syntax #'foreign-callable result-type)])
                                #`((lambda (x)
                                     #,@(if unsafe? #'() #'((unless (record? x 'type) (err x))))
                                     x)
                                   type
                                   [] []))]
-                            [($ftd-as-box? result-type)
+                            [($ftd-pair? result-type)
                              ;; callable receives an extra pointer argument to fill with the result;
                              ;; we add this type to `$foreign-callable` as an initial address argument,
                              ;; which may be actually provided by the caller or synthesized by the
                              ;; back end, depending on the type and architecture
                              (with-syntax ([type (datum->syntax #'foreign-callable result-type)]
-                                           [ftd (datum->syntax #'foreign-callable (unbox result-type))])
+                                           [ftd (datum->syntax #'foreign-callable (cdr result-type))])
                                #`((lambda (x) (void)) ; callable result is ignored
                                   type
                                   [ftd]
