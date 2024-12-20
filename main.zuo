@@ -133,10 +133,11 @@
        (shell/wait "git checkout -q" branch
                    (hash 'dir pb-dir))]
       [(eq? step 'build)
-       (define scheme (let ([s (lookup 'SCHEME)])
-                        (if (equal? s "")
-                            (find-executable-path "scheme")
-                            s)))
+       (define scheme (and (not (lookup 'RKTBOOT #f))
+                           (let ([s (lookup 'SCHEME)])
+                             (if (equal? s "")
+                                 (find-executable-path "scheme")
+                                 s))))
        (cond
          [scheme
           (define reboot (dynamic-require "racket/src/ChezScheme/s/reboot.zuo" 'reboot))

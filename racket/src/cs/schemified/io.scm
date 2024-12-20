@@ -176,7 +176,7 @@
                 (1/pipe-content-length pipe-content-length)
                 (pipe-input-port?* pipe-input-port?)
                 (pipe-output-port?* pipe-output-port?)
-                (pipe-port? pipe-port?)
+                (1/pipe-port? pipe-port?)
                 (1/port-closed-evt port-closed-evt)
                 (1/port-closed? port-closed?)
                 (1/port-commit-peeked port-commit-peeked)
@@ -7013,13 +7013,15 @@
    (lambda (p_0)
      (let ((cp_0 (->core-output-port.1 unsafe-undefined p_0 #f)))
        (pipe-output-port? p_0)))))
-(define pipe-port?
-  (lambda (p_0)
-    (if (1/input-port? p_0)
-      (pipe-input-port?* p_0)
-      (if (1/output-port? p_0)
-        (pipe-output-port?* p_0)
-        (raise-argument-error 'pipe-port? "port?" p_0)))))
+(define 1/pipe-port?
+  (|#%name|
+   pipe-port?
+   (lambda (p_0)
+     (if (1/input-port? p_0)
+       (pipe-input-port?* p_0)
+       (if (1/output-port? p_0)
+         (pipe-output-port?* p_0)
+         (raise-argument-error 'pipe-port? "port?" p_0))))))
 (define 1/pipe-content-length
   (|#%name|
    pipe-content-length

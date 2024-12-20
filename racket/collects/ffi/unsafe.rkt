@@ -1530,7 +1530,6 @@
         ;; done converting:
         (void/reference-sink p)
         v)))
-  
   (cond
    [(and (cpointer? p)
          (cpointer-gcable? p))

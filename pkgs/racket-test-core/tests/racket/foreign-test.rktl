@@ -741,11 +741,9 @@
   (define p (cast (ptr-add (malloc 10) 5) _pointer _thing-pointer))
   (test #t cpointer-gcable? p)
   (define q (cast p _thing-pointer _stuff-pointer))
-  (test (cast p _pointer _intptr)
-        cast q _pointer _intptr)
+  (test #t ptr-equal? p q)
   (collect-garbage)
-  (test (cast p _thing-pointer _intptr)
-        cast q _stuff-pointer _intptr))
+  (test #t ptr-equal? p q))
 
 ;; For casts where the BC output might share with the input, so
 ;; an offset pointer needs to be 'atomic-interior

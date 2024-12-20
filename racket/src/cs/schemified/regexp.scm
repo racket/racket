@@ -5,7 +5,7 @@
                 (1/pregexp pregexp)
                 (1/pregexp? pregexp?)
                 (1/regexp regexp)
-                (regexp-capture-group-count regexp-capture-group-count)
+                (1/regexp-capture-group-count regexp-capture-group-count)
                 (1/regexp-match regexp-match)
                 (1/regexp-match-peek regexp-match-peek)
                 (1/regexp-match-peek-immediate regexp-match-peek-immediate)
@@ -7832,17 +7832,19 @@
           "(or/c regexp? byte-regexp?)"
           rx_0))
        (rx:regexp-max-lookbehind rx_0)))))
-(define regexp-capture-group-count
-  (lambda (rx_0)
-    (begin
-      (if (let ((or-part_0 (1/regexp? rx_0)))
-            (if or-part_0 or-part_0 (1/byte-regexp? rx_0)))
-        (void)
-        (raise-argument-error
-         'regexp-capture-group-count
-         "(or/c regexp? byte-regexp?)"
-         rx_0))
-      (rx:regexp-num-groups rx_0))))
+(define 1/regexp-capture-group-count
+  (|#%name|
+   regexp-capture-group-count
+   (lambda (rx_0)
+     (begin
+       (if (let ((or-part_0 (1/regexp? rx_0)))
+             (if or-part_0 or-part_0 (1/byte-regexp? rx_0)))
+         (void)
+         (raise-argument-error
+          'regexp-capture-group-count
+          "(or/c regexp? byte-regexp?)"
+          rx_0))
+       (rx:regexp-num-groups rx_0)))))
 (define no-prefix #vu8())
 (define fast-bytes?
   (lambda (rx_0 in_0 start-pos_0 end-pos_0 out_0 prefix_0)
