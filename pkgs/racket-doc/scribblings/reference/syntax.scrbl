@@ -1531,6 +1531,16 @@ aliens
   procedure must return either a string for the import's new name or
   @racket[#f] to exclude the import.
 
+  @margin-note{
+    The second part of @racket[filtered-in] is expand-time code evaluated in the
+    scope of the enclosing module. Accordingly, most uses need
+    @racket[(require (for-syntax racket/base))] if @racketmodname[racket/base]
+    is not already imported @racket[for-syntax]. For example,
+    @racket[@#,(hash-lang) @#,racketmodname[racket]] establishes this import
+    automatically, while @racket[@#,(hash-lang) @#,racketmodname[racket/base]]
+    does not.
+  }
+
   For example,
   @racketblock[
     (require (filtered-in
@@ -1638,6 +1648,8 @@ Examples:
 
  Analogous to @racket[filtered-in], but for filtering and renaming
  exports.
+
+  @margin-note{See the documentation of @racket[filtered-in] for use with @racket[@#,(hash-lang) @#,racketmodname[racket/base]].}
 
   For example,
   @racketblock[
