@@ -172,8 +172,7 @@
                   (args-app arg.arg-ids (name og.call ... ...)))
                 arg.help-strs])]
     [pattern (#:alias alias:id redirect-to:id)
-             #:attr function #'(define (alias . args)
-                                 (apply redirect-to args))
+             #:attr function #'(define alias (procedure-rename redirect-to 'alias))
              #:attr name #'alias
              #:attr variables #'(begin)
              #:attr command-line
