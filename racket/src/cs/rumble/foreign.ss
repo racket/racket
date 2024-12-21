@@ -963,8 +963,8 @@
               (ptr-set! p _type 'abs offset v)
               (ptr-set! p _type offset v))])))))
 
-(define (fixnum-in-range? lo hi) (lambda (v) (and (fixnum? v) (fx>= v lo) (fx>= v hi))))
-(define (in-range? lo hi) (lambda (v) (and (exact-integer? v) (>= v lo) (>= v hi))))
+(define (fixnum-in-range? lo hi) (lambda (v) (and (fixnum? v) (fx>= v lo) (fx<= v hi))))
+(define (in-range? lo hi) (lambda (v) (and (exact-integer? v) (>= v lo) (<= v hi))))
 
 ;; Schemify optimizes `(ptr-ref p _uint16 offset v)` to `(ptr-set!/uint16 p (fxlshift offset 1) v #f)`, etc.
 (define-fast-ptr-ops ptr-ref/int8 ptr-set!/int8 _int8 (fixnum-in-range? -128 127) bytevector-s8-ref bytevector-s8-set! integer-8 0)
