@@ -62,55 +62,6 @@ See @secref["fully-expanded"] for the core grammar.
 
 @local-table-of-contents[]
 
-@subsubsub*section{Notation}
-
-Each syntactic form is described by a BNF-like notation that describes
-a combination of (syntax-wrapped) pairs, symbols, and other data (not
-a sequence of characters). These grammatical specifications are shown
-as in the following specification of a @racketkeywordfont{something}
-form:
-
-@specsubform[(@#,racketkeywordfont{something} id thing-expr ...)
-             #:contracts ([thing-expr number?])]
-
-Within such specifications,
-
-@itemize[
-
- @item{@racket[...] indicates zero or more repetitions of the
-       preceding datum; more generally, @math{N} consecutive
-       @racket[...]s a row indicate a consecutive repetition of the
-       preceding @math{N} datums.}
-
- @item{@racket[...+] indicates one or more repetitions of the
-       preceding datum.}
-
- @item{Italic meta-identifiers play the role of non-terminals. Some
-       meta-identifier names imply syntactic constraints:
-
-      @itemize[
-
-        @item{A meta-identifier that ends in @racket[_id] stands for an
-              identifier.}
-
-        @item{A meta-identifier that ends in @racket[_keyword] stands
-              for a keyword.}
-
-        @item{A meta-identifier that ends with @racket[_expr] (such as
-              @racket[_thing-expr]) stands for a sub-form that is
-              expanded as an expression.}
-
-        @item{A meta-identifier that ends with @racket[_body] stands
-              for a sub-form that is expanded in an
-              internal-definition context (see
-              @secref["intdef-body"]).}
-
-              ]} 
-
- @item{Contracts indicate constraints on sub-expression results. For
-       example, @racket[_thing-expr @#,elem{:} number?] indicates that
-       the expression @racket[_thing-expr] must produce a number.}]
-
 @;------------------------------------------------------------------------
 @section[#:tag "module"]{Modules: @racket[module], @racket[module*], ...}
 
