@@ -791,7 +791,7 @@ items
 
 @deftogether[(
 @defproc[(mutable-treelist-append! [tl mutable-treelist?] [other-tl (or/c treelist? mutable-treelist?)]) void?]
-@defproc[(mutable-treelist-prepend! [other-tl (or/c treelist? mutable-treelist?)] [tl mutable-treelist?]) void?]
+@defproc[(mutable-treelist-prepend! [tl mutable-treelist?] [other-tl (or/c treelist? mutable-treelist?)]) void?]
 )]{
 
 Modifies @racket[tl] by appending or prepending all of the elements of
@@ -807,7 +807,7 @@ immutable treelist but chaperoned, then appending or prepending takes
 (define items (mutable-treelist 1 "a" 'apple))
 (mutable-treelist-append! items (treelist 'more 'things))
 items
-(mutable-treelist-prepend! (treelist 0 "b" 'banana) items)
+(mutable-treelist-prepend! items (treelist 0 "b" 'banana))
 items
 (mutable-treelist-append! items items)
 items

@@ -289,7 +289,7 @@
   (test! (treelist -1 0 "a" 'b '#:c) mutable-treelist-cons! small-treelist -1)
   (test! (treelist 0 "a" 'b '#:c 0 "a" 'b '#:c) mutable-treelist-append! small-treelist small-treelist)
   (test! (treelist 0 "a" 'b '#:c 'x 'y 'z) mutable-treelist-append! small-treelist (treelist 'x 'y 'z))
-  (test! (treelist 'x 'y 'z 0 "a" 'b '#:c) (λ (t o) (mutable-treelist-prepend! o t)) small-treelist (mutable-treelist 'x 'y 'z))
+  (test! (treelist 'x 'y 'z 0 "a" 'b '#:c) mutable-treelist-prepend! small-treelist (mutable-treelist 'x 'y 'z))
   (test! (treelist 0 "a" 'b "bzz" '#:c) mutable-treelist-insert! small-treelist 3 "bzz")
   (test! (treelist "neg" 0 "a" 'b '#:c) mutable-treelist-insert! small-treelist 0 "neg")
   (test! (treelist 0 "a" 'b '#:c #xD) mutable-treelist-insert! small-treelist 4 #xD)

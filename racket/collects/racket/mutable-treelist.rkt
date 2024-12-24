@@ -184,7 +184,7 @@
   (define new-tl (treelist-append tl tl2))
   (set-mutable-treelist-tl! mtl new-tl))
 
-(define (mutable-treelist-prepend! m/tl mtl)
+(define (mutable-treelist-prepend! mtl m/tl)
   (check-mutable-treelist 'mutable-treelist-prepend! mtl)
   (define tl
     (cond
