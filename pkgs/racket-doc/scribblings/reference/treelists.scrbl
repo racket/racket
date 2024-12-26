@@ -789,24 +789,31 @@ Modifies @racket[tl] to change the element at @racket[pos] to
 items
 ]}
 
-@defproc[(mutable-treelist-append! [tl mutable-treelist?] [other-tl (or/c treelist? mutable-treelist?)]) void?]{
+@deftogether[(
+@defproc[(mutable-treelist-append! [tl mutable-treelist?] [other-tl (or/c treelist? mutable-treelist?)]) void?]
+@defproc[(mutable-treelist-prepend! [tl mutable-treelist?] [other-tl (or/c treelist? mutable-treelist?)]) void?]
+)]{
 
-Modifies @racket[tl]s by appending all of the elements of
+Modifies @racket[tl] by appending or prepending all of the elements of
 @racket[other-tl]. If @racket[other-tl] is a @tech{mutable treelist},
 it is first converted to an immutable @tech{treelist} with
-@racket[mutable-treelist-snapshot], which takes takes @math{O(N)} time
+@racket[mutable-treelist-snapshot], which takes @math{O(N)} time
 if @racket[other-tl] has @math{N} elements. If @racket[other-tl] is an
-immutable treelist but chaperoned, then appending takes @math{O(N)}
-time for @math{N} elements.
+immutable treelist but chaperoned, then appending or prepending takes
+@math{O(N)} time for @math{N} elements.
 
 @examples[
 #:eval the-eval
 (define items (mutable-treelist 1 "a" 'apple))
 (mutable-treelist-append! items (treelist 'more 'things))
 items
+(mutable-treelist-prepend! items (treelist 0 "b" 'banana))
+items
 (mutable-treelist-append! items items)
 items
-]}
+]
+
+@history[#:changed "8.15.0.11" @elem{Added @racket[mutable-treelist-prepend!].}]}
 
 @deftogether[(
 @defproc[(mutable-treelist-take! [tl mutable-treelist?] [n exact-nonnegative-integer?]) void?]
@@ -966,6 +973,9 @@ Like @racket[for/list] and @racket[for*/list], but generating
                                                             . -> . any/c)]
                                      [#:append append-proc (mutable-treelist? treelist?
                                                             . -> . treelist?)]
+                                     [#:prepend prepend-proc (treelist? mutable-treelist?
+                                                              . -> . treelist?)
+                                      (λ (o t) (append-proc t o))]
                                      [prop impersonator-property?]
                                      [prop-val any/c] ... ...)
           (and/c mutable-treelist? chaperone?)]{
@@ -987,6 +997,9 @@ separate from the treelist itself, and procedures like
                                                               . -> . any/c)]
                                        [#:append append-proc (mutable-treelist? treelist?
                                                               . -> . treelist?)]
+                                       [#:prepend prepend-proc (treelist? mutable-treelist?
+                                                                . -> . treelist?)
+                                        (λ (o t) (append-proc t o))]
                                        [prop impersonator-property?]
                                        [prop-val any/c] ... ...)
           (and/c mutable-treelist? impersonator?)]{
