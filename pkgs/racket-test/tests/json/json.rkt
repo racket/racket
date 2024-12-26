@@ -161,6 +161,13 @@
         ;; Invalid UTF-8 input.
         (bytes->jsexpr #"\"\377\377\377\"") =error> exn:fail?
 
+        ;; high surrogate only
+        (string->jsexpr "\"\\uDEAD\"") =error> exn:fail?
+        (string->jsexpr "\"\\uDEAD\"" #:replace-malformed-surrogate? #t) => "\uFFFD"
+        (string->jsexpr "\"\\uDEADZ\""  #:replace-malformed-surrogate? #t) => "\uFFFDZ"
+        (string->jsexpr "\"\\uDEAD\\u007a\"" #:replace-malformed-surrogate? #t) => "\uFFFDz"
+        (string->jsexpr "\"\\udead\\ud83d\\ude00\""  #:replace-malformed-surrogate? #t) => "\uFFFD\U1F600"
+
         ;; whitespace should be only the four allowed charactes
         (string->jsexpr (string-append
                          "{ \"x\" :"
