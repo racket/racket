@@ -811,7 +811,9 @@ items
 items
 (mutable-treelist-append! items items)
 items
-]}
+]
+
+@history[#:changed "8.15.0.11" @elem{Added @racket[mutable-treelist-prepend!].}]}
 
 @deftogether[(
 @defproc[(mutable-treelist-take! [tl mutable-treelist?] [n exact-nonnegative-integer?]) void?]
