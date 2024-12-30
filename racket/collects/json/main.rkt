@@ -65,11 +65,15 @@
         any)] ;; jsexpr?
   ))
 
+(module* for-extension #f
+  (provide read-json*))
+
 ;; -----------------------------------------------------------------------------
 ;; CUSTOMIZATION
 
 ;; The default translation for a JSON `null' value
 (define json-null (make-parameter 'null))
+
 
 ;; -----------------------------------------------------------------------------
 ;; PREDICATE
@@ -206,9 +210,19 @@
 ;; PARSING (from JSON to Racket)
 
 (define (read-json [i (current-input-port)] #:null [jsnull (json-null)])
-  (read-json* 'read-json i jsnull))
+  (read-json* 'read-json i
+              #:null jsnull
+              #:make-object make-immutable-hasheq
+              #:make-list values
+              #:make-key string->symbol
+              #:make-string values))
 
-(define (read-json* who i jsnull)
+(define (read-json* who i
+                    #:null jsnull
+                    #:make-object make-object-rep
+                    #:make-list make-list-rep
+                    #:make-key make-key-rep
+                    #:make-string make-string-rep)
   ;; Follows the specification (eg, at json.org) -- no extensions.
   ;;
   (define (err fmt . args)
@@ -363,9 +377,8 @@
       (unless (char=? #\: ch)
         (err "error while parsing a json object pair"))
       (read-byte i)
-      (cons (string->symbol k) (read-json)))
-    (for/hasheq ([p (in-list (read-list 'object #\} read-pair))])
-      (values (car p) (cdr p))))
+      (cons (make-key-rep k) (read-json)))
+    (make-object-rep (read-list 'object #\} read-pair)))
   ;;
   (define (read-literal bstr)
     (define len (bytes-length bstr))
@@ -524,9 +537,10 @@
            (eqv? ch #\-))
        (read-number ch)]
       [(eqv? ch #\") (read-byte i)
-                     (read-a-string)]
+                     (make-string-rep (read-a-string))]
       [(eqv? ch #\[) (read-byte i)
-                     (read-list 'array #\] read-json)]
+                     (make-list-rep
+                      (read-list 'array #\] read-json))]
       [(eqv? ch #\{) (read-byte i)
                      (read-hash)]
       [else (bad-input)]))
@@ -567,8 +581,18 @@
 
 (define (string->jsexpr str #:null [jsnull (json-null)])
   ;; str is protected by contract
-  (read-json* 'string->jsexpr (open-input-string str) jsnull))
+  (read-json* 'string->jsexpr (open-input-string str)
+              #:null jsnull
+              #:make-object make-immutable-hasheq
+              #:make-list values
+              #:make-key string->symbol
+              #:make-string values))
 
 (define (bytes->jsexpr bs #:null [jsnull (json-null)])
   ;; bs is protected by contract
-  (read-json* 'bytes->jsexpr (open-input-bytes bs) jsnull))
+  (read-json* 'bytes->jsexpr (open-input-bytes bs)
+              #:null jsnull
+              #:make-object make-immutable-hasheq
+              #:make-list values
+              #:make-key string->symbol
+              #:make-string values))
