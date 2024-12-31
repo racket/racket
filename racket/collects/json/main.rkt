@@ -66,7 +66,8 @@
   ))
 
 (module* for-extension #f
-  (provide read-json*))
+  (provide write-json*
+           read-json*))
 
 ;; -----------------------------------------------------------------------------
 ;; CUSTOMIZATION
@@ -99,9 +100,31 @@
                     #:null [jsnull (json-null)]
                     #:encode [enc 'control]
                     #:indent [indent #f])
-  (write-json* 'write-json x o jsnull enc indent))
+  (write-json* 'write-json x o
+               #:null jsnull
+               #:encode enc
+               #:indent indent
+               #:object-rep? hash?
+               #:object-rep->hash values
+               #:list-rep? list?
+               #:list-rep->list values
+               #:key-rep? symbol?
+               #:key-rep->string symbol->immutable-string
+               #:string-rep? string?
+               #:string-rep->string values))
 
-(define (write-json* who x o jsnull enc indent)
+(define (write-json* who x o
+                     #:null jsnull
+                     #:encode enc
+                     #:indent indent
+                     #:object-rep? object-rep?
+                     #:object-rep->hash object-rep->hash
+                     #:list-rep? list-rep?
+                     #:list-rep->list list-rep->list
+                     #:key-rep? key-rep?
+                     #:key-rep->string key-rep->string
+                     #:string-rep? string-rep?
+                     #:string-rep->string string-rep->string)
   (define (escape m)
     (define ch (string-ref m 0))
     (case ch
@@ -170,39 +193,41 @@
           [(eq? x #f)     (write-bytes #"false" o)]
           [(eq? x #t)     (write-bytes #"true" o)]
           [(eq? x jsnull) (write-bytes #"null" o)]
-          [(string? x) (write-json-string x)]
-          [(list? x)
-           (write-bytes #"[" o)
-           (when (pair? x)
-             (for/fold ([first? #t])
-                       ([x (in-list x)])
-               (unless first? (write-bytes #"," o))
-               (format/write-indented-newline)
-               (format/write-indent-bytes)
-               (write-jsval x (add1 layer))
-               #f)
-             (format/write-indented-newline))
-           (write-bytes #"]" o)]
-          [(hash? x)
+          [(string-rep? x) (write-json-string (string-rep->string x))]
+          [(list-rep? x)
+           (let ([x (list-rep->list x)])
+             (write-bytes #"[" o)
+             (when (pair? x)
+               (for/fold ([first? #t])
+                         ([x (in-list x)])
+                 (unless first? (write-bytes #"," o))
+                 (format/write-indented-newline)
+                 (format/write-indent-bytes)
+                 (write-jsval x (add1 layer))
+                 #f)
+               (format/write-indented-newline))
+             (write-bytes #"]" o))]
+          [(object-rep? x)
            (define write-hash-kv
              (let ([first? #t])
                (λ (k v)
-                 (unless (symbol? k)
+                 (unless (key-rep? k)
                    (raise-type-error who "legal JSON key value" k))
                  (if first? (set! first? #f) (write-bytes #"," o))
                  (format/write-indented-newline)
                  (format/write-indent-bytes)
                  ;; use a string encoding so we get the same deal with
                  ;; `rx-to-encode'
-                 (write-json-string (symbol->immutable-string k))
+                 (write-json-string (key-rep->string k))
                  (write-bytes #":" o)
                  (format/write-whitespace)
                  (write-jsval v (add1 layer)))))
-           (write-bytes #"{" o)
-           (unless (hash-empty? x)
-             (hash-for-each x write-hash-kv #t)
-             (format/write-indented-newline))
-           (write-bytes #"}" o)]
+           (let ([x (object-rep->hash x)])
+             (write-bytes #"{" o)
+             (unless (hash-empty? x)
+               (hash-for-each x write-hash-kv #t)
+               (format/write-indented-newline))
+             (write-bytes #"}" o))]
           [else (raise-type-error who "legal JSON value" x)]))
   (void))
 
@@ -568,7 +593,18 @@
                         #:encode [enc 'control]
                         #:indent [indent #f])
   (define o (open-output-string))
-  (write-json* 'jsexpr->string x o jsnull enc indent)
+  (write-json* 'jsexpr->string x o
+               #:null jsnull
+               #:encode enc
+               #:indent indent
+               #:object-rep? hash?
+               #:object-rep->hash values
+               #:list-rep? list?
+               #:list-rep->list values
+               #:key-rep? symbol?
+               #:key-rep->string symbol->immutable-string
+               #:string-rep? string?
+               #:string-rep->string values)
   (get-output-string o))
 
 (define (jsexpr->bytes x
@@ -576,7 +612,18 @@
                        #:encode [enc 'control]
                        #:indent [indent #f])
   (define o (open-output-bytes))
-  (write-json* 'jsexpr->bytes x o jsnull enc indent)
+  (write-json* 'jsexpr->bytes x o
+               #:null jsnull
+               #:encode enc
+               #:indent indent
+               #:object-rep? hash?
+               #:object-rep->hash values
+               #:list-rep? list?
+               #:list-rep->list values
+               #:key-rep? symbol?
+               #:key-rep->string symbol->immutable-string
+               #:string-rep? string?
+               #:string-rep->string values)
   (get-output-bytes o))
 
 (define (string->jsexpr str #:null [jsnull (json-null)])
