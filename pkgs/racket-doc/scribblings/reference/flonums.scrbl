@@ -79,6 +79,9 @@ floating-point specification does not make enough guarantees to say
 more about the interaction with @racket[flsingle].)
 
 
+@history[#:added "7.8.0.7"]}
+
+
 @defproc[(flbit-field [a flonum?] [start (integer-in 0 64)] [end (integer-in 0 64)])
          exact-nonnegative-integer?]{
 
@@ -93,9 +96,6 @@ set in its (semi-infinite) two's complement representation.
 ]
 
 @history[#:added "8.15.0.3"]}
-
-
-@history[#:added "7.8.0.7"]}
 
 
 @deftogether[(
