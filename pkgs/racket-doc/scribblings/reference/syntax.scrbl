@@ -2070,6 +2070,14 @@ first argument is implicit in the original source). The property
 affects only the format of @racket[exn:fail:contract:arity]
 exceptions, not the result of @racket[procedure-arity].
 
+Along similar lines, Racket looks for a
+@indexed-racket['body-as-unsafe] property when compiling a
+@racket[lambda] or @racket[case-lambda] expression. If it is present
+with a true value, then the procedure body may be compiled in unsafe
+mode in same sense as @racket[(#%declare #:unsafe)]. The
+@indexed-racket['body-as-unsafe] property is allowed only when the
+current @tech{code inspector} is the initial one at compile time.
+
 When a keyword-accepting procedure is bound to an identifier in
 certain ways, and when the identifier is used in the function position
 of an application form, then the application form may be expanded in
@@ -2095,7 +2103,8 @@ optional-argument value was provided.
 @history[#:changed "8.13.0.5" @elem{
 Adjusted binding so that @racket[(free-identifier=? #'λ #'lambda)] produces
 @racket[#t].
-}]
+}
+         #:changed "8.15.0.12" @elem{Added the @racket['body-as-unsafe] property.}]
 }
 
 

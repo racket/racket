@@ -19,6 +19,7 @@
          "letrec.rkt"
          "unnest-let.rkt"
          "infer-name.rkt"
+         "maybe-unsafe.rkt"
          "ptr-ref-set.rkt"
          "literal.rkt"
          "authentic.rkt"
@@ -506,14 +507,14 @@
            [`(lambda ,formals ,body ...)
             (infer-procedure-name
              v
-             `(lambda ,formals ,@(schemify-body body 'tail))
+             `(lambda ,formals ,@(schemify-body (maybe-unsafe v body) 'tail))
               explicit-unnamed?)]
            [`(case-lambda [,formalss ,bodys ...] ...)
             (infer-procedure-name
              v
              `(case-lambda ,@(for/list ([formals (in-list formalss)]
                                         [body (in-list bodys)])
-                               `[,formals ,@(schemify-body body 'tail)]))
+                               `[,formals ,@(schemify-body (maybe-unsafe v body) 'tail)]))
              explicit-unnamed?)]
            [`(define-values (,struct:s ,make-s ,s? ,acc/muts ...)
                (let-values (((,struct: ,make ,?1 ,-ref ,-set!) ,mk))

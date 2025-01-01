@@ -38,7 +38,8 @@
                (not post-schemify?)
                (or (eq? defn 'inline)
                    (can-inline? lam)))
-          (known-procedure/can-inline arity-mask (if (and unsafe-mode? (not (aim? target 'cify)))
+          (known-procedure/can-inline arity-mask (if (or (and unsafe-mode? (not (aim? target 'cify)))
+                                                         (wrap-property lam 'body-as-unsafe))
                                                      (add-begin-unsafe lam)
                                                      lam))]
          [(single-valued-lambda? lam knowns prim-knowns imports mutated)

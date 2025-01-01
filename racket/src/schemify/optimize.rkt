@@ -20,7 +20,7 @@
 ;; have already been optimized.
 
 (define (optimize v prim-knowns primitives knowns imports mutated target compiler-query)
-  (let ([v (unwrap-let v)])
+  (let ([v (unwrap-let v #:keep-unsafe-begin? #t)])
     (match v
       [`(if ,t ,e1 ,e2)
        (if (literal? t)
@@ -28,6 +28,14 @@
            v)]
       [`(begin (quote ,_) ,e . ,es) ; avoid `begin` that looks like it provides a name
        (optimize (reannotate v `(begin ,e . ,es)) prim-knowns primitives knowns imports mutated target compiler-query)]
+      [`(begin-unsafe ,e)
+       (define new-e (optimize e prim-knowns primitives knowns imports mutated target compiler-query))
+       ;; simple heuristic to discard `begin-unsafe` when it's useless and could
+       ;; get in the way of constant folding and propagation:
+       (cond
+         [(wrap-pair? new-e)
+          `(begin-unsafe ,new-e)]
+         [else new-e])]
       [`(not ,t)
        (if (literal? t)
            `,(not (unwrap t))

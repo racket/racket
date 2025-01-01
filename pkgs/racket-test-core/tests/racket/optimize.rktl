@@ -7072,6 +7072,28 @@
 (test #t 'not-not-utf-8 (not (bytes-utf-8-index (bytes 255) 1)))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check that unsafe functions cooperate with cross-module inlining
+
+(register-top-level-module
+ (module module-that-provides-unsafe-curried-function racket/base
+   (require (for-syntax racket/base))
+   (provide do-add)
+   (define-syntax (define-unsafe stx)
+     (syntax-case stx ()
+       [(_ (id arg ...) body)
+        #`(define id #,(syntax-property #`(lambda (arg ...) body) 'body-as-unsafe #t))]))
+   (define-unsafe (do-add x i1 i2 i3 i4) (lambda (y) (+ x y)))))
+
+(test-comp `(module m racket/base
+              (require 'module-that-provides-unsafe-curried-function)
+              do-add
+              ((do-add 1 0 0 0 0) 2))
+           `(module m racket/base
+              (require 'module-that-provides-unsafe-curried-function)
+              do-add
+              3))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Try a program that triggers lots of inlining, which at one point
 ;; exposed a bug related to the closing of `lambda` forms within
 ;; an inlined function. Thanks to Tom Gilray for the test.

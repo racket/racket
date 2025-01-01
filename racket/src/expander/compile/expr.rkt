@@ -7,6 +7,7 @@
          "../syntax/scope.rkt"
          "../syntax/taint.rkt"
          "../syntax/property.rkt"
+         "../syntax/error.rkt"
          "../namespace/namespace.rkt"
          "../namespace/module.rkt"
          "../syntax/binding.rkt"
@@ -19,6 +20,7 @@
          "reserved-symbol.rkt"
          "self-quoting.rkt"
          "../host/correlate.rkt"
+         "../eval/protect.rkt"
          "correlate.rkt")
 
 (provide compile
@@ -154,9 +156,17 @@
                                            (if (syntax? name) (syntax-e name) name))
                       s))
   (define as-method (syntax-property orig-s 'method-arity-error))
-  (if as-method
-      (correlated-property (->correlated named-s) 'method-arity-error as-method)
-      named-s))
+  (define method-s
+    (if as-method
+        (correlated-property (->correlated named-s) 'method-arity-error as-method)
+        named-s))
+  (define as-unsafe (syntax-property orig-s 'body-as-unsafe))
+  (cond
+    [as-unsafe
+     (unless (eq? (current-code-inspector) initial-code-inspector)
+       (raise-syntax-error #f "unsafe procedure compilation disallowed by code inspector" orig-s))
+     (correlated-property (->correlated method-s) 'body-as-unsafe #t)]
+    [else method-s]))
 
 (define (compile-let p cctx name #:rec? rec? result-used?)
   (define body (parsed-let_-values-body p))
