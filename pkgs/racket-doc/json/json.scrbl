@@ -1,6 +1,6 @@
 #lang scribble/manual
 
-@(require (for-label racket/base racket/contract json racket/port))
+@(require (for-label racket/base racket/contract json racket/port racket/treelist))
 
 @(define website @link["http://json.org"]{JSON web site})
 @(define rfc @link["http://www.ietf.org/rfc/rfc4627.txt"]{JSON RFC})
@@ -214,6 +214,88 @@ the @rfc for more information about JSON.
 @examples[#:eval ev
   (bytes->jsexpr #"{\"pancake\" : 5, \"waffle\" : 7}")
 ]
+}
+
+@section{Extension Procedures}
+
+@defmodule[(submod json for-extension)]
+
+The bindings documented in this section are provided by the
+@racket[(submod json for-extension)] module, not @racketmodname[json].
+
+It may be more convenient for some programs to use a different representation of
+JSON than a @racket[jsexpr?].  These procedures allow for customization of
+representation read or written. For example, in the Rhombus language it is more
+natural to use String (which are immutable) for object keys, List (aka
+@racket[treelist?]) for JSON lists, and String as JSON string values.
+
+@defproc[(write-json* [who symbol?]
+                      [x any/c]
+                      [out output-port?]
+                      [#:null jsnull any/c]
+                      [#:encode encode (or/c 'control 'all)]
+                      [#:indent indent (or/c #f #\tab natural-number/c)]
+                      [#:object-rep? object-rep? (-> any/c boolean?)]
+                      [#:object-rep->hash object-rep->hash (-> any/c hash?)]
+                      [#:list-rep? list-rep? (-> any/c boolean?)]
+                      [#:list-rep->list list-rep->list (-> any/c list?)]
+                      [#:key-rep? key-rep? (-> any/c boolean?)]
+                      [#:key-rep->string key-rep->string (-> any/c string?)]
+                      [#:string-rep? string-rep? (-> any/c boolean?)]
+                      [#:string-rep->string string-rep->string (-> any/c string?)])
+         void?]{
+  Writes the value @racket[x], encoded as JSON, to the @racket[out] output port.
+
+  The @racket[who] argument is used for error reporting.  The @racket[jsnull],
+  @racket[encode], and @racket[indent] arguments behave the same as described
+  for @racket[write-json].
+
+  The @racket[object-rep?] function should recognize values that will be written
+  as JSON objects, and @racket[object-rep->hash] must convert the value to a
+  @racket[hash?].
+
+  The @racket[list-rep?] function should recognize values that will be written
+  as JSON arrays, and @racket[list-rep->list] must convert the value to a
+  @racket[list?].
+
+  The @racket[key-rep?] function should recognize values that will be written as
+  JSON object keys, and @racket[key-rep->string] must convert the value to a
+  @racket[string?].
+
+  The @racket[string-rep?] function should recognize values that will be written
+  as JSON strings, and @racket[string-rep->string] must convert the value to a
+  @racket[string?].
+
+@history[#:added "8.15.0.11"]
+}
+
+@defproc[(read-json* [who symbol?]
+                     [in input-port?]
+                     [#:null jsnull any/c]
+                     [#:make-object make-object-rep (-> (listof pair?) any/c)]
+                     [#:make-list make-list-rep (-> list? any/c)]
+                     [#:make-key make-key-rep (-> string? any/c)]
+                     [#:make-string make-string-rep (-> string? any/c)])
+         any/c]{
+  Reads a value from a single JSON-encoded input port @racket[in] as a
+  Racket value, or produces @racket[eof] if only whitespace.
+
+  The @racket[who] argument is used for error reporting.  The @racket[jsnull]
+  argument behaves the same as described in @racket[read-json].
+
+  The @racket[make-object-rep] receives a @racket[list?] of key-value pairs,
+  and returns a custom representation of a JSON object.
+
+  The @racket[make-list-rep] receives a @racket[list?] of values and returns a
+  custom representation of a JSON array.
+
+  The @racket[make-key-rep] receives a @racket[string?] values for an object
+  key, and returns a custom representation of a JSON key.
+
+  The @racket[make-string-rep] receives a @racket[string?] value,
+  and returns a custom representation of a JSON string.
+
+@history[#:added "8.15.0.11"]
 }
 
 @section{A Word About Design}
