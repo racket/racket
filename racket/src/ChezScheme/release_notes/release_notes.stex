@@ -121,6 +121,12 @@ Online versions of both books can be found at
 The type recovery pass has improved support for \scheme{abs} with a fixnum argument
 and added support for \scheme{1+}, \scheme{1-}, and \scheme{-1+}.
 
+\subsection{Single-argument \scheme{fx-/wraparound} (10.2.0)}
+
+The \scheme{fx-/wraparound} function changed to accept a single
+argument, which makes it more consistent with the R6RS \scheme{fx-}
+function.
+
 \subsection{Foreign pointers to Scheme objects (10.2.0)}
 
 The \scheme{make-ftype-scheme-object-pointer} function facilitates a
@@ -129,7 +135,7 @@ under control of the memory manager---especially addresses for
 bytevector and flvector content. Unlike extracting an address via
 \scheme{object->reference-address} and using it to construct a regular
 ftype pointer, the \scheme{make-ftype-scheme-object-pointer} function
-creates an ftype pointer that coopeartes with the memory manager to
+creates an ftype pointer that cooperates with the memory manager to
 ensure that the encapsulated address does not go stale. When the
 pointer is passed in a call to a foreign function, its address can be
 extracted after the point where garbage collections can occur,
@@ -137,7 +143,7 @@ assuming that \scheme{__collect_safe} is not used.
 
 To make this unified pointer representation at the ftype pointer layer
 (\scheme{ftype-ref}, \scheme{ftype-set!}, etc.) as flexible as the raw
-address layer (\scheme{foreign-red}, \scheme{foreign-set!}, etc.), new
+address layer (\scheme{foreign-ref}, \scheme{foreign-set!}, etc.), new
 forms such as \scheme{ftype-any-ref} use generic pointers independent
 of the pointer's ftype. This flexibility comes at the cost of
 consistency checking, which means that the new operations are less
@@ -2805,6 +2811,13 @@ in fasl files does not generally make sense.
 
 %-----------------------------------------------------------------------------
 \section{Bug Fixes}\label{section:bugfixes}
+
+\subsection{Fix \scheme{fx-/wraparound} with \scheme{0} first argument (10.2.0)}
+
+When \scheme{fx-/wraparound} was called with \scheme{0} as its first
+argument, the call could be rewritten to have a single argument, even though
+\scheme{fx-/wraparound} required two arguments. As part of the repair,
+\scheme{fx-/wraparound} changed to accept a single argument.
 
 \subsection{Repair executable-relative search for NetBSD (10.2.0)}
 
