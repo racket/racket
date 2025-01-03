@@ -226,8 +226,8 @@ The bindings documented in this section are provided by the
 It may be more convenient for some programs to use a different representation of
 JSON than a @racket[jsexpr?].  These procedures allow for customization of
 representation read or written. For example, in the Rhombus language it is more
-natural to use String (which are immutable) for object keys, List (aka
-@racket[treelist?]) for JSON lists, and String as JSON string values.
+natural to use strings (which are immutable) for object keys, Rhombus lists (a.k.a.
+@racket[treelist?]) for JSON lists, and immutable strings as JSON string values.
 
 @defproc[(write-json* [who symbol?]
                       [x any/c]
