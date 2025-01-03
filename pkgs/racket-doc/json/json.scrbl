@@ -266,7 +266,7 @@ natural to use String (which are immutable) for object keys, List (aka
   as JSON strings, and @racket[string-rep->string] must convert the value to a
   @racket[string?].
 
-@history[#:added "8.15.0.11"]
+@history[#:added "8.15.0.12"]
 }
 
 @defproc[(read-json* [who symbol?]
@@ -295,7 +295,7 @@ natural to use String (which are immutable) for object keys, List (aka
   The @racket[make-string-rep] receives a @racket[string?] value,
   and returns a custom representation of a JSON string.
 
-@history[#:added "8.15.0.11"]
+@history[#:added "8.15.0.12"]
 }
 
 @section{A Word About Design}
