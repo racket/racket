@@ -43,7 +43,7 @@
   [fx+ (known-procedure/folding/limited -1 'fixnum)]
   [fx+/wraparound (known-procedure/folding/limited 4 'fixnum)]
   [fx- (known-procedure/folding/limited -2 'fixnum)]
-  [fx-/wraparound (known-procedure/folding/limited 4 'fixnum)]
+  [fx-/wraparound (known-procedure/folding/limited 6 'fixnum)]
   [fx->fl (known-procedure/has-unsafe/folding/limited 2 'unsafe-fx->fl 'fixnum)]
   [fx< (known-procedure/folding/limited -2 'fixnum)]
   [fx<= (known-procedure/folding/limited -2 'fixnum)]

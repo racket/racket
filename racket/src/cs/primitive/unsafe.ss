@@ -88,7 +88,7 @@
   [unsafe-fx+ (known-procedure/then-pure/folding-unsafe -1 'fx+)]
   [unsafe-fx+/wraparound (known-procedure/then-pure/folding-unsafe 4 'fx+/wraparound)]
   [unsafe-fx- (known-procedure/then-pure/folding-unsafe -2 'fx-)]
-  [unsafe-fx-/wraparound (known-procedure/then-pure/folding-unsafe 4 'fx-/wraparound)]
+  [unsafe-fx-/wraparound (known-procedure/then-pure/folding-unsafe 6 'fx-/wraparound)]
   [unsafe-fx->extfl (known-procedure/then-pure/folding-unsafe 2 'fx->extfl)]
   [unsafe-fx->fl (known-procedure/then-pure/folding-unsafe 2 'fx->fl)]
   [unsafe-fx< (known-procedure/then-pure/folding-unsafe -2 'fx<)]
