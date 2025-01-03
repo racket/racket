@@ -1487,7 +1487,7 @@ static int run_from_cmd_line(int argc, char *_argv[],
   "  -l <path>, --lib <path>\n"
   "     Like -e '(require (lib \"<path>\"))' [*]\n"
   "  -p <package>\n"
-  "     Like -e '(require (planet \"<package>\")' [*]\n"
+  "     Like -e '(require (planet \"<package>\"))' [*]\n"
   "  -r <file>, --script <file>\n"
   "     Same as -f <file> -N <file> --\n"
   "  -u <file>, --require-script <file>\n"
