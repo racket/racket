@@ -131,6 +131,17 @@ A similar trick can be used to write Racket code in Windows
   "Hello, world!"
   }|
 
+Newer versions of Windows include the PowerShell scripting language. Using Racket
+through a PowerShell script is a little different than using it in a batch file.  PowerShell
+scripts use a @as-index{@tt{.ps1}} extension:
+
+@verbatim[#:indent 2]|{
+  ; Racket.exe (Resolve-Path $PSCommandPath) $args
+  ; Exit
+  #lang racket/base
+  "Hello, world!"
+}|
+
 @;{
 Original trick from Ben Goetter, who used:
 
