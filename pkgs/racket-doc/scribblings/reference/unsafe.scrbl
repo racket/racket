@@ -92,7 +92,7 @@ For @tech{fixnums}: Unchecked versions of @racket[fxpopcount],
 
 @deftogether[(
 @defproc[(unsafe-fx+/wraparound [a fixnum?] [b fixnum?]) fixnum?]
-@defproc[(unsafe-fx-/wraparound [a fixnum?] [b fixnum?]) fixnum?]
+@defproc[(unsafe-fx-/wraparound [a fixnum? 0] [b fixnum?]) fixnum?]
 @defproc[(unsafe-fx*/wraparound [a fixnum?] [b fixnum?]) fixnum?]
 @defproc[(unsafe-fxlshift/wraparound [a fixnum?] [b fixnum?]) fixnum?]
 )]{
@@ -101,7 +101,8 @@ For @tech{fixnums}: Unchecked versions of @racket[fx+/wraparound],
 @racket[fx-/wraparound], @racket[fx*/wraparound], and
 @racket[fxlshift/wraparound].
 
-@history[#:added "7.9.0.6"]}
+@history[#:added "7.9.0.6"
+         #:changed "8.15.0.12" @elem{Changed @racket[unsafe-fx-/wraparound] to accept a single argument.}]}
 
 
 @deftogether[(

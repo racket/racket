@@ -95,6 +95,16 @@
         (bitwise-and v (greatest-fixnum))
         (bitwise-ior v (least-fixnum)))))
 
+(define (wraparound/unary-or-binary op)
+  (case-lambda
+    [(x)
+     (unless (fixnum? x) (raise-argument-error 'wraparound "fixnum?" x))
+     (define v (op x))
+     (if (zero? (bitwise-and v (add1 (greatest-fixnum))))
+         (bitwise-and v (greatest-fixnum))
+         (bitwise-ior v (least-fixnum)))]
+    [(x y) ((wraparound op) x y)]))
+
 ; Check some special cases of the wraparound versions
 (let ()
   (define fxw+ (wraparound +))
@@ -147,7 +157,7 @@
         (list fxremainder unsafe-fxremainder)
         (list fxmodulo unsafe-fxmodulo)
         (list (wraparound +) fx+/wraparound)
-        (list (wraparound -) fx-/wraparound)
+        (list (wraparound/unary-or-binary -) fx-/wraparound)
         (list (wraparound *) fx*/wraparound)
         (list (wraparound lshift) fxlshift/wraparound)
         (list fx+/wraparound unsafe-fx+/wraparound)
