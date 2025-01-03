@@ -93,7 +93,7 @@ of the definition of @racket[init-decl]:
 (define-syntax-class init-decl
   #:attributes (internal external default)
   (pattern internal:id
-           #:with external #:internal
+           #:with external #'internal
            #:with default ???)
   (pattern (mr:maybe-renamed)
            #:with internal #'mr.internal
@@ -123,7 +123,7 @@ respectively. More precisely:
 (define-syntax-class init-decl
   #:attributes (internal external default)
   (pattern internal:id
-           #:with external #:internal
+           #:with external #'internal
            #:with default #'())
   (pattern (mr:maybe-renamed)
            #:with internal #'mr.internal
