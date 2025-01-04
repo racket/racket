@@ -20,7 +20,7 @@ support for running general-purpose networked servers.}
                        [#:reuse? reuse? any/c #t]
                        [#:max-allow-wait max-allow-wait exact-nonnegative-integer? 4]
                        [#:max-concurrent max-concurrent
-                                         (or/c +inf.0 exact-positive-integer?)
+                                         (or/c +inf.0 natural-number/c)
                                          +inf.0]
                        [#:listen-proc listen
                                       (-> listen-port-number?
