@@ -11,7 +11,7 @@
 (define (server-proc/c res/c)
   (->* ((-> input-port? output-port? any))
        (#:max-concurrent   (or/c +inf.0 natural-number/c)
-        #:listener         (and/c listener? evt?)
+        #:listener         evt?
         #:accept-proc      (-> any/c (values input-port? output-port?))
         #:close-proc       (-> any/c void?)
         #:timeout-evt-proc (-> thread? input-port? output-port? boolean? evt?))

@@ -19,7 +19,7 @@ support for running general-purpose networked servers.}
                                          (or/c +inf.0 natural-number/c)
                                          +inf.0]
                        [#:listener listener
-                                      (and/c listener? evt?)
+                                      evt?
                                       (tcp-listen 8080 4 #t "localhost")]
                        [#:accept-proc accept
                                       (-> listener? (values input-port? output-port?))
