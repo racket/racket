@@ -276,6 +276,13 @@ TO DO:
         '((win32-store "ROOT"))]
        [(macosx darwin)
         '((macosx-keychain #f))]
+       [(ios)
+        ;; On iOS, the function SecTrustCopyAnchorCertificates is not
+        ;; provided by the Security framework, so applications must
+        ;; bundle and provide their own certificates. Log an error here
+        ;; if the sources have not been changed.
+        (log-openssl-error "ssl-default-verify-sources must be set on iOS")
+        null]
        [else
         (x509-root-sources)]))))
 
@@ -1376,9 +1383,9 @@ TO DO:
            (if connect? 'connect 'accept)
            (if connect? "client" "server")
            context-or-encrypt-method))
-  (atomically ;; connect functions to subsequent check-valid (ie, ERR_get_error)
-   (let-values ([(mzctx ctx) (get-context who context-or-encrypt-method connect?)])
-     (check-valid ctx who "context creation")
+  (let-values ([(mzctx ctx) (get-context who context-or-encrypt-method connect?)])
+    ;; note: `get-context` above should report any failures itself, so assume `ctx` is valid
+    (atomically ;; ensure finaization and connect functions to subsequent check-valid (ie, ERR_get_error)
      (with-failure
       (lambda () (when (and ctx
                        (need-ctx-free? context-or-encrypt-method))

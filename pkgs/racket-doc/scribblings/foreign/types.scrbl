@@ -1100,11 +1100,16 @@ Examples:
 }
 
 
-@defform/subs[#:literals (i o io)
+@defform/subs[#:literals (i o io
+                          atomic raw atomic nonatomic tagged
+                          atomic-interior interior
+                          zeroed-atomic zeroed-atomic-interior
+                          stubborn uncollectable eternal)
               (_ptr mode type-expr maybe-malloc-mode)
               ([mode i o io]
                [maybe-malloc-mode (code:line) #f raw atomic nonatomic tagged
                                   atomic-interior interior
+                                  zeroed-atomic zeroed-atomic-interior
                                   stubborn uncollectable eternal])]{
 
 Creates a C pointer type, where @racket[mode] indicates input or
@@ -1160,7 +1165,9 @@ allocated using @racket[(malloc type-expr)] if
 @history[#:changed "7.7.0.6" @elem{The modes @racket[i], @racket[o],
                                    and @racket[io] match as symbols
                                    instead of free identifiers.}
-         #:changed "8.0.0.13" @elem{Added @racket[malloc-mode].}]}
+         #:changed "8.0.0.13" @elem{Added @racket[maybe-malloc-mode].}
+         #:changed "8.14.0.4" @elem{Added the @racket[zeroed-atomic] and
+                                    @racket[zeroed-atomic-interior] allocation modes.}]}
 
 
 @defform[(_box type maybe-malloc-mode)]{
@@ -1182,6 +1189,7 @@ Example:
 
 @defform/subs[#:literals (atomic raw atomic nonatomic tagged
                           atomic-interior interior
+                          zeroed-atomic zeroed-atomic-interior
                           stubborn uncollectable eternal)
               (_list mode type maybe-len maybe-mode)
               ([mode i o io]
@@ -1191,6 +1199,7 @@ Example:
                            atomic
                            raw atomic nonatomic tagged
                            atomic-interior interior
+                           zeroed-atomic zeroed-atomic-interior
                            stubborn uncollectable eternal])]{
 
 A @tech{custom function type} that is similar to @racket[_ptr], except
@@ -1227,10 +1236,12 @@ return two values, the vector and the boolean.
       -> (values vec res))
 ]
 
-@history[#:changed "7.7.0.2" @elem{Added @racket[maybe-mode].}]
+@history[#:changed "7.7.0.2" @elem{Added @racket[maybe-mode].}
          #:changed "7.7.0.6" @elem{The modes @racket[i], @racket[o],
                                    and @racket[io] match as symbols
-                                   instead of free identifiers.}]}
+                                   instead of free identifiers.}
+         #:changed "8.14.0.4" @elem{Added the @racket[zeroed-atomic]
+                                    @racket[zeroed-atomic-interior] allocation modes.}]}
 
 @defform[(_vector mode type maybe-len maybe-mode)]{
 
@@ -1321,6 +1332,7 @@ results.
                             [alignment (or/c #f 1 2 4 8 16) #f]
                             [malloc-mode (or/c 'raw 'atomic 'nonatomic 'tagged
                                                'atomic-interior 'interior
+                                               'zeroed-atomic 'zeroed-atomic-interior
                                                'stubborn 'uncollectable 'eternal)
                                          'atomic])
          ctype?]{
@@ -1344,13 +1356,16 @@ allocation mode is @emph{not} used for an argument to a
 @tech{callback}, because temporary space allocated on the C stack
 (possibly by the calling convention) is used in that case.
 
-@history[#:changed "7.3.0.8" @elem{Added the @racket[malloc-mode] argument.}]}
+@history[#:changed "7.3.0.8" @elem{Added the @racket[malloc-mode] argument.}
+         #:changed "8.14.0.4" @elem{Added the @racket['zeroed-atomic]
+                                    @racket['zeroed-atomic-interior] allocation modes.}]}
 
 
 @defproc[(_list-struct [#:alignment alignment (or/c #f 1 2 4 8 16) #f] 
                        [#:malloc-mode malloc-mode
                                       (or/c 'raw 'atomic 'nonatomic 'tagged
                                             'atomic-interior 'interior
+                                            'zeroed-atomic 'zeroed-atomic-interior
                                             'stubborn 'uncollectable 'eternal)
                                       'atomic]
                        [type ctype?] ...+)
@@ -1364,7 +1379,9 @@ structs must be allocated using @racket[malloc] with @racket[malloc-mode]; the c
 the allocated space, so it is inefficient. Use @racket[define-cstruct]
 below for a more efficient approach.
 
-@history[#:changed "6.0.0.6" @elem{Added @racket[#:malloc-mode].}]}
+@history[#:changed "6.0.0.6" @elem{Added @racket[#:malloc-mode].}]
+         #:changed "8.14.0.4" @elem{Added the @racket['zeroed-atomic]
+                                    @racket['zeroed-atomic-interior] allocation modes.}}
 
 
 @defform[(define-cstruct id/sup ([field-id type-expr field-option ...] ...)
@@ -1381,6 +1398,7 @@ below for a more efficient approach.
                       [alignment-expr (or/c #f 1 2 4 8 16)]
                       [malloc-mode-expr (or/c 'raw 'atomic 'nonatomic 'tagged
                                               'atomic-interior 'interior
+                                              'zeroed-atomic 'zeroed-atomic-interior
                                               'stubborn 'uncollectable 'eternal)]
                       [prop-expr struct-type-property?])]{
 
@@ -1639,7 +1657,9 @@ expects arguments for both the super fields and the new ones:
 
 @history[#:changed "6.0.0.6" @elem{Added @racket[#:malloc-mode].}
 #:changed "6.1.1.8" @elem{Added @racket[#:offset] for fields.}
-#:changed "6.3.0.13" @elem{Added @racket[#:define-unsafe].}]}
+#:changed "6.3.0.13" @elem{Added @racket[#:define-unsafe].}
+#:changed "8.14.0.4" @elem{Added the @racket['zeroed-atomic]
+                           @racket['zeroed-atomic-interior] allocation modes.}]}
 
 @defproc[(compute-offsets [types (listof ctype?)]
                           [alignment (or/c #f 1 2 4 8 16) #f]

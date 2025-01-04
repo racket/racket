@@ -866,7 +866,7 @@ The same as @racket[(null? v)].
 The same as @racket[(car lst)], but only for lists (that are not empty).
 
 @mz-examples[#:eval list-eval
-  (first '(1 2 3 4 5 6 7 8 9 10))]}
+  (first '(1 2 3 4 5 6 7 8 9 10 11 12 13 14 15))]}
 
 
 @defproc[(rest [lst list?])
@@ -875,7 +875,7 @@ The same as @racket[(car lst)], but only for lists (that are not empty).
 The same as @racket[(cdr lst)], but only for lists (that are not empty).
 
 @mz-examples[#:eval list-eval
-  (rest '(1 2 3 4 5 6 7 8 9 10))]}
+  (rest '(1 2 3 4 5 6 7 8 9 10 11 12 13 14 15))]}
 
 
 @defproc[(second [lst list?]) any/c]{
@@ -883,7 +883,7 @@ The same as @racket[(cdr lst)], but only for lists (that are not empty).
 Returns the second element of the list.
 
 @mz-examples[#:eval list-eval
-  (second '(1 2 3 4 5 6 7 8 9 10))]}
+  (second '(1 2 3 4 5 6 7 8 9 10 11 12 13 14 15))]}
 
 
 @defproc[(third [lst list?]) any/c]{
@@ -891,7 +891,7 @@ Returns the second element of the list.
 Returns the third element of the list.
 
 @mz-examples[#:eval list-eval
-  (third '(1 2 3 4 5 6 7 8 9 10))]}
+  (third '(1 2 3 4 5 6 7 8 9 10 11 12 13 14 15))]}
 
 
 @defproc[(fourth [lst list?]) any/c]{
@@ -899,7 +899,7 @@ Returns the third element of the list.
 Returns the fourth element of the list.
 
 @mz-examples[#:eval list-eval
-  (fourth '(1 2 3 4 5 6 7 8 9 10))]}
+  (fourth '(1 2 3 4 5 6 7 8 9 10 11 12 13 14 15))]}
 
 
 @defproc[(fifth [lst list?]) any/c]{
@@ -907,7 +907,7 @@ Returns the fourth element of the list.
 Returns the fifth element of the list.
 
 @mz-examples[#:eval list-eval
-  (fifth '(1 2 3 4 5 6 7 8 9 10))]}
+  (fifth '(1 2 3 4 5 6 7 8 9 10 11 12 13 14 15))]}
 
 
 @defproc[(sixth [lst list?]) any/c]{
@@ -915,7 +915,7 @@ Returns the fifth element of the list.
 Returns the sixth element of the list.
 
 @mz-examples[#:eval list-eval
-  (sixth '(1 2 3 4 5 6 7 8 9 10))]}
+  (sixth '(1 2 3 4 5 6 7 8 9 10 11 12 13 14 15))]}
 
 
 @defproc[(seventh [lst list?]) any/c]{
@@ -923,7 +923,7 @@ Returns the sixth element of the list.
 Returns the seventh element of the list.
 
 @mz-examples[#:eval list-eval
-  (seventh '(1 2 3 4 5 6 7 8 9 10))]}
+  (seventh '(1 2 3 4 5 6 7 8 9 10 11 12 13 14 15))]}
 
 
 @defproc[(eighth [lst list?]) any/c]{
@@ -931,7 +931,7 @@ Returns the seventh element of the list.
 Returns the eighth element of the list.
 
 @mz-examples[#:eval list-eval
-  (eighth '(1 2 3 4 5 6 7 8 9 10))]}
+  (eighth '(1 2 3 4 5 6 7 8 9 10 11 12 13 14 15))]}
 
 
 @defproc[(ninth [lst list?]) any/c]{
@@ -939,7 +939,7 @@ Returns the eighth element of the list.
 Returns the ninth element of the list.
 
 @mz-examples[#:eval list-eval
-  (ninth '(1 2 3 4 5 6 7 8 9 10))]}
+  (ninth '(1 2 3 4 5 6 7 8 9 10 11 12 13 14 15))]}
 
 
 @defproc[(tenth [lst list?]) any/c]{
@@ -947,7 +947,57 @@ Returns the ninth element of the list.
 Returns the tenth element of the list.
 
 @mz-examples[#:eval list-eval
-  (tenth '(1 2 3 4 5 6 7 8 9 10))]}
+  (tenth '(1 2 3 4 5 6 7 8 9 10 11 12 13 14 15))]}
+
+
+@defproc[(eleventh [lst list?]) any/c]{
+
+Returns the eleventh element of the list.
+
+@mz-examples[#:eval list-eval
+  (eleventh '(1 2 3 4 5 6 7 8 9 10 11 12 13 14 15))]
+
+@history[#:added "8.15.0.3"]}
+
+
+@defproc[(twelfth [lst list?]) any/c]{
+
+Returns the twelfth element of the list.
+
+@mz-examples[#:eval list-eval
+  (twelfth '(1 2 3 4 5 6 7 8 9 10 11 12 13 14 15))]
+
+@history[#:added "8.15.0.3"]}
+
+
+@defproc[(thirteenth [lst list?]) any/c]{
+
+Returns the thirteenth element of the list.
+
+@mz-examples[#:eval list-eval
+  (thirteenth '(1 2 3 4 5 6 7 8 9 10 11 12 13 14 15))]
+
+@history[#:added "8.15.0.3"]}
+
+
+@defproc[(fourteenth [lst list?]) any/c]{
+
+Returns the fourteenth element of the list.
+
+@mz-examples[#:eval list-eval
+  (fourteenth '(1 2 3 4 5 6 7 8 9 10 11 12 13 14 15))]
+
+@history[#:added "8.15.0.3"]}
+
+
+@defproc[(fifteenth [lst list?]) any/c]{
+
+Returns the fifteenth element of the list.
+
+@mz-examples[#:eval list-eval
+  (fifteenth '(1 2 3 4 5 6 7 8 9 10 11 12 13 14 15))]
+
+@history[#:added "8.15.0.3"]}
 
 
 @defproc[(last [lst list?]) any/c]{
@@ -957,7 +1007,7 @@ Returns the last element of the list.
 This function takes time proportional to the length of @racket[lst].
 
 @mz-examples[#:eval list-eval
-  (last '(1 2 3 4 5 6 7 8 9 10))]}
+  (last '(1 2 3 4 5 6 7 8 9 10 11 12 13 14 15))]}
 
 
 @defproc[(last-pair [p pair?])

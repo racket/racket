@@ -30,6 +30,8 @@
 
 	.file	"linux64_closure.S"
 
+	.machine altivec
+
 #ifdef POWERPC64
 	FFI_HIDDEN (ffi_closure_LINUX64)
 	.globl  ffi_closure_LINUX64
@@ -37,8 +39,10 @@
 	.cfi_startproc
 # if _CALL_ELF == 2
 ffi_closure_LINUX64:
+#  ifndef __PCREL__
 	addis	%r2, %r12, .TOC.-ffi_closure_LINUX64@ha
 	addi	%r2, %r2, .TOC.-ffi_closure_LINUX64@l
+#  endif
 	.localentry ffi_closure_LINUX64, . - ffi_closure_LINUX64
 # else
 	.section        ".opd","aw"
@@ -190,11 +194,19 @@ ffi_closure_LINUX64:
 
 	# make the call
 # if defined _CALL_LINUX || _CALL_ELF == 2
+#  ifdef __PCREL__
+	bl ffi_closure_helper_LINUX64@notoc
+.Lret:
+#  else
 	bl ffi_closure_helper_LINUX64
+.Lret:
+	nop
+#  endif
 # else
 	bl .ffi_closure_helper_LINUX64
-# endif
 .Lret:
+	nop
+# endif
 
 	# now r3 contains the return type
 	# so use it to look up in a table
@@ -460,8 +472,10 @@ ffi_closure_LINUX64:
 	.cfi_startproc
 # if _CALL_ELF == 2
 ffi_go_closure_linux64:
+#  ifndef __PCREL__
 	addis	%r2, %r12, .TOC.-ffi_go_closure_linux64@ha
 	addi	%r2, %r2, .TOC.-ffi_go_closure_linux64@l
+#  endif
 	.localentry ffi_go_closure_linux64, . - ffi_go_closure_linux64
 # else
 	.section        ".opd","aw"

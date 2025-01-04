@@ -22,7 +22,7 @@
           (raise-argument-error name_0 "(or/c struct-type? #f)" what_0))
         (void))
       what_0)))
-(define 1/raise-argument-error
+(define raise-argument-error$1
   (|#%name|
    raise-argument-error
    (lambda (who_0 . args_0)
@@ -49,7 +49,7 @@
               #f)
             #f)
         (void)
-        (1/raise-argument-error
+        (raise-argument-error$1
          'guard-for-prop:stream
          (string-append
           "(vector/c (procedure-arity-includes/c 1)\n"
@@ -67,7 +67,7 @@
     (begin
       (if (if (procedure? v_0) (procedure-arity-includes? v_0 1) #f)
         (void)
-        (1/raise-argument-error
+        (raise-argument-error$1
          'guard-for-prop:sequence
          "(procedure-arity-includes/c 1)"
          v_0))

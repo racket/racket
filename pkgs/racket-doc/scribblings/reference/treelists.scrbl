@@ -5,7 +5,7 @@
                      racket/mutable-treelist))
 
 @(define the-eval (make-base-eval))
-@(the-eval '(require racket/treelist racket/mutable-treelist))
+@(the-eval '(require racket/treelist racket/mutable-treelist racket/stream))
 
 @title[#:tag "treelist"]{Treelists}
 
@@ -37,6 +37,8 @@ sequence (see @secref["sequences"]). The elements of the list serve as
 elements of the sequence. See also @racket[in-treelist] and
 @racket[in-mutable-treelist]. An immutable treelist can also be used
 as a @tech{stream}.
+
+@history[#:changed "8.15.0.3" @elem{Made treelists serializable.}]
 
 @section{Immutable Treelists}
 
@@ -315,6 +317,22 @@ results. For a constant-time @racket[proc], this operation takes
 (treelist-for-each items println)
 ]}
 
+@defproc[(treelist-filter [keep (any/c . -> . any/c)] [tl treelist?])
+         treelist?]{
+
+Produces a treelist with only members of @racket[tl] that satisfy
+@racket[keep].
+
+@examples[
+#:eval the-eval
+(treelist-filter even? (treelist 1 2 3 2 4 5 2))
+(treelist-filter odd? (treelist 1 2 3 2 4 5 2))
+(treelist-filter (λ (x) (not (even? x))) (treelist 1 2 3 2 4 5 2))
+(treelist-filter (λ (x) (not (odd? x))) (treelist 1 2 3 2 4 5 2))
+]
+
+@history[#:added "8.15.0.6"]}
+
 @defproc[(treelist-member? [tl treelist?] [v any/c] [eql? (any/c any/c . -> . any/c) equal?]) boolean?]{
 
 Checks each element of @racket[tl] with @racket[eql?] and @racket[v]
@@ -343,7 +361,54 @@ found, the result is @racket[#f]. For a constant-time
 (define items (treelist 1 "a" 'apple))
 (treelist-find items string?)
 (treelist-find items symbol?)
+(treelist-find items number->string)
 ]}
+
+@defproc[(treelist-index-of [tl treelist?]
+                            [v any/c]
+                            [eql? (any/c any/c . -> . any/c) equal?])
+         (or/c exact-nonnegative-integer? #f)]{
+
+Returns the index of the first element in @racket[tl] that is
+@racket[eql?] to @racket[v].
+If no such element is found, the result is @racket[#f].
+
+@examples[
+#:eval the-eval
+(define items (treelist 1 "a" 'apple))
+(treelist-index-of items 1)
+(treelist-index-of items "a")
+(treelist-index-of items 'apple)
+(treelist-index-of items 'unicorn)
+]
+
+@history[#:added "8.15.0.6"]}
+
+@defproc[(treelist-flatten [v any/c]) treelist?]{
+
+Flattens a tree of nested treelists into a single treelist.
+
+@examples[
+#:eval the-eval
+(treelist-flatten
+ (treelist (treelist "a") "b" (treelist "c" (treelist "d") "e") (treelist)))
+(treelist-flatten "a")
+]
+
+@history[#:added "8.15.0.6"]}
+
+@defproc[(treelist-append* [tlotl (treelist/c treelist?)]) treelist?]{
+
+Appends elements of a treelist of treelists together into one treelist,
+leaving any further nested treelists alone.
+
+@examples[
+#:eval the-eval
+(treelist-append*
+ (treelist (treelist "a" "b") (treelist "c" (treelist "d") "e") (treelist)))
+]
+
+@history[#:added "8.15.0.6"]}
 
 @defproc[(treelist-sort [tl treelist?]
                         [less-than? (any/c any/c . -> . any/c)]
@@ -371,6 +436,23 @@ Returns a @tech{sequence} equivalent to @racket[tl].
 (for/list ([e (in-treelist items)])
   (string-append e "!"))
 ]}
+
+@defproc[(sequence->treelist [s sequence?]) treelist?]{
+
+Returns a treelist whose elements are the elements of @racket[s],
+each of which must be a single value.
+If @racket[s] is infinite, this function does not terminate.
+
+@examples[
+#:eval the-eval
+(sequence->treelist (list 1 "a" 'apple))
+(sequence->treelist (vector 1 "a" 'apple))
+(sequence->treelist (stream 1 "a" 'apple))
+(sequence->treelist (open-input-bytes (bytes 1 2 3 4 5)))
+(sequence->treelist (in-range 0 10))
+]
+
+@history[#:added "8.15.0.6"]}
 
 @deftogether[(
 @defform[(for/treelist (for-clause ...) body-or-break ... body)]
@@ -554,7 +636,7 @@ noted.
 Returns @racket[#t] if @racket[v] is a @tech{mutable treelist},
 @racket[#f] otherwise.}
 
-@defproc[(mutable-treelist [v any/c] ...) treelist?]{
+@defproc[(mutable-treelist [v any/c] ...) mutable-treelist?]{
 
 Returns a @tech{mutable treelist} with @racket[v]s as its elements in order.
 
@@ -707,24 +789,31 @@ Modifies @racket[tl] to change the element at @racket[pos] to
 items
 ]}
 
-@defproc[(mutable-treelist-append! [tl mutable-treelist?] [other-tl (or/c treelist? mutable-treelist?)]) void?]{
+@deftogether[(
+@defproc[(mutable-treelist-append! [tl mutable-treelist?] [other-tl (or/c treelist? mutable-treelist?)]) void?]
+@defproc[(mutable-treelist-prepend! [tl mutable-treelist?] [other-tl (or/c treelist? mutable-treelist?)]) void?]
+)]{
 
-Modifies @racket[tl]s by appending all of the elements of
+Modifies @racket[tl] by appending or prepending all of the elements of
 @racket[other-tl]. If @racket[other-tl] is a @tech{mutable treelist},
 it is first converted to an immutable @tech{treelist} with
-@racket[mutable-treelist-snapshot], which takes takes @math{O(N)} time
+@racket[mutable-treelist-snapshot], which takes @math{O(N)} time
 if @racket[other-tl] has @math{N} elements. If @racket[other-tl] is an
-immutable treelist but chaperoned, then appending takes @math{O(N)}
-time for @math{N} elements.
+immutable treelist but chaperoned, then appending or prepending takes
+@math{O(N)} time for @math{N} elements.
 
 @examples[
 #:eval the-eval
 (define items (mutable-treelist 1 "a" 'apple))
 (mutable-treelist-append! items (treelist 'more 'things))
 items
+(mutable-treelist-prepend! items (treelist 0 "b" 'banana))
+items
 (mutable-treelist-append! items items)
 items
-]}
+]
+
+@history[#:changed "8.15.0.11" @elem{Added @racket[mutable-treelist-prepend!].}]}
 
 @deftogether[(
 @defproc[(mutable-treelist-take! [tl mutable-treelist?] [n exact-nonnegative-integer?]) void?]
@@ -884,6 +973,9 @@ Like @racket[for/list] and @racket[for*/list], but generating
                                                             . -> . any/c)]
                                      [#:append append-proc (mutable-treelist? treelist?
                                                             . -> . treelist?)]
+                                     [#:prepend prepend-proc (treelist? mutable-treelist?
+                                                              . -> . treelist?)
+                                      (λ (o t) (append-proc t o))]
                                      [prop impersonator-property?]
                                      [prop-val any/c] ... ...)
           (and/c mutable-treelist? chaperone?)]{
@@ -905,6 +997,9 @@ separate from the treelist itself, and procedures like
                                                               . -> . any/c)]
                                        [#:append append-proc (mutable-treelist? treelist?
                                                               . -> . treelist?)]
+                                       [#:prepend prepend-proc (treelist? mutable-treelist?
+                                                                . -> . treelist?)
+                                        (λ (o t) (append-proc t o))]
                                        [prop impersonator-property?]
                                        [prop-val any/c] ... ...)
           (and/c mutable-treelist? impersonator?)]{

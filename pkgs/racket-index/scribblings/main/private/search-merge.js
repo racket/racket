@@ -27,7 +27,7 @@
   }
 
   function convert(line) {
-    return [line[0], line[1], convert_span(line[2]), line[3]];
+    return [line[0], line[1], convert_span(line[2]), line[3], line[4], line[5], line[6]];
   }
 
   var i = 0, j = 0;
@@ -54,4 +54,13 @@
     }
   }
   plt_search_data = result;
+
+  var rev_fam_map = [];
+  for (name in plt_language_families)
+      rev_fam_map[name.toLowerCase()] = name;
+
+  for (name in plt_user_language_families) {
+      if (!rev_fam_map[name.toLowerCase()])
+          plt_language_families.push(name);
+  }
 }

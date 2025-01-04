@@ -133,7 +133,7 @@
   (define ctrtd-opaque-known #b0000001)
   (define ctrtd-sealed-known #b0000010)
 
-  (define base-ctrtd ($make-record-type #!base-rtd #!base-rtd "ctrtd" '((immutable flags)) #t #f))
+  (define base-ctrtd ($make-record-type #!base-rtd #!base-rtd "ctrtd" '((immutable flags)) #t #f #f))
   (define ctrtd? (record-predicate base-ctrtd))
   (define ctrtd-flags (record-accessor base-ctrtd 0))
 
@@ -2614,6 +2614,15 @@
                                        e]))
                                  c-val)))))])))))])
 
+      (define-inline 2 (call/cc call/1cc call-with-current-continuation)
+        [(body)
+         (nanopass-case (Lsrc Expr) (value-visit-operand! body)
+           [(case-lambda ,preinfo (clause (,x) ,interface ,e))
+            (guard (not (prelex-was-referenced x)))
+            (residualize-seq (list) (list body) ctxt)
+            e]
+           [else #f])])
+
       (define-inline 2 $call-setting-continuation-attachment
         [(val body)
          (nanopass-case (Lsrc Expr) (value-visit-operand! body)
@@ -3358,7 +3367,7 @@
       (define-inline 3 fxdiv-and-mod
         [(x y)
          (and likely-to-be-compiled?
-              (cp0-constant? (result-exp (value-visit-operand! y)))
+              (cp0-constant? target-fixnum-power-of-two (result-exp (value-visit-operand! y)))
               (cp0
                 (let ([tx (cp0-make-temp #t)] [ty (cp0-make-temp #t)])
                   (let ([refx (build-ref tx)] [refy (build-ref ty)])
@@ -3468,8 +3477,12 @@
                          (values #f ctrtd-opaque-known)
                          (values #f 0)))]
                 [else (values #f 0)])))
+        (define (get-alt-pm x)
+          (nanopass-case (Lsrc Expr) (if x (result-exp (value-visit-operand! x)) false-rec)
+            [(quote ,d) d]
+            [else #f]))
         (let ()
-          (define (mrt ?parent ?name ?fields maybe-?sealed maybe-?opaque ctxt level prim primname opnd*)
+          (define (mrt ?parent ?name ?fields maybe-?sealed maybe-?opaque maybe-?alt-pm ctxt level prim primname opnd*)
             (or (nanopass-case (Lsrc Expr) (result-exp (value-visit-operand! ?name))
                   [(quote ,d)
                    (and (gensym? d)
@@ -3486,11 +3499,12 @@
                     (get-fields ?fields
                       (lambda (fields)
                         (let-values ([(sealed? sealed-flag) (get-sealed maybe-?sealed)]
-                                     [(opaque? opaque-flag) (get-opaque maybe-?opaque prtd)])
+                                     [(opaque? opaque-flag) (get-opaque maybe-?opaque prtd)]
+                                     [(alt-pm) (get-alt-pm maybe-?alt-pm)])
                           (cond
                             [(guard (c [#t #f])
                                ($make-record-type base-ctrtd prtd "tmp" fields
-                                 sealed? opaque? (fxlogor sealed-flag opaque-flag))) =>
+                                  sealed? opaque? alt-pm (fxlogor sealed-flag opaque-flag))) =>
                              (lambda (ctrtd)
                                (residualize-seq opnd* '() ctxt)
                                `(record-type ,ctrtd
@@ -3500,16 +3514,16 @@
 
           (define-inline 2 make-record-type
             [(?name ?fields)
-             (mrt #f ?name ?fields #f #f ctxt level make-record-type 'make-record-type
+             (mrt #f ?name ?fields #f #f #f ctxt level make-record-type 'make-record-type
                (list ?name ?fields))]
             [(?parent ?name ?fields)
-             (mrt ?parent ?name ?fields #f #f ctxt level make-record-type 'make-record-type
+             (mrt ?parent ?name ?fields #f #f #f ctxt level make-record-type 'make-record-type
                (list ?parent ?name ?fields))])
 
           (define-inline 2 $make-record-type
-            [(?base-id ?parent ?name ?fields ?sealed ?opaque . ?extras)
-             (mrt ?parent ?name ?fields ?sealed ?opaque ctxt level $make-record-type '$make-record-type
-               (list* ?base-id ?parent ?name ?fields ?sealed ?opaque ?extras))]))
+            [(?base-id ?parent ?name ?fields ?sealed ?opaque ?alt-pm . ?extras)
+             (mrt ?parent ?name ?fields ?sealed ?opaque ?alt-pm ctxt level $make-record-type '$make-record-type
+               (list* ?base-id ?parent ?name ?fields ?sealed ?opaque ?alt-pm ?extras))]))
         (let ()
           (define (mrtd ?parent ?uid ?fields ?sealed ?opaque ctxt level prim primname opnd*)
             (or (nanopass-case (Lsrc Expr) (result-exp (value-visit-operand! ?uid))
@@ -3729,7 +3743,7 @@
                 (lambda (x)
                   (syntax-case x ()
                     [(_ type bytes pred)
-                     (if (memq (datum type) '(scheme-object boolean))
+                     (if (memq (datum type) '(scheme-object boolean stdbool))
                          #'($oops who "unexpected type ~s" 'type)
                          #'(build-primcall 3 'pred
                              (list (build-ref val-t))))])))
@@ -3752,7 +3766,7 @@
                                    (lambda (fld t check*)
                                      (let* ([type (fld-type fld)]
                                             [real-type (filter-foreign-type type)])
-                                       (if (memq real-type '(scheme-object boolean))
+                                       (if (memq real-type '(scheme-object boolean stdbool))
                                            check*
                                            (cons
                                              `(if ,(type->pred 'record-constructor real-type t)
@@ -4007,7 +4021,7 @@
                                      [rec-t (cp0-make-temp #t)]
                                      [val-t (cp0-make-temp #t)])
                                 (let ([expr `(record-set! ,rtd ,type ,index (ref #f ,rec-t) (ref #f ,val-t))]
-                                      [pred (and (not (memq real-type '(scheme-object boolean)))
+                                      [pred (and (not (memq real-type '(scheme-object boolean stdbool)))
                                                  (type->pred who real-type val-t))])
                                   (cond
                                     [(fx= level 3)

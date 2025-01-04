@@ -48,12 +48,14 @@
        (for ([rand (in-list rands)])
          (check-expr rand 1 e))
        (case (cross-phase-primitive-name (parsed-app-rator e))
-         [(cons list)
+         [(cons list hasheq)
           (check-count 1 num-results enclosing)]
          [(make-struct-type)
           (check-count 5 num-results enclosing)]
          [(make-struct-type-property)
           (check-count 3 num-results enclosing)]
+         [(make-parameter)
+          (check-count 1 num-results enclosing)]
          [(gensym)
           (unless (or (= 0 (length rands))
                       (and (= 1 (length rands))

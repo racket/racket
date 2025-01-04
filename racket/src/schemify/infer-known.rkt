@@ -25,8 +25,6 @@
 ;; that the variable will get a value without referencing anything
 ;; too early. If `post-schemify?`, then `rhs` has been schemified.
 (define (infer-known rhs id knowns prim-knowns imports mutated simples unsafe-mode? target
-                     #:primitives [primitives #hasheq()] ; for `optimize-inline?` mode
-                     #:optimize-inline? [optimize-inline? #f]
                      #:post-schemify? [post-schemify? #f]
                      #:compiler-query [compiler-query (lambda (v) #f)]
                      #:defn [defn #f]) ; either `#t` or `'inline`
@@ -40,12 +38,10 @@
                (not post-schemify?)
                (or (eq? defn 'inline)
                    (can-inline? lam)))
-          (let ([lam (if optimize-inline?
-                         (optimize* lam prim-knowns primitives knowns imports mutated unsafe-mode? target compiler-query)
-                         lam)])
-            (known-procedure/can-inline arity-mask (if (and unsafe-mode? (not (aim? target 'cify)))
-                                                       (add-begin-unsafe lam)
-                                                       lam)))]
+          (known-procedure/can-inline arity-mask (if (or (and unsafe-mode? (not (aim? target 'cify)))
+                                                         (wrap-property lam 'body-as-unsafe))
+                                                     (add-begin-unsafe lam)
+                                                     lam))]
          [(single-valued-lambda? lam knowns prim-knowns imports mutated)
           (known-procedure/single-valued arity-mask)]
          [else

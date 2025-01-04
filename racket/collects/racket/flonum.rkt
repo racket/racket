@@ -9,7 +9,7 @@
          flabs flsqrt flexp fllog
          flsin flcos fltan flasin flacos flatan
          flfloor flceiling flround fltruncate
-         flsingle flexpt flrandom
+         flsingle flexpt flrandom flbit-field
          fl= fl< fl<= fl> fl>= flmin flmax
          ->fl fl->exact-integer
          flvector? flvector make-flvector 

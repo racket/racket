@@ -62,55 +62,6 @@ See @secref["fully-expanded"] for the core grammar.
 
 @local-table-of-contents[]
 
-@subsubsub*section{Notation}
-
-Each syntactic form is described by a BNF-like notation that describes
-a combination of (syntax-wrapped) pairs, symbols, and other data (not
-a sequence of characters). These grammatical specifications are shown
-as in the following specification of a @racketkeywordfont{something}
-form:
-
-@specsubform[(@#,racketkeywordfont{something} id thing-expr ...)
-             #:contracts ([thing-expr number?])]
-
-Within such specifications,
-
-@itemize[
-
- @item{@racket[...] indicates zero or more repetitions of the
-       preceding datum; more generally, @math{N} consecutive
-       @racket[...]s a row indicate a consecutive repetition of the
-       preceding @math{N} datums.}
-
- @item{@racket[...+] indicates one or more repetitions of the
-       preceding datum.}
-
- @item{Italic meta-identifiers play the role of non-terminals. Some
-       meta-identifier names imply syntactic constraints:
-
-      @itemize[
-
-        @item{A meta-identifier that ends in @racket[_id] stands for an
-              identifier.}
-
-        @item{A meta-identifier that ends in @racket[_keyword] stands
-              for a keyword.}
-
-        @item{A meta-identifier that ends with @racket[_expr] (such as
-              @racket[_thing-expr]) stands for a sub-form that is
-              expanded as an expression.}
-
-        @item{A meta-identifier that ends with @racket[_body] stands
-              for a sub-form that is expanded in an
-              internal-definition context (see
-              @secref["intdef-body"]).}
-
-              ]} 
-
- @item{Contracts indicate constraints on sub-expression results. For
-       example, @racket[_thing-expr @#,elem{:} number?] indicates that
-       the expression @racket[_thing-expr] must produce a number.}]
-
 @;------------------------------------------------------------------------
 @section[#:tag "module"]{Modules: @racket[module], @racket[module*], ...}
 
@@ -387,7 +338,13 @@ Legal only in a @tech{module begin context}, and handled by the
 
 The @racket[#%module-begin] form of @racketmodname[racket/base] wraps
 every top-level expression to print non-@|void-const| results using
-@racket[current-print].
+the @tech{print handler} as determined by @racket[current-print],
+and it also returns the values after printing.
+This printing is added as part of the @racket[#%module-begin] expansion, so
+the prompt that @racket[module] itself adds is outside the printing
+wrapper---and it potentially makes the values returned after printing
+relevant, because a continuation could be captured and then invoked in
+a different context.
 
 The @racket[#%module-begin] form of @racketmodname[racket/base] also
 declares a @racket[configure-runtime] submodule (before any other
@@ -1574,6 +1531,16 @@ aliens
   procedure must return either a string for the import's new name or
   @racket[#f] to exclude the import.
 
+  @margin-note{
+    The second part of @racket[filtered-in] is expand-time code evaluated in the
+    scope of the enclosing module. Accordingly, most uses need
+    @racket[(require (for-syntax racket/base))] if @racketmodname[racket/base]
+    is not already imported @racket[for-syntax]. For example,
+    @racket[@#,(hash-lang) @#,racketmodname[racket]] establishes this import
+    automatically, while @racket[@#,(hash-lang) @#,racketmodname[racket/base]]
+    does not.
+  }
+
   For example,
   @racketblock[
     (require (filtered-in
@@ -1681,6 +1648,8 @@ Examples:
 
  Analogous to @racket[filtered-in], but for filtering and renaming
  exports.
+
+  @margin-note{See the documentation of @racket[filtered-in] for use with @racket[@#,(hash-lang) @#,racketmodname[racket/base]].}
 
   For example,
   @racketblock[
@@ -2101,6 +2070,14 @@ first argument is implicit in the original source). The property
 affects only the format of @racket[exn:fail:contract:arity]
 exceptions, not the result of @racket[procedure-arity].
 
+Along similar lines, Racket looks for a
+@indexed-racket['body-as-unsafe] property when compiling a
+@racket[lambda] or @racket[case-lambda] expression. If it is present
+with a true value, then the procedure body may be compiled in unsafe
+mode in same sense as @racket[(#%declare #:unsafe)]. The
+@indexed-racket['body-as-unsafe] property is allowed only when the
+current @tech{code inspector} is the initial one at compile time.
+
 When a keyword-accepting procedure is bound to an identifier in
 certain ways, and when the identifier is used in the function position
 of an application form, then the application form may be expanded in
@@ -2126,7 +2103,8 @@ optional-argument value was provided.
 @history[#:changed "8.13.0.5" @elem{
 Adjusted binding so that @racket[(free-identifier=? #'λ #'lambda)] produces
 @racket[#t].
-}]
+}
+         #:changed "8.15.0.12" @elem{Added the @racket['body-as-unsafe] property.}]
 }
 
 

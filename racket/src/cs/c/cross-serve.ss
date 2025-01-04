@@ -18,6 +18,8 @@
   ;; Racket compilation mode
   (let ([omit-debugging? #t]
         [measure-performance? #f])
+    (define (gensym sym) ; for `current-generate-id`
+      (#%gensym (symbol->string sym)))
     (include "../linklet/config.ss"))
   ;; Set up the environment; ../expander/env.ss must be loaded before compiling
   (expand (let-syntax ([env (lambda (stx)

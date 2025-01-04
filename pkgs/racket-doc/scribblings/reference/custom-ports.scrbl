@@ -194,7 +194,9 @@ The arguments implement the port as follows:
     @racket[read-in], a @racket[0] result indicates that another
     attempt is likely to succeed, so @racket[0] is inappropriate when
     the progress event is ready. Also like @racket[read-in],
-    @racket[peek] must not block indefinitely.
+    @racket[peek] must not block indefinitely. An event produced by
+    @racket[peek] is polled (in the sense of @racket[poll-guard-evt])
+    by an option like @racket[byte-ready?] or @racket[peek-bytes-avail*!].
 
     The skip count provided to @racket[peek] is a number of bytes (or
     @elemref["special"]{specials}) that must remain present in the

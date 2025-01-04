@@ -136,7 +136,7 @@
 (define (add-symbols syms)
   (maplines (lambda (s)
               (define new
-                @list{@(regexp-replace #rx"-" (symbol->string s) "_")_sym})
+                @list{@(regexp-replace* #rx"-" (symbol->string s) "_")_sym})
               (when (assq s (symbols))
                 (error 'add-symbols "symbol ~s already defined" s))
               (symbols (cons (list s new) (symbols)))

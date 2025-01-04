@@ -606,12 +606,19 @@ generation of output, but only for conversions that involve ``shift
 sequences'' to change modes within a stream. To terminate an input
 sequence and reset the converter, use @racket[bytes-convert-end].
 
+@; Using `eval:alts` in case iconv is not available
 @examples[
 (define convert (bytes-open-converter "UTF-8" "UTF-16"))
-(bytes-convert convert (bytes 65 66 67 68))
+(eval:alts (bytes-convert convert (bytes 65 66 67 68))
+           (values #"\376\377\0A\0B\0C\0D"
+                   4
+                   'complete))
 (bytes 195 167 195 176 195 182 194 163)
-(bytes-convert convert (bytes 195 167 195 176 195 182 194 163))
-(bytes-close-converter convert)
+(eval:alts (bytes-convert convert (bytes 195 167 195 176 195 182 194 163))
+           (values #"\0\347\0\360\0\366\0\243"
+                   8
+                   'complete))
+(eval:alts (bytes-close-converter convert) (void))
 ]}
 
 
@@ -656,11 +663,12 @@ Returns @racket[#t] if @racket[v] is a @tech{byte converter} produced
 by @racket[bytes-open-converter], @racket[#f] otherwise.
 
 @examples[
-(bytes-converter? (bytes-open-converter "UTF-8" "UTF-16"))
+(eval:alts (bytes-converter? (bytes-open-converter "UTF-8" "UTF-16"))
+           #t)
 (bytes-converter? (bytes-open-converter "whacky" "not likely"))
 (define b (bytes-open-converter "UTF-8" "UTF-16"))
-(bytes-close-converter b)
-(bytes-converter? b)
+(eval:alts (bytes-close-converter b) (void))
+(eval:alts (bytes-converter? b) #t)
 ]}
 
 @defproc[(locale-string-encoding) any]{
@@ -693,7 +701,7 @@ one between @racket[list] and @racket[list*].
 @defproc[(bytes-join [strs (listof bytes?)] [sep bytes?]) bytes?]{
 
 Appends the byte strings in @racket[strs], inserting @racket[sep] between
-each pair of bytes in @racket[strs].
+each pair of bytes in @racket[strs]. A new mutable byte string is returned.
 
 @mz-examples[#:eval string-eval
  (bytes-join '(#"one" #"two" #"three" #"four") #" potato ")

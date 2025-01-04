@@ -6707,6 +6707,19 @@
    (define (add1 x)
      (+ x 1))))
 
+(register-top-level-module
+ (module add1/with-copy-propagating-lets racket/base
+   (provide add1)
+   (define add1
+     (lambda (x)
+       (let ([x1 x])
+         (begin0
+           (letrec ([x2 x1]
+                    [x3 x1])
+             (begin
+               (quote-syntax ignore-me)
+               (+ x2 1)))))))))
+
 (when (eq? (system-type 'vm) 'chez-scheme)
   (test-comp `(module m racket/base
                 (require 'add1/with-vacuous-let)
@@ -6716,6 +6729,12 @@
                 (add1 2)))
   (test-comp `(module m racket/base
                 (require 'add1/with-vacuous-let/not-broken)
+                (add1 2))
+             `(module m racket/base
+                (require 'add1/without-vacuous-let)
+                (add1 2)))
+  (test-comp `(module m racket/base
+                (require 'add1/with-copy-propagating-lets)
                 (add1 2))
              `(module m racket/base
                 (require 'add1/without-vacuous-let)
@@ -7051,6 +7070,28 @@
 (test #t 'not-not-utf-8 (not (bytes-utf-8-length (bytes 255))))
 (test #f 'not-utf-8 (bytes-utf-8-index (bytes 255) 1))
 (test #t 'not-not-utf-8 (not (bytes-utf-8-index (bytes 255) 1)))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check that unsafe functions cooperate with cross-module inlining
+
+(register-top-level-module
+ (module module-that-provides-unsafe-curried-function racket/base
+   (require (for-syntax racket/base))
+   (provide do-add)
+   (define-syntax (define-unsafe stx)
+     (syntax-case stx ()
+       [(_ (id arg ...) body)
+        #`(define id #,(syntax-property #`(lambda (arg ...) body) 'body-as-unsafe #t))]))
+   (define-unsafe (do-add x i1 i2 i3 i4) (lambda (y) (+ x y)))))
+
+(test-comp `(module m racket/base
+              (require 'module-that-provides-unsafe-curried-function)
+              do-add
+              ((do-add 1 0 0 0 0) 2))
+           `(module m racket/base
+              (require 'module-that-provides-unsafe-curried-function)
+              do-add
+              3))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Try a program that triggers lots of inlining, which at one point

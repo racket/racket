@@ -771,10 +771,12 @@
 
 ;; ----------------------------------------
 
-(define (package-url->checksum pkg-url-str [query empty]
+(define (package-url->checksum pkg-url-str
+                               [query empty]
                                #:type [given-type #f]
                                #:download-printf [download-printf void]
-                               #:pkg-name [pkg-name "package"])
+                               #:pkg-name [pkg-name "package"]
+                               #:cache [cache #f])
   (define pkg-url
     (string->url pkg-url-str))
   (define type (if (eq? given-type 'clone)
@@ -793,29 +795,40 @@
       (lambda ()
         (call-with-network-retries
          (lambda ()
-           ;; Supplying `#:dest-dir #f` means that we just resolve `branch`
-           ;; to an ID:
-           (git-checkout host #:port port repo
-                         #:dest-dir #f
-                         #:ref branch
-                         #:status-printf
-                         (lambda (fmt . args)
-                           (define (strip-ending-newline s)
-                             (regexp-replace #rx"\n$" s ""))
-                           (log-pkg-debug
-                            (strip-ending-newline (apply format fmt args))))
-                         #:initial-error
-                         (lambda ()
-                           (raise
-                            ;; This is a git error so that 
-                            ;; call-with-git-checkout-credentials will retry 
-                            (exn:fail:git
-                             (~a "pkg: Git checkout initial protocol failed;\n"
-                                 " the given URL might not refer to a Git repository\n"
-                                 "  given URL: "
-                                 pkg-url-str)
-                             (current-continuation-marks))))
-                         #:transport transport)))))]
+           (define key (vector host port repo branch))
+           (cond
+             [(and cache
+                   (hash-ref cache key #f))
+              => (lambda (checksum)
+                   checksum)]
+             [else
+              ;; Supplying `#:dest-dir #f` means that we just resolve `branch`
+              ;; to an ID:
+              (define checksum
+                (git-checkout host #:port port repo
+                              #:dest-dir #f
+                              #:ref branch
+                              #:status-printf
+                              (lambda (fmt . args)
+                                (define (strip-ending-newline s)
+                                  (regexp-replace #rx"\n$" s ""))
+                                (log-pkg-debug
+                                 (strip-ending-newline (apply format fmt args))))
+                              #:initial-error
+                              (lambda ()
+                                (raise
+                                 ;; This is a git error so that
+                                 ;; call-with-git-checkout-credentials will retry
+                                 (exn:fail:git
+                                  (~a "pkg: Git checkout initial protocol failed;\n"
+                                      " the given URL might not refer to a Git repository\n"
+                                      "  given URL: "
+                                      pkg-url-str)
+                                  (current-continuation-marks))))
+                              #:transport transport))
+              (when cache
+                (hash-set! cache key checksum))
+              checksum])))))]
     [(github)
      (match-define (list* user repo url-branch path)
        (split-github-url pkg-url))
@@ -869,11 +882,21 @@
            branch))]
     [else
      (define u (string-append pkg-url-str ".CHECKSUM"))
-     (download-printf "Downloading checksum for ~a\n" pkg-name)
-     (log-pkg-debug "Downloading checksum as ~a" u)
-     (call/input-url+200 (string->url u)
-                         port->string
-                         #:who 'download-checksum)]))
+     (define key u)
+     (cond
+       [(and cache
+             (hash-ref cache key #f))
+        => (lambda (checksum)
+             checksum)]
+       [else
+        (download-printf "Downloading checksum for ~a\n" pkg-name)
+        (log-pkg-debug "Downloading checksum as ~a" u)
+        (define checksum
+          (call/input-url+200 (string->url u)
+                              port->string
+                              #:who 'download-checksum))
+        (when cache (hash-set! cache key checksum))
+        checksum])]))
 
 (define (check-checksum given-checksum checksum what pkg-src cached-url)
   (when (and given-checksum

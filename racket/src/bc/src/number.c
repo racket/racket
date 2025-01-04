@@ -134,6 +134,7 @@ static Scheme_Object *fl_ceiling (int argc, Scheme_Object *argv[]);
 static Scheme_Object *fl_truncate (int argc, Scheme_Object *argv[]);
 static Scheme_Object *fl_round (int argc, Scheme_Object *argv[]);
 static Scheme_Object *fl_single (int argc, Scheme_Object *argv[]);
+static Scheme_Object *fl_bit_field (int argc, Scheme_Object *argv[]);
 static Scheme_Object *fl_sin (int argc, Scheme_Object *argv[]);
 static Scheme_Object *fl_cos (int argc, Scheme_Object *argv[]);
 static Scheme_Object *fl_tan (int argc, Scheme_Object *argv[]);
@@ -202,6 +203,7 @@ static Scheme_Object *unsafe_flimag_part (int argc, Scheme_Object *argv[]);
 
 static Scheme_Object *unsafe_flrandom (int argc, Scheme_Object *argv[]);
 static Scheme_Object *unsafe_flsingle (int argc, Scheme_Object *argv[]);
+static Scheme_Object *unsafe_flbit_field (int argc, Scheme_Object *argv[]);
 
 #ifdef MZ_USE_SINGLE_FLOATS
 static Scheme_Object *TO_FLOAT(const Scheme_Object *n);
@@ -1005,6 +1007,10 @@ void scheme_init_flfxnum_number(Scheme_Startup_Env *env)
                                                             | SCHEME_PRIM_PRODUCES_FLONUM);
   scheme_addto_prim_instance("flsingle", p, env);
 
+  p = scheme_make_folding_prim(fl_bit_field, "flbit-field", 3, 3, 1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_PRODUCES_FLONUM);
+  scheme_addto_prim_instance("flbit-field", p, env);
+
   p = scheme_make_folding_prim(fl_sin, "flsin", 1, 1, 1);
   if (scheme_can_inline_fp_op())
     flags = SCHEME_PRIM_IS_UNARY_INLINED;
@@ -1595,6 +1601,10 @@ void scheme_init_unsafe_number(Scheme_Startup_Env *env)
                                                             | SCHEME_PRIM_PRODUCES_FLONUM
                                                             | SCHEME_PRIM_WANTS_FLONUM_FIRST);
   scheme_addto_prim_instance("unsafe-flsingle", p, env);
+
+  p = scheme_make_folding_prim(unsafe_flbit_field, "unsafe-flbit-field", 3, 3, 1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_PRODUCES_FLONUM);
+  scheme_addto_prim_instance("unsafe-flbit-field", p, env);
 }
 
 void scheme_init_extfl_unsafe_number(Scheme_Startup_Env *env)
@@ -5538,6 +5548,48 @@ SAFE_FL(log)
 
 SAFE_BIN_FL(expt)
 
+static Scheme_Object *fl_bit_field (int argc, Scheme_Object *argv[])
+{
+  static char *who = "flbit-field";
+  intptr_t s, e;
+  double d;
+  umzlonglong i;
+
+  if (!SCHEME_DBLP(argv[0]))
+    scheme_wrong_contract(who, "flonum?", 0, argc, argv);
+  if (SCHEME_INTP(argv[1]))
+    s = SCHEME_INT_VAL(argv[1]);
+  else
+    s = -1;
+  if (SCHEME_INTP(argv[2]))
+    e = SCHEME_INT_VAL(argv[2]);
+  else
+    e = -1;
+
+  if (s < 0 || s > 64)
+    scheme_wrong_contract(who, "(integer-in 0 64)", 1, argc, argv);
+  if (e < 0 || e > 64)
+    scheme_wrong_contract(who, "(integer-in 0 64)", 2, argc, argv);
+  if (e < s)
+    scheme_contract_error("bitwise-bit-field",
+                          "first index is more than second index",
+                          "first index", 1, argv[1],
+                          "second index", 1, argv[2],
+                          NULL);
+
+  if (s == 64) /* right shift by 64 with `>>` is not allowed */
+    return scheme_make_integer(0);
+
+  d = SCHEME_DBL_VAL(argv[0]);
+  memcpy(&i, &d, sizeof(double));
+  if ((e - s) < 64) {
+    i = i >> s;
+    i = i & (((umzlonglong)1 << (e - s)) - 1);
+  }
+
+  return scheme_make_integer_value_from_unsigned_long_long(i);
+}
+
 static Scheme_Object *fx_to_extfl (int argc, Scheme_Object *argv[])
 {
 #ifdef MZ_LONG_DOUBLE
@@ -5913,6 +5965,11 @@ static Scheme_Object *unsafe_flrandom (int argc, Scheme_Object *argv[])
 static Scheme_Object *unsafe_flsingle (int argc, Scheme_Object *argv[])
 {
   return fl_single(argc, argv);
+}
+
+static Scheme_Object *unsafe_flbit_field (int argc, Scheme_Object *argv[])
+{
+  return fl_bit_field(argc, argv);
 }
 
 static Scheme_Object *integer_to_extfl (int argc, Scheme_Object *argv[])

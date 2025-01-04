@@ -16,11 +16,7 @@
 (define/subexpression-pos-prop (treelist/c
                                 ctc
                                 #:flat? [flat? (flat-contract? ctc)]
-                                #:lazy? [lazy?
-                                         (cond
-                                           [(flat-contract? ctc) #f]
-                                           [(chaperone-contract? ctc) #t]
-                                           [else #f])])
+                                #:lazy? [lazy? #f])
   (when (and flat? lazy?)
     (raise-arguments-error
      'treelist/c

@@ -55,6 +55,7 @@ ROSYM static Scheme_Object *contract_symbol;
 ROSYM static Scheme_Object *arity_property;
 ROSYM static Scheme_Object *def_err_val_proc;
 ROSYM static Scheme_Object *def_err_stx_proc;
+ROSYM static Scheme_Object *def_err_stx_name_proc;
 ROSYM static Scheme_Object *def_error_esc_proc;
 ROSYM static Scheme_Object *def_err_msg_adjust_proc;
 ROSYM static Scheme_Object *def_err_msg_adjust_name_proc;
@@ -106,6 +107,7 @@ static Scheme_Object *error_escape_handler(int, Scheme_Object *[]);
 static Scheme_Object *error_display_handler(int, Scheme_Object *[]);
 static Scheme_Object *error_value_string_handler(int, Scheme_Object *[]);
 static Scheme_Object *error_syntax_string_handler(int, Scheme_Object *[]);
+static Scheme_Object *error_syntax_name_handler(int, Scheme_Object *[]);
 static Scheme_Object *current_error_message_adjuster(int, Scheme_Object *[]);
 static Scheme_Object *exit_handler(int, Scheme_Object *[]);
 static Scheme_Object *exe_yield_handler(int, Scheme_Object *[]);
@@ -119,6 +121,7 @@ static Scheme_Object *def_error_display_proc(int, Scheme_Object *[]);
 static Scheme_Object *emergency_error_display_proc(int, Scheme_Object *[]);
 static Scheme_Object *def_error_value_string_proc(int, Scheme_Object *[]);
 static Scheme_Object *def_error_syntax_string_proc(int, Scheme_Object *[]);
+static Scheme_Object *def_error_syntax_name_proc(int argc, Scheme_Object *argv[]);
 static Scheme_Object *def_error_message_adjust_proc(int, Scheme_Object *[]);
 static Scheme_Object *def_error_message_adjust_name_proc(int, Scheme_Object *[]);
 static Scheme_Object *def_error_message_adjust_message_proc(int, Scheme_Object *[]);
@@ -151,6 +154,8 @@ static void update_want_level(Scheme_Logger *logger, Scheme_Object *name);
 static Scheme_Object *check_arity_property_value_ok(int argc, Scheme_Object *argv[]);
 
 static char *make_provided_list(Scheme_Object *o, int count, intptr_t *lenout);
+static char *reindent(const char *s, intptr_t *lenout);
+static char *reindent_separate(const char *s, intptr_t *lenout);
 
 static char *init_buf(intptr_t *len, intptr_t *blen);
 
@@ -669,6 +674,7 @@ static intptr_t sch_vsprintf(char *s, intptr_t maxlen, const char *msg, va_list 
 	    Scheme_Object *o;
 	    o = (Scheme_Object *)ptrs[pp++];
 	    t = scheme_make_provided_string(o, 1, &tlen);
+            t = reindent(t, &tlen);
 	  }
 	  break;
 	case '@':
@@ -843,6 +849,7 @@ void scheme_init_error(Scheme_Startup_Env *env)
   ADD_PARAMETER("error-display-handler",       error_display_handler,      MZCONFIG_ERROR_DISPLAY_HANDLER,       env);
   ADD_PARAMETER("error-value->string-handler", error_value_string_handler, MZCONFIG_ERROR_PRINT_VALUE_HANDLER,   env);
   ADD_PARAMETER("error-syntax->string-handler", error_syntax_string_handler, MZCONFIG_ERROR_PRINT_SYNTAX_HANDLER, env);
+  ADD_PARAMETER("error-syntax->name-handler", error_syntax_name_handler, MZCONFIG_ERROR_NAME_SYNTAX_HANDLER, env);
   ADD_PARAMETER("current-error-message-adjuster", current_error_message_adjuster, MZCONFIG_ERROR_MESSAGE_ADJUSTER, env);
   ADD_PARAMETER("error-escape-handler",        error_escape_handler,       MZCONFIG_ERROR_ESCAPE_HANDLER,        env);
   ADD_PARAMETER("exit-handler",                exit_handler,               MZCONFIG_EXIT_HANDLER,                env);
@@ -892,6 +899,9 @@ void scheme_init_error(Scheme_Startup_Env *env)
 
   REGISTER_SO(def_err_stx_proc);
   def_err_stx_proc = scheme_make_prim_w_arity(def_error_syntax_string_proc, "default-error-syntax->string-handler", 2, 2);
+
+  REGISTER_SO(def_err_stx_name_proc);
+  def_err_stx_name_proc = scheme_make_prim_w_arity(def_error_syntax_name_proc, "default-error-name->string-handler", 1, 1);
 
   REGISTER_SO(def_err_msg_adjust_proc);
   REGISTER_SO(def_err_msg_adjust_name_proc);
@@ -1145,7 +1155,10 @@ static char *init_buf(intptr_t *len, intptr_t *_size)
   local_max_symbol_length = scheme_get_max_symbol_length();
   print_width             = scheme_get_print_width();
 
-  size = (3 * local_max_symbol_length + 500 + 2 * print_width);
+  size = (3 * local_max_symbol_length + 500
+          /* in an extreme case, each "\n" is replaced by "\n    ",
+             so that's why there's an extra factor of 4 */
+          + 2 * 4 * print_width);
 
   /* out parameters */
   if (len)
@@ -1511,6 +1524,7 @@ static char *make_arity_expect_string(const char *name, int namelen,
         }
 
 	o = error_write_to_string_w_max(argv[i], len, &l);
+        o = reindent_separate(o, &l);
 	memcpy(s + pos, o, l);
 	pos += l;
       }
@@ -1808,6 +1822,8 @@ char *scheme_make_arg_lines_string(const char *indent, int which, int argc, Sche
         pos += plen;
       
 	o = error_write_to_string_w_max(argv[i], len, &l);
+        o = reindent_separate(o, &l);
+
 	memcpy(other + pos, o, l);
 	pos += l;
       }
@@ -1979,6 +1995,7 @@ static MZ_NORETURN void wrong_contract_for_realm(const char *name, Scheme_Object
     kind = "value";
 
   s = scheme_make_provided_string(o, 1, &slen);
+  s = reindent(s, &slen);
 
   if ((which < 0) || (argc <= 1)) {
     scheme_raise_realm_exn(MZEXN_FAIL_CONTRACT,
@@ -2090,6 +2107,8 @@ static MZ_NORETURN void do_out_of_range(const char *name, Scheme_Object *realm, 
     }
 
     sstr = scheme_make_provided_string(s, 2, &sstrlen);
+    sstr = reindent(sstr, &sstrlen);
+
     scheme_raise_realm_exn(MZEXN_FAIL_CONTRACT,
                            strlen(name), realm, realm,
                            "%s: %sindex is %s\n  %sindex: %s\n  %s%V%s%V]\n  %s: %t",
@@ -2219,6 +2238,7 @@ void scheme_contract_error(const char *name, const char *msg, ...)
   for (i = 0; i < cnt; i++) {
     if (vs[i]) {
       v_str = scheme_make_provided_string(vs[i], 1, &v_str_len);
+      v_str = reindent(v_str, &v_str_len);
       v_strs[i] = v_str;
       v_str_lens[i] = v_str_len;
     } else
@@ -2622,6 +2642,7 @@ void scheme_wrong_rator(Scheme_Object *rator, int argc, Scheme_Object **argv)
   char *s, *r;
 
   r = scheme_make_provided_string(rator, 1, &rlen);
+  r = reindent(r, &rlen);
 
   s = scheme_make_arg_lines_string("   ", -1, argc, argv, &slen);
 
@@ -2852,6 +2873,60 @@ static char *make_provided_list(Scheme_Object *o, int count, intptr_t *lenout)
   *lenout = total;
 
   return accum;
+}
+
+static char *do_reindent(const char *s, intptr_t *lenout, int prefix)
+{
+  intptr_t len = *lenout, i, j, count = 0, new_len;
+  char *new_s;
+
+  if (s[0] == '\n')
+    return (char *)s;
+
+  for (i = 0; i < len; i++) {
+    if (s[i] == '\n')
+      count++;
+  }
+  if (count == 0)
+    return (char *)s;
+
+  new_len = len + (3 * count) + (prefix * 4);
+  new_s = scheme_malloc_atomic(new_len + 1);
+
+  if (prefix) {
+    new_s[0] = '\n';
+    new_s[1] = ' ';
+    new_s[2] = ' ';
+    new_s[3] = ' ';
+    j = 4;
+  } else
+    j = 0;
+
+  for (i = 0; i < len; i++) {
+    if (s[i] == '\n') {
+      new_s[j] = '\n';
+      new_s[j+1] = ' ';
+      new_s[j+2] = ' ';
+      new_s[j+3] = ' ';
+      j += 4;
+    } else
+      new_s[j++] = s[i];
+  }
+
+  new_s[new_len] = 0;
+
+  *lenout = new_len;
+  return new_s;
+}
+
+static char *reindent(const char *s, intptr_t *lenout)
+{
+  return do_reindent(s, lenout, 1);
+}
+
+static char *reindent_separate(const char *s, intptr_t *lenout)
+{
+  return do_reindent(s, lenout, 0);
 }
 
 static Scheme_Object *do_error(const char *who, int mode, int argc, Scheme_Object *argv[])
@@ -3114,6 +3189,8 @@ static Scheme_Object *do_raise_mismatch_error(const char *who, int mismatch, int
         } else {
           st = scheme_make_provided_string(s, scount / 2, &slen);
         }
+        if (!mismatch)
+          st = reindent(st, &slen);
       }
       total += slen;
       ss[i-(1+use_realm)] = st;
@@ -3659,6 +3736,13 @@ def_error_syntax_string_proc(int argc, Scheme_Object *argv[])
   return scheme_make_sized_utf8_string(s, l);
 }
 
+static Scheme_Object *
+def_error_syntax_name_proc(int argc, Scheme_Object *argv[])
+{
+  /* this handler gets replaced by the expander, which is in charge of syntax objects */
+  return scheme_false;
+}
+
 static MZ_NORETURN void
 def_error_escape_proc(int argc, Scheme_Object *argv[])
 {
@@ -3701,6 +3785,15 @@ error_syntax_string_handler(int argc, Scheme_Object *argv[])
 			     scheme_make_integer(MZCONFIG_ERROR_PRINT_SYNTAX_HANDLER),
 			     argc, argv,
 			     2, NULL, NULL, 0);
+}
+
+static Scheme_Object *
+error_syntax_name_handler(int argc, Scheme_Object *argv[])
+{
+  return scheme_param_config("error-value->name-handler",
+			     scheme_make_integer(MZCONFIG_ERROR_NAME_SYNTAX_HANDLER),
+			     argc, argv,
+			     1, NULL, NULL, 0);
 }
 
 static Scheme_Object *

@@ -4071,6 +4071,8 @@ misc.mo:Expected error in mat eval: "attempt to reference unbound identifier con
 misc.mo:Expected error in mat eval: "attempt to reference unbound identifier sort".
 misc.mo:Expected error in mat eval: "attempt to reference unbound identifier sort".
 misc.mo:Expected error in mat eval: "attempt to reference unbound identifier sort".
+misc.mo:Expected error in mat eval: "incorrect argument count in call (< 3)".
+misc.mo:Expected error in mat eval: "incorrect argument count in call (< 3)".
 misc.mo:Expected error in mat eval2: "attempt to reference unbound identifier list".
 misc.mo:Expected error in mat eval2: "attempt to reference unbound identifier force".
 misc.mo:Expected error in mat eval2: "attempt to reference unbound identifier force".
@@ -10228,6 +10230,17 @@ fl.mo:Expected error in mat fldiv0-and-mod0: "flmod0: 17 is not a flonum".
 fl.mo:Expected error in mat fldiv0-and-mod0: "flmod0: 17 is not a flonum".
 fl.mo:Expected error in mat fldiv0-and-mod0: "flmod0: a is not a flonum".
 fl.mo:Expected error in mat fldiv0-and-mod0: "flmod0: (a) is not a flonum".
+fl.mo:Expected error in mat flbit-field: "incorrect argument count in call (flbit-field)".
+fl.mo:Expected error in mat flbit-field: "incorrect argument count in call (flbit-field 0.0)".
+fl.mo:Expected error in mat flbit-field: "incorrect argument count in call (flbit-field 0.0 1)".
+fl.mo:Expected error in mat flbit-field: "flbit-field: 0 is not a flonum".
+fl.mo:Expected error in mat flbit-field: "flbit-field: invalid start index -1".
+fl.mo:Expected error in mat flbit-field: "flbit-field: invalid end index 1".
+fl.mo:Expected error in mat flbit-field: "flbit-field: invalid end index -1".
+fl.mo:Expected error in mat flbit-field: "flbit-field: invalid start index <int>".
+fl.mo:Expected error in mat flbit-field: "flbit-field: invalid end index <int>".
+fl.mo:Expected error in mat flbit-field: "flbit-field: invalid start index 1267650600228229401496703205376".
+fl.mo:Expected error in mat flbit-field: "flbit-field: invalid end index 1267650600228229401496703205376".
 cfl.mo:Expected error in mat fl-make-rectangular: "fl-make-rectangular: 3 is not a flonum".
 cfl.mo:Expected error in mat fl-make-rectangular: "fl-make-rectangular: b is not a flonum".
 cfl.mo:Expected error in mat fl-make-rectangular: "fl-make-rectangular: 3 is not a flonum".
@@ -10438,6 +10451,9 @@ foreign.mo:Expected error in mat foreign-ftype: "invalid syntax (make-ftype-poin
 foreign.mo:Expected error in mat foreign-ftype: "foreign-entry: 1000000 is not a string".
 foreign.mo:Expected error in mat foreign-ftype: "foreign-entry: no entry for "i am not defined"".
 foreign.mo:Expected error in mat foreign-ftype: "unexpected function ftype name outside pointer field A".
+foreign.mo:Expected error in mat foreign-ftype: "void*->void*: invalid foreign-procedure argument 0".
+foreign.mo:Expected error in mat foreign-ftype: "invalid syntax (ftype-ref integer-8 (void*->void* (make-ftype-pointer integer-8 0) 0))".
+foreign.mo:Expected error in mat foreign-ftype: "obj-void*->obj-void*: invalid foreign-procedure argument <ftype-pointer>".
 foreign.mo:Expected error in mat foreign-callable: "foreign-callable: spam is not a procedure".
 foreign.mo:Expected error in mat foreign-callable: "foreign-callable: spam is not a procedure".
 foreign.mo:Expected error in mat foreign-callable: "foreign-callable: spam is not a procedure".
@@ -10527,6 +10543,11 @@ ftype.mo:Expected error in mat ftype: "non-scalar value cannot be assigned (ftyp
 ftype.mo:Expected error in mat ftype: "non-scalar value cannot be referenced (ftype-ref B (tail *) b)".
 ftype.mo:Expected error in mat ftype: "recursive or forward reference outside pointer field Qfrob".
 ftype.mo:Expected error in mat ftype: "recursive or forward reference outside pointer field Qsnark".
+ftype.mo:Expected error in mat ftype: "ftype-ref: ftype mismatch for <ftype-pointer>".
+ftype.mo:Expected error in mat ftype: "ftype-set!: ftype mismatch for <ftype-pointer>".
+ftype.mo:Expected error in mat ftype: "ftype-ref: ftype mismatch for <ftype-pointer>".
+ftype.mo:Expected error in mat ftype: "cannot dereference generic pointer *".
+ftype.mo:Expected error in mat ftype: "invalid syntax (ftype-set! A (x *) bv-p)".
 ftype.mo:Expected error in mat ftype: "ftype-ref: invalid index -1 for #<ftd array>".
 ftype.mo:Expected error in mat ftype: "ftype-ref: invalid index 3.2 for #<ftd array>".
 ftype.mo:Expected error in mat ftype: "ftype-ref: invalid index <int> for #<ftd array>".

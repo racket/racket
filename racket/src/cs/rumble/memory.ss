@@ -592,9 +592,12 @@
 ;; accommodates a limitation of the traditional Racket implementation
 (define (run-one-collect-callback v save sel)
   (let ([protocol (#%vector-ref v 0)]
-        [proc (cpointer-address (#%vector-ref v 1))]
+        [proc (ftype-pointer-address (cptr->fptr 'collect-callback (#%vector-ref v 1)))]
         [ptr (lambda (i)
-               (cpointer*-address (#%vector-ref v (fx+ 2 i))))]
+               (let ([n (#%vector-ref v (fx+ 2 i))])
+                 (if (integer? n)
+                     n
+                     (ftype-pointer-address (cptr->fptr 'collect-callback n)))))]
         [val (lambda (i)
                (#%vector-ref v (fx+ 2 i)))])
     (case protocol

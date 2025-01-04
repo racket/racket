@@ -780,8 +780,8 @@ This suggests the following new algorithm based on (s):
        ((error-syntax->string-handler) stx (error-print-width))))
 
 (define (infer-who stx)
-  (let* ([maybe-id (if (stx-pair? stx) (stx-car stx) stx)])
-    (if (identifier? maybe-id) (syntax-e maybe-id) '?)))
+  (or ((error-syntax->name-handler) stx)
+      '?))
 
 (define (comma-list items)
   (join-sep items "," "or"))

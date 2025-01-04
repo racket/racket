@@ -287,7 +287,8 @@
     (one-mz-test "embed-me35.rkt" "'ok-35\n" #f)
     (one-mz-test "embed-me36.rkt" "'ok-36\n" #f)
     (one-mz-test "embed-me38.rkt" "\"found license\"\n" #f)
-    (one-mz-test "embed-me40.rkt" "#t\n" #f #:only-via-path? #t))
+    (one-mz-test "embed-me40.rkt" "#t\n" #f #:only-via-path? #t)
+    (one-mz-test "embed-me41.rkt" "'ok-41\n" #f))
 
   ;; Try unicode expr and cmdline:
   (when (equal? (locale-string-encoding) "UTF-8")

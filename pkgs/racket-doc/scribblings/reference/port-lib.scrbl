@@ -353,6 +353,19 @@ name. If the @racket[special-ok?]  argument is true, then the
 resulting port supports @racket[write-special], otherwise it does not.}
 
 
+@defproc[(open-input-nowhere [name any/c 'nowhere])
+         input-port?]{
+@index*['("null-input" "null-input-port" "dev-null"
+          "/dev/null")
+	'("Opening a null input port")]{
+
+Creates} and returns an input port that always returns @racket[eof]
+(without blocking). The @racket[name] argument is used as the port's
+name.
+
+@history[#:added "8.15.0.2"]}
+
+
 @defproc[(peeking-input-port [in input-port?]
                              [name any/c (object-name in)]
                              [skip exact-nonnegative-integer? 0]

@@ -433,17 +433,20 @@ the result of @racket[proc].
 }
 
 
-@defproc[(vector-member [v any/c] [vec vector?])
+@defproc[(vector-member [v any/c] [vec vector?] [is-equal? (-> any/c any/c any/c) equal?])
          (or/c natural-number/c #f)]{
 
-Locates the first element of @racket[vec] that is @racket[equal?] to
- @racket[v]. If such an element exists, the index of that element in
+Locates the first element of @racket[vec] that is equal to @racket[v] according
+ to @racket[is-equal?]. If such an element exists, the index of that element in
  @racket[vec] is returned. Otherwise, the result is @racket[#f].
 
 @mz-examples[#:eval vec-eval
 (vector-member 2 (vector 1 2 3 4))
 (vector-member 9 (vector 1 2 3 4))
-]}
+(vector-member 1.0 (vector 1 2 3 4) =)
+]
+
+@history[#:changed "8.15.0.1" @elem{Added the @racket[is-equal?] argument.}]}
 
 
 @defproc[(vector-memv [v any/c] [vec vector?])
@@ -469,7 +472,7 @@ Like @racket[vector-member], but finds an element using @racket[eq?].
 @defproc[(vector-sort [vec vector?]
                       [less-than? (any/c any/c . -> . any/c)]
                       [start exact-nonnegative-integer? 0]
-                      [end exact-nonnegative-integer? (vector-length vec)]
+                      [end (or/c #f exact-nonnegative-integer?) #f]
                       [#:key key (or/c #f (any/c . -> . any/c)) #f]
                       [#:cache-keys? cache-keys? boolean? #f])
          vector?]{
@@ -482,13 +485,21 @@ Like @racket[vector-member], but finds an element using @racket[eq?].
  not modified). This sort is stable (i.e., the order of ``equal''
  elements is preserved).
 
+ If @racket[end] is @racket[#f], it is replaced with
+ @racket[(vector-length vec)].
+
 @mz-examples[#:eval vec-eval
 (define v1 (vector 4 3 2 1))
+v1
 (vector-sort v1 <)
 v1
+(vector-sort v1 < 2 #f #:key #f)
+v1
 (define v2 (vector '(4) '(3) '(2) '(1)))
+v2
 (vector-sort v2 < 1 3 #:key car)
-v2]
+v2
+]
 
 @history[#:added "6.6.0.5"]{}
 }
@@ -496,8 +507,8 @@ v2]
 @defproc[(vector-sort! [vec (and/c vector? (not/c immutable?))]
                        [less-than? (any/c any/c . -> . any/c)]
                        [start exact-nonnegative-integer? 0]
-                       [end exact-nonnegative-integer? (vector-length vec)]
-                       [#:key key (any/c . -> . any/c) (λ (x) x)]
+                       [end (or/c #f exact-nonnegative-integer?) #f]
+                       [#:key key (or/c #f (any/c . -> . any/c)) #f]
                        [#:cache-keys? cache-keys? boolean? #f])
          void?]{
 
@@ -508,11 +519,18 @@ v2]
 
 @mz-examples[#:eval vec-eval
 (define v1 (vector 4 3 2 1))
+v1
 (vector-sort! v1 <)
 v1
-(define v2 (vector '(4) '(3) '(2) '(1)))
-(vector-sort! v2 < 1 3 #:key car)
-v2]
+(define v2 (vector 4 3 2 1))
+v2
+(vector-sort! v2 < 2 #f #:key #f)
+v2
+(define v3 (vector '(4) '(3) '(2) '(1)))
+v3
+(vector-sort! v3 < 1 3 #:key car)
+v3
+]
 
 @history[#:added "6.6.0.5"]{}
 }

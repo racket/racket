@@ -1,3 +1,4373 @@
+commit 3d0ce1e6fcf19f853894862abcbac0ae78a7be60
+Author: Anthony Green <green@moxielogic.org>
+Date:   Sun Feb 18 09:22:51 2024 -0500
+
+    chore: update version to 3.4.6 and fix long double regression on mips64 and alpha
+
+commit 94eaedb40e67e26d2fa35d1c22d8818f4d9f4c2d
+Author: Anthony Green <green@moxielogic.org>
+Date:   Sun Feb 18 08:41:04 2024 -0500
+
+    Update sparc64 host
+
+commit e1dcf03b4642e75a1058799a3023e0ebd0024258
+Author: Anthony Green <green@moxielogic.org>
+Date:   Sun Feb 18 08:02:45 2024 -0500
+
+    Update cfarm hostnames
+
+commit cd78b539125ae615d76df5a57039fe70ebd56c27
+Author: Anthony Green <green@moxielogic.org>
+Date:   Sun Feb 18 07:48:51 2024 -0500
+
+    Always define long double types.
+
+commit 012fcaf96c87ab617ba34babce9b6b259188fcf0
+Author: Anthony Green <green@moxielogic.org>
+Date:   Thu Feb 15 08:35:02 2024 -0500
+
+    Update
+
+commit d1597239af492240770692b8e453f0dca70fc551
+Author: Anthony Green <green@moxielogic.org>
+Date:   Thu Feb 15 08:32:42 2024 -0500
+
+    update copyright year in libffi.texi
+
+commit 91739a1a912476adbf1e0e4dcb091b9a2c5007d9
+Author: Anthony Green <green@moxielogic.org>
+Date:   Thu Feb 15 08:30:09 2024 -0500
+
+    Update version, copyright and testsuite info.
+
+commit 9752a622d12e696eaf9a4c46d4f09b58bca6bb83
+Author: Anthony Green <green@moxielogic.org>
+Date:   Thu Feb 15 08:03:21 2024 -0500
+
+    Fix test filename reference
+
+commit 404355317b3314da14a9ead0c0a50c040212e1fc
+Author: Anthony Green <green@moxielogic.org>
+Date:   Thu Feb 15 08:01:43 2024 -0500
+
+    docs(README): update release details for libffi-3.4.5
+
+commit 04f6fa310ddec494cfcf32fd3685cefe35a8d2a2
+Author: Xi Ruoyao <xry111@xry111.site>
+Date:   Thu Feb 15 20:52:13 2024 +0800
+
+    mips: Fix N32 ABI return value handling (#813)
+    
+    In N32 ABI, 8-bit or 16-bit integers should be extended following the
+    signedness of the integer, but 32-bit integers should always be
+    sign-extended to 64-bit (note that N32 ABI only works on 64-bit CPUs).
+    
+    So handling this in everything using libffi would be nasty.  And the
+    libffi code for architectures with a similar rule (LoongArch & RISC-V)
+    also properly handle this.  Let's do this work in libffi for MIPS N32
+    too.
+    
+    This fixes two failures in Python 3.12.1 ctypes test.
+
+commit 00c0c87773910a320d82f026bb481eea31b50206
+Author: 杨屿杰 <30362409+scylaac@users.noreply.github.com>
+Date:   Thu Feb 15 20:51:40 2024 +0800
+
+    Fix loongarch64 soft-float build (#816) (#817)
+
+commit b3091029ed85339c856224c243826022ae93c041
+Author: Hood Chatham <roberthoodchatham@gmail.com>
+Date:   Thu Feb 15 04:51:12 2024 -0800
+
+    Emscripten: Don't unbox single element structs if they are larger than 16 bytes (#818)
+    
+    This arguably is a compensation for a Python ctypes bug / strange behavior
+    described here:
+    https://github.com/python/cpython/blob/a16a9f978f42b8a09297c1efbf33877f6388c403/Modules/_ctypes/stgdict.c#L718-L779
+    
+    If a struct is larger than 16 bytes, Python does not bother to accurately report
+    its contents figuring that we don't need to know.
+
+commit 98881ecb8eec6d5f2beaaced96d9f625b0dee499
+Author: Bill Roberts <152999275+billatarm@users.noreply.github.com>
+Date:   Thu Feb 15 06:50:40 2024 -0600
+
+    aarch64: add BTI flag to ELF notes (#822)
+    
+    When a program is loaded and linked, the first ELF file that doesn't
+    declare that BTI is supported in the GNU NOTES section disables BTI
+    support.
+    
+    Example:
+    readelf -n ./aarch64-unknown-linux-gnu/.libs/libffi.so
+    Displaying notes found in: .note.gnu.property
+      Owner                Data size        Description
+      GNU                  0x00000010       NT_GNU_PROPERTY_TYPE_0
+          Properties: AArch64 feature: BTI
+    
+    Fixes: #823
+    
+    Signed-off-by: Bill Roberts <bill.roberts@arm.com>
+
+commit f9da12e944c947e797e5f3a98f3860c2a0ed055e
+Author: Dan Horák <dan@danny.cz>
+Date:   Thu Feb 15 13:50:13 2024 +0100
+
+    don't skip ffi_type_longdouble symbols (#814) (#824)
+    
+    Seems there are configurations (ppc64 or ppc64le) that define
+    HAVE_LONG_DOUBLE_VARIANT in fficonfig.h, but do not define
+    HAVE_LONG_DOUBLE, and still want ffi_type_{,complex_}longdouble
+    symbols. Update the condition in libffi.map.in accordingly.
+
+commit f8ed78f1b2e65f2741455612d38477424e321850
+Author: Xi Ruoyao <xry111@xry111.site>
+Date:   Thu Feb 15 20:49:27 2024 +0800
+
+    LoongArch: Fix a build error with GCC 14 (#825)
+    
+    Fix the build error with GCC 14:
+    
+        ../src/loongarch64/ffi.c: In function 'ffi_prep_closure_loc':
+        ../src/loongarch64/ffi.c:525:7: error: implicit declaration of
+        function 'ffi_tramp_set_parms' [-Wimplicit-function-declaration]
+
+commit 0b1dd62bef4192b61153182f7687edf7e885611c
+Author: bartoli <perso.olivier.barthelemy@gmail.com>
+Date:   Thu Feb 1 04:54:57 2024 +0100
+
+    Update README.md (#820)
+    
+    For cygwin/MSVC build, CXXCPP is also needed to pass configure checks
+
+commit c07c40ee9444e029bc595860a669de32b7af282a
+Author: Anthony Green <green@moxielogic.org>
+Date:   Wed Jan 31 22:43:38 2024 -0500
+
+    `feat(github-actions): add new build workflow for warp`
+
+commit 622caabcd25f4e11f752241417d06c9062acdf1f
+Author: Chongyun Lee <45286352+licy183@users.noreply.github.com>
+Date:   Sun Dec 24 23:38:32 2023 +0800
+
+    Put more optional symbols behind ifdefs (#812)
+
+commit a1c391bd8e604c611c7e9c8f6705dc723d403eb5
+Author: Виктор Чернякин <56512186+LocalSpook@users.noreply.github.com>
+Date:   Fri Dec 22 03:30:50 2023 -0700
+
+    Fix a variety of warnings (#811)
+
+commit 3a62a08af7bd0b5d540a087590dc54cdc312416b
+Author: Anthony Green <green@moxielogic.org>
+Date:   Thu Dec 21 15:19:44 2023 -0500
+
+    Remove warnings
+
+commit d96fa2117cc6ca2923de9a2f34311ef0219b7590
+Author: Anthony Green <green@moxielogic.org>
+Date:   Thu Dec 21 14:04:19 2023 -0500
+
+    Eliminate warning
+
+commit 5b1944b4ce4b03e28a5843d36812756168d66b08
+Author: Martin Storsjö <martin@martin.st>
+Date:   Wed Nov 29 00:38:13 2023 +0200
+
+    aarch64: Write the BTI instructions as "hint" instructions (#810)
+    
+    GNU binutils refuses to assemble the direct BTI instructions unless
+    the target architecture explicitly supports BTI, ending up with errors
+    such as
+    
+        ../src/aarch64/sysv.S: Assembler messages:
+        ../src/aarch64/sysv.S:87: Error: selected processor does not support `bti c'
+        ../src/aarch64/sysv.S:156: Error: selected processor does not support `bti j'
+    
+    Building with -march=armv8.5-a fixes building this.
+    
+    However, the BTI instructions assemble into hint instructions, that
+    are ignored by processors that don't implement them. Therefore it is
+    possible to assemble them for the baseline armv8.0-a target as well,
+    by replacing "bti j" with "hint #36", "bti c" with "hint #34" and
+    "bti jc" with "hint #38"; this assembles into the same instruction
+    bits.
+
+commit 11af2196d5f4e8c756758cf86e4ab79dda89f405
+Author: Anthony Green <green@moxielogic.org>
+Date:   Thu Nov 23 09:22:20 2023 -0500
+
+    Reference recent changes
+
+commit d7f5e98b437a242ac712cda8df3e47b205339711
+Author: David Tenty <daltenty.dev@gmail.com>
+Date:   Thu Nov 23 09:16:56 2023 -0500
+
+    Fix visibility check for AIX (#804)
+
+commit 7f960d9a062fab0624302e9f63ef8b025f51dd10
+Author: David Tenty <daltenty.dev@gmail.com>
+Date:   Thu Nov 23 09:16:35 2023 -0500
+
+    [powerpc][AIX] fix layout issues for nested struct types (#805)
+    
+    * [powerpc][AIX] fix layout issues for nested struct types
+    
+    On AIX under the default power alignment rules, the layout
+    of struct types which are nested inside other structs may
+    be different than the layout of those types on their own.
+    
+    Specifically the first member double rules which would
+    apply an eight byte alignment if that type appears in the
+    first position of a struct:
+    
+     1) apply recursively if the struct appear in the first member
+        of another struct
+     2) do not apply if that struct is itself a member of another struct
+        and not the first member.
+    
+    The current implementation of the rules in libffi doesn't handle these
+    cases, causing a mismatch with the compiler and causing some crashes
+    we see when OpenJ9 is used with libffi on AIX.
+    
+    This PR corrects this and adds some representative test cases.
+    
+    * Fix code style
+    
+    * Add a size check
+    
+    * Add additional test
+    
+    * Fix padding in internal structs
+    
+    * Flip condition back to original form
+    
+    * Add a comment
+
+commit d93c0be8a0f11f207e8232770c5f0590406efad1
+Author: Tobias Heider <tobias.heider@stusta.de>
+Date:   Thu Nov 23 15:15:29 2023 +0100
+
+    Add bti intructions to aarch64 assembly to work with strict (#808)
+    
+    BTI enforcement on OpenBSD.
+
+commit adbcf2b247696dde2667ab552cb93e0c79455c84
+Author: Daily Price Depot Droid <anthony@atgreen.org>
+Date:   Sat Oct 21 09:58:28 2023 -0400
+
+    Disable firefox testing
+
+commit 357755eef44735676de1cec458192c7784fb3aa8
+Author: Daily Price Depot Droid <anthony@atgreen.org>
+Date:   Sat Oct 21 09:05:48 2023 -0400
+
+    Try logging
+
+commit c23e9a1c81a84ea4804d001865845b25ff8d4c8a
+Author: Nobuyoshi Nakada <nobu@ruby-lang.org>
+Date:   Sat Oct 21 20:44:24 2023 +0900
+
+    Check if FFI_GO_CLOSURES is defined (#796)
+    
+    This macro is always defined to 1 if defined, or undefined.
+    With `-Wundef` option, checking the value without checking if it is defined causes warnings:
+    
+    ```
+    /opt/local/include/ffi.h:477:5: warning: 'FFI_GO_CLOSURES' is not defined, evaluates to 0 [-Wundef]
+    #if FFI_GO_CLOSURES
+        ^
+    ```
+
+commit a4be0b7210b5a7fd67770d2f4d63105900bc459a
+Author: Yn0ga <ynoga@protonmail.com>
+Date:   Sat Oct 21 13:43:43 2023 +0200
+
+    Add support for Haikuos on PowerPC (#799)
+
+commit dd90749505559d38abb339f1a1cd03791a9dc484
+Author: Petr Sumbera <sumbera@volny.cz>
+Date:   Sat Oct 21 13:42:11 2023 +0200
+
+    Fix passing floating point arguments on 64bits SPARC (libffi#778) (#802)
+
+commit 44f6fa3e526c920c61c8ac10661f447ccfe30872
+Author: Alfred Wingate <parona@protonmail.com>
+Date:   Fri Oct 20 15:02:37 2023 +0300
+
+    Put optional symbols behind ifdefs (#800)
+    
+    Signed-off-by: Alfred Wingate <parona@protonmail.com>
+
+commit 5c6e53db873767cd2266745cebc62551958f5bee
+Author: Michael Osipov <1983-01-06@gmx.net>
+Date:   Mon Sep 4 13:27:01 2023 +0200
+
+    Fix build failures on HP-UX (#792)
+    
+    This fixes #328
+    
+    Co-authored-by: Chris Hunt <chrahunt@gmail.com>
+
+commit 1b3e7569fe114fc7d7779e35704b8519fe65fd4d
+Author: Russell Keith-Magee <russell@keith-magee.com>
+Date:   Mon Sep 4 19:26:11 2023 +0800
+
+    Replace use of triple with target, and explicitly specify build host to force cross-compilation (#794)
+
+commit 22b50e896a80171648439497041afe3b6dba1c08
+Author: Anthony Green <green@moxielogic.com>
+Date:   Thu Aug 31 16:31:42 2023 -0400
+
+    Fix python and pyodide version
+
+commit 4467a3bc350bca106aee2c55cbb19ffffb144d1b
+Author: Anthony Green <green@moxielogic.com>
+Date:   Thu Aug 31 08:48:50 2023 -0400
+
+    Upgrade pyodide version to match newer selenium API
+
+commit 1d0a28ab5a2ee2e12b0650d69184d561cd1fd83c
+Author: Ivan Tadeu Ferreira Antunes Filho <itadeufa@gmail.com>
+Date:   Sat Aug 12 09:02:39 2023 -0400
+
+    Make label private on apple (#788)
+    
+    Private labels on apple must start with L prefix, while on ELF they start with .L prefix.
+    This makes the label start with L on apple instead of .L.
+
+commit 9e8f1bd8de39ee90a73c6927e2df18a418f6da55
+Author: Hood Chatham <roberthoodchatham@gmail.com>
+Date:   Tue Jun 20 21:17:04 2023 -0700
+
+    Emscripten build: Remove -sSTRICT_JS (#781)
+    
+    This rasies errors on newer versions of the emscripten compiler.
+
+commit ac598b7f5272d536b75f4b3833a4610cf4cd9404
+Merge: 2d63cee 8bdd471
+Author: Anthony Green <green@moxielogic.com>
+Date:   Mon Apr 3 08:20:32 2023 -0400
+
+    Merge branch 'master' of github.com:/libffi/libffi
+
+commit 2d63cee0e2154bb9027cff71f780cfaa2f543567
+Author: Anthony Green <green@moxielogic.com>
+Date:   Mon Apr 3 08:18:23 2023 -0400
+
+    Add tests with homogeneous aggregate types
+
+commit 8bdd4716e5974ee0b28b3c09db1eaa9e8833481e
+Author: Hood Chatham <roberthoodchatham@gmail.com>
+Date:   Sun Apr 2 19:54:22 2023 -0700
+
+    More accurate explanation of wasm32 state in readme (#776)
+    
+    There are three main wasm32 target triples:
+    * wasm32-unknown-unknown
+    * wasm32-unknown-emscripten
+    * wasm32-unknown-wasi
+    
+    The wasm32 port is only for the wasm32-unknown-emscripten target triple.
+    (The other triples have no dynamic linking support so libffi would be both
+    hard to port and of limited utility.)
+
+commit f08493d249d2067c8b3207ba46693dd858f95db3
+Author: Anthony Green <green@moxielogic.com>
+Date:   Fri Feb 17 20:35:44 2023 -0500
+
+    Mention ARCv3 work
+
+commit c4df19c99f8d8841942e3edaadbf331d30e298c8
+Author: Claudiu Zissulescu <claziss@gmail.com>
+Date:   Sat Feb 18 03:33:47 2023 +0200
+
+    Update ARC's libffi port (#771)
+    
+    * Add support for ARC and ARC64
+    
+    Add support for ARC/ARC32/ARC64
+    
+    * Implementation of GO Closure for ARC/ARC32/ARC64 Architectures
+    
+    ---------
+    
+    Co-authored-by: Nuno Cardoso <cardoso@synopsys.com>
+    Co-authored-by: Luis Silva <luiss@synopsys.com>
+
+commit 237520649730cb21daf4ebff1cf9a0a64f8507f8
+Author: Anthony Green <green@moxielogic.com>
+Date:   Thu Feb 9 12:23:35 2023 -0500
+
+    Normalize libffi labels
+
+commit ca26801567e9ce19c83f132c6a116d3d25d3b8a1
+Author: Anthony Green <green@moxielogic.com>
+Date:   Thu Feb 9 10:31:22 2023 -0500
+
+    Use rlgl
+
+commit 7d23c2d28e884ad5978e0974ad2443570940d393
+Author: Hood Chatham <roberthoodchatham@gmail.com>
+Date:   Thu Feb 9 06:01:37 2023 -0800
+
+    Add emscripten gha workflow (#768)
+    
+    Resolves issue #767
+
+commit 883f5ae665bf96008a7a56bf4d6c64cb05c68272
+Author: Anthony Green <green@moxielogic.com>
+Date:   Sun Feb 5 09:51:37 2023 -0500
+
+    Rename label
+
+commit 678dad5abe6c95ffa087b799922c2114b18c8541
+Author: Hood Chatham <roberthoodchatham@gmail.com>
+Date:   Thu Feb 2 14:48:07 2023 -0800
+
+    Use libffi-dg-prune to handle Emscripten INFO messages rather than patching emcc.py (#766)
+
+commit 7d03d3a3150c5c1ff70753edaa880bb5d57ae566
+Author: Anthony Green <green@moxielogic.com>
+Date:   Thu Feb 2 16:09:14 2023 -0500
+
+    Mention wasm32
+
+commit c267c72fa803316e95462f16bf1e3d6d5d55612c
+Author: Anthony Green <green@moxielogic.com>
+Date:   Thu Feb 2 16:04:34 2023 -0500
+
+    Modernize
+
+commit 2687cfc5329d08d6bd4d397c1ca8eb0d171e22fd
+Author: Hood Chatham <roberthoodchatham@gmail.com>
+Date:   Thu Feb 2 09:10:00 2023 -0800
+
+    Add wasm32 emscripten support (#763)
+    
+    * added build script
+    
+    * Apply libffi-emscripten patch
+    
+    * Some changes to wasm32/ffi.c
+    
+    * Remove exit(0); from test suites
+    
+    * Fix LONGDOUBLE argument type
+    
+    * Use more macros in ffi.c
+    
+    * Use switch statements instead of if chains
+    
+    * Implemented struct args
+    
+    * Finish struct implementation
+    
+    * Partially working closures
+    
+    * Got closures working (most of closures test suite passes)
+    
+    * Revert changes to test suite
+    
+    * Update .gitignore
+    
+    * Apply code formatter
+    
+    * Use stackSave and stackRestore rather than directly adjusting stack pointer
+    
+    * Add missing break
+    
+    * Fix visibility of ffi_closure_alloc and ffi_closure_free
+    
+    * Fix FFI_TYPE_STRUCT and FFI_TYPE_LONGDOUBLE when WASM_BIGINT is not used
+    sig needs to be vi here for FFI_TYPE_STRUCT and FFI_TYPE_LONGDOUBLE, noticed this while running the test suite without WASM_BIGINT support.
+    
+    * Always use dynCall rather than direct wasmTable lookup (function pointer cast emulation changes dynCall)
+    
+    * Prevent closures.c from duplicating symbols
+    
+    * Try to set up CI
+    
+    * Add test with bigint
+    
+    * Make test methods static
+    
+    * Remove BigInt shorthand because it messes up terser
+    
+    * Add selenium tests
+    
+    * Update tests a bit to try to make CI work
+    
+    * WASM_BIGINT is a linker flag not a compile flag
+    
+    * Finish getting CI working (#1)
+    
+    * update gitignore
+    
+    * Avoid adding "use strict;" to generated JS
+    
+    This should be controlled by -s STRICT_JS in Emscripten.
+    
+    * Make JavaScript ES5 compliant
+    
+    * Remove redundant EXPORTED_RUNTIME_METHODS settings
+    
+    * Fix definition of DEREF_I16
+    
+    * Avoid marshalling FFI_TYPE_LONGDOUBLE when WASM_BIGINT is not used
+    
+    * Add missing FFI_TYPE_STRUCT signature
+    
+    * Improve test scripts
+    
+    * Remove redundant EXPORTED_RUNTIME_METHODS settings
+    
+    * Add missing EOL
+    
+    * Add struct unpacking tests
+    
+    * Update ci config to try to actually use WASM_BIGINT
+    
+    * Revert "Avoid marshalling FFI_TYPE_LONGDOUBLE when WASM_BIGINT is not used"
+    
+    This reverts commit 61bd5a3e20891623715604581b6e872ab3dfab80.
+    
+    * Fix single_entry_structs tests
+    
+    * Fix return from closure call
+    
+    * Fix 64 bit return from closures
+    
+    * only allocate as much space on stack for return pointer as needed
+    
+    * Revert "only allocate as much space on stack for return pointer as needed"
+    
+    This reverts commit e54a30faea3803e7ac33eed191bde9e573850fc1.
+    
+    * xfail two tests
+    
+    * Fix err_bad_abi test
+    
+    * Remove test logging junk
+    
+    * Try to set up long double marshalling for closures
+    
+    * xfail err_bad_abi
+    
+    * Fix reference errors in previous commit
+    
+    * Add missing argument pointer assignment
+    
+    * Fix signature of function pointer in cls_dbls_struct
+    
+    * Fix longdouble argument
+    
+    * Try some changes to bigint handling
+    
+    * Fix BigInt handling
+    
+    * Fix cls_longdouble test
+    
+    * Fix long double closure arg with no WASM_BIGINT
+    
+    * Use EM_JS to factor out js helpers
+    
+    * Support for varargs closure calls
+    
+    * Fix varargs calls
+    
+    * Fix err_bad_abi test
+    
+    * Fix typo in previous commit
+    
+    * Add more assertions to closures test suite
+    
+    * Fix some asserts
+    
+    * Add assertions to a few more tests
+    
+    * Fix some tests
+    
+    * Fix more floating point assertions
+    
+    * Update more tests
+    
+    * Var args for ffi_call
+    
+    * Don't do node tests
+    
+    * Macro for allocating on stack
+    
+    * Add some comments, simplify struct handling
+    
+    * Try again to fix varargs calls, add comments
+    
+    * Consolidate WASM_BIGINT conditionals into LOAD_U64 and STORE_U64 macros
+    
+    * A bit of cleanup
+    
+    * Fix another typo
+    
+    * Some fixes to the testsuite
+    
+    * Another testsuite fix
+    
+    * Fix varags with closures?
+    
+    * Another attempt at getting closure varargs to work
+    
+    * sig is initialized later
+    
+    * Allow libffi.closures tests to be run
+    
+    * Improve build script
+    
+    * Remove redundant semicolons
+    
+    * Fix a few libffi.closures test failures
+    
+    * Cleanup
+    
+    * Legacy dynCall API is no longer used
+    
+    * Fix FFI_TYPE_LONGDOUBLE offset
+    
+    * xfail 2 tests for WASM
+    
+    - closure_loc_fn0; not applicable -- codeloc doesn't point to closure.
+    - huge_struct; function signature too long.
+    
+    * Revert some redundant dg-output/printf statements
+    
+    Helps Node.
+    
+    * Revert "Don't do node tests"
+    
+    This reverts commit a341ef4b.
+    
+    * Fix assertions in cls_24byte
+    
+    * More tiny formating fixes to test suite
+    
+    * Revert "Revert "Don't do node tests""
+    
+    This reverts commit 7722e685ea04e2420e042886816d8c4dd31f5dcb.
+    
+    * Fix 64 bit returns when WASM_BIGINT is absent
+    
+    * Fix print statement in cls_24byte
+    
+    * Add CALL_FUNC_PTR macro to allow pyodide to define custom calling behavior to handle fpcast
+    
+    * Update single_entry_structs tests
+    
+    * More explanations
+    
+    * Fix compile error in last commit
+    
+    * Add more support for pyodide fpcast emulation, update CI to try to test it
+    
+    * Clone via https
+    
+    * Fix path to pyodide emsdk_env
+    
+    * Add asserts to the rest of the test suite
+    
+    * Fix test compile errors
+    
+    * Fix some tests
+    
+    * Fix cls_ulonglong
+    
+    * Fix alignment of <4 byte args
+    
+    * fix cls_ulonglong again
+    
+    * Use snprintf instead of sprintf
+    
+    * Should assert than strncmp returned 0
+    
+    * Fix va_struct1 and va_struct3
+    
+    * Change double and long double tests
+    
+    These tests are failing because of a strange bug with prinft and doubles, but I am not convinced
+    it necessarily has anything to do with libffi. This version casts the double to int before printing it and avoids the issue
+    
+    * Enable node tests
+    
+    * Revert "Change double and long double tests"
+    
+    This reverts commit 8f3ff89c6577dc99564181cd9974f2f1ba21f1e9.
+    
+    * Fix PYODIDE_FPCAST flag
+    
+    * add conftest.py back in
+    
+    * Fix emcc error: setting `EXPORTED_FUNCTIONS` expects `<class 'list'>` but got `<class 'str'>`
+    
+    See discussion on https://github.com/pyodide/pyodide/pull/1596
+    
+    * Remove test.html
+    
+    * Remove duplicate test file
+    
+    * More changes from upstream
+    
+    * Fix some whitespace
+    
+    * Add some basic debug logging statements
+    
+    * Reapply libffi.exp changes
+    
+    * Don't build docs (#7)
+    
+    Works around build issue makeinfo: command not found.
+    
+    * Update long double alignment
+    
+    Emscripten 2.0.26 reduces the aligmnet of long double to 8. Quoting
+    from `ChangeLog.md`:
+    
+    > The alignment of `long double`, which is a 128-bit floating-point
+    > value implemented in software, is reduced from 16 to 8. The lower
+    > alignment allows `max_align_t` to properly match the alignment we
+    > use for malloc, which is 8 (raising malloc's alignment to achieve
+    > correctness the other way would come with a performance regression).
+    > (#10072)
+    
+    * Update long double alignment
+    
+    Emscripten 2.0.26 reduces the aligmnet of long double to 8. Quoting
+    from `ChangeLog.md`:
+    
+    > The alignment of `long double`, which is a 128-bit floating-point
+    > value implemented in software, is reduced from 16 to 8. The lower
+    > alignment allows `max_align_t` to properly match the alignment we
+    > use for malloc, which is 8 (raising malloc's alignment to achieve
+    > correctness the other way would come with a performance regression).
+    > (#10072)
+    
+    * Improve error handling a bit (#8)
+    
+    * Fix handling of signed arguments to ffi_call (#11)
+    
+    * Fix struct argument handling in ffi_call (#10)
+    
+    * Remove fpcast emulation tests
+    
+    * Align the stack to MAX_ALIGN before making call (#12)
+    
+    * Increase MAX_ARGS
+    
+    * Cleanup (#14)
+    
+    * Fix Closure compiler error with -sASSERTIONS=1 (#15)
+    
+    * Remove function pointer cast emulation (#13)
+    
+    This reverts commit 593b402 and cbc54da, as it's no longer needed
+    after PR pyodide/pyodide#2019.
+    
+    * Prefer the `__EMSCRIPTEN__` definition over `EMSCRIPTEN` (#18)
+    
+    "The preprocessor define EMSCRIPTEN is deprecated. Don't pass it to code
+    in strict mode. Code should use the define __EMSCRIPTEN__ instead."
+    https://github.com/emscripten-core/emscripten/blob/84a634167a1cd9e8c47d37a559688153a4ceace6/emcc.py#L887-L890
+    
+    * Install autoconf 2.71
+    
+    * Try again with installing autoconf 2.71
+    
+    * Fix compatibility with Emscripten 3.1.28
+    
+    * CI: remove use of `EM_CONFIG` env
+    
+    See commit:
+    https://github.com/emscripten-core/emsdk/commit/3d87d5ea8143b3636f872fb05b896eb4a19a070b
+    
+    * Fix cls_multi_schar: cast rest_call to signed char
+    
+    * Remove test xfails (#17)
+    
+    * Fix long double when used as a varargs argument
+    
+    * Enable unwindtest and fix it
+    
+    * Add EM_JS_DEPS
+    
+    * Also require convertJsFunctionToWasm
+    
+    * Run tests very very verbose
+    
+    * Echo the .emscripten file
+    
+    * Remove --experimental-wasm-bigint insertion
+    
+    * Build with assertions
+    
+    * Move verbosity flags back out of LDFLAGS
+    
+    * Remove debug print statement
+    
+    * Use up to date pyodide docker image
+    
+    * Explicitly cast res_call to fix test failure
+    
+    * Put back name of main function in cls_longdouble_va.c
+    
+    * Fix alignment
+    
+    The stack pointer apparently needs to be aligned to 16. There were
+    some terrible subtle bugs caused by not respecting this. stackAlloc
+    knows that the stack should be 16 aligned, so we can use stackAlloc(0)
+    to enforce this. This way if alignment requirements change, as long
+    as Emscripten updates stackAlloc to continue to enforce them we should
+    be okay.
+    
+    * Fix handling of systems with no Js bigint integration
+    
+    When we run the node tests we use node v14 tests (since node v14 is
+    vendored with Emscripten). Node v14 has no Js bigint integration
+    unless the --experimental-wasm-bigint flag is passed. So only the
+    node tests really notice if we get this right. Turns out, it didn't
+    work. We can't call a JavaScript function with 64 bit integer arguments
+    without bigint integration.
+    
+    In ffi_call, we are trying to call a wasm function that takes 64 bit
+    integer arguments. dynCall is designed to do this. We need to go back
+    to tracking the signature when we don't have WASM_BIGINT, and then use
+    dynCall. This works better now that emscripten can dynamically fill in
+    extra dynCall wrappers:
+    https://github.com/emscripten-core/emscripten/pull/17328
+    
+    On the other hand, for the closures we are not getting a function pointer
+    as a first argument. We need to make our own wasm legalizer adaptor that
+    splits 64 bit integer arguments and then calls the JavaScript trampoline,
+    then the JavaScript trampoline reassembles them, calls the closure, then
+    splits the result (if it's a 64 bit integer) and the adaptor puts it back
+    together.
+    
+    * Improvements to emscripten test shell scripts (#21)
+    
+    This fixes the C++ unwinding tests and makes other minor improvements
+    to the Emscripten test shell scripts.
+    
+    * Rename the test folder and move test files into emscripten test folder
+    
+    * Use docker image that has autoconf-2.71
+    
+    * Cleanup
+    
+    * Pin emscripten 3.1.30
+    
+    * Fix build.sh path
+    
+    * Rearrange ci pipeline
+    
+    * Fix bpo_38748 test
+    
+    * Cleanup
+    
+    * Improvements to comments, add static asserts, and update copyright
+    
+    * Use `*_js` instead of `*_helper` for EM_JS functions (#22)
+    
+    * Minor code simplification
+    
+    * Xfail first dejagnu test to work around emscripten cache messages
+    
+    See https://github.com/emscripten-core/emscripten/issues/18607
+    
+    * Remove unneeded xfails
+    
+    * Shorten conftest.py by using pytest-pyodide
+    
+    * Apply formatters and linters to emscripten directory
+    
+    * Fix Emscripten xfail hack
+    
+    * Fix build-tests script
+    
+    * Patch emscripten to quiet info messages
+    
+    * Clean up compiler flags in scripts and remove some settings from circleci config
+    
+    * Rename emscripten quiet script
+    
+    * Add missing export
+    
+    * Don't remove go.exp
+    
+    * Add reference to emscripten logging issue
+    
+    ---------
+    
+    Co-authored-by: Kleis Auke Wolthuizen <info@kleisauke.nl>
+    Co-authored-by: Kleis Auke Wolthuizen <github@kleisauke.nl>
+    Co-authored-by: Christian Heimes <christian@python.org>
+
+commit ce077e5565366171aa1b4438749b0922fce887a4
+Author: serge-sans-paille <serge.guelton@telecom-bretagne.eu>
+Date:   Thu Feb 2 14:46:29 2023 +0000
+
+    Forward declare open_temp_exec_file (#764)
+    
+    It's defined in closures.c and used in tramp.c.
+    Also declare it as an hidden symbol, as it should be.
+    
+    Co-authored-by: serge-sans-paille <sguelton@mozilla.com>
+
+commit abf211d1603da9d687455169646e0e9667be17c1
+Author: Anthony Green <green@moxielogic.com>
+Date:   Thu Feb 2 07:06:02 2023 -0500
+
+    Mention HPPA fixes
+
+commit 222abd0c65babe2174b21753217145f5031a8b91
+Author: Anthony Green <green@moxielogic.com>
+Date:   Thu Feb 2 07:04:55 2023 -0500
+
+    From Dave Anglin:
+    
+    This patch is derived from the work done in implementing libffi for 64-bit hppa64-hpux target. Currently, the 32-bit hppa targets do a linear search for the return type of an ffi_call. This is slow and inefficient. A jump table can used to jump directly to the code used to process the return value. In most common cases, the return value can be processed in the jump table itself.
+    
+    The patch also fixes return handling for FFI_TYPE_UINT8, FFI_TYPE_SINT8, FFI_TYPE_UINT16 and FFI_TYPE_SINT16.
+
+commit e58e22b22386ed0e0a95e97eb8eed016e3f01b02
+Author: Anthony Green <green@moxielogic.com>
+Date:   Thu Feb 2 07:02:53 2023 -0500
+
+    From Dave Anglin:
+    
+    A couple of years ago the 32-bit hppa targets were converted from using a trampoline executed on the stack to the function descriptor technique used by ia64. This is more efficient and avoids having to have an executable stack. However, function pointers on 32-bit need the PLABEL bit set in the pointer. It distinguishes between pointers that point directly to the executable code and pointer that point to a function descriptor. We need the later for libffi. But as a result, it is not possible to convert using casts data pointers to function pointers.
+    
+    The solution at the time was to set the PLABEL bit in hppa closure pointers using FFI_CLOSURE_PTR. However, I realized recently that this was a bad choice. Packages like python-cffi allocate their own closure pointers, so this isn't going to work well there.
+    
+    A better solution is to leave closure pointers unchanged and only set the PLABEL bit in pointers used to point to executable code.
+    
+    The attached patch drops the FFI_CLOSURE_PTR and FFI_RESTORE_PTR defines. This allows some cleanup in the hppa closure routines. The FFI_FN define is now used to set the PLABEL bit on hppa. ffi_closure_alloc is modified to set the PLABEL bit in the value set in *code.
+    
+    I also added a FFI_CL define to convert a function pointer to a closure pointer. It is only used in one test case.
+
+commit baa6bbbc176b3c572eaf05b3fae0311df7e5f7b7
+Author: Anthony Green <green@moxielogic.com>
+Date:   Thu Feb 2 06:59:46 2023 -0500
+
+    Add HPPA64 support
+
+commit e70dd1aa240159bd2050cb1eafffb49cdc1d8b22
+Author: Iain Sandoe <iain@sandoe.co.uk>
+Date:   Thu Feb 2 11:44:13 2023 +0000
+
+    libffi: Fix X86 32b Darwin build and EH frames. (#757)
+    
+    This addresses a number of issues in the X86 Darwin 32b port for libffi.
+    
+    1. The pic symbol stubs are weak definitions; the correct section placement
+       for these depends on the linker version in use.  We do not have access
+       to that information, but we can use the target OS version (assumes that
+       the user has installed the latest version of xcode available).
+       When a coalesced section is in use (OS versions earlier than Darwin12 /
+       OSX 10.8), its name must differ from  __TEXT,__text since otherwise that
+       would correspond to altering the attributes of the .text section (which
+       produces a diagnostic from the assembler).
+       Here we use __TEXT, __textcoal_nt for this which is what GCC emits for
+       these stubs.
+       For later versions than Darwin 12 (OS X 10.8) we can place the stubs in
+       the .text section (if we do not we get a diagnostic from clang -cc1as
+       saying that the use of coalesced sections for this is deprecated).
+    
+    2. The EH frame is specified manually, since there is no support for .cfi_
+       directives in 'cctools' assemblers.  The implementation needs to provide
+       offsets for CFA advance, code size and to the CIE as signed values
+       rather than relocations. However the cctools assembler will produce a
+       relocation for expressions like ' .long Lxx-Lyy' which then leads to a
+       link-time error.  We correct this by forming the offset values using
+       ' .set' directives and then assigning the results of them.
+    
+    3. The register numbering used by m32 X86 Darwin EH frames is not the same
+       as the DWARF debug numbering (the Frame and Stack pointer numbers are
+       swapped).
+    
+    4. The FDE address encoding used by the system tools is '0x10' (PCrel + abs)
+       where the value provided was PCrel + sdata4.
+    
+    5. GCC does not use compact unwind at present, and it was not implemented
+       until Darwin10 / OSX 10.6.  There were some issues with function location
+       in 10.6 so that the solution here suppresses emitting the compact unwind
+       section until Darwin11 / OSX 10.7.
+
+commit 7effe99955b228ae828d06fa8d07dc546ef67b1a
+Author: Iain Sandoe <iain@sandoe.co.uk>
+Date:   Thu Feb 2 11:42:46 2023 +0000
+
+    Darwin: Search for both shared and convenience libraries in each path. (#761)
+    
+    For several Darwin linker versions, the default behaviour is to first traverse
+    the set of library paths, looking for shared libraries, and then a second time
+    looking for archives.
+    
+    This means that if the library is configured --disable-shared the installed
+    system version /usr/lib/libffi.dylib will be found before the archive under
+    test.
+    
+    Using the linker option '-search-paths-first' alters the strategy to search each
+    path for dylib and then archive before moving on to the next.
+
+commit ebbc5e14cdbfcc24bf3c9bb7b41ee10cd979c535
+Author: serge-sans-paille <serge.guelton@telecom-bretagne.eu>
+Date:   Thu Feb 2 11:40:17 2023 +0000
+
+    Fix signed vs unsigned comparison (#765)
+    
+    As reported by -Wsign-compare. In the case of getting the result of
+    comparing the result of sysconf (_SC_PAGESIZE) to other value, this also
+    correctly handles edge cases where the above fails and returns -1.
+    
+    Co-authored-by: serge-sans-paille <sguelton@mozilla.com>
+
+commit 7611bb4cfe90884b55ad225e0166136a1d2cf22b
+Author: Anthony Green <green@moxielogic.com>
+Date:   Sun Jan 8 09:01:00 2023 -0500
+
+    Use checkout@v3, with nodejs 16
+
+commit 3a8bb6bb7f51844b890ce6ae44fc6d7c4547fbd0
+Author: YongKang Zhou <zhouyongkang4321@gmail.com>
+Date:   Sun Jan 8 21:56:34 2023 +0800
+
+    fix typo (#758)
+    
+    `mingW` -> `MinGW`
+
+commit 00116b6d0171ba69ffe23d6b5c21c0fdb5907a48
+Author: Alexander Kanavin <alex.kanavin@gmail.com>
+Date:   Mon Dec 5 03:20:09 2022 +0100
+
+    arm/sysv: reverted clang VFP mitigation (#747)
+    
+    Since commit e3d2812ce43940aacae5bab2d0e965278cb1e7ea,
+    seperate instructions were used when compiling under clang,
+    as clang didn't allow the directives at the time. This mitigation
+    now causes compilation to fail under clang 10, as described by
+    https://github.com/libffi/libffi/issues/607. Now that
+    clang supports the LDC and SDC instructions, this mitigation
+    has been reverted.
+    
+    Co-authored-by: Brett Warren <brett.warren@arm.com>
+
+commit c50c16d0bcb58952840184aa83e62c6d912bf779
+Author: Anthony Green <green@moxielogic.com>
+Date:   Sun Nov 20 12:20:40 2022 -0500
+
+    Fix large struct passing on PA-RISC
+
+commit c6dc125afba294b9b9613392c492ae18df3ede84
+Author: Anthony Green <green@moxielogic.com>
+Date:   Tue Oct 25 10:28:19 2022 -0400
+
+    Add missing test cases
+
+commit 2b2f61f6e6a79d46fa277965745a8cd8bb5f04bc
+Author: Xavier Claessens <xclaesse@gmail.com>
+Date:   Mon Oct 24 20:39:04 2022 +0200
+
+    Small build cleanup (#743)
+    
+    * configure.ac: Remove some unused checks
+    
+    * Fix FFI_API definition
+    
+    When doing a static build dllimport/dllexport should be disabled. It was
+    also using 2 different macros FFI_BUILDING_DLL and FFI_BUILDING for no
+    reason.
+
+commit f24180be1367f942824365b131ae894b9c769c7d
+Author: Anthony Green <green@moxielogic.com>
+Date:   Sun Oct 23 20:17:29 2022 -0400
+
+    Update to version 3.4.4
+
+commit 848052fabb207d6f56485c8c2c3509eddecbe828
+Author: Anthony Green <green@moxielogic.com>
+Date:   Sun Oct 23 11:25:10 2022 -0400
+
+    More aarch64 fixes
+
+commit af0f14cd6d932bd1c2f7c39c01e2df3b0ad19ea9
+Author: Icecream95 <the.real.icecream95@gmail.com>
+Date:   Mon Oct 24 04:08:10 2022 +1300
+
+    Fix types of temporary variables in aarch64 extend_integer_type (#745)
+    
+    Fixes truncated values in weston-info output.
+
+commit f7233db2a781b43e419a30edbec7639f74fa2a00
+Author: musvaage <112724366+musvaage@users.noreply.github.com>
+Date:   Mon Oct 17 17:26:17 2022 -0500
+
+    typos (#742)
+
+commit 45e492952e9f984a105ab281fb9433a4bbc12146
+Author: Anthony Green <green@moxielogic.com>
+Date:   Sun Oct 16 12:41:56 2022 -0400
+
+    Add 32-bit cygwin test
+
+commit 93cfb655200f34ab1b2b7d8955291c457b91ee9f
+Author: Anthony Green <green@moxielogic.com>
+Date:   Mon Oct 10 14:32:35 2022 -0400
+
+    Correction for older compilers
+
+commit 77a0fb82b53087647a12334c6ddd590ea6215199
+Author: Andreas Schwab <schwab@linux-m68k.org>
+Date:   Mon Oct 10 17:59:04 2022 +0200
+
+    Flush output before aborting (#740)
+    
+    Co-authored-by: Andreas Schwab <schwab@suse.de>
+
+commit 3874fd9865eef72a5cf5a761781b51f8db9fa267
+Author: Andreas Schwab <schwab@linux-m68k.org>
+Date:   Mon Oct 10 17:58:48 2022 +0200
+
+    Fix strict aliasing problem in aarch64 ffi_call (#739)
+    
+    The assignment a = &dest in ffi_call_int may be moved after the call to
+    extend_integer_type because that function accesses the assigned value with
+    a different type.
+    
+    Co-authored-by: Andreas Schwab <schwab@suse.de>
+
+commit 4b0c358e28fae22164bf0d423f183dfed8a1ba10
+Author: Andreas Schwab <schwab@linux-m68k.org>
+Date:   Mon Oct 10 17:57:47 2022 +0200
+
+    riscv: make copies of structs passed by reference (#738)
+    
+    Co-authored-by: Andreas Schwab <schwab@suse.de>
+
+commit c163d93ac032a101cda1818855d681430f7af89a
+Author: Anthony Green <green@moxielogic.com>
+Date:   Sat Oct 8 18:35:38 2022 -0400
+
+    Add gcc-12 testing for aarch64 linux
+
+commit 62fd1f218be35976858a9f3a0b36fe0d38146bc9
+Author: Anthony Green <green@moxielogic.com>
+Date:   Sun Oct 2 13:03:37 2022 -0400
+
+    Tweak quotes
+
+commit e1d1b094d31dbf97bd53c09736be97e1e9812d6a
+Author: Anthony Green <green@moxielogic.com>
+Date:   Wed Sep 28 10:16:45 2022 -0400
+
+    Add .
+
+commit b45f68949d7d1b705eb5e26f58a09972ad70a9c4
+Author: Anthony Green <green@moxielogic.com>
+Date:   Wed Sep 28 10:16:01 2022 -0400
+
+    Update README for 3.4.4.
+
+commit 817a43fbc1d6d1c702c492e926f158b17ae988e4
+Author: Anthony Green <green@moxielogic.com>
+Date:   Wed Sep 28 09:05:45 2022 -0400
+
+    Revert to previous cfi check. (#735)
+
+commit 963c4a969326192a2a0ad536d3943f21dbbb0eaa
+Author: Anthony Green <green@moxielogic.com>
+Date:   Tue Sep 27 22:05:42 2022 -0400
+
+    Remove nested comments
+
+commit e9e44157526c00bfd1142175ed6a7eb936ea0ede
+Author: Anthony Green <green@moxielogic.com>
+Date:   Tue Sep 27 21:25:30 2022 -0400
+
+    Don't tweak path
+
+commit 4594dcc98770b4fa60fce313abf557f090f8a0fd
+Author: Anthony Green <green@moxielogic.com>
+Date:   Tue Sep 27 21:05:26 2022 -0400
+
+    Fix find
+
+commit fe68a7b998329f471c3c0c5726073b9cb1a5a126
+Author: Anthony Green <green@moxielogic.com>
+Date:   Tue Sep 27 20:29:17 2022 -0400
+
+    Locate tools
+
+commit cfb3f4c255cda534d1dc5de6a31cff70f02f9d69
+Author: Anthony Green <green@moxielogic.com>
+Date:   Tue Sep 27 20:13:42 2022 -0400
+
+    Use cross tools for Windows
+
+commit ae544e0043079d778fdf0e16408db3b7a6d723bd
+Author: Anthony Green <green@moxielogic.com>
+Date:   Tue Sep 27 18:23:06 2022 -0400
+
+    Fix shell
+
+commit b8d849bd85294253787bbe1838de354ad2f54201
+Author: Anthony Green <green@moxielogic.com>
+Date:   Tue Sep 27 17:58:31 2022 -0400
+
+    Find ms tools
+
+commit 9785eee066782d7575023f94b64402963b55aa8c
+Author: Anthony Green <green@moxielogic.com>
+Date:   Tue Sep 27 17:39:44 2022 -0400
+
+    32- and 64-bit Windows
+
+commit 1421717effc7b5052e3c26e2b715a83a8a61355c
+Author: Anthony Green <green@moxielogic.com>
+Date:   Tue Sep 27 08:13:17 2022 -0400
+
+    Add "lto" to triple to identify lto builds
+
+commit 425acd4c2f217b00868ec1577c20b73de032c114
+Author: Anthony Green <green@moxielogic.com>
+Date:   Tue Sep 27 07:57:37 2022 -0400
+
+    Try aarch64 linux with -flto
+
+commit c4261a0588fa997837e44f8417fc8577b37cd461
+Author: Anthony Green <green@moxielogic.com>
+Date:   Mon Sep 26 16:45:00 2022 -0400
+
+    Show compiler version
+
+commit a1467200c36ce80dacb8d9d0d50049765809b6f4
+Author: Anthony Green <green@moxielogic.com>
+Date:   Mon Sep 26 11:41:48 2022 -0400
+
+    Never link pthread for android
+
+commit 5ce26a0e03eacb483709189e8cbb05509fa68612
+Author: Frederik Seiffert <frederik@seiffert.org>
+Date:   Mon Sep 26 13:43:40 2022 +0200
+
+    CI: add Android builds (#732)
+
+commit 55bcc47717bb0f9c5276a45710d757cda7a61f8e
+Author: Anthony Green <green@moxielogic.com>
+Date:   Sat Sep 24 22:03:52 2022 -0400
+
+    Test idea borrowed from cpython
+
+commit a2473cde0a02c096dc3e0b57f0cb73f598765570
+Author: Anthony Green <green@moxielogic.com>
+Date:   Sat Sep 24 21:41:02 2022 -0400
+
+    or1k: All struct args are passed in memory
+
+commit f93224d38662a8cdc33ca56fe6f2d5650a86d690
+Author: Anthony Green <green@moxielogic.com>
+Date:   Sat Sep 24 21:38:57 2022 -0400
+
+    moxie: All struct args are passed in memory
+
+commit e79f19489bb294ce60bef5cdba5e56c3e7d84382
+Author: Anthony Green <green@moxielogic.com>
+Date:   Sat Sep 24 17:11:30 2022 -0400
+
+    Add test case transcribed from cpython
+
+commit ab96038772ec4f4ccfaf49d621cd20f58742c401
+Author: Anthony Green <green@moxielogic.com>
+Date:   Mon Sep 19 19:42:35 2022 -0400
+
+    Set host triplet for native builds
+
+commit a6fc81653d6ce649a6bc29675baa112c68a21df0
+Author: Anthony Green <green@moxielogic.com>
+Date:   Mon Sep 19 19:25:09 2022 -0400
+
+    Update job names
+
+commit 6b7fb6ce9eb4751ed3179de256566971c9d46cb7
+Author: Anthony Green <green@moxielogic.com>
+Date:   Mon Sep 19 18:23:42 2022 -0400
+
+    Give better names to CI workflows
+
+commit f0675ab7e85ca31095b51db5a5c955f1005240cb
+Author: Anthony Green <green@moxielogic.com>
+Date:   Mon Sep 19 17:30:51 2022 -0400
+
+    Update version to 3.4.4-experimental
+
+commit e3eaa609882fbcffb6c1b21270b6ff46fb57699f
+Author: Hans <h-c-mueller@users.noreply.github.com>
+Date:   Mon Sep 19 23:26:59 2022 +0200
+
+    Suppress error console output duing configure in case not an ELF file (#729)
+    
+    On Cygwin, MSYS and MinGW readelf is available, but files generated are no
+    ELF files. This results in an Error output on console:
+    'checking whether .eh_frame section should be read-only... readelf: Error: Not an ELF file - it has the wrong magic bytes at the start
+    yes'
+    With this patch the error output is suppressed resulting in only
+    'checking whether .eh_frame section should be read-only... yes'
+    Setting of related variables is not changed.
+    
+    Co-authored-by: Hannes Müller <>
+
+commit 84817695eab13c282436fca278bde2384ca955e5
+Author: Anthony Green <green@moxielogic.com>
+Date:   Mon Sep 19 13:31:46 2022 -0400
+
+    Fix typo
+
+commit 53338d2bbf547682b2461a6e4199276e24ec5c85
+Author: Anthony Green <green@moxielogic.com>
+Date:   Mon Sep 19 13:07:50 2022 -0400
+
+    Update version
+
+commit 0bd41b75df49f002f3fee9f4d5df225d742d3f1b
+Author: Anthony Green <green@moxielogic.com>
+Date:   Mon Sep 19 12:26:05 2022 -0400
+
+    Update libtool version
+
+commit 9b1dd8f2d5af8c76d120ffd566bf3c821580c96c
+Author: Anthony Green <green@moxielogic.com>
+Date:   Mon Sep 19 12:22:04 2022 -0400
+
+    Update version to 3.4.3
+
+commit 0a769ccc0f7a4a7e3e76a79b61c28341fc47e3be
+Author: Anthony Green <green@moxielogic.com>
+Date:   Mon Sep 19 08:17:15 2022 -0400
+
+    Update release dates
+
+commit f26b56e1c547d2b4d8c9303275ecea47b5936184
+Author: Anthony Green <green@moxielogic.com>
+Date:   Mon Sep 19 08:15:22 2022 -0400
+
+    Add new files for distribution
+
+commit b801b54b667340867441e922c14230a93832c8e2
+Author: Anthony Green <green@moxielogic.com>
+Date:   Mon Sep 19 06:49:32 2022 -0400
+
+    Mention AIX with GCC
+
+commit ff34df233c863371912881516eae039f850fcad6
+Author: Anthony Green <green@moxielogic.com>
+Date:   Mon Sep 19 06:45:19 2022 -0400
+
+    Update comment about platform support
+
+commit 598ea692b81ac8116bd9907d2b498c16fc92bde7
+Author: Anthony Green <green@moxielogic.com>
+Date:   Mon Sep 19 06:43:41 2022 -0400
+
+    Clean ups, preparing for new release
+
+commit fc6b939066f211b99eed3c8111e446ec95d51ca6
+Author: Anthony Green <green@moxielogic.com>
+Date:   Mon Sep 19 06:42:29 2022 -0400
+
+    Standardize temp exec file creation
+
+commit 4c2984c43fbb3db8e65b2b5702b27944eb0ed343
+Author: Anthony Green <green@moxielogic.com>
+Date:   Sun Sep 18 15:06:57 2022 -0400
+
+    Handle win32 ABIs for struct return
+
+commit b05dc51bbe9aef6fcac66a8e68b59472bfaff126
+Author: Anthony Green <green@moxielogic.com>
+Date:   Sun Sep 18 13:03:10 2022 -0400
+
+    Debug x86
+
+commit cafdb8377a8be2eadac05c318fae9ef6786c36c2
+Author: Anthony Green <green@moxielogic.com>
+Date:   Sun Sep 18 12:05:12 2022 -0400
+
+    Revert
+
+commit acf0ce9e9b0bcd73d39f599a53e9924ba74c13c1
+Author: Anthony Green <green@moxielogic.com>
+Date:   Sun Sep 18 11:04:54 2022 -0400
+
+    Add test case
+
+commit b49308eaac7288e01a36894598fb62bfaf61b238
+Author: Anthony Green <green@moxielogic.com>
+Date:   Sun Sep 18 08:26:23 2022 -0400
+
+    Add missing ABI_ATTR
+
+commit 735e7be4fb2a0401a9ca66cc64004b8b3418feb3
+Author: Anthony Green <green@moxielogic.com>
+Date:   Sun Sep 18 08:21:34 2022 -0400
+
+    X86 is never defined.
+
+commit ee22ecbd11f52f8de1adbb2a6561aee2125a576a
+Author: Hans <h-c-mueller@users.noreply.github.com>
+Date:   Sun Sep 18 01:56:25 2022 +0200
+
+    Add MSYS configuration files (#728)
+    
+    * Add MSYS configuration files
+    
+    MSYS behaves very similiar to Cygwin, e.g. also __CYGWIN__ is defined.
+    Now 'make check' passes on MSYS without extra patches.
+    
+    * Fix warning extra tokens at end of #endif in closures.c
+    
+    Extra tokens converted into a comment. Also nearby indentations corrected.
+    
+    * Fix missing prototype warning mkostemp() on Cygwin
+    
+    Cygwin requires also _GNU_SOURCE to be defined to enable mkostemp() prototype.
+    
+    * Fix warning label ‘out’ defined but not used in ffi functions
+    
+    Define same preprocessor conditions for goto and label visibility.
+    
+    * Fix warning label ‘out’ defined but not used and related indentations.
+    
+    Define same preprocessor conditions for goto and label visibility. Correct also
+    related indentations.
+    
+    Co-authored-by: Hannes Müller <>
+
+commit 5e010474cf2e30fa053f0a1a460a752f06438cf7
+Author: Anthony Green <green@moxielogic.com>
+Date:   Thu Sep 15 16:57:59 2022 -0400
+
+    Fix test case for 64-bit mingw
+
+commit 305cde7904ab676b7974ae68acb40b788b4c484e
+Author: Anthony Green <green@moxielogic.com>
+Date:   Thu Sep 15 15:50:35 2022 -0400
+
+    Passes on 64bit mingw
+
+commit 05785cafcf584d80c6b48651e1d33c4a3feca75c
+Author: Anthony Green <green@moxielogic.com>
+Date:   Thu Sep 15 15:18:09 2022 -0400
+
+    Fix arg alignment for STDCALL
+
+commit 98d4ad65e9933ed4878ef4aacfaa8299e467a903
+Author: Anthony Green <green@moxielogic.com>
+Date:   Thu Sep 15 09:42:53 2022 -0400
+
+    Fix test headers
+
+commit 2abf00a6c61f4cf6232dc50f28204be020bef05d
+Author: Anthony Green <green@moxielogic.com>
+Date:   Thu Sep 15 08:25:39 2022 -0400
+
+    Tweak msys2 tools again
+
+commit d1b31536af74590b74236a00254e77617a8d50b0
+Author: Anthony Green <green@moxielogic.com>
+Date:   Thu Sep 15 08:16:26 2022 -0400
+
+    Fix msys2 tool selection
+
+commit d352ed366722d5dfce0c1581c3820124c0bbafed
+Author: Anthony Green <green@moxielogic.com>
+Date:   Thu Sep 15 08:10:53 2022 -0400
+
+    Build 32- and 64-bit msys2
+
+commit 4d0a0384ce11446e02fb7f233aae5c19c8082fb1
+Author: Anthony Green <green@moxielogic.com>
+Date:   Thu Sep 15 07:58:26 2022 -0400
+
+    msvc requires the printf change, not mingw
+
+commit a509abf6b0ef9045b8df05b0c3663969b21290c4
+Author: Anthony Green <green@moxielogic.com>
+Date:   Thu Sep 15 06:45:00 2022 -0400
+
+    Install unzip
+
+commit 950ed4a75384c4e7b0a512cb49f71f4d99c50a5d
+Author: Anthony Green <green@moxielogic.com>
+Date:   Thu Sep 15 06:33:14 2022 -0400
+
+    Don't make msys2 default shell
+
+commit 5d02c0cca3750c7aac61971b9e4cb94940793303
+Author: Anthony Green <green@moxielogic.com>
+Date:   Thu Sep 15 06:28:23 2022 -0400
+
+    Try msys2
+
+commit 64a78fa760c581f9c70199abb34aef1e0d086bd2
+Author: Anthony Green <green@moxielogic.com>
+Date:   Thu Sep 15 06:08:30 2022 -0400
+
+    Try new path
+
+commit 77fdeae859f3ab96bc936f0a967d34a5609af40d
+Author: Anthony Green <green@moxielogic.com>
+Date:   Thu Sep 15 01:37:31 2022 -0400
+
+    Find mingw32
+
+commit bb4e7278b7f362afd03d128e7cb68a5e0e2efaf7
+Author: Anthony Green <green@moxielogic.com>
+Date:   Thu Sep 15 01:28:58 2022 -0400
+
+    DEbug
+
+commit 7443b421d39087cad2e607d00b845c670b18920f
+Author: Anthony Green <green@moxielogic.com>
+Date:   Wed Sep 14 23:17:21 2022 -0400
+
+    Try new shell
+
+commit 2ebc36f4be835437fa5d6c4c2b796fc22f769323
+Author: Anthony Green <green@moxielogic.com>
+Date:   Wed Sep 14 23:11:52 2022 -0400
+
+    Fix indentation
+
+commit 3740b243277c6dc210d45bd0b4f8abe8c2e1cb29
+Author: Anthony Green <green@moxielogic.com>
+Date:   Wed Sep 14 23:10:43 2022 -0400
+
+    set mingw32 path
+
+commit 7bf23f899cef435d023ecc8afde34d9e83829c2f
+Author: Anthony Green <green@moxielogic.com>
+Date:   Wed Sep 14 23:04:42 2022 -0400
+
+    Rename job
+
+commit ce5b2208121667236874181360ca91aaa285b528
+Author: Anthony Green <green@moxielogic.com>
+Date:   Wed Sep 14 23:02:32 2022 -0400
+
+    Fix mingw32 github actions
+
+commit 317c9b6a13d3414c510b27bdc7ce57be56399df5
+Author: Anthony Green <green@moxielogic.com>
+Date:   Wed Sep 14 22:54:10 2022 -0400
+
+    Add mingw32 testing
+
+commit 19e8354ff9b608b5410451caef6a9773375de005
+Author: Anthony Green <green@moxielogic.com>
+Date:   Wed Sep 14 07:36:06 2022 -0400
+
+    Fix test case
+
+commit 4932f351579fb722e1e0b58a173b1571a6dfae79
+Author: Anthony Green <green@moxielogic.com>
+Date:   Wed Sep 14 07:08:06 2022 -0400
+
+    Improve test case
+
+commit 819b01ced894028d41a34ec0178de9e7637b23de
+Author: Anthony Green <green@moxielogic.com>
+Date:   Wed Sep 14 07:07:15 2022 -0400
+
+    Add test case
+
+commit b577a5b801b1d1aef1aec5920d34fd1fd6597122
+Author: Anthony Green <green@moxielogic.com>
+Date:   Mon Sep 12 10:23:59 2022 -0400
+
+    Mention Cygwin static trampoline support.
+
+commit 4b54a6471a8f98eb8bc1ea1694a8f3a3a433e538
+Author: Anthony Green <green@moxielogic.com>
+Date:   Mon Sep 12 09:02:08 2022 -0400
+
+    Fix limits.h inclusion for cygwin
+
+commit a1130f37712c03957c9b0adf316cd006fa92a60b
+Author: Anthony Green <green@moxielogic.com>
+Date:   Mon Sep 12 08:53:06 2022 -0400
+
+    Add static trampoline support for Cygwin
+
+commit 26cc9a6c73c80e8459c25da3718c91cf5a36cbd8
+Author: Anthony Green <green@moxielogic.com>
+Date:   Sat Sep 10 20:36:45 2022 -0400
+
+    Remove stray }}
+
+commit 078184887d65bf4a3ecd2f78f6cdbf4c91ccc357
+Author: Anthony Green <green@moxielogic.com>
+Date:   Sat Sep 10 11:45:28 2022 -0400
+
+    Update rlgl usage (switch from player ID to labels)
+
+commit 6e7caacb9c94efba6775825df2479be389da51f1
+Author: Anthony Green <green@moxielogic.com>
+Date:   Sat Sep 10 10:31:37 2022 -0400
+
+    Label rlgl reports
+
+commit d9a19e21c2b86e03b6acb8a2d73d992c8e4974e8
+Author: Anthony Green <green@moxielogic.com>
+Date:   Wed Sep 7 07:58:03 2022 -0400
+
+    The right kind of quotes
+
+commit 2b2644969cbeeaee50938fbea591ea7f85df809e
+Author: Anthony Green <green@moxielogic.com>
+Date:   Wed Sep 7 07:57:26 2022 -0400
+
+    More quotes
+
+commit eb9eb1f6f041548fe670c76f7a90d1c53c75d620
+Author: Anthony Green <green@moxielogic.com>
+Date:   Wed Sep 7 07:49:51 2022 -0400
+
+    Fix random build dir
+
+commit ea124a99da9efb3bde86a1706e15f62be7e68a66
+Author: Anthony Green <green@moxielogic.com>
+Date:   Wed Sep 7 07:21:21 2022 -0400
+
+    Remove bogus sparc compiler flag
+
+commit cca77833fd53ffec93a4962d1e9cd7ea5a38f13f
+Author: Anthony Green <green@moxielogic.com>
+Date:   Wed Sep 7 07:20:59 2022 -0400
+
+    Fix typo
+
+commit 8ee64076f1b7cc654ff24adaffff25ddb3d57484
+Author: Anthony Green <green@moxielogic.com>
+Date:   Wed Sep 7 07:14:13 2022 -0400
+
+    Fix typo
+
+commit 086935029d23dad133c97dfaf68749b7726460a1
+Author: Anthony Green <green@moxielogic.com>
+Date:   Wed Sep 7 07:12:10 2022 -0400
+
+    Set CC and CXX for GCC compile farm builds
+
+commit da905276850342df0f9dfe2c775f6c649d4eed6b
+Author: Anthony Green <green@moxielogic.com>
+Date:   Tue Sep 6 21:15:58 2022 -0400
+
+    dlmmap fix and always check for PaX MPROTECT on linux
+    
+    Also make EMUTRAMP experimental
+    From Stefan Bühler
+    https://github.com/libffi/libffi/pull/282
+
+commit b86c3dc0950ad5d8991e3970d56daeb409650d60
+Author: Anthony Green <green@moxielogic.com>
+Date:   Tue Sep 6 14:25:09 2022 -0400
+
+    Fix typos
+
+commit c9be1378c709586f264dd643f92f71b9f1a842b2
+Author: Anthony Green <green@moxielogic.com>
+Date:   Tue Sep 6 14:12:21 2022 -0400
+
+    Retry autoconf downloads
+
+commit 62471fd078db7ef66ca8b3118187a2911f2bb3e7
+Author: Anthony Green <green@moxielogic.com>
+Date:   Tue Sep 6 13:00:02 2022 -0400
+
+    Fix typo
+
+commit b2344575569bc3bd129ad0ff92b49dc220fb287b
+Author: Anthony Green <green@moxielogic.com>
+Date:   Tue Sep 6 12:43:08 2022 -0400
+
+    Fix unwindtest on macos
+
+commit fc4e7c4a10dff3c99d7ea9be33d47e6d5f0efda7
+Author: Anthony Green <green@moxielogic.com>
+Date:   Mon Sep 5 22:13:58 2022 -0400
+
+    Install automake on macos
+
+commit 5a6c94f7d49bcd64c85bde04c2d1f10b59d5797c
+Author: Anthony Green <green@moxielogic.com>
+Date:   Mon Sep 5 22:04:52 2022 -0400
+
+    Test with gcc and clang on macos 11 and 12.
+
+commit 351318e3bde9ac90c6d5eddbaa7f26ee3e7bcc6c
+Author: Anthony Green <green@moxielogic.com>
+Date:   Mon Sep 5 15:45:53 2022 -0400
+
+    Switch to 7 char SHA IDs.  Fix windows crlf at git clone time.
+
+commit 2a024088801403ca0c579d20c3decb8dc1453df1
+Author: Anthony Green <green@moxielogic.com>
+Date:   Mon Sep 5 12:56:19 2022 -0400
+
+    Use GitHub SHA for rlgl ID
+
+commit e4c5d46b0abaa8a12e97f0e0673e3efdda59fab8
+Author: Anthony Green <green@moxielogic.com>
+Date:   Mon Sep 5 12:19:57 2022 -0400
+
+    Pass large structs by value
+
+commit 4b79267be359b42e7a4cbf95068abe805aae0061
+Author: Anthony Green <green@moxielogic.com>
+Date:   Mon Sep 5 08:11:45 2022 -0400
+
+    outputs vs output
+
+commit 3020ad832144e35d2a42fb8782ddbd3ed69fdbaf
+Author: Anthony Green <green@moxielogic.com>
+Date:   Mon Sep 5 08:07:57 2022 -0400
+
+    Use single quotes
+
+commit f969a50aadfdf288797d5492dfb768d9916b9477
+Author: Anthony Green <green@moxielogic.com>
+Date:   Mon Sep 5 08:06:53 2022 -0400
+
+    Try {{}}
+
+commit 8df671a35e517f27da78b1b933f19294cfc7224f
+Author: Anthony Green <green@moxielogic.com>
+Date:   Mon Sep 5 08:05:39 2022 -0400
+
+    Fix compares
+
+commit 6a9bbc85a95a8a6d314452c8c5ef4add61e7b280
+Author: Anthony Green <green@moxielogic.com>
+Date:   Mon Sep 5 07:54:47 2022 -0400
+
+    Show host availability
+
+commit 49a361c35b3d826c02e6dc3f15c86555e62ed933
+Author: Anthony Green <green@moxielogic.com>
+Date:   Mon Sep 5 07:51:34 2022 -0400
+
+    Fix conditionals?
+
+commit d9189beb6e61b20ff4b84fd994d895a29351c422
+Author: Anthony Green <green@moxielogic.com>
+Date:   Mon Sep 5 07:47:46 2022 -0400
+
+    Use boolean values
+
+commit 2bcdcda8eda82cce594d2c821fc6a87069041bcc
+Author: Anthony Green <green@moxielogic.com>
+Date:   Mon Sep 5 07:44:01 2022 -0400
+
+    Try conditional steps
+
+commit d86d55e51fc2d35ff3a829d41c8ec1c83570cd40
+Author: Anthony Green <green@moxielogic.com>
+Date:   Mon Sep 5 07:15:38 2022 -0400
+
+    Tweak test for host availability
+
+commit 5b4d5f2b3a3f3f9fb71ce40e3be00ae6191ffc37
+Author: Anthony Green <green@moxielogic.com>
+Date:   Mon Sep 5 07:11:12 2022 -0400
+
+    Fix triples
+
+commit 02e6a894cbb1d851ec1a31b3277f2414c4a1370f
+Author: Anthony Green <green@moxielogic.com>
+Date:   Mon Sep 5 06:55:08 2022 -0400
+
+    Add missing paren
+
+commit fcaa8ebbccf2e2e4e0317164b624b683ac95c474
+Author: Anthony Green <green@moxielogic.com>
+Date:   Mon Sep 5 06:47:40 2022 -0400
+
+    Unnest quotes
+
+commit f4009ed4f0351c6c8e8f410dac7c558fe9996e7e
+Author: Anthony Green <green@moxielogic.com>
+Date:   Mon Sep 5 06:40:00 2022 -0400
+
+    Fix syntax error
+
+commit f92e32cfacdbf82172b06ce13d63eab65f205598
+Author: Anthony Green <green@moxielogic.com>
+Date:   Mon Sep 5 06:17:38 2022 -0400
+
+    Try dribbling output during make check
+
+commit ef57e08aa34dc9f55abb493a554a957ca358d931
+Author: Anthony Green <green@moxielogic.com>
+Date:   Sun Sep 4 22:35:32 2022 -0400
+
+    Split up build into multiple steps
+
+commit 2480cc48def54eb155429710187452e0d495b773
+Author: Anthony Green <green@moxielogic.com>
+Date:   Sun Sep 4 21:09:06 2022 -0400
+
+    Try to fix ssh issues
+
+commit 1105db1ce6cf1f7ab5a254cd04453b0c5e9dad30
+Author: Anthony Green <green@moxielogic.com>
+Date:   Sun Sep 4 09:52:28 2022 -0400
+
+    Try forcing exit upon completion
+
+commit 92a7775150978b3e98b0d47280dd6dd6580dbd07
+Author: Anthony Green <green@moxielogic.com>
+Date:   Sun Sep 4 09:17:01 2022 -0400
+
+    Source .profile on remote host if it exists
+
+commit 8e3ea879a9e538c9237c34ae113babe078565da9
+Author: Anthony Green <green@moxielogic.com>
+Date:   Sun Sep 4 09:07:13 2022 -0400
+
+    Only ignore errors when testing for ssh connectivity.
+
+commit a643db6c1f1bd7594e42a03865b7a9063cfbf1c1
+Author: Anthony Green <green@moxielogic.com>
+Date:   Sun Sep 4 08:28:50 2022 -0400
+
+    Don't fail on error
+
+commit 33f1f19a7da022a7d8dba59bb97c28cb4fd6aadf
+Author: Anthony Green <green@moxielogic.com>
+Date:   Sun Sep 4 08:24:06 2022 -0400
+
+    Add POWER hosts
+
+commit 7a300f3d657ee7b94bda5296b3b366b5915a5c79
+Author: Anthony Green <green@moxielogic.com>
+Date:   Sun Sep 4 08:08:47 2022 -0400
+
+    Fix the setting of the host
+
+commit b104dd621f9d2b298ede781f0bd289ce8a0c20ee
+Author: Anthony Green <green@moxielogic.com>
+Date:   Sun Sep 4 08:07:12 2022 -0400
+
+    If a remote host is unavailable, don't fail the build.
+
+commit 7194e11832ad9609bd38c2a1fd4995d749443ee0
+Author: Anthony Green <green@moxielogic.com>
+Date:   Sun Sep 4 08:01:47 2022 -0400
+
+    Debug build
+
+commit 6fccf95b4f97335eda1d8bfe2e12fc38bea571d2
+Author: Anthony Green <green@moxielogic.com>
+Date:   Sun Sep 4 07:57:53 2022 -0400
+
+    Add connection timeouts and retries
+
+commit b4cf3d64b1807667eba7863701b6fcae68c65e68
+Author: Anthony Green <green@moxielogic.com>
+Date:   Sun Sep 4 07:32:18 2022 -0400
+
+    Prune warnings from sparc64 linux ld
+
+commit 807283704a4a77187103f9d4d73c9feb75f3c757
+Author: Anthony Green <green@moxielogic.com>
+Date:   Sun Sep 4 07:21:02 2022 -0400
+
+    For host triples to distinguish m1 arm64 from others.
+
+commit 4cba6c1858e842ef674ed41b5d79bc981fdfc411
+Author: Anthony Green <green@moxielogic.com>
+Date:   Sat Sep 3 11:42:11 2022 -0400
+
+    Don't exit if runtest fails
+
+commit 439dfa1f7f96aec5689d5b28511e0162bc0ae3f9
+Author: Anthony Green <green@moxielogic.com>
+Date:   Sat Sep 3 10:42:46 2022 -0400
+
+    Fix spaces
+
+commit b7d9e3a1a0c3138df513cd5df49a0e14584c7556
+Author: Anthony Green <green@moxielogic.com>
+Date:   Sat Sep 3 10:41:45 2022 -0400
+
+    Run rlgl
+
+commit e85b55c2d30783db52d148f2691c8a3afd3d4ec3
+Author: Anthony Green <green@moxielogic.com>
+Date:   Sat Sep 3 10:16:01 2022 -0400
+
+    Fix recursive copy flag
+
+commit 98168532a22615bd2aab0f3bf08e8a5f8abcd375
+Author: Anthony Green <green@moxielogic.com>
+Date:   Sat Sep 3 10:14:56 2022 -0400
+
+    Fix typo
+
+commit 943219e3281d4f9f3ae416ca3bf9fd3482cf8c63
+Author: Anthony Green <green@moxielogic.com>
+Date:   Sat Sep 3 10:13:04 2022 -0400
+
+    Use scp, as rsync isn't available on all hosts
+
+commit 0e912017c96afe6bf6500e90075df6b7366c337a
+Author: Anthony Green <green@moxielogic.com>
+Date:   Sat Sep 3 10:04:54 2022 -0400
+
+    Use ssh port numbers and copy dejagnu results back
+
+commit c8fe3d3d440d46b7b465e8d11ea8461a5ae86462
+Author: Anthony Green <green@moxielogic.com>
+Date:   Sat Sep 3 09:58:43 2022 -0400
+
+    Use username
+
+commit 3e75f9554f06bab33e022276d320a301f1b04e44
+Author: Anthony Green <green@moxielogic.com>
+Date:   Sat Sep 3 09:56:13 2022 -0400
+
+    Tighten permissions on key
+
+commit d893eda74196ecc39f1d839b340d0b158fc536eb
+Author: Anthony Green <green@moxielogic.com>
+Date:   Sat Sep 3 09:55:01 2022 -0400
+
+    Disable host key checking
+
+commit da35cf0fb693b6f93a745119c777b3c4aa6d779b
+Author: Anthony Green <green@moxielogic.com>
+Date:   Sat Sep 3 09:52:26 2022 -0400
+
+    Add quotes
+
+commit 128d57ab940a3a76658a8c8b4b98cd80fb602d65
+Author: Anthony Green <green@moxielogic.com>
+Date:   Sat Sep 3 09:51:00 2022 -0400
+
+    Remove bad command
+
+commit 5b34bed4ff0a5c1c0257f4d586b868ded173dc67
+Author: Anthony Green <green@moxielogic.com>
+Date:   Sat Sep 3 09:49:45 2022 -0400
+
+    Debug
+
+commit 77b32cb1533e5166bebf2a7cd1465e3a1eef55ad
+Author: Anthony Green <green@moxielogic.com>
+Date:   Sat Sep 3 09:43:41 2022 -0400
+
+    Fix typo
+
+commit 22c1ceb27597d21779c7565c94c444dadc606478
+Author: Anthony Green <green@moxielogic.com>
+Date:   Sat Sep 3 09:42:01 2022 -0400
+
+    Simplify remote tests
+
+commit dde8e81deba0c2ef3edca804f34347bfae0e88bd
+Author: Anthony Green <green@moxielogic.com>
+Date:   Sat Sep 3 09:22:19 2022 -0400
+
+    Revert to old file copy
+
+commit 3cd913c8dafa71c1bb14ca5e1f4208343cc3a194
+Author: Anthony Green <green@moxielogic.com>
+Date:   Sat Sep 3 09:19:08 2022 -0400
+
+    Remove SHA256
+
+commit 3127a25df827f2afa3f6bdfdfceff169fe241fcf
+Author: Anthony Green <green@moxielogic.com>
+Date:   Sat Sep 3 09:13:16 2022 -0400
+
+    Try new fingerprint
+
+commit f095b747423806b44c2ef883ec65a7ce5230fbf7
+Author: Anthony Green <green@moxielogic.com>
+Date:   Sat Sep 3 09:11:47 2022 -0400
+
+    Use correct fingerprint
+
+commit 1f44118157a005661b55f1747cfd15773214e458
+Author: Anthony Green <green@moxielogic.com>
+Date:   Sat Sep 3 08:55:20 2022 -0400
+
+    Ignore fingerprints
+
+commit 8fd73fe61f496a24a4093ba1d195a884f86d547e
+Author: Anthony Green <green@moxielogic.com>
+Date:   Sat Sep 3 08:51:33 2022 -0400
+
+    Use rsa fingerprints
+
+commit 09c3908a4279f4c9e2c4a8282efb29c412964119
+Author: Anthony Green <green@moxielogic.com>
+Date:   Sat Sep 3 08:43:23 2022 -0400
+
+    Use host fingerprints
+
+commit caa793a3401b92b0ef2006ab90c4dd30b7ab7d5c
+Author: Anthony Green <green@moxielogic.com>
+Date:   Sat Sep 3 08:35:56 2022 -0400
+
+    Try new scp
+
+commit 0cbffe5ef542641170b8cbe588fb703e7410cb13
+Author: Anthony Green <green@moxielogic.com>
+Date:   Sat Sep 3 08:23:35 2022 -0400
+
+    Fix GITHUB_RUN_NUMBER usage
+
+commit 628cc2f675c6df35213d74388aac69c5c165b1f4
+Author: Anthony Green <green@moxielogic.com>
+Date:   Sat Sep 3 08:16:47 2022 -0400
+
+    Fix loongarch64 server port. Try GITHUB_RUN_NUMBER.
+
+commit 9382d7955f80aaa6fc0ca036956fe4e14a0d45b6
+Author: Anthony Green <green@moxielogic.com>
+Date:   Sat Sep 3 08:06:11 2022 -0400
+
+    Reference matrix variables properly
+
+commit e081b2cec74253b48a0d09d8a0d309f60e8f82e5
+Author: Anthony Green <green@moxielogic.com>
+Date:   Sat Sep 3 07:58:27 2022 -0400
+
+    List cfarm servers explicitly
+
+commit 074e9c79e36e63a9cc8c8fca6c76dd927778dc54
+Author: Anthony Green <green@moxielogic.com>
+Date:   Sat Sep 3 07:46:02 2022 -0400
+
+    Try multiple hosts
+
+commit 6002b2ad639f9125da56834e4b0a1b12fa232c57
+Author: Anthony Green <green@moxielogic.com>
+Date:   Sat Sep 3 07:10:58 2022 -0400
+
+    Use correct version of scp-action
+
+commit a990426c5f4114c85f6cfc190276786ef5c49521
+Author: Anthony Green <green@moxielogic.com>
+Date:   Sat Sep 3 07:09:33 2022 -0400
+
+    Use scp instead of rsync
+
+commit 0fabd777d91e13bb4795d0b9db0b2201f9298904
+Author: Anthony Green <green@moxielogic.com>
+Date:   Sat Sep 3 07:02:34 2022 -0400
+
+    Remove extra debug
+
+commit 1922870fe3baf41991670db81b35c1ab0b482895
+Author: Anthony Green <green@moxielogic.com>
+Date:   Sat Sep 3 06:53:52 2022 -0400
+
+    Debug rsync
+
+commit aee50966ca85d777271cd7e14714b916264cb190
+Author: Anthony Green <green@moxielogic.com>
+Date:   Sat Sep 3 06:47:49 2022 -0400
+
+    Change remote path
+
+commit 73552c2e732df17c7f9008fecfc448c1d6397cfe
+Author: Anthony Green <green@moxielogic.com>
+Date:   Fri Sep 2 20:03:02 2022 -0400
+
+    Tweak
+
+commit 904424fe82bd6d4a498fee84b3f26d55426ff75f
+Author: Anthony Green <green@moxielogic.com>
+Date:   Fri Sep 2 19:58:19 2022 -0400
+
+    Work in actions dir
+
+commit 31c31db079b054270a19cc710f06fbb84e805511
+Author: Anthony Green <green@moxielogic.com>
+Date:   Fri Sep 2 19:48:33 2022 -0400
+
+    Run autogen before copying files to remote server
+
+commit d84f2ea0ea760b8e63f50eb6c3583aeb38d89d0e
+Author: Anthony Green <green@moxielogic.com>
+Date:   Fri Sep 2 19:44:34 2022 -0400
+
+    Install autoconf
+
+commit 78beb4aee5386cd4ea14cfa753a778eafcc3ec2d
+Author: Anthony Green <green@moxielogic.com>
+Date:   Fri Sep 2 19:34:50 2022 -0400
+
+    Try more remote testing
+
+commit 16f17cd8418ce2239f8b9b31e5f3b5414298292f
+Author: Anthony Green <green@moxielogic.com>
+Date:   Fri Sep 2 19:16:12 2022 -0400
+
+    Fix ssh
+
+commit badccc01c84ee38f5f443c910ba06b3792029d8b
+Author: Anthony Green <green@moxielogic.com>
+Date:   Fri Sep 2 19:11:53 2022 -0400
+
+    Add platform
+
+commit 0eae6af297d9a34bd6adcbf43fbbd27e5feebc53
+Author: Anthony Green <green@moxielogic.com>
+Date:   Fri Sep 2 19:09:43 2022 -0400
+
+    Missing colon
+
+commit ce8cec023499d8da04936e2dc40111f8d6a1783e
+Author: Anthony Green <green@moxielogic.com>
+Date:   Fri Sep 2 19:04:39 2022 -0400
+
+    Try cfarm access
+
+commit 9b58d4bad688820fa9bb077c0ec5f5949ac18bd2
+Author: Anthony Green <green@moxielogic.com>
+Date:   Thu Sep 1 08:57:13 2022 -0400
+
+    GCC_AS_CFI_PSEUDO_OP passes on msvc, although it's not sufficient.
+
+commit e6d05bea0b4c350edaaf215a81f49298f34b10e4
+Author: Ole André Vadla Ravnås <oleavr@gmail.com>
+Date:   Thu Sep 1 14:51:15 2022 +0200
+
+    Fix struct padding warning reported by MSVC (#613)
+    
+    When building on 32-bit x86.
+
+commit 80912f2f09f4c06b2f720ff243d7b9b6795093f9
+Author: Clément Chigot <pro@helflym.eu>
+Date:   Thu Sep 1 14:47:16 2022 +0200
+
+    Makefile: enable target overridings. (#661)
+    
+    This patch allows target to provide extra files enabling the
+    override of Makefile rules.
+    This patch is not needed for libffi itself but only for GCC on AIX. The
+    t-aix file which is here empty will be replaced in GCC repository. We cannot
+    include GCC version directly here because it has no sense for a standalone
+    libffi.
+    
+    Co-authored-by: Clement <clement.chigot@atos.net>
+
+commit 1fa7d96cdf7bba354f61337854210f060ea56b9f
+Author: Anthony Green <green@moxielogic.com>
+Date:   Thu Sep 1 08:28:59 2022 -0400
+
+    Don't use cached configure test result
+
+commit bcb42e432b5372b1876e8c8db68837d92d1f94ae
+Author: Anthony Green <green@moxielogic.com>
+Date:   Thu Sep 1 08:05:01 2022 -0400
+
+    Fix .cfi pseudo-ops test.
+    
+    The existing tests were failing because the GCC was wrapping the test
+    asm in cfi directives, which gas doesn't like.  So now we test if the
+    compiler emits them first, and assume that the assembler will accept
+    them.  If that doesn't work, then we test if the assembler will accept
+    them assuming the compiler doesn't emit them.
+
+commit 0eb91425f355be19939507d4d4d056bdad12c9dd
+Author: Anthony Green <green@moxielogic.com>
+Date:   Wed Aug 31 20:46:24 2022 -0400
+
+    Change comment style
+
+commit ca76ab3b8551d9e7cee6f533ecd1e89fee70e16a
+Author: Anthony Green <green@moxielogic.com>
+Date:   Wed Aug 31 10:30:26 2022 -0400
+
+    Fix exports for tests
+
+commit 7b1dd8ce10e6bef043088896136105b8aabbb882
+Author: Anthony Green <green@moxielogic.com>
+Date:   Wed Aug 31 09:49:21 2022 -0400
+
+    Don't -malign-double for x86-32
+
+commit 41d0851fc545ff1ffd8377236d193268c8a10740
+Author: Anthony Green <green@moxielogic.com>
+Date:   Wed Aug 31 07:36:43 2022 -0400
+
+    Update copyright year
+
+commit 5a4774cd4d90f9ea7e7f9e34b15de29463aba4c4
+Author: Xi Ruoyao <xry111@xry111.site>
+Date:   Fri Jul 22 05:56:30 2022 +0800
+
+    static trampoline for LoongArch (#723)
+    
+    For the benefit and technical details of static trampoline, see
+    https://github.com/libffi/libffi/pull/624.  As a new architecture, let's
+    be "safer" from the start.
+    
+    The change survived libffi testsuite on loongarch64-linux-gnu.
+
+commit 5264a7c5cd3460465326ebd347559828196dceb1
+Author: matoro <matoro@users.noreply.github.com>
+Date:   Thu Jul 21 17:54:19 2022 -0400
+
+    Move FFI_TYPE definitions above <ffitarget.h> include (#722)
+    
+    For powerpc at least, these definitions are referenced in the
+    target-specific ffitarget.h.  Discovered in the jffi project.  Should
+    close https://github.com/libffi/libffi/issues/637.  Downstream jffi bug
+    https://github.com/jnr/jffi/issues/107.  Downstream distro bug
+    https://bugs.gentoo.org/827215.
+    
+    Testing - both libffi and jffi test suites pass with this patch applied,
+    at least on ppc64le linux.  I did not see any warnings about
+    redefinitions.
+    
+    Tested versions - libffi 3.4.2, jffi 1.3.6 and 1.3.9.
+
+commit ddc6764386b29449d941b2b18d000f2987a9d848
+Author: Anthony Green <green@moxielogic.com>
+Date:   Sat Jun 25 22:04:53 2022 -0400
+
+    Add missing file
+
+commit 2b4728a21f9a36c6567df8dd27fc8a665264019c
+Author: Anthony Green <green@moxielogic.com>
+Date:   Sat Jun 25 21:58:51 2022 -0400
+
+    Fix path
+
+commit 37cc25bb25344ee33c5b7ff06c6804d31374a544
+Author: Anthony Green <green@moxielogic.com>
+Date:   Sat Jun 25 21:56:40 2022 -0400
+
+    Install and use autoconf from special dir
+
+commit 2f2eab957d3acbf571c570ab2ccf894e3c85b033
+Author: Anthony Green <green@moxielogic.com>
+Date:   Sat Jun 25 21:53:00 2022 -0400
+
+    Fix autoconf version number
+
+commit 4b1465495c9d6e5ef95bacc38b86483fd910f887
+Author: Anthony Green <green@moxielogic.com>
+Date:   Sat Jun 25 21:51:25 2022 -0400
+
+    Fix wget
+
+commit 398b7534d97b2b642492fbb024e15be3df564da8
+Author: Anthony Green <green@moxielogic.com>
+Date:   Sat Jun 25 21:49:09 2022 -0400
+
+    Fix wget
+
+commit 2c047eb7b108fba1203ba6122e830a7ae17721ca
+Author: Anthony Green <green@moxielogic.com>
+Date:   Sat Jun 25 21:46:54 2022 -0400
+
+    Fix untar
+
+commit 446c092f409bd37c21b5b986c2be8f87a1cb1dec
+Author: Anthony Green <green@moxielogic.com>
+Date:   Sat Jun 25 21:45:32 2022 -0400
+
+    Install autoconf-2.71
+
+commit 5c76ac1ff55c4ed6faa145b395e9a14cdb834708
+Author: Anthony Green <green@moxielogic.com>
+Date:   Sat Jun 25 21:22:01 2022 -0400
+
+    Update autoconf?
+
+commit 4a46f35ba5a4bbb3ea396e1fa836535d338f8930
+Author: Anthony Green <green@moxielogic.com>
+Date:   Sat Jun 25 21:14:30 2022 -0400
+
+    Update configury
+
+commit fc8c8c1e2c31321b38dc079e549bc7748da4159d
+Author: Anthony Green <green@moxielogic.com>
+Date:   Sat Jun 25 11:06:00 2022 -0400
+
+    Fix ILP32 for aarch64
+
+commit b5abc4f6478147ce72fa6b2eb95296883d5ef3ef
+Author: Anthony Green <green@moxielogic.com>
+Date:   Sat Jun 25 10:43:00 2022 -0400
+
+    Remove duplicate macro definition.
+
+commit 280fe78d37f58927b280e2e316a2ae19201f2b83
+Author: Xi Ruoyao <xry111@xry111.site>
+Date:   Sat Jun 25 18:58:53 2022 +0800
+
+    configure.ac: use grep -E instead of egrep if possible (#720)
+    
+    Upstream will start to emit a warning if egrep is invoked in the next
+    grep release.  Stop invoking it explicitly.  Use AC_PROG_EGREP to try
+    "grep -E" first, and fallback to egrep if "grep -E" does not work.  We
+    need this fallback for some non-GNU grep implementations (like Solaris).
+    
+    Url: https://git.savannah.gnu.org/cgit/grep.git/commit/?id=a951562
+
+commit 1f14b3fa92d4442a60233e9596ddec428a985e3c
+Author: Russell Keith-Magee <russell@keith-magee.com>
+Date:   Fri Jun 3 02:46:35 2022 +0800
+
+    Ensure that VM_PROT_EXECUTE is set on the trampoline page. (#718)
+
+commit 000ecd01cb534fd8bb593422013a79c8497263ff
+Author: Sergei Trofimovich <slyich@gmail.com>
+Date:   Thu Jun 2 18:43:53 2022 +0000
+
+    powerpc64: fix build on gcc-12 (assembly requires AltiVec) (#719)
+    
+    Without the change build fails on powerpc64-gcc-12 as:
+    
+        src/powerpc/linux64_closure.S: Assembler messages:
+        src/powerpc/linux64_closure.S:363: Error: unrecognized opcode: `lvx'
+    
+    It's a 90205f67 "rs6000: Fix bootstrap (libffi)" patch by
+    Segher Boessenkool from gcc upstream repository. It's enough to get
+    libffi build on powerpc64.
+
+commit c528d5b45e248f47b5af6f16bfcafc779b196ed1
+Author: Anthony Green <green@moxielogic.com>
+Date:   Sun May 29 11:22:38 2022 -0400
+
+    Fix windows arg passing
+
+commit aa2c4141722ec8b8b014b97e049ffa2d140d0c0d
+Author: Anthony Green <green@moxielogic.com>
+Date:   Sun May 29 10:28:10 2022 -0400
+
+    64-bit cygwin: fix struct args. Document change.
+
+commit 36b265ae438a364722c98136ba79cb450a48fca3
+Author: Anthony Green <green@moxielogic.com>
+Date:   Sun May 29 10:12:30 2022 -0400
+
+    m32r: pass copies of large structs
+
+commit c248764d3391a460cdd31a1cae82281fd6dfbecd
+Author: Anthony Green <green@moxielogic.com>
+Date:   Sun May 29 07:27:32 2022 -0400
+
+    Update testsuite Makefile
+
+commit fd1fe195e1d98b65ac3b0735cc0d0df95fc1b27b
+Author: Martin Storsjö <martin@martin.st>
+Date:   Sun May 29 14:16:49 2022 +0300
+
+    Fix building on aarch64 after e409225b41b60c490a094bb068e639a2364202fd (#716)
+    
+    The ALIGN_DOWN macro was renamed in 2018 in
+    e6eac7863e2bf1a009ea863041b354bdb4af6b67.
+
+commit c1e237b22ee6042e2d4229008acea8f38c3d0109
+Author: Anthony Green <green@moxielogic.com>
+Date:   Sat May 28 20:46:14 2022 -0400
+
+    Pass large structs by value on the stack
+
+commit 769b7366d2312c7efdfa605cf1fc1156b94ba2e0
+Author: Anthony Green <green@moxielogic.com>
+Date:   Sat May 28 19:59:35 2022 -0400
+
+    Fix for MS x64 ABI
+
+commit faafcb9df9aebdde1415a73d17fe9e943d97d455
+Author: Anthony Green <green@moxielogic.com>
+Date:   Sat May 28 17:24:43 2022 -0400
+
+    Fix moxie struct passing
+
+commit f55d7ff1a24e9c678dac3397175772a9914c02b0
+Author: Anthony Green <green@moxielogic.com>
+Date:   Sat May 28 14:30:13 2022 -0400
+
+    moxie: structs > 8 go on stack
+
+commit 55f80b026c2ac854086a2770d324fa55188f0f81
+Author: Anthony Green <green@moxielogic.com>
+Date:   Sat May 28 14:17:53 2022 -0400
+
+    New test cases
+
+commit 72c3192773fe483f6517e343ecc3ea468ce73a4f
+Author: Anthony Green <green@moxielogic.com>
+Date:   Sat May 28 13:53:26 2022 -0400
+
+    Pass copies of large structs on the stack
+
+commit e409225b41b60c490a094bb068e639a2364202fd
+Author: Anthony Green <green@moxielogic.com>
+Date:   Sat May 28 09:42:13 2022 -0400
+
+    Pass large structs by value for Linux x86_64 and Aarch64.
+    
+    Aarch patch by Andreas Schwab. https://github.com/libffi/libffi/commit/482b37f00467325e3389bab322525099860dd9aa
+
+commit 01d54435c9f9e22345cb2f7d482fcfb42fd11416
+Author: Anthony Green <green@moxielogic.com>
+Date:   Tue May 24 21:38:51 2022 -0400
+
+    Mention loongson64
+
+commit f259a6f6deff9bdc7dd998b8b6bdbb4c166b33c3
+Author: zhangwenlong <zhangwenlong@loongson.cn>
+Date:   Wed May 25 09:31:08 2022 +0800
+
+    Support loongarch64 (#678)
+    
+    * update config.{guess,sub}
+    
+    * Support loongarch64
+    
+    Co-Authored-By: Cheng Lulu <chenglulu@loongson.cn>
+    Co-Authored-By: Xi Ruoyao <xry111@mengyan1223.wang>
+    Co-Authored-By: Xu Hao
+    Co-Authored-By: Zhang Wenlong <zhangwenlong@loongson.cn>
+    Co-Authored-By: Pan Xuefeng <panxuefeng@loongson.cn>
+    
+    Co-authored-by: panxuefeng <panxuefeng@loongson.cn>
+    Co-authored-by: Cheng Lulu <chenglulu@loongson.cn>
+    Co-authored-by: Xi Ruoyao <xry111@mengyan1223.wang>
+
+commit d02d46607b5ba62510ddab5fa89303dfa09a7853
+Author: Anthony Green <green@moxielogic.com>
+Date:   Tue May 24 12:28:08 2022 -0400
+
+    Debug cygwin builds
+
+commit 7e93ded9302d7e6e3cc77b39e8eec4b323e63585
+Author: Anthony Green <green@moxielogic.com>
+Date:   Mon May 23 21:42:52 2022 -0400
+
+    Revert "Don't dereference beyond the last array entry. (#667)" (#715)
+    
+    This reverts commit 92d77d0e87a5f2a8c9c9b2431ffd264cb664e17a.
+
+commit 432384b6d47087d144d3e947b62c48ddc6e4740b
+Author: Russell Keith-Magee <russell@keith-magee.com>
+Date:   Tue May 24 09:06:19 2022 +0800
+
+    Add support for ARM64 as an Apple simulator platform. (#712)
+
+commit 9af445fd70e4d7f2b3bdfc511cc3cc76a6b84c9a
+Author: Kevin Bowling <kevin.bowling@kev009.com>
+Date:   Mon May 23 18:05:01 2022 -0700
+
+    Upstream FreeBSD riscv patch (#708)
+    
+    Like 8276f812a99b10d1f2c387dbd6ef2ca4f597c733 commit message:
+        > devel/libffi: Fix abort() on ARM related to __clear_cache()
+        >
+        > The current FreeBSD __clear_cache() implementation does nothing #if
+        > __i386__ || __x86_64__ #else abort();
+        >
+        > cognet@ advises this is an issue for anything !Apple that is using the
+        > libcompiler_rt provided by Clang on ARM, and requires upstreaming.
+    
+    Co-authored-by: Kristof Provost <kp@FreeBSD.org>
+
+commit de95947ae5db07e4589bb16bab30b6c8ba2b3106
+Author: Roland Schatz <roland.schatz@oracle.com>
+Date:   Tue May 24 03:04:43 2022 +0200
+
+    Fix check for invalid varargs arguments. (#707)
+
+commit 92d77d0e87a5f2a8c9c9b2431ffd264cb664e17a
+Author: Anthony Green <green@moxielogic.com>
+Date:   Mon May 23 21:03:00 2022 -0400
+
+    Don't dereference beyond the last array entry. (#667)
+
+commit e504f90fe9123d256f6bc556badb25d1d0aa7046
+Author: A. Wilcox <AWilcox@Wilcox-Tech.com>
+Date:   Mon May 23 18:42:32 2022 -0500
+
+    testsuite/libffi.closures: Fix PowerPC 64 (#709)
+    
+    -mlong-double-128 is only supported on glibc.
+    
+    This test still passes on glibc targets, and now passes on musl targets
+    as well (which uses 64-bit ldbl).
+
+commit f3e61d497a5ddc3bbe506e0554a0be421f6f0f35
+Author: Anthony Green <green@moxielogic.com>
+Date:   Mon May 23 09:11:42 2022 -0400
+
+    Remove debug code
+
+commit a36880e710f2ec37c0cc50d436facd7c2d282e7b
+Author: Anthony Green <green@moxielogic.com>
+Date:   Mon May 23 08:35:21 2022 -0400
+
+    Remove stray export command
+
+commit 5f98afe802e189584e5649f53a7dd07280516efd
+Author: Anthony Green <green@moxielogic.com>
+Date:   Mon May 23 08:11:26 2022 -0400
+
+    Debug cygwin builds
+
+commit abaacbf8cdf80ddd9303fda5d9be4312d52b531c
+Author: Anthony Green <green@moxielogic.com>
+Date:   Mon May 23 07:57:26 2022 -0400
+
+    Debug cygwin tests
+
+commit e770fb76a781c642f185c23e686bf2af0429ce4c
+Author: Anthony Green <green@moxielogic.com>
+Date:   Sun May 22 20:43:41 2022 -0400
+
+    Clean up types
+
+commit 2e825e219fa06d308b9a9863d70320606d67490d
+Author: YunQiang Su <syq@debian.org>
+Date:   Mon May 16 09:47:11 2022 +0800
+
+    MIPS: fix some N32 test failure (#701)
+    
+    Some go closure and pointer testcase fails.
+    These failures is not introduced by the complex support code.
+
+commit 1f1c33753b65a75216770928018e8932168e8908
+Author: YunQiang Su <syq@debian.org>
+Date:   Mon May 16 09:45:27 2022 +0800
+
+    MIPS: fix O32 softfloat support (#702)
+
+commit 3ac265d5c0e038e324bae29131dbc4bacb4935ea
+Author: hjl-tools <hjl.tools@gmail.com>
+Date:   Sun May 15 18:43:56 2022 -0700
+
+    x86-64: Always double jump table slot size for CET (#710) (#711)
+    
+    When CET is enabled, double jump table slot size to add 4 bytes of ENDBR64
+    for CET.  Since CET enabled clang doesn't have the LLVM assembler bug:
+    
+    https://bugs.llvm.org/show_bug.cgi?id=21501
+    
+    fixed by
+    
+    commit 04d39260d64e08b8bfb3844109ad43d4055b2e8d
+    Author: Rafael Espindola <rafael.espindola@gmail.com>
+    Date:   Wed Nov 4 23:50:29 2015 +0000
+    
+        Simplify .org processing and make it a bit more powerful.
+    
+    we can use .org to allocate jump table slot size to 16 bytes.
+
+commit e67697c370e8875f28b2bf62fac25edad7558eca
+Author: YunQiang Su <syq@debian.org>
+Date:   Thu Mar 31 20:44:49 2022 +0800
+
+    MIPS: add Complex support (#698)
+
+commit e3cf8b806c3ca919f95b9d33d6037869a059c035
+Author: Ole André Vadla Ravnås <oleavr@gmail.com>
+Date:   Thu Mar 31 14:42:03 2022 +0200
+
+    Allow system to have overlapping mallopt defines (#700)
+    
+    Which is the case on some OSes, such as QNX.
+
+commit c086cacb8b9665fab0c046fc92959fc8af5239b8
+Author: Ole André Vadla Ravnås <oleavr@gmail.com>
+Date:   Thu Mar 31 14:40:59 2022 +0200
+
+    Clean up the QNX ARM bits (#699)
+    
+    - Add missing include.
+    - Use constants instead of magic values.
+
+commit ab1677106605aba1c27665964ff90bea59612ce3
+Author: Max Filippov <jcmvbkbc@gmail.com>
+Date:   Sun Feb 20 16:01:38 2022 -0800
+
+    Xtensa cleanups and XEA3 support (#677)
+    
+    * xtensa: clean up stack usage in ffi_trampoline call
+    
+    Space for outgoing call arguments reserved in the stack frame of the
+    function ffi_trampoline overlaps register spill overflow area at the
+    top of the frame. In xtensa XEA2 exception architecture the layout of
+    overlapping areas is identical so that even if the ffi_trampoline
+    registers frame gets spilled the memory contents doesn't change.
+    This is not so with the xtensa XEA3 exception architecture, where
+    registers a0 - a7 of a different function are spilled in that location.
+    
+    Reserve spill area for 8 registers to avoid overlapping of the spill
+    area with the outgoing call arguments area in the ffi_trampoline.
+    
+    Signed-off-by: Max Filippov <jcmvbkbc@gmail.com>
+    
+    * xtensa: support xtensa XEA3 exception architecture
+    
+    XEA3 requires that 32 bytes of register spill area is reserved in all
+    functions. Fix ffi_cacheflush entry instruction to satisfy this
+    requirement.
+    
+    Signed-off-by: Max Filippov <jcmvbkbc@gmail.com>
+    
+    * xtensa: maintain stack alignment
+    
+    xtensa ABI requires stack alignment on 16 byte boundary and passing
+    up to 6 arguments in registers. To simplify stack alignment maintenance
+    fixed amount of stack space is reserved for arguments passed in
+    registers and variable but correctly aligned amount is reserved for the
+    remaining arguments. After copying arguments to the stack and loading
+    registers the fixed part of the stack reservation is freed.
+    
+    Signed-off-by: Max Filippov <jcmvbkbc@gmail.com>
+    
+    * xtensa: fix err_bad_abi tests
+    
+    Check ffi_cif::abi value in the ffi_prep_closure_loc and return
+    FFI_BAD_ABI error if it's not one of the supported values.
+    
+    Signed-off-by: Max Filippov <jcmvbkbc@gmail.com>
+
+commit aa3fce08ba620c50db17215a9f14dd0f1facf741
+Author: Andreas Schwab <schwab@linux-m68k.org>
+Date:   Sun Feb 13 21:04:33 2022 +0100
+
+    riscv: extend return types smaller than ffi_arg (#680)
+    
+    Co-authored-by: Andreas Schwab <schwab@suse.de>
+
+commit 464b4b66e3cf3b5489e730c1466ee1bf825560e0
+Author: Dan Horák <dan@danny.cz>
+Date:   Mon Jan 31 14:08:09 2022 +0100
+
+    powerpc64: fix handling of homogeneous float128 structs (#689)
+    
+    If there is a homogeneous struct with float128 members, they should be
+    copied to vector register save area. The current code incorrectly copies
+    only the value of the first member, not increasing the pointer with each
+    iteration. Fix this.
+
+commit b60d4fc7bb4419021bf566e09de55ed1d9b041db
+Author: rorth <ro@CeBiTec.Uni-Bielefeld.DE>
+Date:   Thu Dec 23 14:32:46 2021 +0100
+
+    src/x86/win64.S: Use #define instead of .macro (#665) (#669)
+    
+    The Solaris/x86 assembler doesn't support .macro/.endm, so use #define since
+    win64.S is passed through cpp anyway.
+
+commit 4fa6239f42ddc7df12e40da9ae25ba715312239c
+Author: Andreas Schwab <schwab@linux-m68k.org>
+Date:   Thu Dec 23 14:27:32 2021 +0100
+
+    testsuite/libffi.call: fix mismatching return types (#679)
+    
+    Co-authored-by: Andreas Schwab <schwab@suse.de>
+
+commit 0f2dd369cd5edcefad29b3fca4e1d08cb34f8f19
+Author: Jules Maselbas <54854023+jmaselbas@users.noreply.github.com>
+Date:   Wed Sep 22 21:39:56 2021 +0200
+
+    Makefile: Add missing kvx/asm.h to dist headers (#660)
+    
+    The header kvx/asm.h is required to build libffi and is missing from
+    the dist tarball.
+    
+    Signed-off-by: Jules Maselbas <jmaselbas@kalray.eu>
+
+commit ee1263f7d43bd29b15fc72c4d9520a824e8004df
+Author: Anthony Green <green@moxielogic.com>
+Date:   Thu Jul 29 17:46:17 2021 -0400
+
+    Fix 'type'-o
+
+commit 86d5ecc5e84fbbc79fcff6a307310630d9d68549
+Author: Anthony Green <green@moxielogic.com>
+Date:   Thu Jul 29 16:58:32 2021 -0400
+
+    Fix struct arg passing
+
+commit 03596285ed36b94bb3e1d8bdebfe58590e2766df
+Author: Anthony Green <green@moxielogic.com>
+Date:   Thu Jul 29 10:16:42 2021 -0400
+
+    No more xfail for alpha
+
+commit 4ac18f26ed16588377b1482208212aaa39624e21
+Author: Anthony Green <green@moxielogic.com>
+Date:   Thu Jul 29 10:01:40 2021 -0400
+
+    Add alpha CPU
+
+commit 7643c6ee68e376810b4185e5f38e156c97bcc090
+Author: Anthony Green <green@moxielogic.com>
+Date:   Thu Jul 29 08:51:35 2021 -0400
+
+    Try to fix ARM QEMU tests
+
+commit a04f57bce057604f38bb7c1bf32b7f671d2b56d5
+Author: Anthony Green <green@moxielogic.com>
+Date:   Thu Jul 29 08:47:53 2021 -0400
+
+    Fix m32r testing
+
+commit 339acf3d8f049d296dafac3f482c1b7db29c0bae
+Author: Anthony Green <green@moxielogic.com>
+Date:   Thu Jul 29 08:38:18 2021 -0400
+
+    Debug cross-in-containers builds
+
+commit 43e4ad4d7b4bcc87ee447736a1172b2801a47908
+Author: Anthony Green <green@moxielogic.com>
+Date:   Thu Jul 29 07:55:59 2021 -0400
+
+    Test passing structs by value
+
+commit 68485e33a413c3d91fbfd7ec270803ae6bd3d3db
+Author: Anthony Green <green@moxielogic.com>
+Date:   Thu Jul 29 07:13:35 2021 -0400
+
+    Mention x32 static tramponline fix
+
+commit 07f826fdd4d8a23a190f107f7ec6ad830a4864a0
+Author: Harald van Dijk <harald@gigawatt.nl>
+Date:   Sun Jul 25 02:39:37 2021 +0100
+
+    Fix trampoline_code_table for x32. (#657)
+    
+    x32's struct tramp_parm has 32-bit pointers. This change adjusts the
+    loads and offsets accordingly.
+
+commit be0b3b6e75d4890fe18ba4164b91387beaebee06
+Author: Anthony Green <green@moxielogic.com>
+Date:   Fri Jul 16 21:51:03 2021 -0400
+
+    Fix CHECK
+
+commit 7db17442a6c9f1399065748b7d5b9fbcac203344
+Author: Anthony Green <green@moxielogic.com>
+Date:   Fri Jul 16 11:30:01 2021 -0400
+
+    Don't check the whole buffer, just what we printed.
+
+commit 8bcf594749882e9e4966fec2e3d6009d08a554ab
+Author: Anthony Green <green@moxielogic.com>
+Date:   Fri Jul 16 11:26:02 2021 -0400
+
+    Fix test case
+
+commit c96b057757446fe4277f30e8423f09851ae5d0fa
+Author: Anthony Green <green@moxielogic.com>
+Date:   Fri Jul 16 11:16:39 2021 -0400
+
+    Fix test check
+
+commit 4ed23be8e2a59e438c201ca1ba5affc0b0477b15
+Author: Anthony Green <green@moxielogic.com>
+Date:   Fri Jul 16 11:08:01 2021 -0400
+
+    Fix test check
+
+commit eb2447249540ca568b0b464f6107501dcc0f65ab
+Author: Hood Chatham <hood@mit.edu>
+Date:   Fri Jul 16 14:33:04 2021 +0000
+
+    Use CHECK to assert more things in test suite (#654)
+    
+    * Use CHECK to assert more things in test suite
+    
+    * Use snprintf instead of sprintf
+    
+    * Fix va_struct1 and va_struct3
+
+commit a541fc600f4418441f91073a0834ea47b0989de9
+Author: Anthony Green <green@moxielogic.com>
+Date:   Fri Jul 16 08:56:30 2021 -0400
+
+    Update README for next release.
+
+commit b4cf80ab54b6d9d31ef2135036e471388cf026df
+Author: Anthony Green <green@moxielogic.com>
+Date:   Fri Jul 16 08:55:02 2021 -0400
+
+    Trigger actions on master branch
+
+commit d1eef904766dbd647de6c240a57dbc98d46e33dd
+Author: Anthony Green <green@moxielogic.com>
+Date:   Fri Jul 16 08:29:08 2021 -0400
+
+    Migrate from travis-ci to github actions.
+
+commit f9ea41683444ebe11cfa45b05223899764df28fb
+Author: Anthony Green <green@moxielogic.com>
+Date:   Mon Jun 28 21:10:49 2021 -0400
+
+    Update version to 3.4.2
+
+commit 2bdc8e52efb78d939f23efb4f9c515355610bff5
+Author: Anthony Green <green@moxielogic.com>
+Date:   Mon Jun 28 19:50:29 2021 -0400
+
+    Version 3.4.1
+
+commit c1d09bf08c2859abb40c476c57ae521d208f92a8
+Author: Anthony Green <green@moxielogic.com>
+Date:   Mon Jun 28 18:50:31 2021 -0400
+
+    Update version to 3.4.0
+
+commit 1ed0aa73806872f0c31dccf2c689c762239d3353
+Author: Anthony Green <green@moxielogic.com>
+Date:   Mon Jun 28 18:45:11 2021 -0400
+
+    Fix warnings
+
+commit 0a2cc2ec2893821f62b36b269da1dbc0442a5617
+Author: Anthony Green <green@moxielogic.com>
+Date:   Mon Jun 28 14:59:07 2021 -0400
+
+    Add missing test cases to distribution
+
+commit ee3ef737857e13cc01a15dbef298478d90188805
+Author: Hood Chatham <hood@mit.edu>
+Date:   Mon Jun 28 11:51:35 2021 -0700
+
+    Add tests for single entry structs (#653)
+
+commit f08c5ace5750f1e1f234f52f4d3d772bb8d276a0
+Author: Hood Chatham <hood@mit.edu>
+Date:   Mon Jun 28 07:24:19 2021 -0700
+
+    Fix the assertions in cls-24byte (#652)
+    
+    * Fix the assertions in cls-24byte
+    
+    * Update print statement too
+
+commit 4557f232926353f5cdec0f2f459e4d59ce8f19e4
+Author: Anthony Green <green@moxielogic.com>
+Date:   Mon Jun 28 09:53:01 2021 -0400
+
+    3.4.0 release candidate 2
+
+commit cd4428911d5c4d25ce2c24e6728124792124bba2
+Author: Jeremy Huddleston Sequoia <jeremyhu@users.noreply.github.com>
+Date:   Mon Jun 28 04:56:30 2021 -0700
+
+    Add missing FFI_HIDDEN to ffi_tramp_is_present declaration (#651)
+    
+    Signed-off-by: Jeremy Huddleston Sequoia <jeremyhu@apple.com>
+
+commit 9fa94c607852081adce33547bde292fe4313cff7
+Author: Hood Chatham <hood@mit.edu>
+Date:   Sun Jun 27 11:02:33 2021 -0700
+
+    Print more information when an assertion fails in test suite (#649)
+
+commit 91eaadfb2e4b79d12a45d24002b06563e5905e5d
+Author: Hood Chatham <hood@mit.edu>
+Date:   Sun Jun 27 09:49:31 2021 -0700
+
+    Fix signature of function pointer in cls_dbls_struct (#648)
+
+commit 132699b95d3ee4d889ea2a80540acf3300987dad
+Author: Sergei Trofimovich <slyfox@gentoo.org>
+Date:   Sun Jun 27 16:50:20 2021 +0100
+
+    configure.ac: add --disable-exec-static-tramp flag (#647)
+    
+    Some projects like GHC (Glasgow Haskell Compiler) and
+    gobject-introspection use `ffi_closure_alloc()` as a way
+    to allocate executable memory. exec static tramp
+    interferes with it (unclear how exactly yet).
+    
+    GHC symptom: ffi closure freeing cimplains about unexpected
+    trampoline (GHC manually fills one):
+    
+    ```
+    $ ghci
+    GHCi, version 8.10.5: https://www.haskell.org/ghc/  :? for help
+    ghc: freeHaskellFunctionPtr: not for me, guv! 0x7f0417a1efe8
+    ghc: freeHaskellFunctionPtr: not for me, guv! 0x7f0417a1efc8
+    ```
+    
+    gobject-introspection symptom:
+    
+    ```
+    $ meld
+    Segmentation fault (core dumped)
+    
+    $ gdb --args /usr/bin/python3.9 /usr/bin/meld
+    (gdb) run
+    ...
+    Thread 1 "python3.9" received signal SIGSEGV, Segmentation fault.
+    0x00007fffe9ac1ae8 in g_callable_info_free_closure (
+      callable_info=0x555555d45990, closure=0x7fffe9e70c20)
+        at ../gobject-introspection-1.68.0/girepository/girffi.c:428
+    428       g_free (wrapper->ffi_closure.cif->arg_types);
+    (gdb) bt
+      callable_info=0x555555d45990, closure=0x7fffe9e70c20)
+        at ../gobject-introspection-1.68.0/girepository/girffi.c:428
+      data=0x555555d252d0)
+        at ../pygobject-3.40.1/gi/pygi-closure.c:635
+    ...
+    ```
+    
+    To ease downstreams narrowing down the actual problem let's
+    provide a knob to disable exec static trampolines.
+    
+    The change for not affect current default.
+    
+    Signed-off-by: Sergei Trofimovich <slyfox@gentoo.org>
+
+commit 4e07374c2773711902ec12905d5c64d95d22d050
+Author: Anthony Green <green@moxielogic.com>
+Date:   Sun Jun 27 11:25:06 2021 -0400
+
+    Remove caveat about varargs support
+
+commit 11f9713887e1d8e9bdf861c1555de55aba9fc46c
+Author: Anthony Green <green@moxielogic.com>
+Date:   Sun Jun 27 07:46:12 2021 -0400
+
+    Update contact info
+
+commit f792adb61a27aa2a7d24573b956ce29ebdb82e03
+Author: Sergei Trofimovich <slyfox@gentoo.org>
+Date:   Sat Jun 26 22:26:52 2021 +0100
+
+    configure.ac: allow user to specify READELF (#646)
+    
+    Before the change with x86_64-pc-linux-gnu cross-compiler
+    installed the configure was not able to find cross-readelf:
+    
+    ```
+    $ ./configure --host=x86_64-pc-linux-gnu
+    ...
+    checking whether .eh_frame section should be read-only... .././configure: line 19540: readelf: command not found
+    yes
+    ...
+    ```
+    
+    The change uses AC_CHECK_TOOL to automatically seatch for ${host}-readelf,
+    readelf. And as a bonus it also allows user to override readelf with
+    something like READELF=llvm-readelf.
+    
+    Signed-off-by: Sergei Trofimovich <slyfox@gentoo.org>
+
+commit 9cf15b3a284d8e79f3673b8743d4157739df5d36
+Author: Anthony Green <green@moxielogic.com>
+Date:   Sat Jun 26 12:12:06 2021 -0400
+
+    Make 3.4 release candidate 1
+
+commit 1e5dc8de825d03f5493884a45e1edeacda2106c5
+Author: Anthony Green <green@moxielogic.com>
+Date:   Sat Jun 26 12:08:35 2021 -0400
+
+    Add missing file from make dist.  Add missing license info.
+
+commit c0b210c7fd1e5b4a17e9fc839a4cf1d75483d591
+Author: Anthony Green <green@moxielogic.com>
+Date:   Sat Jun 26 10:55:57 2021 -0400
+
+    Remove test case
+
+commit 87429ce726ead7bb789d194c6d979c5b0c4086e9
+Author: Matthew Green <85970515+squidhacks@users.noreply.github.com>
+Date:   Sat Jun 26 08:49:45 2021 -0400
+
+    This test includes a closure and must live in the closures test directory. (#645)
+    
+    Co-authored-by: Matthew Green <squidhacks@users.noreply.github.com>
+
+commit 8d83c7c1fa331b93e58967979c59c38600df1ee9
+Author: Hood Chatham <roberthoodchatham@gmail.com>
+Date:   Fri Jun 25 19:50:33 2021 -0700
+
+    Make test methods static (#644)
+
+commit becae7397873d6bb85a271b16961f055e71f42a6
+Author: Anthony Green <green@moxielogic.com>
+Date:   Tue Jun 22 13:01:06 2021 -0400
+
+    Switch from travis-ci.org to travis-ci.com.
+
+commit fa1ef887d4dc5d18696517e32e2ae98310f0040d
+Author: Anthony Green <green@moxielogic.com>
+Date:   Tue Jun 22 08:48:24 2021 -0400
+
+    Avoid undefined behaviour
+
+commit 84bb56914756845371be62e2753041521fd5d261
+Author: Tres Finocchiaro <tres.finocchiaro@gmail.com>
+Date:   Tue Jun 22 07:33:46 2021 -0400
+
+    Remove libtool-ldflags file from .gitignore (#600)
+    
+    This is correct.  Thank you!
+
+commit 5651bea284ad0822eafe768e3443c2f4d7da2c8f
+Author: Jakub Jelinek <jakub@redhat.com>
+Date:   Tue Jun 15 15:19:26 2021 -0400
+
+    2021-06-15  Jakub Jelinek  <jakub@redhat.com>
+    
+            * src/x86/ffi64.c (classify_argument): For FFI_TYPE_STRUCT set words
+            to number of words needed for type->size + byte_offset bytes rather
+            than just type->size bytes.  Compute pos before the loop and check
+            total size of the structure.
+            * testsuite/libffi.call/nested_struct12.c: New test.
+
+commit f56eb85227bbcc7bd81232a338655146385a77ca
+Author: DJ Delorie <dj@delorie.com>
+Date:   Tue Jun 15 08:50:20 2021 -0400
+
+    Don't stop test on copy failure (#636)
+    
+    * Don't stop test on copy failure
+    
+    Static-library tests were failing only because there were
+    no DLLs to copy.  This change makes a copy failure not stop
+    the build; if a failed copy would otherwise be relevent, the
+    later tests would fail anyway.
+    
+    While there are more clever ways to solve this, a brute force
+    fix is sufficient.
+    
+    * [TEST] Try cygwin64; install more packages explicitly
+    
+    * use correct cygwin64 directory name
+    
+    appveyor has cygwin64 pre-installed in /cygwin64, and 32-bit cygwin
+    in /cygwin
+    
+    * More testing - revert VS change, bump travis timeout
+    
+    * Add -g to update the rest of perl
+    
+    * Skip execution tests on non-native platforms
+    
+    Special site.exp that skips the unix_load() command for arm platforms.
+    
+    Unset TERM to avoid cruft in stdout
+    
+    Try harder to find the libffi libraries
+
+commit ff059dd96af6ba4daf7bc9ddf22d1d2dbf6a177b
+Author: vhankala <81743325+vhankala@users.noreply.github.com>
+Date:   Thu Jun 10 18:41:02 2021 +0000
+
+    Fix build on OpenBSD/mips64 (#638)
+    
+    The build fails on OpenBSD/mips64 because clang 11's integrated
+    assembler expects read-only .eh_frame:
+    
+    ../src/mips/n32.S:585:9: error: changed section flags for .eh_frame, expected: 0x2
+            .section .eh_frame,"aw",@progbits
+            ^
+    
+    Use EH_FRAME_FLAGS to get matching flags for the section.
+
+commit e6eb59cde6580607544160f8e7dedc326b4799fd
+Author: Cheng Jin <jincheng@ca.ibm.com>
+Date:   Wed Jun 9 16:00:10 2021 -0400
+
+    Add struct test to verify a nested float struct (#640)
+    
+    The test aims to check a nested float struct
+    [float, [float,float]] to see whether it works good
+    with libffi.
+    
+    Signed-off-by: Cheng Jin <jincheng@ca.ibm.com>
+
+commit 6eb38863bc0b21854959ebf845f8672c44a99684
+Author: Anthony Green <green@moxielogic.com>
+Date:   Wed Jun 9 15:45:31 2021 -0400
+
+    Remove reference to old test case
+
+commit ca2235ecfe717ecaed6abbef3a2ca2918a91c60b
+Author: Anthony Green <green@moxielogic.com>
+Date:   Fri Jun 4 18:20:24 2021 -0400
+
+    Revert appveyor changes
+
+commit 243004cc4c8be552503a5d10710ebb252b406064
+Author: Anthony Green <green@moxielogic.com>
+Date:   Tue Jun 1 23:00:29 2021 -0400
+
+    Update vs version
+
+commit 04c157f49a1b83798c102f3259bc397b9b7f7266
+Author: Anthony Green <green@moxielogic.com>
+Date:   Tue Jun 1 22:57:47 2021 -0400
+
+    Upgrade to vs2019
+
+commit 03a78e88402fff424426a1968e014be93666b86f
+Author: Anthony Green <green@moxielogic.com>
+Date:   Tue Jun 1 22:53:44 2021 -0400
+
+    Try updating automake
+
+commit 1f1829bd4ce19b58d0354db3bef21cb8402cdf82
+Author: Anthony Green <green@moxielogic.com>
+Date:   Tue Jun 1 22:34:37 2021 -0400
+
+    Bring in the latest version of perl
+
+commit dd5bd03075149d7cf8441875c1a344e8beb57dde
+Author: Martin Storsjö <martin@martin.st>
+Date:   Wed Apr 7 05:42:10 2021 +0300
+
+    Fix building for arm windows with mingw toolchains (#631)
+    
+    * arm: Check _WIN32 instead of _M_ARM or _MSC_VER for detecting windows
+    
+    This matches what was done for ARM64 in
+    c06468fa6674d3783a0edb1d0fae9afc8bc28513.
+    
+    * arm: Only use armasm source when building with MSVC
+    
+    When building for windows/arm with clang, the normal gas style .S
+    source works fine (if fixed up to support thumb and other windows
+    specifics).
+    
+    This matches what was done for ARM64 in
+    c06468fa6674d3783a0edb1d0fae9afc8bc28513.
+    
+    * arm: Fix sysv.S to work in thumb mode
+    
+    Align cases in jump tables (adding nop padding to make sure each
+    case starts where expected).
+    
+    Rewrite instructions that add directly to the pc register.
+    
+    For ffi_closure_ret, factor out a call_epilogue subroutine that
+    restores both sp and pc from the stack; the thumb version of ldm
+    can't load into the sp register. To avoid excessive ifdeffing, keep
+    using call_epilogue in arm mode, but keep the shorter "ldm sp, {sp, pc}"
+    epilogue in that case.
+    
+    * arm: Add win32 version of trampoline to sysv.S
+    
+    This matches the version of it in sysv_msvc_arm32.S. The calling
+    C code expects a specific form of the trampoline on windows; make
+    sure these work the same on windows regardless of the form of
+    assembly used.
+    
+    * arm: Avoid optimizing out clearing the thumb bit of ffi_arm_trampoline
+    
+    We clear the thumb bit of ffi_arm_trampoline with a bitmask before
+    memcpying its instructions into closure->tramp.
+    
+    If the bit isn't cleared, the memcpy of the trampoline function
+    copies the wrong instructions.
+    
+    If the ffi_arm_trampoline symbol is declared as an array of int,
+    the compiler can assume that it is aligned to a 4 byte boundary
+    and the bitmask operation is a no-op, and optimize it out.
+    
+    See https://godbolt.org/z/dE3jE1WTz; both Clang and GCC optimize
+    out the bitmask as it is, while MSVC doesn't. By declaring the
+    trampoline as an array of unsigned char, the bitmask works as
+    intended.
+
+commit 95ef857d5c6ed15c6c6ba5f8a5b26c0a38b417ab
+Author: Anthony Green <green@moxielogic.com>
+Date:   Thu Mar 25 10:43:05 2021 -0400
+
+    Verbose brew update.
+
+commit 78c97c9ff4491e14e78992ffabdd043674c05e15
+Author: Anthony Green <green@moxielogic.com>
+Date:   Thu Mar 25 09:15:37 2021 -0400
+
+    Move container images to quay.io.
+
+commit 58dfdf6a84b98296ceb2b8b4237d37aa75bb2cd4
+Author: Sergei Trofimovich <slyfox@gentoo.org>
+Date:   Wed Mar 24 23:19:54 2021 +0000
+
+    testsuite: fix compiler vendor detection on dash as /bin/sh (#594)
+    
+    In https://bugs.gentoo.org/753299 Paolo Pedroni reported
+    a single test failure out of all libffi. Here is the minimal
+    reproducer:
+    
+    ```
+    $ ./autogen
+    $ CONFIG_SHELL=/bin/dash ./configure --host=x86_64-pc-linux-gnu
+    $ make check RUNTESTFLAGS='complex.exp'
+    ...
+    FAIL: libffi.complex/cls_align_complex_float.c (test for excess errors)
+    ```
+    
+    This happens because under 'dash' shell autoconf generates slightly
+    different style of string quotation in `config.log`:
+    
+    - on bash: `ax_cv_c_compiler_vendor=gnu`
+    - on dash: `ax_cv_c_compiler_vendor='gnu'`
+    
+    To avoid shell quotation parsing the change just embeds
+    `compiler_vendor` into `local.exp` at configure time.
+    
+    Reported-by: Paolo Pedroni
+    Bug: https://bugs.gentoo.org/753299
+    Signed-off-by: Sergei Trofimovich <slyfox@gentoo.org>
+
+commit eafab2356e8dcf5f01d2bcfa311cafba3b395a7e
+Author: Jeremy Huddleston Sequoia <jeremyhu@users.noreply.github.com>
+Date:   Wed Mar 24 11:38:36 2021 -0700
+
+    arm64e: Pull in pointer authentication code from Apple's arm64e libffi port (#565)
+    
+    NOTES: This changes the ptrauth support from #548 to match what Apple is
+           shipping in its libffi-27 tag.
+    
+    Signed-off-by: Jeremy Huddleston Sequoia <jeremyhu@apple.com>
+
+commit 01b56f4b3e89a349228c4ccf55061d847153c8d6
+Author: ericLemanissier <ericLemanissier@users.noreply.github.com>
+Date:   Wed Mar 24 12:20:27 2021 +0100
+
+    fix windows tests (#595)
+    
+    * Update .appveyor.yml
+    
+    * add (debug+release)*(shared+static) CI
+    
+    * fix libversion
+
+commit 1aeb26714ec30649f5d9de5b4884a4ac46f5f474
+Author: Ole André Vadla Ravnås <oleavr@gmail.com>
+Date:   Wed Mar 24 12:16:12 2021 +0100
+
+    x86: Fix thiscall and fastcall stack cleanup behavior (#611)
+    
+    These are meant to use callee clean-up.
+
+commit e92c81a549924c80d70666ecbe5ed0c2fcd7963a
+Author: Anthony Green <green@moxielogic.com>
+Date:   Wed Mar 24 07:07:53 2021 -0400
+
+    Mention MSVC runtime stack checking improvement
+
+commit f88add14e40de398706c732e578620e8106062c7
+Author: Ole André Vadla Ravnås <oleavr@gmail.com>
+Date:   Wed Mar 24 12:04:51 2021 +0100
+
+    x86: Fix MSVC runtime checks interop (#612)
+    
+    MSVC can add runtime code that checks if a stack frame is mismanaged,
+    however our custom assembly deliberately accesses and modifies the parent
+    stack frame.  Fortunately we can disable that specific check for the
+    function call so do that.
+    
+    Co-authored-by: Matthew Waters <matthew@centricular.com>
+
+commit aa4dafb159a2e0f74aa39353a1bf23a943f36656
+Author: Anthony Green <green@moxielogic.com>
+Date:   Tue Mar 23 19:06:08 2021 -0400
+
+    Mention LIBFFI_TMPDIR
+
+commit 70ea259c603e0f84eda766be29d4259f1e8fe5b7
+Author: DJ Delorie <dj@delorie.com>
+Date:   Tue Mar 23 19:03:45 2021 -0400
+
+    Search $LIBFFI_TMPDIR also (#605)
+    
+    Most temp file directories need to be hardened against execution, but
+    libffi needs execute privileges.  Add a libffi-specific temp directory
+    that can be set up by sysadmins as needed with suitable permissions.
+    This both ensures that libffi will have a valid temp directory to use
+    as well as preventing attempts to access other directories.
+
+commit f58e5ee63263657a7e8f2892d27c012a16facc1a
+Author: AndreRH <andre.hentschel@ok.de>
+Date:   Tue Mar 23 23:54:00 2021 +0100
+
+    aarch64: Fix closures for win64 (#606)
+
+commit 5865450decd13275b2bde064bd4a0f79bca6dba2
+Author: Francisco Boni <boboniboni@gmail.com>
+Date:   Tue Mar 23 19:50:09 2021 -0300
+
+    Update ax_cc_maxopt m4 macro (#617)
+    
+    Keeps libffi's specific changes
+    (https://github.com/libffi/libffi/commit/cec3a3a201f17a7f018f25e1a0917bd5206e5a5a#diff-2396a1256ac4b1c6849c931ddb8018bdd984bb2383be21bb819a33b95d8d603f)
+    and updates to the latest ax_cc_maxopt.m4
+    (http://git.savannah.gnu.org/gitweb/?p=autoconf-archive.git;a=commit;h=73ee1b396c21062ee8eeb8721ba5323322110fb5):
+    
+    ax_cc_maxopt.m4: retain setting of CFLAGS by configure
+    
+    AX_CC_MAXOPT checks whether CFLAGS was set by the user; if so, the user’s
+    setting is respected. This behavior is retained, of course.
+    
+    However, AX_CC_MAXOPT was then setting CFLAGS="". This overrode the default
+    setting by configure, which usually includes -g. Hence, if CFLAGS was not
+    set by the user, retain the default setting, to preserve the ability to
+    debug.
+    
+    A typical default setting from configure is "-g -O2". This means that
+    AX_CC_MAXOPT might typically set CFLAGS to "-g -O2 -O3". This is fine,
+    because the later -O3 will override the earlier -O2. (The only assumption is
+    that all compilers that AX_CC_MAXOPT knows behave in this sane way.)
+
+commit 8f44384df17b536615caef951a615655a967103f
+Author: Anthony Green <green@moxielogic.com>
+Date:   Tue Mar 23 14:24:54 2021 -0400
+
+    Fix formatting
+
+commit 9d491b5e21ffd7fcf2370d998a4832b755d1c9e9
+Author: Anthony Green <green@moxielogic.com>
+Date:   Tue Mar 23 12:26:37 2021 -0400
+
+    Mention KVX
+
+commit 205cf01b57972fdc8c090fc79192b464dc43fc0d
+Author: Anthony Green <green@moxielogic.com>
+Date:   Tue Mar 23 11:31:08 2021 -0400
+
+    Bug #680.  Don't accept floats or small ints as var args. (#628)
+    
+    * Bug #680.  Don't accept floats or small ints as var args.
+    
+    * Bug #680.  Don't accept floats or small ints as var args.
+    
+    * Bug #680.  Don't accept floats or small ints as var args.
+
+commit d271dbe0a8b230e566fa3385babdc9cc0ca214ea
+Author: Jeremy Huddleston Sequoia <jeremyhu@users.noreply.github.com>
+Date:   Sat Mar 20 06:06:28 2021 -0700
+
+    Add some missing #if conditionals from Apple's code drop (#620)
+    
+    * arm/aarch64: Add FFI_CLOSURES conditionals where appropriate
+    
+    Signed-off-by: Jeremy Huddleston Sequoia <jeremyhu@apple.com>
+    
+    * aarch64: Don't emit the do_closure label when building without FFI_GO_CLOSURES
+    
+    Signed-off-by: Jeremy Huddleston Sequoia <jeremyhu@apple.com>
+
+commit bae695da367b6abd83152f8f1e9b1a8b79794c8d
+Author: Russell Keith-Magee <russell@keith-magee.com>
+Date:   Sat Mar 6 00:09:17 2021 +0800
+
+    Add configuration generator for tvOS and watchOS. (#625)
+
+commit 9ba559217bea0803263a9a9a0bafcf9203606f5b
+Author: Madhavan T. Venkataraman <75220914+madvenka786@users.noreply.github.com>
+Date:   Fri Mar 5 10:07:30 2021 -0600
+
+    Static tramp v5 (#624)
+    
+    * Static Trampolines
+    
+    Closure Trampoline Security Issue
+    =================================
+    
+    Currently, the trampoline code used in libffi is not statically defined in
+    a source file (except for MACH). The trampoline is either pre-defined
+    machine code in a data buffer. Or, it is generated at runtime. In order to
+    execute a trampoline, it needs to be placed in a page with executable
+    permissions.
+    
+    Executable data pages are attack surfaces for attackers who may try to
+    inject their own code into the page and contrive to have it executed. The
+    security settings in a system may prevent various tricks used in user land
+    to write code into a page and to have it executed somehow. On such systems,
+    libffi trampolines would not be able to run.
+    
+    Static Trampoline
+    =================
+    
+    To solve this problem, the trampoline code needs to be defined statically
+    in a source file, compiled and placed in the text segment so it can be
+    mapped and executed naturally without any tricks. However, the trampoline
+    needs to be able to access the closure pointer at runtime.
+    
+    PC-relative data referencing
+    ============================
+    
+    The solution implemented in this patch set uses PC-relative data references.
+    The trampoline is mapped in a code page. Adjacent to the code page, a data
+    page is mapped that contains the parameters of the trampoline:
+    
+            - the closure pointer
+            - pointer to the ABI handler to jump to
+    
+    The trampoline code uses an offset relative to its current PC to access its
+    data.
+    
+    Some architectures support PC-relative data references in the ISA itself.
+    E.g., X64 supports RIP-relative references. For others, the PC has to
+    somehow be loaded into a general purpose register to do PC-relative data
+    referencing. To do this, we need to define a get_pc() kind of function and
+    call it to load the PC in a desired register.
+    
+    There are two cases:
+    
+    1. The call instruction pushes the return address on the stack.
+    
+       In this case, get_pc() will extract the return address from the stack
+       and load it in the desired register and return.
+    
+    2. The call instruction stores the return address in a designated register.
+    
+       In this case, get_pc() will copy the return address to the desired
+       register and return.
+    
+    Either way, the PC next to the call instruction is obtained.
+    
+    Scratch register
+    ================
+    
+    In order to do its job, the trampoline code would need to use a scratch
+    register. Depending on the ABI, there may not be a register available for
+    scratch. This problem needs to be solved so that all ABIs will work.
+    
+    The trampoline will save two values on the stack:
+    
+            - the closure pointer
+            - the original value of the scratch register
+    
+    This is what the stack will look like:
+    
+            sp before trampoline ------>    --------------------
+                                            | closure pointer  |
+                                            --------------------
+                                            | scratch register |
+            sp after trampoline ------->    --------------------
+    
+    The ABI handler can do the following as needed by the ABI:
+    
+            - the closure pointer can be loaded in a desired register
+    
+            - the scratch register can be restored to its original value
+    
+            - the stack pointer can be restored to its original value
+              (the value when the trampoline was invoked)
+    
+    To do this, I have defined prolog code for each ABI handler. The legacy
+    trampoline jumps to the ABI handler directly. But the static trampoline
+    defined in this patch jumps tp the prolog code which performs the above
+    actions before jumping to the ABI handler.
+    
+    Trampoline Table
+    ================
+    
+    In order to reduce the trampoline memory footprint, the trampoline code
+    would be defined as a code array in the text segment. This array would be
+    mapped into the address space of the caller. The mapping would, therefore,
+    contain a trampoline table.
+    
+    Adjacent to the trampoline table mapping, there will be a data mapping that
+    contains a parameter table, one parameter block for each trampoline. The
+    parameter block will contain:
+    
+            - a pointer to the closure
+            - a pointer to the ABI handler
+    
+    The static trampoline code would finally look like this:
+    
+            - Make space on the stack for the closure and the scratch register
+              by moving the stack pointer down
+            - Store the original value of the scratch register on the stack
+            - Using PC-relative reference, get the closure pointer
+            - Store the closure pointer on the stack
+            - Using PC-relative reference, get the ABI handler pointer
+            - Jump to the ABI handler
+    
+    Mapping size
+    ============
+    
+    The size of the code mapping that contains the trampoline table needs to be
+    determined on a per architecture basis. If a particular architecture
+    supports multiple base page sizes, then the largest supported base page size
+    needs to be chosen. E.g., we choose 16K for ARM64.
+    
+    Trampoline allocation and free
+    ==============================
+    
+    Static trampolines are allocated in ffi_closure_alloc() and freed in
+    ffi_closure_free().
+    
+    Normally, applications use these functions. But there are some cases out
+    there where the user of libffi allocates and manages its own closure
+    memory. In such cases, static trampolines cannot be used. These will
+    fall back to using legacy trampolines. The user has to make sure that
+    the memory is executable.
+    
+    ffi_closure structure
+    =====================
+    
+    I did not want to make any changes to the size of the closure structure for
+    this feature to guarantee compatibility. But the opaque static trampoline
+    handle needs to be stored in the closure. I have defined it as follows:
+    
+    -  char tramp[FFI_TRAMPOLINE_SIZE];
+    +  union {
+    +    char tramp[FFI_TRAMPOLINE_SIZE];
+    +    void *ftramp;
+    +  };
+    
+    If static trampolines are used, then tramp[] is not needed to store a
+    dynamic trampoline. That space can be reused to store the handle. Hence,
+    the union.
+    
+    Architecture Support
+    ====================
+    
+    Support has been added for x64, i386, aarch64 and arm. Support for other
+    architectures can be added very easily in the future.
+    
+    OS Support
+    ==========
+    
+    Support has been added for Linux. Support for other OSes can be added very
+    easily.
+    
+    Signed-off-by: Madhavan T. Venkataraman <madvenka@linux.microsoft.com>
+    
+    * x86: Support for Static Trampolines
+    
+            - Define the arch-specific initialization function ffi_tramp_arch ()
+              that returns trampoline size information to common code.
+    
+            - Define the trampoline code mapping and data mapping sizes.
+    
+            - Define the trampoline code table statically. Define two tables,
+              actually, one with CET and one without.
+    
+            - Introduce a tiny prolog for each ABI handling function. The ABI
+              handlers addressed are:
+    
+                    - ffi_closure_unix64
+                    - ffi_closure_unix64_sse
+                    - ffi_closure_win64
+    
+              The prolog functions are called:
+    
+                    - ffi_closure_unix64_alt
+                    - ffi_closure_unix64_sse_alt
+                    - ffi_closure_win64_alt
+    
+              The legacy trampoline jumps to the ABI handler. The static
+              trampoline jumps to the prolog function. The prolog function uses
+              the information provided by the static trampoline, sets things up
+              for the ABI handler and then jumps to the ABI handler.
+    
+            - Call ffi_tramp_set_parms () in ffi_prep_closure_loc () to
+              initialize static trampoline parameters.
+    
+    Signed-off-by: Madhavan T. Venkataraman <madvenka@linux.microsoft.com>
+    
+    * i386: Support for Static Trampolines
+    
+            - Define the arch-specific initialization function ffi_tramp_arch ()
+              that returns trampoline size information to common code.
+    
+            - Define the trampoline code table statically. Define two tables,
+              actually, one with CET and one without.
+    
+            - Define the trampoline code table statically.
+    
+            - Introduce a tiny prolog for each ABI handling function. The ABI
+              handlers addressed are:
+    
+                    - ffi_closure_i386
+                    - ffi_closure_STDCALL
+                    - ffi_closure_REGISTER
+    
+              The prolog functions are called:
+    
+                    - ffi_closure_i386_alt
+                    - ffi_closure_STDCALL_alt
+                    - ffi_closure_REGISTER_alt
+    
+              The legacy trampoline jumps to the ABI handler. The static
+              trampoline jumps to the prolog function. The prolog function uses
+              the information provided by the static trampoline, sets things up
+              for the ABI handler and then jumps to the ABI handler.
+    
+            - Call ffi_tramp_set_parms () in ffi_prep_closure_loc () to
+              initialize static trampoline parameters.
+    
+    Signed-off-by: Madhavan T. Venkataraman <madvenka@linux.microsoft.com>
+    
+    * arm64: Support for Static Trampolines
+    
+            - Define the arch-specific initialization function ffi_tramp_arch ()
+              that returns trampoline size information to common code.
+    
+            - Define the trampoline code mapping and data mapping sizes.
+    
+            - Define the trampoline code table statically.
+    
+            - Introduce a tiny prolog for each ABI handling function. The ABI
+              handlers addressed are:
+    
+                    - ffi_closure_SYSV
+                    - ffi_closure_SYSV_V
+    
+              The prolog functions are called:
+    
+                    - ffi_closure_SYSV_alt
+                    - ffi_closure_SYSV_V_alt
+    
+              The legacy trampoline jumps to the ABI handler. The static
+              trampoline jumps to the prolog function. The prolog function uses
+              the information provided by the static trampoline, sets things up
+              for the ABI handler and then jumps to the ABI handler.
+    
+            - Call ffi_tramp_set_parms () in ffi_prep_closure_loc () to
+              initialize static trampoline parameters.
+    
+    Signed-off-by: Madhavan T. Venkataraman <madvenka@linux.microsoft.com>
+    
+    * arm: Support for Static Trampolines
+    
+            - Define the arch-specific initialization function ffi_tramp_arch ()
+              that returns trampoline size information to common code.
+    
+            - Define the trampoline code mapping and data mapping sizes.
+    
+            - Define the trampoline code table statically.
+    
+            - Introduce a tiny prolog for each ABI handling function. The ABI
+              handlers addressed are:
+    
+                    - ffi_closure_SYSV
+                    - ffi_closure_VFP
+    
+              The prolog functions are called:
+    
+                    - ffi_closure_SYSV_alt
+                    - ffi_closure_VFP_alt
+    
+              The legacy trampoline jumps to the ABI handler. The static
+              trampoline jumps to the prolog function. The prolog function uses
+              the information provided by the static trampoline, sets things up
+              for the ABI handler and then jumps to the ABI handler.
+    
+            - Call ffi_tramp_set_parms () in ffi_prep_closure_loc () to
+              initialize static trampoline parameters.
+    
+    Signed-off-by: Madhavan T. Venkataraman <madvenka@linux.microsoft.com>
+
+commit 5c63b463b87d3c06102a4a7f05f395929d9ea79b
+Author: DJ Delorie <dj@delorie.com>
+Date:   Wed Dec 2 16:14:27 2020 -0500
+
+    Use memfd_create() (#604)
+    
+    memfd_create creates a file in a memory-only filesystem that may
+    bypass strict security protocols in filesystem-based temporary
+    files.
+
+commit cb8474368cdef3207638d047bd6c707ad8fcb339
+Author: hjl-tools <hjl.tools@gmail.com>
+Date:   Wed Dec 2 12:52:12 2020 -0800
+
+    libffi/x86: Always check __x86_64__ for x32 hosts (#601) (#602)
+    
+    Since for x86_64-*x32 and x86_64-x32-* hosts, -m32 generates ia32 codes.
+    We should always check __x86_64__ for x32 hosts.
+
+commit e70bf987daa7b7b5df2de7579d5c51a888e8bf7d
+Author: Tres Finocchiaro <tres.finocchiaro@gmail.com>
+Date:   Tue Nov 24 19:13:57 2020 -0500
+
+    Properly quote and resolve msvcc.sh params (#596)
+
+commit 8cc8f446f5aac13e107161dffbc15d1ee1a58878
+Author: Mike Hommey <mh@glandium.org>
+Date:   Tue Nov 10 20:41:33 2020 +0900
+
+    Allow to build with mingw-clang (#579)
+    
+    For some reason, compiling sysv.S with mingw-clang fails with:
+    ```
+    error: invalid variant 'ffi_closure_inner@8'
+    ```
+    
+    This can be fixed (worked around?) by quoting the symbol. This works
+    fine with mingw-gcc too.
+
+commit d817d0daa312c58548d7a081aa876027ca103766
+Author: Mike Hommey <mh@glandium.org>
+Date:   Tue Nov 10 20:39:25 2020 +0900
+
+    Don't use FFI_TYPE_LONGDOUBLE in the jump table in win64*.S (#580)
+    
+    It may have the same value as FFI_TYPE_DOUBLE per ffi.h, which
+    possibly can make things go wrong with .org/ORG.
+    
+    For instance, GCC complains about "Error: attempt to move .org
+    backwards"
+
+commit 56f7df711f70414d4f3663b34e54b122b38bab88
+Author: AndreRH <andre.hentschel@ok.de>
+Date:   Tue Nov 10 12:27:59 2020 +0100
+
+    aarch64: Allow FFI_WIN64 for winelib (#593)
+
+commit 8111cd06921e80d5d7192ce8d1f64733072fdbcd
+Author: Brandon Bergren <git@bdragon.rtk0.net>
+Date:   Tue Oct 27 09:07:38 2020 -0500
+
+    Add support for powerpc64le-*-freebsd*. (#581)
+    
+    Tests pass with no additional changes needed, tested on hardware.
+
+commit 484c1a0d7536be60002473f7bb82223efe139883
+Author: Ken <21211439+kencu@users.noreply.github.com>
+Date:   Tue Oct 27 07:07:07 2020 -0700
+
+    darwin powerpc: use go closures only if enabled (#583)
+    
+    SHA: 0ff9419f2e75652426469e256cb7d0748064ad58 added go closures for darwin powerpc AIX, but
+    these have not yet been implemented for non-AIX systems
+    
+    use the go closures only if enabled
+
+commit 032b3cd6f7850f3ebc1269eeab7d1db3ea518d29
+Author: Jeremy Huddleston Sequoia <jeremyhu@users.noreply.github.com>
+Date:   Tue Oct 27 07:06:21 2020 -0700
+
+    Support building x86 and arm64 without FFI_GO_CLOSURES (#586)
+    
+    * x86: Support building without FFI_GO_CLOSURES
+    
+    Signed-off-by: Jeremy Huddleston Sequoia <jeremyhu@apple.com>
+    
+    * arm: Support building without FFI_GO_CLOSURES
+    
+    Signed-off-by: Jeremy Huddleston Sequoia <jeremyhu@apple.com>
+
+commit 93cf288ddd59c7cb203c1aba25de5e5b8f308da6
+Author: Jeremy Huddleston Sequoia <jeremyhu@users.noreply.github.com>
+Date:   Tue Oct 27 07:05:28 2020 -0700
+
+    testsuite: Add a missing include of <inttypes.h> to fix build failure in test suite (#587)
+    
+    Signed-off-by: Jeremy Huddleston Sequoia <jeremyhu@apple.com>
+
+commit c78fcf88ab13a5cc414826a018dd46c3f886adee
+Author: petersn <schmidtnielsenpeter@gmail.com>
+Date:   Tue Oct 27 07:02:36 2020 -0700
+
+    Removing unnecessary instruction from ffi_call_unix64 (#588)
+    
+    unix64.S's `ffi_call_unix64` looks like it used to take six parameters,
+    where the sixth said the number of SSE register arguments. However,
+    currently the function only takes five parameters, and the number of SSE
+    register arguments is encoded in the `struct register_args *` passed as
+    the first parameter to `ffi_call_unix64`. This change removes an
+    instruction that tries to use this missing sixth parameter as the number
+    of SSE arguments.
+    
+    This fix should not change any behavior, nor fix any bugs, because a few
+    instructions later the value moved from %r9d into %eax is overwritten by
+    the correct value anyway. This change merely makes the code a tad less
+    confusing, because currently the assembly moves from a register (r9)
+    whose value is never set.
+
+commit 2d86809db6d1d626a9df40c283ec564ac98ff85d
+Author: jacobly0 <jacobly0@users.noreply.github.com>
+Date:   Tue Oct 27 10:00:03 2020 -0400
+
+    Fix read-only .eh_frame section test when CFLAGS contains -flto. (#590)
+
+commit f4435980fa2da335fe388db431d4a7946a99a2b9
+Author: Alan Modra <amodra@gmail.com>
+Date:   Tue Oct 27 23:36:21 2020 +1030
+
+    Power10 libffi fixes (#585)
+    
+    Power10 pc-relative code doesn't use or preserve r2 as a TOC pointer.
+    That means calling between pc-relative and TOC using code can't be
+    done without intervening linker stubs, and a call from TOC code to
+    pc-relative code must have a nop after the bl in order to restore r2.
+    
+    Now the PowerPC libffi assembly code doesn't use r2 except for the
+    implicit use when making calls back to C, ffi_closure_helper_LINUX64
+    and ffi_prep_args64.  So changing the assembly to interoperate with
+    pc-relative code without stubs is easily done.
+    
+            * src/powerpc/linux64.S (ffi_call_LINUX64): Don't emit global
+            entry when __PCREL__.  Call using @notoc.  Add nops.
+            * src/powerpc/linux64_closure.S (ffi_closure_LINUX64): Likewise.
+            (ffi_go_closure_linux64): Likewise.
+
+commit 407394c0aac2db4a1978a7691035889db9924a01
+Author: Tim Gates <tim.gates@iress.com>
+Date:   Sun Oct 11 15:07:40 2020 +1100
+
+    docs: fix simple typo, paramters -> parameters (#589)
+    
+    There is a small typo in src/x86/ffi.c.
+    
+    Should read `parameters` rather than `paramters`.
+
+commit ead65ca8711aa07efc0453f67136aff82f33c01f
+Author: Anthony Green <green@moxielogic.com>
+Date:   Wed Aug 19 08:34:09 2020 -0400
+
+    Re-enable s390x testing
+
+commit 8276f812a99b10d1f2c387dbd6ef2ca4f597c733
+Author: Niclas Zeising <zeising+github@daemonic.se>
+Date:   Fri Aug 7 21:05:23 2020 +0200
+
+    Upstream local FreeBSD patches (#567)
+    
+    * Add support for FreeBSD mips
+    
+    Add support for FreeBSD mips, this has been a local patch in the FreeBSD
+    ports tree for quite some time.
+    
+    Originally submitted by sson, and committed by sbruno AT FreeBSD DOT org
+    See https://bugs.freebsd.org/bugzilla/show_bug.cgi?id=191909 for
+    background details.
+    
+    Signed-off-by: Niclas Zeising <zeising@daemonic.se>
+    
+    * Add support for FreeBSD powerpcspe
+    
+    Add support for powerpcspe on FreeBSD
+    This has been in the FreeBSD ports tree for some time.
+    Originally submitted by jhibbits AT FreeBSD DOT org.
+    
+    Signed-off-by: Niclas Zeising <zeising@daemonic.se>
+    
+    * Fix abort() on FreeBSD arm related to __clear_cache()
+    
+    This patch has been in the FreeBSD ports tree for a number of years.
+    Original commit by koobs AT FreeBSD DOT org
+    
+    Original commit message:
+    > devel/libffi: Fix abort() on ARM related to __clear_cache()
+    >
+    > The current FreeBSD/ARM __clear_cache() implementation does nothing #if
+    > __i386__ || __x86_64__ #else abort();
+    >
+    > cognet@ advises this is an issue for anything !Apple that is using the
+    > libcompiler_rt provided by Clang on ARM, and requires upstreaming.
+    
+    See https://bugs.freebsd.org/bugzilla/show_bug.cgi?id=149167 for some
+    background details.
+    
+    Signed-off-by: Niclas Zeising <zeising@daemonic.se>
+
+commit 392afbaf60663e530bd740da0b5a39ee9f4ba052
+Author: Anthony Green <green@moxielogic.com>
+Date:   Wed Aug 5 21:38:51 2020 -0400
+
+    Don't test s390.  Travis-ci is broken.
+
+commit e08eb1ced18598a26cd7f14fea05693e89638ed2
+Author: Anthony Green <green@moxielogic.com>
+Date:   Wed Aug 5 17:59:59 2020 -0400
+
+    Add support for eabisim back.  This was removed upstream.
+
+commit 4661ba7928b49588aec9e6976673208c8cbf0295
+Merge: 45875da 1a4b786
+Author: Tom Tromey <tom@tromey.com>
+Date:   Tue Aug 4 11:08:19 2020 -0600
+
+    Merge pull request #576 from froydnj/config-updates
+    
+    update config.{guess,sub}
+
+commit 1a4b786df34b61af7b6738a2ce7b8d34f5377a71
+Author: Nathan Froyd <froydnj@gmail.com>
+Date:   Tue Aug 4 12:17:04 2020 -0400
+
+    update config.{guess,sub}
+    
+    This change is primarily for aarch64 macOS support, since that configuration
+    is now properly supported upstream.
+
+commit 45875da4bc71578f6f45471141c14e1743239b7e
+Merge: fbd1de8 8e58f88
+Author: Tom Tromey <tom@tromey.com>
+Date:   Wed Jul 1 09:32:37 2020 -0600
+
+    Merge pull request #570 from jwilk-forks/spelling
+    
+    aarch64: Fix typo
+
+commit 8e58f88d33eb878b0fbca1433f83bbf872d5d0f3
+Author: Jakub Wilk <jwilk@jwilk.net>
+Date:   Tue Jun 30 22:59:28 2020 +0200
+
+    aarch64: Fix typo
+
+commit fbd1de85f6532f8a8f61abbd7892f8cb58b233d0
+Author: Ma Jun <majun258@linux.alibaba.com>
+Date:   Mon Jun 29 08:02:20 2020 -0400
+
+    Add support for csky
+
+commit 0027b072627aa9d3ada71c4374561966064ecd5a
+Author: M. Herdiansyah <herdiansyah@netc.eu>
+Date:   Thu Jun 11 19:40:24 2020 +0700
+
+    Makefile: increase compatibility with bmake (#551)
+
+commit b7af8f47d5fff2957521dc269637c00b8a4b6c75
+Author: Andre Miras <AndreMiras@users.noreply.github.com>
+Date:   Thu Jun 11 14:38:59 2020 +0200
+
+    Fixes macOS build on Python 3 (#563)
+    
+    The error was:
+    ```
+    Traceback (most recent call last):
+      File "_generate-darwin-source-and-headers.py", line 209, in <module>
+        generate_source_and_headers(generate_osx=not args.only_ios, generate_ios=not args.only_osx)
+      File "_generate-darwin-source-and-headers.py", line 197, in generate_source_and_headers
+        for header_name, tag_tuples in platform_headers.iteritems():
+    AttributeError: 'collections.defaultdict' object has no attribute 'iteritems'
+    ```
+
+commit 5c45c40c04f89cf67ade3fdfa99915ca5409e51a
+Author: Kentaro Hayashi <kenhys@gmail.com>
+Date:   Thu Jun 11 21:37:41 2020 +0900
+
+    Fix Free software foundation address (#564)
+    
+    ref. https://www.fsf.org/about/contact/
+
+commit 2e90bb5577ea1fe3bc1716954e790999bc3549f7
+Author: Anthony Green <green@moxielogic.com>
+Date:   Sun Jun 7 14:31:06 2020 -0400
+
+    Add gcc bug tests back
+
+commit 5e6ca054148dfb4d78e6f79457d48b745f919def
+Author: Yann Sionneau <yann@sionneau.net>
+Date:   Fri May 1 13:59:11 2020 +0200
+
+    Add support for Kalray KVX architecture (#559)
+
+commit 4f9e20ac51ce13d46fed3c869e1deb6d9bb89444
+Author: Andrew Geissler <geissonator@users.noreply.github.com>
+Date:   Fri May 1 06:58:30 2020 -0500
+
+    ffi_powerpc.h: fix build failure with powerpc7 (#561)
+    
+    This is a patch pulled down from the following:
+    https://github.com/buildroot/buildroot/blob/78926f610b1411b03464152472fd430012deb9ac/package/libffi/0004-ffi_powerpc.h-fix-build-failure-with-powerpc7.patch
+    
+    This issue is being hit on OpenBMC code when pulling the latest
+    libffi tag and building on a P8 ppc64le machine. I verified this
+    patch fixes the issue we are seeing.
+    
+    Below is the original commit message:
+    
+    Sicne commit 73dd43afc8a447ba98ea02e9aad4c6898dc77fb0, build on powerpc7
+    fails on:
+    
+    In file included from ../src/powerpc/ffi.c:33:0:
+    ../src/powerpc/ffi_powerpc.h:61:9: error: '_Float128' is not supported on this target
+     typedef _Float128 float128;
+             ^~~~~~~~~
+    
+    Fix this build failure by checking for __HAVE_FLOAT128 before using
+    _Float128, as _Float128 is enabled only on specific conditions, see
+    output/host/powerpc64-buildroot-linux-gnu/sysroot/usr/include/bits/floatn.h:
+    
+     /* Defined to 1 if the current compiler invocation provides a
+        floating-point type with the IEEE 754 binary128 format, and this glibc
+        includes corresponding *f128 interfaces for it.  */
+     #if defined _ARCH_PWR8 && defined __LITTLE_ENDIAN__ && (_CALL_ELF == 2) \
+         && defined __FLOAT128__ && !defined __NO_LONG_DOUBLE_MATH
+     # define __HAVE_FLOAT128 1
+     #else
+     # define __HAVE_FLOAT128 0
+     #endif
+    
+    Fixes:
+     - http://autobuild.buildroot.org/results/5c9dd8fb3b6a128882b6250f197c80232d8a3b53
+    
+    Signed-off-by: Fabrice Fontaine <fontaine.fabrice@gmail.com>
+    Signed-off-by: Andrew Geissler <geissonator@yahoo.com>
+    
+    Co-authored-by: Fabrice Fontaine <fontaine.fabrice@gmail.com>
+
+commit 053b04c525a00abdc25ec646096a44208a1b9423
+Author: Martin Storsjö <martin@martin.st>
+Date:   Sun Apr 26 05:02:14 2020 +0300
+
+    arm: Fix the clang specific version of the assembly (#556)
+    
+    Also fix the same error in the comment for the non-clang case.
+    That typo there seems to have existed since the code was written
+    in that form, in e7f15f60e86 - and when the clang specific codepath
+    was added in e3d2812ce43, the typo in the comment made it into the
+    actual code.
+
+commit c543849c3767cc0f0a84e3ed7b664a63724ed516
+Author: Martin Storsjö <martin@martin.st>
+Date:   Sun Apr 26 05:01:03 2020 +0300
+
+    win64_armasm: Fix the spelling of ALIGN (#553)
+
+commit 15d3ea31a53bd0e5b828c90a9f7c4285c58f73e1
+Author: Martin Storsjö <martin@martin.st>
+Date:   Sun Apr 26 04:59:35 2020 +0300
+
+    Use __builtin_ffs instead of ffs (#554)
+    
+    USE_BUILTIN_FFS is defined to 1 within __GNUC__, and the __builtin_ffs
+    function is available since GCC 3.x at least, while the ffs function
+    only exists on some OSes.
+    
+    This fixes compilation for non-x86 mingw platforms. For x86,
+    USE_BUILTIN_FFS is explicitly disabled for windows targets - but
+    if USE_BUILTIN_FFS is enabled based on __GNUC__, it should also use
+    the builtin which actually is available correspondingly, not dependent
+    on the target OS.
+
+commit c06468fa6674d3783a0edb1d0fae9afc8bc28513
+Author: Martin Storsjö <martin@martin.st>
+Date:   Sun Apr 26 04:58:33 2020 +0300
+
+    Fix building for aarch64 windows with mingw toolchains (#555)
+    
+    * aarch64: Check _WIN32 instead of _M_ARM64 for detecting windows
+    
+    This fixes building for aarch64 with mingw toolchains. _M_ARM64 is
+    predefined by MSVC, while mingw compilers predefine __aarch64__.
+    
+    In aarch64 specific code, change checks for _M_ARM64 into checks for
+    _WIN32.
+    
+    In arch independent code, check for
+    (defined(_M_ARM64) || defined(__aarch64__)) && defined(_WIN32)
+    instead of just _M_ARM64.
+    
+    In src/closures.c, coalesce checks like
+    defined(X86_WIN32) || defined(X86_WIN64) || defined(_M_ARM64)
+    into plain defined(_WIN32). Technically, this enables code for
+    ARM32 windows where it wasn't, but as far as I can see it, those
+    codepaths should be fine for that architecture variant as well.
+    
+    * aarch64: Only use armasm source when building with MSVC
+    
+    When building for windows/arm64 with clang, the normal gas style .S
+    source works fine. sysv.S and win64_armasm.S seem to be functionally
+    equivalent, with only differences being due to assembler syntax.
+
+commit 8c50837f0b58ba5b2bcb1b424a2a4bfa01559fb2
+Author: Fangrui Song <i@maskray.me>
+Date:   Tue Mar 10 04:36:09 2020 -0700
+
+    Improve read-write .eh_frame check (#546)
+    
+    llvm-objdump -h does not print BFD SEC_* constants like "READONLY",
+    so the check will consider .eh_frame writable.
+    clang 11 (since https://reviews.llvm.org/D73999) will error for mismatching section flags.
+    
+    Use readelf -S and check "WA" instead.
+
+commit 4a6414f2785a60f455c91fdd04f7745fe7fc11e0
+Author: Moxie Bot <bot@moxielogic.com>
+Date:   Mon Mar 9 21:10:53 2020 -0400
+
+    Mention ARM Pointer Authentication
+
+commit 909b37ffffe2a0bb08947b07508a3a4eed5f36a8
+Author: Moxie Bot <bot@moxielogic.com>
+Date:   Mon Mar 9 21:10:33 2020 -0400
+
+    Test on aarch64 Linux with clang
+
+commit 4c7bde32ea3af479babdf527d94f241282951cb9
+Author: Ole André Vadla Ravnås <oleavr@gmail.com>
+Date:   Tue Mar 10 02:05:42 2020 +0100
+
+    Port to iOS/arm64e (#548)
+
+commit 211e929df4388a6724b0dba4df4e3a1283dc49e9
+Author: Anthony Green <green@moxielogic.com>
+Date:   Mon Mar 9 12:39:22 2020 -0400
+
+    Try to fix RLGL_KEY nonsense (#547)
+    
+    * Try to fix RLGL_KEY nonsense
+    
+    * Hard code policy bound API key
+    
+    Co-authored-by: Anthony Green <green@moxielogic.com>
+
+commit 8eb2d2b05626b1cbbed100725bc440709499e8a6
+Author: Moxie Bot <bot@moxielogic.com>
+Date:   Mon Feb 24 10:29:20 2020 -0500
+
+    Revamp PA_LINUX and PA_HPUX target closures to use function descriptors.
+    
+            2020-02-23  John David Anglin  <danglin@gcc.gnu.org>
+    
+            * include/ffi.h.in (FFI_CLOSURE_PTR, FFI_RESTORE_PTR): Define.
+            * src/closures.c (ffi_closure_alloc): Convert closure pointer
+            return by malloc to function pointer.
+            (ffi_closure_free): Convert function pointer back to malloc pointer.
+            * src/pa/ffi.c (ffi_closure_inner_pa32): Use union to double word
+            align return address on stack.  Adjust statements referencing return
+            address.  Convert closure argument from function pointer to standard
+            closure pointer.
+            (ffi_prep_closure_loc): Likewise convert closure argument back to
+            closure pointer.  Remove assembler trampolines.  Setup simulated
+            function descriptor as on ia64.
+            src/pa/ffitarget.h (FFI_TRAMPOLINE_SIZE): Reduce to 12.
+            src/pa/hpux32.S (ffi_closure_pa32): Retrieve closure pointer and real
+            gp from fake gp value in register %r19.
+            src/pa/linux.S (ffi_closure_pa32): Likewise.
+
+commit be815544c1588c6ca70120361c168b196376aa56
+Author: hjl-tools <hjl.tools@gmail.com>
+Date:   Sun Feb 23 07:45:42 2020 -0800
+
+    Update the ABI version to LIBFFI_BASE_8.0 (#544)
+    
+    Since x86 and x86-64 FFI_TRAMPOLINE_SIZE have been increased, we must
+    bump the ABI version.  This fixes:
+    
+    https://github.com/libffi/libffi/issues/543
+
+commit d9abffeabe4f38bac12b864146cf974ede814411
+Author: hjl-tools <hjl.tools@gmail.com>
+Date:   Sat Feb 22 06:32:22 2020 -0800
+
+    x86: Fix ffi_prep_closure_loc (#542)
+    
+    Since FFI_TRAMPOLINE_SIZE is increased by 4 bytes to add ENDBR32, adjust
+    jump displacement by 4 bytes.
+
+commit 624c7a35f7e1d12f917453d6c657cd5947ac57f7
+Merge: 4c775d7 7855656
+Author: Moxie Bot <bot@moxielogic.com>
+Date:   Fri Feb 21 22:13:14 2020 -0500
+
+    Merge branch 'master' of github.com:/libffi/libffi
+
+commit 4c775d7cd6e914c6a2f66465497106cff360aeb5
+Author: Moxie Bot <bot@moxielogic.com>
+Date:   Fri Feb 21 22:12:34 2020 -0500
+
+    Update for pending 3.4 release.
+
+commit 7855656148b96c7070ec362d2a73af840025a2b7
+Author: hjl-tools <hjl.tools@gmail.com>
+Date:   Fri Feb 21 19:08:06 2020 -0800
+
+    x86: Add indirect branch tracking support (#540)
+    
+    Intel Control-flow Enforcement Technology (CET):
+    
+    https://software.intel.com/en-us/articles/intel-sdm
+    
+    contains shadow stack (SHSTK) and indirect branch tracking (IBT).  When
+    CET is enabled, ELF object files must be marked with .note.gnu.property
+    section.  When Intel CET is enabled, include <cet.h> in assembly codes
+    to mark Intel CET support.
+    
+    Also when IBT is enabled, all indirect branch targets must start with
+    ENDBR instruction and notrack prefix can be used to disable IBT on
+    indirect branch.  <cet.h> defines _CET_ENDBR which can be used in
+    assembly codes for ENDBR instruction.  If <cet.h> isn't included,
+    define _CET_ENDBR as empty so that _CET_ENDBR can be used in assembly
+    codes.
+    
+    Trampoline must be enlarged to add ENDBR instruction unconditionally,
+    which is NOP on non-CET processors.  This is required regardless if
+    libffi is enabled with CET since libffi.so will be marked in legacy
+    bitmap, but trampoline won't.  Update library version for larger
+    FFI_TRAMPOLINE_SIZE.
+    
+    This fixed:
+    
+    https://github.com/libffi/libffi/issues/474
+    
+    Tested with
+    
+    $ CC="gcc -Wl,-z,cet-report=error -fcf-protection" CXX="g++ -Wl,-z,cet-report=error -fcf-protection" .../configure
+    
+    on Linux CET machines in i686, x32 and x86-64 modes.
+
+commit 4d6d2866ae43e55325e8ee96561221804602cd7a
+Author: Samuel Holland <samuel@sholland.org>
+Date:   Fri Feb 21 21:06:15 2020 -0600
+
+    Update powerpc sysv assembly for ffi_powerpc.h changes (#541)
+    
+    Some of the flag bits were moved when adding powerpc64 vector support.
+    
+    Fixes #536
+
+commit b844a9c7f1ca792a1dfb0c09d5dae576178e6729
+Author: Anthony Green <green@moxielogic.com>
+Date:   Fri Jan 10 10:22:10 2020 -0500
+
+    Update copyright year.
+
+commit 81b5491a4ef46103f2e1be79d368e76dba021ffa
+Author: Anthony Green <green@moxielogic.com>
+Date:   Sun Jan 5 21:37:05 2020 -0500
+
+    Fix script
+
+commit 1e08a45535d929915e14e48af38e45f8c8e4f8de
+Author: Anthony Green <green@moxielogic.com>
+Date:   Sun Jan 5 21:18:23 2020 -0500
+
+    Use rlgl API key on login
+
+commit e50b9ef8b910fa642ef158f6642e60d54d7ad740
+Author: Khem Raj <raj.khem@gmail.com>
+Date:   Sat Dec 7 02:34:14 2019 -0800
+
+    powerpc64: Use memcpy to help platforms with no __int128. (#534)
+    
+    Signed-off-by: Khem Raj <raj.khem@gmail.com>
+
+commit f9da75e157ab089363d079a781644c3e6f7db2c3
+Author: Anthony Green <green@moxielogic.com>
+Date:   Sat Nov 30 07:37:19 2019 -0500
+
+    Remove 32-bit x86 file references to fix macosx builds
+
+commit 76c0cfea70f78586231d7994492396eebfb12d5f
+Author: Carl Hurd <carl.m.hurd@gmail.com>
+Date:   Fri Nov 29 14:46:11 2019 -0500
+
+    Fixed missed #ifndef for __mips_soft_float (#442)
+    
+    Thank you!
+
+commit 98da256096c63406ef77f92369ada622c50ce388
+Author: Anthony Green <green@moxielogic.com>
+Date:   Fri Nov 29 14:29:51 2019 -0500
+
+    Clean up macosx builds
+
+commit 6663047f56c2932a6b10a790f4ac6666dd181326
+Author: Anthony Green <green@moxielogic.com>
+Date:   Fri Nov 29 07:00:35 2019 -0500
+
+    Address platforms with no __int128.
+
+commit 0069526c5adea9e6268b8a0087a6120c9c5c89fa
+Author: Anthony Green <green@moxielogic.com>
+Date:   Thu Nov 28 18:58:40 2019 -0500
+
+    Make build errors easier to debug
+
+commit 43887a9108f10124d05c8e0e67f3942cd980cb86
+Author: Anthony Green <green@moxielogic.com>
+Date:   Thu Nov 28 17:44:51 2019 -0500
+
+    Add powerpc-eabi
+
+commit 29297445da5c2c9437de0e20f3189799a27f0301
+Author: Anthony Green <green@moxielogic.com>
+Date:   Thu Nov 28 17:31:44 2019 -0500
+
+    Test on powerpc-eabisim
+
+commit 01a75ed76ea7e57f1b7a5c183e2b1e890e6aa0fd
+Author: Sergei Trofimovich <slyfox@gentoo.org>
+Date:   Thu Nov 28 12:42:41 2019 +0000
+
+    powerpc: fix build failure on power7 and older (#532)
+    
+    Build failure looks as:
+    ```
+    libtool: compile:  powerpc-unknown-linux-gnu-gcc \
+        -O2 -mcpu=powerpc -mtune=powerpc -pipe ... -c src/powerpc/ffi.c ...
+    In file included from src/powerpc/ffi.c:33:
+    src/powerpc/ffi_powerpc.h:65:9: error: '__int128' is not supported on this target
+       65 | typedef __int128 float128;
+          |         ^~~~~~~~
+    ```
+    
+    The fix avoids using __int128 in favour of aligned char[16].
+    
+    Closes: https://github.com/libffi/libffi/issues/531
+    Signed-off-by: Sergei Trofimovich <slyfox@gentoo.org>
+
+commit 1ec01ea81cf18e12748082f48f7c279a3fdd505d
+Author: Anthony Green <green@moxielogic.com>
+Date:   Sun Nov 24 22:47:48 2019 -0500
+
+    Run aarch64-linux-gnu tests on travi-ci directly
+
+commit 66022e52ec0409f9170eb0884c6d0bdd048bc04e
+Author: Anthony Green <green@moxielogic.com>
+Date:   Sun Nov 24 16:52:14 2019 -0500
+
+    Fixes for ppc64le and s390x travis testing
+
+commit 932e5bb68a603885e4bd9cf1bd5146542f736ccf
+Author: Anthony Green <green@moxielogic.com>
+Date:   Sun Nov 24 16:26:14 2019 -0500
+
+    Force the use of docker
+
+commit 803db14c5a0aeb52ee521fe4fe4a7919926373de
+Merge: 86be66c fb914c3
+Author: Anthony Green <green@moxielogic.com>
+Date:   Sun Nov 24 16:10:22 2019 -0500
+
+    Merge branch 'master' of github.com:libffi/libffi
+
+commit 86be66c8f608a84caea2ef724698093d2da2e5e2
+Author: Anthony Green <green@moxielogic.com>
+Date:   Sun Nov 24 16:09:44 2019 -0500
+
+    Try travis-ci's new ppc64le and s390x support
+
+commit fb914c366fabb29ac373050ca0bfa4d9c1fef149
+Author: Panayotis <panayotis@panayotis.com>
+Date:   Sun Nov 24 18:25:13 2019 +0200
+
+    disable obsolete 32-bit targets in macOS (#511)
+
+commit fd99c95f90f85963f5ec88630c0428a8132012db
+Author: Anthony Green <green@moxielogic.com>
+Date:   Sun Nov 24 11:11:25 2019 -0500
+
+    Minor clean-up
+
 commit 5dcb741f1544c5e18c9dbf96aeb8b61cc556a616
 Author: Anthony Green <green@moxielogic.com>
 Date:   Sat Nov 23 10:24:58 2019 -0500

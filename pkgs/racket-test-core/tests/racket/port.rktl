@@ -80,6 +80,8 @@
   (test-file #t))
 
 (let-values ([(r w) (make-pipe)])
+  (test #t pipe-port? r)
+  (test #t pipe-port? w)
   (write-byte 200 w)
   (test #t byte-ready? r)
   (test #f char-ready? r))
@@ -90,6 +92,9 @@
   (close-input-port i)
   (test #t evt? (sync/timeout 0 (port-progress-evt i)))
   (test 0 peek-bytes-avail! (make-bytes 10) 0 (port-progress-evt i) i))
+
+(test #f pipe-port? (open-input-string ""))
+(test #f pipe-port? (open-output-string))
 
 (test #t string-port? (open-input-string ""))
 (test #t string-port? (open-input-bytes #""))
@@ -1308,6 +1313,45 @@
   (define str (make-string 10))
   (test 5 peek-string! str 0 in)
   (test "hello" substring str 0 5))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(parameterize ([current-input-port (open-input-nowhere)])
+  (test eof read)
+  (test eof read-char)
+  (test eof read-byte)
+  (test eof read-line)
+  (test eof read-char-or-special))
+
+(test 'nowhere object-name (open-input-nowhere))
+(test 'apple   object-name (open-input-nowhere 'apple))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(for ([poll-proc (in-list (list
+                           (lambda (i)
+                             (byte-ready? i))
+                           (lambda (i)
+                             (peek-bytes-avail!* (make-bytes 1) 0 #f i))))])
+  (define peeked? #f)
+  (define polled? #f)
+  (define i
+    (make-input-port
+     'test
+     (lambda (bstr)
+       never-evt)
+     (lambda (bstr skip evt)
+       (set! peeked? #t)
+       (poll-guard-evt
+        (lambda (poll?)
+          (when poll?
+            (set! polled? #t))
+          (wrap-evt always-evt (lambda (v) 0)))))
+     void))
+  ;; should trigger a poll on an evt:
+  (poll-proc i)
+  (test #t values peeked?)
+  (test #t values polled?))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

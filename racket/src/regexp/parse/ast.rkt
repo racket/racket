@@ -12,6 +12,7 @@
 (define rx:line-end 'line-end)
 (define rx:word-boundary 'word-boundary)
 (define rx:not-word-boundary 'not-word-boundary)
+(define rx:unicode-grapheme 'unicode-grapheme)
 
 ;; exact integer : match single byte or char
 ;; byte string : match content sequence
@@ -46,6 +47,7 @@
    [(rx:conditional? rx) (rx:conditional-needs-backtrack? rx)]
    [(rx:cut? rx) (rx:cut-needs-backtrack? rx)] ; doesn't actually backtrack, but count may vary
    [(rx:unicode-categories? rx) #t]
+   [(eq? rx rx:unicode-grapheme) #t]
    [else #f]))
 
 (define (rx-range range limit-c)

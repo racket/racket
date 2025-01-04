@@ -167,6 +167,7 @@
   (test-bin 1.5 'unsafe-fl+ 1.5 0.0)
   (test-bin 1.7 'unsafe-fl+ 0.0 1.7)
   (test-tri 1.25 'unsafe-fl* 1.0 2.5 0.5)
+  (test-tri #xB43544F2 'unsafe-flbit-field 3.141579e132 16 48)
 
   (test-un #t unsafe-fx= 1 #:branch? #t)
   (test-bin #f unsafe-fx= 1 2 #:branch? #t)
@@ -1126,7 +1127,7 @@
   (test 7 (dynamic-require ''claims-unreachable-parts/unsafe 'f2) (arity-at-least 7)))
   
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Make sure safe code is not inclined into an unsafe context
+;; Make sure safe code is not inlined into an unsafe context
 
 (module unsafe-module-that-provides-do-unsafe racket/base
   (#%declare #:unsafe)
@@ -1139,6 +1140,38 @@
 
 (err/rt-test/once (dynamic-require ''safe-module-that-uses-do-unsafe #f)
                   exn:fail:contract?)
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Make sure safe code is not inlined into an unsafe context
+
+(module safe-module-that-provides-unsafe-function racket/base
+  (require (for-syntax racket/base))
+  (provide do-unsafe)
+  (define-syntax (define-unsafe stx)
+    (syntax-case stx ()
+      [(_ (id arg) body)
+       #`(define id #,(syntax-property #`(lambda (arg) body) 'body-as-unsafe #t))]))
+  (define-unsafe (do-unsafe x) (car x)))
+
+(module otherwise-safe-module-that-uses-unsafe racket/base
+  (require 'safe-module-that-provides-unsafe-function)
+  (provide v)
+  (define v
+    (do-unsafe (list 1 2))))
+
+(test 1 dynamic-require ''otherwise-safe-module-that-uses-unsafe 'v)
+
+(err/rt-test (parameterize ([current-code-inspector (make-inspector)])
+               (compile '(module m racket/base
+                           (require (for-syntax racket/base))
+                           (provide do-unsafe)
+                           (define-syntax (define-unsafe stx)
+                             (syntax-case stx ()
+                               [(_ (id arg) body)
+                                #`(define id #,(syntax-property #`(lambda (arg) body) 'body-as-unsafe #t))]))
+                           (define-unsafe (do-unsafe x) (car x)))))
+             exn:fail:syntax?
+             #rx"unsafe procedure compilation disallowed")
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

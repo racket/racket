@@ -9,11 +9,12 @@
          non-empty-string?
          string-prefix?
          string-suffix?
-         string-contains?)
+         string-contains?
+         string-find)
 
 (module+ private
   (provide build-kmp-table))
-           
+
 
 (define string-append*
   (case-lambda [(strs) (apply string-append strs)] ; optimize common cases
@@ -282,67 +283,84 @@
            [else
             (loop2 pos (vector-ref t cnd))]))])))
 
+(define (string-find str sub)
+  (do-string-find 'string-find str sub))
+
 (define (string-contains? str sub)
+  (and (do-string-find 'string-contains? str sub) #t))
+
+(define (do-string-find who str sub)
   (unless (string? str)
-    (raise-argument-error 'string-contains? "string?" str))
+    (raise-argument-error who "string?" str))
   (unless (string? sub)
-    (raise-argument-error 'string-contains? "string?" sub))
+    (raise-argument-error who "string?" sub))
   (define L1 (string-length str))
   (define L2 (string-length sub))
   (define d (- L1 L2))
   (define d-4 (- d 4))
 
-  (or (= L2 0)
-      (let loop ([start 0]
-                 [offset 0])
-        (define start+offset (+ start offset))
-        (and (<= start d)
-             (or (= offset L2)
-                 (cond
-                   [(char=? (string-ref sub offset)
-                            (string-ref str start+offset))
-                    (loop start (add1 offset))]
-                   [(or (<= offset 4) (>= start d-4))
-                    (loop (add1 start) 0)]
-                   [else
-                    (define t (build-kmp-table/partial/first sub offset))
-                    (define skip (vector-ref t offset))
-                    (cond
-                      [skip
-                       (string-contains?/table str sub (- start+offset skip) skip t)]
-                      [else
-                       (string-contains?/table str sub (add1 start+offset) 0 t)])]))))))
+  (cond
+    [(= L2 0) 0]
+    [else
+     (let loop ([start 0]
+                [offset 0])
+       (define start+offset (+ start offset))
+       (and (<= start d)
+            (cond
+              [(= offset L2)
+               start]
+              [else
+               (cond
+                 [(char=? (string-ref sub offset)
+                          (string-ref str start+offset))
+                  (loop start (add1 offset))]
+                 [(or (<= offset 4) (>= start d-4))
+                  (loop (add1 start) 0)]
+                 [else
+                  (define t (build-kmp-table/partial/first sub offset))
+                  (define skip (vector-ref t offset))
+                  (cond
+                    [skip
+                     (string-find/table str sub (- start+offset skip) skip t)]
+                    [else
+                     (string-find/table str sub (add1 start+offset) 0 t)])])])))]))
 
-(define (string-contains?/table str sub start offset t)
+(define (string-find/table str sub start offset t)
   (define L1 (string-length str))
   (define L2 (string-length sub))
   (define d (- L1 L2))
 
-  (or (= L2 0)
-      (let loop ([start start]
-                 [offset offset]
-                 [t t]
-                 [tL (sub1 (vector-length t))])
-        (define start+offset (+ start offset))
-        (and (<= start d)
-             (or (= offset L2)
-                 (cond
-                   [(char=? (string-ref sub offset)
-                            (string-ref str start+offset))
-                    (loop start (add1 offset) t tL)]
-                   [(< offset tL)
-                    (define skip (vector-ref t offset))
+  (cond
+    [(= L2 0)
+     start]
+    [else
+     (let loop ([start start]
+                [offset offset]
+                [t t]
+                [tL (sub1 (vector-length t))])
+       (define start+offset (+ start offset))
+       (and (<= start d)
+            (cond
+              [(= offset L2)
+               start]
+              [else
+               (cond
+                 [(char=? (string-ref sub offset)
+                          (string-ref str start+offset))
+                  (loop start (add1 offset) t tL)]
+                 [(< offset tL)
+                  (define skip (vector-ref t offset))
+                  (cond
+                    [skip
+                     (loop (- start+offset skip) skip t tL)]
+                    [else
+                     (loop (add1 start+offset) 0 t tL)])]
+                 [else
+                  (let* ([t (build-kmp-table/partial/next sub offset t)]
+                         [tL (sub1 (vector-length t))]
+                         [skip (vector-ref t offset)])
                     (cond
                       [skip
                        (loop (- start+offset skip) skip t tL)]
                       [else
-                       (loop (add1 start+offset) 0 t tL)])]
-                   [else
-                    (let* ([t (build-kmp-table/partial/next sub offset t)]
-                           [tL (sub1 (vector-length t))]
-                           [skip (vector-ref t offset)])
-                      (cond
-                        [skip
-                         (loop (- start+offset skip) skip t tL)]
-                        [else
-                         (loop (add1 start+offset) 0 t tL)]))]))))))
+                       (loop (add1 start+offset) 0 t tL)]))])])))]))

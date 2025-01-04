@@ -780,8 +780,9 @@ rktio_ok_t rktio_set_current_directory(rktio_t *rktio, const char *path)
 # define rktio_st_ctim st_ctim
 #endif
 
-rktio_stat_t *rktio_file_or_directory_stat(
-  rktio_t *rktio, rktio_const_string_t path, rktio_bool_t follow_links)
+rktio_stat_t *file_or_directory_or_fd_stat(rktio_t *rktio,
+                                           rktio_const_string_t path, rktio_fd_t *fd,
+                                           rktio_bool_t follow_links)
 {
   int stat_result;
   struct rktio_stat_t *rktio_stat_buf;
@@ -789,7 +790,9 @@ rktio_stat_t *rktio_file_or_directory_stat(
   struct stat stat_buf;
 
   do {
-    if (follow_links) {
+    if (fd) {
+      stat_result = fstat(rktio_fd_system_fd(rktio, fd), &stat_buf);
+    } else if (follow_links) {
       stat_result = stat(path, &stat_buf);
     } else {
       stat_result = lstat(path, &stat_buf);
@@ -824,21 +827,46 @@ rktio_stat_t *rktio_file_or_directory_stat(
 #endif
 #ifdef RKTIO_SYSTEM_WINDOWS
   struct __stat64 stat_buf;
-  const WIDE_PATH_t *wp;
-  wp = MSC_WIDE_PATH_temp(path);
-  if (!wp) {
-    return NULL;
+  const WIDE_PATH_t *wp = NULL;
+  int hfd = 0;
+
+  if (fd) {
+    HANDLE h;
+    if (!DuplicateHandle(GetCurrentProcess(), (HANDLE)rktio_fd_system_fd(rktio, fd),
+                         GetCurrentProcess(), &h,
+                         0, FALSE, DUPLICATE_SAME_ACCESS)) {
+      get_windows_error();
+      return NULL;
+    }
+    hfd = _open_osfhandle((intptr_t)h, 0);
+    if (hfd == -1) {
+      get_posix_error();
+      CloseHandle(h);
+      return NULL;
+    }
+  } else {
+    wp = MSC_WIDE_PATH_temp(path);
+    if (!wp) {
+      return NULL;
+    }
   }
 
   do {
-    /* No stat/lstat distinction under Windows */
-    stat_result = _wstat64(wp, &stat_buf);
+    if (fd) {
+      stat_result = _fstat64(hfd, &stat_buf);
+    } else {
+      /* No stat/lstat distinction under Windows */
+      stat_result = _wstat64(wp, &stat_buf);
+    }
   } while ((stat_result == -1) && (errno == EINTR));
 
   if (stat_result) {
     get_posix_error();
+    if (fd) _close(hfd);
     return NULL;
   }
+
+  if (fd) _close(hfd);
 
   rktio_stat_buf = (struct rktio_stat_t *) malloc(sizeof(struct rktio_stat_t));
   /* Corresponds to drive on Windows. 0 = A:, 1 = B: etc. */
@@ -868,6 +896,16 @@ rktio_stat_t *rktio_file_or_directory_stat(
 #endif
 
   return rktio_stat_buf;
+}
+
+rktio_stat_t *rktio_file_or_directory_stat(rktio_t *rktio, rktio_const_string_t path, rktio_bool_t follow_links)
+{
+  return file_or_directory_or_fd_stat(rktio, path, NULL, follow_links);
+}
+
+rktio_stat_t *rktio_fd_stat(rktio_t *rktio, rktio_fd_t *fd)
+{
+  return file_or_directory_or_fd_stat(rktio, NULL, fd, 0);
 }
 
 static rktio_identity_t *get_identity(rktio_t *rktio, rktio_fd_t *fd, const char *path, int follow_links)

@@ -1864,10 +1864,12 @@
                                           (let ([p (build-dest-path s-dir lib-name)])
                                             (and (or (file-exists? p)
                                                      (directory-exists? p))
-                                                 (or (and moving?
-                                                          (not (file-exists? src))
-                                                          (not (directory-exists? src)))
-                                                     (same-content? src p))))))
+                                                 ;; In `moving?` mode, either the move hasn't
+                                                 ;; happened, in which case `same-content?` compares
+                                                 ;; as intended, or the move has already happened,
+                                                 ;; in which case `same-content?` will report `#f`
+                                                 ;; and the moved library will be kept
+                                                 (same-content? src p)))))
                                    ;; already exists in one of the search directories, so
                                    ;; don't copy/move to this one
                                    #f]

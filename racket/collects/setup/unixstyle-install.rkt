@@ -427,6 +427,7 @@
        (define old (or (and (file-exists? src)
                             (call-with-input-file src read))
                        (hash)))
+       (make-dir* configdir)
        (with-output-to-file src #:exists 'truncate/replace
          (lambda ()
            (define handled (make-hash))
@@ -526,6 +527,11 @@
      (printf "  missing source path ~s, skipping...\n" src)]
     [else (error 'move/copy-tree "internal error, unknown mode: ~e" missing)]))
 
+(define (cleantree dst*)
+  (define dst (if (symbol? dst*) (dir: dst*) dst*))
+  (when (directory-exists? dst)
+    (printf "Deleting destination ~s...\n" dst)))
+
 ;; --------------------------------------------------------------------------
 
 ;; Does not support moving "collects" or "pkgs" outside of "share"
@@ -597,6 +603,7 @@
   (skip-dot-files!)
   (with-handlers ([exn? (lambda (e) (undo-changes) (raise e))])
     (set! yes-to-all? #t) ; non-interactive
+    (for-each cleantree (list 'collects 'pkgs 'sharerkt 'doc 'config))
     (copytree "collects" 'collects)
     (copytree (make-path "share" "pkgs") 'pkgs #:missing 'skip)
     (parameterize ([current-skip-filter (add-pkgs-skip (current-skip-filter))])

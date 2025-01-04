@@ -1,0 +1,41 @@
+.search-result-wrapper {
+    display: none;
+    box-sizing: border-box;
+    cursor: help;
+}
+
+/* The following pair of colors are picked to account for color blindness
+ * See https://davidmathlogic.com/colorblind/
+ */
+
+.search-result-wrapper-pkg-base {
+    background-color: #005AB5;
+    padding-right: 5px;
+}
+
+.search-result-wrapper-pkg-main-dist {
+    background-color: #A0CAC5;
+    padding-right: 5px;
+}
+
+.search-result-row {
+    margin: 0.1em 0em;
+    padding: 0.25em 1em;
+    cursor: default;
+}
+
+.search-status {
+    font-weight: bold;
+    color: #601515;
+    padding: 2pt;
+}
+
+.context-line {
+}
+
+.language-family {
+    float: right;
+    clear: both;
+    text-align: right;
+    color: #A0A0A0;
+}

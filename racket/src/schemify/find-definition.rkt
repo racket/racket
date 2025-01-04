@@ -5,7 +5,9 @@
          "struct-type-info.rkt"
          "optimize.rkt"
          "infer-known.rkt"
-         "unwrap-let.rkt")
+         "unwrap-let.rkt"
+         "lambda.rkt"
+         "aim.rkt")
 
 (provide find-definitions)
 
@@ -155,12 +157,14 @@
                              #:cross-module-inline? cross-module-inline?)
   (define new-rhs
     (if optimize?
-        (optimize rhs prim-knowns primitives knowns imports mutated target compiler-query)
+        (let ([rhs (unwrap-let rhs)])
+          (if (and (not (aim? target 'system)) ; more optimization matters in a cross-module context
+                   (lambda? rhs))
+              (optimize* rhs prim-knowns primitives knowns imports mutated unsafe-mode? target compiler-query)
+              (optimize rhs prim-knowns primitives knowns imports mutated target compiler-query)))
         rhs))
   (define k
     (infer-known new-rhs id knowns prim-knowns imports mutated simples unsafe-mode? target
-                 #:primitives primitives
-                 #:optimize-inline? optimize?
                  #:compiler-query compiler-query
                  #:defn (or (and cross-module-inline? 'inline) #t)))
   (if k

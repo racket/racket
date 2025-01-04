@@ -644,20 +644,25 @@ returns @racket[#f] otherwise.
 }
 
 @deftogether[(
+@defproc[(string-find [s string?] [contained string?]) (or/c exact-nonnegative-integer? #f)]
 @defproc[(string-contains? [s string?] [contained string?]) boolean?]
 @defproc[(string-prefix? [s string?] [prefix string?]) boolean?]
 @defproc[(string-suffix? [s string?] [suffix string?]) boolean?])]{
-Checks whether @racket[s] includes at any location, start with, or ends with
-the second argument, respectively.
+Checks whether @racket[s] includes at any location, starts with, or ends with
+the second argument, respectively. The @racket[string-find] function returns the
+first position within @racket[s] where @racket[contained] is found, if any,
+while @racket[string-contains?] reports only whether it was found.
 
 @mz-examples[#:eval string-eval
   (string-prefix? "Racket" "R")
   (string-prefix? "Jacket" "R")
   (string-suffix? "Racket" "et")
+  (string-find "Racket" "ack")
   (string-contains? "Racket" "ack")
 ]
 
-@history[#:added "6.3"]{}
+@history[#:added "6.3"
+         #:changed "8.15.0.7" @elem{Added @racket[string-find].}]
 }
 
 

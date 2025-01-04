@@ -114,15 +114,8 @@
 
 (define (extract-form-name s)
   (cond
-   [(syntax? s)
-    (define e (syntax-e s))
-    (cond
-     [(symbol? e) e]
-     [(and (pair? e)
-           (identifier? (car e)))
-      (syntax-e (car e))]
-     [else #f])]
-   [else #f]))
+    [(syntax? s) ((error-syntax->name-handler) s)]
+    [else #f]))
 
 (define (extract-source-location s)
   (and (syntax? s)
@@ -156,11 +149,22 @@
       (string-append " " str)))
 
 (define (install-error-syntax->string-handler!)
+  (error-syntax->name-handler
+   (lambda (s)
+     (unless (syntax? s)
+       (raise-argument-error 'default-error-syntax->name-handler "syntax?" s))
+     (define e (syntax-e s))
+     (cond
+       [(symbol? e) e]
+       [(and (pair? e)
+             (identifier? (car e)))
+        (syntax-e (car e))]
+       [else #f])))
   (error-syntax->string-handler
    (let ([default-error-syntax->string-handler
            (lambda (v len)
              (unless (or (not len) (exact-nonnegative-integer? len))
-               (raise-argument-error 'default-error-value->string-handler
+               (raise-argument-error 'default-error-syntax->string-handler
                                      "(or/c exact-nonnegative-integer? #f)"
                                      len))
              (if len

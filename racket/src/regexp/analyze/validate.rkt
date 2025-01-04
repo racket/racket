@@ -92,6 +92,8 @@
           (values 1 +inf.0 0)])]
        [(rx:unicode-categories? rx)
         (values 1 4 0)]
+       [(eq? rx rx:unicode-grapheme)
+        (values 1 +inf.0 0)]
        [else (error 'validate "internal error: ~s" rx)])))
   (for ([n (in-hash-keys must-sizes)])
     (unless (positive? (hash-ref group-sizes n 0))

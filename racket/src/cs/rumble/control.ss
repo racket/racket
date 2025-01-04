@@ -2077,7 +2077,9 @@
   (raise
    (|#%app|
     exn:fail:contract:continuation
-    (string-append (symbol->string who) ": " msg)
+    (error-message->adjusted-string
+     who primitive-realm
+     msg primitive-realm)
     (current-continuation-marks))))
 
 ;; ----------------------------------------

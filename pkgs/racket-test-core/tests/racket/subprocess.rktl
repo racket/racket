@@ -684,6 +684,11 @@
                exn:fail:contract?
                #rx"exact command line not supported"))
 
+(err/rt-test (subprocess #f #f #f "anything" 'exact) ;; missing argument after `'exact`
+             exn:fail:contract?)
+(err/rt-test (subprocess #f #f #f "anything" 'exact "a" "b") ;; multiple arguments after `'exact`
+             exn:fail:contract?)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; check file-descriptor sharing
 

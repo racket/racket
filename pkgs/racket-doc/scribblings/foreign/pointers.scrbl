@@ -214,6 +214,7 @@ see @|InsideRacket|.
                  [cptr cpointer? @#,elem{absent}]
                  [mode (or/c 'raw 'atomic 'nonatomic 'tagged
                              'atomic-interior 'interior
+                             'zeroed-atomic 'zeroed-atomic-interior
                              'stubborn 'uncollectable 'eternal)
                        @#,elem{absent}]
                  [fail-mode 'failok @#,elem{absent}])
@@ -299,6 +300,14 @@ specification is required at minimum:
        This allocation mode corresponds to
        @cpp{scheme_malloc_allow_interior} in the C API.}
 
+     @item{@indexed-racket['zeroed-atomic] --- Like @racket['atomic],
+       but the allocated object is filled with zeros, instead of
+       having unspecified initial content.}
+
+     @item{@indexed-racket['zeroed-atomic-interior] --- Like
+       @racket['atomic-interior], but the allocated object is filled
+       with zeros, instead of having unspecified initial content.}
+
      @item{@indexed-racket['tagged] --- Allocates memory that must
        start with a @tt{short} value that is registered as a tag with
        the garbage collector.
@@ -342,7 +351,9 @@ type, and @racket['atomic] allocation is used otherwise.
          #:changed "8.0.0.13" @elem{Changed CS to support the @racket['interior] allocation mode.}
          #:changed "8.1.0.6" @elem{Changed CS to remove constraints on the use of memory allocated
                                    with the @racket['nonatomic] and @racket['interior] allocation
-                                   modes.}]}
+                                   modes.}
+         #:changed "8.14.0.4" @elem{Added the @racket['zeroed-atomic]
+                                    @racket['zeroed-atomic-interior] allocation modes.}]}
 
 
 @defproc[(free [cptr cpointer?]) void]{

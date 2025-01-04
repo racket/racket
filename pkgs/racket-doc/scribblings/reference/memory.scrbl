@@ -217,12 +217,12 @@ Set the @as-index{@envvar{PLTDISABLEGC}} environment variable (to any
 value) before Racket starts to disable @tech{garbage collection}. Set
 the @as-index{@envvar{PLT_INCREMENTAL_GC}} environment variable
 to a value that starts with @litchar{1}, @litchar{y}, or @litchar{Y} to
-request incremental mode at all times, but calling
+request incremental mode at all times for the @tech{3m} implementation of Racket, but calling
 @racket[(collect-garbage 'incremental)] in a program with a periodic
 task is generally a better mechanism for requesting incremental mode.
 Set the @envvar{PLT_INCREMENTAL_GC} environment variable
 to a value that starts with @litchar{0}, @litchar{n}, or @litchar{N} to
-disable incremental-mode requests.
+disable incremental-mode requests (in all implementations of Racket).
 
 Each garbage collection logs a message (see @secref["logging"]) at the
 @racket['debug] level with topic @racket['GC]. In the @tech{CS} and @tech{3m}

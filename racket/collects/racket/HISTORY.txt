@@ -1,3 +1,20 @@
+Version 8.16
+Add `port-file-stat`
+
+Version 8.15, Ocotober 2024
+Sort and highlight documentation-search results by core documentation
+ and main-distribution packages
+Add "language family" to documents, support filtering searches by
+ language family, and highlight results that are not the main family
+Add `'ios` as a compilation target distinct from `'macos`
+Use `AI_V4MAPPED` and `AI_ADDRCONFIG` for hostname resolution via
+ `getaddrinfo`, which improves IPv4 vs. IPv6 on some platforms
+raco pkg: Add `uninstall` command prefer it to `remove`
+raco pkg: Improve `--clone` transition for packages that are included
+ in a distribution, and improve `--unclone` propagation to implied
+ffi/unsafe: Add `'zeroed-atomic[-interior]` allocation mode
+compiler/demod: Repair for Windows paths and some syntax scopes
+
 Version 8.14, July 2024
 Add `case-λ`, add `match-λ` (and variants) to `racket/match`, and
  change the binding of `λ` to be `free-identifier=?` to `lambda`

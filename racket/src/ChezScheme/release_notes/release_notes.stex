@@ -1,8 +1,8 @@
 \documentclass{releasenotes}
 
-\thisversion{Version 10.0.0}
+\thisversion{Version 10.2.0}
 \thatversion{Version 8.4}
-\pubmonth{February}
+\pubmonth{November}
 \pubyear{2024}
 
 \iflatex
@@ -116,6 +116,63 @@ Online versions of both books can be found at
 %-----------------------------------------------------------------------------
 \section{Functionality Changes}\label{section:functionality}
 
+\subsection{Type recovery improvements (10.2.0)}
+
+The type recovery pass has improved support for \scheme{abs} with a fixnum argument
+and added support for \scheme{1+}, \scheme{1-}, and \scheme{-1+}.
+
+\subsection{Single-argument \scheme{fx-/wraparound} (10.2.0)}
+
+The \scheme{fx-/wraparound} function changed to accept a single
+argument, which makes it more consistent with the R6RS \scheme{fx-}
+function.
+
+\subsection{Foreign pointers to Scheme objects (10.2.0)}
+
+The \scheme{make-ftype-scheme-object-pointer} function facilitates a
+unified view of foreign-allocated addresses and addresses that are
+under control of the memory manager---especially addresses for
+bytevector and flvector content. Unlike extracting an address via
+\scheme{object->reference-address} and using it to construct a regular
+ftype pointer, the \scheme{make-ftype-scheme-object-pointer} function
+creates an ftype pointer that cooperates with the memory manager to
+ensure that the encapsulated address does not go stale. When the
+pointer is passed in a call to a foreign function, its address can be
+extracted after the point where garbage collections can occur,
+assuming that \scheme{__collect_safe} is not used.
+
+To make this unified pointer representation at the ftype pointer layer
+(\scheme{ftype-ref}, \scheme{ftype-set!}, etc.) as flexible as the raw
+address layer (\scheme{foreign-ref}, \scheme{foreign-set!}, etc.), new
+forms such as \scheme{ftype-any-ref} use generic pointers independent
+of the pointer's ftype. This flexibility comes at the cost of
+consistency checking, which means that the new operations are less
+safe than operations that are sensitive to a pointer's ftype.
+
+Additions:
+
+\schemedisplay
+make-ftype-scheme-object-pointer
+ftype-scheme-object-pointer?
+ftype-scheme-object-pointer-object
+ftype-scheme-object-pointer-offset
+ftype-any-ref
+ftype-any-set!
+ftype-pointer               ; as \var{ftype-name}
+ftype-scheme-object-pointer ; as \var{ftype-name}
+(& \var{ftype-name} ftype-pointer) ; as call argument or result
+(& \var{ftype-name} ftype-scheme-object-pointer) ; as argument/result
+\endschemedisplay
+
+\subsection{Constrain signal delivery to the main thread (10.1.0)}
+
+Signals are now always delivered to the main Scheme thread to avoid crashes when a signal
+is delivered to a thread that may not even be running Scheme.
+
+\subsection{Improved support for lists in type recovery (10.1.0)}
+
+The type recovery pass has improved support for lists by classifying pairs as mutable or
+immutable. Type recovery is enabled with the \scheme{enable-type-recovery} parameter.
 
 \subsection{New machine types for iOS (10.1.0)}\label{section:ios-machine-types}
 
@@ -123,6 +180,24 @@ The a6ios, ta6ios, arm64ios and tarm64ios machine types correspond to an
 iOS compilation target. Native-code support for iOS is currently limited
 to applications attached to a debugger as the platform does not allow
 executable code to be loaded at runtime.
+
+\subsection{Standard boolean foreign type (10.1.0)}
+
+The \scheme{stdbool} foreign type corresponds to \scheme{bool} as
+defined by the host machine's \scheme{stdbool.h} include file.
+
+\subsection{Optimization for \scheme{call/cc} (10.1.0)}
+
+When \scheme{call/cc} is applied to an immediate function that does
+not use its argument, then the application is replaced with the body
+of that function, which avoids the potential work of capturing a
+continuation at run time.
+
+\subsection{New procedure \scheme{flbit-field} (10.1.0)}
+
+The \scheme{flbit-field} procedure extracts bits from an IEEE 64-bit
+floating-point representation in a way that is analogous to
+\scheme{bitwise-bit-field} on an exact integer.
 
 \subsection{Unicode 15.1 support (10.0.0)}
 
@@ -2737,31 +2812,98 @@ in fasl files does not generally make sense.
 %-----------------------------------------------------------------------------
 \section{Bug Fixes}\label{section:bugfixes}
 
+\subsection{Fix \scheme{fx-/wraparound} with \scheme{0} first argument (10.2.0)}
+
+When \scheme{fx-/wraparound} was called with \scheme{0} as its first
+argument, the call could be rewritten to have a single argument, even though
+\scheme{fx-/wraparound} required two arguments. As part of the repair,
+\scheme{fx-/wraparound} changed to accept a single argument.
+
+\subsection{Performance regression for \scheme{fxdiv-and-mod} at optimize-level 3 (10.2.0)}
+
+At optimize-level 3, the source optimizer (cp0) could replace calls to
+\scheme{fxdiv-and-mod}, where the second argument is constant, with calls to
+\scheme{fxdiv} and \scheme{fxmod} that the back-end would choose not to inline
+because the constant was not a power of two.
+
+\subsection{Repair executable-relative search for NetBSD (10.2.0)}
+
+An incorrect approach to finding the current executable's path on
+NetBSD meant that boot files could not be found relative to the
+executable.
+
+\subsection{Incorrect assembly code for threaded ARMv5 and earlier (10.1.0)}
+
+A bug that generated incorrect assembly code in threaded mode for ARMv5 and earlier
+architectures has been fixed.
+
+\subsection{Index checks in bytevector-reference procedures (10.1.0)}
+
+Bugs that caused an invalid memory reference in \scheme{bytevector-reference-ref},
+\scheme{bytevector-reference*-ref}, and \scheme{bytevector-reference-set!} have been
+fixed.
+
+\subsection{Repairs for pb32 foreign interface (10.1.0)}
+
+Bugs in the handling of callable addresses and 64-bit arguments and results in pb32 when
+using libffi have been fixed.
+
+\subsection{Bytecode endianness handling on s390x, m68k, and hppa (10.1.0)}
+
+The bytecode endianness on s390x, m68k, and hppa architectures has been fixed.
+
+\subsection{Error message fixes (10.1.0)}
+
+A bug where \scheme{flvector} incorrectly reports ``non-flonum found'' errors as
+``non-fixnum found'' errors has been fixed.
+
+Errors for invalid indices in bit operations \scheme{bitwise-bit-set?},
+\scheme{bitwise-copy-bit}, \scheme{logbit?}, \scheme{logbit0}, and \scheme{logbit1} now
+report ``invalid bit index'' instead of ``not an exact integer''.
+
+\subsection{\scheme{with-continuation-mark} key and value expressions (10.1.0)}
+
+A bug in \scheme{with-continuation-mark} positioned the key and
+value expressions outside of the current continuation marks, which
+meant that attempting to look up a continuation mark in the key or
+value expression would fail.
+
+\subsection{\scheme{quote-syntax} incorrectly applies wrap (10.1.0)}
+
+A bug in \scheme{quote-syntax} that caused \scheme{(identifier? (quote-syntax \var{symbol}))}
+to report the wrong result has been fixed.
+
+\subsection{Repair R$^5$RS and IEEE environments (10.1.0)}
+
+The environments returned by \scheme{(scheme-report-environment 5)}
+and \scheme{(ieee-environment)} had some names incorrectly
+prefixed with \scheme{r6rs:}, such as \scheme{r6rs:<} instead of
+\scheme{<}.
+
+\subsection{Non-empty mantissa widths (10.1.0)}
+
+Non-empty mantissa widths are now taken into account.  For example,
+\scheme{(string->number "#e0.1|1")} now evaluates to \scheme{1/8}.
+
 \subsection{Case-insensitive ``V'' format directive (10.1.0)}
 
 The ``V'' format directive is now recognized in uppercase as well as lowercase.
 
 \subsection{Optimization and \scheme{debug-level} $\geq$ 2 (10.1.0)}
 
-Setting \scheme{debug-level} to 2 or higher did not prevent an
-error-causing call in nontail position to stay nontail when
-\scheme{enable-type-recovery} is \scheme{#t} (the default value).
-Furthermore, a tail error-causing call could be made non-tail by
-optimizations that aim to expose non-error paths. Those behaviors
-moved further from the documented behavior of \scheme{debug-level}
-than Chez Scheme version 9.x---but version 9.x was also not consistent
-with the documentation due to cp0 conversions such as replacing
-\scheme{(let ([x \var{expr}]) x)} with just \var{expr}.
+When \scheme{debug-level} is 2 or higher and \scheme{enable-type-recovery} is \scheme{#t}
+(the default), the compiler could move a call to error from non-tail position to tail
+position, which eliminates the stack frame and makes debugging more difficult.
+Furthermore, the compiler could also move a call to error from tail position to non-tail
+position by optimizations that aim to expose non-error paths.
 
-Instead of guaranteeing any specific behavior, a \scheme{debug-level}
-value of 2 or higher is now defined to merely \emph{discourage}
-optimizations that affect the continuation structure as revealed by the
-inspector, where the goal is to produce more informative stack
-backtraces at the point where an exception is raised. The
-implementation produces results that are more in line with Chez Scheme
-9.x. Meanwhile, continuation marks support predictable and
-well-defined reflection on continuations in a way that is compatible
-with compiler optimizations.
+Instead of guaranteeing any specific behavior, a \scheme{debug-level} value of 2 or higher
+is now defined to \emph{discourage} optimizations that affect the continuation structure
+as revealed by the inspector, where the goal is to produce more informative stack traces
+at the point where an exception is raised. The implementation produces results that are
+more consistent with Chez Scheme 9. Meanwhile, continuation marks support predictable and
+well-defined reflection on continuations in a way that is compatible with compiler
+optimizations.
 
 \subsection{Random number generation for large exact integers (10.1.0)}
 
@@ -2786,6 +2928,12 @@ word size, then bounds checking was incorrect in
 and \scheme{bytevector-reference-set!}. In addition, the garbage
 collector would fail to preserve the last few bytes of a reference
 bytevector whose length is not a multiple of the word size.
+
+\subsection{Missing C implementation for \scheme{Smake_flvector} (10.1.0)}
+
+The header file scheme.h Scheme defines \scheme{Smake_flvector}, but
+Chez Scheme does not provide an implmentation. The
+\scheme{Smake_flvector} function is now implemented.
 
 \subsection{\scheme{library-exports} for library that is not yet imported (10.0.0)}
 

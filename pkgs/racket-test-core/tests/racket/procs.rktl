@@ -823,6 +823,25 @@
           (hello 1 #:key 'hi))))
 
 ;; ----------------------------------------
+;; Use `error-syntax->string-handler` for keyword errors
+
+(parameterize ([error-syntax->string-handler
+                (let ([default (error-syntax->string-handler)])
+                  (lambda (v len)
+                    (if (keyword? v)
+                        (format ">>~a<<" (keyword->string v))
+                        (default v len))))])
+  (define (f x #:y y) 0)
+  (define (g x #:y y #:z z) 0)
+  (define (h x #:y y #:z z #:q q) 0)
+  (err/rt-test/once (f 1) exn:fail:contract? #rx"required keyword: >>y<<")
+  (err/rt-test/once (g 1 #:y 0) exn:fail:contract? #rx"required keyword: >>z<<")
+  (err/rt-test/once (f 1 2) exn:fail:contract? #rx"1 plus an argument with keyword >>y<<")
+  (err/rt-test/once (g 1 2) exn:fail:contract? #rx"1 plus arguments with keywords >>y<< and >>z<<")
+  (err/rt-test/once (h 1 2) exn:fail:contract? #rx"1 plus arguments with keywords >>q<<, >>y<<, and >>z<<")
+  (err/rt-test/once (f 1 #:z 0) exn:fail:contract? #rx"given keyword: >>z<<"))
+
+;; ----------------------------------------
 ;; Regression test to make sure an internal chaperone is not disallowed
 ;; due to a `prop:procedure` method whose implementation accepts 0 arguments
 ;; (but it can never get called that way)

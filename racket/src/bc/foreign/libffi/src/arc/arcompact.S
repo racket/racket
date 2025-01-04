@@ -33,103 +33,178 @@
 #define ENTRY(x) .globl CNAME(x)` .type CNAME(x),%function` CNAME(x):
 #endif
 
+#if __SIZEOF_POINTER__ == 8
+#define PTRS 8
+#define FLTS 8
+#define LARG ldl
+#define SARG stl
+#define ADDPTR addl
+#define MOVPTR movl_s
+#else
+#define PTRS 4
+#define FLTS 4
+#define LARG ld
+#define SARG st
+#define ADDPTR add
+#define MOVPTR mov_s
+#endif
+
+#define FRAME_LEN (8 * PTRS + 16)
+
 .text
 
-        /* R0:   ffi_prep_args */
-        /* R1:   &ecif */
-        /* R2:   cif->bytes */
-        /* R3:   fig->flags */
-        /* R4:   ecif.rvalue */
-        /* R5:   fn */
-ENTRY(ffi_call_ARCompact)
+ENTRY(ffi_call_asm)
+        .cfi_startproc
+
         /* Save registers.  */
-        st.a       fp, [sp, -4]        /* fp + 20, fp */
-        push_s     blink               /* fp + 16, blink */
-        st.a       r4, [sp, -4]        /* fp + 12, ecif.rvalue */
-        push_s     r3                  /* fp +  8, fig->flags */
-        st.a       r5, [sp, -4]        /* fp +  4, fn */
-        push_s     r2                  /* fp +  0, cif->bytes */
-        mov        fp, sp
+        .cfi_def_cfa r1, FRAME_LEN
+        SARG    fp, [r1, FRAME_LEN - 2*PTRS]
+        .cfi_offset fp, -2*PTRS
+        SARG    blink, [r1, FRAME_LEN - 1*PTRS]
+        .cfi_offset blink, -1*PTRS
+        ADDPTR  fp, r1, FRAME_LEN
+        MOVPTR  sp, r0
+        .cfi_def_cfa fp, 0
 
-        /* Make room for all of the new args.  */
-        sub        sp, sp, r2
+        /* Load arguments.  */
+        MOVPTR  r11, r2      /* fn */
+        MOVPTR  r12, r3      /* closure */
 
-        /* Place all of the ffi_prep_args in position.  */
-        /* ffi_prep_args(char *stack, extended_cif *ecif) */
-        /* R1 already set.  */
-
-        /* And call.  */
-        jl_s.d     [r0]
-        mov_s      r0, sp
-
-        ld.ab      r12, [fp, 4]        /* cif->bytes */
-        ld.ab      r11, [fp, 4]        /* fn */
-
-        /* Move first 8 parameters in registers...  */
-        ld_s       r0, [sp]
-        ld_s       r1, [sp, 4]
-        ld_s       r2, [sp, 8]
-        ld_s       r3, [sp, 12]
-        ld         r4, [sp, 16]
-        ld         r5, [sp, 20]
-        ld         r6, [sp, 24]
-        ld         r7, [sp, 28]
-
-        /* ...and adjust the stack.  */
-        min        r12, r12, 32
+        /* Save arguments.  */
+        LARG    r0, [fp, -FRAME_LEN+0*PTRS]
+        LARG    r1, [fp, -FRAME_LEN+1*PTRS]
+        LARG    r2, [fp, -FRAME_LEN+2*PTRS]
+        LARG    r3, [fp, -FRAME_LEN+3*PTRS]
+        LARG    r4, [fp, -FRAME_LEN+4*PTRS]
+        LARG    r5, [fp, -FRAME_LEN+5*PTRS]
+        LARG    r6, [fp, -FRAME_LEN+6*PTRS]
+        LARG    r7, [fp, -FRAME_LEN+7*PTRS]
 
         /* Call the function.  */
-        jl.d       [r11]
-        add        sp, sp, r12 
+        jl         [r11] 
 
-        mov        sp, fp        
-        pop_s      r3        /* fig->flags, return type */
-        pop_s      r2        /* ecif.rvalue, pointer for return value */
+        /* Save return value (r0/r1)  */
+        SARG    r0, [fp, -FRAME_LEN+0*PTRS]
+        SARG    r1, [fp, -FRAME_LEN+1*PTRS]
 
-        /* If the return value pointer is NULL, assume no return value.  */
-        breq.d     r2, 0, epilogue
-        pop_s      blink
+        /* Restore and return.  */
+        add     sp, fp, -FRAME_LEN
+        .cfi_def_cfa sp, FRAME_LEN
+        LARG    blink, [fp, -1*PTRS]
+        .cfi_restore blink
+        LARG    fp, [fp, -2*PTRS]
+        .cfi_restore fp
+        j_s     [blink]
+        .cfi_endproc
+        .size   ffi_call_asm, .-ffi_call_asm
 
-        /* Return INT.  */
-        brne       r3, FFI_TYPE_INT, return_double
-        b.d        epilogue
-        st_s       r0, [r2]        
+/*
+  ffi_closure_asm. Expects address of the passed-in ffi_closure in r8.
+  void ffi_closure_inner (ffi_cif *cif,
+		          void (*fun) (ffi_cif *, void *, void **, void *),
+		          void *user_data,
+		          size_t *stackargs, struct call_context *regargs)
+*/
 
-return_double:
-        brne       r3, FFI_TYPE_DOUBLE, epilogue
-        st_s       r0, [r2]        
-        st_s       r1, [r2,4]
+ENTRY(ffi_closure_asm)
+        .cfi_startproc
 
-epilogue:
-        j_s.d      [blink]
-        ld.ab      fp, [sp, 4]
+        ADDPTR  sp, sp, -FRAME_LEN
+        .cfi_def_cfa_offset FRAME_LEN
 
-ENTRY(ffi_closure_ARCompact)
-        st.a       r0, [sp, -32]
-        st_s       r1, [sp, 4]
-        st_s       r2, [sp, 8]
-        st_s       r3, [sp, 12]
-        st         r4, [sp, 16]
-        st         r5, [sp, 20]
-        st         r6, [sp, 24]
-        st         r7, [sp, 28]
+        /* Make a frame.  */
+        SARG    fp, [sp, FRAME_LEN-2*PTRS]
+        .cfi_offset fp, -2*PTRS
+        SARG    blink, [sp, FRAME_LEN-1*PTRS]
+        .cfi_offset blink, -1*PTRS
+        ADDPTR  fp, sp, FRAME_LEN
 
-        /* pointer to arguments */
-        mov_s      r2, sp
+        /* Save arguments.  */
+        SARG    r0, [sp, 0*PTRS]
+        SARG    r1, [sp, 1*PTRS]
+        SARG    r2, [sp, 2*PTRS]
+        SARG    r3, [sp, 3*PTRS]
+        SARG    r4, [sp, 4*PTRS]
+        SARG    r5, [sp, 5*PTRS]
+        SARG    r6, [sp, 6*PTRS]
+        SARG    r7, [sp, 7*PTRS]
 
-        /* return value goes here */
-        sub        sp, sp, 8
-        mov_s      r1, sp
+        /* Enter C.  */
+        LARG    r0, [r8, FFI_TRAMPOLINE_SIZE+0*PTRS]
+        LARG    r1, [r8, FFI_TRAMPOLINE_SIZE+1*PTRS]
+        LARG    r2, [r8, FFI_TRAMPOLINE_SIZE+2*PTRS]
+        ADDPTR  r3, sp, FRAME_LEN
+        MOVPTR  r4, sp
 
-        push_s     blink
+        /* Call the C code.  */
+        bl      ffi_closure_inner
         
-        bl.d       ffi_closure_inner_ARCompact
-        mov_s      r0, r8                /* codeloc, set by trampoline */
+        /* Return values.  */
+        LARG    r0, [sp, 0*PTRS]
+        LARG    r1, [sp, 1*PTRS]
 
-        pop_s      blink
+        /* Restore and return.  */
+        LARG    blink, [sp, FRAME_LEN-1*PTRS]
+        .cfi_restore blink
+        LARG    fp, [sp, FRAME_LEN-2*PTRS]
+        .cfi_restore fp
+        ADDPTR  sp, sp, FRAME_LEN
+        .cfi_def_cfa_offset 0
+        j_s     [blink]
+        .cfi_endproc
+        .size ffi_closure_asm, .-ffi_closure_asm
 
-        /* set return value to r1:r0 */
-        pop_s      r0
-        pop_s      r1
-        j_s.d      [blink]
-        add_s      sp, sp, 32
+/*
+  ffi_go_closure_asm.  Expects address of the passed-in ffi_go_closure in r12.
+  void ffi_closure_inner (ffi_cif *cif,
+		          void (*fun) (ffi_cif *, void *, void **, void *),
+		          void *user_data,
+		          size_t *stackargs, struct call_context *regargs)
+*/
+
+ENTRY(ffi_go_closure_asm)
+        .cfi_startproc
+
+        ADDPTR  sp, sp, -FRAME_LEN
+        .cfi_def_cfa_offset FRAME_LEN
+
+        /* make a frame */
+        SARG    fp, [sp, FRAME_LEN-2*PTRS]
+        .cfi_offset fp, -2*PTRS
+        SARG    blink, [sp, FRAME_LEN-1*PTRS]
+        .cfi_offset blink, -1*PTRS
+        ADDPTR  fp, sp, FRAME_LEN
+
+        /* save arguments */
+        SARG    r0, [sp, 0*PTRS]
+        SARG    r1, [sp, 1*PTRS]
+        SARG    r2, [sp, 2*PTRS]
+        SARG    r3, [sp, 3*PTRS]
+        SARG    r4, [sp, 4*PTRS]
+        SARG    r5, [sp, 5*PTRS]
+        SARG    r6, [sp, 6*PTRS]
+        SARG    r7, [sp, 7*PTRS]
+
+        /* enter C */
+        LARG    r0, [r12, 1*PTRS]
+        LARG    r1, [r12, 2*PTRS]
+        MOVPTR  r2, r12
+        ADDPTR  r3, sp, FRAME_LEN
+        MOVPTR  r4, sp
+
+        bl      ffi_closure_inner
+
+        /* Return values. */
+        LARG    r0, [sp, 0*PTRS]
+        LARG    r1, [sp, 1*PTRS]
+
+
+        LARG    blink, [sp, FRAME_LEN-1*PTRS]
+        .cfi_restore blink
+        LARG    fp, [sp, FRAME_LEN-2*PTRS]
+        .cfi_restore fp
+        ADDPTR  sp, sp, FRAME_LEN
+        .cfi_def_cfa_offset 0
+        j_s     [blink]
+        .cfi_endproc
+        .size ffi_go_closure_asm, .-ffi_go_closure_asm

@@ -189,7 +189,7 @@ void scheme_init_flfxnum_numarith(Scheme_Startup_Env *env)
                                                             | SCHEME_PRIM_AD_HOC_OPT);
   scheme_addto_prim_instance("fx-", p, env);
 
-  p = scheme_make_folding_prim(fx_minus_wrap, "fx-/wraparound", 2, 2, 1);
+  p = scheme_make_folding_prim(fx_minus_wrap, "fx-/wraparound", 1, 2, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNARY_INLINED
                                                             | SCHEME_PRIM_IS_BINARY_INLINED
                                                             | SCHEME_PRIM_IS_NARY_INLINED
@@ -391,7 +391,7 @@ void scheme_init_unsafe_numarith(Scheme_Startup_Env *env)
                                                             | SCHEME_PRIM_PRODUCES_FIXNUM);
   scheme_addto_prim_instance("unsafe-fx-", p, env);
 
-  p = scheme_make_folding_prim(unsafe_fx_minus_wrap, "unsafe-fx-/wraparound", 2, 2, 1);
+  p = scheme_make_folding_prim(unsafe_fx_minus_wrap, "unsafe-fx-/wraparound", 1, 2, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_BINARY_INLINED
                                                             | SCHEME_PRIM_IS_NARY_INLINED
                                                             | SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL
@@ -1278,8 +1278,21 @@ SAFE_FX(fx_mod, "fxmodulo", scheme_modulo, CHECK_SECOND_ZERO("fxmodulo"))
    return scheme_make_integer(r);                                       \
  }
 
+#define SAFE_FX_UNARY_BINARY_WRAP(name, name_binary, s_name, op) \
+ SAFE_FX_WRAP(name_binary, s_name, op) \
+ static Scheme_Object *name(int argc, Scheme_Object *argv[]) \
+ {                                                           \
+   if (argc == 1) {                                          \
+     uintptr_t r;                                            \
+     if (!SCHEME_INTP(argv[0])) scheme_wrong_contract(s_name, "fixnum?", 0, argc, argv); \
+     r = ((uintptr_t)0 op (uintptr_t)SCHEME_INT_VAL(argv[1])); \
+     return scheme_make_integer(r);                            \
+   } else                                                      \
+     return name_binary(argc, argv);                           \
+ }
+
 SAFE_FX_WRAP(fx_plus_wrap, "fx+/wraparound", +)
-SAFE_FX_WRAP(fx_minus_wrap, "fx-/wraparound", -)
+SAFE_FX_UNARY_BINARY_WRAP(fx_minus_wrap, fx_minus_binary_wrap, "fx-/wraparound", -)
 SAFE_FX_WRAP(fx_mult_wrap, "fx*/wraparound", *)
 
 static Scheme_Object *fx_abs(int argc, Scheme_Object *argv[])

@@ -95,6 +95,16 @@
         (bitwise-and v (greatest-fixnum))
         (bitwise-ior v (least-fixnum)))))
 
+(define (wraparound/unary-or-binary op)
+  (case-lambda
+    [(x)
+     (unless (fixnum? x) (raise-argument-error 'wraparound "fixnum?" x))
+     (define v (op x))
+     (if (zero? (bitwise-and v (add1 (greatest-fixnum))))
+         (bitwise-and v (greatest-fixnum))
+         (bitwise-ior v (least-fixnum)))]
+    [(x y) ((wraparound op) x y)]))
+
 ; Check some special cases of the wraparound versions
 (let ()
   (define fxw+ (wraparound +))
@@ -147,7 +157,7 @@
         (list fxremainder unsafe-fxremainder)
         (list fxmodulo unsafe-fxmodulo)
         (list (wraparound +) fx+/wraparound)
-        (list (wraparound -) fx-/wraparound)
+        (list (wraparound/unary-or-binary -) fx-/wraparound)
         (list (wraparound *) fx*/wraparound)
         (list (wraparound lshift) fxlshift/wraparound)
         (list fx+/wraparound unsafe-fx+/wraparound)
@@ -270,9 +280,17 @@
 
 ;; ----------------------------------------
 
+(define 64-bit-machine? (eq? (expt 2 40) (eq-hash-code (expt 2 40))))
 
-
-;; ----------------------------------------
+(test (fxvector 0 0 0 0 0) make-fxvector 5)
+(test (fxvector 0 0 0 0 0) make-fxvector 5 0)
+(err/rt-test (make-fxvector "oops") exn:fail:contract? "exact-nonnegative-integer[?]")
+(err/rt-test (make-fxvector 5.0 0) exn:fail:contract? "exact-nonnegative-integer[?]")
+(err/rt-test (make-fxvector 5.2 0) exn:fail:contract? "exact-nonnegative-integer[?]")
+(err/rt-test (make-fxvector -5 0) exn:fail:contract? "exact-nonnegative-integer[?]")
+(unless 64-bit-machine?
+  (err/rt-test (make-fxvector 500000000000000 0) exn:fail:out-of-memory?))
+(err/rt-test (make-fxvector 50000000000000000000 0) exn:fail:out-of-memory?)
 
 (err/rt-test (fxvector-ref (fxvector 4 5 6) 4) exn:fail:contract? #rx"[[]0, 2[]]")
 (err/rt-test (fxvector-set! (fxvector 4 5 6) 4 0) exn:fail:contract? #rx"[[]0, 2[]]")

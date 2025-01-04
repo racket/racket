@@ -7,11 +7,12 @@
          '#%flfxnum
          racket/hash-code
          "private/sort.rkt"
-         (only-in "private/for.rkt" prop:stream))
+         (only-in "private/for.rkt" prop:stream)
+         "private/serialize-structs.rkt")
 
 (#%declare #:unsafe)
 
-;; RRB tree implemention
+;; RRB tree implementation
 ;;
 ;; Based on
 ;;
@@ -51,10 +52,15 @@
          list->treelist
          treelist-map
          treelist-for-each
+         treelist-filter
          treelist-member?
          treelist-find
+         treelist-index-of
+         treelist-flatten
+         treelist-append*
          treelist-sort
          in-treelist
+         sequence->treelist
          for/treelist
          for*/treelist
          chaperone-treelist
@@ -133,7 +139,7 @@
 (define (node-last n) (assert-node n) (let ([cs (node-children n)])
                                         (vector*-ref cs (fx- (vector*-length cs) 1))))
 (define (node-ref n i) (assert-node n) (vector*-ref (node-children n) i))
-(define (node-set n i v) (assert-node n) (vector*-set/copy (node-children n) i v))
+(define (node-child-set n i v) (assert-node n) (vector*-set/copy (node-children n) i v))
 (define (node-length n) (assert-node n) (vector*-length (node-children n)))
 
 ;; `node*` refers to a leftwise dense node
@@ -171,7 +177,25 @@
   #:property prop:stream (vector
                           (lambda (tl) (treelist-empty? tl))
                           (lambda (tl) (treelist-first tl))
-                          (lambda (tl) (treelist-rest tl))))
+                          (lambda (tl) (treelist-rest tl)))
+  #:property prop:serializable (make-serialize-info
+                                (lambda (tl) (vector (treelist->vector tl)))
+                                (cons 'deserialize-treelist
+                                      (module-path-index-join '(submod "." deserialize)
+                                                              (variable-reference->module-path-index
+                                                               (#%variable-reference))))
+                                #f
+                                (or (current-load-relative-directory)
+                                    (current-directory))))
+
+(module+ deserialize
+  (provide deserialize-treelist)
+  (define deserialize-treelist
+    (make-deserialize-info (lambda (vec) (if (vector? vec)
+                                             (vector->treelist vec)
+                                             (error 'treelist "invalid deserialization")))
+                           (lambda () (error "should not get here; cycles not supported"))))
+  (module declare-preserve-for-embedding racket/kernel))
 
 (define empty-treelist (treelist empty-node 0 0))
 
@@ -292,6 +316,15 @@
                            #f
                            #f))))])
     in-treelist))
+
+(define (sequence->treelist s)
+  (cond
+    [(treelist? s) s]
+    [(vector? s) (vector->treelist s)]
+    [(list? s) (list->treelist s)]
+    [(sequence? s) (for/treelist ([el s]) el)]
+    [else
+     (raise-argument-error* 'sequence->treelist 'racket/primitive "sequence?" s)]))
 
 (define (treelist-print type-str tl port mode)
   (case mode
@@ -484,13 +517,14 @@
                  [height height])
          (cond
            [(fx= height 0)
-            (node-set node (radix index height) el)]
+            (node-child-set node (radix index height) el)]
            [(node-leftwise-dense? node)
             (define branch-index (radix index height))
             (node*-set node branch-index (set (node*-ref node branch-index) index el (fx- height 1)))]
            [else
             (define-values (branch-index subindex) (step node index height))
-            (node-set node branch-index (set (node-ref node branch-index) subindex el (fx- height 1)))])))
+            (Node (node-child-set node branch-index (set (node-ref node branch-index) subindex el (fx- height 1)))
+                  (node-sizes node))])))
      (treelist new-node size height)]))
 
 ;; add `el` to end of vector
@@ -1182,6 +1216,14 @@ minimum required storage. |#
   (for ([v (in-treelist tl)])
     (proc v)))
 
+(define (treelist-filter keep tl)
+  (unless (and (procedure? keep) (procedure-arity-includes? keep 1))
+    (raise-argument-error* 'treelist-filter 'racket/primitive "(procedure-arity-includes/c 1)" keep))
+  (check-treelist 'treelist-filter tl)
+  (for/treelist ([el (in-treelist tl)]
+                 #:when (keep el))
+    el))
+
 (define (treelist-member? tl v [eql? equal?])
   (check-treelist 'treelist-member? tl)
   (unless (and (procedure? eql?) (procedure-arity-includes? eql? 2))
@@ -1199,6 +1241,27 @@ minimum required storage. |#
                       #:when (match? el)
                       #:final #t)
     el))
+
+(define (treelist-index-of tl v [eql? equal?])
+  (check-treelist 'treelist-index-of tl)
+  (unless (and (procedure? eql?) (procedure-arity-includes? eql? 2))
+    (raise-argument-error* 'treelist-index-of 'racket/primitive "(procedure-arity-includes/c 2)" eql?))
+  (for/first ([el (in-treelist tl)]
+              [i (in-naturals)]
+              #:when (eql? v el))
+    i))
+
+;; input does not have to be a treelist: if so make a singleton
+(define (treelist-flatten v)
+  (cond
+    [(treelist? v) (treelist-append* (treelist-map v treelist-flatten))]
+    [else (build-treelist v)]))
+
+;; append*, concat, treelist of treelists into a single treelist
+(define (treelist-append* tlotl)
+  (check-treelist 'treelist-append* tlotl)
+  (for/fold ([acc empty-treelist]) ([tl (in-treelist tlotl)])
+    (treelist-append acc tl)))
 
 (define (check-sort-arguments who less-than? get-key)
   (unless (and (procedure? less-than?) (procedure-arity-includes? less-than? 2))

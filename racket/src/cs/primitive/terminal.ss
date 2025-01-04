@@ -2,6 +2,7 @@
 (define-primitive-table terminal-table
   [terminal-init (known-procedure 4)]
   [terminal-read-char (known-procedure 2)]
+  [terminal-pending-winch? (known-procedure 1)]
   [terminal-write-char (known-procedure 2)]
   [terminal-char-width (known-procedure 2)]
   [terminal-set-color (known-procedure 4)]

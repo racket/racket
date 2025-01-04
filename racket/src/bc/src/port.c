@@ -3554,7 +3554,7 @@ static Scheme_Object *unsafe_socket_to_semaphore(int argc, Scheme_Object *argv[]
   return unsafe_handle_to_semaphore("unsafe-socket->semaphore", argc, argv, 1);
 }
 
-Scheme_Object *scheme_file_identity(int argc, Scheme_Object *argv[])
+static intptr_t extract_port_fd_identity(const char *who, int argc, Scheme_Object *argv[])
 {
   intptr_t fd = 0;
   int fd_ok = 0;
@@ -3571,21 +3571,39 @@ Scheme_Object *scheme_file_identity(int argc, Scheme_Object *argv[])
 
       ip = scheme_input_port_record(p);
       
-      CHECK_PORT_CLOSED("port-file-identity", "input", p, ip->closed);
+      CHECK_PORT_CLOSED(who, "input", p, ip->closed);
     } else if (SCHEME_OUTPUT_PORTP(p)) {
       Scheme_Output_Port *op;
       
       op = scheme_output_port_record(p);
       
-      CHECK_PORT_CLOSED("port-file-identity", "output", p, op->closed);
+      CHECK_PORT_CLOSED(who, "output", p, op->closed);
     }
 
     /* Otherwise, it's just the wrong type: */
-    scheme_wrong_contract("port-file-identity", "file-stream-port?", 0, argc, argv);
-    return NULL;
+    scheme_wrong_contract(who, "file-stream-port?", 0, argc, argv);
+    return 0;
   }
 
-  return scheme_get_fd_identity(p, fd, NULL, 0);
+  return fd;
+}
+
+Scheme_Object *scheme_file_identity(int argc, Scheme_Object *argv[])
+{
+  intptr_t fd;
+
+  fd = extract_port_fd_identity("port-file-identity", argc, argv);
+
+  return scheme_get_fd_identity(argv[0], fd, NULL, 0);
+}
+
+Scheme_Object *scheme_file_stat(int argc, Scheme_Object *argv[])
+{
+  intptr_t fd;
+
+  fd = extract_port_fd_identity("port-file-stat", argc, argv);
+
+  return scheme_get_fd_stat(fd);
 }
 
 static int is_fd_terminal(intptr_t fd)
@@ -7173,6 +7191,15 @@ static Scheme_Object *terminal_read_char(int argc, Scheme_Object **argv) {
 #endif
 }
 
+static Scheme_Object *terminal_pending_winch(int argc, Scheme_Object **argv) {
+#if MZ_EXPR_EDIT
+  /* This won't actually work unless */
+  return s_ee_pending_winch();
+#else
+  return scheme_false;
+#endif
+}
+
 static Scheme_Object *terminal_write_char(int argc, Scheme_Object **argv) {
   int width = 1;
 #if MZ_EXPR_EDIT
@@ -7366,6 +7393,7 @@ void scheme_init_terminal(Scheme_Startup_Env *env) {
 
   ADDTO_EE("terminal-init", terminal_init_term, 2);
   ADDTO_EE("terminal-read-char", terminal_read_char, 1);
+  ADDTO_EE("terminal-pending-winch?", terminal_pending_winch, 0);
   ADDTO_EE("terminal-write-char", terminal_write_char, 1);
   ADDTO_EE("terminal-char-width", terminal_char_width, 1);
   ADDTO_EE("terminal-set-color", terminal_set_color, 2);

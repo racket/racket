@@ -3386,16 +3386,27 @@ if test "${enable_ios}" != "" ; then
   esac
   case "${enable_ios}" in
     iPhoneOS|iPhoneSimulator)
-     ios_sdk=/Applications/Xcode.app/Contents/Developer/Platforms/${enable_ios}.platform/Developer/SDKs/${enable_ios}.sdk
-     echo "=== Using inferred iOS SDK path ${ios_sdk}"
+     IOS_SDK=/Applications/Xcode.app/Contents/Developer/Platforms/${enable_ios}.platform/Developer/SDKs/${enable_ios}.sdk
+     echo "=== Using inferred iOS SDK path ${IOS_SDK}"
      ;;
     *)
-     ios_sdk="${enable_ios}"
+     IOS_SDK="${enable_ios}"
      ;;
   esac
   IOS_PHONE_VERS="6.0"
-  PREFLAGS="$PREFLAGS -DTARGET_OS_IPHONE=1 -arch ${IOS_ARCH} -isysroot ${ios_sdk} -miphoneos-version-min=${IOS_PHONE_VERS}"
-  LDFLAGS="$LDFLAGS -arch ${IOS_ARCH} -isysroot ${ios_sdk} -miphoneos-version-min=${IOS_PHONE_VERS} -liconv"
+  IOS_SDK_FLAGS="-miphoneos-version-min=${IOS_PHONE_VERS}"
+  case "${IOS_SDK}" in
+      # When -arch is arm64-apple-darwin and -sdk is iPhoneSimulator,
+      # passing -miphoneos-version-min makes clang think it's targeting
+      # iPhoneOS instead of iPhoneSimulator, which causes the configure
+      # script to fail. There is no -miphonesimulator-version-min flag.
+      # The -mtargetos flag exhibits the same behavior.
+      *iPhoneSimulator.sdk)
+          IOS_SDK_FLAGS=""
+          ;;
+  esac
+  PREFLAGS="$PREFLAGS -DTARGET_OS_IPHONE=1 -arch ${IOS_ARCH} -isysroot ${IOS_SDK} ${IOS_SDK_FLAGS}"
+  LDFLAGS="$LDFLAGS -arch ${IOS_ARCH} -isysroot ${IOS_SDK} ${IOS_SDK_FLAGS} -liconv"
 fi
 
 
@@ -4589,6 +4600,9 @@ case "$host_os" in
   darwin*)
     PREFLAGS="$PREFLAGS -DOS_X"
     MACH_OS=osx
+    if test "${enable_ios}" != "" ; then
+      MACH_OS=ios
+    fi
     LIBS="${LIBS} -framework CoreFoundation"
     LDFLAGS="${LDFLAGS} -Wl,-headerpad_max_install_names"
     SIGNED_EXE="t"

@@ -197,7 +197,7 @@
              (set-who! foreign-ref  ; checks ty, addr, and offset, but inherently unsafe
                (lambda (ty addr offset)
                  (define-syntax ref
-                   (syntax-rules (scheme-object char wchar boolean
+                   (syntax-rules (scheme-object char wchar boolean stdbool
                                                 integer-24 unsigned-24 integer-40 unsigned-40 integer-48 unsigned-48
                                                 integer-56 unsigned-56 integer-64 unsigned-64)
                      [(_ scheme-object bytes pred) ($oops who "cannot load scheme pointers from foreign memory")]
@@ -210,6 +210,9 @@
                       (constant-case int-bits
                         [(32) (not (eq? (#3%foreign-ref 'integer-32 addr offset) 0))]
                         [(64) (not (eq? (#3%foreign-ref 'integer-64 addr offset) 0))])]
+                     [(_ stdbool bytes pred)
+                      (constant-case stdbool-bits
+                        [(8) (not (eq? (#3%foreign-ref 'integer-8 addr offset) 0))])]
                      [(_ integer-24 bytes pred)
                       (eq? 'unknown (constant native-endianness))
                       (build-multi-int (#3%foreign-ref addr offset) integer 16 8 swap?)]
@@ -256,7 +259,7 @@
                (lambda (ty addr offset v)
                  (define (value-err x t) ($oops who "invalid value ~s for foreign type ~s" x t))
                  (define-syntax set
-                   (syntax-rules (scheme-object char wchar boolean
+                   (syntax-rules (scheme-object char wchar boolean stdbool
                                                 integer-24 unsigned-24 integer-40 unsigned-40 integer-48 unsigned-48
                                                 integer-56 unsigned-56 integer-64 unsigned-64 double-float single-float)
                      [(_ scheme-object bytes pred) ($oops who "cannot store scheme pointers into foreign memory")]
@@ -274,6 +277,9 @@
                       (constant-case int-bits
                         [(32) (#3%foreign-set! 'integer-32 addr offset (if v 1 0))]
                         [(64) (#3%foreign-set! 'integer-64 addr offset (if v 1 0))])]
+                     [(_ stdbool bytes pred)
+                      (constant-case stdbool-bits
+                        [(8) (#3%foreign-set! 'integer-8 addr offset (if v 1 0))])]
                      [(_ integer-24 bytes pred)
                       (eq? 'unknown (constant native-endianness))
                       (begin
@@ -364,7 +370,7 @@
   (set-who! $object-ref ; not safe, just handles non-constant types
     (lambda (ty r offset)
       (define-syntax ref
-        (syntax-rules (char wchar boolean
+        (syntax-rules (char wchar boolean stdbool
                             integer-24 unsigned-24 integer-40 unsigned-40 integer-48 unsigned-48
                             integer-56 unsigned-56 integer-64 unsigned-64)
           [(_ char bytes pred) (integer->char (#3%$object-ref 'unsigned-8 r offset))]
@@ -376,6 +382,9 @@
            (constant-case int-bits
              [(32) (not (eq? (#3%$object-ref 'integer-32 r offset) 0))]
              [(64) (not (eq? (#3%$object-ref 'integer-64 r offset) 0))])]
+          [(_ stdbool bytes pred)
+           (constant-case stdbool-bits
+             [(8) (not (eq? (#3%$object-ref 'integer-8 r offset) 0))])]
           [(_ integer-24 bytes pred)
            (eq? 'unknown (constant native-endianness))
            (build-multi-int (#3%$object-ref r offset) integer 16 8 #f)]
@@ -407,7 +416,7 @@
   (set-who! $swap-object-ref ; not safe, just handles non-constant types
     (lambda (ty r offset)
       (define-syntax ref
-        (syntax-rules (char wchar boolean
+        (syntax-rules (char wchar boolean stdbool
                             integer-24 unsigned-24 integer-40 unsigned-40 integer-48 unsigned-48
                             integer-56 unsigned-56 integer-64 unsigned-64)
           [(_ char bytes pred) (integer->char (#3%$swap-object-ref 'unsigned-8 r offset))]
@@ -419,6 +428,9 @@
            (constant-case int-bits
              [(32) (not (eq? (#3%$swap-object-ref 'integer-32 r offset) 0))]
              [(64) (not (eq? (#3%$swap-object-ref 'integer-64 r offset) 0))])]
+          [(_ stdbool bytes pred)
+           (constant-case stdbool-bits
+             [(8) (not (eq? (#3%$swap-object-ref 'integer-8 r offset) 0))])]
           [(_ integer-24 bytes pred)
            (eq? 'unknown (constant native-endianness))
            (build-multi-int (#3%$swap-object-ref r offset) integer 16 8 #t)]
@@ -450,7 +462,7 @@
   (set-who! $object-set! ; not safe, just handles non-constant types
     (lambda (ty r offset v)
       (define-syntax set
-        (syntax-rules (char wchar boolean
+        (syntax-rules (char wchar boolean stdbool
                             integer-24 unsigned-24 integer-40 unsigned-40 integer-48 unsigned-48
                             integer-56 unsigned-56 integer-64 unsigned-64)
           [(_ char bytes pred)
@@ -463,6 +475,9 @@
            (constant-case int-bits
              [(32) (#3%$object-set! 'integer-32 r offset (if v 1 0))]
              [(64) (#3%$object-set! 'integer-64 r offset (if v 1 0))])]
+          [(_ stdbool bytes pred)
+           (constant-case stdbool-bits
+             [(8) (#3%$object-set! 'integer-8 r offset (if v 1 0))])]
           [(_ integer-24 bytes pred)
            (eq? 'unknown (constant native-endianness))
            (build-multi-int (#3%$object-set! r offset v) integer 16 8 #f)]
@@ -552,7 +567,7 @@
             (constant rtd-opaque)
             0)
         (if sealed? (constant rtd-sealed) 0)))
-    (define ($mrt who base-rtd name parent uid flags fields anonymous-fields? extras)
+    (define ($mrt who base-rtd name parent uid flags fields anonymous-fields? alt-pm extras)
       (include "layout.ss")
       (when parent
         (when ($record-type-act-sealed? parent)
@@ -562,6 +577,15 @@
               ($oops who "cannot make anonymous-field record type ~s from named-field parent record type ~s" name parent))
             (when (fixnum? (rtd-flds parent))
               ($oops who "cannot make named-field record type ~s from anonymous-field parent record type ~s" name parent))))
+      (when alt-pm
+        (case alt-pm
+          [(#t) (let ([fields (append (if (not parent) '() (csv7:record-type-field-decls parent))
+                                      fields)])
+                  (unless (and (= 2 (length fields))
+                               (eq? 'uptr (cadr (car fields)))
+                               (eq? 'uptr (cadr (cadr fields))))
+                    ($oops who "fields ~s inconsistent with pointer-mask protocol ~s" fields alt-pm)))]
+          [else ($oops who "unrecognized alternative pointer-mask protocol ~s" alt-pm)]))
       (let ([uid (or uid ((current-generate-id) name))])
        ; start base offset at rtd field
        ; synchronize with syntax.ss and front.ss
@@ -617,6 +641,9 @@
                  (unless (eq? ($record-type-descriptor rtd) base-rtd) (squawk "different base rtd"))
                  (unless (eq? (rtd-parent rtd) parent) (squawk "different parent"))
                  (unless (same-fields? (rtd-flds rtd) (if (pair? flds) (cdr flds) (fx- flds 1))) (squawk "different fields"))
+                 (let ([pm (rtd-pm rtd)])
+                   (unless (if alt-pm (eq? pm alt-pm) (or (fixnum? pm) (bignum? pm)))
+                     (squawk "different pointer mask")))
                  (unless (= (rtd-mpm rtd) mpm) (squawk "different mutability"))
                  (unless (fx= (rtd-flags rtd) flags) (squawk "different flags"))
                  (unless (eq? (rtd-size rtd) size) (squawk "different size")))
@@ -628,7 +655,7 @@
                  (unless (fx= i len)
                    (vector-set! ancestry i (vector-ref (rtd-ancestry parent) i))
                    (loop (fx+ i 1))))
-               (let ([rtd (apply #%$record base-rtd ancestry size pm mpm name
+               (let ([rtd (apply #%$record base-rtd ancestry size (or alt-pm pm) mpm name
                                  (if (pair? flds) (cdr flds) (fx- flds 1)) flags uid #f extras)])
                  (vector-set! ancestry len rtd)
                  (with-tc-mutex ($sputprop uid '*rtd* rtd))
@@ -643,7 +670,10 @@
                     [ancestry (rtd-ancestry rtd)]
                     [name (rtd-name rtd)]
                     [flags (rtd-flags rtd)]
-                    [old-flds (rtd-flds rtd)])
+                    [old-flds (rtd-flds rtd)]
+                    [alt-pm (let ([old-pm (rtd-pm rtd)])
+                              (and (not (or (fixnum? old-pm) (bignum? old-pm)))
+                                   old-pm))])
                 (let-values ([(pm mpm flds size)
                               (if (fixnum? old-flds)
                                   (compute-field-offsets who
@@ -672,7 +702,7 @@
                                            (car flds))
                                        (loop (cdr flds) (cdr old-flds) (cdr parent-flds) (cdr parent-old-flds)))])))
                           flds)))
-                  (let ([rtd (apply #%$record base-rtd ancestry size pm mpm name
+                  (let ([rtd (apply #%$record base-rtd ancestry size (or alt-pm pm) mpm name
                                (if (pair? flds)
                                    (share-with-remade-parent (cdr flds))
                                    (fx- flds 1))
@@ -688,18 +718,18 @@
                     rtd)))))))
 
     (let ()
-      (define (mrt base-rtd parent name fields sealed? opaque? extras)
+      (define (mrt base-rtd parent name fields sealed? opaque? alt-pm extras)
         (cond
           [(gensym? name)
            ($mrt 'make-record-type base-rtd
              (string->symbol (symbol->string name)) parent name
              (make-flags name sealed? opaque? parent)
-             fields #f extras)]
+             fields #f alt-pm extras)]
           [(string? name)
            ($mrt 'make-record-type base-rtd
              (string->symbol name) parent #f
              (make-flags #f sealed? opaque? parent)
-             fields #f extras)]
+             fields #f alt-pm extras)]
           [else ($oops 'make-record-type "invalid record name ~s" name)]))
 
       (set-who! make-record-type
@@ -708,26 +738,26 @@
             [(name fields)
              (unless (list? fields)
                ($oops who "invalid field list ~s" fields))
-             (mrt base-rtd #f name fields #f #f '())]
+             (mrt base-rtd #f name fields #f #f #f '())]
             [(parent name fields)
              (unless (or (not parent) (record-type-descriptor? parent))
                ($oops who "~s is not a record type descriptor"
                  parent))
              (unless (list? fields)
                ($oops who "invalid field list ~s" fields))
-             (mrt base-rtd parent name fields #f #f '())])))
+             (mrt base-rtd parent name fields #f #f #f '())])))
 
-      (set! $make-record-type
-        (lambda (base-rtd parent name fields sealed? opaque? . extras)
+      (set-who! $make-record-type
+        (lambda (base-rtd parent name fields sealed? opaque? alt-pm . extras)
           (unless (record-type-descriptor? base-rtd)
-            ($oops 'make-record-type "~s is not a record type descriptor"
+            ($oops who "~s is not a record type descriptor"
               base-rtd))
           (unless (or (not parent) (record-type-descriptor? parent))
-            ($oops 'make-record-type "~s is not a record type descriptor"
+            ($oops who "~s is not a record type descriptor"
               parent))
           (unless (list? fields)
-            ($oops 'make-record-type "invalid field list ~s" fields))
-          (mrt base-rtd parent name fields sealed? opaque? extras))))
+            ($oops who "invalid field list ~s" fields))
+          (mrt base-rtd parent name fields sealed? opaque? alt-pm extras))))
 
     (let ()
       (define (mrtd base-rtd name parent uid sealed? opaque? fields anon-ok? who extras)
@@ -772,6 +802,7 @@
                              ($oops who "invalid field specifier ~s" x))
                            (cons x (f (fx+ i 1)))))))])
               (pair? fields)
+              #f
               extras))
 
       (set! $make-record-type-descriptor

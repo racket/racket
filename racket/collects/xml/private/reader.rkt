@@ -1,8 +1,8 @@
 #lang racket/base
-(require racket/contract
+(require racket/contract/base
          racket/list
-         racket/match
-         "structures.rkt")
+         (only-in "structures.rkt" make-document make-prolog)
+         (except-in (submod "structures.rkt" unsafe) make-document make-prolog))
 
 (provide/contract
  [read-xml (() (input-port?) . ->* . document?)]
@@ -66,7 +66,7 @@
   (cond
     [(start-tag? start) (read-element start in pos)]
     [(element? start) start]
-    [else 
+    [else
      (parse-error
       (list
        (make-srcloc
@@ -239,7 +239,7 @@
                 (unless (string=? (read-string 6 in) "CDATA[")
                   (lex-error in pos "expected CDATA following <["))
                 (let ([data (lex-cdata-contents in pos)])
-                  (make-cdata start (pos) (format "<![CDATA[~a]]>" data)))]
+                  (make-cdata start (pos) (string-append "<![CDATA[" data "]]>")))]
          [else (skip-dtd in pos)
                (skip-space in)
                (unless (eq? (peek-char-or-special in) #\<)
@@ -270,16 +270,16 @@
 
 ;; lex-attributes : Input-port (-> Location) -> (listof Attribute)
 (define (lex-attributes in pos)
-  (let* ([result_list 
+  (let* ([result-list
           (let loop ()
             (skip-space in)
             (cond [(name-start? (peek-char-or-special in))
                    (cons (lex-attribute in pos) (loop))]
                   [else null]))]
-         [check_dup (check-duplicates result_list (lambda (a b) (eq? (attribute-name a) (attribute-name b))))])
-    (if check_dup
-        (lex-error in pos "duplicated attribute name ~a" (attribute-name check_dup))
-        result_list)))
+         [check-dup (check-duplicates result-list eq? #:key attribute-name)])
+    (if check-dup
+        (lex-error in pos "duplicated attribute name ~a" (attribute-name check-dup))
+        result-list)))
 
 ;; lex-attribute : Input-port (-> Location) -> Attribute
 (define (lex-attribute in pos)
@@ -332,50 +332,39 @@
         (loop)))))
 
 ;; lex-pcdata : Input-port (-> Location) -> Pcdata
-;; deviation - disallow ]]> "for compatibility" with SGML, sec 2.4 XML spec 
+;; deviation - disallow ]]> "for compatibility" with SGML, sec 2.4 XML spec
 (define (lex-pcdata in pos)
-  (let ([start (pos)]
-        [data (let ()
-                (define out (open-output-string))
-                (let loop ()
-                  (let ([next (peek-char-or-special in)])
-                    (cond
-                      [(or (eof-object? next)
-                           (not (char? next))
-                           (eq? next #\&)
-                           (eq? next #\<))
-                       (void)]
-                      [(and (char-whitespace? next) (collapse-whitespace))
-                       (skip-space in)
-                       (write-char #\space out)
-                       (loop)]
-                      [else
-                       (write-char next out)
-                       (void (read-char in))
-                       (loop)])))
-                (get-output-string out))])
-    (make-pcdata start (pos) data)))
+  (define start (pos))
+  (define data
+    (let loop ([chars null])
+      (let ([next (peek-char-or-special in)])
+        (cond
+          [(or (eof-object? next)
+               (not (char? next))
+               (eq? next #\&)
+               (eq? next #\<))
+           (apply string (reverse chars))]
+          [(and (char-whitespace? next) (collapse-whitespace))
+           (skip-space in)
+           (loop (cons #\space chars))]
+          [else
+           (loop (cons (read-char in) chars))]))))
+  (make-pcdata start (pos) data))
 
 ;; lex-name : Input-port (-> Location) -> Symbol
 (define (lex-name in pos)
-  (let ([c (non-eof read-char-or-special in pos)])
-    (unless (name-start? c)
-      (lex-error in pos "expected name, received ~e" c))
-    (string->symbol
-     (let ()
-       (define out (open-output-string))
-       (write-char c out)
-       (let lex-rest ()
-         (let ([c (non-eof peek-char-or-special in pos)])
-           (cond
-             [(eq? c 'special)
-              (lex-error in pos "names cannot contain non-text values")]
-             [(name-char? c)
-              (write-char c out)
-              (void (read-char in))
-              (lex-rest)]
-             [else (void)])))
-       (get-output-string out)))))
+  (define c (non-eof read-char-or-special in pos))
+  (unless (name-start? c)
+    (lex-error in pos "expected name, received ~e" c))
+  (let loop ([chars (list c)])
+    (define c (non-eof peek-char-or-special in pos))
+    (cond
+      [(eq? c 'special)
+       (lex-error in pos "names cannot contain non-text values")]
+      [(name-char? c)
+       (loop (cons (read-char in) chars))]
+      [else
+       (string->symbol (apply string (reverse chars)))])))
 
 ;; skip-dtd : Input-port (-> Location) -> Void
 (define (skip-dtd in pos)
@@ -411,13 +400,12 @@
 ;; read-until : Char Input-port (-> Location) -> String
 ;; discards the stop character, too
 (define (read-until char in pos)
-  (define out (open-output-string))
-  (let read-more ()
-    (let ([c (non-eof read-char in pos)])
-      (cond
-        [(eq? c char) (void)]
-        [else (write-char c out) (read-more)])))
-  (get-output-string out))
+  (let loop ([chars null])
+    (define c
+      (non-eof read-char in pos))
+    (if (eq? c char)
+        (apply string (reverse chars))
+        (loop (cons c chars)))))
 
 ;; non-eof : (Input-port -> (U Char Eof)) Input-port (-> Location) -> Char
 (define (non-eof f in pos)
@@ -426,53 +414,13 @@
       [(eof-object? c) (lex-error in pos "unexpected eof")]
       [else c])))
 
-;; gen-read-until-string : String -> Input-port (-> Location) -> String
-;; uses Knuth-Morris-Pratt from
-;; Introduction to Algorithms, Cormen, Leiserson, and Rivest, pages 869-876
-;; discards stop from input
-;; ---
-;; Modified by Jay to look more like the version on Wikipedia after discovering a bug when parsing CDATA
-;; The use of the hasheq table and the purely numeric code trades hash efficiency for stack/ec capture efficiency
-(struct hash-string (port pos ht))
-(define (hash-string-ref hs k)
-  (match-define (hash-string port pos ht) hs)
-  (hash-ref! ht k (lambda () (non-eof read-char port pos))))
-
+;; gen-read-until-string : String -> (Input-port (-> Location) -> String)
 (define (gen-read-until-string W)
-  (define Wlen (string-length W))
-  (define T (make-vector Wlen #f))
-  (vector-set! T 0 -1)
-  (vector-set! T 1 0)
-  (let kmp-table ([pos 2] [cnd 0])
-    (when (pos . < . Wlen)
-      (cond
-        [(char=? (string-ref W (sub1 pos)) (string-ref W cnd))
-         (vector-set! T pos (add1 cnd))
-         (kmp-table (add1 pos) (add1 cnd))]
-        [(cnd . > . 0)
-         (kmp-table pos (vector-ref T cnd))]
-        [(zero? cnd)
-         (vector-set! T pos 0)
-         (kmp-table (add1 pos) 0)])))
-  (lambda (S-as-port S-pos)
-    (define S (hash-string S-as-port S-pos (make-hasheq)))
-    (define W-starts-at
-      (let kmp-search ([m 0] [i 0])
-        (if (char=? (string-ref W i) (hash-string-ref S (+ m i)))
-            (let ([i (add1 i)])
-              (if (= i Wlen)
-                  m
-                  (kmp-search m i)))
-            (let* ([Ti (vector-ref T i)]
-                   [m (+ m i (* -1 Ti))])
-              (if (Ti . > . -1)
-                  (let ([i Ti])
-                    (kmp-search m i))
-                  (let ([i 0])
-                    (kmp-search m i)))))))
+  (define re (regexp (regexp-quote W)))
+  (lambda (in pos)
     (define out (open-output-string))
-    (for ([i (in-range 0 W-starts-at)])
-      (write-char (hash-string-ref S i) out))
+    (unless (regexp-match-positions re in 0 #f out)
+      (lex-error in pos "unexpected eof"))
     (get-output-string out)))
 
 ;; "-->" makes more sense, but "--" follows the spec.

@@ -225,6 +225,9 @@
                       0 0 #f
                       (list (cons prop:method-arity-error #t))))
 
+  (define (fmt v)
+    ((error-syntax->string-handler) v #f))
+
   (define (generate-arity-string proc)
     (let-values ([(req allowed) (procedure-keywords proc)]
                  [(a) (procedure-arity proc)]
@@ -238,13 +241,13 @@
                                 ""
                                 "s")
                             (case (length req)
-                              [(1) (format " ~a" (car req))]
-                              [(2) (format " ~a and ~a" (car req) (cadr req))]
+                              [(1) (format " ~a" (fmt (car req)))]
+                              [(2) (format " ~a and ~a" (fmt (car req)) (fmt (cadr req)))]
                               [else
                                (let loop ([req req])
                                  (if (null? (cdr req))
-                                     (format " and ~a" (car req))
-                                     (format " ~a,~a" (car req)
+                                     (format " and ~a" (fmt (car req)))
+                                     (format " ~a,~a" (fmt (car req))
                                              (loop (cdr req)))))])))]
                  [(method-adjust)
                   (lambda (a)
@@ -1657,7 +1660,7 @@
                           (format "\n   ~e" v))
                         args)
                    (map (lambda (kw kw-arg)
-                          (format "\n   ~a ~e" kw kw-arg))
+                          (format "\n   ~a ~e" (fmt kw) kw-arg))
                         kws kw-args))))])
         (define (application-message str)
           (error-message->adjusted-string 'application
@@ -1675,7 +1678,7 @@
                      "  procedure: ~a\n"
                      "  given keyword: ~a"
                      "~a")
-                    name/val extra-kw args-str))
+                    name/val (fmt extra-kw) args-str))
                   (if proc?
                       (application-message
                        (format
@@ -1700,7 +1703,7 @@
                      "  procedure: ~a\n"
                      "  required keyword: ~a"
                      "~a")
-                    name/val missing-kw args-str))
+                    name/val (fmt missing-kw) args-str))
                   (application-message
                    (format
                     (string-append

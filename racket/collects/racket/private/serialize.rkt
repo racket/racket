@@ -296,8 +296,9 @@
             (let-values ([(path base) (module-path-index-split v)])
               (loop path)
               (loop base))]
-	   [else (raise-argument-error
+	   [else (raise-argument-error*
 		  'serialize
+                  'racket/primitive
 		  "serializable?"
 		  v)])
 	  ;; No more possibility for this object in

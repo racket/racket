@@ -5,6 +5,12 @@
 (parameterize ([current-contract-namespace
                 (make-basic-contract-namespace 'racket/contract 'racket/list)])
 
+  (contract-syntax-error-test
+   'contract-in-not-module-path
+   #'(require (contract-in (only-in racket add1)
+                           [add1 (-> number? number?)]))
+   #rx"expected a module-path")
+
   (test/spec-passed/result
    'contract-in1
    '(let ()
@@ -94,6 +100,39 @@
                (g 1)))
       (eval '(require 'contract-in6b)))
    "(quote contract-in6a)")
+
+  (test/spec-passed/result
+   'contract-in7
+   '(let ()
+      (eval '(module contract-in-test-suite7 racket/base
+               (require racket/contract)
+               ;; this `values` shadows the one from racket/base
+               (require (contract-in racket/base (values (-> string? string?))))
+               (provide contract-in-test-suite7-name)
+               (define msg
+                 (with-handlers ([exn:fail? exn-message])
+                   (values 'a)))
+               (define contract-in-test-suite7-name
+                 (list-ref (regexp-match #rx"^([^:]*):" msg) 1))))
+      (eval '(require 'contract-in-test-suite7))
+      (eval 'contract-in-test-suite7-name))
+   "values")
+
+  (test/spec-passed/result
+   'contract-in8
+   '(let ()
+      (eval '(module contract-in-test-suite8 racket/base
+               (require racket/contract)
+               (require (contract-in racket/base (rename values desired-name (-> string? string?))))
+               (provide contract-in-test-suite8-name)
+               (define msg
+                 (with-handlers ([exn:fail? exn-message])
+                   (desired-name 'a)))
+               (define contract-in-test-suite8-name
+                 (list-ref (regexp-match #rx"^([^:]*):" msg) 1))))
+      (eval '(require 'contract-in-test-suite8))
+      (eval 'contract-in-test-suite8-name))
+   "desired-name")
 
   (test/spec-passed/result
    'contract-in-struct1

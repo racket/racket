@@ -780,6 +780,8 @@
     (bin-exact #f 'bitwise-bit-set? (expt 2 40) 41)
     (bin-exact #t 'bitwise-bit-set? (- (expt 2 40)) 41)
 
+    (tri-exact #xB43544F2 'flbit-field (lambda () 3.141579e132) 16 48 void #f)
+
     (un 1 'real-part 1+2i)
     (un 105 'real-part 105)
     (un-exact 10.0 'flreal-part 10.0+7.0i #t)

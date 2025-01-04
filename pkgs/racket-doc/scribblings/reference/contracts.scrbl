@@ -705,11 +705,7 @@ necessarily @racket[eq?] to the input.
 
 @defproc[(treelist/c [ctc contract?]
                      [#:flat? flat? any/c (flat-contract? ctc)]
-                     [#:lazy? lazy? any/c
-                      (cond
-                        [(flat-contract? ctc) #f]
-                        [(chaperone-contract? ctc) #t]
-                        [else #f])])
+                     [#:lazy? lazy? any/c #f])
          contract?]{
 
  Produces a contract for @tech{treelists} whose elements
@@ -722,11 +718,11 @@ necessarily @racket[eq?] to the input.
  If @racket[lazy?] is a true value, then @racket[ctc] must
  be a @tech{chaperone contract} and the resulting contract
  will be a chaperone contract. In that situation, the
- contracts on the elements of the tree list are not checked
+ contracts on the elements of the treelist are not checked
  until the values are accessed.
 
  If both @racket[flat?] and @racket[lazy?] are @racket[#f],
- then the contract will copy the tree list as part of the
+ then the contract will copy the treelist as part of the
  process of checking the contract and the result will be
  a @tech{chaperone contract} if @racket[ctc] is a
  chaperone contract.
@@ -744,7 +740,10 @@ necessarily @racket[eq?] to the input.
               (treelist/c natural?)
               (treelist -1 -2 -3)))]
 
-@history[#:added "8.12.0.7"]
+@history[#:added "8.12.0.7"
+         #:changed "8.15.0.2" @elem{Changed the default value of @racket[lazy?]
+           from @racket[(and (chaperone-contract? ctc) (not (flat-contract? ctc)))]
+           to @racket[#f].}]
 }
 
 @defproc[(mutable-treelist/c [ctc contract?])
@@ -1945,8 +1944,8 @@ earlier fields.}}
 
 @deftogether[(@defform[
  #:literals (struct rename)
- (contract-in in-out-item ...)]
-               @defform[
+ (contract-in module-path in-out-item ...)]
+              @defform[
  #:literals (struct rename)
  (contract-out unprotected-submodule in-out-item ...)
  #:grammar

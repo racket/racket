@@ -59,6 +59,18 @@
 (err/rt-test (fl->exact-integer 1/3))
 (err/rt-test (fl->exact-integer 1.0+2.0i))
 
+(define 64-bit-machine? (eq? (expt 2 40) (eq-hash-code (expt 2 40))))
+
+(test (flvector 0.0 0.0 0.0 0.0 0.0) make-flvector 5)
+(test (flvector 0.0 0.0 0.0 0.0 0.0) make-flvector 5 0.0)
+(err/rt-test (make-flvector "oops") exn:fail:contract? "exact-nonnegative-integer[?]")
+(err/rt-test (make-flvector 5.0 0.0) exn:fail:contract? "exact-nonnegative-integer[?]")
+(err/rt-test (make-flvector 5.2 0.0) exn:fail:contract? "exact-nonnegative-integer[?]")
+(err/rt-test (make-flvector -5 0.0) exn:fail:contract? "exact-nonnegative-integer[?]")
+(unless 64-bit-machine?
+  (err/rt-test (make-flvector 500000000000000 0) exn:fail:out-of-memory?))
+(err/rt-test (make-flvector 50000000000000000000 0) exn:fail:out-of-memory?)
+
 (err/rt-test (flvector-ref (flvector 4.0 5.0 6.0) 4) exn:fail:contract? #rx"[[]0, 2[]]")
 (err/rt-test (flvector-set! (flvector 4.0 5.0 6.0) 4 0.0) exn:fail:contract? #rx"[[]0, 2[]]")
 
@@ -390,6 +402,44 @@
 
 (test -0.0 flsqrt -0.0)
 (test +nan.0 log (flsqrt -1.0))
+
+;; ----------------------------------------
+;; `flbit-field`, based on tests in the Chez Scheme test suite
+
+(for ([i (in-range 65)])
+  (test 0 flbit-field 3.14 i i))
+
+(for ([i (in-range 64)])
+  (test 0 flbit-field 0.0 i (add1 i)))
+
+(for ([i (in-range 65)])
+  (test 0 flbit-field 0.0 0 i))
+
+(for ([i (in-range 63)])
+  (test 0 flbit-field -0.0 i (add1 i)))
+(test 1 flbit-field -0.0 63 64)
+
+(test #x5B71B43544F260A6
+      flbit-field 3.141579e132 0 64)
+(test #x5B71B43544F260A6
+      flbit-field 3.141579e132 0 63)
+(test #x2db8da1aa2793053
+      flbit-field 3.141579e132 1 64)
+(test #xB71B43544F260A
+      flbit-field 3.141579e132 4 60)
+(test #x71B43544F260
+      flbit-field 3.141579e132 8 56)
+(test #x5B71B435
+      flbit-field 3.141579e132 32 64)
+(test #x44F260A6
+      flbit-field 3.141579e132 0 32)
+(test #xB43544F2
+      flbit-field 3.141579e132 16 48)
+
+(for ([i (in-range 65)])
+  (for ([j (in-range i 65)])
+    (test (bitwise-bit-field #x5B71B43544F260A6 i j)
+          flbit-field 3.141579e132 i j)))
 
 ;; ----------------------------------------
 ;; Make sure `flvector` is not incorrectly constant-folded

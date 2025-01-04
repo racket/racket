@@ -56,7 +56,8 @@
          lookahead-matcher
          lookbehind-matcher
          
-         unicode-categories-matcher)
+         unicode-categories-matcher
+         unicode-grapheme-matcher)
 
 ;; ----------------------------------------
 
@@ -590,3 +591,32 @@
          [else
           ;; c must be 'continue
           (loop (add1 pos) (cons b accum))])]))))
+
+(define (unicode-grapheme-matcher next-m)
+  (lambda (s pos start limit end state stack)
+    (let loop ([pos pos] [accum null] [end-pos #f] [state 0])
+      (define b
+        (if (bytes? s)
+            (and (pos . < . limit)
+                 (bytes-ref s pos))
+            (and (lazy-bytes-before-end? s pos limit)
+                 (lazy-bytes-ref s pos))))
+      (define (stop)
+        (if (eqv? state 0)
+            #f
+            (next-m s end-pos start limit end state stack)))
+      (cond
+       [(not b) (stop)]
+       [else
+        (define c (bytes->char/utf-8 b accum))
+        (cond
+         [(char? c)
+          (define-values (ended? new-state) (char-grapheme-step c state))
+          (if ended?
+              (next-m s (if (eqv? new-state 0) (add1 pos) end-pos) start limit end state stack)
+              (loop (add1 pos) null (add1 pos) new-state))]
+         [(eq? c 'fail)
+          (stop)]
+         [else
+          ;; c must be 'continue
+          (loop (add1 pos) (cons b accum) end-pos state)])]))))

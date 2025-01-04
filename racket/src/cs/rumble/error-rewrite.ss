@@ -33,6 +33,13 @@
    [(and (who-condition? v)
          (eq? 'time-utc->date (condition-who v)))
     exn:fail]
+   [(and (format-condition? v)
+         (who-condition? v)
+         (#%memq (condition-who v) '(make-string make-vector make-fxvector make-flvector make-bytevector))
+         (string-prefix? "~s is not a valid " (condition-message v))
+         (string-suffix? " length" (condition-message v))
+         (exact-nonnegative-integer? (car (condition-irritants v))))
+    exn:fail:out-of-memory]
    [else
     exn:fail:contract]))
 
@@ -52,8 +59,9 @@
                 bytevector-u8-set! bytes-set!
                 bytevector-length bytes-length
                 bytevector-copy bytes-copy
+                make-bytevector make-bytes
                 bitwise-arithmetic-shift arithmetic-shift
-                fixnum->flonum fx->fl 
+                fixnum->flonum fx->fl
                 flonum->fixnum fl->fx
                 fxarithmetic-shift-right fxrshift
                 fxarithmetic-shift-left fxlshift
@@ -94,30 +102,33 @@
                                                 s)))
             null)]
    [(equal? str "~s is not a pair")
-    (format-error-values (string-append
-                          "contract violation\n  expected: "
-                          (error-contract->adjusted-string "pair?" primitive-realm)
-                          "\n  given: ~s")
-                         irritants)]
+    (format-contract-violation "pair?" irritants)]
    [(and (equal? str "incorrect list structure ~s")
          (cxr->contract who))
     => (lambda (ctc)
-         (format-error-values (string-append "contract violation\n  expected: "
-                                             (error-contract->adjusted-string ctc primitive-realm)
-                                             "\n  given: ~s")
-                              irritants))]
+         (format-contract-violation ctc irritants))]
    [(and (or (eq? who 'list-ref) (eq? who 'list-tail))
          (equal? str "index ~s is out of range for list ~s"))
-    (format-error-values (string-append "index too large for list\n"
-                                        "  index: ~s\n"
-                                        "  in: ~s")
-                         irritants)]
+    (cond
+      [(and (eq? who 'list-ref)
+            (not (pair? (cadr irritants))))
+       (format-contract-violation "pair?" (list (cadr irritants)))]
+      [else
+       (format-error-values (string-append "index too large for list\n"
+                                           "  index: ~s\n"
+                                           "  in: ~s")
+                            irritants)])]
    [(and (or (eq? who 'list-ref) (eq? who 'list-tail))
          (equal? str "index ~s reaches a non-pair in ~s"))
-    (format-error-values (string-append "index reaches a non-pair\n"
-                                        "  index: ~s\n"
-                                        "  in: ~s")
-                         irritants)]
+    (cond
+      [(and (eq? who 'list-ref)
+            (not (pair? (cadr irritants))))
+       (format-contract-violation "pair?" (list (cadr irritants)))]
+      [else
+       (format-error-values (string-append "index reaches a non-pair\n"
+                                           "  index: ~s\n"
+                                           "  in: ~s")
+                            irritants)])]
    [(or (eq? who 'memq) (eq? who 'memv))
     (format-error-values "not a proper list\n  in: ~s" irritants)]
    [(equal? str  "~s is not a valid index for ~s")
@@ -154,14 +165,29 @@
                                           "  first argument...:\n"
                                           "   ~s")
                            irritants)])]
+   [(equal? str "~s is not a valid unicode scalar value")
+    (format-contract-violation "(and/c (integer-in 0 #x10FFFF) (not/c (integer-in #xD800 #xDFFF)))" irritants)]
+   [(and (string-prefix? "~s is not a valid " str)
+         (string-suffix? " length" str)
+         (#%memq who '(make-string make-vector make-fxvector make-flvector make-bytevector)))
+    (if (exact-nonnegative-integer? (car irritants))
+        (values (string-append "out of memory making "
+                               (case who
+                                 [(make-string) "string"]
+                                 [(make-vector) "vector"]
+                                 [(make-fxvector) "fxvector"]
+                                 [(make-flvector) "flvector"]
+                                 [(make-bytevector) "byte string"])
+                               "\n  length: ~s")
+                irritants)
+        (format-contract-violation "exact-nonnegative-integer?" irritants))]
    [(and (> (string-length str) (string-length is-not-a-str))
          (equal? (substring str 0 (string-length is-not-a-str)) is-not-a-str)
          (= 1 (length irritants)))
     (let ([ctc (desc->contract (substring str (string-length is-not-a-str) (string-length str)))])
-      (format-error-values (string-append "contract violation\n  expected: "
-                                          (error-contract->adjusted-string ctc primitive-realm)
-                                          "\n  given: ~s")
-                           irritants))]
+      (format-contract-violation ctc irritants))]
+   [(equal? str "index ~s is not an exact nonnegative integer") ; doesn't match `is-not-a-str`
+    (format-contract-violation "exact-nonnegative-integer?" irritants)]
    [(equal? str "cannot extend sealed record type ~s as ~s")
     (format-error-values (string-append "cannot make a subtype of a sealed type\n"
                                         "  type name: ~s\n"
@@ -206,28 +232,32 @@
    [(and (or (equal? str "invalid bit index ~s")
              (equal? str "invalid start index ~s")
              (equal? str "invalid end index ~s"))
-         (memq who '(bitwise-bit-set? bitwise-bit-field)))
+         (#%memq who '(bitwise-bit-set? bitwise-bit-field flbit-field)))
     (cond
       [(exact-nonnegative-integer? (car irritants))
-       ;; must be an out-of-range end index
-       (format-error-values (string-append
-                             "ending index is smaller than starting index\n  ending index: ~s")
-                            irritants)]
+       (cond
+         [(and (eq? who 'flbit-field) (> (car irritants) 64))
+          ;; must be an out-of-range index
+          (format-contract-violation "(integer-in 0 64)" irritants)]
+         [else
+          ;; must be an out-of-range end index
+          (format-error-values (string-append
+                                "ending index is smaller than starting index\n  ending index: ~s")
+                               irritants)])]
       [else
-       (format-error-values (string-append
-                             "contract violation\n  expected: "
-                             (error-contract->adjusted-string "exact-nonnegative-integer?" primitive-realm)
-                             "\n  given: ~s")
-                            irritants)])]
+       (format-contract-violation (if (eq? who 'flbit-field) "(integer-in 0 64)" "exact-nonnegative-integer?") irritants)])]
    [(and (equal? str "invalid value ~s")
          (eq? who 'bytevector-u8-set!))
-    (format-error-values (string-append
-                          "contract violation\n  expected: "
-                          (error-contract->adjusted-string "byte?" primitive-realm)
-                          "\n  given: ~s")
-                         irritants)]
+    (format-contract-violation "byte?" irritants)]
    [else
     (format-error-values str irritants)]))
+
+(define (format-contract-violation contract-str irritants)
+  (format-error-values (string-append
+                        "contract violation\n  expected: "
+                        (error-contract->adjusted-string contract-str primitive-realm)
+                        "\n  given: ~s")
+                       irritants))
 
 (define (format-error-values str irritants)
   (let ([str (string-copy str)]
@@ -244,7 +274,7 @@
           [(#\s)
            (string-set! str (fx+ i 1) #\a)
            (loop (fx+ i 2)
-                 (cons (error-value->string (car irritants))
+                 (cons (reindent/newline (error-value->string (car irritants)))
                        accum-irritants)
                  (cdr irritants))]
           [else (loop (fx+ i 2)

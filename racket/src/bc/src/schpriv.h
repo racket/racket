@@ -3637,6 +3637,7 @@ char *scheme_get_exec_path(void);
 Scheme_Object *scheme_get_run_cmd(void);
 
 Scheme_Object *scheme_get_fd_identity(Scheme_Object *port, intptr_t fd, char *path, int noerr);
+Scheme_Object *scheme_get_fd_stat(intptr_t fd);
 
 Scheme_Object *scheme_extract_relative_to(Scheme_Object *obj, Scheme_Object *dir, Scheme_Hash_Table *cache);
 
@@ -3702,6 +3703,7 @@ Scheme_Object *scheme_file_position_star(int argc, Scheme_Object *argv[]);
 Scheme_Object *scheme_file_truncate(int argc, Scheme_Object *argv[]);
 Scheme_Object *scheme_file_buffer(int argc, Scheme_Object *argv[]);
 Scheme_Object *scheme_file_identity(int argc, Scheme_Object *argv[]);
+Scheme_Object *scheme_file_stat(int argc, Scheme_Object *argv[]);
 Scheme_Object *scheme_file_try_lock(int argc, Scheme_Object **argv);
 Scheme_Object *scheme_file_unlock(int argc, Scheme_Object **argv);
 

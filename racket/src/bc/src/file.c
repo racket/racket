@@ -3828,6 +3828,13 @@ static Scheme_Object *simplify_qm_path(Scheme_Object *path, int *has_rel)
   }
 }
 
+static void cycle_error(char *s) {
+  scheme_raise_exn(MZEXN_FAIL_FILESYSTEM,
+                   "simplify-path: cycle detected at link\n"
+                   "  link path: %q",
+                   s);
+}
+
 static Scheme_Object *do_simplify_path(Scheme_Object *path, Scheme_Object *cycle_check, int skip, 
 				       int use_filesystem, 
                                        int force_rel_up, int already_cleansed,
@@ -4030,10 +4037,7 @@ static Scheme_Object *do_simplify_path(Scheme_Object *path, Scheme_Object *cycle
 	  if ((len == SCHEME_PATH_LEN(p))
 	      && !strcmp(s, SCHEME_PATH_VAL(p))) {
 	    /* Cycle of links detected */
-	    scheme_raise_exn(MZEXN_FAIL_FILESYSTEM,
-			     "simplify-path: cycle detected at link\n"
-                             "  link path: %q",
-			     s);
+            cycle_error(s);
 	  }
 	  l = SCHEME_CDR(l);
 	}
@@ -4103,7 +4107,7 @@ static Scheme_Object *do_simplify_path(Scheme_Object *path, Scheme_Object *cycle
 	  while (1) {
 	    a[0] = result;
 	    new_result = do_resolve_path(1, a, guards);
-	
+
 	    /* Was it a link? */
 	    if (result != new_result) {
 	      /* It was a link. Is the new result relative? */
@@ -4129,20 +4133,16 @@ static Scheme_Object *do_simplify_path(Scheme_Object *path, Scheme_Object *cycle
 		  if ((SCHEME_PATH_LEN(cp) == SCHEME_PATH_LEN(new_result))
 		      && !strcmp(SCHEME_PATH_VAL(cp), SCHEME_PATH_VAL(new_result))) {
 		    /* cycle */
-		    new_result = NULL;
-		    break;
+                    cycle_error(SCHEME_PATH_VAL(new_result));
 		  }
 		}
 	      }
 	    
-	      if (new_result) {
-		/* Simplify the new result */
-		result = do_simplify_path(new_result, cycle_check, skip,
-					  use_filesystem, force_rel_up, 0, kind,
-					  guards);
-		cycle_check = scheme_make_pair(new_result, cycle_check);
-	      } else
-		break;
+              /* Simplify the new result */
+              result = do_simplify_path(new_result, cycle_check, skip,
+                                        use_filesystem, force_rel_up, 0, kind,
+                                        guards);
+              cycle_check = scheme_make_pair(new_result, cycle_check);
 	    } else
 	      break;
 	  }
@@ -4995,33 +4995,35 @@ static Scheme_Object *make_nanoseconds(uintptr_t secs, uintptr_t nsecs) {
                          scheme_make_integer_value_from_unsigned(nsecs));
 }
 
-static Scheme_Object *file_stat(int argc, Scheme_Object *argv[])
+static Scheme_Object *file_or_fd_stat(const char *filename, Scheme_Object *filename_arg, intptr_t fd, int as_link)
 {
-  char *filename;
-  int as_link = 0;
   rktio_stat_t *r;
   Scheme_Hash_Tree *ht;
 
-  if (!SCHEME_PATH_STRINGP(argv[0]))
-    scheme_wrong_contract("file-or-directory-identity", "path-string?", 0, argc, argv);
+  if (filename) {
+    r = rktio_file_or_directory_stat(scheme_rktio, filename, !as_link);
 
-  filename = scheme_expand_string_filename(argv[0],
-					   "file-or-directory-identity",
-					   NULL,
-					   SCHEME_GUARD_FILE_EXISTS);
+    if (!r) {
+      scheme_raise_exn(MZEXN_FAIL_FILESYSTEM,
+                       "file-or-directory-stat: cannot get stat result\n"
+                       "  path: %q\n"
+                       "  system error: %R",
+                       filename_for_error(filename_arg));
+      return NULL;
+    }
+  } else {
+    rktio_fd_t *rfd;
 
-  if (argc > 1)
-    as_link = SCHEME_TRUEP(argv[1]);
+    rfd = rktio_system_fd(scheme_rktio, fd, RKTIO_OPEN_READ);
+    r = rktio_fd_stat(scheme_rktio, rfd);
+    rktio_forget(scheme_rktio, rfd);
 
-  r = rktio_file_or_directory_stat(scheme_rktio, filename, !as_link);
-
-  if (!r) {
-    scheme_raise_exn(MZEXN_FAIL_FILESYSTEM,
-                     "file-or-directory-stat: cannot get stat result\n"
-                     "  path: %q\n"
-                     "  system error: %R",
-                     filename_for_error(argv[0]));
-    return NULL;
+    if (!r) {
+      scheme_raise_exn(MZEXN_FAIL_FILESYSTEM,
+                       "port-file-stat: cannot get stat result\n"
+                       "  system error: %R");
+      return NULL;
+    }
   }
 
   ht = scheme_make_hash_tree(0);
@@ -5056,6 +5058,30 @@ static Scheme_Object *file_stat(int argc, Scheme_Object *argv[])
   rktio_free(r);
   
   return (Scheme_Object *)ht;
+}
+
+static Scheme_Object *file_stat(int argc, Scheme_Object *argv[])
+{
+  char *filename;
+  int as_link = 0;
+
+  if (!SCHEME_PATH_STRINGP(argv[0]))
+    scheme_wrong_contract("file-or-directory-identity", "path-string?", 0, argc, argv);
+
+  filename = scheme_expand_string_filename(argv[0],
+					   "file-or-directory-identity",
+					   NULL,
+					   SCHEME_GUARD_FILE_EXISTS);
+
+  if (argc > 1)
+    as_link = SCHEME_TRUEP(argv[1]);
+
+  return file_or_fd_stat(filename, argv[0], 0, as_link);
+}
+
+Scheme_Object *scheme_get_fd_stat(intptr_t fd)
+{
+  return file_or_fd_stat(NULL, NULL, fd, 0);
 }
 
 static Scheme_Object *file_size(int argc, Scheme_Object *argv[])

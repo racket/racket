@@ -23,8 +23,13 @@
 (test #f malloc 0 _int)
 (test #f malloc _int 0)
 
+(test 0 ptr-ref (malloc 100 'zeroed-atomic) _int 10)
+(test 0 ptr-ref (malloc 100 'zeroed-atomic-interior) _int 10)
+
 (unless (eq? 'cs (system-type 'gc))
   (test 0 bytes-length (make-sized-byte-string #f 0)))
+
+(err/rt-test (malloc 'atomic) exn:fail:contract? #rx"no size given")
 
 ;; Check integer-range checking:
 (let ()
@@ -736,11 +741,9 @@
   (define p (cast (ptr-add (malloc 10) 5) _pointer _thing-pointer))
   (test #t cpointer-gcable? p)
   (define q (cast p _thing-pointer _stuff-pointer))
-  (test (cast p _pointer _intptr)
-        cast q _pointer _intptr)
+  (test #t ptr-equal? p q)
   (collect-garbage)
-  (test (cast p _thing-pointer _intptr)
-        cast q _stuff-pointer _intptr))
+  (test #t ptr-equal? p q))
 
 ;; For casts where the BC output might share with the input, so
 ;; an offset pointer needs to be 'atomic-interior
@@ -1409,6 +1412,13 @@
   (test #t ctype? (_vector o _int 10))
   (test #t ctype? (_vector io _int 10)))
 
+(test #t ctype? (_ptr i _int atomic))
+(test #t ctype? (_ptr i _int zeroed-atomic))
+(test #t ctype? (_ptr i _int atomic-interior))
+(test #t ctype? (_ptr i _int zeroed-atomic-interior))
+
+(syntax-test #'(_ptr i _int magic))
+
 ;; ----------------------------------------
 
 (define-cpointer-type _foo)
@@ -1531,7 +1541,7 @@
     (go (- (expt 2 63)) (- 256 (expt 2 63))))
 
   (let ()
-    (define p (cast bstr _pointer _pointer))
+    (define p (malloc 10 'atomic-interior))
     (for ([i (in-range 100)])
       (ptr-set! bstr _pointer (ptr-add p i))
       (ptr-set! bstr _pointer 2 p)

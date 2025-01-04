@@ -348,13 +348,13 @@
 (test 'c list-ref '(a b c d) 2)
 (test 'c list-ref '(a b c . d) 2)
 (arity-test list-ref 2 2)
-(err/rt-test (list-ref 1 1) exn:application:mismatch?)
+(err/rt-test (list-ref 1 1) exn:application:mismatch? #rx"contract violation.*pair[?]")
 (err/rt-test (list-ref '(a b . c) 2) exn:application:mismatch? #rx"index reaches a non-pair")
-(err/rt-test (list-ref '(1 2 3) 2.0))
-(err/rt-test (list-ref '(1) '(1)))
+(err/rt-test (list-ref '(1 2 3) 2.0) exn:fail:contract? #rx"contract violation.*exact-nonnegative-integer[?]")
+(err/rt-test (list-ref '(1) '(1)) exn:fail:contract? #rx"contract violation.*exact-nonnegative-integer[?]")
 (err/rt-test (list-ref '(1) 1) exn:application:mismatch? #rx"index too large for list")
-(err/rt-test (list-ref '() 0) exn:application:mismatch?)
-(err/rt-test (list-ref '(1) -1))
+(err/rt-test (list-ref '() 0) exn:application:mismatch? #rx"contract violation.*pair[?]")
+(err/rt-test (list-ref '(1) -1) exn:fail:contract? #rx"contract violation.*exact-nonnegative-integer[?]")
 (err/rt-test (list-ref '(1) 2000000000000) exn:application:mismatch?)
 
 (test '(c d) list-tail '(a b c d) 2)
@@ -362,10 +362,11 @@
 (test '(b c . d) list-tail '(a b c . d) 1)
 (test 1 list-tail 1 0)
 (arity-test list-tail 2 2)
-(err/rt-test (list-tail 1 1) exn:application:mismatch?)
-(err/rt-test (list-tail '(1 2 3) 2.0))
-(err/rt-test (list-tail '(1) '(1)))
-(err/rt-test (list-tail '(1) -1))
+(err/rt-test (list-tail 1 1) exn:application:mismatch? #rx"index reaches a non-pair")
+(err/rt-test (list-tail null 1) exn:application:mismatch? #rx"index too large for list")
+(err/rt-test (list-tail '(1 2 3) 2.0) exn:fail:contract? #rx"contract violation.*exact-nonnegative-integer[?]")
+(err/rt-test (list-tail '(1) '(1)) exn:fail:contract? #rx"contract violation.*exact-nonnegative-integer[?]")
+(err/rt-test (list-tail '(1) -1)exn:fail:contract? #rx"contract violation.*exact-nonnegative-integer[?]")
 (err/rt-test (list-tail '(1) 2) exn:application:mismatch? #rx"index too large for list")
 (err/rt-test (list-tail '(1 2 . 3) 3) exn:application:mismatch? #rx"index reaches a non-pair")
 
@@ -893,14 +894,19 @@
 (test #\a integer->char (char->integer #\a))
 (test #\371 integer->char (char->integer #\371))
 (test #\U12345 integer->char (char->integer #\U12345))
+(test #\0 integer->char (char->integer #\0))
+(test #\U10FFFF integer->char (char->integer #\U10FFFF))
 (arity-test integer->char 1 1)
 (arity-test char->integer 1 1)
-(err/rt-test (integer->char 5.0))
-(err/rt-test (integer->char 'a))
-(err/rt-test (integer->char -1))
-(err/rt-test (integer->char (expt 2 32)))
-(err/rt-test (integer->char 10000000000000000))
-(err/rt-test (char->integer 5))
+(let ([rx #rx"[(]and/c [(]integer-in 0 #x10FFFF[)] [(]not/c [(]integer-in #xD800 #xDFFF[)][)][)]"])
+  (err/rt-test (integer->char 5.0) exn:fail:contract? rx)
+  (err/rt-test (integer->char 'a) exn:fail:contract? rx)
+  (err/rt-test (integer->char -1) exn:fail:contract? rx)
+  (err/rt-test (integer->char (expt 2 32) exn:fail:contract? rx))
+  (err/rt-test (integer->char 10000000000000000) exn:fail:contract? rx)
+  (err/rt-test (integer->char #xD800) exn:fail:contract? rx)
+  (err/rt-test (integer->char #xDFFF) exn:fail:contract? rx))
+(err/rt-test (char->integer 5) exn:fail:contract? #rx"char[?]")
 
 (define (test-up/down case case-name members memassoc)
   (let loop ([n 0])
@@ -916,26 +922,37 @@
 (test-up/down char-upcase 'char-upcase lowers (map cons lowers uppers))
 (test-up/down char-downcase 'char-downcase uppers (map cons uppers lowers))
 
+(define 64-bit-machine? (eq? (expt 2 40) (eq-hash-code (expt 2 40))))
+
 (test #t string? "The word \"recursion\\\" has many meanings.")
 (test #t string? "")
 (arity-test string? 1 1)
 (test 3 'make-string (string-length (make-string 3)))
 (test "" make-string 0)
 (arity-test make-string 1 2)
-(err/rt-test (make-string "hello"))
-(err/rt-test (make-string 5 "hello"))
-(err/rt-test (make-string 5.0 #\b))
-(err/rt-test (make-string 5.2 #\a))
-(err/rt-test (make-string -5 #\f))
-(define 64-bit-machine? (eq? (expt 2 40) (eq-hash-code (expt 2 40))))
+(err/rt-test (make-string "hello") exn:fail:contract? "exact-nonnegative-integer[?]")
+(err/rt-test (make-string 5 "hello") exn:fail:contract? "char[?]")
+(err/rt-test (make-string 5.0 #\b) exn:fail:contract? "exact-nonnegative-integer[?]")
+(err/rt-test (make-string 5.2 #\a) exn:fail:contract? "exact-nonnegative-integer[?]")
+(err/rt-test (make-string -5 #\f) exn:fail:contract? "exact-nonnegative-integer[?]")
 (unless 64-bit-machine?
   (err/rt-test (make-string 500000000000000 #\f) exn:fail:out-of-memory?)) ;; bignum on 32-bit machines
 (err/rt-test (make-string 50000000000000000000 #\f) exn:fail:out-of-memory?)  ;; bignum on 64-bit machines
 
+(test #t vector? (make-vector 0))
+(test #(0 0 0 0 0) make-vector 5)
+(test #(0 0 0 0 0) make-vector 5 0)
+(err/rt-test (make-vector "oops") exn:fail:contract? "exact-nonnegative-integer[?]")
+(err/rt-test (make-vector 5.0 0) exn:fail:contract? "exact-nonnegative-integer[?]")
+(err/rt-test (make-vector 5.2 0) exn:fail:contract? "exact-nonnegative-integer[?]")
+(err/rt-test (make-vector -5 0) exn:fail:contract? "exact-nonnegative-integer[?]")
 (unless 64-bit-machine?
   (err/rt-test (make-vector 1234567890 #\f) exn:fail:out-of-memory?)
+  (err/rt-test (make-vector 500000000000000 0) exn:fail:out-of-memory?))
+(err/rt-test (make-vector 50000000000000000000 0) exn:fail:out-of-memory?)
+
+(unless 64-bit-machine?
   (err/rt-test (read (open-input-string "#1234567890(0)")) exn:fail:out-of-memory?))
-(test #t vector? (make-vector 0))
 
 (let ([b (vector 1 2 3)])
   (vector-copy! b 0 b 1)
@@ -1262,12 +1279,12 @@
 (test 3 'make-bytes (bytes-length (make-bytes 3)))
 (test #"" make-bytes 0)
 (arity-test make-bytes 1 2)
-(err/rt-test (make-bytes #"hello"))
-(err/rt-test (make-bytes 5 #"hello"))
-(err/rt-test (make-bytes 5.0 98))
-(err/rt-test (make-bytes 5.2 97))
-(err/rt-test (make-bytes -5 98))
-(err/rt-test (make-bytes 50000000000000000000 #\f))
+(err/rt-test (make-bytes #"hello") exn:fail:contract? "exact-nonnegative-integer[?]")
+(err/rt-test (make-bytes 5 #"hello") exn:fail:contract? "byte[?]")
+(err/rt-test (make-bytes 5.0 98) exn:fail:contract? "exact-nonnegative-integer[?]")
+(err/rt-test (make-bytes 5.2 97) exn:fail:contract? "exact-nonnegative-integer[?]")
+(err/rt-test (make-bytes -5 98) exn:fail:contract? "exact-nonnegative-integer[?]")
+(err/rt-test (make-bytes 50000000000000000000 #\f) exn:fail:contract? "byte?")
 (unless 64-bit-machine?
   (err/rt-test (make-bytes 500000000000000 45) exn:fail:out-of-memory?)) ;; bignum on 32-bit machines
 (err/rt-test (make-bytes 50000000000000000000 45) exn:fail:out-of-memory?)  ;; bignum on 64-bit machines
@@ -2566,6 +2583,51 @@
   (err/rt-test (apply raise-argument-error 'f "something/c" 124 vals)
                exn:fail:contract? #rx"argument position: 125th")
   )
+
+(parameterize ([error-value->string-handler
+                (lambda (v len)
+                  (if (string? v)
+                      v
+                      (format "~s" v)))])
+  (err/rt-test/once (raise-argument-error 'f "something" "one line")
+                    exn:fail:contract?
+                    #rx"given: one line")
+  (err/rt-test/once (raise-argument-error 'f "something" "two\n lines")
+                    exn:fail:contract?
+                    #rx"given: \n   two\n    lines")
+  (err/rt-test/once (raise-argument-error 'f "something" "\ntwo\n lines")
+                    exn:fail:contract?
+                    #rx"given: \ntwo\n lines")
+  (err/rt-test/once (raise-arguments-error
+                     'f
+                     "fail"
+                     "something" "two\n lines"
+                     "more" "three\nmore\nlines")
+                    exn:fail:contract?
+                    #rx"something: \n   two\n    lines.*more: \n   three\n   more\n   lines")
+  (err/rt-test/once (raise-arguments-error
+                     'f
+                     "fail"
+                     "something" "two\n lines"
+                     "more" (unquoted-printing-string "three\nmore\nlines"))
+                    exn:fail:contract?
+                    #rx"something: \n   two\n    lines.*more: \n   three\n   more\n   lines")
+  (err/rt-test/once (raise-argument-error
+                     'f
+                     "something"
+                     0
+                     "whatever"
+                     "two\n lines"
+                     "three\nmore\nlines")
+                    exn:fail:contract?
+                    #rx"other arguments[.][.][.]:\n   two\n    lines\n   three\n   more\n   lines")
+  (err/rt-test/once (+ 1 "two\n lines")
+                    exn:fail:contract?
+                    #rx"given: \n   two\n    lines")
+  (err/rt-test/once ("two\n lines" 1)
+                    exn:fail:contract?
+                    #rx"given: \n   two\n    lines")
+)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; continuations

@@ -109,7 +109,11 @@
 
 (define (write-xexpr x [out (current-output-port)]
                      #:insert-newlines? [insert-newlines? #f])
-  (define short (empty-tag-shorthand))
+  (define short
+    (let ([s (empty-tag-shorthand)])
+      (if (list? s)
+          (map lowercase-symbol s)
+          s)))
   (define unescaped (current-unescaped-tags))
   (let loop ([x x] [escape? #t])
     (cond

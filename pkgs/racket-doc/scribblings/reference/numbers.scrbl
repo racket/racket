@@ -950,7 +950,7 @@ state space of practically 192 bits.
 When security is a concern, use @racket[crypto-random-bytes]
 instead of @racket[random].
 
-The @racketmodname[racket/math #:indirect] library provides @seclink[
+The @racketmodname[math/base #:indirect] library provides @seclink[
  #:indirect? #t #:doc '(lib "math/scribblings/math.scrbl") "Random_Number_Generation"]{
   additional functions for random number generation}
 without the limit of @racket[4294967087].

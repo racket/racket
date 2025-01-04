@@ -363,7 +363,7 @@ typedef struct {
 
   /* If this is enabled, then a raw closure has the same layout 
      as a regular closure.  We use this to install an intermediate 
-     handler to do the transaltion, void** -> ffi_raw*.  */
+     handler to do the translation, void** -> ffi_raw*.  */
 
   void     (*translate_args)(ffi_cif*,void*,void**,void*);
   void      *this_closure;
@@ -429,7 +429,7 @@ ffi_prep_java_raw_closure_loc (ffi_java_raw_closure*,
 
 #endif /* FFI_CLOSURES */
 
-#if FFI_GO_CLOSURES
+#ifdef FFI_GO_CLOSURES
 
 typedef struct {
   void      *tramp;

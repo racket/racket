@@ -464,3 +464,10 @@ pipe instead of a file, the @exnraise[exn:fail:filesystem].
 (close-output-port file1)
 (close-output-port file2)
 ]}
+
+@defproc[(port-file-stat [port file-stream-port?]) (and/c (hash/c symbol? any/c) hash-eq?)]{
+
+Like @racket[file-or-directory-stat], but returns information for an
+open file represented by a port, instead using of the file's path.
+
+@history[#:added "8.15.0.6"]}

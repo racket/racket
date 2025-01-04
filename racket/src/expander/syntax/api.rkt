@@ -231,7 +231,15 @@
   (cond
     [(module-binding? b)
      (define ctx (get-current-expand-context #:fail-ok? #t))
-     (define phase-shift (phase- phase (module-binding-phase b)))
+     (define phase-shift (if (module-binding-phase b)
+                             (phase- phase (module-binding-phase b))
+                             ;; If the portal is bound at the label phase, then
+                             ;; the relevant instantion of its enclosing module is
+                             ;; ambiguous. We don't want to shift to the label phase
+                             ;; and lose information, so we instead phase 0, which
+                             ;; seems roughly in line with the way that shifting
+                             ;; to a label phase pulls only from phase 0
+                             0))
      (define portal-syntax-lookup
        (namespace-module-get-portal-syntax-lookup (if ctx
                                                       (expand-context-namespace ctx)

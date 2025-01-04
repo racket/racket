@@ -34,8 +34,10 @@
                          ;; that contains just one module should be omitted
                          ;; from any pane, leaving a reference to the original
                          ;; external module, instead
-                         #:external-singetons? external-singletons?)
-  (define top-path (normalize-path orig-top-path))
+                         #:external-singetons? external-singletons?
+                         #:include-submods include-submods
+                         #:exclude-submods exclude-submods)
+  (define top-path (simple-form-path orig-top-path))
 
   ;; pane = (cons (set entry ...) (set phase ...))
   ;; Non-slice mode:
@@ -181,9 +183,16 @@
           (cond
             [(eq? submod 'many) 'many]
             [(equal? (path/submod-path path/submod) top-path)
-             (if (not submod)
-                 (path/submod-submod path/submod)
-                 'many)]
+             (define sm (path/submod-submod path/submod))
+             (cond
+               [(or (null? sm)
+                    (and (or (not include-submods)
+                             (member sm include-submods))
+                         (not (member sm exclude-submods))))
+                (if (not submod)
+                    (path/submod-submod path/submod)
+                    'many)]
+               [else submod])]
             [else submod])))
       (when (eq? unique-submod 'many)
         (error "two entry-point submodules are in the same pane"))

@@ -8,7 +8,8 @@
          "merged.rkt"
          "name.rkt"
          "remap.rkt"
-         "binding-lookup.rkt")
+         "binding-lookup.rkt"
+         "path-submod.rkt")
 
 ;; Prune unnused definitions,
 ;;  * soundly, with a simple approximation of `pure?`, by default
@@ -56,7 +57,7 @@
          (define b (identifier-binding (intro stx 'add) phase))
          (when (list? b)
            (define mpi (car b))
-           (define path/submod (resolved-module-path-name (module-path-index-resolve mpi)))
+           (define path/submod (resolved-module-path->path/submod (module-path-index-resolve mpi)))
            (define sym (cadr b))
            (define phase (list-ref b 4))
            (define-values (new-name at-phase)

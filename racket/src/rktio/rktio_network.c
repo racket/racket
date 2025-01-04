@@ -727,10 +727,10 @@ rktio_addrinfo_lookup_t *rktio_start_addrinfo_lookup(rktio_t *rktio,
   /* On modern systems, `AI_ADDRCONFIG` and `AI_V4MAPPED` tend to be
      the defaults when `hints` is NULL, so add them if they seem
      available. */
-#ifdef AI_ADDRCONFIG
+#if defined(AI_ADDRCONFIG)
   RKTIO_AS_ADDRINFO(hints)->ai_flags |= AI_ADDRCONFIG;
 #endif
-#ifdef AI_V4MAPPED
+#if defined(AI_V4MAPPED) && !defined(__ANDROID__)
   RKTIO_AS_ADDRINFO(hints)->ai_flags |= AI_V4MAPPED;
 #endif
   if (tcp) {

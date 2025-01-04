@@ -176,6 +176,7 @@
                 (1/pipe-content-length pipe-content-length)
                 (pipe-input-port?* pipe-input-port?)
                 (pipe-output-port?* pipe-output-port?)
+                (1/pipe-port? pipe-port?)
                 (1/port-closed-evt port-closed-evt)
                 (1/port-closed? port-closed?)
                 (1/port-commit-peeked port-commit-peeked)
@@ -184,6 +185,7 @@
                 (1/port-counts-lines? port-counts-lines?)
                 (1/port-display-handler port-display-handler)
                 (1/port-file-identity port-file-identity)
+                (1/port-file-stat port-file-stat)
                 (1/port-file-unlock port-file-unlock)
                 (1/port-next-location port-next-location)
                 (1/port-print-handler port-print-handler)
@@ -1849,7 +1851,7 @@
                           (vector-copy! vec_0 start_0 work-vec_0 0 n_0)))))))
               (void)))
           (|#%app| vector-sort! vec_0 less-than?_0 start_0 end_0))))))))
-(define 1/raise-argument-error
+(define raise-argument-error$1
   (|#%name|
    raise-argument-error
    (lambda (who_0 . args_0)
@@ -1886,7 +1888,7 @@
               #f)
             #f)
         (void)
-        (1/raise-argument-error
+        (raise-argument-error$1
          'guard-for-prop:stream
          (string-append
           "(vector/c (procedure-arity-includes/c 1)\n"
@@ -1904,7 +1906,7 @@
     (begin
       (if (if (procedure? v_0) (procedure-arity-includes? v_0 1) #f)
         (void)
-        (1/raise-argument-error
+        (raise-argument-error$1
          'guard-for-prop:sequence
          "(procedure-arity-includes/c 1)"
          v_0))
@@ -1942,16 +1944,16 @@
 (define check-range-generic
   (lambda (who_0 a_0 b_0 step_0)
     (begin
-      (if (real? a_0) (void) (1/raise-argument-error who_0 "real?" a_0))
-      (if (real? b_0) (void) (1/raise-argument-error who_0 "real?" b_0))
+      (if (real? a_0) (void) (raise-argument-error$1 who_0 "real?" a_0))
+      (if (real? b_0) (void) (raise-argument-error$1 who_0 "real?" b_0))
       (if (real? step_0)
         (void)
-        (1/raise-argument-error who_0 "real?" step_0)))))
+        (raise-argument-error$1 who_0 "real?" step_0)))))
 (define check-naturals
   (lambda (n_0)
     (if (if (integer? n_0) (if (exact? n_0) (>= n_0 0) #f) #f)
       (void)
-      (1/raise-argument-error 'in-naturals "exact-nonnegative-integer?" n_0))))
+      (raise-argument-error$1 'in-naturals "exact-nonnegative-integer?" n_0))))
 (define-values
  (struct:list-stream
   make-list-stream
@@ -1977,21 +1979,21 @@
       (values car cdr values (|#%app| list-stream-ref v_0 0) pair? #f #f))))))
 (define check-list
   (lambda (l_0)
-    (if (list? l_0) (void) (1/raise-argument-error 'in-list "list?" l_0))))
+    (if (list? l_0) (void) (raise-argument-error$1 'in-list "list?" l_0))))
 (define check-in-hash
   (lambda (ht_0)
-    (if (hash? ht_0) (void) (1/raise-argument-error 'in-hash "hash?" ht_0))))
+    (if (hash? ht_0) (void) (raise-argument-error$1 'in-hash "hash?" ht_0))))
 (define check-in-hash-keys
   (lambda (ht_0)
     (if (hash? ht_0)
       (void)
-      (1/raise-argument-error 'in-hash-keys "hash?" ht_0))))
+      (raise-argument-error$1 'in-hash-keys "hash?" ht_0))))
 (define check-ranges
   (lambda (who_0 type-name_0 vec_0 start_0 stop_0 step_0 len_0)
     (begin
       (if (exact-nonnegative-integer? start_0)
         (void)
-        (1/raise-argument-error who_0 "exact-nonnegative-integer?" start_0))
+        (raise-argument-error$1 who_0 "exact-nonnegative-integer?" start_0))
       (if (let ((or-part_0 (< start_0 len_0)))
             (if or-part_0 or-part_0 (= len_0 start_0 stop_0)))
         (void)
@@ -2005,7 +2007,7 @@
          (sub1 len_0)))
       (if (exact-integer? stop_0)
         (void)
-        (1/raise-argument-error who_0 "exact-integer?" stop_0))
+        (raise-argument-error$1 who_0 "exact-integer?" stop_0))
       (if (if (<= -1 stop_0) (<= stop_0 len_0) #f)
         (void)
         (1/raise-range-error
@@ -2018,7 +2020,7 @@
          len_0))
       (if (if (exact-integer? step_0) (not (zero? step_0)) #f)
         (void)
-        (1/raise-argument-error
+        (raise-argument-error$1
          who_0
          "(and/c exact-integer? (not/c zero?))"
          step_0))
@@ -2056,7 +2058,7 @@
     (begin
       (if (|#%app| vector?_0 vec_0)
         (void)
-        (1/raise-argument-error who_0 (string-append type-name_0 "?") vec_0))
+        (raise-argument-error$1 who_0 (string-append type-name_0 "?") vec_0))
       (let ((len_0 (|#%app| unsafe-vector-length_0 vec_0)))
         (let ((stop*_0 (if stop_0 stop_0 len_0)))
           (begin
@@ -2073,17 +2075,17 @@
   (lambda (v_0)
     (if (vector? v_0)
       (void)
-      (1/raise-argument-error 'in-vector (string-append "vector" "?") v_0))))
+      (raise-argument-error$1 'in-vector (string-append "vector" "?") v_0))))
 (define check-string
   (lambda (v_0)
     (if (string? v_0)
       (void)
-      (1/raise-argument-error 'in-string (string-append "string" "?") v_0))))
+      (raise-argument-error$1 'in-string (string-append "string" "?") v_0))))
 (define check-bytes
   (lambda (v_0)
     (if (bytes? v_0)
       (void)
-      (1/raise-argument-error 'in-bytes (string-append "bytes" "?") v_0))))
+      (raise-argument-error$1 'in-bytes (string-append "bytes" "?") v_0))))
 (define-values
  (struct:do-stream make-do-stream do-stream? do-stream-ref do-stream-set!)
  (make-struct-type
@@ -3068,6 +3070,7 @@
   (hash-ref rktio-table 'rktio_set_file_modify_seconds))
 (define rktio_file_or_directory_stat
   (hash-ref rktio-table 'rktio_file_or_directory_stat))
+(define rktio_fd_stat (hash-ref rktio-table 'rktio_fd_stat))
 (define rktio_fd_identity (hash-ref rktio-table 'rktio_fd_identity))
 (define rktio_path_identity (hash-ref rktio-table 'rktio_path_identity))
 (define rktio_get_file_or_directory_permissions
@@ -7010,6 +7013,15 @@
    (lambda (p_0)
      (let ((cp_0 (->core-output-port.1 unsafe-undefined p_0 #f)))
        (pipe-output-port? p_0)))))
+(define 1/pipe-port?
+  (|#%name|
+   pipe-port?
+   (lambda (p_0)
+     (if (1/input-port? p_0)
+       (pipe-input-port?* p_0)
+       (if (1/output-port? p_0)
+         (pipe-output-port?* p_0)
+         (raise-argument-error 'pipe-port? "port?" p_0))))))
 (define 1/pipe-content-length
   (|#%name|
    pipe-content-length
@@ -7027,8 +7039,8 @@
                   (if c1_0
                     (pipe-output-port-d c1_0)
                     (raise-argument-error
-                     'pipe-contact-length
-                     "(or/c pipe-input-port? pipe-output-port?)"
+                     'pipe-content-length
+                     "pipe-port?"
                      p_0)))))))
        (begin
          (unsafe-start-atomic)
@@ -10910,7 +10922,13 @@
                                                      (loop_0 in_0)))
                                                  (if (evt? v_1)
                                                    (if zero-ok?20_0
-                                                     0
+                                                     (let ((r_0
+                                                            (sync/timeout
+                                                             0
+                                                             v_1)))
+                                                       (if r_0
+                                                         (result-loop_0 r_0)
+                                                         0))
                                                      (result-loop_0
                                                       (if enable-break?21_0
                                                         (sync/enable-break v_1)
@@ -25363,6 +25381,152 @@
                 #f
                 p_0
                 'port-file-identity)))))))))
+(define path-or-fd-stat.1
+  (|#%name|
+   path-or-fd-stat
+   (lambda (as-link?2_0 fd3_0 host-path1_0 port4_0 who9_0)
+     (let ((r0_0
+            (if fd3_0
+              (|#%app| rktio_fd_stat (unsafe-place-local-ref cell.1) fd3_0)
+              (|#%app|
+               rktio_file_or_directory_stat
+               (unsafe-place-local-ref cell.1)
+               host-path1_0
+               (not as-link?2_0)))))
+       (let ((r_0
+              (if (vector? r0_0)
+                r0_0
+                (begin0
+                  (|#%app| rktio_stat_to_vector r0_0)
+                  (|#%app| rktio_free r0_0)))))
+         (begin
+           (unsafe-end-atomic)
+           (if (vector? r0_0)
+             (raise-filesystem-error
+              who9_0
+              r_0
+              (string-append
+               "cannot get stat result\n"
+               (if host-path1_0
+                 (1/format "  path: ~a" (host-> host-path1_0))
+                 "")))
+             (let ((combined-nanoseconds_0
+                    (|#%name|
+                     combined-nanoseconds
+                     (lambda (seconds-index_0)
+                       (let ((app_0
+                              (* 1000000000 (vector-ref r_0 seconds-index_0))))
+                         (+ app_0 (vector-ref r_0 (add1 seconds-index_0))))))))
+               (let ((main-hash_0
+                      (let ((app_0 (vector-ref r_0 0)))
+                        (let ((app_1 (vector-ref r_0 1)))
+                          (let ((app_2 (vector-ref r_0 2)))
+                            (let ((app_3 (vector-ref r_0 3)))
+                              (let ((app_4 (vector-ref r_0 4)))
+                                (let ((app_5 (vector-ref r_0 5)))
+                                  (let ((app_6 (vector-ref r_0 6)))
+                                    (let ((app_7 (vector-ref r_0 7)))
+                                      (let ((app_8 (vector-ref r_0 8)))
+                                        (let ((app_9 (vector-ref r_0 9)))
+                                          (let ((app_10 (vector-ref r_0 10)))
+                                            (let ((app_11
+                                                   (combined-nanoseconds_0
+                                                    10)))
+                                              (let ((app_12
+                                                     (vector-ref r_0 12)))
+                                                (hasheq
+                                                 'device-id
+                                                 app_0
+                                                 'inode
+                                                 app_1
+                                                 'mode
+                                                 app_2
+                                                 'hardlink-count
+                                                 app_3
+                                                 'user-id
+                                                 app_4
+                                                 'group-id
+                                                 app_5
+                                                 'device-id-for-special-file
+                                                 app_6
+                                                 'size
+                                                 app_7
+                                                 'block-size
+                                                 app_8
+                                                 'block-count
+                                                 app_9
+                                                 'access-time-seconds
+                                                 app_10
+                                                 'access-time-nanoseconds
+                                                 app_11
+                                                 'modify-time-seconds
+                                                 app_12
+                                                 'modify-time-nanoseconds
+                                                 (combined-nanoseconds_0
+                                                  12)))))))))))))))))
+                 (let ((ctime-hash_0
+                        (if (vector-ref r_0 15)
+                          (let ((app_0 (vector-ref r_0 14)))
+                            (hasheq
+                             'change-time-seconds
+                             app_0
+                             'change-time-nanoseconds
+                             (combined-nanoseconds_0 14)
+                             'creation-time-seconds
+                             0
+                             'creation-time-nanoseconds
+                             0))
+                          (let ((app_0 (vector-ref r_0 14)))
+                            (hasheq
+                             'change-time-seconds
+                             0
+                             'change-time-nanoseconds
+                             0
+                             'creation-time-seconds
+                             app_0
+                             'creation-time-nanoseconds
+                             (combined-nanoseconds_0 14))))))
+                   (letrec*
+                    ((for-loop_0
+                      (|#%name|
+                       for-loop
+                       (lambda (new-hash_0 i_0)
+                         (if i_0
+                           (call-with-values
+                            (lambda ()
+                              (hash-iterate-key+value ctime-hash_0 i_0))
+                            (lambda (key_0 value_0)
+                              (let ((new-hash_1
+                                     (let ((new-hash_1
+                                            (hash-set
+                                             new-hash_0
+                                             key_0
+                                             value_0)))
+                                       (values new-hash_1))))
+                                (for-loop_0
+                                 new-hash_1
+                                 (hash-iterate-next ctime-hash_0 i_0)))))
+                           new-hash_0)))))
+                    (for-loop_0
+                     main-hash_0
+                     (hash-iterate-first ctime-hash_0)))))))))))))
+(define 1/port-file-stat
+  (|#%name|
+   port-file-stat
+   (lambda (p_0)
+     (begin
+       (if (1/file-stream-port? p_0)
+         (void)
+         (raise-argument-error 'port-file-stat "file-stream-port?" p_0))
+       (let ((cp_0
+              (let ((or-part_0 (->core-input-port.1 #f p_0 #f)))
+                (if or-part_0 or-part_0 (->core-output-port.1 #f p_0 #f)))))
+         (begin
+           (unsafe-start-atomic)
+           (begin
+             (check-not-closed 'port-file-stat cp_0)
+             (let ((fd_0 (|#%app| (file-stream-ref cp_0) cp_0)))
+               (path-or-fd-stat.1 #f fd_0 #f p_0 'port-file-stat)))))))))
 (define 1/port-try-file-lock?
   (|#%name|
    port-try-file-lock?
@@ -25813,7 +25977,8 @@
                                                                       (=
                                                                        len_0
                                                                        dest-end_0)))))
-                                                             (make-bytes len_0)
+                                                             (make-bytes
+                                                              (min len_0 8192))
                                                              dest-bstr_0)))
                                                       (let ((n_0
                                                              (|#%app|
@@ -28053,11 +28218,12 @@
           'file-or-directory-modify-seconds
           "path-string?"
           p_0))
-       (if (exact-integer? secs_0)
+       (if (let ((or-part_0 (not secs_0)))
+             (if or-part_0 or-part_0 (exact-integer? secs_0)))
          (void)
          (raise-argument-error
           'file-or-directory-modify-seconds
-          "exact-integer?"
+          "(or/c #f exact-integer?)"
           secs_0))
        (do-file-or-directory-modify-seconds
         'file-or-directory-modify-seconds
@@ -28244,151 +28410,12 @@
                      (->host p12_0 'file-or-directory-stat '(exists))))
                 (begin
                   (unsafe-start-atomic)
-                  (let ((r0_0
-                         (|#%app|
-                          rktio_file_or_directory_stat
-                          (unsafe-place-local-ref cell.1)
-                          host-path_0
-                          (not as-link?11_0))))
-                    (let ((r_0
-                           (if (vector? r0_0)
-                             r0_0
-                             (begin0
-                               (|#%app| rktio_stat_to_vector r0_0)
-                               (|#%app| rktio_free r0_0)))))
-                      (begin
-                        (unsafe-end-atomic)
-                        (if (vector? r0_0)
-                          (raise-filesystem-error
-                           'file-or-directory-stat
-                           r_0
-                           (let ((app_0
-                                  (string-append
-                                   "cannot get stat result\n"
-                                   "  path: ~a")))
-                             (1/format app_0 (host-> host-path_0))))
-                          (let ((combined-nanoseconds_0
-                                 (|#%name|
-                                  combined-nanoseconds
-                                  (lambda (seconds-index_0)
-                                    (let ((app_0
-                                           (*
-                                            1000000000
-                                            (vector-ref r_0 seconds-index_0))))
-                                      (+
-                                       app_0
-                                       (vector-ref
-                                        r_0
-                                        (add1 seconds-index_0))))))))
-                            (let ((main-hash_0
-                                   (let ((app_0 (vector-ref r_0 0)))
-                                     (let ((app_1 (vector-ref r_0 1)))
-                                       (let ((app_2 (vector-ref r_0 2)))
-                                         (let ((app_3 (vector-ref r_0 3)))
-                                           (let ((app_4 (vector-ref r_0 4)))
-                                             (let ((app_5 (vector-ref r_0 5)))
-                                               (let ((app_6
-                                                      (vector-ref r_0 6)))
-                                                 (let ((app_7
-                                                        (vector-ref r_0 7)))
-                                                   (let ((app_8
-                                                          (vector-ref r_0 8)))
-                                                     (let ((app_9
-                                                            (vector-ref
-                                                             r_0
-                                                             9)))
-                                                       (let ((app_10
-                                                              (vector-ref
-                                                               r_0
-                                                               10)))
-                                                         (let ((app_11
-                                                                (combined-nanoseconds_0
-                                                                 10)))
-                                                           (let ((app_12
-                                                                  (vector-ref
-                                                                   r_0
-                                                                   12)))
-                                                             (hasheq
-                                                              'device-id
-                                                              app_0
-                                                              'inode
-                                                              app_1
-                                                              'mode
-                                                              app_2
-                                                              'hardlink-count
-                                                              app_3
-                                                              'user-id
-                                                              app_4
-                                                              'group-id
-                                                              app_5
-                                                              'device-id-for-special-file
-                                                              app_6
-                                                              'size
-                                                              app_7
-                                                              'block-size
-                                                              app_8
-                                                              'block-count
-                                                              app_9
-                                                              'access-time-seconds
-                                                              app_10
-                                                              'access-time-nanoseconds
-                                                              app_11
-                                                              'modify-time-seconds
-                                                              app_12
-                                                              'modify-time-nanoseconds
-                                                              (combined-nanoseconds_0
-                                                               12)))))))))))))))))
-                              (let ((ctime-hash_0
-                                     (if (vector-ref r_0 15)
-                                       (let ((app_0 (vector-ref r_0 14)))
-                                         (hasheq
-                                          'change-time-seconds
-                                          app_0
-                                          'change-time-nanoseconds
-                                          (combined-nanoseconds_0 14)
-                                          'creation-time-seconds
-                                          0
-                                          'creation-time-nanoseconds
-                                          0))
-                                       (let ((app_0 (vector-ref r_0 14)))
-                                         (hasheq
-                                          'change-time-seconds
-                                          0
-                                          'change-time-nanoseconds
-                                          0
-                                          'creation-time-seconds
-                                          app_0
-                                          'creation-time-nanoseconds
-                                          (combined-nanoseconds_0 14))))))
-                                (letrec*
-                                 ((for-loop_0
-                                   (|#%name|
-                                    for-loop
-                                    (lambda (new-hash_0 i_0)
-                                      (if i_0
-                                        (call-with-values
-                                         (lambda ()
-                                           (hash-iterate-key+value
-                                            ctime-hash_0
-                                            i_0))
-                                         (lambda (key_0 value_0)
-                                           (let ((new-hash_1
-                                                  (let ((new-hash_1
-                                                         (hash-set
-                                                          new-hash_0
-                                                          key_0
-                                                          value_0)))
-                                                    (values new-hash_1))))
-                                             (for-loop_0
-                                              new-hash_1
-                                              (hash-iterate-next
-                                               ctime-hash_0
-                                               i_0)))))
-                                        new-hash_0)))))
-                                 (for-loop_0
-                                  main-hash_0
-                                  (hash-iterate-first
-                                   ctime-hash_0)))))))))))))))))
+                  (path-or-fd-stat.1
+                   as-link?11_0
+                   #f
+                   host-path_0
+                   #f
+                   'file-or-directory-stat))))))))
     (|#%name|
      file-or-directory-stat
      (case-lambda
@@ -28790,53 +28817,49 @@
                   (let ((new-base_0 (combine_0 base_0 accum_0)))
                     (let ((target_0
                            (do-resolve-path new-base_0 'simplify-path)))
-                      (call-with-values
-                       (lambda ()
-                         (if (eq? target_0 new-base_0)
-                           (values new-base_0 seen_0)
-                           (let ((from-base_0
-                                  (if (1/complete-path? target_0)
-                                    target_0
-                                    (call-with-values
-                                     (lambda () (1/split-path new-base_0))
-                                     (lambda (base-dir_0 name_0 dir?_0)
-                                       (path->complete-path.1
-                                        #t
-                                        target_0
-                                        base-dir_0))))))
-                             (begin
-                               (if (hash-ref seen_0 from-base_0 #f)
-                                 (raise
-                                  (let ((app_0
-                                         (let ((msg_0
-                                                (string-append
-                                                 "cycle detected at link"
-                                                 "\n  link path: "
-                                                 (path->string new-base_0))))
-                                           (error-message->adjusted-string
-                                            who_0
-                                            'racket/primitive
-                                            msg_0
-                                            'racket/primitive))))
-                                    (|#%app|
-                                     exn:fail:filesystem
-                                     app_0
-                                     (current-continuation-marks))))
-                                 (void))
-                               (values
-                                from-base_0
-                                (hash-set seen_0 from-base_0 #t))))))
-                       (lambda (from-base_0 new-seen_0)
-                         (call-with-values
-                          (lambda () (1/split-path from-base_0))
-                          (lambda (next-base_0 name_0 dir?_0)
-                            (if (not next-base_0)
-                              (loop_0 (cdr l_1) from-base_0 '() new-seen_0)
-                              (loop_0
-                               (cdr l_1)
-                               next-base_0
-                               '()
-                               new-seen_0))))))))
+                      (if (eq? target_0 new-base_0)
+                        (call-with-values
+                         (lambda () (1/split-path new-base_0))
+                         (lambda (next-base_0 name_0 dir?_0)
+                           (if (not next-base_0)
+                             (loop_0 (cdr l_1) new-base_0 '() seen_0)
+                             (loop_0 (cdr l_1) next-base_0 '() seen_0))))
+                        (begin
+                          (if (hash-ref seen_0 new-base_0 #f)
+                            (raise
+                             (let ((app_0
+                                    (let ((msg_0
+                                           (string-append
+                                            "cycle detected at link"
+                                            "\n  link path: "
+                                            (path->string new-base_0))))
+                                      (error-message->adjusted-string
+                                       who_0
+                                       'racket/primitive
+                                       msg_0
+                                       'racket/primitive))))
+                               (|#%app|
+                                exn:fail:filesystem
+                                app_0
+                                (current-continuation-marks))))
+                            (void))
+                          (let ((new-seen_0 (hash-set seen_0 new-base_0 #t)))
+                            (if (1/complete-path? target_0)
+                              (let ((new-l_0 (1/explode-path target_0)))
+                                (let ((app_0 (append (cdr new-l_0) l_1)))
+                                  (loop_0
+                                   app_0
+                                   (car new-l_0)
+                                   null
+                                   new-seen_0)))
+                              (call-with-values
+                               (lambda () (1/split-path new-base_0))
+                               (lambda (base-dir_0 name_0 dir?_0)
+                                 (loop_0
+                                  (append (1/explode-path target_0) l_1)
+                                  base-dir_0
+                                  null
+                                  new-seen_0)))))))))
                   (let ((app_0 (cdr l_1)))
                     (loop_0
                      app_0
@@ -28847,10 +28870,10 @@
          (loop_0
           app_0
           (if (1/path? (car l_0))
-            (let ((temp6_0 (car l_0)))
-              (let ((temp7_0 (current-directory$1)))
-                (let ((temp6_1 temp6_0))
-                  (path->complete-path.1 #t temp6_1 temp7_0))))
+            (let ((temp4_0 (car l_0)))
+              (let ((temp5_0 (current-directory$1)))
+                (let ((temp4_1 temp4_0))
+                  (path->complete-path.1 #t temp4_1 temp5_0))))
             (current-directory$1))
           '()
           hash2725))))))
@@ -29681,30 +29704,28 @@
                "explanation"
                (unquoted-printing-string
                 "path can be split, is not relative, or names a special element"))))))
-      (begin
-        (if (eq? 'windows convention_0)
-          (if (call-with-values
-               (lambda () (values bstr_0 (unsafe-bytes-length bstr_0)))
-               (lambda (vec_0 len_0)
-                 (letrec*
-                  ((for-loop_0
-                    (|#%name|
-                     for-loop
-                     (lambda (result_0 pos_0)
-                       (if (unsafe-fx< pos_0 len_0)
-                         (let ((b_0 (unsafe-bytes-ref vec_0 pos_0)))
-                           (let ((result_1 (eqv? b_0 92)))
-                             (let ((result_2 (values result_1)))
-                               (if (if (not (let ((x_0 (list b_0))) result_2))
-                                     #t
-                                     #f)
-                                 (for-loop_0 result_2 (unsafe-fx+ 1 pos_0))
-                                 result_2))))
-                         result_0)))))
-                  (for-loop_0 #f 0))))
-            (bad-element_0)
-            (void))
-          (void))
+      (if (if (eq? 'windows convention_0)
+            (call-with-values
+             (lambda () (values bstr_0 (unsafe-bytes-length bstr_0)))
+             (lambda (vec_0 len_0)
+               (letrec*
+                ((for-loop_0
+                  (|#%name|
+                   for-loop
+                   (lambda (result_0 pos_0)
+                     (if (unsafe-fx< pos_0 len_0)
+                       (let ((b_0 (unsafe-bytes-ref vec_0 pos_0)))
+                         (let ((result_1 (eqv? b_0 92)))
+                           (let ((result_2 (values result_1)))
+                             (if (if (not (let ((x_0 (list b_0))) result_2))
+                                   #t
+                                   #f)
+                               (for-loop_0 result_2 (unsafe-fx+ 1 pos_0))
+                               result_2))))
+                       result_0)))))
+                (for-loop_0 #f 0))))
+            #f)
+        (if (not false-on-non-element?_0) (bad-element_0) #f)
         (let ((len_0 (unsafe-bytes-length bstr_0)))
           (let ((p_0
                  (path1.1
@@ -33037,7 +33058,11 @@
               (call-with-values
                (lambda ()
                  (if (if (pair? exact/args_0)
-                       (eq? 'exact (car exact/args_0))
+                       (if (eq? 'exact (car exact/args_0))
+                         (if (pair? (cdr exact/args_0))
+                           (null? (cddr exact/args_0))
+                           #f)
+                         #f)
                        #f)
                    (values #t (cdr exact/args_0))
                    (values #f exact/args_0)))

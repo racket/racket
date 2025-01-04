@@ -2,7 +2,8 @@
 (require racket/match
          "../private/deserialize.rkt"
          "import.rkt"
-         "binding-lookup.rkt")
+         "binding-lookup.rkt"
+         "path-submod.rkt")
 
 (provide binding-module-path-index-shift
          binding-mpi+phases
@@ -63,7 +64,7 @@
 (define (binding-sym-path/submod-phase bind)
   (define (resolve mpi)
     (define r (module-path-index-resolve mpi))
-    (resolved-module-path-name r))
+    (resolved-module-path->path/submod r))
   (cond
     [(provided? bind) (binding-sym-path/submod-phase (provided-binding bind))]
     [else
@@ -87,7 +88,7 @@
        (define (lookup mpi phase)
          (define r (module-path-index-resolve mpi))
          (define pos
-           (or (hash-ref external-path-pos (cons (resolved-module-path-name r) phase) #f)
+           (or (hash-ref external-path-pos (cons (resolved-module-path->path/submod r) phase) #f)
                ;; self-mpi:
                0))
          (when (pos . >= . mpi-count)
@@ -95,7 +96,7 @@
          pos)
        (define (lookup-sym mpi phase sym)
          (define r (module-path-index-resolve mpi))
-         (define path/submod (resolved-module-path-name r))
+         (define path/submod (resolved-module-path->path/submod r))
          (binding-lookup path/submod phase sym
                          names transformer-names
                          one-mods

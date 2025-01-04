@@ -57,7 +57,7 @@
                       #:dump-mi-output-file [dump-linklet-file (current-merged-machine-independent-output-file)]
                       #:keep-submodules? [keep-submodules? (submodule-preservation-enabled)]
                       #:external-singetons? [external-singletons? keep-syntax?])
-  (define input-path (normalize-path given-input-file))
+  (define input-path (simple-form-path given-input-file))
 
   (define work-directory (or given-work-directory
                              (make-temporary-file "demod-work-~a" 'directory)))
@@ -88,7 +88,9 @@
   (define-values (all-sorted-panes added-pane-submods)
     (partition-panes all-one-mods input-path submods
                      #:slice? (not keep-syntax?)
-                     #:external-singetons? external-singletons?))
+                     #:external-singetons? external-singletons?
+                     #:include-submods include-submods
+                     #:exclude-submods exclude-submods))
   (define-values (top-path/submods excluded-module-mpiss included-module-phasess one-mods)
     (reify-panes all-sorted-panes all-one-mods common-excluded-module-mpis
                  #:slice? (not keep-syntax?)))
@@ -186,6 +188,13 @@
       (define module-name (if (pair? submod)
                               (cons file-name submod)
                               file-name))
+      (define (only-kept-submodules submod-syms)
+        (for/list ([submod-sym (in-list submod-syms)]
+                   #:do [(define sub-submod (append submod (list submod-sym)))]
+                   #:when (and (or (not include-submods)
+                                   (member sub-submod include-submods))
+                               (not (member sub-submod exclude-submods))))
+          submod-sym))
       (define bundle
         (wrap-bundle module-name phase-merged name-imports
                      stx-vec portal-stxes
@@ -200,8 +209,10 @@
                                        (if (null? submod)
                                            added-pane-submods
                                            null)
-                                       (one-mod-pre-submodules m))
-                     #:post-submodules (one-mod-post-submodules m)
+                                       (only-kept-submodules
+                                        (one-mod-pre-submodules m)))
+                     #:post-submodules (only-kept-submodules
+                                        (one-mod-post-submodules m))
                      #:dump-output-file dump-output-file))
       (values submod bundle)))
 

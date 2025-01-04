@@ -155,6 +155,8 @@
       (unicode-categories-matcher (rx:unicode-categories-symlist rx)
                                   (rx:unicode-categories-match? rx)
                                   next-m)]
+     [(eq? rx rx:unicode-grapheme)
+      (unicode-grapheme-matcher next-m)]
      [else (error 'compile/bt "internal error: unrecognized ~s" rx)])))
 
 ;; Compile a matcher repeater, if possible; the result is

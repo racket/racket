@@ -85,6 +85,7 @@
           error-print-width
           error-value->string-handler
           error-syntax->string-handler
+          error-syntax->name-handler
           error-print-context-length
           exception-handler-key
           uncaught-exception-handler
@@ -641,6 +642,7 @@
           unsafe-flsqrt
           unsafe-flexpt
 
+          unsafe-flbit-field
           unsafe-flrandom
 
           extfl* extfl+ extfl- ->extfl

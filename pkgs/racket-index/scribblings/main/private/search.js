@@ -31,8 +31,8 @@ var prev_page_link1, prev_page_link2, next_page_link1, next_page_link2;
 //  -1 prev/next page (un-tab-able)
 
 function MakePref(label, input) {
-  return '<tr><td align="right">' + label + ':&nbsp;&nbsp;</td>'
-            +'<td>' + input + '</td></tr>';
+  return '<tr><td align="right" valign="baseline">' + label + ':&nbsp;&nbsp;</td>'
+            +'<td valign="baseline">' + input + '</td></tr>';
 }
 
 function PrefInputArgs(name, desc) {
@@ -43,23 +43,23 @@ function PrefInputArgs(name, desc) {
        +' onchange="set_'+name+'(this); return true;"'
        +' onfocus="saved_status=status_line.innerHTML;'
                  +'status_line.innerHTML=descriptions[\''+name+'\'];"'
-       +' onblur="status_line.innerHTML=(saved_status || \'\');"';
+      +' onblur="status_line.innerHTML=(saved_status || \'&nbsp;\');"';
 }
 
 function MakeChevrons(num, middle) {
-  return '<div style="text-align: center;">'
+  return '<div style="text-align: center; clear:both">'
           +'<a href="#" title="Previous Page" id="prev_page_link'+num+'"'
             +' tabIndex="-1"'
             +' style="float: left; text-decoration: none; font-weight: bold;'
                    +' font-family: monospace;"'
             +' onclick="key_handler(\'PgUp\'); return false;"'
-            +'>&lt;&lt;</a>'
+            +'>'+MakePageIcon("prev", "&lt;&lt;")+'</a>'
           +'<a href="#" title="Next Page" id="next_page_link'+num+'" '
             +'tabIndex="-1"'
             +' style="float: right; text-decoration: none; font-weight: bold;'
                    +' font-family: monospace;"'
             +' onclick="key_handler(\'PgDn\'); return false;"'
-            +'>&gt;&gt;</a>'
+            +'>'+MakePageIcon("next", "&gt;&gt;")+'</a>'
           +middle
         +'</div>';
 }
@@ -75,12 +75,36 @@ function MakeContextQueryItem(qry, desc) {
            + '</a></li>';
 }
 
-function MakeIcon(label,title,action) {
+function MakeLanguageFamilySuggestions() {
+    if (plt_language_families.length == 1) {
+        return "";
+    }
+    accum = ""
+    for (i = 0; i < plt_language_families.length; i++) {
+        accum += MakeContextQueryItem("F:" + plt_language_families[i],
+                                      plt_language_families[i] + " language family");
+    }
+    return accum;
+}
+
+function MakeSVGRef(img, padding) {
+    if (!padding) padding = "4pt"
+    return '<svg style="padding: '+padding+'; padding-bottom: 0pt; margin-bottom: -2pt" width="12pt" height="12pt" viewBox="0 0 17 17"><use href="#'+img+'"></svg>';
+}
+
+function MakeIcon(img,label,title,action) {
+  if (img) {
+      label = MakeSVGRef(img);
+  }
   return '<a href="#" title="'+title+'" tabIndex="3"'
           +' style="text-decoration: none; color: black;'
                  +' font-weight: bold; font-family: monospace;"'
           +' onclick="'+action+'; return false;"'
           +'>'+label+'</a>';
+}
+
+function MakePageIcon(img,label) {
+    return MakeSVGRef(img);
 }
 
 function InitializeSearch() {
@@ -96,10 +120,9 @@ function InitializeSearch() {
     '<div style="width: 100%; margin: 0em; padding: 0em;'
               +' background-color: '+background_color+';">'
       +'<div style="'+panelbgcolor+'">'
-        +'<div style="float: right; border-color: #222; border-style: solid;'
-                   +' border-width: 1px 1px 0px 0px;">'
-          +MakeIcon("[?]", "help",        "toggle_panel(\'help\')")
-          +MakeIcon("[!]", "preferences", "toggle_panel(\'prefs\')")
+        +'<div style="float: right; ">'
+          +MakeIcon("help", "[?]", "help",        "toggle_panel(\'help\')")
+          +MakeIcon("settings", "[!]", "preferences", "toggle_panel(\'prefs\')")
         +'</div>'
         +'<input type="text" id="search_box" style="width: 90%;"'
               +' tabIndex="1" onkeydown="return key_handler(event);"'
@@ -108,15 +131,16 @@ function InitializeSearch() {
       +'<div id="close_panel"'
           +' style="display: none; float: right;'
                  +' margin: 0.2em 0.5em; '+panelbgcolor+'">'
-        +MakeIcon("&#10005;", "close", "toggle_panel(false)")
+        +MakeIcon(false, "&#10005;", "close", "toggle_panel(false)")
       +'</div>'
       +'<div id="help_panel" '+panelstyle+'>'
         +'<ul style="padding: 0em; margin: 0.5em 1.5em;">'
-        +'<li>Hit <kbd>PageUp</kbd>/<kbd>PageDown</kbd> or'
-           +' <kbd>Ctrl</kbd>+<kbd>Enter</kbd> / <kbd>Shift</kbd>+<kbd>Ctrl</kbd>+<kbd>Enter</kbd>'
-           +' to scroll through the results.</li>'
-        +'<li>Search terms are all required, use'
+        +'<li>A search matches when all space-separated terms and modifiers match.</li>'
+        +'<li>Use'
            +' &ldquo;<kbd>N:<i>str</i></kbd>&rdquo; to negate a term.'
+        +'<li>Use &ldquo;<kbd>F:<i>str</i></kbd>&rdquo; to match only'
+           +' entries for a language family that exactly matches'
+           +' &ldquo;<kbd><i>str</i></kbd>&rdquo;.</li>'
         +'<li>Use &ldquo;<kbd>M:<i>str</i></kbd>&rdquo; to match only'
            +' identifiers from modules that (partially) match'
            +' &ldquo;<kbd><i>str</i></kbd>&rdquo;; &ldquo;<kbd>M:</kbd>&rdquo; by'
@@ -144,6 +168,9 @@ function InitializeSearch() {
         +'<li>Right-clicking these links refines the current query instead of'
            +' changing it (but some browsers don\'t support this).</li>'
         +'</ul>'
+        +'Hit <kbd>PageUp</kbd>/<kbd>PageDown</kbd> or'
+           +' <kbd>Ctrl</kbd>+<kbd>Enter</kbd> / <kbd>Shift</kbd>+<kbd>Ctrl</kbd>+<kbd>Enter</kbd>'
+           +' to scroll through the results.'
       +'</div>'
       +'<div id="prefs_panel" '+panelstyle+'>'
         +'<table align="center" style="margin: 0em 2em;">'
@@ -155,7 +182,7 @@ function InitializeSearch() {
              +'<option>never</option>'
              +'<option>except identifiers</option>'
              +'<option>always</option>'
-           +'</select>'
+             +'</select>&nbsp;&nbsp;'
            +'<input type="checkbox" '
                    +PrefInputArgs("show_manual_titles",
                                   "Controls how manual links are shown")
@@ -178,7 +205,7 @@ function InitializeSearch() {
                                   "The color to use for highlighting exact"
                                   +" matches (a known color name or #RGB)")
                    +'>')
-        + MakePref('Context-Query',
+        + MakePref('Query prefix',
            '<input type="text" '
                    +PrefInputArgs("ctx_query",
                      "A &ldquo;context&rdquo; query that is implicitly added"
@@ -190,32 +217,32 @@ function InitializeSearch() {
         +'</table>'
       +'</div>'
       +'<div id="contexts_panel" '+panelstyle+'>'
-        +'<table align="center" style="margin: 0em 2em;">'
-          + MakePref('Context-Query',
+        +'<table align="center" style="margin: auto 2em; padding-bottom: 2em">'
+          + MakePref('Query prefix',
              '<input type="text" '
                      +PrefInputArgs("context_query",
                        "A &ldquo;context&rdquo; query that is implicitly added"
                        +" to all searches")
-                     +'>')
+                     +'>' + MakeIcon("help", "[?]", "help", "toggle_panel(\'help\')"))
         +'</table>'
-        +'Clicking the following links will set your context-query to a'
-        +' few common choices:'
+        +'The following links set your query prefix to a'
+        +' common choice:'
         +'<ul style="padding: 0em; margin: 0.5em 1.5em;">'
-        +MakeContextQueryItem("M:", "Bindings")
-        +MakeContextQueryItem("H:", "Languages")
-        +MakeContextQueryItem("R:", "Reader modules")
-        +MakeContextQueryItem("T:reference", "Reference manual")
+        +MakeLanguageFamilySuggestions()
+        +MakeContextQueryItem("M:", "binding names")
+        +MakeContextQueryItem("T:reference", "Racket Reference manual")
         +MakeContextQueryItem("M:racket", "{{racket}} bindings")
         +MakeContextQueryItem("M:racket/base", "{{racket/base}} bindings")
+        +MakeContextQueryItem("H:", "language names")
         +'</ul>'
-      +'</div>'
+        +'</div>'
+        +'<div style="text-align: center; padding: 2pt"><span id="ctx_query_label" style="color: #444;">&nbsp;</span></div>'
       +MakeChevrons(1,
         '<span id="search_status"'
-            +' style="color: #601515; font-weight: bold;">&nbsp;</span>')
+            +' class="ssansserif search-status"'
+            +'>&nbsp;</span>')
       +'<div id="search_result_container"></div>'
-      +'<br />'
-      +MakeChevrons(2,
-        '<span id="ctx_query_label" style="color: #444;">&nbsp;</span>')
+      +MakeChevrons(2, '&nbsp;')
     +'</div>';
   // get the widgets we use
   query = document.getElementById("search_box");
@@ -244,9 +271,7 @@ function InitializeSearch() {
 
 function makeProtoSearchResult() {
   var proto_search_result = document.createElement('div');
-  proto_search_result.style.display = 'none';
-  proto_search_result.style.margin = '0.1em 0em';
-  proto_search_result.style.padding = '0.25em 1em';
+  proto_search_result.classList.add('search-result-wrapper');
   return proto_search_result;
 }
 
@@ -418,7 +443,7 @@ function UrlToManual(url) {
 // mostly for context queries.
 
 function CompileTerm(term) {
-  var op = ((term.search(/^[NLMHRTQ]:/) == 0) && term.substring(0,1));
+  var op = ((term.search(/^[NFLMHRTQ]:/) == 0) && term.substring(0,1));
   if (op) term = term.substring(2);
   term = term.toLowerCase();
   switch (op) {
@@ -426,6 +451,12 @@ function CompileTerm(term) {
     op = CompileTerm(term);
     // return C_exact if it's not found, so it doesn't disqualify exact matches
     return function(x) { return (op(x) >= C_match) ? C_fail : C_exact; };
+  case "F":
+    return function(x) {
+        fams = x[6].map((x) => x.toLowerCase())
+        if (!fams) return C_fail;
+        return (MaxCompares(term,fams) >= C_exact) ? C_exact : C_fail;
+    };
   case "L":
     return function(x) {
       if (!x[3]) return C_fail;
@@ -437,19 +468,19 @@ function CompileTerm(term) {
     return function(x) {
       if (!x[3]) return C_fail;
       if (x[3] == "module" || x[3] == "language" || x[3] == "reader") return Compare(term,x[0]); // rexact allowed
-      return (MaxCompares(term,x[3]) >= C_match) ? C_exact : C_fail;
+        return (MaxCompares(term,x[8]?x[8]:x[3]) >= C_match) ? C_exact : C_fail;
     };
   case "H":
     return function(x) {
       if (!x[3]) return C_fail;
       if (x[3] == "language") return Compare(term,x[0]);
-      return (MaxCompares(term,x[3]) >= C_exact) ? C_exact : C_fail;
+        return (MaxCompares(term,x[8]?x[8]:x[3]) >= C_exact) ? C_exact : C_fail;
     };
   case "R":
     return function(x) {
       if (!x[3]) return C_fail;
       if (x[3] == "reader") return Compare(term,x[0]);
-      return (MaxCompares(term,x[3]) >= C_exact) ? C_exact : C_fail;
+      return (MaxCompares(term,x[8]?x[8]:x[3]) >= C_exact) ? C_exact : C_fail;
     };
   case "T":
     return function(x) {
@@ -552,6 +583,28 @@ function MakeShowProgress() {
   };
 }
 
+function packageAndOrderCompare(a, b) {
+  var a_is_base = plt_base_pkgs.indexOf(a[4]) >= 0;
+  var b_is_base = plt_base_pkgs.indexOf(b[4]) >= 0;
+  if (a_is_base && b_is_base) return 0;
+  if (a_is_base) return -1;
+  if (b_is_base) return 1;
+
+  var a_in_main = plt_main_dist_pkgs.indexOf(a[4]) >= 0;
+  var b_in_main = plt_main_dist_pkgs.indexOf(b[4]) >= 0;
+  if (a_in_main && b_in_main) return 0;
+  if (a_in_main) return -1;
+  if (b_in_main) return 1;
+
+  // Same name: sort using `sort-order`
+  if (a[0] == b[0]) {
+      if (a[5] < b[5]) return -1;
+      if (b[5] < a[5]) return 1;
+  }
+
+  return 0;
+}
+
 function Search(data, term, is_pre, K) {
   // `K' is a continuation if this run is supposed to happen in a "thread"
   // false otherwise
@@ -589,6 +642,11 @@ function Search(data, term, is_pre, K) {
     }
     if (i<data.length) t = setTimeout(DoChunk,5);
     else {
+      i = 0;
+      for (i = 0; i < matches.length; i++) {
+        matches[i].sort(packageAndOrderCompare);
+      }
+
       r = [matches[0].length, [].concat.apply([],matches)];
       if (K) K(r); else return r;
     }
@@ -617,25 +675,30 @@ var search_data; // pre-filtered searchable index data
 function ContextFilter() {
   ctx_query = NormalizeSpaces(ctx_query);
   search_data = Search(plt_search_data, ctx_query, true, false)[1];
+  button_sep = "&nbsp;&nbsp;"
+  context_str = "Searching"
   if (ctx_query == "") {
     ctx_query_label_line.innerHTML =
-      '<a href="#" tabIndex="5"'
+      '<span class="ssansserif context-line">'+context_str+': all'
+       +button_sep
+       +'<a href="#" tabIndex="5"'
        +' title="Edit context-query"'
        +' style="text-decoration: none; color: #444;'
               +' font-size: 82%; font-weight: bold;"'
        +' onclick="toggle_panel(\'contexts\'); return false;">'
-       +'[set context]</a>';
+       +MakeSVGRef("settings", "0")+'</a></span>';
   } else {
     ctx_query_label_line.innerHTML =
-      'Context:&nbsp;' + GetContextHTML()
-      + '&nbsp;'
-      + GetContextClearerHTML('[clear')
-      + '/<a href="#" tabIndex="5"'
+      '<span class="ssansserif context-line">'+context_str+':&nbsp;' + GetContextHTML()
+      + button_sep
+      + GetContextClearerHTML(MakeSVGRef("clear", "0"))
+      + button_sep
+      + '<a href="#" tabIndex="5"'
           +' title="Edit context-query"'
           +' style="text-decoration: none; color: #444;'
                  +' font-size: 82%; font-weight: bold;"'
           +' onclick="toggle_panel(\'contexts\'); return false;">'
-          +'modify]</a>';
+          +MakeSVGRef("settings", "0")+'</a></span>';
   }
   last_search_term = null;
   last_search_term_raw = null;
@@ -706,27 +769,36 @@ function StripQArg(args) {
 }
 
 function UpdateResults() {
+  // Change the URL query param to reflect the current search term
+  var term = query.value;
+  var new_url = GetURL();
+  new_url.searchParams.set("q", term);
+  window.history.replaceState({}, "", new_url);
+
   if (first_search_result < 0 ||
       first_search_result >= search_results.length)
     first_search_result = 0;
-  var link_args = page_query_string && StripQArg("?"+page_query_string);
+  var link_args = GetPageQueryString() && StripQArg("?" + GetPageQueryString());
+  var show_family = (plt_language_families.length > 1) && !(ctx_query.includes("F:"))
   for (var i=0; i<result_links.length; i++) {
     var n = i + first_search_result;
     if (n < search_results.length) {
-      var note = false, res = search_results[n], desc = res[3];
+        var note = false, res = search_results[n], desc = res[3], lang_fams = res[6];
       if ((desc instanceof Array) && (desc.length > 0)) {
+        var desc_key = res[8] ? res[8] : desc;
+        var desc_display = res[7];
         note = '<span class="smaller">provided from</span> ';
         for (var j=0; j<desc.length; j++)
           note +=
             (j==0 ? "" : ", ")
-            + '<a href="?q=' + encodeURIComponent("L:"+desc[j]) + '"'
+            + '<a href="?q=' + encodeURIComponent("L:"+desc_key[j]) + '"'
                +' class="RktMod" tabIndex="2"'
-               +' title="show bindings from the '+desc[j]+' module'
+               +' title="show bindings from the '+desc_key[j]+' module'
                        +' (right-click to refine current query)"'
                +' style="text-decoration: none; color: #006;"'
                +' onclick="return new_query(this,\'\');"'
                +' oncontextmenu="return refine_query(this);">'
-            + desc[j] + '</a>';
+              + (desc_display ? UncompactHtml(desc_display[j]) : desc[j]) + '</a>';
       } else if (desc == "module") {
         note = '<span class="smaller">module</span>';
       } else if (desc == "language") {
@@ -750,6 +822,8 @@ function UpdateResults() {
       }
       if (note)
         note = '&nbsp;&nbsp;<span class="smaller">' + note + '</span>';
+      if (show_family && (lang_fams[0] != plt_main_language_family))
+        note = '<div class="language-family">' + lang_fams[0] + "</div>" + note;
       var href = UncompactUrl(res[1]);
       if (link_args) {
         var hash = href.indexOf("#");
@@ -758,11 +832,28 @@ function UpdateResults() {
         else
           href = href + link_args;
       }
+
       result_links[i].innerHTML =
-        '<a href="' + href + '" class="indexlink" tabIndex="2">'
-        + UncompactHtml(res[2]) + '</a>' + (note || "");
-      result_links[i].style.backgroundColor =
+        '<div title="" class="search-result-row"><a href="' + href
+        + '" class="indexlink" tabIndex="2">'
+        + UncompactHtml(res[2]) + '</a>' + (note || "") + '</div>';
+      result_links[i].classList.remove(
+        'search-result-wrapper-pkg-base',
+        'search-result-wrapper-pkg-main-dist'
+      );
+      if (plt_base_pkgs.indexOf(res[4]) >= 0) {
+        result_links[i].classList.add('search-result-wrapper-pkg-base');
+        result_links[i].title = "from base language's official documentation";
+      } else if (plt_main_dist_pkgs.indexOf(res[4]) >= 0) {
+        result_links[i].classList.add('search-result-wrapper-pkg-main-dist');
+        result_links[i].title = "from distribution's official documentation";
+      } else {
+        result_links[i].title = '';
+      }
+
+      result_links[i].firstChild.style.backgroundColor =
         (n < exact_results_num) ? highlight_color : background_color;
+
       result_links[i].style.display = "block";
     } else {
       result_links[i].style.display = "none";
@@ -775,11 +866,11 @@ function UpdateResults() {
             + ((exact == results_num) ? 'all' : exact)
             + ' exact</span>)';
   if (search_results.length == 0) {
-    if (last_search_term == "") status_line.innerHTML = "";
+    if (last_search_term == "") status_line.innerHTML = "&nbsp;";
     else status_line.innerHTML = 'No matches found'
            + ((ctx_query != "")
               ? (' in '+GetContextHTML()
-                 +' '+GetContextClearerHTML('<small>[clear]</small>'))
+                 +' '+GetContextClearerHTML(MakeSVGRef("clear", "0")))
               : '')
            + '<br><div style="color: black; font-size: 82%;">'
            + '(Make sure your spelling is correct'
@@ -804,7 +895,7 @@ function UpdateResults() {
   saved_status = false;
 
   document.getElementById("redo_search_global").innerHTML =
-        "<a href=\"http://docs.racket-lang.org/search/index.html?" + page_query_string + "\">Click here to repeat your search globally</a>.";
+        "<a href=\"http://docs.racket-lang.org/search/index.html?" + GetPageQueryString() + "\">Click here to repeat your search globally</a>.";
 }
 
 function HandleKeyEvent(event) {

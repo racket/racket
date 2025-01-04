@@ -101,7 +101,8 @@
 
 ;; ----
 
-(define (kw->string kw) (format "~a" kw))
+(define (kw->string kw)
+  ((error-syntax->string-handler) kw #f))
 
 (define (diff/sorted/eq xs ys)
   (if (pair? xs)

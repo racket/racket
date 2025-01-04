@@ -18,6 +18,7 @@
 ;; a deserialization expression
 
 (struct serialize-state (reachable-scopes       ; the set of all reachable scopes
+                         implicitly-reachable-scopes ; not necessarily reachable, but contibutes to binding scope sets
                          bindings-intern        ; to record pruned binding tables
                          bulk-bindings-intern   ; to record pruned bulk-binding lists
                          scopes                 ; interned scope sets
@@ -36,12 +37,14 @@
   #:authentic)
 
 (define (make-serialize-state reachable-scopes
+                              implicitly-reachable-scopes
                               preserve-prop-keys
                               keep-provides?
                               drop-shifts?
                               map-binding-symbol)
   (define state
     (serialize-state reachable-scopes
+                     implicitly-reachable-scopes
                      (make-hasheq)   ; bindings-intern
                      (make-hasheq)   ; bulk-bindings-intern
                      (make-hash)     ; scopes

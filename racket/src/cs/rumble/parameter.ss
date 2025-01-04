@@ -109,24 +109,38 @@
         3
         data))]))
 
-(define/who (make-derived-parameter p guard wrap)
-  (check who authentic-parameter?
-         :contract "(and/c parameter? (not/c impersonator?))"
-         p)
-  (check who (procedure-arity-includes/c 1) guard)
-  (check who (procedure-arity-includes/c 1) wrap)
-  (make-arity-wrapper-procedure
-   (case-lambda
-    [(v) (p (|#%app| guard v))]
-    [() (|#%app| wrap (p))])
-   3
-   (make-derived-parameter-data
-    guard
-    (parameter-data-name
-     (wrapper-procedure-data p))
-    (parameter-data-realm
-     (wrapper-procedure-data p))
-    p)))
+(define/who make-derived-parameter
+  (case-lambda
+   [(p guard wrap name realm)
+    (check who authentic-parameter?
+           :contract "(and/c parameter? (not/c impersonator?))"
+           p)
+    (check who (procedure-arity-includes/c 1) guard)
+    (check who (procedure-arity-includes/c 1) wrap)
+    (check who symbol? name)
+    (check who symbol? realm)
+    (make-arity-wrapper-procedure
+     (if (and (eq? guard values) (eq? wrap values))
+         (wrapper-procedure-procedure p)
+         (case-lambda
+          [(v) (p (|#%app| guard v))]
+          [() (|#%app| wrap (p))]))
+     3
+     (make-derived-parameter-data
+      guard
+      name
+      realm
+      p))]
+   [(p guard wrap name)
+    (define d (and (authentic-parameter? p)
+                   (wrapper-procedure-data p)))
+    (make-derived-parameter p guard wrap name (and d (parameter-data-realm d)))]
+   [(p guard wrap)
+    (define d (and (authentic-parameter? p)
+                   (wrapper-procedure-data p)))
+    (make-derived-parameter p guard wrap
+                            (and d (parameter-data-name d))
+                            (and d (parameter-data-realm d)))]))
 
 (define/who (parameter-procedure=? a b)
   (check who parameter? a)

@@ -52,7 +52,7 @@ ml="ml"
 safeseh="-safeseh"
 output=
 libpaths=
-libversion=7
+libversion=8
 verbose=
 
 while [ $# -gt 0 ]
@@ -165,24 +165,24 @@ do
       shift 1
     ;;
     -I)
-      p=$(cygpath -m $2)
-      args="$args -I$p"
-      includes="$includes -I$p"
+      p=$(cygpath -ma "$2")
+      args="$args -I\"$p\""
+      includes="$includes -I\"$p\""
       shift 2
     ;;
     -I*)
-      p=$(cygpath -m ${1#-I})
-      args="$args -I$p"
-      includes="$includes -I$p"
+      p=$(cygpath -ma "${1#-I}")
+      args="$args -I\"$p\""
+      includes="$includes -I\"$p\""
       shift 1
     ;;
     -L)
-      p=$(cygpath -m $2)
+      p=$(cygpath -ma $2)
       linkargs="$linkargs -LIBPATH:$p"
       shift 2
     ;;
     -L*)
-      p=$(cygpath -m ${1#-L})
+      p=$(cygpath -ma ${1#-L})
       linkargs="$linkargs -LIBPATH:$p"
       shift 1
     ;;
@@ -256,12 +256,12 @@ do
       shift 2
     ;;
     *.S)
-      src=$1
+      src="$(cygpath -ma $1)"
       assembly="true"
       shift 1
     ;;
     *.c)
-      args="$args $1"
+      args="$args $(cygpath -ma $1)"
       shift 1
     ;;
     *)
@@ -312,7 +312,7 @@ if [ -n "$assembly" ]; then
       echo "$cl -nologo -EP $includes $defines $src > $ppsrc"
     fi
 
-    "$cl" -nologo -EP $includes $defines $src > $ppsrc || exit $?
+    eval "\"$cl\" -nologo -EP $includes $defines $src" > $ppsrc || exit $?
     output="$(echo $output | sed 's%/F[dpa][^ ]*%%g')"
     if [ $ml = "armasm" ]; then
       args="-nologo -g -oldit $armasm_output $ppsrc -errorReport:prompt"
