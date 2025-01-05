@@ -14,21 +14,11 @@
 @defmodule[net/server]{The @racketmodname[net/server] library provides
 support for running general-purpose networked servers.}
 
-@defproc[(start-server [host (or/c #f string?)]
-                       [port listen-port-number?]
+@defproc[(start-server [listener evt?]
                        [handle (-> input-port? output-port? any)]
-                       [#:reuse? reuse? any/c #t]
-                       [#:max-allow-wait max-allow-wait exact-nonnegative-integer? 4]
                        [#:max-concurrent max-concurrent
-                                         (or/c +inf.0 exact-positive-integer?)
+                                         (or/c +inf.0 natural-number/c)
                                          +inf.0]
-                       [#:listen-proc listen
-                                      (-> listen-port-number?
-                                          exact-nonnegative-integer?
-                                          any/c
-                                          (or/c #f string?)
-                                          (and/c listener? evt?))
-                                      tcp-listen]
                        [#:accept-proc accept
                                       (-> listener? (values input-port? output-port?))
                                       tcp-accept]
@@ -39,13 +29,13 @@ support for running general-purpose networked servers.}
                                            (-> thread? input-port? output-port? boolean? evt?)
                                            (λ (thd in out break-sent?) never-evt)]) (-> void?)]{
 
-  Creates a listening server on @racket[port], bound to the interface
-  associated with @racket[host].  After the listener is ready, it
-  spawns a background thread to accept new connections.  For every new
-  connection, @racket[handle] is called with two arguments: an input
-  port to read from the client, and an output port to write to the
-  client.  The returned procedure stops the accepting thread and
-  closes the listener but does not terminate active connections.
+  Creates a server listening to an event source @racket[listener].
+  First, the server spawns a background thread to accept new
+  connections. For every new connection, @racket[handle] is called
+  with two arguments: an input port to read from the client, and an
+  output port to write to the client.  The returned procedure stops
+  the accepting thread and closes the listener but does not terminate
+  active connections.
 
   Each client connection is managed by a new custodian, and each call
   to @racket[handle] occurs in a new thread (also managed by the
@@ -82,7 +72,7 @@ support for running general-purpose networked servers.}
   @racket[accept] would not block; the synchronization result of the
   listener must be a value that can be passed to @racket[accept].
 
-  @history[#:added "1.1"]
+  @history[#:added "1.3"]
 }
 
 @defproc[(run-server [host (or/c #f string?)]
@@ -114,7 +104,7 @@ support for running general-purpose networked servers.}
   thread until a break is received.  Before returning, it stops the
   spawned server.  The server is run with breaks disabled.
 
-  @history[#:added "1.1"]
+  @history[#:added "1.3"]
 }
 
 @section{Examples}

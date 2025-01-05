@@ -9,32 +9,22 @@
   [run-server (server-proc/c void?)]))
 
 (define (server-proc/c res/c)
-  (->* ((or/c #f string?)
-        listen-port-number?
-        (-> input-port? output-port? any))
-       (#:reuse? any/c
-        #:max-allow-wait exact-nonnegative-integer?
-        #:max-concurrent (or/c +inf.0 exact-positive-integer?)
-        #:listen-proc (-> listen-port-number? exact-nonnegative-integer? any/c (or/c #f string?) evt?)
-        #:accept-proc (-> any/c (values input-port? output-port?))
-        #:close-proc (-> any/c void?)
+  (->* (evt? (-> input-port? output-port? any))
+       (#:max-concurrent   (or/c +inf.0 natural-number/c)
+        #:accept-proc      (-> any/c (values input-port? output-port?))
+        #:close-proc       (-> any/c void?)
         #:timeout-evt-proc (-> thread? input-port? output-port? boolean? evt?))
        res/c))
 
-(define (start-server host port handle
-                      #:reuse? [reuse? #t]
-                      #:max-allow-wait [max-allow-wait 4]
-                      #:max-concurrent [max-concurrent +inf.0]
-                      #:listen-proc [listen tcp-listen]
-                      #:accept-proc [accept tcp-accept]
-                      #:close-proc [close tcp-close]
+(define (start-server listener handle
+                      #:max-concurrent   [max-concurrent +inf.0]
+                      #:accept-proc      [accept tcp-accept]
+                      #:close-proc       [close tcp-close]
                       #:timeout-evt-proc [make-timeout-evt (λ (_thd _in _out _break-sent?) never-evt)])
   (define can-break?
     (break-enabled))
   (define paramz
     (current-parameterization))
-  (define listener
-    (listen port max-allow-wait reuse? host))
   (define server-thd
     (thread
      (lambda ()
