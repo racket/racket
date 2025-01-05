@@ -46,9 +46,9 @@
          (keyword-apply
           start-server
           kws kw-args
-          "127.0.0.1" 0 handler-proc
-          args
-          #:listen-proc (make-tcp-listen-proc port-ch)))
+          ((make-tcp-listen-proc port-ch) 0 512 #t "127.0.0.1")
+          handler-proc
+          args))
        (values stop (channel-get port-ch)))))
 
   (define start-test-server*
@@ -214,8 +214,8 @@
       (thread
        (lambda ()
          (run-server
-          #:listen-proc (make-tcp-listen-proc port-ch)
-          "127.0.0.1" 0 echo))))
+          ((make-tcp-listen-proc port-ch) 0 512 #t "127.0.0.1")
+          echo))))
     (define (stop)
       (break-thread server-thd)
       (thread-wait server-thd))

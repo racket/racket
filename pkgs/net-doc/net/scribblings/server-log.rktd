@@ -14,7 +14,11 @@
  ((3) 0 () 0 () () (c values c (void)))
  #""
  #"")
-((define stop (start-server "127.0.0.1" 9000 echo))
+((define listener (tcp-listen 9000 512 #t "127.0.0.1"))
+ ((3) 0 () 0 () () (c values c (void)))
+ #""
+ #"")
+((define stop (start-server listener echo))
  ((3) 0 () 0 () () (c values c (void)))
  #""
  #"")
@@ -52,7 +56,10 @@
  #""
  #"")
 ((ssl-seal-context! server-ctx) ((3) 0 () 0 () () (c values c (void))) #"" #"")
-((define stop (start-server "127.0.0.1" 9000 (make-tls-echo server-ctx)))
+((define stop
+   (start-server
+    (tcp-listen 9000 512 #t "127.0.0.1")
+    (make-tls-echo server-ctx)))
  ((3) 0 () 0 () () (c values c (void)))
  #""
  #"")
@@ -82,17 +89,11 @@
  #"")
 ((define stop
    (start-server
-    #:listen-proc
-    (λ (port backlog reuse? host)
-      (unless (unix-socket-path? host)
-        (error 'start-server "invalid socket path: ~e" host))
-      (listener host (unix-socket-listen host backlog)))
     #:accept-proc
     unix-socket-accept
     #:close-proc
     (λ (l) (delete-file (listener-path l)))
-    path
-    0
+    (listener path (unix-socket-listen path 512))
     (make-tls-echo server-ctx)))
  ((3) 0 () 0 () () (c values c (void)))
  #""
@@ -113,14 +114,11 @@
 ((define ch (make-channel)) ((3) 0 () 0 () () (c values c (void))) #"" #"")
 ((define stop
    (start-server
-    #:listen-proc
-    (λ (port backlog reuse? host) ch)
     #:accept-proc
     (λ (ports) (apply values ports))
     #:close-proc
     void
-    "127.0.0.1"
-    0
+    ch
     echo))
  ((3) 0 () 0 () () (c values c (void)))
  #""
