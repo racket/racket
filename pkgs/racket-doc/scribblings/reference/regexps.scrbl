@@ -177,10 +177,10 @@ syntactic restrictions:
 These constraints are checked syntactically by the following type
 system. A type [@math{n}, @math{m}] corresponds to an expression that
 matches between @math{n} and @math{m} characters. In the rule for
-@litchar{(}@nonterm{Regexp}@litchar{)}, @math{N} means the number such
-that the opening parenthesis is the @math{N}th opening parenthesis for
+@litchar{(}@nonterm{regexp}@litchar{)}, @nonterm{n} means the number such
+that the opening parenthesis is the @nonterm{n}th opening parenthesis for
 collecting match reports.  Non-emptiness is inferred for a
-backreference pattern, @litchar{\}@nonterm{N}, so that a
+backreference pattern, @litchar{\}@nonterm{n}, so that a
 backreference can be used for repetition patterns; in the case of
 mutual dependencies among backreferences, the inference chooses the
 fixpoint that maximizes non-emptiness.  Finiteness is not inferred for
@@ -426,12 +426,12 @@ and @racket[pattern] is not a byte regexp. Otherwise, the list
 contains byte strings (substrings of the UTF-8 encoding of
 @racket[input], if @racket[input] is a string).
 
-The first [byte] string in a result list is the portion of
+The first (byte) string in a result list is the portion of
 @racket[input] that matched @racket[pattern]. If two portions of
 @racket[input] can match @racket[pattern], then the match that starts
 earliest is found.
 
-Additional [byte] strings are returned in the list if @racket[pattern]
+Additional (byte) strings are returned in the list if @racket[pattern]
 contains parenthesized sub-expressions (but not when the opening
 parenthesis is followed by @litchar{?}). Matches for the
 sub-expressions are provided in the order of the opening parentheses
@@ -472,7 +472,7 @@ port is a custom port with inconsistent reading and peeking procedures
 used for matching may be different than the bytes read and discarded
 after the match completes; the matcher inspects only the peeked
 bytes. To avoid such interleaving, use @racket[regexp-match-peek]
-(with a @racket[progress-evt] argument) followed by
+(with a @racket[_progress] argument) followed by
 @racket[port-commit-peeked].
 
 @examples[
@@ -527,9 +527,9 @@ port).
 (regexp-match* #rx"x*" "12x4x6")
 ]
 
-@racket[match-select] specifies the collected results.  The default of
+The @racket[match-select] function specifies the collected results.  The default of
 @racket[car] means that the result is the list of matches without
-returning parenthesized sub-patterns.  It can be given as a `selector'
+returning parenthesized sub-patterns.  It can be given as a ``selector''
 function which chooses an item from a list, or it can choose a list of
 items.  For example, you can use @racket[cdr] to get a list of lists
 of parenthesized sub-patterns matches, or @racket[values] (as an
@@ -692,7 +692,7 @@ Beware that @racket[regexp-match-exact?] can return @racket[#f] if
 @racket[pattern] generates a partial match for @racket[input] first, even if
 @racket[pattern] could also generate a complete match. To check if there is any
 match of @racket[pattern] that covers all of @racket[input], use
-@racket[rexexp-match?] with @elem{@litchar{^(?:}@racket[pattern]@litchar{)$}}
+@racket[regexp-match?] with @elem{@litchar{^(?:}@racket[pattern]@litchar{)$}}
 instead.
 
 @examples[
@@ -714,14 +714,14 @@ lower precedence than alternation; the regular expression without it,
                             [input input-port?]
                             [start-pos exact-nonnegative-integer? 0]
                             [end-pos (or/c exact-nonnegative-integer? #f) #f]
-                            [progress (or/c evt #f) #f]
+                            [progress (or/c progress-evt? #f) #f]
                             [input-prefix bytes? #""])
           (or/c (cons/c bytes? (listof (or/c bytes? #f)))
                 #f)]{
 
 Like @racket[regexp-match] on input ports, but only peeks bytes from
 @racket[input] instead of reading them. Furthermore, instead of
-an output port, the last optional argument is a progress event for
+an output port, the optional @racket[progress] argument is a progress event for
 @racket[input] (see @racket[port-progress-evt]). If @racket[progress]
 becomes ready, then the match stops peeking from @racket[input]
 and returns @racket[#f]. The @racket[progress] argument can be
@@ -744,7 +744,7 @@ information if another process meanwhile reads from
                             [input input-port?]
                             [start-pos exact-nonnegative-integer? 0]
                             [end-pos (or/c exact-nonnegative-integer? #f) #f]
-                            [progress (or/c evt #f) #f]
+                            [progress (or/c progress-evt? #f) #f]
                             [input-prefix bytes? #""])
           (or/c (cons/c (cons/c exact-nonnegative-integer?
                                 exact-nonnegative-integer?)
@@ -762,7 +762,7 @@ bytes from @racket[input] instead of reading them, and with a
                             [input input-port?]
                             [start-pos exact-nonnegative-integer? 0]
                             [end-pos (or/c exact-nonnegative-integer? #f) #f]
-                            [progress (or/c evt #f) #f]
+                            [progress (or/c progress-evt? #f) #f]
                             [input-prefix bytes? #""])
           (or/c (cons/c bytes? (listof (or/c bytes? #f)))
                 #f)]{
@@ -777,7 +777,7 @@ match fails if not-yet-available characters might be used to match
                             [input input-port?]
                             [start-pos exact-nonnegative-integer? 0]
                             [end-pos (or/c exact-nonnegative-integer? #f) #f]
-                            [progress (or/c evt #f) #f]
+                            [progress (or/c progress-evt? #f) #f]
                             [input-prefix bytes? #""])
           (or/c (cons/c (cons/c exact-nonnegative-integer?
                                 exact-nonnegative-integer?)
@@ -847,7 +847,7 @@ to determine an appropriate value for @racket[count].}
                             [input input-port?]
                             [start-pos exact-nonnegative-integer? 0]
                             [end-pos (or/c exact-nonnegative-integer? #f) #f]
-                            [progress (or/c evt #f) #f]
+                            [progress (or/c progress-evt? #f) #f]
                             [input-prefix bytes? #""]
                             [count exact-nonnegative-integer? 1])
          (values
@@ -862,7 +862,7 @@ to determine an appropriate value for @racket[count].}
                             [input input-port?]
                             [start-pos exact-nonnegative-integer? 0]
                             [end-pos (or/c exact-nonnegative-integer? #f) #f]
-                            [progress (or/c evt #f) #f]
+                            [progress (or/c progress-evt? #f) #f]
                             [input-prefix bytes? #""]
                             [count exact-nonnegative-integer? 1])
          (values
@@ -1034,13 +1034,13 @@ string or the stream up to an end-of-file.
                            (listof
                             (list/c (or/c regexp? byte-regexp? string? bytes?)
                                     (or/c string? bytes?
-                                        (string? string? ... . -> . string?)
-                                        (bytes? bytes? ... . -> . bytes?))))])
+                                          (string? string? ... . -> . string?)
+                                          (bytes? bytes? ... . -> . bytes?))))])
          (or/c string? bytes?)]{
 
 Performs a chain of @racket[regexp-replace*] operations, where each
 element in @racket[replacements] specifies a replacement as a
-@racket[(list pattern replacement)].  The replacements are done in
+@racket[(list _pattern _insert)].  The replacements are done in
 order, so later replacements can apply to previous insertions.
 
 @examples[
