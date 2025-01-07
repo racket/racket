@@ -1,5 +1,5 @@
 #lang at-exp racket/base
-(require scribble/core scribble/manual scribble/bnf
+(require scribble/core scribble/manual scribble/bnf scribble/decode
          racket/list racket/string)
 
 ;; If you edit this table, please try to avoid making the table wider
@@ -180,7 +180,7 @@
                                          (element #f " ")
                                          (element #f (regexp-replace* #rx"`" Y " "))))]
     [(#rx"^$") null]
-    [else (list s)]))
+    [else (decode-string s)]))
 
 (define (lit-ize l)
   (map (lambda (i) (if (string? i) (litchar i) i)) l))
@@ -306,7 +306,7 @@
 (define (subscripts i)
   (regexp-case i
     [(#rx"^(.*)_(.)(.*)$" X S Y)
-     `(,@(subscripts X) ,(element 'subscript (list S)) ,@(subscripts Y))]
+     `(,@(subscripts X) ,(element 'subscript (fixup-ids S)) ,@(subscripts Y))]
     [(#rx"^(.*)([nm])([012]?)(.*)$" X V N Y)
      `(,@(subscripts X)
        ,(element 'italic (list V)) ,(element 'subscript (list N))
