@@ -33,6 +33,7 @@
         (jsexpr? '#hasheq())
         (jsexpr? '#hasheq([x . 1]))
         (jsexpr? '#hasheq([x . 1] [y . 2]))
+        (jsexpr? (hash-copy #hasheq([x . 1] [y . 2])))
         (jsexpr? '#hash([x . 1] [y . 2])) ; fine as a jsexpr too
         (jsexpr? '#hasheq([|x\y| . 1] [y . 2]))
         (not (jsexpr? '#hasheq([1 . 1])))
@@ -87,6 +88,9 @@
           => "\"\\u03bb\\u2200\\ud834\\udd1e\""
         ;; and that the same holds for keys
         (jsexpr->string (string->jsexpr "{\"\U0010FFFF\":\"\U0010FFFF\"}"))
+          => "{\"\U0010FFFF\":\"\U0010FFFF\"}"
+        (jsexpr->string (string->jsexpr "{\"\U0010FFFF\":\"\U0010FFFF\"}"
+                        #:mhash? #t))
           => "{\"\U0010FFFF\":\"\U0010FFFF\"}"
 	(jsexpr->string #hash[(a . 1) (b . 2)]) => "{\"a\":1,\"b\":2}"
         (jsexpr->string (string->jsexpr "{\"\U0010FFFF\":\"\U0010FFFF\"}")
@@ -144,9 +148,17 @@
         (string->jsexpr @T{ " \b\n\r\f\t\\\"\/ " }) => " \b\n\r\f\t\\\"/ "
         (string->jsexpr @T{ "\uD834\uDD1E" }) => "\U1D11E"
         (string->jsexpr @T{ "\ud834\udd1e" }) => "\U1d11e"
-	;; INPUT PORT is optional
-	(with-input-from-string "[]" read-json)
-	=> (parameterize ((json-null '())) (json-null))
+
+        ;; mutable hash tables
+        (let ([js (string->jsexpr @T{ {"x":1,"y":2} } #:mhash? #t)])
+          (hash-set! js 'x 0)
+          js)
+        => (hash-copy #hasheq([x . 0] [y . 2]))
+
+        ;; INPUT PORT is optional
+        (with-input-from-string "[]" read-json)
+        => (parameterize ((json-null '())) (json-null))
+
         ;; EOF detection
         (for/list ([je (in-port read-json
                                 (open-input-string

@@ -129,7 +129,8 @@ the @rfc for more information about JSON.
 @section{Parsing JSON Text into JS-Expressions}
 
 @defproc[(read-json [in input-port? (current-input-port)]
-                    [#:null jsnull any/c (json-null)])
+                    [#:null jsnull any/c (json-null)]
+                    [#:mhash? jsmhash? boolean? #f])
          (or/c jsexpr? eof-object?)]{
   Reads a @tech{jsexpr} from a single JSON-encoded input port @racket[in] as a
   Racket (immutable) value, or produces @racket[eof] if only whitespace
@@ -137,14 +138,28 @@ the @rfc for more information about JSON.
   characters in the port so that a second call can retrieve the
   remaining JSON input(s). If the JSON inputs aren't delimited per se
   (true, false, null), they must be separated by whitespace from the
-  following JSON input. Raises @racket[exn:fail:read] if @racket[in] is not
-  at EOF and starts with malformed JSON (that is, no initial sequence of bytes
-  in @racket[in] can be parsed as JSON); see below for examples.
+  following JSON input.
+
+  @racket[jsmhash?] determines whether the generated hash table is mutable.
+
+  Raises @racket[exn:fail:read] if @racket[in] is not at EOF and starts with
+  malformed JSON (that is, no initial sequence of bytes in @racket[in] can be
+  parsed as JSON); see below for examples.
 
 @examples[#:eval ev
   (with-input-from-string
     "{\"arr\" : [1, 2, 3, 4]}"
     (λ () (read-json)))
+
+  (immutable?
+   (with-input-from-string
+     "{\"arr\" : [1, 2, 3, 4]}"
+     (λ () (read-json))))
+
+  (immutable?
+   (with-input-from-string
+     "{\"arr\" : [1, 2, 3, 4]}"
+     (λ () (read-json #:mhash? #t))))
 
   (with-input-from-string
     "\"sandwich\""
@@ -190,11 +205,14 @@ the @rfc for more information about JSON.
            @racket[#\space], @racket[#\tab], @racket[#\newline], or @racket[#\return].}]
 }
 
-@defproc[(string->jsexpr [str string?] [#:null jsnull any/c (json-null)])
+@defproc[(string->jsexpr [str string?]
+                         [#:null jsnull any/c (json-null)]
+                         [#:mhash? jsmhash? boolean? #f])
          jsexpr?]{
   Parses a recognizable prefix of the string @racket[str] as an immutable @tech{jsexpr}.
   If the prefix isn't delimited per se (true, false, null), it
   must be separated by whitespace from the remaining characters.
+
   Raises @racket[exn:fail:read] if the string is malformed JSON.
 
 
@@ -203,12 +221,15 @@ the @rfc for more information about JSON.
 ]
 }
 
-@defproc[(bytes->jsexpr [str bytes?] [#:null jsnull any/c (json-null)])
+@defproc[(bytes->jsexpr [str bytes?]
+                        [#:null jsnull any/c (json-null)]
+                        [#:mhash? jsmhash? boolean? #f])
          jsexpr?]{
   Parses a recognizable prefix of the string @racket[str] as an immutable @tech{jsexpr}.
   If the prefix isn't delimited per se (true, false, null), it
-  must be separated by whitespace from the remaining bytes. Raises
-  @racket[exn:fail:read] if the byte string is malformed JSON.
+  must be separated by whitespace from the remaining bytes.
+
+  Raises @racket[exn:fail:read] if the byte string is malformed JSON.
 
 
 @examples[#:eval ev
