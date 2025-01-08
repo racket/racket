@@ -1729,6 +1729,47 @@
 (arity-test regexp-replace 3 4)
 (arity-test regexp-replace* 3 6)
 
+(err/rt-test (regexp-match 'oops "input")
+             exn:fail:contract?
+             #rx"regexp-match: contract violation.*expected:.+or/c.+regexp[?].+byte-regexp[?].+string[?].+bytes[?]")
+(err/rt-test (regexp-match #rx"pattern" 'oops)
+             exn:fail:contract?
+             #rx"regexp-match: contract violation.*expected:.+or/c.+string[?].+bytes[?].+path[?].+input-port[?]")
+(err/rt-test (regexp-match #rx"pattern" "input" "oops")
+             exn:fail:contract?
+             #rx"regexp-match: contract violation.*expected: exact-nonnegative-integer[?]")
+(err/rt-test (regexp-match #rx"pattern" "input" 0 "oops")
+             exn:fail:contract?
+             #rx"regexp-match: contract violation.*expected:.+or/c.+exact-nonnegative-integer[?].+#f")
+(err/rt-test (regexp-match #rx"pattern" "input" 0 #f "oops")
+             exn:fail:contract?
+             #rx"regexp-match: contract violation.*expected:.+or/c.+output-port[?].+#f")
+(err/rt-test (regexp-match #rx"pattern" "input" 0 #f #f "oops")
+             exn:fail:contract?
+             #rx"regexp-match: contract violation.*expected: bytes[?]")
+
+(err/rt-test (regexp-match-peek 'oops (open-input-string "input"))
+             exn:fail:contract?
+             #rx"regexp-match-peek: contract violation.*expected:.+or/c.+regexp[?].+byte-regexp[?].+string[?].+bytes[?]")
+(err/rt-test (regexp-match-peek #rx"pattern" 'oops)
+             exn:fail:contract?
+             #rx"regexp-match-peek: contract violation.*expected: input-port[?]")
+(err/rt-test (regexp-match-peek #rx"pattern" "oops")
+             exn:fail:contract?
+             #rx"regexp-match-peek: contract violation.*expected: input-port[?]")
+(err/rt-test (regexp-match-peek #rx"pattern" (open-input-string "input") "oops")
+             exn:fail:contract?
+             #rx"regexp-match-peek: contract violation.*expected: exact-nonnegative-integer[?]")
+(err/rt-test (regexp-match-peek #rx"pattern" (open-input-string "input") 0 "oops")
+             exn:fail:contract?
+             #rx"regexp-match-peek: contract violation.*expected:.+or/c.+exact-nonnegative-integer[?].+#f")
+(err/rt-test (regexp-match-peek #rx"pattern" (open-input-string "input") 0 #f "oops")
+             exn:fail:contract?
+             #rx"regexp-match-peek: contract violation.*expected:.+or/c.+progress-evt[?].+#f")
+(err/rt-test (regexp-match-peek #rx"pattern" (open-input-string "input") 0 #f #f "oops")
+             exn:fail:contract?
+             #rx"regexp-match-peek: contract violation.*expected: bytes[?]")
+
 (test 3 regexp-max-lookbehind #rx#"(?<=abc)d")
 (test 2 regexp-max-lookbehind #rx#"e(?<=a..)d")
 (test 2 regexp-max-lookbehind #rx#"(?:a|ab)(?<!a..)d")
