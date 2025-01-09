@@ -370,7 +370,7 @@
          (define-values (e* new-result new-pos)
            (let resync ([e e] [result result] [pos pos])
              (cond
-               [(<= #xD800 e #xDFFF)
+               [(<= #xD800 e #xDBFF)
                 (cond
                   [(equal? (peek-bytes 2 0 i) #"\\u")
                    (read-bytes 2 i)
@@ -388,6 +388,10 @@
                    (values #xFFFD result pos)]
                   [else
                    (err "bad string \\u escape, missing second half of a UTF-16 pair")])]
+               [(<= #xDC00 e #xDFFF)
+                (if replace-malformed-surrogate?
+                    (values #xFFFD result pos)
+                    (err "bad string \\u escape, missing first half of a UTF-16 pair"))]
                [else (values e result pos)])))
          (keep-char (integer->char e*) new-result new-pos converter)]
         [else (err "bad string escape: \"~a\"" esc)]))
