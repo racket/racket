@@ -276,28 +276,26 @@
            ((fx+ pos 1) next-node next-node-pos))]]
       [_ #f])))
 
-(define-for-syntax (make-for/treelist for/fold/derived-id wrap-result-id)
+(define-for-syntax (make-for/treelist for/vector-id vector->treelist-id)
   (lambda (stx)
     (syntax-case stx ()
       [(_ binds body0 body ...)
-       (with-syntax ([((pre-body ...) (post-body ...)) (split-for-body stx #'(body0 body ...))]
-                     [for/fold/derived for/fold/derived-id]
-                     [wrap-result wrap-result-id])
-         #`(for/fold/derived #,stx ([root empty-node] [size 0] [height 0]
-                                                      #:result (wrap-result
-                                                                (if (fx= size 0)
-                                                                    empty-treelist
-                                                                    (treelist root size height))))
-                             binds
-             pre-body ...
-             (unsafe-root-add root size height
-                              (let ()
-                                post-body ...))))])))
+       (quasisyntax/loc stx
+         (#,vector->treelist-id
+          (#,for/vector-id binds body0 body ...)))]
+      [(_ #:length length-expr #:fill fill-expr binds body0 body ...)
+       (quasisyntax/loc stx
+         (#,vector->treelist-id
+          (#,for/vector-id #:length length-expr #:fill fill-expr binds body0 body ...)))]
+      [(_ #:length length-expr binds body0 body ...)
+       (quasisyntax/loc stx
+         (#,vector->treelist-id
+          (#,for/vector-id #:length length-expr binds body0 body ...)))])))
 
 (define-syntax for/treelist
-  (make-for/treelist #'for/fold/derived #'values))
+  (make-for/treelist #'for/vector #'vector->treelist))
 (define-syntax for*/treelist
-  (make-for/treelist #'for*/fold/derived #'values))
+  (make-for/treelist #'for*/vector #'vector->treelist))
 
 (define in-treelist/proc
   ;; Slower strategy than the inline version, but the
@@ -552,7 +550,7 @@
                       (fx+ height 1)))])]))
 
 (define (unsafe-root-add root size height el)
-  ;; similar to `treelist-add`, used for `for/treelist`
+  ;; similar to `treelist-add`
   (define new-root (build root height el))
   (if new-root
       (values new-root (fx+ size 1) height)
@@ -835,9 +833,12 @@ minimum required storage. |#
 
 (define (treelist-reverse tl)
   (check-treelist 'treelist-reverse tl)
-  (define len (treelist-length tl))
-  (for/fold ([new-tl (treelist-take tl 0)]) ([i (in-range len)])
-    (treelist-add new-tl (treelist-ref tl (fx- len i 1)))))
+  (define len (treelist-size tl))
+  (define vec (make-vector len))
+  (for ([el (in-treelist tl)]
+        [i (in-range (sub1 len) -1 -1)])
+    (vector-set! vec i el))
+  (vector->treelist vec))
 
 (define (treelist-rest tl)
   (cond
@@ -1206,7 +1207,7 @@ minimum required storage. |#
   (check-treelist 'treelist-map tl)
   (unless (and (procedure? proc) (procedure-arity-includes? proc 1))
     (raise-argument-error* 'treelist-map 'racket/primitive "(procedure-arity-includes/c 1)" proc))
-  (for/treelist ([v (in-treelist tl)])
+  (for/treelist #:length (treelist-size tl) ([v (in-treelist tl)])
     (proc v)))
 
 (define (treelist-for-each tl proc)
@@ -1591,7 +1592,7 @@ minimum required storage. |#
 
 (define (treelist-add/slow tl el)
   (check-treelist 'treelist-add tl)
-  (treelist-insert/slow tl (treelist-length tl) el))
+  (treelist-insert/slow tl (treelist-size tl) el))
 
 (define (treelist-cons/slow tl el)
   (check-treelist 'treelist-cons tl)
@@ -1670,7 +1671,7 @@ minimum required storage. |#
      tl]
     [(impersonator? tl)
      ;; copy the slow but general way
-     (for/treelist ([i (in-treelist tl)])
+     (for/treelist #:length (treelist-size tl) ([i (in-treelist tl)])
        i)]
     [else
      (struct-copy treelist tl

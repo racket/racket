@@ -319,9 +319,9 @@
   (in-treelist (mutable-treelist-tl mtl)))
 
 (define-syntax for/mutable-treelist
-  (make-for/treelist #'for/fold/derived #'treelist-copy))
+  (make-for/treelist #'for/vector #'vector->mutable-treelist))
 (define-syntax for*/mutable-treelist
-  (make-for/treelist #'for*/fold/derived #'treelist-copy))
+  (make-for/treelist #'for*/vector #'vector->mutable-treelist))
 
 (define (check-chaperone-arguments who
                                    ref-proc

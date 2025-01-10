@@ -455,17 +455,16 @@ If @racket[s] is infinite, this function does not terminate.
 @history[#:added "8.15.0.6"]}
 
 @deftogether[(
-@defform[(for/treelist (for-clause ...) body-or-break ... body)]
-@defform[(for*/treelist (for-clause ...) body-or-break ... body)]
+@defform[(for/treelist maybe-length (for-clause ...) body-or-break ... body)]
+@defform[(for*/treelist maybe-length (for-clause ...) body-or-break ... body)]
 )]{
 
-Like @racket[for/list] and @racket[for*/list], but generating
+Like @racket[for/vector] and @racket[for*/vector], but generating
 @tech{treelists}.
 
 @examples[
 #:eval the-eval
-(for/treelist ([i (in-range 10)])
-  i)
+(for/treelist #:length 15 #:fill 'a ([i (in-range 10)]) i)
 ]}
 
 @defproc[(chaperone-treelist [tl treelist?]
@@ -951,17 +950,16 @@ Returns a @tech{sequence} equivalent to @racket[tl].
 ]}
 
 @deftogether[(
-@defform[(for/mutable-treelist (for-clause ...) body-or-break ... body)]
-@defform[(for*/mutable-treelist (for-clause ...) body-or-break ... body)]
+@defform[(for/mutable-treelist maybe-length (for-clause ...) body-or-break ... body)]
+@defform[(for*/mutable-treelist maybe-length (for-clause ...) body-or-break ... body)]
 )]{
 
-Like @racket[for/list] and @racket[for*/list], but generating
+Like @racket[for/vector] and @racket[for*/vector], but generating
 @tech{mutable treelists}.
 
 @examples[
 #:eval the-eval
-(for/mutable-treelist ([i (in-range 10)])
-  i)
+(for/mutable-treelist #:length 15 #:fill 'a ([i (in-range 10)]) i)
 ]}
 
 @defproc[(chaperone-mutable-treelist [tl mutable-treelist?]

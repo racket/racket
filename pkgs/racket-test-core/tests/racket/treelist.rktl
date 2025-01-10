@@ -37,6 +37,16 @@
       (for*/treelist ([i (in-range 1 4)]
                       [m '(1 -1)])
         (* i m)))
+(test (treelist 1 -1 2 -2 3 -3 0 0) 'for*
+      (for*/treelist #:length 8
+                     ([i (in-range 1 4)]
+                      [m '(1 -1)])
+        (* i m)))
+(test (treelist 1 -1 2 -2 3 -3 'x 'x) 'for*
+      (for*/treelist #:length 8 #:fill 'x
+                     ([i (in-range 1 4)]
+                      [m '(1 -1)])
+        (* i m)))
 
 (test (make-treelist 0 567) "make-treelist 0" (treelist))
 (test (eq? (make-treelist 0 567) (treelist)) "eq make-treelist" #t)
