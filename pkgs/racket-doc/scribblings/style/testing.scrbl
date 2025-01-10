@@ -7,6 +7,8 @@
 @; -----------------------------------------------------------------------------
 @section[#:tag "test-suite"]{Test Suites}
 
+This section is specifically for Racketeers who commit to the Racket code base.
+
 Most of our collections come with test suites. These tests suites tend to
  live in @tt{collects/tests/} in the PLT repository, though due to
  historical reasons, a few collections come with their own local test
