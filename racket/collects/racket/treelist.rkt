@@ -1526,8 +1526,8 @@ minimum required storage. |#
   (define who 'treelist-reverse)
   (check-treelist who tl)
   (define len (treelist-size tl))
-  (for/fold ([new-tl (treelist-take tl 0)]) ([i (in-range len)])
-    (treelist-add new-tl (treelist-ref tl (fx- len i 1)))))
+  (for/fold ([new-tl (treelist-take/slow tl 0)]) ([i (in-range len)])
+    (treelist-add/slow new-tl (treelist-ref/slow tl (fx- len i 1)))))
 
 (define (treelist-rest/slow tl)
   (define who 'treelist-rest)
