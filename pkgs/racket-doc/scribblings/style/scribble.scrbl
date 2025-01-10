@@ -57,6 +57,9 @@ or ``the X11 windowing system'' would be more precisely correct, but
 use ``X11'' as adjective when necessary, such as ``X11 display.''
 Racket runs ``on'' a platform, as opposed to ``under'' a platform.
 
+Use ``DrRacket'' to refer to the Racket programming environment, not
+``Dr. Racket.''
+
 Avoid using a predicate as a noun that stands for a value
 satisfying the predicate. Instead, use @racket[tech] and
 @racket[deftech] to establish a connection between an
