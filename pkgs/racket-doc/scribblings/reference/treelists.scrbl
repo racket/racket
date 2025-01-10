@@ -464,6 +464,8 @@ Like @racket[for/vector] and @racket[for*/vector], but generating
 
 @examples[
 #:eval the-eval
+(for/treelist ([i (in-range 10)]) i)
+(for/treelist #:length 15 ([i (in-range 10)]) i)
 (for/treelist #:length 15 #:fill 'a ([i (in-range 10)]) i)
 ]}
 
@@ -959,6 +961,8 @@ Like @racket[for/vector] and @racket[for*/vector], but generating
 
 @examples[
 #:eval the-eval
+(for/mutable-treelist ([i (in-range 10)]) i)
+(for/mutable-treelist #:length 15 ([i (in-range 10)]) i)
 (for/mutable-treelist #:length 15 #:fill 'a ([i (in-range 10)]) i)
 ]}
 
