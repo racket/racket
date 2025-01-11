@@ -834,10 +834,16 @@ minimum required storage. |#
     [else (treelist-take (treelist-drop tl pos) len)]))
 
 (define (treelist-reverse tl)
-  (check-treelist 'treelist-reverse tl)
-  (define len (treelist-length tl))
-  (for/fold ([new-tl (treelist-take tl 0)]) ([i (in-range len)])
-    (treelist-add new-tl (treelist-ref tl (fx- len i 1)))))
+  (cond
+    [(impersonator? tl) (treelist-reverse/slow tl)]
+    [else
+     (check-treelist 'treelist-reverse tl)
+     (define len (treelist-size tl))
+     (define vec (make-vector len))
+     (for ([el (in-treelist tl)]
+           [i (in-range (sub1 len) -1 -1)])
+       (vector-set! vec i el))
+     (vector->treelist vec)]))
 
 (define (treelist-rest tl)
   (cond
@@ -1517,6 +1523,13 @@ minimum required storage. |#
      (raise-arguments-error* who 'racket/primitive "treelist is empty")]
     [else
      (treelist-ref/slow tl (fx- (treelist-size tl) 1))]))
+
+(define (treelist-reverse/slow tl)
+  (define who 'treelist-reverse)
+  (check-treelist who tl)
+  (define len (treelist-size tl))
+  (for/fold ([new-tl (treelist-take/slow tl 0)]) ([i (in-range len)])
+    (treelist-add/slow new-tl (treelist-ref/slow tl (fx- len i 1)))))
 
 (define (treelist-rest/slow tl)
   (define who 'treelist-rest)

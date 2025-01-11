@@ -242,16 +242,7 @@
 (define (mutable-treelist-reverse! mtl)
   (check-mutable-treelist 'mutable-treelist-reverse! mtl)
   (define tl (mutable-treelist-tl mtl))
-  (cond
-    [(impersonator? mtl)
-     (set-mutable-treelist-tl! mtl (treelist-reverse tl))]
-    [else
-     (define len (treelist-length tl))
-     (define vec (make-vector len))
-     (for ([el (in-treelist tl)]
-           [i (in-range (sub1 len) -1 -1)])
-       (vector-set! vec i el))
-     (set-mutable-treelist-tl! mtl (vector->treelist vec))]))
+  (set-mutable-treelist-tl! mtl (treelist-reverse tl)))
 
 (define (mutable-treelist->vector mtl)
   (check-mutable-treelist 'mutable-treelist->vector mtl)
