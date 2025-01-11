@@ -276,16 +276,18 @@
            ((fx+ pos 1) next-node next-node-pos))]]
       [_ #f])))
 
-(define-for-syntax (make-for/treelist for/fold/derived-id)
+(define-for-syntax (make-for/treelist for/fold/derived-id wrap-result-id)
   (lambda (stx)
     (syntax-case stx ()
       [(_ binds body0 body ...)
        (with-syntax ([((pre-body ...) (post-body ...)) (split-for-body stx #'(body0 body ...))]
-                     [for/fold/derived for/fold/derived-id])
+                     [for/fold/derived for/fold/derived-id]
+                     [wrap-result wrap-result-id])
          #`(for/fold/derived #,stx ([root empty-node] [size 0] [height 0]
-                                                      #:result (if (fx= size 0)
-                                                                   empty-treelist
-                                                                   (treelist root size height)))
+                                                      #:result (wrap-result
+                                                                (if (fx= size 0)
+                                                                    empty-treelist
+                                                                    (treelist root size height))))
                              binds
              pre-body ...
              (unsafe-root-add root size height
@@ -293,9 +295,9 @@
                                 post-body ...))))])))
 
 (define-syntax for/treelist
-  (make-for/treelist #'for/fold/derived))
+  (make-for/treelist #'for/fold/derived #'values))
 (define-syntax for*/treelist
-  (make-for/treelist #'for*/fold/derived))
+  (make-for/treelist #'for*/fold/derived #'values))
 
 (define in-treelist/proc
   ;; Slower strategy than the inline version, but the
