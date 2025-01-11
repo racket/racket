@@ -242,7 +242,16 @@
 (define (mutable-treelist-reverse! mtl)
   (check-mutable-treelist 'mutable-treelist-reverse! mtl)
   (define tl (mutable-treelist-tl mtl))
-  (set-mutable-treelist-tl! mtl (treelist-reverse tl)))
+  (cond
+    [(impersonator? mtl)
+     (set-mutable-treelist-tl! mtl (treelist-reverse tl))]
+    [else
+     (define len (treelist-length tl))
+     (define vec (make-vector len))
+     (for ([el (in-treelist tl)]
+           [i (in-range (sub1 len) -1 -1)])
+       (vector-set! vec i el))
+     (set-mutable-treelist-tl! mtl (vector->treelist vec))]))
 
 (define (mutable-treelist->vector mtl)
   (check-mutable-treelist 'mutable-treelist->vector mtl)
@@ -318,10 +327,26 @@
   (check-mutable-treelist 'in-mutable-treelist mtl)
   (in-treelist (mutable-treelist-tl mtl)))
 
+(define-for-syntax (make-for/mutable-treelist for/vector-id)
+  (lambda (stx)
+    (syntax-case stx ()
+      [(_ binds body0 body ...)
+       (quasisyntax/loc stx
+         (vector->mutable-treelist
+          (#,for/vector-id binds body0 body ...)))]
+      [(_ #:length length-expr #:fill fill-expr binds body0 body ...)
+       (quasisyntax/loc stx
+         (vector->mutable-treelist
+          (#,for/vector-id #:length length-expr #:fill fill-expr binds body0 body ...)))]
+      [(_ #:length length-expr binds body0 body ...)
+       (quasisyntax/loc stx
+         (vector->mutable-treelist
+          (#,for/vector-id #:length length-expr binds body0 body ...)))])))
+
 (define-syntax for/mutable-treelist
-  (make-for/treelist #'for/vector #'vector->mutable-treelist))
+  (make-for/mutable-treelist #'for/vector))
 (define-syntax for*/mutable-treelist
-  (make-for/treelist #'for*/vector #'vector->mutable-treelist))
+  (make-for/mutable-treelist #'for*/vector))
 
 (define (check-chaperone-arguments who
                                    ref-proc

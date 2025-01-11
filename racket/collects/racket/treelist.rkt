@@ -276,26 +276,26 @@
            ((fx+ pos 1) next-node next-node-pos))]]
       [_ #f])))
 
-(define-for-syntax (make-for/treelist for/vector-id vector->treelist-id)
+(define-for-syntax (make-for/treelist for/fold/derived-id)
   (lambda (stx)
     (syntax-case stx ()
       [(_ binds body0 body ...)
-       (quasisyntax/loc stx
-         (#,vector->treelist-id
-          (#,for/vector-id binds body0 body ...)))]
-      [(_ #:length length-expr #:fill fill-expr binds body0 body ...)
-       (quasisyntax/loc stx
-         (#,vector->treelist-id
-          (#,for/vector-id #:length length-expr #:fill fill-expr binds body0 body ...)))]
-      [(_ #:length length-expr binds body0 body ...)
-       (quasisyntax/loc stx
-         (#,vector->treelist-id
-          (#,for/vector-id #:length length-expr binds body0 body ...)))])))
+       (with-syntax ([((pre-body ...) (post-body ...)) (split-for-body stx #'(body0 body ...))]
+                     [for/fold/derived for/fold/derived-id])
+         #`(for/fold/derived #,stx ([root empty-node] [size 0] [height 0]
+                                                      #:result (if (fx= size 0)
+                                                                   empty-treelist
+                                                                   (treelist root size height)))
+                             binds
+             pre-body ...
+             (unsafe-root-add root size height
+                              (let ()
+                                post-body ...))))])))
 
 (define-syntax for/treelist
-  (make-for/treelist #'for/vector #'vector->treelist))
+  (make-for/treelist #'for/fold/derived))
 (define-syntax for*/treelist
-  (make-for/treelist #'for*/vector #'vector->treelist))
+  (make-for/treelist #'for*/fold/derived))
 
 (define in-treelist/proc
   ;; Slower strategy than the inline version, but the
@@ -550,7 +550,7 @@
                       (fx+ height 1)))])]))
 
 (define (unsafe-root-add root size height el)
-  ;; similar to `treelist-add`
+  ;; similar to `treelist-add`, used for `for/treelist`
   (define new-root (build root height el))
   (if new-root
       (values new-root (fx+ size 1) height)
@@ -832,16 +832,10 @@ minimum required storage. |#
     [else (treelist-take (treelist-drop tl pos) len)]))
 
 (define (treelist-reverse tl)
-  (cond
-    [(impersonator? tl) (treelist-reverse/slow tl)]
-    [else
-     (check-treelist 'treelist-reverse tl)
-     (define len (treelist-size tl))
-     (define vec (make-vector len))
-     (for ([el (in-treelist tl)]
-           [i (in-range (sub1 len) -1 -1)])
-       (vector-set! vec i el))
-     (vector->treelist vec)]))
+  (check-treelist 'treelist-reverse tl)
+  (define len (treelist-length tl))
+  (for/fold ([new-tl (treelist-take tl 0)]) ([i (in-range len)])
+    (treelist-add new-tl (treelist-ref tl (fx- len i 1)))))
 
 (define (treelist-rest tl)
   (cond
@@ -1210,7 +1204,7 @@ minimum required storage. |#
   (check-treelist 'treelist-map tl)
   (unless (and (procedure? proc) (procedure-arity-includes? proc 1))
     (raise-argument-error* 'treelist-map 'racket/primitive "(procedure-arity-includes/c 1)" proc))
-  (for/treelist #:length (treelist-size tl) ([v (in-treelist tl)])
+  (for/treelist ([v (in-treelist tl)])
     (proc v)))
 
 (define (treelist-for-each tl proc)
@@ -1522,13 +1516,6 @@ minimum required storage. |#
     [else
      (treelist-ref/slow tl (fx- (treelist-size tl) 1))]))
 
-(define (treelist-reverse/slow tl)
-  (define who 'treelist-reverse)
-  (check-treelist who tl)
-  (define len (treelist-size tl))
-  (for/fold ([new-tl (treelist-take/slow tl 0)]) ([i (in-range len)])
-    (treelist-add/slow new-tl (treelist-ref/slow tl (fx- len i 1)))))
-
 (define (treelist-rest/slow tl)
   (define who 'treelist-rest)
   (check-treelist who tl)
@@ -1681,7 +1668,7 @@ minimum required storage. |#
      tl]
     [(impersonator? tl)
      ;; copy the slow but general way
-     (for/treelist #:length (treelist-size tl) ([i (in-treelist tl)])
+     (for/treelist ([i (in-treelist tl)])
        i)]
     [else
      (struct-copy treelist tl
