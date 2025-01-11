@@ -16,7 +16,7 @@
         #:timeout-evt-proc (-> thread? input-port? output-port? boolean? evt?))
        res/c))
 
-(define (start-server listener handle
+(define (start-server listen-evt handle
                       #:max-concurrent   [max-concurrent +inf.0]
                       #:accept-proc      [accept tcp-accept]
                       #:close-proc       [close tcp-close]
@@ -41,6 +41,7 @@
                                       (format "Connection error: ~a" (exn-message e))
                                       e)))])
                   (sync/enable-break
+                   ;; Deduct completed connections from `in-progress`
                    (handle-evt
                     (thread-receive-evt)
                     (lambda (_)
@@ -48,14 +49,17 @@
                         (if (thread-try-receive)
                             (drain-loop (sub1 in-progress))
                             in-progress))))
+                   ;; Accept new connections, subject to `in-progress`
                    (handle-evt
-                    (if (< in-progress max-concurrent) listener never-evt)
-                    (lambda (l)
+                    (if (< in-progress max-concurrent) listen-evt never-evt)
+                    (lambda (listener)
+                      ;; make a custodian for the new connection
                       (define client-cust (make-custodian))
                       (parameterize ([current-custodian client-cust])
+                        ;; disable breaks during connection set-up...
                         (parameterize-break #f
                           (define-values (in out)
-                            (accept l))
+                            (accept listener))
                           (define client-thd
                             (thread
                              (lambda ()
@@ -63,19 +67,23 @@
                                 paramz
                                 (lambda ()
                                   (break-enabled can-break?)
+                                  ;; create an intermediary custodian to provent `handle`
+                                  ;; from shutting down `client-cust`
                                   (parameterize ([current-custodian (make-custodian client-cust)])
                                     (handle in out)))))))
-                          (thread
-                           (lambda ()
-                             (sync client-thd (make-timeout-evt client-thd in out #f))
-                             (when (thread-running? client-thd)
-                               (break-thread client-thd)
-                               (sync client-thd (make-timeout-evt client-thd in out #t)))
-                             (thread-send server-thd 'done void)
-                             (custodian-shutdown-all client-cust)))
+                          (define supervisor-thd
+                            (thread
+                             (lambda ()
+                               (sync client-thd (make-timeout-evt client-thd in out #f))
+                               (when (thread-running? client-thd)
+                                 (break-thread client-thd)
+                                 (sync client-thd (make-timeout-evt client-thd in out #t)))
+                               ;; report that this connection finished
+                               (thread-send server-thd 'done void)
+                               (custodian-shutdown-all client-cust))))
                           (add1 in-progress)))))))))))
          (lambda ()
-           (close listener))))))
+           (close listen-evt))))))
   (lambda ()
     (break-thread server-thd)
     (thread-wait server-thd)))

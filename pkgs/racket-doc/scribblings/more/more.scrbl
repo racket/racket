@@ -802,6 +802,9 @@ The Racket distribution includes a production-quality web server that
 addresses all of the design points mentioned here and more.  To learn
 more, see the tutorial @Continue[Continue-title], @Web[], or the
 research paper @cite["Krishnamurthi07"].
+Additionally, the @racketmodname[net/server #:indirect] library
+supports adding these features to custom servers, including for
+protocols other than TCP.
 
 Otherwise, if you arrived here as part of an introduction to
 Racket, then your next stop is probably @|guide|.
