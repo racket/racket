@@ -1,5 +1,25 @@
 Version 8.16
+Add `treelist-filter, `treelist-index-of`, `treelist-flatten`,
+ `treelist-append*`, and `sequence->treelist` in `racket/treelist`,
+  repair `treelist-set` on non-leftwise-dense subtrees,
+  and change `treelist/c` to never lazy by default
+Add `mutable-treelist-prepend!` in `racket/mutable-treelist`
+Change (mutable) treelists to support serialization
+Add `flbit-field` to `racket/flonum`
+Add `\X` in `pregexp` to match a grapheme cluster character sequence
+Improve `ffi/unsafe` layers to speed up `ptr-ref` and `ptr-set!`
 Add `port-file-stat`
+Add `pipe-port?`
+Add `open-input-nowhere` to `racket/port`
+Improve `read-bytes` for large requests through custom input ports
+CS: repair custom-port polling by `peek-bytes-avail*!`
+Allow `make-parameter` as cross-phase persistent
+CS: repair `simplify-path` for a link that needs simplification
+Add `read-json*` and `write-json*` in `(submod json for-extension)`
+Improve XML reader performance
+Add `error-syntax->name-handler`
+Add `racket/serialize-structs`
+BC: upgrade to libffi 3.4.6
 
 Version 8.15, Ocotober 2024
 Sort and highlight documentation-search results by core documentation
