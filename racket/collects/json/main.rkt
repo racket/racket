@@ -41,7 +41,9 @@
         any)] ;; void?
   [read-json
    (->* ()
-        (input-port? #:null any/c) ;; (json-null)
+        (input-port?
+         #:null any/c ;; (json-null)
+         #:mhash? boolean?) ;; #f
         any)] ;; jsexpr?
   [jsexpr->string
    (->* (any/c) ;; jsexpr? but dependent on #:null arg
@@ -57,11 +59,13 @@
         any)] ;; bytes?
   [string->jsexpr
    (->* (string?)
-        (#:null any/c) ;; (json-null)
+        (#:null any/c ;; (json-null)
+         #:mhash? boolean?) ;; #f
         any)] ;; jsexpr?
   [bytes->jsexpr
    (->* (bytes?)
-        (#:null any/c) ;; (json-null)
+        (#:null any/c ;; (json-null)
+         #:mhash? boolean?) ;; #f
         any)] ;; jsexpr?
   ))
 
@@ -234,10 +238,12 @@
 ;; -----------------------------------------------------------------------------
 ;; PARSING (from JSON to Racket)
 
-(define (read-json [i (current-input-port)] #:null [jsnull (json-null)])
+(define (read-json [i (current-input-port)]
+                   #:null [jsnull (json-null)]
+                   #:mhash? [jsmhash? #f])
   (read-json* 'read-json i
               #:null jsnull
-              #:make-object make-immutable-hasheq
+              #:make-object (if jsmhash? make-hasheq make-immutable-hasheq)
               #:make-list values
               #:make-key string->symbol
               #:make-string values))
@@ -626,20 +632,24 @@
                #:string-rep->string values)
   (get-output-bytes o))
 
-(define (string->jsexpr str #:null [jsnull (json-null)])
+(define (string->jsexpr str
+                        #:null [jsnull (json-null)]
+                        #:mhash? [jsmhash? #f])
   ;; str is protected by contract
   (read-json* 'string->jsexpr (open-input-string str)
               #:null jsnull
-              #:make-object make-immutable-hasheq
+              #:make-object (if jsmhash? make-hasheq make-immutable-hasheq)
               #:make-list values
               #:make-key string->symbol
               #:make-string values))
 
-(define (bytes->jsexpr bs #:null [jsnull (json-null)])
+(define (bytes->jsexpr bs
+                       #:null [jsnull (json-null)]
+                       #:mhash? [jsmhash? #f])
   ;; bs is protected by contract
   (read-json* 'bytes->jsexpr (open-input-bytes bs)
               #:null jsnull
-              #:make-object make-immutable-hasheq
+              #:make-object (if jsmhash? make-hasheq make-immutable-hasheq)
               #:make-list values
               #:make-key string->symbol
               #:make-string values))
