@@ -493,7 +493,7 @@
           #f])])]))
 
 ;; For importing into the default space, adjust shadowable imports of
-;; the same name into non-default spaces to that they're treated as
+;; the same name into non-default spaces so that they're treated as
 ;; ambiguous, the same as would happen for local bindings.
 (define (adjust-shadow-requires! r+p id phase space)
   (unless space
@@ -507,19 +507,20 @@
         ;; Currently bound by require; by only a shadowable require?
         (define mpi (intern-mpi r+p (module-binding-nominal-module b)))
         (define at-mod (hash-ref (requires+provides-requires r+p) mpi #f))
-        (define nominal-phase+space-shift (module-binding-nominal-require-phase+space-shift b))
-        (define sym-to-reqds (hash-ref at-mod nominal-phase+space-shift #hasheq()))
-        (define reqds (hash-ref sym-to-reqds (syntax-e id) null))
-        (when (for/and ([r (in-list-ish reqds)])
-                (if (bulk-required? r)
-                    (bulk-required-can-be-shadowed? r)
-                    (required-can-be-shadowed? r)))
-          ;; It's a shadowable require, so we want to make it act ambiguous
-          ;; and treat it as no longer imported
-          (hash-set! sym-to-reqds (syntax-e id)
-                     (remove-non-matching-requireds reqds space-id phase mpi nominal-phase+space-shift (syntax-e id)))
-          (add-binding! space-id (like-ambiguous-binding) phase))))))
-        
+        (when at-mod ; can be `#f` if `r+p` is an incomplete history of imports
+          (define nominal-phase+space-shift (module-binding-nominal-require-phase+space-shift b))
+          (define sym-to-reqds (hash-ref at-mod nominal-phase+space-shift #f))
+          (when sym-to-reqds
+            (define reqds (hash-ref sym-to-reqds (syntax-e id) null))
+            (when (for/and ([r (in-list-ish reqds)])
+                    (if (bulk-required? r)
+                        (bulk-required-can-be-shadowed? r)
+                        (required-can-be-shadowed? r)))
+              ;; It's a shadowable require, so we want to make it act ambiguous
+              ;; and treat it as no longer imported
+              (hash-set! sym-to-reqds (syntax-e id)
+                         (remove-non-matching-requireds reqds space-id phase mpi nominal-phase+space-shift (syntax-e id)))
+              (add-binding! space-id (like-ambiguous-binding) phase))))))))
 
 (define (add-defined-syms! r+p syms phase #:as-transformer? [as-transformer? #f])
   (define phase-to-defined-syms (requires+provides-phase-to-defined-syms r+p))

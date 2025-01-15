@@ -4360,5 +4360,30 @@ case of module-leve bindings; it doesn't cover local bindings.
       (namespace-require '(for-label 'provides-at-multiple-phases-and-spaces-mixed)))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Regression test related to shadowing imports at non-default space
+
+(parameterize ([current-namespace (make-base-namespace)])
+  (define (make name v demo?)
+    `(module ,name racket/base
+       (require (for-syntax racket/base))
+       (provide x
+                z
+                (for-space test/demo z)
+                ,@(if demo?
+                      `((for-space test/demo x))
+                      null))
+       (define-syntax (def stx)
+         (syntax-case stx ()
+           [(_ id v) #`(define #,((make-interned-syntax-introducer 'test/demo) #'id) v)]))
+       (define x ,v)
+       (def x ,(+ v 100))
+       (define z 0)
+       (def z 0)))
+  (eval (make 'm 10 #t))
+  (namespace-require (make-resolved-module-path 'm))
+  (eval (make 'n 11 #f))
+  (namespace-require '(for-meta 0 'n 'n)))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)
