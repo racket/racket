@@ -267,6 +267,21 @@
 
 (test #t mutable-treelist-empty? (make-mutable-treelist 0))
 
+(test (mutable-treelist 1 -1 2 -2 3 -3) 'for*
+      (for*/mutable-treelist ([i (in-range 1 4)]
+                              [m '(1 -1)])
+        (* i m)))
+(test (mutable-treelist 1 -1 2 -2 3 -3 0 0) 'for*
+      (for*/mutable-treelist #:length 8
+                             ([i (in-range 1 4)]
+                              [m '(1 -1)])
+        (* i m)))
+(test (mutable-treelist 1 -1 2 -2 3 -3 'x 'x) 'for*
+      (for*/mutable-treelist #:length 8 #:fill 'x
+                             ([i (in-range 1 4)]
+                              [m '(1 -1)])
+        (* i m)))
+
 (define (mutable-treelist-tests small-treelist wrap)
   (define test!
     (make-keyword-procedure

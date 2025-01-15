@@ -318,10 +318,26 @@
   (check-mutable-treelist 'in-mutable-treelist mtl)
   (in-treelist (mutable-treelist-tl mtl)))
 
+(define-for-syntax (make-for/mutable-treelist for/vector-id)
+  (lambda (stx)
+    (syntax-case stx ()
+      [(_ binds body0 body ...)
+       (quasisyntax/loc stx
+         (vector->mutable-treelist
+          (#,for/vector-id binds body0 body ...)))]
+      [(_ #:length length-expr #:fill fill-expr binds body0 body ...)
+       (quasisyntax/loc stx
+         (vector->mutable-treelist
+          (#,for/vector-id #:length length-expr #:fill fill-expr binds body0 body ...)))]
+      [(_ #:length length-expr binds body0 body ...)
+       (quasisyntax/loc stx
+         (vector->mutable-treelist
+          (#,for/vector-id #:length length-expr binds body0 body ...)))])))
+
 (define-syntax for/mutable-treelist
-  (make-for/treelist #'for/fold/derived #'treelist-copy))
+  (make-for/mutable-treelist #'for/vector))
 (define-syntax for*/mutable-treelist
-  (make-for/treelist #'for*/fold/derived #'treelist-copy))
+  (make-for/mutable-treelist #'for*/vector))
 
 (define (check-chaperone-arguments who
                                    ref-proc
