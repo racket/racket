@@ -41,7 +41,9 @@
         any)] ;; void?
   [read-json
    (->* ()
-        (input-port? #:null any/c) ;; (json-null)
+        (input-port?
+         #:replace-malformed-surrogate? any/c
+         #:null any/c) ;; (json-null)
         any)] ;; jsexpr?
   [jsexpr->string
    (->* (any/c) ;; jsexpr? but dependent on #:null arg
@@ -57,11 +59,13 @@
         any)] ;; bytes?
   [string->jsexpr
    (->* (string?)
-        (#:null any/c) ;; (json-null)
+        (#:replace-malformed-surrogate? any/c
+         #:null any/c) ;; (json-null)
         any)] ;; jsexpr?
   [bytes->jsexpr
    (->* (bytes?)
-        (#:null any/c) ;; (json-null)
+        (#:replace-malformed-surrogate? any/c
+         #:null any/c) ;; (json-null)
         any)] ;; jsexpr?
   ))
 
@@ -234,8 +238,11 @@
 ;; -----------------------------------------------------------------------------
 ;; PARSING (from JSON to Racket)
 
-(define (read-json [i (current-input-port)] #:null [jsnull (json-null)])
+(define (read-json [i (current-input-port)]
+                   #:null [jsnull (json-null)]
+                   #:replace-malformed-surrogate? [replace-malformed-surrogate? #f])
   (read-json* 'read-json i
+              #:replace-malformed-surrogate? replace-malformed-surrogate?
               #:null jsnull
               #:make-object make-immutable-hasheq
               #:make-list values
@@ -243,6 +250,7 @@
               #:make-string values))
 
 (define (read-json* who i
+                    #:replace-malformed-surrogate? replace-malformed-surrogate?
                     #:null jsnull
                     #:make-object make-object-rep
                     #:make-list make-list-rep
@@ -281,7 +289,7 @@
     ;; Using a string output port would make sense here, but managing
     ;; a string buffer directly is even faster
     (define result (make-string 16))
-    (define (keep-char c old-result pos converter)
+    (define (save-char c old-result pos)
       (define result
         (cond
           [(= pos (string-length old-result))
@@ -290,7 +298,10 @@
            new]
           [else old-result]))
       (string-set! result pos c)
-      (loop result (add1 pos) converter))
+      (values result (add1 pos)))
+    (define (keep-char c old-result old-pos converter)
+      (define-values (result pos) (save-char c old-result old-pos))
+      (loop result pos converter))
     (define (loop result pos converter)
       (define c (read-byte i))
       (cond
@@ -356,21 +367,33 @@
               (arithmetic-shift (hex-convert c3) 4)
               (hex-convert c4)))
          (define e (get-hex))
-         (define e*
-           (cond
-             [(<= #xD800 e #xDFFF)
-              (define (err-missing)
-                (err "bad string \\u escape, missing second half of a UTF-16 pair"))
-              (unless (eqv? (read-byte i) (char->integer #\\)) (err-missing))
-              (unless (eqv? (read-byte i) (char->integer #\u)) (err-missing))
-              (define e2 (get-hex))
-              (cond
-                [(<= #xDC00 e2 #xDFFF)
-                 (+ (arithmetic-shift (- e #xD800) 10) (- e2 #xDC00) #x10000)]
-                [else
-                 (err "bad string \\u escape, bad second half of a UTF-16 pair")])]
-             [else e]))
-         (keep-char (integer->char e*) result pos converter)]
+         (define-values (e* new-result new-pos)
+           (let resync ([e e] [result result] [pos pos])
+             (cond
+               [(<= #xD800 e #xDBFF)
+                (cond
+                  [(equal? (peek-bytes 2 0 i) #"\\u")
+                   (read-bytes 2 i)
+                   (define e2 (get-hex))
+                   (cond
+                     [(<= #xDC00 e2 #xDFFF)
+                      (define cp (+ (arithmetic-shift (- e #xD800) 10) (- e2 #xDC00) #x10000))
+                      (values cp result pos)]
+                     [replace-malformed-surrogate?
+                      (define-values (new-result new-pos) (save-char (integer->char #xFFFD) result pos))
+                      (resync e2 new-result new-pos)]
+                     [else
+                      (err "bad string \\u escape, bad second half of a UTF-16 pair")])]
+                  [replace-malformed-surrogate?
+                   (values #xFFFD result pos)]
+                  [else
+                   (err "bad string \\u escape, missing second half of a UTF-16 pair")])]
+               [(<= #xDC00 e #xDFFF)
+                (if replace-malformed-surrogate?
+                    (values #xFFFD result pos)
+                    (err "bad string \\u escape, missing first half of a UTF-16 pair"))]
+               [else (values e result pos)])))
+         (keep-char (integer->char e*) new-result new-pos converter)]
         [else (err "bad string escape: \"~a\"" esc)]))
     (loop result 0 #f))
   ;;
@@ -626,18 +649,24 @@
                #:string-rep->string values)
   (get-output-bytes o))
 
-(define (string->jsexpr str #:null [jsnull (json-null)])
+(define (string->jsexpr str
+                        #:replace-malformed-surrogate? [replace-malformed-surrogate? #f]
+                        #:null [jsnull (json-null)])
   ;; str is protected by contract
   (read-json* 'string->jsexpr (open-input-string str)
+              #:replace-malformed-surrogate? replace-malformed-surrogate?
               #:null jsnull
               #:make-object make-immutable-hasheq
               #:make-list values
               #:make-key string->symbol
               #:make-string values))
 
-(define (bytes->jsexpr bs #:null [jsnull (json-null)])
+(define (bytes->jsexpr bs
+                       #:replace-malformed-surrogate? [replace-malformed-surrogate? #f]
+                       #:null [jsnull (json-null)])
   ;; bs is protected by contract
   (read-json* 'bytes->jsexpr (open-input-bytes bs)
+              #:replace-malformed-surrogate? replace-malformed-surrogate?
               #:null jsnull
               #:make-object make-immutable-hasheq
               #:make-list values
