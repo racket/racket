@@ -938,6 +938,11 @@
 ;; strings can be cast
 (test "heλλo" cast (cast "he\u3bb\u3bbo" _string/utf-16 _gcpointer) _gcpointer _string/utf-16)
 
+;; symbols
+(test "abc" cast (cast 'abc _symbol _gcpointer) _gcpointer _string/utf-8)
+(test "heλλo" cast (cast 'heλλo _symbol _gcpointer) _gcpointer _string/utf-8)
+(test (char->integer #\h) (get-ffi-obj 'grab7th test-lib  (_fun _symbol -> _int)) 'abcdefgh)
+
 ;; check async:
 (when test-async?
   (define (check async like)
