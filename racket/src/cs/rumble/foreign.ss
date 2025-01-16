@@ -517,7 +517,7 @@
 (define-ctype _symbol ftype-pointer 'string
   (lambda (m) (string->symbol (utf8->string (fptr->bytevector/nul m))))
   (lambda (for-whom x) (if (symbol? x)
-                           (cptr->fptr who (string->utf8 (symbol->string x)))
+                           (cptr->fptr who (string->utf8 (string-append (#%symbol->string x) (string #\nul))))
                            (bad-ctype-value for-whom who x))))
 
 (define-ctype _longdouble double 'double

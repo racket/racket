@@ -20,7 +20,7 @@
   [_stdbool (known-ctype 'integer-8)]
   [_string/ucs-4 (known-ctype 'ftype-pointer)]
   [_string/utf-16 (known-ctype 'ftype-pointer)]
-  [_symbol (known-ctype 'string)]
+  [_symbol (known-ctype 'ftype-pointer)]
   [_ufixint (known-ctype 'unsigned-32)]
   [_ufixnum (known-ctype 'fixnum)]
   [_uint16 (known-ctype 'unsigned-16)]
