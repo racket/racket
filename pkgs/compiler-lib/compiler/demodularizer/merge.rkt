@@ -12,7 +12,8 @@
 
 (provide merge-linklets)
 
-(define (merge-linklets phase-runs names transformer-names)
+(define (merge-linklets phase-runs names transformer-names
+                        #:prune-definitions? prune-definitions?)
   ;; Accumulate syntax objects, which span phases. If would be nice if we didn't
   ;; keep syntax objects in expressions that are later pruned,
   ;; but we'll leave that as a future improvement.

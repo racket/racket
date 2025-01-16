@@ -46,11 +46,14 @@
          (case tag
            [(#:module)
             (unless (module-path? (syntax->datum path))
-              (raise-syntax-error #f "not a module path" stx path))            
-            (list 'module
-                  (resolved-module-path-name
-                   (module-path-index-resolve
-                    (module-path-index-join (syntax->datum path) #f))))]
+              (raise-syntax-error #f "not a module path" stx path))
+            (define name
+              (resolved-module-path-name
+               (module-path-index-resolve
+                (module-path-index-join (syntax->datum path) #f))))
+            (unless (path? name)
+              (raise-syntax-error #f "not a file module path" stx path))
+            (list 'module name)]
            [(#:dir)
             (unless (path-string? (syntax-e path))
               (raise-syntax-error #f "not a path" stx path))

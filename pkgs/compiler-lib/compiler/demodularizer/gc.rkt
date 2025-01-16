@@ -83,6 +83,9 @@
     (define (used-name! name)
       (used-name-at-defined-names! name defined-names))
 
+    (define ready (make-hasheq))
+    (define inlines (make-hasheq))
+
     (define (used! b)
       (cond
         [(faslable-correlated? b)
@@ -120,12 +123,13 @@
             (define u (hash-ref used id #f))
             (cond
               [(and (procedure? u) (or (symbol? rhs)
-                                       (pure? rhs)))
+                                       (pure? rhs ready inlines #hasheq())))
                (hash-set! used id (lambda ()
                                     (u)
                                     (used! rhs)))]
               [else
                (used! rhs)])]
+           [`(void ,e) (used! e)]
            [`(quote . ,_) (void)]
            [`(with-continuation-mark ,key ,val ,body)
             (used! key)
@@ -135,8 +139,15 @@
             (used-name! id)]
            [`(#%variable-reference . ,_) (void)]
            [`(,rator ,rands ...)
-            (used! rator)
-            (for-each used! rands)]
+            (define new-b (try-inline rator rands inlines
+                                      (lambda (e)
+                                        (or (not (symbol? e))
+                                            (hash-ref ready e #f)))))
+            (cond
+              [new-b (used! new-b)]
+              [else
+               (used! rator)
+               (for-each used! rands)])]
            [_
             (when (symbol? b)
               (used-name! b))])]))
@@ -144,6 +155,7 @@
     (for ([b (in-list body)])
       (match b
         [`(define-values ,ids ,rhs)
+         (maybe-add-inline! ids rhs inlines)
          (define done? #f)
          (define (used-rhs!)
            (unless done?
@@ -159,8 +171,10 @@
               (hash-set! used id used-rhs!)]))
          (unless (and (not keep-defines?)
                       (or prune-definitions?
-                          (pure? rhs)))
-           (used-rhs!))]
+                          (pure? rhs ready inlines #hasheq())))
+           (used-rhs!))
+         (for ([id (in-list ids)])
+           (hash-set! ready id #t))]
         [_
          (cond
            [(transformer-definition-name b)
@@ -169,7 +183,7 @@
                  (if (hash-ref used name #f)
                      (used-trans!)
                      (hash-set! used name used-trans!)))]
-           [(pure? b) (void)]
+           [(pure? b ready inlines #hasheq()) (void)]
            [else (used! b)])]))))
 
 (define (gc-definitions used phase-merged)
@@ -179,12 +193,18 @@
 
     (define defined-names (merged-defined-names mgd))
     (define new-defined-names (make-hasheq))
+
+    (define inlines (make-hasheq))
+    (define ready (make-hasheq))
     
     (define pruned-body
       ;; Drop unused definitions
       (for/list ([b (in-list body)]
                  #:when (match b
                           [`(define-values ,ids ,rhs)
+                           (maybe-add-inline! ids rhs inlines)
+                           (for/or ([id (in-list ids)])
+                             (hash-set! ready id #t))
                            (define keep?
                              (for/or ([id (in-list ids)])
                                (eq? 'used (hash-ref used id #f))))
@@ -197,11 +217,11 @@
                              [(transformer-definition-name b)
                               => (lambda (name)
                                    (eq? 'used (hash-ref used name #f)))]
-                             [else (not (pure? b))])]))
-                                 
+                             [else (not (pure? b ready inlines used))])]))
         b))
 
-    ;; drop assignments to unused definitions
+    ;; Drop assignments to unused definitions and perform inlines
+    ;; of otherwise unused definitions
     (define new-body
       (remap-names pruned-body
                    (lambda (id) id)
@@ -211,26 +231,91 @@
                                         (eq? (hash-ref used id #f) 'used))
                                     'keep]
                                    [else
-                                    (if (symbol? rhs) #f 'rhs-only)]))))
-    
+                                    (if (symbol? rhs) #f 'rhs-only)]))
+                   #:application-hook (lambda (rator rands remap)
+                                        (cond
+                                          [(and (hash-ref inlines rator #f)
+                                                (not (eq? 'used (hash-ref used rator #f))))
+                                           (define new-b (try-inline rator rands inlines
+                                                                     (lambda (e) #t)))
+                                           (unless new-b
+                                             (error "expected inlining"))
+                                           (remap new-b)]
+                                          [else #f]))))
+
     (values root-phase (struct-copy merged mgd
                                     [body new-body]
                                     [defined-names new-defined-names]))))
 
-(define (pure? b)
-  (match b
-    [`(lambda . ,_) #t]
-    [`(case-lambda . ,_) #t]
-    [`(begin ,b) (pure? b)]
-    [`(begin-unsafe ,b) (pure? b)]
-    [`(quote . ,_) #t]
-    [`(let-values ([,idss ,rhss] ...) ,body)
-     (and (andmap pure? rhss)
-          (pure? body))]
-    [`(#%variable-reference . ,_) #t]
-    [`(void) #t]
-    [_ (not (or (pair? b)
-                (symbol? b)))]))
+(define (pure? b ready inlines used)
+  (let pure? ([b b])
+    (match b
+      [`(lambda . ,_) #t]
+      [`(case-lambda . ,_) #t]
+      [`(begin ,b) (pure? b)]
+      [`(begin-unsafe ,b) (pure? b)]
+      [`(quote . ,_) #t]
+      [`(let-values ([,idss ,rhss] ...) ,body)
+       (and (andmap pure? rhss)
+            (pure? body))]
+      [`(#%variable-reference . ,_) #t]
+      [`(void ,es ...) (andmap pure? es)]
+      [`(set! ,id ,rhs)
+       (cond
+         [(hash-ref used id #f)
+          => (lambda (u)
+               (and (not (eq? u 'used))
+                    (pure? rhs)))]
+         [else #f])]
+      [`(,rator ,rands ...)
+       (define new-b (try-inline rator rands inlines pure?))
+       (and new-b
+            (pure? new-b))]
+      [_ (not (and (symbol? b)
+                   (not (hash-ref ready b #f))))])))
+
+(struct inlined (args body))
+
+(define (maybe-add-inline! ids rhs inlines)
+  (when (= 1 (length ids))
+    (define inline
+      (let loop ([rhs rhs])
+        (cond
+          [(faslable-correlated? rhs)
+           (loop (faslable-correlated-e rhs))]
+          [else
+           (match rhs
+             [`(lambda ,args ,rhs)
+              (and
+               (list? args)
+               (let loop ([rhs rhs])
+                 (cond
+                   [(faslable-correlated? rhs)
+                    (loop (faslable-correlated-e rhs))]
+                   [else
+                    (match rhs
+                      [`(set! . ,_) #t]
+                      [_ (or (symbol? rhs)
+                             (not (pair? rhs)))])]))
+               (inlined args rhs))]
+             [_ #f])])))
+    (when inline
+      (hash-set! inlines (car ids) inline))))
+
+(define (try-inline rator rands inlines pure?)
+  (define inline (hash-ref inlines rator #f))
+  (define (simple? v) (or (symbol? v) (not (pair? v))))
+  (and inline
+       (andmap simple? rands)
+       (andmap pure? rands)
+       (= (length rands) (length (inlined-args inline)))
+       (let ([env (for/hash ([arg (in-list (inlined-args inline))]
+                                  [rand (in-list rands)])
+                    (values arg rand))])
+         (car
+          (remap-names (list (inlined-body inline))
+                       (lambda (id)
+                         (hash-ref env id id)))))))
 
 (define (transformer-definition-name b)
   (match b

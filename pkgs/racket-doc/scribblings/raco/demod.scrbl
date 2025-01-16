@@ -54,11 +54,15 @@ The @exec{raco demod} command accepts these flags:
 
  @item{@Flag{x} @nonterm{module-path} or @DFlag{exclude-library} @nonterm{module-path} ---
        excludes the module in @nonterm{module-path} from flattening, as well
-       as all of its dependencies.}
+       as all of its dependencies. An error is reported if @nonterm{module-path}
+       is not a dependency of the input module and has no submodules that are
+       dependencies.}
 
  @item{@Flag{e} @nonterm{path} or @DFlag{exclude-module} @nonterm{path} ---
        excludes the module in relative-file @nonterm{path} from flattening, as well
-       as all of its dependencies. For backward compatibility, @DFlag{exclude-modules}
+       as all of its dependencies. An error is reported if @nonterm{path}
+       is not a dependency of the input module and has no submodules that are
+       dependencies. For backward compatibility, @DFlag{exclude-modules}
        is an alias for @DFlag{exclude-module}.}
 
  @item{@Flag{s} or @DFlag{syntax} --- preserve syntax objects
@@ -119,7 +123,10 @@ flattening. The introduced submodules have names
                                 @Flag{s}/@DFlag{syntax}, @DFlag{dump},
                                 @DFlag{dump-mi}, @DFlag{prune-definitions}
                                 (as a new name for @DFlag{garbage-collect}),
-                                and preservation of submodules.}]
+                                and preservation of submodules.}
+         #:changed "1.16" @elem{Changed to reporting an error when a module
+                                named by @Flag{x} or @Flag{e} is not a
+                                dependency of the input module.}]
 
 @section[#:tag "lib-demod"]{Demodularizing Libraries}
 
@@ -218,6 +225,12 @@ form; otherwise, all modules are candidates for inclusion. When the
 @racket[_mod-spec]s are excluded, even if they would otherwise be
 included according to a @racket[#:include] specification. In other
 words, @racket[#:exclude] is applied after @racket[#:include].
+Each @racket[_mod-spec] must name a module by a filesystem or
+collection-based path, and it must not name a submodule; any submodule
+of the named module is implicitly included or excluded.
+If a @racket[_mod-spec] in the @racket[#:include] or @racket[#:exclude]
+list is not a dependency of @racket[module-path] (and has no submodules
+that are dependencies), then an exception is raised.
 
 The @racket[#:submodule-include] and @racket[#:submodule-exclude]
 specifications are analogous to @racket[#:include] and
@@ -292,4 +305,7 @@ for demodularization. This extra compilation is managed using
 incrementally, but still separate from normal compilation of the
 dependencies.
 
-@history[#:added "1.15"]
+@history[#:added "1.15"
+         #:changed "1.16" @elem{Changed to raising and exception an error when a module
+                                listed in @racket[#:include] or @racket[#:iexclude] is not a
+                                dependency of @racket[module-path].}]

@@ -333,6 +333,15 @@
       (find-modules! (path/submod-join top-path submod) (module-path-index-join `(submod "." ,@submod) self-mpi) #f #f)
       submod))
 
+  (when explicitly-included-modules
+    (for ([incl (in-set explicitly-included-modules)])
+      (unless (hash-ref mods incl #f)
+        (error 'demodularize "explicitly included module is not a dependency: ~a" incl))))
+  (when explicitly-excluded-modules
+    (for ([excl (in-set explicitly-excluded-modules)])
+      (unless (hash-ref mods excl #f)
+        (error 'demodularize "explicitly excluded module is not a dependency: ~a" excl))))
+
   (values one-mods
           kept-submods
           (for/hash ([(path/submod mpi+phase) (in-hash excluded-module-mpis)])

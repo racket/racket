@@ -121,7 +121,8 @@
   (define-values (phase-mergeds name-importss stx-vecs portal-stxess)
     (for/lists (phase-mergeds name-importss stx-vecs portal-stxess)
         ([phase-runs (in-list new-phase-runss)])
-      (merge-linklets phase-runs names transformer-names)))
+      (merge-linklets phase-runs names transformer-names
+                      #:prune-definitions? prune-definitions?)))
   (define provided-namess ; (list (root-phase -> (list sym ...)))
     (for/list ([top-path/submod (in-list top-path/submods)]
                [excluded-module-mpis (in-list excluded-module-mpiss)]

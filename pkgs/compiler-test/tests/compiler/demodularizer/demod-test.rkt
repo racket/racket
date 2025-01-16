@@ -19,6 +19,11 @@
     [("racket-5.rkt") #t]
     [else #f]))
 
+(define (non-base-test? i)
+  (case (path->string i)
+    [("kernel-5.rkt") #t]
+    [else #f]))
+
 (define (get-pruned-expected i)
   (case (path->string i)
     [("base-effect-defn.rkt")
@@ -113,12 +118,13 @@
      (test-on-program (path->string ip)
                       #:flags (append syntax-flags '("-g"))
                       #:expected-output (get-pruned-expected i))
-     (test-on-program (path->string ip)
-                      #:flags syntax-flags
-                      #:excludes
-                      (list "-e"
-                            (path->string
-                             (collection-file-path "pre-base.rkt" "racket/private"))))))
+     (unless (non-base-test? i)
+       (test-on-program (path->string ip)
+                        #:flags syntax-flags
+                        #:excludes
+                        (list "-e"
+                              (path->string
+                               (collection-file-path "pre-base.rkt" "racket/private")))))))
 
 (module+ test
   (module config info
