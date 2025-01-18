@@ -288,7 +288,7 @@
     (define flvector*-mask             #b0100000000000000)
     (define box-mask                   #b1000000000000000)
 
-    ;These two are more tricky, becuase they are not a constant property.
+    ; These two are trickier, because they are not constant properties.
     (define list-pair-mask           #b010000000000000000)
     (define nonlist-pair-mask        #b100000000000000000)
 
