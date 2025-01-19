@@ -1,6 +1,6 @@
 #lang racket/base
 
-(require racket/contract
+(require racket/contract/base
          racket/tcp)
 
 (provide
@@ -9,18 +9,18 @@
   [run-server (server-proc/c void?)]))
 
 (define (server-proc/c res/c)
-  (->* (evt? (-> input-port? output-port? any))
-       (#:max-concurrent   (or/c +inf.0 natural-number/c)
+  (->* [evt? (-> input-port? output-port? any)]
+       [#:max-concurrent   (or/c +inf.0 natural-number/c)
+        #:timeout-evt-proc (-> thread? input-port? output-port? boolean? evt?)
         #:accept-proc      (-> any/c (values input-port? output-port?))
-        #:close-proc       (-> any/c void?)
-        #:timeout-evt-proc (-> thread? input-port? output-port? boolean? evt?))
+        #:close-proc       (-> any/c void?)]
        res/c))
 
 (define (start-server listen-evt handle
                       #:max-concurrent   [max-concurrent +inf.0]
+                      #:timeout-evt-proc [make-timeout-evt (λ (_thd _in _out _break-sent?) never-evt)]
                       #:accept-proc      [accept tcp-accept]
-                      #:close-proc       [close tcp-close]
-                      #:timeout-evt-proc [make-timeout-evt (λ (_thd _in _out _break-sent?) never-evt)])
+                      #:close-proc       [close tcp-close])
   (define can-break?
     (break-enabled))
   (define paramz
@@ -41,7 +41,6 @@
                                       (format "Connection error: ~a" (exn-message e))
                                       e)))])
                   (sync/enable-break
-                   ;; Deduct completed connections from `in-progress`
                    (handle-evt
                     (thread-receive-evt)
                     (lambda (_)
@@ -49,15 +48,12 @@
                         (if (thread-try-receive)
                             (drain-loop (sub1 in-progress))
                             in-progress))))
-                   ;; Accept new connections, subject to `in-progress`
                    (handle-evt
                     (if (< in-progress max-concurrent) listen-evt never-evt)
                     (lambda (listener)
-                      ;; make custodians for the new connection
-                      (define supervisor-cust (make-custodian)) ; for supervisor-thd
-                      (define client-cust (make-custodian supervisor-cust)) ; for resources
+                      (define supervisor-cust (make-custodian))
+                      (define client-cust (make-custodian supervisor-cust))
                       (parameterize ([current-custodian client-cust])
-                        ;; disable breaks during connection set-up...
                         (parameterize-break #f
                           (define-values (in out)
                             (accept listener))
@@ -68,14 +64,14 @@
                                 paramz
                                 (lambda ()
                                   (break-enabled can-break?)
-                                  ;; create an intermediary custodian to provent `handle`
-                                  ;; from shutting down `client-cust`
+                                  ;; Create an intermediary custodian to prevent `handle` from
+                                  ;; shutting down `client-cust`.
                                   (parameterize ([current-custodian (make-custodian client-cust)])
                                     (handle in out)))))))
-                          (define supervisor-thd
-                            ;; under supervisor-cust so we can shut down client-cust
-                            ;; before we report that this connection is finished,
-                            ;; which means supervisor-thd must run after client-cust is shut down
+                          (define _supervisor-thd
+                            ;; Under supervisor-cust so we can shut down client-cust before we
+                            ;; report that this connection is finished, which means supervisor-thd
+                            ;; must continue running after client-cust is shut down.
                             (parameterize ([current-custodian supervisor-cust])
                               (thread
                                (lambda ()
@@ -83,11 +79,8 @@
                                  (when (thread-running? client-thd)
                                    (break-thread client-thd)
                                    (sync client-thd (make-timeout-evt client-thd in out #t)))
-                                 ;; release resources
                                  (custodian-shutdown-all client-cust)
-                                 ;; report that this connection is closed
                                  (thread-send server-thd 'done void)
-                                 ;; shut down ourself
                                  (custodian-shutdown-all supervisor-cust)))))
                           (add1 in-progress)))))))))))
          (lambda ()
