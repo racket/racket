@@ -26,6 +26,7 @@ jobs:
         raco test -l tests/json/json
         raco test -l tests/file/main
         raco test -l tests/net/head
+        raco test -l tests/net/server
         raco test -l tests/net/uri-codec
         raco test -l tests/net/url
         raco test -l tests/net/url-port
@@ -56,6 +57,7 @@ jobs:
         raco test -l tests/json/json
         raco test -l tests/file/main
         raco test -l tests/net/head
+        raco test -l tests/net/server
         raco test -l tests/net/uri-codec
         raco test -l tests/net/url
         raco test -l tests/net/url-port
