@@ -18,6 +18,8 @@ The @racketmodname[net/server] library provides
 support for running general-purpose networked servers.
 
 @(define reference '(lib "scribblings/reference/reference.scrbl"))
+@(define unix-sockets-link @seclink["Echo_Server_over_Unix_Domain_Sockets"]{Unix domain sockets})
+@(define ports-link @seclink["Echo_Server_over_Ports"]{plain Racket ports})
 
 @defproc[(start-server [listen-evt (evt/c @#,tech{listener})]
                        [handle (-> input-port? output-port? any)]
@@ -78,21 +80,20 @@ support for running general-purpose networked servers.
   impose a limit on the number of active connections.
 
   The @racket[listen-evt], @racket[accept] and @racket[close]
-  arguments together determine the protocol that is used.
-  The procedures must all work on the same kinds of values.
-  The default @racket[accept] and @racket[close] procedures
-  expect @racket[listen-evt] to be a @tech[#:doc reference]{TCP
-  listener} as created by @racket[tcp-listen]. The examples
-  illustrate using these arguments to serve instead over
-  @seclink["Echo_Server_over_Unix_Domain_Sockets"]{Unix domain sockets}
-  or over @seclink["Echo_Server_over_Ports"]{plain Racket ports}.
-  In the general case, @racket[listen-evt] must be a @tech[#:doc
-  reference]{synchronizable event} that is @tech[#:doc reference]{ready
-  for synchronization} when @racket[accept] would not block, and its
-  @tech[#:doc reference]{synchronization result} must be some kind of
-  @deftech{listener} value (perhaps @racket[listen-evt] itself) that can
-  be passed to @racket[accept]. Additionally, @racket[listen-evt] itself
-  must be suitable as an argument to @racket[close].
+  arguments together determine the protocol that is used. The
+  procedures must all work on the same kinds of values. The
+  default @racket[accept] and @racket[close] procedures expect
+  @racket[listen-evt] to be a @tech[#:doc reference]{TCP listener}
+  as created by @racket[tcp-listen]. The examples illustrate using
+  these arguments to serve instead over @unix-sockets-link or over
+  @|ports-link|. In the general case, @racket[listen-evt] must be a
+  @tech[#:doc reference]{synchronizable event} that is @tech[#:doc
+  reference]{ready for synchronization} when @racket[accept] would not
+  block, and its @tech[#:doc reference]{synchronization result} must be
+  some kind of @deftech{listener} value (perhaps @racket[listen-evt]
+  itself) that can be passed to @racket[accept]. Additionally,
+  @racket[listen-evt] itself must be suitable as an argument to
+  @racket[close].
 
   @history[#:added "1.3"]
 }
