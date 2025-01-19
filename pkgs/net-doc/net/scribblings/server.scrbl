@@ -55,7 +55,7 @@ support for running general-purpose networked servers.
 
   To facilitate capturing a continuation in one connection
   thread and invoking it in another, the parameterization of the
-  @racket[run-server] call is used for every call to @racket[handle].
+  @racket[start-server] call is used for every call to @racket[handle].
   In this parameterization and for the connection's thread, the
   @racket[current-custodian] is parameterized to the connection's
   custodian.
