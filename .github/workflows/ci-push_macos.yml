@@ -9,7 +9,7 @@ permissions:
   contents: read
 
 jobs:
-  
+
 # Build jobs
 # These jobs build each Racket component separately and tests on the component start as soon as each
 # component finishes building.
@@ -19,11 +19,11 @@ jobs:
       fail-fast: false
       matrix:
         cify: [nocify]
-          
+
     runs-on: macos-14
     env:
       RACKET_EXTRA_CONFIGURE_ARGS: ""
-    
+
     steps:
     - uses: actions/checkout@v4
       with:
@@ -37,18 +37,18 @@ jobs:
     - name: Configuring Racket CGC
       working-directory: ./racket/src
       run: >
-        ./configure 
+        ./configure
         --prefix=$GITHUB_WORKSPACE/racketcgc
-        $RACKET_EXTRA_CONFIGURE_ARGS 
-        --enable-cgcdefault 
-        --enable-jit 
+        $RACKET_EXTRA_CONFIGURE_ARGS
+        --enable-cgcdefault
+        --enable-jit
         --enable-foreign
         --enable-macprefix
-        --enable-places 
+        --enable-places
         --enable-float
         $CIFY_OPTION
         --enable-pthread
-        --disable-docs 
+        --disable-docs
     - name: Building
       working-directory: ./racket/src
       run: |
@@ -70,14 +70,14 @@ jobs:
       fail-fast: false
       matrix:
         cify: [nocify]
-            
+
     runs-on: macos-14
-    
+
     needs: build-racketcgc
-    
+
     env:
       RACKET_EXTRA_CONFIGURE_ARGS: ""
-    
+
     steps:
     - uses: actions/checkout@v4
       with:
@@ -101,17 +101,17 @@ jobs:
         CC: clang
       run: >
         ./configure
-        --prefix=$GITHUB_WORKSPACE/racket3m 
-        $RACKET_EXTRA_CONFIGURE_ARGS 
-        --enable-racket=$GITHUB_WORKSPACE/racketcgc/bin/racket 
-        --enable-bcdefault 
-        --enable-jit 
+        --prefix=$GITHUB_WORKSPACE/racket3m
+        $RACKET_EXTRA_CONFIGURE_ARGS
+        --enable-racket=$GITHUB_WORKSPACE/racketcgc/bin/racket
+        --enable-bcdefault
+        --enable-jit
         --enable-foreign
         --enable-macprefix
-        --enable-places 
-        --enable-float 
-        --disable-docs 
-        $CIFY_OPTION 
+        --enable-places
+        --enable-float
+        --disable-docs
+        $CIFY_OPTION
         --enable-pthread
     - name: Building
       working-directory: ./racket/src
@@ -132,7 +132,7 @@ jobs:
   build-racketcs:
     runs-on: macos-14
     needs: build-racketcgc
-    
+
     steps:
     - uses: actions/checkout@v4
       with:
@@ -149,14 +149,14 @@ jobs:
       env:
         CC: ${{ matrix.cc }}
       run: >
-        ./configure 
+        ./configure
         --prefix=$GITHUB_WORKSPACE/racketcs
         --enable-racket=$GITHUB_WORKSPACE/racketcgc/bin/racket
         --enable-macprefix
-        --enable-compress 
-        --disable-docs 
-        --enable-pthread 
-        --enable-csdefault 
+        --enable-compress
+        --disable-docs
+        --enable-pthread
+        --enable-csdefault
         --enable-csonly
     - name: Building
       working-directory: ./racket/src
@@ -203,10 +203,8 @@ jobs:
           make install
 
   # Tests
-  # Unfortunately Actions does not support atm yaml anchors
-  # otherwise all the following jobs could be simplified
-  # Note: the reason we cannot transform this into a matrix
-  # build is because we cannot use variables in the needs keyword.
+  # Note: the reason we cannot transform this into a matrix build is
+  # because we cannot use variables in the needs keyword.
   test-cgc:
     strategy:
       fail-fast: false
@@ -235,44 +233,8 @@ jobs:
         run: |
           racket -l- pkg/dirs-catalog --immediate $PWD/rktcat $PWD/pkgs/
           raco pkg config --set catalogs $PWD/rktcat/ https://pkgs.racket-lang.org https://planet-compats.racket-lang.org
-      - name: Install racket-test dependency
-        run: raco pkg install --auto racket-test
-      - name: Run tests/racket/test
-        run: raco test -l tests/racket/test
-      - name: Run tests/racket/contract/all
-        run: racket -l tests/racket/contract/all
-      - name: Run tests/json/json
-        run: raco test -l tests/json/json
-      - name: Run tests/file/main
-        run: raco test -l tests/file/main
-      - name: Run tests/net/head
-        run: raco test -l tests/net/head
-      - name: Run tests/net/uri-codec
-        run: raco test -l tests/net/uri-codec
-      - name: Run tests/net/url
-        run: raco test -l tests/net/url
-      - name: Run tests/net/url-port
-        run: raco test -l tests/net/url-port
-      - name: Run tests/net/encoders
-        run: raco test -l tests/net/encoders
-      - name: Run tests/openssl/basic
-        run: raco test -l tests/openssl/basic
-      - name: Run tests/openssl/https
-        run: raco test -l tests/openssl/https
-      - name: Run tests/match/main
-        run: raco test -l tests/match/main
-      - name: Run tests/zo-path
-        run: raco test -l tests/zo-path
-      - name: Run tests/xml
-        run: raco test -c tests/xml
-      - name: Run tests/stxparse
-        run: raco test -c tests/stxparse
-      - name: Install db tests dependency
-        run: raco pkg install --auto db-test
-      - name: Run db tests
-        run: raco test -l tests/db/all-tests
-      - name: Run syntax tests
-        run: raco test -c tests/syntax
+      - name: Test
+        run: bash .github/scripts/run-racket-tests.sh
 
   test-3m:
     strategy:
@@ -302,45 +264,9 @@ jobs:
         run: |
           racket -l- pkg/dirs-catalog --immediate $PWD/rktcat $PWD/pkgs/
           raco pkg config --set catalogs $PWD/rktcat/ https://pkgs.racket-lang.org https://planet-compats.racket-lang.org
-      - name: Install racket-test dependency
-        run: raco pkg install --auto racket-test
-      - name: Run tests/racket/test
-        run: raco test -l tests/racket/test
-      - name: Run tests/racket/contract/all
-        run: racket -l tests/racket/contract/all
-      - name: Run tests/json/json
-        run: raco test -l tests/json/json
-      - name: Run tests/file/main
-        run: raco test -l tests/file/main
-      - name: Run tests/net/head
-        run: raco test -l tests/net/head
-      - name: Run tests/net/uri-codec
-        run: raco test -l tests/net/uri-codec
-      - name: Run tests/net/url
-        run: raco test -l tests/net/url
-      - name: Run tests/net/url-port
-        run: raco test -l tests/net/url-port
-      - name: Run tests/net/encoders
-        run: raco test -l tests/net/encoders
-      - name: Run tests/openssl/basic
-        run: raco test -l tests/openssl/basic
-      - name: Run tests/openssl/https
-        run: raco test -l tests/openssl/https
-      - name: Run tests/match/main
-        run: raco test -l tests/match/main
-      - name: Run tests/zo-path
-        run: raco test -l tests/zo-path
-      - name: Run tests/xml
-        run: raco test -c tests/xml
-      - name: Run tests/stxparse
-        run: raco test -c tests/stxparse
-      - name: Install db tests dependency
-        run: raco pkg install --auto db-test
-      - name: Run db tests
-        run: raco test -l tests/db/all-tests
-      - name: Run syntax tests
-        run: raco test -c tests/syntax
-          
+      - name: Test
+        run: bash .github/scripts/run-racket-tests.sh
+
   test-cs:
     runs-on: macos-14
 
@@ -364,41 +290,5 @@ jobs:
         run: |
           racket -l- pkg/dirs-catalog --immediate $PWD/rktcat $PWD/pkgs/
           raco pkg config --set catalogs $PWD/rktcat/ https://pkgs.racket-lang.org https://planet-compats.racket-lang.org
-      - name: Install racket-test dependency
-        run: raco pkg install --auto racket-test
-      - name: Run tests/racket/test
-        run: raco test -l tests/racket/test
-      - name: Run tests/racket/contract/all
-        run: racket -l tests/racket/contract/all
-      - name: Run tests/json/json
-        run: raco test -l tests/json/json
-      - name: Run tests/file/main
-        run: raco test -l tests/file/main
-      - name: Run tests/net/head
-        run: raco test -l tests/net/head
-      - name: Run tests/net/uri-codec
-        run: raco test -l tests/net/uri-codec
-      - name: Run tests/net/url
-        run: raco test -l tests/net/url
-      - name: Run tests/net/url-port
-        run: raco test -l tests/net/url-port
-      - name: Run tests/net/encoders
-        run: raco test -l tests/net/encoders
-      - name: Run tests/openssl/basic
-        run: raco test -l tests/openssl/basic
-      - name: Run tests/openssl/https
-        run: raco test -l tests/openssl/https
-      - name: Run tests/match/main
-        run: raco test -l tests/match/main
-      - name: Run tests/zo-path
-        run: raco test -l tests/zo-path
-      - name: Run tests/xml
-        run: raco test -c tests/xml
-      - name: Run tests/stxparse
-        run: raco test -c tests/stxparse
-      - name: Install db tests dependency
-        run: raco pkg install --auto db-test
-      - name: Run db tests
-        run: raco test -l tests/db/all-tests
-      - name: Run syntax tests
-        run: raco test -c tests/syntax
+      - name: Test
+        run: bash .github/scripts/run-racket-tests.sh
