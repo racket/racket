@@ -17,28 +17,9 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - name: Build
-      run: make CPUS=$(nproc) PKGS="racket-test db-test unstable-flonum-lib net-test"
+      run: make CPUS="$(nproc)" PKGS=""
     - name: Test
-      run: |
-        export PATH=$PATH:`pwd`/racket/bin
-        raco test -l tests/racket/test
-        racket -l tests/racket/contract/all
-        raco test -l tests/json/json
-        raco test -l tests/file/main
-        raco test -l tests/net/head
-        raco test -l tests/net/uri-codec
-        raco test -l tests/net/url
-        raco test -l tests/net/url-port
-        raco test -l tests/net/encoders
-        raco test -l tests/openssl/basic
-        raco test -l tests/openssl/https
-        raco test -l tests/match/main
-        raco test -l tests/zo-path
-        raco test -c tests/xml
-        raco test --timeout 300 -c tests/future
-        raco test -l tests/db/all-tests
-        raco test -c tests/stxparse
-        raco test -c tests/syntax
+      run: bash .github/scripts/run-racket-tests.sh
 
   buildtest-macos:
 
@@ -47,28 +28,9 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - name: Build
-      run: make CPUS=$(sysctl -n hw.physicalcpu) PKGS="racket-test db-test unstable-flonum-lib net-test"
+      run: make CPUS="$(sysctl -n hw.physicalcpu)" PKGS=""
     - name: Test
-      run: |
-        export PATH=$PATH:`pwd`/racket/bin
-        raco test -l tests/racket/test
-        racket -l tests/racket/contract/all
-        raco test -l tests/json/json
-        raco test -l tests/file/main
-        raco test -l tests/net/head
-        raco test -l tests/net/uri-codec
-        raco test -l tests/net/url
-        raco test -l tests/net/url-port
-        raco test -l tests/net/encoders
-        raco test -l tests/openssl/basic
-        raco test -l tests/openssl/https
-        raco test -l tests/match/main
-        raco test -l tests/zo-path
-        raco test -c tests/xml
-        raco test --timeout 300 -c tests/future
-        raco test -l tests/db/all-tests
-        raco test -c tests/stxparse
-        raco test -c tests/syntax
+      run: bash .github/scripts/run-racket-tests.sh
     - name: Tarball
       run: tar -cvjf racketcs-macos-aarch64_git${{ github.sha }}.tar.bz2 racket
     - uses: actions/upload-artifact@v4
