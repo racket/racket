@@ -530,7 +530,8 @@
 (define (cleantree dst*)
   (define dst (if (symbol? dst*) (dir: dst*) dst*))
   (when (directory-exists? dst)
-    (printf "Deleting destination ~s...\n" dst)))
+    (printf "Deleting destination ~s...\n" dst)
+    (rm dst)))
 
 ;; --------------------------------------------------------------------------
 
