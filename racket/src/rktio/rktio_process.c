@@ -390,7 +390,7 @@ void centralized_done_with_process_id(int pid, int in_group)
   pthread_mutex_unlock(&child_wait_lock);
 }
 
-static void got_sigchld()
+static void got_sigchld(int ignored)
 { 
   /* handle doesn't need to to anything, since sigwait()
      in a thread does the work. */
