@@ -674,7 +674,7 @@ Racket processes. The callback, @racket[handler], is called with the symbol
 @racket['done] as the @racket[_handler-type] argument for each successfully compiled file, 
 @racket['output] when a
 successful compilation produces stdout/stderr output, @racket['error] when a
-compilation error has occurred, or @racket['fatal-error] when a unrecoverable
+compilation error has occurred, or @racket['fatal-error] when an unrecoverable
 error occurs. The other arguments give more information for each status update.
 The return value is @racket[(void)] if it was successful, or @racket[#f] if there was an error.
  
