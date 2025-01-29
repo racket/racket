@@ -13,3 +13,5 @@ Changes to the source in this copy:
    Racket wrapper
 
  * Disabled AX_ENABLE_BUILDDIR in "configure.ac"
+
+ * Repaired 32-bit x86 Darwin struct return for sizes 1, 2, 4, and 8
