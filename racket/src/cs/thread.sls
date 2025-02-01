@@ -206,6 +206,10 @@
                                  unsafe-semaphore-post)
 
   (set-scheduler-atomicity-callbacks! (lambda ()
+                                        (start-atomic))
+                                      (lambda ()
+                                        (end-atomic))
+                                      (lambda ()
                                         (current-atomic (fx+ (current-atomic) 1)))
                                       (lambda ()
                                         (current-atomic (fx- (current-atomic) 1))))

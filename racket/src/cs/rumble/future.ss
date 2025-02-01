@@ -15,7 +15,7 @@
   (set! sync-future sync)
   (set! current-future-prompt current-prompt))
 
-;; Call `thunk` in the main thread to synchronizel the thunk must be
+;; Call `thunk` in the main thread to synchronize; the thunk must be
 ;; constant-time, never rasse an exception, and return a single value
 (define (future-sync who thunk)
   (let ([disabled? (> (disable-interrupts) 1)])

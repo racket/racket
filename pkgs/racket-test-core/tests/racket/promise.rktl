@@ -4,7 +4,7 @@
 
 (Section 'promise)
 
-(test '(0 1)
+(test '(0)
   (for/list/concurrent ([i (in-range 3)])
     #:break (= i 1)
     i))

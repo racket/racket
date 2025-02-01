@@ -1642,7 +1642,7 @@
                                              [else r])))))])
                              (if (and orig-place?
                                       (not (eqv? 0 (get-thread-id))))
-                                 (async-callback-queue-call orig-place-async-callback-queue (lambda (th) (th)) (lambda () (go)) #f #t #t)
+                                 (async-callback-queue-call orig-place-async-callback-queue (lambda (th) (th)) (lambda () (go)) #f #t #t #t)
                                  (go))))])
                  ((ctype-c->s out-type) r)))
              (fxsll 1 (length in-types))
@@ -1801,7 +1801,7 @@
         v)]
      [else
       ;; Inform the scheduler that it's in atomic mode
-      (scheduler-start-atomic)
+      (scheduler-start-atomic/counter-only)
       ;; Now that the schedule is in atomic mode, reenable interrupts (for GC)
       (enable-interrupts)
       ;; See also `call-guarding-foreign-escape`, which will need to take
@@ -1809,7 +1809,7 @@
       ;; the scheduler's atomic mode
       (let ([v (thunk)])
         (disable-interrupts)
-        (scheduler-end-atomic)
+        (scheduler-end-atomic/counter-only)
         v)])]
    [(box? async-apply)
     ;; Not in a place's main thread; return the box's content
@@ -1830,7 +1830,9 @@
                                  ;; the scheduler to be in atomic mode:
                                  known-thread?
                                  ;; Wait for result:
-                                 #t))]))
+                                 #t
+                                 ;; No thread swapping when existing atomic mode:
+                                 #f))]))
 
 (define (call-enabling-ffi-callbacks proc)
   (disable-interrupts)
@@ -1838,11 +1840,15 @@
     (enable-interrupts)
     v))
 
+(define scheduler-start-atomic/counter-only void) ; don't check for a future barrier
+(define scheduler-end-atomic/counter-only void)   ; doesn't run end-atomic callbacks, which means that breaks may be delayed
 (define scheduler-start-atomic void)
-(define scheduler-end-atomic void) ; doesn't run end-atomic callbacks, which means that breaks may be delayed
-(define (set-scheduler-atomicity-callbacks! start-atomic end-atomic)
+(define scheduler-end-atomic void)
+(define (set-scheduler-atomicity-callbacks! start-atomic end-atomic start-atomic/counter-only end-atomic/counter-only)
   (set! scheduler-start-atomic start-atomic)
-  (set! scheduler-end-atomic end-atomic))
+  (set! scheduler-end-atomic end-atomic)
+  (set! scheduler-start-atomic/counter-only start-atomic/counter-only)
+  (set! scheduler-end-atomic/counter-only end-atomic/counter-only))
 
 ;; ----------------------------------------
 

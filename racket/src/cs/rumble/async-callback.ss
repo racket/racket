@@ -13,19 +13,22 @@
                                                          void)))
 
 (define (call-as-asynchronous-callback thunk)
-  (async-callback-queue-call (current-async-callback-queue) (lambda (th) (th)) thunk #f #t #t))
+  (async-callback-queue-call (current-async-callback-queue) (lambda (th) (th)) thunk #f #t #t #f))
 
 (define (post-as-asynchronous-callback thunk)
-  (async-callback-queue-call (current-async-callback-queue) (lambda (th) (th)) thunk #f #t #f)
+  (async-callback-queue-call (current-async-callback-queue) (lambda (th) (th)) thunk #f #t #f #f)
   (void))
 
-(define (async-callback-queue-call async-callback-queue run-thunk thunk interrupts-disabled? need-atomic? wait-for-result?)
+(define (async-callback-queue-call async-callback-queue run-thunk thunk interrupts-disabled? need-atomic? wait-for-result? allow-swap?)
   (let* ([result-done? (box #f)]
          [result #f]
          [q (or async-callback-queue orig-place-async-callback-queue)]
          [m (async-callback-queue-lock q)])
     (when interrupts-disabled? (enable-interrupts)) ; interrupt "lock" ordered after mutex
-    (when need-atomic? (scheduler-start-atomic)) ; don't abandon engine after mutex is acquired
+    (when need-atomic?  ; don't abandon engine after mutex is acquired
+      (if (or (not allow-swap?) (current-future))
+          (scheduler-start-atomic/counter-only)
+          (scheduler-start-atomic)))
     (mutex-acquire m)
     (set-async-callback-queue-in! q (cons (lambda ()
                                             (run-thunk
@@ -49,7 +52,10 @@
           (condition-wait (async-callback-queue-condition q) m)
           (loop))))
     (mutex-release m)
-    (when need-atomic? (scheduler-end-atomic))
+    (when need-atomic?
+      (if (or (not allow-swap?) (current-future))
+          (scheduler-end-atomic/counter-only)
+          (scheduler-end-atomic)))
     (when interrupts-disabled? (disable-interrupts))
     result))
 
