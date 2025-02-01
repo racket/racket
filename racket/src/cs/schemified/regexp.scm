@@ -608,8 +608,8 @@
                              (list
                               "required keywords"
                               (unquoted-printing-string
-                               (apply
-                                string-append
+                               (apply-string-append
+                                0
                                 (cdr
                                  (letrec*
                                   ((loop_0
@@ -640,8 +640,8 @@
                            (list
                             "argument lists..."
                             (unquoted-printing-string
-                             (apply
-                              string-append
+                             (apply-string-append
+                              0
                               (letrec*
                                ((loop_0
                                  (|#%name|
@@ -1362,8 +1362,8 @@
                       (cons app_0 (loop_0 #f null l_1)))
                     (let ((app_0
                            (if (eq? mode_0 'byte)
-                             (apply
-                              bytes-append
+                             (apply-bytes-append
+                              0
                               (reverse$1
                                (let ((lst_0 (reverse$1 accum_0)))
                                  (letrec*
@@ -1388,8 +1388,8 @@
                                          fold-var_0)))))
                                   (for-loop_0 null lst_0)))))
                              (if (eq? mode_0 'char)
-                               (apply
-                                string-append
+                               (apply-string-append
+                                0
                                 (reverse$1
                                  (let ((lst_0 (reverse$1 accum_0)))
                                    (letrec*
@@ -7430,8 +7430,8 @@
     (if (bytes? a_0) (bytes-append a_0 b_0 c_0) (string-append a_0 b_0 c_0)))
    ((a_0 . l_0)
     (if (bytes? a_0)
-      (apply bytes-append a_0 l_0)
-      (apply string-append a_0 l_0)))))
+      (apply-bytes-append 1 (list* a_0 l_0))
+      (apply-string-append 1 (list* a_0 l_0))))))
 (define chytes?
   (lambda (ex_0 v_0) (if (bytes? ex_0) (bytes? v_0) (string? v_0))))
 (define chytes-length

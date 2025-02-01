@@ -137,6 +137,20 @@
                 (let ([opt (compiler-query `(foreign-sizeof ',scheme-arg))])
                   (or (and (integer? opt) opt))))
            v)]
+      [`(apply ,rator ,rand . ,rands)
+       #:guard (memq (match v [`(,_ ,rator . ,_) (unwrap rator)])
+                     '(string-append
+                       string-append-immutable
+                       bytes-append))
+       (define new-rator
+         (case (unwrap rator)
+           [(string-append) 'apply-string-append]
+           [(string-append-immutable) 'apply-string-append-immutable]
+           [(bytes-append) 'apply-bytes-append]))
+       `(,new-rator ,(sub1 (length (cons rand rands)))
+                    ,(if (null? rands)
+                         rand
+                         `(list* ,rand ,@rands)))]
       [`(,rator . ,rands)
        (define u-rator (unwrap rator))
        (define k (and (symbol? u-rator) (hash-ref prim-knowns u-rator #f)))

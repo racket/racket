@@ -1840,8 +1840,8 @@
                              (list
                               "required keywords"
                               (unquoted-printing-string
-                               (apply
-                                string-append
+                               (apply-string-append
+                                0
                                 (cdr
                                  (letrec*
                                   ((loop_0
@@ -1872,8 +1872,8 @@
                            (list
                             "argument lists..."
                             (unquoted-printing-string
-                             (apply
-                              string-append
+                             (apply-string-append
+                              0
                               (letrec*
                                ((loop_0
                                  (|#%name|
@@ -10924,101 +10924,176 @@
                                            (if (integer? opt_0) opt_0 #f))
                                          #f)))
                                   (if or-part_0 or-part_0 v_1))))
-                            (if (let ((p_0 (unwrap v_1)))
-                                  (if (pair? p_0) #t #f))
+                            (if (if (if (eq? 'apply hd_0)
+                                      (let ((a_0 (cdr (unwrap v_1))))
+                                        (let ((p_0 (unwrap a_0)))
+                                          (if (pair? p_0)
+                                            (let ((a_1 (cdr p_0)))
+                                              (let ((p_1 (unwrap a_1)))
+                                                (if (pair? p_1) #t #f)))
+                                            #f)))
+                                      #f)
+                                  (memq
+                                   (if (let ((p_0 (unwrap v_1)))
+                                         (if (pair? p_0)
+                                           (let ((a_0 (cdr p_0)))
+                                             (let ((p_1 (unwrap a_0)))
+                                               (if (pair? p_1) #t #f)))
+                                           #f))
+                                     (let ((rator_0
+                                            (let ((d_0 (cdr (unwrap v_1))))
+                                              (let ((a_0 (car (unwrap d_0))))
+                                                a_0))))
+                                       (unwrap rator_0))
+                                     (error 'match "failed ~e" v_1))
+                                   '(string-append
+                                     string-append-immutable
+                                     bytes-append))
+                                  #f)
                               (call-with-values
                                (lambda ()
-                                 (let ((p_0 (unwrap v_1)))
-                                   (let ((rator_0 (let ((a_0 (car p_0))) a_0)))
-                                     (let ((rands_0
-                                            (let ((d_0 (cdr p_0))) d_0)))
-                                       (let ((rator_1 rator_0))
-                                         (values rator_1 rands_0))))))
-                               (lambda (rator_0 rands_0)
-                                 (let ((u-rator_0 (unwrap rator_0)))
-                                   (let ((k_0
-                                          (if (symbol? u-rator_0)
-                                            (hash-ref
-                                             prim-knowns_0
-                                             u-rator_0
-                                             #f)
-                                            #f)))
-                                     (let ((c1_0
-                                            (if k_0
-                                              (if (let ((or-part_0
-                                                         (known-procedure/folding?
-                                                          k_0)))
-                                                    (if or-part_0
-                                                      or-part_0
-                                                      (let ((or-part_1
-                                                             (known-procedure/pure/folding?
-                                                              k_0)))
-                                                        (if or-part_1
-                                                          or-part_1
-                                                          (let ((or-part_2
-                                                                 (known-procedure/then-pure/folding-unsafe?
-                                                                  k_0)))
-                                                            (if or-part_2
-                                                              or-part_2
-                                                              (known-procedure/has-unsafe/folding?
-                                                               k_0)))))))
-                                                (if (letrec*
-                                                     ((for-loop_0
-                                                       (|#%name|
-                                                        for-loop
-                                                        (lambda (result_0
-                                                                 lst_0)
-                                                          (if (pair? lst_0)
-                                                            (let ((rand_0
-                                                                   (unsafe-car
-                                                                    lst_0)))
-                                                              (let ((rest_0
-                                                                     (unsafe-cdr
-                                                                      lst_0)))
-                                                                (let ((result_1
-                                                                       (let ((result_1
-                                                                              (literal?
-                                                                               rand_0)))
-                                                                         (values
-                                                                          result_1))))
-                                                                  (if (if (not
-                                                                           (let ((x_0
-                                                                                  (list
-                                                                                   rand_0)))
-                                                                             (not
-                                                                              result_1)))
-                                                                        #t
-                                                                        #f)
-                                                                    (for-loop_0
-                                                                     result_1
-                                                                     rest_0)
-                                                                    result_1))))
-                                                            result_0)))))
-                                                     (for-loop_0 #t rands_0))
-                                                  (try-fold-primitive
-                                                   u-rator_0
-                                                   k_0
-                                                   rands_0
-                                                   prim-knowns_0
-                                                   primitives_0)
-                                                  #f)
-                                                #f)
+                                 (let ((d_0 (cdr (unwrap v_1))))
+                                   (let ((p_0 (unwrap d_0)))
+                                     (let ((rator_0
+                                            (let ((a_0 (car p_0))) a_0)))
+                                       (call-with-values
+                                        (lambda ()
+                                          (let ((d_1 (cdr p_0)))
+                                            (let ((p_1 (unwrap d_1)))
+                                              (let ((rand_0
+                                                     (let ((a_0 (car p_1)))
+                                                       a_0)))
+                                                (let ((rands_0
+                                                       (let ((d_2 (cdr p_1)))
+                                                         d_2)))
+                                                  (let ((rand_1 rand_0))
+                                                    (values
+                                                     rand_1
+                                                     rands_0)))))))
+                                        (lambda (rand_0 rands_0)
+                                          (let ((rator_1 rator_0))
+                                            (values
+                                             rator_1
+                                             rand_0
+                                             rands_0))))))))
+                               (lambda (rator_0 rand_0 rands_0)
+                                 (let ((new-rator_0
+                                        (let ((tmp_0 (unwrap rator_0)))
+                                          (if (eq? tmp_0 'string-append)
+                                            'apply-string-append
+                                            (if (eq?
+                                                 tmp_0
+                                                 'string-append-immutable)
+                                              'apply-string-append-immutable
+                                              (if (eq? tmp_0 'bytes-append)
+                                                'apply-bytes-append
+                                                (void)))))))
+                                   (let ((app_0
+                                          (sub1
+                                           (length (cons rand_0 rands_0)))))
+                                     (list
+                                      new-rator_0
+                                      app_0
+                                      (if (null? rands_0)
+                                        rand_0
+                                        (list* 'list* rand_0 rands_0)))))))
+                              (if (let ((p_0 (unwrap v_1)))
+                                    (if (pair? p_0) #t #f))
+                                (call-with-values
+                                 (lambda ()
+                                   (let ((p_0 (unwrap v_1)))
+                                     (let ((rator_0
+                                            (let ((a_0 (car p_0))) a_0)))
+                                       (let ((rands_0
+                                              (let ((d_0 (cdr p_0))) d_0)))
+                                         (let ((rator_1 rator_0))
+                                           (values rator_1 rands_0))))))
+                                 (lambda (rator_0 rands_0)
+                                   (let ((u-rator_0 (unwrap rator_0)))
+                                     (let ((k_0
+                                            (if (symbol? u-rator_0)
+                                              (hash-ref
+                                               prim-knowns_0
+                                               u-rator_0
+                                               #f)
                                               #f)))
-                                       (if c1_0 (car c1_0) v_1))))))
-                              (let ((u_0 (unwrap v_1)))
-                                (if (symbol? u_0)
-                                  (let ((k_0
-                                         (hash-ref-either
-                                          knowns_0
-                                          imports_0
-                                          u_0)))
-                                    (if (if (known-literal? k_0)
-                                          (simple-mutated-state?
-                                           (hash-ref mutated_0 u_0 #f))
-                                          #f)
-                                      (wrap-literal (known-literal-value k_0))
-                                      v_1))
-                                  v_1)))))))))))))))))
+                                       (let ((c1_0
+                                              (if k_0
+                                                (if (let ((or-part_0
+                                                           (known-procedure/folding?
+                                                            k_0)))
+                                                      (if or-part_0
+                                                        or-part_0
+                                                        (let ((or-part_1
+                                                               (known-procedure/pure/folding?
+                                                                k_0)))
+                                                          (if or-part_1
+                                                            or-part_1
+                                                            (let ((or-part_2
+                                                                   (known-procedure/then-pure/folding-unsafe?
+                                                                    k_0)))
+                                                              (if or-part_2
+                                                                or-part_2
+                                                                (known-procedure/has-unsafe/folding?
+                                                                 k_0)))))))
+                                                  (if (letrec*
+                                                       ((for-loop_0
+                                                         (|#%name|
+                                                          for-loop
+                                                          (lambda (result_0
+                                                                   lst_0)
+                                                            (if (pair? lst_0)
+                                                              (let ((rand_0
+                                                                     (unsafe-car
+                                                                      lst_0)))
+                                                                (let ((rest_0
+                                                                       (unsafe-cdr
+                                                                        lst_0)))
+                                                                  (let ((result_1
+                                                                         (let ((result_1
+                                                                                (literal?
+                                                                                 rand_0)))
+                                                                           (values
+                                                                            result_1))))
+                                                                    (if (if (not
+                                                                             (let ((x_0
+                                                                                    (list
+                                                                                     rand_0)))
+                                                                               (not
+                                                                                result_1)))
+                                                                          #t
+                                                                          #f)
+                                                                      (for-loop_0
+                                                                       result_1
+                                                                       rest_0)
+                                                                      result_1))))
+                                                              result_0)))))
+                                                       (for-loop_0 #t rands_0))
+                                                    (try-fold-primitive
+                                                     u-rator_0
+                                                     k_0
+                                                     rands_0
+                                                     prim-knowns_0
+                                                     primitives_0)
+                                                    #f)
+                                                  #f)
+                                                #f)))
+                                         (if c1_0 (car c1_0) v_1))))))
+                                (let ((u_0 (unwrap v_1)))
+                                  (if (symbol? u_0)
+                                    (let ((k_0
+                                           (hash-ref-either
+                                            knowns_0
+                                            imports_0
+                                            u_0)))
+                                      (if (if (known-literal? k_0)
+                                            (simple-mutated-state?
+                                             (hash-ref mutated_0 u_0 #f))
+                                            #f)
+                                        (wrap-literal
+                                         (known-literal-value k_0))
+                                        v_1))
+                                    v_1))))))))))))))))))
 (define optimize*
   (lambda (v_0
            prim-knowns_0

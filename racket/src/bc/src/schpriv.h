@@ -344,6 +344,7 @@ void scheme_init_proc(Scheme_Startup_Env *env);
 void scheme_init_vector(Scheme_Startup_Env *env);
 void scheme_init_unsafe_vector(Scheme_Startup_Env *env);
 void scheme_init_string(Scheme_Startup_Env *env);
+void scheme_init_internal_string(Scheme_Startup_Env *env);
 void scheme_init_number(Scheme_Startup_Env *env);
 void scheme_init_flfxnum_number(Scheme_Startup_Env *env);
 void scheme_init_extfl_number(Scheme_Startup_Env *env);

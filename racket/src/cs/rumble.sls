@@ -346,11 +346,14 @@
           bytes=? bytes<? bytes>?
           bytes-append
           subbytes
+          apply-bytes-append            ; not exported to racket
 
           make-string
           string-copy!
           substring
           immutable-string? mutable-string?
+          apply-string-append           ; not exported to racket
+          apply-string-append-immutable ; not exported to racket
 
           char-blank?
           char-iso-control?

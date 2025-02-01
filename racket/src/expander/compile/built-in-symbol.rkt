@@ -75,6 +75,9 @@
                #%call-with-values
                #%app/no-return
                #%app/value
+               apply-string-append
+               apply-string-append-immutable
+               apply-bytes-append
                call-with-module-prompt
                make-pthread-parameter
                engine-block

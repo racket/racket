@@ -51,3 +51,37 @@
     (check who exact-nonnegative-integer? end)
     (check-range who "string" s start end (string-length s))
     (#%substring s start end)]))
+
+;; ----------------------------------------
+
+;; schmeify converts `(apply string-append arg ... list-arg)`
+;; to `(apply-string-append N (list* arg ... list-arg))`
+;; where N is the number of `arg`s
+(define (apply-string-append* who pre-n strss)
+  (cond
+    [(list? strss)
+     (let ([len
+            (let loop ([len 0] [strs strss])
+              (if (null? strs)
+                  len
+                  (let ([str (car strs)])
+                    (if (string? str)
+                        (loop (fx+ len (string-length str)) (cdr strs))
+                        (raise-argument-error who "string?" str)))))])
+       (let ([acc (make-string len)])
+         (let loop ([offset 0] [strs strss])
+           (unless (null? strs)
+             (let* ([str (car strs)]
+                    [len (string-length str)])
+               (#%string-copy! str 0 acc offset len)
+               (loop (fx+ offset len) (cdr strs)))))
+         acc))]
+    [else
+     (raise-argument-error 'apply "list?" (list-tail strss pre-n))]))
+
+(define (apply-string-append pre-n strss)
+  (apply-string-append* 'string-append pre-n strss))
+
+(define (apply-string-append-immutable pre-n strss)
+  (unsafe-string->immutable-string!
+   (apply-string-append* 'string-append-immutable pre-n strss)))

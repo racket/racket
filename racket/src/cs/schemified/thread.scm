@@ -670,8 +670,8 @@
                              (list
                               "required keywords"
                               (unquoted-printing-string
-                               (apply
-                                string-append
+                               (apply-string-append
+                                0
                                 (cdr
                                  (letrec*
                                   ((loop_0
@@ -702,8 +702,8 @@
                            (list
                             "argument lists..."
                             (unquoted-printing-string
-                             (apply
-                              string-append
+                             (apply-string-append
+                              0
                               (letrec*
                                ((loop_0
                                  (|#%name|

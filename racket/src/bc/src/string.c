@@ -85,6 +85,8 @@ static Scheme_Object *string_grapheme_cluster_count (int argc, Scheme_Object *ar
 static Scheme_Object *substring (int argc, Scheme_Object *argv[]);
 static Scheme_Object *string_append (int argc, Scheme_Object *argv[]);
 static Scheme_Object *string_append_immutable (int argc, Scheme_Object *argv[]);
+static Scheme_Object *apply_string_append (int argc, Scheme_Object *argv[]);
+static Scheme_Object *apply_string_append_immutable (int argc, Scheme_Object *argv[]);
 static Scheme_Object *string_to_list (int argc, Scheme_Object *argv[]);
 static Scheme_Object *list_to_string (int argc, Scheme_Object *argv[]);
 static Scheme_Object *string_copy (int argc, Scheme_Object *argv[]);
@@ -111,6 +113,7 @@ static Scheme_Object *byte_string_lt (int argc, Scheme_Object *argv[]);
 static Scheme_Object *byte_string_gt (int argc, Scheme_Object *argv[]);
 static Scheme_Object *byte_substring (int argc, Scheme_Object *argv[]);
 static Scheme_Object *byte_string_append (int argc, Scheme_Object *argv[]);
+static Scheme_Object *apply_byte_string_append (int argc, Scheme_Object *argv[]);
 static Scheme_Object *byte_string_to_list (int argc, Scheme_Object *argv[]);
 static Scheme_Object *list_to_byte_string (int argc, Scheme_Object *argv[]);
 static Scheme_Object *byte_string_copy (int argc, Scheme_Object *argv[]);
@@ -884,6 +887,27 @@ scheme_init_string (Scheme_Startup_Env *env)
 #endif
 }
 
+
+void
+scheme_init_internal_string (Scheme_Startup_Env *env)
+{
+  scheme_addto_prim_instance("apply-string-append",
+                             scheme_make_immed_prim(apply_string_append,
+                                                    "apply-string-append",
+                                                    2, 2),
+                             env);
+  scheme_addto_prim_instance("apply-string-append-immutable",
+                             scheme_make_immed_prim(apply_string_append_immutable,
+                                                    "apply-string-append-immutable",
+                                                    2, 2),
+                             env);
+  scheme_addto_prim_instance("apply-bytes-append",
+                             scheme_make_immed_prim(apply_byte_string_append,
+                                                    "apply-bytes-append",
+                                                    2, 2),
+                             env);
+}
+
 void scheme_init_string_places(void) {
   REGISTER_SO(current_locale_name_ptr);
   current_locale_name_ptr = (void *)xes_char_string;
@@ -1155,6 +1179,19 @@ Scheme_Object *string_append_immutable(int argc, Scheme_Object *argv[])
   return r;
 }
 
+Scheme_Object *apply_string_append(int argc, Scheme_Object *argv[])
+{
+  return do_apply_char_string_append("string-append", argc, argv);
+}
+
+Scheme_Object *apply_string_append_immutable(int argc, Scheme_Object *argv[])
+{
+  Scheme_Object *r;
+  r = do_apply_char_string_append("string-append-immutable", argc, argv);
+  SCHEME_SET_CHAR_STRING_IMMUTABLE(r);
+  return r;
+}
+
 /**********************************************************************/
 /*                         byte strings                               */
 /**********************************************************************/
@@ -1227,6 +1264,11 @@ Scheme_Object *scheme_byte_string_eq_2(Scheme_Object *str1, Scheme_Object *str2)
   a[0] = str1;
   a[1] = str2;       
   return byte_string_eq(2, a);
+}
+
+Scheme_Object *apply_byte_string_append(int argc, Scheme_Object *argv[])
+{
+  return do_apply_byte_string_append("bytes-append", argc, argv);
 }
 
 /**********************************************************************/

@@ -2255,8 +2255,8 @@
                              (list
                               "required keywords"
                               (unquoted-printing-string
-                               (apply
-                                string-append
+                               (apply-string-append
+                                0
                                 (cdr
                                  (letrec*
                                   ((loop_0
@@ -2287,8 +2287,8 @@
                            (list
                             "argument lists..."
                             (unquoted-printing-string
-                             (apply
-                              string-append
+                             (apply-string-append
+                              0
                               (letrec*
                                ((loop_0
                                  (|#%name|
@@ -16099,8 +16099,8 @@
                                                    (loop_0
                                                     (+ pos_0 in-used_0 4))))
                                               (if (eqv? pos_0 0)
-                                                (apply
-                                                 bytes-append
+                                                (apply-bytes-append
+                                                 0
                                                  (cons
                                                   bstr_0
                                                   (cons err-bstr_0 r_0)))
@@ -16210,8 +16210,8 @@
                                                   (+ pos_0 in-used_0 1))))
                                             (if (eqv? pos_0 0)
                                               (1/bytes->string/utf-8
-                                               (apply
-                                                bytes-append
+                                               (apply-bytes-append
+                                                0
                                                 (cons
                                                  bstr_0
                                                  (cons err-bstr_0 r_0))))
@@ -19053,8 +19053,8 @@
                                 result_0)))))
                          (for-loop_0 #f 0))))))
                (let ((len_0 (string-length str_0)))
-                 (apply
-                  string-append
+                 (apply-string-append
+                  0
                   (letrec*
                    ((loop_0
                      (|#%name|
@@ -21915,21 +21915,22 @@
              2
              (round
               (let ((app_1 (error-print-width))) (/ app_1 (length args_0)))))))
-         (apply
-          string-append
-          "; "
-          "arguments were: "
-          (letrec*
-           ((loop_0
-             (|#%name|
-              loop
-              (lambda (ss_0)
-                (if (let ((or-part_0 (null? ss_0)))
-                      (if or-part_0 or-part_0 (null? (cdr ss_0))))
-                  ss_0
-                  (let ((app_0 (car ss_0)))
-                    (cons app_0 (cons " " (loop_0 (cdr ss_0))))))))))
-           (loop_0 (map_2353 error-value->string args_0)))))
+         (apply-string-append
+          2
+          (list*
+           "; "
+           "arguments were: "
+           (letrec*
+            ((loop_0
+              (|#%name|
+               loop
+               (lambda (ss_0)
+                 (if (let ((or-part_0 (null? ss_0)))
+                       (if or-part_0 or-part_0 (null? (cdr ss_0))))
+                   ss_0
+                   (let ((app_0 (car ss_0)))
+                     (cons app_0 (cons " " (loop_0 (cdr ss_0))))))))))
+            (loop_0 (map_2353 error-value->string args_0))))))
         ""))))
 (define 1/fprintf
   (|#%name|
@@ -22582,7 +22583,7 @@
                      (if (if (eq? tmp_0 'rel) #t (eq? tmp_0 'red)) #vu8(92) #vu8()))))
               (let ((app_1 (starting-point-extra-sep s_0)))
                 (apply bytes-append init-bstr_0 app_0 app_1 (cdr elems_0)))))))
-      (let ((bstr_0 (apply bytes-append elems_0)))
+      (let ((bstr_0 (apply-bytes-append 0 elems_0)))
         (if (backslash-backslash-questionmark? bstr_0)
           (subbytes bstr_0 1)
           (if (if (not unc-result?_0) (parse-unc.1 #f #f bstr_0 0) #f)
@@ -22740,10 +22741,9 @@
                               (append
                                app_0
                                (let ((rel-bstr_0
-                                      (apply
-                                       bytes-append
-                                       #vu8(92 92 63 92 82 69 76)
-                                       dots_0)))
+                                      (apply-bytes-append
+                                       1
+                                       (list* #vu8(92 92 63 92 82 69 76) dots_0))))
                                  (let ((rel-len_0
                                         (unsafe-bytes-length rel-bstr_0)))
                                    (make-starting-point.1
@@ -30023,7 +30023,9 @@
                         (recase/no-nul (substring s3_0 pos_0 i-len_0) up?1_0)))
                    (let ((r_0 (loop_0 (fx+ i-len_0 1))))
                      (if (eqv? pos_0 0)
-                       (apply string-append new-s_0 (string '#\x0) r_0)
+                       (apply-string-append
+                        2
+                        (list* new-s_0 (string '#\x0) r_0))
                        (cons new-s_0 (cons (string '#\x0) r_0)))))))))))
         (loop_0 0))))))
 (define recase/no-nul
@@ -30095,11 +30097,9 @@
                                                       (+ pos_0 in-used_0)
                                                       2)))))
                                               (if (eqv? pos_0 0)
-                                                (apply
-                                                 string-append
-                                                 ls_0
-                                                 err-s_0
-                                                 r_0)
+                                                (apply-string-append
+                                                 2
+                                                 (list* ls_0 err-s_0 r_0))
                                                 (list*
                                                  ls_0
                                                  err-s_0
@@ -30398,34 +30398,35 @@
                 (|#%app| exn:fail_0 app_0 (current-continuation-marks))))))
         (if (string? init_0)
           (let ((app_0
-                 (apply
-                  string-append
-                  init_0
-                  (1/reverse
-                   (letrec*
-                    ((for-loop_0
-                      (|#%name|
-                       for-loop
-                       (lambda (fold-var_0 lst_0)
-                         (if (pair? lst_0)
-                           (let ((arg_0 (unsafe-car lst_0)))
-                             (let ((rest_0 (unsafe-cdr lst_0)))
-                               (let ((fold-var_1
-                                      (let ((fold-var_1
-                                             (cons
-                                              (string-append
-                                               " "
-                                               (let ((app_0
-                                                      (error-value->string-handler)))
-                                                 (|#%app|
-                                                  app_0
-                                                  arg_0
-                                                  (error-print-width))))
-                                              fold-var_0)))
-                                        (values fold-var_1))))
-                                 (for-loop_0 fold-var_1 rest_0))))
-                           fold-var_0)))))
-                    (for-loop_0 null args_0))))))
+                 (apply-string-append
+                  1
+                  (list*
+                   init_0
+                   (1/reverse
+                    (letrec*
+                     ((for-loop_0
+                       (|#%name|
+                        for-loop
+                        (lambda (fold-var_0 lst_0)
+                          (if (pair? lst_0)
+                            (let ((arg_0 (unsafe-car lst_0)))
+                              (let ((rest_0 (unsafe-cdr lst_0)))
+                                (let ((fold-var_1
+                                       (let ((fold-var_1
+                                              (cons
+                                               (string-append
+                                                " "
+                                                (let ((app_0
+                                                       (error-value->string-handler)))
+                                                  (|#%app|
+                                                   app_0
+                                                   arg_0
+                                                   (error-print-width))))
+                                               fold-var_0)))
+                                         (values fold-var_1))))
+                                  (for-loop_0 fold-var_1 rest_0))))
+                            fold-var_0)))))
+                     (for-loop_0 null args_0)))))))
             (|#%app| exn:fail_0 app_0 (current-continuation-marks)))
           (raise-argument-error who_0 "(or/c symbol? string?)" init_0))))))
 (define 1/error-print-source-location

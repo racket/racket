@@ -15,8 +15,10 @@
 (module+ private
   (provide build-kmp-table))
 
-
 (define string-append*
+  ;; Not great error reporting, since errors come from `apply` and `string-append`,
+  ;; but schemify on CS at least converts each `apply string-append` to a use of
+  ;; `apply-string-append` to avoid unpacking and repacking the `strs` list.
   (case-lambda [(strs) (apply string-append strs)] ; optimize common cases
                [(s1 strs) (apply string-append s1 strs)]
                [(s1 s2 strs) (apply string-append s1 s2 strs)]
