@@ -7,8 +7,7 @@
   (define libffi.a
     (at-dir (.a "ffi")))
 
-  (define (find-all-objects dir)
-    (define match? (glob->matcher (~a "*." (hash-ref config 'LTO "o"))))
+  (define (find-all dir match?)
     (define dot? (glob->matcher ".*"))
     (reverse
      (let loop ([dir dir])
@@ -22,9 +21,17 @@
               '()
               (ls dir)))))
 
+  (define (find-all-sources dir)
+    (define match? (glob->matcher "*.[chS]"))
+    (find-all dir match?))
+
+  (define (find-all-objects dir)
+    (define match? (glob->matcher (~a "*." (hash-ref config 'LTO "o"))))
+    (find-all dir match?))
+
   (list (target libffi.a
                 (lambda (path token)
-                  (rule '()
+                  (rule (find-all-sources (at-source "libffi/src"))
                         (lambda ()
                           (shell/wait (build-shell
                                        (let ([s (hash-ref config 'MAKE "")])
