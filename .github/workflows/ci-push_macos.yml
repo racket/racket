@@ -44,6 +44,7 @@ jobs:
         --enable-jit
         --enable-foreign
         --enable-macprefix
+        --disable-origtree
         --enable-places
         --enable-float
         $CIFY_OPTION
@@ -108,6 +109,7 @@ jobs:
         --enable-jit
         --enable-foreign
         --enable-macprefix
+        --disable-origtree
         --enable-places
         --enable-float
         --disable-docs
@@ -153,6 +155,7 @@ jobs:
         --prefix=$GITHUB_WORKSPACE/racketcs
         --enable-racket=$GITHUB_WORKSPACE/racketcgc/bin/racket
         --enable-macprefix
+        --disable-origtree
         --enable-compress
         --disable-docs
         --enable-pthread
