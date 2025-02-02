@@ -2,11 +2,15 @@
 
 set -euo pipefail
 HERE="$(dirname "$0")"
-BIN="$HERE/../../racket/bin"
-RACKET="$BIN/racket"
-RACO="$BIN/raco"
+RACKET="racket"
+RACO="raco"
+
+echo Using `which "$RACKET"`
+"$RACKET" -v
+
 CPUS="$("$RACKET" -e '(processor-count)')"
 
+echo Installing dt-test and racket-test using `which "$RACO"`
 "$RACO" pkg install --auto --skip-installed db-test racket-test
 
 do_test() {
