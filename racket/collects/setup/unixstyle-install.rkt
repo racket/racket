@@ -604,7 +604,13 @@
   (skip-dot-files!)
   (with-handlers ([exn? (lambda (e) (undo-changes) (raise e))])
     (set! yes-to-all? #t) ; non-interactive
-    (for-each cleantree (list 'collects 'pkgs 'sharerkt 'doc 'config))
+    (for-each cleantree (list 'collects 'pkgs 'sharerkt 'doc))
+    ;; Only deletes 'config (which is etc/ in some cases) when origtree? is not set.
+    ;; This particularly affects Unix-style builds on Mac with a custom --prefix where
+    ;; origtree? would be true in this case. Consequently, there is not a separate
+    ;; write-config step later in this function.
+    ;; Therefore, 'config should not be deleted in the first place.
+    (unless origtree? (cleantree 'config))
     (copytree "collects" 'collects)
     (copytree (make-path "share" "pkgs") 'pkgs #:missing 'skip)
     (parameterize ([current-skip-filter (add-pkgs-skip (current-skip-filter))])
