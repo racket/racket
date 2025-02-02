@@ -18,6 +18,8 @@ jobs:
     - uses: actions/checkout@v4
     - name: Build
       run: make CPUS="$(nproc)" PKGS=""
+    - name: Extend PATH with Racket executable
+      run: echo "${GITHUB_WORKSPACE}/racket/bin" >> $GITHUB_PATH
     - name: Test
       run: bash .github/scripts/run-racket-tests.sh
 
@@ -29,6 +31,8 @@ jobs:
     - uses: actions/checkout@v4
     - name: Build
       run: make CPUS="$(sysctl -n hw.physicalcpu)" PKGS=""
+    - name: Extend PATH with Racket executable
+      run: echo "${GITHUB_WORKSPACE}/racket/bin" >> $GITHUB_PATH
     - name: Test
       run: bash .github/scripts/run-racket-tests.sh
     - name: Tarball
