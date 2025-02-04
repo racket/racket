@@ -63,6 +63,7 @@
                                  [binding-layer (if sc
                                                     (increment-binding-layer ids ctx sc)
                                                     (expand-context-binding-layer ctx))]
+                                 [name #f]
                                  [frame-id #:parent root-expand-context #f]))
   (define exp-body (if sc
                        (expand-body sc-bodys body-ctx #:source (keep-as-needed ctx s #:keep-for-error? #t))

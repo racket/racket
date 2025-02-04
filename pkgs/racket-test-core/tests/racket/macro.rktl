@@ -276,6 +276,14 @@
 
 ;; ----------------------------------------
 
+(define-syntax (expand-to-syntax-local-name stx)
+  #`(quote #,(syntax-local-name)))
+
+(test 'f 'name (let ([f (expand-to-syntax-local-name)]) f))
+(test #f (let ([f (lambda () (expand-to-syntax-local-name))]) f))
+
+;; ----------------------------------------
+
 (require (for-syntax racket/struct-info))
 
 (define-syntax (et-struct-info stx)
