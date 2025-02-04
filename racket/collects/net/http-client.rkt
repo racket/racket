@@ -176,8 +176,15 @@
   (define body (->bytes data))
   (cond [(procedure? body)
          (fprintf to "Transfer-Encoding: chunked\r\n")]
-        [(and body
-              (not (regexp-member #rx"^(?i:Content-Length:)[\t ]*.+$" headers-bs)))
+        [(and
+          ;; Some hosts fail when given a Content-Length of 0. So, avoid
+          ;; sending the header if there isn't any content and the
+          ;; method doesn't expect a body.
+          ;;
+          ;; xref: https://github.com/racket/racket/pull/5200
+          (or (expects-body? method-bss)
+              (not (bytes=? body #"")))
+          (not (regexp-member #rx"^(?i:Content-Length:)[\t ]*.+$" headers-bs)))
          (fprintf to "Content-Length: ~a\r\n" (bytes-length body))])
   (when close?
     (unless (regexp-member #rx"^(?i:Connection:)[\t ]*.+$" headers-bs)
@@ -188,7 +195,8 @@
   (cond [(procedure? body)
          (body (λ (data) (write-chunk to data)))
          (fprintf to "0\r\n\r\n")]
-        [body (display body to)])
+        [(not (bytes=? body #""))
+         (display body to)])
   (flush-output to))
 
 (define (http-conn-status! hc)
@@ -325,10 +333,28 @@
           (define abandon-p ssl-abndn-p)
           (values clt-ctx r:from r:to abandon-p)]))
 
+(define (delete? method-bss)
+  (or (equal? method-bss #"DELETE")
+      (equal? method-bss "DELETE")
+      (equal? method-bss 'DELETE)))
+
+(define (get? method-bss)
+  (or (equal? method-bss #"GET")
+      (equal? method-bss "GET")
+      (equal? method-bss 'GET)))
+
 (define (head? method-bss)
   (or (equal? method-bss #"HEAD")
       (equal? method-bss "HEAD")
       (equal? method-bss 'HEAD)))
+
+;; https://www.rfc-editor.org/rfc/rfc9110.html#name-get
+;; https://www.rfc-editor.org/rfc/rfc9110.html#name-head
+;; https://www.rfc-editor.org/rfc/rfc9110.html#name-delete
+(define (expects-body? method-bss)
+  (and (not (get? method-bss))
+       (not (head? method-bss))
+       (not (delete? method-bss))))
 
 ;; https://datatracker.ietf.org/doc/html/rfc2616#section-10.1
 ;; https://datatracker.ietf.org/doc/html/rfc2616#section-10.2.5
