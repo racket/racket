@@ -114,7 +114,7 @@
                               (module-linklet-info (namespace->instance ns 0)
                                                    #f
                                                    core-mpi
-                                                   #f
+                                                   insp
                                                    #f
                                                    #f)))))
                 #:instantiate-phase-callback

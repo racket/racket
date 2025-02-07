@@ -43073,7 +43073,7 @@ static const char *startup_source =
 " core-module-name27_0"
 " temp28_0))))"
 "(if ns_2"
-"(module-linklet-info2.1(namespace->instance ns_2 0) #f core-mpi #f #f #f)"
+"(module-linklet-info2.1(namespace->instance ns_2 0) #f core-mpi insp_0 #f #f)"
 " #f))"
 " #f)))"
 "((temp22_0)"
