@@ -107,17 +107,16 @@
                                            [(protected-core? val) (provided b #t #f)]
                                            [else b]))))
                 #:phase-level-linklet-info-callback
-                (let ([insp (current-code-inspector)])
-                  (lambda (phase-level ns insp)
-                    (and (zero? phase-level)
-                         (let ([ns (namespace->module-namespace ns core-module-name 0)])
-                           (and ns
-                                (module-linklet-info (namespace->instance ns 0)
-                                                     #f
-                                                     core-mpi
-                                                     insp
-                                                     #f
-                                                     #f))))))
+                (lambda (phase-level ns insp)
+                  (and (zero? phase-level)
+                       (let ([ns (namespace->module-namespace ns core-module-name 0)])
+                         (and ns
+                              (module-linklet-info (namespace->instance ns 0)
+                                                   #f
+                                                   core-mpi
+                                                   insp
+                                                   #f
+                                                   #f)))))
                 #:instantiate-phase-callback
                 (lambda (data-box ns phase phase-level self bulk-binding-registry insp)
                   (case phase-level
