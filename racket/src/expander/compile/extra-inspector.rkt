@@ -80,7 +80,7 @@
 
 ;; Split the list back into the other parallel list --- but also check
 ;; for inlining-introduced references that must have formerly been
-;; module-internal references (i.e., referenecs that are not already
+;; module-internal references (i.e., references that are not already
 ;; recorded as imports)
 (define (module-uses-extract-extra-inspectorsss mu*s linklet check-inlined-reference? skip-n)
   (cond

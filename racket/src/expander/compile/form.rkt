@@ -500,7 +500,7 @@
                                                       (module-use-phase mu*))))
       (when mli
         ;; Record the module's declaration-time inspector, for use
-        ;; later recording extra inspectors for inlined referenced
+        ;; later recording extra inspectors for inlined references
         (module-use*-declaration-inspector! mu* (module-linklet-info-inspector mli)))
       (if mli
           ;; Found info for inlining:

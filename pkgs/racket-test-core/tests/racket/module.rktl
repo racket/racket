@@ -4385,5 +4385,20 @@ case of module-leve bindings; it doesn't cover local bindings.
   (namespace-require '(for-meta 0 'n 'n)))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Regression test for access of a protected variable that originates from `#%core`
+;; but is inlined across an intermediate module
+
+(module exports-local-expand-as-inlinable racket/base
+  (provide get-my-local-expand) ; not protected!
+  (define (get-my-local-expand) local-expand))
+
+(parameterize ([current-code-inspector (make-inspector (current-code-inspector))])
+  (eval '(module uses-local-expand-as-inlinable racket/base
+           (provide go)
+           (require 'exports-local-expand-as-inlinable)
+           (define (go) (get-my-local-expand))))
+  (namespace-require ''uses-local-expand-as-inlinable))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)
