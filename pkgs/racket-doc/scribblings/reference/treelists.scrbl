@@ -657,7 +657,10 @@ time for @math{N} elements.
 ]}
 
 
-@defproc[(treelist-copy [tl treelist?]) mutable-treelist?]{
+@deftogether[(
+@defproc[(treelist-copy [tl treelist?]) mutable-treelist?]
+@defproc[(mutable-treelist-copy [tl mutable-treelist?]) mutable-treelist?]
+)]{
 
 Creates a @tech{mutable treelist} that contains the same elements as
 @racket[tl]. Creating the mutable treelist takes @math{O(N)} time for
@@ -666,18 +669,29 @@ Creates a @tech{mutable treelist} that contains the same elements as
 @examples[
 #:eval the-eval
 (treelist-copy (treelist 3 "a"))
+(mutable-treelist-copy (mutable-treelist 3 "a"))
 ]}
 
-@defproc[(mutable-treelist-snapshot [tl mutable-treelist?]) treelist?]{
+@defproc[(mutable-treelist-snapshot [tl mutable-treelist?]
+                                    [n exact-nonnegative-integer? 0]
+                                    [m (or/c #f exact-nonnegative-integer?) #f])
+         treelist?]{
 
 Produces an immutable @tech{treelist} that has the same elements as
-@racket[tl]. Creating the immutable treelist takes @math{O(N)} time for
-@math{N} elements.
+@racket[tl] at position @racket[n] (inclusive) through position
+@racket[m] (exclusive). If @racket[m] is @racket[#f], then the length
+of @racket[tl] is used, instead. Creating the immutable treelist takes
+@math{O(N)} time for @math{N} elements of the resulting treelist, on
+top of the cost of @racket[treelist-sublist] if the result is a
+sublist.
 
 @examples[
 #:eval the-eval
 (define items (mutable-treelist 1 "a" 'apple))
 (define snap (mutable-treelist-snapshot items))
+snap
+(mutable-treelist-snapshot items 1)
+(mutable-treelist-snapshot items 1 2)
 (mutable-treelist-drop! items 2)
 items
 snap
