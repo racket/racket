@@ -120,9 +120,11 @@
      (treelist-copy-for-mutable tl)]
     [else
      (define size (treelist-length tl))
-     (check-treelist-bound-index 'mutable-treelist-snapshot tl size pos 0 "starting ")
+     (check-treelist-bound-index 'mutable-treelist-snapshot tl size pos 0 "starting "
+                                 mtl "mutable treelist")
      (when end-pos
-       (check-treelist-bound-index 'mutable-treelist-snapshot tl size end-pos pos "ending "))
+       (check-treelist-bound-index 'mutable-treelist-snapshot tl size end-pos pos "ending "
+                                   mtl "mutable treelist"))
      (treelist-copy-for-mutable (treelist-sublist tl pos (or end-pos size)))]))
 
 (define (mutable-treelist-length mtl)
@@ -136,7 +138,8 @@
 (define (mutable-treelist-ref mtl index)
   (check-mutable-treelist 'mutable-treelist-ref mtl)
   (define tl (mutable-treelist-tl mtl))
-  (check-treelist-index 'mutable-treelist-ref tl (treelist-length tl) index)
+  (check-treelist-index 'mutable-treelist-ref tl (treelist-length tl) index
+                        mtl "mutable treelist")
   (treelist-ref tl index))
 
 (define (mutable-treelist-first mtl)
@@ -156,7 +159,8 @@
 (define (mutable-treelist-set! mtl index val)
   (check-mutable-treelist 'mutable-treelist-set! mtl)
   (define tl (mutable-treelist-tl mtl))
-  (check-treelist-index 'mutable-treelist-set! tl (treelist-length tl) index)
+  (check-treelist-index 'mutable-treelist-set! tl (treelist-length tl) index
+                        mtl "mutable treelist")
   (cond
     [(impersonator? mtl)
      (set-mutable-treelist-tl! mtl (treelist-set tl index val))]
@@ -198,45 +202,53 @@
 (define (mutable-treelist-insert! mtl index val)
   (check-mutable-treelist 'mutable-treelist-insert! mtl)
   (define tl (mutable-treelist-tl mtl))
-  (check-treelist-end-index 'mutable-treelist-insert! tl (treelist-length tl) index)
+  (check-treelist-end-index 'mutable-treelist-insert! tl (treelist-length tl) index
+                            mtl "mutable treelist")
   (set-mutable-treelist-tl! mtl (treelist-insert tl index val)))
 
 (define (mutable-treelist-delete! mtl index)
   (check-mutable-treelist 'mutable-treelist-delete! mtl)
   (define tl (mutable-treelist-tl mtl))
-  (check-treelist-index 'mutable-treelist-delete! tl (treelist-length tl) index)
+  (check-treelist-index 'mutable-treelist-delete! tl (treelist-length tl) index
+                        mtl "mutable treelist")
   (set-mutable-treelist-tl! mtl (treelist-delete tl index)))
 
 (define (mutable-treelist-take! mtl n)
   (check-mutable-treelist 'mutable-treelist-take! mtl)
   (define tl (mutable-treelist-tl mtl))
-  (check-treelist-end-index 'mutable-treelist-take! tl (treelist-length tl) n)
+  (check-treelist-end-index 'mutable-treelist-take! tl (treelist-length tl) n
+                            mtl "mutable treelist")
   (set-mutable-treelist-tl! mtl (treelist-take tl n)))
 
 (define (mutable-treelist-drop! mtl n)
   (check-mutable-treelist 'mutable-treelist-drop! mtl)
   (define tl (mutable-treelist-tl mtl))
-  (check-treelist-end-index 'mutable-treelist-drop! tl (treelist-length tl) n)
+  (check-treelist-end-index 'mutable-treelist-drop! tl (treelist-length tl) n
+                            mtl "mutable treelist")
   (set-mutable-treelist-tl! mtl (treelist-drop tl n)))
 
 (define (mutable-treelist-take-right! mtl n)
   (check-mutable-treelist 'mutable-treelist-take-right! mtl)
   (define tl (mutable-treelist-tl mtl))
-  (check-treelist-end-index 'mutable-treelist-take-right! tl (treelist-length tl) n)
+  (check-treelist-end-index 'mutable-treelist-take-right! tl (treelist-length tl) n
+                            mtl "mutable treelist")
   (set-mutable-treelist-tl! mtl (treelist-take-right tl n)))
 
 (define (mutable-treelist-drop-right! mtl n)
   (check-mutable-treelist 'mutable-treelist-drop-right! mtl)
   (define tl (mutable-treelist-tl mtl))
-  (check-treelist-end-index 'mutable-treelist-drop-right! tl (treelist-length tl) n)
+  (check-treelist-end-index 'mutable-treelist-drop-right! tl (treelist-length tl) n
+                            mtl "mutable treelist")
   (set-mutable-treelist-tl! mtl (treelist-drop-right tl n)))
 
 (define (mutable-treelist-sublist! mtl pos end-pos)
   (check-mutable-treelist 'mutable-treelist-sublist! mtl)
   (define tl (mutable-treelist-tl mtl))
   (define size (treelist-length tl))
-  (check-treelist-bound-index 'mutable-treelist-sublist! tl size pos 0 "starting ")
-  (check-treelist-bound-index 'mutable-treelist-sublist! tl size end-pos pos "ending ")
+  (check-treelist-bound-index 'mutable-treelist-sublist! tl size pos 0 "starting "
+                              mtl "mutable treelist")
+  (check-treelist-bound-index 'mutable-treelist-sublist! tl size end-pos pos "ending "
+                              mtl "mutable treelist")
   (set-mutable-treelist-tl! mtl (treelist-sublist tl pos end-pos)))
 
 (define (mutable-treelist-reverse! mtl)
