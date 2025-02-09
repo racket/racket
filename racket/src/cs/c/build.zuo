@@ -1,6 +1,7 @@
 #lang zuo
 (require "../../lib.zuo"
          "../../mac/codesign.zuo"
+         "../../worksp/mingw-ms.zuo"
          (only-in "../../ChezScheme/build.zuo"
                   [targets-at scheme-targets-at])
          (only-in "../../start/build.zuo"
@@ -642,7 +643,7 @@
                                       (list libres.o (target->path librktio.a))
                                       (if msvc?
                                           windows-libs
-                                          '()))
+                                          (make-mingw-to-ms-link-libraries m (at-dir) config)))
                               (if msvc?
                                   (config-merge config
                                                 'CFLAGS
