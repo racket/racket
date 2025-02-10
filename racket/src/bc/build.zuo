@@ -2,6 +2,7 @@
 (require "../lib.zuo"
          "../worksp/gendef.zuo"
          "../mac/codesign.zuo"
+         "../worksp/mingw-ms.zuo"
          (only-in "../start/build.zuo"
                   [targets-at starter-targets-at])
          (only-in zuo/c
@@ -876,7 +877,8 @@
            (lambda (cgc? libracket.dll libracket.a libracket.def link-inputs objs)
              `[:target (,libracket.dll ,libracket.def) (,@(if cgc? (list libmzgcxxxxxxx.dll) (list newgc.o))
                                                         ,libracket.a ,mzsj86.o ,@mzsj86a-objs
-                                                        ,@link-inputs)
+                                                        ,@link-inputs
+                                                        ,(at-source "../worksp/mingw-ms.zuo"))
                        ,(lambda (path token)
                           (mkdir-p (path-only path))
                           (c-link path
@@ -913,10 +915,13 @@
                                                                  "-Wl,--no-whole-archive"
                                                                  "-static-libgcc"
                                                                  (map string->shell
-                                                                      (map target->path
-                                                                           (filter (lambda (p)
-                                                                                     (not (equal? p libracketgc.a)))
-                                                                                   link-inputs))))))))])
+                                                                      (append
+                                                                       (map target->path
+                                                                            (filter (lambda (p)
+                                                                                      (not (equal? p libracketgc.a)))
+                                                                                    link-inputs))
+                                                                       (make-mingw-to-ms-link-libraries
+                                                                        (hash-ref config 'MACH) (at-dir) config))))))))])
            (list #t #t #f)
            (list libracketcgc1xxxxxxx.dll libracketcgcxxxxxxx.dll libracket3mxxxxxxx.dll)
            (list libracketcgc1.a libracketcgc.a libracket3m.a)
