@@ -3,7 +3,7 @@
    declarations. */
 
 #define ZUO_VERSION 1
-#define ZUO_MINOR_VERSION 10
+#define ZUO_MINOR_VERSION 11
 
 #if defined(_MSC_VER) || defined(__MINGW32__)
 # define ZUO_WINDOWS
@@ -3748,6 +3748,24 @@ static char *zuo_getcwd(void) {
 #ifdef ZUO_WINDOWS
   dir = zuo_from_wide((wchar_t *)s);
   free(s);
+#endif
+
+#ifdef ZUO_UNIX
+  {
+    /* If the `PWD` environment variable refers to the same place with
+       a different absolute path, then prefer the `PWD` form */
+    char *pwd = getenv("PWD");
+    if (pwd && pwd[0] == '/' && strcmp(pwd, dir)) {
+      struct stat stat_buf1, stat_buf2;
+      if ((stat(dir, &stat_buf1) == 0)
+          && (stat(pwd, &stat_buf2) == 0)
+          && (stat_buf1.st_dev == stat_buf2.st_dev)
+          && (stat_buf1.st_ino == stat_buf2.st_ino)) {
+        free(dir);
+        dir = strdup(pwd);
+      }
+    }
+  }
 #endif
 
   return dir;
