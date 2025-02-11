@@ -25,11 +25,10 @@
     [else
      null])
    (cond
-     [(and win?
-           aarch64?)
-      '("openssl-3")]
+     [(and mac? (or m32? ppc?))
+      '("openssl-1")]
      [else
-      '("openssl-1")])
+      '("openssl-3")])
    '("expat"
      "gettext")
    (cond
@@ -62,9 +61,13 @@
      "harfbuzz"
      "fribidi"
      "pango"
-     "gmp"
-     "mpfr"
-     "jpeg"
+     "gmp")
+   (cond
+     [aarch64?
+      '("mpfr-4")]
+     [else
+      '("mpfr-3")])
+   '("jpeg"
      "atk"
      "poppler")
    (cond
@@ -97,7 +100,7 @@
                       (list (if win? "--win" (if linux? "--linux" "--mac"))
                             (if m32?
                                 (if ppc? "--mppc" "--m32")
-                                (if aarch64? "--maarch64" "--m64")))
+                                (if aarch64? "--maarch64" "--mx86_64")))
                       (cons "--archives"
                             (add-between (map ~a archives-dirs)
                                          "--archives"))

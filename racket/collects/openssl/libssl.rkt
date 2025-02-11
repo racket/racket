@@ -18,8 +18,13 @@
   (case (if runtime? (system-type) (cross-system-type))
     [(windows) '(so "ssleay32")]
     [(macosx)
-     ;; Version "1.1" is bundled with Racket
-     '(so "libssl" ("1.1" #f))]
+     (case (if runtime? (system-type 'arch) (cross-system-type 'arch))
+       [(i386 ppc)
+        ;; Version "1.1" is bundled with Racket
+        '(so "libssl" ("1.1" #f))]
+       [else
+        ;; Version "3" is bundled with Racket
+        '(so "libssl" ("3" #f))])]
     [else '(so "libssl")]))
 
 (define libssl

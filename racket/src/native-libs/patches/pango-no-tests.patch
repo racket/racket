@@ -1,0 +1,13 @@
+Only in old: glib-2.72.2
+diff -r -u old/pango-1.42.0/Makefile.in new/pango-1.42.0/Makefile.in
+--- old/pango-1.42.0/Makefile.in	2018-03-12 10:09:13
++++ new/pango-1.42.0/Makefile.in	2025-02-11 10:22:20
+@@ -414,7 +414,7 @@
+ top_build_prefix = @top_build_prefix@
+ top_builddir = @top_builddir@
+ top_srcdir = @top_srcdir@
+-SUBDIRS = pango pango-view examples docs tools tests win32
++SUBDIRS = pango pango-view examples docs tools win32
+ meson_dist_files = \
+ 	pango/pango-features.h.meson \
+ 	pango-view/meson.build \

@@ -1,6 +1,6 @@
-diff -u -r old/pixman-0.34.0/Makefile new/pixman-0.34.0/Makefile
---- old/pixman-0.34.0/Makefile.in	2018-09-22 20:18:54.000000000 -0600
-+++ new/pixman-0.34.0/Makefile.in	2018-09-22 20:18:35.000000000 -0600
+diff -u -r old/pixman-0.44.2/Makefile new/pixman-0.44.2/Makefile
+--- old/pixman-0.44.2/Makefile.in	2018-09-22 20:18:54.000000000 -0600
++++ new/pixman-0.44.2/Makefile.in	2018-09-22 20:18:35.000000000 -0600
 @@ -380,7 +380,7 @@
  top_build_prefix = @top_build_prefix@
  top_builddir = @top_builddir@

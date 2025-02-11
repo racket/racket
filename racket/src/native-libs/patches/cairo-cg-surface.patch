@@ -1,6 +1,6 @@
-diff -r -u old/cairo-1.14.12/src/cairo-quartz-surface.c new/cairo-1.14.12/src/cairo-quartz-surface.c
---- old/cairo-1.14.12/src/cairo-quartz-surface.c	2021-04-23 18:09:41.000000000 -0600
-+++ new/cairo-1.14.12/src/cairo-quartz-surface.c	2021-04-23 19:17:00.000000000 -0600
+diff -u -r old/cairo-1.18.2/src/cairo-quartz-surface.c new/cairo-1.18.2/src/cairo-quartz-surface.c
+--- old/cairo-1.18.2/src/cairo-quartz-surface.c	2024-09-01 07:09:23
++++ new/cairo-1.18.2/src/cairo-quartz-surface.c	2025-02-11 06:37:07
 @@ -48,6 +48,11 @@
  #include "cairo-surface-backend-private.h"
  #include "cairo-surface-clipper-private.h"
@@ -13,10 +13,12 @@ diff -r -u old/cairo-1.14.12/src/cairo-quartz-surface.c new/cairo-1.14.12/src/ca
  
  #include <dlfcn.h>
  
-@@ -2462,6 +2467,58 @@
- 	return NULL;
- }
+@@ -2358,6 +2363,58 @@
+     }
  
+     return NULL;
++}
++
 +CGContextRef
 +cairo_quartz_get_cg_context_with_clip (cairo_t *cr)
 +{
@@ -67,8 +69,23 @@ diff -r -u old/cairo-1.14.12/src/cairo-quartz-surface.c new/cairo-1.14.12/src/ca
 +	return;
 +
 +    CGContextRestoreGState (quartz->cgContext);
-+}
-+
+ }
+ 
  /**
-  * _cairo_surface_is_quartz:
-  * @surface: a #cairo_surface_t
+Only in new/cairo-1.18.2/src: cairo-quartz-surface.c.orig
+diff -u -r old/cairo-1.18.2/src/cairo-quartz.h new/cairo-1.18.2/src/cairo-quartz.h
+--- old/cairo-1.18.2/src/cairo-quartz.h	2024-09-01 07:09:23
++++ new/cairo-1.18.2/src/cairo-quartz.h	2025-02-11 06:37:32
+@@ -57,6 +57,12 @@
+ cairo_public CGContextRef
+ cairo_quartz_surface_get_cg_context (cairo_surface_t *surface);
+ 
++cairo_public CGContextRef
++cairo_quartz_get_cg_context_with_clip (cairo_t *cr);
++
++cairo_public void
++cairo_quartz_finish_cg_context_with_clip (cairo_t *cr);
++  
+ #if CAIRO_HAS_QUARTZ_FONT
+ 
+ /*

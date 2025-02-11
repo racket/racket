@@ -62,7 +62,10 @@
        ;; Also don't look for older versions, because that can log an error
        ;; in "mzssl.rkt". Just recognize the version that's provided by
        ;; the "racket-lib" package.
-       '("1.1")]
+       (case (system-type 'arch)
+         [(i386 ppc)
+          '("1.1")]
+         [else '("3")])]
       [else
        (case (path->string (system-library-subpath #f))
          [("x86_64-darwin" "i386-darwin" "aarch64-darwin")
@@ -81,8 +84,13 @@
   (case (if runtime? (system-type) (cross-system-type))
     [(windows) '(so "libeay32")]
     [(macosx)
-     ;; Version "1.1" is bundled with Racket
-     '(so "libcrypto" ("1.1" #f))]
+     (case (if runtime? (system-type 'arch) (cross-system-type 'arch))
+       [(i386 ppc)
+        ;; Version "1.1" is bundled with Racket
+        '(so "libcrypto" ("1.1" #f))]
+       [else
+        ;; Version "3" is bundled with Racket
+        '(so "libcrypto" ("3" #f))])]
     [else '(so "libcrypto")]))
 
 (define libcrypto
