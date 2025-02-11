@@ -126,6 +126,10 @@
 (check-not-exn (λ ()
                  (test-contract-generation
                   (rename-contract (or/c integer? boolean?) 'b-or-i))))
+(check-not-exn (λ ()
+                 (test-contract-generation
+                  (letrec ([c (recursive-contract (hash/c any/c c #:flat? #t) #:flat)])
+                    c))))
 
 (define (check-empty-and-nonempty ctc val-empty? val-nonempty?)
   (define val-list

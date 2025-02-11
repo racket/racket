@@ -197,7 +197,7 @@
   (define this-rng (base-hash/c-rng ctc))
   (define this-immutable (base-hash/c-immutable ctc))
   (λ (fuel)
-    (define rnd (random fuel)) ;; used to return empty hashes from time to time
+    (define rnd (if (zero? fuel) 0 (random fuel))) ;; used to return empty hashes from time to time
     (define gen-key (contract-random-generate/choose this-dom fuel))
     (define gen-val (contract-random-generate/choose this-rng fuel))
     (λ ()
