@@ -2912,11 +2912,34 @@ static Scheme_Object *complex_log(Scheme_Object *c)
 {
   Scheme_Object *m, *theta;
 
-  m = magnitude(1, &c);
   theta = angle(1, &c);
-
-  return scheme_bin_plus(log_e_prim(1, &m),
-                         scheme_bin_mult(scheme_plus_i, theta));
+  if (SCHEME_COMPLEXP(c)) {
+    Scheme_Object *r, *i;
+    double x;
+    r = scheme_abs(1, &_scheme_complex_real_part(c));
+    i = scheme_abs(1, &_scheme_complex_imaginary_part(c));
+    /* impossible: is not complex
+    if (SAME_OBJ(r, scheme_exact_zero) && SAME_OBJ(i, scheme_exact_zero)) { return log_e_prim(1, &r); } */
+    m = scheme_bin_minus(r, i);
+    /* is there a max or compare function available? */
+    if (MZ_IS_NAN(scheme_real_to_double(m))) return scheme_make_complex(m, theta);
+    if   (scheme_is_negative(m)) { m = i; }
+    else                         { m = r; r = i; }
+    if (SAME_OBJ(m, scheme_exact_zero)) { m = scheme_zerod; x = 0.0; }
+    else {
+      x = scheme_real_to_double(scheme_bin_div(r, m));
+      if (MZ_IS_NAN(x)) { x = 0.0; }
+    }
+    m = log_e_prim(1, &m);
+    /* is log1p available everywhere? It is in math.h of gcc and mingw */
+    x = 0.5 * log1p( x * x );
+    m = scheme_bin_plus( m, scheme_make_double(x));
+    return scheme_make_complex(m, theta);
+  }
+  else {
+    m = magnitude(1, &c);
+    return log_e_prim(1, &m);
+  }
 }
 
 static Scheme_Object *bignum_log(Scheme_Object *b)
