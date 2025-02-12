@@ -663,17 +663,18 @@ file.
 
 @section[#:tag "parse-vector"]{Reading Vectors}
 
-When the reader encounters a @litchar{#(}, @litchar{#[}, or
-@litchar["#{"], it starts parsing a @tech{vector}; see @secref["vectors"] for
-information on vectors. A @litchar{#fl} in place of @litchar{#}
-starts an @tech{flvector}, but is not allowed in @racket[read-syntax] mode; 
-see @secref["flvectors"] for information on flvectors.
-A @litchar{#fx} in place of @litchar{#}
-starts an @tech{fxvector}, but is not allowed in @racket[read-syntax] mode; 
-see @secref["fxvectors"] for information on fxvectors.
-The @litchar{#[}, @litchar["#{"], @litchar{#fl[}, @litchar["#fl{"], 
-@litchar{#fx[}, and @litchar["#fx{"] forms can be disabled through 
-the @racket[read-square-bracket-as-paren] and
+When the reader encounters a @as-index{@litchar{#(}},
+@as-index{@litchar{#[}}, or @as-index{@litchar["#{"]}, it starts
+parsing a @tech{vector}; see @secref["vectors"] for information on
+vectors. A @as-index{@litchar{#fl}} in place of @litchar{#} starts an
+@tech{flvector}, but is not allowed in @racket[read-syntax] mode; see
+@secref["flvectors"] for information on flvectors.  A
+@as-index{@litchar{#fx}} in place of @litchar{#} starts an
+@tech{fxvector}, but is not allowed in @racket[read-syntax] mode; see
+@secref["fxvectors"] for information on fxvectors.  The @litchar{#[},
+@litchar["#{"], @litchar{#fl[}, @litchar["#fl{"], @litchar{#fx[}, and
+@litchar["#fx{"] forms can be disabled through the
+@racket[read-square-bracket-as-paren] and
 @racket[read-curly-brace-as-paren] @tech{parameters}.
 
 The elements of the vector are recursively read until a matching
@@ -707,11 +708,12 @@ immutable.
 
 @section[#:tag "parse-structure"]{Reading Structures}
 
-When the reader encounters a @litchar{#s(}, @litchar{#s[}, or
-@litchar["#s{"], it starts parsing an instance of a @tech{prefab}
-@tech{structure type}; see @secref["structures"] for information on
-@tech{structure types}.  The @litchar{#s[} and @litchar["#s{"] forms
-can be disabled through the @racket[read-square-bracket-as-paren] and
+When the reader encounters a @as-index{@litchar{#s(}},
+@as-index{@litchar{#s[}}, or @as-index{@litchar["#s{"]}, it starts
+parsing an instance of a @tech{prefab} @tech{structure type}; see
+@secref["structures"] for information on @tech{structure types}.  The
+@litchar{#s[} and @litchar["#s{"] forms can be disabled through the
+@racket[read-square-bracket-as-paren] and
 @racket[read-curly-brace-as-paren] @tech{parameters}.
 
 The elements of the structure are recursively read until a matching
