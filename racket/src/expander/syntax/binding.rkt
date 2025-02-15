@@ -203,6 +203,14 @@
      shifts]
     [else (cons shift shifts)]))
 
+(define (binding-free=id-phase immediate-b)
+  ;; a `free=id` mapping is only possible at the same phase as the
+  ;; referencing binding, so we can use the binding's own phase to
+  ;; indicate the relevant `free=id` phase
+  (if (module-binding? immediate-b)
+      (module-binding-phase immediate-b)
+      0))
+
 ;; Use `resolve+shift` instead of `resolve` when the module of a
 ;; module binding is relevant or when `free-identifier=?` equivalences
 ;; (as installed by a binding to a rename transformer) are relevant;
@@ -231,7 +239,7 @@
      (define b (if (and immediate-b
                         (not immediate?)
                         (binding-free=id immediate-b))
-                   (resolve+shift (binding-free=id immediate-b) phase
+                   (resolve+shift (binding-free=id immediate-b) (binding-free=id-phase immediate-b)
                                   #:extra-shifts (append extra-shifts (syntax-mpi-shifts s))
                                   #:ambiguous-value ambiguous-value
                                   #:exactly? exactly?
