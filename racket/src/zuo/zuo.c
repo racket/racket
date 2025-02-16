@@ -38,9 +38,9 @@
 
 #if 0
 # include <assert.h>
-# define ASSERT(x) assert(x)
+# define ZUO_ASSERT(x) assert(x)
 #else
-# define ASSERT(x) do { } while (0)
+# define ZUO_ASSERT(x) do { } while (0)
 #endif
 
 /* `zuo_int_t` should be a 64-bit integer type, so we don't have to
@@ -439,7 +439,7 @@ static void *malloc_or_recycle(zuo_int_t min_size, zuo_int_t *size) {
 static zuo_t *zuo_new(int tag, zuo_int_t size) {
   zuo_t *obj;
 
-  ASSERT(size >= sizeof(zuo_forwarded_t));
+  ZUO_ASSERT(size >= sizeof(zuo_forwarded_t));
 
   size = ALLOC_ALIGN(size);
 
@@ -761,7 +761,7 @@ static void zuo_fasl_ref(zuo_t **_obj, zuo_fasl_stream_t *_stream) {
     zuo_intptr_t delta = ((char *)obj) - ((char *)stream->heap);
     zuo_t *shadow_obj = (zuo_t *)(((char *)stream->shadow_heap) + delta);
 
-    ASSERT((delta >= 0) && (delta < stream->heap_size));
+    ZUO_ASSERT((delta >= 0) && (delta < stream->heap_size));
 
     zuo_ensure_image_room(stream);
 
@@ -899,7 +899,7 @@ static void zuo_fasl(zuo_t *obj, zuo_fasl_stream_t *stream) {
     zuo_panic("cannot dump heap with handles");
     break;
   case zuo_forwarded_tag:
-    ASSERT(0);
+    ZUO_ASSERT(0);
     break;
   }
 }
@@ -1000,7 +1000,7 @@ static void zuo_fasl_restore(char *dump_in, zuo_int_t len) {
     zuo_int32_t tag = stream.image[delta];
     zuo_int_t sz;
 
-    ASSERT((tag >= 0) && (tag < zuo_forwarded_tag));
+    ZUO_ASSERT((tag >= 0) && (tag < zuo_forwarded_tag));
 
     if (tag == zuo_string_tag)
       sz = object_size(tag, BUILD_INT(stream.image[delta+1], stream.image[delta+2]));
@@ -1183,7 +1183,7 @@ static zuo_t *zuo_cont(zuo_cont_tag_t tag, zuo_t *data, zuo_t *env, zuo_t *in_pr
    symbol-keyed persistent maps. */
 
 static zuo_t *trie_lookup(zuo_t *trie, zuo_int_t id) {
-  ASSERT(trie->tag == zuo_trie_node_tag);
+  ZUO_ASSERT(trie->tag == zuo_trie_node_tag);
 
   while (id > 0) {
     trie = ((zuo_trie_node_t *)trie)->next[id & ZUO_TRIE_BFACTOR_MASK];
@@ -1215,7 +1215,7 @@ static void trie_set(zuo_t *trie, zuo_int_t id, zuo_t *key, zuo_t *val) {
 }
 
 static void zuo_trie_set(zuo_t *trie, zuo_t *sym, zuo_t *val) {
-  ASSERT(trie_lookup(trie, ((zuo_symbol_t *)sym)->id) == z.o_undefined);
+  ZUO_ASSERT(trie_lookup(trie, ((zuo_symbol_t *)sym)->id) == z.o_undefined);
   trie_set(trie, ((zuo_symbol_t *)sym)->id, sym, val);
   ((zuo_trie_node_t *)trie)->count++;
 }
@@ -3206,7 +3206,7 @@ static void check_syntax(zuo_t *e) {
 }
 
 static zuo_t *env_extend(zuo_t *env, zuo_t *sym, zuo_t *val) {
-  ASSERT((env->tag == zuo_trie_node_tag) || (env->tag == zuo_pair_tag));
+  ZUO_ASSERT((env->tag == zuo_trie_node_tag) || (env->tag == zuo_pair_tag));
   return zuo_cons(zuo_cons(sym, val), env);
 }
 
@@ -6568,7 +6568,7 @@ static const uint32_sha2_t K[] =
     0x90BEFFFA, 0xA4506CEB, 0xBEF9A3F7, 0xC67178F2,
 };
 
-#define  SHR(x,n) ((x & 0xFFFFFFFF) >> n)
+#define SHR(x,n) ((x & 0xFFFFFFFF) >> n)
 #define ROTR(x,n) (SHR(x,n) | (x << (32 - n)))
 
 #define S0(x) (ROTR(x, 7) ^ ROTR(x,18) ^  SHR(x, 3))
@@ -7644,3 +7644,28 @@ void zuo_ext_stash_push(zuo_ext_t *v) { Z.o_stash = zuo_cons(v, Z.o_stash); }
 zuo_ext_t *zuo_ext_stash_pop(void) { zuo_t *v = _zuo_car(Z.o_stash); Z.o_stash = _zuo_cdr(Z.o_stash); return v; }
 
 #endif
+
+/*======================================================================*/
+/* undefs                                                               */
+/*======================================================================*/
+
+/* In case someone wants to try to use the C preprocessor as a module
+   system, undefine macros that don't start with `ZUO`. */
+#undef z
+#undef Z
+#undef BUILD_INT
+#undef SWAP_ENDIAN
+#undef GET_UINT32_BE
+#undef PUT_UINT32_BE
+#undef SHR
+#undef ROTR
+#undef S0
+#undef S1
+#undef S2
+#undef S3
+#undef F0
+#undef F1
+#undef R
+#undef P
+#undef TRIE_SET_TOP_ENV
+#undef EMBEDDED_IMAGE
