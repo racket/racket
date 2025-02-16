@@ -5,26 +5,28 @@
 (define (make-mingw-to-ms-link-libraries m dir config)
   (cond
     [(member m '("ta6nt" "ti3nt"))
-     ;; Synthesize a library that links `pow` to msvcrt,
+     ;; Synthesize a library that links `sin`, `cos` and `pow` to msvcrt,
      ;; instead of using MinGW's implementation
      (define dlltool (find-cc-like-tool config 'DLLTOOL "dlltool"))
 
-     (define mspow-def (build-path dir "mspow.def"))
-     (define out (fd-open-output mspow-def :truncate))
+     (define msfuns-def (build-path dir "msfuns.def"))
+     (define out (fd-open-output msfuns-def :truncate))
      (fd-write out (~a "LIBRARY msvcrt\n"
                        "EXPORTS\n"
+                       "  sin\n"
+                       "  cos\n"
                        "  pow\n"))
      (fd-close out)
 
-     (define mspow-a (path-replace-extension mspow-def ".a"))
+     (define msfuns-a (path-replace-extension msfuns-def ".a"))
 
      (define proc (hash-ref
-                   (shell dlltool "-d" mspow-def "-l" mspow-a)
+                   (shell dlltool "-d" msfuns-def "-l" msfuns-a)
                    'process))
 
      (process-wait proc)
      (or (and (equal? 0 (process-status proc))
-              (list mspow-a))
+              (list msfuns-a))
          '())]
     [else '()]))
 
