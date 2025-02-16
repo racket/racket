@@ -40,7 +40,6 @@
 
          resolve-module-path
          current-module-name-resolver
-         build-module-name
          
          current-module-declare-name
          current-module-declare-source
@@ -503,22 +502,24 @@
               "not a supported module path: ~v" p)])]))
 
 ;; Build a submodule name given an enclosing module name, if any
-(define (build-module-name name ; a symbol
-                           enclosing ; #f => no enclosing module
+(define (build-module-name name ; a symbol or ".."
+                           enclosing ; resoved module path or #f; #f => no enclosing module
                            #:original [orig-name name]) ; for error reporting
   (define enclosing-module-name (and enclosing
                                      (resolved-module-path-name enclosing)))
   (make-resolved-module-path
    (cond
-    [(not enclosing-module-name) name]
-    [(symbol? enclosing-module-name) (list enclosing-module-name name)]
-    [(equal? name "..")
-     (cond
-      [(symbol? enclosing-module-name)
-       (error "too many \"..\"s:" orig-name)]
-      [(= 2 (length enclosing-module-name)) (car enclosing-module-name)]
-      [else (reverse (cdr (reverse enclosing-module-name)))])]
-    [else (append enclosing-module-name (list name))])))
+     [(equal? name "..")
+      ;; At the time of writing, we only get here via `core-module-name-resolver`
+      ;; --- which is replaced on startup
+      (cond
+        [(not (pair? enclosing-module-name))
+         (error "too many \"..\"s:" orig-name)]
+        [(= 2 (length enclosing-module-name)) (car enclosing-module-name)]
+        [else (reverse (cdr (reverse enclosing-module-name)))])]
+     [(not enclosing-module-name) name]
+     [(pair? enclosing-module-name) (append enclosing-module-name (list name))]
+     [else (list enclosing-module-name name)])))
 
 ;; Parameter that can be set externally:
 (define current-module-name-resolver
