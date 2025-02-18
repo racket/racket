@@ -41,13 +41,3 @@
 
 (define (gensym sym)
   (string->uninterned-symbol (symbol->string sym)))
-
-(define (modulo n m)
-  (let ([r (remainder n m)])
-    (if (>= m 0)
-        (if (>= n 0)
-            r
-            (- r))
-        (if (< n 0)
-            r
-            (+ r n)))))
