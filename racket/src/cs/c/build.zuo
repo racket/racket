@@ -636,7 +636,7 @@
                    (vfasl scheme-chunked.boot "scheme.boot" '("petite"))
                    (vfasl racket-chunked.boot "racket.boot" '("petite" "scheme")))]
 
-       [:target ,libracketcsxxx_RAW.dll (,@boot-objs ,libres.o ,(at-source "../../worksp/mingw-ms.zuo"))
+       [:target ,libracketcsxxx_RAW.dll (,@boot-objs ,libres.o ,@mingw-to-ms-link-libraries-deps)
                 ,(lambda (path token)
                    (c-compile libracketcsxxx_RAW.dll
                               (append (map target->path boot-objs)

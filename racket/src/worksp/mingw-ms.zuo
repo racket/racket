@@ -1,40 +1,10 @@
 #lang zuo
+(require "../ChezScheme/c/mingw.zuo")
 
-(provide make-mingw-to-ms-link-libraries)
+(provide make-mingw-to-ms-link-libraries
+         mingw-to-ms-link-libraries-deps)
 
-(define (make-mingw-to-ms-link-libraries m dir config)
-  (cond
-    [(member m '("ta6nt" "ti3nt"))
-     ;; Synthesize a library that links `pow` to msvcrt,
-     ;; instead of using MinGW's implementation
-     (define dlltool (find-cc-like-tool config 'DLLTOOL "dlltool"))
-
-     (define mspow-def (build-path dir "mspow.def"))
-     (define out (fd-open-output mspow-def :truncate))
-     (fd-write out (~a "LIBRARY msvcrt\n"
-                       "EXPORTS\n"
-                       "  pow\n"))
-     (fd-close out)
-
-     (define mspow-a (path-replace-extension mspow-def ".a"))
-
-     (define proc (hash-ref
-                   (shell dlltool "-d" mspow-def "-l" mspow-a)
-                   'process))
-
-     (process-wait proc)
-     (or (and (equal? 0 (process-status proc))
-              (list mspow-a))
-         '())]
-    [else '()]))
-
-(define (find-cc-like-tool config key name)
-  (or (hash-ref config key #f)
-      (let ([cc (hash-ref config 'CC #f)])
-        (cond
-          [(and cc (glob-match? "*gcc" cc))
-           (~a (substring cc 0 (- (string-length cc) 3)) name)]
-          [(and cc (glob-match? "*cc" cc))
-           (~a (substring cc 0 (- (string-length cc) 2)) name)]
-          [else
-           name]))))
+(define mingw-to-ms-link-libraries-deps
+  (list
+   (at-source "mingw-ms.zuo")
+   (at-source "../ChezScheme/c/mingw.zuo")))

@@ -878,7 +878,7 @@
              `[:target (,libracket.dll ,libracket.def) (,@(if cgc? (list libmzgcxxxxxxx.dll) (list newgc.o))
                                                         ,libracket.a ,mzsj86.o ,@mzsj86a-objs
                                                         ,@link-inputs
-                                                        ,(at-source "../worksp/mingw-ms.zuo"))
+                                                        ,@mingw-to-ms-link-libraries-deps)
                        ,(lambda (path token)
                           (mkdir-p (path-only path))
                           (c-link path
