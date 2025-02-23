@@ -3,6 +3,8 @@
 
   (provide foldl
            foldr
+           running-foldl
+           running-foldr
 
            remv
            remq
@@ -271,6 +273,41 @@
          (if (pair? (car ls)) ; `check-fold' ensures all lists have equal length
              (apply f (mapadd car ls (loop (map cdr ls))))
              init))]))
+  
+  (define running-foldl
+    (case-lambda
+      [(f init l)
+       (check-fold 'running-foldl f init l null)
+       (let loop ([l l] [acc init] [result null])
+         (if (null? l)
+             (reverse (cons acc result))
+             (loop (cdr l) (f (car l) acc) (cons acc result))))]
+      [(f init l . ls)
+       (check-fold 'running-foldl f init l ls)
+       (let loop ([ls (cons l ls)] [acc init] [result null])
+         (if (null? (car ls)) ; `check-fold' ensures all lists have equal length
+             (reverse (cons acc result))
+             (loop (map cdr ls) 
+                   (apply f (mapadd car ls acc))
+                   (cons acc result))))]))
+
+  (define running-foldr
+    (case-lambda
+      [(f init l)
+       (check-fold 'running-foldr f init l null)
+       (let loop ([l l])
+         (if (null? l)
+             (list init)
+             (let ([accs (loop (cdr l))])
+               (cons (f (car l) (car accs)) accs))))]
+      [(f init l . ls)
+       (check-fold 'running-foldr f init l ls)
+       (let loop ([ls (cons l ls)])
+         (if (null? (car ls)) ; `check-fold' ensures all lists have equal length
+             (list init)
+             (let ([accs (loop (map cdr ls))])
+               (cons (apply f (mapadd car ls (car accs))) 
+                     accs))))]))
 
   (define (filter f list)
     (unless (and (procedure? f)

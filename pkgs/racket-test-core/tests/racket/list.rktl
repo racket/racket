@@ -772,4 +772,50 @@
 (test '(1 3) indexes-where '(1 2 3 4 5) even?)
 (test '(0 2 4) indexes-where '(1 2 3 4 5) odd?)
 
+;; ---------- running-foldl / running-foldr ----------
+(test '(0) running-foldl + 0 '())
+(test '(0 1 3 6) running-foldl + 0 '(1 2 3))
+(err/rt-test (running-foldl 1 0 0))
+(err/rt-test (running-foldl + 0 0))
+(test '(1 2 6 0 0) running-foldl * 1 '(2 3 0 4))
+(test '(1 2 2 2) running-foldl (lambda (val _) val) 1 '(2 2 2))
+;; variadic tests
+(test '(0) running-foldl + 0 '() '())
+(err/rt-test (running-foldl + 0 '(1) '()))
+(err/rt-test (running-foldl + 0 '() (1)))
+(test '(1 3 7 13) running-foldl + 1 '(1 2 3) '(1 2 3))
+(test '(1 2 24 0 0) running-foldl * 1 '(2 3 0 4) '(1 4 4 5))
+
+(test '(0) running-foldr + 0 '())
+(test '(6 5 3 0) running-foldr + 0 '(1 2 3))
+(err/rt-test (running-foldr 1 0 0))
+(err/rt-test (running-foldr + 0 0))
+(test '(0 0 0 4 1) running-foldr * 1 '(2 3 0 4))
+(test '(2 2 2 1) running-foldr (lambda (val _) val) 1 '(2 2 2))
+;; variadic tests
+(test '(0) running-foldr + 0 '() '())
+(err/rt-test (running-foldr + 0 '(1) '()))
+(err/rt-test (running-foldr + 0 '() (1)))
+(test '(13 11 7 1) running-foldr + 1 '(1 2 3) '(1 2 3))
+(test '(0 0 0 20 1) running-foldr * 1 '(2 3 0 4) '(1 4 4 5))
+
+;; ---------- windows ----------
+(test '((1 1 1) (2 2 2) (3 3 3)) windows 3 3 '(1 1 1 2 2 2 3 3 3))
+(test '((1 2 3) (2 3 4) (3 4 5)) windows 3 1 '(1 2 3 4 5))
+(err/rt-test (windows 0 1 '(1)))
+(err/rt-test (windows 1 0 '(1)))
+(err/rt-test (windows 1 1 (void)))
+(test '((1 1 1)) windows 3 3 '(1 1 1 2 2))
+(test '((1 1 1)) windows 3 7 '(1 1 1 2 2))
+(test '((1) (2) (3)) windows 1 1 '(1 2 3))
+(test '((1) (3)) windows 1 2 '(1 2 3 4))
+
+;; ---------- slice-by ----------
+(test '() slice-by eq? '())
+(test '((1 1) (2 2) (3 3)) slice-by eq? '(1 1 2 2 3 3))
+(test '((1) (1 2) (2)) slice-by < '(1 1 2 2))
+(err/rt-test (slice-by positive? '()))
+(err/rt-test (slice-by equal? (void)))
+(test '((1 2 3) (-1 -2 -3) (4)) slice-by (lambda (e1 e2) (eq? (positive? e1) (positive? e2))) '(1 2 3 -1 -2 -3 4))
+
 (report-errs)
