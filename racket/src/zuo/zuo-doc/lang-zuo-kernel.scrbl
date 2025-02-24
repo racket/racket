@@ -12,7 +12,7 @@
 @title[#:tag "zuo-kernel"]{Zuo Kernel Language}
 
 @defmodulelang[zuo/kernel #:no-declare #:packages ()]
-@declare-exporting[zuo-doc/fake-kernel #:packages ()]
+@declare-exporting[zuo/kernel #:packages () #:use-sources (zuo-doc/fake-kernel)]
 
 The body of a @racketmodname[zuo/kernel] module is a single expression
 using a set of core @seclink["kernel-syntax"]{syntactic forms}

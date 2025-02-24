@@ -1,6 +1,7 @@
 #lang zuo
 (require "../../lib.zuo"
          "../../mac/codesign.zuo"
+         "../../worksp/mingw-ms.zuo"
          (only-in "../../ChezScheme/build.zuo"
                   [targets-at scheme-targets-at])
          (only-in "../../start/build.zuo"
@@ -635,14 +636,14 @@
                    (vfasl scheme-chunked.boot "scheme.boot" '("petite"))
                    (vfasl racket-chunked.boot "racket.boot" '("petite" "scheme")))]
 
-       [:target ,libracketcsxxx_RAW.dll (,@boot-objs ,libres.o)
+       [:target ,libracketcsxxx_RAW.dll (,@boot-objs ,libres.o ,@mingw-to-ms-link-libraries-deps)
                 ,(lambda (path token)
                    (c-compile libracketcsxxx_RAW.dll
                               (append (map target->path boot-objs)
                                       (list libres.o (target->path librktio.a))
                                       (if msvc?
                                           windows-libs
-                                          '()))
+                                          (make-mingw-to-ms-link-libraries m (at-dir) config)))
                               (if msvc?
                                   (config-merge config
                                                 'CFLAGS

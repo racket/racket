@@ -1,12 +1,12 @@
 ;;; exceptions.ss
 ;;; Copyright 1984-2017 Cisco Systems, Inc.
-;;; 
+;;;
 ;;; Licensed under the Apache License, Version 2.0 (the "License");
 ;;; you may not use this file except in compliance with the License.
 ;;; You may obtain a copy of the License at
-;;; 
+;;;
 ;;; http://www.apache.org/licenses/LICENSE-2.0
-;;; 
+;;;
 ;;; Unless required by applicable law or agreed to in writing, software
 ;;; distributed under the License is distributed on an "AS IS" BASIS,
 ;;; WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -94,7 +94,7 @@ TODO:
           [(message-condition? c)
            (let ([irritants (if (irritants-condition? c) (condition-irritants c) '())])
              (case (and (list? irritants) (length irritants))
-               [(0) 
+               [(0)
                 ($report-string op
                   (and prefix? (if (warning-only? c) "warning" "exception"))
                   (and (who-condition? c) (condition-who c))
@@ -263,37 +263,30 @@ TODO:
   (set-who! $guard
     (lambda (supply-else? guards body)
       (if supply-else?
-          ((call/cc
-             (lambda (kouter)
-               (let ([original-handler-stack ($current-handler-stack)])
-                 (with-exception-handler
-                   (lambda (arg)
-                     ((call/cc
+          (call/cc
+            (lambda (kouter)
+              (let ([original-handler-stack ($current-handler-stack)]
+                    [kouter-marks (current-continuation-marks)])
+                (with-exception-handler
+                    (lambda (arg)
+                      (call/cc
                         (lambda (kinner)
-                          (kouter
-                            (lambda ()
-                              (guards arg
-                                (lambda ()
-                                  (kinner
-                                    (lambda ()
-                                      (parameterize ([$current-handler-stack original-handler-stack])
-                                        (raise-continuable arg))))))))))))
-                   (lambda ()
-                     (call-with-values
-                       body
-                       (case-lambda
-                         [(x) (lambda () x)]
-                         [vals (lambda () (apply values vals))]))))))))
-          ((call/cc
-             (lambda (k)
-               (with-exception-handler
-                 (lambda (arg) (k (lambda () (guards arg))))
-                 (lambda ()
-                   (call-with-values
-                     body
-                     (case-lambda
-                       [(x) (lambda () x)]
-                       [vals (lambda () (apply values vals))]))))))))))
+                          (let ([kinner-marks (current-continuation-marks)])
+                            (call-in-continuation kouter kouter-marks
+                              (lambda ()
+                                (guards arg
+                                  (lambda ()
+                                    (call-in-continuation kinner kinner-marks
+                                      (lambda ()
+                                        (parameterize ([$current-handler-stack original-handler-stack])
+                                          (raise-continuable arg))))))))))))
+                  body))))
+          (call/cc
+            (lambda (k)
+              (let ([marks (current-continuation-marks)])
+                (with-exception-handler
+                    (lambda (arg) (call-in-continuation k marks (lambda () (guards arg))))
+                  body)))))))
 )
 
 (define-syntax guard
@@ -471,7 +464,7 @@ TODO:
 ;;; defining its child types, even though the system is compiled with
 ;;; (eval-syntax-expanders-when) not including compile.
 (begin
-(let-syntax ([a (syntax-rules () 
+(let-syntax ([a (syntax-rules ()
                   [(_ &condition) ; leave only &condition visible
                    (define-record-type (&condition make-simple-condition simple-condition?)
                      (nongenerative #{&condition oyb459ue1fphfx4-a}))])])
@@ -706,7 +699,7 @@ TODO:
       (for-each
         (lambda (m) (unless (string? m) ($oops who "~s is not a string" m)))
         messages)
-      (error-help #f who #f 
+      (error-help #f who #f
         (if (null? messages) "invalid syntax" (apply string-append messages))
         #f (make-syntax-violation form #f))))
 

@@ -74,10 +74,17 @@
 (define macx86-libs
   '("PSMTabBarControl.framework"))
 
+(define stuck-on-openssl1? (or linux?
+                               (and mac? (or m32? ppc?))))
+
 (define nonwin-libs
-  '("libcrypto.1.1"
-    "libssl.1.1"
-    "libuuid.1"))
+  (append
+   (if stuck-on-openssl1?
+       '("libcrypto.1.1"
+         "libssl.1.1")
+       '("libcrypto.3"
+         "libssl.3"))
+   '("libuuid.1")))
 
 (define no-copy-libs
   '("PSMTabBarControl.framework"
@@ -181,23 +188,32 @@
       ["libz" "zlib is by Jean-loup Gailly and Mark Adler."
               Zlib])]
     ["racket"
-     "-3"
+     ,(cond
+        [(and mac? (not m32?) (not ppc?))
+         "-4"]
+        [else
+         "-3"])
      "racket"
      ""
      ()
      #t
      "base"
-     "1.2"
-     (["libeay32" ,(~a "This product includes software developed by the OpenSSL Project for\n"
-                       "use in the OpenSSL Toolkit (https://www.openssl.org/).\n"
-                       "\n"
-                       "Eric Young is the author of libeay and ssleay.")
-                  OpenSSL]
-      ["ssleay32" #f OpenSSL]
-      ["libssl" ,(~a "This product includes software developed by the OpenSSL Project for\n"
-                       "use in the OpenSSL Toolkit (https://www.openssl.org/).\n")
-                OpenSSL]
-      ["libcrypto" #f OpenSSL]
+     ,(cond
+        [(and mac? (not m32?) (not ppc?))
+         "1.0"]
+        [else
+         "1.2"])
+     (["libeay32" #f Apache-2.0]
+      ["ssleay32" #f Apache-2.0]
+      ["libssl" ,(and stuck-on-openssl1?
+                      (~a "This product includes software developed by the OpenSSL Project for\n"
+                          "use in the OpenSSL Toolkit (https://www.openssl.org/).\n"))
+                ,(if stuck-on-openssl1?
+                     'OpenSSL
+                     'Apache-2.0)]
+      ["libcrypto" #f ,(if stuck-on-openssl1?
+                           'OpenSSL
+                           'Apache-2.0)]
       ["libiconv-2" "libiconv is released under the GNU Lesser General Public License (GNU LGPL)."
                     LGPL-3.0-or-later]
       ["longdouble" ,(~a "The source to longdouble is included with the Racket source code,\n"
@@ -457,6 +473,8 @@
        (displayln l o))
      (display lic-end o))))
 
+(define failed? #f)
+
 (define (install platform i-platform so fixup libs renames)
   (define pkgs (make-hash))
   (define pkgs-lic (make-hash))
@@ -468,7 +486,7 @@
 	(define (both v) (values v v))
 	(cond
 	 [(plain-path? lib) (both lib)]
-	 [(procedure? so) (both (so lib))]
+	 [(procedure? so) (values (so lib) (so (revert-name lib renames)))]
 	 [else
 	  (define (make lib) (format "~a.~a" lib so))
 	  (values (make lib) (make (revert-name lib renames)))])))
@@ -487,11 +505,19 @@
           [(file-exists? dest) (delete-file dest)]
           [(directory-exists? dest) (delete-directory/files dest)])
         (define src (build-path from orig-p))
-        (if (directory-exists? src)
-            (copy-directory/files src dest)
-            (copy-file src dest)))
-      (unless (plain-path? p)
-        (fixup p dest)))
+        (define (fixup-dest)
+          (unless (plain-path? p)
+            (fixup p dest)))
+        (cond
+          [(directory-exists? src)
+           (copy-directory/files src dest)
+           (fixup-dest)]
+          [(file-exists? src)
+           (copy-file src dest)
+           (fixup-dest)]
+          [else
+           (set! failed? #t)
+           (log-error "SKIPPING ~s" dest)])))
 
     (hash-update! pkgs pkg (lambda (l) (cons p l)) '())
     (hash-update! pkgs-lic-sexps pkg (λ (l) (append lic-sexps l)) '())
@@ -549,7 +575,18 @@
                       aarch64-renames
                       null))
 
-  (install platform platform "dylib" fixup
+  (define (add-dylib lib)
+    (define p (string-append lib ".dylib"))
+    (cond
+      [(file-exists? (build-path from p))
+       p]
+      [else
+       (define alt-p (string-append (substring lib 0 (- (string-length lib) 2)) ".so.0"))
+       (if (file-exists? (build-path from alt-p))
+           alt-p
+           p)]))
+
+  (install platform platform add-dylib fixup
            (append libs
                    (cond
                      [ppc? '()]
@@ -673,3 +710,6 @@
  [win? (install-win)]
  [linux? (install-linux)]
  [else (install-mac)])
+
+(when failed?
+  (error "failed"))

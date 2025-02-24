@@ -21,16 +21,16 @@ older versions):
  sed-4.2 (Windows only, to avoid non-GNU `sed`)
  sqlite[-autoconf]-3360000 (Windows and Linux)
  libedit-20191231-3.1 (Mac OS only)
- openssl-1.1.1o (Windows AArch64: openssl-3.0.2)
+ openssl-3.4.1 (Mac OS i386 and PowerPC, Linux: openssl-1.1.1o)
  libiconv-1.15 (Windows only)
  zlib-1.2.12 (Windows and Linux only)
- libffi-3.2.1 (AArch64 Mac OS and Windows: libffi-3.3)
+ libffi-3.2.1 (Mac OS AArch64, Windows AArch64: libffi-3.3)
  expat-2.4.8
  gettext-0.19.8
  glib-2.72.2
  libpng-1.6.37
- pixman-0.38.4
- cairo-1.16.0
+ pixman-0.44.2 (Mac OS i386 and PowerPC, Linux: pixman-0.38.4)
+ cairo-1.18.2 (Mac OS i386 and PowerPC, Linux: cairo-1.16.0)
  jpegsrc.v9e
  harfbuzz-1.7.6
  fribidi-1.0.2
@@ -38,7 +38,7 @@ older versions):
  freetype-2.12.1
  pango-1.42.0
  poppler-0.24.5
- mpfr-3.1.6 (Mac OS AArch64: mpfr-4.2.0)
+ mpfr-3.1.6 (Mac OS AArch64, Windows AArch64: mpfr-4.2.0)
  gmp-6.2.1
  atk-2.28.1
 

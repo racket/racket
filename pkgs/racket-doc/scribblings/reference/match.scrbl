@@ -679,7 +679,7 @@ Equivalent to @racket[(lambda lst (match lst clause ...))].
 }
 
 @deftogether[(@defform[(match-lambda** clause* ...)]
-              @defform[(match-λ** clause ...)])]{
+              @defform[(match-λ** clause* ...)])]{
 
 Equivalent to @racket[(lambda (args ...) (match* (args ...) clause* ...))],
 where the number of @racket[args ...] is computed from the number of patterns

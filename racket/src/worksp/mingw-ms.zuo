@@ -1,0 +1,10 @@
+#lang zuo
+(require "../ChezScheme/c/mingw.zuo")
+
+(provide make-mingw-to-ms-link-libraries
+         mingw-to-ms-link-libraries-deps)
+
+(define mingw-to-ms-link-libraries-deps
+  (list
+   (at-source "mingw-ms.zuo")
+   (at-source "../ChezScheme/c/mingw.zuo")))

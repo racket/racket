@@ -118,7 +118,8 @@ Online versions of both books can be found at
 
 \subsection{Type recovery improvements (10.2.0)}
 
-The type recovery pass has improved support for \scheme{abs} with a fixnum argument
+The type recovery pass has improved support for \scheme{abs},
+\scheme{add1} and \scheme{sub1}  with a fixnum argument
 and added support for \scheme{1+}, \scheme{1-}, and \scheme{-1+}.
 
 \subsection{Single-argument \scheme{fx-/wraparound} (10.2.0)}
@@ -2812,6 +2813,19 @@ in fasl files does not generally make sense.
 %-----------------------------------------------------------------------------
 \section{Bug Fixes}\label{section:bugfixes}
 
+\subsection{Respect constraint on \scheme{make-record-constructor-descriptor} (10.2.0)}
+
+The source optimizer (cp0) overlooked the constraint that, when forming a
+record-constructor descriptor, one must specify a protocol if the parent
+record-constructor descriptor has a protocol.
+
+\subsection{Restore immediate table of marks where \scheme{call-in-continuation} is used (10.2.0)}
+
+Tests have been added that test that the (immediate) table of marks is set
+correctly when expressions are evaluated in the various continuations
+specified by the \scheme{guard} form.  Necessary fixes to uses of
+\scheme{call-in-continuation} have been applied in the implementation.
+
 \subsection{Fix \scheme{fx-/wraparound} with \scheme{0} first argument (10.2.0)}
 
 When \scheme{fx-/wraparound} was called with \scheme{0} as its first
@@ -2825,6 +2839,13 @@ At optimize-level 3, the source optimizer (cp0) could replace calls to
 \scheme{fxdiv-and-mod}, where the second argument is constant, with calls to
 \scheme{fxdiv} and \scheme{fxmod} that the back-end would choose not to inline
 because the constant was not a power of two.
+
+\subsection{Link to system libraries for some math functions with MinGW (10.2.0)}
+
+When building with MinGW, the C libraries for i3nt and a6nt implement
+less precise versions of \scheme{pow}, \scheme{sin}, and \scheme{cos},
+so link instead to the MSVCRT or UCRT implementations of those
+functions.
 
 \subsection{Repair executable-relative search for NetBSD (10.2.0)}
 

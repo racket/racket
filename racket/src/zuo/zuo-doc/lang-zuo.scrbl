@@ -1359,7 +1359,10 @@ Zuo process. The hash table includes the following keys:
       process was started, not counting Zuo configuration arguments or
       the name of a script to run}
 
-@item{@racket['dir]: the current directory}
+@item{@racket['dir]: the current directory; on Unix, if the
+      @envvar{PWD} environment variable is set as an absolute path
+      that refer to the same directory as the one reported by the
+      operating system, the @envvar{PWD} form is used}
 
 @item{@racket['env]: a list of pairs of strings for environment variables}
 
@@ -1388,7 +1391,9 @@ Zuo process. The hash table includes the following keys:
 
 ]
 
-@history[#:changed "1.1" @elem{Added @racket['minor-version].}]}
+@history[#:changed "1.1" @elem{Added @racket['minor-version].}
+         #:changed "1.11" @elem{Changed @racket['dir] to use the @envvar{PWD}
+                                environment variable.}]}
 
 @defproc[(system-type) symbol?]{
 

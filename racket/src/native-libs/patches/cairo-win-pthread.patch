@@ -1,0 +1,12 @@
+diff -u -r old/cairo-1.18.2/meson.build new/cairo-1.18.2/meson.build
+--- old/cairo-1.18.2/meson.build	2024-09-01 07:09:23
++++ new/cairo-1.18.2/meson.build	2025-02-11 14:29:42
+@@ -711,6 +711,8 @@
+ pthread_c_args = []
+ pthread_link_args = []
+ 
++conf.set('CAIRO_HAS_PTHREAD', 1)
++
+ foreach thread_flags : check_thread_flags
+   if not conf.has('CAIRO_HAS_PTHREAD')
+     cflags = thread_flags[0]

@@ -3392,5 +3392,31 @@
       step))))
 
 ;; ----------------------------------------
+;; Regression test for `identifier-binding` and a `free-identifier=?` chain
+;; via a phase-shifted syntax object
+
+(module module-with-a-rename-transformer-at-phase-0 racket/base
+  (require (for-syntax racket/base))
+  (provide n)
+
+  (define real-m 10)
+  (define-syntax m (make-rename-transformer #'real-m))
+  (define (n) #'m))
+
+(module module-import-rename-transformer-at-phase-1 racket/base
+  (require (for-syntax racket/base
+                       'module-with-a-rename-transformer-at-phase-0))
+  (provide result)
+
+  (define-syntax (check stx)
+    (if (identifier-binding (n) 1)
+        #''yes
+        #''no))
+
+  (define result (check)))
+
+(test 'yes dynamic-require ''module-import-rename-transformer-at-phase-1 'result)
+
+;; ----------------------------------------
 
 (report-errs)

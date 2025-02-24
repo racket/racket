@@ -210,19 +210,31 @@
 (define (register-change! op . args)
   (set! path-changes (cons (cons op args) path-changes)))
 
+;; similar to `register-change!`, but for checking merge collisions
+;; instead of undoing, so record paths within a directory
+(define wrote-paths (make-hash))
+(define (register-wrote-path! dest)
+  (hash-set! wrote-paths dest #t)
+  (when (directory-exists? dest)
+    (for ([f (in-list (directory-list dest))])
+      (register-wrote-path! (path->string (build-path dest f))))))
+
 ;; like `mv', but also record moves
 (define (mv* src dst)
   (mv src dst)
-  (register-change! 'mv src dst))
+  (register-change! 'mv src dst)
+  (register-wrote-path! dst))
 
 ;; like `cp', but also record copies
 (define (cp* src dst)
   (cp src dst)
-  (register-change! 'cp src dst))
+  (register-change! 'cp src dst)
+  (register-wrote-path! dst))
 
 (define (cp*/build src dst)
   (cp src dst #:build-path? #t)
-  (register-change! 'cp src dst))
+  (register-change! 'cp src dst)
+  (register-wrote-path! dst))
 
 (define (fix-executable file #:ignore-non-executable? [ignore-non-executable? #f])
   (define (fix-binary file)
@@ -466,8 +478,11 @@
     (register-change! 'md dir)))
 
 (define yes-to-all? #f)
-(define (ask-overwrite kind path)
-  (let ([rm (lambda () (rm path))])
+(define (ask-overwrite kind path #:merge? merge?)
+  (let ([rm (lambda ()
+              (when (and merge? (hash-ref wrote-paths path #f))
+                (error 'merge "merge would overwrite previous path: ~a" path))
+              (rm path))])
     (if yes-to-all?
       (rm)
       (begin (printf "Overwrite ~a \"~a\"?\n" kind path)
@@ -504,21 +519,20 @@
              [dst-f? (file-exists? dst)])
          (unless (skip-filter src)
            (when (and src-d? (not lvl) (not dst-d?))
-             (unless merge?
-               (when (or dst-l? dst-f?) (ask-overwrite "file or link" dst)))
+             (when (or dst-l? dst-f?) (ask-overwrite "file or link" dst #:merge? merge?))
              (make-directory dst)
              (register-change! 'md dst)
              (set! dst-d? #t) (set! dst-l? #f) (set! dst-f? #f))
-           (cond [dst-l? (unless merge? (ask-overwrite "symlink" dst)) (doit)]
-                 [dst-d? (if (and src-d? (or (not lvl) (< 0 lvl)))
+           (cond [dst-l? (ask-overwrite "symlink" dst #:merge? merge?) (doit)]
+                 [dst-d? (if (and src-d? (or (not lvl) (< 0 lvl) merge?))
                            ;; recur only when source is dir, & not too deep
                            (for-each (lambda (name)
                                        (loop (make-path src name)
                                              (make-path dst name)
                                              (and lvl (sub1 lvl))))
                                      (ls src))
-                           (begin (unless merge? (ask-overwrite "dir" dst)) (doit)))]
-                 [dst-f? (unless merge? (ask-overwrite "file" dst)) (doit)]
+                           (begin (ask-overwrite "dir" dst #:merge? merge?) (doit)))]
+                 [dst-f? (ask-overwrite "file" dst #:merge? merge?) (doit)]
                  [else (doit)]))))
      (when move? (remove-empty-dirs src))]
     [(eq? missing 'error)

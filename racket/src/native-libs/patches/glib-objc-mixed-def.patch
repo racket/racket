@@ -1,0 +1,20 @@
+diff -u -r old/glib-2.72.2/gio/gosxcontenttype.m new/glib-2.72.2/gio/gosxcontenttype.m
+--- old/glib-2.72.2/gio/gosxcontenttype.m	2022-05-30 07:26:47
++++ new/glib-2.72.2/gio/gosxcontenttype.m	2025-02-11 08:12:24
+@@ -59,7 +59,7 @@
+ create_cstr_from_cfstring (CFStringRef str)
+ {
+   g_return_val_if_fail (str != NULL, NULL);
+-
++  {
+   CFIndex length = CFStringGetLength (str);
+   CFIndex maxlen = CFStringGetMaximumSizeForEncoding (length, kCFStringEncodingUTF8);
+   gchar *buffer = g_malloc (maxlen + 1);
+@@ -73,6 +73,7 @@
+       g_free (buffer);
+       return NULL;
+     }
++  }
+ }
+ 
+ /*< internal >

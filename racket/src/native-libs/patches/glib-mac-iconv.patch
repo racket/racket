@@ -1,0 +1,12 @@
+diff -u -r old/glib-2.72.2/meson.build new/glib-2.72.2/meson.build
+--- old/glib-2.72.2/meson.build	2022-05-30 07:26:47
++++ new/glib-2.72.2/meson.build	2025-02-11 09:20:12
+@@ -2015,7 +2015,7 @@
+     found_iconv = true
+   endif
+   if not found_iconv and ['auto', 'external'].contains(iconv_opt) and cc.has_header_symbol('iconv.h', 'iconv_open')
+-    libiconv = [cc.find_library('iconv')]
++    libiconv = ['-liconv']
+     found_iconv = true
+   endif
+ 

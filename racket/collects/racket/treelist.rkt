@@ -213,30 +213,34 @@
   (unless (treelist? tl)
     (raise-argument-error* who 'racket/primitive "treelist?" tl)))
 
-(define (check-treelist-index who tl size index)
+(define (check-treelist-index who tl size index
+                              [tl-in tl] [type "treelist"])
   (unless (fixnum? index)
     (if (exact-nonnegative-integer? index)
-        (raise-range-error* who 'racket/primitive "treelist" "" index tl 0 (fx- size 1))
+        (raise-range-error* who 'racket/primitive type "" index tl-in 0 (fx- size 1))
         (raise-argument-error* who 'racket/primitive "exact-nonnegative-integer?" index)))
   (when (index . fx< . 0)
     (raise-argument-error* who 'racket/primitive "exact-nonnegative-integer?" index))
   (when (index . fx>= . size)
-    (raise-range-error* who 'racket/primitive "treelist" "" index tl 0 (fx- size 1))))
+    (raise-range-error* who 'racket/primitive type "" index tl-in 0 (fx- size 1))))
 
-(define (check-treelist-bound-index who tl size index at-least what)
+(define (check-treelist-bound-index who tl size index at-least what
+                                    [tl-in tl] [type "treelist"])
   (unless (fixnum? index)
     (if (exact-nonnegative-integer? index)
-        (raise-range-error* who 'racket/primitive "treelist" what index tl at-least size)
+        (raise-range-error* who 'racket/primitive type what index tl-in at-least size)
         (raise-argument-error* who 'racket/primitive "exact-nonnegative-integer?" index)))
   (when (index . fx< . at-least)
     (if (index . fx>= . 0)
-        (raise-range-error* who 'racket/primitive "treelist" what index tl at-least size)
+        (raise-range-error* who 'racket/primitive type what index tl-in at-least size)
         (raise-argument-error* who 'racket/primitive "exact-nonnegative-integer?" index)))
   (when (index . fx> . size)
-    (raise-range-error* who 'racket/primitive "treelist" what index tl at-least size)))
+    (raise-range-error* who 'racket/primitive type what index tl-in at-least size)))
 
-(define (check-treelist-end-index who tl size index)
-  (check-treelist-bound-index who tl size index 0 ""))
+(define (check-treelist-end-index who tl size index
+                                  [tl-in tl] [type "treelist"])
+  (check-treelist-bound-index who tl size index 0 ""
+                              tl-in type))
 
 (define (treelist-empty? v)
   (or (eq? v empty-treelist)

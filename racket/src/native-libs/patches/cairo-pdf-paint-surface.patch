@@ -1,0 +1,47 @@
+diff -r -u old/cairo-1.16.0/src/cairo-pdf-surface.c new/cairo-1.16.0/src/cairo-pdf-surface.c
+--- old/cairo-1.16.0/src/cairo-pdf-surface.c	2018-10-16 10:53:00
++++ new/cairo-1.16.0/src/cairo-pdf-surface.c	2025-02-10 19:59:20
+@@ -4700,6 +4700,7 @@
+ _cairo_pdf_surface_paint_surface_pattern (cairo_pdf_surface_t          *surface,
+ 					  cairo_operator_t              op,
+ 					  const cairo_pattern_t        *source,
++					  cairo_analysis_source_t       source_type,
+ 					  const cairo_rectangle_int_t  *extents,
+ 					  double                        alpha,
+ 					  cairo_pdf_resource_t	       *smask_res,
+@@ -4711,6 +4712,7 @@
+     double x_offset;
+     double y_offset;
+     cairo_pdf_source_surface_entry_t *pdf_source;
++    int region_id = 0;
+ 
+     if (source->extend == CAIRO_EXTEND_PAD &&
+ 	!(source->type == CAIRO_PATTERN_TYPE_SURFACE &&
+@@ -4724,9 +4726,19 @@
+ 							      &y_offset,
+ 							      NULL);
+     } else {
++	if (source->type == CAIRO_PATTERN_TYPE_SURFACE) {
++	    cairo_surface_pattern_t *surface_pattern = (cairo_surface_pattern_t *) source;
++	    if (_cairo_pdf_interchange_struct_tree_requires_recording_surface (surface,
++									       surface_pattern,
++									       source_type))
++	    {
++		region_id = surface_pattern->region_array_id;
++	    }
++	}
+ 	status = _cairo_pdf_surface_add_source_surface (surface,
+ 							NULL,
+ 							source,
++							region_id,
+ 							op,
+ 							source->filter,
+ 							stencil_mask,
+@@ -4734,6 +4746,7 @@
+ 							alpha != 1.0, /* need_transp_group */
+ 							extents,
+ 							smask_res,
++
+ 							&pdf_source,
+ 							&x_offset,
+ 							&y_offset,
