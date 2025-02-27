@@ -3418,5 +3418,35 @@
 (test 'yes dynamic-require ''module-import-rename-transformer-at-phase-1 'result)
 
 ;; ----------------------------------------
+;; Regression test for use-site scopes incorrectly added in an
+;; expression context
+
+(module check-for-too-many-use-site-scopes racket/base
+  (require (for-syntax racket/base))
+  (provide result)
+
+  (define-syntax (m stx)
+    (define-syntax-rule (m2 a)
+      a)
+    (define-syntax-rule (m3 a)
+      (let () a))
+
+    (define id1 (m2 #'x))
+    (define id2 (let () #'x))
+    (define id3 (m3 #'x))
+
+    #`(list
+       (let ([#,id1 5])
+         x)
+       (let ([#,id2 5])
+         x)
+       (let ([#,id3 5])
+         x)))
+
+  (define result (m)))
+
+(test '(5 5 5) dynamic-require ''check-for-too-many-use-site-scopes 'result)
+
+;; ----------------------------------------
 
 (report-errs)

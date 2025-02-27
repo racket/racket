@@ -53,8 +53,10 @@
                                  [def-ctx-scopes def-ctx-scopes]
                                  [post-expansion #:parent root-expand-context
                                                  (lambda (s) (add-scope s inside-sc))]
-                                 [scopes (cons inside-sc
-                                               (expand-context-scopes ctx))]
+                                 [scopes (append (unbox (or (root-expand-context-use-site-scopes ctx)
+                                                            (box null)))
+                                                 (cons inside-sc
+                                                       (expand-context-scopes ctx)))]
                                  [use-site-scopes #:parent root-expand-context (box null)]
                                  [frame-id #:parent root-expand-context frame-id]
                                  [reference-records (cons frame-id
@@ -269,11 +271,14 @@
                         (datum->syntax #f (cons 'begin init-bodys) s)
                         (if (null? init-bodys) #f (last init-bodys))))
   ;; As we finish expanding, we're no longer in a definition context
-  (define finish-ctx (struct*-copy expand-context (accumulate-def-ctx-scopes body-ctx def-ctx-scopes)
+  (define accum-ctx (accumulate-def-ctx-scopes body-ctx def-ctx-scopes))
+  (define finish-ctx (struct*-copy expand-context accum-ctx
                                    [context 'expression]
                                    [use-site-scopes #:parent root-expand-context (box null)]
                                    [only-immediate? #f]
                                    [def-ctx-scopes #f]
+                                   [scopes (append (unbox (root-expand-context-use-site-scopes accum-ctx))
+                                                   (expand-context-scopes accum-ctx))]
                                    [post-expansion #:parent root-expand-context #f]))
   ;; Helper to expand and wrap the ending expressions in `begin`, if needed:
   (define (finish-bodys finish-ctx)

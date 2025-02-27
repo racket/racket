@@ -654,6 +654,7 @@
                            (expand-context-stops ctx)
                            empty-free-id-set)]
                 [def-ctx-scopes #f]
+                [use-site-scopes #:parent root-expand-context (box null)]
                 [post-expansion #:parent root-expand-context #f]))
 
 ;; Expand and evaluate `s` as a compile-time expression, ensuring that
