@@ -60,7 +60,9 @@
          group-by
          cartesian-product
          remf
-         remf*)
+         remf*
+         windows
+         slice-by)
 
 (require (for-syntax racket/base)
          racket/private/list-predicates)
@@ -953,3 +955,36 @@
     (cond [(null? ls) '()]
           [(f (car ls)) (cons i (loop (cdr ls) (add1 i)))]
           [else (loop (cdr ls) (add1 i))])))
+
+(define (windows size step ls)
+  (unless (exact-positive-integer? size)
+    (raise-argument-error 'windows "exact-positive-integer?" 0 size step ls))
+  (unless (exact-positive-integer? step)
+    (raise-argument-error 'windows "exact-positive-integer?" 1 size step ls))
+  (unless (list? ls)
+    (raise-argument-error 'windows "list?" 2 size step ls))
+
+  (let loop ([ls ls] [l (length ls)])
+    (if (or (null? ls) (< l size))
+        null
+        (cons 
+          (take ls size)
+          (if (< l step)
+              null
+              (loop (drop ls step) (- l step)))))))
+
+(define (slice-by f ls)
+  (unless (and (procedure? f)
+               (procedure-arity-includes? f 2))
+    (raise-argument-error 'slice-by "(-> any/c any/c any/c)" 0 f ls))
+  (unless (list? ls)
+    (raise-argument-error 'slice-by "list?" 1 f ls))
+
+  (if (null? ls)
+      null
+      (let loop ([ls ls] [slice null] [result null])
+        (cond [(null? (cdr ls)) (reverse (cons (reverse (cons (car ls) slice)) result))]
+              [(f (car ls) (cadr ls)) (loop (cdr ls) (cons (car ls) slice) result)]
+              [else (loop (cdr ls) 
+                          null 
+                          (cons (reverse (cons (car ls) slice)) result))]))))
