@@ -249,18 +249,25 @@ static ptr s_ee_read_char(IBOOL blockp) {
 
       if ((bstate & 1) ^ (obstate & 1)) {
 	/* left button changed, keep bmask 0, remove possible movement flag */
-	if (obstate & 1) {
+	if (bstate & 1) {
 	  action = 'M';
 	}
 	bmask = 0;
 	obstate = (obstate & ~1) | (bstate & 1);
       } else if ((bstate & 2) ^ (obstate & 2)) {
 	/* right button */
-	if (obstate & 2) {
+	if (bstate & 2) {
 	  action = 'M';
 	}
 	bmask = 2;
 	obstate = (obstate & ~2) | (bstate & 2);
+      } else if ((bstate & 4) ^ (obstate & 4)) {
+	/* middle (second left) button */
+	if (bstate & 4) {
+	  action = 'M';
+	}
+	bmask = 1;
+	obstate = (obstate & ~4) | (bstate & 4);
       }
       if (bmask >= 10) {
 	buf[bufidx++] = '0' + (bmask / 10);
