@@ -92,7 +92,7 @@ static ptr s_ee_read_char(IBOOL blockp) {
   ptr tc;
 #endif /* PTHREADS */
   BOOL succ;
-  static wchar_t buf[10];
+  static wchar_t buf[20];
   static int bufidx = 0;
   static int buflen = 0;
   static int rptcnt = 0;
@@ -227,6 +227,48 @@ static ptr s_ee_read_char(IBOOL blockp) {
        when the window size changes. */
       case WINDOW_BUFFER_SIZE_EVENT: // scrn buf. resizing 
         return Strue;
+
+    case MOUSE_EVENT: {
+      MOUSE_EVENT_RECORD mer = irInBuf[0].Event.MouseEvent;
+      int x = mer.dwMousePosition.X % 100;
+      int y = mer.dwMousePosition.Y % 100;
+
+      /* Mouse reporting starts with CSI [ < */
+      bufidx = 0;
+      buf[bufidx++] = '\033';
+      buf[bufidx++] = '[';
+      buf[bufidx++] = '<';
+
+      /* button mask (+ extra information) :: fixed motion event for now */
+      int bmask = 32;
+      if (bmask >= 10) {
+	buf[bufidx++] = '0' + (bmask / 10);
+      }
+      buf[bufidx++] = '0' + (bmask % 10);
+      buf[bufidx++] = ';';
+
+      /* X coordinate */
+      if (x >= 10) {
+	buf[bufidx++] = '0' + (x / 10);
+      }
+      buf[bufidx++] = '0' + (x % 10);
+      buf[bufidx++] = ';'
+
+      /* Y coordinate */
+      if (y >= 10) {
+	buf[bufidx++] = '0' + (y / 10);
+      }
+      buf[bufidx++] = '0' + (y % 10);
+
+      /* */
+      buf[bufidx++] = 'M';
+
+      /* send however many characters were needed to encode the event */
+      buflen = bufidx;
+      bufidx = 0;
+      rptcnt = 1;
+      break;
+    }
   
       default: 
         break; 
