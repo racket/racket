@@ -230,10 +230,11 @@ static ptr s_ee_read_char(IBOOL blockp) {
 
     case MOUSE_EVENT: {
       MOUSE_EVENT_RECORD mer = irInBuf[0].Event.MouseEvent;
-      // int x = mer.dwMousePosition.X % 1000;
-      // int y = mer.dwMousePosition.Y % 1000;
-      int x = mer.dwButtonState % 1000;
-      int y = mer.dwEventFlags % 1000;
+      short x = mer.dwMousePosition.X % 1000;
+      short y = mer.dwMousePosition.Y % 1000;
+      short bstate = mer.dwButtonState & 0xffff;
+      short hbstate = mer.dwButtonState >> 16;
+      static short obstate = 0;
 
       /* Mouse reporting starts with CSI [ < */
       bufidx = 0;
@@ -241,8 +242,26 @@ static ptr s_ee_read_char(IBOOL blockp) {
       buf[bufidx++] = '[';
       buf[bufidx++] = '<';
 
-      /* button mask (+ extra information) :: fixed motion event for now */
+      /* button mask (+ extra information) */
+      /* TODO: check event type and use 32 as a start only for explicit movement event */
       int bmask = 32;
+      char action = 'm';
+
+      if ((bstate & 1) ^ (obstate & 1)) {
+	/* left button changed, keep bmask 0, remove possible movement flag */
+	if (obstate & 1) {
+	  action = 'M';
+	}
+	bmask = 0;
+	obstate = (obstate & ~1) | (bstate & 1);
+      } else if ((bstate & 2) ^ (obstate & 2)) {
+	/* right button */
+	if (obstate & 2) {
+	  action = 'M';
+	}
+	bmask = 2;
+	obstate = (obstate & ~2) | (bstate & 2);
+      }
       if (bmask >= 10) {
 	buf[bufidx++] = '0' + (bmask / 10);
       }
@@ -268,8 +287,8 @@ static ptr s_ee_read_char(IBOOL blockp) {
       }
       buf[bufidx++] = '0' + (y % 10);
 
-      /* */
-      buf[bufidx++] = 'M';
+      /* terminate with m/M based on button state changes */
+      buf[bufidx++] = action;
 
       /* send however many characters were needed to encode the event */
       buflen = bufidx;
