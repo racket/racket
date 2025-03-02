@@ -230,8 +230,10 @@ static ptr s_ee_read_char(IBOOL blockp) {
 
     case MOUSE_EVENT: {
       MOUSE_EVENT_RECORD mer = irInBuf[0].Event.MouseEvent;
-      int x = mer.dwMousePosition.X % 100;
-      int y = mer.dwMousePosition.Y % 100;
+      // int x = mer.dwMousePosition.X % 1000;
+      // int y = mer.dwMousePosition.Y % 1000;
+      int x = mer.dwButtonState % 1000;
+      int y = mer.dwEventFlags % 1000;
 
       /* Mouse reporting starts with CSI [ < */
       bufidx = 0;
@@ -248,15 +250,21 @@ static ptr s_ee_read_char(IBOOL blockp) {
       buf[bufidx++] = ';';
 
       /* X coordinate */
+      if (x >= 100) {
+	buf[bufidx++] = '0' + (x / 100);
+      }
       if (x >= 10) {
-	buf[bufidx++] = '0' + (x / 10);
+	buf[bufidx++] = '0' + ((x / 10) % 10);
       }
       buf[bufidx++] = '0' + (x % 10);
-      buf[bufidx++] = ';'
+      buf[bufidx++] = ';';
 
       /* Y coordinate */
+      if (y >= 100) {
+	buf[bufidx++] = '0' + (y / 100);
+      }
       if (y >= 10) {
-	buf[bufidx++] = '0' + (y / 10);
+	buf[bufidx++] = '0' + ((y / 10) % 10);
       }
       buf[bufidx++] = '0' + (y % 10);
 
