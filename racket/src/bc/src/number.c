@@ -2890,20 +2890,34 @@ static Scheme_Object *complex_exp(Scheme_Object *c)
 {
   Scheme_Object *r = _scheme_complex_real_part(c);
   Scheme_Object *i = _scheme_complex_imaginary_part(c);
-  Scheme_Object *cos_a, *sin_a;
-
-  r = exp_prim(1, &r);
+  Scheme_Object *cos_a, *sin_a, *tmp;
 
   /* If i is 0.0, avoid computing the cos/sin, since that can end up
      producing NaN. */
   if (SCHEME_FLOATP(i) && (SCHEME_FLOAT_VAL(i) == 0.0)) {
-    return scheme_make_complex(r, i);
+    return scheme_make_complex(exp_prim(1, &r), i);
   }
-
   cos_a = cos_prim(1, &i);
   sin_a = sin_prim(1, &i);
-
-  return scheme_bin_mult(r, scheme_bin_plus(cos_a, scheme_bin_mult(sin_a, scheme_plus_i)));
+  /* is this the best way to check this? or is math/flonums +max.0 and (log +max.0) defined */
+  if (scheme_real_to_double(r) <= 709.782712893384) {
+    r = exp_prim(1, &r);
+    return scheme_bin_mult(r, scheme_bin_plus(cos_a, scheme_bin_mult(sin_a, scheme_plus_i)));
+  }
+  else {
+    /* imag part first, before mutating r */
+    tmp = scheme_abs(1, &sin_a);
+    i = scheme_bin_plus(r, log_e_prim(1, &tmp));
+    i = exp_prim(1, &i);
+    if (scheme_is_negative(sin_a)) { i = scheme_bin_minus(scheme_zerod, i); }
+    
+    tmp = scheme_abs(1, &cos_a);
+    r = scheme_bin_plus(r, log_e_prim(1, &tmp));
+    r = exp_prim(1, &r);
+    if (scheme_is_negative(cos_a)) { r = scheme_bin_minus(scheme_zerod, r); }
+    
+    return scheme_make_complex(r, i);
+  }
 }
 
 static Scheme_Object *complex_log(Scheme_Object *c);
