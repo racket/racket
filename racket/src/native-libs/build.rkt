@@ -136,6 +136,9 @@
 ;; https://hg.mozilla.org/mozilla-central/file/tip/gfx/cairo/native-clipping.patch
 (define-runtime-path cairo-cg-surface-patch "patches/cairo-cg-surface.patch")
 
+;; Drop a glyph-advance hack that interferes with italic output to PDF
+(define-runtime-path cairo-quartz-advance-patch "patches/cairo-quartz-advance.patch")
+
 ;; Decallocation-ordering fix
 (define-runtime-path cairo-quartz-callback-patch "patches/cairo-quartz-callback.patch")
 
@@ -336,7 +339,12 @@
      (displayln content out))))
 
 (define (make-mac-cross_file.txt cpu)
-  (define flags (string-join (string-split (sdk mac32-sdk)) "', '"))
+  (define flags (string-join (string-split
+                              (sdk (case cpu
+                                     [("i386") mac32-sdk]
+                                     [("x86_64") mac64-sdk]
+                                     [("arm64") macaarch64-sdk])))
+                             "', '"))
   (define content
     @~a{[host_machine]
         system = 'darwin'
@@ -365,7 +373,7 @@
 (define (cross-file)
   (and (or win? mac?)
        (cond
-         [aarch64? "aarch64"]
+         [aarch64? (if mac? "arm64" "aarch64")]
          [m32? (if mac? "i386" "i686")]
          [else "x86_64"])))
 
@@ -398,7 +406,6 @@
          (cond
            [use-cross-file
             (list "--cross-file" "cross_file.txt")]
-
            [m32?
             (list "-host=i386-apple-darwin")]
            [aarch64?
@@ -733,7 +740,8 @@
              #:make-install "meson install -C _build"
              #:patches (append
                         (list courier-new-patch
-                              cairo-cg-surface-patch)
+                              cairo-cg-surface-patch
+                              cairo-quartz-advance-patch)
                         (if win?
                             (list cairo-win-pthread-patch)
                             null)))]

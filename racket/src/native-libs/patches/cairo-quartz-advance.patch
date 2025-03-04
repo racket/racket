@@ -1,0 +1,23 @@
+diff -r -u old/cairo-1.18.2/src/cairo-quartz-font.c new/cairo-1.18.2/src/cairo-quartz-font.c
+--- old/cairo-1.18.2/src/cairo-quartz-font.c	2024-09-01 07:09:23
++++ new/cairo-1.18.2/src/cairo-quartz-font.c	2025-03-03 14:21:31
+@@ -424,12 +424,19 @@
+     extents.y_bearing = - ymax;
+     extents.width = xmax - xmin;
+     extents.height = ymax - ymin;
++#if 0
+ /* At the necessary 1.0pt ctFont size some glyphs get a reduced
+  * advance that causes overlaps when scaled up. We can avoid that by
+  * using the width instead if it's wider. Since cairo doesn't support
+  * vertical font layout we don't do the same for y_advance.
+  */
+     extents.x_advance = MAX(extents.width, advance.width);
++#else
++    /* The above is not right for an italic Timew New Roman, for example.
++       It was apparently intended to solve a problem with Emoji, and
++       Racket's draw library handles Emoji differently, so skip it. */
++    extents.x_advance = advance.width;
++#endif
+     extents.y_advance = advance.height;
+ 
+ #ifdef DEBUG
