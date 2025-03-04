@@ -2461,6 +2461,10 @@
 (test -272+1084.i z-round (* 1000 (tan -1+i)))
 
 (test 693.+3142.i z-round (* 1000 (log -2)))
+(test 710073.+785.i z-round (* 1000 (log 1.7e308+1.7e308i)))
+(test 735435.+464.i z-round (* 1000 (log (make-rectangular (string->number (build-string 320 (lambda (x) #\2)))
+                                                           (string->number (build-string 320 (lambda (x) #\1)))))))
+(test 710000.+2300.i z-round (* 1000 (log (exp 710+2.3i))))
 (test 1571.-1317.i z-round (* 1000 (asin 2)))
 (test -1571.+1317.i z-round (* 1000 (asin -2)))
 (test 0.0+3688.i z-round (* 1000 (acos 20)))
