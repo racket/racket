@@ -2961,7 +2961,8 @@ static Scheme_Object *complex_log(Scheme_Object *c)
   }
   else {
     m = magnitude(1, &c);
-    return log_e_prim(1, &m);
+    return scheme_bin_plus(log_e_prim(1, &m),
+                           scheme_bin_mult(scheme_plus_i, theta));
   }
 }
 
