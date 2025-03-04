@@ -2900,7 +2900,12 @@ static Scheme_Object *complex_exp(Scheme_Object *c)
   cos_a = cos_prim(1, &i);
   sin_a = sin_prim(1, &i);
   /* is this the best way to check this? or is math/flonum's +max.0 and (log +max.0) defined */
-  if (scheme_real_to_double(r) <= 709.782712893384) {
+#ifdef MZ_USE_SINGLE_FLOATS
+  if (SCHEME_FLTP(r) ? (SCHEME_FLOAT_VAL(r) <= 88.72284f) : (scheme_real_to_double(r) <= 709.782712893384e0))
+#else
+  if (scheme_real_to_double(r) <= 709.782712893384e0)
+#endif
+  {
     r = exp_prim(1, &r);
     return scheme_bin_mult(r, scheme_bin_plus(cos_a, scheme_bin_mult(sin_a, scheme_plus_i)));
   }
@@ -2945,6 +2950,12 @@ static Scheme_Object *complex_log(Scheme_Object *c)
     }
     m = log_e_prim(1, &m);
     x = 0.5 * log1p( x * x );
+#ifdef MZ_USE_SINGLE_FLOATS
+    if (SCHEME_FLTP(m)) {
+      m = scheme_bin_plus( m, scheme_make_float((float)x));
+      return scheme_make_complex(m, theta);
+    }
+#endif
     m = scheme_bin_plus( m, scheme_make_double(x));
     return scheme_make_complex(m, theta);
   }
