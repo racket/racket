@@ -2899,7 +2899,7 @@ static Scheme_Object *complex_exp(Scheme_Object *c)
   }
   cos_a = cos_prim(1, &i);
   sin_a = sin_prim(1, &i);
-  /* is this the best way to check this? or is math/flonums +max.0 and (log +max.0) defined */
+  /* is this the best way to check this? or is math/flonum's +max.0 and (log +max.0) defined */
   if (scheme_real_to_double(r) <= 709.782712893384) {
     r = exp_prim(1, &r);
     return scheme_bin_mult(r, scheme_bin_plus(cos_a, scheme_bin_mult(sin_a, scheme_plus_i)));
@@ -2935,7 +2935,6 @@ static Scheme_Object *complex_log(Scheme_Object *c)
     /* impossible: is not complex
     if (SAME_OBJ(r, scheme_exact_zero) && SAME_OBJ(i, scheme_exact_zero)) { return log_e_prim(1, &r); } */
     m = scheme_bin_minus(r, i);
-    /* is there a max or compare function available? */
     if (MZ_IS_NAN(scheme_real_to_double(m))) return scheme_make_complex(m, theta);
     if   (scheme_is_negative(m)) { m = i; }
     else                         { m = r; r = i; }
@@ -2945,7 +2944,6 @@ static Scheme_Object *complex_log(Scheme_Object *c)
       if (MZ_IS_NAN(x)) { x = 0.0; }
     }
     m = log_e_prim(1, &m);
-    /* is log1p available everywhere? It is in math.h of gcc and mingw */
     x = 0.5 * log1p( x * x );
     m = scheme_bin_plus( m, scheme_make_double(x));
     return scheme_make_complex(m, theta);
@@ -4103,6 +4101,7 @@ static Scheme_Object *angle(int argc, Scheme_Object *argv[])
   if (SCHEME_COMPLEXP(o)) {
     Scheme_Object *r = (Scheme_Object *)_scheme_complex_real_part(o);
     Scheme_Object *i = (Scheme_Object *)_scheme_complex_imaginary_part(o);
+    Scheme_Object *m, *n;
     double rd, id, v;
 #ifdef MZ_USE_SINGLE_FLOATS
 # ifdef USE_SINGLE_FLOATS_AS_DEFAULT
@@ -4111,6 +4110,13 @@ static Scheme_Object *angle(int argc, Scheme_Object *argv[])
     int was_single = (SCHEME_FLTP(r) || SCHEME_FLTP(i));
 # endif
 #endif
+    if (scheme_is_exact(r)) {
+      m = scheme_abs(1, &r);
+      n = scheme_abs(1, &i);
+      if (scheme_bin_lt(m, n)) { m = n; }
+      r = scheme_bin_div(r, m);
+      i = scheme_bin_div(i, m);
+    }
 
     id = TO_DOUBLE_VAL(i);
     rd = TO_DOUBLE_VAL(r);
