@@ -450,58 +450,6 @@ each call to @racket[proc]).
 
 
 @; ----------------------------------------
-@section{More List Iteration}
-
-@defmodule[racket/list/iteration #:packages ("sequence-tools")]
-
-The bindings in this section are provided by the @racket[sequence-tools] packages 
-which acts as an extension to the base sequence libraries.
-
-@defproc[(running-foldl [proc procedure?] [init any/c] [lst list?] ...+)
-         list?]{
-
-Like @racket[foldl], but produces a list containing all the results of applying 
-@racket[proc] as well as the initial accumulator.
-
-@codeblock|{
-  > (running-foldl + 0 '(1 2 3))
-  '(0 1 3 6)
-  > (running-foldl + 0 '())
-  '(0)
-  > (running-foldl (lambda (a b acc) 
-                     (* acc (+ a b))) 
-                   1 
-                   '(1 2)
-                   '(3 4))
-  '(1 4 24)
-}|
-@history[#:added "1.0"]{}
-}
-
-
-@defproc[(running-foldr [proc procedure?] [init any/c] [lst list?] ...+)
-         list?]{
-
-Like @racket[running-foldl], but produces the intermediate results from the right
-like @racket[foldr].
-
-@codeblock|{
-  > (running-foldr + 0 '(1 2 3))
-  '(6 5 3 0)
-  > (running-foldr + 0 '())
-  '(0)
-  > (running-foldr (lambda (a b acc) 
-                     (* acc (+ a b))) 
-                   1 
-                   '(1 2)
-                   '(3 4))
-  '(24 6 1)
-}|
-@history[#:added "1.0"]{}
-}
-
-
-@; ----------------------------------------
 @section{List Filtering}
 
 @defproc[(filter [pred procedure?] [lst list?])
@@ -1711,51 +1659,6 @@ produces a true value.
 
 
 @close-eval[list-eval]
-
-
-@; ----------------------------------------
-@section{More List Grouping}
-
-@defmodule[racket/list/grouping #:packages ("sequence-tools")]
-
-The bindings in this section are provided by the @racket[sequence-tools] packages 
-which acts as an extension to the base sequence libraries.
-
-@defproc[(windows [size exact-positive-integer?] [step exact-positive-integer?] [lst list?]) 
-         (listof list?)]{
-
-Returns a list of sliding windows such that each window contains @racket[size] elements with the window
-sliding @racket[step] positions on each iteration. If the number of remaining elements is less than 
-@racket[size], then those elements are dropped.
-
-@codeblock|{
-  > (windows 3 1 '(1 2 3 4))
-  '((1 2 3) (2 3 4))
-  > (windows 2 3 '(1 2 3))
-  '((1 2))
-  > (windows 1 2 '(1 2 3 4))
-  '((1) (3))
-}|
-@history[#:added "1.0"]{}
-}
-
-
-@defproc[(slice-by [proc (-> any/c any/c any/c)] [lst list?])
-         (listof list?)]{
-
-Returns a list such that each element is a sublist (slice) that is 
-constructed from comparing each pair of adjacent elements. All pairs of 
-elements that satisfy @racket[proc] will be grouped together into a slice, otherwise 
-the element will start a new slice.
-
-@codeblock|{
-  > (slice-by eq? '(1 1 2 1 3 3))
-  '((1 1) (2) (1) (3 3))
-  > (slice-by < '(1 2 3 3 4))
-  '((1 2 3) (3 4))
-}|
-@history[#:added "1.0"]{}
-}
 
 
 @; ----------------------------------------
