@@ -19,6 +19,7 @@
                      "pict-lib"
                      "readline-lib"
                      "readline-doc"
+                     "sequence-tools-lib"
                      "syntax-color-doc"
                      "syntax-color-lib"
                      "scribble-doc"
