@@ -431,7 +431,7 @@
     [(ftype-pointer-null? m) #f]
     [else
      (let loop ([i 0])
-       (if (fx= 0 (ftype-ref unsigned-8 () m i))
+       (if (fx= 0 (ftype-any-ref unsigned-8 () m i))
            (let ([bstr (make-bytes i)])
              (memcpy* (cptr->fptr 'bv bstr) 0 m 0 i #f)
              bstr)
