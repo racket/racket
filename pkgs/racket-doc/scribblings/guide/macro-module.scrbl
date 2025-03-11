@@ -367,7 +367,7 @@ another random number:
 'another
 ]
 
-@margin-note{Beware that the expander flattens the content of a
+@margin-note[#:footnote? #t]{Beware that the expander flattens the content of a
 top-level @racket[begin] into the top level as soon as the
 @racket[begin] is discovered. So, @racket[(begin (require
 'another-compile-time-number) 'next)] would still have printed
