@@ -363,6 +363,12 @@
                          (raise-syntax-error #f "ok" #'oops))
 		      (lambda (x) (and (exn:fail? x) (regexp-match? #rx"converter" (exn-message x))))
 		      (list "bad setting" zero-arg-proc one-arg-proc three-arg-proc))
+		(list error-module-path->string-handler
+		      (list (error-module-path->string-handler) (lambda (x w) (error 'converter)))
+		      '(with-handlers ([exn:fail:filesystem:missing-module? void])
+                         (dynamic-require 'racket/base/no-such-module #f))
+		      (lambda (x) (and (exn:fail? x) (regexp-match? #rx"converter" (exn-message x))))
+		      (list "bad setting" zero-arg-proc one-arg-proc three-arg-proc))
 		(list print-syntax-width
 		      (list 1024 32)
                       '(let ([s (format "~s" (datum->syntax #f (cons 'hello (for/list ([i 100])

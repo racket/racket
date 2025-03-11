@@ -548,7 +548,8 @@ Returns the @tech{realm} of the module represented by
                                      resolved-module-path?
                                      module-path-index?)]
                           [provided (or/c symbol? #f 0 void?)]
-                          [fail-thunk (-> any) (lambda () ....)])
+                          [fail-thunk (or/c 'error (-> any)) 'error]
+                          [syntax-thunk (or/c 'eval (-> any)) 'eval])
          (or/c void? any/c)]{
 
 @margin-note{Because @racket[dynamic-require] is a procedure, giving a plain S-expression for
@@ -598,7 +599,8 @@ with the given name is returned, and still the module is not
   (dynamic-require ''b 'dessert)
 ]
 
-If the module exports @racket[provided] as syntax, then a use of the binding
+If the module exports @racket[provided] as syntax, then @racket[syntax-thunk]
+is called if it is a procedure. If @racket[syntax-thunk] is @racket['eval], a use of the binding
 is expanded and evaluated in a fresh namespace to which the module is
 attached, which means that the module is @tech{visit}ed in the fresh
 namespace. The expanded syntax must return a single value.
@@ -614,8 +616,9 @@ namespace. The expanded syntax must return a single value.
 ]
 
 If the module has no such exported variable or syntax, then
-@racket[fail-thunk] is called; the default @racket[fail-thunk] raises
-@racket[exn:fail:contract]. If the variable named by @racket[provided]
+@racket[fail-thunk] is called, or the
+@exnraise[exn:fail:contract] if @racket[fail-thunk] is @racket['error].
+If the variable named by @racket[provided]
 is exported protected (see @secref["modprotect"]), then the
 @exnraise[exn:fail:contract].
 
@@ -626,7 +629,7 @@ is made @tech{available} in higher phases.
 
 If @racket[provided] is @|void-const|, then the module is
 @tech{visit}ed but not @tech{instantiate}d (see @secref["mod-parse"]),
-and the result is @|void-const|.}
+and the result is @|void-const|.
 
 More examples using different @racket[module-path] grammar expressions are given below:
 
@@ -654,13 +657,21 @@ The last line in the above example could instead have been written as
 
 which is equivalent.
 
+@history[#:changed "8.16.0.3" @elem{Added the @racket[syntax-thunk] argument and
+                                    changed to allow @racket['error] for @racket[fail-thunk].}]}
+
+
 @defproc[(dynamic-require-for-syntax [mod module-path?]
                                      [provided (or/c symbol? #f)]
-                                     [fail-thunk (-> any) (lambda () ....)])
+                                     [fail-thunk (or/c 'error (-> any)) 'error]
+                                     [syntax-thunk (or/c 'eval (-> any)) 'eval])
          any]{
 
 Like @racket[dynamic-require], but in a @tech{phase} that is @math{1}
-more than the namespace's @tech{base phase}.}
+more than the namespace's @tech{base phase}.
+
+@history[#:changed "8.16.0.3" @elem{Added the @racket[syntax-thunk] argument and
+                                    changed to allow @racket['error] for @racket[fail-thunk].}]}
 
 
 @defproc[(module-declared?

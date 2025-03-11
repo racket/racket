@@ -284,8 +284,10 @@
                                                  ": "
                                                  (regexp-replace #rx"\n" 
                                                                  msg
-                                                                 (format "\n  for module path: ~s\n"
-                                                                         s)))])
+                                                                 (format "\n  for module path: ~a\n"
+                                                                         ((error-module-path->string-handler)
+                                                                          s
+                                                                          (error-print-width)))))])
                                        (raise
                                         (if stx
                                             (exn:fail:syntax:missing-module

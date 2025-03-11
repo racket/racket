@@ -317,6 +317,7 @@
   [error-escape-handler (known-procedure/single-valued 3)]
   [error-message-adjuster-key (known-constant)]
   [error-message->adjusted-string (known-procedure/single-valued 16)]
+  [error-module-path->string-handler (known-procedure/single-valued 3)]
   [error-print-context-length (known-procedure/single-valued 3)]
   [error-print-source-location (known-procedure/single-valued 3)]
   [error-print-width (known-procedure/single-valued 3)]

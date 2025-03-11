@@ -855,6 +855,15 @@ a symbol if a name can be extracted from the syntax object,
 @history[#:added "8.15.0.2"]}
 
 
+@defparam[error-module-path->string-handler proc (any/c exact-nonnegative-integer?
+                                                        . -> .
+                                                        string?)]{
+
+Similar to @racket[error-value->string-handler], but intended for a
+module path. The default @racket[write]s the module path to a string.
+
+@history[#:added "8.16.0.3"]}
+
 @;------------------------------------------------------------------------
 @section{Built-in Exception Types}
 
