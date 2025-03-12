@@ -459,9 +459,9 @@ each call to @racket[proc]).
 @; ----------------------------------------
 @section{More List Iteration}
 
-@defmodule[racket/list/iteration #:packages ("sequence-tools-lib")]
+@note-lib-only[racket/list/iteration]
 
-The bindings in this section are provided by the @racket[sequence-tools-lib] packages 
+The bindings in this section are provided by the @racket[sequence-tools-lib] package 
 which acts as an extension to the base sequence libraries.
 
 @defproc[(running-foldl [proc procedure?] [init any/c] [lst list?] ...+)
@@ -475,9 +475,9 @@ Like @racket[foldl], but produces a list containing all the results of applying
   (running-foldl + 0 '())
   (running-foldl (lambda (a b acc) 
                      (* acc (+ a b))) 
-                   1 
-                   '(1 2)
-                   '(3 4))]}
+                 1 
+                 '(1 2)
+                 '(3 4))]}
 
 
 @defproc[(running-foldr [proc procedure?] [init any/c] [lst list?] ...+)
@@ -491,9 +491,9 @@ like @racket[foldr].
   (running-foldr + 0 '())
   (running-foldr (lambda (a b acc) 
                      (* acc (+ a b))) 
-                   1 
-                   '(1 2)
-                   '(3 4))]}
+                 1 
+                 '(1 2)
+                 '(3 4))]}
 
 
 @; ----------------------------------------
@@ -1705,9 +1705,9 @@ produces a true value.
 @; ----------------------------------------
 @section{More List Grouping}
 
-@defmodule[racket/list/grouping #:packages ("sequence-tools-lib")]
+@note-lib-only[racket/list/grouping]
 
-The bindings in this section are provided by the @racket[sequence-tools-lib] packages 
+The bindings in this section are provided by the @racket[sequence-tools-lib] package 
 which acts as an extension to the base sequence libraries.
 
 @defproc[(windows [size exact-positive-integer?] [step exact-positive-integer?] [lst list?]) 
