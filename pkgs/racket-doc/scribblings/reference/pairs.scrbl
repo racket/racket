@@ -1,7 +1,7 @@
 #lang scribble/doc
 @(require "mz.rkt" scribble/scheme racket/generator racket/list
           (for-syntax racket/base)
-          (for-label racket/list))
+          (for-label racket/list racket/list/iteration racket/list/grouping))
 
 @(define (generate-c_r-example proc)
   (define (make-it start n)
@@ -449,6 +449,53 @@ each call to @racket[proc]).
   (foldr (lambda (v l) (cons (add1 v) l)) '() '(1 2 3 4))]}
 
 
+@(define list-eval (make-base-eval))
+@examples[#:hidden #:eval list-eval
+          (require racket/list (only-in racket/function negate))
+          (require racket/list/grouping)
+          (require racket/list/iteration)]
+
+
+@; ----------------------------------------
+@section{More List Iteration}
+
+@note-lib-only[racket/list/iteration]
+
+The bindings in this section are provided by the @racket[sequence-tools-lib] package,
+which acts as an extension to the base sequence libraries.
+
+@defproc[(running-foldl [proc procedure?] [init any/c] [lst list?] ...+)
+         list?]{
+
+Like @racket[foldl], but produces a list containing all the results of applying 
+@racket[proc] as well as the initial accumulator.
+
+@examples[#:eval list-eval
+  (running-foldl + 0 '(1 2 3))
+  (running-foldl + 0 '())
+  (running-foldl (lambda (a b acc) 
+                     (* acc (+ a b))) 
+                 1 
+                 '(1 2)
+                 '(3 4))]}
+
+
+@defproc[(running-foldr [proc procedure?] [init any/c] [lst list?] ...+)
+         list?]{
+
+Like @racket[running-foldl], but produces the intermediate results from the right
+like @racket[foldr].
+
+@examples[#:eval list-eval
+  (running-foldr + 0 '(1 2 3))
+  (running-foldr + 0 '())
+  (running-foldr (lambda (a b acc) 
+                     (* acc (+ a b))) 
+                 1 
+                 '(1 2)
+                 '(3 4))]}
+
+
 @; ----------------------------------------
 @section{List Filtering}
 
@@ -827,9 +874,6 @@ Like @racket[assoc], but finds an element using the predicate
 @section{Additional List Functions and Synonyms}
 
 @note-lib[racket/list]
-@(define list-eval (make-base-eval))
-@examples[#:hidden #:eval list-eval
-          (require racket/list (only-in racket/function negate))]
 
 
 @defthing[empty null?]{
@@ -1656,6 +1700,40 @@ produces a true value.
 ]
 @history[#:added "6.3"]{}
 }
+
+
+@; ----------------------------------------
+@section{More List Grouping}
+
+@note-lib-only[racket/list/grouping]
+
+The bindings in this section are provided by the @racket[sequence-tools-lib] package,
+which acts as an extension to the base sequence libraries.
+
+@defproc[(windows [size exact-positive-integer?] [step exact-positive-integer?] [lst list?]) 
+         (listof list?)]{
+
+Returns a list of sliding windows such that each window contains @racket[size] elements with the window
+sliding @racket[step] positions on each iteration. If the number of remaining elements is less than 
+@racket[size], then those elements are dropped.
+
+@examples[#:eval list-eval
+  (windows 3 1 '(1 2 3 4))
+  (windows 2 3 '(1 2 3))
+  (windows 1 2 '(1 2 3 4))]}
+
+
+@defproc[(slice-by [proc (-> any/c any/c any/c)] [lst list?])
+         (listof list?)]{
+
+Returns a list such that each element is a sublist (slice) that is 
+constructed from comparing each pair of adjacent elements. All pairs of 
+elements that satisfy @racket[proc] will be grouped together into a slice, otherwise 
+the element will start a new slice.
+
+@examples[#:eval list-eval
+  (slice-by eq? '(1 1 2 1 3 3))
+  (slice-by < '(1 2 3 3 4))]}
 
 
 @close-eval[list-eval]
