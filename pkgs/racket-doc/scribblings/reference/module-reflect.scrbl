@@ -600,7 +600,8 @@ with the given name is returned, and still the module is not
 ]
 
 If the module exports @racket[provided] as syntax, then @racket[syntax-thunk]
-is called if it is a procedure. If @racket[syntax-thunk] is @racket['eval], a use of the binding
+is called if it is a procedure, and its result is the result of the
+@racket[dynamic-wind] call. If @racket[syntax-thunk] is @racket['eval], a use of the binding
 is expanded and evaluated in a fresh namespace to which the module is
 attached, which means that the module is @tech{visit}ed in the fresh
 namespace. The expanded syntax must return a single value.

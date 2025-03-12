@@ -124,15 +124,6 @@
           (parameterize ([current-namespace tmp-ns])
             (eval sym tmp-ns))])])])]))
 
-;; The `dynamic-require` function cheats by recognizing this failure
-;; thunk and substituting a more specific error:
-(define (default-dynamic-require-fail-thunk)
-  (error "failed"))
-
-;; The `dynamic-require` function cheats by recognizing this, too:
-(define (default-dynamic-require-syntax-thunk)
-  (error "oops"))
-
 (define/who (dynamic-require mod-path sym
                              [fail-k 'error]
                              [syntax-k 'eval])
