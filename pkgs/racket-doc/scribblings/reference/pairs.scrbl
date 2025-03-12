@@ -461,7 +461,7 @@ each call to @racket[proc]).
 
 @note-lib-only[racket/list/iteration]
 
-The bindings in this section are provided by the @racket[sequence-tools-lib] package 
+The bindings in this section are provided by the @racket[sequence-tools-lib] package,
 which acts as an extension to the base sequence libraries.
 
 @defproc[(running-foldl [proc procedure?] [init any/c] [lst list?] ...+)
@@ -1707,7 +1707,7 @@ produces a true value.
 
 @note-lib-only[racket/list/grouping]
 
-The bindings in this section are provided by the @racket[sequence-tools-lib] package 
+The bindings in this section are provided by the @racket[sequence-tools-lib] package,
 which acts as an extension to the base sequence libraries.
 
 @defproc[(windows [size exact-positive-integer?] [step exact-positive-integer?] [lst list?]) 
