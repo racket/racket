@@ -1402,6 +1402,17 @@
 (err/rt-test (bitwise-bit-set? 13 -1) exn:fail:contract? #rx"exact-nonnegative-integer[?]")
 (err/rt-test (bitwise-bit-set? 13 (- (expt 2 101)) exn:fail:contract? #rx"exact-nonnegative-integer[?]"))
 
+(test 0 bitwise-first-bit-set -1)
+(test 0 bitwise-first-bit-set 13)
+(test 0 bitwise-first-bit-set -13)
+(test 7 bitwise-first-bit-set 128)
+(test 7 bitwise-first-bit-set -128)
+(test 100 bitwise-first-bit-set (expt 2 100))
+(test 100 bitwise-first-bit-set (- (expt 2 100)))
+
+(arity-test bitwise-first-bit-set 1 1)
+(err/rt-test (bitwise-first-bit-set "a") exn:fail:contract? #rx"exact-integer[?]")
+
 (test 0 bitwise-bit-field 13 0 0)
 (test 1 bitwise-bit-field 13 0 1)
 (test 0 bitwise-bit-field 13 1 1)

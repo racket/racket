@@ -66,6 +66,7 @@ static Scheme_Object *bitwise_xor (int argc, Scheme_Object *argv[]);
 static Scheme_Object *bitwise_not (int argc, Scheme_Object *argv[]);
 static Scheme_Object *bitwise_bit_set_p (int argc, Scheme_Object *argv[]);
 static Scheme_Object *bitwise_bit_field (int argc, Scheme_Object *argv[]);
+static Scheme_Object *bitwise_first_bit_set (int argc, Scheme_Object *argv[]);
 static Scheme_Object *integer_length (int argc, Scheme_Object *argv[]);
 static Scheme_Object *gcd (int argc, Scheme_Object *argv[]);
 static Scheme_Object *lcm (int argc, Scheme_Object *argv[]);
@@ -601,6 +602,10 @@ scheme_init_number (Scheme_Startup_Env *env)
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNARY_INLINED
                                                             | SCHEME_PRIM_AD_HOC_OPT);
   scheme_addto_prim_instance("bitwise-not", p, env);
+
+  p = scheme_make_folding_prim(bitwise_first_bit_set, "bitwise-first-bit-set", 1, 1, 1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_PRODUCES_FIXNUM);
+  scheme_addto_prim_instance("bitwise-first-bit-set", p, env);
 
   p = scheme_make_folding_prim(bitwise_bit_set_p, "bitwise-bit-set?", 2, 2, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_BINARY_INLINED);
@@ -4642,6 +4647,56 @@ static Scheme_Object *bitwise_bit_field (int argc, Scheme_Object *argv[])
   }
 
   return slow_bitwise_bit_field(argc, argv, so, sb1, sb2);
+}
+
+static Scheme_Object *
+bitwise_first_bit_set (int argc, Scheme_Object *argv[])
+{
+  Scheme_Object *o = argv[0];
+
+  if (SCHEME_INTP(o)) {
+    intptr_t a = SCHEME_INT_VAL(o);
+    int i = 0;
+
+    if (a == 0)
+      return scheme_make_integer(-1);
+
+    while (!(a & 0x1)) {
+      if (!(a & 0xFFFF)) {
+        i += 16;
+        a >>= 16;
+      } else if (!(a & 0xF)) {
+        i += 4;
+        a >>= 4;
+      } else {
+        i++;
+        a >>= 1;
+      }
+    }
+
+    return scheme_make_integer(i);
+  } else if (SCHEME_BIGNUMP(o)) {
+     /* As noted in the Chez Scheme implementation:
+        first bit set in signed magnitude is same as for two's complement,
+        since if x ends with k zeros, ~x+1 also ends with k zeros. */
+    intptr_t i, len;
+    bigdig d;
+    len = ((Scheme_Bignum *)o)->len;
+    while (((Scheme_Bignum *)o)->digits[i] == 0) {
+      i++;
+    }
+    d = ((Scheme_Bignum *)o)->digits[i];
+    i *= (sizeof(bigdig) * 8);
+    while (!(d & 0x1)) {
+      d >>= 1;
+      i++;
+    }
+
+    return scheme_make_integer(i);
+  } else {
+    scheme_wrong_contract("bitwise-first-bit-set", "exact-integer?", 0, argc, argv);
+    ESCAPED_BEFORE_HERE;
+  }
 }
 
 static Scheme_Object *

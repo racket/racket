@@ -38,6 +38,7 @@
   [bitwise-and (known-procedure/folding -1)]
   [bitwise-bit-field (known-procedure/folding 8)]
   [bitwise-bit-set? (known-procedure/folding 4)]
+  [bitwise-first-bit-set (known-procedure/folding 2)]
   [bitwise-ior (known-procedure/folding -1)]
   [bitwise-not (known-procedure/folding 2)]
   [bitwise-xor (known-procedure/folding -1)]

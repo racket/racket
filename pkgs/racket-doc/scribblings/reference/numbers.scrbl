@@ -866,6 +866,25 @@ but it is faster and runs in constant time when @racket[n] is positive.
 @mz-examples[(bitwise-bit-set? 5 0) (bitwise-bit-set? 5 2) (bitwise-bit-set? -5 (expt 2 700))]}
 
 
+@defproc[(bitwise-first-bit-set [n exact-integer?])
+         exact-integer?]{
+
+Returns @racket[-1] if @racket[n] is @racket[0], otherwise returns the
+smallest @racket[_m] for which @racket[(bitwise-bit-set? n _m)]
+produces @racket[#t].
+
+@mz-examples[(bitwise-first-bit-set 128)]
+
+@history[#:added "8.16.0.4"]}
+
+
+This operation is equivalent to
+@racket[(not (zero? (bitwise-and n (arithmetic-shift 1 m))))],
+but it is faster and runs in constant time when @racket[n] is positive.
+
+@mz-examples[(bitwise-bit-set? 5 0) (bitwise-bit-set? 5 2) (bitwise-bit-set? -5 (expt 2 700))]}
+
+
 @defproc[(bitwise-bit-field [n exact-integer?]
                             [start exact-nonnegative-integer?]
                             [end (and/c exact-nonnegative-integer?
