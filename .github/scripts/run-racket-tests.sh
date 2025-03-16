@@ -31,6 +31,7 @@ do_test() {
 # ~~~~~~~~~~~~~~~~
 # The core test suite of Racket itself.
 
+printf "\n\n == Testing collection 'tests/racket/test' ==\n"
 do_test -l "tests/racket/test"
 
 
@@ -54,7 +55,7 @@ COLLECTIONS_TO_TEST=(
 )
 
 for collection in "${COLLECTIONS_TO_TEST[@]}"; do
-    echo "\n\n == Testing collection '$collection' ==\n"
+    printf "\n\n == Testing collection '' ==\n" "$collection"
     do_test -c "$collection"
 done
 
@@ -71,7 +72,7 @@ MODULES_TO_TEST=(
 )
 
 for mpath in "${MODULES_TO_TEST[@]}"; do
-    echo "\n\n == Testing module path '$mpath' ==\n"
+    printf "\n\n == Testing module path '%s' ==\n" "$mpath"
     do_test -l "$mpath"
 done
 
@@ -80,6 +81,6 @@ done
 # ~~~~~~~~~~~~~
 # Tests that don't fit in the previous two buckets.
 
-echo "\n\n == Testing tests/racket/contract/all ==\n"
+printf "\n\n == Testing tests/racket/contract/all ==\n"
 
 "$RACKET" -l tests/racket/contract/all
