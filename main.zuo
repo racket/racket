@@ -621,6 +621,10 @@
                              "")
                        (shell->strings (lookup 'DIST_CATALOGS_q))))
 
+    (define pref-defaults (lookup 'PREF_DEFAULTS_BASE64))
+    (unless (equal? pref-defaults "")
+      (built-racket* "-l" "distro-build/set-pref-defaults" "bundle/racket/etc/racket-prefs.rktd" pref-defaults))
+
     (built-racket* "-l-" "distro-build/installer"
                    "--readme" (lookup 'README) "--upload" (lookup 'UPLOAD)
                    "--desc" (lookup 'DIST_DESC)

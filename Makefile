@@ -361,6 +361,12 @@ INSTALLER_PRE_PROCESS_BASE64 =
 # installer is uploaded, or empty for no post-process action:
 INSTALLER_POST_PROCESS_BASE64 =
 
+# Set to a base64-encoded list of 2-element lists, symbol and value,
+# to install as "racket-prefs.rktd" in the configuration directory,
+# which initialized preferences to default values when a preferences
+# file does not already exist:
+PREF_DEFAULTS_BASE64 =
+
 # Human-readable name (spaces allowed), installation name base, and
 # Unix installation directory name for the generated installers:
 DIST_NAME = Racket
@@ -475,6 +481,7 @@ DISTRO_BUILD_VARS = SERVER_COMPILE_MACHINE="$(SERVER_COMPILE_MACHINE)" \
                     DISABLE_STATIC_LIBS="$(DISABLE_STATIC_LIBS)" \
                     INSTALLER_PRE_PROCESS_BASE64="$(INSTALLER_PRE_PROCESS_BASE64)" \
                     INSTALLER_POST_PROCESS_BASE64="$(INSTALLER_POST_PROCESS_BASE64)" \
+                    PREF_DEFAULTS_BASE64="$(PREF_DEFAULTS_BASE64)" \
                     DIST_NAME="$(DIST_NAME)" \
                     DIST_BASE="$(DIST_BASE)" \
                     DIST_DIR="$(DIST_DIR)" \
