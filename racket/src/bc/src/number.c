@@ -4679,9 +4679,8 @@ bitwise_first_bit_set (int argc, Scheme_Object *argv[])
      /* As noted in the Chez Scheme implementation:
         first bit set in signed magnitude is same as for two's complement,
         since if x ends with k zeros, ~x+1 also ends with k zeros. */
-    intptr_t i, len;
     bigdig d;
-    len = ((Scheme_Bignum *)o)->len;
+    intptr_t i = 0;
     while (((Scheme_Bignum *)o)->digits[i] == 0) {
       i++;
     }
