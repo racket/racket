@@ -27,6 +27,12 @@ do_test() {
 #
 # [1]: http://drdr.racket-lang.org/
 
+# Core Tests.
+# ~~~~~~~~~~~~~~~~
+# The core test suite of Racket itself.
+
+do_test -l "tests/racket/test"
+
 
 # Collection Tests
 # ~~~~~~~~~~~~~~~~
@@ -48,7 +54,7 @@ COLLECTIONS_TO_TEST=(
 )
 
 for collection in "${COLLECTIONS_TO_TEST[@]}"; do
-    echo " == Testing collection '$collection'"
+    echo "\n\n == Testing collection '$collection' ==\n"
     do_test -c "$collection"
 done
 
@@ -65,7 +71,7 @@ MODULES_TO_TEST=(
 )
 
 for mpath in "${MODULES_TO_TEST[@]}"; do
-    echo " == Testing module path '$mpath'"
+    echo "\n\n == Testing module path '$mpath' ==\n"
     do_test -l "$mpath"
 done
 
@@ -73,5 +79,7 @@ done
 # Special Cases
 # ~~~~~~~~~~~~~
 # Tests that don't fit in the previous two buckets.
+
+echo "\n\n == Testing tests/racket/contract/all ==\n"
 
 "$RACKET" -l tests/racket/contract/all
