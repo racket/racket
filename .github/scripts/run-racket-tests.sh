@@ -31,7 +31,7 @@ do_test() {
 # ~~~~~~~~~~~~~~~~
 # The core test suite of Racket itself.
 
-printf "\n\n == Testing collection 'tests/racket/test' ==\n"
+printf "\n\n\n\n == Testing collection 'tests/racket/test' ==\n"
 do_test -l "tests/racket/test"
 
 
@@ -55,7 +55,7 @@ COLLECTIONS_TO_TEST=(
 )
 
 for collection in "${COLLECTIONS_TO_TEST[@]}"; do
-    printf "\n\n == Testing collection '' ==\n" "$collection"
+    printf "\n\n\n\n == Testing collection '%s' ==\n" "$collection"
     do_test -c "$collection"
 done
 
@@ -72,7 +72,7 @@ MODULES_TO_TEST=(
 )
 
 for mpath in "${MODULES_TO_TEST[@]}"; do
-    printf "\n\n == Testing module path '%s' ==\n" "$mpath"
+    printf "\n\n\n\n == Testing module path '%s' ==\n" "$mpath"
     do_test -l "$mpath"
 done
 
