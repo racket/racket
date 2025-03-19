@@ -219,4 +219,4 @@ jobs:
       if: ${{ steps.chunk_presence.outputs.presence == '1' }}
       with:
         sarif_file: workspace
-        category: scanbuild-${{ matrix.variants }}-${{ matrix.chunks }}-${{ github.sha }}
+        category: scanbuild-${{ matrix.variants }}-${{ matrix.chunks }}
