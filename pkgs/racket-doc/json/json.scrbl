@@ -276,7 +276,7 @@ natural to use strings (which are immutable) for object keys, Rhombus lists (a.k
 
 @defproc[(read-json* [who symbol?]
                      [in input-port?]
-                     [#:replace-malformed-surrogate? replace-malformed-surrogate? any/c #f]
+                     [#:replace-malformed-surrogate? replace-malformed-surrogate? any/c]
                      [#:null jsnull any/c]
                      [#:make-object make-object-rep (-> (listof pair?) any/c)]
                      [#:make-list make-list-rep (-> list? any/c)]
