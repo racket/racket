@@ -416,13 +416,18 @@
   ;;
   (define (read-hash)
     (define (read-pair)
-      (define k (read-json))
-      (unless (string? k) (err "non-string value used for json object key"))
-      (define ch (skip-whitespace))
-      (when (eof-object? ch)
+      (define ch0 (skip-whitespace))
+      (cond
+        [(eqv? ch0 #\") (read-byte i)]
+        [(eof-object? ch0) (read-byte i)
+                           (err "unexpected end-of-file while parsing a json object pair")]
+        [else (err "non-string value used for json object key")])
+      (define k (read-a-string))
+      (define ch1 (skip-whitespace))
+      (when (eof-object? ch1)
         (read-byte i) ;; consume the eof
         (err "unexpected end-of-file while parsing a json object pair"))
-      (unless (char=? #\: ch)
+      (unless (char=? #\: ch1)
         (err "error while parsing a json object pair"))
       (read-byte i)
       (cons (make-key-rep k) (read-json)))
