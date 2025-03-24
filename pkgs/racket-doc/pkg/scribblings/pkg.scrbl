@@ -64,8 +64,8 @@ Each @tech{package} has associated @deftech{package metadata}:
  @item{a @deftech{package name} --- a string made of the characters @|package-name-chars|.}
  @item{a @deftech{checksum} --- a string that identifies different releases of a package. A
                                 package can be updated when its @tech{checksum} changes,
-                                whether or not its @tech{version} changes. The checksum normally
-                                can be computed as the SHA1 (see @racketmodname[openssl/sha1])
+                                whether or not its @tech{version} changes. The checksum must
+                                be computed as the SHA1 (see @racketmodname[openssl/sha1])
                                 of the package's content.}
  @item{a @deftech{version} --- a string of the form @nonterm{maj}@litchar{.}@nonterm{min},
                      @nonterm{maj}@litchar{.}@nonterm{min}@litchar{.}@nonterm{sub}, or
