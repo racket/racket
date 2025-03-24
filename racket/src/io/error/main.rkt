@@ -60,6 +60,15 @@
   (do-global-print 'default-error-value->string-handler v o 0 len)
   (get-output-string o))
 
+(define (default-error-module-path->string-handler v len)
+  (unless (exact-nonnegative-integer? len)
+    (raise-argument-error 'default-error-module-path->string-handler
+                          "exact-nonnegative-integer?"
+                          len))
+  (define o (open-output-string))
+  (do-write 'default-error-value->string-handler v o len)
+  (get-output-string o))
+
 ;; Install the default error-value->string handler,
 ;; replacing the non-working primitive placeholder
 (define (install-error-value->string-handler!)
@@ -79,7 +88,8 @@
          [else "..."]))
      (if ((string-length str) . > . len)
          (substring str 0 len)
-         str))))
+         str)))
+  (error-module-path->string-handler default-error-module-path->string-handler))
 
 (void (install-error-value->string-handler!))
 
