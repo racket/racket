@@ -153,7 +153,7 @@
            (unless (<= start orig-len)
              (raise-range-error 'fXvector-copy fXvector-str "starting "
                                 start flv 0 orig-len))
-           (raise-mismatch-error 'fXvector-copy fXvector-str "ending "
+           (raise-range-error 'fXvector-copy fXvector-str "ending "
                                  end flv start orig-len)))
        (let* ([len (- end start)]
               [vec (make-fXvector len)])

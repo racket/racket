@@ -359,7 +359,9 @@
     (test 2 'fxvector-copy (fxvector-ref v 2))
     (test -10 'fxvector-copy (fxvector-ref vc 2))
     (test '(2 3) 'fxvector-copy (for/list ([i (in-fxvector (fxvector-copy v 2))]) i))
-    (test '(2) 'fxvector-copy (for/list ([i (in-fxvector (fxvector-copy v 2 3))]) i))))
+    (test '(2) 'fxvector-copy (for/list ([i (in-fxvector (fxvector-copy v 2 3))]) i))
+    (err/rt-test (fxvector-copy (fxvector 1 2) 3 5) exn:fail? "fxvector-copy: starting index is out of range")
+    (err/rt-test (fxvector-copy (fxvector 1 2) 0 5) exn:fail? "fxvector-copy: ending index is out of range")))
 
 ;; ----------------------------------------
 
