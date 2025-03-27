@@ -13,8 +13,12 @@ CPUS="$("$RACKET" -e '(processor-count)')"
 echo Installing dt-test and racket-test using `which "$RACO"`
 "$RACO" pkg install --auto --skip-installed db-test racket-test
 
+do_test/notimeout() {
+    "$RACO" test -j "$CPUS" "$@"
+}
+
 do_test() {
-    "$RACO" test --timeout 300 -j "$CPUS" "$@"
+    do_test/notimeout --timeout 300 "$@"
 }
 
 
@@ -32,7 +36,7 @@ do_test() {
 # The core test suite of Racket itself.
 
 printf '\n\n\n\n%s\n\n' "== Testing core tests, 'tests/racket/test' =="
-do_test -l "tests/racket/test"
+do_test/notimeout -l "tests/racket/test"
 
 
 # Collection Tests
