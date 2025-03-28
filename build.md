@@ -321,6 +321,8 @@ make
 ./racket/bin/raco docs raco
 ```
 
+Note that the raco built by `make base` does not support the `docs` subcommand. You have to do a full build.
+
 #### 1.7.3. Installing Packages
 
 After you’ve built and installed minimal Racket, you could install
