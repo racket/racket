@@ -18,8 +18,9 @@ and how to contribute to Racket development.
 >> [1.6 More Instructions: Building Racket CS and Racket BC](#16-more-instructions-building-racket-cs-and-racket-bc)  
 >> [1.7 Even More Instructions: Building Racket Pieces](#17-even-more-instructions-building-racket-pieces)  
 >>> [1.7.1 Building Minimal Racket](#171-building-minimal-racket)  
->>> [1.7.2 Installing Packages](#172-installing-packages)  
->>> [1.7.3 Linking Packages for In-Place Development Mode](#173-linking-packages-for-in-place-development-mode)  
+>>> [1.7.2 Documenting Packages](#172-documenting-packages)  
+>>> [1.7.3 Installing Packages](#173-installing-packages)  
+>>> [1.7.4 Linking Packages for In-Place Development Mode](#173-linking-packages-for-in-place-development-mode)  
   
 > [2 Distributing Racket Variants](#2-distributing-racket-variants)  
 >> [2.1 Running Build Farms](#21-running-build-farms)  
@@ -308,7 +309,19 @@ bytecode to be machine-independent, which is mainly useful when the
 generated installation will be used as a template for other platforms or
 for cross-compilation.
 
-#### 1.7.2. Installing Packages
+#### 1.7.2. Documenting Packages
+
+Packages shipped with the racket base installation, such as `raco`, are documented in this repository.
+For these packages, `raco docs` links to the installation `raco` came from.
+As a result, `raco docs` show you the docs for your *install*, not the docs for this repository.
+
+To build docs for raco itself, first build raco from source, then run it:
+```
+make
+./racket/bin/raco docs raco
+```
+
+#### 1.7.3. Installing Packages
 
 After you’ve built and installed minimal Racket, you could install
 packages via the package-catalog server, completely ignoring the content
@@ -327,7 +340,7 @@ before the default package catalogs, specify the catalog’s URL as the
 
   `make .... SRC_CATALOG=<url>`
 
-#### 1.7.3. Linking Packages for In-Place Development Mode
+#### 1.7.4. Linking Packages for In-Place Development Mode
 
 With an in-place build, you can edit packages within `"pkgs"` directly
 or update those packages with `git pull` plus `raco setup`, since the
