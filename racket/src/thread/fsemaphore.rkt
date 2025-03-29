@@ -44,7 +44,7 @@
        (define deps (fsemaphore-dependents fs))
        ;; If a future is waiting on the semaphore, it wins over any
        ;; non-future threads that are blocked on the fsemaphore.
-       ;; That's not a great choice, but it we don't have to worry
+       ;; That's not a great choice, but it means we don't have to worry
        ;; about keeping track of threads that are in still line versus
        ;; threads that have been interrupted.
        (cond
