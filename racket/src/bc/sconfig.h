@@ -650,7 +650,7 @@
 
 # if defined(XONX)
 #  define SCHEME_OS "darwin"
-# elif defined(TARGET_OS_IPHONE)
+# elif defined(TARGET_OS_IPHONE) && TARGET_OS_IPHONE
 #  define SCHEME_OS "ios"
 # else
 #  define SCHEME_OS "macosx"
@@ -662,7 +662,7 @@
 #  define SCHEME_ARCH "arm"
 # elif defined(__arm64__)
 #  define SCHEME_ARCH "aarch64"
-#  if !defined(TARGET_OS_IPHONE)
+#  if !(defined(TARGET_OS_IPHONE) && TARGET_OS_IPHONE)
 #   define MZ_USE_MAP_JIT
 #  endif
 # elif defined(__x86_64__)
