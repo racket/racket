@@ -243,7 +243,6 @@ static ptr s_ee_read_char(IBOOL blockp) {
       buf[bufidx++] = '<';
 
       /* button mask (+ extra information) */
-      /* TODO: check event type and use 32 as a start only for explicit movement event */
       int bmask = 32;
       char action = 'm';
 
@@ -268,6 +267,14 @@ static ptr s_ee_read_char(IBOOL blockp) {
 	}
 	bmask = 1;
 	obstate = (obstate & ~4) | (bstate & 4);
+      } else if (mer.dwEventFlags == 4) {
+	/* MOUSE_WHEELED */
+	action = 'M';
+	if (hbstate > 0) {
+	  bmask = 64;
+	} else {
+	  bmask = 65;
+	}
       }
       if (bmask >= 10) {
 	buf[bufidx++] = '0' + (bmask / 10);
