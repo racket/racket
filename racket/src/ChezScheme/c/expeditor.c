@@ -271,9 +271,11 @@ static ptr s_ee_read_char(IBOOL blockp) {
 	/* MOUSE_WHEELED */
 	action = 'M';
 	if (hbstate > 0) {
-	  bmask = 64;
-	} else {
+	  /* positive: wheel down */
 	  bmask = 65;
+	} else {
+	  /* negative: wheel up */
+	  bmask = 64;
 	}
       }
       if (bmask >= 10) {
