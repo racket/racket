@@ -121,7 +121,7 @@ Exceptions carry information about the error that occurred. The
 @racket[exn-message] accessor provides a descriptive message for the
 exception. The @racket[exn-continuation-marks] accessor provides
 information about the point where the exception was raised.
-@margin-note{The @racket[continuation-mark-set->context] procedure provides best-effort structured backtrace information.}
+@margin-note[#:footnote? #t]{The @racket[continuation-mark-set->context] procedure provides best-effort structured backtrace information.}
 
 @interaction[
 (with-handlers ([exn:fail?

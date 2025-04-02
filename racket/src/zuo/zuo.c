@@ -3,7 +3,7 @@
    declarations. */
 
 #define ZUO_VERSION 1
-#define ZUO_MINOR_VERSION 11
+#define ZUO_MINOR_VERSION 12
 
 #if defined(_MSC_VER) || defined(__MINGW32__)
 # define ZUO_WINDOWS
@@ -790,7 +790,7 @@ static void zuo_fasl_int32(zuo_int32_t *_i, zuo_fasl_stream_t *_stream) {
   }
 }
 
-#define BUILD_INT(lo, hi) (((zuo_int_t)(hi) << 32) | ((zuo_int_t)(lo) & 0xFFFFFFFF))
+#define BUILD_INT(lo, hi) ((zuo_int_t)(((zuo_uint_t)(hi) << 32) | ((zuo_uint_t)(lo) & 0xFFFFFFFF)))
 
 static void zuo_fasl_int(zuo_int_t *_i, zuo_fasl_stream_t *_stream) {
   zuo_int32_t lo, hi;

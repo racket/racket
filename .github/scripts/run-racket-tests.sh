@@ -13,8 +13,12 @@ CPUS="$("$RACKET" -e '(processor-count)')"
 echo Installing dt-test and racket-test using `which "$RACO"`
 "$RACO" pkg install --auto --skip-installed db-test racket-test
 
+do_test/notimeout() {
+    "$RACO" test -j "$CPUS" "$@"
+}
+
 do_test() {
-    "$RACO" test --timeout 300 -j "$CPUS" "$@"
+    do_test/notimeout --timeout 300 "$@"
 }
 
 
@@ -26,6 +30,13 @@ do_test() {
 # DrDr[1] whenever changes are made to the master branch.
 #
 # [1]: http://drdr.racket-lang.org/
+
+# Core Tests.
+# ~~~~~~~~~~~~~~~~
+# The core test suite of Racket itself.
+
+printf '\n\n\n\n%s\n\n' "== Testing core tests, 'tests/racket/test' =="
+do_test/notimeout -l "tests/racket/test"
 
 
 # Collection Tests
@@ -48,7 +59,7 @@ COLLECTIONS_TO_TEST=(
 )
 
 for collection in "${COLLECTIONS_TO_TEST[@]}"; do
-    echo " == Testing collection '$collection'"
+    printf '\n\n\n\n%s\n\n' "== Testing collection '$collection' =="
     do_test -c "$collection"
 done
 
@@ -65,7 +76,7 @@ MODULES_TO_TEST=(
 )
 
 for mpath in "${MODULES_TO_TEST[@]}"; do
-    echo " == Testing module path '$mpath'"
+    printf '\n\n\n\n%s\n\n' "== Testing module path '$mpath' =="
     do_test -l "$mpath"
 done
 
@@ -73,5 +84,7 @@ done
 # Special Cases
 # ~~~~~~~~~~~~~
 # Tests that don't fit in the previous two buckets.
+
+printf '\n\n\n\n%s\n\n' "== Testing 'tests/racket/contract/all' =="
 
 "$RACKET" -l tests/racket/contract/all

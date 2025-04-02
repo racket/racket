@@ -57,27 +57,34 @@
       (raise
        (exn:fail:syntax:missing-module
         (format (string-append "~a: cannot open module file\n"
-                               "  module path: ~s\n"
+                               "  module path: ~a\n"
                                "  path: ~a~a~a~a\n"
                                "  system error: ~a")
                 (if (syntax-srcloc path)
                     (srcloc->string (syntax-srcloc path))
                     name)
-                (syntax->datum path)
+                ((error-module-path->string-handler)
+                 (syntax->datum path)
+                 (error-print-width))
                 filename pre rel post
                 errstr)
         (current-continuation-marks)
         (list path)
         (syntax->datum path))))
     (raise
-       (exn:fail:filesystem:missing-module
-        (format (string-append "~a: cannot open module file\n"
-                               "  module path: ~s\n"
-                               "  path: ~a~a~a~a\n"
-                               "  system error: ~a")
-                name
+     (exn:fail:filesystem:missing-module
+      (error-message->adjusted-string
+       (if (string? name) (string->symbol name) name)
+       'racket/primitive
+       (format (string-append "cannot open module file\n"
+                              "  module path: ~a\n"
+                              "  path: ~a~a~a~a\n"
+                              "  system error: ~a")
+               ((error-module-path->string-handler)
                 path
-                filename pre rel post
-                errstr)
-        (current-continuation-marks)
-        path))))
+                (error-print-width))
+               filename pre rel post
+               errstr)
+       'racket/primitive)
+      (current-continuation-marks)
+      path))))

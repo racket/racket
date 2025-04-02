@@ -30453,6 +30453,19 @@
            0
            len_0)
           (1/get-output-string o_0))))))
+(define default-error-module-path->string-handler
+  (lambda (v_0 len_0)
+    (begin
+      (if (exact-nonnegative-integer? len_0)
+        (void)
+        (raise-argument-error
+         'default-error-module-path->string-handler
+         "exact-nonnegative-integer?"
+         len_0))
+      (let ((o_0 (1/open-output-string)))
+        (begin
+          (do-write 'default-error-value->string-handler v_0 o_0 len_0)
+          (1/get-output-string o_0))))))
 (define install-error-value->string-handler!
   (lambda ()
     (begin
@@ -30480,7 +30493,9 @@
                           "..."))))
                  (if (> (string-length str_0) len_0)
                    (substring str_0 0 len_0)
-                   str_0))))))))))
+                   str_0)))))))
+      (error-module-path->string-handler
+       default-error-module-path->string-handler))))
 (define effect_2767
   (begin (void (install-error-value->string-handler!)) (void)))
 (define relative-to-user-directory

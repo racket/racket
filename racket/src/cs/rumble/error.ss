@@ -89,6 +89,15 @@
                   'error-syntax->name-handler
                   primitive-realm))
 
+(define/who error-module-path->string-handler
+  (make-parameter (lambda (v len)
+                    (#%format "~s" v))
+                  (lambda (v)
+                    (check who (procedure-arity-includes/c 2) v)
+                    v)
+                  'error-module-path->string-handler
+                  primitive-realm))
+
 (define/who error-print-context-length
   (make-parameter 16
                   (lambda (v)

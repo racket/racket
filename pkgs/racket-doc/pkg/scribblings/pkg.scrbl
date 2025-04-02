@@ -64,9 +64,12 @@ Each @tech{package} has associated @deftech{package metadata}:
  @item{a @deftech{package name} --- a string made of the characters @|package-name-chars|.}
  @item{a @deftech{checksum} --- a string that identifies different releases of a package. A
                                 package can be updated when its @tech{checksum} changes,
-                                whether or not its @tech{version} changes. The checksum normally
-                                can be computed as the SHA1 (see @racketmodname[openssl/sha1])
-                                of the package's content.}
+                                whether or not its @tech{version} changes. The checksum must
+                                be computed as the SHA-1 hash (see @racketmodname[openssl/sha1])
+                                of the package's archive when the package is distributed in
+                                archive form. A package can be installed in a way that it has
+                                no checksum, but then the package installation does not support
+                                updating.}
  @item{a @deftech{version} --- a string of the form @nonterm{maj}@litchar{.}@nonterm{min},
                      @nonterm{maj}@litchar{.}@nonterm{min}@litchar{.}@nonterm{sub}, or
                      @nonterm{maj}@litchar{.}@nonterm{min}@litchar{.}@nonterm{sub}@litchar{.}@nonterm{rel},
@@ -130,7 +133,9 @@ The @tech{package source} types are:
 @item{a local file path naming an archive (as a plain path or @litchar{file://} URL)
 --- The name of the package
 is the basename of the archive file. The @tech{checksum} for archive
-@filepath{f.@nonterm{ext}} is given by the file @filepath{f.@nonterm{ext}.CHECKSUM}.
+@filepath{f.@nonterm{ext}} is the archive's SHA-1 hash (see @racketmodname[openssl/sha1]),
+which is optionally recorded in the file @filepath{f.@nonterm{ext}.CHECKSUM}
+(but ultimately checked again the file's actual hash).
 The valid archive formats
 are (currently) @filepath{.zip}, @filepath{.tar}, @filepath{.tgz},
 @filepath{.tar.gz}, and
@@ -139,7 +144,7 @@ Other than a @litchar{type} query, which affects inference as described below,
 any query or fragments parts of a @litchar{file://} URL are ignored.
 
 For example, @filepath{~/tic-tac-toe.zip} is an archive package
-source, and its @tech{checksum} would be inside
+source, and its @tech{checksum} would be optionally recorded inside
 @filepath{~/tic-tac-toe.zip.CHECKSUM}.
 
 An archive represents package content analogous to a directory, but if
@@ -199,13 +204,14 @@ then the package is installed as directory link, the same as if
                URL, recognize a @litchar{type} query, and ignore any
                other query or fragment.}]}
 
+@; ----------------------------------------
 @item{a remote URL naming an archive --- This type follows the same
 rules as a local file path, but the archive and @tech{checksum} files are
 accessed via HTTP(S).
 
 For example,
 @filepath{http://game.com/tic-tac-toe.zip} is a remote URL package
-source whose @tech{checksum} is found at
+source whose @tech{checksum} is optionally recorded at
 @filepath{http://game.com/tic-tac-toe.zip.CHECKSUM}.
 
 A package source is inferred to be a URL only when it
@@ -213,7 +219,22 @@ starts with @litchar{http://} or @litchar{https://}, and it
 is inferred to be a file URL when the URL ends with a path element
 that could be inferred as a file archive.
 The inferred package name is from the URL's file name in the same
-way as for a file package source.}
+way as for a file package source.
+
+When a @filepath{.CHECKSUM} file for a remote archive is not
+available, then the archive is downloaded to compute its
+checksum. If the remote server provides an @tt{ETag} header for the
+downloaded file and recognizes @tt{If-None-Match} headers, then
+the @tt{ETag} value can be used as a shortcut to determine that
+the file's checksum has not changed. An @tt{ETag}-to-checksum mapping
+is cached in
+@racket[(build-path (files-system-path 'cache-dir) "pkg-etag-checksum.rktd")].
+
+@history[#:changed "8.16.0.4"
+         @elem{Changed the checksum for a remote archive to download
+               and use the archive content when a @filepath{.CHECKSUM}
+               file is not available, instead of treating the package
+               as having no checksum.}]}
 
 @; ----------------------------------------
 @item{a remote URL naming a directory --- The remote directory must
@@ -221,7 +242,8 @@ contain a file named @filepath{MANIFEST} that lists all the contingent
 files. These are downloaded into a local directory and then the rules
 for local directory paths are followed. However, if the remote
 directory contains a file named @filepath{.CHECKSUM}, then it is used
-to determine the @tech{checksum}.
+to determine the @tech{checksum} for the purposes of detecting updates,
+and there is no constraint on how that checksum is computed.
 
 For example,
 @filepath{http://game.com/tic-tac-toe/} is a directory URL package

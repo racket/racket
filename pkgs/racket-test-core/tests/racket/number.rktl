@@ -1402,6 +1402,17 @@
 (err/rt-test (bitwise-bit-set? 13 -1) exn:fail:contract? #rx"exact-nonnegative-integer[?]")
 (err/rt-test (bitwise-bit-set? 13 (- (expt 2 101)) exn:fail:contract? #rx"exact-nonnegative-integer[?]"))
 
+(test 0 bitwise-first-bit-set -1)
+(test 0 bitwise-first-bit-set 13)
+(test 0 bitwise-first-bit-set -13)
+(test 7 bitwise-first-bit-set 128)
+(test 7 bitwise-first-bit-set -128)
+(test 100 bitwise-first-bit-set (expt 2 100))
+(test 100 bitwise-first-bit-set (- (expt 2 100)))
+
+(arity-test bitwise-first-bit-set 1 1)
+(err/rt-test (bitwise-first-bit-set "a") exn:fail:contract? #rx"exact-integer[?]")
+
 (test 0 bitwise-bit-field 13 0 0)
 (test 1 bitwise-bit-field 13 0 1)
 (test 0 bitwise-bit-field 13 1 1)
@@ -2461,6 +2472,10 @@
 (test -272+1084.i z-round (* 1000 (tan -1+i)))
 
 (test 693.+3142.i z-round (* 1000 (log -2)))
+(test 710073.+785.i z-round (* 1000 (log 1.7e308+1.7e308i)))
+(test 735435.+464.i z-round (* 1000 (log (make-rectangular (string->number (build-string 320 (lambda (x) #\2)))
+                                                           (string->number (build-string 320 (lambda (x) #\1)))))))
+(test 710000.+2300.i z-round (* 1000 (log (exp 710+2.3i))))
 (test 1571.-1317.i z-round (* 1000 (asin 2)))
 (test -1571.+1317.i z-round (* 1000 (asin -2)))
 (test 0.0+3688.i z-round (* 1000 (acos 20)))

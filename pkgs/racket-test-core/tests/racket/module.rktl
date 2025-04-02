@@ -167,6 +167,14 @@
 (syntax-test #'(module m racket/base (#%require (for-syntax racket/base)) (#%declare #:require=define) (define-syntax car 5) (require racket/base)))
 (syntax-test #'(module m racket/base (#%require (for-syntax racket/base)) (#%declare #:require=define) (define-syntax car 5) (require (only-in racket/base car))))
 
+(test car dynamic-require 'racket/base 'car 'error)
+(test car dynamic-require 'racket/base 'car (lambda () 'not-used-error))
+(test 'not-available dynamic-require 'racket/base 'no-such-car (lambda () 'not-available))
+(test car dynamic-require 'racket/base 'car 'error 'eval)
+(test car dynamic-require 'racket/base 'car (lambda () 'not-used-error) (lambda () 'not-used-eval))
+(test car dynamic-require 'racket/base 'car (lambda () 'not-used-error) (lambda () 'not-used-eval))
+(test 'used-eval dynamic-require 'racket/base 'lambda (lambda () 'not-used-error) (lambda () 'used-eval))
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (let ()

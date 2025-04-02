@@ -50,7 +50,7 @@
     "Burke Fetscher"
     "Michael Filonenko"
     "Robby Findler"
-    "Jack Firth"
+    "Jacqueline Firth"
     "Kathi Fisler"
     "Cormac Flanagan"
     "Matthew Flatt"

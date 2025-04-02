@@ -66,6 +66,7 @@ static Scheme_Object *bitwise_xor (int argc, Scheme_Object *argv[]);
 static Scheme_Object *bitwise_not (int argc, Scheme_Object *argv[]);
 static Scheme_Object *bitwise_bit_set_p (int argc, Scheme_Object *argv[]);
 static Scheme_Object *bitwise_bit_field (int argc, Scheme_Object *argv[]);
+static Scheme_Object *bitwise_first_bit_set (int argc, Scheme_Object *argv[]);
 static Scheme_Object *integer_length (int argc, Scheme_Object *argv[]);
 static Scheme_Object *gcd (int argc, Scheme_Object *argv[]);
 static Scheme_Object *lcm (int argc, Scheme_Object *argv[]);
@@ -601,6 +602,10 @@ scheme_init_number (Scheme_Startup_Env *env)
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNARY_INLINED
                                                             | SCHEME_PRIM_AD_HOC_OPT);
   scheme_addto_prim_instance("bitwise-not", p, env);
+
+  p = scheme_make_folding_prim(bitwise_first_bit_set, "bitwise-first-bit-set", 1, 1, 1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_PRODUCES_FIXNUM);
+  scheme_addto_prim_instance("bitwise-first-bit-set", p, env);
 
   p = scheme_make_folding_prim(bitwise_bit_set_p, "bitwise-bit-set?", 2, 2, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_BINARY_INLINED);
@@ -2890,20 +2895,39 @@ static Scheme_Object *complex_exp(Scheme_Object *c)
 {
   Scheme_Object *r = _scheme_complex_real_part(c);
   Scheme_Object *i = _scheme_complex_imaginary_part(c);
-  Scheme_Object *cos_a, *sin_a;
-
-  r = exp_prim(1, &r);
+  Scheme_Object *cos_a, *sin_a, *tmp;
 
   /* If i is 0.0, avoid computing the cos/sin, since that can end up
      producing NaN. */
   if (SCHEME_FLOATP(i) && (SCHEME_FLOAT_VAL(i) == 0.0)) {
-    return scheme_make_complex(r, i);
+    return scheme_make_complex(exp_prim(1, &r), i);
   }
-
   cos_a = cos_prim(1, &i);
   sin_a = sin_prim(1, &i);
-
-  return scheme_bin_mult(r, scheme_bin_plus(cos_a, scheme_bin_mult(sin_a, scheme_plus_i)));
+  /* is this the best way to check this? or is math/flonum's +max.0 and (log +max.0) defined */
+#ifdef MZ_USE_SINGLE_FLOATS
+  if (SCHEME_FLTP(r) ? (SCHEME_FLOAT_VAL(r) <= 88.72284f) : (scheme_real_to_double(r) <= 709.782712893384e0))
+#else
+  if (scheme_real_to_double(r) <= 709.782712893384e0)
+#endif
+  {
+    r = exp_prim(1, &r);
+    return scheme_bin_mult(r, scheme_bin_plus(cos_a, scheme_bin_mult(sin_a, scheme_plus_i)));
+  }
+  else {
+    /* imag part first, before mutating r */
+    tmp = scheme_abs(1, &sin_a);
+    i = scheme_bin_plus(r, log_e_prim(1, &tmp));
+    i = exp_prim(1, &i);
+    if (scheme_is_negative(sin_a)) { i = scheme_bin_minus(scheme_zerod, i); }
+    
+    tmp = scheme_abs(1, &cos_a);
+    r = scheme_bin_plus(r, log_e_prim(1, &tmp));
+    r = exp_prim(1, &r);
+    if (scheme_is_negative(cos_a)) { r = scheme_bin_minus(scheme_zerod, r); }
+    
+    return scheme_make_complex(r, i);
+  }
 }
 
 static Scheme_Object *complex_log(Scheme_Object *c);
@@ -2912,11 +2936,39 @@ static Scheme_Object *complex_log(Scheme_Object *c)
 {
   Scheme_Object *m, *theta;
 
-  m = magnitude(1, &c);
   theta = angle(1, &c);
-
-  return scheme_bin_plus(log_e_prim(1, &m),
-                         scheme_bin_mult(scheme_plus_i, theta));
+  if (SCHEME_COMPLEXP(c)) {
+    Scheme_Object *r, *i;
+    double x;
+    r = scheme_abs(1, &_scheme_complex_real_part(c));
+    i = scheme_abs(1, &_scheme_complex_imaginary_part(c));
+    /* impossible: is not complex
+    if (SAME_OBJ(r, scheme_exact_zero) && SAME_OBJ(i, scheme_exact_zero)) { return log_e_prim(1, &r); } */
+    m = scheme_bin_minus(r, i);
+    if (MZ_IS_NAN(scheme_real_to_double(m))) return scheme_make_complex(m, theta);
+    if   (scheme_is_negative(m)) { m = i; }
+    else                         { m = r; r = i; }
+    if (SAME_OBJ(m, scheme_exact_zero)) { m = scheme_zerod; x = 0.0; }
+    else {
+      x = scheme_real_to_double(scheme_bin_div(r, m));
+      if (MZ_IS_NAN(x)) { x = 0.0; }
+    }
+    m = log_e_prim(1, &m);
+    x = 0.5 * log1p( x * x );
+#ifdef MZ_USE_SINGLE_FLOATS
+    if (SCHEME_FLTP(m)) {
+      m = scheme_bin_plus( m, scheme_make_float((float)x));
+      return scheme_make_complex(m, theta);
+    }
+#endif
+    m = scheme_bin_plus( m, scheme_make_double(x));
+    return scheme_make_complex(m, theta);
+  }
+  else {
+    m = magnitude(1, &c);
+    return scheme_bin_plus(log_e_prim(1, &m),
+                           scheme_bin_mult(scheme_plus_i, theta));
+  }
 }
 
 static Scheme_Object *bignum_log(Scheme_Object *b)
@@ -4066,6 +4118,7 @@ static Scheme_Object *angle(int argc, Scheme_Object *argv[])
   if (SCHEME_COMPLEXP(o)) {
     Scheme_Object *r = (Scheme_Object *)_scheme_complex_real_part(o);
     Scheme_Object *i = (Scheme_Object *)_scheme_complex_imaginary_part(o);
+    Scheme_Object *m, *n;
     double rd, id, v;
 #ifdef MZ_USE_SINGLE_FLOATS
 # ifdef USE_SINGLE_FLOATS_AS_DEFAULT
@@ -4074,6 +4127,13 @@ static Scheme_Object *angle(int argc, Scheme_Object *argv[])
     int was_single = (SCHEME_FLTP(r) || SCHEME_FLTP(i));
 # endif
 #endif
+    if (scheme_is_exact(r)) {
+      m = scheme_abs(1, &r);
+      n = scheme_abs(1, &i);
+      if (scheme_bin_lt(m, n)) { m = n; }
+      r = scheme_bin_div(r, m);
+      i = scheme_bin_div(i, m);
+    }
 
     id = TO_DOUBLE_VAL(i);
     rd = TO_DOUBLE_VAL(r);
@@ -4587,6 +4647,55 @@ static Scheme_Object *bitwise_bit_field (int argc, Scheme_Object *argv[])
   }
 
   return slow_bitwise_bit_field(argc, argv, so, sb1, sb2);
+}
+
+static Scheme_Object *
+bitwise_first_bit_set (int argc, Scheme_Object *argv[])
+{
+  Scheme_Object *o = argv[0];
+
+  if (SCHEME_INTP(o)) {
+    intptr_t a = SCHEME_INT_VAL(o);
+    int i = 0;
+
+    if (a == 0)
+      return scheme_make_integer(-1);
+
+    while (!(a & 0x1)) {
+      if (!(a & 0xFFFF)) {
+        i += 16;
+        a >>= 16;
+      } else if (!(a & 0xF)) {
+        i += 4;
+        a >>= 4;
+      } else {
+        i++;
+        a >>= 1;
+      }
+    }
+
+    return scheme_make_integer(i);
+  } else if (SCHEME_BIGNUMP(o)) {
+     /* As noted in the Chez Scheme implementation:
+        first bit set in signed magnitude is same as for two's complement,
+        since if x ends with k zeros, ~x+1 also ends with k zeros. */
+    bigdig d;
+    intptr_t i = 0;
+    while (((Scheme_Bignum *)o)->digits[i] == 0) {
+      i++;
+    }
+    d = ((Scheme_Bignum *)o)->digits[i];
+    i *= (sizeof(bigdig) * 8);
+    while (!(d & 0x1)) {
+      d >>= 1;
+      i++;
+    }
+
+    return scheme_make_integer(i);
+  } else {
+    scheme_wrong_contract("bitwise-first-bit-set", "exact-integer?", 0, argc, argv);
+    ESCAPED_BEFORE_HERE;
+  }
 }
 
 static Scheme_Object *

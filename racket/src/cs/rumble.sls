@@ -86,6 +86,7 @@
           error-value->string-handler
           error-syntax->string-handler
           error-syntax->name-handler
+          error-module-path->string-handler
           error-print-context-length
           exception-handler-key
           uncaught-exception-handler

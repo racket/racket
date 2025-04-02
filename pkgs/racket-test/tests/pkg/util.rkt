@@ -126,16 +126,67 @@
       thunk
       (λ () (kill-thread thread-id))))
 
+(define server-not-modifieds 0)
+(define current-serve-etags (make-parameter #t))
+
+(define (make-etag-file-handler root-dir)
+  (λ (req)
+    (define path
+      (let ([els (map path/param-path (url-path (request-uri req)))])
+        (and (andmap path-string? els)
+             (andmap relative-path? els)
+             (apply build-path root-dir els))))
+    (cond
+      [(and path (file-exists? path))
+       (define etag
+         (call-with-input-file
+          path
+          (lambda (in)
+            (format "\"et-~a\"" (sha1 in)))))
+       (define want-etags
+         (and (current-serve-etags)
+              (extract-bindings 'if-none-match (request-headers req))))
+       (define headers
+         (if (current-serve-etags)
+             (list
+              (header #"Etag" (string->bytes/utf-8 etag)))
+             (list)))
+       (cond
+         [(equal? want-etags (list etag))
+          (set! server-not-modifieds (add1 server-not-modifieds))
+          (response/output
+           #:code 304
+           #:message #"Not Modified"
+           #:headers headers
+           (lambda (out)
+             (void)))]
+         [else
+          (response/output
+           #:headers headers
+           (lambda (out)
+             (define in (open-input-file path))
+             (copy-port in out)
+             (close-input-port in)))])]
+      [else
+       (response/xexpr
+        #:code 404
+        "None")])))
+
 (require web-server/http
-         web-server/servlet-env)
+         web-server/servlet-env
+         web-server/http/bindings
+         net/url-string
+         file/sha1)
 (define (start-file-server)
   (parameterize ([current-error-port (if (verbose?)
                                          (current-output-port)
                                          (open-output-nowhere))])
-    (serve/servlet (λ (req) (response/xexpr "None"))
+    (define root-dir (build-path test-directory "test-pkgs"))
+    (serve/servlet (make-etag-file-handler root-dir)
+                   #:servlet-regexp #rx""
                    #:command-line? #t
                    #:port 9997
-                   #:extra-files-paths (list (build-path test-directory "test-pkgs")))))
+                   #:extra-files-paths (list root-dir))))
 
 (require "basic-index.rkt")
 (define *index-ht-1* (make-hash))
