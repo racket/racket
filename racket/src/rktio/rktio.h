@@ -481,7 +481,14 @@ RKTIO_EXTERN rktio_ok_t rktio_socket_shutdown(rktio_t *rktio, rktio_fd_t *rfd, i
 
 RKTIO_EXTERN rktio_ok_t rktio_tcp_nodelay(rktio_t *rktio, rktio_fd_t *rfd, rktio_bool_t enable);
 /* Changes a connection to enable or disable "TCP_NODELAY" mode,
-   which diabled Nagle's algorithm for avoiding small packets. */
+   which diables Nagle's algorithm for avoiding small packets. */
+
+RKTIO_EXTERN rktio_ok_t rktio_tcp_keepalive(rktio_t *rktio, rktio_fd_t *rfd, rktio_bool_t enable);
+/* Changes a connection to enable or disable "SO_KEEPALIVE" where supported,
+   which causes a connection waiting for data to send a periodic ping and
+   trigger a timeout if the other end does not respond. The frequency of keepalive
+   pings is determined by the OS, but it tends to be on the order of once every
+   2 hours, so it's not a fast timeout mechanism. */
 
 RKTIO_EXTERN rktio_fd_t *rktio_udp_open(rktio_t *rktio, RKTIO_NULLABLE rktio_addrinfo_t *addr, int family);
 /* The `addr` argument can be NULL to create a socket without

@@ -130,4 +130,5 @@
 ;; in atomic mode
 (define (open-input-output-accepted-tcp fd)
   (rktio_tcp_nodelay rktio fd #t) ; initially block buffered
+  (rktio_tcp_keepalive rktio fd #t)
   (open-input-output-tcp fd "tcp-accepted"))

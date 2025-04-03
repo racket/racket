@@ -1,3 +1,6 @@
+Version 8.17
+Change TCP ports to use SO_KEEPALIVE
+
 Version 8.16
 Add `treelist-filter, `treelist-index-of`, `treelist-flatten`,
  `treelist-append*`, and `sequence->treelist` in `racket/treelist`,

@@ -1039,6 +1039,7 @@ static Scheme_Object *tcp_connect(int argc, Scheme_Object *argv[])
       rktio_addrinfo_free(scheme_rktio, tcp_connect_src);
 
     rktio_tcp_nodelay(scheme_rktio, s, 1); /* initially block-buffered: */
+    rktio_tcp_keepalive(scheme_rktio, s, 1);
 
     tcp = make_tcp_port_data(s, 2);
     
@@ -1265,6 +1266,7 @@ do_tcp_accept(int argc, Scheme_Object *argv[], Scheme_Object *cust, char **_fail
     Scheme_Tcp *tcp;
 
     rktio_tcp_nodelay(scheme_rktio, s, 1); /* initially block-buffered: */
+    rktio_tcp_keepalive(scheme_rktio, s, 1);
 
     tcp = make_tcp_port_data(s, 2);
 

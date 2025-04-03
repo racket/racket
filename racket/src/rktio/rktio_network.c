@@ -991,6 +991,20 @@ int rktio_tcp_nodelay(rktio_t *rktio, rktio_fd_t *rfd, rktio_bool_t enable)
   return 1;
 }
 
+int rktio_tcp_keepalive(rktio_t *rktio, rktio_fd_t *rfd, rktio_bool_t enable)
+{
+#ifdef SO_KEEPALIVE
+  rktio_socket_t s = rktio_fd_socket(rktio, rfd);
+  int nd = (enable ? 1 : 0), r;
+  r = setsockopt(s, IPPROTO_TCP, SO_KEEPALIVE, &nd, sizeof(nd));
+  if (r) {
+    get_socket_error();
+    return 0;
+  }
+#endif
+  return 1;
+}
+
 int rktio_socket_poll_write_ready(rktio_t *rktio, rktio_fd_t *rfd)
 {
 #ifdef RKTIO_SYSTEM_UNIX

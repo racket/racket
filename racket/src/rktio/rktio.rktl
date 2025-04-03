@@ -581,6 +581,12 @@
  rktio_tcp_nodelay
  (((ref rktio_t) rktio) ((ref rktio_fd_t) rfd) (rktio_bool_t enable)))
 (define-function/errno
+ #f
+ ()
+ rktio_ok_t
+ rktio_tcp_keepalive
+ (((ref rktio_t) rktio) ((ref rktio_fd_t) rfd) (rktio_bool_t enable)))
+(define-function/errno
  NULL
  ()
  (ref rktio_fd_t)

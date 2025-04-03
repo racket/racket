@@ -2948,6 +2948,7 @@
 (define rktio_connect_trying (hash-ref rktio-table 'rktio_connect_trying))
 (define rktio_socket_shutdown (hash-ref rktio-table 'rktio_socket_shutdown))
 (define rktio_tcp_nodelay (hash-ref rktio-table 'rktio_tcp_nodelay))
+(define rktio_tcp_keepalive (hash-ref rktio-table 'rktio_tcp_keepalive))
 (define rktio_udp_open (hash-ref rktio-table 'rktio_udp_open))
 (define rktio_udp_disconnect (hash-ref rktio-table 'rktio_udp_disconnect))
 (define rktio_udp_bind (hash-ref rktio-table 'rktio_udp_bind))
@@ -34636,6 +34637,12 @@
                                                                           cell.1)
                                                                          fd_0
                                                                          #t)
+                                                                        (|#%app|
+                                                                         rktio_tcp_keepalive
+                                                                         (unsafe-place-local-ref
+                                                                          cell.1)
+                                                                         fd_0
+                                                                         #t)
                                                                         (open-input-output-tcp.1
                                                                          #t
                                                                          fd_0
@@ -35186,6 +35193,7 @@
   (lambda (fd_0)
     (begin
       (|#%app| rktio_tcp_nodelay (unsafe-place-local-ref cell.1) fd_0 #t)
+      (|#%app| rktio_tcp_keepalive (unsafe-place-local-ref cell.1) fd_0 #t)
       (let ((temp18_0 "tcp-accepted"))
         (open-input-output-tcp.1 #t fd_0 temp18_0)))))
 (define string->integer

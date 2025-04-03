@@ -58,6 +58,7 @@ rktio_poll_connect_ready
 rktio_connect_trying
 rktio_socket_shutdown
 rktio_tcp_nodelay
+rktio_tcp_keepalive
 rktio_udp_open
 rktio_udp_disconnect
 rktio_udp_bind
