@@ -251,8 +251,8 @@ needed to strip lexical and source-location information recursively.
 Converts the @tech{datum} @racket[v] to a @tech{syntax object}.
 If @racket[v] is already a @tech{syntax object}, then there is no conversion,
 and @racket[v] is returned unmodified.
-The contents of pairs, vectors, and boxes, the fields of @tech{prefab}
-structures, and the values of immutable hash tables are recursively converted.
+The contents of pairs, vectors, and boxes, the values of immutable hash tables,
+and the fields of immutable @tech{prefab} structures are recursively converted.
 The keys of @tech{prefab} structures and the keys of immutable hash tables are
 not converted. Mutable vectors and boxes are replaced by immutable vectors and
 boxes. For any kind of value other than a
