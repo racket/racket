@@ -253,6 +253,7 @@ case "$host_os" in
     LIBS="${LIBS} -lm -lpthread"
     LINK_DYNAMIC="-rdynamic"
     add_iconv_lib="-liconv"
+    strip_needs_dash_s=yes
     ;;
   openbsd*)
     MACH_OS=ob
