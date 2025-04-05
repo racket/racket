@@ -13,8 +13,7 @@ ICP_STRIP_FLAG=""
 
 if test "${enable_strip}" = "yes" ; then
   AC_CHECK_TOOL([STRIP], [strip], [:])
-  # Used to add -S flag, but not all `strip' variants support it:
-  STRIP_DEBUG="${STRIP}"
+  STRIP_DEBUG="${STRIP} -S"
   if test "${INSTALL_LIBS_ENABLE}" = "install" ; then
     check_strip_dash_s=yes
   fi
