@@ -3,6 +3,8 @@
          racket/contract/base
          racket/contract/combinator
          racket/pretty
+         (only-in racket/string
+                  non-empty-string?)
          "core.rkt")
 
 
@@ -75,6 +77,11 @@
       (true-k)))
 
 
+(define (non-empty-symbol? x)
+  (and
+   (symbol? x)
+   (non-empty-string? (symbol->string x))))
+
 ;; incorrect-xexpr?: any -> (or/c #f exn:invalid-xexpr)
 ;; Returns an exn:invalid-xexpr if the xexpr has incorrect structure.
 ;; Otherwise, returns #f.
@@ -94,7 +101,7 @@
              (current-continuation-marks)
              x)]
            [else
-            (if (symbol? (car x))
+            (if (non-empty-symbol? (car x))
                 (cond [(has-attribute-pairs? x)
                        (define maybe-exn (erroneous-attribute-pairs? (cadr x)))
                        (cond [maybe-exn maybe-exn]
