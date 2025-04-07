@@ -6,7 +6,7 @@
 (struct one-mod (order ; integer that represents `require` order, lower is first
                  excluded?
                  rel-mpi ; used if the module is a singleton pane and changed to excluded
-                 zo
+                 zo      ; #f => synthesized pane submodule
                  decl
                  phase-uses  ; phase-level -> (list (cons path/submod phase-level) ...) for linklet imports
                  reqs    ; phase-shift -> (list path/submod ...) preserving original order

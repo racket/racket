@@ -18,7 +18,8 @@
                      "plai-lib"
                      "rackunit-lib"
 		     "dynext-lib"
-		     "mzscheme-lib"))
+		     "mzscheme-lib"
+                     "sandbox-lib"))
 (define update-implies '("compiler-lib"))
 
 (define license

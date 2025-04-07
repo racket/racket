@@ -132,6 +132,14 @@
                          one-mods
                          excluded-module-mpis included-module-phases
                          #:keep-syntax? keep-syntax?)))
+  (define all-provides ; path/submod -> (list bind ...)
+    (for/fold ([all-provides #hash()]) ([top-path/submod (in-list top-path/submods)]
+               [excluded-module-mpis (in-list excluded-module-mpiss)])
+      (gather-provides all-provides
+                       top-path/submod
+                       (one-mod-provides (hash-ref one-mods top-path/submod))
+                       excluded-module-mpis
+                       #:keep-syntax? keep-syntax?)))
 
   (log-demodularizer-info "Simplifying merged linklet")
   (define simplified-phase-mergeds
@@ -200,7 +208,12 @@
         (wrap-bundle module-name phase-merged name-imports
                      stx-vec portal-stxes
                      excluded-modules-to-require excluded-module-mpis included-module-phases
-                     (one-mod-provides m)
+                     (if (not (one-mod-zo m))
+                         (extend-provides (one-mod-provides m)
+                                          all-provides
+                                          top-path/submod
+                                          included-module-phases)
+                         (one-mod-provides m))
                      names transformer-names one-mods
                      symbol-module-paths
                      #:import/export-only (and (or (not keep-syntax?)
