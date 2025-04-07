@@ -13,7 +13,8 @@
   [xexpr/c contract?]
   [xexpr? (any/c . -> . boolean?)]
   [validate-xexpr (any/c . -> . (one-of/c #t))]
-  [rename correct-xexpr/k? correct-xexpr? (any/c (-> any/c) (exn:invalid-xexpr? . -> . any/c) . -> . any/c)])
+  [rename correct-xexpr/k? correct-xexpr? (any/c (-> any/c) (exn:invalid-xexpr? . -> . any/c) . -> . any/c)]
+  [non-empty-symbol? (any/c . -> . boolean?)])
  (struct-out exn:invalid-xexpr))
 
 ;; Xexpr ::= String
@@ -182,18 +183,6 @@
        (current-continuation-marks)
        (car attr))))
 
-
-(module+ test
-  (require
-   (only-in rackunit
-            check-true
-            check-false))
-
-  (check-true (non-empty-symbol? 'x))
-  (check-false (non-empty-symbol? '||))
-  (check-false (non-empty-symbol? 0))
-  (check-false (non-empty-symbol? (string->uninterned-symbol "")))
-  (check-true (non-empty-symbol? (string->uninterned-symbol "x"))))
 
 ;; ; end xexpr? helpers
 ;; ;; ;; ;; ;; ;; ;; ;;
