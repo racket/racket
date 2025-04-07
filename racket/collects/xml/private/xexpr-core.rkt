@@ -3,8 +3,8 @@
          racket/contract/base
          racket/contract/combinator
          racket/pretty
-         (only-in racket/string
-                  non-empty-string?)
+         (only-in racket/symbol
+                  symbol->immutable-string)
          "core.rkt")
 
 
@@ -76,11 +76,15 @@
       (false-k maybe-exn)
       (true-k)))
 
-
 (define (non-empty-symbol? x)
-  (and
-   (symbol? x)
-   (non-empty-string? (symbol->string x))))
+  (cond
+    [(symbol? x)
+     (cond
+       [(symbol-interned? x)
+        (not (eq? x '||))]
+       [else
+        (not (= 0 (string-length (symbol->immutable-string x))))])]
+    [else #f]))
 
 ;; incorrect-xexpr?: any -> (or/c #f exn:invalid-xexpr)
 ;; Returns an exn:invalid-xexpr if the xexpr has incorrect structure.
@@ -177,6 +181,19 @@
        (format "Expected an attribute symbol, given ~s" (car attr))
        (current-continuation-marks)
        (car attr))))
+
+
+(module+ test
+  (require
+   (only-in rackunit
+            check-true
+            check-false))
+
+  (check-true (non-empty-symbol? 'x))
+  (check-false (non-empty-symbol? '||))
+  (check-false (non-empty-symbol? 0))
+  (check-false (non-empty-symbol? (string->uninterned-symbol "")))
+  (check-true (non-empty-symbol? (string->uninterned-symbol "x"))))
 
 ;; ; end xexpr? helpers
 ;; ;; ;; ;; ;; ;; ;; ;;
