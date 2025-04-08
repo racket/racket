@@ -527,6 +527,7 @@ case "$host_os" in
     check_gcc_dash_e="yes"
     use_flag_pthread="no"
     use_flag_posix_pthread="yes"
+    strip_needs_dash_s="no"
     ;;
   aix*)
     enable_cgcdefault="yes"
@@ -714,9 +715,6 @@ case "$host_os" in
         FRAMEWORK_INSTALL_DIR='${libpltdir}'
         FRAMEWORK_REL_INSTALL=yes
       fi
-      if test "${enable_embedfw}" = "yes" ; then
-        strip_needs_dash_s=yes
-      fi
       # ".a" is typically not useful, since we always build a ".dylib":
       if test "${enable_libs}" = "" ; then
         INSTALL_LIBS_ENABLE=no-install
@@ -724,7 +722,6 @@ case "$host_os" in
     else
       PREFLAGS="$PREFLAGS -DXONX "
       LIBS="$LIBS -framework CoreFoundation"
-      strip_needs_dash_s=yes
     fi
     # ncurses.h is always available, except on iOS
     if test "${enable_ios}" != "" ; then

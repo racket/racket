@@ -2791,7 +2791,7 @@ STRIP_DEBUG=":"
 STRIP_LIB_DEBUG=":"
 strip_debug_flags=""
 enable_strip_by_default=yes
-strip_needs_dash_s=no
+strip_needs_dash_s=yes
 
 STRIP_SIGNATURE=":"
 RESTORE_SIGNATURE=":"
@@ -4518,6 +4518,7 @@ case "$host_os" in
     LIBS="$LIBS -lsocket -lnsl -lintl"
     use_flag_pthread="no"
     use_flag_posix_pthread="yes"
+    strip_needs_dash_s="no"
     ;;
   aix*)
     ;;
@@ -4611,10 +4612,6 @@ case "$host_os" in
     else
       CONFIGURE_RACKET_SO_COMPILE="PLT_CS_MAKE_UNIX_STYLE_MACOS=y"
       CPPFLAGS="${CPPFLAGS} -DRACKET_XONX"
-      strip_needs_dash_s=yes
-    fi
-    if test "${enable_embedfw}" = "yes" ; then
-      strip_needs_dash_s=yes
     fi
 
     PROPAGATE_SUB_CONFIGURE=no
@@ -5078,11 +5075,11 @@ else
   STRIP="$ac_cv_prog_STRIP"
 fi
 
-  # Used to add -S flag, but not all `strip' variants support it:
   STRIP_DEBUG="${STRIP}"
   if test "${INSTALL_LIBS_ENABLE}" = "install" ; then
     check_strip_dash_s=yes
   fi
+  # Note that `check_strip_dash_s` is set to "yes" by default
   if test "${strip_needs_dash_s}" = "yes" ; then
     check_strip_dash_s=yes
   fi

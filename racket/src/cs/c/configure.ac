@@ -243,6 +243,7 @@ case "$host_os" in
     LIBS="$LIBS -lsocket -lnsl -lintl"
     use_flag_pthread="no"
     use_flag_posix_pthread="yes"
+    strip_needs_dash_s="no"
     ;;
   aix*)
     ;;
@@ -336,10 +337,6 @@ case "$host_os" in
     else
       CONFIGURE_RACKET_SO_COMPILE="PLT_CS_MAKE_UNIX_STYLE_MACOS=y"
       CPPFLAGS="${CPPFLAGS} -DRACKET_XONX"
-      strip_needs_dash_s=yes
-    fi
-    if test "${enable_embedfw}" = "yes" ; then
-      strip_needs_dash_s=yes
     fi
 
     PROPAGATE_SUB_CONFIGURE=no

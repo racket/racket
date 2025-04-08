@@ -3010,7 +3010,7 @@ STRIP_DEBUG=":"
 STRIP_LIB_DEBUG=":"
 strip_debug_flags=""
 enable_strip_by_default=yes
-strip_needs_dash_s=no
+strip_needs_dash_s=yes
 
 STRIP_SIGNATURE=":"
 RESTORE_SIGNATURE=":"
@@ -5085,6 +5085,7 @@ case "$host_os" in
     check_gcc_dash_e="yes"
     use_flag_pthread="no"
     use_flag_posix_pthread="yes"
+    strip_needs_dash_s="no"
     ;;
   aix*)
     enable_cgcdefault="yes"
@@ -5361,9 +5362,6 @@ $as_echo "#define HAVE_STDINT_H 1" >>confdefs.h
         FRAMEWORK_INSTALL_DIR='${libpltdir}'
         FRAMEWORK_REL_INSTALL=yes
       fi
-      if test "${enable_embedfw}" = "yes" ; then
-        strip_needs_dash_s=yes
-      fi
       # ".a" is typically not useful, since we always build a ".dylib":
       if test "${enable_libs}" = "" ; then
         INSTALL_LIBS_ENABLE=no-install
@@ -5371,7 +5369,6 @@ $as_echo "#define HAVE_STDINT_H 1" >>confdefs.h
     else
       PREFLAGS="$PREFLAGS -DXONX "
       LIBS="$LIBS -framework CoreFoundation"
-      strip_needs_dash_s=yes
     fi
     # ncurses.h is always available, except on iOS
     if test "${enable_ios}" != "" ; then
@@ -5551,11 +5548,11 @@ else
   STRIP="$ac_cv_prog_STRIP"
 fi
 
-  # Used to add -S flag, but not all `strip' variants support it:
   STRIP_DEBUG="${STRIP}"
   if test "${INSTALL_LIBS_ENABLE}" = "install" ; then
     check_strip_dash_s=yes
   fi
+  # Note that `check_strip_dash_s` is set to "yes" by default
   if test "${strip_needs_dash_s}" = "yes" ; then
     check_strip_dash_s=yes
   fi
