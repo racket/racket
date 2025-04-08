@@ -146,7 +146,7 @@ jobs:
             experimental: true
     steps:
       - uses: actions/checkout@v4
-      - uses: Bogdanp/setup-racket@v1.11
+      - uses: Bogdanp/setup-racket@v1.12
         with:
           architecture: x64
           distribution: full
