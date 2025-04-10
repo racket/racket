@@ -1808,7 +1808,7 @@ the value a pair of such values, and so on.}
 
 An identifier bound to @deftech{portal syntax} value created by
 @racket[make-portal-syntax] does not act as a transformer, but it
-encapsulates a syntax object that can be accessed in inspected even
+encapsulates a syntax object that can be accessed and inspected even
 without instantiating the enclosing module. Portal syntax is also bound
 using the @racketidfont{portal} form of @racket[#%require].
 
