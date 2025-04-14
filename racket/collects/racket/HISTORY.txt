@@ -1,5 +1,18 @@
 Version 8.17
+Package manager: support a file URL without associated ".CHECKSUM"
+ file, and instead the download the file as needed to infer
+Add `bitwise-first-bit-set`
+Add a syntax-thunk argument to `dynamic-require`
+Add `error-module-path->string-handler`
+Improve precision in `angle`, `expt`, `log`, `sin`, and `cos`
+ on some platforms
+Improve `(apply string-append ....)` on long list arguments
 Change TCP ports to use SO_KEEPALIVE
+Add Windows mouse event translation in terminal support provided
+ by the `#%terminal` primitive module
+json: Add `#:replace-malformed-surrogate?` argument
+net/http-client: Avoid sending "Content-Length: 0" when no body
+compiler/demod: Improve pruning of unused assignments
 
 Version 8.16
 Add `treelist-filter, `treelist-index-of`, `treelist-flatten`,
