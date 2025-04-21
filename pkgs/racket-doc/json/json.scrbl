@@ -191,8 +191,8 @@ the @rfc for more information about JSON.
 ]
 
 @history[#:changed "8.1.0.2" @list{Adjusted the whitespace handling to reject whitespace that isn't either
-           @racket[#\space], @racket[#\tab], @racket[#\newline], or @racket[#\return].}]
-@history[#:changed "8.15.0.12" @list{Added @racket[#:replace-malformed-surrogate?]}]
+           @racket[#\space], @racket[#\tab], @racket[#\newline], or @racket[#\return].}
+         #:changed "8.16.0.1" @list{Added @racket[#:replace-malformed-surrogate?].}]
 }
 
 @defproc[(string->jsexpr [str string?] [#:null jsnull any/c (json-null)])
@@ -302,7 +302,8 @@ natural to use strings (which are immutable) for object keys, Rhombus lists (a.k
   The @racket[make-string-rep] receives a @racket[string?] value,
   and returns a custom representation of a JSON string.
 
-@history[#:added "8.15.0.12"]
+@history[#:added "8.15.0.12"
+         #:changed "8.16.0.1" @list{Added @racket[#:replace-malformed-surrogate?].}]
 }
 
 @section{A Word About Design}
