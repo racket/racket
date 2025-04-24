@@ -340,6 +340,7 @@
     (strip-signature dest)
     (unless mac-fw?
       (bootstrap-racket (at-source "embed-boot.rkt")
+                        "--target" m
                         boot-compress-flags
                         ""
                         dest
@@ -974,7 +975,8 @@
                        m (lookup 'KERNEL_TARGET_MACH m)
                        (lookup 'CROSS_COMPILE_TARGET_KIND "machine")
                        (at-source ".")
-                       (lookup 'PLT_CS_SLSP_SUFFIX))
+                       (lookup 'PLT_CS_SLSP_SUFFIX)
+                       (if mac? "macosx" "other"))
        
        (icp* (at-source "api.h") (build-path includepltdir "racketcs.h"))
        (icp* (at-source "boot.h") (build-path includepltdir "racketcsboot.h"))
