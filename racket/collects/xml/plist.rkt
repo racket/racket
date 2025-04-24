@@ -1,6 +1,7 @@
 #lang racket/base
 (require racket/list
          racket/contract
+         racket/string
          xml)
 
 (define (plist-dict? v)
@@ -11,7 +12,7 @@
                  (and (list? v)
                       (= 3 (length v))
                       (eq? (car v) 'assoc-pair)
-                      (string? (cadr v))
+                      (non-empty-string? (cadr v))
                       (plist-value? (caddr v))))
                (cdr v))))
 
