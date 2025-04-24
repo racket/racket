@@ -37,6 +37,8 @@
   (check-false (plist-value? '(dict (assoc-pair "" (array)))))
 
   (check-inverse "blub")
+  (check-inverse '(true))
+  (check-inverse '(false))
   (check-inverse '(dict))
   (check-inverse '(dict (assoc-pair "a" (array))))
   (check-inverse '(dict (assoc-pair "a" "bla") (assoc-pair "b" "blub"))))
