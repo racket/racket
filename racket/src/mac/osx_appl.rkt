@@ -22,27 +22,9 @@
 	       l)
 	(car (reverse l))))
 
-  (define rez-path (or (getenv "REZ")
-		       (find-executable-path "Rez")
-		       (try "/Applications/Xcode.app/Contents/Developer/Tools/Rez"
-			    "/Developer/Tools/Rez")))
-
   (define plthome (build-path (vector-ref (current-command-line-arguments) 0) 'up))
   (define dest-dir (vector-ref (current-command-line-arguments) 1))
   (define suffix (vector-ref (current-command-line-arguments) 2))
-
-  ; Rez where needed:
-  (let* ([cw-path (build-path plthome "src" "mac" "cw")]
-	 [rez-it (lambda (app src)
-		   (printf "Writing ~a~n" (string-append app ".rsrc.OSX"))
-		   (system* rez-path 
-			    (path->string (build-path cw-path (string-append src ".r")))
-			    "-UseDF" "-o" 
-			    (build-path
-                             dest-dir
-			     (path-replace-suffix app #".rsrc.OSX"))))])
-    ; (rez-it "Racket") ; useless under OS X...
-    (rez-it "GRacket" "GRacket"))
 
   ; make .app templates in the right places:
 
