@@ -3065,6 +3065,14 @@ if test "${enable_sysroot}" != "" ; then
    echo "=== Using sysroot directory ${enable_sysroot}"
 fi
 
+
+
+
+# `llvm-strip` tends to delete the segment for embedded boot files;
+# since we don't compile with debugging and there isn't much C code,
+# anyway, don't bother figuring out when `strip` is ok
+enable_strip_by_default=no
+
 show_explicitly_enabled "${enable_strip}" "Debug-symbol stripping"
 show_explicitly_disabled "${enable_strip}" "Debug-symbol stripping"
 
