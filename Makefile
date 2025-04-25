@@ -397,6 +397,12 @@ INSTALL_NAME =
 # installer:
 SIGN_IDENTITY =
 
+# For Mac OS, set to a signing certificate configuration for use with
+# `rcodesign` as a base64-encoded hash table, where the distro-build
+# documentation for `#:sign-cert-config` describes the keys and
+# values:
+SIGN_CERT_BASE64 =
+
 # For Mac OS, set to a notarization configuration as a base64-encoded
 # hash table <config> in `--notarization-config <config>`, where the
 # distro-build documentation for `#:notarization-config` describes the
@@ -491,6 +497,7 @@ DISTRO_BUILD_VARS = SERVER_COMPILE_MACHINE="$(SERVER_COMPILE_MACHINE)" \
                     BUILD_STAMP="$(BUILD_STAMP)" \
                     INSTALL_NAME="$(INSTALL_NAME)" \
                     SIGN_IDENTITY="$(SIGN_IDENTITY)" \
+                    SIGN_CERT_BASE64="$(SIGN_CERT_BASE64)" \
                     NOTARIZATION_CONFIG="$(NOTARIZATION_CONFIG)" \
                     OSSLSIGNCODE_ARGS_BASE64="$(OSSLSIGNCODE_ARGS_BASE64)" \
                     README="$(README)" \

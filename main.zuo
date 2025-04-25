@@ -639,7 +639,8 @@
                    (shell->strings (lookup 'NOTARIZATION_CONFIG))
                    (lookup 'DIST_NAME) (lookup 'DIST_BASE) (lookup 'DIST_DIR)
                    (lookup 'DIST_SUFFIX)
-                   (lookup 'SIGN_IDENTITY) (lookup 'OSSLSIGNCODE_ARGS_BASE64)))
+                   (lookup 'SIGN_IDENTITY) (lookup 'OSSLSIGNCODE_ARGS_BASE64)
+                   (lookup 'SIGN_CERT_BASE64)))
 
   (define (in-bundle-raco options . args)
     (if (hash-ref options 'cross? #f)
