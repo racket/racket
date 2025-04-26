@@ -6,23 +6,29 @@
          add-ad-hoc-signature
          get/set-dylib-path)
 
+(define current-big-endian (make-parameter (system-big-endian?)))
+
 (define (check-exe-id exe-id)
-  (unless (memv exe-id '(#xFeedFacf #xFeedFace))
-    (error 'mach-o "unrecognized #x~x" exe-id)))
+  (cond
+    [(memv exe-id '(#xcfFaedFe #xceFaedFe))
+     (current-big-endian (not (current-big-endian)))]
+    [else
+     (unless (memv exe-id '(#xFeedFacf #xFeedFace))
+       (error 'mach-o "unrecognized #x~x" exe-id))]))
 
 (define aarch64-machine-type #x0100000C)
 
 (define (read-ulong p)
-  (integer-bytes->integer (read-bytes 4 p) #f))
+  (integer-bytes->integer (read-bytes 4 p) #f (current-big-endian)))
 
 (define (read-xulong p)
-  (integer-bytes->integer (read-bytes 8 p) #f))
+  (integer-bytes->integer (read-bytes 8 p) #f (current-big-endian)))
 
 (define (write-ulong v out)
-  (display (integer->integer-bytes v 4 #f) out))
+  (display (integer->integer-bytes v 4 #f (current-big-endian)) out))
 
 (define (write-xulong v out)
-  (display (integer->integer-bytes v 8 #f) out))
+  (display (integer->integer-bytes v 8 #f (current-big-endian)) out))
 
 (define (write-be-ulong v out)
   (display (integer->integer-bytes v 4 #f #t) out))
