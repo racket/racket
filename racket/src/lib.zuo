@@ -230,7 +230,7 @@
 
 (define (shell-subst-pwd str wrt)
   (string-join (string-split str "`pwd`")
-               (string->shell wrt)))
+               (string->shell (path->complete-path wrt))))
 
 (define (configured-targets-at options)
   (define who 'configured-targets-at)
