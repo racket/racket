@@ -15,18 +15,18 @@ on:
       - ".github/scripts/**"
       - ".github/workflows/chez-build.yml"
       - "Makefile"
-      
+
 permissions:
   contents: read
 
 jobs:
   build-linux:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
 
     strategy:
       fail-fast: false
       matrix:
-        mach: ['i3le', 'ti3le', 'a6le', 'ta6le'] 
+        mach: ['i3le', 'ti3le', 'a6le', 'ta6le']
 
     env:
       MACH: ${{ matrix.mach }}
