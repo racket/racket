@@ -56,7 +56,8 @@
                         (choose-file-to-load path expect-module #t expect-module
                                              #f
                                              (current-compiled-file-roots)
-                                             (use-compiled-file-paths))])
+                                             (use-compiled-file-paths)
+                                             (use-compiled-file-check))])
             (when the-path
               (define-values (_base orig-file dir?) (split-path path))
               (define base (if (eq? _base 'relative) 'same _base))
