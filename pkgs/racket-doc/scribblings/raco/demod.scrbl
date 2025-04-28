@@ -297,15 +297,18 @@ preserved for modules that cannot be usefully merged, but
 into new submodules.
 
 Compilation and expansion of a @racketmodname[compiler/demod] module
-creates a @filepath{compiled/demod} subdirectory in the same directory
+creates a @filepath{compiled/ephemeral/demod} subdirectory in the same directory
 as the module. That subdirectory that holds freshly compiled versions
 of all dependencies of the flattened module in a form that is suitable
 for demodularization. This extra compilation is managed using
 @racketmodname[compiler/cm], so changes to dependencies can be handled
 incrementally, but still separate from normal compilation of the
-dependencies.
+dependencies. Detecting that the compilation of the
+@racketmodname[compiler/demod] module is up-to-date does not depend on
+the @filepath{compiled/ephemeral/demod} subdirectory, so
+it can be safely discarded after compilation.
 
 @history[#:added "1.15"
-         #:changed "1.16" @elem{Changed to raising and exception an error when a module
+         #:changed "1.16" @elem{Changed to raising an exception when a module
                                 listed in @racket[#:include] or @racket[#:iexclude] is not a
                                 dependency of @racket[module-path].}]
