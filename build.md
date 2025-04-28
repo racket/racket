@@ -9,6 +9,12 @@ distributions like the ones at
 [https://download.racket-lang.org](https://download.racket-lang.org),
 and how to contribute to Racket development.
 
+If you’re reading this document in Markdown form, you may find the
+[online HTML
+version](https://docs.racket-lang.org/racket-build-guide/index.html)
+more readable. There’s no guarantee that the online version is still
+available or matches the Racket sources you’re using, however.
+
 > [1 Building Racket from Source](#1-building-racket-from-source)  
 >> [1.1 Git Repository versus Source Distribution](#11-git-repository-versus-source-distribution)  
 >> [1.2 Git Repository Build Modes](#12-git-repository-build-modes)  
@@ -78,60 +84,75 @@ way that you probably expect.
 
 The rest of this chapter assumes that you’re sticking with the [source
 repository](https://github.com/racket/racket). In that case, you still
-have several options:
+have several options, depending on your goal, but you almost certainly
+want the first one:
 
-* **In-place build** — This mode is the default. It creates a build in
-  the `"racket"` subdirectory and installs packages that you specify (or
-  the `"main-distribution"` plus `"main-distribution-test"` package by
-  default). Any package implementations that reside in the `"pkgs"`
-  subdirectory are linked in-place. This is the most natural mode for
-  developing Racket itself or staying on the bleeding edge. See [Quick
-  Instructions: In-Place Build](#13-quick-instructions-in-place-build)
-  for more instructions.
+* **In-place build** — ​_This mode is the default, and it is almost
+  certainly the mode you want._​ In this mode, “build” and “install” are
+  the same, because the build is self-contained for in-place use. It
+  creates a build in the `"racket"` subdirectory and installs (local to
+  that subdirectory) packages that you specify (or the
+  `"main-distribution"` plus `"main-distribution-test"` packages by
+  default). Building and installing packages implies that documentation
+  provided by those packages is built and locally installed, too. Any
+  package implementations that reside in the `"pkgs"` subdirectory are
+  linked in-place. This is the most natural mode for developing Racket
+  itself or staying on the bleeding edge. See [Quick Instructions:
+  In-Place Build](#13-quick-instructions-in-place-build) for more
+  instructions.
 
-* **Unix-style install** — This mode installs to a given destination
+* **Unix-style install** — ​_This mode is not the one you want for
+  contributing to Racket, but it can be a sensible choice for installing
+  Racket._​ This mode builds and installs to a given destination
   directory (on platforms other than Windows), leaving no reference to
   the source directory. This is the most natural mode for installing
   once from the source repository. See [Quick Instructions: Unix-Style
   Install](#14-quick-instructions-unix-style-install) for more
   instructions.
 
-* **Minimal** — This mode is like a source distribution, and it is
-  described in the `"src"` subdirectory of `"racket"` (i.e., ignore the
-  repository’s root directory and `"pkgs"` subdirectory). Build an
-  in-place minimal Racket using `make base`. Alternatively, use `make
-  pb-fetch` to download bootstrapping support, and then in
-  `"racket/src"` use the usual `configure && make && make install` steps
-  (or similar for Windows). After installation, you can install packages
-  from the catalog server with `raco pkg`; if you do not use `make
-  base`, you should install at least the `"racket-lib"` package. See
-  [Building Minimal Racket](#171-building-minimal-racket) for more
-  information.
+* **Minimal** — ​_This mode is a building block for miscellaneous tasks,
+  and probably not the mode you want._​ This mode is like a source
+  distribution, and it is described in the `"src"` subdirectory of
+  `"racket"` (i.e., ignore the repository’s root directory and `"pkgs"`
+  subdirectory). Build an in-place minimal Racket using `make base`.
+  Alternatively, use `make pb-fetch` to download bootstrapping support,
+  and then in `"racket/src"` use the usual `configure && make && make
+  install` steps (or similar for Windows). After installation, you can
+  install packages from the catalog server with `raco pkg`; if you do
+  not use `make base`, you should install at least the `"racket-lib"`
+  package. See [Building Minimal Racket](#171-building-minimal-racket)
+  for more information.
 
-* **Installers** — This mode creates Racket distribution installers for
-  a variety of platforms by farming out work to machines that run those
-  platforms. This is the way that Racket snapshots and releases are
-  created, and you can create your own. See [Distributing Racket
+* **Installers** — ​_This mode is for creating new distributions of
+  Racket, not for developing or installing Racket locally._​ This mode
+  creates Racket distribution installers for a variety of platforms by
+  farming out work to machines that run those platforms. This is the way
+  that Racket snapshots and releases are created, and you can create
+  your own. See [Distributing Racket
   Variants](#2-distributing-racket-variants) for more instructions.
 
-* **In-place Racket BC build** — This mode builds the old Racket
-  implementation (where “BC” means “bytecode” or “before Chez Scheme”).
-  Final executables with names that end in `bc` or `BC` are the Racket
-  BC variants. See [More Instructions: Building Racket CS and Racket
+* **In-place Racket BC build** — ​_This mode is for software
+  archeologists or developers with a particular need to access a
+  historical Racket implementation in a contemporary context._​ This
+  mode builds the old Racket implementation (where “BC” means “bytecode”
+  or “before Chez Scheme”). Final executables with names that end in
+  `bc` or `BC` are the Racket BC variants. See [More Instructions:
+  Building Racket CS and Racket
   BC](#16-more-instructions-building-racket-cs-and-racket-bc) for more
   information.
 
 ### 1.3. Quick Instructions: In-Place Build
 
 On Unix (including Linux) and Mac OS, `make` (or `make in-place`)
-creates a build in the `"racket"` directory.
+creates a build in the `"racket"` directory, and the build is an
+“installation” in the sense that you can run it directly.
 
 On Windows with Microsoft Visual Studio (any version between 2008/9.0
 and 2022/17.0), `nmake` creates a build in the `"racket"` directory. If
 your command-prompt environment is not already configured for Visual
 Studio to run programs like `nmake.exe` and `cl.exe`, you can run
 `"racket/src/worksp/msvcprep.bat"` \(PowerShell:
-`"racket/src/worksp/msvcprep.ps1"`} and provide an argument that selects
+`"racket/src/worksp/msvcprep.ps1"`) and provide an argument that selects
 a build mode: `x86` (32-bit Intel/AMD mode), `x64` or `x86_amd64`
 (64-bit Intel/AMD mode), or `x64_arm64` (64-bit Arm mode). Any use of
 `make` described in this build guide should also work with `nmake`,
@@ -144,7 +165,9 @@ versions of any other package, use `make in-place` again, which includes
 a `raco pkg update` step.
 
 See [More Instructions: Building
-Racket](#15-more-instructions-building-racket) for more information.
+Racket](#15-more-instructions-building-racket) for more information. If
+your goal is to contribute to Racket development, skip to [Contributing
+to Racket Development](#3-contributing-to-racket-development), first.
 
 ### 1.4. Quick Instructions: Unix-Style Install
 
@@ -237,7 +260,9 @@ you change only packages, then `raco setup` should suffice.)
 If you need even more control over the build, carry on to [Even More
 Instructions: Building Racket
 Pieces](#17-even-more-instructions-building-racket-pieces) further
-below.
+below.  If your goal is to contribute to Racket development, skip to
+[Contributing to Racket
+Development](#3-contributing-to-racket-development), first.
 
 ### 1.6. More Instructions: Building Racket CS and Racket BC
 
@@ -274,6 +299,11 @@ Instead of just using `make in-place` or `make unix-style`, you can take
 more control over the build by understanding how the pieces fit
 together. You can also read `"Makefile"`, which defines and describes
 many variables that can be supplied via `make`.
+
+If you are just trying to get a build in place so you can to contribute
+to Racket development, then you’ve probably read too far in this
+section. Try jumping to [Contributing to Racket
+Development](#3-contributing-to-racket-development).
 
 #### 1.7.1. Building Minimal Racket
 
@@ -753,39 +783,31 @@ Guidelines](#33-general-contribution-guidelines).
 
 If you find yourself changing a file that is in a `"share/pkgs"`
 subdirectory (either installed as part of a Racket release or as a
-product of an in-place build), then that file is not part of the main
-Racket Git repository. It almost certainly has its own Git repository
-somewhere else, possibly within
+product of an in-place build), then that file is probably not part of
+the main Racket Git repository. It almost certainly has its own Git
+repository somewhere else, possibly within
 [https://github.com/racket](https://github.com/racket), but possibly in
 another user’s space. The name of the directory in `"share/pkgs"` is
 almost certainly the package name.
 
-To start working on a package <_pkg-name_> from a Racket release or
-snapshot, you first need to adjust the package installation to use the
-source specified by the main package catalog
-
-  `raco pkg update --no-setup --catalog https://pkgs.racket-lang.org
-<pkg-name>`
-
-and then in the directory you’d like to hold the package’s source
+To start working on a package <_pkg-name_>, in the directory you’d like
+to hold the package’s source, use
 
   `raco pkg update --clone <pkg-name>`
 
-will clone the package’s source Git repository into `"<pkg-name>"`
-within the current directory.
+> For Racket version 8.14 and earlier as a release or snapshot, before
+> using `--clone`, you first need to adjust the package installation to
+> use the source specified by the main package catalog:
+>   `raco pkg update --no-setup --catalog https://pkgs.racket-lang.org
+> <pkg-name>`
 
-Alternatively, if you already have an in-place build of the main Racket
-repository, you can start working on a package <_pkg-name_>, by going to
-the root directory of your Racket repository checkout and running
-
-  `raco pkg update --clone extra-pkgs/<pkg-name>`
-
-That will create `"extra-pkgs/<pkg-name>"` as a clone of the package’s
-source Git repository, it will replace the current installation of the
-package in your Racket build to point at that directory, and then it
-will rebuild (essentially by using `raco setup`) with the new location
-of the package installation. Now you can edit in
-`"extra-pkgs/<pkg-name>"`, and your changes will be live.
+That command will clone the package’s source Git repository into
+`"<pkg-name>"` within the current directory and checkout the appropriate
+commit. Then, it will replace the current installation of the package in
+your Racket build to point at that directory, and then it will rebuild
+(essentially by using `raco setup`) with the new location of the package
+installation. Now you can edit in `"<pkg-name>"`, and your changes will
+be live.
 
 Some information that might improve your experience:
 
@@ -793,26 +815,26 @@ Some information that might improve your experience:
   `raco setup` step, which makes sense if you want to make changes and
   then run `raco setup` yourself.
 
-* A package is sometimes a subdirectory within a Git repository, and it
-  would be better if the checkout in `"extra-pkgs"` matched the
-  repository name instead of the package name. If you know the
-  repository name, you can use
+* The argument after `--clone` is a directory, and by default, the
+  package name is inferred from the directory. Within an in-place build
+  of the main Racket repository, for example, the conventional use
 
-    `raco pkg update --clone extra-pkgs/<repo-name> <pkg-name>`
+    `raco pkg update --clone extra-pkgs/<pkg-name>`
 
-  to make the distinction.
+  creates `"extra-pkgs/<pkg-name>"` as a clone of the Git repository for
+  <_pkg-name_> (and `".gitignore"` for the Racket repository excludes
+  `"extra-pkgs"`).
 
-* This same approach will generally work if you’re starting from a
-  distribution installer instead of the checkout of the Racket sources
-  from the main Git repository. You’ll need write permission to the
-  installation, though, so that `raco pkg update` can redirect the
-  package. Also, there’s no particular reason to use `extra-pkgs` in
-  that case.
+* To use a clone directory name that is different than the package name,
+  you can supply the package name explicitly after the `--clone`
+  directory name:
+
+    `raco pkg update --clone <repo-name> <pkg-name>`
 
 * If you’re done and want to go back to the normal installation for
   <_pkg-name_>, use
 
-    `raco pkg update --lookup <pkg-name>`
+    `raco pkg update --unclone <pkg-name>`
 
 * See Developing Packages with Git for more information about how
   packages are meant to work as Git repositories.
