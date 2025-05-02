@@ -857,7 +857,7 @@ body must match the following @racket[_module-body] grammar:
               derived-require-form]]
 
 After any number of @racket[_require-decl]s, the content of the module
-is the same as a @racket[unit] body.
+is the same as a @racket[unit] body with access to @racketmodname[racket/base].
 
 The resulting unit is exported as @racket[_base]@racketidfont["@"],
 where @racket[_base] is derived from the enclosing module's name
@@ -872,7 +872,8 @@ suffix). If the module name ends in @racketidfont{-unit}, then
 @section{Single-Signature Modules}
 
 @defmodulelang[racket/signature]{The @racketmodname[racket/signature]
-language treats a module body as a unit signature.}
+language treats a module body as a unit signature with access to
+@racketmodname[racket/base].}
 
 The body must match the following @racket[_module-body] grammar:
 
