@@ -537,6 +537,7 @@ case "$host_os" in
     LIBS="$LIBS -rdynamic"
     DYN_CFLAGS="-fPIC"
     enable_pthread_by_default=yes
+    strip_needs_dash_s=yes
     ;;
   openbsd*)
     LIBS="$LIBS -Wl,--export-dynamic"
