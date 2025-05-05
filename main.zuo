@@ -665,6 +665,7 @@
 
   (define (installers token)
     (rm* "build/installers")
+    (rm* "build/log")
     (server token (hash 'serve-during-cmd (get-drive-clients-args))))
 
   (define (installers-from-built token)
