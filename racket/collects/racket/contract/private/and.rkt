@@ -208,14 +208,7 @@
                [(eq? second-pred positive?)
                 (renamed->-ctc 0 `(and/c real? positive?))]
                [else
-                (define second-contract (cadr contracts))
-                (cond
-                  [(equal? (contract-name second-contract) '(not/c positive?))
-                   (renamed-between/c -inf.0 0 `(and/c real? (not/c positive?)))]
-                  [(equal? (contract-name second-contract) '(not/c negative?))
-                   (renamed-between/c 0 +inf.0 `(and/c real? (not/c negative?)))]
-                  [else
-                   (make-first-order-and/c contracts preds)])])]
+                (make-first-order-and/c contracts preds)])]
             [(or (eq? (car preds) exact-nonnegative-integer?)
                  (eq? (car preds) natural?)
                  (eq? (cadr preds) exact-nonnegative-integer?)
