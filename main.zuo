@@ -434,7 +434,7 @@
                               (at-source "build/user/config")
                               (if (or (and (hash-ref options 'cross? #f)
                                            (eq? vm 'cs))
-                                      (hash-ref options 'server-compile-machine? #t))
+                                      (hash-ref options 'server-compile-machine? #f))
                                   (hash 'server-compile-machine? #t)
                                   (hash))))
     (hash-set vars
