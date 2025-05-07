@@ -125,14 +125,15 @@ READ_ONLY static Scheme_Object *init_dir_symbol, *init_file_symbol, *sys_dir_sym
 READ_ONLY static Scheme_Object *exec_file_symbol, *run_file_symbol, *collects_dir_symbol;
 READ_ONLY static Scheme_Object *pref_file_symbol, *orig_dir_symbol, *addon_dir_symbol;
 READ_ONLY static Scheme_Object *config_dir_symbol, *cache_dir_symbol;
-READ_ONLY static Scheme_Object *host_collects_dir_symbol, *host_config_dir_symbol;
+READ_ONLY static Scheme_Object *host_collects_dir_symbol, *host_config_dir_symbol, *host_addon_dir_symbol;
 
 SHARED_OK static Scheme_Object *exec_cmd;
 SHARED_OK static Scheme_Object *run_cmd;
 SHARED_OK static Scheme_Object *collects_path, *config_path;
-SHARED_OK static Scheme_Object *host_collects_path, *host_config_path;
+SHARED_OK static Scheme_Object *host_collects_path, *host_config_path, *host_addon_path;
 THREAD_LOCAL_DECL(static Scheme_Object *original_pwd);
 SHARED_OK static Scheme_Object *addon_dir;
+SHARED_OK static int host_addon_no_inherit;
 
 READ_ONLY static Scheme_Object *windows_symbol, *unix_symbol;
 
@@ -146,6 +147,7 @@ READ_ONLY static Scheme_Object *access_time_seconds_symbol, *access_time_nanosec
 READ_ONLY static Scheme_Object *modify_time_seconds_symbol, *modify_time_nanoseconds_symbol;
 READ_ONLY static Scheme_Object *change_time_seconds_symbol, *change_time_nanoseconds_symbol;
 READ_ONLY static Scheme_Object *creation_time_seconds_symbol, *creation_time_nanoseconds_symbol;
+
 
 void scheme_init_file(Scheme_Startup_Env *env)
 {
@@ -173,6 +175,7 @@ void scheme_init_file(Scheme_Startup_Env *env)
   REGISTER_SO(config_dir_symbol);
   REGISTER_SO(host_collects_dir_symbol);
   REGISTER_SO(host_config_dir_symbol);
+  REGISTER_SO(host_addon_dir_symbol);
   REGISTER_SO(orig_dir_symbol);
   REGISTER_SO(addon_dir_symbol);
   REGISTER_SO(cache_dir_symbol);
@@ -227,6 +230,7 @@ void scheme_init_file(Scheme_Startup_Env *env)
   config_dir_symbol = scheme_intern_symbol("config-dir");
   host_collects_dir_symbol = scheme_intern_symbol("host-collects-dir");
   host_config_dir_symbol = scheme_intern_symbol("host-config-dir");
+  host_addon_dir_symbol = scheme_intern_symbol("host-addon-dir");
   orig_dir_symbol = scheme_intern_symbol("orig-dir");
   addon_dir_symbol = scheme_intern_symbol("addon-dir");
   cache_dir_symbol = scheme_intern_symbol("cache-dir");
@@ -5227,6 +5231,10 @@ find_system_path(int argc, Scheme_Object **argv)
     return config_path;
   } else if (argv[0] == orig_dir_symbol) {
     return original_pwd;
+  } else if (argv[0] == host_addon_dir_symbol) {
+    if (host_addon_path) return host_addon_path;
+    if (host_addon_no_inherit && addon_dir) return addon_dir;
+    which = RKTIO_PATH_ADDON_DIR;
   } else if (argv[0] == addon_dir_symbol) {
     if (addon_dir) return addon_dir;
     which = RKTIO_PATH_ADDON_DIR;
@@ -5329,6 +5337,15 @@ void scheme_set_host_config_path(Scheme_Object *p)
   host_config_path = p;
 }
 
+/* should only called from main */
+void scheme_set_host_addon_dir(Scheme_Object *p)
+{
+  if (!host_addon_path) {
+    REGISTER_SO(host_addon_path);
+  }
+  host_addon_path = p;
+  host_addon_no_inherit = 1;
+}
 
 void scheme_set_original_dir(Scheme_Object *d)
 {

@@ -247,6 +247,7 @@
                 (set-collects-dir! set-collects-dir!)
                 (set-config-dir! set-config-dir!)
                 (set-exec-file! set-exec-file!)
+                (set-host-addon-dir! set-host-addon-dir!)
                 (set-host-collects-dir! set-host-collects-dir!)
                 (set-host-config-dir! set-host-config-dir!)
                 (set-maybe-raise-missing-module!
@@ -368,44 +369,46 @@
                 (1/write-special-evt write-special-evt)
                 (1/write-string write-string)))
 (define hash2725 (hash))
-(define hash2702
+(define hash2713
   (hasheq
    'addon-dir
-   '12
-   'cache-dir
    '13
+   'cache-dir
+   '14
    'collects-dir
    '4
    'config-dir
    '3
    'desk-dir
-   '15
-   'doc-dir
    '16
+   'doc-dir
+   '17
    'exec-file
    '1
    'home-dir
-   '14
+   '15
+   'host-addon-dir
+   '7
    'host-collects-dir
    '6
    'host-config-dir
    '5
    'init-dir
-   '17
-   'init-file
    '18
+   'init-file
+   '19
    'orig-dir
-   '7
+   '8
    'pref-dir
-   '10
-   'pref-file
    '11
+   'pref-file
+   '12
    'run-file
    '2
    'sys-dir
-   '9
+   '10
    'temp-dir
-   '8))
+   '9))
 (define hash2610 (hasheq))
 (define hash3229
   (hasheq
@@ -29257,7 +29260,7 @@
        (begin0
          (let ((index_0
                 (if (symbol? key_0)
-                  (hash-ref hash2702 key_0 (lambda () 0))
+                  (hash-ref hash2713 key_0 (lambda () 0))
                   0)))
            (if (unsafe-fx< index_0 9)
              (if (unsafe-fx< index_0 4)
@@ -29269,7 +29272,7 @@
                    "      'init-dir 'init-file 'addon-dir 'cache-dir\n"
                    "      'doc-dir 'desk-dir 'sys-dir 'exec-file 'run-file\n"
                    "      'collects-dir 'config-dir 'orig-dir\n"
-                   "      'host-collects-dir 'host-config-dir)")
+                   "      'host-collects-dir 'host-config-dir 'host-addon-dir)")
                   key_0)
                  (if (unsafe-fx< index_0 2)
                    (let ((or-part_0 exec-file))
@@ -29315,17 +29318,24 @@
                                   (string->path$1 "../collects")))))))
                      (1/path->directory-path p_0))
                    (if (unsafe-fx< index_0 8)
-                     (1/path->directory-path orig-dir)
-                     (let ((p_0 (rktio-system-path 'find-system-path 1)))
-                       (1/path->directory-path p_0))))))
-             (if (unsafe-fx< index_0 13)
-               (if (unsafe-fx< index_0 10)
-                 (let ((p_0 (rktio-system-path 'find-system-path 0)))
-                   (1/path->directory-path p_0))
-                 (if (unsafe-fx< index_0 11)
+                     (if (eq? host-addon-dir 'inherit)
+                       (1/find-system-path addon-dir)
+                       (let ((or-part_0 host-addon-dir))
+                         (if or-part_0
+                           or-part_0
+                           (rktio-system-path 'find-system-path 4))))
+                     (1/path->directory-path orig-dir)))))
+             (if (unsafe-fx< index_0 14)
+               (if (unsafe-fx< index_0 11)
+                 (if (unsafe-fx< index_0 10)
+                   (let ((p_0 (rktio-system-path 'find-system-path 1)))
+                     (1/path->directory-path p_0))
+                   (let ((p_0 (rktio-system-path 'find-system-path 0)))
+                     (1/path->directory-path p_0)))
+                 (if (unsafe-fx< index_0 12)
                    (let ((p_0 (rktio-system-path 'find-system-path 2)))
                      (1/path->directory-path p_0))
-                   (if (unsafe-fx< index_0 12)
+                   (if (unsafe-fx< index_0 13)
                      (rktio-system-path 'find-system-path 3)
                      (let ((p_0
                             (let ((or-part_0 addon-dir))
@@ -29333,19 +29343,19 @@
                                 or-part_0
                                 (rktio-system-path 'find-system-path 4)))))
                        (1/path->directory-path p_0)))))
-               (if (unsafe-fx< index_0 15)
-                 (if (unsafe-fx< index_0 14)
+               (if (unsafe-fx< index_0 16)
+                 (if (unsafe-fx< index_0 15)
                    (let ((p_0 (rktio-system-path 'find-system-path 10)))
                      (1/path->directory-path p_0))
                    (let ((p_0 (rktio-system-path 'find-system-path 5)))
                      (1/path->directory-path p_0)))
-                 (if (unsafe-fx< index_0 16)
+                 (if (unsafe-fx< index_0 17)
                    (let ((p_0 (rktio-system-path 'find-system-path 6)))
                      (1/path->directory-path p_0))
-                   (if (unsafe-fx< index_0 17)
+                   (if (unsafe-fx< index_0 18)
                      (let ((p_0 (rktio-system-path 'find-system-path 7)))
                        (1/path->directory-path p_0))
-                     (if (unsafe-fx< index_0 18)
+                     (if (unsafe-fx< index_0 19)
                        (let ((p_0 (rktio-system-path 'find-system-path 8)))
                          (1/path->directory-path p_0))
                        (rktio-system-path 'find-system-path 9))))))))
@@ -29409,6 +29419,8 @@
 (define set-host-collects-dir! (lambda (p_0) (set! host-collects-dir p_0)))
 (define host-config-dir #f)
 (define set-host-config-dir! (lambda (p_0) (set! host-config-dir p_0)))
+(define host-addon-dir 'inherit)
+(define set-host-addon-dir! (lambda (p_0) (set! host-addon-dir p_0)))
 (define rktio-system-path
   (lambda (who_0 key_0)
     (begin

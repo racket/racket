@@ -283,7 +283,11 @@
            [else
             (at-source "racket/bin" (~a "racket" sfx))])]))
     (hash 'racket racket.exe
-          'racket-args (append (shell->strings (lookup 'SETUP_MACHINE_FLAGS))
+          'racket-args (append (if (and (hash-ref options 'server-compile-machine? #f)
+                                        (hash-ref options 'build-user-dir #f))
+                                   (list "-A" (hash-ref options 'build-user-dir #f))
+                                   '())
+                               (shell->strings (lookup 'SETUP_MACHINE_FLAGS))
                                (if (hash-ref options 'server-compile-machine? #f)
                                    (get-mcr-args)
                                    '())
@@ -415,7 +419,6 @@
   (define svr-prt (~a (lookup 'SERVER) ":" (lookup 'SERVER_PORT)))
   (define svr-cat (~a (lookup 'SERVER_URL_SCHEME) "://" svr-prt "/" (lookup 'SERVER_CATALOG_PATH)))
   (define config+mode (list (lookup 'CONFIG) (lookup 'CONFIG_MODE)))
-  (define user-flags (list "-A" "build/user"))
 
   ;; Catch problems due to malformed distribution-build packages
   (define recompile-options (list "--recompile-only"))
@@ -435,7 +438,10 @@
                               (if (or (and (hash-ref options 'cross? #f)
                                            (eq? vm 'cs))
                                       (hash-ref options 'server-compile-machine? #f))
-                                  (hash 'server-compile-machine? #t)
+                                  (hash 'server-compile-machine? #t
+                                        'build-user-dir (if (hash-ref options 'hide-client-user-dir? #f)
+                                                            "build/server-user"
+                                                            "build/user"))
                                   (hash))))
     (hash-set vars
               'racket-args
@@ -489,6 +495,7 @@
                 (shell->strings (lookup 'DISTRO_BUILD_PKGS)))
     (server-set-config options)
     (built-racket options "-l-" "distro-build/pkg-info" "-o" "build/pkgs.rktd" "build/catalog-copy")
+    (built-racket options "-l" "distro-build/start-site" config+mode)
     (built-racket options "-l" "distro-build/install-pkgs" config+mode
                   (build-shell (lookup 'PKGS) (lookup 'TEST_PKGS))
                   source-user-auto
@@ -576,7 +583,7 @@
                        (equal? (lookup 'BUNDLE_FROM_SERVER_TARGET) "bundle-cross-from-server")
                        (equal? (lookup 'CS_CROSS_SUFFIX) "-cross")))
     (define options (if cross?
-                        (hash-set options-in 'cross? #t)
+                        (hash-set (hash-set options-in 'cross? #t) 'hide-client-user-dir? #t)
                         options-in))
 
     (define (built-racket* . args) (built-racket options args))
