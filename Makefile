@@ -544,6 +544,8 @@ client: $(ZUO)
 client-compile-any: $(ZUO)
 	$(RUN_ZUO) client-compile-any $(BUILD_VARS) $(DISTRO_BUILD_VARS)
 
+client-no-installer: $(ZUO)
+	$(RUN_ZUO) client-no-installer $(BUILD_VARS) $(DISTRO_BUILD_VARS)
 
 test-client: $(ZUO)
 	$(RUN_ZUO) test-client $(BUILD_VARS) $(DISTRO_BUILD_VARS)

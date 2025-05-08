@@ -314,7 +314,7 @@
   (define (maybe-fetch vm)
     (when (eq? vm 'cs)
       (when (andmap (lambda (key) (equal? (lookup key) ""))
-                    '(RACKET BOOTFILE_RACKET PLAIN_RACKET SCHEME SCHEME_DIR))
+                    '(RACKET BOOTFILE_RACKET PLAIN_RACKET SCHEME SCHEME_DIR CS_HOST_WORKAREA_PREFIX))
         (pb-manage 'fetch))))
 
   (define (base token vm [options (hash)])
@@ -569,15 +569,18 @@
   ;; ------------------------------------------------------------
   ;; Distribution builds: client
 
-  (define (client token [options-in (hash)])
-     (cond
+  (define (client-base token [options-in (hash)])
+    (cond
       [(directory-exists? "build/log") ; => server space also used for client build
        (check-mode "server")]
       [else
        (check-mode "client")
        (rm* "build/user")])
     (maybe-fetch 'cs)
-    (base token vm options-in)
+    (base token vm options-in))
+
+  (define (client token [options-in (hash)])
+    (client-base token options-in)
 
     (define cross? (or (hash-ref options-in 'server-compile-machine? #f)
                        (equal? (lookup 'BUNDLE_FROM_SERVER_TARGET) "bundle-cross-from-server")
@@ -783,6 +786,7 @@
 
        [:target client () ,(lambda (token) (client token))]
        [:target client-compile-any () ,(lambda (token) (client token (hash 'server-compile-machine? #t)))]
+       [:target client-no-installer () ,(lambda (token) (client-base token))]
        [:target client-from-site () ,(lambda (token) (client token (hash 'from-site? #t)))]
 
        [:target test-client () ,(lambda (token) (test-client token))]
