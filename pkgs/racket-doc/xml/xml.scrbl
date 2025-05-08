@@ -23,7 +23,7 @@
 The @racketmodname[xml] library provides functions for parsing and
 generating XML. XML can be represented as an instance of the
 @racket[document] structure type, or as a kind of S-expression that is
-called an @deftech{X-expression}.
+called an @tech{X-expression}.
 
 The @racketmodname[xml] library does not provide Document Type
 Declaration (DTD) processing, including preservation of DTDs in read documents, or validation.
@@ -144,7 +144,8 @@ of the input to @racket[validate-xexpr].}
 
 Returns @racket[#t] if @racket[v] is a @tech{X-expression}, @racket[#f] otherwise.
 
-The following grammar describes expressions that create @tech{X-expressions}:
+An @deftech{X-expression} is a type of Racket expression that can represent XML
+content. The following grammar describes expressions that create X-expressions:
 
 @racketgrammar[
 #:literals (cons list valid-char?)
@@ -167,7 +168,7 @@ represented by a string.
 A @racket[_symbol] represents a symbolic entity. For example,
 @racket['nbsp] represents @litchar{&nbsp;}.
 
-An @racket[valid-char?] represents a numeric entity. For example,
+A @racket[valid-char?] represents a numeric entity. For example,
 @racketvalfont{#x20} represents @litchar{&#x20;}.
 
 A @racket[_cdata] is an instance of the @racket[cdata] structure type,
