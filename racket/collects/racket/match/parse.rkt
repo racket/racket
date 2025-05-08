@@ -195,6 +195,39 @@
        (raise-syntax-error #f "key does not have a value" stx)]
       [else (loop (rest (rest xs)) (cons (list (first xs) (second xs)) acc))])))
 
+(define (impossible-and? list-of-patterns)
+  (define ps list-of-patterns)
+  ; Patterns that contain two different literals such
+  ; as (and 10 11) can never match a value.
+  ; Such a pattern can be replaced with the pattern (or).
+
+  (define (literal? x)
+    (or (eq? x #t)
+        (eq? x #f)
+        (string? x)
+        (bytes? x)
+        (number? x)
+        (char? x)
+        (keyword? x)
+        (regexp? x)
+        (pregexp? x)))
+
+  (define (stxliteral? x)
+    (literal? (if (syntax? x) (syntax-e x) x)))
+
+  (define (same? x y)
+    (equal? (if (syntax? x) (syntax-e x) x)
+            (if (syntax? y) (syntax-e y) y)))
+
+  (define all-literals (map syntax-e (filter stxliteral? ps)))
+  (define n (length all-literals))
+  (case n
+    [(0 1) #f]
+    [else  (define l  (first all-literals))
+           (define (same-as-first? x) (same? x l))
+           (define ls (dropf (rest all-literals) same-as-first?))
+           (not (null? ls))]))
+
 ;; parse : syntax -> Pat
 ;; compile stx into a pattern, using the new syntax
 (define (parse stx)
@@ -216,7 +249,10 @@
      (identifier? #'v)
      (Var (rearm #'v))]
     [(and p ...)
-     (OrderedAnd (map rearm+parse (syntax->list #'(p ...))))]
+     (let ([ps (syntax->list #'(p ...))])
+       (if (impossible-and? ps)
+           (Not (Dummy stx)) ; same as (or) which always fails
+           (OrderedAnd (map rearm+parse ps))))]
     [(or)
      (Not (Dummy stx))]
     [(or p ps ...)
