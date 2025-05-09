@@ -866,7 +866,8 @@
      (set-cport-pos! cp shared-size)
      
      (make-reader-graph (read-compact cp))]
-    [(equal? vm #"chez-scheme")
+    [else
+     ;; assume Chez Scheme
      (define len (read-simple-number port))
      (define bstr (read-bytes len port))
      (cond
@@ -877,9 +878,7 @@
                                       bstr)))
                   'opaque (opaque bstr))]
        [else
-        (hash 'opaque bstr)])]
-    [else
-     (error 'zo-parse "cannot parse for virtual machine: ~s" vm)]))
+        (hash 'opaque bstr)])]))
 
 ;; ----------------------------------------
 

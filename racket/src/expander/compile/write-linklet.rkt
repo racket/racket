@@ -6,11 +6,18 @@
 (provide write-linklet-bundle
          write-linklet-directory)
 
-(define (write-linklet-bundle b as-correlated-linklet? linklet-bundle->hash port)
+(define (machine-type-vm-bytes machine-type)
+  (if (eq? machine-type (system-type 'target-machine))
+      vm-bytes
+      (string->bytes/utf-8 (symbol->string machine-type))))
+
+(define (write-linklet-bundle b as-correlated-linklet? linklet-bundle->hash machine-type port)
   ;; Various tools expect a particular header:
   ;;   "#~"
   ;;   length of version byte string (< 64) as one byte
   ;;   version byte string
+  ;;   length of machine byte string (< 64) as one byte
+  ;;   machine byte string
   ;;   "B"
   ;;   20 bytes of SHA-1 hash
   (write-bytes #"#~" port)
@@ -18,7 +25,7 @@
   (write-bytes version-bytes port)
   (let ([vm-bytes (if as-correlated-linklet?
                       correlated-linklet-vm-bytes
-                      vm-bytes)])
+                      (machine-type-vm-bytes machine-type))])
     (write-bytes (bytes (bytes-length vm-bytes)) port)
     (write-bytes vm-bytes port))
   (write-bytes #"B" port)
@@ -28,18 +35,18 @@
       (write-correlated-linklet-bundle-hash (linklet-bundle->hash b) port)
       (write-linklet-bundle-hash (linklet-bundle->hash b) port)))
 
-(define (linklet-bundle->bytes b as-correlated-linklet? linklet-bundle->hash)
+(define (linklet-bundle->bytes b as-correlated-linklet? linklet-bundle->hash machine-type)
   (define o (open-output-bytes))
-  (write-linklet-bundle b as-correlated-linklet? linklet-bundle->hash o)
+  (write-linklet-bundle b as-correlated-linklet? linklet-bundle->hash machine-type o)
   (get-output-bytes o))
 
-(define (write-linklet-directory ld as-correlated-linklet? linklet-directory->hash linklet-bundle->hash port)
+(define (write-linklet-directory ld as-correlated-linklet? linklet-directory->hash linklet-bundle->hash machine-type port)
   ;; Various tools expect a particular header:
   ;;   "#~"
   ;;   length of version byte string (< 64) as one byte
   ;;   version byte string
-  ;;   length of virtual machine byte string (< 64) as one byte
-  ;;   virtual machine byte string
+  ;;   length of machine byte string (< 64) as one byte
+  ;;   machine byte string
   ;;   "D"
   ;;   bundle count as 4-byte integer
   ;;   binary tree:
@@ -54,7 +61,7 @@
   ;; a 4-byte integer for the length.
   (let ([vm-bytes (if as-correlated-linklet?
                       correlated-linklet-vm-bytes
-                      vm-bytes)])
+                      (machine-type-vm-bytes machine-type))])
     (write-bytes #"#~" port)
     (write-byte (bytes-length version-bytes) port)
     (write-bytes version-bytes port)
@@ -69,7 +76,7 @@
           (cond
             [(eq? key #f)
              (values (cons (cons (encode-name rev-name-prefix)
-                                 (linklet-bundle->bytes value as-correlated-linklet? linklet-bundle->hash))
+                                 (linklet-bundle->bytes value as-correlated-linklet? linklet-bundle->hash machine-type))
                            accum)
                      #t)]
             [else

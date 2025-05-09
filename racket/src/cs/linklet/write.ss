@@ -1,7 +1,10 @@
 
 (define (linklet-virtual-machine-bytes)
-  ;; #"chez-scheme"
-  #vu8(99 104 101 122 45 115 99 104 101 109 101))
+  (string->utf8 (symbol->string (machine-type))))
+
+(define (linklet-cross-machine-type l)
+  (let ([prep (linklet-preparation l)])
+    (and (pair? prep) (cdr prep))))
 
 (define (write-linklet-bundle-hash ht dest-o)
   (let-values ([(ls cross-machine) (encode-linklet-literals ht)])

@@ -45,7 +45,7 @@
         (cond
          [a (start-cross-compiler machine (cadr a))]
          [else
-          (#%error who "no compiler loaded for ~a" machine)]))])))
+          (#%errorf who "no compiler loaded for ~a" machine)]))])))
 
 (define (cache-cross-compiler a)
   (with-interrupts-disabled
@@ -124,7 +124,7 @@
                  (write-string (#%format "~a~a\n" (car msg) (if compress? #\y #\n)) to)
                  (let-values ([(bv literals) (fasl-to-bytevector (cadr msg) (caddr msg))])
                    ;; We can't send all literals to the cross compiler, but we can send
-                   ;; strings and byte stringa, which might affect compilation. Otherwise,
+                   ;; strings and byte strings, which might affect compilation. Otherwise,
                    ;; we report the existence of other literals, and the cross compiler can
                    ;; report which of those remain used in the compiled form.
                    (let-values ([(literals-bv ignored) (fasl-to-bytevector (strip-opaque literals) #f)])

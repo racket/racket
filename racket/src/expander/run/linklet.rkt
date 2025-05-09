@@ -344,6 +344,9 @@
 (define (linklet-add-target-machine-info linklet other-linklet)
   linklet)
 
+(define (linklet-summarize-target-machine-info linklet)
+  (hash))
+
 ;; Intended for JIT preparation
 ;; (and we could compile to a function here)
 (define (eval-linklet c)
@@ -351,6 +354,9 @@
 
 (define (linklet-virtual-machine-bytes)
   #"exp")
+
+(define (linklet-cross-machine-type ht)
+  #f)
 
 (define (write-linklet-bundle-hash ld in)
   (write ld in))

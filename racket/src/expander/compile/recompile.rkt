@@ -16,7 +16,8 @@
          "compiled-in-memory.rkt")
 
 (provide compiled-expression-recompile
-         compiled-expression-add-target-machine)
+         compiled-expression-add-target-machine
+         compiled-expression-summarize-target-machine)
 
 (define (compiled-expression-recompile c)
   (unless (compiled-expression? c)
@@ -246,12 +247,15 @@
 ;; ----------------------------------------
 
 (define (compiled-expression-add-target-machine c from-c)
+  (define who 'compiled-expression-add-target-machine)
   (unless (compiled-expression? c)
-    (raise-argument-error 'compiled-expression-recompile "compiled-expression?" c))
-  (unless (compiled-expression? from-c)
-    (raise-argument-error 'compiled-expression-recompile "compiled-expression?" from-c))
+    (raise-argument-error who "compiled-expression?" c))
+  (define from-hash? (hash? from-c))
+  (unless (or from-hash?
+              (compiled-expression? from-c))
+    (raise-argument-error who "(or/c compiled-expression? hash?)" from-c))
   (define (looks-wrong)
-    (raise-arguments-error 'compiled-expression-recompile
+    (raise-arguments-error who
                            (string-append
                             "compiled expressions are not compatible;\n"
                             " they appear to be from compiling different modules")))
@@ -263,9 +267,13 @@
         c
         (compiled-in-memory-linklet-directory c)))
   (let ([c (get-linklet c)]
-        [from-c (get-linklet from-c)])
+        [from-c (if from-hash?
+                    from-c
+                    (get-linklet from-c))])
     (define bundles (extract-linklet-bundles c '() #hash()))
-    (define from-bundles (extract-linklet-bundles from-c '() #hash()))
+    (define from-bundles (if from-hash?
+                             from-c
+                             (extract-linklet-bundles from-c '() #hash())))
     (unless (= (hash-count bundles) (hash-count from-bundles)) (looks-wrong))
     (define new-bundles
       (for/hash ([k (in-hash-keys bundles)])
@@ -273,7 +281,12 @@
         (define from-b (hash-ref from-bundles k #f))
         (unless from-b (looks-wrong))
         (define h (linklet-bundle->hash b))
-        (define from-h (linklet-bundle->hash from-b))
+        (define from-h (cond
+                         [from-hash?
+                          (unless (hash? from-b) (looks-wrong))
+                          from-b]
+                         [else
+                          (linklet-bundle->hash from-b)]))
         (define new-b
           (hash->linklet-bundle
            (for/fold ([h h]) ([(phase body-linklet) (in-hash h)]
@@ -283,3 +296,21 @@
              (hash-set h phase (linklet-add-target-machine-info body-linklet from-body-linklet)))))
         (values k (recompiled new-b #f #f))))
     (replace-linklet-bundles c '() new-bundles)))
+
+(define (compiled-expression-summarize-target-machine from-c)
+  (unless (compiled-expression? from-c)
+    (raise-argument-error 'compiled-expression-recompile "compiled-expression?" from-c))
+  (define (get-linklet c)
+    (if (or (linklet-bundle? c)
+            (linklet-directory? c))
+        c
+        (compiled-in-memory-linklet-directory c)))
+  (let ([from-c (get-linklet from-c)])
+    (define from-bundles (extract-linklet-bundles from-c '() #hash()))
+    (for/hash ([(k from-b) (in-hash from-bundles)])
+      (define from-h (linklet-bundle->hash from-b))
+      (define new-h
+        (for/hash ([(phase from-body-linklet) (in-hash from-h)]
+                   #:when (exact-integer? phase))
+          (values phase (linklet-summarize-target-machine-info from-body-linklet))))
+      (values k new-h))))

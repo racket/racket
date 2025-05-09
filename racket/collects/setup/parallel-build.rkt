@@ -404,6 +404,12 @@
                           [managed-recompile-only (if (memq 'recompile-only options)
                                                       #t
                                                       (managed-recompile-only))]
+                          [managed-recompile-cache-dir (let ([dir-bytes (for/or ([o (in-list options)])
+                                                                          (and (pair? o)
+                                                                               (eq? (car o) 'recompile-cache)
+                                                                               (cadr o)))])
+                                                         (and dir-bytes
+                                                              (bytes->path dir-bytes)))]
                           [current-load-relative-directory dir]
                           [current-input-port (open-input-string "")]
                           [current-output-port out-str-port]

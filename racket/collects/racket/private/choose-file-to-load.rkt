@@ -193,7 +193,7 @@ also got dragged along too.
 
 (define version-bytes (string->bytes/utf-8 (version)))
 (define version-length (bytes-length version-bytes))
-(define vm-bytes (string->bytes/utf-8 (symbol->string (system-type 'vm))))
+(define vm-bytes (string->bytes/utf-8 (symbol->string (system-type 'target-machine))))
 (define vm-length (bytes-length vm-bytes))
 
 (define (linklet-bundle-or-directory-start i tag)

@@ -140,9 +140,11 @@
                             ;; Flags that take 1 argument:
                             '("--mode" "--doc-pdf"
                               "-j" "--jobs" "--workers"
-                              "--error-in" "--error-out"))
+                              "--error-in" "--error-out"
+                              "--recompile-cache"))
                     (if (pair? (cdr flags))
-                        (filter-flags queued-flags (cddr flags))
+                        (cons (cons (car flags) (cadr flags))
+                              (filter-flags queued-flags (cddr flags)))
                         queued-flags)
                     (if (or (equal? "--boot" (car flags))
                             (equal? "--chain" (car flags)))
@@ -179,6 +181,19 @@
     (lambda (flag-name)
       (member flag-name flags)))
 
+  ;; Get flag argument:
+  (define-values (flag-value)
+    (lambda (flag-name)
+      (define-values (search)
+        (lambda (flags)
+          (if (null? flags)
+              #f
+              (if (and (pair? (car flags))
+                       (equal? (caar flags) flag-name))
+                  (cdar flags)
+                  (search (cdr flags))))))
+      (search flags)))
+
   (define-values (print-bootstrapping)
     (lambda (why)
       (fprintf (current-output-port)
@@ -200,6 +215,37 @@
 
   (define-values (original-compiled-file-paths) (use-compiled-file-paths))
 
+  (define-values (recompile-cache-dir) (flag-value "--recompile-cache"))
+
+  (define-values (try-load-cached)
+    (lambda (orig-load path modname)
+      ;; If SHA-1 of `path` is in the recompile cache, then it must be a machine-indepdent
+      ;; module whose recompiled form is the cached compilation
+      (let ([bstr (call-with-input-file path sha1-bytes)])
+        (let ([len (bytes-length bstr)])
+          (let ([sha1 (make-string (* len 2))])
+            (define-values (digit)
+              (lambda (v)
+                (integer->char (if (v . < . 10)
+                                   (+ v (char->integer #\0))
+                                   (+ v (- (char->integer #\a) 10))))))
+            (define-values (iter)
+              (lambda (i j)
+                (if (= i len)
+                    (void)
+                    (let ([c (bytes-ref bstr i)])
+                      (begin
+                        (string-set! sha1 j (digit (arithmetic-shift c -4)))
+                        (string-set! sha1 (+ j 1) (digit (bitwise-and c #xF)))
+                        (iter (+ i 1) (+ j 2)))))))
+            (iter 0 0)
+            (let ([prefix (substring sha1 0 2)]
+                  [name (substring sha1 2)])
+              (let ([cache-path (build-path recompile-cache-dir (format "~a" (current-compile-target-machine)) prefix name)])
+                (if (file-exists? cache-path)
+                    (orig-load cache-path modname)
+                    (orig-load path modname)))))))))
+
   (if (or (on? "--clean")
           (on? "-c")
           (on? "--no-zo")
@@ -216,7 +262,7 @@
       ;; Load the cm instance to be installed while loading Setup PLT.
       ;; This has to be dynamic, so we get a chance to turn off compiled
       ;;  file loading, and so it can be in a separate namespace.
-      (let-values ([(mk trust-zos managed-recompile-only)
+      (let-values ([(mk trust-zos managed-recompile-only managed-recompile-cache-dir)
 		    ;; Load cm.rkt into its own namespace, so that cm compiles
 		    ;;  itself and its required modules in the right order
 		    ;;  (i.e., when some module requires cm or one of its
@@ -257,7 +303,11 @@
 						 (if (regexp-match? #rx#"[.]zo$" (path->bytes path))
 						     ;; It's a .zo:
                                                      (begin0
-                                                      (orig-load path modname)
+                                                      (if recompile-cache-dir
+                                                          ;; If the .zo is machine-independent, we might be
+                                                          ;; able to load a version compiled for this machine
+                                                          (try-load-cached orig-load path modname)
+                                                          (orig-load path modname))
                                                       ;; Force loading of all dependencies, which ensures
                                                       ;; a rebuild if a #lang reader changes. (Otherwise,
                                                       ;; the dependencies should be loaded already.)
@@ -307,14 +357,19 @@
 				   [trust-zos
 				    (dynamic-require 'compiler/private/cm-minimal 'trust-existing-zos)]
                                    [managed-recompile-only
-                                    (dynamic-require 'compiler/private/cm-minimal 'managed-recompile-only)])
+                                    (dynamic-require 'compiler/private/cm-minimal 'managed-recompile-only)]
+                                   [managed-recompile-cache-dir
+                                    (dynamic-require 'compiler/private/cm-minimal 'managed-recompile-cache-dir)])
 			       ;; Return the extracted functions:
-			       (lambda () (values mk trust-zos managed-recompile-only)))))))))])
+			       (lambda () (values mk trust-zos managed-recompile-only managed-recompile-cache-dir)))))))))])
 	(if (on? "--trust-zos")
             (trust-zos #t)
             (void))
         (if (on? "--recompile-only")
             (managed-recompile-only #t)
+            (void))
+        (if recompile-cache-dir
+            (managed-recompile-cache-dir (path->complete-path (string->path recompile-cache-dir)))
             (void))
 	(current-load/use-compiled (mk))))
 

@@ -30,7 +30,7 @@
     (unless (or as-correlated-linklet?
                 (equal? vm vm-bytes))
       (raise-read-error '|loading code|
-                        "virtual-machine mismatch"
+                        "machine mismatch"
                         "expected" (bytes->string/utf-8 vm-bytes)
                         "found" (bytes->string/utf-8 vm #\?)
                         "in" (let ([n (object-name in)])

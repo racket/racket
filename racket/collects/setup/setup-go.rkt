@@ -33,6 +33,9 @@
                                          (trust-existing-zos))]
                  [managed-recompile-only (or (has-x-flag? 'recompile-only)
                                              (managed-recompile-only))]
+                 [managed-recompile-cache-dir (let ([d (get-x-flag 'recompile-cache #f)])
+                                                (and d
+                                                     (path->complete-path d)))]
                  [specific-collections x-specific-collections]
                  [specific-packages x-specific-packages]
                  [archives x-archives]

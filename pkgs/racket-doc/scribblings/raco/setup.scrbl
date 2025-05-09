@@ -170,6 +170,10 @@ flags:
   recompiled from an existing @filepath{.zo} in machine-independent
   format (when compiling to a machine-dependent format).}
 
+ @item{@DFlag{recompile-cache} @nonterm{dir} --- cache module
+  recompilations (from machine-independent format to machine-dependent
+  format) in @nonterm{dir}.}
+
  @item{@DFlag{sync-docs-only} --- synchronize or move documentation
    into place to ``build'' it, but do not run or render documentation
    sources.}
@@ -394,7 +398,8 @@ debugging:
          #:changed "7.2.0.8" @elem{Added @DFlag{recompile-only}.}
          #:changed "7.9.0.3" @elem{Added @envvar{PLT_SETUP_NO_FORCE_GC},
                                    @envvar{PLT_SETUP_SHOW_TIMESTAMPS},
-                                   and @DFlag{sync-docs-only}.}]
+                                   and @DFlag{sync-docs-only}.}
+         #:changed "8.17.0.2" @elem{Added the @litchar{recompile-cache} flag.}]
 
 @; ------------------------------------------------------------------------
 
@@ -1027,6 +1032,7 @@ normal dependency counts as a build-time dependency, too).
                 [#:clean? clean? any/c #f]
                 [#:tidy? tidy? any/c #f]
                 [#:recompile-only? recompile-only? any/c #f]
+                [#:recompile-cache recompile-cache (or/c path-string? #f) #f]
                 [#:jobs jobs exact-nonnegative-integer? #f]
                 [#:fail-fast? fail-fast? any/c #f]
                 [#:get-target-dir get-target-dir (or/c #f (-> path-string?)) #f])
@@ -1089,6 +1095,9 @@ Runs @exec{raco setup} with various options:
        from source, allowing only timestamp adjustments and recompilation
        from machine-independent form}
 
+ @item{@racket[recompile-cache] --- if not @racket[#f], a directory to cache recompilations
+       from machine-independent form to machine-dependent form}
+
  @item{@racket[jobs] --- if not @racket[#f], determines the maximum number of parallel
        tasks used for setup}
 
@@ -1111,8 +1120,8 @@ sensitive to the @racket[use-compiled-file-check] parameter.
          #:changed "7.2.0.7" @elem{Added the @racket[check-pkg-deps?],
                                    @racket[fix-pkg-deps?] , and @racket[unused-pkg-deps?]
                                    arguments.}
-         #:changed "7.2.0.8" @elem{Added the @racket[recompile-only?] argument.}]}
-
+         #:changed "7.2.0.8" @elem{Added the @racket[recompile-only?] argument.}
+         #:changed "8.17.0.2" @elem{Added the @racket[recompile-cache] argument.}]}
 
 
 @subsection{@exec{raco setup} Unit}

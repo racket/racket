@@ -11,6 +11,7 @@
          linklet-import-variables
          linklet-export-variables
          linklet-add-target-machine-info
+         linklet-summarize-target-machine-info
 
          linklet-directory?
          hash->linklet-directory

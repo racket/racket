@@ -448,6 +448,9 @@ PKG_INSTALL_OPTIONS =
 # Set to `--skip` to avoid unpacking collects from the server:
 UNPACK_COLLECTS_FLAGS = 
 
+# Directory to cache recompiled modules
+RECOMPILE_CACHE =
+
 # The `test-client` atarget is an optional test step for an installer
 # build, were `TEST_PKGS` names extra packages to install, and
 # `TEST_ARGS_q` is a set of arguments to `raco test`. This step will
@@ -509,6 +512,7 @@ DISTRO_BUILD_VARS = SERVER_COMPILE_MACHINE="$(SERVER_COMPILE_MACHINE)" \
                     SERVE_DURING_CMD_qq='$(SERVE_DURING_CMD_qq)' \
                     PKG_INSTALL_OPTIONS="$(PKG_INSTALL_OPTIONS)" \
                     UNPACK_COLLECTS_FLAGS="$(UNPACK_COLLECTS_FLAGS)" \
+                    RECOMPILE_CACHE="$(RECOMPILE_CACHE)" \
                     TEST_PKGS="$(TEST_PKGS)" \
                     TEST_ARGS_q='$(TEST_ARGS_q)' \
                     CLIENT_BASE="$(CLIENT_BASE)" \

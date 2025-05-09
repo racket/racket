@@ -334,7 +334,7 @@ corresponds to a variable that is made available by the linklet in its
 instance.}
 
 @defproc[(linklet-add-target-machine-info [linklet linklet?]
-                                          [from-linklet linklet?])
+                                          [from-linklet (or linklet? hash?)])
          linklet?]{
 
 When @racket[compile-linklet] or @racket[recompile-linklet] requests a
@@ -351,7 +351,23 @@ within a linklet, in which case
 sources, but @racket[linklet-add-target-machine-info] might perform
 only a sanity check for compatibility.
 
-@history[#:added "8.12.0.3"]}
+The @racket[from-linklet] can be a linklet or a summary of a linklet's
+information as produced by @racket[linklet-summarize-target-machine-info].
+
+@history[#:added "8.12.0.3"
+         #:changed "8.17.0.3" @elem{Added support for @racket[from-linklet]
+                                    as a summary.}]}
+
+
+@defproc[(linklet-summarize-target-machine-info [from-linklet linklet?])
+         hash?]{
+
+Returns a value that has the same information as @racket[from-linklet]
+for @racket[linklet-add-target-machine-info], but in a form that can be
+portably serialized via @racketmodname[racket/fasl].
+
+@history[#:added "8.17.0.3"]}
+
 
 @defproc[(linklet-directory? [v any/c]) boolean?]{
 

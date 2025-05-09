@@ -1201,6 +1201,9 @@
                                              '())
                                          (if (managed-recompile-only)
                                              '(recompile-only)
+                                             '())
+                                         (if (managed-recompile-cache-dir)
+                                             `((recompile-cache ,(path->bytes (managed-recompile-cache-dir))))
                                              '())))
             (for/fold ([gcs 0]) ([cc planet-dirs-to-compile])
               (compile-cc cc gcs has-module-suffix?)))))
@@ -2183,8 +2186,8 @@
       (setup-printf "compiled-file roots" "")
       (for ([p roots])
         (setup-printf #f "  ~a" p))))
-  (setup-printf "main docs" "~a" (find-doc-dir))
-
+  (when (managed-recompile-cache-dir)
+    (setup-printf "recompile cache" "~a" (managed-recompile-cache-dir)))
   (when (and (not (null? (archives))) no-specific-collections?)
     (done))
 

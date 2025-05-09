@@ -245,7 +245,9 @@
         body-l])]
     [(? linklet?)
      (case (system-type 'vm)
-       [(chez-scheme)
+       [(racket linklet)
+        `(....)]
+       [else
         (define-values (fmt code literals) ((vm-primitive 'linklet-fasled-code+arguments) l))
         (cond
           [code

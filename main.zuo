@@ -87,6 +87,12 @@
     (define opts (lookup 'PLT_SETUP_OPTIONS))
     (build-shell opts (get-job-options)))
 
+  (define (get-recompile-cache-options)
+    (define cache-dir (lookup 'RECOMPILE_CACHE))
+    (if (equal? cache-dir "")
+        '()
+        (list "--recompile-cache" cache-dir)))
+
   (define (get-mcr-args)
     (list "-MCR" (~a (path->complete-path (at-source "build/zo")) ":")))
 
@@ -208,7 +214,8 @@
                                                                 ""))
                                       'PLT_SETUP_OPTIONS (build-shell
                                                           (if also? "-D" "")
-                                                          (setup-options))
+                                                          (setup-options)
+                                                          (get-recompile-cache-options))
                                       'DESTDIR (if prefix
                                                    (lookup 'DESTDIR "")
                                                    "")
@@ -309,7 +316,8 @@
     (raco (find-racket vm)
           "setup"
           args
-          (shell->strings (setup-options))))
+          (shell->strings (setup-options))
+          (get-recompile-cache-options)))
 
   (define (maybe-fetch vm)
     (when (eq? vm 'cs)
@@ -422,8 +430,8 @@
 
   ;; Catch problems due to malformed distribution-build packages
   (define recompile-options (list "--recompile-only"))
-  
-  (define auto-options (list "--skip-installed" "--deps" "search-auto" "--pkgs" (get-job-options)))
+   
+  (define auto-options (list "--skip-installed" "--deps" "search-auto" "--pkgs" (get-job-options) (get-recompile-cache-options)))
   (define user-auto-options (list "--scope" "user" auto-options))
   (define source-user-auto (list "--catalog" "build/catalog-copy" user-auto-options
                                  (shell->strings (lookup 'SERVER_PKG_INSTALL_OPTIONS))))
@@ -462,6 +470,7 @@
     (check-mode "server")
     (maybe-fetch 'cs)
     (rm* "build/zo")
+    (rm* "build/recompile-cache")
     (base token vm (add-server-compile-machine options))
     (server-from-base token options))
 
@@ -613,7 +622,7 @@
     (built-racket* "-l" "setup/winvers-change" "bundle/racket")
     (built-racket* "-l-" "distro-build/unpack-collects" (shell->strings (lookup 'UNPACK_COLLECTS_FLAGS))
                    (~a (lookup 'SERVER_URL_SCHEME) "://" svr-prt "/" (lookup 'SERVER_COLLECTS_PATH)))
-    (in-bundle-raco options "setup" "--no-user" (get-job-options) recompile-options)
+    (in-bundle-raco options "setup" "--no-user" (get-job-options) recompile-options (get-recompile-cache-options))
     (define pkg-source-flags (shell->strings (lookup 'PKG_SOURCE_MODE)))
     (in-bundle-raco options "pkg" "install" remote-inst-auto pkg-source-flags required-pkgs)
     (in-bundle-raco options "pkg" "install" remote-inst-auto pkg-source-flags (shell->strings (lookup 'PKGS)))
