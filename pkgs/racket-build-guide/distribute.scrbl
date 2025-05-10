@@ -23,6 +23,9 @@ pre-built. Then, as described below, create platform-specific
 installers on some number of client machines, each of which contacts
 the server machine to obtain pre-built packages. The server can act as
 a client, naturally, to create an installer for the server's platform.
+Instead of using separate client machines, Docker containers can be
+used to cross-compile for multiple platforms, all on a single
+``server'' machine.
 
 The distribution-build process is a collaboration between the Racket
 Git repository's top-level makefile and @|distro-build-package|.
@@ -33,14 +36,18 @@ Git repository's top-level makefile and @|distro-build-package|.
 The @exec{installers} target of the makefile will do everything to
 generate installers: build a server on the current machine, run
 clients on hosts specified via @exec{CONFIG}, and start/stop
-VirtualBox virtual machines or Docker containers that act as client
+Docker containers or VirtualBox virtual machines that act as client
 machines.
 
 If the server is already built, the @exec{installers-from-built}
 target will drive the client builds without re-building the server.
 
 See the documentation of @|distro-build-package| for a description of
-the site-configuration module and requirements on client hosts.
+the site-configuration module and requirements on client hosts. The
+@racketmodname[distro-build/main-distribution] library provides
+site-configuration helpers for creating a distribution like the one at
+the main Racket download site and using Docker containers (all on one
+host machine) to cross-compile for supported platforms.
 
 If @filepath{my-site-config.rkt} is a configuration module, then
 
@@ -99,11 +106,10 @@ string is specified for the client in the site configuration, and
 Linux), @filepath{.dmg} or @filepath{.pkg} for Mac OS, and
 @filepath{.exe} for Windows.
 
-The server supports both @racket['cs] and @racket['3m] clients by
+The server supports CS clients on different platforms and BC clients by
 creating built packages in machine-independent form (which is then
 recompiled to the client's native format, still much faster than
-compiling from source). Set @exec{SERVER_COMPILE_MACHINE=} to disable
-machine-independent format for built packages.
+compiling from source).
 
 @; ------------------------------------------------------------
 @section{Generating Installer Web Sites}
@@ -390,3 +396,16 @@ client} while passing suitable values for @exec{DIST_CATALOGS_q},
 @exec{SERVER_COLLECTS_PATH}. Supply any other suitable variables, such
 as @exec{DIST_NAME} or @exec{RELEASE_MODE}, the same as for @exec{make
 client}.
+
+@; ------------------------------------------------------------
+@section{Cleaning Up Docker Containers}
+
+When building with Docker containers as clients, the containers will
+remain after the completion of client builds, and they will be used
+for incremental updates as long as they exist. The containers can be
+removed at any time between builds. Use
+
+@commandline{make clean-clients}
+
+to clean up Docker instances and shared data that is created by client
+builds.

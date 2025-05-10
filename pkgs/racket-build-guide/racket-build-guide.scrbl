@@ -20,7 +20,7 @@ however.}
 @table-of-contents[]
 
 @include-section["build.scrbl"]
-@include-section["distribute.scrbl"]
 @include-section["contribute.scrbl"]
 @include-section["zuo.scrbl"]
 @include-section["bootstrap.scrbl"]
+@include-section["distribute.scrbl"]
