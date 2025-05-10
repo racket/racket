@@ -575,6 +575,12 @@ installers: $(ZUO)
 installers-from-built: $(ZUO)
 	$(RUN_ZUO) installers-from-built $(BUILD_VARS) $(DISTRO_BUILD_VARS)
 
+# Cleans local clients --- including Docker containers, but cannot clean remote
+# or virtual machines, if any; does not delete anything that `installers`
+# will delete, anyway, but creates a clean slate for `installers-from-built`
+clean-clients: $(ZUO)
+	$(RUN_ZUO) clean-clients $(BUILD_VARS) $(DISTRO_BUILD_VARS)
+
 describe-clients: $(ZUO)
 	$(RUN_ZUO) describe-clients $(BUILD_VARS) $(DISTRO_BUILD_VARS)
 

@@ -691,6 +691,32 @@
     (built-catalog-server token (add-server-compile-machine
                                  (hash 'serve-during-cmd (get-drive-clients-args)))))
 
+  (define (clean-clients token)
+    (check-mode "server")
+    (displayln "removing containers")
+    (define containers-file "build/containers.txt")
+    (define (split-lines s) (filter (lambda (s) (not (equal? s ""))) (string-split s "\n")))
+    (define containers
+      (if (file-exists? containers-file)
+          (split-lines (file->string containers-file))
+          '()))
+    (for-each (lambda (container)
+                (define p (shell "docker container ls -a --filter"
+                                 (~a "NAME='^" container "$'")
+                                 (hash 'stdout 'pipe)))
+                (define ls-str (fd-read (hash-ref p 'stdout) eof))
+                (process-wait (hash-ref p 'process))
+                (if (> (length (split-lines ls-str)) 1)
+                    (shell/wait "docker" "container" "rm" container)
+                    (alert (~a "no container " container))))
+              containers)
+    (define (rm/show s)
+      (displayln (~a "removing " s))
+      (rm* s))
+    (rm/show containers-file)
+    (rm/show "build/common")
+    (rm/show "build/recompile-cache"))
+
   (define (get-drive-clients-args [describe-clients? #f])
     (list "-l-" "distro-build/drive-clients"
           (if describe-clients?
@@ -802,6 +828,7 @@
 
        [:target installers () ,(lambda (token) (installers token))]
        [:target installers-from-built () ,(lambda (token) (installers-from-built token))]
+       [:target clean-clients () ,(lambda (token) (clean-clients token))]
        [:target describe-clients () ,(lambda (token) (describe-clients token))]
 
        [:target site () ,(lambda (token) (site token))]
