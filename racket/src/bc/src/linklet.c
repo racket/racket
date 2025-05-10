@@ -750,7 +750,7 @@ static Scheme_Object *linklet_summarize_target_machine_info(int argc, Scheme_Obj
 {
   if (!SAME_TYPE(SCHEME_TYPE(argv[0]), scheme_linklet_type))
     scheme_wrong_contract("linklet-summarize-target-machine-info", "linklet?", 0, argc, argv);
-  return scheme_make_hash_tree(0);
+  return (Scheme_Object *)scheme_make_hash_tree(0);
 }
 
 static Scheme_Object *instance_p(int argc, Scheme_Object **argv)
