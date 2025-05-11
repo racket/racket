@@ -4,7 +4,7 @@
 (require racket/class)
 
 (Section 'object)
-     
+
 ;; ------------------------------------------------------------
 ;; Test syntax errors
 
@@ -2453,6 +2453,109 @@
   (define sub-obj (new sub%))
   (test #t equal? (send sub-obj f 10) 10)
   (err/rt-test (send sub-obj f "hi") exn:fail:contract?))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; interface with default methods
+
+(let ()
+  (define i<%>
+    (interface ()
+      m1
+      [m2 #:default (lambda (arg)
+                      (define v (m1 arg))
+                      (test v (send this m1 arg))
+                      (list v arg))]))
+  (define cn%
+    (class* object% (i<%>)
+      (super-new)
+      (define/public (m1 arg) (+ arg 1))))
+  (define cy%
+    (class* object% (i<%>)
+      (super-new)
+      (define/public (m1 arg) (+ arg 1))
+      (define/public (m2 arg) (+ arg 2))))
+  (define pre-z%
+    (class object%
+      (super-new)
+      (define/public (m2 arg) (+ arg 2))))
+  (define cz%
+    (class* pre-z% (i<%>)
+      (super-new)
+      (define/public (m1 arg) (+ arg 1))))
+
+  (test 11 (send (new cn%) m1 10))
+  (test (list 11 10) (send (new cn%) m2 10))
+  (test 11 (send (new cy%) m1 10))
+  (test 12 (send (new cy%) m2 10))
+  (test 12 (send (new cz%) m2 10))
+
+  (err/rt-test (class* object% (i<%>)
+                 (super-new))
+               exn:fail?
+               #rx"missing interface-required method")
+  (err/rt-test (class* object% (i<%>)
+                 (super-new)
+                 (define/public (m2 arg) (+ arg 2)))
+               exn:fail?
+               #rx"missing interface-required method")
+
+  (define i2<%>
+    (interface (i<%>)
+      m3
+      [m4  (->m any/c list?) #:default (lambda (arg)
+                                         (and arg
+                                              (let ([v (m3 arg)])
+                                                (test v (send this m3 arg))
+                                                (list v arg))))]
+      [m5 #:default (lambda (arg) (m4 arg))]))
+  (define c2n%
+    (class* object% (i2<%>)
+      (super-new)
+      (define/public (m1 arg) (+ arg 1))
+      (define/public (m3 arg) (+ arg 3))))
+  (define c2y%
+    (class* object% (i2<%>)
+      (super-new)
+      (define/public (m1 arg) (+ arg 1))
+      (define/public (m2 arg) (+ arg 2))
+      (define/public (m3 arg) (+ arg 3))
+      (define/public (m4 arg) (and arg (list (+ arg 4))))))
+
+  (test 11 (send (new c2n%) m1 10))
+  (test (list 11 10) (send (new c2n%) m2 10))
+  (test 13 (send (new c2n%) m3 10))
+  (test (list 13 10) (send (new c2n%) m4 10))
+  (test 11 (send (new c2y%) m1 10))
+  (test 12 (send (new c2y%) m2 10))
+  (test 13 (send (new c2y%) m3 10))
+  (test (list 14) (send (new c2y%) m4 10))
+
+  (err/rt-test (send (new c2n%) m4 #f)
+               exn:fail:contract?
+               #rx"broke its own contract")
+  (err/rt-test (send (new c2y%) m4 #f)
+               exn:fail:contract?
+               #rx"broke its own contract")
+  (err/rt-test (send (new c2y%) m5 #f)
+               exn:fail:contract?
+               #rx"broke its own contract")
+
+  ;; ok to have default implementations from same original interface
+  (test #t interface? (interface (i<%> i2<%>)))
+  (test #t interface? (interface (i2<%> (interface (i<%>)))))
+
+  (err/rt-test (interface (i<%>
+                           (interface ()
+                             [m2 #:default (lambda (arg) "oops")])))
+               exn:fail:object?
+               #rx"conflicting default implementations")
+
+  (test #t interface? (interface (i<%>
+                                  (interface ()
+                                    [m2 #:default (lambda (arg) "oops")]))
+                        [m2 #:default (lambda (arg) "ok")]))
+
+  (void))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

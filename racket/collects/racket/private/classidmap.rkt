@@ -397,6 +397,32 @@
           "misuse of method (not in application)" 
           stx)])))))
 
+(define (make-interface-method-map set!-stx the-finder the-obj
+                                   find-method-who-stx method-stx)
+  (make-set!-transformer
+   (lambda (stx)
+     (class-syntax-protect
+      (syntax-case stx ()
+        [(set! id expr)
+         (and (identifier? (syntax id))
+              (free-identifier=? (syntax set!) set!-stx))
+         (raise-syntax-error 'interface "cannot mutate method" stx)]
+        [(id . args)
+         (identifier? (syntax id))
+         (let* ([args-stx (syntax args)]
+                [proper? (stx-list? args-stx)]
+                [flat-args-stx (if proper? args-stx (flatten-args args-stx))]
+                [method-obj-stx (find the-finder the-obj stx)])
+           (make-method-call-to-possibly-wrapped-object
+            stx #f flat-args-stx (not proper?)
+            #''id #`(#,find-method-who-stx 'interface #,method-obj-stx 'id) method-obj-stx method-obj-stx))]
+        [id
+         (identifier? (syntax id))
+         (raise-syntax-error
+          'interface
+          "misuse of method (not in application)"
+          stx)])))))
+
 (define (flatten-args orig-args)
   (let loop ([args orig-args][accum null])
     (cond
@@ -554,6 +580,7 @@
                       make-rename-super-map make-rename-inner-map
                       make-init-error-map make-init-redirect super-error-map 
                       make-with-method-map
+                      make-interface-method-map
                       flatten-args make-method-call 
                       make-method-call-to-possibly-wrapped-object
                       do-localize make-private-name
