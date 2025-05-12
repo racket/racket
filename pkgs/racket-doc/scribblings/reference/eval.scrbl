@@ -608,7 +608,7 @@ potentially different performance characteristics.
 @history[#:added "6.3"]}
 
 @defproc[(compiled-expression-add-target-machine [ce compiled-expression?]
-                                                 [other-ce compiled-expression?])
+                                                 [other-ce (or/c compiled-expression? hash?)])
          compiled-expression?]{
 
 Returns a compiled expression like @racket[ce], but augments or
@@ -619,7 +619,23 @@ from @racket[other-ce]. The intent is that @racket[ce] and
 to run a module on the compiling machine, while information from
 @racket[other-ce] is needed for cross-compiling imports of the module.
 
-@history[#:added "8.12.0.3"]}
+The @racket[other-ce] argument can be a compiled module or a summary of a module's
+information as produced by @racket[compiled-expression-summarize-target-machine-info].
+
+@history[#:added "8.12.0.3"
+         #:changed "8.17.0.3" @elem{Added support for @racket[other-ce]
+                                    as a summary.}]}
+
+
+@defproc[(compiled-expression-summarize-target-machine-info [other-ce compiled-expression?])
+         hash?]{
+
+Returns a value that has the same information as @racket[other-ce]
+for @racket[compiled-expression-add-target-machine-info], but in a form that can be
+portably serialized via @racketmodname[racket/fasl].
+
+@history[#:added "8.17.0.3"]}
+
 
 @defproc[(compiled-expression? [v any/c]) boolean?]{
 
