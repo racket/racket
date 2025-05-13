@@ -125,13 +125,14 @@ The class system allows a program to define a new class (a
 ]
 
 An @deftech{interface} is a collection of method names to be
-implemented by a class, combined with a derivation requirement. A
+implemented by a class, potentially with default implementations
+some methods, combined with a derivation requirement. A
 class @deftech{implements} an interface when it
 
 @itemize[
 
- @item{declares (or inherits) a public method for each variable in the
- interface;}
+ @item{declares (or inherits) a public method for each method in the
+ interface (that does not have a default implementation);}
 
  @item{is derived from the class required by the interface, if any; and}
 
@@ -145,6 +146,9 @@ implements. Each class also implements an implicitly-defined interface
 that is associated with the class. The implicitly-defined interface
 contains all of the class's public method names, and it requires that
 all other implementations of the interface are derived from the class.
+When a class implements an interface but does not explicitly
+declare an implementation of a method that has a default implementation
+in the interface, then the default implementation is used for the class.
 
 A new interface can @deftech{extend} one or more interfaces with
 additional method names; each class that implements the extended
@@ -168,7 +172,9 @@ interface is not an object (i.e., there are no ``meta-classes'' or
 @defform/subs[(interface (super-interface-expr ...) name-clause ...)
               ([name-clause
                 id
-                (id contract-expr)])]{
+                (id contract-expr)
+                (id #:default default-expr)
+                (id contract-expr #:default default-expr)])]{
 
 Produces an interface. The @racket[id]s must be mutually distinct.
 
@@ -183,11 +189,19 @@ superinterfaces.
 
 The result of an @racket[interface] expression is an interface that
 includes all of the specified @racket[id]s, plus all identifiers from
-the superinterfaces. Duplicate identifier names among the
-superinterfaces are ignored, but if a superinterface contains one of
-the @racket[id]s in the @racket[interface] expression, the
-@exnraise[exn:fail:object]. A given @racket[id] may be paired with
-a corresponding @racket[contract-expr].
+the superinterfaces. A given @racket[id] may be paired with
+a corresponding @racket[contract-expr], and it may have a @racket[default-expr],
+which supplies a default implementation of @racket[id] when it is not
+present in an implementing class. Each @racket[default-expr] must
+be a @racket[_method-procedure]; see @secref["clmethoddefs"].
+Duplicate identifier names among the
+superinterfaces are ignored, as long a no more than one of them provides
+a default implementation for each identifier that originated in a
+different interface. If a superinterface contains one of
+the @racket[id]s in the @racket[interface] expression, then if it has
+a @racket[default-expr], the new default implementation replaces the
+inherited one; if the @racket[id] does not have a @racket[default-expr],
+the @exnraise[exn:fail:object].
 
 If no @racket[super-interface-expr]s are provided, then the derivation
 requirement of the resulting interface is trivial: any class that
@@ -206,14 +220,19 @@ superinterfaces specify inconsistent derivation requirements, the
   (interface (file-interface<%>)
     [file-list (->m (listof (is-a?/c file-interface<%>)))]
     parent-directory))
-]}
+]
+
+@history[#:changed "8.17.0.4" @elem{Added support for @racket[#:default] method
+                                    implementations.}]}
 
 @defform/subs[(interface* (super-interface-expr ...)
                           ([property-expr val-expr] ...)
                 name-clause ...)
               ([name-clause
                 id
-                (id contract-expr)])]{
+                (id contract-expr)
+                (id #:default default-expr)
+                (id contract-expr #:default default-expr)])]{
 
 Like @racket[interface], but also associates to the interface the
 structure-type properties produced by the @racket[property-expr]s with
@@ -234,7 +253,10 @@ structure type property's guard, if any).
 (define i<%> (interface* () ([prop:custom-write
                               (lambda (obj port mode) (void))])
                method1 method2 method3))
-]}
+]
+
+@history[#:changed "8.17.0.4" @elem{Added support for @racket[#:default] method
+                                    implementations.}]}
 
 @; ------------------------------------------------------------------------
 
