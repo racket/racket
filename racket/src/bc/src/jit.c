@@ -4147,7 +4147,14 @@ static Scheme_Native_Lambda *create_native_lambda(Scheme_Lambda *lam, int clear_
   nlam->arity_code = sjc.on_demand_jit_arity_code;
   nlam->u2.orig_code = lam;
   nlam->closure_size = lam->closure_size;
-  nlam->max_let_depth = (JIT_RUNSTACK_RESERVE * sizeof(void*)) | (case_lam ? 0x2 : 0) | (clear_code_after_jit ? 0x1 : 0);
+  nlam->max_let_depth = (WORDS_TO_BYTES(JIT_RUNSTACK_RESERVE
+                                        /* If `case_lam`, need to include `lam->num_params`,
+                                           because case-lambda may need to copy args to the
+                                           runstack before it jumps to a case to force its
+                                           JIT conversion */
+                                        + lam->num_params)
+                         | (case_lam ? 0x2 : 0)
+                         | (clear_code_after_jit ? 0x1 : 0));
   nlam->tl_map = lam->tl_map;
 
   return nlam;
