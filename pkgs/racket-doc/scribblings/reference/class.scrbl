@@ -126,7 +126,7 @@ The class system allows a program to define a new class (a
 
 An @deftech{interface} is a collection of method names to be
 implemented by a class, potentially with default implementations
-some methods, combined with a derivation requirement. A
+some methods, combined with a @deftech{derivation requirement}. A
 class @deftech{implements} an interface when it
 
 @itemize[
@@ -197,28 +197,38 @@ which supplies an implementation of @racket[id] to be inherited or overridden
 in an implementing class. Each @racket[impl-expr] must
 be a @racket[_method-procedure]; see @secref["clmethoddefs"].
 Duplicate identifier names among the
-superinterfaces are ignored, as long a no more than one of them provides
+superinterfaces are ignored, as long as no more than one of them provides
 a default implementation for each identifier that originated in a
-different interface. An interface can provide an implementation using
+different interface.
+
+An interface can provide an implementation of a method using
 @racket[#:public] if no superinterface has an implementation of the
 method, or using @racket[#:override] otherwise. If multiple superinterfaces
 provide implementations of a method that originate from different ancestor
 interfaces, then the method must be overridden. The @racket[super]
 form is not supported within an interface method implementation.
 
-If no @racket[super-interface-expr]s are provided, then the derivation
-requirement of the resulting interface is trivial: any class that
+If no @racket[super-interface-expr]s are provided, then the @tech{derivation
+requirement} of the resulting interface is trivial: any class that
 implements the interface must be derived from @racket[object%].
 Otherwise, the implementation requirement of the resulting interface
 is the most specific requirement from its superinterfaces. If the
-superinterfaces specify inconsistent derivation requirements, the
-@exnraise[exn:fail:object].
+superinterfaces specify inconsistent @tech{derivation requirements}, then
+@exnraise[exn:fail:object] is raised.
 
 @examples[
 #:eval class-ctc-eval
 #:no-prompt
 (define file-interface<%>
-  (interface () open close read-byte write-byte))
+  (interface ()
+    open close read-byte write-byte
+    [append-line
+     #:public
+     (λ (bts)
+       (send this open 'append)
+       (for ([b (in-bytes bts)])
+         (send this write-byte b))
+       (send this close))]))
 (define directory-interface<%>
   (interface (file-interface<%>)
     [file-list (->m (listof (is-a?/c file-interface<%>)))]
@@ -956,7 +966,7 @@ When a method is declared with @racket[override], @racket[overment],
 or @racket[override-final], then the superclass or superinterface implementation of the
 method can be called using @racket[super] form. If multiple superinterfaces
 provide an implementation of the overridden method, then @racket[super]
-raises @exnfail[exn:fail:object] when it is evaluated.
+raises @racket[exn:fail:object] when it is evaluated.
 
 When a method is declared with @racket[pubment], @racket[augment], or
 @racket[overment], then a subclass augmenting method can be called
