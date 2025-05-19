@@ -289,7 +289,8 @@
                                 (if (equal? exe-id #xFeedFacf) 32 28)
                                 (- code-signature-lc-sz))]
                     [new-cmd-sz (if segdata
-                                    (if link-edit-64? 72 56)
+                                    (+ (if link-edit-64? 72 56)  ; segment
+                                       (if link-edit-64? 80 68)) ; section
                                     0)]
                     [outlen (if segdata
                                 (round-up-page (bytes-length segdata) machine-id)
@@ -327,8 +328,22 @@
                    ((if link-edit-64? write-xulong write-ulong) outlen out)
                    (write-ulong 0 out) ; maxprot
                    (write-ulong 0 out) ; minprot
-                   (write-ulong 0 out)
+                   (write-ulong 1 out) ; 1 segment
                    (write-ulong 4 out) ; 4 means SG_NORELOC
+                   (display (pad-segment-name
+                             ;; create secction name as downcased segment name:
+                             (string->bytes/utf-8 (string-downcase (bytes->string/utf-8 segment-name)))) out)
+                   (display (pad-segment-name segment-name) out)
+                   ((if link-edit-64? write-xulong write-ulong) out-addr out)
+                   ((if link-edit-64? write-xulong write-ulong) outlen out)
+                   (write-ulong out-offset out)
+                   (write-ulong 0 out) ; alignment
+                   (write-ulong 0 out) ; reloff
+                   (write-ulong 0 out) ; nreloc
+                   (write-ulong #x10000000 #| S_ATTR_NO_DEAD_STRIP |# out) ; flags
+                   (write-ulong 0 out) ; reserved1
+                   (write-ulong 0 out) ; reserved2
+                   (when link-edit-64? (write-ulong 0 out)) ; reserved3
                    ;; Shift command positions
                    (unless sym-tab-pos
                      (error 'mach-o "symtab position not found"))
