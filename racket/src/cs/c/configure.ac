@@ -107,14 +107,6 @@ m4_include(../ac/vm.m4)
 
 m4_include(../ac/instlib.m4)
 m4_include(../ac/sdk_show.m4)
-
-
-
-# `llvm-strip` tends to delete the segment for embedded boot files;
-# since we don't compile with debugging and there isn't much C code,
-# anyway, don't bother figuring out when `strip` is ok
-enable_strip_by_default=no
-
 m4_include(../ac/strip_show.m4)
 
 if test "${enable_iconv}" = "" ; then
