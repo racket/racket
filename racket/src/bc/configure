@@ -3722,7 +3722,7 @@ if test "${enable_ios}" != "" ; then
   esac
   case "${enable_ios}" in
     iPhoneOS|iPhoneSimulator)
-     IOS_SDK=/Applications/Xcode.app/Contents/Developer/Platforms/${enable_ios}.platform/Developer/SDKs/${enable_ios}.sdk
+     IOS_SDK="$(xcode-select -p)/Platforms/${enable_ios}.platform/Developer/SDKs/${enable_ios}.sdk"
      echo "=== Using inferred iOS SDK path ${IOS_SDK}"
      ;;
     *)
