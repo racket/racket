@@ -228,7 +228,7 @@ downloaded file and recognizes @tt{If-None-Match} headers, then
 the @tt{ETag} value can be used as a shortcut to determine that
 the file's checksum has not changed. An @tt{ETag}-to-checksum mapping
 is cached in
-@racket[(build-path (files-system-path 'cache-dir) "pkg-etag-checksum.rktd")].
+@racket[(build-path (find-system-path 'cache-dir) "pkg-etag-checksum.rktd")].
 
 @history[#:changed "8.16.0.4"
          @elem{Changed the checksum for a remote archive to download
