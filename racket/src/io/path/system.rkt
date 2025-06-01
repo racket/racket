@@ -42,7 +42,7 @@
                                        collects-dir
                                        (string->path "../collects")))]
       [(host-addon-dir) (if (eq? host-addon-dir 'inherit)
-                            (find-system-path addon-dir)
+                            (find-system-path 'addon-dir)
                             (or host-addon-dir
                                 (rktio-system-path who RKTIO_PATH_ADDON_DIR)))]
       [(orig-dir) (as-dir orig-dir)]
@@ -67,7 +67,7 @@
                                    "      'host-collects-dir 'host-config-dir 'host-addon-dir)")
                                   key)])
     (security-guard-check-file who #f '(exists))))
-                                 
+
 (define exec-file #f)
 (define (set-exec-file! p) (set! exec-file p))
 

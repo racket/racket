@@ -29319,7 +29319,7 @@
                      (1/path->directory-path p_0))
                    (if (unsafe-fx< index_0 8)
                      (if (eq? host-addon-dir 'inherit)
-                       (1/find-system-path addon-dir)
+                       (1/find-system-path 'addon-dir)
                        (let ((or-part_0 host-addon-dir))
                          (if or-part_0
                            or-part_0
