@@ -361,7 +361,7 @@
 (define (write-linklet-bundle-hash ld in)
   (write ld in))
 
-(define (read-linklet-bundle-hash in)
+(define (read-linklet-bundle-hash in cross-machine)
   (read in))
 
 ;; Convert linklet to a procedure

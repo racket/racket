@@ -531,6 +531,34 @@
             exports)       ; list of export symbol-or-pair, pair is (cons export-symbol src-symbol)
     (nongenerative #{linklet Zuquy0g9bh5vmeespyap4g-3}))
 
+  (define (linklet->vector l)
+    (vector '|#%linklet|
+            (linklet-code l)
+            (linklet-literals l)
+            (linklet-format l)
+            (linklet-preparation l)
+            (linklet-importss-abi l)
+            (linklet-exports-info l)
+            (linklet-name l)
+            (linklet-importss l)
+            (linklet-exports l)))
+
+  (define (linklet-vector? l)
+    (and (vector? l)
+         (= 10 (vector-length l))
+         (eq? '|#%linklet| (vector-ref l 0))))
+
+  (define (vector->linklet v)
+    (make-linklet (vector-ref v 1)
+                  (vector-ref v 2)
+                  (vector-ref v 3)
+                  (vector-ref v 4)
+                  (vector-ref v 5)
+                  (vector-ref v 6)
+                  (vector-ref v 7)
+                  (vector-ref v 8)
+                  (vector-ref v 9)))
+
   (define (set-linklet-code linklet code preparation)
     (make-linklet code
                   (linklet-literals linklet)

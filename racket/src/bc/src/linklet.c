@@ -152,7 +152,7 @@ void scheme_init_linklet(Scheme_Startup_Env *env)
   ADD_PRIM_W_ARITY("linklet-virtual-machine-bytes", linklet_vm_bytes, 0, 0, env);
   ADD_PRIM_W_ARITY("linklet-cross-machine-type", linklet_cross_machine_type, 1, 1, env);
   ADD_PRIM_W_ARITY("write-linklet-bundle-hash", write_linklet_bundle_hash, 2, 2, env);
-  ADD_PRIM_W_ARITY("read-linklet-bundle-hash", read_linklet_bundle_hash, 1, 1, env);
+  ADD_PRIM_W_ARITY("read-linklet-bundle-hash", read_linklet_bundle_hash, 2, 2, env);
 
   ADD_FOLDING_PRIM("instance?", instance_p, 1, 1, 1, env);
   ADD_PRIM_W_ARITY("make-instance", make_instance, 1, -1, env);

@@ -28,7 +28,8 @@
     (define vm (read-bytes vm-len in))
     (define as-correlated-linklet? (equal? vm correlated-linklet-vm-bytes))
     (unless (or as-correlated-linklet?
-                (equal? vm vm-bytes))
+                ;; Assume that anything other than `racket` is a machine type
+                (not (equal? vm #"racket")))
       (raise-read-error '|loading code|
                         "machine mismatch"
                         "expected" (bytes->string/utf-8 vm-bytes)
@@ -44,7 +45,8 @@
        (define sha-1 (read-bytes 20 in))
        (define b-ht (if as-correlated-linklet?
                         (read-correlated-linklet-bundle-hash in)
-                        (read-linklet-bundle-hash in)))
+                        (read-linklet-bundle-hash in (and (not (equal? vm vm-bytes))
+                                                          (string->symbol (bytes->string/utf-8 vm #\?))))))
        (unless (hash? b-ht)
          (raise-read-error 'read-linklet-bundle-hash
                            "bad read result"
