@@ -65,5 +65,5 @@
 
 (define (adjust-linklet-cross-preparation l cross-machine-type)
   (if cross-machine-type
-      (set-linklet-preparation l (cons 'cross l))
+      (set-linklet-preparation l (cons 'cross cross-machine-type))
       l))
