@@ -875,7 +875,8 @@
         (hash-set ((vm-primitive 'read-linklet-bundle-hash)
                    (open-input-bytes (bytes-append
                                       (integer->integer-bytes len 4 #f #f)
-                                      bstr)))
+                                      bstr))
+                   #f)
                   'opaque (opaque bstr))]
        [else
         (hash 'opaque bstr)])]))
