@@ -28,8 +28,10 @@
     (define vm (read-bytes vm-len in))
     (define as-correlated-linklet? (equal? vm correlated-linklet-vm-bytes))
     (unless (or as-correlated-linklet?
+                (equal? vm vm-bytes)
                 ;; Assume that anything other than `racket` is a machine type
-                (not (equal? vm #"racket")))
+                (equal? (equal? vm #"racket")
+                        (equal? vm-bytes #"racket")))
       (raise-read-error '|loading code|
                         "machine mismatch"
                         "expected" (bytes->string/utf-8 vm-bytes)
