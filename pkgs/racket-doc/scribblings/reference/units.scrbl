@@ -883,10 +883,10 @@ The body must match the following @racket[_module-body] grammar:
 
 @racketgrammar*[
 #:literals (require)
-[module-body (code:line (require require-spec ...) ... sig-spec ...)]
+[module-body (code:line (require require-spec ...) ... sig-elem ...)]
 ]
 
-See @secref["creatingunits"] for the grammar of @racket[_sig-spec].
+See @racket[define-signature] for the grammar of @racket[_sig-elem].
 Unlike the body of a @racketmodname[racket/unit] module, a
 @racket[require] in a @racketmodname[racket/signature] module must be
 a literal use of @racket[require].
@@ -899,7 +899,7 @@ without the directory and file suffix). If the module name ends in
 name before @racketidfont{-sig}. Otherwise, the module name serves as
 @racket[_base].
 
-A @racket[struct] form as a @racket[_sig-spec] is consistent with the
+A @racket[struct] form as a @racket[_sig-elem] is consistent with the
 definitions introduced by @racket[define-struct], as opposed to
 definitions introduced by @racket[struct]. (That behavior was originally
 a bug, but it is preserved for compatibility.)
