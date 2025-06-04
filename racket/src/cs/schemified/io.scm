@@ -15802,33 +15802,29 @@
                                    (begin
                                      (let ((n_0 (char->integer c_0)))
                                        (begin
-                                         (let ((app_0 bstr_0))
+                                         (unsafe-bytes-set!
+                                          bstr_0
+                                          pos_0
+                                          (arithmetic-shift n_0 -24))
+                                         (let ((app_0 (+ pos_0 1)))
                                            (unsafe-bytes-set!
+                                            bstr_0
                                             app_0
-                                            pos_0
-                                            (arithmetic-shift n_0 -24)))
-                                         (let ((app_0 bstr_0))
-                                           (let ((app_1 (+ pos_0 1)))
-                                             (unsafe-bytes-set!
-                                              app_0
-                                              app_1
-                                              (bitwise-and
-                                               255
-                                               (arithmetic-shift n_0 -16)))))
-                                         (let ((app_0 bstr_0))
-                                           (let ((app_1 (+ pos_0 2)))
-                                             (unsafe-bytes-set!
-                                              app_0
-                                              app_1
-                                              (bitwise-and
-                                               255
-                                               (arithmetic-shift n_0 -8)))))
-                                         (let ((app_0 bstr_0))
-                                           (let ((app_1 (+ pos_0 3)))
-                                             (unsafe-bytes-set!
-                                              app_0
-                                              app_1
-                                              (bitwise-and 255 n_0))))))
+                                            (bitwise-and
+                                             255
+                                             (arithmetic-shift n_0 -16))))
+                                         (let ((app_0 (+ pos_0 2)))
+                                           (unsafe-bytes-set!
+                                            bstr_0
+                                            app_0
+                                            (bitwise-and
+                                             255
+                                             (arithmetic-shift n_0 -8))))
+                                         (let ((app_0 (+ pos_0 3)))
+                                           (unsafe-bytes-set!
+                                            bstr_0
+                                            app_0
+                                            (bitwise-and 255 n_0)))))
                                      (for-loop_0
                                       (unsafe-fx+ idx_0 1)
                                       (+ pos_0 inc_0))))
@@ -15866,33 +15862,29 @@
                                    (begin
                                      (let ((n_0 (char->integer c_0)))
                                        (begin
-                                         (let ((app_0 bstr_0))
-                                           (let ((app_1 (+ pos_0 3)))
-                                             (unsafe-bytes-set!
-                                              app_0
-                                              app_1
-                                              (arithmetic-shift n_0 -24))))
-                                         (let ((app_0 bstr_0))
-                                           (let ((app_1 (+ pos_0 2)))
-                                             (unsafe-bytes-set!
-                                              app_0
-                                              app_1
-                                              (bitwise-and
-                                               255
-                                               (arithmetic-shift n_0 -16)))))
-                                         (let ((app_0 bstr_0))
-                                           (let ((app_1 (+ pos_0 1)))
-                                             (unsafe-bytes-set!
-                                              app_0
-                                              app_1
-                                              (bitwise-and
-                                               255
-                                               (arithmetic-shift n_0 -8)))))
-                                         (let ((app_0 bstr_0))
+                                         (let ((app_0 (+ pos_0 3)))
                                            (unsafe-bytes-set!
+                                            bstr_0
                                             app_0
-                                            pos_0
-                                            (bitwise-and 255 n_0)))))
+                                            (arithmetic-shift n_0 -24)))
+                                         (let ((app_0 (+ pos_0 2)))
+                                           (unsafe-bytes-set!
+                                            bstr_0
+                                            app_0
+                                            (bitwise-and
+                                             255
+                                             (arithmetic-shift n_0 -16))))
+                                         (let ((app_0 (+ pos_0 1)))
+                                           (unsafe-bytes-set!
+                                            bstr_0
+                                            app_0
+                                            (bitwise-and
+                                             255
+                                             (arithmetic-shift n_0 -8))))
+                                         (unsafe-bytes-set!
+                                          bstr_0
+                                          pos_0
+                                          (bitwise-and 255 n_0))))
                                      (for-loop_0
                                       (unsafe-fx+ idx_0 1)
                                       (+ pos_0 inc_0))))
@@ -18521,28 +18513,27 @@
                       (loop_0 i_0 (add1 i_0) max-length_3))
                     (let ((c_0 (string-ref str_0 i_0)))
                       (let ((escaped_0
-                             (let ((tmp_0 c_0))
-                               (if (eqv? tmp_0 '#\x22)
-                                 #vu8(92 34)
-                                 (if (eqv? tmp_0 '#\x5c)
-                                   #vu8(92 92)
-                                   (if (eqv? tmp_0 '#\x7)
-                                     #vu8(92 97)
-                                     (if (eqv? tmp_0 '#\x8)
-                                       #vu8(92 98)
-                                       (if (eqv? tmp_0 '#\x1b)
-                                         #vu8(92 101)
-                                         (if (eqv? tmp_0 '#\xc)
-                                           #vu8(92 102)
-                                           (if (eqv? tmp_0 '#\xa)
-                                             #vu8(92 110)
-                                             (if (eqv? tmp_0 '#\xd)
-                                               #vu8(92 114)
-                                               (if (eqv? tmp_0 '#\x9)
-                                                 #vu8(92 116)
-                                                 (if (eqv? tmp_0 '#\xb)
-                                                   #vu8(92 118)
-                                                   #f)))))))))))))
+                             (if (eqv? c_0 '#\x22)
+                               #vu8(92 34)
+                               (if (eqv? c_0 '#\x5c)
+                                 #vu8(92 92)
+                                 (if (eqv? c_0 '#\x7)
+                                   #vu8(92 97)
+                                   (if (eqv? c_0 '#\x8)
+                                     #vu8(92 98)
+                                     (if (eqv? c_0 '#\x1b)
+                                       #vu8(92 101)
+                                       (if (eqv? c_0 '#\xc)
+                                         #vu8(92 102)
+                                         (if (eqv? c_0 '#\xa)
+                                           #vu8(92 110)
+                                           (if (eqv? c_0 '#\xd)
+                                             #vu8(92 114)
+                                             (if (eqv? c_0 '#\x9)
+                                               #vu8(92 116)
+                                               (if (eqv? c_0 '#\xb)
+                                                 #vu8(92 118)
+                                                 #f))))))))))))
                         (if escaped_0
                           (let ((max-length_3
                                  (write-string/max

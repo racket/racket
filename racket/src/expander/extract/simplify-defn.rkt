@@ -126,6 +126,8 @@
      e]
     [(list app ...) (map simp app)]))
 
+;; We can rely on each binding within the linklet having a distinct
+;; symbolic name
 (define (simplify-definitions linklet-expr)
   (log-status "Simplifying definitions...")
   (define body (bootstrap:s-expr-linklet-body linklet-expr))
