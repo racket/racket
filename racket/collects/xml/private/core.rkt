@@ -9,20 +9,20 @@
 (define permissive-xexprs (make-parameter #f))
 
 ; Source = (make-source Location Location)
-(define-struct source (start stop) #:transparent)
+(define-struct source (start stop) #:prefab)
 
 ; Comment = (make-comment String)
-(define-struct comment (text) #:transparent)
+(define-struct comment (text) #:prefab)
 
 ; Processing-instruction = (make-p-i Location Location String String)
 ; also represents XMLDecl
-(define-struct (p-i source) (target-name instruction) #:transparent)
+(define-struct (p-i source) (target-name instruction) #:prefab)
 
 ; Pcdata = (make-pcdata Location Location String)
-(define-struct (pcdata source) (string) #:transparent)
+(define-struct (pcdata source) (string) #:prefab)
 
 ; Cdata = (make-cdata Location Location String)
-(define-struct (cdata source) (string) #:transparent)
+(define-struct (cdata source) (string) #:prefab)
 
 ; Section 2.2 of XML 1.1
 ; (XML 1.0 is slightly different and more restrictive)
