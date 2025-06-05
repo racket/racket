@@ -55,7 +55,7 @@
              ;; that the thread completed with a value
              (atomically
               (set! result-kind 'value)
-              (thread-dead! t))
+              (thread-dead! (current-thread/in-atomic)))
              (engine-block)))))
       #:custodian cust)))
   (atomically
