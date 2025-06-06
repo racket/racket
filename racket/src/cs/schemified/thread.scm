@@ -12413,84 +12413,85 @@
                     (let ((result_0 #f))
                       (let ((result-kind_0 #f))
                         (let ((ready-sema_0 (1/make-semaphore)))
-                          (let ((t_0 unsafe-undefined))
-                            (set! t_0
-                              (with-continuation-mark*
-                               push-authentic
-                               break-enabled-key
-                               (make-thread-cell #f)
-                               (let ((temp5_0
-                                      (lambda ()
-                                        (begin
-                                          (1/semaphore-wait ready-sema_0)
-                                          (let ((with-handlers-predicate7_0
-                                                 (|#%name|
-                                                  with-handlers-predicate7
-                                                  (lambda (x_0) #t))))
-                                            (let ((with-handlers-handler8_0
-                                                   (|#%name|
-                                                    with-handlers-handler8
-                                                    (lambda (x_0)
-                                                      (begin
-                                                        (set! result-kind_0
-                                                          'exn)
-                                                        (set! result_0
-                                                          x_0))))))
-                                              (let ((bpz_0
-                                                     (continuation-mark-set-first
-                                                      #f
-                                                      break-enabled-key)))
-                                                (call-handled-body
-                                                 bpz_0
-                                                 (lambda (e_0)
-                                                   (select-handler/no-breaks
-                                                    e_0
+                          (let ((t_0
+                                 (with-continuation-mark*
+                                  push-authentic
+                                  break-enabled-key
+                                  (make-thread-cell #f)
+                                  (let ((temp5_0
+                                         (lambda ()
+                                           (begin
+                                             (1/semaphore-wait ready-sema_0)
+                                             (let ((with-handlers-predicate7_0
+                                                    (|#%name|
+                                                     with-handlers-predicate7
+                                                     (lambda (x_0) #t))))
+                                               (let ((with-handlers-handler8_0
+                                                      (|#%name|
+                                                       with-handlers-handler8
+                                                       (lambda (x_0)
+                                                         (begin
+                                                           (set! result-kind_0
+                                                             'exn)
+                                                           (set! result_0
+                                                             x_0))))))
+                                                 (let ((bpz_0
+                                                        (continuation-mark-set-first
+                                                         #f
+                                                         break-enabled-key)))
+                                                   (call-handled-body
                                                     bpz_0
-                                                    (list
-                                                     (cons
-                                                      with-handlers-predicate7_0
-                                                      with-handlers-handler8_0))))
-                                                 (lambda ()
-                                                   (with-continuation-mark*
-                                                    authentic
-                                                    break-enabled-key
-                                                    init-break-cell_0
-                                                    (begin
-                                                      (set! result_0
-                                                        (call-with-continuation-barrier
-                                                         (lambda ()
-                                                           (call-with-values
+                                                    (lambda (e_0)
+                                                      (select-handler/no-breaks
+                                                       e_0
+                                                       bpz_0
+                                                       (list
+                                                        (cons
+                                                         with-handlers-predicate7_0
+                                                         with-handlers-handler8_0))))
+                                                    (lambda ()
+                                                      (with-continuation-mark*
+                                                       authentic
+                                                       break-enabled-key
+                                                       init-break-cell_0
+                                                       (begin
+                                                         (set! result_0
+                                                           (call-with-continuation-barrier
                                                             (lambda ()
-                                                              (call-with-continuation-prompt
-                                                               thunk2_0
-                                                               (default-continuation-prompt-tag)
-                                                               (lambda (thunk_0)
-                                                                 (abort-current-continuation
+                                                              (call-with-values
+                                                               (lambda ()
+                                                                 (call-with-continuation-prompt
+                                                                  thunk2_0
                                                                   (default-continuation-prompt-tag)
-                                                                  thunk_0))))
-                                                            list))))
-                                                      (begin
-                                                        (start-atomic)
-                                                        (begin0
-                                                          (begin
-                                                            (set! result-kind_0
-                                                              'value)
-                                                            (thread-dead! t_0))
-                                                          (end-atomic)))
-                                                      (engine-block))))))))))))
-                                 (do-make-thread.1
-                                  #f
-                                  cust_0
-                                  #f
-                                  #f
-                                  'call-in-nested-thread
-                                  temp5_0))))
+                                                                  (lambda (thunk_0)
+                                                                    (abort-current-continuation
+                                                                     (default-continuation-prompt-tag)
+                                                                     thunk_0))))
+                                                               list))))
+                                                         (begin
+                                                           (start-atomic)
+                                                           (begin0
+                                                             (begin
+                                                               (set! result-kind_0
+                                                                 'value)
+                                                               (thread-dead!
+                                                                (current-thread/in-atomic)))
+                                                             (end-atomic)))
+                                                         (engine-block))))))))))))
+                                    (do-make-thread.1
+                                     #f
+                                     cust_0
+                                     #f
+                                     #f
+                                     'call-in-nested-thread
+                                     temp5_0)))))
                             (begin
                               (start-atomic)
                               (begin
                                 (begin0
-                                  (let ((app_0 (current-thread/in-atomic)))
-                                    (set-thread-forward-break-to! app_0 t_0))
+                                  (set-thread-forward-break-to!
+                                   (current-thread/in-atomic)
+                                   t_0)
                                   (end-atomic))
                                 (begin
                                   (1/semaphore-post ready-sema_0)
