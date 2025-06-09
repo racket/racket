@@ -754,7 +754,8 @@
                   config+mode (lookup 'PKGS)
                   "build/built/catalog" "build/native/catalog")
     (built-racket options "-l-" "distro-build/assemble-site"
-                  config+mode (lookup 'DIST_BASE)))
+                  config+mode (lookup 'DIST_BASE)
+                  (build-shell (lookup 'PKGS) (lookup 'TEST_PKGS))))
 
   (define (snapshot-site token)
     (site token)
