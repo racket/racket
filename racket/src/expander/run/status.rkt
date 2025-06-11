@@ -1,12 +1,18 @@
 #lang racket/base
 
 (provide log-status
-         lines)
+         lines
+         current-status-output-port)
 
 (define stdout (current-output-port))
 
+(define current-status-output-port
+  (make-parameter stdout
+                  (lambda (v) (if (output-port? v) v (raise-argument-error "output-port?" v)))
+                  'current-status-output-port))
+
 (define (log-status fmt . args)
-  (apply fprintf stdout (string-append fmt "\n") args))
+  (apply fprintf (current-status-output-port) (string-append fmt "\n") args))
 
 (define (lines prefix vals)
   (apply
