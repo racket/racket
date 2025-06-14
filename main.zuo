@@ -491,7 +491,7 @@
              (shell/wait "docker run -it --rm"
                          "-v" (string->shell (~a (path->complete-path "build") ":/build"))
                          image
-                         "-c" (string->shell "/bin/rm -rf /build/recompile-cache/*")))))
+                         "-c" (string->shell (~a "/bin/rm -rf /build/recompile-cache/" f "/*"))))))
        (ls cache-dir))
       (rm* cache-dir))
     (base token vm (add-server-compile-machine options))
