@@ -470,7 +470,30 @@
     (check-mode "server")
     (maybe-fetch 'cs)
     (rm* "build/zo")
-    (rm* "build/recompile-cache")
+    (define cache-dir "build/recompile-cache")
+    (when (directory-exists? cache-dir)
+      (for-each
+       (lambda (f)
+         (let ([f (build-path cache-dir f)])
+           (when (directory-exists? f)
+             ;; Use Docker to remove directories that were created by
+             ;; Docker instances. This avoids permission issues by
+             ;; using whatever user is set up in the writing Docker
+             ;; image. A default Docker image to use for removal is
+             ;; hardwired, but distro-build should record a recommended
+             ;; Docker image to use; the redommendation for "<dir>"
+             ;; is in "<dir>.txt".
+             (define image-file (path-replace-extension f ".txt"))
+             (define image
+               (or (and (file-exists? image-file)
+                        (string-trim (file->string image-file) "\n"))
+                   "racket/distro-build:debian10"))
+             (shell/wait "docker run -it --rm"
+                         "-v" (string->shell (~a (path->complete-path "build") ":/build"))
+                         image
+                         "-c" (string->shell "/bin/rm -rf /build/recompile-cache/*")))))
+       (ls cache-dir))
+      (rm* cache-dir))
     (base token vm (add-server-compile-machine options))
     (server-from-base token options))
 
