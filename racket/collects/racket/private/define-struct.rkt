@@ -143,6 +143,17 @@
       (raise-argument-error name "symbol?" what))
     what)
 
+  (define (check-property-alist name what)
+    (unless (and (list? what)
+                 (andmap (lambda (elem)
+                           (and (pair? elem)
+                                (struct-type-property? (car elem))))
+                         what))
+      (raise-argument-error name
+                            "(listof (cons struct-type-property? any/c))"
+                            what))
+    what)
+
   (define-syntax (define-struct* stx)
     (syntax-case stx ()
       [(_ . rest)
@@ -260,6 +271,7 @@
                            (#:inspector . #f)
                            (#:auto-value . #f)
                            (#:props . ())
+                           (#:proplists . ())
                            (#:mutable . #f)
                            (#:guard . #f)
                            (#:constructor-name . #f)
@@ -311,6 +323,17 @@
                                '#:props
                                (cons (cons (cadr p) (caddr p))
                                      (lookup config '#:props)))
+                nongen?)]
+         [(eq? '#:properties (syntax-e (car p)))
+          (check-exprs 1 p #f)
+          (when nongen?
+            ;; no error, since `#:properties null` should be allowed for prefab
+            (void))
+          (loop (cddr p)
+                (extend-config config
+                               '#:proplists
+                               (cons #`(check-property-alist '#,fm #,(cadr p))
+                                     (lookup config '#:proplists)))
                 nongen?)]
          [(eq? '#:methods (syntax-e (car p)))
           ;; #:methods gen:foo [(define (meth1 x ...) e ...) ...]
@@ -494,7 +517,7 @@
                          (car field-stxes))]
                        [else
                         (loop (cdr fields) (cdr field-stxes) #f)]))])
-               (let*-values ([(inspector super-expr props auto-val guard ctor-name ctor-only? 
+               (let*-values ([(inspector super-expr props proplists auto-val guard ctor-name ctor-only?
                                          reflect-name-expr mutable?
                                          omit-define-values? omit-define-syntaxes?
                                          info-name name-only?)
@@ -512,6 +535,7 @@
                                                 (cons (cons #'prop:sealed #'#t)
                                                       l)
                                                 l)))
+                                        (lookup config '#:proplists)
                                         (lookup config '#:auto-value)
                                         (lookup config '#:guard)
                                         (lookup config '#:constructor-name)
@@ -672,11 +696,18 @@
                                                                   #,(- (length fields) auto-count)
                                                                   #,auto-count
                                                                   #,auto-val
-                                                                  #,(if (null? props)
-                                                                        #'null
-                                                                        #`(list #,@(map (lambda (p)
-                                                                                          #`(cons #,(car p) #,(cdr p)))
-                                                                                        props)))
+                                                                  #,(cond
+                                                                     [(and (null? props) (null? proplists))
+                                                                      #'null]
+                                                                     [(null? proplists)
+                                                                      #`(list #,@(map (lambda (p)
+                                                                                        #`(cons #,(car p) #,(cdr p)))
+                                                                                      props))]
+                                                                     [else
+                                                                      #`(list* #,@(map (lambda (p)
+                                                                                         #`(cons #,(car p) #,(cdr p)))
+                                                                                       props)
+                                                                               (append #,@proplists))])
                                                                   #,(or inspector
                                                                         #`(current-inspector))
                                                                   #f

@@ -1240,6 +1240,22 @@
 
 ;; ----------------------------------------
 
+(let ()
+  (define-values (prop:a a? a-ref) (make-struct-type-property 'a))
+  (define-values (prop:b b? b-ref) (make-struct-type-property 'b))
+  (define-values (prop:c c? c-ref) (make-struct-type-property 'c))
+  (struct s (x y)
+    #:properties (list (cons prop:a "abc") (cons prop:b "xyz"))
+    #:property prop:procedure (lambda (self arg) arg)
+    #:properties (list (cons prop:c 'here)))
+
+  (test "abc" a-ref (s 1 2))
+  (test "xyz" b-ref (s 1 2))
+  (test 'here c-ref (s 1 2))
+  (test 123 (s 1 2) 123))
+
+;; ----------------------------------------
+
 (require (for-syntax racket/struct-info))
 
 (let ()
