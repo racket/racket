@@ -77,6 +77,12 @@
         (hash 'jobs n-jobs)
         (hash)))
 
+  (define (derived-options)
+    (define r (get-provided-racket))
+    (if (equal? r "")
+        (hash)
+        (hash 'racket (or (find-executable-path r) r))))
+
   (define (get-job-options)
     (define jobs (get-jobs))
     (if jobs
@@ -797,7 +803,8 @@
       (let ([src (at-source src)])
         (build (find-target target-name
                             ((dynamic-require src 'targets-at)
-                             (make-at-dir (path-only src))))
+                             (make-at-dir (path-only src))
+                             (derived-options)))
                token)))
     (build-one "racket/src/rktio/build.zuo" "rktio-rktl")
     (build-one "racket/src/expander/main.zuo" "expander")
