@@ -1252,7 +1252,16 @@
   (test "abc" a-ref (s 1 2))
   (test "xyz" b-ref (s 1 2))
   (test 'here c-ref (s 1 2))
-  (test 123 (s 1 2) 123))
+  (test 123 (s 1 2) 123)
+
+  ;; Allow #:properties with #:prefab, dynamic error if non-empty
+  (struct ps1 (x y) #:prefab #:properties null)
+  (struct ps2 (x [y #:mutable]) #:properties null #:prefab)
+  (err/rt-test (let ()
+                 (struct pbad (x y)
+                   #:prefab
+                   #:properties (list (cons prop:procedure void)))
+                 (void))))
 
 ;; ----------------------------------------
 
