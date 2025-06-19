@@ -103,7 +103,7 @@
     (list "-MCR" (~a (path->complete-path (at-source "build/zo")) ":")))
 
   ;; ------------------------------------------------------------
-  ;; pb setup
+  ;; check consistent use of checkout
 
   (define (check-mode mode)
     (define mode-file (at-source "racket/src/build/checkout-mode"))
@@ -327,8 +327,10 @@
 
   (define (maybe-fetch vm)
     (when (eq? vm 'cs)
-      (when (andmap (lambda (key) (equal? (lookup key) ""))
-                    '(RACKET BOOTFILE_RACKET PLAIN_RACKET SCHEME SCHEME_DIR CS_HOST_WORKAREA_PREFIX))
+      (when (or (andmap (lambda (key) (equal? (lookup key) ""))
+                        '(RACKET BOOTFILE_RACKET PLAIN_RACKET SCHEME SCHEME_DIR CS_HOST_WORKAREA_PREFIX))
+                ;; include `racket/src/ChezScheme/boot/pb` in source:
+                (not (equal? (lookup 'SOURCE_MODE) "")))
         (pb-manage 'fetch))))
 
   (define (base token vm [options (hash)])
