@@ -392,7 +392,7 @@ END
      
      (test-read-xml/element/exn
       "<!-- comment --><br />"
-      "read-xml: parse-error: expected root element - received (comment ")
+      "read-xml: parse-error: expected root element - received '#s(comment \" comment \"")
      
      (test-read-xml/element
       "<title><![CDATA[hello world[mp3]]]></title>"
@@ -520,7 +520,7 @@ END
      
      (test-syntax:read-xml/element/exn
       "<!-- comment --><br />"
-      "read-xml: parse-error: expected root element - received (comment ")
+      "read-xml: parse-error: expected root element - received '#s(comment \" comment \"")
 
      (check-equal?
       (syntax-source
