@@ -410,7 +410,22 @@ END
         'title
         (list)
         (list (make-cdata (make-source (make-location 1 7 8) (make-location 1 20 21)) "<![CDATA[]]]>"))))
-     
+
+     (test-read-xml/element
+      "<x> &lt;&gt;&amp;&apos;&quot; </x>"
+      '(make-element
+        (make-source (make-location 1 0 1) (make-location 1 34 35))
+        'x
+        (list)
+        (list
+         (make-pcdata (make-source (make-location 1 3 4) (make-location 1 4 5)) " ")
+         (make-pcdata (make-source (make-location 1 4 5) (make-location 1 8 9)) "<")
+         (make-pcdata (make-source (make-location 1 8 9) (make-location 1 12 13)) ">")
+         (make-pcdata (make-source (make-location 1 12 13) (make-location 1 17 18)) "&")
+         (make-pcdata (make-source (make-location 1 17 18) (make-location 1 23 24)) "'")
+         (make-pcdata (make-source (make-location 1 23 24) (make-location 1 29 30)) "\"")
+         (make-pcdata (make-source (make-location 1 29 30) (make-location 1 30 31)) " "))))
+
      ; XXX need more read-xml/element tests
      
      )
@@ -549,6 +564,23 @@ END
      (test-write-xml "<root>&nbsp;</root>")
      (test-write-xml "<root>&#40;</root>")
      (test-write-xml "<br />")
+     (test-equal?
+      "top external-dtd type ignores system field"
+      (with-output-to-string
+        (λ ()
+          (write-xml (document (prolog '() (document-type 'html (external-dtd "ignored") #f) '())
+                               (element #f #f 'html '() '())
+                               '()))))
+      "<!DOCTYPE html>\n<html />")
+     (test-equal?
+      "no-external-dtd"
+      (with-output-to-string
+        (λ ()
+          (write-xml (document (prolog '() (document-type 'html no-external-dtd #f) '())
+                               (element #f #f 'html '() '())
+                               '()))))
+      "<!DOCTYPE html>\n<html />")
+
      ; XXX need more write-xml tests
      )
     

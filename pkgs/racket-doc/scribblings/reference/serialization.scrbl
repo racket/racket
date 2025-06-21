@@ -40,7 +40,7 @@ by deserialization produces a value with the same graph structure and
 mutability as the original value, but the serialized value is a plain
 tree (i.e., no sharing).
 
-The following kinds of values are serializable:
+The following kinds of values are @deftech{serializable}:
 
 @itemize[
 
@@ -575,10 +575,10 @@ transfers the field values of this instance into @racket[x].}
 
 @; ----------------------------------------------------------------------
 
-@defthing[prop:serializable property?]{
+@defthing[prop:serializable struct-type-property?]{
 
 This property identifies structures and structure types that are
-serializable. The property value should be constructed with
+@tech{serializable}. The property value should be constructed with
 @racket[make-serialize-info].}
 
 @; ----------------------------------------------------------------------
