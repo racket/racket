@@ -37,6 +37,9 @@
 ; Misc = Comment
 ;      |  Processing-instruction
 
+; Pcdata = (make-pcdata Location Location String)
+(define-struct (pcdata source) (string) #:transparent)
+
 ; Entity = (make-entity Location Location (U Nat Symbol))
 (define-struct (entity source) (text) #:transparent)
 

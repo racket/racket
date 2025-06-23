@@ -71,7 +71,7 @@
     [(string? x) (make-pcdata 'racket 'racket x)]
     [(or (symbol? x) (exact-nonnegative-integer? x))
      (make-entity 'racket 'racket x)]
-    [(or (comment? x) (p-i? x) (cdata? x) (pcdata? x)) x]
+    [(or (comment? x) (p-i? x) (cdata? x)) x]
     [else ;(error 'xexpr->xml "malformed xexpr ~e" x)
      x]))
 

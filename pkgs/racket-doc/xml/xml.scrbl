@@ -173,12 +173,21 @@ A @racket[valid-char?] represents a numeric entity. For example,
 
 A @racket[_cdata] is an instance of the @racket[cdata] structure type,
 and a @racket[_misc] is an instance of the @racket[comment] or
-@racket[p-i] structure types.}
+@racket[p-i] structure types.
+
+@history[
+ #:changed "8.17.0.5"
+ @elem{Fixed a bug that had accepted instances of the @racket[pcdata] structure type.}
+]}
 
 @defthing[xexpr/c contract?]{
  A contract that is like @racket[xexpr?] except produces a better error
  message when the value is not an @tech{X-expression}.
-}
+
+@history[
+ #:changed "8.17.0.5"
+ @elem{Fixed a bug that had accepted instances of the @racket[pcdata] structure type.}
+]}
 
 @; ----------------------------------------------------------------------
 
@@ -400,7 +409,11 @@ is the part of @racket[v] that caused the exception.
   (validate-xexpr '(doc () "over " (em () "9000") "!"))
   (validate-xexpr #\newline)
 ]
-}
+
+@history[
+ #:changed "8.17.0.5"
+ @elem{Fixed a bug that had accepted instances of the @racket[pcdata] structure type.}
+]}
 
 @defproc[(correct-xexpr? [v any/c]
                          [success-k (-> any/c)]
@@ -411,7 +424,12 @@ Like @racket[validate-xexpr], except that @racket[success-k] is called
 on each valid leaf, and @racket[fail-k] is called on invalid leaves;
 the @racket[fail-k] may return a value instead of raising an exception
 or otherwise escaping. Results from the leaves are combined with
-@racket[and] to arrive at the final result.}
+@racket[and] to arrive at the final result.
+
+@history[
+ #:changed "8.17.0.5"
+ @elem{Fixed a bug that had accepted instances of the @racket[pcdata] structure type.}
+]}
 
 @; ----------------------------------------------------------------------
 
