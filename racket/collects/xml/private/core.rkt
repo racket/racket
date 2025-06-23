@@ -18,9 +18,6 @@
 ; also represents XMLDecl
 (define-struct (p-i source) (target-name instruction) #:transparent)
 
-; Pcdata = (make-pcdata Location Location String)
-(define-struct (pcdata source) (string) #:transparent)
-
 ; Cdata = (make-cdata Location Location String)
 (define-struct (cdata source) (string) #:transparent)
 

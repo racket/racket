@@ -153,7 +153,8 @@ END
      (test-not-xexpr? '(a ((b)) c))
      (test-xexpr? (make-cdata #f #f "unquoted <b>"))
      (test-xexpr? (make-comment "Comment!"))
-     (test-xexpr? (make-pcdata #f #f "quoted <b>"))
+     (test-xexpr? "quoted <b>")
+     (test-not-xexpr? (make-pcdata #f #f "quoted <b>"))
      
      (test-not-xexpr? (list 'a (list (list 'href)) "content"))
      
@@ -922,7 +923,7 @@ XML
          (test-validate-xexpr 64)
          (test-validate-xexpr 'nbsp)
          (test-validate-xexpr "string")
-         (test-validate-xexpr (make-pcdata #f #f "pcdata"))
+         (test-validate-xexpr/exn (make-pcdata #f #f "pcdata") (make-pcdata #f #f "pcdata"))
          (test-validate-xexpr (make-cdata #f #f "cdata"))
          (test-validate-xexpr (make-comment "comment"))
          (test-validate-xexpr (make-p-i #f #f 's1 "s2"))
