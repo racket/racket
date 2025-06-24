@@ -280,9 +280,10 @@
    (define syslog-logging-arg #f)
    (define runtime-for-init? #t)
    (define exit-value 0)
+   (define addon-dir #f)
    (define host-collects-dir #f)
    (define host-config-dir #f)
-   (define addon-dir #f)
+   (define host-addon-dir 'inherit)
    (define rev-collects-post-extra '())
 
    (define (no-init! saw)
@@ -493,10 +494,12 @@
                 (set! init-config-dir (path->complete-path (->path (find-original-bytes config-path))))
                 (loop rest-args))]
              [("-C" "--cross")
-              (set! host-config-dir init-config-dir)
-              (set! host-collects-dir init-collects-dir)
-              (set-cross-mode! 'force)
-              (loop (cdr args))]
+              (unless (saw? saw 'cross)
+                (set! host-config-dir init-config-dir)
+                (set! host-collects-dir init-collects-dir)
+                (set! host-addon-dir addon-dir)
+                (set-cross-mode! 'force))
+              (flags-loop (cdr args) (see saw 'cross))]
              [("-U" "--no-user-path")
               (set! user-specific-search-paths? #f)
               (loop (cdr args))]
@@ -900,6 +903,10 @@
                 (getenv-bytes "PLTADDONDIR"))])
      (when a
        (set-addon-dir! (path->complete-path (->path a)))))
+   (unless (eq? host-addon-dir 'inherit)
+     (let ([a (or host-addon-dir
+                  (getenv-bytes "PLTADDONDIR"))])
+       (set-host-addon-dir! (and a (path->complete-path (->path a))))))
 
    (when (getenv "PLT_STATS_ON_BREAK")
      (keyboard-interrupt-handler

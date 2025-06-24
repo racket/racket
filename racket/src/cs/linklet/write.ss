@@ -1,7 +1,10 @@
 
 (define (linklet-virtual-machine-bytes)
-  ;; #"chez-scheme"
-  #vu8(99 104 101 122 45 115 99 104 101 109 101))
+  (string->utf8 (symbol->string (machine-type))))
+
+(define (linklet-cross-machine-type l)
+  (let ([prep (linklet-preparation l)])
+    (and (pair? prep) (cdr prep))))
 
 (define (write-linklet-bundle-hash ht dest-o)
   (let-values ([(ls cross-machine) (encode-linklet-literals ht)])
@@ -38,7 +41,7 @@
                         [else v])])
            (when (linklet? new-v)
              (linklet-pack-exports-info! new-v))
-           (let ([accum (cons* key new-v accum)])
+           (let ([accum (cons* key (to-portable new-v) accum)])
              (loop (hash-iterate-next orig-ht i)
                    accum
                    (or cross-machine
@@ -57,3 +60,14 @@
   (case (linklet-preparation l)
     [(callable lazy)
      (raise-arguments-error 'write "linklet is not serializable")]))
+
+(define (to-portable v)
+  (cond
+    [(linklet? v)
+     ;; Linklet records have a different shape across platforms (at least
+     ;; for 32-bit versus 64-bit]. Convert to a shape that can be unfasled
+     ;; on any platform. It might also work to omit RTDs in the fasled
+     ;; form and rely on matching field counts, but this approach is a
+     ;; little more direct.
+     (linklet->vector v)]
+    [else v]))

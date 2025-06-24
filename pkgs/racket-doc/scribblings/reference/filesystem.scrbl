@@ -161,6 +161,15 @@ by @racket[kind], which must be one of the following:
  On Mac OS, the default is @filepath{Library/Racket} within the
  @tech{user's home directory}.}
 
+ @item{@indexed-racket['host-addon-dir] --- like
+ @racket['addon-dir], but when cross-platform build mode has been
+ selected (through the @Flag{C} or @DFlag{cross} argument to
+ @exec{racket}; see @secref["mz-cmdline"]), the result refers to a
+ directory for the current system's installation, instead of for the
+ target system.
+
+ @history[#:added "8.17.0.2"]}
+
  @item{@indexed-racket['cache-dir] --- a directory for storing
  user-specific caches. The directory might not exist.
 

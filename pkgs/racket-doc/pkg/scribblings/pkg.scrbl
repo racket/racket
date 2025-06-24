@@ -228,7 +228,7 @@ downloaded file and recognizes @tt{If-None-Match} headers, then
 the @tt{ETag} value can be used as a shortcut to determine that
 the file's checksum has not changed. An @tt{ETag}-to-checksum mapping
 is cached in
-@racket[(build-path (files-system-path 'cache-dir) "pkg-etag-checksum.rktd")].
+@racket[(build-path (find-system-path 'cache-dir) "pkg-etag-checksum.rktd")].
 
 @history[#:changed "8.16.0.4"
          @elem{Changed the checksum for a remote archive to download
@@ -671,6 +671,9 @@ sub-commands.
         are properly built), but if a compilation error is reported, it will be after the package
         is installed.}
 
+  @item{@DFlag{recompile-cache} @nonterm{dir} --- cache module recompilations (from machine-independent
+       format to machine-dependent format) in @nonterm{dir}.}
+
   @item{@DFlag{jobs} @nonterm{n} or @Flag{j} @nonterm{n} --- Installs and runs @exec{raco setup} with @nonterm{n} parallel jobs.}
 
   @item{@DFlag{batch} --- Disables @deftech{interactive mode}, suppressing potential prompts for a user
@@ -690,7 +693,8 @@ sub-commands.
          #:changed "7.2.0.8" @elem{Added the @DFlag{recompile-only} flag.}
          #:changed "7.4.0.4" @elem{Added the @DFlag{no-docs}, @Flag{D} flags.}
          #:changed "7.6.0.14" @elem{Allowed multiple @DFlag{catalog} flags.}
-         #:changed "8.0.0.13" @elem{Added @litchar{git-url} as a @DFlag{type} option.}]}
+         #:changed "8.0.0.13" @elem{Added @litchar{git-url} as a @DFlag{type} option.}
+         #:changed "8.17.0.2" @elem{Added the @litchar{recompile-cache} flag.}]}
 
 
 @subcommand{@command/toc{update} @nonterm{option} ... @nonterm{pkg-source} ...
@@ -807,6 +811,7 @@ the given @nonterm{pkg-source}s.
  @item{@DFlag{no-setup} --- Same as for @command-ref{install}.}
  @item{@DFlag{no-docs} or @Flag{D} --- Same as for @command-ref{install}.}
  @item{@DFlag{recompile-only} --- Same as for @command-ref{install}.}
+ @item{@DFlag{recompile-cache} @nonterm{dir} --- Same as for @command-ref{install}.}
  @item{@DFlag{jobs} @nonterm{n} or @Flag{j} @nonterm{n} --- Same as for @command-ref{install}.}
  @item{@DFlag{batch} --- Same as for @command-ref{install}.}
  @item{@DFlag{no-trash} --- Same as for @command-ref{install}.}
@@ -823,7 +828,8 @@ the given @nonterm{pkg-source}s.
          #:changed "6.90.0.27" @elem{Added the @DFlag{unclone} flag.}
          #:changed "7.2.0.8" @elem{Added the @DFlag{recompile-only} flag.}
          #:changed "7.4.0.4" @elem{Added the @DFlag{no-docs}, @Flag{D} flags.}
-         #:changed "7.6.0.14" @elem{Allowed multiple @DFlag{catalog} flags.}]}
+         #:changed "7.6.0.14" @elem{Allowed multiple @DFlag{catalog} flags.}
+         #:changed "8.17.0.2" @elem{Added the @litchar{recompile-cache} flag.}]}
 
 @subcommand{@command/toc{uninstall} @nonterm{option} ... @nonterm{pkg} ...
 --- Attempts to uninstall the given packages. By default, if a package is the dependency
@@ -853,6 +859,7 @@ the given @nonterm{pkg}s.
  @item{@DFlag{no-setup} --- Same as for @command-ref{install}.}
  @item{@DFlag{no-docs} or @Flag{D} --- Same as for @command-ref{install}.}
  @item{@DFlag{recompile-only} --- Same as for @command-ref{install}.}
+ @item{@DFlag{recompile-cache} @nonterm{dir} --- Same as for @command-ref{install}.}
  @item{@DFlag{jobs} @nonterm{n} or @Flag{j} @nonterm{n} --- Same as for @command-ref{install}.}
  @item{@DFlag{batch} --- Same as for @command-ref{install}.}
  @item{@DFlag{no-trash} --- Same as for @command-ref{install}.}
@@ -863,7 +870,8 @@ the given @nonterm{pkg}s.
          #:changed "6.4.0.14" @elem{Added the @DFlag{dry-run} flag.}
          #:changed "7.2.0.8" @elem{Added the @DFlag{recompile-only} flag.}
          #:changed "7.4.0.4" @elem{Added the @DFlag{no-docs}, @Flag{D} flags.}
-         #:changed "8.14.0.2" @elem{Renamed from @command-ref{remove} to @command-ref{uninstall}.}]}
+         #:changed "8.14.0.2" @elem{Renamed from @command-ref{remove} to @command-ref{uninstall}.}
+         #:changed "8.17.0.2" @elem{Added the @litchar{recompile-cache} flag.}]}
 
 @subcommand{@command/toc{remove} --- A synonym for @command-ref{uninstall}.
 
@@ -953,13 +961,15 @@ package is created.
   @item{@DFlag{no-setup} --- Same as for @command-ref{install}.}
   @item{@DFlag{no-docs} or @Flag{D} --- Same as for @command-ref{install}.}
   @item{@DFlag{recompile-only} --- Same as for @command-ref{install}.}
+ @item{@DFlag{recompile-cache} @nonterm{dir} --- Same as for @command-ref{install}.}
   @item{@DFlag{jobs} @nonterm{n} or @Flag{j} @nonterm{n} --- Same as for @command-ref{install}.}
  ]
 
 @history[#:changed "6.4.0.14" @elem{Added the @DFlag{dry-run} flag.}
          #:changed "7.2.0.8" @elem{Added the @DFlag{recompile-only} flag.}
          #:changed "7.4.0.4" @elem{Added the @DFlag{no-docs}, @Flag{D} flags.}
-         #:changed "7.6.0.14" @elem{Allowed multiple @DFlag{catalog} flags.}]}
+         #:changed "7.6.0.14" @elem{Allowed multiple @DFlag{catalog} flags.}
+         #:changed "8.17.0.2" @elem{Added the @litchar{recompile-cache} flag.}]}
 
 @subcommand{@command/toc{create} @nonterm{option} ... @nonterm{directory-or-package}
 --- Bundles a package into an archive. Bundling

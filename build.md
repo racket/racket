@@ -9,6 +9,12 @@ distributions like the ones at
 [https://download.racket-lang.org](https://download.racket-lang.org),
 and how to contribute to Racket development.
 
+If you’re reading this document in Markdown form, you may find the
+[online HTML
+version](https://docs.racket-lang.org/racket-build-guide/index.html)
+more readable. There’s no guarantee that the online version is still
+available or matches the Racket sources you’re using, however.
+
 > [1 Building Racket from Source](#1-building-racket-from-source)  
 >> [1.1 Git Repository versus Source Distribution](#11-git-repository-versus-source-distribution)  
 >> [1.2 Git Repository Build Modes](#12-git-repository-build-modes)  
@@ -21,22 +27,23 @@ and how to contribute to Racket development.
 >>> [1.7.2 Installing Packages](#172-installing-packages)  
 >>> [1.7.3 Linking Packages for In-Place Development Mode](#173-linking-packages-for-in-place-development-mode)  
   
-> [2 Distributing Racket Variants](#2-distributing-racket-variants)  
->> [2.1 Running Build Farms](#21-running-build-farms)  
->> [2.2 Generating Installer Web Sites](#22-generating-installer-web-sites)  
->> [2.3 Managing Snapshot Web Sites](#23-managing-snapshot-web-sites)  
->> [2.4 Separate Server and Clients](#24-separate-server-and-clients)  
->> [2.5 Creating a Client from an Installer Web Site](#25-creating-a-client-from-an-installer-web-site)  
+> [2 Contributing to Racket Development](#2-contributing-to-racket-development)  
+>> [2.1 Main-Repository Contributions](#21-main-repository-contributions)  
+>> [2.2 Distribution-Package Contributions](#22-distribution-package-contributions)  
+>> [2.3 General Contribution Guidelines](#23-general-contribution-guidelines)  
+>> [2.4 More Resources](#24-more-resources)  
   
-> [3 Contributing to Racket Development](#3-contributing-to-racket-development)  
->> [3.1 Main-Repository Contributions](#31-main-repository-contributions)  
->> [3.2 Distribution-Package Contributions](#32-distribution-package-contributions)  
->> [3.3 General Contribution Guidelines](#33-general-contribution-guidelines)  
->> [3.4 More Resources](#34-more-resources)  
+> [3 Zuo and the Racket Build System](#3-zuo-and-the-racket-build-system)  
   
-> [4 Zuo and the Racket Build System](#4-zuo-and-the-racket-build-system)  
+> [4 Bootstrapping Racket](#4-bootstrapping-racket)  
   
-> [5 Bootstrapping Racket](#5-bootstrapping-racket)  
+> [5 Distributing Racket Variants](#5-distributing-racket-variants)  
+>> [5.1 Running Build Farms](#51-running-build-farms)  
+>> [5.2 Generating Installer Web Sites](#52-generating-installer-web-sites)  
+>> [5.3 Managing Snapshot Web Sites](#53-managing-snapshot-web-sites)  
+>> [5.4 Separate Server and Clients](#54-separate-server-and-clients)  
+>> [5.5 Creating a Client from an Installer Web Site](#55-creating-a-client-from-an-installer-web-site)  
+>> [5.6 Cleaning Up Docker Containers](#56-cleaning-up-docker-containers)  
 
 ## 1. Building Racket from Source
 
@@ -78,60 +85,75 @@ way that you probably expect.
 
 The rest of this chapter assumes that you’re sticking with the [source
 repository](https://github.com/racket/racket). In that case, you still
-have several options:
+have several options, depending on your goal, but you almost certainly
+want the first one:
 
-* **In-place build** — This mode is the default. It creates a build in
-  the `"racket"` subdirectory and installs packages that you specify (or
-  the `"main-distribution"` plus `"main-distribution-test"` package by
-  default). Any package implementations that reside in the `"pkgs"`
-  subdirectory are linked in-place. This is the most natural mode for
-  developing Racket itself or staying on the bleeding edge. See [Quick
-  Instructions: In-Place Build](#13-quick-instructions-in-place-build)
-  for more instructions.
+* **In-place build** — ​_This mode is the default, and it is almost
+  certainly the mode you want._​ In this mode, “build” and “install” are
+  the same, because the build is self-contained for in-place use. It
+  creates a build in the `"racket"` subdirectory and installs (local to
+  that subdirectory) packages that you specify (or the
+  `"main-distribution"` plus `"main-distribution-test"` packages by
+  default). Building and installing packages implies that documentation
+  provided by those packages is built and locally installed, too. Any
+  package implementations that reside in the `"pkgs"` subdirectory are
+  linked in-place. This is the most natural mode for developing Racket
+  itself or staying on the bleeding edge. See [Quick Instructions:
+  In-Place Build](#13-quick-instructions-in-place-build) for more
+  instructions.
 
-* **Unix-style install** — This mode installs to a given destination
+* **Unix-style install** — ​_This mode is not the one you want for
+  contributing to Racket, but it can be a sensible choice for installing
+  Racket._​ This mode builds and installs to a given destination
   directory (on platforms other than Windows), leaving no reference to
   the source directory. This is the most natural mode for installing
   once from the source repository. See [Quick Instructions: Unix-Style
   Install](#14-quick-instructions-unix-style-install) for more
   instructions.
 
-* **Minimal** — This mode is like a source distribution, and it is
-  described in the `"src"` subdirectory of `"racket"` (i.e., ignore the
-  repository’s root directory and `"pkgs"` subdirectory). Build an
-  in-place minimal Racket using `make base`. Alternatively, use `make
-  pb-fetch` to download bootstrapping support, and then in
-  `"racket/src"` use the usual `configure && make && make install` steps
-  (or similar for Windows). After installation, you can install packages
-  from the catalog server with `raco pkg`; if you do not use `make
-  base`, you should install at least the `"racket-lib"` package. See
-  [Building Minimal Racket](#171-building-minimal-racket) for more
-  information.
+* **Minimal** — ​_This mode is a building block for miscellaneous tasks,
+  and probably not the mode you want._​ This mode is like a source
+  distribution, and it is described in the `"src"` subdirectory of
+  `"racket"` (i.e., ignore the repository’s root directory and `"pkgs"`
+  subdirectory). Build an in-place minimal Racket using `make base`.
+  Alternatively, use `make pb-fetch` to download bootstrapping support,
+  and then in `"racket/src"` use the usual `configure && make && make
+  install` steps (or similar for Windows). After installation, you can
+  install packages from the catalog server with `raco pkg`; if you do
+  not use `make base`, you should install at least the `"racket-lib"`
+  package. See [Building Minimal Racket](#171-building-minimal-racket)
+  for more information.
 
-* **Installers** — This mode creates Racket distribution installers for
-  a variety of platforms by farming out work to machines that run those
-  platforms. This is the way that Racket snapshots and releases are
-  created, and you can create your own. See [Distributing Racket
-  Variants](#2-distributing-racket-variants) for more instructions.
+* **Installers** — ​_This mode is for creating new distributions of
+  Racket, not for developing or installing Racket locally._​ This mode
+  creates Racket distribution installers for a variety of platforms by
+  farming out work to machines that run those platforms. This is the way
+  that Racket snapshots and releases are created, and you can create
+  your own. See [Distributing Racket
+  Variants](#5-distributing-racket-variants) for more instructions.
 
-* **In-place Racket BC build** — This mode builds the old Racket
-  implementation (where “BC” means “bytecode” or “before Chez Scheme”).
-  Final executables with names that end in `bc` or `BC` are the Racket
-  BC variants. See [More Instructions: Building Racket CS and Racket
+* **In-place Racket BC build** — ​_This mode is for software
+  archeologists or developers with a particular need to access a
+  historical Racket implementation in a contemporary context._​ This
+  mode builds the old Racket implementation (where “BC” means “bytecode”
+  or “before Chez Scheme”). Final executables with names that end in
+  `bc` or `BC` are the Racket BC variants. See [More Instructions:
+  Building Racket CS and Racket
   BC](#16-more-instructions-building-racket-cs-and-racket-bc) for more
   information.
 
 ### 1.3. Quick Instructions: In-Place Build
 
 On Unix (including Linux) and Mac OS, `make` (or `make in-place`)
-creates a build in the `"racket"` directory.
+creates a build in the `"racket"` directory, and the build is an
+“installation” in the sense that you can run it directly.
 
 On Windows with Microsoft Visual Studio (any version between 2008/9.0
 and 2022/17.0), `nmake` creates a build in the `"racket"` directory. If
 your command-prompt environment is not already configured for Visual
 Studio to run programs like `nmake.exe` and `cl.exe`, you can run
 `"racket/src/worksp/msvcprep.bat"` \(PowerShell:
-`"racket/src/worksp/msvcprep.ps1"`} and provide an argument that selects
+`"racket/src/worksp/msvcprep.ps1"`) and provide an argument that selects
 a build mode: `x86` (32-bit Intel/AMD mode), `x64` or `x86_amd64`
 (64-bit Intel/AMD mode), or `x64_arm64` (64-bit Arm mode). Any use of
 `make` described in this build guide should also work with `nmake`,
@@ -144,7 +166,9 @@ versions of any other package, use `make in-place` again, which includes
 a `raco pkg update` step.
 
 See [More Instructions: Building
-Racket](#15-more-instructions-building-racket) for more information.
+Racket](#15-more-instructions-building-racket) for more information. If
+your goal is to contribute to Racket development, skip to [Contributing
+to Racket Development](#2-contributing-to-racket-development), first.
 
 ### 1.4. Quick Instructions: Unix-Style Install
 
@@ -178,7 +202,7 @@ in-place` or `make unix-style` is to build minimal Racket, and you can
 read `"racket/src/README.txt"` for more information, including
 information about dependencies. (The very first step of a build is to
 compile Zuo, which is a tiny variant of Racket that [drives the rest of
-the build system](#4-zuo-and-the-racket-build-system).)
+the build system](#3-zuo-and-the-racket-build-system).)
 
 If you would like to provide arguments to `configure` for the minimal
 Racket build, then you can supply them with by adding
@@ -237,7 +261,9 @@ you change only packages, then `raco setup` should suffice.)
 If you need even more control over the build, carry on to [Even More
 Instructions: Building Racket
 Pieces](#17-even-more-instructions-building-racket-pieces) further
-below.
+below.  If your goal is to contribute to Racket development, skip to
+[Contributing to Racket
+Development](#2-contributing-to-racket-development), first.
 
 ### 1.6. More Instructions: Building Racket CS and Racket BC
 
@@ -274,6 +300,11 @@ Instead of just using `make in-place` or `make unix-style`, you can take
 more control over the build by understanding how the pieces fit
 together. You can also read `"Makefile"`, which defines and describes
 many variables that can be supplied via `make`.
+
+If you are just trying to get a build in place so you can to contribute
+to Racket development, then you’ve probably read too far in this
+section. Try jumping to [Contributing to Racket
+Development](#2-contributing-to-racket-development).
 
 #### 1.7.1. Building Minimal Racket
 
@@ -353,7 +384,272 @@ Git tools, use
 The `"extra-pkgs"` directory name is a convention that is supported by a
 `".gitignore"` entry in the repository root.
 
-## 2. Distributing Racket Variants
+## 2. Contributing to Racket Development
+
+The Racket developers are happy to receive bug reports and improvements
+to the implementation and documentation through GitHub issues and pull
+requests:
+
+* Issues (bug reports):
+  [https://github.com/racket/racket/issues](https://github.com/racket/racket/issues)
+
+* Pull requests (improvements):
+  [https://github.com/racket/racket/pulls](https://github.com/racket/racket/pulls)
+
+The Racket distribution includes scores of packages that have their own
+separate repositories, which somewhat complicates the process of sending
+pull requests. The mechanism is the same, but see [Distribution-Package
+Contributions](#22-distribution-package-contributions) for more
+guidance.
+
+By making a contribution, you are agreeing that your contribution is
+licensed under the LGPLv3, Apache 2.0, and MIT licenses. Those licenses
+are available in the [Racket Git
+repository](https://github.com/racket/racket) in the files
+`"LICENSE.txt"`, `"LICENSE-APACHE.txt"`, and `"LICENSE-MIT.txt"`.
+
+### 2.1. Main-Repository Contributions
+
+The [main Racket Git repository](https://github.com/racket/racket)
+contains the implementation of everything that is in the Minimal Racket
+distribution. That includes the runtime system, core libraries, and
+`raco pkg` so that other packages can be installed.
+
+The main Racket repository also has the source to the Racket Reference,
+Racket Guide, and other core-ish documentation, including the source to
+the document that you are reading. Those document sources are in the
+repository’s `"pkgs"` directory.
+
+Finally, the main repository includes a few other packages that are
+especially tightly bound to the runtime-system implementation, such as
+the `"compiler-lib"` package or the `"racket-test"` package. Those
+package sources are also in the repository’s `"pkgs"` directory.
+
+To develop improvements to any of those parts of Racket, following the
+usual GitHub-based workflow:
+
+* Fork the Racket repository.
+
+* Create an in-place build as described in [Building Racket from
+  Source](#1-building-racket-from-source).
+
+* Make your changes and rebuild with `make` or `make as-is` or `raco
+  setup`, where `raco setup` is the best choice when modifying Racket
+  libraries that are in `"collects"` or a package. If your changes
+  involve modifying things that are part of the `racket` executable,
+  then a simple `make` may not suffice; see “Modifying Racket” in
+  `"racket/src/README.txt"` for more information.
+
+* Commit changes to your fork and [submit a pull
+  request](https://help.github.com/en/articles/creating-a-pull-request).
+
+See the [General Contribution
+Guidelines](#23-general-contribution-guidelines).
+
+### 2.2. Distribution-Package Contributions
+
+If you find yourself changing a file that is in a `"share/pkgs"`
+subdirectory (either installed as part of a Racket release or as a
+product of an in-place build), then that file is probably not part of
+the main Racket Git repository. It almost certainly has its own Git
+repository somewhere else, possibly within
+[https://github.com/racket](https://github.com/racket), but possibly in
+another user’s space. The name of the directory in `"share/pkgs"` is
+almost certainly the package name.
+
+To start working on a package <_pkg-name_>, in the directory you’d like
+to hold the package’s source, use
+
+  `raco pkg update --clone <pkg-name>`
+
+> For Racket version 8.14 and earlier as a release or snapshot, before
+> using `--clone`, you first need to adjust the package installation to
+> use the source specified by the main package catalog:
+>   `raco pkg update --no-setup --catalog https://pkgs.racket-lang.org
+> <pkg-name>`
+
+That command will clone the package’s source Git repository into
+`"<pkg-name>"` within the current directory and checkout the appropriate
+commit. Then, it will replace the current installation of the package in
+your Racket build to point at that directory, and then it will rebuild
+(essentially by using `raco setup`) with the new location of the package
+installation. Now you can edit in `"<pkg-name>"`, and your changes will
+be live.
+
+Some information that might improve your experience:
+
+* You can add `--no-setup` to the `raco pkg update` command to skip the
+  `raco setup` step, which makes sense if you want to make changes and
+  then run `raco setup` yourself.
+
+* The argument after `--clone` is a directory, and by default, the
+  package name is inferred from the directory. Within an in-place build
+  of the main Racket repository, for example, the conventional use
+
+    `raco pkg update --clone extra-pkgs/<pkg-name>`
+
+  creates `"extra-pkgs/<pkg-name>"` as a clone of the Git repository for
+  <_pkg-name_> (and `".gitignore"` for the Racket repository excludes
+  `"extra-pkgs"`).
+
+* To use a clone directory name that is different than the package name,
+  you can supply the package name explicitly after the `--clone`
+  directory name:
+
+    `raco pkg update --clone <repo-name> <pkg-name>`
+
+* If you’re done and want to go back to the normal installation for
+  <_pkg-name_>, use
+
+    `raco pkg update --unclone <pkg-name>`
+
+* See Developing Packages with Git for more information about how
+  packages are meant to work as Git repositories.
+
+Note that none of this is necessary if you’re modifying a package in the
+main Racket repository’s `"pkgs"` directory. Those are automatically
+linked in place for an in-place build of Racket.
+
+### 2.3. General Contribution Guidelines
+
+When you make a pull request, the Racket developers will help you get
+the improvement in shape to merge to the Racket repository. You can make
+that process faster by keeping a few guidelines in mind:
+
+* Try to follow the style guide.
+
+* When you fix a bug or create a new feature, include a test case for
+  it.
+
+  Note that core Racket tests are in
+  `"pkgs/racket-test-core/tests/racket"`, and tests for other libraries
+  are also sometimes in a separate `"-test"` package.
+
+* Include new or updated documentation as appropriate.
+
+  To locate a documentation (Scribble) source file, visit the current
+  documentation in a browser, and click at the page heading. A box will
+  appear with a URL to a documentation source. Note that while it is
+  likely that the documentation source will not be the file that you
+  want to edit exactly, it should give you a rough idea for where it is.
+  Particularly, the Racket reference is in
+  `"pkgs/racket-doc/scribblings/reference"`, and the Racket guide is in
+  `"pkgs/racket-doc/scribblings/guide"`.
+
+  When adding to a library or extending an existing binding’s behavior,
+  be sure to include a `history` note in the documentation to record the
+  change.
+
+* Build with your changes.
+
+  Don’t break the Racket build. That means at least checking that `raco
+  setup` runs and completes without errors. If you added or modified
+  documentation, visually inspect the newly rendered documentation to
+  make sure it reads as intended.
+
+  A common mistake is to just run a modified library or its tests, but
+  where a change creates a new package dependency that will only be
+  detected by a full `raco setup`. _Really:_ run `raco setup`.
+
+* For changes to the C code, ensure your code follows the C99 standard.
+
+  On Unix systems, extensions that are part of the `_DEFAULT_SOURCE`
+  pre-processor flag are also allowed. See the
+  [glibc](https://www.gnu.org/software/libc/manual/html_node/Feature-Test-Macros.html#index-_005fDEFAULT_005fSOURCE)
+  manual for more details.
+
+### 2.4. More Resources
+
+For additional pointers on how to contribute to Racket, see
+
+[https://github.com/racket/racket/wiki/Ways-to-contribute-to-Racket](https://github.com/racket/racket/wiki/Ways-to-contribute-to-Racket)
+
+## 3. Zuo and the Racket Build System
+
+Racket builds with many options, and the build needs to work in a
+variety of environments. That variability is difficult to manage through
+a traditional makefile. The Racket build is mostly driven instead with
+Zuo, which is a tiny, Racket-like scripting language with facilities
+inspired by `make` and [Shake](https://shakebuild.com/). When you build
+Racket with `make`, the makefile target ensures that `zuo` is built, and
+then it bounces the build request to a `"main.zuo"` script.
+
+Racket makefiles build `zuo` using the `CC_FOR_BUILD` makefile variable
+plus `CFLAGS_FOR_BUILD`. The `CC_FOR_BUILD` variable defaults to using
+the `CC` makefile variable plus `-O2`, while `CC` normally defaults to
+`cc`. If you need to specify a C compiler or options for building Zuo,
+supply `CC=<compiler>`, `CC_FOR_BUILD=<compiler>`, and/or
+`CFLAGS_FOR_BUILD=<flags>` to `make`.
+
+In you have `zuo` installed, you can generally substitute `zuo .` in
+place of `make` when building Racket components. You can even use just
+`zuo` in place of `make` if you’re not providing additional target or
+variable arguments to `make`, but otherwise `.` is needed after `zuo` to
+select the `main.zuo` script in the current directory. In most cases, it
+doesn’t matter whether you use `make` or `zuo .`, but if you move deep
+enough into the Racket build tree, there are only Zuo scripts. To
+install Zuo, you can use the usual `configure && make && make install`
+in `"racket/src/zuo"`.
+
+Even when you run `zuo` directly, configuration information is
+frequently read from `"Makefile"` or `"Mf-config"`. The latter name is
+used when the makefile exists only for recording a configuration and
+does not provide targets. When you run a `configure` script,
+configuration choices are recorded in a generated `"Makefile"` or
+`"Mf-config"`.
+
+By convention, a source file `"build.zuo"` is analogous to
+`"Makefile.in"`: it is meant to be instantiated in a build directory as
+`"main.zuo"`. Instead of copying and updating, as typically happens to
+convert `"Makefile.in"` to `"Makefile"`, a `"main.zuo"` is typically
+instantiated as a small module, possibly by copying a `"buildmain.zuo"`
+file to `"main.zuo"`. That `"main.zuo"` reaches `"build.zuo"` using a
+source directory that is recorded in an accompanying `"Makefile"` or
+`"Mf-config"`.
+
+## 4. Bootstrapping Racket
+
+Although Racket is implemented in Racket, you do not normally need an
+existing Racket installation to build Racket. Distribution archives
+include the needed bootstrapping artifacts in a portable form. The
+Racket Git repository similarly includes some of those artifacts checked
+in directly, and some are in a separate repository that is downloaded by
+`make`. Specifically:
+
+* `"racket/src/cs/schemified"` includes macro-expanded, schemified
+  versions of layers that are implemented in Racket for Racket CS, and
+  these are checked into the Git repository;
+
+* `"racket/src/bc/srcstartup.inc"` is the macro-expanded expander (as
+  implemented in Racket) for Racket BC, and it is checked into the Git
+  repository; and
+
+* `"racket/src/ChezScheme/boot/pb"` contains Chez Scheme pb (portable
+  bytecode) boot files, normally downloaded from a separate Git
+  repository in a branch that has a single commit \(i.e., no history of
+  old versions within the branch\).
+
+If you modify certain pieces of Racket, you will need an existing build
+of Racket to bootstrap. That includes the Chez Scheme implementation (at
+least for some kinds of modifications), the Racket macro expander, and
+in the case of Racket CS, the "thread", "io", "regexp", and "schemify"
+layers.
+
+For more information about modifying Chez Scheme, see
+`"racket/src/cs/README.txt"`. As explained there, you can create new
+boot files in `"racket/src/ChezScheme/boot/pb"` or platform-specific
+boot files using even a relatively old version of Chez Scheme or Racket.
+
+For information about modifying the macro expander for Racket CS and/or
+BC, see `"racket/src/expander/README.txt"`. Building the expander may
+require a relatively new version of Racket, perhaps even the very latest
+version before the change.
+
+Finally, for information about modifying the other layers for Racket CS,
+see `"racket/src/cs/README.txt"`. Rebuilding these layers requires a
+relatively new version of Racket, too.
+
+## 5. Distributing Racket Variants
 
 This chapter is about distributing variants of Racket, as opposed to
 distributing applications that are built with Racket. See `raco
@@ -368,23 +664,29 @@ Use one non-Windows machine as a server, where packages will be
 pre-built. Then, as described below, create platform-specific installers
 on some number of client machines, each of which contacts the server
 machine to obtain pre-built packages. The server can act as a client,
-naturally, to create an installer for the server’s platform.
+naturally, to create an installer for the server’s platform. Instead of
+using separate client machines, Docker containers can be used to
+cross-compile for multiple platforms, all on a single “server” machine.
 
 The distribution-build process is a collaboration between the Racket Git
 repository’s top-level makefile and the `"distro-build"` package.
 
-### 2.1. Running Build Farms
+### 5.1. Running Build Farms
 
 The `installers` target of the makefile will do everything to generate
 installers: build a server on the current machine, run clients on hosts
-specified via `CONFIG`, and start/stop VirtualBox virtual machines or
-Docker containers that act as client machines.
+specified via `CONFIG`, and start/stop Docker containers or VirtualBox
+virtual machines that act as client machines.
 
 If the server is already built, the `installers-from-built` target will
 drive the client builds without re-building the server.
 
 See the documentation of the `"distro-build"` package for a description
-of the site-configuration module and requirements on client hosts.
+of the site-configuration module and requirements on client hosts. The
+`distro-build/main-distribution` library provides site-configuration
+helpers for creating a distribution like the one at the main Racket
+download site and using Docker containers (all on one host machine) to
+cross-compile for supported platforms.
 
 If `"my-site-config.rkt"` is a configuration module, then
 
@@ -438,13 +740,12 @@ for the client in the site configuration, and <_ext_> is
 platform-specific: `".sh"` for Unix (including Linux), `".dmg"` or
 `".pkg"` for Mac OS, and `".exe"` for Windows.
 
-The server supports both `'cs` and `'3m` clients by creating built
-packages in machine-independent form (which is then recompiled to the
-client’s native format, still much faster than compiling from source).
-Set `SERVER_COMPILE_MACHINE=` to disable machine-independent format for
-built packages.
+The server supports CS clients on different platforms and BC clients by
+creating built packages in machine-independent form (which is then
+recompiled to the client’s native format, still much faster than
+compiling from source).
 
-### 2.2. Generating Installer Web Sites
+### 5.2. Generating Installer Web Sites
 
 The `site` target of the makefile uses the `installers` target to
 generate a set of installers, and then it combines the installers,
@@ -469,7 +770,7 @@ Use the `site-from-installers` makefile target to perform the part of
 `site` that happens after `installers` (i.e., to generate a `site` from
 an already-generated set of installers).
 
-### 2.3. Managing Snapshot Web Sites
+### 5.3. Managing Snapshot Web Sites
 
 The `snapshot-site` makefile target uses `site` (so supply the same
 `CONFIG=...` and `CONFIG_MODE=...` arguments), and then treats the
@@ -492,7 +793,7 @@ Use the `snapshot-at-site` makefile target to perform the part of
 `snapshot-site` that happens after `site` (i.e., to manage snapshots
 around an already-generated site).
 
-### 2.4. Separate Server and Clients
+### 5.4. Separate Server and Clients
 
 Instead of using the `installers` makefile target and a site
 configuration file, you can run server and client processes manually.
@@ -668,7 +969,7 @@ If you provide `JOB_OPTIONS=<options>` for either a client or server
 build, the options are used both for `raco setup` and `raco pkg
 install`. Normally, `JOB_OPTIONS` is used to control parallelism.
 
-### 2.5. Creating a Client from an Installer Web Site
+### 5.5. Creating a Client from an Installer Web Site
 
 If you (or someone else) previously created an installer site with `make
 site`, then `make client-from-site` in a clean repository creates an
@@ -687,275 +988,14 @@ passing suitable values for `DIST_CATALOGS_q`, `DOC_SEARCH`,
 suitable variables, such as `DIST_NAME` or `RELEASE_MODE`, the same as
 for `make client`.
 
-## 3. Contributing to Racket Development
+### 5.6. Cleaning Up Docker Containers
 
-The Racket developers are happy to receive bug reports and improvements
-to the implementation and documentation through GitHub issues and pull
-requests:
+When building with Docker containers as clients, the containers will
+remain after the completion of client builds, and they will be used for
+incremental updates as long as they exist. The containers can be removed
+at any time between builds. Use
 
-* Issues (bug reports):
-  [https://github.com/racket/racket/issues](https://github.com/racket/racket/issues)
+  `make clean-clients`
 
-* Pull requests (improvements):
-  [https://github.com/racket/racket/pulls](https://github.com/racket/racket/pulls)
-
-The Racket distribution includes scores of packages that have their own
-separate repositories, which somewhat complicates the process of sending
-pull requests. The mechanism is the same, but see [Distribution-Package
-Contributions](#32-distribution-package-contributions) for more
-guidance.
-
-By making a contribution, you are agreeing that your contribution is
-licensed under the LGPLv3, Apache 2.0, and MIT licenses. Those licenses
-are available in the [Racket Git
-repository](https://github.com/racket/racket) in the files
-`"LICENSE.txt"`, `"LICENSE-APACHE.txt"`, and `"LICENSE-MIT.txt"`.
-
-### 3.1. Main-Repository Contributions
-
-The [main Racket Git repository](https://github.com/racket/racket)
-contains the implementation of everything that is in the Minimal Racket
-distribution. That includes the runtime system, core libraries, and
-`raco pkg` so that other packages can be installed.
-
-The main Racket repository also has the source to the Racket Reference,
-Racket Guide, and other core-ish documentation, including the source to
-the document that you are reading. Those document sources are in the
-repository’s `"pkgs"` directory.
-
-Finally, the main repository includes a few other packages that are
-especially tightly bound to the runtime-system implementation, such as
-the `"compiler-lib"` package or the `"racket-test"` package. Those
-package sources are also in the repository’s `"pkgs"` directory.
-
-To develop improvements to any of those parts of Racket, following the
-usual GitHub-based workflow:
-
-* Fork the Racket repository.
-
-* Create an in-place build as described in [Building Racket from
-  Source](#1-building-racket-from-source).
-
-* Make your changes and rebuild with `make` or `make as-is` or `raco
-  setup`, where `raco setup` is the best choice when modifying Racket
-  libraries that are in `"collects"` or a package. If your changes
-  involve modifying things that are part of the `racket` executable,
-  then a simple `make` may not suffice; see “Modifying Racket” in
-  `"racket/src/README.txt"` for more information.
-
-* Commit changes to your fork and [submit a pull
-  request](https://help.github.com/en/articles/creating-a-pull-request).
-
-See the [General Contribution
-Guidelines](#33-general-contribution-guidelines).
-
-### 3.2. Distribution-Package Contributions
-
-If you find yourself changing a file that is in a `"share/pkgs"`
-subdirectory (either installed as part of a Racket release or as a
-product of an in-place build), then that file is not part of the main
-Racket Git repository. It almost certainly has its own Git repository
-somewhere else, possibly within
-[https://github.com/racket](https://github.com/racket), but possibly in
-another user’s space. The name of the directory in `"share/pkgs"` is
-almost certainly the package name.
-
-To start working on a package <_pkg-name_> from a Racket release or
-snapshot, you first need to adjust the package installation to use the
-source specified by the main package catalog
-
-  `raco pkg update --no-setup --catalog https://pkgs.racket-lang.org
-<pkg-name>`
-
-and then in the directory you’d like to hold the package’s source
-
-  `raco pkg update --clone <pkg-name>`
-
-will clone the package’s source Git repository into `"<pkg-name>"`
-within the current directory.
-
-Alternatively, if you already have an in-place build of the main Racket
-repository, you can start working on a package <_pkg-name_>, by going to
-the root directory of your Racket repository checkout and running
-
-  `raco pkg update --clone extra-pkgs/<pkg-name>`
-
-That will create `"extra-pkgs/<pkg-name>"` as a clone of the package’s
-source Git repository, it will replace the current installation of the
-package in your Racket build to point at that directory, and then it
-will rebuild (essentially by using `raco setup`) with the new location
-of the package installation. Now you can edit in
-`"extra-pkgs/<pkg-name>"`, and your changes will be live.
-
-Some information that might improve your experience:
-
-* You can add `--no-setup` to the `raco pkg update` command to skip the
-  `raco setup` step, which makes sense if you want to make changes and
-  then run `raco setup` yourself.
-
-* A package is sometimes a subdirectory within a Git repository, and it
-  would be better if the checkout in `"extra-pkgs"` matched the
-  repository name instead of the package name. If you know the
-  repository name, you can use
-
-    `raco pkg update --clone extra-pkgs/<repo-name> <pkg-name>`
-
-  to make the distinction.
-
-* This same approach will generally work if you’re starting from a
-  distribution installer instead of the checkout of the Racket sources
-  from the main Git repository. You’ll need write permission to the
-  installation, though, so that `raco pkg update` can redirect the
-  package. Also, there’s no particular reason to use `extra-pkgs` in
-  that case.
-
-* If you’re done and want to go back to the normal installation for
-  <_pkg-name_>, use
-
-    `raco pkg update --lookup <pkg-name>`
-
-* See Developing Packages with Git for more information about how
-  packages are meant to work as Git repositories.
-
-Note that none of this is necessary if you’re modifying a package in the
-main Racket repository’s `"pkgs"` directory. Those are automatically
-linked in place for an in-place build of Racket.
-
-### 3.3. General Contribution Guidelines
-
-When you make a pull request, the Racket developers will help you get
-the improvement in shape to merge to the Racket repository. You can make
-that process faster by keeping a few guidelines in mind:
-
-* Try to follow the style guide.
-
-* When you fix a bug or create a new feature, include a test case for
-  it.
-
-  Note that core Racket tests are in
-  `"pkgs/racket-test-core/tests/racket"`, and tests for other libraries
-  are also sometimes in a separate `"-test"` package.
-
-* Include new or updated documentation as appropriate.
-
-  To locate a documentation (Scribble) source file, visit the current
-  documentation in a browser, and click at the page heading. A box will
-  appear with a URL to a documentation source. Note that while it is
-  likely that the documentation source will not be the file that you
-  want to edit exactly, it should give you a rough idea for where it is.
-  Particularly, the Racket reference is in
-  `"pkgs/racket-doc/scribblings/reference"`, and the Racket guide is in
-  `"pkgs/racket-doc/scribblings/guide"`.
-
-  When adding to a library or extending an existing binding’s behavior,
-  be sure to include a `history` note in the documentation to record the
-  change.
-
-* Build with your changes.
-
-  Don’t break the Racket build. That means at least checking that `raco
-  setup` runs and completes without errors. If you added or modified
-  documentation, visually inspect the newly rendered documentation to
-  make sure it reads as intended.
-
-  A common mistake is to just run a modified library or its tests, but
-  where a change creates a new package dependency that will only be
-  detected by a full `raco setup`. _Really:_ run `raco setup`.
-
-* For changes to the C code, ensure your code follows the C99 standard.
-
-  On Unix systems, extensions that are part of the `_DEFAULT_SOURCE`
-  pre-processor flag are also allowed. See the
-  [glibc](https://www.gnu.org/software/libc/manual/html_node/Feature-Test-Macros.html#index-_005fDEFAULT_005fSOURCE)
-  manual for more details.
-
-### 3.4. More Resources
-
-For additional pointers on how to contribute to Racket, see
-
-[https://github.com/racket/racket/wiki/Ways-to-contribute-to-Racket](https://github.com/racket/racket/wiki/Ways-to-contribute-to-Racket)
-
-## 4. Zuo and the Racket Build System
-
-Racket builds with many options, and the build needs to work in a
-variety of environments. That variability is difficult to manage through
-a traditional makefile. The Racket build is mostly driven instead with
-Zuo, which is a tiny, Racket-like scripting language with facilities
-inspired by `make` and [Shake](https://shakebuild.com/). When you build
-Racket with `make`, the makefile target ensures that `zuo` is built, and
-then it bounces the build request to a `"main.zuo"` script.
-
-Racket makefiles build `zuo` using the `CC_FOR_BUILD` makefile variable
-plus `CFLAGS_FOR_BUILD`. The `CC_FOR_BUILD` variable defaults to using
-the `CC` makefile variable plus `-O2`, while `CC` normally defaults to
-`cc`. If you need to specify a C compiler or options for building Zuo,
-supply `CC=<compiler>`, `CC_FOR_BUILD=<compiler>`, and/or
-`CFLAGS_FOR_BUILD=<flags>` to `make`.
-
-In you have `zuo` installed, you can generally substitute `zuo .` in
-place of `make` when building Racket components. You can even use just
-`zuo` in place of `make` if you’re not providing additional target or
-variable arguments to `make`, but otherwise `.` is needed after `zuo` to
-select the `main.zuo` script in the current directory. In most cases, it
-doesn’t matter whether you use `make` or `zuo .`, but if you move deep
-enough into the Racket build tree, there are only Zuo scripts. To
-install Zuo, you can use the usual `configure && make && make install`
-in `"racket/src/zuo"`.
-
-Even when you run `zuo` directly, configuration information is
-frequently read from `"Makefile"` or `"Mf-config"`. The latter name is
-used when the makefile exists only for recording a configuration and
-does not provide targets. When you run a `configure` script,
-configuration choices are recorded in a generated `"Makefile"` or
-`"Mf-config"`.
-
-By convention, a source file `"build.zuo"` is analogous to
-`"Makefile.in"`: it is meant to be instantiated in a build directory as
-`"main.zuo"`. Instead of copying and updating, as typically happens to
-convert `"Makefile.in"` to `"Makefile"`, a `"main.zuo"` is typically
-instantiated as a small module, possibly by copying a `"buildmain.zuo"`
-file to `"main.zuo"`. That `"main.zuo"` reaches `"build.zuo"` using a
-source directory that is recorded in an accompanying `"Makefile"` or
-`"Mf-config"`.
-
-## 5. Bootstrapping Racket
-
-Although Racket is implemented in Racket, you do not normally need an
-existing Racket installation to build Racket. Distribution archives
-include the needed bootstrapping artifacts in a portable form. The
-Racket Git repository similarly includes some of those artifacts checked
-in directly, and some are in a separate repository that is downloaded by
-`make`. Specifically:
-
-* `"racket/src/cs/schemified"` includes macro-expanded, schemified
-  versions of layers that are implemented in Racket for Racket CS, and
-  these are checked into the Git repository;
-
-* `"racket/src/bc/srcstartup.inc"` is the macro-expanded expander (as
-  implemented in Racket) for Racket BC, and it is checked into the Git
-  repository; and
-
-* `"racket/src/ChezScheme/boot/pb"` contains Chez Scheme pb (portable
-  bytecode) boot files, normally downloaded from a separate Git
-  repository in a branch that has a single commit \(i.e., no history of
-  old versions within the branch\).
-
-If you modify certain pieces of Racket, you will need an existing build
-of Racket to bootstrap. That includes the Chez Scheme implementation (at
-least for some kinds of modifications), the Racket macro expander, and
-in the case of Racket CS, the "thread", "io", "regexp", and "schemify"
-layers.
-
-For more information about modifying Chez Scheme, see
-`"racket/src/cs/README.txt"`. As explained there, you can create new
-boot files in `"racket/src/ChezScheme/boot/pb"` or platform-specific
-boot files using even a relatively old version of Chez Scheme or Racket.
-
-For information about modifying the macro expander for Racket CS and/or
-BC, see `"racket/src/expander/README.txt"`. Building the expander may
-require a relatively new version of Racket, perhaps even the very latest
-version before the change.
-
-Finally, for information about modifying the other layers for Racket CS,
-see `"racket/src/cs/README.txt"`. Rebuilding these layers requires a
-relatively new version of Racket, too.
+to clean up Docker instances and shared data that is created by client
+builds.

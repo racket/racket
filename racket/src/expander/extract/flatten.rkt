@@ -1,5 +1,6 @@
 #lang racket/base
-(require "../common/set.rkt"
+(require racket/match
+         "../common/set.rkt"
          "../run/status.rkt"
          "link.rkt"
          "linklet-info.rkt"
@@ -26,10 +27,11 @@
       lnk))
 
   ;; variable -> symbol
-  (define variable-names (pick-variable-names
-                          #:linklets linklets
-                          #:needed-linklets-in-order needed-linklets-in-order
-                          #:instance-knot-ties instance-knot-ties))
+  (define-values (variable-names used-names)
+    (pick-variable-names
+     #:linklets linklets
+     #:needed-linklets-in-order needed-linklets-in-order
+     #:instance-knot-ties instance-knot-ties))
 
   (for ([var (in-hash-keys variable-names)]
         #:when (symbol? (link-name (variable-link var)))
@@ -54,12 +56,15 @@
      ,@(apply
         append
         (for/list ([lnk (in-list (reverse needed-linklets-in-order))])
-          (define body
-            (body-with-substituted-variable-names lnk
-                                                  (hash-ref linklets lnk)
-                                                  variable-names
-                                                  #:linklets linklets
-                                                  #:instance-knot-ties instance-knot-ties))
+          (define-values (body new-used-names)
+            (body-with-freshened-local-names
+             (body-with-substituted-variable-names lnk
+                                                   (hash-ref linklets lnk)
+                                                   variable-names
+                                                   #:linklets linklets
+                                                   #:instance-knot-ties instance-knot-ties)
+             used-names))
+          (set! used-names new-used-names)
           (substitute-primitive-table-access body primitive-table-directs))))))
 
 (define (pick-variable-names #:linklets linklets
@@ -121,19 +126,23 @@
   ;; (If a variable was given an alternative name for all imports or
   ;; exports, probably using the obvious symbol would cause a
   ;; collision.)
-  (for/hash ([var (in-list (reverse all-variables))])
-    (define current-syms (hash-ref variable-locals var))
-    (define sym
-      (cond
-       [(and (= 1 (set-count current-syms))
-             (not (set-member? otherwise-used-symbols (set-first current-syms))))
-        (set-first current-syms)]
-       [(and (set-member? current-syms (variable-name var))
-             (not (set-member? otherwise-used-symbols (variable-name var))))
-        (variable-name var)]
-       [else (distinct-symbol (variable-name var) otherwise-used-symbols)]))
-    (set! otherwise-used-symbols (set-add otherwise-used-symbols sym))
-    (values var sym)))
+  (define variable-names
+    (for/hash ([var (in-list (reverse all-variables))])
+      (define current-syms (hash-ref variable-locals var))
+      (define sym
+        (cond
+          [(and (= 1 (set-count current-syms))
+                (not (set-member? otherwise-used-symbols (set-first current-syms))))
+           (set-first current-syms)]
+          [(and (set-member? current-syms (variable-name var))
+                (not (set-member? otherwise-used-symbols (variable-name var))))
+           (variable-name var)]
+          [else (distinct-symbol (variable-name var) otherwise-used-symbols)]))
+      (set! otherwise-used-symbols (set-add otherwise-used-symbols sym))
+      (values var sym)))
+
+  (values variable-names
+          otherwise-used-symbols))
 
 (define (body-with-substituted-variable-names lnk li variable-names
                                               #:linklets linklets
@@ -172,6 +181,65 @@
   
   (substitute-symbols orig-s substs))
 
+;; Make sure all local variables are distinct, so that a flattened
+;; linklet has the same property as each original linklet produced by
+;; the expander: each binding within the linklet has a distinct name.
+;; That property makes it easy to record per-binding information.
+;; Meanwhile, we still have the property that primitive forms are
+;; never shadowed, which simplifies the task here.
+(define (body-with-freshened-local-names body used-names-in)
+  (define used-names used-names-in)
+  (define (freshen-bind sym env)
+    (unless (symbol? sym) (error 'freshen-bind "bad: ~e" sym))
+    (define new-sym (distinct-symbol sym used-names "0"))
+    (set! used-names (hash-set used-names new-sym #t))
+    (hash-set env sym new-sym))
+  (define (freshen-body body env)
+    (for/list ([e (in-list body)])
+      (freshen e env)))
+  (define (freshen-lambda-case args e env)
+    (define new-env
+      (let loop ([args args] [env env])
+        (cond
+          [(symbol? args) (freshen-bind args env)]
+          [(pair? args) (loop (cdr args) (loop (car args) env))]
+          [(null? args) env])))
+    (list (let loop ([args args])
+            (cond
+              [(symbol? args) (hash-ref new-env args)]
+              [(pair? args) (cons (loop (car args)) (loop (cdr args)))]
+              [(null? args) null]))
+          (freshen e new-env)))
+  (define (freshen-let head cls e env)
+    (define new-env
+      (for*/fold ([env env]) ([cl (in-list cls)]
+                              [var (in-list (car cl))])
+        (freshen-bind var env)))
+    `(,head ,(for/list ([cl (in-list cls)])
+               (list (map (lambda (v) (hash-ref new-env v v)) (car cl))
+                     (freshen (cadr cl) new-env)))
+            ,(freshen e new-env)))
+  (define (freshen e env)
+    (match e
+      [`(let-values ,cl ,e)
+       (freshen-let 'let-values cl e env)]
+      [`(letrec-values ,cl ,e)
+       (freshen-let 'letrec-values cl e env)]
+      [`(lambda ,args ,e)
+       `(lambda ,@(freshen-lambda-case args e env))]
+      [`(case-lambda [,args ,e] ...)
+       `(case-lambda ,@(for/list ([args (in-list args)]
+                                  [e (in-list e)])
+                         (freshen-lambda-case args e env)))]
+      [`(quote ,_) e]
+      [(? symbol? e) (hash-ref env e e)]
+      ;; covered all binding forms, so we can treat the rest as just a
+      ;; sequence of expressions, relying on the absence of shadowing
+      [`(,e ...) (map (lambda (e) (freshen e env)) e)]
+      [_ e]))
+  (define new-body
+    (freshen-body body #hasheq()))
+  (values new-body used-names))
 
 (define (find-knot-tying-alternate knot-ties lnk external linklets)
   (cond

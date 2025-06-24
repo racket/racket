@@ -1,7 +1,8 @@
 #lang racket/base
 (require scribble/base
          scribble/bnf
-         scribble/core)
+         scribble/core
+         scribble/html-properties)
 
 (provide (all-defined-out)
          nonterm)
@@ -17,3 +18,6 @@
 ;; Ditto
 (define (commandline . s)
   (para (hspace 2) (element 'tt s)))
+
+(define (html-hidden-attribute)
+  (style #f (list (attributes '((style . "display: none;"))))))

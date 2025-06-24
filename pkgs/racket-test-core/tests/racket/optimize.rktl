@@ -228,11 +228,16 @@
            'stop)
          same?))]))
 
+(define (vm->machine sym)
+  (if (eq? sym 'racket)
+      sym
+      'chez-scheme))
+
 (define (test-comp expr1 expr2 [same? #t]
                    #:except [except '()])
-  (unless (or (eq? (system-type 'vm) except)
+  (unless (or (eq? (system-type 'vm) (vm->machine except))
               (and (list? except)
-                   (memq (system-type 'vm) except)))
+                   (eq? (system-type 'vm) (vm->machine except))))
     (define (->stx s)
       ;; Give `s` a minimal location, so that other macro locations
       ;; don't bleed through:

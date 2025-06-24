@@ -1,11 +1,12 @@
 
-(define (read-linklet-bundle-hash in)
+(define (read-linklet-bundle-hash in cross-machine-type)
   (performance-region
    'read-bundle
    (let* ([len (integer-bytes->integer (read-bytes 4 in) #f #f)]
           [bstr (read-bytes len in)])
      (adjust-linklet-bundle-laziness-and-literals
-      (fasl-read (open-bytevector-input-port bstr))))))
+      (fasl-read (open-bytevector-input-port bstr))
+      cross-machine-type))))
 
 (define read-on-demand-source
   (make-parameter #f
@@ -18,7 +19,7 @@
                     v)
 		  'read-on-demand-source))
 
-(define (adjust-linklet-bundle-laziness-and-literals ls)
+(define (adjust-linklet-bundle-laziness-and-literals ls cross-machine-type)
   (let loop ([ls ls] [ht (hasheq)])
     (cond
      [(null? ls) ht]
@@ -29,9 +30,12 @@
               (hash-set ht
                         key
                         (cond
-                          [(linklet? val)
-                           (adjust-linklet-laziness
-                            (decode-linklet-literals val))]
+                          [(linklet-vector? val)
+                           (adjust-linklet-cross-preparation
+                            (adjust-linklet-laziness
+                            (decode-linklet-literals
+                             (vector->linklet val)))
+                            cross-machine-type)]
                           [else val]))))])))
 
 (define (adjust-linklet-laziness linklet)
@@ -58,3 +62,8 @@
       [else
        (set-linklet-literals linklet
                              (unfasl-literals/lazy literals))])))
+
+(define (adjust-linklet-cross-preparation l cross-machine-type)
+  (if cross-machine-type
+      (set-linklet-preparation l (cons 'cross cross-machine-type))
+      l))

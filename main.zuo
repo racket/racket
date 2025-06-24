@@ -77,6 +77,12 @@
         (hash 'jobs n-jobs)
         (hash)))
 
+  (define (derived-options)
+    (define r (get-provided-racket))
+    (if (equal? r "")
+        (hash)
+        (hash 'racket (or (find-executable-path r) r))))
+
   (define (get-job-options)
     (define jobs (get-jobs))
     (if jobs
@@ -87,11 +93,17 @@
     (define opts (lookup 'PLT_SETUP_OPTIONS))
     (build-shell opts (get-job-options)))
 
+  (define (get-recompile-cache-options)
+    (define cache-dir (lookup 'RECOMPILE_CACHE))
+    (if (equal? cache-dir "")
+        '()
+        (list "--recompile-cache" cache-dir)))
+
   (define (get-mcr-args)
     (list "-MCR" (~a (path->complete-path (at-source "build/zo")) ":")))
 
   ;; ------------------------------------------------------------
-  ;; pb setup
+  ;; check consistent use of checkout
 
   (define (check-mode mode)
     (define mode-file (at-source "racket/src/build/checkout-mode"))
@@ -208,7 +220,8 @@
                                                                 ""))
                                       'PLT_SETUP_OPTIONS (build-shell
                                                           (if also? "-D" "")
-                                                          (setup-options))
+                                                          (setup-options)
+                                                          (get-recompile-cache-options))
                                       'DESTDIR (if prefix
                                                    (lookup 'DESTDIR "")
                                                    "")
@@ -283,7 +296,11 @@
            [else
             (at-source "racket/bin" (~a "racket" sfx))])]))
     (hash 'racket racket.exe
-          'racket-args (append (shell->strings (lookup 'SETUP_MACHINE_FLAGS))
+          'racket-args (append (if (and (hash-ref options 'server-compile-machine? #f)
+                                        (hash-ref options 'build-user-dir #f))
+                                   (list "-A" (hash-ref options 'build-user-dir #f))
+                                   '())
+                               (shell->strings (lookup 'SETUP_MACHINE_FLAGS))
                                (if (hash-ref options 'server-compile-machine? #f)
                                    (get-mcr-args)
                                    '())
@@ -305,12 +322,15 @@
     (raco (find-racket vm)
           "setup"
           args
-          (shell->strings (setup-options))))
+          (shell->strings (setup-options))
+          (get-recompile-cache-options)))
 
   (define (maybe-fetch vm)
     (when (eq? vm 'cs)
-      (when (andmap (lambda (key) (equal? (lookup key) ""))
-                    '(RACKET BOOTFILE_RACKET PLAIN_RACKET SCHEME SCHEME_DIR))
+      (when (or (andmap (lambda (key) (equal? (lookup key) ""))
+                        '(RACKET BOOTFILE_RACKET PLAIN_RACKET SCHEME SCHEME_DIR CS_HOST_WORKAREA_PREFIX))
+                ;; include `racket/src/ChezScheme/boot/pb` in source:
+                (not (equal? (lookup 'SOURCE_MODE) "")))
         (pb-manage 'fetch))))
 
   (define (base token vm [options (hash)])
@@ -415,12 +435,11 @@
   (define svr-prt (~a (lookup 'SERVER) ":" (lookup 'SERVER_PORT)))
   (define svr-cat (~a (lookup 'SERVER_URL_SCHEME) "://" svr-prt "/" (lookup 'SERVER_CATALOG_PATH)))
   (define config+mode (list (lookup 'CONFIG) (lookup 'CONFIG_MODE)))
-  (define user-flags (list "-A" "build/user"))
 
   ;; Catch problems due to malformed distribution-build packages
   (define recompile-options (list "--recompile-only"))
-  
-  (define auto-options (list "--skip-installed" "--deps" "search-auto" "--pkgs" (get-job-options)))
+   
+  (define auto-options (list "--skip-installed" "--deps" "search-auto" "--pkgs" (get-job-options) (get-recompile-cache-options)))
   (define user-auto-options (list "--scope" "user" auto-options))
   (define source-user-auto (list "--catalog" "build/catalog-copy" user-auto-options
                                  (shell->strings (lookup 'SERVER_PKG_INSTALL_OPTIONS))))
@@ -434,8 +453,11 @@
                               (at-source "build/user/config")
                               (if (or (and (hash-ref options 'cross? #f)
                                            (eq? vm 'cs))
-                                      (hash-ref options 'server-compile-machine? #t))
-                                  (hash 'server-compile-machine? #t)
+                                      (hash-ref options 'server-compile-machine? #f))
+                                  (hash 'server-compile-machine? #t
+                                        'build-user-dir (if (hash-ref options 'hide-client-user-dir? #f)
+                                                            "build/server-user"
+                                                            "build/user"))
                                   (hash))))
     (hash-set vars
               'racket-args
@@ -456,6 +478,30 @@
     (check-mode "server")
     (maybe-fetch 'cs)
     (rm* "build/zo")
+    (define cache-dir "build/recompile-cache")
+    (when (directory-exists? cache-dir)
+      (for-each
+       (lambda (f-name)
+         (define f (build-path cache-dir f-name))
+         (when (directory-exists? f)
+           ;; Use Docker to remove directories that were created by
+           ;; Docker instances. This avoids permission issues by
+           ;; using whatever user is set up in the writing Docker
+           ;; image. A default Docker image to use for removal is
+           ;; hardwired, but distro-build should record a recommended
+           ;; Docker image to use; the redommendation for "<dir>"
+           ;; is in "<dir>.txt".
+           (define image-file (path-replace-extension f ".txt"))
+           (define image
+             (or (and (file-exists? image-file)
+                      (string-trim (file->string image-file) "\n"))
+                 "racket/distro-build:debian10"))
+           (shell/wait "docker run -i --rm"
+                       "-v" (string->shell (~a (path->complete-path "build") ":/build"))
+                       image
+                       "-c" (string->shell (~a "/bin/rm -rf /build/recompile-cache/" f-name "/*")))))
+       (ls cache-dir))
+      (rm* cache-dir))
     (base token vm (add-server-compile-machine options))
     (server-from-base token options))
 
@@ -489,6 +535,7 @@
                 (shell->strings (lookup 'DISTRO_BUILD_PKGS)))
     (server-set-config options)
     (built-racket options "-l-" "distro-build/pkg-info" "-o" "build/pkgs.rktd" "build/catalog-copy")
+    (built-racket options "-l" "distro-build/start-site" config+mode)
     (built-racket options "-l" "distro-build/install-pkgs" config+mode
                   (build-shell (lookup 'PKGS) (lookup 'TEST_PKGS))
                   source-user-auto
@@ -562,21 +609,24 @@
   ;; ------------------------------------------------------------
   ;; Distribution builds: client
 
-  (define (client token [options-in (hash)])
-     (cond
+  (define (client-base token [options-in (hash)])
+    (cond
       [(directory-exists? "build/log") ; => server space also used for client build
        (check-mode "server")]
       [else
        (check-mode "client")
        (rm* "build/user")])
     (maybe-fetch 'cs)
-    (base token vm options-in)
+    (base token vm options-in))
+
+  (define (client token [options-in (hash)])
+    (client-base token options-in)
 
     (define cross? (or (hash-ref options-in 'server-compile-machine? #f)
                        (equal? (lookup 'BUNDLE_FROM_SERVER_TARGET) "bundle-cross-from-server")
                        (equal? (lookup 'CS_CROSS_SUFFIX) "-cross")))
     (define options (if cross?
-                        (hash-set options-in 'cross? #t)
+                        (hash-set (hash-set options-in 'cross? #t) 'hide-client-user-dir? #t)
                         options-in))
 
     (define (built-racket* . args) (built-racket options args))
@@ -603,7 +653,7 @@
     (built-racket* "-l" "setup/winvers-change" "bundle/racket")
     (built-racket* "-l-" "distro-build/unpack-collects" (shell->strings (lookup 'UNPACK_COLLECTS_FLAGS))
                    (~a (lookup 'SERVER_URL_SCHEME) "://" svr-prt "/" (lookup 'SERVER_COLLECTS_PATH)))
-    (in-bundle-raco options "setup" "--no-user" (get-job-options) recompile-options)
+    (in-bundle-raco options "setup" "--no-user" (get-job-options) recompile-options (get-recompile-cache-options))
     (define pkg-source-flags (shell->strings (lookup 'PKG_SOURCE_MODE)))
     (in-bundle-raco options "pkg" "install" remote-inst-auto pkg-source-flags required-pkgs)
     (in-bundle-raco options "pkg" "install" remote-inst-auto pkg-source-flags (shell->strings (lookup 'PKGS)))
@@ -639,7 +689,8 @@
                    (shell->strings (lookup 'NOTARIZATION_CONFIG))
                    (lookup 'DIST_NAME) (lookup 'DIST_BASE) (lookup 'DIST_DIR)
                    (lookup 'DIST_SUFFIX)
-                   (lookup 'SIGN_IDENTITY) (lookup 'OSSLSIGNCODE_ARGS_BASE64)))
+                   (lookup 'SIGN_IDENTITY) (lookup 'OSSLSIGNCODE_ARGS_BASE64)
+                   (lookup 'SIGN_CERT_BASE64)))
 
   (define (in-bundle-raco options . args)
     (if (hash-ref options 'cross? #f)
@@ -664,11 +715,38 @@
 
   (define (installers token)
     (rm* "build/installers")
+    (rm* "build/log")
     (server token (hash 'serve-during-cmd (get-drive-clients-args))))
 
   (define (installers-from-built token)
     (built-catalog-server token (add-server-compile-machine
                                  (hash 'serve-during-cmd (get-drive-clients-args)))))
+
+  (define (clean-clients token)
+    (check-mode "server")
+    (displayln "removing containers")
+    (define containers-file "build/containers.txt")
+    (define (split-lines s) (filter (lambda (s) (not (equal? s ""))) (string-split s "\n")))
+    (define containers
+      (if (file-exists? containers-file)
+          (split-lines (file->string containers-file))
+          '()))
+    (for-each (lambda (container)
+                (define p (shell "docker container ls -a --filter"
+                                 (~a "NAME='^" container "$'")
+                                 (hash 'stdout 'pipe)))
+                (define ls-str (fd-read (hash-ref p 'stdout) eof))
+                (process-wait (hash-ref p 'process))
+                (if (> (length (split-lines ls-str)) 1)
+                    (shell/wait "docker" "container" "rm" container)
+                    (alert (~a "no container " container))))
+              containers)
+    (define (rm/show s)
+      (displayln (~a "removing " s))
+      (rm* s))
+    (rm/show containers-file)
+    (rm/show "build/common")
+    (rm/show "build/recompile-cache"))
 
   (define (get-drive-clients-args [describe-clients? #f])
     (list "-l-" "distro-build/drive-clients"
@@ -707,7 +785,8 @@
                   config+mode (lookup 'PKGS)
                   "build/built/catalog" "build/native/catalog")
     (built-racket options "-l-" "distro-build/assemble-site"
-                  config+mode (lookup 'DIST_BASE)))
+                  config+mode (lookup 'DIST_BASE)
+                  (build-shell (lookup 'PKGS) (lookup 'TEST_PKGS))))
 
   (define (snapshot-site token)
     (site token)
@@ -726,7 +805,8 @@
       (let ([src (at-source src)])
         (build (find-target target-name
                             ((dynamic-require src 'targets-at)
-                             (make-at-dir (path-only src))))
+                             (make-at-dir (path-only src))
+                             (derived-options)))
                token)))
     (build-one "racket/src/rktio/build.zuo" "rktio-rktl")
     (build-one "racket/src/expander/main.zuo" "expander")
@@ -774,12 +854,14 @@
 
        [:target client () ,(lambda (token) (client token))]
        [:target client-compile-any () ,(lambda (token) (client token (hash 'server-compile-machine? #t)))]
+       [:target client-no-installer () ,(lambda (token) (client-base token))]
        [:target client-from-site () ,(lambda (token) (client token (hash 'from-site? #t)))]
 
        [:target test-client () ,(lambda (token) (test-client token))]
 
        [:target installers () ,(lambda (token) (installers token))]
        [:target installers-from-built () ,(lambda (token) (installers-from-built token))]
+       [:target clean-clients () ,(lambda (token) (clean-clients token))]
        [:target describe-clients () ,(lambda (token) (describe-clients token))]
 
        [:target site () ,(lambda (token) (site token))]

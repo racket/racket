@@ -6,23 +6,29 @@
          add-ad-hoc-signature
          get/set-dylib-path)
 
+(define current-big-endian (make-parameter (system-big-endian?)))
+
 (define (check-exe-id exe-id)
-  (unless (memv exe-id '(#xFeedFacf #xFeedFace))
-    (error 'mach-o "unrecognized #x~x" exe-id)))
+  (cond
+    [(memv exe-id '(#xcfFaedFe #xceFaedFe))
+     (current-big-endian (not (current-big-endian)))]
+    [else
+     (unless (memv exe-id '(#xFeedFacf #xFeedFace))
+       (error 'mach-o "unrecognized #x~x" exe-id))]))
 
 (define aarch64-machine-type #x0100000C)
 
 (define (read-ulong p)
-  (integer-bytes->integer (read-bytes 4 p) #f))
+  (integer-bytes->integer (read-bytes 4 p) #f (current-big-endian)))
 
 (define (read-xulong p)
-  (integer-bytes->integer (read-bytes 8 p) #f))
+  (integer-bytes->integer (read-bytes 8 p) #f (current-big-endian)))
 
 (define (write-ulong v out)
-  (display (integer->integer-bytes v 4 #f) out))
+  (display (integer->integer-bytes v 4 #f (current-big-endian)) out))
 
 (define (write-xulong v out)
-  (display (integer->integer-bytes v 8 #f) out))
+  (display (integer->integer-bytes v 8 #f (current-big-endian)) out))
 
 (define (write-be-ulong v out)
   (display (integer->integer-bytes v 4 #f #t) out))
@@ -283,7 +289,8 @@
                                 (if (equal? exe-id #xFeedFacf) 32 28)
                                 (- code-signature-lc-sz))]
                     [new-cmd-sz (if segdata
-                                    (if link-edit-64? 72 56)
+                                    (+ (if link-edit-64? 72 56)  ; segment
+                                       (if link-edit-64? 80 68)) ; section
                                     0)]
                     [outlen (if segdata
                                 (round-up-page (bytes-length segdata) machine-id)
@@ -321,8 +328,22 @@
                    ((if link-edit-64? write-xulong write-ulong) outlen out)
                    (write-ulong 0 out) ; maxprot
                    (write-ulong 0 out) ; minprot
-                   (write-ulong 0 out)
+                   (write-ulong 1 out) ; 1 segment
                    (write-ulong 4 out) ; 4 means SG_NORELOC
+                   (display (pad-segment-name
+                             ;; create secction name as downcased segment name:
+                             (string->bytes/utf-8 (string-downcase (bytes->string/utf-8 segment-name)))) out)
+                   (display (pad-segment-name segment-name) out)
+                   ((if link-edit-64? write-xulong write-ulong) out-addr out)
+                   ((if link-edit-64? write-xulong write-ulong) outlen out)
+                   (write-ulong out-offset out)
+                   (write-ulong 0 out) ; alignment
+                   (write-ulong 0 out) ; reloff
+                   (write-ulong 0 out) ; nreloc
+                   (write-ulong #x10000000 #| S_ATTR_NO_DEAD_STRIP |# out) ; flags
+                   (write-ulong 0 out) ; reserved1
+                   (write-ulong 0 out) ; reserved2
+                   (when link-edit-64? (write-ulong 0 out)) ; reserved3
                    ;; Shift command positions
                    (unless sym-tab-pos
                      (error 'mach-o "symtab position not found"))

@@ -15,17 +15,21 @@
 
 (struct linklet-directory (ht)
   #:property prop:custom-write (lambda (ld port mode)
+                                 (define machine-type (linklet-directory-machine-type ld))
                                  (write-linklet-directory ld
-                                                          (correlated-linklet-directory? ld)
+                                                          (not machine-type)
                                                           linklet-directory->hash
                                                           linklet-bundle->hash
+                                                           machine-type
                                                           port)))
 
 (struct linklet-bundle (ht)
   #:property prop:custom-write (lambda (b port mode)
+                                 (define machine-type (linklet-bundle-machine-type b))
                                  (write-linklet-bundle b
-                                                       (correlated-linklet-bundle? b)
+                                                       (not machine-type)
                                                        linklet-bundle->hash
+                                                       machine-type
                                                        port)))
 
 (define/who (hash->linklet-directory ht)
@@ -82,13 +86,15 @@
 ;; If there are no values that satisfy `linklet?`, then
 ;; assume that we have `correlated-linklet?` values.
 
-(define (correlated-linklet-directory? ld)
-  (for/and ([(k v) (in-hash (linklet-directory->hash ld))])
+(define (linklet-directory-machine-type ld)
+  (for/or ([(k v) (in-hash (linklet-directory->hash ld))])
     (cond
-      [(not k) (correlated-linklet-bundle? v)]
-      [(symbol? k) (correlated-linklet-directory? v)]
-      [else #t])))
+      [(not k) (linklet-bundle-machine-type v)]
+      [(symbol? k) (linklet-directory-machine-type v)]
+      [else #f])))
       
-(define (correlated-linklet-bundle? b)
-  (for/and ([(k v) (in-hash (linklet-bundle->hash b))])
-    (not (linklet? v))))
+(define (linklet-bundle-machine-type b)
+  (for/or ([(k v) (in-hash (linklet-bundle->hash b))])
+    (and (linklet? v)
+         (or (linklet-cross-machine-type v)
+             (system-type 'target-machine)))))

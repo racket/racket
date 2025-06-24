@@ -121,7 +121,9 @@
                                                   (eq? (syntax-e #'mode) '#:dynamic))
                         #:work-directory (build-path (or (current-load-relative-directory)
                                                          (current-directory))
-                                                     "compiled/demod")
+                                                     ;; an "ephemeral" directory in "compiled"
+                                                     ;; is discarded when creating a package
+                                                     "compiled/ephemeral/demod")
                         #:includes includes
                         #:excludes excludes
                         #:include-submodules include-submodules

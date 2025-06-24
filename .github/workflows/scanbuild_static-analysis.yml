@@ -15,7 +15,7 @@ jobs:
 #
   scanbuild-racketcgc:
 
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     container: pmatos/scan-build:12.0.1
 
     steps:
@@ -66,7 +66,7 @@ jobs:
 
   scanbuild-racket3m:
 
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     container: pmatos/scan-build:12.0.1
 
     steps:
@@ -128,7 +128,7 @@ jobs:
 
   scanbuild-racketcs:
 
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     container: pmatos/scan-build:12.0.1
 
     steps:
@@ -185,7 +185,7 @@ jobs:
         path: sarif-files/
 
   upload:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     needs: [scanbuild-racketcgc, scanbuild-racket3m, scanbuild-racketcs]
 
     strategy:

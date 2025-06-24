@@ -67,7 +67,11 @@ the following files and directories:
 
  @item{directories/files whose names end with @filepath{~}; and}
 
- @item{directories/files whose names start and end with @filepath{#}.}
+ @item{directories/files whose names start and end with @filepath{#}; and}
+
+ @item{directories/files named @filepath{ephemeral} whose parent is named @filepath{compiled}.
+
+       @history[#:changed "8.17.0.1" @elem{Added @filepath{compiled/ephemeral} directory pruning.}]}
 
 ]
 

@@ -1240,6 +1240,31 @@
 
 ;; ----------------------------------------
 
+(let ()
+  (define-values (prop:a a? a-ref) (make-struct-type-property 'a))
+  (define-values (prop:b b? b-ref) (make-struct-type-property 'b))
+  (define-values (prop:c c? c-ref) (make-struct-type-property 'c))
+  (struct s (x y)
+    #:properties (list (cons prop:a "abc") (cons prop:b "xyz"))
+    #:property prop:procedure (lambda (self arg) arg)
+    #:properties (list (cons prop:c 'here)))
+
+  (test "abc" a-ref (s 1 2))
+  (test "xyz" b-ref (s 1 2))
+  (test 'here c-ref (s 1 2))
+  (test 123 (s 1 2) 123)
+
+  ;; Allow #:properties with #:prefab, dynamic error if non-empty
+  (struct ps1 (x y) #:prefab #:properties null)
+  (struct ps2 (x [y #:mutable]) #:properties null #:prefab)
+  (err/rt-test (let ()
+                 (struct pbad (x y)
+                   #:prefab
+                   #:properties (list (cons prop:procedure void)))
+                 (void))))
+
+;; ----------------------------------------
+
 (require (for-syntax racket/struct-info))
 
 (let ()

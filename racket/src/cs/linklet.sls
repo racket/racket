@@ -14,6 +14,7 @@
           linklet-interpret-jitified?        ; for `raco decompile`
           linklet-interpret-jitified-extract ; for `raco decompile`
           linklet-add-target-machine-info    ; helps cross-compilation
+          linklet-summarize-target-machine-info ; helps cross-compilation
           
           instance?
           make-instance
@@ -26,6 +27,7 @@
           instance-describe-variable!
 
           linklet-virtual-machine-bytes
+          linklet-cross-machine-type
           write-linklet-bundle-hash
           read-linklet-bundle-hash
           
@@ -529,6 +531,34 @@
             exports)       ; list of export symbol-or-pair, pair is (cons export-symbol src-symbol)
     (nongenerative #{linklet Zuquy0g9bh5vmeespyap4g-3}))
 
+  (define (linklet->vector l)
+    (vector '|#%linklet|
+            (linklet-code l)
+            (linklet-literals l)
+            (linklet-format l)
+            (linklet-preparation l)
+            (linklet-importss-abi l)
+            (linklet-exports-info l)
+            (linklet-name l)
+            (linklet-importss l)
+            (linklet-exports l)))
+
+  (define (linklet-vector? l)
+    (and (vector? l)
+         (= 10 (vector-length l))
+         (eq? '|#%linklet| (vector-ref l 0))))
+
+  (define (vector->linklet v)
+    (make-linklet (vector-ref v 1)
+                  (vector-ref v 2)
+                  (vector-ref v 3)
+                  (vector-ref v 4)
+                  (vector-ref v 5)
+                  (vector-ref v 6)
+                  (vector-ref v 7)
+                  (vector-ref v 8)
+                  (vector-ref v 9)))
+
   (define (set-linklet-code linklet code preparation)
     (make-linklet code
                   (linklet-literals linklet)
@@ -917,28 +947,38 @@
   (define (linklet-add-target-machine-info linklet other-linklet)
     (unless (linklet? linklet)
       (raise-argument-error 'linklet-add-target-machine-info "linklet?" linklet))
-    (unless (linklet? other-linklet)
-      (raise-argument-error 'linklet-add-target-machine-info "linklet?" other-linklet))
+    (let ([from-hash? (hash? other-linklet)])
+      (unless (or from-hash?
+                  (linklet? other-linklet))
+        (raise-argument-error 'linklet-add-target-machine-info "(or/c linklet? hash?)" other-linklet))
+      (linklet-unpack-exports-info! linklet)
+      (unless from-hash?
+        (linklet-unpack-exports-info! other-linklet))
+      (unless from-hash?
+        ;; sanity check:
+        (let ([ht (make-hasheq)])
+          (for-each (lambda (ex) (hash-set! ht ex #t)) (linklet-export-variables linklet))
+          (let ([exs (linklet-export-variables other-linklet)])
+            (unless (and (= (length exs) (hash-count ht))
+                         (andmap (lambda (ex) (hash-ref ht ex #f)) exs))
+              (raise-arguments-error 'linklet-add-target-machine-info
+                                     "linklets are not compatible")))))
+      ;; merge:
+      (let ([other-ei (if from-hash? other-linklet (or (linklet-exports-info other-linklet) (hasheq)))])
+        (set-linklet-exports-info linklet
+                                  (let loop ([ei (or (linklet-exports-info linklet) (hasheq))]
+                                             [keys (hash-map other-ei (lambda (k v) k))])
+                                    (cond
+                                      [(null? keys) ei]
+                                      [else (let ([key (car keys)])
+                                              (loop (hash-set ei key (hash-ref other-ei key))
+                                                    (cdr keys)))]))))))
+
+  (define (linklet-summarize-target-machine-info linklet)
+    (unless (linklet? linklet)
+      (raise-argument-error 'linklet-add-target-machine-info "linklet?" linklet))
     (linklet-unpack-exports-info! linklet)
-    (linklet-unpack-exports-info! other-linklet)
-    ;; sanity check:
-    (let ([ht (make-hasheq)])
-      (for-each (lambda (ex) (hash-set! ht ex #t)) (linklet-export-variables linklet))
-      (let ([exs (linklet-export-variables other-linklet)])
-        (unless (and (= (length exs) (hash-count ht))
-                     (andmap (lambda (ex) (hash-ref ht ex #f)) exs))
-          (raise-arguments-error 'linklet-add-target-machine-info
-                                 "linklets are not compatible"))))
-    ;; merge:
-    (let ([other-ei (or (linklet-exports-info other-linklet) (hasheq))])
-      (set-linklet-exports-info linklet
-                                (let loop ([ei (or (linklet-exports-info linklet) (hasheq))]
-                                           [keys (hash-map other-ei (lambda (k v) k))])
-                                  (cond
-                                    [(null? keys) ei]
-                                    [else (let ([key (car keys)])
-                                            (loop (hash-set ei key (hash-ref other-ei key))
-                                                  (cdr keys)))])))))
+    (linklet-exports-info linklet))
 
   ;; ----------------------------------------
 

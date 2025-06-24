@@ -63,6 +63,7 @@
          set-addon-dir!
          set-host-collects-dir!
          set-host-config-dir!
+         set-host-addon-dir!
 
          _path)
 

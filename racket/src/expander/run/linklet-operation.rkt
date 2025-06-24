@@ -24,6 +24,7 @@
               linklet-import-variables
               linklet-export-variables
               linklet-add-target-machine-info
+              linklet-summarize-target-machine-info
 
               instance?
               make-instance
@@ -36,6 +37,7 @@
               instance-describe-variable!
 
               linklet-virtual-machine-bytes
+              linklet-cross-machine-type
               write-linklet-bundle-hash
               read-linklet-bundle-hash
               

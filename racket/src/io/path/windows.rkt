@@ -31,7 +31,9 @@
                   (let loop ([i+1 len])
                     (cond
                       [(zero? i+1)
-                       (if (letter-drive-start? bstr len)
+                       ;; Won't get here if `in-bstr` was normalized, which was true
+                       ;; for calls with `#:immediate? #f` at the time of writing
+                       (if (letter-drive-start? in-bstr len)
                            (subbytes in-bstr 2)
                            in-bstr)]
                       [else

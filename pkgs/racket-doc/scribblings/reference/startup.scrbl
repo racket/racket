@@ -348,10 +348,13 @@ flags:
   @item{@FlagFirst{C} or @DFlagFirst{cross} : Select cross-platform
         build mode, causing @racket[(system-type 'cross)] to report
         @racket['force], and sets the current configuration of
-        @racket[(find-system-path 'config-dir)] and
-        @racket[(find-system-path 'collects-dir)] to be the results of
-        @racket[(find-system-path 'host-config-dir)] and
-        @racket[(find-system-path 'host-collects-dir)], respectively.
+        @racket[(find-system-path 'config-dir)],
+        @racket[(find-system-path 'collects-dir)], and
+        @racket[(find-system-path 'addon-dir)],
+        to be the results of
+        @racket[(find-system-path 'host-config-dir)],
+        @racket[(find-system-path 'host-collects-dir)], and
+        @racket[(find-system-path 'host-addon-dir)], respectively.
         If @FlagFirst{C} or @DFlagFirst{cross} is provided multiple
         times, only the first instance has an effect.}
   

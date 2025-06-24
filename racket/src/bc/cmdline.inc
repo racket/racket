@@ -717,7 +717,7 @@ static int run_from_cmd_line(int argc, char *_argv[],
   int skip_coll_dirs = 0;
   Scheme_Object *collects_path = NULL, *collects_extra = NULL, *addon_dir = NULL;
   Scheme_Object *config_path = NULL;
-  Scheme_Object *host_collects_path = NULL, *host_config_path = NULL;
+  Scheme_Object *host_collects_path = NULL, *host_config_path = NULL, *host_addon_path = NULL;
   char *compiled_paths = NULL;
   Scheme_Object *collects_paths_l, *collects_paths_r, *config_table;
 #ifndef DONT_PARSE_COMMAND_LINE
@@ -927,6 +927,7 @@ static int run_from_cmd_line(int argc, char *_argv[],
             was_config_flag = 1;
             host_config_path = config_path;
             host_collects_path = collects_path;
+            host_addon_path = addon_dir;
           }
 	  break;
 	case 'U':
@@ -1308,6 +1309,7 @@ static int run_from_cmd_line(int argc, char *_argv[],
   if (cross_compile) {
     host_config_path = adjust_config_path(host_config_path);
     scheme_set_host_config_path(host_config_path);
+    /* host_addon_path installed below */
   }
 
   /* Make list of additional collection paths: */
@@ -1384,6 +1386,17 @@ static int run_from_cmd_line(int argc, char *_argv[],
   if (addon_dir) {
     addon_dir = scheme_path_to_complete_path(addon_dir, NULL);
     scheme_set_addon_dir(addon_dir);
+  }
+  if (cross_compile) {
+    if (!host_addon_path) {
+     char *s;
+     s = getenv("PLTADDONDIR");
+     if (s) {
+       s = scheme_expand_filename(s, -1, NULL, NULL, 0);
+       if (s) host_addon_path = scheme_make_path(s);
+     }
+    }
+    scheme_set_host_addon_dir(host_addon_path);
   }
 
   /* Creates the main kernel environment */

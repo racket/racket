@@ -264,11 +264,16 @@
 (define host-config
   (get-config-table find-host-main-config))
 
+(define host-user-lib-dir
+  (delay/sync (simplify-path (build-path (find-system-path 'host-addon-dir)
+                                         (get-installation-name)
+                                         "lib"))))
+
 (define host-lib-search-dirs
   (delay/sync
    (combine-search
     (to-path (hash-ref (force host-config) 'lib-search-dirs #f))
-    (list (find-user-lib-dir)
+    (list (force host-user-lib-dir)
           (let ([coll-dir (find-host-main-collects)])
             (or (let ([p (hash-ref (force host-config) 'lib-dir #f)])
                   (and p

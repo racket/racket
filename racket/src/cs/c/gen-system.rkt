@@ -1,12 +1,13 @@
 (module gen-system '#%kernel
   
-  ;; Command-line argument: <dest-file> <target-machine> <kernel-target-machine> <cross-target-machine> <srcdir> <slsp-suffix>
+  ;; Command-line argument: <dest-file> <target-machine> <kernel-target-machine> <cross-target-machine> <srcdir> <slsp-suffix> <macosx-or-other>
 
   (define-values (target-machine) (string->symbol (vector-ref (current-command-line-arguments) 1)))
   (define-values (machine) (string->symbol (vector-ref (current-command-line-arguments) 2)))
   (define-values (cross-target-machine) (vector-ref (current-command-line-arguments) 3))
   (define-values (srcdir) (vector-ref (current-command-line-arguments) 4))
   (define-values (slsp-suffix) (vector-ref (current-command-line-arguments) 5))
+  (define-values (macosx?) (equal? "macosx" (vector-ref (current-command-line-arguments) 6)))
 
   (define-values (definitions)
     (call-with-input-file
@@ -61,7 +62,7 @@
           (if (matches? e '(string->utf8 _))
               (string->bytes/utf-8 (cadr e))
               (if (matches? e '(if unix-style-macos? _ _))
-                  (if (eq? (system-type) 'macosx)
+                  (if macosx?
                       (parse-expr (cadddr e))
                       (parse-expr (caddr e)))
                   (if (matches? e 'unix-link)

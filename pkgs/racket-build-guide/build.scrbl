@@ -39,26 +39,35 @@ way that you probably expect.
 
 The rest of this chapter assumes that you're sticking with the
 @hyperlink[git-repo]{source repository}. In that case, you still have
-several options:
+several options, depending on your goal, but you almost certainly want the first one:
 
 @itemlist[
 
- @item{@bold{In-place build} --- This mode is the default. It creates
-   a build in the @filepath{racket} subdirectory and installs packages
+ @item{@bold{In-place build} --- @emph{This mode is the default, and it
+   is almost certainly the mode you want.} In this mode,
+   ``build'' and ``install'' are the same, because the build is self-contained
+   for in-place use. It creates
+   a build in the @filepath{racket} subdirectory and installs (local to that subdirectory) packages
    that you specify (or the @filepath{main-distribution} plus
-   @filepath{main-distribution-test} package by default). Any package
+   @filepath{main-distribution-test} packages by default). Building and
+   installing packages implies that documentation provided by those packages
+   is built and locally installed, too. Any package
    implementations that reside in the @filepath{pkgs} subdirectory are
    linked in-place. This is the most natural mode for developing
    Racket itself or staying on the bleeding edge. See
    @secref["quick-in-place"] for more instructions.}
 
- @item{@bold{Unix-style install} --- This mode installs to a given
+ @item{@bold{Unix-style install} --- @emph{This mode is not the one you want for
+   contributing to Racket, but it can be a sensible choice for installing Racket.}
+   This mode builds and installs to a given
    destination directory (on platforms other than Windows), leaving no
    reference to the source directory. This is the most natural mode
    for installing once from the source repository. See
    @secref["quick-unix-style"] for more instructions.}
 
- @item{@bold{Minimal} --- This mode is like a source distribution, and
+ @item{@bold{Minimal} --- @emph{This mode is a building block for
+   miscellaneous tasks, and probably not the mode you want.}
+   This mode is like a source distribution, and
    it is described in the @filepath{src} subdirectory of
    @filepath{racket} (i.e., ignore the repository's root directory and
    @filepath{pkgs} subdirectory). Build an in-place minimal Racket using @exec{make base}.
@@ -69,13 +78,17 @@ several options:
    you should install at least the @filepath{racket-lib} package. See
    @secref["minimal"] for more information.}
 
- @item{@bold{Installers} --- This mode creates Racket distribution
+ @item{@bold{Installers} --- @emph{This mode is for creating new
+   distributions of Racket, not for developing or installing Racket locally.}
+   This mode creates Racket distribution
    installers for a variety of platforms by farming out work to
    machines that run those platforms. This is the way that Racket
    snapshots and releases are created, and you can create your own.
    See @secref["distribute"] for more instructions.}
 
- @item{@bold{In-place Racket BC build} --- This mode builds the old
+ @item{@bold{In-place Racket BC build} --- @emph{This mode is for software
+   archeologists or developers with a particular need to access a historical
+   Racket implementation in a contemporary context.} This mode builds the old
    Racket implementation (where ``BC'' means ``bytecode'' or ``before
    Chez Scheme''). Final executables with names that end in
    @litchar{bc} or @litchar{BC} are the Racket BC variants. See
@@ -87,14 +100,15 @@ several options:
 @section[#:tag "quick-in-place"]{Quick Instructions: In-Place Build}
 
 On Unix (including Linux) and Mac OS, @exec{make} (or @exec{make in-place})
-creates a build in the @filepath{racket} directory.
+creates a build in the @filepath{racket} directory, and the build is an
+``installation'' in the sense that you can run it directly.
 
 On Windows with Microsoft Visual Studio (any version between 2008/9.0
 and 2022/17.0), @exec{nmake} creates a build in the @filepath{racket}
 directory. If your command-prompt environment is not already
 configured for Visual Studio to run programs like @exec{nmake.exe} and
 @exec{cl.exe}, you can run @filepath{racket/src/worksp/msvcprep.bat}
-(PowerShell: @filepath{racket/src/worksp/msvcprep.ps1}} and provide an
+(PowerShell: @filepath{racket/src/worksp/msvcprep.ps1}) and provide an
 argument that selects a build mode: @exec{x86} (32-bit Intel/AMD
 mode), @exec{x64} or @exec{x86_amd64} (64-bit Intel/AMD mode), or
 @exec{x64_arm64} (64-bit Arm mode). Any use of @exec{make} described
@@ -107,7 +121,8 @@ those packages, as well as the Racket core, then use @exec{git pull}.
 Afterward, or to get new versions of any other package, use @exec{make
 in-place} again, which includes a @exec{raco pkg update} step.
 
-See @secref["more"] for more information.
+See @secref["more"] for more information. If your goal is to
+contribute to Racket development, skip to @secref["contribute"], first.
 
 
 @; ------------------------------------------------------------
@@ -209,8 +224,8 @@ minimal Racket. (If you change only packages, then @exec{raco setup}
 should suffice.)
 
 If you need even more control over the build, carry on to
-@secref["even-more"] further below.
-
+@secref["even-more"] further below.  If your goal is to
+contribute to Racket development, skip to @secref["contribute"], first.
 
 @; ------------------------------------------------------------
 @section[#:tag "build-cs"]{More Instructions: Building Racket CS and Racket BC}
@@ -252,6 +267,10 @@ Instead of just using @exec{make in-place} or @exec{make unix-style}, you can
 take more control over the build by understanding how the pieces fit
 together. You can also read @filepath{Makefile}, which defines and
 describes many variables that can be supplied via @exec{make}.
+
+If you are just trying to get a build in place so you can to
+contribute to Racket development, then you've probably read too far in
+this section. Try jumping to @secref["contribute"].
 
 @; - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 @subsection[#:tag "minimal"]{Building Minimal Racket}

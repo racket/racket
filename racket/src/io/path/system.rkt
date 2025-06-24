@@ -19,6 +19,7 @@
          set-addon-dir!
          set-host-collects-dir!
          set-host-config-dir!
+         set-host-addon-dir!
 
          init-current-directory!)
 
@@ -40,6 +41,10 @@
       [(host-collects-dir) (as-dir (or host-collects-dir
                                        collects-dir
                                        (string->path "../collects")))]
+      [(host-addon-dir) (if (eq? host-addon-dir 'inherit)
+                            (find-system-path 'addon-dir)
+                            (or host-addon-dir
+                                (rktio-system-path who RKTIO_PATH_ADDON_DIR)))]
       [(orig-dir) (as-dir orig-dir)]
       [(temp-dir) (as-dir (rktio-system-path who RKTIO_PATH_TEMP_DIR))]
       [(sys-dir) (as-dir (rktio-system-path who RKTIO_PATH_SYS_DIR))]
@@ -59,10 +64,10 @@
                                    "      'init-dir 'init-file 'addon-dir 'cache-dir\n"
                                    "      'doc-dir 'desk-dir 'sys-dir 'exec-file 'run-file\n"
                                    "      'collects-dir 'config-dir 'orig-dir\n"
-                                   "      'host-collects-dir 'host-config-dir)")
+                                   "      'host-collects-dir 'host-config-dir 'host-addon-dir)")
                                   key)])
     (security-guard-check-file who #f '(exists))))
-                                 
+
 (define exec-file #f)
 (define (set-exec-file! p) (set! exec-file p))
 
@@ -117,6 +122,9 @@
 
 (define host-config-dir #f)
 (define (set-host-config-dir! p) (set! host-config-dir p))
+
+(define host-addon-dir 'inherit)
+(define (set-host-addon-dir! p) (set! host-addon-dir p))
 
 (define (rktio-system-path who key)
   (start-atomic)

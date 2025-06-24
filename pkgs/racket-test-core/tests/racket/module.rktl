@@ -3569,11 +3569,11 @@ case of module-leve bindings; it doesn't cover local bindings.
 
   (define re-o (open-output-bytes))
   (write re-m re-o)
-  (check-vm (get-output-bytes re-o) (system-type 'vm))
+  (check-vm (get-output-bytes re-o) (system-type 'target-machine))
 
   (define re-o2 (open-output-bytes))
   (write re-m2 re-o2)
-  (check-vm (get-output-bytes re-o2) (system-type 'vm))
+  (check-vm (get-output-bytes re-o2) (system-type 'target-machine))
 
   ;; Check top-level compilation:
   (define tl-o (open-output-bytes))

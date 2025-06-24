@@ -126,7 +126,7 @@
     (values (add drops more-drops)
             (add keeps more-keeps)))
 
-  (define (drop-by-default? path get-p)
+  (define (drop-by-default? path base get-p)
     (define bstr (path->bytes path))
     (define (immediate-doc/css-or-doc/js?)
       ;; Drop ".css" and ".js" immediately in a "doc" directory:
@@ -140,6 +140,10 @@
                        bstr)
         ;; can appear as a marker in rendered documentation:
         (equal? #"synced.rktd" bstr)
+        (and (equal? #"ephemeral" bstr)
+             (path? base)
+             (let-values ([(base name dir?) (split-path base)])
+               (equal? (bytes->path #"compiled") name)))
         (case mode
           [(source)
            (regexp-match? #rx#"^(?:compiled|doc)$" bstr)]
@@ -203,7 +207,7 @@
               [else (void)]))]
          [else (void)])]))
   
-  (define (explore base   ; containing directory relative to `dir`, 'base at start
+  (define (explore base   ; containing directory relative to `dir`, 'same at start
                    paths  ; paths in `base'
                    drops  ; hash table of paths (relative to start) to drop
                    keeps  ; hash table of paths (relative to start) to keep
@@ -225,6 +229,7 @@
                              (not (or drop-all-by-default?
                                       (drop-by-default?
                                        path
+                                       base
                                        (lambda () (build-path dir p))))))))
       (define old-p (build-path dir p))
       (define new-p (build-path dest-dir p))

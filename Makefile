@@ -397,6 +397,12 @@ INSTALL_NAME =
 # installer:
 SIGN_IDENTITY =
 
+# For Mac OS, set to a signing certificate configuration for use with
+# `rcodesign` as a base64-encoded hash table, where the distro-build
+# documentation for `#:sign-cert-config` describes the keys and
+# values:
+SIGN_CERT_BASE64 =
+
 # For Mac OS, set to a notarization configuration as a base64-encoded
 # hash table <config> in `--notarization-config <config>`, where the
 # distro-build documentation for `#:notarization-config` describes the
@@ -441,6 +447,9 @@ PKG_INSTALL_OPTIONS =
 
 # Set to `--skip` to avoid unpacking collects from the server:
 UNPACK_COLLECTS_FLAGS = 
+
+# Directory to cache recompiled modules
+RECOMPILE_CACHE =
 
 # The `test-client` atarget is an optional test step for an installer
 # build, were `TEST_PKGS` names extra packages to install, and
@@ -491,6 +500,7 @@ DISTRO_BUILD_VARS = SERVER_COMPILE_MACHINE="$(SERVER_COMPILE_MACHINE)" \
                     BUILD_STAMP="$(BUILD_STAMP)" \
                     INSTALL_NAME="$(INSTALL_NAME)" \
                     SIGN_IDENTITY="$(SIGN_IDENTITY)" \
+                    SIGN_CERT_BASE64="$(SIGN_CERT_BASE64)" \
                     NOTARIZATION_CONFIG="$(NOTARIZATION_CONFIG)" \
                     OSSLSIGNCODE_ARGS_BASE64="$(OSSLSIGNCODE_ARGS_BASE64)" \
                     README="$(README)" \
@@ -502,6 +512,7 @@ DISTRO_BUILD_VARS = SERVER_COMPILE_MACHINE="$(SERVER_COMPILE_MACHINE)" \
                     SERVE_DURING_CMD_qq='$(SERVE_DURING_CMD_qq)' \
                     PKG_INSTALL_OPTIONS="$(PKG_INSTALL_OPTIONS)" \
                     UNPACK_COLLECTS_FLAGS="$(UNPACK_COLLECTS_FLAGS)" \
+                    RECOMPILE_CACHE="$(RECOMPILE_CACHE)" \
                     TEST_PKGS="$(TEST_PKGS)" \
                     TEST_ARGS_q='$(TEST_ARGS_q)' \
                     CLIENT_BASE="$(CLIENT_BASE)" \
@@ -537,6 +548,8 @@ client: $(ZUO)
 client-compile-any: $(ZUO)
 	$(RUN_ZUO) client-compile-any $(BUILD_VARS) $(DISTRO_BUILD_VARS)
 
+client-no-installer: $(ZUO)
+	$(RUN_ZUO) client-no-installer $(BUILD_VARS) $(DISTRO_BUILD_VARS)
 
 test-client: $(ZUO)
 	$(RUN_ZUO) test-client $(BUILD_VARS) $(DISTRO_BUILD_VARS)
@@ -561,6 +574,12 @@ installers: $(ZUO)
 # Server is already built; start it and drive clients:
 installers-from-built: $(ZUO)
 	$(RUN_ZUO) installers-from-built $(BUILD_VARS) $(DISTRO_BUILD_VARS)
+
+# Cleans local clients --- including Docker containers, but cannot clean remote
+# or virtual machines, if any; does not delete anything that `installers`
+# will delete, anyway, but creates a clean slate for `installers-from-built`
+clean-clients: $(ZUO)
+	$(RUN_ZUO) clean-clients $(BUILD_VARS) $(DISTRO_BUILD_VARS)
 
 describe-clients: $(ZUO)
 	$(RUN_ZUO) describe-clients $(BUILD_VARS) $(DISTRO_BUILD_VARS)

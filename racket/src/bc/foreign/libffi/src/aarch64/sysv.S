@@ -89,8 +89,8 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.  */
    x5 closure
 */
 
-	cfi_startproc
 CNAME(ffi_call_SYSV):
+	cfi_startproc
 	BTI_C
 	/* Sign the lr with x1 since that is where it will be stored */
 	SIGN_LR_WITH_REG(x1)
@@ -102,17 +102,16 @@ CNAME(ffi_call_SYSV):
 	 * function it is necessary to point the cfa at the signing register.
 	 */
 	cfi_def_cfa(x1, 0);
-#else
-	cfi_def_cfa(x1, 40);
 #endif
 	stp	x29, x30, [x1]
+	cfi_def_cfa_register(x1)
+	cfi_rel_offset (x29, 0)
+	cfi_rel_offset (x30, 8)
 	mov	x9, sp
 	str	x9, [x1, #32]
 	mov	x29, x1
-	mov	sp, x0
 	cfi_def_cfa_register(x29)
-	cfi_rel_offset (x29, 0)
-	cfi_rel_offset (x30, 8)
+	mov	sp, x0
 
 	mov	x9, x2			/* save fn */
 	mov	x8, x3			/* install structure return */
@@ -347,8 +346,8 @@ CNAME(ffi_closure_SYSV_V):
 #endif
 
 	.align	4
-	cfi_startproc
 CNAME(ffi_closure_SYSV):
+	cfi_startproc
 	BTI_C
 	SIGN_LR
 	stp     x29, x30, [sp, #-ffi_closure_SYSV_FS]!
@@ -643,8 +642,8 @@ CNAME(ffi_go_closure_SYSV_V):
 #endif
 
 	.align	4
-	cfi_startproc
 CNAME(ffi_go_closure_SYSV):
+	cfi_startproc
 	BTI_C
 	stp     x29, x30, [sp, #-ffi_closure_SYSV_FS]!
 	cfi_adjust_cfa_offset (ffi_closure_SYSV_FS)

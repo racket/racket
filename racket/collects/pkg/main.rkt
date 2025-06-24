@@ -15,7 +15,7 @@
          (for-syntax racket/base
                      syntax/strip-context))
 
-(define (setup what no-setup? no-docs? recompile-only? fail-fast? setup-collects jobs)
+(define (setup what no-setup? no-docs? recompile-only? recompile-cache fail-fast? setup-collects jobs)
   (unless (or (eq? setup-collects 'skip)
               no-setup?
               (not (member (getenv "PLT_PKG_NOSETUP") '(#f ""))))
@@ -32,6 +32,7 @@
              #:make-doc-index? #t
              #:jobs jobs
              #:recompile-only? recompile-only?
+             #:recompile-cache recompile-cache
              #:fail-fast? fail-fast?)
       ((current-pkg-error)
        "packages ~a, although setup reported errors"
@@ -270,7 +271,7 @@
                                        (pkg-desc p a-type* name checksum #f
                                                  #:path (and (eq? a-type* 'clone)
                                                              (path->complete-path clone))))))))
-                (setup "installed" no-setup no-docs recompile-only fail-fast setup-collects jobs))))]
+                (setup "installed" no-setup no-docs recompile-only recompile-cache fail-fast setup-collects jobs))))]
           ;; ----------------------------------------
           [update
            "Update packages"
@@ -375,7 +376,7 @@
                                     #:infer-clone-from-dir? (not (or link static-link copy))
                                     #:dry-run? dry-run
                                     #:use-trash? (not no-trash)))))
-                (setup "updated" no-setup no-docs recompile-only #f setup-collects jobs))))]
+                (setup "updated" no-setup no-docs recompile-only recompile-cache #f setup-collects jobs))))]
           ;; ----------------------------------------
           [uninstall
            "Uninstall packages"
@@ -403,7 +404,7 @@
                              #:force? force
                              #:dry-run? dry-run
                              #:use-trash? (not no-trash))))
-              (setup "uninstalled" no-setup no-docs recompile-only #f setup-collects jobs)))]
+              (setup "uninstalled" no-setup no-docs recompile-only recompile-cache #f setup-collects jobs)))]
           [#:alias remove uninstall]
           ;; ----------------------------------------
           [new
@@ -515,7 +516,7 @@
                                             (and binary-lib 'binary-lib))
                                 #:force-strip? force
                                 #:dry-run? dry-run))))
-              (setup "migrated" no-setup no-docs recompile-only #f setup-collects jobs)))]
+              (setup "migrated" no-setup no-docs recompile-only recompile-cache #f setup-collects jobs)))]
           ;; ----------------------------------------
           [create
            "Bundle package from a directory or installed package"
@@ -730,6 +731,7 @@
  ([#:bool no-setup () ("Don't `raco setup` after changing packages (usually a bad idea)")]
   [#:bool no-docs ("-D") "Do not compile .scrbl files and do not build documentation"]
   [#:bool recompile-only () ("Expect built packages, possibly machine-independent")]
+  [(#:str dir #f) recompile-cache () ("Cache recompiled modules in <dir>")]
   [(#:num n #f) jobs ("-j") "Setup with <n> parallel jobs"]
   [#:bool batch () ("Disable interactive mode and all prompts")])
  #:trash-flags

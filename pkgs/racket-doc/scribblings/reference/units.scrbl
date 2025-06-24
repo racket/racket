@@ -839,9 +839,11 @@ contract.  The unit name is used for the positive blame of the contract.
 
 @section[#:tag "single-unit"]{Single-Unit Modules}
 
-When @racketmodname[racket/unit] is used as a language name with
-@hash-lang[], the module body is treated as a unit body.  The
-body must match the following @racket[_module-body] grammar:
+As a language name with @hash-lang[], @racketmodname[racket/unit] provides all
+bindings of @racketmodname[racket/unit] and @racketmodname[racket/base] except
+for @racket[%#module-begin], and the @racketmodname[racket/unit] module body is
+treated as a unit body. The body must match the following @racket[_module-body]
+grammar:
 
 @racketgrammar*[
 #:literals (import export require begin)
@@ -857,7 +859,7 @@ body must match the following @racket[_module-body] grammar:
               derived-require-form]]
 
 After any number of @racket[_require-decl]s, the content of the module
-is the same as a @racket[unit] body.
+is the same as a @racket[unit] body with access to @racketmodname[racket/base].
 
 The resulting unit is exported as @racket[_base]@racketidfont["@"],
 where @racket[_base] is derived from the enclosing module's name
@@ -871,8 +873,11 @@ suffix). If the module name ends in @racketidfont{-unit}, then
 
 @section{Single-Signature Modules}
 
-@defmodulelang[racket/signature]{The @racketmodname[racket/signature]
-language treats a module body as a unit signature.}
+@defmodulelang[racket/signature]{The @racketmodname[racket/signature] language
+treats a module body as a unit signature in the same way that
+@racketmodname[racket/unit] treats @seclink["single-unit"]{a module body as unit
+body}: it provides all bindings of @racketmodname[racket/signature] and
+@racketmodname[racket/base] except for @racket[%#module-begin].}
 
 The body must match the following @racket[_module-body] grammar:
 

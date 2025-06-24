@@ -247,6 +247,7 @@
                 (set-collects-dir! set-collects-dir!)
                 (set-config-dir! set-config-dir!)
                 (set-exec-file! set-exec-file!)
+                (set-host-addon-dir! set-host-addon-dir!)
                 (set-host-collects-dir! set-host-collects-dir!)
                 (set-host-config-dir! set-host-config-dir!)
                 (set-maybe-raise-missing-module!
@@ -368,44 +369,46 @@
                 (1/write-special-evt write-special-evt)
                 (1/write-string write-string)))
 (define hash2725 (hash))
-(define hash2702
+(define hash2713
   (hasheq
    'addon-dir
-   '12
-   'cache-dir
    '13
+   'cache-dir
+   '14
    'collects-dir
    '4
    'config-dir
    '3
    'desk-dir
-   '15
-   'doc-dir
    '16
+   'doc-dir
+   '17
    'exec-file
    '1
    'home-dir
-   '14
+   '15
+   'host-addon-dir
+   '7
    'host-collects-dir
    '6
    'host-config-dir
    '5
    'init-dir
-   '17
-   'init-file
    '18
+   'init-file
+   '19
    'orig-dir
-   '7
+   '8
    'pref-dir
-   '10
-   'pref-file
    '11
+   'pref-file
+   '12
    'run-file
    '2
    'sys-dir
-   '9
+   '10
    'temp-dir
-   '8))
+   '9))
 (define hash2610 (hasheq))
 (define hash3229
   (hasheq
@@ -15799,33 +15802,29 @@
                                    (begin
                                      (let ((n_0 (char->integer c_0)))
                                        (begin
-                                         (let ((app_0 bstr_0))
+                                         (unsafe-bytes-set!
+                                          bstr_0
+                                          pos_0
+                                          (arithmetic-shift n_0 -24))
+                                         (let ((app_0 (+ pos_0 1)))
                                            (unsafe-bytes-set!
+                                            bstr_0
                                             app_0
-                                            pos_0
-                                            (arithmetic-shift n_0 -24)))
-                                         (let ((app_0 bstr_0))
-                                           (let ((app_1 (+ pos_0 1)))
-                                             (unsafe-bytes-set!
-                                              app_0
-                                              app_1
-                                              (bitwise-and
-                                               255
-                                               (arithmetic-shift n_0 -16)))))
-                                         (let ((app_0 bstr_0))
-                                           (let ((app_1 (+ pos_0 2)))
-                                             (unsafe-bytes-set!
-                                              app_0
-                                              app_1
-                                              (bitwise-and
-                                               255
-                                               (arithmetic-shift n_0 -8)))))
-                                         (let ((app_0 bstr_0))
-                                           (let ((app_1 (+ pos_0 3)))
-                                             (unsafe-bytes-set!
-                                              app_0
-                                              app_1
-                                              (bitwise-and 255 n_0))))))
+                                            (bitwise-and
+                                             255
+                                             (arithmetic-shift n_0 -16))))
+                                         (let ((app_0 (+ pos_0 2)))
+                                           (unsafe-bytes-set!
+                                            bstr_0
+                                            app_0
+                                            (bitwise-and
+                                             255
+                                             (arithmetic-shift n_0 -8))))
+                                         (let ((app_0 (+ pos_0 3)))
+                                           (unsafe-bytes-set!
+                                            bstr_0
+                                            app_0
+                                            (bitwise-and 255 n_0)))))
                                      (for-loop_0
                                       (unsafe-fx+ idx_0 1)
                                       (+ pos_0 inc_0))))
@@ -15863,33 +15862,29 @@
                                    (begin
                                      (let ((n_0 (char->integer c_0)))
                                        (begin
-                                         (let ((app_0 bstr_0))
-                                           (let ((app_1 (+ pos_0 3)))
-                                             (unsafe-bytes-set!
-                                              app_0
-                                              app_1
-                                              (arithmetic-shift n_0 -24))))
-                                         (let ((app_0 bstr_0))
-                                           (let ((app_1 (+ pos_0 2)))
-                                             (unsafe-bytes-set!
-                                              app_0
-                                              app_1
-                                              (bitwise-and
-                                               255
-                                               (arithmetic-shift n_0 -16)))))
-                                         (let ((app_0 bstr_0))
-                                           (let ((app_1 (+ pos_0 1)))
-                                             (unsafe-bytes-set!
-                                              app_0
-                                              app_1
-                                              (bitwise-and
-                                               255
-                                               (arithmetic-shift n_0 -8)))))
-                                         (let ((app_0 bstr_0))
+                                         (let ((app_0 (+ pos_0 3)))
                                            (unsafe-bytes-set!
+                                            bstr_0
                                             app_0
-                                            pos_0
-                                            (bitwise-and 255 n_0)))))
+                                            (arithmetic-shift n_0 -24)))
+                                         (let ((app_0 (+ pos_0 2)))
+                                           (unsafe-bytes-set!
+                                            bstr_0
+                                            app_0
+                                            (bitwise-and
+                                             255
+                                             (arithmetic-shift n_0 -16))))
+                                         (let ((app_0 (+ pos_0 1)))
+                                           (unsafe-bytes-set!
+                                            bstr_0
+                                            app_0
+                                            (bitwise-and
+                                             255
+                                             (arithmetic-shift n_0 -8))))
+                                         (unsafe-bytes-set!
+                                          bstr_0
+                                          pos_0
+                                          (bitwise-and 255 n_0))))
                                      (for-loop_0
                                       (unsafe-fx+ idx_0 1)
                                       (+ pos_0 inc_0))))
@@ -16476,29 +16471,28 @@
   (|#%name|
    special-filename?
    (lambda (immediate?1_0 in-bstr3_0)
-     (let ((bstr_0 unsafe-undefined))
-       (set! bstr_0
-         (if immediate?1_0
-           in-bstr3_0
-           (if (backslash-backslash-questionmark? in-bstr3_0)
-             #vu8()
-             (let ((len_0 (unsafe-bytes-length in-bstr3_0)))
-               (letrec*
-                ((loop_0
-                  (|#%name|
-                   loop
-                   (lambda (i+1_0)
-                     (if (zero? i+1_0)
-                       (if (letter-drive-start? bstr_0 len_0)
-                         (subbytes in-bstr3_0 2)
-                         in-bstr3_0)
-                       (let ((i_0 (sub1 i+1_0)))
-                         (if (is-sep?
-                              (unsafe-bytes-ref in-bstr3_0 i_0)
-                              'windows)
-                           (subbytes in-bstr3_0 i+1_0)
-                           (loop_0 i_0))))))))
-                (loop_0 len_0))))))
+     (let ((bstr_0
+            (if immediate?1_0
+              in-bstr3_0
+              (if (backslash-backslash-questionmark? in-bstr3_0)
+                #vu8()
+                (let ((len_0 (unsafe-bytes-length in-bstr3_0)))
+                  (letrec*
+                   ((loop_0
+                     (|#%name|
+                      loop
+                      (lambda (i+1_0)
+                        (if (zero? i+1_0)
+                          (if (letter-drive-start? in-bstr3_0 len_0)
+                            (subbytes in-bstr3_0 2)
+                            in-bstr3_0)
+                          (let ((i_0 (sub1 i+1_0)))
+                            (if (is-sep?
+                                 (unsafe-bytes-ref in-bstr3_0 i_0)
+                                 'windows)
+                              (subbytes in-bstr3_0 i+1_0)
+                              (loop_0 i_0))))))))
+                   (loop_0 len_0)))))))
        (let ((len_0 (unsafe-bytes-length bstr_0)))
          (if (zero? len_0)
            #f
@@ -16525,11 +16519,10 @@
                                                 (lambda (vec_0 len_1)
                                                   (call-with-values
                                                    (lambda ()
-                                                     (let ((vec_1 bstr_0))
-                                                       (values
-                                                        vec_1
-                                                        (unsafe-bytes-length
-                                                         vec_1))))
+                                                     (values
+                                                      bstr_0
+                                                      (unsafe-bytes-length
+                                                       bstr_0)))
                                                    (lambda (vec_1 len_2)
                                                      (let ((vec_2 vec_0)
                                                            (len_3 len_1))
@@ -18518,28 +18511,27 @@
                       (loop_0 i_0 (add1 i_0) max-length_3))
                     (let ((c_0 (string-ref str_0 i_0)))
                       (let ((escaped_0
-                             (let ((tmp_0 c_0))
-                               (if (eqv? tmp_0 '#\x22)
-                                 #vu8(92 34)
-                                 (if (eqv? tmp_0 '#\x5c)
-                                   #vu8(92 92)
-                                   (if (eqv? tmp_0 '#\x7)
-                                     #vu8(92 97)
-                                     (if (eqv? tmp_0 '#\x8)
-                                       #vu8(92 98)
-                                       (if (eqv? tmp_0 '#\x1b)
-                                         #vu8(92 101)
-                                         (if (eqv? tmp_0 '#\xc)
-                                           #vu8(92 102)
-                                           (if (eqv? tmp_0 '#\xa)
-                                             #vu8(92 110)
-                                             (if (eqv? tmp_0 '#\xd)
-                                               #vu8(92 114)
-                                               (if (eqv? tmp_0 '#\x9)
-                                                 #vu8(92 116)
-                                                 (if (eqv? tmp_0 '#\xb)
-                                                   #vu8(92 118)
-                                                   #f)))))))))))))
+                             (if (eqv? c_0 '#\x22)
+                               #vu8(92 34)
+                               (if (eqv? c_0 '#\x5c)
+                                 #vu8(92 92)
+                                 (if (eqv? c_0 '#\x7)
+                                   #vu8(92 97)
+                                   (if (eqv? c_0 '#\x8)
+                                     #vu8(92 98)
+                                     (if (eqv? c_0 '#\x1b)
+                                       #vu8(92 101)
+                                       (if (eqv? c_0 '#\xc)
+                                         #vu8(92 102)
+                                         (if (eqv? c_0 '#\xa)
+                                           #vu8(92 110)
+                                           (if (eqv? c_0 '#\xd)
+                                             #vu8(92 114)
+                                             (if (eqv? c_0 '#\x9)
+                                               #vu8(92 116)
+                                               (if (eqv? c_0 '#\xb)
+                                                 #vu8(92 118)
+                                                 #f))))))))))))
                         (if escaped_0
                           (let ((max-length_3
                                  (write-string/max
@@ -29257,7 +29249,7 @@
        (begin0
          (let ((index_0
                 (if (symbol? key_0)
-                  (hash-ref hash2702 key_0 (lambda () 0))
+                  (hash-ref hash2713 key_0 (lambda () 0))
                   0)))
            (if (unsafe-fx< index_0 9)
              (if (unsafe-fx< index_0 4)
@@ -29269,7 +29261,7 @@
                    "      'init-dir 'init-file 'addon-dir 'cache-dir\n"
                    "      'doc-dir 'desk-dir 'sys-dir 'exec-file 'run-file\n"
                    "      'collects-dir 'config-dir 'orig-dir\n"
-                   "      'host-collects-dir 'host-config-dir)")
+                   "      'host-collects-dir 'host-config-dir 'host-addon-dir)")
                   key_0)
                  (if (unsafe-fx< index_0 2)
                    (let ((or-part_0 exec-file))
@@ -29315,17 +29307,24 @@
                                   (string->path$1 "../collects")))))))
                      (1/path->directory-path p_0))
                    (if (unsafe-fx< index_0 8)
-                     (1/path->directory-path orig-dir)
-                     (let ((p_0 (rktio-system-path 'find-system-path 1)))
-                       (1/path->directory-path p_0))))))
-             (if (unsafe-fx< index_0 13)
-               (if (unsafe-fx< index_0 10)
-                 (let ((p_0 (rktio-system-path 'find-system-path 0)))
-                   (1/path->directory-path p_0))
-                 (if (unsafe-fx< index_0 11)
+                     (if (eq? host-addon-dir 'inherit)
+                       (1/find-system-path 'addon-dir)
+                       (let ((or-part_0 host-addon-dir))
+                         (if or-part_0
+                           or-part_0
+                           (rktio-system-path 'find-system-path 4))))
+                     (1/path->directory-path orig-dir)))))
+             (if (unsafe-fx< index_0 14)
+               (if (unsafe-fx< index_0 11)
+                 (if (unsafe-fx< index_0 10)
+                   (let ((p_0 (rktio-system-path 'find-system-path 1)))
+                     (1/path->directory-path p_0))
+                   (let ((p_0 (rktio-system-path 'find-system-path 0)))
+                     (1/path->directory-path p_0)))
+                 (if (unsafe-fx< index_0 12)
                    (let ((p_0 (rktio-system-path 'find-system-path 2)))
                      (1/path->directory-path p_0))
-                   (if (unsafe-fx< index_0 12)
+                   (if (unsafe-fx< index_0 13)
                      (rktio-system-path 'find-system-path 3)
                      (let ((p_0
                             (let ((or-part_0 addon-dir))
@@ -29333,19 +29332,19 @@
                                 or-part_0
                                 (rktio-system-path 'find-system-path 4)))))
                        (1/path->directory-path p_0)))))
-               (if (unsafe-fx< index_0 15)
-                 (if (unsafe-fx< index_0 14)
+               (if (unsafe-fx< index_0 16)
+                 (if (unsafe-fx< index_0 15)
                    (let ((p_0 (rktio-system-path 'find-system-path 10)))
                      (1/path->directory-path p_0))
                    (let ((p_0 (rktio-system-path 'find-system-path 5)))
                      (1/path->directory-path p_0)))
-                 (if (unsafe-fx< index_0 16)
+                 (if (unsafe-fx< index_0 17)
                    (let ((p_0 (rktio-system-path 'find-system-path 6)))
                      (1/path->directory-path p_0))
-                   (if (unsafe-fx< index_0 17)
+                   (if (unsafe-fx< index_0 18)
                      (let ((p_0 (rktio-system-path 'find-system-path 7)))
                        (1/path->directory-path p_0))
-                     (if (unsafe-fx< index_0 18)
+                     (if (unsafe-fx< index_0 19)
                        (let ((p_0 (rktio-system-path 'find-system-path 8)))
                          (1/path->directory-path p_0))
                        (rktio-system-path 'find-system-path 9))))))))
@@ -29409,6 +29408,8 @@
 (define set-host-collects-dir! (lambda (p_0) (set! host-collects-dir p_0)))
 (define host-config-dir #f)
 (define set-host-config-dir! (lambda (p_0) (set! host-config-dir p_0)))
+(define host-addon-dir 'inherit)
+(define set-host-addon-dir! (lambda (p_0) (set! host-addon-dir p_0)))
 (define rktio-system-path
   (lambda (who_0 key_0)
     (begin

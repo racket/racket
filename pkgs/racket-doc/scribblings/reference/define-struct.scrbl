@@ -23,6 +23,7 @@
                               (code:line #:auto-value auto-expr)
                               (code:line #:guard guard-expr)
                               (code:line #:property prop-expr val-expr)
+                              (code:line #:properties prop-list-expr)
                               (code:line #:transparent)
                               (code:line #:prefab)
                               (code:line #:sealed)
@@ -133,9 +134,10 @@ procedure, respectively. See @racket[make-struct-type] for more
 information on these attributes of a structure type.  The
 @racket[#:property] option, which can be supplied
 multiple times, attaches a property value to the structure type; see
-@secref["structprops"] for more information on properties. The
-@racket[#:transparent] option is a shorthand for @racket[#:inspector
-#f].
+@secref["structprops"] for more information on properties.
+The @racket[#:properties] option, which can be supplied multiple times,
+accepts multiple properties and their values as an association list.
+The @racket[#:transparent] option is a shorthand for @racket[#:inspector #f].
 
 @examples[#:eval posn-eval
   (struct point (x y) #:inspector #f)
@@ -307,7 +309,8 @@ cp
 For serialization, see @racket[define-serializable-struct].
 
 @history[#:changed "6.9.0.4" @elem{Added @racket[#:authentic].}
-         #:changed "8.0.0.7" @elem{Added @racket[#:sealed].}]}
+         #:changed "8.0.0.7" @elem{Added @racket[#:sealed].}
+         #:changed "8.17.0.4" @elem{Added @racket[#:properties].}]}
 
 
 @defform[(struct-field-index field-id)]{

@@ -64,6 +64,7 @@
                          "++global-ok" "addon-dir"
                          "++global-ok" "host-collects-dir"
                          "++global-ok" "host-config-dir"
+                         "++global-ok" "host-addon-dir"
                          "++global-ok" "saved-error-value->string"
                          "-o" path)
                  (register-expansion-dependencies io-dep.rktd token))]

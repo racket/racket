@@ -340,6 +340,7 @@
     (strip-signature dest)
     (unless mac-fw?
       (bootstrap-racket (at-source "embed-boot.rkt")
+                        "--target" m
                         boot-compress-flags
                         ""
                         dest
@@ -974,7 +975,8 @@
                        m (lookup 'KERNEL_TARGET_MACH m)
                        (lookup 'CROSS_COMPILE_TARGET_KIND "machine")
                        (at-source ".")
-                       (lookup 'PLT_CS_SLSP_SUFFIX))
+                       (lookup 'PLT_CS_SLSP_SUFFIX)
+                       (if mac? "macosx" "other"))
        
        (icp* (at-source "api.h") (build-path includepltdir "racketcs.h"))
        (icp* (at-source "boot.h") (build-path includepltdir "racketcsboot.h"))
@@ -1120,7 +1122,7 @@
        (run-raco-setup config dest-racket copytree-racket
                        ;; this can be redundant if it's also supplied via `SETUP_MACHINE_FLAGS`,
                        ;; but redundant should be ok:
-                       (list "-MCR" (~a (at-dir "compiled") ":")
+                       (list "-MCR" (~a (path->complete-path (at-dir "compiled")) ":")
                              "--cross-compiler" m (at-dir ".")))
        (maybe-libzo-move config dest-racket copytree-racket at-dir)
        (maybe-destdir-fix config dest-racket copytree-racket at-dir)

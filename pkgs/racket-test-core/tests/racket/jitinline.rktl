@@ -1306,5 +1306,33 @@
               (make-ticks '-1.0 '1.0 '300))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Try to trigger copying of arguments to a JITted
+;; `case-lambda` into the runstack before the cases
+;; of the `case-lambda` have been compiled. This
+;; is intended as a regression test for a bug that
+;; led to a runstack overflow in that case.
+
+(let ()
+  (define procs
+    (parameterize ([current-namespace (make-base-namespace)])
+      (for/list ([i 4096])
+        (chaperone-procedure
+         (case-lambda
+           [(a b c d e f g h) 8]
+           [(a b c) 3])
+         (eval '(case-lambda
+                  [(a b c d e f g h) (values a b c d e f g h)]
+                  [(a b c) (values a b c)]))))))
+
+  (define args '(1 2 3 4 5 6 7 8))
+  (set! args args)
+
+  (let loop ([procs procs])
+    (if (null? procs)
+        0
+        (+ (loop (cdr procs))
+           (apply (car procs) args)))))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)
