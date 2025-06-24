@@ -11,8 +11,8 @@
 @note-lib-only[racket/deprecation]
 
 
-To @deftech{deprecate} a function, macro, or other API element is to formally declare it as obsolete,
-typically with an intended replacement that users should migrate to. The
+A @deftech{deprecated} function, macro, or other API element is one that's been formally declared
+obsolete, typically with an intended replacement that users should migrate to. The
 @racketmodname[racket/deprecation] library provides a standardized mechanism for declaring
 deprecations in a machine-processable manner. These declarations can allow tools such as
 @racketmodname[resyntax #:indirect] to automate migrating code away from deprecated APIs. Note that a
@@ -53,7 +53,7 @@ The @racketmodname[racket/deprecation/transformer] module provides compile-time 
 the @racketmodname[racket/deprecation] library, primarily for use in tools that wish to reflect on
 deprecated code.
 
-A @tech{deprecated alias transformer} is a kind of @tech{rename transformer} which signals that the
+A @deftech{deprecated alias transformer} is a kind of @tech{rename transformer} which signals that the
 transformer binding is a @tech{deprecated} alias of the target identifier. This signal is intended
 for consumption in tools such as editors (which may wish to display a warning when deprecated aliases
 are used) and automated refactoring systems (which may wish to replace deprecated aliases with their
@@ -68,13 +68,15 @@ target identifiers automatically).
  on the transformer value.
 
 @(examples
+  #:escape UNSYNTAX
   (require (for-syntax racket/base
                        racket/deprecation/transformer)
            racket/deprecation
            syntax/parse/define)
 
   (define-syntax-parse-rule (is-deprecated? id:id)
-    #:do [(define-values (transformer _) (syntax-local-value/immediate #'id))]
+    #:do [(define-values (transformer _)
+            (syntax-local-value/immediate #'id (λ () (values #false #false))))]
     #:with result #`'#,(deprecated-alias? transformer)
     result)
 

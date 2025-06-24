@@ -8,7 +8,7 @@
 
 (struct deprecated-alias (target)
   #:transparent
-  #:guard (λ (name target)
+  #:guard (λ (target name)
             (unless (identifier? target)
               (raise-argument-error name "identifier?" target))
             (syntax-property target 'not-free-identifier=? #true))
