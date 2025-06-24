@@ -12,4 +12,5 @@
             (unless (identifier? target)
               (raise-argument-error name "identifier?" target))
             (syntax-property target 'not-free-identifier=? #true))
-  #:property prop:rename-transformer 0)
+  #:property prop:rename-transformer 0
+  #:omit-define-syntaxes)

@@ -17,8 +17,4 @@
          (raise-syntax-error #f "expected an alias identifier" stx #'id))
        (unless (identifier? #'target-id)
          (raise-syntax-error #f "expected a target identifier" stx #'target-id))
-       (unless (equal? (syntax-local-context) 'module)
-         (raise-syntax-error #f "can only be used in a module context" stx))
-       #'(begin
-           (provide id)
-           (define-syntax id (deprecated-alias #'target-id))))]))
+       #'(define-syntax id (deprecated-alias #'target-id)))]))
