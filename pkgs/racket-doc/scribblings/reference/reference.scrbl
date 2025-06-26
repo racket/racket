@@ -76,7 +76,6 @@ In addition, it re-exports @racket[for-syntax] everything from
 @include-section["concurrency.scrbl"]
 @include-section["macros.scrbl"]
 @include-section["io.scrbl"]
-@include-section["deprecation.scrbl"]
 @include-section["security.scrbl"]
 @include-section["os.scrbl"]
 @include-section["memory.scrbl"]

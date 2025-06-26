@@ -1,7 +1,8 @@
 #lang scribble/doc
 
 @(require (for-label racket/deprecation
-                     racket/deprecation/transformer)
+                     racket/deprecation/transformer
+                     syntax/parse/define)
           "mz.rkt")
 
 
@@ -77,8 +78,8 @@ target identifiers automatically).
   (define-syntax-parse-rule (is-deprecated? id:id)
     #:do [(define-values (transformer _)
             (syntax-local-value/immediate #'id (λ () (values #false #false))))]
-    #:with result #`'#,(deprecated-alias? transformer)
-    result)
+    #:with result (deprecated-alias? transformer)
+    'result)
 
   (define-deprecated-alias bad-list list)
   (is-deprecated? list)

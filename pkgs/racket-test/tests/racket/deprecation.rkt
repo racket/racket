@@ -7,6 +7,16 @@
          syntax/parse/define)
 
 
+(module mod racket/base
+  (require racket/deprecation)
+  (provide a b)
+  (define a 42)
+  (define-deprecated-alias b a))
+
+
+(require (prefix-in mod: 'mod))
+
+
 (test-case "define-deprecated-alias"
 
   (test-case "deprecated alias of a constant"
@@ -27,10 +37,10 @@
     (check-equal? (m2 1 2 3) (list 1 2 3)))
 
   (define-syntax-parse-rule (is-deprecated? id:id)
-      #:do [(define-values (transformer _)
-              (syntax-local-value/immediate #'id (λ () (values #false #false))))]
-      #:with result #`'#,(deprecated-alias? transformer)
-      result)
+    #:do [(define-values (transformer _)
+            (syntax-local-value/immediate #'id (λ () (values #false #false))))]
+    #:with result #`'#,(deprecated-alias? transformer)
+    result)
   
   (test-case "deprecated alias can be inspected at compile time"
     (define a 42)
@@ -39,13 +49,5 @@
     (check-true (is-deprecated? b)))
 
   (test-case "deprecated alias provided by module can be inspected at compile time"
-    (local-require 'foo)
-    (check-false (is-deprecated? a))
-    (check-true (is-deprecated? b))))
-
-
-(module foo racket/base
-  (require racket/deprecation)
-  (provide a b)
-  (define a 42)
-  (define-deprecated-alias b a))
+    (check-false (is-deprecated? mod:a))
+    (check-true (is-deprecated? mod:b))))

@@ -20,3 +20,4 @@
 @include-section["sandbox.scrbl"]
 @include-section["repl.scrbl"]
 @include-section["linklet.scrbl"]
+@include-section["deprecation.scrbl"]
