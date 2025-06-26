@@ -328,7 +328,7 @@ you obtain bindings that work with the existing prefab structure type:
 
 The field name @racketidfont{kind} above does not matter for finding
 the prefab structure type; only the name @racketidfont{sprout} and the
-number of fields matters. At the same time, the prefab structure type
+number of fields matter. At the same time, the prefab structure type
 @racketidfont{sprout} with three fields is a different structure type
 than the one with a single field:
 
