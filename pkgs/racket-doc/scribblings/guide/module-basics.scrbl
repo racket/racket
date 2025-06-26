@@ -238,7 +238,7 @@ your Racket configuration.
 
 Some libraries are meant to be used across multiple projects, so that
 keeping the library source in a directory with its uses does not make
-sense. In that case, the best option is add a new
+sense. In that case, the best option is to add a new
 @tech{collection}. After the library is in a collection, it can be
 referenced with an unquoted path, just like libraries that are
 included with the Racket distribution.
