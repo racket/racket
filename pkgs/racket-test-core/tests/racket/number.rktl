@@ -639,9 +639,9 @@
   (test +inf.f expt -4.0f0 (lcm (exact-round -1.7976931348623151e+308)))
   (test -inf.f expt -4.0f0 (add1 (lcm (exact-round -1.7976931348623151e+308)))))
 
-(test  5.540619075645279e+34 expt   1.000000000000001 (expt 2 56))
-(test  5.540619075645279e+34 expt  -1.000000000000001 (expt 2 56))
-(test -5.5406190756452855e+34 expt -1.000000000000001 (add1 (expt 2 56)))
+(test 5.540622384393264e34 expt 1.000000000000001 72057594037927936)
+(test 5.540622384393264e34 expt -1.000000000000001 72057594037927936)
+(test -5.54062238439327e+34 expt -1.000000000000001 72057594037927937)
 
 (err/rt-test (eval '(expt 2 (expt 2 80))) exn:fail:out-of-memory?)
 (err/rt-test (eval '(expt 1+1i (expt 2 80))) exn:fail:out-of-memory?)
@@ -666,7 +666,7 @@
       (define L
         (for/list ([i (in-list '(14 150 350))])
           (expt base (make-exponent (string->number (build-string i (λ (i) #\1)))))))
-      (test #t `(,base ,L) (apply = L)))))
+      (test #t `(,base ,L ,make-exponent) (apply = L)))))
 
 (define (inf-non-real? x)
   (and (not (real? x))

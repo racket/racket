@@ -3873,28 +3873,68 @@ scheme_expt(int argc, Scheme_Object *argv[])
           || (v < -((mzlonglong)1 << 53))
           || (v > ((mzlonglong)1 << 53))) {
         /* `e` loses precision as a flonum */
+        /* The implementaton here is based on Brad Lucier's implementation for Gambit */
 #ifdef MZ_USE_SINGLE_FLOATS
         int sgl = !SCHEME_DBLP(n);
 #endif
         double d = SCHEME_FLOAT_VAL(n), a = 1.0;
         intptr_t i;
         int invert = 0;
-        if (scheme_is_negative(e)) {
-          invert = 1;
-          e = scheme_bin_minus(scheme_make_integer(0), e);
-        }
-        i = scheme_integer_length(e);
-        while (i >= 0) {
-          a = a * a;
-          if (scheme_bin_bitwise_bit_set_p(e, scheme_make_integer(i)))
-            a *= d;
-          i--;
-        }
-        if (invert) a = 1.0 / a;
+        Scheme_Object *args[2];
+
+        if (d == 1.0) {
+          return n;
+        } else if (d == -1.0) {
+          if (SCHEME_TRUEP(scheme_even_p(1, &e))) {
 #ifdef MZ_USE_SINGLE_FLOATS
-        if (sgl) return scheme_make_float(a);
+            if (sgl) return scheme_make_float(1.0);
 #endif
-        return scheme_make_double(a);
+            return scheme_make_double(1.0);
+          }
+          return n;
+        }
+
+        args[0] = scheme_make_integer(1);
+        args[1] = scheme_make_integer(63);
+        r = scheme_bitwise_shift(2, args);
+        if (scheme_bin_lt_eq(r, e)
+            || scheme_bin_lt_eq(e, scheme_bin_minus(scheme_make_integer(0), r))) {
+          /* Only extreme values (zero and infinity) are possible */
+          int is_neg;
+          is_neg = SCHEME_TRUEP(scheme_odd_p(1, &e)) && (d < 0.0);
+          if (((d > 1.0) || (d < -1.0)) == scheme_is_positive(e)) {
+            if (is_neg)
+              return SELECT_EXPT_PRECISION(scheme_single_minus_inf_object,
+                                           scheme_minus_inf_object);
+            else
+              return SELECT_EXPT_PRECISION(scheme_single_inf_object,
+                                           scheme_inf_object);
+          } else {
+            if (is_neg)
+              return SELECT_EXPT_PRECISION(scheme_nzerof, scheme_nzerod);
+            else
+              return SELECT_EXPT_PRECISION(scheme_zerof, scheme_zerod);
+          }          
+        } else {
+          Scheme_Object *abs_big_e, *big_part_of_e, *rest_of_e;
+          args[0] = e;
+          args[0] = scheme_abs(1, args);
+          args[1] = scheme_make_integer(-12);
+          args[0] = scheme_bitwise_shift(2, args);
+          args[1] = scheme_make_integer(12);
+          abs_big_e = scheme_bitwise_shift(2, args);
+          if (scheme_is_negative(e))
+            big_part_of_e = scheme_bin_minus(scheme_make_integer(0), abs_big_e);
+          else
+            big_part_of_e = abs_big_e;
+          rest_of_e = scheme_bin_minus(e, abs_big_e);
+          d = (sch_pow(d, scheme_real_to_double(big_part_of_e))
+               * sch_pow(d, scheme_real_to_double(rest_of_e)));
+#ifdef MZ_USE_SINGLE_FLOATS
+          if (sgl) return scheme_make_float(d);
+#endif
+          return scheme_make_double(d);
+        }
       }
     }
 
