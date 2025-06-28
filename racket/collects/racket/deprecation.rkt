@@ -17,7 +17,7 @@
          (raise-syntax-error #f "expected an alias identifier" stx #'id))
        (unless (identifier? #'target-id)
          (raise-syntax-error #f "expected a target identifier" stx #'target-id))
-       (unless (identifier-binding #'target-id)
+       (unless (identifier-binding #'target-id (syntax-local-phase-level) #true)
          (raise-syntax-error #f "target identifier not bound" stx #'target-id
                              #:exn exn:fail:syntax:unbound))
        (syntax-property #'(define-syntax id (deprecated-alias #'target-id))
