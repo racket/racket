@@ -4,6 +4,7 @@
                      racket/deprecation/transformer)
          racket/deprecation
          rackunit
+         syntax/macro-testing
          syntax/parse/define)
 
 
@@ -50,4 +51,17 @@
 
   (test-case "deprecated alias provided by module can be inspected at compile time"
     (check-false (is-deprecated? mod:a))
-    (check-true (is-deprecated? mod:b))))
+    (check-true (is-deprecated? mod:b)))
+
+  (test-case "deprecated alias of unbound identifier is a syntax error"
+    (define thrown
+      (convert-syntax-error
+       (let ()
+         (define-deprecated-alias a x)
+         #false)))
+    (unless thrown
+      (fail-check "no compile-time error was raised"))
+    (check-pred exn:fail:syntax:unbound? thrown)
+    (check-regexp-match #rx"target identifier" (exn-message thrown))
+    (define expr-datums (map syntax->datum (exn:fail:syntax-exprs thrown)))
+    (check-equal? expr-datums '((define-deprecated-alias a x) x))))
