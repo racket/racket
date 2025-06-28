@@ -430,6 +430,22 @@ Pending expunges must be handled before calling this function; see
 @racket[imap-get-expunges].}
 
 
+@defproc[(imap-move [imap imap-connection?]
+                    [msg-nums (listof exact-nonnegative-integer?)]
+                    [dest-mailbox (or/c string? bytes?)])
+          void?]{
+
+Moves the specified messages from the currently selected mailbox to
+the specified mailbox---equivalent to copying and then expunging the
+messages, but this single step works only when the IMAP server
+supports the MOVE extension.
+
+Pending expunges must be handled before calling this function; see
+@racket[imap-get-expunges].
+
+@history[#:added "1.3"]}
+
+
 @defproc[(imap-append [imap imap-connection?]
                       [mailbox string?]
                       [message (or/c string? bytes?)]
@@ -551,4 +567,5 @@ Imports nothing, exports @racket[imap^].}
 
 @defsignature[imap^ ()]{}
 
-Includes everything exported by the @racketmodname[net/imap] module.
+Includes everything exported by the @racketmodname[net/imap] module,
+except for @racket[imap-move].

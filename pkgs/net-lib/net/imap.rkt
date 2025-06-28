@@ -56,6 +56,7 @@
  imap-copy
  imap-store imap-flag->symbol symbol->imap-flag
  imap-expunge
+ imap-move
 
  imap-mailbox-exists?
  imap-create-mailbox
@@ -557,6 +558,11 @@
   (no-expunges 'imap-copy imap)
   (check-ok
    (imap-send imap (list "COPY" (box (msg-set msgs)) dest-mailbox) void)))
+
+(define (imap-move imap msgs dest-mailbox)
+  (no-expunges 'imap-move imap)
+  (check-ok
+   (imap-send imap (list "MOVE" (box (msg-set msgs)) dest-mailbox) void)))
 
 (define (imap-append imap dest-mailbox msg [flags '(seen)]
                      #:date [date #f])
