@@ -1005,8 +1005,10 @@
 
        (cond
          [mac?
-          (define dest-framework-dir (build-path (shell-subst (lookup 'FRAMEWORK_INSTALL_DIR) config)
-                                                 "Racket.framework"))
+          (define dest-framework-dir (at-destdir
+                                      config
+                                      (build-path (shell-subst (lookup 'FRAMEWORK_INSTALL_DIR) config)
+                                                  "Racket.framework")))
           (define fw-vers-dir (build-path dest-framework-dir "Versions" (~a version "_CS")))
           (define dest-racket (build-path bindir (cs-suffix "racket")))
           (define (get-framework-prefix gui?)

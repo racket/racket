@@ -4,17 +4,20 @@
 (provide add-plt-segment
          remove-signature
          add-ad-hoc-signature
-         get/set-dylib-path)
+         get/set-dylib-path
+         exectuable-for-signing?)
 
 (define current-big-endian (make-parameter (system-big-endian?)))
 
-(define (check-exe-id exe-id)
+(define (check-exe-id exe-id #:error? [error? #t])
   (cond
     [(memv exe-id '(#xcfFaedFe #xceFaedFe))
-     (current-big-endian (not (current-big-endian)))]
+     (current-big-endian (not (current-big-endian)))
+     #t]
     [else
-     (unless (memv exe-id '(#xFeedFacf #xFeedFace))
-       (error 'mach-o "unrecognized #x~x" exe-id))]))
+     (or (memv exe-id '(#xFeedFacf #xFeedFace))
+         (and error?
+              (error 'mach-o "unrecognized #x~x" exe-id)))]))
 
 (define aarch64-machine-type #x0100000C)
 
@@ -467,6 +470,9 @@
         (write-ulong (+ offset delta) out)
         (flush-output out)))))
 
+(define (sign-machine-id? machine-id)
+  (eqv? machine-id aarch64-machine-type))
+
 (define (remove-signature file)
   (add-plt-segment file #f))
 
@@ -482,7 +488,7 @@
        (check-exe-id exe-id)
        (define machine-id (read-ulong p))
        (cond
-         [(eqv? machine-id aarch64-machine-type)
+         [(sign-machine-id? machine-id)
           (define orig-size (file-size file))
           (define file-identity (let-values ([(base name dir?) (split-path file)])
                                   (bytes-append (path->bytes name) #"\0")))
@@ -719,3 +725,13 @@
           (close-input-port p)
           (when out
             (close-output-port out))))))
+
+(define (exectuable-for-signing? path)
+  (call-with-input-file*
+   path
+   (lambda (p)
+     (define bstr (peek-bytes 8 0 p))
+     (and (bytes? bstr)
+          (= 8 (bytes-length bstr))
+          (check-exe-id (read-ulong p) #:error? #f)
+          (sign-machine-id? (read-ulong p))))))

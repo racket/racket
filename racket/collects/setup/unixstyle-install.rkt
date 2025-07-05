@@ -35,7 +35,8 @@
 (require setup/cross-system
          (submod compiler/private/collects-path set-executable-tag)
          racket/file
-         racket/list)
+         racket/list
+         compiler/private/mach-o)
 
 (module test racket/base)
 
@@ -244,8 +245,12 @@
                            (if (string? dir)
                                (string->path dir)
                                dir))))
+    (when (exectuable-for-signing? file)
+      (remove-signature file))
     (fix-one #rx#"coLLECTs dIRECTORy:" "collects" (dir: 'collects))
-    (fix-one #rx#"coNFIg dIRECTORy:" "config" (dir: 'config)))
+    (fix-one #rx#"coNFIg dIRECTORy:" "config" (dir: 'config))
+    (when (exectuable-for-signing? file)
+      (add-ad-hoc-signature file)))
   (define (fix-script file)
     (let* ([size (file-size file)]
            [buf (with-input-from-file file (lambda () (read-bytes size)))]
