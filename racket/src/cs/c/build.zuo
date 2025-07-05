@@ -322,7 +322,7 @@
     (when signed-exe?
       (restore-signature* cross? bootstrap-racket dest)))
   (define entitlements
-    (if (and mac? signed-exe?)
+    (if signed-exe?  ; wanted for XOX, too, so no `mac?` check
         (list (at-source "../../mac/entitlements.plist"))
         '()))
 
