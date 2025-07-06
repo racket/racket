@@ -1168,3 +1168,12 @@
      (syntax-parse #'(hello)
        [(_ (~describe "thing" e) ...+)
         'ok]))))
+
+;; issue #5293 (7/2025)
+(test-case "fixup wf"
+  (convert-compile-time-error
+   (let ()
+     (define-syntax-class bad
+       (pattern ((~or* (~and (~seq))
+                       (~var _ id)))))
+     (void))))

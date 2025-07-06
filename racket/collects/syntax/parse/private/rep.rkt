@@ -1294,7 +1294,9 @@
          (parse-pat:and/k stx ps))]
       [(pat:or _ ps _)
        (let ([ps (map I ps)])
-         (if (ormap head-pattern? ps) (create-hpat:or ps) (create-pat:or ps)))]
+         (if (ormap head-pattern? ps)
+             (create-hpat:or (map coerce-head-pattern ps))
+             (create-pat:or ps)))]
       [(pat:delimit sp)
        (let ([sp (parameterize ((cut-allowed? #t)) (I sp))])
          (if (head-pattern? sp) (hpat:delimit sp) (pat:delimit sp)))]
