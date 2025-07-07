@@ -205,6 +205,12 @@ MAKE_INSTALL_PKGSCOPE = @MAKE_INSTALL_PKGSCOPE@
 # (e.g., "user")
 INSTALL_PKGSCOPE = @INSTALL_PKGSCOPE@
 
+# Extra packages to install, and where to find then if not
+# the default package catalog
+INSTALL_PKGS = @INSTALL_PKGS@
+INSTALL_MISSING_PKGS = @INSTALL_MISSING_PKGS@
+INSTALL_PKG_CATALOG = @INSTALL_PKG_CATALOG@
+
 # Whether ".zo" files should be moved to "lib" instead of "share"
 # for a Unix-style installation ("yes" or "no")
 INSTALL_LIBZO = @INSTALL_LIBZO@

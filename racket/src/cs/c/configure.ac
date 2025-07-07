@@ -42,6 +42,7 @@ m4_include(../ac/vm_arg.m4)
 m4_include(../ac/crossany_arg.m4)
 AC_ARG_ENABLE(libz,       [  --enable-libz           use installed libz if available])
 AC_ARG_ENABLE(liblz4,     [  --enable-liblz4         use installed liblz4 if available])
+m4_include(../ac/pkgs_arg.m4)
 
 m4_include(../ac/sdk.m4)
 
@@ -118,6 +119,7 @@ if test "${enable_xonx}" = "" ; then
 fi
 
 m4_include(../ac/path_pkgscope.m4)
+m4_include(../ac/pkgs_show.m4)
 
 m4_include(../ac/crossany.m4)
 
@@ -770,6 +772,10 @@ if test "${enable_check}" = "yes" ; then
   ENABLE_EXTRA_CHECKS=yes
 fi
 
+############## Packages tool ################
+
+m4_include(../ac/pkgs.m4)
+
 ############## subconfigure ################
 
 # Before libtool setup
@@ -933,6 +939,9 @@ AC_SUBST(PLT_CS_SLSP_SUFFIX)
 AC_SUBST(RKTIO_CONFIGURE_ARGS)
 AC_SUBST(CC_FOR_BUILD)
 AC_SUBST(CFLAGS_FOR_BUILD)
+AC_SUBST(INSTALL_PKGS)
+AC_SUBST(INSTALL_MISSING_PKGS)
+AC_SUBST(INSTALL_PKG_CATALOG)
 AC_SUBST(upsrcdir)
 
 makefiles="Makefile"

@@ -241,6 +241,7 @@ if test "${enable_racket}" != "" ; then
 fi
 
 m4_include(../ac/path_pkgscope.m4)
+m4_include(../ac/pkgs_show.m4)
 
 m4_include(../ac/crossany.m4)
 
@@ -1328,6 +1329,10 @@ if test "${enable_werror}" = "yes"; then
   CFLAGS="-Werror ${CFLAGS}"
 fi
 
+############## packages ################
+
+m4_include(../ac/pkgs.m4)
+
 ############## subconfigures ################
 
 # Make sure the --enable-shared default is propagated:
@@ -1480,6 +1485,10 @@ AC_SUBST(INSTALL_NAME_TOOL)
 
 AC_SUBST(LIBFFI_CONFIGURE_ARGS)
 AC_SUBST(RKTIO_CONFIGURE_ARGS)
+
+AC_SUBST(INSTALL_PKGS)
+AC_SUBST(INSTALL_MISSING_PKGS)
+AC_SUBST(INSTALL_PKG_CATALOG)
 
 AC_SUBST(CC_FOR_BUILD)
 AC_SUBST(CFLAGS_FOR_BUILD)

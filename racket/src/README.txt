@@ -353,27 +353,19 @@ After installing developer tools, follow the Unix instructions above,
 but note the following:
 
  * If you are building from a source distribution (as opposed to a Git
-   repository checkout), then beware that a regular/full Racket
-   distribution will not build correctly. A regular source
-   distribution is intended for Unix platforms, and it does not
-   include native libraries that are needed on Mac OS. You should
-   start with a source distribution that is labelled "Minimal Racket",
-   instead, and then finish with
+   repository checkout), then beware that a Racket distribution will
+   not build correctly by itself. A source distribution is intended
+   for Unix platforms, and it does not include native libraries that
+   are needed on Mac OS.
 
-     raco pkg update --auto racket-lib
-     raco pkg install -i main-distribution
+   To fetch the missing packages, supply `--enable-missingpkgs` to
+   `configure`. Using `--enable-missingpkgs` downloads and installs
+   needed platform-specific Racket packages as part of `make install`.
 
- * If you are building from a minimal Racket source distribution (as
-   opposed to a Git repository checkout or a regular/full Racket
-   source distribution for Unix), then "racket-lib" is already
-   included and installed as part of the the distribution, but still
-   without dependencies of "racket-lib" that are specific to Mac OS.
-   In that case, after following build steps for Unix, use
-
-      raco pkg update --auto racket-lib
-
-   using `raco` as created by `make install` to download and install
-   the dependencies.
+   Use `--enable-catalog=<url>` to install packages from a different
+   catalog than the source distribution's default. Use
+   `--enable-pkgs=<pkgs>` to install a different set of packages (or
+   additional packages if `--enable-missingpkgs` is also specified).
 
  * The Racket build creates a framework, "Racket.framework", which is
    installed into "racket/lib".  This framework is used by the `racket`

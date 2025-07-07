@@ -623,6 +623,9 @@ ac_includes_default="\
 ac_subst_vars='LTLIBOBJS
 LIBOBJS
 upsrcdir
+INSTALL_PKG_CATALOG
+INSTALL_MISSING_PKGS
+INSTALL_PKGS
 CFLAGS_FOR_BUILD
 CC_FOR_BUILD
 RKTIO_CONFIGURE_ARGS
@@ -816,6 +819,9 @@ enable_cgcdefault
 enable_crossany
 enable_libz
 enable_liblz4
+enable_pkgs
+enable_missingpkgs
+enable_catalog
 '
       ac_precious_vars='build_alias
 host_alias
@@ -1511,6 +1517,9 @@ Optional Features:
   --enable-crossany       Record own cross target as machine-independent
   --enable-libz           use installed libz if available
   --enable-liblz4         use installed liblz4 if available
+  --enable-pkgs=<pkgs>    add <pkgs> on install
+  --enable-missingpkgs    add missing package dependencies on install
+  --enable-catalog=<url>  install packages from <url>
 
 Some influential environment variables:
   CC          C compiler command
@@ -2861,6 +2870,23 @@ if test "${enable_liblz4+set}" = set; then :
 fi
 
 
+# Check whether --enable-pkgs was given.
+if test "${enable_pkgs+set}" = set; then :
+  enableval=$enable_pkgs;
+fi
+
+# Check whether --enable-missingpkgs was given.
+if test "${enable_missingpkgs+set}" = set; then :
+  enableval=$enable_missingpkgs;
+fi
+
+# Check whether --enable-catalog was given.
+if test "${enable_catalog+set}" = set; then :
+  enableval=$enable_catalog;
+fi
+
+
+
 
 enable_quartz=no
 if test "${enable_xonx}" = "yes" ; then
@@ -3101,6 +3127,24 @@ fi
 
 
 
+
+show_pkg_catalog="no"
+
+if test "$enable_pkgs" != ""  ; then
+  echo "=== Adding extra packages on install: $enable_pkgs"
+  show_pkg_catalog="yes"
+fi
+
+if test "$enable_missingpkgs" == "yes"  ; then
+  echo "=== Adding any missing package dependencies on install"
+  show_pkg_catalog="yes"
+fi
+
+if test "$show_pkg_catalog" != ""  ; then
+  if test "$enable_catalog" != "" ; then
+    echo "=== Installing packages from: $enable_catalog"
+  fi
+fi
 
 
 show_explicitly_enabled "${enable_crossany}" "Own cross-compile target as machine-independent"
@@ -6124,6 +6168,13 @@ if test "${enable_check}" = "yes" ; then
   ENABLE_EXTRA_CHECKS=yes
 fi
 
+############## Packages tool ################
+
+INSTALL_PKGS="$enable_pkgs"
+INSTALL_MISSING_PKGS="$enable_missingpkgs"
+INSTALL_PKG_CATALOG="$enable_catalog"
+
+
 ############## subconfigure ################
 
 # Before libtool setup
@@ -6251,6 +6302,9 @@ done
 
 
 RKTIO_CONFIGURE_ARGS="${keep_configure_args} ${SUB_CONFIGURE_EXTRAS}"
+
+
+
 
 
 

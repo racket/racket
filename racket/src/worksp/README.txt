@@ -6,25 +6,14 @@ content for a Racket build.
 ========================================================================
 
 If you are building from a source distribution (as opposed to a Git
-repository checkout), then beware that a regular/full Racket
-distribution will not build correctly. A regular source distribution
-is intended for Unix platforms, and it does not include native
-libraries that are needed on Windows. You should start with a source
-distribution that is labelled "Minimal Racket", instead.
+repository checkout), then beware that a Racket distribution will not
+build correctly on its own. A source distribution is intended for Unix
+platforms, and it does not include native libraries that are needed on
+Windows.
 
-When building from a minimal Racket source distribution, then most
-likely "racket-lib" is already included and installed as part of the
-the distribution, but without Windows-specific dependencies of
-"racket-lib". After following steps below to build and install,
-complete the build (in the "src" parent directory of "worksp") with
-
-   ..\raco pkg update --auto racket-lib
-
-If your goal is to arrive at the same content as a regular Racket
-distribution, then after building and installing minimal Racket,
-finish with
-
-   ..\raco pkg install -i main-distribution
+To fetch the missing packages, supply the `/addmissingpkgs` flag to
+`winfig.bat`, which downloads and installs needed platform-specific
+Racket packages as part of installing.
 
 
 ========================================================================

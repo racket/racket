@@ -625,6 +625,9 @@ LIBOBJS
 upsrcdir
 CFLAGS_FOR_BUILD
 CC_FOR_BUILD
+INSTALL_PKG_CATALOG
+INSTALL_MISSING_PKGS
+INSTALL_PKGS
 RKTIO_CONFIGURE_ARGS
 LIBFFI_CONFIGURE_ARGS
 INSTALL_NAME_TOOL
@@ -3554,6 +3557,24 @@ fi
 
 
 
+
+show_pkg_catalog="no"
+
+if test "$enable_pkgs" != ""  ; then
+  echo "=== Adding extra packages on install: $enable_pkgs"
+  show_pkg_catalog="yes"
+fi
+
+if test "$enable_missingpkgs" == "yes"  ; then
+  echo "=== Adding any missing package dependencies on install"
+  show_pkg_catalog="yes"
+fi
+
+if test "$show_pkg_catalog" != ""  ; then
+  if test "$enable_catalog" != "" ; then
+    echo "=== Installing packages from: $enable_catalog"
+  fi
+fi
 
 
 show_explicitly_enabled "${enable_crossany}" "Own cross-compile target as machine-independent"
@@ -7465,6 +7486,13 @@ if test "${enable_werror}" = "yes"; then
   CFLAGS="-Werror ${CFLAGS}"
 fi
 
+############## packages ################
+
+INSTALL_PKGS="$enable_pkgs"
+INSTALL_MISSING_PKGS="$enable_missingpkgs"
+INSTALL_PKG_CATALOG="$enable_catalog"
+
+
 ############## subconfigures ################
 
 # Make sure the --enable-shared default is propagated:
@@ -7535,6 +7563,10 @@ case "$srcdir" in
 esac
 
 LIBS="$LIBS $EXTRALIBS"
+
+
+
+
 
 
 

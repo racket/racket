@@ -4,6 +4,7 @@ setlocal
 set SRCDIR=%~dp0
 set BUILDMODE=cs
 set USE_SUFFIX=
+set INSTALL_MISSING_PKGS=no
 
 :argloop
 shift
@@ -13,6 +14,7 @@ if defined ARG (
   if "%ARG%"=="/csonly" set BUILDMODE=cs && goto argloop
   if "%ARG%"=="/bconly" set BUILDMODE=bc && goto argloop
   if "%ARG%"=="/suffix" set USE_SUFFIX=%1 && shift && goto argloop
+  if "%ARG%"=="/addmissingpkgs" set INSTALL_MISSING_PKGS=yes && shift && goto argloop
   echo Unrecognized argument %ARG%
   exit /B 1
 )
@@ -29,6 +31,7 @@ echo srcdir=%SRCDIR% > Makefile
 echo use_cs=%use_cs% >> Makefile
 echo use_bc=%use_bc% >> Makefile
 echo default_vm=%default_vm% >> Makefile
+echo INSTALL_MISSING_PKGS=%INSTALL_MISSING_PKGS% >> Makefile
 
 if %BUILDMODE%==bc echo MMM_CAP_INSTALLED=%USE_SUFFIX% >> Makefile
 if %BUILDMODE%==cs echo CS_CAP_INSTALLED=%USE_SUFFIX% >> Makefile

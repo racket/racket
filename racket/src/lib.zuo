@@ -97,7 +97,8 @@
   (define p (apply process (cons command args)))
   (process-wait (hash-ref p 'process))
   (unless (= 0 (process-status (hash-ref p 'process)))
-    (error "failed")))
+    (error "failed"))
+  (hash-ref p 'stdout (void)))
 
 (struct raco-driver (vars target config-getter))
 
@@ -131,7 +132,8 @@
       (thread-process-wait pid)
       (process-wait pid))
   (unless (= 0 (process-status pid))
-    (error "failed")))
+    (error "failed"))
+  (hash-ref p 'stdout (void)))
 
 (define (raco/process vars . args)
   (apply racket/process (list* vars
@@ -417,6 +419,7 @@
 (define (strip-lib-debug config path)
   (do-strip config 'STRIP_LIB_DEBUG path))
 
+;; Also installs additional packages as indicated in `config`
 (define (run-raco-setup config dest-racket cross-bootstrap-racket cross-compiler-args)
   (define windows? (eq? 'windows (system-type)))
   
@@ -434,26 +437,70 @@
   (define self-root-config-flags (if (equal? self-root-config-dir "")
                                      '()
                                      (list "-G" self-root-config-dir)))
+  (define pre-raco-args (list
+                         (extras 'INSTALL_SETUP_RACKET_FLAGS)
+                         (extras 'SETUP_MACHINE_FLAGS)))
+  (define (run-raco options . args)
+    (cond
+      [(not cross-bootstrap-racket)
+       (process/wait dest-racket
+                     "-X" collectsdir
+                     "-G" configdir
+                     self-root-config-flags
+                     pre-raco-args
+                     args
+                     options)]
+      [else
+       (racket (hash 'racket cross-bootstrap-racket)
+               self-root-config-flags
+               cross-compiler-args
+               "-X" collectsdir
+               "-G" configdir
+               pre-raco-args
+               args
+               options)]))
+
+  (define pkgs (hash-ref config 'INSTALL_PKGS ""))
+  (define missing-pkgs? (equal? (hash-ref config 'INSTALL_MISSING_PKGS "") "yes"))
+  (unless (and (equal? pkgs "") (not missing-pkgs?))
+    (define pkg-catalog (hash-ref config 'INSTALL_PKG_CATALOG ""))
+    (alert "setting up enough to install packages")
+    (run-raco '()
+              "-N" "raco" "-l-" "setup"
+              (extras 'INSTALL_SETUP_FLAGS)
+              (extras 'PLT_SETUP_OPTIONS)
+              "-D"
+              "pkg")
+    (define missing-pkgs
+      (cond
+        [missing-pkgs?
+         (alert "checking for missing packages")
+         (define stdout
+           (run-raco (hash 'stdout 'pipe)
+                     "-l" "pkg/private/missing-deps"))
+         (define missing-pkgs
+           (string-split (string-trim (fd-read stdout eof) "\n") "\n"))
+         (if (equal? missing-pkgs '(""))
+             '()
+             missing-pkgs)]
+        [else '()]))
+    (unless (and (equal? pkgs "") (null? missing-pkgs))
+      (alert "installing packages")
+      (run-raco '()
+                "-N" "raco" "-l-" "pkg" "install"
+                "-i" "--no-setup" "--skip-installed" "--auto"
+                (if (equal? pkg-catalog "")
+                    '()
+                    (list "--catalog" pkg-catalog))
+                (string-split pkgs)
+                missing-pkgs)
+      (alert "packages installed")))
+
   (define setup-args (list
-                      (extras 'INSTALL_SETUP_RACKET_FLAGS)
-                      (extras 'SETUP_MACHINE_FLAGS)
                       "-N" "raco" "-l-" "setup"
                       (extras 'INSTALL_SETUP_FLAGS)
                       (extras 'PLT_SETUP_OPTIONS)))
-  (cond
-    [(not cross-bootstrap-racket)
-     (process/wait dest-racket
-                   "-X" collectsdir
-                   "-G" configdir
-                   self-root-config-flags
-                   setup-args)]
-    [else
-     (racket (hash 'racket cross-bootstrap-racket)
-             self-root-config-flags
-             cross-compiler-args
-             "-X" collectsdir
-             "-G" configdir
-             setup-args)]))
+  (run-raco '() setup-args))
 
 (define (raco-setup-prepare-to-here config built-racket at-dir at-root-dir)
   (define collects-dir (at-root-dir "collects"))

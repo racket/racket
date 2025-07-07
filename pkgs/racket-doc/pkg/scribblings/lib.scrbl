@@ -731,9 +731,9 @@ run-time dependencies and build-time dependencies.
 If @racket[filter?] is true, then platform-specific dependencies are
 removed from the result list when they do not apply to the current
 platform, and other information is stripped so that the result list is
-always a list of either strings (when @racket[versions?] is true) or a
+always a list of either strings (when @racket[versions?] is @racket[#f]) or a
 two-element list containing a string and a version (when
-@racket[versions?] is @racket[#f]).
+@racket[versions?] is true).
 
 If @racket[info] is @racket[#f], the result is @racket[(list)].
 
