@@ -139,6 +139,11 @@
 ;; Drop a glyph-advance hack that interferes with italic output to PDF
 (define-runtime-path cairo-quartz-advance-patch "patches/cairo-quartz-advance.patch")
 
+;; When substitutions are handled by Pango/Cairo and a substition ends up
+;; empty, then carry on with PDF writing anyway; that can happen when writing
+;; "算法名称" with "Lucida Grande" on macOS Monterey, for example
+(define-runtime-path cairo-empty-font-subset-patch "patches/cairo-empty-font-subset.patch")
+
 ;; Decallocation-ordering fix
 (define-runtime-path cairo-quartz-callback-patch "patches/cairo-quartz-callback.patch")
 
@@ -741,7 +746,8 @@
              #:patches (append
                         (list courier-new-patch
                               cairo-cg-surface-patch
-                              cairo-quartz-advance-patch)
+                              cairo-quartz-advance-patch
+                              cairo-empty-font-subset-patch)
                         (if win?
                             (list cairo-win-pthread-patch)
                             null)))]
