@@ -2,21 +2,6 @@ This directory contains scripts, resources, and other Windows-specific
 content for a Racket build.
 
 ========================================================================
- Building from a Source Distribution
-========================================================================
-
-If you are building from a source distribution (as opposed to a Git
-repository checkout), then beware that a Racket distribution will not
-build correctly on its own. A source distribution is intended for Unix
-platforms, and it does not include native libraries that are needed on
-Windows.
-
-To fetch the missing packages, supply the `/addmissingpkgs` flag to
-`winfig.bat`, which downloads and installs needed platform-specific
-Racket packages as part of installing.
-
-
-========================================================================
  Building from the Command Line via Visual Studio
 ========================================================================
 
@@ -42,9 +27,19 @@ Racket CS
 ---------
 
 Build the Racket CS implementation from the "src" parent directory of
-"worksp" using
+"worksp" using either
 
    winfig.bat
+
+if you are building from a git checkout or
+
+   winfig.bat /addmissingpkgs
+
+if you are building from a source distribution; the /addmissingpkgs
+flag causes winfig.bat to download and install needed platform-specific
+Racket packages as part of installing. Either way, follow that command
+with these two:
+
    nmake
    nmake install
 
@@ -66,9 +61,19 @@ Racket BC
 ---------
 
 Build the Racket BC implementation from the "src" parent directory of
-"worksp" using
+"worksp" using either
 
    winfig.bat /bconly /suffix BC
+
+if you are building from a git checkout or 
+
+   winfig.bat /bconly /addmissingpkgs /suffix BC
+
+if you are building from a source distribution; the /addmissingpkgs
+flag causes winfig.bat to download and install needed platform-specific
+Racket packages as part of installing. Either way, follow that command
+with these two:
+
    nmake
    nmake install
 
