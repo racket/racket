@@ -1229,6 +1229,13 @@ fi
 if test "${enable_natipkg}" = "yes" ; then
   AC_DEFINE(SPLS_SUFFIX,"-natipkg",[Library subpath suffix])
 fi
+if test "${enable_nonatipkg}" = "yes" ; then
+  if test "${enable_natipkg}" = "yes" ; then
+     echo 'cannot specify both `--enable-natipkg` and `--enable-nonatipkg`'
+     exit 1
+  fi
+  AC_DEFINE(SPLS_SUFFIX,"-nonatipkg",[Library subpath suffix])
+fi
 
 ############## Racket for Racket ################
 

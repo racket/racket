@@ -621,6 +621,14 @@ if test "${enable_natipkg}" = "yes" ; then
   CONFIGURE_RACKET_SO_COMPILE="${CONFIGURE_RACKET_SO_COMPILE} PLT_CS_SLSP_SUFFIX=-natipkg"
   PLT_CS_SLSP_SUFFIX="-natipkg"
 fi
+if test "${enable_nonatipkg}" = "yes" ; then
+  if test "${enable_natipkg}" = "yes" ; then
+     echo 'cannot specify both `--enable-natipkg` and `--enable-nonatipkg`'
+     exit 1
+  fi
+  CONFIGURE_RACKET_SO_COMPILE="${CONFIGURE_RACKET_SO_COMPILE} PLT_CS_SLSP_SUFFIX=-nonatipkg"
+  PLT_CS_SLSP_SUFFIX="-nonatipkg"
+fi
 
 ############## ubsan ################
 

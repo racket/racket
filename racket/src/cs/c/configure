@@ -1489,6 +1489,7 @@ Optional Features:
   --enable-check          enable extra safety checks for testing
   --enable-portable       prefer portable to host-specific
   --enable-natipkg        add "-natipkg" to library subpath
+  --enable-nonatipkg      add "-nonatipkg" to library subpath
   --enable-sdk=<path>     use Mac OS 10.4 SDK directory
   --enable-sdk5=<path>    use Mac OS 10.5 SDK directory
   --enable-sdk6=<path>    use Mac OS 10.6 SDK directory
@@ -2709,6 +2710,11 @@ if test "${enable_natipkg+set}" = set; then :
   enableval=$enable_natipkg;
 fi
 
+# Check whether --enable-natipkg was given.
+if test "${enable_natipkg+set}" = set; then :
+  enableval=$enable_natipkg;
+fi
+
 
 # Check whether --enable-sdk was given.
 if test "${enable_sdk+set}" = set; then :
@@ -2973,6 +2979,7 @@ show_explicitly_disabled "${enable_pbchunk}" "pbchunk"
 show_explicitly_enabled "${enable_portable}" "portable"
 
 show_explicitly_enabled "${enable_natipkg}" "Adding \"-natipkg\" suffix to library subpath"
+show_explicitly_enabled "${enable_nonatipkg}" "Adding \"-nonatipkg\" suffix to library subpath"
 
 show_explicitly_enabled "${enable_libz}" "Installed libz"
 show_explicitly_disabled "${enable_libz}" "Installed libz"
@@ -5180,6 +5187,14 @@ fi
 if test "${enable_natipkg}" = "yes" ; then
   CONFIGURE_RACKET_SO_COMPILE="${CONFIGURE_RACKET_SO_COMPILE} PLT_CS_SLSP_SUFFIX=-natipkg"
   PLT_CS_SLSP_SUFFIX="-natipkg"
+fi
+if test "${enable_nonatipkg}" = "yes" ; then
+  if test "${enable_natipkg}" = "yes" ; then
+     echo 'cannot specify both `--enable-natipkg` and `--enable-nonatipkg`'
+     exit 1
+  fi
+  CONFIGURE_RACKET_SO_COMPILE="${CONFIGURE_RACKET_SO_COMPILE} PLT_CS_SLSP_SUFFIX=-nonatipkg"
+  PLT_CS_SLSP_SUFFIX="-nonatipkg"
 fi
 
 ############## ubsan ################

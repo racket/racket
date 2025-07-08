@@ -1517,6 +1517,7 @@ Optional Features:
   --enable-usersetup      setup user-specific files on install
   --enable-portable       prefer portable to host-specific
   --enable-natipkg        add "-natipkg" to library subpath
+  --enable-nonatipkg      add "-nonatipkg" to library subpath
   --enable-shared         create shared libraries (ok, but not recommended)
   --enable-dynlib         same as --enable-shared
   --enable-lt=<prog>      use <prog> instead of libtool; disable to use bundled
@@ -2774,6 +2775,11 @@ if test "${enable_natipkg+set}" = set; then :
   enableval=$enable_natipkg;
 fi
 
+# Check whether --enable-natipkg was given.
+if test "${enable_natipkg+set}" = set; then :
+  enableval=$enable_natipkg;
+fi
+
 
 
 # Check whether --enable-shared was given.
@@ -3417,6 +3423,7 @@ show_explicitly_enabled "${enable_usersetup}" "User-specific setup on install"
 show_explicitly_enabled "${enable_portable}" "portable"
 
 show_explicitly_enabled "${enable_natipkg}" "Adding \"-natipkg\" suffix to library subpath"
+show_explicitly_enabled "${enable_nonatipkg}" "Adding \"-nonatipkg\" suffix to library subpath"
 
 
 show_explicitly_enabled "${enable_xonx}" "Unix style"
@@ -7384,6 +7391,15 @@ fi
 if test "${enable_natipkg}" = "yes" ; then
 
 $as_echo "#define SPLS_SUFFIX \"-natipkg\"" >>confdefs.h
+
+fi
+if test "${enable_nonatipkg}" = "yes" ; then
+  if test "${enable_natipkg}" = "yes" ; then
+     echo 'cannot specify both `--enable-natipkg` and `--enable-nonatipkg`'
+     exit 1
+  fi
+
+$as_echo "#define SPLS_SUFFIX \"-nonatipkg\"" >>confdefs.h
 
 fi
 
