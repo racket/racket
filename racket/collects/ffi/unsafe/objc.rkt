@@ -276,17 +276,18 @@
 (define-objc/private objc_msgSendSuper_stret _fpointer)
 
 (define use-stret?
-  (case (string->symbol (path->string (system-library-subpath #f)))
-    [(i386-macosx i386-darwin) (lambda (v) (not (memq (ctype-sizeof v) '(1 2 4 8))))]
-    [(ppc-macosx ppc-darwin) (lambda (v) (not (memq (ctype-sizeof v) '(1 2 3 4))))]
-    [(x86_64-macosx x86_64-darwin) 
+  (case (system-type 'arch)
+    [(i386) (lambda (v) (not (memq (ctype-sizeof v) '(1 2 4 8))))]
+    [(ppc) (lambda (v) (not (memq (ctype-sizeof v) '(1 2 3 4))))]
+    [(x86_64)
      (lambda (v)
        ;; Remarkably complex rules govern sizes > 8 and <= 32.
        ;; But if we assume no unaligned data and that fancy types
        ;; like _m256 won't show up with ObjC, it seems to be as
        ;; simple as this:
        ((ctype-sizeof v) . > . 16))]
-    [(aarch64-macosx aarch64-darwin) (lambda (v) #f)]))
+    [(aarch64) (lambda (v) #f)]
+    [else (lambda (v) (error "unknown architecture for stret") #f)]))
 
 ;; Make `msgSends' access atomic, so that a thread cannot be suspended
 ;; or killed during access, which would block other threads.
