@@ -20,6 +20,7 @@
               (error 'mach-o "unrecognized #x~x" exe-id)))]))
 
 (define aarch64-machine-type #x0100000C)
+(define MH_EXECUTE #x2)
 
 (define (read-ulong p)
   (integer-bytes->integer (read-bytes 4 p) #f (current-big-endian)))
@@ -85,7 +86,7 @@
           (check-exe-id exe-id)
           (define machine-id (read-ulong p))
           (read-ulong p)
-          (check-same #x2 (read-ulong p))
+          (check-same MH_EXECUTE (read-ulong p))
           (let* ([total-cnt (read-ulong p)]
                  [cmdssz (read-ulong p)]
                  [min-used (round-up-page cmdssz machine-id)]
@@ -493,7 +494,7 @@
           (define file-identity (let-values ([(base name dir?) (split-path file)])
                                   (bytes-append (path->bytes name) #"\0")))
           (read-ulong p)
-          (check-same #x2 (read-ulong p))
+          (check-same MH_EXECUTE (read-ulong p))
           (let* ([total-cnt (read-ulong p)]
                  [cmdssz (read-ulong p)]
                  [min-used (round-up-page cmdssz machine-id)]
@@ -726,12 +727,15 @@
           (when out
             (close-output-port out))))))
 
+
 (define (exectuable-for-signing? path)
   (call-with-input-file*
    path
    (lambda (p)
-     (define bstr (peek-bytes 8 0 p))
+     (define bstr (peek-bytes 16 0 p))
      (and (bytes? bstr)
-          (= 8 (bytes-length bstr))
+          (= 16 (bytes-length bstr))
           (check-exe-id (read-ulong p) #:error? #f)
-          (sign-machine-id? (read-ulong p))))))
+          (sign-machine-id? (read-ulong p))
+          (begin (read-ulong p) #t)
+          (equal? MH_EXECUTE (read-ulong p))))))
