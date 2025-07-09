@@ -1051,7 +1051,11 @@
                              (~a (get-framework-prefix #t) "Racket.framework/Versions/" version "_CS/Racket")
                              dest-gracket)
           (strip-signature dest-gracket)
-          (set-collects-path dest-gracket "../../../../collects" "../../../../etc")
+          (cond
+            [(equal? (lookup 'INSTALL_ORIG_TREE) "yes")
+             (set-collects-path dest-gracket "../../../../collects" "../../../../etc")]
+            [else
+             (set-collects-path dest-gracket collects-path configdir)])
           (strip-debug config dest-gracket)
           (restore-signature dest-gracket)
 

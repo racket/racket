@@ -574,6 +574,7 @@
       (map (lambda (dir)
              (at-destdir config (shell-subst (hash-ref config dir) config)))
            '(bindir
+             guibindir
              collectsdir
              pkgsdir
              docdir

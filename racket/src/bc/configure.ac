@@ -620,6 +620,7 @@ case "$host_os" in
     use_flag_pthread=no
     skip_curses_check=yes
     dist_install_missing_pkgs=yes
+    update_guibin_default_as_root
     MZOPTIONS="$MZOPTIONS -fno-omit-frame-pointer" # to make JIT backtraces work
     MINGW="t"
     WXVARIANT="wx_win"
@@ -724,6 +725,7 @@ case "$host_os" in
         INSTALL_LIBS_ENABLE=no-install
       fi
       dist_install_missing_pkgs=yes
+      update_guibin_default_as_root
     else
       PREFLAGS="$PREFLAGS -DXONX "
       LIBS="$LIBS -framework CoreFoundation"

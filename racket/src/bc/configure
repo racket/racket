@@ -739,6 +739,7 @@ CONFIG_PATH
 GR_APP_COLLECTS_PATH
 GUI_COLLECTS_PATH
 COLLECTS_PATH
+guibindir
 pkgsdir
 includepltdir
 etcpltdir
@@ -785,7 +786,7 @@ sysconfdir
 datadir
 datarootdir
 libexecdir
-sbindir
+guibindir
 bindir
 program_transform_name
 prefix
@@ -899,7 +900,7 @@ x_libraries=NONE
 # Use braces instead of parens because sh, perl, etc. also accept them.
 # (The list follows the same order as the GNU Coding Standards.)
 bindir='${exec_prefix}/bin'
-sbindir='${exec_prefix}/sbin'
+guibindir='${bindir}'
 libexecdir='${exec_prefix}/libexec'
 datarootdir='${prefix}/share'
 datadir='${datarootdir}'
@@ -1185,11 +1186,11 @@ do
   | -silent | --silent | --silen | --sile | --sil)
     silent=yes ;;
 
-  -sbindir | --sbindir | --sbindi | --sbind | --sbin | --sbi | --sb)
-    ac_prev=sbindir ;;
-  -sbindir=* | --sbindir=* | --sbindi=* | --sbind=* | --sbin=* \
+  -guibindir | --guibindir | --guibindi | --guibind | --guibin | --sbi | --sb)
+    ac_prev=guibindir ;;
+  -guibindir=* | --guibindir=* | --guibindi=* | --guibind=* | --guibin=* \
   | --sbi=* | --sb=*)
-    sbindir=$ac_optarg ;;
+    guibindir=$ac_optarg ;;
 
   -sharedstatedir | --sharedstatedir | --sharedstatedi \
   | --sharedstated | --sharedstate | --sharedstat | --sharedsta \
@@ -1319,7 +1320,7 @@ if test -n "$ac_unrecognized_opts"; then
 fi
 
 # Check all directory arguments for consistency.
-for ac_var in	exec_prefix prefix bindir sbindir libexecdir datarootdir \
+for ac_var in	exec_prefix prefix bindir guibindir libexecdir datarootdir \
 		datadir sysconfdir sharedstatedir localstatedir includedir \
 		oldincludedir docdir infodir htmldir collectsdir appsdir psdir \
 		libdir appsdir mandir
@@ -1471,6 +1472,7 @@ For better control, use the options below.
 
 Fine tuning of the installation directories:
   --bindir=DIR            user executables [EPREFIX/bin]
+  --guibindir=DIR         GUI programs [BINDIR]
   --sysconfdir=DIR        read-only single-machine data [PREFIX/etc]
   --libdir=DIR            object code libraries [EPREFIX/lib]
   --includedir=DIR        C header files [PREFIX/include]
@@ -3158,6 +3160,9 @@ if test "${enable_origtree}" != "yes" -a "${enable_useprefix}" != "no" ; then
   if test "${bindir}" != '${exec_prefix}/bin' ; then
    unixstyle=yes
   fi
+  if test "${guibindir}" != '${bindir}' ; then
+   unixstyle=yes
+  fi
   if test "${datadir}" != '${prefix}/share' ; then
    # Newer autoconf uses datarootdir:
    if test "${datadir}" = '${datarootdir}' ; then
@@ -3199,6 +3204,13 @@ if test "${enable_origtree}" != "yes" -a "${enable_useprefix}" != "no" ; then
   fi
 fi
 
+update_guibin_default_as_root()
+{
+  if test "${guibindir_is_default}" = "yes" ; then
+     guibindir='${prefix}'
+  fi
+}
+
 MAKE_COPYTREE=no
 if test "${unixstyle}" = "no" ; then
   if test "${enable_useprefix}" = "no" -o "${prefix}" = "NONE" ; then
@@ -3208,6 +3220,8 @@ if test "${unixstyle}" = "no" ; then
     MAKE_COPYTREE=copytree
   fi
   bindir='${prefix}/bin'
+  guibindir='${bindir}'
+  guibindir_is_default=yes
   libpltdir='${prefix}/lib'
   libpltdir_rel='lib'
   sharepltdir='${prefix}/share'
@@ -3294,6 +3308,7 @@ GUI_CONFIG_PATH="${CONFIG_PATH}"
 
 
 
+
 ########################################
 
 show_path_results()
@@ -3314,6 +3329,7 @@ show_path_results()
   else
     echo ">>> Installation targets:"
     echo " executables        : ${bindir}/..."
+    echo " GUI executables    : ${guibindir}/..."
     echo " core docs          : ${docdir}/..."
     echo " C libraries        : ${libdir}/..."
     echo " C headers          : ${includepltdir}/..."
@@ -3326,13 +3342,14 @@ show_path_results()
     echo " man pages          : ${mandir}/..."
     echo "     where prefix = ${prefix}"
     echo "  and datarootdir = ${datarootdir}"
+    echo "  and datadir = ${datadir}"
+    echo "  and bindir = ${bindir}"
     if test "${unixstyle}" = "yes" ; then
       echo "  and exec_prefix = ${exec_prefix}"
       echo "  and PACKAGE = racket"
     fi
   fi
 }
-
 
 
 ###### Make sure GRacket is really there ######
@@ -5205,6 +5222,7 @@ case "$host_os" in
     use_flag_pthread=no
     skip_curses_check=yes
     dist_install_missing_pkgs=yes
+    update_guibin_default_as_root
     MZOPTIONS="$MZOPTIONS -fno-omit-frame-pointer" # to make JIT backtraces work
     MINGW="t"
     WXVARIANT="wx_win"
@@ -5398,6 +5416,7 @@ $as_echo "#define HAVE_STDINT_H 1" >>confdefs.h
         INSTALL_LIBS_ENABLE=no-install
       fi
       dist_install_missing_pkgs=yes
+      update_guibin_default_as_root
     else
       PREFLAGS="$PREFLAGS -DXONX "
       LIBS="$LIBS -framework CoreFoundation"
@@ -7566,7 +7585,7 @@ do
   # Strip away all feature choices
   -enable* | --enable* | -disable* | --disable*)
     ;;
-  -collects* | --collects* | -apps* | --apps* | -pkgs* | --pkgs*)
+  -collects* | --collects* | -apps* | --apps* | -pkgs* | --pkgs* | -guibin*  | --guibin*)
     ;;
   *)
     case $fixup_arg in

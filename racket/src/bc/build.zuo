@@ -1648,7 +1648,11 @@
                   [windows?
                    (set-collects-path racket dest-exe "../collects" "../etc")]
                   [mac?
-                   (set-collects-path racket dest-exe "../../../../collects" "../../../../etc")
+                   (cond
+                     [(equal? (lookup 'INSTALL_ORIG_TREE) "yes")
+                      (set-collects-path racket dest-exe "../../../../collects" "../../../../etc")]
+                     [else
+                      (set-collects-path racket dest-exe collects-path configdir)])
                    (install_name_tool "-change"
                                       (~a "@executable_path/Racket.framework/Versions/" version fw-suffix "/Racket")
                                       (~a (get-framework-prefix #t) "Racket.framework/Versions/" version fw-suffix "/Racket")

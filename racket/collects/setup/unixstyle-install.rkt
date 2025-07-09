@@ -36,7 +36,9 @@
          (submod compiler/private/collects-path set-executable-tag)
          racket/file
          racket/list
-         compiler/private/mach-o)
+         racket/path
+         compiler/private/mach-o
+         compiler/private/macfw)
 
 (module test racket/base)
 
@@ -66,12 +68,13 @@
                 [(collects) "collects"]
                 [(pkgs) (build-path "share" "pkgs")]
                 [(apps) (build-path "share" "applications")]
+                [(guibin) "bin"]
                 [else (symbol->string name)])))
 (define dirs (map (lambda (name) (list name 
                                        (if base-destdir
                                            (build-dest-arg name)
                                            (get-arg))))
-		  '(bin collects pkgs doc lib includerkt librkt sharerkt config apps man #|src|#)))
+		  '(bin guibin collects pkgs doc lib includerkt librkt sharerkt config apps man #|src|#)))
 
 (define (dir: name)
   (cadr (or (assq name dirs) (error 'getdir "unknown dir name: ~e" name))))
@@ -89,6 +92,7 @@
   (let ([dir (string->symbol (basename dir))])
     (case dir
       [(bin)      #f]
+      [(guibin)   #f]
       [(collects) 1]
       [(pkgs)     1]
       [(doc)      1]
@@ -238,7 +242,7 @@
   (register-wrote-path! dst))
 
 (define (fix-executable file #:ignore-non-executable? [ignore-non-executable? #f])
-  (define (fix-binary file)
+  (define (fix-binary file mach-o?)
     (define (fix-one tag desc dir)
       (set-executable-tag 'unixstyle-install tag desc file ignore-non-executable? dir
                           (path->bytes
@@ -249,6 +253,8 @@
       (remove-signature file))
     (fix-one #rx#"coLLECTs dIRECTORy:" "collects" (dir: 'collects))
     (fix-one #rx#"coNFIg dIRECTORy:" "config" (dir: 'config))
+    (when mach-o?
+      (update-framework-path (path->directory-path (dir: 'librkt)) file #f))
     (when (exectuable-for-signing? file)
       (add-ad-hoc-signature file)))
   (define (fix-script file)
@@ -258,51 +264,68 @@
                    #rx#"\n# {{{ bindir\n(.*?\n)# }}} bindir\n" buf)
                   (error (format "could not find binpath block in script: ~a"
                                  file)))]
-           [m2 (regexp-match-positions
-                #rx#"\n# unixstyle-install: use librktdir\n" buf)])
+           [use-librkt? (regexp-match?
+                         #rx#"\n# unixstyle-install: use librktdir\n" buf)]
+           [use-guibin? (regexp-match?
+                         #rx#"\n# unixstyle-install: use guibindir\n" buf)])
       ;; 'truncate file to keep it executable
       (with-output-to-file file #:exists 'truncate
         (lambda ()
           (write-bytes buf (current-output-port) 0 (caadr m))
           (define (escaped-dir: sym)
             (regexp-replace* #rx"[\"`'$\\]" (dir: sym) "\\\\&"))
-          (printf "bindir=\"~a\"\n" (if m2
-                                        (escaped-dir: 'librkt)
-                                        (escaped-dir: 'bin)))
+          (printf "bindir=\"~a\"\n" (cond
+                                      [use-librkt? (escaped-dir: 'librkt)]
+                                      [use-guibin? (escaped-dir: 'guibin)]
+                                      [else (escaped-dir: 'bin)]))
           (write-bytes buf (current-output-port) (cdadr m))))))
-  (let ([magic (with-input-from-file file (lambda () (let ([r (read-bytes 10)])
-                                                       (if (eof-object? r)
-                                                           #""
-                                                           r))))])
-    (cond [(or (regexp-match #rx#"^\177ELF" magic)
-               ;; Mach-O magic numbers for LE/BE, 32/64-bit
-               (regexp-match #rx#"^\316\372\355\376" magic)
-               (regexp-match #rx#"^\317\372\355\376" magic)
-               (regexp-match #rx#"^\376\355\372\316" magic)
-               (regexp-match #rx#"^\376\355\372\317" magic))
-           (let ([temp (format "~a-temp-for-install"
-                               (regexp-replace* #rx"/" file "_"))])
-             (with-handlers ([exn? (lambda (e) (rm temp) (raise e))])
-               ;; always copy so we never change the running executable
-               (rm temp)
-               (copy-file file temp)
-               (fix-binary temp)
-               (rm file)
-               (mv temp file)))]
-          [(regexp-match #rx#"^#!/bin/sh" magic)
-           (fix-script file)]
-          [ignore-non-executable? (void)]
-          [else (error (format "unknown executable: ~a" file))])))
+  (cond
+    [(file-exists? file)
+     (let ([magic (with-input-from-file file (lambda () (let ([r (read-bytes 10)])
+                                                          (if (eof-object? r)
+                                                              #""
+                                                              r))))])
+       (define elf? (regexp-match #rx#"^\177ELF" magic))
+       (define mach-o? (and (not elf?)
+                            (or
+                             ;; Mach-O magic numbers for LE/BE, 32/64-bit
+                             (regexp-match #rx#"^\316\372\355\376" magic)
+                             (regexp-match #rx#"^\317\372\355\376" magic)
+                             (regexp-match #rx#"^\376\355\372\316" magic)
+                             (regexp-match #rx#"^\376\355\372\317" magic))))
+       (cond [(or elf? mach-o?)
+              (let ([temp (format "~a-temp-for-install"
+                                  (regexp-replace* #rx"/" file "_"))])
+                (with-handlers ([exn? (lambda (e) (rm temp) (raise e))])
+                  ;; always copy so we never change the running executable
+                  (rm temp)
+                  (copy-file file temp)
+                  (fix-binary temp mach-o?)
+                  (rm file)
+                  (mv temp file)))]
+             [(regexp-match #rx#"^#!/bin/sh" magic)
+              (fix-script file)]
+             [ignore-non-executable? (void)]
+             [else (error (format "unknown executable: ~a" file))]))]
+    [else
+     ;; must be an ".app" bundle
+     (define-values (base name dir?) (split-path file))
+     (define exe-file (build-path file "Contents" "MacOS" (path-replace-extension name #"")))
+     (when (file-exists? exe-file)
+       (fix-executable (path->string exe-file)))]))
 
-(define (fix-executables bindir librktdir [binfiles #f] [libfiles #f])
-  (for ([dir (in-list (list bindir librktdir))]
-        [files (in-list (list binfiles libfiles))]
-        [ignore-non-executable? (in-list (list #f #t))])
+(define (fix-executables bindir guibindir librktdir [binfiles #f] [guibinfiles '()] [libfiles #f])
+  (for ([dir (in-list (list bindir guibindir librktdir))]
+        [files (in-list (list binfiles guibinfiles libfiles))]
+        [ignore-non-executable? (in-list (list #f #t #t))])
     (parameterize ([current-directory dir])
-      (for ([f (in-list (or files (ls)))] #:when (file-exists? f))
+      (for ([f (in-list (or files (ls)))]
+            #:when (or (file-exists? f)
+                       (and (directory-exists? f)
+                            (equal? (path-get-extension f) #".app"))))
         (fix-executable f #:ignore-non-executable? ignore-non-executable?)))))
 
-(define (fix-desktop-files appsdir bindir sharerktdir [appfiles #f])
+(define (fix-desktop-files appsdir [appfiles #f])
   ;; For absolute mode, change `Exec' and `Icon' lines to
   ;; have absolute paths:
   (define (fixup-path at-dir orig-path)
@@ -319,7 +342,7 @@
                          ;; Assume anything after a space is the argument spec:
                          (let ([m (regexp-match #rx"Exec=([^ ]*)(.*)" l)])
                            (format "Exec=~a~a" 
-                                   (fixup-path (dir: 'bin) (cadr m))
+                                   (fixup-path (dir: 'guibin) (cadr m))
                                    (caddr m)))]
                         [(regexp-match? #rx"^Icon=" l)
                          (format "Icon=~a" (fixup-path (dir: 'sharerkt) (substring l 5)))]
@@ -461,6 +484,9 @@
            (out! 'share-dir (dir: 'sharerkt))
            (out! 'include-dir (dir: 'includerkt))
            (out! 'bin-dir (dir: 'bin))
+           (if (equal? (dir: 'bin) (dir: 'guibin))
+               (hash-set! handled 'gui-bin-dir #t)
+               (out! 'gui-bin-dir (dir: 'guibin)))
            (out! 'apps-dir (dir: 'apps))
            (out! 'man-dir (dir: 'man))
            (out! 'absolute-installation? #t)
@@ -556,6 +582,7 @@
     (error "Cannot handle distribution of shared-libraries (yet)"))
   (with-handlers ([exn? (lambda (e) (undo-changes) (raise e))])
     (define binfiles (ls* "bin"))
+    (define guibinfiles null) ; must be the same as bin or not yet relevant (e.g., build from source)
     (define libfiles (ls* "lib"))
     (if (eq? 'windows (cross-system-type))
         ;; Windows executables appear in the immediate directory:
@@ -590,8 +617,8 @@
       (error (format "leftovers in source tree: ~s" (ls))))
     ;; we need to know which files need fixing
     (unless bundle?
-      (fix-executables (dir: 'bin) (dir: 'librkt) binfiles libfiles)
-      (fix-desktop-files (dir: 'apps) (dir: 'bin) (dir: 'sharerkt) appfiles)
+      (fix-executables (dir: 'bin) (dir: 'guibin) (dir: 'librkt) binfiles guibinfiles libfiles)
+      (fix-desktop-files (dir: 'apps) appfiles)
       (write-uninstaller)
       (write-config)))
   (when move?
@@ -683,6 +710,7 @@
   (define libzo? (equal? "libzo" (get-arg)))
   ;; grab paths before we change them
   (define bindir      (dir: 'bin))
+  (define guibindir   (dir: 'guibin))
   (define librktdir   (dir: 'librkt))
   (define sharerktdir   (dir: 'sharerkt))
   (define configdir   (dir: 'config))
@@ -691,8 +719,9 @@
   ;; no need to send an explicit binfiles argument -- this function is used
   ;; only when DESTDIR is present, so we're installing to a directory that
   ;; has only our binaries
-  (fix-executables bindir librktdir)
-  (fix-desktop-files appsdir bindir sharerktdir)
+  (fix-executables bindir guibindir librktdir
+                   #f (if (equal? bindir guibindir) '() #f) #f)
+  (fix-desktop-files appsdir)
   (unless origtree? (write-config configdir libzo?)))
 
 (define (post-adjust)

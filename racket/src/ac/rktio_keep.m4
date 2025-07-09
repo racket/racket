@@ -9,7 +9,7 @@ do
   # Strip away all feature choices
   -enable* | --enable* | -disable* | --disable*)
     ;;
-  -collects* | --collects* | -apps* | --apps* | -pkgs* | --pkgs*)
+  -collects* | --collects* | -apps* | --apps* | -pkgs* | --pkgs* | -guibin*  | --guibin*)
     ;;
   *)
     case $fixup_arg in

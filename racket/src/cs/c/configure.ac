@@ -313,6 +313,7 @@ case "$host_os" in
     use_flag_pthread=no
     use_own_zlibs=yes
     dist_install_missing_pkgs=yes
+    update_guibin_default_as_root
     MACH_OS=nt
     LIBS="${LIBS} -lshell32 -luser32 -lole32 -lrpcrt4 -luuid -lws2_32 -ladvapi32 -lwinmm"
     MINGW="t"
@@ -340,6 +341,7 @@ case "$host_os" in
     if test "${enable_xonx}" = "no" ; then
       OSX="t"
       dist_install_missing_pkgs=yes
+      update_guibin_default_as_root
     else
       CONFIGURE_RACKET_SO_COMPILE="PLT_CS_MAKE_UNIX_STYLE_MACOS=y"
       CPPFLAGS="${CPPFLAGS} -DRACKET_XONX"

@@ -34,8 +34,8 @@ exit 0
 (define skip-rxs
   (map (lambda (s)
 	 (regexp (format "^  --~a=DIR" s)))
-       '(sbindir 
-	 libexecdir 
+       '(;; sbindir   - converted to "guibindir" 
+         libexecdir
 	 sharedstatedir
 	 localstatedir
 	 oldincludedir
@@ -96,6 +96,16 @@ exit 0
           (displayln "  --pkgsdir=DIR           installed pkgs [EPREFIX/share/PACKAGE/pkgs]")]
          [else
           (displayln (regexp-replace* #rx"pdf" l "pkgs"))])
+        (loop)]
+       [(regexp-match #rx"sbindir" l)
+        ;; Hack: take over "sbindir" for "guibindir":
+        (cond
+         [(equal? l "sbindir='${exec_prefix}/sbin'")
+          (displayln "guibindir='${bindir}'")]
+         [(equal? l "  --sbindir=DIR           system admin executables [EPREFIX/sbin]")
+          (displayln "  --guibindir=DIR         GUI programs [BINDIR]")]
+         [else
+          (displayln (regexp-replace* #rx"sbin" l "guibin"))])
         (loop)]
        [(regexp-match #rx"localedir" l)
         ;; Hack: take over "localedir" for "appsdir":

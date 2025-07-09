@@ -10,6 +10,9 @@ if test "${enable_origtree}" != "yes" -a "${enable_useprefix}" != "no" ; then
   if test "${bindir}" != '${exec_prefix}/bin' ; then
    unixstyle=yes
   fi
+  if test "${guibindir}" != '${bindir}' ; then
+   unixstyle=yes
+  fi
   if test "${datadir}" != '${prefix}/share' ; then
    # Newer autoconf uses datarootdir:
    if test "${datadir}" = '${datarootdir}' ; then
@@ -51,6 +54,13 @@ if test "${enable_origtree}" != "yes" -a "${enable_useprefix}" != "no" ; then
   fi
 fi
 
+update_guibin_default_as_root()
+{
+  if test "${guibindir_is_default}" = "yes" ; then
+     guibindir='${prefix}'
+  fi
+}
+
 MAKE_COPYTREE=no
 if test "${unixstyle}" = "no" ; then
   if test "${enable_useprefix}" = "no" -o "${prefix}" = "NONE" ; then
@@ -60,6 +70,8 @@ if test "${unixstyle}" = "no" ; then
     MAKE_COPYTREE=copytree
   fi
   bindir='${prefix}/bin'
+  guibindir='${bindir}'
+  guibindir_is_default=yes
   libpltdir='${prefix}/lib'
   libpltdir_rel='lib'
   sharepltdir='${prefix}/share'
@@ -121,6 +133,7 @@ AC_SUBST(etcpltdir)
 AC_SUBST(includepltdir)
 AC_SUBST(docdir)
 AC_SUBST(pkgsdir)
+AC_SUBST(guibindir)
 
 AC_SUBST(COLLECTS_PATH)
 AC_SUBST(GUI_COLLECTS_PATH)
@@ -166,6 +179,7 @@ show_path_results()
   else
     echo ">>> Installation targets:"
     echo " executables        : ${bindir}/..."
+    echo " GUI executables    : ${guibindir}/..."
     echo " core docs          : ${docdir}/..."
     echo " C libraries        : ${libdir}/..."
     echo " C headers          : ${includepltdir}/..."
@@ -178,10 +192,11 @@ show_path_results()
     echo " man pages          : ${mandir}/..."
     echo "     where prefix = ${prefix}"
     echo "  and datarootdir = ${datarootdir}"
+    echo "  and datadir = ${datadir}"
+    echo "  and bindir = ${bindir}"
     if test "${unixstyle}" = "yes" ; then
       echo "  and exec_prefix = ${exec_prefix}"
       echo "  and PACKAGE = racket"
     fi
   fi
 }
-  

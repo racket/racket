@@ -107,6 +107,7 @@ exec_prefix = @exec_prefix@
 datarootdir = @datarootdir@
 datadir = @datadir@
 bindir = @bindir@
+guibindir = @guibindir@
 libdir = @libdir@
 includepltdir = @includepltdir@
 libpltdir = @libpltdir@

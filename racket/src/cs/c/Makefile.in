@@ -176,6 +176,7 @@ exec_prefix = @exec_prefix@
 datarootdir = @datarootdir@
 datadir = @datadir@
 bindir = @bindir@
+guibindir = @guibindir@
 libdir = @libdir@
 includepltdir = @includepltdir@
 libpltdir = @libpltdir@
@@ -190,7 +191,7 @@ appsdir = @appsdir@
 mandir = @mandir@
 
 # Whether `setup/unixstyle-install.rkt copytree` is needed for
-# installation ("yes" or "no")
+# installation ("copytree" or "no")
 MAKE_COPYTREE = @MAKE_COPYTREE@
 
 # Whether copytree should preserve the source shape ("yes")
