@@ -3629,6 +3629,8 @@ OWN_LIBFFI="ON"
 ar_libtool_no_undefined=""
 LIBRACKET_DEP=""
 
+dist_install_missing_pkgs=no
+
 EXE_SUFFIX=
 SO_SUFFIX=.so
 
@@ -5202,6 +5204,7 @@ case "$host_os" in
     mzrt_needs_pthread=no
     use_flag_pthread=no
     skip_curses_check=yes
+    dist_install_missing_pkgs=yes
     MZOPTIONS="$MZOPTIONS -fno-omit-frame-pointer" # to make JIT backtraces work
     MINGW="t"
     WXVARIANT="wx_win"
@@ -5394,6 +5397,7 @@ $as_echo "#define HAVE_STDINT_H 1" >>confdefs.h
       if test "${enable_libs}" = "" ; then
         INSTALL_LIBS_ENABLE=no-install
       fi
+      dist_install_missing_pkgs=yes
     else
       PREFLAGS="$PREFLAGS -DXONX "
       LIBS="$LIBS -framework CoreFoundation"
@@ -7392,6 +7396,7 @@ if test "${enable_natipkg}" = "yes" ; then
 
 $as_echo "#define SPLS_SUFFIX \"-natipkg\"" >>confdefs.h
 
+  dist_install_missing_pkgs=yes
 fi
 if test "${enable_nonatipkg}" = "yes" ; then
   if test "${enable_natipkg}" = "yes" ; then
@@ -7401,6 +7406,7 @@ if test "${enable_nonatipkg}" = "yes" ; then
 
 $as_echo "#define SPLS_SUFFIX \"-nonatipkg\"" >>confdefs.h
 
+  dist_install_missing_pkgs=no
 fi
 
 ############## Racket for Racket ################
@@ -7505,8 +7511,15 @@ fi
 ############## packages ################
 
 INSTALL_PKGS="$enable_pkgs"
-INSTALL_MISSING_PKGS="$enable_missingpkgs"
 INSTALL_PKG_CATALOG="$enable_catalog"
+
+if test "$enable_missingpkgs" = "" ; then
+  if test "$dist_install_missing_pkgs" = "yes" ; then
+    INSTALL_MISSING_PKGS="dist"
+  fi
+else
+  INSTALL_MISSING_PKGS="$enable_missingpkgs"
+fi
 
 
 ############## subconfigures ################

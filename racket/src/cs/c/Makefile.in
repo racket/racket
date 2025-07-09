@@ -208,8 +208,14 @@ INSTALL_PKGSCOPE = @INSTALL_PKGSCOPE@
 # Extra packages to install, and where to find then if not
 # the default package catalog
 INSTALL_PKGS = @INSTALL_PKGS@
-INSTALL_MISSING_PKGS = @INSTALL_MISSING_PKGS@
 INSTALL_PKG_CATALOG = @INSTALL_PKG_CATALOG@
+
+# Can be "yes", "no" (or ""), or "dist" to indicate whether an install
+# step should check for missing packages, especially platform-specific
+# packages like "racket-aarch64-macosx-4"; a value of "dist"
+# means "yes" if "../../source-dist.txt" exists; installation uses
+# `INSTALL_PKG_CATALOG`
+INSTALL_MISSING_PKGS = @INSTALL_MISSING_PKGS@
 
 # Whether ".zo" files should be moved to "lib" instead of "share"
 # for a Unix-style installation ("yes" or "no")

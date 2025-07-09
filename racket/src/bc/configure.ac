@@ -282,6 +282,8 @@ OWN_LIBFFI="ON"
 ar_libtool_no_undefined=""
 LIBRACKET_DEP=""
 
+dist_install_missing_pkgs=no
+
 EXE_SUFFIX=
 SO_SUFFIX=.so
 
@@ -617,6 +619,7 @@ case "$host_os" in
     mzrt_needs_pthread=no
     use_flag_pthread=no
     skip_curses_check=yes
+    dist_install_missing_pkgs=yes
     MZOPTIONS="$MZOPTIONS -fno-omit-frame-pointer" # to make JIT backtraces work
     MINGW="t"
     WXVARIANT="wx_win"
@@ -720,6 +723,7 @@ case "$host_os" in
       if test "${enable_libs}" = "" ; then
         INSTALL_LIBS_ENABLE=no-install
       fi
+      dist_install_missing_pkgs=yes
     else
       PREFLAGS="$PREFLAGS -DXONX "
       LIBS="$LIBS -framework CoreFoundation"
@@ -1228,6 +1232,7 @@ fi
 
 if test "${enable_natipkg}" = "yes" ; then
   AC_DEFINE(SPLS_SUFFIX,"-natipkg",[Library subpath suffix])
+  dist_install_missing_pkgs=yes
 fi
 if test "${enable_nonatipkg}" = "yes" ; then
   if test "${enable_natipkg}" = "yes" ; then
@@ -1235,6 +1240,7 @@ if test "${enable_nonatipkg}" = "yes" ; then
      exit 1
   fi
   AC_DEFINE(SPLS_SUFFIX,"-nonatipkg",[Library subpath suffix])
+  dist_install_missing_pkgs=no
 fi
 
 ############## Racket for Racket ################

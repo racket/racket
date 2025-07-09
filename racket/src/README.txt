@@ -2,12 +2,12 @@ This directory has the source code for the `racket` executable.
 
 If this directory is part of a Racket source code distribution, then
 the distribution may include additional packages. Those extra packages
-will be installed built with the `make install` step.
+will be installed and built with the `make install` step.
 
 If this directory is part of a clone of the Git repository for Racket,
 then the clone's root directory includes a makefile to both build
-minimal Racket and install packages. See "build.md" in the clone's
-root directory.
+minimal Racket and install packages, and you should start there,
+instead of here. See "build.md" in the clone's root directory.
 
 ========================================================================
  License and external links
@@ -34,9 +34,9 @@ Report bugs:
 ========================================================================
 
 This source directory contains implementations for two different
-versions of Racket: the original BC implementation that is
-substantially implemented in C, and the CS implementation that is
-implemented in Chez Scheme and Racket (compiled to Chez Scheme).
+versions of Racket: the CS implementation that is implemented in Chez
+Scheme and Racket (compiled to Chez Scheme), and the original BC
+implementation that is substantially implemented in C.
 
 Racket CS
 ---------
@@ -99,7 +99,9 @@ Quick instructions:
  for more information about dependencies.
 
  When working from a clone of the Racket Git repository, as opposed to
- a source code distirbution, prefix the above commands with
+ a source code distribution, and when you do not want to use the
+ makefiles in the clone's root directory, then prefix the above
+ commands with
   
    make --directory=../../ pb-fetch
 
@@ -125,7 +127,7 @@ Detailed instructions:
 
     It's better to run the build in a directory other than the one
     containing `configure`, especially if you're getting sources via
-    git. A common way to start a git-based build is:
+    Git. A common way to start a Git-based build is:
 
         cd [here]
         mkdir build
@@ -353,19 +355,11 @@ After installing developer tools, follow the Unix instructions above,
 but note the following:
 
  * If you are building from a source distribution (as opposed to a Git
-   repository checkout), then beware that a Racket distribution will
-   not build correctly by itself. A source distribution is intended
-   for Unix platforms, and it does not include native libraries that
-   are needed on Mac OS.
-
-   To fetch the missing packages, supply `--enable-missingpkgs` to
-   `configure`. Using `--enable-missingpkgs` downloads and installs
-   needed platform-specific Racket packages as part of `make install`.
-
-   Use `--enable-catalog=<url>` to install packages from a different
-   catalog than the source distribution's default. Use
-   `--enable-pkgs=<pkgs>` to install a different set of packages (or
-   additional packages if `--enable-missingpkgs` is also specified).
+   repository checkout), then beware that the distribution does not
+   include native libraries that are needed on Mac OS. The install
+   step will fetch missing packages. With a Git repository checkout,
+   `raco pkg install -i racket-lib` will be needed as described in the
+   Unix instructions.
 
  * The Racket build creates a framework, "Racket.framework", which is
    installed into "racket/lib".  This framework is used by the `racket`
@@ -373,7 +367,7 @@ but note the following:
    flag is used.
 
  * The GRacket build creates a GUI-executable variant of the Racket
-   executable. The GRacket build process also downloads (from github)
+   executable. The GRacket build process also downloads (from GitHub)
    pre-built libraries for Cairo, Pango, etc.
 
  * The `--enable-shared` flag for `configure` must not be used,
@@ -402,8 +396,6 @@ but note the following:
 ========================================================================
  Compiling for Windows
 ========================================================================
-
-First, see "Building from a Source Distribution" in "worksp\README.txt".
 
 For information on setting up a command-line build environment with
 Microsoft Visual Studio, see detailed instructions in

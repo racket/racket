@@ -461,7 +461,12 @@
                options)]))
 
   (define pkgs (hash-ref config 'INSTALL_PKGS ""))
-  (define missing-pkgs? (equal? (hash-ref config 'INSTALL_MISSING_PKGS "") "yes"))
+  (define missing-pkgs? (let ([v (hash-ref config 'INSTALL_MISSING_PKGS "")])
+                          (or (equal? v "yes")
+                              (and (equal? v "dist")
+                                   ;; added by `setup/unixstyle-install` when
+                                   ;; assembling a source distribrution:
+                                   (file-exists? (at-source "source-dist.txt"))))))
   (unless (and (equal? pkgs "") (not missing-pkgs?))
     (define pkg-catalog (hash-ref config 'INSTALL_PKG_CATALOG ""))
     (alert "setting up enough to install packages")

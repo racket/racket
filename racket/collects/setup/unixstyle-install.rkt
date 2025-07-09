@@ -706,6 +706,13 @@
          (or (regexp-match? #rx"^build$" (basename p))
              (chez-skip p)))))
     (do-tree "src" (build-path base-destdir "src") #:build-path? #t)
+    (let ([tag (build-path base-destdir "src" "source-dist.txt")])
+      (unless (file-exists? tag)
+        (call-with-output-file*
+         tag
+         (lambda (o)
+           (fprintf o "This is a source distribution.\n")
+           (fprintf o "(The existence of this file is a hint to build scripts.)\n")))))
     ;; Copy pb boot files, if present
     (let ([src-pb "src/ChezScheme/boot/pb"])
       (when (directory-exists? src-pb)

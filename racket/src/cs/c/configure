@@ -3413,6 +3413,8 @@ use_own_zlibs=no
 
 cs_auto_flags=--disable-auto-flags
 
+dist_install_missing_pkgs=no
+
 COPY_NEW_CFLAGS_TO_CPPFLAGS=no
 
 SCHEME_LIBFFI=no
@@ -4634,6 +4636,7 @@ case "$host_os" in
     skip_curses_check=yes
     use_flag_pthread=no
     use_own_zlibs=yes
+    dist_install_missing_pkgs=yes
     MACH_OS=nt
     LIBS="${LIBS} -lshell32 -luser32 -lole32 -lrpcrt4 -luuid -lws2_32 -ladvapi32 -lwinmm"
     MINGW="t"
@@ -4660,6 +4663,7 @@ case "$host_os" in
     SIGNED_EXE="t"
     if test "${enable_xonx}" = "no" ; then
       OSX="t"
+      dist_install_missing_pkgs=yes
     else
       CONFIGURE_RACKET_SO_COMPILE="PLT_CS_MAKE_UNIX_STYLE_MACOS=y"
       CPPFLAGS="${CPPFLAGS} -DRACKET_XONX"
@@ -5187,6 +5191,7 @@ fi
 if test "${enable_natipkg}" = "yes" ; then
   CONFIGURE_RACKET_SO_COMPILE="${CONFIGURE_RACKET_SO_COMPILE} PLT_CS_SLSP_SUFFIX=-natipkg"
   PLT_CS_SLSP_SUFFIX="-natipkg"
+  dist_install_missing_pkgs=yes
 fi
 if test "${enable_nonatipkg}" = "yes" ; then
   if test "${enable_natipkg}" = "yes" ; then
@@ -5195,6 +5200,7 @@ if test "${enable_nonatipkg}" = "yes" ; then
   fi
   CONFIGURE_RACKET_SO_COMPILE="${CONFIGURE_RACKET_SO_COMPILE} PLT_CS_SLSP_SUFFIX=-nonatipkg"
   PLT_CS_SLSP_SUFFIX="-nonatipkg"
+  dist_install_missing_pkgs=no
 fi
 
 ############## ubsan ################
@@ -6186,8 +6192,15 @@ fi
 ############## Packages tool ################
 
 INSTALL_PKGS="$enable_pkgs"
-INSTALL_MISSING_PKGS="$enable_missingpkgs"
 INSTALL_PKG_CATALOG="$enable_catalog"
+
+if test "$enable_missingpkgs" = "" ; then
+  if test "$dist_install_missing_pkgs" = "yes" ; then
+    INSTALL_MISSING_PKGS="dist"
+  fi
+else
+  INSTALL_MISSING_PKGS="$enable_missingpkgs"
+fi
 
 
 ############## subconfigure ################
