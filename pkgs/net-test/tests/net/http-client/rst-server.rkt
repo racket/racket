@@ -6,13 +6,16 @@
 
 (require ffi/unsafe
          ffi/unsafe/port
+         racket/file
          racket/runtime-path
          racket/system
          racket/tcp)
 
 (define cc (find-executable-path "cc"))
-(define-runtime-path rst-server-constants
-  "rst-server-constants")
+(define here (build-path (syntax-source #'here) 'up))
+(define compiled
+  (for/first ([p (in-list (use-compiled-file-paths))])
+    (simplify-path (build-path here p))))
 (define-runtime-path rst-server-constants.c
   "rst-server-constants.c")
 
@@ -21,6 +24,8 @@
 (define (get-constants)
   (parameterize ([current-subprocess-custodian-mode 'kill]
                  [subprocess-group-enabled #t])
+    (make-directory* compiled)
+    (define rst-server-constants (build-path compiled "rst-server-constants"))
     (unless (zero? (system*/exit-code cc "-o" rst-server-constants rst-server-constants.c))
       (error 'get-constants "failed to compile"))
     (define out (open-output-string))
