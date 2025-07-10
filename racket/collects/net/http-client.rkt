@@ -267,6 +267,8 @@
                last-bytes]
               [else
                (read-bytes chunk-size ip)]))
+          (when (eof-object? bs)
+            (error 'http-pipe-chunk "Unexpected EOF while reading chunk"))
           (read-bytes! crlf-bytes ip 0 2)
           (write-bytes bs op 0 chunk-size)
           (loop bs)])])))
