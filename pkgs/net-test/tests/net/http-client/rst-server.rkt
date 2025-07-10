@@ -48,6 +48,9 @@
      (lambda ()
        (define-values (in out)
          (tcp-accept listener))
+       (define sock (unsafe-port->socket out))
+       (define opt (make-linger 1 0))
+       (setsockopt sock SOL_SOCKET SO_LINGER opt (ctype-sizeof _linger))
        (for ([line (in-lines in)])
          #:break (equal? line "")
          (void))
@@ -64,9 +67,9 @@
           (fprintf out "Content-Length: 50\r\n")
           (fprintf out "\r\n")
           (fprintf out "hello")])
-       (define sock (unsafe-port->socket out))
-       (define opt (make-linger 1 0))
-       (setsockopt sock SOL_SOCKET SO_LINGER opt (ctype-sizeof _linger))
+       ;; On Linux, the socket needs to be in a half-closed state for
+       ;; the RST to get sent reliably.
+       (tcp-abandon-port out)
        (close-output-port out))))
   (values
    local-port
