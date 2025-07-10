@@ -225,57 +225,128 @@
 (define (http-conn-response-port/rest! hc)
   (http-conn-response-port/length! hc +inf.0 #:close? #t))
 
-(define (http-conn-response-port/length! hc count #:close? [close? #f])
-  (define-values (in out) (make-pipe PIPE-SIZE))
-  (thread
-   (λ ()
-     (copy-bytes (http-conn-from hc) out count)
-     (when close?
-       (http-conn-close! hc))
-     (close-output-port out)))
-  in)
+(define (http-conn-response-port/length! hc n #:close? [close? #f])
+  (make-conn-response-port
+   hc close?
+   (lambda (in out)
+     (copy-bytes in out n))))
 
 (define (http-conn-response-port/chunked! hc #:close? [close? #f])
-  (define (http-pipe-chunk ip op)
-    (define (done) (void))
-    (define crlf-bytes (make-bytes 2))
-    (let loop ([last-bytes #f])
-      (define in-v (read-line ip eol-type))
-      (cond
-        [(eof-object? in-v)
-         (done)]
-        [else
-         (define size-str (string-trim in-v))
-         (define chunk-size (string->number size-str 16))
-         (unless chunk-size
-           (error 'http-conn-response/chunked
-                  "Could not parse ~S as hexadecimal number"
-                  size-str))
-         (define use-last-bytes?
-           (and last-bytes (<= chunk-size (bytes-length last-bytes))))
-         (if (zero? chunk-size)
-             (done)
-             (let* ([bs (if use-last-bytes?
-                            (begin
-                              (read-bytes! last-bytes ip 0 chunk-size)
-                              last-bytes)
-                            (read-bytes chunk-size ip))]
-                    [crlf (read-bytes! crlf-bytes ip 0 2)])
-               (write-bytes bs op 0 chunk-size)
-               (loop bs)))])))
+  (make-conn-response-port
+   hc close?
+   (lambda (in out)
+     (http-pipe-chunk in out))))
 
-  (define-values (in out) (make-pipe PIPE-SIZE))
-  (define chunk-t
-    (thread
-     (λ ()
-       (http-pipe-chunk (http-conn-from hc) out))))
+(define (http-pipe-chunk ip op)
+  (define crlf-bytes
+    (make-bytes 2))
+  (let loop ([last-bytes #f])
+    (define in-v (read-line ip eol-type))
+    (cond
+      [(eof-object? in-v)
+       (void)]
+      [else
+       (define size-str
+         (string-trim in-v))
+       (define chunk-size
+         (string->number size-str 16))
+       (unless chunk-size
+         (error 'http-pipe-chunk
+                "Could not parse ~S as hexadecimal number"
+                size-str))
+       (define use-last-bytes?
+         (and last-bytes (<= chunk-size (bytes-length last-bytes))))
+       (cond
+         [(zero? chunk-size)
+          (void)]
+         [else
+          (define bs
+            (cond
+              [use-last-bytes?
+               (read-bytes! last-bytes ip 0 chunk-size)
+               last-bytes]
+              [else
+               (read-bytes chunk-size ip)]))
+          (when (eof-object? bs)
+            (error 'http-pipe-chunk "Unexpected EOF while reading chunk"))
+          (read-bytes! crlf-bytes ip 0 2)
+          (write-bytes bs op 0 chunk-size)
+          (loop bs)])])))
+
+;; The other end can hang up while we're reading the response, so we
+;; have to ensure that reading from the port doesn't deadlock and that
+;; the thread reading the port we return is notified of the exn.
+(define (make-conn-response-port hc close? copy)
+  (define-values (in out set-err!)
+    (make-pipe/err PIPE-SIZE))
   (thread
-   (λ ()
-     (thread-wait chunk-t)
-     (when close?
-       (http-conn-close! hc))
-     (close-output-port out)))
+   (lambda ()
+     (with-handlers ([exn:fail?
+                      (lambda (e)
+                        (set-err! e)
+                        (http-conn-close! hc)
+                        (close-output-port out))])
+       (copy (http-conn-from hc) out)
+       (when close? (http-conn-close! hc))
+       (close-output-port out))))
   in)
+
+;; Like make-pipe, but returns 3 values: the input port, the output port
+;; and a procedure to signal that an error has ocurred while piping
+;; data. When an error a signaled, in-progress and subsequent reads from
+;; the input port raise that error.
+(define (make-pipe/err size)
+  (define-values (in out)
+    (make-pipe size))
+  (define err #f)
+  (define (make-ready-or-err-evt)
+    ;; When an error has already been signaled, raise immediately.
+    (when err
+      (raise err))
+    ;; Otherwise wait for the port to make progress or be closed.
+    ;; Assumes the user of make-pipe/err will close the output port
+    ;; after signaling an error.
+    (wrap-evt
+     in
+     (lambda (ip)
+       (when err
+         (raise err))
+       ip)))
+  (define (set-err! e)
+    (set! err e))
+  (define custom-in
+    (make-input-port
+     #;name
+     'http-conn-response-port
+     #;read-in
+     (lambda (bs)
+       (wrap-evt
+        (make-ready-or-err-evt)
+        (lambda (ip)
+          (read-bytes-avail! bs ip))))
+     #;peek
+     (lambda (bs s progress)
+       (wrap-evt
+        (make-ready-or-err-evt)
+        (lambda (ip)
+          (peek-bytes-avail! bs s progress ip))))
+     #;close
+     (lambda ()
+       (close-input-port in))
+     #;get-progress-evt
+     (lambda ()
+       (port-progress-evt in))
+     #;commit
+     (lambda (amt progress evt)
+       (port-commit-peeked amt progress evt in))
+     #;get-location
+     (lambda ()
+       (port-next-location in))
+     #;count-lines!
+     (lambda ()
+       (port-count-lines! in))
+     #;init-position 1))
+  (values custom-in out set-err!))
 
 ;; Derived
 
