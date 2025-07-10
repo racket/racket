@@ -143,7 +143,7 @@ Returns @racket[(not v)].}
 
 @section{Mutability Predicates}
 
-@note-lib[racket/mutability]
+@note-lib-only[racket/mutability]
 
 @history[#:added "8.9.0.3"]
 
