@@ -759,3 +759,545 @@ More shared utilities
  * "lt" --- `libtool` and `configure` support
 
  * "utils" --- miscellaneous
+
+========================================================================
+ Configure flags
+========================================================================
+
+Run `configure --help-cs` or `configure --help-bc` for general
+information on using `configure` and they way that `--enable-<x>`
+implies the possibility of `--disable-<x>`. This section provides more
+detail on Racket-specific options.
+
+Racket variant
+--------------
+
+--enable-bcdefault
+
+ Makes Racket BC the default. Racket CS is built with a "CS" or "cs"
+ suffix if it is enabled with `--enable-cs`.
+
+--enable-csdefault
+
+ Makes Racket CS the default. Racket BC is built with a "BC" or "bc"
+ suffix if it is enabled with `--enable-bc`. This is the default mode.
+
+--enable-cs
+
+ Builds Racket CS when it would otherwise be skipped.
+
+--enable-bc
+
+ Builds Racket BC when it would otherwise be skipped.
+
+--enable-csonly
+
+ Makes Racket CS the default and disallows combination with
+ `--enable-bconly`.
+
+--enable-bconly
+
+ Makes Racket BC the default and disallows combination with
+ `--enable-csonly`.
+
+--enable-cgcdefault (discouraged)
+
+ Like `--enable-bcdefault` but further specifies the CGC variant of
+ Racket BC.
+
+--enable-crossany
+
+ Creates a Racket build, whether CS or BC, that by default compiles to
+ a machine- and variant-indendent format. That format is normally used
+ as a stepping stone to a machine- and variant-specific format, since
+ loading variant-inpendent bytecode can be very slow.
+
+--enable-gracket (BC only)
+
+ Enabled by default: Build GRacket as well as Racket. (Racket CS
+ always builds GRacket.)
+
+
+Installation directory structure
+--------------------------------
+
+--prefix=<dir>
+
+ Disables in-place build mode and makes the install step put files in
+ <dir>. The installation's directory structure can be further
+ specified by selecting a destination for specific parts of a build
+ via the options listed below, and setting any one of them disables
+ in-place mode. The directories are not required to be under the
+ prefix <dir>, but normally they are. Specifying these directories not
+ only chooses where to install files initially, but also configures
+ the installation to use the specified directory for packages and
+ collections that are added later (using installation scope instead of
+ user scope).
+
+  --bindir=<dir>
+
+   Executables go in <dir>.
+
+  --guibindir=<dir>
+
+   Executables for GUI programs for in <dir>, instead of the same
+   dierctory as other executables. This separate directory makes the
+   most sense for Mac OS, where GUI executables mean ".app" bundles
+   (but launcher scripts for those applications are still written in
+   the non-GUI excutable destination).
+
+  --sysconfdir=<dir>
+
+   Racket's configuration (especially a "config.rktd" file) is written
+   in <dir>.
+
+  --libdir=<dir>
+
+   Platform-specific libraries and compiled files go in <dir>. This
+   includes ".zo" files, unless `--enable-sharezo` is used.
+
+  --datarootdir=<dir>
+
+   Adjusts the default data, doc, and man directories to be within
+   <dir>.
+
+  --datadir=<dir>
+
+   Adjusts the default pkgs directory to be within <dir>.
+
+  --collectsdir=<dir>
+
+   Racket's initial linbrary collection sources go in <dir>. If
+   `--enable-sharezo` is used, then compiled forms go here, too.
+
+  --pkgsdir=<dir>
+
+   Sources for packages in installtion scope go in <dir>. If
+   `--enable-sharezo` is used, then compiled forms go here, too.
+
+  --docdir=<dir>
+
+   Docuemntation goes in <dir>.
+
+  --mandir=<dir>
+
+   Man pages go in <dir>.
+
+  --appsdir=<dir>
+
+   For Unix, ".desktop" files for in <dir>.
+
+  --includedir=<dir>
+
+    C header files (for Racket C ABI) go in <di>
+
+--enable-origtree
+
+ Enabled by default on Mac OS unless `--enable-xonx` is used: When
+ installing to a destination specified by `--prefix`, use the same
+ directory structure as an in-place build instead of a more Unix-style
+ build.
+
+  --enable-macprefix      allow --prefix with a Mac OS install
+
+--disable-useprefix
+
+ Causes `--prefix` to be ignored, forcing an in-place build. This
+ option is intended primarily for the makefile in a Git checkout's
+ root to ensure that an in-place build really is in-place.
+
+--enable-sharezo
+
+ In a Unix-style directory structure, causes ".zo" files for compiled
+ mores to be kept in "share" instead of "lib". Using "lib" is more
+ correct for Racket CS, since its ".zo" files are platform-specific.
+
+--enable-libfw
+
+ Install Mac OS frameworks to "/Library/Frameworks".
+
+--enable-userfw
+
+ Install Mac OS frameworks to "~/Library/Frameworks".
+
+--enable-embedfw
+
+ Statically link into executables the implementation that would
+ otherwise be in a framework (shared library) on Mac OS.
+
+--enable-libs
+
+ Enabled by default for Unix: install static libraries containing
+ Racket's kernel implementation.
+
+Racket functionality and OS libraries
+-------------------------------------
+
+--enable-pthread
+
+ Normally enabled automatically: Use the pthreads library to enable
+ internal threads for places, futures, and similar. For Racket CS,
+ disabling the use of pthread affects the inferred Chez Scheme machine
+ type, picking one that does not start with "t".
+
+--enable-iconv
+
+ Normally enabled automatically: Use the iconv library for
+ string-encoding conversion. Disabling use of iconv will limit
+ conversions available from Racket's `bytes-open-converter`.
+
+--enable-curses
+
+ Normally enabled automatically: Use the curses or ncurses library for
+ terminal control. Disabling the use of curses will hobble editing in
+ Racket's `read-eval-print-loop`.
+
+--enable-curseslib=<libs>
+
+ Use <libs> for linking to curses library, instead of letting
+ `configure` automtaically find a suitable curses or ncurses library.
+
+--enable-portable
+
+ Link to curses support in a way that maximizes portability across OS
+ variants, especially Linux versions and distributions.
+
+--enable-libz
+
+ Enabled by default: Use the system-installed libz, if available,
+ instead of Racket's vendored copy.
+
+--enable-liblz4
+
+ Enabled by default: Use the system-installed liblz4, if available,
+ instead of Racket's vendored copy.
+
+--enable-libffi (BC only)
+
+ Enabled by default: Use the system-installed libffi, if available,
+ instead of Racket's vendored copy.
+
+--enable-jit (BC only)
+
+ Enabled by default: Support JIT compilation. (Racket CS always
+ compiles to machine code on the fly.)
+
+--enable-foreign (BC only)
+
+ Enabled by default: Support foreign calls, which use libffi. (Racket CS
+ always supports foreign calls, and it uses libffi only for pb
+ variants.)
+
+--enable-places (BC only)
+
+ Enabled by default for pthread builds and 3m: Support places. (Racket
+ CS always supports places for pthread builds.)
+
+--enable-futures (BC only)
+
+ Enabled by default for pthread builds and 3m: Support futures. (Racket
+ CS always supports futures for pthread builds.)
+
+--enable-float (BC only)
+
+ Enabled by default: Support single-precision float-point values.
+ (Racket CS never supports single-precision float-point values, except
+ the `flsingle` procedure.)
+
+--enable-floatinstead (BC only, strongly discouraged)
+
+ Use single-precision floats by default.
+
+--enable-extflonum (BC only)
+
+ Enabled by default for i386 and x86_64 platforms: Support extflonums.
+ (Racket CS never supports extflonums.)
+
+--enable-generations (BC only)
+
+ Enable by default: Support generational garbage colleciton in the 3m
+ variant.
+
+--enable-backtrace (BC only, expensive debugging mode)
+
+ Enable backtrace dumps with the 3m variant.
+
+--enable-sgc (BC only)
+
+ Obsolete: Senora GC is always enabled for the CGC variant.
+
+--enable-sgcdebug (BC only,  expensive debugging mode)
+
+ Use Senora GC for debugging in the CGC variant.
+
+Time--space tradeoffs
+---------------------
+
+--enable-shared
+
+ A standard `configure` flag that has no effect for Racket CS and that
+ is not recommended for Racket BC. Windows builds always use shared
+ libraries, Mac OS builds use a framework unless `--enable-embedfw` is
+ used, and Racket CS on other platforms never uses shared libraries.
+ In all cases, executables built from Racket and distributed together
+ will share a library or core executable, achieving much of the same
+ effect of shared libraries.
+
+--enable-wpo (CS only)
+
+ Enabled by default: Use "whole-program operation" to build the
+ immediate Racket layer on top of Chez Scheme. Using `--disable-wpo`
+ substantially decreases the amount of memory needed to compile the
+ Racket CS executable, but it may reduce performance.
+
+--enable-compress (CS only)
+
+ Enabled by default: Compress (via lz4) machine code when writing
+ Racket ".zo" files. This flag affects only the default for writing
+ ".zo" files, and all Racket CS builds support compressed and
+ uncompressed content.
+
+--enable-compressboot (CS only)
+
+ Enabled by default on Windows: Compress the machine code for Racket's
+ initial image. This machine code may be in "petite.boot",
+ "scheme.boot", and "racket.boot" files, or it may be embedded in
+ executables.
+
+--enable-dynlib (BC only)
+
+ Same as `--enable-shared`.
+
+--enable-cify (BC only)
+
+ Enabled by default on platforms where the JIT is not available:
+ Compile Racket code in the core implementation (which includes the
+ macro expander) to C instead of bytecode.
+
+Packages and user-specific files
+--------------------------------
+
+--enable-pkgscope=<scope>
+
+ Sets the default scope used by `raco pkg`, where <scope> can be
+ `installation`, `user`, or `shared`. The default is to preserve the
+ current setting, which is normally `user` but might be initialized to
+ `installation` in a Git checkout build. If a <scope> is provided,
+ then the build's configuration is changed to use it.
+
+--enable-docs
+
+ Enabled by default: Build package-provided documentation on install.
+ If no documentation package is pre-installed (in a source
+ distribution) or currently installed (when rebuilding in-place), then
+ `--enable-docs` has no effect. Documentation for Racket itself is
+ provided by the "racket-doc" package.
+
+--enable-usersetup
+
+ Includes user-scope packages and user-specific collections in the
+ setup set of an install. Normally, the install step ignores
+ user-scope packages and user-specific collections.
+
+--enable-pkgs=<pkgs>
+
+ At the install step, install packages listed (as space-separated) in
+ <pkgs>. When building from a source distribution, the installation may
+ be staged early in the `make` step instead of `make install`.
+
+--enable-catalog=<url>
+
+ Install any extra packages by consulting the catalog <url> instead of
+ the default or currently configured (or preconfigured for a source
+ distribution) catalog.
+
+--enable-missingpkgs
+
+ Enabled by default for a relevant platforms when building from a
+ source distribution (as opposed to a Git checkout): Detect and add
+ missing package dependencies at the install step. Mac OS is a
+ relevant platform unless `--enable-xonx` or `--enable-nonnatipkg` is
+ specified. Windows is a relevant platform. Using `--enable-natipkg`
+ makes any platform relevant.
+
+Target configuration and cross compilation
+------------------------------------------
+
+--enable-racket=<path>
+
+ Use <path> as Racket for building, especially for cross-compilation,
+ but also potentially to bootstrap parts of the build instead of
+ starting from more primitive layers. Use "auto" as <path> for a cross
+ build to automatically generate the host-platform Racket that is
+ needed for cross compialtion. See "Cross compilation" above for more
+ information.
+
+--enable-scheme=<path> (CS only)
+
+ Use <path> as Chez Scheme for building. See "Cross compilation" above
+ for more information.
+
+--enable-mach=<mach> (CS only)
+
+ Build for Chez Scheme machine type <mach>. Normally, <mach> is
+ inferred, but supply it if inference somehow fails, For cross
+ compilation, it's not enough to specify <mach>, and something like
+ `--host=...` will be needed to describe the target machine (and then
+ <mach> normally can be inferred); see "Cross compilation above for
+ more information. Specifying a machine type that does not start with
+ "t" changes whether the pthread library is used by default. If
+ `--enable-pb` is also used, then `--enable-mach` can still be
+ relevant for helping inference of how to build the interpreter
+ kernel.
+
+--enable-target=<mach> (CS only)
+
+ Selects cross-compilation mode for a target described by the Chez
+ Scheme machine type <mach>. Normally, `--host=...` causes <mach> to
+ be inferred, but `--enable-target` provides a way to override
+ inference and insist on cross compilation.
+
+--enable-pb (CS only)
+
+ Build for pb (portable byetcode) interpretation instead of
+ native-code generatation for Racket programs. A pb variant with
+ suitable threading, word size, endianness will be inferred, such as
+ `tpb46le`. The `--enable-pb` flag might be used in combination with
+ `--enable-mach=<mach>`, in which case the `<mach>` helps infer the
+ choice of pb variant and the way that the interpreter kernel itself
+ is compiled. If `--enable-racket=auto` is supplied, then
+ `--enable-pb` triggers cross-compilation mode. Note that for some
+ host platforms (such as s390x), a pb variant is the default machine
+ type.
+
+--enable-pbchunk (CS only)
+
+ Enable by default: When building a pb variant of Racket, compile some
+ bytecode representing Racket's own implementation to machine code via
+ C. The converted implementation includes the compiler and macro
+ expander, so `--enable-pbchunk` can substantially speed up Racket as
+ a compiler and provider of built-in operations. The generated C code
+ may be large and take a long time to compile, however.
+
+--enable-check (CS only)
+
+ Build the Chez Scheme and Racket core in safe mode, which is
+ potentially useful for tracking down bugs in Racket's implementation
+ or exposing bugs in the use of unsafe operations provided by Racket.
+ Normally, this mode should not be used outside of debugging Racket
+ itself.
+
+--enable-natipkg
+
+ Adds "-natipkg" to the result of `system-library-subpath`. The intent
+ is primarily to effect platform-specific package dependencies,
+ perhaps causing the "racket-x86_64-linux-natipkg-3" dependency of the
+ "racket-lib" package to be activated, for example.
+
+--enable-nonatipkg
+
+ Adds "-nonatipkg" to the result of `system-library-subpath`. Like
+ `--enable-natipkg`, the intent is to affect package dependencies,
+ perhaps causing the "racket-x86_64-macosx-3" dependency of the
+ "racket-lib" package to *not* be activated, for example.
+
+--enable-xonx
+
+ Affects Mac OS builds only: Creates a build that is Unix-style in its
+ default installation layout and package dependencies. For an
+ `--enable-xonx` build, the `system-library-subpath` result will use
+ "darwin" instead of "macosx".
+
+--enable-ios=<path>
+
+ Cross-compile for iOS, and use <path> as the SDK path along the same
+ lines as `--enable-sdk`.
+
+--enable-mac64
+
+  Enabled by default: allow 64-bit Mac OS build. Historically,
+  `--disable-mac64` was used to build for 32-bit Mac OS on 64-bit Mac
+  OS.
+
+--enable-stackup (BC only)
+
+ Assume "up" if the stack direction cannot be inferred.
+
+--enable-bigendian (BC only)
+
+ Assume "big" if endianness cannot be inferred.
+
+--enable-ffipoll (BC only)
+
+ Defer FFI calls to the point where an embedding program explicitly
+ polls for them.
+
+C compiler and linker configuration
+-----------------------------------
+
+--enable-sdk=<path>
+
+ Use <path> as a Mac OS 10.4 SDK directory, also setting 10.4 as the
+ minimal Mac OS version.
+
+--enable-sdk5=<path>
+
+ Like `--enable-sdk`, but for Mac OS 10.5.
+
+--enable-sdk6=<path>
+
+ Like `--enable-sdk`, but for Mac OS 10.6.
+
+--enable-sdk9=<path>
+
+ Like `--enable-sdk`, but for Mac OS 10.9.
+
+--enable-sdk11=<path>
+
+ Like `--enable-sdk`, but for Mac OS 11.0.
+
+--enable-sysroot=<path>
+
+ Use <path> as a sysroot directory (e.g., for Android).
+
+--enable-postlink=<cmd> a
+
+ Apply <cmd> to executable after linking.
+
+--enable-strip
+
+ Usually enabled by default: Strip debugging information at the
+ install step.
+
+--enable-ubsan
+
+ Compile with `-fsanitize=undefined`.
+
+--enable-asan (CS only)
+
+ Compile with `-fsanitize=address`.
+
+--enable-gprof (BC only)
+
+ Compile for profiling with gprof (gcc only).
+
+--enable-gcov (BC only)
+
+ Compile to gather gcov statistics (gcc3 only).
+
+--enable-noopt (BC only)
+
+ Drop `-O` C flags (useful for low-level debugging).
+
+--enable-jitframe (BC only)
+
+ On x86_64, use a frame pointer for internal calls.
+
+--enable-werror (BC only)
+
+ Compile with warnings as errors.
+
+--enable-lt=<prog> (BC only)
+
+ Use <prog> instead of `libtool`. Use `--disable-lt` to always use a
+ vendered `libtool`.

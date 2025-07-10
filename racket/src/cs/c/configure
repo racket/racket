@@ -774,14 +774,12 @@ ac_subst_files=''
 ac_user_opts='
 enable_option_checking
 enable_shared
-enable_standalone
 enable_pthread
 enable_iconv
 enable_curses
 enable_curseslib
 enable_wpo
 enable_compress
-enable_compressmore
 enable_compressboot
 enable_origtree
 enable_sharezo
@@ -1467,14 +1465,12 @@ Optional Features:
   --disable-FEATURE       do not include FEATURE (same as --enable-FEATURE=no)
   --enable-FEATURE[=ARG]  include FEATURE [ARG=yes]
   --enable-shared         create shared libraries (not currently supported)
-  --enable-standalone     create a standalone shared library
   --enable-pthread        link with pthreads (usually auto-enabled if needed)
   --enable-iconv          use iconv (usually auto-enabled)
   --enable-curses         use curses (usually auto-enabled)
   --enable-curseslib=<libs> use <libs> for linking to curses library
   --enable-wpo            agressively optimize Racket core (enabled by default)
   --enable-compress       compress compiled code (enabled by default)
-  --enable-compressmore   compress compiled code even more
   --enable-compressboot   compress boot files
   --enable-origtree       install with original directory structure
   --enable-sharezo        install ".zo"s to "share", not "lib"
@@ -2582,11 +2578,6 @@ if test "${enable_shared+set}" = set; then :
   enableval=$enable_shared;
 fi
 
-# Check whether --enable-standalone was given.
-if test "${enable_standalone+set}" = set; then :
-  enableval=$enable_standalone;
-fi
-
 # Check whether --enable-pthread was given.
 if test "${enable_pthread+set}" = set; then :
   enableval=$enable_pthread;
@@ -2618,11 +2609,6 @@ fi
 # Check whether --enable-compress was given.
 if test "${enable_compress+set}" = set; then :
   enableval=$enable_compress;
-fi
-
-# Check whether --enable-compressmore was given.
-if test "${enable_compressmore+set}" = set; then :
-  enableval=$enable_compressmore;
 fi
 
 # Check whether --enable-compressboot was given.
@@ -2966,7 +2952,6 @@ fi
 show_explicitly_enabled "${enable_pthread}" "pthreads"
 show_explicitly_disabled "${enable_pthread}" "pthreads"
 show_explicitly_disabled "${enable_compress}" "Compressed code"
-show_explicitly_disabled "${enable_compressmore}" "Compressed code even more"
 show_explicitly_enabled "${enable_compressboot}" "Compressed boot files"
 show_explicitly_disabled "${enable_compressboot}" "Compressed boot files"
 show_explicitly_enabled "${enable_xonx}" "Unix style"
@@ -5028,9 +5013,6 @@ fi
 
 if test "${enable_compress}" != "no" ; then
   COMPRESS_COMP="--compress"
-fi
-if test "${enable_compressmore}" = "yes" ; then
-  COMPRESS_COMP="--compress-more"
 fi
 
 if test "${enable_compressboot}" = "yes" ; then

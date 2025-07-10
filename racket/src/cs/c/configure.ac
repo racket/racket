@@ -14,13 +14,11 @@ AC_CANONICAL_SYSTEM
 AC_DISABLE_OPTION_CHECKING
 
 AC_ARG_ENABLE(shared,     [  --enable-shared         create shared libraries (not currently supported)])
-AC_ARG_ENABLE(standalone, [  --enable-standalone     create a standalone shared library])
 AC_ARG_ENABLE(pthread,    [  --enable-pthread        link with pthreads (usually auto-enabled if needed)])
 m4_include(../ac/iconv_arg.m4)
 m4_include(../ac/curses_arg.m4)
 AC_ARG_ENABLE(wpo,        [  --enable-wpo            agressively optimize Racket core (enabled by default)])
 AC_ARG_ENABLE(compress,   [  --enable-compress       compress compiled code (enabled by default)])
-AC_ARG_ENABLE(compressmore, [  --enable-compressmore   compress compiled code even more])
 AC_ARG_ENABLE(compressboot, [  --enable-compressboot   compress boot files])
 m4_include(../ac/path_arg.m4)
 AC_ARG_ENABLE(racket,     [  --enable-racket=<path>  use <path> as Racket for build; or "auto" to create])
@@ -81,7 +79,6 @@ fi
 show_explicitly_enabled "${enable_pthread}" "pthreads"
 show_explicitly_disabled "${enable_pthread}" "pthreads"
 show_explicitly_disabled "${enable_compress}" "Compressed code"
-show_explicitly_disabled "${enable_compressmore}" "Compressed code even more"
 show_explicitly_enabled "${enable_compressboot}" "Compressed boot files"
 show_explicitly_disabled "${enable_compressboot}" "Compressed boot files"
 show_explicitly_enabled "${enable_xonx}" "Unix style"
@@ -600,9 +597,6 @@ fi
 
 if test "${enable_compress}" != "no" ; then
   COMPRESS_COMP="--compress"
-fi
-if test "${enable_compressmore}" = "yes" ; then
-  COMPRESS_COMP="--compress-more"
 fi
 
 if test "${enable_compressboot}" = "yes" ; then

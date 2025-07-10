@@ -52,7 +52,8 @@ for arg in $*; do
             ;;
         --help | -h)
             echo $0:
-            echo see --help-bc or --help-cs, since the Racket CS build and the
+            echo See '"Configure flags"' in '"README.txt"', or try again with
+            echo '`--help-cs`' or '`--help-bc`', since the Racket CS build and the
             echo Racket BC build support different options. If you use options
             echo that build both CS and BC, then you can mix options that apply
             echo to both or either kind of build.
