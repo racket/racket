@@ -9,7 +9,10 @@
                       start-breakable-atomic
                       end-breakable-atomic
                       call-as-atomic
-                      call-as-nonatomic))
+                      call-as-nonatomic
+                      start-uninterruptable
+                      end-uninterruptable
+                      call-as-uninterruptable))
 
 (define (start-atomic)
   (unsafe-start-atomic))
@@ -25,6 +28,12 @@
 
 (define (in-atomic-mode?)
   (unsafe-in-atomic?))
+
+(define (start-uninterruptable)
+  (unsafe-start-uninterruptable))
+
+(define (end-uninterruptable)
+  (unsafe-end-uninterruptable))
 
 ;; ----------------------------------------
 
@@ -132,3 +141,9 @@
                       (loop (sub1 i))))
                   (set! extra-atomic-depth extra-depth)
                   (set! monitor-owner (current-thread)))))))))))
+
+(define (call-as-uninterruptable f)
+  (unless (and (procedure? f)
+               (procedure-arity-includes? f 0))
+    (raise-type-error 'call-as-uninterruptable "procedure (arity 0)" f))
+  (dynamic-wind unsafe-start-uninterruptable f unsafe-end-uninterruptable))

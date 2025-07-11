@@ -17,7 +17,10 @@
          "future-id.rkt"
          "future-lock.rkt"
          "future-logging.rkt"
-         "error.rkt")
+         "error.rkt"
+         (only-in '#%unsafe
+                  unsafe-call-with-composable-continuation/no-wind
+                  unsafe-abort-current-continuation/no-wind))
 
 ;; See "README.txt" for some general information about this
 ;; implementation of futures.
@@ -337,12 +340,22 @@
   (on-transition-to-unfinished)
   (future-suspend))
 
-;; called with lock held on the current future
+;; called with lock held on the current future, which implies
+;; that `(current-atomic)` has been incremented, too
 (define (future-suspend [touching-f #f])
   (define me-f (current-future))
-  (call-with-composable-continuation
+  (unsafe-call-with-composable-continuation/no-wind
    (lambda (k)
-     (set-future*-thunk! me-f k)
+     (cond
+       [(eqv? (current-atomic) 1)
+        (set-future*-thunk! me-f k)]
+       [else
+        ;; extra atomicity is from `start-uninterrupted`s
+        (define n (sub1 (current-atomic)))
+        (current-atomic 1)
+        (set-future*-thunk! me-f (lambda ()
+                                   (current-atomic (+ n (current-atomic)))
+                                   (k)))])
      (lock-release (future*-lock me-f))
      (when touching-f
        (log-future 'touch (future*-id me-f) #:data (future*-id touching-f)))
@@ -351,9 +364,9 @@
      (cond
        [(future*-would-be? me-f)
         (current-future #f)
-        (abort-current-continuation future-start-prompt-tag (void))]
+        (unsafe-abort-current-continuation/no-wind future-start-prompt-tag (void))]
        [else
-        (abort-current-continuation future-scheduler-prompt-tag (void))]))
+        (unsafe-abort-current-continuation/no-wind future-scheduler-prompt-tag (void))]))
    future-start-prompt-tag))
 
 ;; ----------------------------------------
@@ -588,8 +601,9 @@
   ;;     void)
   ;; But use an engine so we can periodically check that the future is
   ;; still supposed to run.
-  ;; We take advantage of `current-atomic`, which would otherwise
-  ;; be unused, to disable interruptions.
+  ;; We take advantage of `current-atomic` to disable interruptions,
+  ;; both directly here and in the implementation of
+  ;; `unsafe-{start, end}-uninterruptable`.
   (define e (make-engine (lambda ()
                            ;; decrements `(current-atomic)`
                            (run-future f))

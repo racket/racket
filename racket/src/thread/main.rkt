@@ -160,6 +160,8 @@
          unsafe-end-breakable-atomic
          unsafe-in-atomic?
          unsafe-set-on-atomic-timeout!
+         unsafe-start-uninterruptable
+         unsafe-end-uninterruptable
 
          unsafe-thread-at-root
          unsafe-make-custodian-at-root

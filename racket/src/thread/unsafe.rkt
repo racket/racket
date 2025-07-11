@@ -10,7 +10,10 @@
          unsafe-start-breakable-atomic
          unsafe-end-breakable-atomic
          unsafe-in-atomic?
-         unsafe-set-on-atomic-timeout!)
+         unsafe-set-on-atomic-timeout!
+
+         unsafe-start-uninterruptable
+         unsafe-end-uninterruptable)
 
 (define (unsafe-start-breakable-atomic)
   (start-atomic)
@@ -31,3 +34,8 @@
 
 (define (unsafe-set-on-atomic-timeout! proc)
   (set-atomic-timeout-callback! proc))
+
+(define (unsafe-start-uninterruptable)
+  (start-uninterruptable))
+(define (unsafe-end-uninterruptable)
+  (end-uninterruptable))

@@ -140,6 +140,7 @@
                 (1/unsafe-custodian-unregister unsafe-custodian-unregister)
                 (1/unsafe-end-atomic unsafe-end-atomic)
                 (1/unsafe-end-breakable-atomic unsafe-end-breakable-atomic)
+                (1/unsafe-end-uninterruptable unsafe-end-uninterruptable)
                 (1/unsafe-in-atomic? unsafe-in-atomic?)
                 (1/unsafe-make-custodian-at-root unsafe-make-custodian-at-root)
                 (1/unsafe-make-os-semaphore unsafe-make-os-semaphore)
@@ -151,6 +152,7 @@
                 (1/unsafe-set-on-atomic-timeout! unsafe-set-on-atomic-timeout!)
                 (1/unsafe-start-atomic unsafe-start-atomic)
                 (1/unsafe-start-breakable-atomic unsafe-start-breakable-atomic)
+                (1/unsafe-start-uninterruptable unsafe-start-uninterruptable)
                 (1/unsafe-thread-at-root unsafe-thread-at-root)
                 (1/vector-set-performance-stats! vector-set-performance-stats!)
                 (1/will-execute will-execute)
@@ -1920,6 +1922,9 @@
   (lambda () (begin (start-atomic) (|#%app| host:disable-interrupts))))
 (define end-atomic/no-interrupts
   (lambda () (begin (|#%app| host:enable-interrupts) (end-atomic))))
+(define start-uninterruptable
+  (lambda () (current-atomic (fx+ (current-atomic) 1))))
+(define end-uninterruptable (lambda () (end-atomic)))
 (define in-atomic-mode? (lambda () (positive? (current-atomic))))
 (define future-barrier
   (lambda () (if (current-future$1) (|#%app| future-block-for-atomic) (void))))
@@ -11370,10 +11375,20 @@
           future-suspend
           (lambda (touching-f6_0)
             (let ((me-f_0 (current-future$1)))
-              (call-with-composable-continuation
+              (unsafe-call-with-composable-continuation/no-wind
                (lambda (k_0)
                  (begin
-                   (set-future*-thunk! me-f_0 k_0)
+                   (if (eqv? (current-atomic) 1)
+                     (set-future*-thunk! me-f_0 k_0)
+                     (let ((n_0 (sub1 (current-atomic))))
+                       (begin
+                         (current-atomic 1)
+                         (set-future*-thunk!
+                          me-f_0
+                          (lambda ()
+                            (begin
+                              (current-atomic (+ n_0 (current-atomic)))
+                              (|#%app| k_0)))))))
                    (lock-release (future*-lock me-f_0))
                    (if touching-f6_0
                      (let ((temp48_0 (future*-id me-f_0)))
@@ -11387,10 +11402,10 @@
                    (if (future*-would-be? me-f_0)
                      (begin
                        (current-future$1 #f)
-                       (abort-current-continuation
+                       (unsafe-abort-current-continuation/no-wind
                         future-start-prompt-tag
                         (void)))
-                     (abort-current-continuation
+                     (unsafe-abort-current-continuation/no-wind
                       future-scheduler-prompt-tag
                       (void)))))
                future-start-prompt-tag))))))
@@ -12977,6 +12992,10 @@
   (|#%name|
    unsafe-set-on-atomic-timeout!
    (lambda (proc_0) (set-atomic-timeout-callback! proc_0))))
+(define 1/unsafe-start-uninterruptable
+  (|#%name| unsafe-start-uninterruptable (lambda () (start-uninterruptable))))
+(define 1/unsafe-end-uninterruptable
+  (|#%name| unsafe-end-uninterruptable (lambda () (end-atomic))))
 (define 1/current-process-milliseconds
   (let ((current-process-milliseconds_0
          (|#%name|

@@ -18,6 +18,9 @@
          start-atomic/no-interrupts
          end-atomic/no-interrupts
 
+         start-uninterruptable
+         end-uninterruptable
+
          in-atomic-mode?
 
          future-barrier
@@ -58,10 +61,10 @@
 
 ;; inlined in Chez Scheme embedding:
 (define (start-atomic)
-  ;; Althogh it's adjusting atomicity for the thread scheduler,
+  ;; Although it's adjusting atomicity for the thread scheduler,
   ;; this function is documented as working in any Scheme thread.
   ;; The current implementation relies on parameters like
-  ;; `future-barrier` and `current-atomic` being virtual registers
+  ;; `future-barrier` and `current-atomic` being virtual registers.
   (future-barrier)
   (current-atomic (fx+ (current-atomic) 1)))
 
@@ -112,6 +115,15 @@
 
 (define (end-atomic/no-interrupts)
   (host:enable-interrupts)
+  (end-atomic))
+
+;; allowed in a future thread: does not necessary make a Racket (or
+;; Scheme) thread atomic with respect to other threads, but does
+;; ensure that a thread or future will be allowed to continue to
+;; `end-uninterruptable` before it can be externally stopped
+(define (start-uninterruptable)
+  (current-atomic (fx+ (current-atomic) 1)))
+(define (end-uninterruptable)
   (end-atomic))
 
 (define (in-atomic-mode?)

@@ -59,11 +59,12 @@
   (unless (procedure-arity-includes? proc 1)
     (raise-argument-error who expected proc)))
 
-(define ((allocator d) proc)
+(define ((allocator d #:merely-uninterruptable? [merely-uninterruptable? #f]) proc)
   (check-arity-includes-1 'allocator d)
   (cond
     [(not proc) #f]
     [else
+     (define call-as-atomic* (if merely-uninterruptable? call-as-uninterruptable call-as-atomic))
      (rename
       (let-values ([(_ allowed-kws) (procedure-keywords proc)])
         (define (register v)
@@ -76,19 +77,22 @@
         (cond
           [(null? allowed-kws)
            (lambda args
-             (call-as-atomic
+             (call-as-atomic*
               (lambda ()
                 (register (apply proc args)))))]
           [else
            (make-keyword-procedure
             (λ (kws kw-args . rest)
-              (call-as-atomic
+              (call-as-atomic*
                (lambda ()
                  (register (keyword-apply proc kws kw-args rest))))))]))
       proc)]))
 
-(define ((deallocator [get-arg car]) proc)
+(define ((deallocator [get-arg car]
+                      #:merely-uninterruptable? [merely-uninterruptable? #f])
+         proc)
   (check-arity-includes-1 'deallocator get-arg "(-> list/c any/c)")
+  (define call-as-atomic* (if merely-uninterruptable? call-as-uninterruptable call-as-atomic))
   (rename
    (let-values ([(_ allowed-kws) (procedure-keywords proc)])
      (define (handle v)
@@ -102,21 +106,23 @@
      (cond
        [(null? allowed-kws)
         (lambda args
-          (call-as-atomic
+          (call-as-atomic*
            (lambda ()
              (begin0 (apply proc args)
                      (handle (get-arg args))))))]
        [else
         (make-keyword-procedure
          (λ (kws kw-args . rest)
-           (call-as-atomic
+           (call-as-atomic*
             (lambda ()
               (begin0
                 (keyword-apply proc kws kw-args rest)
                 (handle (get-arg rest)))))))]))
    proc))
 
-(define ((retainer d [get-arg car]) proc)
+(define ((retainer d [get-arg car]
+                   #:merely-uninterruptable? [merely-uninterruptable? #f])
+         proc)
   (check-arity-includes-1 'retainer d)
   (check-arity-includes-1 'retainer get-arg "(-> list/c any/c)")
   (rename
@@ -128,17 +134,18 @@
        (hash-set! allocated v ds)
        (unless next-ds
          (register-finalizer v deallocate)))
+     (define call-as-atomic* (if merely-uninterruptable? call-as-uninterruptable call-as-atomic))
      (cond
        [(null? allowed-kws)
         (lambda args
-          (call-as-atomic
+          (call-as-atomic*
            (lambda ()
              (begin0 (apply proc args)
                      (handle (get-arg args))))))]
        [else
         (make-keyword-procedure
          (λ (kws kw-args . rest)
-           (call-as-atomic
+           (call-as-atomic*
             (lambda ()
               (begin0
                 (keyword-apply proc kws kw-args rest)
