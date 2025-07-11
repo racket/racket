@@ -345,7 +345,7 @@ static void init_icu()
   }
 
   uloc_getDefault(); /* https://unicode-org.atlassian.net/browse/ICU-21380 */
-  icu_init_status = INTI_YES;
+  icu_init_status = INIT_YES;
   return;
 #endif
 }
