@@ -28,11 +28,11 @@
 
 The @racketmodname[racket/future] library provides support for
 performance improvement through parallelism with @deftech{futures} and the @racket[future]
-and @racket[touch] functions. The level of parallelism available from
-those constructs, however, is limited by several factors, and the
-current implementation is best suited to numerical tasks. The caveats
+and @racket[touch] functions. Achieving parallelism through
+those constructs depends on avoiding @tech{blocking} operations: anything that inspects
+the full continuation or requires atomic execution relative to Racket threads. The caveats
 in @secref["DrRacket-perf"] also apply to futures; notably,
-the debugging instrumentation currently defeats futures.
+debugging instrumentation currently defeats futures.
 
 @margin-note{Other functions, such as @racket[thread], support the
 creation of reliably concurrent tasks. However, threads never run truly
@@ -79,13 +79,17 @@ The future @racket[f] runs @racket[(any-double? l2)] in parallel to
 l2)] becomes available about the same time that it is demanded by
 @racket[(touch f)].
 
-Futures run in parallel as long as they can do so safely, but the
-notion of ``future safe'' is inherently tied to the
-implementation. The distinction between ``future safe'' and ``future unsafe''
-operations may be far from apparent at the level of a Racket program.
-The remainder of this section works through an example to illustrate
-this distinction and to show how to use the future visualizer
-can help shed light on it.
+Futures run in parallel as long as they can do so safely and
+independent of any continuation context that a @racket[touch] might
+provide. Continuation context can include an exception handler,
+parameter value, continuation prompts, or other values accessible via
+continuation marks. Safety concerns shared mutable objects, such as
+input ports, output ports, and @racket[equal?]-based hash tables,
+where concurrent access is managed either internally or explicitly via
+locks. The remainder of this section works through an example to illustrate
+safety and continuation obstacles, and it also shows how the
+@defterm{futures visualizer} (provided by @racketmodname[future-visualizer #:indirect])
+can help shed light on those obstacles.
 
 Consider the following core of a Mandelbrot-set computation:
 
@@ -125,10 +129,10 @@ using one @racket[future] does not improve performance:
          (touch f)))
 ]
 
-To see why, use the @racketmodname[future-visualizer #:indirect] to
+To see why, use the futures visualizer from @racketmodname[future-visualizer #:indirect] to
 visualize the execution of the above program.
- 
-This opens a window showing a graphical view of a trace of the computation.
+@;
+The visualizer opens a window showing a graphical view of a trace of the computation.
 The upper-left portion of the window contains an execution timeline:
 
 @(interaction-eval 
@@ -463,21 +467,25 @@ dots represent important events in the execution of the program; they are
 color-coded to distinguish one event type from another.  The upper-left blue 
 dot in the timeline represents the future's creation.  The future 
 executes for a brief period (represented by a green bar in the second line) on thread 
-1. It then pauses, because the runtime thread will need to perform a
+1. It then pauses, because the Racket thread will need to perform a
 future-unsafe operation (as represented by a red dot). That pause is long,
-because the runtime thread is performing its own copy of the calculation
+because the Racket thread is performing its own copy of the calculation
 before it @racket[touch]es the future. Meanwhile, the
 pink vertical lines represent garbage-collection events, which imply a
 synchronization across parallel tasks.
 
-A @deftech{blocking} operation halts the evaluation of the future, and
-will not allow it to continue until it is touched. A @racket[touch] of
-the future causes its work to be evaluated sequentially by the runtime
-thread.@margin-note*{In the @tech{BC} implementation of Racket, a
-@deftech{synchronized} operation also halts the future. The runtime
+A future-unsafe operation or an operation that needs continuation context is
+a @deftech{blocking} operation.
+A blocking operation halts evaluation of a future and
+will not allow it to continue until the future is touched. A @racket[touch] of
+the future in a thread causes its work to be evaluated sequentially by the
+thread, which provides a continuation context and can synchronize with
+Racket threads.@margin-note*{In the @tech{BC} implementation of Racket, a
+@deftech{synchronized} operation also halts the future. A background
 thread may perform the operation at any time and, once completed, the
 future may continue running in parallel. The @tech{CS} implementation
-can perform synchronized operations without stopping a future.}
+can perform synchronized operations without stopping a future or relying
+on a background thread.}
 
 When you move your mouse over an event, the visualizer shows you 
 detailed information about the event and draws arrows
