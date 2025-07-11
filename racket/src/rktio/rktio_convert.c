@@ -331,7 +331,7 @@ static void init_icu()
     ucnv_close = (ucnv_close_proc_t)GetProcAddress(m, "ucnv_close");
     ucnv_reset = (ucnv_reset_proc_t)GetProcAddress(m, "ucnv_reset");
     ucnv_convertEx = (ucnv_convertEx_proc_t)GetProcAddress(m, "ucnv_convertEx");
-    uloc_getDefault = (uloc_getDefault_proc_t)GetProcAddress(m, "uloc_getDefault")'
+    uloc_getDefault = (uloc_getDefault_proc_t)GetProcAddress(m, "uloc_getDefault");
   }
   
   if (!ucnv_open || !ucnv_close || !ucnv_reset || !ucnv_convertEx || !uloc_getDefault) {
@@ -655,7 +655,7 @@ static void rktio_iconv_converter_close(rktio_t *rktio, rktio_iconv_converter_t 
 
 static void rktio_iconv_convert_reset(rktio_t *rktio, rktio_iconv_converter_t *cvt)
 {
-  if (INIT_YES = iconv_init_status)
+  if (INIT_YES == iconv_init_status)
     (void)iconv(cvt->cd, NULL, NULL, NULL, NULL);
 }
 
