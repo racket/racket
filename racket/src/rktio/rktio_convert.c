@@ -23,9 +23,9 @@
 #if defined(RKTIO_SYSTEM_WINDOWS)
 # define RKTIO_HAVE_ICU /* we avoid needing a header on Windows */
 #elif defined(RLTIO_HAVE_ICU)
-#ifdef RKTIO_HAVE_ICU
 # include "unicode/utypes.h" /* Basic ICU data types  */
 # include "unicode/ucnv.h"   /* C   Converter API     */
+# include "unicode/uloc.h" /* for precautionary thread initialization */
 #endif
 
 typedef enum {
@@ -252,8 +252,13 @@ rktio_char16_t *rktio_get_dll_path(rktio_char16_t *s) { return NULL; }
 /*============================================================*/
 
 #if !defined(RKTIO_HAVE_ICU) || defined(RKTIO_SYSTEM_WINDOWS)
+/* On Windows, we need these because we are avoiding requiring a header.
+   On non-Windows, we require a header and conventional C linking for ICU,
+   but making these few definitions available when we are *not* actually
+   supporting ICU minimizes conditional compilation later. */
 typedef rktio_char16_t UChar;
 typedef intptr_t UConverter;
+/* TODO: are the rest of these actually needed as stubs for non-Windows? */
 typedef char UBool;
 typedef int UErrorCode;
 # define U_ZERO_ERROR               0
@@ -277,6 +282,7 @@ typedef void (*ucnv_convertEx_proc_t)(UConverter *targetCnv, UConverter *sourceC
                                       UChar **pivotSource, UChar **pivotTarget,
                                       const UChar *pivotLimit,
                                       UBool reset, UBool flush, UErrorCode *pErrorCode);
+typedef char* (*uloc_getDefault_proc_t)(void);
 static ucnv_open_proc_t ucnv_open = NULL;
 static ucnv_close_proc_t ucnv_close = NULL;
 static ucnv_reset_proc_t ucnv_reset = NULL;
@@ -292,6 +298,7 @@ static void init_icu()
 #ifdef RKTIO_SYSTEM_WINDOWS
   HMODULE m = NULL;
   wchar_t *p;
+  uloc_getDefault_proc_t uloc_getDefault = NULL;
 #endif
   if (INIT_NOT_YET != icu_init_status)
     return;
@@ -299,6 +306,7 @@ static void init_icu()
   icu_init_status = INIT_NO;
   return;
 #elif !defined(RKTIO_SYSTEM_WINDOWS)
+  uloc_getDefault(); /* https://unicode-org.atlassian.net/browse/ICU-21380 */
   icu_init_status = INIT_YES;
   return;
 #else
@@ -307,8 +315,6 @@ static void init_icu()
      but we would need to arrange to call CoInitializeEx from each thread before usinc ICU,
      which is not needed with icu.dll.
      https://learn.microsoft.com/en-us/windows/win32/intl/international-components-for-unicode--icu-
-
-     Is this applicable? https://unicode-org.atlassian.net/browse/ICU-21380
   */
   p = rktio_get_dll_path(L"icu.dll");
   if (p) {
@@ -325,17 +331,20 @@ static void init_icu()
     ucnv_close = (ucnv_close_proc_t)GetProcAddress(m, "ucnv_close");
     ucnv_reset = (ucnv_reset_proc_t)GetProcAddress(m, "ucnv_reset");
     ucnv_convertEx = (ucnv_convertEx_proc_t)GetProcAddress(m, "ucnv_convertEx");
+    uloc_getDefault = (uloc_getDefault_proc_t)GetProcAddress(m, "uloc_getDefault")'
   }
   
-  if (!ucnv_open || !ucnv_close || !ucnv_reset || !ucnv_convertEx) {
+  if (!ucnv_open || !ucnv_close || !ucnv_reset || !ucnv_convertEx || !uloc_getDefault) {
     ucnv_open = NULL;
     ucnv_close = NULL;
     ucnv_reset = NULL;
     ucnv_convertEx = NULL;
+    uloc_getDefault = NULL;
     icu_init_status = INIT_NO;
     return;
   }
 
+  uloc_getDefault(); /* https://unicode-org.atlassian.net/browse/ICU-21380 */
   icu_init_status = INTI_YES;
   return;
 #endif
@@ -601,10 +610,6 @@ typedef struct rktio_iconv_converter_t {
   iconv_t cd;
 } rktio_iconv_converter_t;
 
-#ifndef RKTIO_HAVE_ICU
-typedef rktio_char16_t UChar;
-typedef intptr_t UConverter;
-#endif
 #define ICU_BUF_SIZE 1024
 typedef struct rktio_icu_converter_t {
   rktio_converter_t tag;
