@@ -5803,10 +5803,11 @@
                             (void))
                           s_0))))
                   (unsafe-end-atomic)))))
-         (let ((self_0 unsafe-undefined))
-           (set! self_0
-             (wrap-evt (semaphore-peek-evt sema_0) (lambda (v_0) self_0)))
-           self_0))))))
+         (let ((self_0 #f))
+           (begin
+             (set! self_0
+               (wrap-evt (semaphore-peek-evt sema_0) (lambda (v_0) self_0)))
+             self_0)))))))
 (define check-not-closed
   (lambda (who_0 cp_0)
     (if (core-port-closed? cp_0)
