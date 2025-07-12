@@ -46,8 +46,8 @@
 (define (make-engine thunk          ; can return any number of values
                      prompt-tag     ; prompt to wrap around call to `thunk`
                      abort-handler  ; handler for that prompt
-                     init-break-enabled-cell ; default break-enable cell
-                     empty-config?) ; whether to clone the current parameterization
+                     thread-cell-state ; from make-engine-thread-cell-state
+                     empty-config?) ; same as used to create `thread-cell-state`
   (let ([paramz (if empty-config?
                     empty-parameterization
                     (current-parameterization))])
@@ -70,11 +70,18 @@
                                               prompt-tag
                                               abort-handler))
                            engine-return))))
-                   (make-engine-cell-state
-                    (if empty-config?
-                        (make-empty-thread-cell-values)
-                        (new-engine-thread-cell-values))
-                    init-break-enabled-cell))))
+                   thread-cell-state)))
+
+(define (make-engine-thread-cell-state init-break-enabled-cell ; default break-enable cell
+                                       empty-config?) ; whether to clone the current parameterization
+  (make-engine-cell-state
+   (if empty-config?
+       (make-empty-thread-cell-values)
+       (new-engine-thread-cell-values))
+   init-break-enabled-cell))
+
+(define (set-engine-thread-cell-state! thread-cell-state)
+  (current-engine-cell-state (or thread-cell-state empty-engine-cell-state)))
 
 ;; Internal: creates an engine procedure to be called within `call-with-engine-completion`
 ;; or from an engine procedure's `complete-or-expire` callback

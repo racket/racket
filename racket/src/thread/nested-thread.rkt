@@ -57,7 +57,7 @@
                    (atomically
                     (set! result-kind 'value)
                     (thread-dead! t))
-                   (engine-block)))))
+                   (thread-engine-block)))))
            #:custodian cust)))
   (atomically
    (set-thread-forward-break-to! (current-thread/in-atomic) t))

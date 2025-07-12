@@ -7,6 +7,14 @@ more primitive layer must also provide `break-enabled-key` and special
 handling for looking up a mark with that key so that an egine-specific
 default thread cell is produced.
 
+Thread
+------
+
+"Thread" or "Racket thread" here means a Racket thread in the sense of
+`thread`. Thse are "green threads" within a place; they do not run
+concurrent with each other. Synchronization at this level is often
+implemented by using atomic mode via `start=atomic` and `end-atomic`.
+
 Futures
 -------
 
@@ -37,9 +45,24 @@ original Racket implementation:
    won't switch to the main thread just long enough to perform the
    operation and then switch back to parallel mode.
 
-   To put is another way, there are no operations that trigger a 'sync
+   To put this another way, there are no operations that trigger a 'sync
    logging output instead of a 'block output. That's main because so
    many more operations are safe. A second reason is that the futures
    implementation has a finer-grained view of a computation so that it
    doesn't see operations like `fprintf`; it sees only `start-atomic`
    as an unsafe step inside `fprintf`.
+
+Parallel Threads
+----------------
+
+A Racket parallel thread via `thread/parallel` is implemented by a
+combination of a regular Racket thread and a future. The future is
+special in two ways (1) when the future blocks (e.g., hits
+`start-atomic`), the accompanying Racket thread takes over
+automatically, as if by `touch`; and (2) a continuation that was moved
+to a Racket thread can move back to the future after the blocking
+operation is handled (e.g., at `end-atomic`).
+
+The Racket thread is used as the external repesentative of the
+parallel thread, and if it is shut down or sent a break signal, the
+future is terminated or signalled accordingly.

@@ -1,7 +1,4 @@
 #lang racket/base
+(require "host.rkt")
 
-(provide internal-error)
-
-(define (internal-error s)
-  (raise (exn:fail (string-append "internal error: " s)
-                   (current-continuation-marks))))
+(provide (rename-out [host:internal-error internal-error]))

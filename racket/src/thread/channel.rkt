@@ -60,7 +60,7 @@
     [else
      (define b (box #f))
      (let receive () ; loop if a retry is needed
-       ((atomically
+       ((atomically/no-exit-barrier
          (define pw+v (queue-remove! (channel-put-queue ch)))
          (define gw (current-thread/in-atomic))
          (cond
@@ -124,7 +124,7 @@
     [(channel-put-impersonator? ch)
      (channel-impersonator-put ch v channel-put)]
     [else
-     ((atomically
+     ((atomically/no-exit-barrier
        (define gw+b (queue-remove! (channel-get-queue ch)))
        (define pw (current-thread/in-atomic))
        (cond

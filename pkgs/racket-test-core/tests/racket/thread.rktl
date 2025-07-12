@@ -16,6 +16,8 @@
 (err/rt-test (thread (lambda (x) 8)) type?)
 (arity-test thread? 1 1)
 
+(test-values (list '() '(#:keep-results? #:pool)) (lambda () (procedure-keywords thread)))
+
 (test #f struct-predicate-procedure? thread?)
 (test #f struct-predicate-procedure? evt?)
 (test #f struct-type-property-predicate-procedure? evt?)
@@ -293,8 +295,20 @@
   (test #t values ex?)
   (set! ex? #f))
 
-(arity-test thread-wait 1 1)
+(arity-test thread-wait 1 2)
 (err/rt-test (thread-wait 5) type?)
+
+(let ([fail (lambda (keep-results?)
+              (thread (parameterize ([current-error-port (open-output-bytes)])
+                        (lambda ()
+                          (error "fail")))
+                      #:keep-results? keep-results?))])
+  (test (void) thread-wait (fail #f))
+  (test 'no thread-wait (fail #f) (lambda () 'no))
+  (test 'no thread-wait (fail #t) (lambda () 'no))
+  (test (void) thread-wait (thread (lambda () 'ok)))
+  (test 'ok thread-wait (thread (lambda () 'ok) #:keep-results? #t))
+  (test-values '(ok more) (lambda () (thread-wait (thread (lambda () (values 'ok 'more)) #:keep-results? #t)))))
 
 (test #t thread-running? (current-thread))
 (arity-test thread-running? 1 1)
@@ -541,7 +555,6 @@
   (define c1 (make-custodian))
   (define c2 (make-custodian))
   (define c3 (make-custodian))
-
 
   (set! output-stream null)
   

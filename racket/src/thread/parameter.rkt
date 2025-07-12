@@ -3,7 +3,9 @@
 
 (provide current-atomic
          current-thread/in-atomic
-         current-future) ; not the one exported to Racket; see "api.rkt"
+         current-future ; not the one exported to Racket; see "api.rkt"
+         in-racket-thread?
+         in-future-thread?)
 
 ;; These definitions are specially recognized for Racket on
 ;; Chez Scheme and converted to use a virtual register.
@@ -16,9 +18,16 @@
 
 ;; Normally #f for a place's main pthread (running a Racket thread)
 ;; and non-#f for a future pthread, but can be a would-be future
-;; in the main pthread
+;; in the main pthread, and can be a future for an automatically generated
+;; unblock thread:
 (define current-future (make-pthread-parameter #f))
 
 ;; Calling `(current-thread/in-atomic)` is faster than
 ;; `(current-thread)`, but it's only valid in a place's main pthread
-;; --- not in a future thread.
+;; --- not in a future pthread. Sometimes, we call it in a future pthread
+;; to check for `#f` to me that we're in a future pthread.
+
+(define (in-racket-thread?)
+  (and (current-thread/in-atomic) #t))
+(define (in-future-thread?)
+  (not (current-thread/in-atomic)))

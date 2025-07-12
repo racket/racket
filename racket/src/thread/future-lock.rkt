@@ -1,5 +1,6 @@
 #lang racket/base
-(require "internal-error.rkt"
+(require racket/fixnum
+         "internal-error.rkt"
          "host.rkt"
          "parameter.rkt"
          "atomic.rkt")
@@ -11,16 +12,18 @@
 ;; when multiple locks are held at once, they must be acquired
 ;; in this order):
 ;;
+;;    - engine atomicity
 ;;    - fsemaphore [one at a time]
+;;    - futures, lower ID before higher ID (implies engine atomicity)
 ;;    - schedule queue
-;;    - futures, lower ID before higher ID
+;;    - place lock
 ;;
 ;; A future's lock must be held to change the future's fields, except
 ;; that the fields to implement the schedule queue should be modified
 ;; only with the schedule-queue lock held.
 ;;
 ;; A future with state #f is available to run, but it must be either
-;; `would-be?` (never in the queue, only run by a Racket thread) or
+;; would-be (never in the queue, only run by a Racket thread) or
 ;; currently in a queue for a future pthread to take ownership of the
 ;; future.
 
@@ -41,14 +44,10 @@
 (define (make-lock) (box 0))
 
 (define (start-future-uninterrupted)
-  (if (current-future)
-      (current-atomic (add1 (current-atomic))) ; see `run-future-in-worker`
-      (start-atomic)))
+  (current-atomic (fx+ (current-atomic) 1)))
 
 (define (end-future-uninterrupted)
-  (if (current-future)
-      (current-atomic (sub1 (current-atomic))) ; see `run-future-in-worker`
-      (end-atomic)))
+  (current-atomic (fx- (current-atomic) 1)))
 
 (define (lock-acquire lock)
   (start-future-uninterrupted)
