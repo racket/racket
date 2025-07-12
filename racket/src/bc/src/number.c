@@ -2398,7 +2398,8 @@ static Scheme_Object *bin_lcm (Scheme_Object *n1, Scheme_Object *n2);
 
 static Scheme_Object *int_abs(Scheme_Object *v)
 {
-  if (scheme_is_negative(v))
+  if (scheme_is_negative(v)
+      || (SCHEME_FLOATP(v) && scheme_minus_zero_p(SCHEME_FLOAT_VAL(v))))
     return scheme_bin_minus(scheme_make_integer(0), v);
   else
     return v;
@@ -2469,9 +2470,9 @@ scheme_bin_gcd (const Scheme_Object *n1, const Scheme_Object *n2)
     else
       i2 = scheme_bignum_to_double(n2);
 
-    if (i1 < 0)
+    if (i1 < 0 || minus_zero_p(i1))
       i1 = -i1;
-    if (i2 < 0)
+    if (i2 < 0 || minus_zero_p(i2))
       i2 = -i2;
     if (i1 > i2) {
       a = i1;
