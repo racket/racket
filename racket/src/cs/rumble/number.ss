@@ -521,7 +521,7 @@
       (chez:lcm n m)]
      [else
       (let ([d (gcd n m)])
-        (* n (/ m d)))])]
+        (abs (* n (/ m d))))])]
    [(n . ms)
     (check who rational? n)
     (let loop ([n n] [ms ms])
