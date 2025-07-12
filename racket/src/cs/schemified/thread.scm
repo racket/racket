@@ -10433,23 +10433,24 @@
          (if (procedure? next_0)
            (void)
            (raise-argument-error 'replace-evt "procedure?" next_0))
-         (letrec*
-          ((orig-evt_0
-            (replacing-evt34.1
-             (lambda ()
-               (let ((s_0
-                      (let ((temp89_0
-                             (evts->syncers 'replace-evt (list evt_0))))
-                        (make-syncing.1 #f temp89_0))))
-                 (values
-                  #f
-                  (control-state-evt9.1
-                   (nested-sync-evt35.1 s_0 next_0 orig-evt_0)
-                   values
-                   (lambda () (syncing-interrupt! s_0))
-                   (lambda () (syncing-abandon! s_0))
-                   (lambda () (syncing-retry! s_0)))))))))
-          orig-evt_0))))))
+         (let ((orig-evt_0 #f))
+           (begin
+             (set! orig-evt_0
+               (replacing-evt34.1
+                (lambda ()
+                  (let ((s_0
+                         (let ((temp89_0
+                                (evts->syncers 'replace-evt (list evt_0))))
+                           (make-syncing.1 #f temp89_0))))
+                    (values
+                     #f
+                     (control-state-evt9.1
+                      (nested-sync-evt35.1 s_0 next_0 orig-evt_0)
+                      values
+                      (lambda () (syncing-interrupt! s_0))
+                      (lambda () (syncing-abandon! s_0))
+                      (lambda () (syncing-retry! s_0))))))))
+             orig-evt_0)))))))
 (define poll-nested-sync
   (lambda (ns_0 just-poll?_0 fast-only?_0 sched-info_0)
     (let ((temp90_0 (nested-sync-evt-s ns_0)))
@@ -12413,140 +12414,144 @@
                     (let ((result_0 #f))
                       (let ((result-kind_0 #f))
                         (let ((ready-sema_0 (1/make-semaphore)))
-                          (let ((t_0 unsafe-undefined))
-                            (set! t_0
-                              (with-continuation-mark*
-                               push-authentic
-                               break-enabled-key
-                               (make-thread-cell #f)
-                               (let ((temp5_0
-                                      (lambda ()
-                                        (begin
-                                          (1/semaphore-wait ready-sema_0)
-                                          (let ((with-handlers-predicate7_0
-                                                 (|#%name|
-                                                  with-handlers-predicate7
-                                                  (lambda (x_0) #t))))
-                                            (let ((with-handlers-handler8_0
-                                                   (|#%name|
-                                                    with-handlers-handler8
-                                                    (lambda (x_0)
-                                                      (begin
-                                                        (set! result-kind_0
-                                                          'exn)
-                                                        (set! result_0
-                                                          x_0))))))
-                                              (let ((bpz_0
-                                                     (continuation-mark-set-first
-                                                      #f
-                                                      break-enabled-key)))
-                                                (call-handled-body
-                                                 bpz_0
-                                                 (lambda (e_0)
-                                                   (select-handler/no-breaks
-                                                    e_0
-                                                    bpz_0
-                                                    (list
-                                                     (cons
-                                                      with-handlers-predicate7_0
-                                                      with-handlers-handler8_0))))
-                                                 (lambda ()
-                                                   (with-continuation-mark*
-                                                    authentic
-                                                    break-enabled-key
-                                                    init-break-cell_0
-                                                    (begin
-                                                      (set! result_0
-                                                        (call-with-continuation-barrier
-                                                         (lambda ()
-                                                           (call-with-values
-                                                            (lambda ()
-                                                              (call-with-continuation-prompt
-                                                               thunk2_0
-                                                               (default-continuation-prompt-tag)
-                                                               (lambda (thunk_0)
-                                                                 (abort-current-continuation
-                                                                  (default-continuation-prompt-tag)
-                                                                  thunk_0))))
-                                                            list))))
-                                                      (begin
-                                                        (start-atomic)
-                                                        (begin0
-                                                          (begin
-                                                            (set! result-kind_0
-                                                              'value)
-                                                            (thread-dead! t_0))
-                                                          (end-atomic)))
-                                                      (engine-block))))))))))))
-                                 (do-make-thread.1
-                                  #f
-                                  cust_0
-                                  #f
-                                  #f
-                                  'call-in-nested-thread
-                                  temp5_0))))
+                          (let ((t_0 #f))
                             (begin
-                              (start-atomic)
+                              (set! t_0
+                                (with-continuation-mark*
+                                 push-authentic
+                                 break-enabled-key
+                                 (make-thread-cell #f)
+                                 (let ((temp5_0
+                                        (lambda ()
+                                          (begin
+                                            (1/semaphore-wait ready-sema_0)
+                                            (let ((with-handlers-predicate7_0
+                                                   (|#%name|
+                                                    with-handlers-predicate7
+                                                    (lambda (x_0) #t))))
+                                              (let ((with-handlers-handler8_0
+                                                     (|#%name|
+                                                      with-handlers-handler8
+                                                      (lambda (x_0)
+                                                        (begin
+                                                          (set! result-kind_0
+                                                            'exn)
+                                                          (set! result_0
+                                                            x_0))))))
+                                                (let ((bpz_0
+                                                       (continuation-mark-set-first
+                                                        #f
+                                                        break-enabled-key)))
+                                                  (call-handled-body
+                                                   bpz_0
+                                                   (lambda (e_0)
+                                                     (select-handler/no-breaks
+                                                      e_0
+                                                      bpz_0
+                                                      (list
+                                                       (cons
+                                                        with-handlers-predicate7_0
+                                                        with-handlers-handler8_0))))
+                                                   (lambda ()
+                                                     (with-continuation-mark*
+                                                      authentic
+                                                      break-enabled-key
+                                                      init-break-cell_0
+                                                      (begin
+                                                        (set! result_0
+                                                          (call-with-continuation-barrier
+                                                           (lambda ()
+                                                             (call-with-values
+                                                              (lambda ()
+                                                                (call-with-continuation-prompt
+                                                                 thunk2_0
+                                                                 (default-continuation-prompt-tag)
+                                                                 (lambda (thunk_0)
+                                                                   (abort-current-continuation
+                                                                    (default-continuation-prompt-tag)
+                                                                    thunk_0))))
+                                                              list))))
+                                                        (begin
+                                                          (start-atomic)
+                                                          (begin0
+                                                            (begin
+                                                              (set! result-kind_0
+                                                                'value)
+                                                              (thread-dead!
+                                                               t_0))
+                                                            (end-atomic)))
+                                                        (engine-block))))))))))))
+                                   (do-make-thread.1
+                                    #f
+                                    cust_0
+                                    #f
+                                    #f
+                                    'call-in-nested-thread
+                                    temp5_0))))
                               (begin
-                                (begin0
-                                  (let ((app_0 (current-thread/in-atomic)))
-                                    (set-thread-forward-break-to! app_0 t_0))
-                                  (end-atomic))
+                                (start-atomic)
                                 (begin
-                                  (1/semaphore-post ready-sema_0)
-                                  (let ((pending-break_0
-                                         (letrec*
-                                          ((loop_0
-                                            (|#%name|
-                                             loop
-                                             (lambda (t_1 pending-break_0)
-                                               (begin
-                                                 (1/thread-wait t_1)
-                                                 (let ((next-pending-break_0
-                                                        (break-max
-                                                         pending-break_0
-                                                         (thread-pending-break
-                                                          t_1))))
-                                                   (let ((sub-t_0
-                                                          (thread-forward-break-to
-                                                           t_1)))
-                                                     (if sub-t_0
-                                                       (loop_0
-                                                        sub-t_0
-                                                        next-pending-break_0)
-                                                       next-pending-break_0))))))))
-                                          (loop_0 t_0 #f))))
-                                    (begin
-                                      (start-atomic)
-                                      (begin0
-                                        (set-thread-forward-break-to!
-                                         (current-thread/in-atomic)
-                                         #f)
-                                        (end-atomic))
-                                      (with-continuation-mark*
-                                       push-authentic
-                                       break-enabled-key
-                                       (make-thread-cell #f)
-                                       (begin
-                                         (if pending-break_0
-                                           (1/break-thread
-                                            (1/current-thread)
-                                            (if (eq? pending-break_0 'break)
-                                              #f
-                                              pending-break_0))
-                                           (void))
-                                         (if (eq? result-kind_0 'exn)
-                                           (raise result_0)
-                                           (void))
-                                         (if (eq? result-kind_0 'value)
-                                           (void)
-                                           (raise
-                                            (|#%app|
-                                             exn:fail
-                                             "call-in-nested-thread: the thread was killed, or it exited via the default error escape handler"
-                                             (current-continuation-marks))))))
-                                      (1/check-for-break)
-                                      (apply values result_0))))))))))))))))))
+                                  (begin0
+                                    (let ((app_0 (current-thread/in-atomic)))
+                                      (set-thread-forward-break-to! app_0 t_0))
+                                    (end-atomic))
+                                  (begin
+                                    (1/semaphore-post ready-sema_0)
+                                    (let ((pending-break_0
+                                           (letrec*
+                                            ((loop_0
+                                              (|#%name|
+                                               loop
+                                               (lambda (t_1 pending-break_0)
+                                                 (begin
+                                                   (1/thread-wait t_1)
+                                                   (let ((next-pending-break_0
+                                                          (break-max
+                                                           pending-break_0
+                                                           (thread-pending-break
+                                                            t_1))))
+                                                     (let ((sub-t_0
+                                                            (thread-forward-break-to
+                                                             t_1)))
+                                                       (if sub-t_0
+                                                         (loop_0
+                                                          sub-t_0
+                                                          next-pending-break_0)
+                                                         next-pending-break_0))))))))
+                                            (loop_0 t_0 #f))))
+                                      (begin
+                                        (start-atomic)
+                                        (begin0
+                                          (set-thread-forward-break-to!
+                                           (current-thread/in-atomic)
+                                           #f)
+                                          (end-atomic))
+                                        (with-continuation-mark*
+                                         push-authentic
+                                         break-enabled-key
+                                         (make-thread-cell #f)
+                                         (begin
+                                           (if pending-break_0
+                                             (1/break-thread
+                                              (1/current-thread)
+                                              (if (eq? pending-break_0 'break)
+                                                #f
+                                                pending-break_0))
+                                             (void))
+                                           (if (eq? result-kind_0 'exn)
+                                             (raise result_0)
+                                             (void))
+                                           (if (eq? result-kind_0 'value)
+                                             (void)
+                                             (raise
+                                              (|#%app|
+                                               exn:fail
+                                               "call-in-nested-thread: the thread was killed, or it exited via the default error escape handler"
+                                               (current-continuation-marks))))))
+                                        (1/check-for-break)
+                                        (apply
+                                         values
+                                         result_0)))))))))))))))))))
     (|#%name|
      call-in-nested-thread
      (case-lambda
