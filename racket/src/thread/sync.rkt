@@ -757,23 +757,24 @@
 (define/who (replace-evt evt next)
   (check who evt? evt)
   (check who procedure? next)
-  (define orig-evt
-    (replacing-evt
-     ;; called for each `sync`:
-     (lambda ()
-       (define s (make-syncing (evts->syncers who (list evt))))
-       (values
-        #f
-        ;; represents the instantited attempt to sync on `evt`:
-        (control-state-evt
-         (nested-sync-evt s next orig-evt)
-         values
-         ;; The interrupt and retry callbacks get discarded
-         ;; when a new event is returned (but the abandon
-         ;; callback is preserved)
-         (lambda () (syncing-interrupt! s))
-         (lambda () (syncing-abandon! s))
-         (lambda () (syncing-retry! s)))))))
+  (define orig-evt #f)
+  (set! orig-evt
+        (replacing-evt
+         ;; called for each `sync`:
+         (lambda ()
+           (define s (make-syncing (evts->syncers who (list evt))))
+           (values
+            #f
+            ;; represents the instantited attempt to sync on `evt`:
+            (control-state-evt
+             (nested-sync-evt s next orig-evt)
+             values
+             ;; The interrupt and retry callbacks get discarded
+             ;; when a new event is returned (but the abandon
+             ;; callback is preserved)
+             (lambda () (syncing-interrupt! s))
+             (lambda () (syncing-abandon! s))
+             (lambda () (syncing-retry! s)))))))
   orig-evt)
 
 (define (poll-nested-sync ns just-poll? fast-only? sched-info)
