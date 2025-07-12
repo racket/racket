@@ -11,7 +11,7 @@
          register-address-finalizer
          address-init!)
 
-;; in atomic mode
+;; in atomic mode and *not* rktio mode
 (define (call-with-resolved-address hostname port-no proc
                                     #:who [who #f] ; not #f => report errors
                                     #:which [which ""] ; for error reporting, including trailing space
@@ -28,28 +28,29 @@
      (proc #f)]
     [else
      (call-with-resource
-      (box (rktio_start_addrinfo_lookup rktio
-                                        (and hostname (string->bytes/utf-8 hostname))
-                                        (or port-no 0)
-                                        family passive? tcp?))
-      ;; in atomic mode
+      (box (rktioly (rktio_start_addrinfo_lookup rktio
+                                                 (and hostname (string->bytes/utf-8 hostname))
+                                                 (or port-no 0)
+                                                 family passive? tcp?)))
+      ;; in atomic mode, *not* rktio mode
       (lambda (lookup-box)
         (define lookup (unbox lookup-box))
         (when lookup
-          (rktio_addrinfo_lookup_stop rktio lookup)))
-      ;; in atomic mode
+          (rktioly (rktio_addrinfo_lookup_stop rktio lookup))))
+      ;; in atomic mode, *not* rktio mode
       (lambda (lookup-box)
         (define lookup (unbox lookup-box))
         (let loop ()
           (cond
             [(and (not (rktio-error? lookup))
-                  (eqv? (rktio_poll_addrinfo_lookup_ready rktio lookup)
+                  (eqv? (rktioly (rktio_poll_addrinfo_lookup_ready rktio lookup))
                         RKTIO_POLL_NOT_READY))
              (end-atomic)
              ((if enable-break? sync/enable-break sync)
               (rktio-evt (lambda ()
-                           (not (eqv? (rktio_poll_addrinfo_lookup_ready rktio lookup)
+                           (not (eqv? (rktioly (rktio_poll_addrinfo_lookup_ready rktio lookup))
                                       RKTIO_POLL_NOT_READY)))
+                         ;; in atomic and in rktio, must not start nested rktio
                          (lambda (ps)
                            (rktio_poll_add_addrinfo_lookup rktio lookup ps))))
              (start-atomic)
@@ -59,9 +60,9 @@
              (call-with-resource
               (if (rktio-error? lookup)
                   lookup
-                  (rktio_addrinfo_lookup_get rktio lookup))
+                  (rktioly (rktio_addrinfo_lookup_get rktio lookup)))
               ;; in atomic mode
-              (lambda (addr) (rktio_addrinfo_free rktio addr))
+              (lambda (addr) (rktioly (rktio_addrinfo_free rktio addr)))
               ;; in atomic mode
               (lambda (addr)
                 (cond
@@ -78,7 +79,7 @@
                    (begin0
                      (proc addr)
                      (unless retain-address?
-                       (rktio_addrinfo_free rktio addr)))])))]))))]))
+                       (rktioly (rktio_addrinfo_free rktio addr))))])))]))))]))
 
 ;; ----------------------------------------
 
@@ -88,7 +89,7 @@
   (will-register address-will-executor
                  addr
                  (lambda (addr)
-                   (rktio_addrinfo_free rktio addr)
+                   (rktioly (rktio_addrinfo_free rktio addr))
                    #t)))
 
 (define (poll-address-finalizations)

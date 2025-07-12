@@ -55,6 +55,10 @@
                            fxquotient
                            expt
                            make-flvector flvector-copy
+                           make-pseudo-random-generator
+                           pseudo-random-generator?
+                           pseudo-random-generator-next!
+                           pseudo-random-generator->vector
                            vector->pseudo-random-generator
                            vector->pseudo-random-generator!)
                    [make-parameter chez:make-parameter]

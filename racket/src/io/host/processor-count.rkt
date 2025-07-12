@@ -4,4 +4,4 @@
 (provide processor-count)
 
 (define (processor-count)
-  (rktio_processor_count rktio))
+  (rktioly (rktio_processor_count rktio)))

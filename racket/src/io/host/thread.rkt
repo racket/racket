@@ -4,9 +4,11 @@
 
 (provide start-atomic
          end-atomic
+         start-uninterruptible
+         end-uninterruptible
          atomically
          non-atomically
-         atomically/no-interrupts/no-wind
+         atomically/no-gc-interrupts/no-wind
          assert-atomic
          check-current-custodian)
 
@@ -51,6 +53,8 @@
         prop:evt
         unsafe-start-atomic
         unsafe-end-atomic
+        unsafe-start-uninterruptible
+        unsafe-end-uninterruptible
         current-custodian
         custodian-shut-down?
         current-plumber
@@ -67,13 +71,14 @@
          poll-ctx-select-proc
          poll-ctx-sched-info
          set-poll-ctx-incomplete?!
+         delayed-poll
          schedule-info-did-work!
          control-state-evt
          async-evt
          schedule-info-current-exts
          current-sandman
-         start-atomic/no-interrupts ; => disable GC, too, if GC can call back
-         end-atomic/no-interrupts
+         start-atomic/no-gc-interrupts ; => disable GC, too, if GC can call back
+         end-atomic/no-gc-interrupts
          in-atomic-mode?
          unsafe-custodian-register
          unsafe-custodian-unregister
@@ -85,6 +90,8 @@
 
 (define start-atomic unsafe-start-atomic)
 (define end-atomic unsafe-end-atomic)
+(define start-uninterruptible unsafe-start-uninterruptible)
+(define end-uninterruptible unsafe-end-uninterruptible)
 
 (define-syntax-rule (atomically e ...)
   (begin
@@ -104,12 +111,12 @@
 ;; an unforced constraint: don't use anything related
 ;; to `dynamic-wind`, continuations, or continuation marks.
 ;; Cannot be exited with `non-atomically`.
-(define-syntax-rule (atomically/no-interrupts/no-wind e ...)
+(define-syntax-rule (atomically/no-gc-interrupts/no-wind e ...)
   (begin
-    (start-atomic/no-interrupts)
+    (start-atomic/no-gc-interrupts)
     (begin0
       (let () e ...)
-      (end-atomic/no-interrupts))))
+      (end-atomic/no-gc-interrupts))))
 
 ;; Enable for debugging
 (define (assert-atomic)
@@ -119,9 +126,9 @@
     (error 'assert-atomic "not in atomic mode")))
 
 ;; in atomic mode
-(define (check-current-custodian who)
+(define (check-current-custodian who #:unlock [unlock end-atomic])
   (when (custodian-shut-down? (current-custodian))
-    (end-atomic)
+    (unlock)
     (raise
      (exn:fail
       (string-append (symbol->string who) ": the current custodian has been shut down")

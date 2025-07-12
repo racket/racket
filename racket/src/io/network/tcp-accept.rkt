@@ -23,13 +23,13 @@
                        #:enable-break? [enable-break? #f])
   (check who tcp-listener? listener)
   (let loop ()
-    (start-atomic)
+    (start-atomic) ; because listener, `check-current-custodian`, and `open-input-output-accepted-tcp`
     (cond
       [(tcp-listener-closed? listener)
        (closed-error who listener)]
       [(accept-ready? listener)
        (check-current-custodian who)
-       (define fd (rktio_accept rktio (tcp-listener-lnr listener)))
+       (define fd (rktioly (rktio_accept rktio (tcp-listener-lnr listener))))
        (cond
          [(rktio-error? fd)
           (end-atomic)
@@ -46,7 +46,7 @@
          (lambda ()
            (or (tcp-listener-closed? listener)
                (accept-ready? listener)))
-         ;; in atomic mode
+         ;; in atomic and in rktio, must not start nested rktio
          (lambda (ps)
            (rktio_poll_add_accept rktio (tcp-listener-lnr listener) ps))))
        (loop)])))
@@ -87,7 +87,7 @@
                           (parameterize ([current-custodian c])
                             (check-current-custodian 'tcp-accept-evt)))))]
        [(accept-ready? listener)
-        (define fd (rktio_accept rktio (tcp-listener-lnr listener)))
+        (define fd (rktioly (rktio_accept rktio (tcp-listener-lnr listener))))
         (cond
           [(rktio-error? fd)
            (end-atomic)
@@ -103,6 +103,7 @@
           (schedule-info-current-exts sched-info
                                       (sandman-add-poll-set-adder
                                        (schedule-info-current-exts sched-info)
+                                       ;; in atomic and in rktio, must not start nested rktio
                                        (lambda (ps)
                                          (rktio_poll_add_accept rktio (tcp-listener-lnr listener) ps)))))
         (values #f self)])))
@@ -117,7 +118,7 @@
 ;; in atomic mode
 ;; assumes that listener is not closed
 (define (accept-ready? listener)
-  (not (eqv? (rktio_poll_accept_ready rktio (tcp-listener-lnr listener))
+  (not (eqv? (rktioly (rktio_poll_accept_ready rktio (tcp-listener-lnr listener)))
              RKTIO_POLL_NOT_READY)))
 
 ;; in atomic mode
@@ -127,8 +128,9 @@
                          "listener is closed"
                          "listener" listener))
 
-;; in atomic mode
+;; in atomic mode, *not* rktio mode
 (define (open-input-output-accepted-tcp fd)
-  (rktio_tcp_nodelay rktio fd #t) ; initially block buffered
-  (rktio_tcp_keepalive rktio fd #t)
+  (rktioly
+   (rktio_tcp_nodelay rktio fd #t) ; initially block buffered
+   (rktio_tcp_keepalive rktio fd #t))
   (open-input-output-tcp fd "tcp-accepted"))

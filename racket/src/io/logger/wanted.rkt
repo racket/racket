@@ -31,7 +31,7 @@
         (logger-wanted-level logger topic)])]))
 
 (define (logger-max-wanted-level logger)
-  (atomically/no-interrupts/no-wind
+  (atomically/no-gc-interrupts/no-wind
    (logger-max-wanted-level* logger)))
 
 ;; in atomic mode with interrupts disabled
@@ -123,6 +123,6 @@
           append
           (for/list ([topic (in-hash-keys topics)])
             (list (level->user-representation
-                   (atomically/no-interrupts/no-wind
+                   (atomically/no-gc-interrupts/no-wind
                     (logger-wanted-level logger topic)))
                   topic)))))

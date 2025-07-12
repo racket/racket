@@ -43,7 +43,7 @@
   (check who udp? u)
   (check who string? multicast-hostname)
   (check who string? #:or-false hostname)
-  (atomically
+  (atomically ; because `call-with-resolved-address`
    (call-with-resolved-address
     #:who who
     #:which "multicast "
@@ -60,20 +60,28 @@
        #:family (udp-default-family)
        #:tcp? #f
        (lambda (intf-addr)
-         (check-udp-closed who u)
+         (start-rktio)
+         (check-udp-closed* who u)
          (define v (rktio_udp_change_multicast_group rktio (udp-s u) multicast-addr intf-addr action))
+         (end-rktio)
          (when (rktio-error? v)
-           (raise-option-error who "set" v))))))))
+           (raise-option-error* who "set" v))))))))
 
-(define (raise-option-error who mode v)
+;; in atomic mode, *not* rktio mode
+(define (raise-option-error* who mode v)
   (end-atomic)
+  (raise-network-option-error who mode v))
+
+;; in rktio mode, *not* atomic mode
+(define (raise-option-error who mode v)
+  (end-rktio)
   (raise-network-option-error who mode v))
 
 ;; ----------------------------------------
 
 (define/who (udp-multicast-interface u)
   (check who udp? u)
-  (start-atomic)
+  (start-rktio)
   (check-udp-closed who u)
   (define v (rktio_udp_multicast_interface rktio (udp-s u)))
   (cond
@@ -82,13 +90,13 @@
     [else
      (define bstr (rktio_to_bytes v))
      (rktio_free v)
-     (end-atomic)
+     (end-rktio)
      (bytes->string/utf-8 bstr)]))
 
 (define/who (udp-multicast-set-interface! u hostname)
   (check who udp? u)
   (check who string? #:or-false hostname)
-  (atomically
+  (atomically ; because `call-with-resolved-address`
    (call-with-resolved-address
     #:who who
     #:port-number-on-error? #f
@@ -96,16 +104,18 @@
     #:family (udp-default-family)
     #:tcp? #f
     (lambda (addr)
-      (check-udp-closed who u)
+      (start-rktio)
+      (check-udp-closed* who u)
       (define r (rktio_udp_set_multicast_interface rktio (udp-s u) addr))
+      (end-rktio)
       (when (rktio-error? r)
-        (raise-option-error who "set" r))))))
+        (raise-option-error* who "set" r))))))
   
 ;; ----------------------------------------
 
 (define/who (udp-multicast-loopback? u)
   (check who udp? u)
-  (atomically
+  (rktioly
    (check-udp-closed who u)
    (define v (rktio_udp_get_multicast_loopback rktio (udp-s u)))
    (cond
@@ -115,7 +125,7 @@
 
 (define/who (udp-multicast-set-loopback! u loopback?)
   (check who udp? u)
-  (atomically
+  (rktioly
    (check-udp-closed who u)
    (define r (rktio_udp_set_multicast_loopback rktio (udp-s u) loopback?))
    (when (rktio-error? r)
@@ -125,7 +135,7 @@
 
 (define/who (udp-multicast-ttl u)
   (check who udp? u)
-  (atomically
+  (rktioly
    (check-udp-closed who u)
    (define v (rktio_udp_get_multicast_ttl rktio (udp-s u)))
    (cond
@@ -136,7 +146,7 @@
 (define/who (udp-multicast-set-ttl! u ttl)
   (check who udp? u)
   (check who byte? ttl)
-  (atomically
+  (rktioly
    (check-udp-closed who u)
    (define r (rktio_udp_set_multicast_ttl rktio (udp-s u) ttl))
    (when (rktio-error? r)

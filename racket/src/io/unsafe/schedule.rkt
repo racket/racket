@@ -36,21 +36,22 @@
 (define (unsafe-poll-ctx-fd-wakeup poll-ctx fd mode)
   (when poll-ctx
     (sandman-poll-ctx-add-poll-set-adder! poll-ctx
+                                          ;; in atomic and in rktio, must not start nested rktio
                                           (lambda (ps)
-                                            (atomically
-                                             (define rfd (rktio_system_fd rktio
-                                                                          fd
-                                                                          (case mode
-                                                                            [(read) RKTIO_OPEN_READ]
-                                                                            [else RKTIO_OPEN_WRITE])))
-                                             (rktio_poll_add rktio rfd ps (case mode
-                                                                            [(read) RKTIO_POLL_READ]
-                                                                            [else RKTIO_POLL_WRITE]))
-                                             (rktio_forget rktio rfd))))))
+                                            (define rfd (rktio_system_fd rktio
+                                                                         fd
+                                                                         (case mode
+                                                                           [(read) RKTIO_OPEN_READ]
+                                                                           [else RKTIO_OPEN_WRITE])))
+                                            (rktio_poll_add rktio rfd ps (case mode
+                                                                           [(read) RKTIO_POLL_READ]
+                                                                           [else RKTIO_POLL_WRITE]))
+                                            (rktio_forget rktio rfd)))))
 
 (define (unsafe-poll-ctx-eventmask-wakeup poll-ctx event-mask)
   (when poll-ctx
     (sandman-poll-ctx-add-poll-set-adder! poll-ctx
+                                          ;; in atomic and in rktio, must not start nested rktio
                                           (lambda (ps)
                                             (rktio_poll_set_add_eventmask rktio ps event-mask)))))
 

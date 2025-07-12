@@ -12,6 +12,7 @@
          "../port/fd-port.rkt"
          "../port/file-stream.rkt"
          "../port/check.rkt"
+         "../port/insist-lock.rkt"
          "../file/host.rkt"
          "../string/convert.rkt"
          "../locale/string.rkt"
@@ -35,12 +36,13 @@
   #:constructor-name make-subprocess
   #:property
   prop:evt
-  (poller (lambda (sp ctx)
-            (define v (rktio_poll_process_done rktio (subprocess-process sp)))
+  (poller (lambda (sp ctx) ; in atomic mode
+            (define v (rktioly (rktio_poll_process_done rktio (subprocess-process sp))))
             (cond
               [(eqv? v 0)
                (sandman-poll-ctx-add-poll-set-adder!
                 ctx
+                ;; in atomic and in rktio, must not start nested rktio
                 (lambda (ps)
                   (rktio_poll_add_process rktio (subprocess-process sp) ps)))
                (values #f sp)]
@@ -135,18 +137,23 @@
 
         ;; If `stdout` or `stderr` is a fifo with no read end open, wait for it:
         (define (maybe-wait fd)
-          (when (and fd (rktio_fd_is_pending_open rktio (fd-port-fd fd)))
+          (when (and fd (rktioly (rktio_fd_is_pending_open rktio (fd-port-fd fd))))
             (sync fd)))
         (maybe-wait stdout)
         (unless (eq? stderr 'stdout)
           (maybe-wait stderr))
 
+        (when stdout (port-insist-atomic-lock stdout))
+        (when stdin (port-insist-atomic-lock stdin))
+        (when (and stderr (not (eq? stderr 'stdout))) (port-insist-atomic-lock stderr))
+
         (start-atomic)
-        (when stdout (check-not-closed who stdout))
-        (when stdin (check-not-closed who stdin))
-        (when (and stderr (not (eq? stderr 'stdout))) (check-not-closed who stderr))
+        (when stdout (check-not-closed who stdout #:unlock end-atomic))
+        (when stdin (check-not-closed who stdin #:unlock end-atomic))
+        (when (and stderr (not (eq? stderr 'stdout))) (check-not-closed who stderr #:unlock end-atomic))
         (poll-subprocess-finalizations)
         (check-current-custodian who)
+        (start-rktio)
         (define envvars (rktio_empty_envvars rktio))
         (for ([name (in-list (environment-variables-names env-vars))])
           (rktio_envvars_set rktio envvars name (environment-variables-ref env-vars name)))
@@ -174,6 +181,7 @@
           (rktio_envvars_free rktio envvars))
 
         (when (rktio-error? r)
+          (end-rktio)
           (end-atomic)
           (raise-rktio-error who r "process creation failed"))
 
@@ -194,6 +202,7 @@
 
         (rktio_free r)
 
+        (end-rktio)
         (end-atomic)
         (values sp in out err)))
     subprocess))
@@ -208,37 +217,41 @@
 
 (define/who (subprocess-status sp)
   (check who subprocess? sp)
-  (start-atomic)
+  (start-atomic) ; because `no-custodian!`
+  (start-rktio)
   (define r (rktio_process_status rktio (subprocess-process sp)))
   (cond
     [(rktio-error? r)
+     (end-rktio)
      (end-atomic)
      (raise-rktio-error who r "status access failed")]
     [(rktio_status_running r)
      (rktio_free r)
+     (end-rktio)
      (end-atomic)
      'running]
     [else
      (no-custodian! sp)
      (define v (rktio_status_result r))
      (rktio_free r)
+     (end-rktio)
      (end-atomic)
      v]))
   
 (define/who (subprocess-pid sp)
   (check who subprocess? sp)
-  (atomically
+  (rktioly
    (rktio_process_pid rktio (subprocess-process sp))))
 
 ;; ----------------------------------------
 
-;; in atomic mode
+;; in rktio mode
 (define (kill-subprocess sp)
   (define p (subprocess-process sp))
   (when p
     (rktio_process_kill rktio p)))
 
-;; in atomic mode
+;; in rktio mode
 (define (interrupt-subprocess sp)
   (define p (subprocess-process sp))
   (when p
@@ -246,9 +259,9 @@
 
 (define/who (subprocess-kill sp force?)
   (check who subprocess? sp)
-  (atomically (if force?
-                  (kill-subprocess sp)
-                  (interrupt-subprocess sp))))
+  (rktioly (if force?
+               (kill-subprocess sp)
+               (interrupt-subprocess sp))))
 
 ;; ----------------------------------------
 
@@ -269,7 +282,7 @@
                  sp
                  (lambda (sp)
                    (when (subprocess-process sp)
-                     (rktio_process_forget rktio (subprocess-process sp))
+                     (rktioly (rktio_process_forget rktio (subprocess-process sp)))
                      (set-subprocess-process! sp #f))
                    (no-custodian! sp)
                    #t)))
@@ -323,12 +336,17 @@
   ;; Let `rktio_shell_execute` handle its own atomicity. That's because
   ;; it can yield to Windows events, and events need to be handled by callbacks
   ;; starting from a mode that's like a Racket foreign call.
-  (define r (rktio_shell_execute rktio
-                                 (and verb (string->bytes/utf-8 verb))
-                                 (string->bytes/utf-8 target)
-                                 (string->bytes/utf-8 parameters)
-                                 (->host (->path dir) who '(exists))
-                                 show_mode))
+  (define verb-bytes (and verb (string->bytes/utf-8 verb)))
+  (define target-bytes (string->bytes/utf-8 target))
+  (define param-bytes (string->bytes/utf-8 parameters))
+  (define host-dir-path (->host (->path dir) who '(exists)))
+  (define r (rktioly
+             (rktio_shell_execute rktio
+                                  verb-bytes
+                                  target-bytes
+                                  param-bytes
+                                  host-dir-path
+                                  show_mode)))
   (when (rktio-error? r) (raise-rktio-error who r "failed"))
   #f)
 
@@ -337,4 +355,5 @@
 (void
  (set-get-subprocesses-time!
   (lambda ()
-    (rktio_get_process_children_milliseconds rktio))))
+    (rktioly
+     (rktio_get_process_children_milliseconds rktio)))))

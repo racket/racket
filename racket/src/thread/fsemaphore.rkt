@@ -40,26 +40,29 @@
     (define c (fsemaphore-c fs))
     (cond
       [(zero? c)
-       (define b (fsemaphore-dep-box fs))
-       (define deps (fsemaphore-dependents fs))
-       ;; If a future is waiting on the semaphore, it wins over any
-       ;; non-future threads that are blocked on the fsemaphore.
-       ;; That's not a great choice, but it means we don't have to worry
-       ;; about keeping track of threads that are in still line versus
-       ;; threads that have been interrupted.
-       (cond
-         [(not (hash-empty? deps))
-          (define f (hash-iterate-key deps (hash-iterate-first deps)))
-          (set-fsemaphore-dependents! fs (hash-remove deps f))
-          (future-notify-dependent f)]
-         [else
-          (set-fsemaphore-c! fs 1)
-          (when b
-            ;; This is a kind of broadcast wakeup, and then the
-            ;; awakened threads will compete for the fsemaphore:
-            (set-fsemaphore-dep-box! fs #f)
-            (set-box! b #t)
-            (wakeup-this-place))])]
+       (let loop ()
+         (define b (fsemaphore-dep-box fs))
+         (define deps (fsemaphore-dependents fs))
+         ;; If a future is waiting on the semaphore, it wins over any
+         ;; non-future threads that are blocked on the fsemaphore.
+         ;; That's not a great choice, but it means we don't have to worry
+         ;; about keeping track of threads that are in still line versus
+         ;; threads that have been interrupted.
+         (cond
+           [(not (hash-empty? deps))
+            (define f (hash-iterate-key deps (hash-iterate-first deps)))
+            (set-fsemaphore-dependents! fs (hash-remove deps f))
+            (unless (future-notify-dependent f)
+              ;; future for `thread/parallel` was terminated; try next
+              (loop))]
+           [else
+            (set-fsemaphore-c! fs 1)
+            (when b
+              ;; This is a kind of broadcast wakeup, and then the
+              ;; awakened threads will compete for the fsemaphore:
+              (set-fsemaphore-dep-box! fs #f)
+              (set-box! b #t)
+              (wakeup-this-place))]))]
       [else
        (set-fsemaphore-c! fs (add1 c))])))
 
@@ -68,12 +71,13 @@
   (lock-acquire (fsemaphore-lock fs))
   (define c (fsemaphore-c fs))
   (cond
-    [(zero? c)
+    [(zero? c)     
      (define me-f (current-future))
      (cond
        [me-f
         (lock-acquire (future*-lock me-f))
         (set-fsemaphore-dependents! fs (hash-set (fsemaphore-dependents fs) me-f #t))
+        (future-maybe-notify-stop me-f)
         (set-future*-state! me-f 'fsema)
         (lock-release (fsemaphore-lock fs))
         (future-suspend) ; expects lock on me-f and releases it

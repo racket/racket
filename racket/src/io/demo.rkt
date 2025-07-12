@@ -12,10 +12,6 @@
                   [current-directory host:current-directory]
                   [path->string host:path->string]))
 
-(require (file "/tmp/simp.rkt"))
-(check-simplify (lambda (p) (path->string (simplify-path (host:path->string p)))))
-(exit)
-
 (path->string (current-directory))
 (set-string->number?! string->number)
 
@@ -955,3 +951,28 @@
              (seconds->date (expt 2 60))))
   (test #t (with-handlers ([exn:fail? out-of-range])
              (seconds->date (expt 2 80)))))
+
+(time
+ (let ()
+   (define-values (i o) (make-pipe 4096))
+   (for-each
+    thread-wait
+    (for/list ([k (in-range 10)])
+      (thread #:pool 'own
+              (lambda ()
+                (for ([j (in-range 1000)])
+                  (write-bytes #"a" o)
+                  (read-bytes 1 i))))))))
+
+(time
+ (let ()
+   (define o (open-output-bytes))
+   (for-each
+    thread-wait
+    (for/list ([k (in-range 10)])
+      (thread #:pool 'own
+              (lambda ()
+                (for ([j (in-range 1000)])
+                  (write-bytes #"a" o))))))
+   (bytes-length (get-output-bytes o))))
+

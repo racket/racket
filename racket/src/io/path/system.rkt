@@ -97,11 +97,11 @@
          [else
           (define os-dir-id
             (begin
-              (start-atomic)
+              (start-rktio)
               (path-or-fd-identity 'original-directory #:host-path os-host-dir #:no-error? #t)))
           (define pwd-id
             (begin
-              (start-atomic)
+              (start-rktio)
               (path-or-fd-identity 'original-directory #:host-path pwd #:no-error? #t)))
           (cond
             [(and os-dir-id (eqv? os-dir-id pwd-id ))
@@ -127,16 +127,16 @@
 (define (set-host-addon-dir! p) (set! host-addon-dir p))
 
 (define (rktio-system-path who key)
-  (start-atomic)
+  (start-rktio)
   (define s (rktio_system_path rktio key))
   (cond
     [(rktio-error? s)
-     (end-atomic)
+     (end-rktio)
      (raise-rktio-error who s "path lookup failed")]
     [else
      (define bstr (rktio_to_bytes s))
      (rktio_free s)
-     (end-atomic)
+     (end-rktio)
      (path bstr (system-path-convention-type))]))
 
 (define (init-current-directory!)

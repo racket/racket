@@ -133,7 +133,7 @@
        (do-custodian-shutdown-all orig-cust)
        (for ([proc (in-list (place-post-shutdown new-place))])
          (proc))
-       (kill-future-scheduler)
+       (kill-future-schedulers)
        (host:mutex-acquire lock)
        (set-place-result! new-place result)
        (host:mutex-release lock)
@@ -163,15 +163,28 @@
 
 ;; called with place's lock held or for the current place
 (define (place-has-activity! p)
-  (set-box! (place-activity-canary p) #t)
+  (define canary (place-activity-canary p))
+  (let loop ()
+    (or (box-cas! canary #f #t)
+        (box-cas! canary #t #t)
+        (loop)))
   (sandman-wakeup (place-wakeup-handle p)))
+
+;; called with place's lock held or for the current place
+(define (place-wait-activity p)
+  (sandman-sleep #f))
 
 (void
  (set-check-place-activity!
   ;; Called in atomic mode by scheduler
   (lambda (callbacks)
     (define p current-place)
-    (when (unbox (place-activity-canary p))
+    (define canary (place-activity-canary p))    
+    (when (let loop ()
+            (cond
+              [(box-cas! canary #f #f) #f]
+              [(box-cas! canary #t #t) #t]
+              [else (loop)]))
       (set-box! (place-activity-canary p) #f)
       (host:mutex-acquire (place-lock p))
       (define queued-result (place-queued-result p))
@@ -194,7 +207,14 @@
         (semaphore-post-all/atomic s))
       (when break
         (thread-did-work!)
-        (do-break-thread root-thread break #f))))))
+        (do-break-thread root-thread break #f))))
+  ;; Called in atomic mode by scheduler
+  (lambda ()
+    (define p current-place)
+    (host:mutex-acquire (place-lock p))
+    (define n (place-active-parallel p))
+    (host:mutex-release (place-lock p))
+    (n . > . 0))))
 
 ;; in atomic mode
 (define (do-place-kill p)
@@ -470,6 +490,8 @@
 (void (set-place-future-procs!
        (lambda ()
          (place-has-activity! current-place))
+       (lambda ()
+         (place-wait-activity current-place))
        ;; in atomic mode
        (lambda ()
          (ensure-wakeup-handle!))))

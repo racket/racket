@@ -27,7 +27,7 @@
      (define (do-destroy)
        (unless completed?
          (destroy r)))
-     (thread-push-kill-callback! do-destroy)
+     (thread-push-kill-callback! do-destroy) ; needs to be in atomic mode
      (dynamic-wind
       void
       (lambda ()
@@ -38,6 +38,6 @@
         ;; In case of an escape out of the body, we
         ;; may not be in atomic mode:
         (start-atomic)
-        (thread-pop-kill-callback!)
+        (thread-pop-kill-callback!) ; needs to be in atomic mode
         (do-destroy)
         (end-atomic)))]))

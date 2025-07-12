@@ -12,14 +12,14 @@
          check-rktio-error*)
 
 (define (remap-rktio-error err)
-  (start-atomic)
+  (start-rktio)
   (rktio_set_last_error rktio
                         (rktio-errkind err)
                         (rktio-errno err))
   (rktio_remap_last_error rktio)
   (define errno (rktio_get_last_error rktio))
   (define errkind (rktio_get_last_error_kind rktio))
-  (end-atomic)
+  (end-rktio)
   (vector errkind errno))
 
 (define (format-rktio-message who err base-msg)
@@ -30,12 +30,12 @@
                           (format-rktio-system-error-message err))))
 
 (define (format-rktio-system-error-message err)
-  (start-atomic)
+  (start-rktio)
   (define p (rktio_get_error_string rktio
                                     (rktio-errkind err)
                                     (rktio-errno err)))
   (define system-msg (rktio_to_bytes p))
-  (end-atomic)
+  (end-rktio)
   (string-append (bytes->string/utf-8 system-msg #\?)
                  "; "
                  (let ([kind (rktio-errkind err)])

@@ -54,6 +54,8 @@
 
           ;; not exported to Racket:
           make-engine
+          make-engine-thread-cell-state
+          set-engine-thread-cell-state!
           engine-block
           engine-timeout
           engine-return
@@ -318,6 +320,8 @@
           unsafe-ephemeron-hash-iterate-key unsafe-ephemeron-hash-iterate-value
           unsafe-ephemeron-hash-iterate-key+value unsafe-ephemeron-hash-iterate-pair
           unsafe-hash-seal!    ; not exported to racket
+          unsafe-make-hasheq   ; not exported to racket
+          unsafe-make-weak-hasheq   ; not exported to racket
 
           hash? hash-eq? hash-equal? hash-eqv? hash-equal-always? hash-strong? hash-weak? hash-ephemeron?
           immutable-hash?
@@ -477,7 +481,10 @@
           random
           random-seed
           current-pseudo-random-generator
+          pseudo-random-generator?
+          make-pseudo-random-generator
           pseudo-random-generator-vector?
+          pseudo-random-generator->vector
           vector->pseudo-random-generator
           vector->pseudo-random-generator!
 

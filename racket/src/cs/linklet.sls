@@ -360,7 +360,7 @@
      mode
      (compile* e #f #t)))
 
-  (define primitives (make-hasheq)) ; hash of sym -> known
+  (define primitives (unsafe-make-hasheq)) ; hash of sym -> known
   (define primitive-tables '())     ; list of (cons sym hash)
 
   ;; Arguments are `(cons <sym> <hash-table>)`
@@ -956,7 +956,7 @@
         (linklet-unpack-exports-info! other-linklet))
       (unless from-hash?
         ;; sanity check:
-        (let ([ht (make-hasheq)])
+        (let ([ht (unsafe-make-hasheq)])
           (for-each (lambda (ex) (hash-set! ht ex #t)) (linklet-export-variables linklet))
           (let ([exs (linklet-export-variables other-linklet)])
             (unless (and (= (length exs) (hash-count ht))
@@ -1238,7 +1238,7 @@
      [(name) (make-instance name #f)]
      [(name data) (make-instance name data #f)]
      [(name data constance . content)
-      (let* ([ht (make-hasheq)]
+      (let* ([ht (unsafe-make-hasheq)]
              [raw-ht (hash->eq-hashtable ht)] ; note: raw-ht isn't shared, yet
              [inst (new-instance name data ht)]
              [inst-box (weak-cons inst #f)])
@@ -1450,7 +1450,7 @@
   (define-syntax primitive-table
     (syntax-rules ()
       [(_ id ...)
-       (let ([ht (make-hasheq)])
+       (let ([ht (unsafe-make-hasheq)])
          (hash-set! ht 'id id) ...
          ht)]))
 

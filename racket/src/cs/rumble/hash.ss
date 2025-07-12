@@ -14,8 +14,12 @@
 (define-record eq-mutable-hash mutable-hash
   ())
 
-(define (create-mutable-hash ht kind) (make-mutable-hash (make-lock kind) #f #t ht))
-(define (create-eq-mutable-hash ht) (make-eq-mutable-hash (make-lock 'eq?) #f #t ht))
+(define (create-mutable-hash ht lock) (make-mutable-hash lock #f #t ht))
+(define (create-eq-mutable-hash ht) (make-eq-mutable-hash (make-nonscheduler-lock) #f #t ht))
+
+;; without locks, so that they can be used from a scheduler
+(define (unsafe-make-hasheq) (make-eq-mutable-hash #f #f #t (make-eq-hashtable)))
+(define (unsafe-make-weak-hasheq) (make-eq-mutable-hash #f #f #t (make-weak-eq-hashtable)))
 
 (define (mutable-hash-lock ht) (locked-iterable-hash-lock ht))
 (define (mutable-hash-cells ht) (locked-iterable-hash-cells ht))
@@ -36,17 +40,17 @@
 
 (define/who make-hash
   (case-lambda
-   [() (create-mutable-hash (make-hashtable key-equal-hash-code key-equal?) 'equal?)]
+   [() (create-mutable-hash (make-hashtable key-equal-hash-code key-equal?) (make-scheduler-lock))]
    [(alist) (fill-hash! who (make-hash) alist)]))
 
 (define/who make-weak-hash
   (case-lambda
-   [() (create-mutable-hash (make-weak-hashtable key-equal-hash-code key-equal?) 'equal?)]
+   [() (create-mutable-hash (make-weak-hashtable key-equal-hash-code key-equal?) (make-scheduler-lock))]
    [(alist) (fill-hash! who (make-weak-hash) alist)]))
 
 (define/who make-ephemeron-hash
   (case-lambda
-   [() (create-mutable-hash (make-ephemeron-hashtable key-equal-hash-code key-equal?) 'equal?)]
+   [() (create-mutable-hash (make-ephemeron-hashtable key-equal-hash-code key-equal?) (make-scheduler-lock))]
    [(alist) (fill-hash! who (make-ephemeron-hash) alist)]))
 
 (define/who make-hasheq
@@ -71,33 +75,33 @@
 
 (define/who make-hasheqv
   (case-lambda
-   [() (create-mutable-hash (make-eqv-hashtable) 'eqv?)]
+   [() (create-mutable-hash (make-eqv-hashtable) (make-nonscheduler-lock))]
    [(alist) (fill-hash! who (make-hasheqv) alist)]))
 
 (define/who make-weak-hasheqv
   (case-lambda
-   [() (create-mutable-hash (make-weak-eqv-hashtable) 'eqv?)]
+   [() (create-mutable-hash (make-weak-eqv-hashtable) (make-nonscheduler-lock))]
    [(alist) (fill-hash! who (make-weak-hasheqv) alist)]))
 
 (define/who make-ephemeron-hasheqv
   (case-lambda
-   [() (create-mutable-hash (make-ephemeron-eqv-hashtable) 'eqv?)]
+   [() (create-mutable-hash (make-ephemeron-eqv-hashtable) (make-nonscheduler-lock))]
    [(alist) (fill-hash! who (make-ephemeron-hasheqv) alist)]))
 
 ;; hashalw is for equal ALWays, first 3 letters of "always" since "equal" is implicit
 (define/who make-hashalw
   (case-lambda
-   [() (create-mutable-hash (make-hashtable key-equal-always-hash-code key-equal-always?) 'equal-always?)]
+   [() (create-mutable-hash (make-hashtable key-equal-always-hash-code key-equal-always?) (make-scheduler-lock))]
    [(alist) (fill-hash! who (make-hashalw) alist)]))
 
 (define/who make-weak-hashalw
   (case-lambda
-   [() (create-mutable-hash (make-weak-hashtable key-equal-always-hash-code key-equal-always?) 'equal-always?)]
+   [() (create-mutable-hash (make-weak-hashtable key-equal-always-hash-code key-equal-always?) (make-scheduler-lock))]
    [(alist) (fill-hash! who (make-weak-hashalw) alist)]))
 
 (define/who make-ephemeron-hashalw
   (case-lambda
-   [() (create-mutable-hash (make-ephemeron-hashtable key-equal-always-hash-code key-equal-always?) 'equal-always?)]
+   [() (create-mutable-hash (make-ephemeron-hashtable key-equal-always-hash-code key-equal-always?) (make-scheduler-lock))]
    [(alist) (fill-hash! who (make-ephemeron-hashalw) alist)]))
 
 (define/who (fill-hash! who ht alist)
@@ -147,10 +151,7 @@
 (define (hash-set! ht k v)
   (cond
    [(mutable-hash? ht)
-    (cond
-     [(and (current-future) (eq-mutable-hash? ht))
-      (future-sync 'hash-set! (lambda () (mutable-hash-set! ht k v)))]
-     [else (mutable-hash-set! ht k v)])]
+    (mutable-hash-set! ht k v)]
    [(and (impersonator? ht)
          (let ([ht (impersonator-val ht)])
            (mutable-hash? ht)))
@@ -166,10 +167,7 @@
 (define (hash-remove! ht k)
   (cond
    [(mutable-hash? ht)
-    (cond
-     [(and (current-future) (eq-mutable-hash? ht))
-      (future-sync 'hash-remove! (lambda () (mutable-hash-remove! ht k)))]
-     [else (mutable-hash-remove! ht k)])]
+    (mutable-hash-remove! ht k)]
    [(and (impersonator? ht)
          (let ([ht (impersonator-val ht)])
            (mutable-hash? ht)))
@@ -194,9 +192,7 @@
 (define (hash-clear! ht)
   (cond
    [(mutable-hash? ht)
-    (cond
-     [(current-future) (future-sync 'hash-clear! (lambda () (mutable-hash-clear! ht)))]
-     [else (mutable-hash-clear! ht)])]
+    (mutable-hash-clear! ht)]
    [(and (impersonator? ht)
          (let ([ht (impersonator-val ht)])
            (mutable-hash? ht)))
@@ -219,10 +215,7 @@
 (define (hash-copy ht)
   (cond
    [(mutable-hash? ht)
-    (cond
-     [(and (current-future) (eq-mutable-hash? ht))
-      (future-sync 'hash-copy (lambda () (mutable-hash-copy ht)))]
-     [else (mutable-hash-copy ht)])]
+    (mutable-hash-copy ht)]
    [(intmap? ht)
     (let ([new-ht (cond
                    [(intmap-eq? ht) (make-hasheq)]
@@ -246,9 +239,8 @@
                     (create-eq-mutable-hash (hashtable-copy (mutable-hash-ht ht) #t))
                     (create-mutable-hash (hashtable-copy (mutable-hash-ht ht) #t)
                                          (cond
-                                          [(hash-eqv? ht) 'eqv?]
-                                          [(hash-equal-always? ht) 'equal-always?]
-                                          [else 'equal?])))])
+                                           [(hash-eqv? ht) (make-nonscheduler-lock)]
+                                           [else (make-scheduler-lock)])))])
     (lock-release (mutable-hash-lock ht))
     new-ht))
 
@@ -388,11 +380,10 @@
    [(mutable-hash? ht)
     (cond
      [(eq-mutable-hash? ht)
-      ;; As long as we're not in a future thread, it's an atomic action
-      ;; to access the mutable hash table using `eq-hashtable-ref`:
-      (if (current-future)
-          (future-sync 'hash-ref (lambda () (eq-hashtable-ref (mutable-hash-ht ht) k none)))
-          (eq-hashtable-ref (mutable-hash-ht ht) k none))]
+      (lock-acquire/a (mutable-hash-lock ht))
+      (let ([v (eq-hashtable-ref (mutable-hash-ht ht) k none)])
+        (lock-release/a (mutable-hash-lock ht))
+        v)]
      [else
       (lock-acquire (mutable-hash-lock ht))
       (let ([v (hashtable-ref (mutable-hash-ht ht) k none)])
@@ -425,11 +416,7 @@
 (define (hash-ref-key/none ht k)
   (cond
    [(mutable-hash? ht)
-    (cond
-     [(and (current-future) (eq-mutable-hash? ht))
-      (future-sync 'hash-ref-key (lambda () (mutable-hash-ref-key/none ht k)))]
-     [else
-      (mutable-hash-ref-key/none ht k)])]
+    (mutable-hash-ref-key/none ht k)]
    [(intmap? ht)
     (intmap-ref-key ht k none)]
    [(and (impersonator? ht)
@@ -596,11 +583,10 @@
 (define (hash-count ht)
   (cond
    [(mutable-hash? ht)
-    (cond
-     [(current-future)
-      (future-sync 'hash-count (lambda () (hashtable-size (mutable-hash-ht ht))))]
-     [else
-      (hashtable-size (mutable-hash-ht ht))])]
+    (lock-acquire (mutable-hash-lock ht))
+    (let ([sz (hashtable-size (mutable-hash-ht ht))])
+      (lock-release (mutable-hash-lock ht))
+      sz)]
    [(intmap? ht) (intmap-count ht)]
    [(and (impersonator? ht)
          (authentic-hash? (impersonator-val ht)))
@@ -754,7 +740,7 @@
                                  0)
                              32))])
         (let ([len (#%vector-length new-vec)])
-          (when (fx= len (hash-count ht))
+          (when (fx= len (hashtable-size (mutable-hash-ht ht)))
             (set-locked-iterable-hash-retry?! ht #f)))
         (let ([vec (cells-merge vec new-vec)])
           (set-locked-iterable-hash-cells! ht vec)

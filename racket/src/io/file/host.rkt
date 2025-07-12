@@ -6,7 +6,6 @@
          "../path/cleanse.rkt"
          "../path/protect.rkt"
          "../path/simplify-nofs.rkt"
-         "../host/rktio.rkt"
          "../security/main.rkt")
 
 (provide ->host

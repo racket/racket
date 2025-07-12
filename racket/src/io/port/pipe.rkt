@@ -6,6 +6,7 @@
          "port.rkt"
          "input-port.rkt"
          "output-port.rkt"
+         "lock.rkt"
          "count.rkt"
          "commit-port.rkt")
 
@@ -54,7 +55,7 @@
        => (lambda (p) (pipe-output-port-d p))]
       [else
        (raise-argument-error 'pipe-content-length "pipe-port?" p)]))
-  (atomically
+  (with-lock p
    (with-object pipe-data d
      (sync-both)
      (content-length))))
@@ -79,7 +80,7 @@
   [read-ready-evt #f]
   [write-ready-evt #f]
 
-  ;; in atomic mode for all static methods 
+  ;; with lock held and in atomic for all static methods
 
   #:static
   ;; sync local fields with input buffer without implying slow mode
@@ -200,12 +201,10 @@
   #:override
   [prepare-change
    (lambda ()
-     (with-object pipe-data d
-       (pause-waiting-commit)))]
+     (pause-waiting-commit))]
 
   [read-in
    (lambda (dest-bstr dest-start dest-end copy?)
-     (assert-atomic)
      (slow-mode!)
      (with-object pipe-data d
        (cond
@@ -240,7 +239,6 @@
   [peek-in
    (lambda (dest-bstr dest-start dest-end skip progress-evt copy?)
      (with-object pipe-data d
-       (assert-atomic)
        (sync-both)
        (define content-amt (content-length))
        (cond
@@ -279,7 +277,6 @@
 
   [byte-ready
    (lambda (work-done!)
-     (assert-atomic)
      (with-object pipe-data d
        (or (not output-ref)
            (begin
@@ -298,7 +295,7 @@
 
   [get-progress-evt
    (lambda ()
-     (atomically
+     (with-lock this
       (with-object pipe-data d
         (cond
           [(not input-ref) always-evt]
@@ -306,11 +303,17 @@
            (slow-mode!)
            (make-progress-evt)]))))]
 
+  [no-more-atomic-for-progress
+   (lambda ()
+     ;; stay in atomic mode
+     (void))]
+
   [commit
    ;; Allows `amt` to be zero and #f for other arguments,
    ;; which is helpful for `open-input-peek-via-read`.
+   ;; Must be in atomic mode, since progress-evt is provided
+   ;; and since pipes are always atomic mode, anyway
    (lambda (amt progress-evt ext-evt finish)
-     (assert-atomic)
      ;; `progress-evt` is a `semepahore-peek-evt`, and `ext-evt`
      ;; is constrained; we can send them over to different threads
      (cond
@@ -319,31 +322,34 @@
        [else
         (wait-commit
          progress-evt ext-evt
-         ;; in atomic mode, maybe in a different thread:
+         ;; in atomic mode, maybe in a different thread;
+         ;; having a progress-evt means that the port lock
+         ;; requires atomic mode
          (lambda ()
-           (with-object pipe-data d
-             (slow-mode!)
-             (let ([amt (min amt (content-length))])
-               (cond
-                 [(fx= 0 amt)
-                  ;; There was nothing to commit; claim success for 0 bytes
-                  (finish #"")]
-                 [else
-                  (define dest-bstr (make-bytes amt))
-                  (define s start)
-                  (define e end)
-                  (cond
-                    [(s . fx< . e)
-                     (bytes-copy! dest-bstr 0 bstr s (fx+ s amt))]
-                    [else
-                     (define amt1 (fxmin (fx- len s) amt))
-                     (bytes-copy! dest-bstr 0 bstr s (fx+ s amt1))
-                     (when (amt1 . fx< . amt)
-                       (bytes-copy! dest-bstr amt1 bstr 0 (fx- amt amt1)))])
-                  (set! start (fxmodulo (fx+ s amt) len))
-                  (progress!)
-                  (fast-mode! amt)
-                  (finish dest-bstr)])))))]))]
+           (with-lock this
+             (with-object pipe-data d
+               (slow-mode!)
+               (let ([amt (min amt (content-length))])
+                 (cond
+                   [(fx= 0 amt)
+                    ;; There was nothing to commit; claim success for 0 bytes
+                    (finish #"")]
+                   [else
+                    (define dest-bstr (make-bytes amt))
+                    (define s start)
+                    (define e end)
+                    (cond
+                      [(s . fx< . e)
+                       (bytes-copy! dest-bstr 0 bstr s (fx+ s amt))]
+                      [else
+                       (define amt1 (fxmin (fx- len s) amt))
+                       (bytes-copy! dest-bstr 0 bstr s (fx+ s amt1))
+                       (when (amt1 . fx< . amt)
+                         (bytes-copy! dest-bstr amt1 bstr 0 (fx- amt amt1)))])
+                    (set! start (fxmodulo (fx+ s amt) len))
+                    (progress!)
+                    (fast-mode! amt)
+                    (finish dest-bstr)]))))))]))]
 
   [count-lines!
    (lambda ()
@@ -404,9 +410,8 @@
 
   #:override
   [write-out
-   ;; in atomic mode
-   (lambda (src-bstr src-start src-end nonblock? enable-break? copy?)
-     (assert-atomic)
+   ;; with lock held
+   (lambda (src-bstr src-start src-end nonblock? enable-break? copy? no-escape?)
      (slow-mode!)
      (with-object pipe-data d
        (let try-again ()
@@ -499,7 +504,7 @@
                                   (port-count! out v bstr start)))]
 
   [close
-   ;; in atomic mode
+   ;; with lock held
    (lambda ()
      (with-object pipe-data d
        (when output-ref
@@ -541,6 +546,10 @@
   (set-pipe-data-write-ready-evt! d write-ready-evt)
   (set-pipe-data-read-ready-evt! d read-ready-evt)
 
+  ;; make pipe locks always imply atomic:
+  (port-lock-init-atomic-mode input)
+  (port-lock-init-atomic-mode output)
+
   (values input output))
 
 (define/who (make-pipe [limit #f] [input-name 'pipe] [output-name 'pipe])
@@ -568,7 +577,10 @@
             (set! write-ready-sema (make-semaphore)))
           (define in (ref-value input-ref))
           (when in
-            (send pipe-input-port in on-output-full))
+            ;; no one else has the lock on `in`, since it requires atomic mode
+            (port-lock in)
+            (send pipe-input-port in on-output-full)
+            (port-unlock in))
           (values #f (replace-evt (semaphore-peek-evt write-ready-sema)
                                   (lambda (v) pwp)))])))))
 
@@ -589,6 +601,9 @@
             (set! read-ready-sema (make-semaphore)))
           (define out (ref-value output-ref))
           (when out
-            (send pipe-output-port out on-input-empty))
+            ;; no one else has the lock on `out`, since it requires atomic mode
+            (port-lock out)
+            (send pipe-output-port out on-input-empty)
+            (port-unlock out))
           (values #f (wrap-evt (semaphore-peek-evt read-ready-sema)
                                (lambda (v) 0)))])))))

@@ -19,7 +19,7 @@
   (unless threaded? (raise-unsupported who))
   (fork-pthread (lambda ()
                   (start-atomic) ; just in case
-                  (current-thread/in-atomic #f) ; don't inherit
+                  (current-thread/in-racket #f) ; don't inherit
                   (proc)))
   (void))
 

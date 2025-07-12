@@ -118,7 +118,7 @@
   (when (sync/timeout 0 suspend-evt)
     (commit-manager-pause mgr)))
 
-;; in atmomic mode; can leave it and return
+;; in atomic mode; can leave it and return
 (define (commit-manager-wait mgr progress-evt ext-evt finish)
   (define result-ch (make-channel))
   (define abandon-evt (make-semaphore))

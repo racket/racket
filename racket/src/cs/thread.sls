@@ -10,6 +10,8 @@
                   [unsafe-place-local-set! rumble:unsafe-place-local-set!]
                   ;; These are extracted via `#%linklet`:
                   [make-engine rumble:make-engine]
+                  [make-engine-thread-cell-state rumble:make-engine-thread-cell-state]
+                  [set-engine-thread-cell-state! rumble:set-engine-thread-cell-state!]
                   [engine-timeout rumble:engine-timeout]
                   [engine-return rumble:engine-return]
                   [engine-roots rumble:engine-roots]
@@ -58,7 +60,7 @@
                     (syntax-rules ()
                       [(_) (virtual-register n)]
                       [(_ v) (set-virtual-register! n v)]))))])
-      (syntax-case stx (current-atomic end-atomic-callback current-future$1
+      (syntax-case stx (current-atomic end-atomic-callback 1/current-future
                                        lambda make-pthread-parameter unsafe-make-place-local)
         ;; Recognize definition of `current-atomic`:
         [(_ current-atomic (make-pthread-parameter 0))
@@ -67,12 +69,14 @@
         [(_ end-atomic-callback (make-pthread-parameter 0))
          (define-as-virtual-register stx end-atomic-virtual-register)]
         ;; Recognize definition of `current-future`:
-        [(_ current-future$1 (make-pthread-parameter #f))
+        [(_ 1/current-future (make-pthread-parameter #f))
          (define-as-virtual-register stx current-future-virtual-register)]
-        ;; Force-inline `start-atomic`, `end-atomic`, and `future-barrier`,
-        ;; at least within the core layers:
+        ;; Force-inline atomicity-managing functions, at least within the core layers:
         [(_ id (lambda () expr ...))
-         (#%memq (syntax->datum #'id) '(start-atomic end-atomic future-barrier))
+         (#%memq (syntax->datum #'id) '(start-atomic end-atomic end-atomic/no-barrier-exit
+                                                     future-barrier future-barrier-exit
+                                                     start-uninterruptable end-uninterruptable
+                                                     in-atomic-mode? not-atomic-mode?))
          #'(begin
              (define proc (let ([id (lambda () expr ...)]) id))
              (define-syntax (id stx)
@@ -117,6 +121,33 @@
   (define (get-system-stats)
     (values (collections)))
 
+  (define (internal-error s)
+    (#%printf "internal-error: ~a\n" s)
+    (#%call/cc
+     (lambda (k)
+       (let loop ([k k] [offset #f] [n 0])
+         (cond
+           [(or (not (#%$continuation? k))
+                (eq? k #%$null-continuation))
+            (void)]
+           [(fx= n 100) (void)]
+           [else
+            (let* ([name (let* ([c (if offset
+                                       (#%$continuation-stack-return-code k offset)
+                                       (#%$continuation-return-code k))]
+                                [n (#%$code-name c)])
+                           n)])
+              (#%printf " at ~s\n" name)
+              (let* ([offset (if offset
+                                 (fx- offset (#%$continuation-stack-return-frame-words k offset))
+                                 (fx- (#%$continuation-stack-clength k)
+                                      (#%$continuation-return-frame-words k)))]
+                     [offset (if (fx= offset 0) #f offset)])
+                (loop (if offset k (#%$continuation-link k))
+                      offset
+                      (fx+ n 1))))]))))
+    (#%exit 1))
+
   (define (primitive-table key)
     (case key
       [(|#%pthread|)
@@ -139,6 +170,8 @@
       [(|#%engine|)
        (hasheq
         'make-engine rumble:make-engine
+        'make-engine-thread-cell-state rumble:make-engine-thread-cell-state
+        'set-engine-thread-cell-state! rumble:set-engine-thread-cell-state!
         'engine-timeout rumble:engine-timeout
         'engine-return rumble:engine-return
         'engine-roots rumble:engine-roots
@@ -150,6 +183,8 @@
         'will-executor? rumble:will-executor?
         'will-register rumble:will-register
         'will-try-execute rumble:will-try-execute
+        'unsafe-make-hasheq unsafe-make-hasheq
+        'unsafe-make-weak-hasheq unsafe-make-weak-hasheq
         'set-break-enabled-transition-hook! rumble:set-break-enabled-transition-hook!
         'continuation-marks rumble:continuation-marks
         'set-reachable-size-increments-callback! rumble:set-reachable-size-increments-callback!
@@ -187,7 +222,8 @@
         'threaded? rumble:threaded?
         'continuation-current-primitive rumble:continuation-current-primitive
         'prop:unsafe-authentic-override prop:unsafe-authentic-override
-        'get-system-stats get-system-stats)]
+        'get-system-stats get-system-stats
+        'internal-error internal-error)]
       [else #f]))
 
   ;; Tie knots:
@@ -214,4 +250,4 @@
                                       (lambda ()
                                         (current-atomic (fx- (current-atomic) 1))))
 
-  (set-future-callbacks! future-block future-sync current-future-prompt))
+  (set-future-callbacks! future-block future-unblock future-sync current-future-prompt))

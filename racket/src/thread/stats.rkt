@@ -6,7 +6,8 @@
          "schedule.rkt"
          (only-in "host.rkt"
                   host:get-system-stats)
-         "thread-group.rkt")
+         "thread-group.rkt"
+         "atomic.rkt")
 
 (provide vector-set-performance-stats!)
 
@@ -37,8 +38,9 @@
     [else
      (maybe-set! 0 (thread-running? thd))
      (maybe-set! 1 (thread-dead? thd))
-     (maybe-set! 2 (and (not (thread-dead? thd))
-                        (or (thread-descheduled? thd)
-                            (thread-sched-info thd)))) ; blocked for synchronization?
+     (maybe-set! 2 (atomically
+                    (and (not (is-thread-dead? thd))
+                         (or (thread-descheduled? thd)
+                             (thread-sched-info thd))))) ; blocked for synchronization?
      (maybe-set! 3 0) ; continuation size in bytes
      (void)]))

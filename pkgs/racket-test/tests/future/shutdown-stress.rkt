@@ -15,7 +15,7 @@
   (define f #f)
 
   (define loop? ((random) . < . 0.2))
-  
+
   (parameterize ([current-custodian c])
     (void
      (thread (lambda ()
@@ -23,7 +23,6 @@
                                  (if loop?
                                      (let loop () (loop))
                                      10))))))))
-  
   (sync (system-idle-evt))
   (sleep 0.1)
 

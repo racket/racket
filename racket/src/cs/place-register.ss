@@ -37,7 +37,7 @@
            [(_ id (unsafe-make-place-local v))
             (with-syntax ([i (#%datum->syntax #'here (add-place-register! #'id start count))])
               #`(begin
-                  ;; The `id` shoiuld be used only with
+                  ;; The `id` should be used only with
                   ;; `unsafe-place-local-{ref,set!}`:
                   (define-syntax id (syntax-rules ()))
                   ;; Initialize the place value:

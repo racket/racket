@@ -95,27 +95,31 @@
 
 ;; ----------------------------------------
 
-(struct stdio-log-receiver log-receiver (rktio which)
+(struct stdio-log-receiver log-receiver (rktio rktio-mutex+sleep which)
   #:property
   prop:receiver-send
   (lambda (lr msg)
     ;; called in atomic mode and possibly in host interrupt handler
     (define rktio (stdio-log-receiver-rktio lr))
-    (define fd (rktio_std_fd rktio (stdio-log-receiver-which lr)))
+    (define rktio-mutex+sleep (stdio-log-receiver-rktio-mutex+sleep lr))
     (define bstr (bytes-append (string->bytes/utf-8 (vector-ref msg 1)) #"\n"))
     (define len (bytes-length bstr))
+    (start-some-rktio rktio-mutex+sleep)
+    (define fd (rktio_std_fd rktio (stdio-log-receiver-which lr)))
     (let loop ([i 0])
       (define v (rktio_write_in rktio fd bstr i len))
       (unless (rktio-error? v)
         (let ([i (+ i v)])
           (unless (= i len)
             (loop i)))))
-    (rktio_forget rktio fd)))
+    (rktio_forget rktio fd)
+    (end-some-rktio rktio-mutex+sleep)))
 
 (define (add-stdio-log-receiver! who logger args parse-who which)
   (check who logger? logger)
   (define lr (stdio-log-receiver (parse-filters parse-who args #:default-level 'none)
                                  rktio
+                                 rktio-mutex+sleep
                                  which))
   (atomically
    (add-log-receiver! logger lr #f)
@@ -129,12 +133,13 @@
 
 ;; ----------------------------------------
 
-(struct syslog-log-receiver log-receiver (rktio cmd)
+(struct syslog-log-receiver log-receiver (rktio rktio-mutex+sleep cmd)
   #:property
   prop:receiver-send
   (lambda (lr msg)
     ;; called in atomic mode and possibly in host interrupt handler
     (define rktio (syslog-log-receiver-rktio lr))
+    (define rktio-mutex+sleep (stdio-log-receiver-rktio-mutex+sleep lr))
     (define bstr (bytes-append (string->bytes/utf-8 (vector-ref msg 1)) #"\n"))
     (define pri
       (case (vector-ref msg 0)
@@ -143,11 +148,14 @@
         [(warning) RKTIO_LOG_WARNING]
         [(info) RKTIO_LOG_INFO]
         [else RKTIO_LOG_DEBUG]))
-    (rktio_syslog rktio pri #f bstr (syslog-log-receiver-cmd lr))))
+    (start-some-rktio rktio-mutex+sleep)
+    (rktio_syslog rktio pri #f bstr (syslog-log-receiver-cmd lr))
+    (end-some-rktio rktio-mutex+sleep)))
 
 (define/who (add-syslog-log-receiver! logger . args)
   (define lr (syslog-log-receiver (parse-filters 'make-syslog-log-receiver args #:default-level 'none)
                                   rktio
+                                  rktio-mutex+sleep
                                   (path-bytes (find-system-path 'run-file))))
   (atomically
    (add-log-receiver! logger lr #f)
@@ -156,7 +164,7 @@
 ;; ----------------------------------------
 
 (define (add-log-receiver! logger lr backref)
-  (atomically/no-interrupts/no-wind
+  (atomically/no-gc-interrupts/no-wind
    ;; Add receiver to the logger's list, pruning empty boxes
    ;; every time the list length doubles (roughly):
    (cond

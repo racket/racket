@@ -90,6 +90,12 @@
       (complete-or-expire go #f (if timeout? 0 10))]))
   go)
 
+(define (make-engine-thread-cell-state init-break-enabled-cell empty-config?)
+  init-break-enabled-cell)
+
+(define (set-engine-thread-cell-state! init-break-enabled-cell)
+  (void)) 
+
 (define (engine-block)
   (thread-suspend (current-thread)))
 
@@ -236,6 +242,8 @@
 (primitive-table '#%engine
                  (hash 
                   'make-engine make-engine
+                  'make-engine-thread-cell-state make-engine-thread-cell-state
+                  'set-engine-thread-cell-state! set-engine-thread-cell-state!
                   'engine-timeout engine-timeout
                   'engine-return (lambda args
                                    (error "engine-return: not ready"))
@@ -251,6 +259,8 @@
                   'will-executor? will-executor/notify?
                   'will-register will-register/notify
                   'will-try-execute will-try-execute/notify
+                  'unsafe-make-hasheq make-hasheq
+                  'unsafe-make-weak-hasheq make-weak-hasheq
                   'set-reachable-size-increments-callback! (lambda (proc) (void))
                   'set-custodian-memory-use-proc! (lambda (proc) (void))
                   'set-immediate-allocation-check-proc! (lambda (proc) (void))
@@ -289,9 +299,10 @@
                   'mutex-release (lambda (s) (semaphore-post s))
                   'call-as-asynchronous-callback (lambda (thunk) (thunk))
                   'post-as-asynchronous-callback (lambda (thunk) (thunk))
-                  'continuation-current-primitive (lambda (k) #f)
+                  'continuation-current-primitive (lambda (k excls incls) #f)
                   'prop:unsafe-authentic-override prop:unsafe-authentic-override
-                  'get-system-stats (lambda () (values 0))))
+                  'get-system-stats (lambda () (values 0))
+                  'internal-error error))
 
 ;; add dummy definitions that implement pthreads and conditions etc.
 ;; dummy definitions that error

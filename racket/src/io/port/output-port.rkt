@@ -4,6 +4,7 @@
          "../host/thread.rkt"
          "../host/pthread.rkt"
          "port.rkt"
+         "lock.rkt"
          "evt.rkt")
 
 (provide prop:output-port
@@ -58,27 +59,27 @@
 
   #:public
   ;; port or (bstr start-k end-k no-block/buffer? enable-break? copy? -*> ...)
-  ;; Called in atomic mode.
+  ;; Called with lock held.
   ;; Doesn't block if `no-block/buffer?` is true. Does enable breaks
   ;; while blocking if `enable-break?` is true. The `copy?` flag
   ;; indicates that the given byte string should not be exposed to
   ;; untrusted code, and instead of should be copied if necessary.
   ;; The return values are the same as documented for
   ;; `make-output-port`.
-  [write-out (lambda (bstr start-k end-k no-block/buffer? enable-break? copy?)
+  [write-out (lambda (bstr start-k end-k no-block/buffer? enable-break? copy? no-escape?)
                (- end-k start-k))]
 
   ;; #f or (any no-block/buffer? enable-break? -*> boolean?)
-  ;; Called in atomic mode.
+  ;; Called with lock held.
   [write-out-special #f]
   
   ;; #f or (bstr start-k end-k -*> evt?)
-  ;; Called in atomic mode.
+  ;; Called with lock held.
   ;; The given bstr should not be exposed to untrusted code.
   [get-write-evt (lambda (bstr start-k end-k) always-evt)]
 
   ;; #f or (any -*> evt?)
-  ;; *Not* called in atomic mode.
+  ;; *Not* called with lock held.
   [get-write-special-evt #f]
 
   #:property
@@ -92,7 +93,8 @@
                                 (lambda (self sched-info)
                                   ;; atomic mode
                                   (cond
-                                    [(core-port-closed? o)
+                                    [(with-lock o
+                                       (core-port-closed? o))
                                      (values '(#t) #f)]
                                     [else (values #f self)]))))
                               (core-output-port-evt o)))))])
@@ -104,12 +106,18 @@
     (write-evt
      ;; in atomic mode:
      (lambda (self-evt)
-       (define v (send core-output-port out write-out src-bstr src-start src-end #t #f #t))
+       (port-lock out)
+       (define v (send core-output-port out write-out src-bstr src-start src-end #t #f #t #t))
        (when (exact-integer? v)
          (count-write-evt-via-write-out out v src-bstr src-start))
-       (if (evt? v)
-           (values #f (replace-evt v self-evt))
-           (values (list v) #f))))))
+       (port-unlock out)
+       (cond
+         [(evt? v)
+          (values #f (replace-evt v self-evt))]
+         [(procedure? v)
+          (values #f (delayed-poll v))]
+         [else
+          (values (list v) #f)])))))
 
 (struct write-evt (proc)
   #:property prop:evt (poller

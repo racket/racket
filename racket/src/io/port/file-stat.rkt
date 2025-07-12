@@ -5,6 +5,7 @@
          "port.rkt"
          "input-port.rkt"
          "output-port.rkt"
+         "lock.rkt"
          "file-stream.rkt"
          "check.rkt")
 
@@ -14,7 +15,7 @@
   (check who file-stream-port? p)
   (define cp (or (->core-input-port p #:default #f)
                  (->core-output-port p #:default #f)))
-  (start-atomic)
+  (port-lock cp)
   (check-not-closed who cp)
   (define fd ((file-stream-ref cp) cp))
-  (path-or-fd-stat who #:fd fd #:port p))
+  (path-or-fd-stat who #:fd fd #:port p #:unlock (lambda () (port-unlock cp))))

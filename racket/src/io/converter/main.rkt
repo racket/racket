@@ -71,14 +71,14 @@
        [(zero? (bitwise-and props RKTIO_CONVERTER_SUPPORTED))
         #f]
        [else
-        (start-atomic)
+        (start-rktio)
         (unless cust (check-current-custodian who))
         (define c (rktio_converter_open rktio
                                         (encoding->bytes who to-str)
                                         (encoding->bytes who from-str)))
         (cond
           [(rktio-error? c)
-           (end-atomic)
+           (end-rktio)
            #;
            (raise-rktio-error who c "failed")
            #f]
@@ -86,7 +86,7 @@
            (define converter (bytes-converter c #f))
            (define cref (unsafe-custodian-register (or cust (current-custodian)) converter close-converter #f #f))
            (set-bytes-converter-custodian-reference! converter cref)
-           (end-atomic)
+           (end-rktio)
            converter])])]))
 
 (define/who (bytes-open-converter from-str to-str)
@@ -94,7 +94,7 @@
 
 ;; ----------------------------------------
 
-;; in atomic mode
+;; in rktio mode
 (define (close-converter converter)
   (define c (bytes-converter-c converter))
   (when c
@@ -107,7 +107,7 @@
 
 (define/who (bytes-close-converter converter)
   (check who bytes-converter? converter)
-  (atomically
+  (rktioly
    (close-converter converter)))
 
 ;; ----------------------------------------
@@ -171,10 +171,10 @@
                     src-bstr src-start-pos src-end-pos
                     dest-bstr dest-start-pos dest-end-pos
                     guess-dest-size)
-  (start-atomic)
+  (start-rktio)
   (define c (bytes-converter-c converter))
   (unless c
-    (end-atomic)
+    (end-rktio)
     (raise-arguments-error who "converter is closed"
                            "converter" converter))
   (define use-dest-bstr (or dest-bstr
@@ -211,7 +211,7 @@
       [else
        ;; report results
        (define all-out-produced (+ out-produced out-already-produced))
-       (end-atomic)
+       (end-rktio)
        (values (if dest-bstr
                    all-out-produced
                    (subbytes use-dest-bstr 0 all-out-produced))
@@ -223,7 +223,7 @@
                  [(eqv? err RKTIO_ERROR_CONVERT_OTHER) 'error] ; should not happen
                  [else 'complete]))])))
 
-;; in atomic mode
+;; in rktio mode
 (define (convert-in c src src-start src-end dest dest-start dest-end)
   (cond
     [(utf-8-converter? c)
@@ -239,7 +239,7 @@
                       (rktio_get_last_error rktio)))
      (values in-consumed out-produced err)]))
 
-;; in atomic mode
+;; in rktio mode
 (define (bytes-reset-converter converter)
   (define c (bytes-converter-c converter))
   (unless (utf-8-converter? c)

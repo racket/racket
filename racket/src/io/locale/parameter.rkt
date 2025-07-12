@@ -24,9 +24,9 @@
 
 (define-place-local installed-locale #f)
 
-;; in atomic mode
+;; in rktio mode
 ;; Any rktio function that depends on the locale should be called in
-;; an atomic region that includes an earlier `(sync-locale!)`
+;; a rktio region that includes an earlier `(sync-locale!)`
 (define (sync-locale!)
   (define loc (current-locale))
   (unless (or (not loc)
@@ -37,7 +37,7 @@
 (void (rktio_set_default_locale #""))
 (void (sync-locale!))
 
-;; potentially in atomic mode
+;; potentially in rktio mode
 (define (locale-encoding-is-utf-8?)
   (define t (system-type))
   (define loc (current-locale))
@@ -47,7 +47,7 @@
            (equal? loc ""))
       (zero? (bitwise-and (rktio_convert_properties rktio) RKTIO_CONVERTER_SUPPORTED))))
 
-;; in atomic mode
+;; in rktio mode
 (define (locale-string-encoding/bytes)
   (cond
     [(locale-encoding-is-utf-8?) #"UTF-8"]
@@ -56,7 +56,7 @@
      (define e (rktio_locale_encoding rktio))
      (cond
        [(rktio-error? e)
-        (end-atomic)
+        (end-rktio)
         (raise-rktio-error 'locale-string-encoding e "error getting locale encoding")]
        [else
         (begin0
@@ -64,19 +64,19 @@
           (rktio_free e))])]))
 
 (define (locale-string-encoding)
-  (bytes->string/utf-8 (atomically (locale-string-encoding/bytes)) #\?))
+  (bytes->string/utf-8 (rktioly (locale-string-encoding/bytes)) #\?))
 
 (define/who (system-language+country)
-  (start-atomic)
+  (start-rktio)
   (define c (rktio_system_language_country rktio))
   (cond
     [(rktio-error? c)
-     (end-atomic)
+     (end-rktio)
      (raise-rktio-error who c "error getting language and country information")]
     [else
      (bytes->string/utf-8
       (begin0
         (rktio_to_bytes c)
         (rktio_free c)
-        (end-atomic))
+        (end-rktio))
       #\?)]))

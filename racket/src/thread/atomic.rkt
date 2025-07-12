@@ -7,23 +7,28 @@
          "debug.rkt"
          (for-syntax racket/base))
 
-(provide atomically
-         current-atomic
+(provide current-atomic
+
+         start-uninterruptible
+         end-uninterruptible
 
          start-atomic
          end-atomic
          abort-atomic
 
-         atomically/no-interrupts
-         start-atomic/no-interrupts
-         end-atomic/no-interrupts
+         end-atomic/no-barrier-exit
 
-         start-uninterruptible
-         end-uninterruptible
+         atomically
+         atomically/no-gc-interrupts
+         start-atomic/no-gc-interrupts
+         end-atomic/no-gc-interrupts
 
          in-atomic-mode?
+         not-atomic-mode?
 
          future-barrier
+         future-barrier-exit
+         atomically/no-barrier-exit
 
          add-end-atomic-callback!
          flush-end-atomic-callbacks!
@@ -34,7 +39,18 @@
 
          assert-no-end-atomic-callbacks
 
+         assert
+
          set-future-block!)
+
+;; allowed in a future pthread: does not necessary make a Racket (or
+;; Scheme) thread atomic with respect to other threads, but does
+;; ensure that a thread or future will be allowed to continue to
+;; `end-uninterruptible` before it can be externally stopped
+(define (start-uninterruptible)
+  (current-atomic (fx+ (current-atomic) 1)))
+(define (end-uninterruptible)
+  (end-atomic/no-barrier-exit))
 
 ;; "atomically" is atomic within a place; when a future-running
 ;; pthread tries to enter atomic mode, it is suspended
@@ -52,12 +68,19 @@
          (let () expr ...)
          (end-atomic)))]))
 
-(define-syntax-rule (atomically/no-interrupts expr ...)
+(define-syntax-rule (atomically/no-gc-interrupts expr ...)
   (begin
-    (start-atomic/no-interrupts)
+    (start-atomic/no-gc-interrupts)
     (begin0
      (let () expr ...)
-     (end-atomic/no-interrupts))))
+     (end-atomic/no-gc-interrupts))))
+
+(define-syntax-rule (atomically/no-barrier-exit expr ...)
+  (begin
+    (start-atomic)
+    (begin0
+     (let () expr ...)
+     (end-atomic/no-barrier-exit))))
 
 ;; inlined in Chez Scheme embedding:
 (define (start-atomic)
@@ -79,16 +102,32 @@
      ;; before we exit atomic mode. Make sure that rare
      ;; possibility remains ok. There are also places that
      ;; exit atomic mode by decrementing `(current-atomic)`
-     ;; directly; those are places where an arbitrar ycallback
+     ;; directly; those are places where an arbitrary callback
      ;; is not allowed, such as in a foreign callbacks, and in
      ;; that case, we end up delaying the callback until a
-     ;; time interrupt.
+     ;; timer interrupt.
+     (if (eq? 0 (end-atomic-callback))
+         (current-atomic n)
+         (do-end-atomic-callback))
+     (future-barrier-exit)]
+    [(fx< n 0) (bad-end-atomic)]
+    [else
+     (current-atomic n)]))
+
+;; like `end-atomic`, but for use by anything
+;; potentially on the path to an block-handling operation
+;; in a Racket thread for a parallel thread, but where an atomic
+;; region was created for the handling thread's own purposes and
+;; not to act as an atomic region for the parallel thread
+(define (end-atomic/no-barrier-exit)
+  (define n (fx- (current-atomic) 1))
+  (cond
+    [(fx= n 0)
      (if (eq? 0 (end-atomic-callback))
          (current-atomic n)
          (do-end-atomic-callback))]
     [(fx< n 0) (bad-end-atomic)]
-    [else
-     (current-atomic n)]))
+    [else (current-atomic n)]))
 
 ;; intended to avoid an infinite loop of "can't do that in atomic
 ;; mode" exceptions when things have gone terribly wrong, assume that
@@ -109,30 +148,41 @@
 (define (bad-end-atomic)
   (internal-error "not in atomic mode to end"))
 
-(define (start-atomic/no-interrupts)
+(define (start-atomic/no-gc-interrupts)
   (start-atomic)
   (host:disable-interrupts))
 
-(define (end-atomic/no-interrupts)
+(define (end-atomic/no-gc-interrupts)
   (host:enable-interrupts)
   (end-atomic))
 
-;; allowed in a future thread: does not necessary make a Racket (or
-;; Scheme) thread atomic with respect to other threads, but does
-;; ensure that a thread or future will be allowed to continue to
-;; `end-uninterruptible` before it can be externally stopped
-(define (start-uninterruptible)
-  (current-atomic (fx+ (current-atomic) 1)))
-(define (end-uninterruptible)
-  (end-atomic))
-
 (define (in-atomic-mode?)
-  (positive? (current-atomic)))
+  (not (eqv? (current-atomic) 0)))
+(define (not-atomic-mode?)
+  (eqv? (current-atomic) 0))
 
-;; inlined in Chez Scheme embedding:
+;; inlined in Chez Scheme embedding;
+;; calling `future-barrier` kicks a future computation that is running
+;; in a futher pthread over to a Racket thread, either by blocking a
+;; future to moving the continuation of a parallel thread (which is
+;; implemented in part by a future) over to its Racket thread half;
+;; a `future-barrier-exit` call can move the continuation back to
+;; a future pthread; if a `future-barrier` call does not have a
+;; `future-barrier-exit` later, then a continuation may stay in a
+;; Racket thread, which should be ok, and it can get migrated by
+;; some later `future-barrier-exit` (after another `future-barrier`);
+;; there's also the special case of `end-atomic/no-barrier-exit`,
+;; which avoids `future-barrier-exit` because atomic mode was not
+;; entered on behalf of a future
 (define (future-barrier)
   (when (current-future)
+    ;; performs its own check for `(current-future)`, so the preceeding
+    ;; check is just an inlined shortcut
     (future-block-for-atomic)))
+(define (future-barrier-exit)
+  (when (current-future)
+    ;; performs its own check for `(current-future)`...
+    (future-unblock-for-atomic)))
 
 ;; ----------------------------------------
 
@@ -167,9 +217,11 @@
 ;; ----------------------------------------
 
 (define future-block-for-atomic (lambda () (void)))
+(define future-unblock-for-atomic (lambda () (void)))
 
-(define (set-future-block! block)
-  (set! future-block-for-atomic block))
+(define (set-future-block! block unblock)
+  (set! future-block-for-atomic block)
+  (set! future-unblock-for-atomic unblock))
 
 ;; ----------------------------------------
 
@@ -196,9 +248,15 @@
 
   (define (assert-no-end-atomic-callbacks)
     (unless (eq? 0 (end-atomic-callback))
-      (internal-error "non-empty end-atomic callbacks")))]
+      (internal-error "non-empty end-atomic callbacks")))
+  (define-syntax (assert stx)
+    (syntax-case stx ()
+      [(_ e)
+       #`(unless e
+           (internal-error #,(format "assertion failed: ~s" (syntax->datum #'e))))]))]
  #:off
  [(define-syntax-rule (start-implicit-atomic-mode) (begin))
   (define-syntax-rule (end-implicit-atomic-mode) (begin))
   (define-syntax-rule (assert-atomic-mode) (begin))
-  (define-syntax-rule (assert-no-end-atomic-callbacks) (begin))])
+  (define-syntax-rule (assert-no-end-atomic-callbacks) (begin))
+  (define-syntax-rule (assert e) (begin))])

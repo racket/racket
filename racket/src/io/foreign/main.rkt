@@ -23,10 +23,10 @@
   (check who path-string? #:or-false path)
   (check who (procedure-arity-includes/c 1) success-k)
   (define bstr (and path (->host/as-is path #f #f)))
-  (start-atomic)
+  (start-rktio)
   (define dll (rktio_dll_open rktio bstr as-global?))
   (define err-str (dll-get-error dll))
-  (end-atomic)
+  (end-rktio)
   (cond
     [(rktio-error? dll)
      (cond
@@ -38,24 +38,24 @@
     [else (success-k dll)]))
 
 (define/who (ffi-unload-lib dll)
-  (start-atomic)
+  (start-rktio)
   (define r (rktio_dll_close rktio dll))
   (cond
     [(rktio-error? r)
      (define err-str (dll-get-error r))
-     (end-atomic)
+     (end-rktio)
      (raise-dll-error who "could not unload foreign library" err-str r)]
     [else
-     (end-atomic)]))
+     (end-rktio)]))
 
 (define (ffi-get-obj who dll dll-name name success-k)
   (check who path-string? #:or-false dll-name)
   (check who bytes? name)
   (check who (procedure-arity-includes/c 1) success-k)
-  (start-atomic)
+  (start-rktio)
   (define obj (rktio_dll_find_object rktio dll name))
   (define err-str (dll-get-error obj))
-  (end-atomic)
+  (end-rktio)
   (cond
     [(rktio-error? obj)
      (define msg (string-append "could not find export from foreign library"
@@ -73,7 +73,7 @@
         (raise-filesystem-error who dll msg)])]
     [else (success-k obj)]))
 
-;; in atomic mode
+;; in rktio mode
 (define (dll-get-error v)
   (and (rktio-error? v)
        (let ([p (rktio_dll_get_error rktio)])

@@ -34,6 +34,7 @@
          unsafe-custodian-unregister
          custodian-register-thread
          custodian-register-place
+         custodian-register-pool
          custodian-register-also
          custodian-shutdown-root-at-exit
          raise-custodian-is-shut-down
@@ -51,7 +52,12 @@
            poll-custodian-will-executor))
 
 (module+ for-future
-  (provide set-custodian-future-callbacks!))
+  (provide set-custodian-future-callbacks!
+           current-custodian
+           custodian-will-executor
+           unsafe-custodian-unregister
+           custodian-register-pool
+           raise-custodian-is-shut-down))
 
 ;; For `(struct custodian ...)`, see "custodian-object.rkt"
 
@@ -155,7 +161,7 @@
       (when gc-root?
         (host:disable-interrupts)
         (unless (custodian-gc-roots cust)
-          (set-custodian-gc-roots! cust (make-weak-hasheq)))
+          (set-custodian-gc-roots! cust (host:unsafe-make-weak-hasheq)))
         (hash-set! (custodian-gc-roots cust) obj #t)
         (check-limit-custodian cust)
         (host:enable-interrupts))
@@ -172,6 +178,9 @@
 
 (define (custodian-register-place cust obj callback)
   (do-custodian-register cust obj callback #:weak? #t #:gc-root? #t))
+
+(define (custodian-register-pool cust obj callback)
+  (do-custodian-register cust obj callback))
 
 (define (custodian-register-also cref obj callback at-exit? weak?)
   (assert-atomic-mode)
@@ -233,7 +242,7 @@
 
 (define/who (custodian-shutdown-all c)
   (check who custodian? c)
-  (atomically
+  (atomically/no-barrier-exit
    (do-custodian-shutdown-all c))
   ;; Set in "thread.rkt" to check whether the current thread
   ;; should be swapped out
@@ -416,7 +425,7 @@
   (check who exact-nonnegative-integer? need-amt)
   (check who custodian? stop-cust)
   (place-ensure-wakeup!)
-  (atomically/no-interrupts
+  (atomically/no-gc-interrupts
    (unless (or (custodian-shut-down? limit-cust)
                (custodian-shut-down? stop-cust))
      (set-custodian-memory-limits! limit-cust
@@ -434,7 +443,7 @@
 ;; Ensures that custodians with memory limits and children are not
 ;; treated as inaccessible and merged; use only while holding the
 ;; memory-limit lock and with interrupts disabled (or be in a GC)
-(define custodians-with-limits (make-hasheq))
+(define custodians-with-limits (host:unsafe-make-hasheq))
 
 ;; In atomic mode
 (define (check-limit-custodian limit-cust)
@@ -514,7 +523,7 @@
                 ;; A place may have future pthreads, and each pthread may
                 ;; be running a future that becomes to a particular custodian;
                 ;; build up a custodian-to-pthread mapping in this table:
-                (define custodian-future-threads (make-hasheq))
+                (define custodian-future-threads (host:unsafe-make-hasheq))
                 (future-scheduler-add-thread-custodian-mapping! (place-future-scheduler initial-place)
                                                                 custodian-future-threads)
                 ;; Get roots, which are threads and custodians, for all distinct accounting domains
@@ -634,7 +643,7 @@
          (cond
            [(eq? c initial-place-root-custodian) all]
            [else
-            (when (atomically/no-interrupts
+            (when (atomically/no-gc-interrupts
                    (host:mutex-acquire memory-limit-lock)
                    (cond
                      [(zero? compute-memory-sizes)

@@ -30,8 +30,9 @@ it terminates and does not involve synchronization.
 @defproc[(end-atomic) void?]
 )]{
 
-Disables/re-enables context switches at the level of Racket threads,
-and also suspends/resumes delivery of break exceptions (independent of the
+Disables/re-enables concurrency with any Racket
+@tech[#:doc reference.scrbl]{coroutine threads} in the same
+place, and also suspends/resumes delivery of break exceptions (independent of the
 result of @racket[break-enabled]). Calls to @racket[start-atomic] and
 @racket[end-atomic] can be nested.
 
@@ -64,10 +65,13 @@ safely interrupted by a non-atomic exception construction.
 Unlike @racket[call-as-atomic], @racket[start-atomic] and
 @racket[end-atomic] can be called from any OS thread as supported by
 @racketmodname[ffi/unsafe/os-thread], although the calls have no
-effect in that case. Using @racket[start-atomic] in a @tech[#:doc
+effect outside of Racket threads. Using @racket[start-atomic] in a @tech[#:doc
 reference.scrbl]{future} that is not running in a Racket thread
 blocks the future until it is resumed by @racket[touch] in a Racket
-thread.
+thread. Using @racket[start-atomic] in a tech[#:doc
+reference.scrbl]{parallel thread} synchronizes with all
+@tech[#:doc reference.scrbl]{coroutine threads} in the same
+@tech[#:doc reference.scrbl]{place}, but not other parallel threads or futures.
 
 See also the caveat that @elemref["atomic-unsafe"]{atomic mode is unsafe}.}
 
@@ -126,32 +130,35 @@ Returns @racket[#t] when in @tech{atomic mode} or @tech{uninterruptible mode} (w
 @defproc[(end-uninterruptible) void?]
 )]{
 
-Like @racket[start-atomic] and @racket[end-atomic], but with the
-intent that the continuation after @racket[start-uninterruptible] and
+Like @racket[start-atomic] and @racket[end-atomic], but
+the continuation after @racket[start-uninterruptible] and
 before @racket[end-uninterruptible] may run concurrently with other Racket
-threads, but in @deftech{uninterruptible mode}: it should reach
+threads (both @tech[#:doc reference.scrbl]{coroutine threads}
+and @tech[#:doc reference.scrbl]{parallel threads}),
+but in @deftech{uninterruptible mode}: the continuation will reach
 @racket[end-uninterruptible] without interruption from other threads.
 Uninterruptable mode is unsafe, just like
 @elemref["atomic-unsafe"]{atomic mode is unsafe}.
 
-Uninterruptable mode is currently implemented using
-@racket[start-atomic] and @racket[end-atomic], except when used within
-a @tech[#:doc reference.scrbl]{future}. Unlike @racket[start-atomic],
+Unlike @racket[start-atomic],
 @racket[start-uninterruptible] in the @CS[] implementation does not block a future that is
-running concurrently with Racket threads. At the same time, it is the
-responsibility of such a future to not perform any action that
-blocks the future, otherwise the ``uninterruptible'' sequence is
-interrupted, and it will be completed only when a Racket thread
-@racket[touch]es the future (at which point it will run uninterrupted
-in the Racket thread until @racket[end-uninterruptible]).
+running concurrently with Racket threads, and it does not cause
+a parallel thread to synchronize with coroutine threads. At the same time,
+such a future or parallel thread must not perform any action that
+blocks the future or requires synchronization with coroutine threads;
+successful use of uninterruptible mode in a future
+or parallel thread thus requires knowledge of Racket's internals.
 
 Calls to @racket[start-uninterruptible] and
 @racket[end-uninterruptible] can be nested, and they can be mutually
-nested with calls to @racket[start-atomic] and @racket[end-atomic]. A
-call to @racket[start-atomic] nested in uninterruptible mode will
-still block a future that is running concurrently to Racket threads.
+nested with calls to @racket[start-atomic] and @racket[end-atomic]
+in a coroutine thread. Since @racket[start-atomic] is blocking for futures
+and requires synchronization in a parallel thread, it cannot be used
+in uninterruptible mode in a future or parallel thread.
 
-@history[#:added "8.17.0.7"]}
+@history[#:added "8.17.0.7"
+         #:changed "8.18.0.2" @elem{Constrain the use of uninterruptable mode in
+                                    futures and parallel threads.}]}
 
 
 @defproc[(call-as-uninterruptible [thunk (-> any)]) any]{
