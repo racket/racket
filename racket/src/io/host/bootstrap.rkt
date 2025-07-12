@@ -96,7 +96,16 @@
                          'immobile-cell-ref (lambda (ib) (ptr-ref ib _racket))
                          'immobile-cell->address (lambda (b) b)
                          'address->immobile-cell (lambda (b) b)
-                         'set-fs-change-properties! void))
+                         'set-fs-change-properties! void
+                         'make-mutex (lambda () 'mutex)
+                         'make-condition (lambda () 'cond)
+                         'mutex-acquire (lambda (m) (start-atomic))
+                         'mutex-release (lambda (m) (end-atomic))
+                         'condition-wait (lambda (m c)
+                                           (semaphore-post m)
+                                           (semaphore-wait c)
+                                           (semaphore-wait m))
+                         'condition-signal semaphore-post))
 
 (primitive-table '#%thread
                  (hasheq 'thread thread
@@ -129,14 +138,17 @@
                          'poll-ctx-sched-info poll-ctx-sched-info
                          'set-poll-ctx-incomplete?! void
                          'schedule-info-did-work! void
+                         'delayed-poll (lambda (thunk) (thunk))
                          'control-state-evt control-state-evt
                          'async-evt async-evt
                          'schedule-info-current-exts schedule-info-current-exts
                          'current-sandman current-sandman
                          'unsafe-start-atomic start-atomic
                          'unsafe-end-atomic end-atomic
-                         'start-atomic/no-interrupts start-atomic
-                         'end-atomic/no-interrupts end-atomic
+                         'start-atomic/no-gc-interrupts start-atomic
+                         'end-atomic/no-gc-interrupts end-atomic
+                         'unsafe-start-uninterruptible start-atomic ; because mutex & condition are implemented as semaphores
+                         'unsafe-end-uninterruptible end-atomic
                          'in-atomic-mode? in-atomic-mode?
                          'current-custodian current-custodian
                          'custodian-shut-down? (lambda (c)

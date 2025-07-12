@@ -6,6 +6,7 @@
          "port.rkt"
          "count.rkt"
          "output-port.rkt"
+         "lock.rkt"
          "parameter.rkt"
          "write.rkt"
          "check.rkt")
@@ -30,7 +31,7 @@
 
 ;; `out` must be a core output port
 (define (do-write-byte b out)
-  (start-atomic)
+  (port-lock out)
   (define buffer (core-port-buffer out))
   (define pos (direct-pos buffer))
   (cond
@@ -39,9 +40,9 @@
      (set-direct-pos! buffer (fx+ pos 1))
      (when (core-port-count out)
        (port-count-byte! out b))
-     (end-atomic)]
+     (port-unlock out)]
     [else
-     (end-atomic)
+     (port-unlock out)
      (write-some-bytes 'write-byte out (bytes b) 0 1 #:buffer-ok? #t #:copy-bstr? #f)])
   (void))
 
@@ -108,11 +109,11 @@
   (check who exact-nonnegative-integer? end-pos)
   (check-range who start-pos end-pos (bytes-length bstr) bstr)
   (let ([out (->core-output-port out)])
-    (atomically
+    (with-lock out
      (check-not-closed who out)
      (define get-write-evt (method core-output-port out get-write-evt))
      (unless get-write-evt
-       (end-atomic)
+       (port-unlock out)
        (raise-arguments-error who
                               "port does not support output events"
                               "port" out))
@@ -121,4 +122,6 @@
 (define/who (port-writes-atomic? out)
   (check who output-port? out)
   (let ([out (->core-output-port out)])
-    (and (method core-output-port out get-write-evt) #t)))
+    (and (with-lock out
+           (method core-output-port out get-write-evt))
+         #t)))

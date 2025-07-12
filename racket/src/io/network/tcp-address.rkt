@@ -17,13 +17,13 @@
   (check who (lambda (p) (or (tcp-port? p) (tcp-listener? p) (udp? p)))
          #:contract "(or/c tcp-port? tcp-listener? udp?)"
          p)
-  (start-atomic)
+  (start-rktio)
   (define-values (local-address peer-address)
     (cond
       [(tcp-listener? p)
        (cond
          [(tcp-listener-closed? p)
-          (end-atomic)
+          (end-rktio)
           (raise-arguments-error who
                                  "listener is closed"
                                  "listener" p)]
@@ -37,7 +37,7 @@
             (check-udp-closed who p)
             (udp-s p)]
            [(port-closed? p)
-            (end-atomic)
+            (end-rktio)
             (raise-arguments-error who
                                    "port is closed"
                                    "port" p)]
@@ -49,7 +49,7 @@
   (define peer-address-bytes (and peer-address
                                   (not (rktio-error? peer-address))
                                   (rktio_to_bytes_list peer-address 2)))
-  (end-atomic)
+  (end-rktio)
 
   (when (rktio-error? local-address)
     (raise-network-error who local-address "could not get address"))

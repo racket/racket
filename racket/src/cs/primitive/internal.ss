@@ -40,6 +40,13 @@
   [make-pthread-parameter (known-procedure 2)]
   [engine-block (known-procedure 1)]
 
+  [make-mutex (known-procedure 1)]
+  [make-condition (known-procedure 1)]
+  [mutex-acquire (known-procedure 2)]
+  [mutex-release (known-procedure 2)]
+  [condition-wait (known-procedure 4)]
+  [condition-signal (known-procedure 2)]
+
   [ptr-ref/int8 (known-procedure 8)]
   [ptr-ref/uint8 (known-procedure 8)]
   [ptr-ref/int16 (known-procedure 8)]

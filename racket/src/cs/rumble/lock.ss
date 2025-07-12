@@ -51,20 +51,115 @@
 ;; ------------------------------------------------------------
 ;; Locks used for hash tables
 
-(define (make-lock for-kind)
-  (cond
-   [(eq? for-kind 'equal?)
-    (make-scheduler-lock)]
-   [else #f]))
+(meta-cond
+ [(not (threaded?))
+  (define (make-nonscheduler-lock) #f)
+  (define (lock-acquire lock)
+    (cond
+      [(not lock) (disable-interrupts)]
+      [else
+       (scheduler-lock-acquire lock)]))
+  (define (lock-release lock)
+    (cond
+      [(not lock) (enable-interrupts) (#%void)]
+      [else
+       (scheduler-lock-release lock)]))
+  (define (lock-acquire/a lock) (void))
+  (define (lock-release/a lock) (void))]
+ [else
+  (define transition-lock (make-mutex))
+  (define transition-cond (make-condition))
 
-(define (lock-acquire lock)
-  (cond
-   [(not lock) (disable-interrupts)]
-   [else
-    (scheduler-lock-acquire lock)]))
+  ;; A nonscheduler lock is for `eq?`- and `eqv?`-based hash tables,
+  ;; there the operation is atomic from the Racket perspective, and
+  ;; it's worth using a CAS to make the uncontended case fast.
 
-(define (lock-release lock)
-  (cond
-   [(not lock) (enable-interrupts) (#%void)]
-   [else
-    (scheduler-lock-release lock)]))
+  ;; box of
+  ;;  #f - unlocked, uncontended
+  ;;  #t - locked, uncontended
+  ;;  <mutex> - contended and managed by mutex
+  ;;  <void> - locked, contended, switches to <mutex> on release
+
+  (define (make-nonscheduler-lock)
+    (box #f))
+
+  (define (lock-acquire lock)
+    (cond
+      [(not lock) (disable-interrupts)]
+      [(box? lock)
+       ;; need to block engine swaps to provide atomic behavior,
+       ;; and the engine-specific opeartion is cheaper than disabling all interrupts
+       (start-engine-uninterrupted 'lock-acquire)
+       (cond
+         [(box-cas! lock #f #t) (memory-order-acquire)]
+         [else (#%$app/no-inline lock-acquire/slow lock)])]
+      [else
+       (scheduler-lock-acquire lock)]))
+
+  (define (lock-acquire/slow lock)
+    (let loop ()
+      (cond
+        [(box-cas! lock #f #t)
+         ;; uncontended lock
+         (memory-order-acquire)]
+        [else
+         (let ([v (unbox lock)])
+           (cond
+             [(mutex? v)
+              ;; contended lock that has switched to using a mutex
+              (mutex-acquire v)]
+             [(or (eq? v #t)
+                  (void? v))
+              ;; contended lock that needs to switch to a mutex, maybe in process already
+              (mutex-acquire transition-lock)
+              (cond
+                [(box-cas! lock v (void))
+                 (condition-wait transition-cond transition-lock)
+                 (mutex-release transition-lock)]
+                [else
+                 (mutex-release transition-lock)])
+              (loop)]
+             [else
+              (loop)]))])))
+
+  (define (lock-release lock)
+    (cond
+      [(not lock) (enable-interrupts) (#%void)]
+      [(box? lock)
+       (memory-order-release)
+       (cond
+         [(box-cas! lock #t #f) (void)]
+         [else
+          (#%$app/no-inline lock-release-slow lock)])
+       (end-engine-uninterrupted 'lock-release)
+       (void)]
+      [else
+       (scheduler-lock-release lock)]))
+
+  (define (lock-release-slow lock)
+    (let loop ()
+      (cond
+        [(box-cas! lock #t #f)
+         ;; release uncontended lock
+         (void)]
+        [else
+         (let ([v (unbox lock)])
+           (cond
+             [(mutex? v)
+              ;; contended lock that has switched to using a mutex
+              (mutex-release v)]
+             [(void? v)
+              ;; contended lock that needs to switch to a mutex
+              (let ([m (make-mutex)])
+                (cond
+                  [(box-cas! lock (void) m)
+                   (mutex-acquire transition-lock)
+                   (condition-broadcast transition-cond)
+                   (mutex-release transition-lock)]
+                  [else
+                   (loop)]))]
+             [else
+              (loop)]))])))
+
+  (define (lock-acquire/a lock) (lock-acquire lock))
+  (define (lock-release/a lock) (lock-release lock))])

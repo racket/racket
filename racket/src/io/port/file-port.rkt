@@ -33,11 +33,12 @@
   (define host-path (->host path who '(read)))
   (start-atomic)
   (check-current-custodian who)
-  (define fd (rktio_open rktio
-                         host-path
-                         (+ RKTIO_OPEN_READ
-                            (mode->flags mode1)
-                            (mode->flags mode2))))
+  (define fd (rktioly
+              (rktio_open rktio
+                          host-path
+                          (+ RKTIO_OPEN_READ
+                             (mode->flags mode1)
+                             (mode->flags mode2)))))
   (when (rktio-error? fd)
     (end-atomic)
     (when (or (eq? mode1 'module) (eq? mode2 'module))
@@ -89,6 +90,7 @@
        (mode->flags mode1)
        (mode->flags mode2)
        (if replace-perms? RKTIO_OPEN_REPLACE_PERMS 0)))
+  (start-rktio)
   (define fd0
     (rktio_open_with_create_permissions rktio host-path flags perms))
   (define fd
@@ -101,6 +103,7 @@
                                     host-path
                                     (current-force-delete-permissions)))
        (when (rktio-error? r)
+         (end-rktio)
          (end-atomic)
          (raise-filesystem-error who
                                  r
@@ -110,6 +113,7 @@
                                          (host-> host-path))))
        (rktio_open_with_create_permissions rktio host-path flags perms)]
       [else fd0]))
+  (end-rktio)
   (when (rktio-error? fd)
     (end-atomic)
     (raise-filesystem-error who

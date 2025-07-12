@@ -21,6 +21,7 @@
 (load-relative "struct.rktl")
 (load-relative "struct-derived.rktl")
 (load-relative "thread.rktl")
+(load-relative "parallel.rktl")
 (load-relative "logger.rktl")
 (load-relative "sync.rktl")
 (load-relative "place.rktl")

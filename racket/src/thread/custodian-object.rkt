@@ -1,5 +1,7 @@
 #lang racket/base
-(require "place-local.rkt")
+(require "place-local.rkt"
+         (only-in "host.rkt"
+                  host:unsafe-make-weak-hasheq))
 
 (provide (struct-out custodian)
          create-custodian
@@ -27,7 +29,7 @@
   #:authentic)
 
 (define (create-custodian parent)
-  (custodian (make-weak-hasheq)
+  (custodian (host:unsafe-make-weak-hasheq)
              (box #f) ; shut-down?-box
              #f     ; shutdown semaphore
              #f     ; need shutdown?

@@ -6,9 +6,11 @@
          "port.rkt"
          "input-port.rkt"
          "output-port.rkt"
+         "lock.rkt"
          "bytes-input.rkt"
          "count.rkt"
-         "commit-port.rkt")
+         "commit-port.rkt"
+         "progress-evt.rkt")
 
 (provide open-input-bytes
          open-output-bytes
@@ -29,7 +31,7 @@
   [alt-pos #f]
 
   #:private
-  ;; in atomic mode
+  ;; with lock held
   [in-buffer-pos
    (lambda ()
      (define b buffer)
@@ -38,6 +40,7 @@
          pos))]
 
   #:override
+  ;; with lock held
   [close
    (lambda ()
      (set! commit-manager #f) ; to indicate closed
@@ -49,6 +52,7 @@
        (set! offset pos)
        (set-direct-end! b pos)
        (set-direct-bstr! b #f)))]
+  ;; with lock held
   [file-position
    (case-lambda
      [() (or alt-pos (in-buffer-pos))]
@@ -64,11 +68,12 @@
       (set! alt-pos (and (not (eof-object? given-pos))
                          (given-pos . > . new-pos)
                          given-pos))])]
-
+  ;; with lock held
   [prepare-change
    (lambda ()
      (pause-waiting-commit))]
 
+  ;; with lock held
   [read-in
    (lambda (dest-bstr start end copy?)
      (define b buffer)
@@ -87,6 +92,8 @@
         amt]
        [else eof]))]
 
+  ;; with lock held
+  ;; and in atomic mode if progress-evt
   [peek-in
    (lambda (dest-bstr start end skip progress-evt copy?)
      (define b buffer)
@@ -106,10 +113,11 @@
    (lambda (work-done!)
      ;; byte or EOF is always ready:
      #t)]
-  
+
+  ;;; lock *not* held
   [get-progress-evt
    (lambda ()
-     (atomically
+     (with-lock this
       (unless progress-sema
         ;; set port to slow mode:
         (define b buffer)
@@ -119,26 +127,30 @@
           (set! offset i)
           (set-direct-bstr! b #f)
           (set-direct-pos! b (direct-end b))))
-      (make-progress-evt)))]
+       (make-progress-evt)))]
 
+  ;; with lock held, and in atomic mode since we get progress-evt
   [commit
    (lambda (amt progress-evt ext-evt finish)
      (wait-commit
       progress-evt ext-evt
-      ;; in atomic mode, maybe in a different thread:
+      ;; in atomic mode, maybe in a different thread;
+      ;; since we have progress-evt, then the lock must
+      ;; requrire atomic mode
       (lambda ()
-        (define b buffer)
-        (define len (direct-end b))
-        (define i (in-buffer-pos))
-        (let ([amt (min amt (- len i))])
-          (define dest-bstr (make-bytes amt))
-          (bytes-copy! dest-bstr 0 bstr i (+ i amt))
-          ;; Keep/resume fast mode
-          (set-direct-pos! b (fx+ i amt))
-          (set-direct-bstr! b bstr)
-          (set! offset 0)
-          (progress!)
-          (finish dest-bstr)))))])
+        (with-lock this
+          (define b buffer)
+          (define len (direct-end b))
+          (define i (in-buffer-pos))
+          (let ([amt (min amt (- len i))])
+            (define dest-bstr (make-bytes amt))
+            (bytes-copy! dest-bstr 0 bstr i (+ i amt))
+            ;; Keep/resume fast mode
+            (set-direct-pos! b (fx+ i amt))
+            (set-direct-bstr! b bstr)
+            (set! offset 0)
+            (progress!)
+            (finish dest-bstr))))))])
 
 (define (make-input-bytes bstr name)
   (finish-port/count
@@ -157,28 +169,28 @@
   [max-pos 0]
 
   #:public
+  ;; with lock held
   [get-length (lambda ()
-                (start-atomic)
                 (slow-mode!)
-                (end-atomic)
                 max-pos)]
+  ;; with lock held
   [get-bytes (lambda (dest-bstr start-pos discard?)
-               (start-atomic)
                (slow-mode!)
                (bytes-copy! dest-bstr 0 bstr start-pos (fx+ start-pos (bytes-length dest-bstr)))
                (when discard?
                  (set! bstr #"")
                  (set! pos 0)
-                 (set! max-pos 0))
-               (end-atomic))]
+                 (set! max-pos 0)))]
 
   #:private
+  ;; with lock held
   [enlarge!
    (lambda (len)
      (define new-bstr (make-bytes (fx* 2 len)))
      (bytes-copy! new-bstr 0 bstr 0 pos)
      (set! bstr new-bstr))]
 
+  ;; with lock held
   [slow-mode!
    (lambda ()
      (define b buffer)
@@ -190,6 +202,7 @@
        (set! offset s)
        (set! max-pos (fxmax s max-pos))))]
 
+  ;; with lock held
   [fast-mode!
    (lambda ()
      (define b buffer)
@@ -199,8 +212,9 @@
      (set! offset 0))]
 
   #:override
+  ;; with lock held
   [write-out
-   (lambda (src-bstr src-start src-end nonblock? enable-break? copy?)
+   (lambda (src-bstr src-start src-end nonblock? enable-break? copy? no-escape?)
      (slow-mode!)
      (define i pos)
      (define amt (min (fx- src-end src-start) 4096))
@@ -212,9 +226,11 @@
      (set! max-pos (fxmax pos max-pos))
      (fast-mode!)
      amt)]
+  ;; with lock held
   [get-write-evt
    (get-write-evt-via-write-out (lambda (out v bstr start)
                                   (port-count! out v bstr start)))]
+  ;; with lock held
   [file-position
    (case-lambda
      [()
@@ -229,7 +245,7 @@
         [(new-pos . > . len)
          (when (new-pos . >= . (expt 2 48))
            ;; implausibly large
-           (end-atomic)
+           (port-unlock this)
            (raise-arguments-error 'file-position
                                   "new position is too large"
                                   "port" this
@@ -256,19 +272,19 @@
   (check who exact-nonnegative-integer? start-pos)
   (check who exact-nonnegative-integer? #:or-false end-pos)
   (let ([o (->core-output-port o)])
-    (start-atomic)
+    (port-lock o)
     (define len (send bytes-output-port o get-length))
     (when (start-pos . > . len)
-      (end-atomic)
+      (port-unlock o)
       (raise-range-error who "port content" "starting " start-pos o 0 len #f))
     (when end-pos
       (unless (<= start-pos end-pos len)
-        (end-atomic)
+        (port-unlock o)
         (raise-range-error who "port content" "ending " end-pos o 0 len start-pos)))
     (define amt (- (min len (or end-pos len)) start-pos))
     (define bstr (make-bytes amt))
     (send bytes-output-port o get-bytes bstr start-pos reset?)
-    (end-atomic)
+    (port-unlock o)
     bstr))
 
 ;; ----------------------------------------

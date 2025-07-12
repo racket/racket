@@ -113,12 +113,12 @@ We should also test deep continuations.
                                 (hash-ref ht 'ok))))])
     (touch f)
     (let ([log (raw-log-output)])
-      ;; Racket CS syncs on hash-ref, traditional Racket blocks
+      ;; Racket CS implements `hash-ref` atomically, Racket BC blocks
       (case (system-type 'vm)
         [(chez-scheme)
-         (check-equal? 2 (length (get-sync-blocks log)))
-         (check-equal? 1 (length (get-sync-blocks-on 'hash-set! log)))
-         (check-equal? 1 (length (get-sync-blocks-on 'hash-ref log)))]
+         (check-equal? 0 (length (get-sync-blocks log)))
+         (check-equal? 0 (length (get-sync-blocks-on 'hash-set! log)))
+         (check-equal? 0 (length (get-sync-blocks-on 'hash-ref log)))]
         [else
          (check-equal? 2 (length (get-blocks log)))
          (check-equal? 1 (length (get-blocks-on 'hash-set! log)))
@@ -543,7 +543,7 @@ We should also test deep continuations.
     (check-equal? #t (fsemaphore-try-wait? m1)) 
     (check-equal? #f (fsemaphore-try-wait? m2)))
   
-  ;Test for errors when passing bad arguments 
+  ;Test for errors when passing bad arguments
   (check-exn exn:fail:contract? (λ () (make-fsemaphore -1)))
   (check-exn exn:fail:contract? (λ () (make-fsemaphore (cons "a" "b"))))
   (check-exn exn:fail:contract? (λ () (fsemaphore-count (cons "foo" "goo"))))
@@ -735,8 +735,8 @@ We should also test deep continuations.
       (if (even? i)
           (func void)
           (func (parameterize ([eval-jit-enabled #f])
-                    (eval #'(lambda () (void)))))))))
-  
+                  (eval #'(lambda () (void)))))))))
+
   ;; A future shouldn't use up a background thread if its
   ;; starting thread's custodian is shut down:
   (let ()
@@ -748,7 +748,7 @@ We should also test deep continuations.
                                         (let loop () (loop)))))))))
     (sleep 0.1)
     (custodian-shutdown-all c))
-  
+
   ;; If a future is suspended via a custodian, it should still
   ;; work to touch it:
   (let ()
@@ -764,8 +764,7 @@ We should also test deep continuations.
     (custodian-shutdown-all c)
     (fsemaphore-post s)
     (check-equal? 10 (touch f)))
-  
-  
+
   ;; Start a future in a custodian-suspended future:
   (let ()
     (define f #f)

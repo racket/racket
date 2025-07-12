@@ -3,19 +3,22 @@
          "../error/message.rkt"
          "../error/value-string.rkt"
          "port.rkt"
+         "lock.rkt"
          "input-port.rkt"
          "output-port.rkt"
          "close.rkt")
 
 (provide check-not-closed)
 
-;; in atomic mode
+;; with p lock held
 ;; Atomic mode is required on entry because an operation
 ;; that is prefixed when a port-closed check normally needs
 ;; to happen atomically with respect to the check.
-(define (check-not-closed who cp)
+(define (check-not-closed who cp  #:unlock [unlock #f])
   (when (core-port-closed? cp)
-    (end-atomic)
+    (if unlock
+        (unlock)
+        (port-unlock cp))
     (define input? (core-input-port? cp))
     (raise
      (exn:fail

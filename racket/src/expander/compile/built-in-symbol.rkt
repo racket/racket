@@ -81,6 +81,12 @@
                call-with-module-prompt
                make-pthread-parameter
                engine-block
+               make-mutex
+               make-condition
+               mutex-acquire
+               mutex-release
+               condition-wait
+               condition-signal
                make-record-type-descriptor
                make-record-type-descriptor*
                make-record-constructor-descriptor

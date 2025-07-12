@@ -71,6 +71,10 @@ Thread and signal conventions:
    called concurrently with anything else. Notably,
    `rktio_signal_received_at` does not take a `rktio_t`.
 
+ - A function declared as `RKTIO_EXTERN_ATOMIC` or
+   `RKTIO_EXTERN_ATOMIC_NOERR` can be called concurrently with
+   anything else, even though it has a `rktio_t` argument.
+
  - SIGCHLD may be enabled, blocked, and/or handled by the `rktio`
    library.
 
@@ -90,6 +94,9 @@ Thread and signal conventions:
 #define RKTIO_EXTERN_ERR(n) RKTIO_EXTERN
 #define RKTIO_EXTERN_NOERR  RKTIO_EXTERN
 #define RKTIO_EXTERN_STEP   RKTIO_EXTERN
+
+#define RKTIO_EXTERN_ATOMIC        RKTIO_EXTERN
+#define RKTIO_EXTERN_ATOMIC_NOERR  RKTIO_EXTERN
 
 #define RKTIO_NULLABLE      /* empty; pointer type can be NULL */
 #define RKTIO_BLOCKING      /* empty; function blocks indefinitely */
@@ -412,7 +419,7 @@ RKTIO_EXTERN rktio_addrinfo_lookup_t *rktio_start_addrinfo_lookup(rktio_t *rktio
                                                                   int family, rktio_bool_t passive, rktio_bool_t tcp);
 /* The `family` argument should be one of the following: */
 #define RKTIO_FAMILY_ANY (-1)
-RKTIO_EXTERN_NOERR int rktio_get_ipv4_family(rktio_t *rktio);
+RKTIO_EXTERN_ATOMIC_NOERR int rktio_get_ipv4_family(rktio_t *rktio);
 
 RKTIO_EXTERN_ERR(RKTIO_POLL_ERROR)
 rktio_tri_t rktio_poll_addrinfo_lookup_ready(rktio_t *rktio, rktio_addrinfo_lookup_t *lookup);
@@ -564,10 +571,10 @@ RKTIO_EXTERN char **rktio_listener_address(rktio_t *rktio, rktio_listener_t *lnr
 /*************************************************/
 /* Environment variables                         */
 
-RKTIO_EXTERN rktio_bool_t rktio_is_ok_envvar_name(rktio_t *rktio, rktio_const_string_t name);
+RKTIO_EXTERN_ATOMIC rktio_bool_t rktio_is_ok_envvar_name(rktio_t *rktio, rktio_const_string_t name);
 /* Checks whether a string is valid as a new (e.g., no "="). */
 
-RKTIO_EXTERN rktio_bool_t rktio_are_envvar_names_case_insensitive(rktio_t *rktio);
+RKTIO_EXTERN_ATOMIC rktio_bool_t rktio_are_envvar_names_case_insensitive(rktio_t *rktio);
 /* Checks whether environment variables are case-folded by the OS.
    That doesn't mean that clients need to case-fold names, but clients
    may want to imitate the OS. */
@@ -634,7 +641,7 @@ RKTIO_EXTERN rktio_process_result_t *rktio_process(rktio_t *rktio,
 #define RKTIO_PROCESS_NO_CLOSE_FDS              (1<<4)
 #define RKTIO_PROCESS_NO_INHERIT_FDS            (1<<5)
 
-RKTIO_EXTERN_NOERR int rktio_process_allowed_flags(rktio_t *rktio);
+RKTIO_EXTERN_ATOMIC_NOERR int rktio_process_allowed_flags(rktio_t *rktio);
 /* Reports the flags that are accepted by `rktio_process` on the
    current OS. */
 
@@ -673,7 +680,7 @@ RKTIO_EXTERN void rktio_reap_processes(rktio_t *rktio);
 /*************************************************/
 /* Filesystem-change events                      */
 
-RKTIO_EXTERN_NOERR int rktio_fs_change_properties(rktio_t *rktio);
+RKTIO_EXTERN_ATOMIC_NOERR int rktio_fs_change_properties(rktio_t *rktio);
 /* Reports properties of the filesystem-change event implementation: */
 #define RKTIO_FS_CHANGE_SUPPORTED   (1 << 0)
 #define RKTIO_FS_CHANGE_SCALABLE    (1 << 1)
@@ -979,7 +986,7 @@ RKTIO_EXTERN_STEP rktio_file_copy_t *rktio_copy_file_start_permissions(rktio_t *
    by `umask` on file create (whether supplied or taken from the `src`
    file) or because the file already exists. */
 
-RKTIO_EXTERN rktio_bool_t rktio_copy_file_is_done(rktio_t *rktio, rktio_file_copy_t *fc);
+RKTIO_EXTERN_ATOMIC rktio_bool_t rktio_copy_file_is_done(rktio_t *rktio, rktio_file_copy_t *fc);
 RKTIO_EXTERN_STEP rktio_ok_t rktio_copy_file_step(rktio_t *rktio, rktio_file_copy_t *fc);
 /* As long as the copy isn't done, call `rktio_copy_file_step` to make
    a little progress. Use `rktio_copy_file_finish_permissions`
@@ -1195,7 +1202,7 @@ enum {
 /*************************************************/
 /* Encoding conversion                           */
 
-RKTIO_EXTERN_NOERR int rktio_convert_properties(rktio_t *rktio);
+RKTIO_EXTERN_ATOMIC_NOERR int rktio_convert_properties(rktio_t *rktio);
 /* Returns a combination of the following flags. */
 
 #define RKTIO_CONVERTER_SUPPORTED   (1 << 0)

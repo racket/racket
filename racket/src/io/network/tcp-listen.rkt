@@ -16,6 +16,7 @@
          tcp-listener-lnr
          tcp-listener-closed?)
 
+;; a listener is locked by atomic mode
 (struct tcp-listener (lnr
                       closed ; boxed boolean
                       custodian-reference)
@@ -35,21 +36,21 @@
                                         (format "\n  port number: ~a" port-no))))
   (security-guard-check-network who hostname port-no 'server)
   (let loop ([family RKTIO_FAMILY_ANY])
-    ((atomically
+    ((atomically ; because `call-with-resolved-address` and `unsafe-custodian-register`
       ;; Result is a thunk that might call `loop`
       ;; or might return a listener
       (call-with-resolved-address
        hostname port-no
        #:family family
        #:passive? #t
-       ;; in atomic mode
+       ;; in atomic mode, *not* rktio mode
        (lambda (addr)
          (cond
            [(rktio-error? addr)
             (raise-listen-error "address-resolution error" addr)]
            [else
-            (check-current-custodian who)
-            (define lnr (rktio_listen rktio addr (min max-allow-wait 10000) reuse?))
+            (check-current-custodian who #:unlock end-rktio+atomic)
+            (define lnr (rktioly (rktio_listen rktio addr (min max-allow-wait 10000) reuse?)))
             (cond
               [(rktio-error? lnr)
                (cond

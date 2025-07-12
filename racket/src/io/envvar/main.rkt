@@ -55,13 +55,13 @@
   (define ht (environment-variables-ht e))
   (cond
     [(not ht)
-     (start-atomic)
+     (start-rktio)
      (define v (rktio_getenv rktio k))
      (define s (and (not (rktio-error? v))
                     (begin0
                       (rktio_to_bytes v)
                       (rktio_free v))))
-     (end-atomic)
+     (end-rktio)
      s]
     [else
      (cdr (hash-ref ht (normalize-key k) '(#f . #f)))]))
@@ -79,7 +79,7 @@
   (define ht (environment-variables-ht e))
   (cond
     [(not ht)
-     (define r (rktio_setenv rktio k v))
+     (define r (rktioly (rktio_setenv rktio k v)))
      (when (rktio-error? r)
        (cond
          [(eq? fail none)
@@ -97,7 +97,7 @@
   (cond
     [(not ht)
      ;; Make a copy of current OS-level environment variables
-     (start-atomic)
+     (start-rktio)
      (define ev (rktio_envvars rktio))
      (define ht
        (cond
@@ -119,7 +119,7 @@
                   (bytes->immutable-bytes (rktio_to_bytes v))
                   (rktio_free v)))))
             (rktio_envvars_free rktio ev))]))
-     (end-atomic)
+     (end-rktio)
      (environment-variables ht)]
     [else
      ;; Copy wrapper around immutable `ht`:

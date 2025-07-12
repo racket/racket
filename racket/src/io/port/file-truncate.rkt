@@ -4,6 +4,7 @@
          "check.rkt"
          "port.rkt"
          "output-port.rkt"
+         "lock.rkt"
          "file-stream.rkt")
 
 (provide prop:file-truncate
@@ -17,7 +18,7 @@
                (file-stream-port? p))
     (raise-argument-error who "(and/c output-port? file-stream-port?)" p))
   (check 'file-truncate exact-nonnegative-integer? pos)
-  (atomically
-   (check-not-closed who p)
-   (let ([p (->core-output-port p)])
-     ((file-truncate-ref p) p pos))))
+  (with-lock p
+    (check-not-closed who p)
+    (let ([p (->core-output-port p)])
+      ((file-truncate-ref p) p pos))))

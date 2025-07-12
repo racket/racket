@@ -7,6 +7,11 @@
 
 (Section 'subprocess)
 
+(let ()
+  (local-require ffi/unsafe/atomic)
+  (when (in-atomic-mode?)
+    (error "oops0\n")))
+
 (define self
   (parameterize ([current-directory (find-system-path 'orig-dir)])
     (find-executable-path (find-system-path 'exec-file) #f)))
@@ -800,5 +805,9 @@
 
 (for ([f (list tmpfile tmpfile2)] #:when (file-exists? f)) (delete-file f))
 
+(let ()
+  (local-require ffi/unsafe/atomic)
+  (when (in-atomic-mode?)
+    (error "oops1\n")))
 
 (report-errs)

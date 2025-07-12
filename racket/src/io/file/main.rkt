@@ -48,7 +48,8 @@
 
 (define/who (directory-exists? p)
   (check who path-string? p)
-  (rktio_directory_exists rktio (->host p who '(exists))))
+  (define host-path (->host p who '(exists)))
+  (rktioly (rktio_directory_exists rktio host-path)))
 
 (define/who (file-exists? p)
   (check who path-string? p)
@@ -58,11 +59,13 @@
           (special-filename? host-path #:immediate? #f))
      #t]
     [else
-     (rktio_file_exists rktio host-path)]))
+     (rktioly
+      (rktio_file_exists rktio host-path))]))
 
 (define/who (link-exists? p)
   (check who path-string? p)
-  (rktio_link_exists rktio (->host p who '(exists))))
+  (define host-path (->host p who '(exists)))
+  (rktioly (rktio_link_exists rktio host-path)))
 
 (define/who (file-or-directory-type p [must-exist? #f])
   (check who path-string? p)
@@ -72,7 +75,7 @@
           (special-filename? host-path #:immediate? #f))
      'file]
     [else
-     (define r (rktio_file_type rktio host-path))
+     (define r (rktioly (rktio_file_type rktio host-path)))
      (cond
        [(eqv? r RKTIO_FILE_TYPE_FILE) 'file]
        [(eqv? r RKTIO_FILE_TYPE_DIRECTORY) 'directory]
@@ -91,7 +94,7 @@
   (check who path-string? p)
   (check who permissions? #:contract permissions-desc perms)
   (define host-path (->host p who '(write)))
-  (define r (rktio_make_directory_with_permissions rktio host-path perms))
+  (define r (rktioly (rktio_make_directory_with_permissions rktio host-path perms)))
   (when (rktio-error? r)
     (raise-filesystem-error who
                             r
@@ -115,12 +118,12 @@
 		       ;; Need to avoid "." and "..", so simplify
 		       (->host (simplify-path/dl (host-> host-path/initial)) #f '())]
 		      [else host-path/initial]))
-  (atomically
+  (atomically ; because `call-with-resource`
    (call-with-resource
-    (rktio_directory_list_start rktio host-path)
-    ;; in atomic mode
-    (lambda (dl) (rktio_directory_list_stop rktio dl))
-    ;; in atomic mode
+    (rktioly (rktio_directory_list_start rktio host-path))
+    ;; in atomic mode, *not* in rktio mode
+    (lambda (dl) (rktioly (rktio_directory_list_stop rktio dl)))
+    ;; in atomic mode, *not* in rktio mode
     (lambda (dl)
       (cond
         [(rktio-error? dl)
@@ -132,32 +135,42 @@
                                           "  path: ~a")
                                          (host-> host-path)))]
         [else
-         (end-atomic)
-         (let loop ([accum null])
-           (start-atomic)
+         (start-rktio)
+         (let loop ([accum null] [len 0])
            (define fnp (rktio_directory_list_step rktio dl))
            (define fn (if (rktio-error? fnp)
                           fnp
                           (rktio_to_bytes fnp)))
            (cond
              [(rktio-error? fn)
+              (end-rktio)
               (end-atomic)
               (check-rktio-error fn "error reading directory")]
              [(equal? fn #"")
               ;; `dl` is no longer valid; need to return still in
               ;; atomic mode, so that `dl` is not destroyed again
+              (end-rktio)
               accum]
              [else
+              (define new-accum (cons (host-element-> fn) accum))
               (rktio_free fnp)
-              (end-atomic)
-              (loop (cons (host-element-> fn) accum))]))])))))
+              (cond
+                [(= len 128)
+                 (end-rktio)
+                 (end-atomic)
+                 (start-atomic)
+                 (start-rktio)
+                 (loop new-accum 0)]
+                [else
+                 (loop new-accum (add1 len))])]))])))))
 
 (define/who (delete-file p)
   (check who path-string? p)
   (define host-path (->host p who '(delete)))
-  (define r (rktio_delete_file rktio
-                               host-path
-                               (current-force-delete-permissions)))
+  (define force-perms (current-force-delete-permissions))
+  (define r (rktioly (rktio_delete_file rktio
+                                        host-path
+                                        force-perms)))
   (when (rktio-error? r)
     (raise-filesystem-error who
                             r
@@ -169,10 +182,12 @@
 (define/who (delete-directory p)
   (check who path-string? p)
   (define host-path (->host p who '(delete)))
-  (define r (rktio_delete_directory rktio
-                                    host-path
-                                    (->host (current-directory) #f #f)
-                                    (current-force-delete-permissions)))
+  (define host-dir-path (->host (current-directory) #f #f))
+  (define force-perms (current-force-delete-permissions))
+  (define r (rktioly (rktio_delete_directory rktio
+                                             host-path
+                                             host-dir-path
+                                             force-perms)))
   (when (rktio-error? r)
     (raise-filesystem-error who
                             r
@@ -186,7 +201,7 @@
   (check who path-string? new)
   (define host-old (->host old who '(read)))
   (define host-new (->host new who '(write)))
-  (define r (rktio_rename_file rktio host-new host-old exists-ok?))
+  (define r (rktioly (rktio_rename_file rktio host-new host-old exists-ok?)))
   (when (rktio-error? r)
     (raise-filesystem-error who
                             r
@@ -222,7 +237,7 @@
                              "integer value is out-of-range"
                              "value" secs)))
   (define host-path (->host p who (if secs '(write) '(read))))
-  (start-atomic)
+  (start-rktio)
   (define r0 (if secs
                  (rktio_set_file_modify_seconds rktio host-path secs)
                  (rktio_get_file_modify_seconds rktio host-path)))
@@ -231,7 +246,7 @@
                   (rktio_timestamp_ref r0)
                   (rktio_free r0))
                 r0))
-  (end-atomic)
+  (end-rktio)
   (cond
     [(rktio-error? r)
      (if fail
@@ -257,9 +272,10 @@
          mode)
   (define host-path (->host p who (if (integer? mode) '(write) '(read))))
   (define r
-    (if (integer? mode)
-        (rktio_set_file_or_directory_permissions rktio host-path mode)
-        (rktio_get_file_or_directory_permissions rktio host-path (eq? mode 'bits))))
+    (rktioly
+     (if (integer? mode)
+         (rktio_set_file_or_directory_permissions rktio host-path mode)
+         (rktio_get_file_or_directory_permissions rktio host-path (eq? mode 'bits)))))
   (when (rktio-error? r)
     (raise-filesystem-error who
                             r
@@ -294,26 +310,26 @@
 (define/who (file-or-directory-stat p [as-link? #f])
   (check who path-string? p)
   (define host-path (->host p who '(exists)))
-  (start-atomic)
+  (start-rktio)
   (path-or-fd-stat who #:host-path host-path #:as-link? as-link?))
 
 (define/who (file-or-directory-identity p [as-link? #f])
   (check who path-string? p)
   (define host-path (->host p who '(exists)))
-  (start-atomic)
+  (start-rktio)
   (path-or-fd-identity who #:host-path host-path #:as-link? as-link?))
 
 (define/who (file-size p)
   (check who path-string? p)
   (define host-path (->host p who '(read)))
-  (start-atomic)
+  (start-rktio)
   (define r0 (rktio_file_size rktio host-path))
   (define r (if (rktio-error? r0)
                 r0
                 (begin0
                   (rktio_filesize_ref r0)
                   (rktio_free r0))))
-  (end-atomic)
+  (end-rktio)
   (cond
     [(rktio-error? r)
      (raise-filesystem-error who
@@ -336,6 +352,7 @@
   (define src-host (->host src who '(read)))
   (define dest-host (->host dest who '(write delete)))
   (define (report-error r)
+    (end-atomic)
     (raise-filesystem-error who
                             r
                             (format (string-append
@@ -345,35 +362,42 @@
                                     (copy-file-step-string r)
                                     (host-> src-host)
                                     (host-> dest-host))))
-  (start-atomic)
-  (let ([cp (rktio_copy_file_start_permissions rktio dest-host src-host exists-ok?
-                                               permissions (or permissions 0)
-                                               override-create-permissions?)])
-    (cond
-      [(rktio-error? cp)
-       (end-atomic)
-       (report-error cp)]
-      [else
-       (thread-push-kill-callback!
-        (lambda () (rktio_copy_file_stop rktio cp)))
-       (dynamic-wind
-        void
-        (lambda ()
-          (end-atomic)
-          (let loop ()
-            (cond
-              [(rktio_copy_file_is_done rktio cp)
-               (define r (rktio_copy_file_finish_permissions rktio cp))
-               (when (rktio-error? r) (report-error r))]
-              [else
-               (define r (rktio_copy_file_step rktio cp))
-               (when (rktio-error? r) (report-error r))
-               (loop)])))
-        (lambda ()
-          (start-atomic)
-          (rktio_copy_file_stop rktio cp)
-          (thread-pop-kill-callback!)
-          (end-atomic)))])))
+  (atomically ; because `call-with-resource`
+   (call-with-resource
+    (rktioly (rktio_copy_file_start_permissions rktio dest-host src-host exists-ok?
+                                                permissions (or permissions 0)
+                                                override-create-permissions?))
+    ;; in atomic mode, *not* in rktio mode
+    (lambda (cp) (rktioly (rktio_copy_file_stop rktio cp)))
+    ;; in atomic mode, *not* in rktio mode
+    (lambda (cp)
+      (cond
+        [(rktio-error? cp)
+         (report-error cp)]
+        [else
+         (start-rktio)
+         (let loop ([steps 0])
+           (cond
+             [(rktio_copy_file_is_done rktio cp)
+              (define r (rktio_copy_file_finish_permissions rktio cp))
+              (when (rktio-error? r)
+                (end-rktio)
+                (report-error r))
+              (rktio_copy_file_stop rktio cp)
+              (end-rktio)]
+             [else
+              (define r (rktio_copy_file_step rktio cp))
+              (when (rktio-error? r)
+                (end-rktio)
+                (report-error r))
+              (cond
+                [(= steps 10)
+                 (end-rktio)
+                 (end-atomic)
+                 (start-atomic)
+                 (start-rktio)
+                 (loop 0)]
+                [else (loop (add1 steps))])]))])))))
 
 (define/who (make-file-or-directory-link to path)
   (check who path-string? to)
@@ -381,7 +405,8 @@
   (define to-path (->path to))
   (define path-host (->host path who '(write)))
   (define to-host (->host/as-is to-path who (host-> path-host)))
-  (define r (rktio_make_link rktio path-host to-host (directory-path? to-path)))
+  (define dir? (directory-path? to-path))
+  (define r (rktioly (rktio_make_link rktio path-host to-host dir?)))
   (when (rktio-error? r)
     (raise-filesystem-error who
                             r
@@ -398,14 +423,14 @@
   (define p-path (->path p))
   (define host-path (->host p-path who '(exists)))
   (define host-path/no-sep (host-path->host-path-without-trailing-separator host-path))
-  (start-atomic)
+  (start-rktio)
   (define r0 (rktio_readlink rktio host-path/no-sep))
   (define r (if (rktio-error? r0)
                 r0
                 (begin0
                   (rktio_to_bytes r0)
                   (rktio_free r0))))
-  (end-atomic)
+  (end-rktio)
   (cond
     [(rktio-error? r)
      ;; Errors are not reported, but are treated like non-links
@@ -432,14 +457,14 @@
     [(and (positive? (bytes-length bstr))
           (eqv? (bytes-ref bstr 0) (char->integer #\~)))
      (define host-path (->host/as-is path who #f))
-     (start-atomic)
+     (start-rktio)
      (define r0 (rktio_expand_user_tilde rktio host-path))
      (define r (if (rktio-error? r0)
                    r0
                    (begin0
                      (rktio_to_bytes r0)
                      (rktio_free r0))))
-     (end-atomic)
+     (end-rktio)
      (when (rktio-error? r)
        (raise-filesystem-error who
                                r
@@ -452,12 +477,12 @@
 
 (define/who (filesystem-root-list)
   (security-guard-check-file who #f '(exists))
-  (start-atomic)
+  (start-rktio)
   (define r0 (rktio_filesystem_roots rktio))
   (define r (if (rktio-error? r0)
                 r0
                 (rktio_to_bytes_list r0)))
-  (end-atomic)
+  (end-rktio)
   (when (rktio-error? r)
     (raise-filesystem-error who r "cannot get roots"))
   (for/list ([p (in-list r)])

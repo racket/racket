@@ -7,6 +7,7 @@
          "port.rkt"
          "input-port.rkt"
          "output-port.rkt"
+         "lock.rkt"
          "check.rkt")
 
 (provide file-position
@@ -34,18 +35,13 @@
             (lambda (p) (or (exact-nonnegative-integer? p) (eof-object? p)))
             #:contract "(or/c exact-nonnegative-integer? eof-object?)"
             pos)
-     (when (and (number? p) (pos . >= . (expt 2 63)))
-       (raise-arguments-error who
-                              "new position is too large"
-                              "port" p
-                              "position" pos))
      (let ([cp (cond
                  [(input-port? p) (->core-input-port p)]
                  [else (->core-output-port p)])])
        (define file-position (method core-port cp file-position))
        (cond
          [(and (procedure? file-position) (procedure-arity-includes? file-position 2))
-          (atomically
+          (with-lock cp
            (check-not-closed who cp)
            (file-position cp pos))]
          [else
@@ -62,17 +58,17 @@
              [(input-port? orig-p) (->core-input-port orig-p)]
              [(output-port? orig-p) (->core-output-port orig-p)]
              [else (raise-argument-error who "port?" orig-p)])])
-    (start-atomic)
+    (port-lock p)
     (check-not-closed who p)
     (define file-position (method core-port p file-position))
     (cond
       [(or (input-port? file-position)
            (output-port? file-position))
-       (end-atomic)
+       (port-unlock p)
        (do-simple-file-position who file-position fail-k)]
       [else
        (define pos (or (and file-position
                             (file-position p))
                        (get-core-port-offset p)))
-       (end-atomic)
+       (port-unlock p)
        (or pos (fail-k))])))

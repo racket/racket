@@ -4,6 +4,7 @@
          "../host/thread.rkt"
          "../host/pthread.rkt"
          "port.rkt"
+         "lock.rkt"
          "evt.rkt")
 
 (provide prop:input-port
@@ -55,10 +56,11 @@
 
   #:public
   
-  ;; #f or (-*> void)
-  ;; Called in atomic mode
-  ;; May leave atomic mode temporarily, but on return, ensures that
-  ;; other atomic operations are ok to change the port. The main use
+  ;; #f or (-*> boolean?)
+  ;; Called with lock held.
+  ;; May leave locked mode temporarily, but the intent for that
+  ;; to happen only when the port's lock is set that it it must
+  ;; be required in atomic mode. The main use
   ;; of `prepare-change` is to pause and `port-commit-peeked`
   ;; attempts to not succeed while a potential change is in progress,
   ;; where the commit attempts can resume after atomic mode is left.
@@ -67,7 +69,7 @@
   [prepare-change #f]
 
   ;; port or (bytes start-k end-k copy? -*> (or/c integer? ...))
-  ;; Called in atomic mode.
+  ;; Called with lock held.
   ;; A port value redirects to the port. Otherwise, the function
   ;; never blocks, and can assume `(- end-k start-k)` is non-zero.
   ;; The `copy?` flag indicates that the given byte string should not
@@ -79,7 +81,7 @@
   [read-in (lambda (bstr start end copy?) eof)]
 
   ;; port or (bytes start-k end-k skip-k progress-evt copy? -*> (or/c integer? ...))
-  ;; Called in atomic mode.
+  ;; Called with lock held.
   ;; A port value redirects to the port. Otherwise, the function
   ;; never blocks, and it can assume that `(- end-k start-k)` is
   ;; non-zero. The `copy?` flag is the same as for `read-in`. The
@@ -87,7 +89,7 @@
   [peek-in (lambda (bstr start end progress-evt copy?) eof)]
 
   ;; port or ((->) -*> (or/c boolean? evt))
-  ;; Called in atomic mode.
+  ;; Called with lock held.
   ;; A port value makes sense when `peek-in` has a port value.
   ;; Otherwise, check whether a peek on one byte would succeed
   ;; without blocking and return a boolean, or return an event that
@@ -99,19 +101,20 @@
   [byte-ready (lambda (work-done!) #t)]
 
   ;; #f or (-*> evt?)
-  ;; *Not* called in atomic mode.
+  ;; *Not* called with lock held
   ;; Optional support for progress events, and may be called on a
   ;; closed port.
   [get-progress-evt #f]
 
   ;; (amt-k progress-evt? evt? (bytes? -> any) -*> boolean)
-  ;; Called in atomic mode.
+  ;; Called with lock held.
   ;; Goes with `get-progress-evt`. The final `evt?` argument is
   ;; constrained to a few kinds of events; see docs for
   ;; `port-commit-peeked` for more information. On success, a
   ;; completion function is called in atomic mode, but possibly in a
-  ;; different thread, with the committed bytes. The result is a
-  ;; boolean indicating success or failure.
+  ;; different thread, with the committed bytes. The intent is that
+  ;; commit would only be called with a valid progress evt when the
+  ;; port's lock mode is set to require atomic mode.
   [commit (lambda (amt progress-evt ext-evt finish) #f)]
 
   #:property
@@ -131,9 +134,10 @@
                                   (poller
                                    (lambda (self poll-ctx)
                                      ;; atomic mode
-                                     (define v (byte-ready i
-                                                           (lambda ()
-                                                             (schedule-info-did-work! (poll-ctx-sched-info poll-ctx)))))
+                                     (define v (with-lock i
+                                                 (byte-ready i
+                                                             (lambda ()
+                                                               (schedule-info-did-work! (poll-ctx-sched-info poll-ctx))))))
                                      (cond
                                        [(evt? v)
                                         (values #f v)]

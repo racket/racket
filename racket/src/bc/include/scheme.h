@@ -1176,6 +1176,8 @@ typedef struct Scheme_Thread {
   Scheme_Object *running_box;   /* contains pointer to thread when it's running */
   Scheme_Object *sync_box;      /* semaphore used for NACK events */
 
+  Scheme_Object *results; /* list of results, if kept */
+
   struct Scheme_Thread *gc_prep_chain;
 
   struct Scheme_Thread *nester, *nestee;

@@ -41,6 +41,7 @@
          (submod "subprocess/main.rkt" init)
          (only-in "locale/parameter.rkt"
                   sync-locale!)
+         (submod "filesystem-change-evt/main.rkt" init)
          "port/place.rkt")
 
 (provide (all-from-out "port/main.rkt")
@@ -82,6 +83,7 @@
   (init-current-ports! in-fd out-fd err-fd cust plumber)
   (subprocess-init!)
   (address-init!)
+  (rktio-filesyste-change-evt-init!)
   (sync-locale!))
 
 (define (io-place-destroy!)

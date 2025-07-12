@@ -4,6 +4,7 @@
          "../host/thread.rkt"
          "port.rkt"
          "output-port.rkt"
+         "lock.rkt"
          "parameter.rkt"
          "count.rkt")
 
@@ -31,22 +32,22 @@
          (port-loop write-out-special (cons o extra-count-os))]
         [else
          (let loop ()
-           (start-atomic)
+           (port-lock o)
            (define r (write-out-special o v (not retry?) #f))
            (let result-loop ([r r])
              (cond
                [(not r)
-                (end-atomic)
+                (port-unlock o)
                 (if retry?
                     (loop)
                     #f)]
                [(evt? r)
-                (end-atomic)
+                (port-unlock o)
                 (and retry?
                      (result-loop (sync r)))]
                [else
                 (port-count-all! o extra-count-os 1 #"x" 0)
-                (end-atomic)
+                (port-unlock o)
                 #t])))]))))
 
 (define/who (write-special v [o (current-output-port)])

@@ -19,10 +19,7 @@
          [si (floor s)]
          [get-gmt (if local? 0 1)]
          [nsecs (floor (* (- s si) 1000000000))]
-         ;; The allocation, deallocation and the conversion of the
-         ;; rktio_date_t* result is hidden in rktio_seconds_to_date*,
-         ;; therefore no atomicity is needed here.
-         [dt (rktio_seconds_to_date* rktio si nsecs get-gmt)])
+         [dt (rktioly (rktio_seconds_to_date* rktio si nsecs get-gmt))])
     (cond
       [(date*? dt)
        dt]

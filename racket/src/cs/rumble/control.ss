@@ -94,8 +94,8 @@
 ;; that an engine doesn't get swapped out (or, more generally,
 ;; asynchronous signals are handled at the Racket level) while we're
 ;; manipulating the continuation representation. A bad time for a swap
-;; is an "interrupted" region. The `begin-uninterrupted` and
-;; `end-uninterrupted` functions bracket such regions dynamically. See
+;; is an "interrupted" region. The `begin-engine-uninterrupted` and
+;; `end-engine-uninterrupted` functions bracket such regions dynamically. See
 ;; also "rumble/engine.ss" and "rumble/interrupt.ss"
 
 (define-virtual-register current-metacontinuation '())
@@ -205,6 +205,9 @@
   (let ([fp (strip-impersonator (current-future-prompt))]
         [tag (strip-impersonator tag)])
     (cond
+     [(not fp)
+      ;; no need for barrier
+      (void)]
      [(eq? fp tag)
       ;; shortcut: boundary is the future prompt
       (void)]
@@ -232,7 +235,7 @@
      (check who procedure? proc)
      (check who continuation-prompt-tag? tag)
      (check who :or-false procedure? handler)
-     (start-uninterrupted 'prompt)
+     (start-engine-uninterrupted 'prompt)
      (call-in-empty-metacontinuation-frame
       tag
       (wrap-handler-for-impersonator
@@ -240,7 +243,7 @@
        (or handler (make-default-abort-handler tag)))
       empty-mark-frame ; new splice
       (lambda ()
-        (end-uninterrupted 'prompt)
+        (end-engine-uninterrupted 'prompt)
         ;; Finally, apply the given function:
         (apply proc args)))]))
 
@@ -267,7 +270,7 @@
 (define (call-in-empty-metacontinuation-frame tag handler new-splice proc)
   ;; Call `proc` in an empty metacontinuation frame, reifying the
   ;; current metacontinuation as a new frame on `current-metacontinuation`
-  (assert-in-uninterrupted 'call-in-empty-metacontinuation-frame)
+  (assert-in-engine-uninterrupted 'call-in-empty-metacontinuation-frame)
   (assert-not-in-system-wind 'call-in-empty-metacontinuation-frame)
   (call/cc
    (lambda (resume-k)
@@ -303,13 +306,13 @@
             (cond
              [(null? (current-metacontinuation)) (engine-return)]
              [else
-              (start-uninterrupted 'resume-mc)
+              (start-engine-uninterrupted 'resume-mc)
               (let ([mf (pop-metacontinuation-frame)])
                 (#%$call-in-continuation
                  (metacontinuation-frame-resume-k mf)
                  (metacontinuation-frame-marks mf)
                  (lambda ()
-                   (end-uninterrupted 'resume)
+                   (end-engine-uninterrupted 'resume)
                    (let ([cc-guard (metacontinuation-frame-cc-guard mf)])
                      ;; Apply the cc-guard, if any, outside of the prompt:
                      (cond
@@ -322,7 +325,7 @@
 
 ;; Simplified `call-in-empty-metacontinuation-frame` suitable for swapping engines:
 (define (call-with-empty-metacontinuation-frame-for-swap proc)
-  (assert-in-uninterrupted 'call-with-empty-metacontinuation-frame-for-swap)
+  (assert-in-engine-uninterrupted 'call-with-empty-metacontinuation-frame-for-swap)
   (assert-not-in-system-wind 'call-with-empty-metacontinuation-frame-for-swap)
   (call/cc
    (lambda (resume-k)
@@ -406,19 +409,21 @@
   (check-prompt-tag-available who (strip-impersonator tag))
   (let ([args (apply-impersonator-abort-wrapper tag args)]
         [tag (strip-impersonator tag)])
-    (start-uninterrupted 'abort)
+    (start-engine-uninterrupted 'abort)
     (do-abort-current-continuation who tag args #t)))
 
+;; "no-wind" version also doesn't check for a break transition,
+;; since we want to use it in the thread scheduler
 (define/who (unsafe-abort-current-continuation/no-wind tag arg)
   (let ([args (apply-impersonator-abort-wrapper tag (list arg))]
         [tag (strip-impersonator tag)])
-    (start-uninterrupted 'abort)
+    (start-engine-uninterrupted 'abort)
     (do-abort-current-continuation who tag args #f)))
 
 ;; `args` can be a thunk if `do-abort-current-continuation` is
 ;; called via `apply-continuation`
 (define (do-abort-current-continuation who tag args wind?)
-  (assert-in-uninterrupted 'do-abort-current-continuation)
+  (assert-in-engine-uninterrupted 'do-abort-current-continuation)
   (cond
    [(null? (current-metacontinuation))
     ;; A reset handler must end the uninterrupted region:
@@ -435,7 +440,9 @@
            (metacontinuation-frame-resume-k mf)
            (metacontinuation-frame-marks mf)
            (lambda ()
-             (end-uninterrupted/call-hook 'handle)
+             (if wind?
+                 (end-engine-uninterrupted/call-hook 'handle)
+                 (end-engine-uninterrupted 'handle))
              (if (#%procedure? args)
                  (args) ; assuming that handler is `values`
                  (apply (metacontinuation-frame-handler mf)
@@ -457,7 +464,7 @@
 
 (define (check-prompt-still-available who tag)
   (unless (is-continuation-prompt-available? tag #f)
-    (end-uninterrupted 'escape-fail)
+    (end-engine-uninterrupted 'escape-fail)
     (raise-continuation-error who
                               (string-append
                                "lost target;\n"
@@ -473,17 +480,17 @@
 
 (define/who (call-with-continuation-barrier p)
   (check who (procedure-arity-includes/c 0) p)
-  (start-uninterrupted 'barrier)
+  (start-engine-uninterrupted 'barrier)
   (call-with-continuation-barrier* p))
 
 (define/who (call-with-continuation-barrier* p)
-  (assert-in-uninterrupted 'call-with-continuation-barrier*)
+  (assert-in-engine-uninterrupted 'call-with-continuation-barrier*)
   (call-in-empty-metacontinuation-frame
    the-barrier-prompt-tag ; <- recognized as a barrier by continuation capture or call
    #f
    empty-mark-frame ; new splice
    (lambda ()
-     (end-uninterrupted 'barrier)
+     (end-engine-uninterrupted 'barrier)
      (|#%app| p))))
 
 ;; ----------------------------------------
@@ -538,6 +545,8 @@
        tag
        wind?)))))
 
+;; "no-wind" version also doesn't check for a break transition;
+;; see also `unsafe-abort-current-continuation/no-wind`
 (define (unsafe-call-with-composable-continuation/no-wind p tag)
   (call-with-composable-continuation* p tag #f))
 
@@ -574,7 +583,7 @@
 
 ;; Applying a composable continuation calls this internal function:
 (define (apply-composable-continuation c args)
-  (start-uninterrupted 'continue)
+  (start-engine-uninterrupted 'continue)
   ;; To compose the metacontinuation, first make sure the current
   ;; continuation is reified in `(current-metacontinuation)`:
   (call-in-empty-metacontinuation-frame-for-compose
@@ -591,7 +600,7 @@
                   (and (null? (cdr marks))
                        (eq? (car marks) 'empty)))))
        ;; Shortcut for no winds and no change to break status:
-       (end-uninterrupted 'cc)
+       (end-engine-uninterrupted 'cc)
        (if (#%procedure? args)
            (#%$call-in-continuation (full-continuation-k c) (full-continuation-mark-stack c)
                                     (lambda () (args)))
@@ -603,21 +612,21 @@
 
 ;; Applying an escape continuation calls this internal function:
 (define (apply-escape-continuation c args)
-  (start-uninterrupted 'continue)
+  (start-engine-uninterrupted 'continue)
   (let ([tag (escape-continuation-tag c)])
     (unless (is-continuation-prompt-available? tag #f)
-      (end-uninterrupted 'escape-fail)
+      (end-engine-uninterrupted 'escape-fail)
       (raise-continuation-error '|continuation application|
                                 "attempt to jump into an escape continuation"))
     (do-abort-current-continuation '|continuation application| tag args #t)))
 
 ;; Applying a non-composable continuation calls this internal function:
 (define (apply-non-composable-continuation c args)
-  (start-uninterrupted 'continue)
+  (start-engine-uninterrupted 'continue)
   (apply-non-composable-continuation* c args))
 
 (define (apply-non-composable-continuation* c args)
-  (assert-in-uninterrupted 'apply-non-composable-continuation*)
+  (assert-in-engine-uninterrupted 'apply-non-composable-continuation*)
   (let ([mc (current-metacontinuation)]
         [c-mc (continuation-mc c)]
         [tag (full-continuation-tag c)])
@@ -633,7 +642,7 @@
       ;; Short cut: jump within the same metacontinuation, no winder
       ;; changes or changes to marks (so no break-enabled changes),
       ;; and no tag impersonators to deal with
-      (end-uninterrupted 'cc)
+      (end-engine-uninterrupted 'cc)
       (if (#%procedure? args)
           (#%$call-in-continuation (full-continuation-k c) (full-continuation-mark-stack c)
                                    (lambda () (args)))
@@ -673,7 +682,7 @@
 
 ;; Apply a continuation within the current metacontinuation frame:
 (define (apply-immediate-continuation c rmc args exit-winder-n entered-winder-n)
-  (assert-in-uninterrupted 'apply-immediate-continuation)
+  (assert-in-engine-uninterrupted 'apply-immediate-continuation)
   (apply-continuation-with-appended-metacontinuation rmc c args exit-winder-n entered-winder-n))
 
 (define (apply-continuation-within-metacontinuation c args exit-winder-n entered-winder-n)
@@ -692,7 +701,7 @@
          ;; the metacontinuation won't change (except by escaping):
          (activate-and-wrap-cc-guard-for-impersonator!
           (full-continuation-tag c)))
-       (end-uninterrupted 'cc)
+       (end-engine-uninterrupted 'cc)
        (apply-with-break-transition (full-continuation-k c) mark-stack args))
      ;; If a winder changed the meta-continuation, try again for a
      ;; non-composable continuation:
@@ -707,8 +716,8 @@
                              (current-metacontinuation)))
   (current-winders (full-continuation-winders c))
   (current-mark-splice (full-continuation-mark-splice c))
-  (end-uninterrupted 'cc)
-  (apply-with-break-transition (full-continuation-k c) (full-continuation-mark-stack c) args))
+  (end-engine-uninterrupted 'cc)
+  (apply-without-break-transition (full-continuation-k c) (full-continuation-mark-stack c) args))
 
 ;; Used as a "handler" for a prompt without a tag, which is used for
 ;; composable continuations
@@ -721,7 +730,7 @@
 ;; with the composable continuation's metacontinuation (so we
 ;; should not unwind and rewind those metacontinuation frames)
 (define (find-common-metacontinuation mc current-mc tag)
-  (assert-in-uninterrupted 'find-common-metacontinuation)
+  (assert-in-engine-uninterrupted 'find-common-metacontinuation)
   (let-values ([(rev-current ; (list (cons mf mc) ...)
                  base-current-mc)
                 ;; Get the reversed prefix of `current-mc` that is to be
@@ -731,7 +740,7 @@
                    [(null? current-mc)
                     (unless (or (eq? tag the-default-continuation-prompt-tag)
                                 (eq? tag the-root-continuation-prompt-tag))
-                      (end-uninterrupted 'tag-error)
+                      (end-engine-uninterrupted 'tag-error)
                       (raise-no-prompt-tag '|continuation application| tag))
                     (values accum null)]
                    [(eq? tag (strip-impersonator (metacontinuation-frame-tag (car current-mc))))
@@ -769,7 +778,7 @@
           (values (cdr (cdar rev-current)) rev-mc)])))))
 
 (define (check-for-barriers rev-mc)
-  (assert-in-uninterrupted 'check-for-barriers)
+  (assert-in-engine-uninterrupted 'check-for-barriers)
   (unless (null? rev-mc)
     (when (eq? (metacontinuation-frame-tag (car rev-mc))
                the-barrier-prompt-tag)
@@ -777,7 +786,7 @@
     (check-for-barriers (cdr rev-mc))))
 
 (define (raise-barrier-error)
-  (end-uninterrupted 'hit-barrier)
+  (end-engine-uninterrupted 'hit-barrier)
   (raise-continuation-error '|continuation application|
                             "attempt to cross a continuation barrier"))
 
@@ -845,7 +854,7 @@
   ;;  (current-metacontinuation (append mc (current-metacontinuation)))
   ;; But, to run winders and replace anything in the current frame,
   ;; we proceed frame-by-frame in `mc`.
-  (assert-in-uninterrupted 'apply-continuation-with-appended-metacontinuation)
+  (assert-in-engine-uninterrupted 'apply-continuation-with-appended-metacontinuation)
   (let loop ([rmc rmc] [exit-winder-n exit-winder-n] [entered-winder-n entered-winder-n])
     (cond
       [(null? rmc)
@@ -1750,7 +1759,7 @@
 
 (define (apply-prompt-tag-interposition who at-when what
                                         wrapper args chaperone?)
-  (assert-not-in-uninterrupted 'apply-prompt-tag-interposition)
+  (assert-not-in-engine-uninterrupted 'apply-prompt-tag-interposition)
   (call-with-values (lambda () (apply wrapper args))
     (lambda new-args
       (unless (= (length args) (length new-args))
@@ -1781,7 +1790,7 @@
      [else handler])))
 
 (define (apply-impersonator-abort-wrapper tag args)
-  (assert-not-in-uninterrupted 'apply-impersonator-abort-wrapper)
+  (assert-not-in-engine-uninterrupted 'apply-impersonator-abort-wrapper)
   (let loop ([tag tag] [args args])
     (cond
      [(continuation-prompt-tag-impersonator-or-chaperone? tag)
@@ -1798,7 +1807,7 @@
      [else args])))
 
 (define (activate-and-wrap-cc-guard-for-impersonator! tag)
-  (assert-in-uninterrupted 'activate-and-wrap-cc-guard-for-impersonator!)
+  (assert-in-engine-uninterrupted 'activate-and-wrap-cc-guard-for-impersonator!)
   (current-metacontinuation
    (let loop ([mc (current-metacontinuation)])
      (cond
@@ -1847,7 +1856,7 @@
    [else guard]))
 
 (define (wrap-cc-guard-for-impersonator tag cc-guard)
-  (assert-in-uninterrupted 'wrap-cc-guard-for-impersonator)
+  (assert-in-engine-uninterrupted 'wrap-cc-guard-for-impersonator)
   (cond
    [(continuation-prompt-tag-impersonator-or-chaperone? tag)
     (let ([cc-impersonate (continuation-prompt-tag-procs-cc-impersonate
@@ -1856,12 +1865,12 @@
       (let ([cc-guard (wrap-cc-guard-for-impersonator (impersonator-next tag) cc-guard)])
         (let ([new-cc-guard (call-with-continuation-barrier*
                              (lambda ()
-                               (assert-not-in-uninterrupted 'cc-guard)
+                               (assert-not-in-engine-uninterrupted 'cc-guard)
                                (|#%app| cc-impersonate cc-guard)))])
-          (start-uninterrupted 'post-cc-guard)
+          (start-engine-uninterrupted 'post-cc-guard)
           (when chaperone?
             (unless (chaperone-of? new-cc-guard cc-guard)
-              (end-uninterrupted 'cc-guard-fail)
+              (end-engine-uninterrupted 'cc-guard-fail)
               (raise-chaperone-error 'call-with-current-continuation
                                      "continuation-result guard"
                                      cc-guard
@@ -1909,19 +1918,19 @@
                                  (current-mark-stack)
                                  pre
                                  post)])
-       (start-uninterrupted 'dw)
+       (start-engine-uninterrupted 'dw)
        (begin
          (call-winder-thunk 'dw-pre pre)
          (current-winders (cons winder winders))
-         (end-uninterrupted/call-hook 'dw-body)
+         (end-engine-uninterrupted/call-hook 'dw-body)
          (call-with-values (if (#%procedure? thunk)
                                thunk
                                (lambda () (|#%app| thunk)))
            (lambda args
-             (start-uninterrupted 'dw-body)
+             (start-engine-uninterrupted 'dw-body)
              (current-winders winders)
              (call-winder-thunk 'dw-post post)
-             (end-uninterrupted/call-hook 'dw)
+             (end-engine-uninterrupted/call-hook 'dw)
              (if (and (pair? args)
                       (null? (cdr args)))
                  (car args)
@@ -1931,9 +1940,9 @@
   (with-continuation-mark
    break-enabled-key (make-thread-cell #f #t)
    (begin
-     (end-uninterrupted who)
+     (end-engine-uninterrupted who)
      (|#%app| thunk)
-     (start-uninterrupted who))))
+     (start-engine-uninterrupted who))))
 
 (define (wind-in winders k)
   (do-wind 'dw-pre winders winder-pre k))
@@ -1942,7 +1951,7 @@
   (do-wind 'dw-post (current-winders) winder-post k))
 
 (define (do-wind who winders winder-thunk k)
-  (assert-in-uninterrupted 'do-wind)
+  (assert-in-engine-uninterrupted 'do-wind)
   (let ([winder (car winders)]
         [winders (cdr winders)])
     (current-winders winders)
@@ -2094,8 +2103,8 @@
 ;; where we might jump to a context where breaks are allowed. The
 ;; `continuation-mark-change-hook` function allows a thread scheduler to
 ;; inject a check at those points.
-(define (end-uninterrupted/call-hook who)
-  (end-uninterrupted who)
+(define (end-engine-uninterrupted/call-hook who)
+  (end-engine-uninterrupted who)
   (break-enabled-transition-hook))
 
 (define break-enabled-transition-hook void)
@@ -2109,6 +2118,15 @@
    all-marks
    (lambda ()
      (break-enabled-transition-hook)
+     (if (#%procedure? args)
+         (args)
+         (#%apply values args)))))
+
+(define (apply-without-break-transition k all-marks args)
+  (#%$call-in-continuation
+   k
+   all-marks
+   (lambda ()
      (if (#%procedure? args)
          (args)
          (#%apply values args)))))
@@ -2171,7 +2189,7 @@
                   (system-wind-k prefix)))))))
 
 (define (assert-not-in-system-wind who)
-  (CHECK-uninterrupted
+  (CHECK-engine-uninterrupted
    (when (current-system-wind-start-k)
      (internal-error 'not-in-system-wind (format "~a: assertion failed" who)))))
 

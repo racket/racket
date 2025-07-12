@@ -31,4 +31,10 @@
         free-immobile-cell
         immobile-cell-ref
         immobile-cell->address
-        address->immobile-cell)
+        address->immobile-cell
+        make-mutex
+        make-condition
+        mutex-acquire
+        mutex-release
+        condition-wait
+        condition-signal)

@@ -4122,6 +4122,8 @@ void scheme_place_set_memory_use(intptr_t amt);
 void scheme_place_check_memory_use();
 void scheme_clear_place_ifs_stack();
 
+Scheme_Object *scheme_thread_parallel(int argc, Scheme_Object *argv[]);
+
 Scheme_Object **scheme_extract_sorted_keys(Scheme_Object *ht);
 void scheme_sort_resolve_ir_local_array(Scheme_IR_Local **a, intptr_t count);
 

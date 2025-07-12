@@ -57,10 +57,10 @@
                    (atomically
                     (set! result-kind 'value)
                     (thread-dead! t))
-                   (engine-block)))))
+                   (thread-engine-block)))))
            #:custodian cust)))
   (atomically
-   (set-thread-forward-break-to! (current-thread/in-atomic) t))
+   (set-thread-forward-break-to! (current-thread/in-racket) t))
   (semaphore-post ready-sema) ; let the nested thread run
 
   ;; Wait for the nested thread to complete -- and any thread nested
@@ -78,7 +78,7 @@
   ;; killed or aborted to the original continuation
   
   (atomically
-   (set-thread-forward-break-to! (current-thread/in-atomic) #f))
+   (set-thread-forward-break-to! (current-thread/in-racket) #f))
 
   ;; Propagate any leftover break, but give a propagated
   ;; exception priority over a break exception:
