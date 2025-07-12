@@ -410,7 +410,7 @@ Returns the @as-index{greatest common divisor} (a non-negative
 @defproc[(lcm [n rational?] ...) rational?]{
 
 Returns the @as-index{least common multiple} (a non-negative number)
- of the @racket[n]s; non-integer @racket[n]s, the result is
+ of the @racket[n]s. For two non-integer @racket[n]s, the result is
  the absolute value of the product divided by the
  @racket[gcd]. If no arguments are provided, the result is
  @racket[1]. If any argument is zero, the result is zero; furthermore,

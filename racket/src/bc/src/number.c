@@ -2469,9 +2469,9 @@ scheme_bin_gcd (const Scheme_Object *n1, const Scheme_Object *n2)
     else
       i2 = scheme_bignum_to_double(n2);
 
-    if (i1 < 0)
+    if (i1 < 0 || minus_zero_p(i1))
       i1 = -i1;
-    if (i2 < 0)
+    if (i2 < 0 || minus_zero_p(i2))
       i2 = -i2;
     if (i1 > i2) {
       a = i1;
