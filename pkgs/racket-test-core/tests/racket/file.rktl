@@ -46,7 +46,9 @@
 (test #f output-port? this-file)
 (test #f terminal-port? this-file)
 (test #t file-stream-port? this-file)
+(test #f port-closed? this-file)
 (close-input-port this-file)
+(test #t port-closed? this-file)
 
 (define this-file (open-input-file testing.rktl #:mode 'text))
 (test #t port? this-file)
@@ -62,6 +64,7 @@
 (arity-test current-input-port 0 1)
 (arity-test current-output-port 0 1)
 (arity-test current-error-port 0 1)
+(arity-test port-closed? 1 1)
 (err/rt-test (current-input-port 8))
 (err/rt-test (current-output-port 8))
 (err/rt-test (current-error-port 8))
@@ -92,6 +95,7 @@
 (err/rt-test (close-output-port 5))
 (err/rt-test (close-input-port (current-output-port)))
 (err/rt-test (close-output-port (current-input-port)))
+(err/rt-test (port-closed? #f) exn:fail:contract? #rx"port-closed[?]")
 
 (define (check-test-file name)
   (define test-file (open-input-file name))

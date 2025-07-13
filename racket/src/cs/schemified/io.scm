@@ -7553,7 +7553,7 @@
               (->core-input-port.1 unsafe-undefined p_0 #f)
               (if (1/output-port? p_0)
                 (->core-output-port.1 unsafe-undefined p_0 #f)
-                (raise-argument-error 'close-input-port "port?" p_0)))))
+                (raise-argument-error 'port-closed? "port?" p_0)))))
        (begin
          (begin
            (unsafe-start-uninterruptible)
