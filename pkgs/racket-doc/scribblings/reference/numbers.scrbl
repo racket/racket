@@ -407,10 +407,10 @@ Returns the @as-index{greatest common divisor} (a non-negative
 @mz-examples[(gcd 10) (gcd 12 81.0) (gcd 1/2 1/3)]}
 
 
-@defproc[(lcm [n rational?] ...) rational?]{
+@defproc[(lcm [n rational?] ...) (or/c rational? +inf.0)]{
 
 Returns the @as-index{least common multiple} (a non-negative number)
- of the @racket[n]s; non-integer @racket[n]s, the result is
+ of the @racket[n]s. For two non-integer @racket[n]s, the result is
  the absolute value of the product divided by the
  @racket[gcd]. If no arguments are provided, the result is
  @racket[1]. If any argument is zero, the result is zero; furthermore,
