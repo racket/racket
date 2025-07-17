@@ -877,7 +877,7 @@ sequence of forms, and the forms are spliced in place of the
 
 @note-lib-only[racket/for-clause]
 
-@defproc[(syntax-local-splicing-clause-introduce [stx syntax?]) syntax?]{
+@defproc[(syntax-local-splicing-for-clause-introduce [stx syntax?]) syntax?]{
 
 Analogous to @racket[syntax-local-introduce], but for use in an
 expander bound with @racket[define-splicing-for-clause-syntax].
