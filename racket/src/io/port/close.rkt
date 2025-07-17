@@ -18,8 +18,7 @@
   (let ([p (cond
              [(input-port? p) (->core-input-port p)]
              [(output-port? p) (->core-output-port p)]
-             [else
-              (raise-argument-error 'close-input-port "port?" p)])])
+             [else (raise-argument-error 'port-closed? "port?" p)])])
     (core-port-closed? p)))
 
 ;; maybe in atomic mode via custodian shutdown:
