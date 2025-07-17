@@ -1933,7 +1933,7 @@ current-system paths while @racket[get-cross-lib-search-dirs] and
                    [#:namespace namespace (or/c namespace? #f) #f]
                    [#:bootstrap? bootstrap? any/c #f])
          (or/c
-          (symbol? [(-> any)] . -> . any)
+          ((symbol?) ((-> any)) . ->* . any)
           #f)]{
    Accepts a list of strings naming a collection or sub-collection,
    and calls @racket[get-info/full] with the full path corresponding to the
@@ -1942,8 +1942,9 @@ current-system paths while @racket[get-cross-lib-search-dirs] and
 @defproc[(get-info/full [path path-string?]
                         [#:namespace namespace (or/c namespace? #f) #f]
                         [#:bootstrap? bootstrap? any/c #f])
-         (or/c (->* (symbol?) ((-> any)) any)
-               #f)]{
+         (or/c
+          ((symbol?) ((-> any)) . ->* . any)
+          #f)]{
 
    Accepts a path to a directory. If it finds either a well-formed
    @filepath{info.rkt} file or an @filepath{info.ss} file (with
@@ -1964,10 +1965,10 @@ current-system paths while @racket[get-cross-lib-search-dirs] and
    using @racketmodname[info] or @racketmodname[setup/infotab]),
    or if the @filepath{info.rkt} file fails to load, then an exception
    is raised. If the @filepath{info.rkt} file loaded, @racket[get-info/full]
-   returns the @racket[get-info] file. If the @filepath{info.rkt} file does not exist, 
+   returns the info procedure. If the @filepath{info.rkt} file does not exist, 
    then @racket[get-info/full] does
    the same checks for the @filepath{info.ss} file, either raising an exception
-   or returning the @racket[get-info] function from the @filepath{info.ss} file.
+   or returning the info procedure from the @filepath{info.ss} file.
 
    The @filepath{info.rkt} (or @filepath{info.ss}) module is loaded
    into @racket[namespace] if it is not @racket[#f], or a private,
