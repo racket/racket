@@ -55,8 +55,8 @@
           'schedule-info-did-work! schedule-info-did-work!
           'unsafe-start-atomic unsafe-start-atomic
           'unsafe-end-atomic unsafe-end-atomic
-          'start-atomic/no-interrupts start-atomic/no-interrupts
-          'end-atomic/no-interrupts end-atomic/no-interrupts
+          'start-atomic/no-gc-interrupts start-atomic/no-gc-interrupts
+          'end-atomic/no-gc-interrupts end-atomic/no-gc-interrupts
           'in-atomic-mode? in-atomic-mode?
           'current-custodian current-custodian
           'custodian-shut-down? custodian-shut-down?

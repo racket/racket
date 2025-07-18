@@ -8,7 +8,7 @@
         (#%$app/no-return do-raise v))]))
 
 (define (do-raise/barrier v)
-  (assert-not-in-uninterrupted 'raise)
+  (assert-not-in-engine-uninterrupted 'raise)
   (call-with-continuation-barrier
    (lambda ()
      (do-raise v))))
@@ -213,7 +213,7 @@
   (#%$app/no-return do-raise-arguments-error who who-in realm what exn:fail:contract more))
   
 (define (do-raise-arguments-error e-who who realm what exn:fail:contract more)
-  (assert-not-in-uninterrupted 'do-raise-arguments-error)
+  (assert-not-in-engine-uninterrupted 'do-raise-arguments-error)
   (check e-who symbol? who)
   (check e-who symbol? realm)
   (check e-who string? what)
@@ -288,7 +288,7 @@
      (#%$app/no-return do-raise-argument-error who "result" who-in realm what pos arg args)]))
 
 (define (do-raise-argument-error e-who tag who realm what pos arg args)
-  (assert-not-in-uninterrupted 'do-raise-argument-error)
+  (assert-not-in-engine-uninterrupted 'do-raise-argument-error)
   (check e-who symbol? who)
   (check e-who symbol? realm)
   (check e-who string? what)

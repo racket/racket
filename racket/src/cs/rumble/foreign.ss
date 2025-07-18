@@ -1831,7 +1831,7 @@
                                  known-thread?
                                  ;; Wait for result:
                                  #t
-                                 ;; No thread swapping when existing atomic mode:
+                                 ;; No thread swapping when exiting atomic mode:
                                  #f))]))
 
 (define (call-enabling-ffi-callbacks proc)

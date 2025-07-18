@@ -90,6 +90,12 @@
       (complete-or-expire go #f (if timeout? 0 10))]))
   go)
 
+(define (make-engine-thread-cell-state init-break-enabled-cell empty-config?)
+  init-break-enabled-cell)
+
+(define (set-engine-thread-cell-state! init-break-enabled-cell)
+  (void)) 
+
 (define (engine-block)
   (thread-suspend (current-thread)))
 
@@ -236,6 +242,8 @@
 (primitive-table '#%engine
                  (hash 
                   'make-engine make-engine
+                  'make-engine-thread-cell-state make-engine-thread-cell-state
+                  'set-engine-thread-cell-state! set-engine-thread-cell-state!
                   'engine-timeout engine-timeout
                   'engine-return (lambda args
                                    (error "engine-return: not ready"))
@@ -291,7 +299,8 @@
                   'post-as-asynchronous-callback (lambda (thunk) (thunk))
                   'continuation-current-primitive (lambda (k) #f)
                   'prop:unsafe-authentic-override prop:unsafe-authentic-override
-                  'get-system-stats (lambda () (values 0))))
+                  'get-system-stats (lambda () (values 0))
+                  'internal-error error))
 
 ;; add dummy definitions that implement pthreads and conditions etc.
 ;; dummy definitions that error

@@ -10,8 +10,6 @@
                     [choice-evt raw:choice-evt])
          (only-in "sync.rkt"
                   sync/enable-break)
-         (only-in "parameter.rkt"
-                  [current-future raw:current-future])
          (only-in "future.rkt"
                   future-block
                   currently-running-future))
@@ -30,8 +28,7 @@
          call-with-semaphore/enable-break)
 
 (define (current-future)
-  (or (raw:current-future)
-      (currently-running-future)))
+  (currently-running-future))
 
 (define/who (choice-evt . args)
   (for ([arg (in-list args)])

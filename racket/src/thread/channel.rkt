@@ -60,9 +60,9 @@
     [else
      (define b (box #f))
      (let receive () ; loop if a retry is needed
-       ((atomically
+       ((atomically/no-barrier-exit
          (define pw+v (queue-remove! (channel-put-queue ch)))
-         (define gw (current-thread/in-atomic))
+         (define gw (current-thread/in-racket))
          (cond
            [(not pw+v)
             (define gq (channel-get-queue ch))
@@ -96,7 +96,7 @@
     (define b (box #f))
     (define gq (channel-get-queue ch))
     (define gw (channel-select-waiter (poll-ctx-select-proc poll-ctx)
-                                      (current-thread/in-atomic)))
+                                      (current-thread/in-racket)))
     (define n (queue-add! gq (cons gw b)))
     (values #f
             (control-state-evt async-evt
@@ -124,9 +124,9 @@
     [(channel-put-impersonator? ch)
      (channel-impersonator-put ch v channel-put)]
     [else
-     ((atomically
+     ((atomically/no-barrier-exit
        (define gw+b (queue-remove! (channel-get-queue ch)))
-       (define pw (current-thread/in-atomic))
+       (define pw (current-thread/in-racket))
        (cond
          [(not gw+b)
           (define pq (channel-put-queue ch))
@@ -159,7 +159,7 @@
    [else
     (define pq (channel-put-queue ch))
     (define pw (channel-select-waiter (poll-ctx-select-proc poll-ctx)
-                                      (current-thread/in-atomic)))
+                                      (current-thread/in-racket)))
     (define n (queue-add! pq (cons pw v)))
     (values #f
             (control-state-evt async-evt
@@ -205,7 +205,7 @@
 (define (not-matching-select-waiter w+b/v)
   (define w (car w+b/v))
   (or (not (channel-select-waiter? w))
-      (not (eq? (current-thread/in-atomic)
+      (not (eq? (current-thread/in-racket)
                 (channel-select-waiter-thread w)))))
 
 ;; ----------------------------------------

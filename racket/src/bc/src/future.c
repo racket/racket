@@ -32,6 +32,10 @@ static Scheme_Object *futures_enabled(int argc, Scheme_Object *argv[])
 static void register_traversers(void);
 #endif
 
+static Scheme_Object *make_parallel_pool(int argc, Scheme_Object *argv[]);
+static Scheme_Object *parallel_pool_p(int argc, Scheme_Object *argv[]);
+static Scheme_Object *parallel_pool_close(int argc, Scheme_Object *argv[]);
+
 #ifndef MZ_USE_FUTURES
 
 /* Futures not enabled, but make a stub module and implementation */
@@ -520,6 +524,20 @@ void scheme_init_futures(Scheme_Startup_Env *newenv)
   ADD_PRIM_W_ARITY("futures-enabled?", futures_enabled, 0, 0, newenv);
   ADD_PRIM_W_ARITY("reset-future-logs-for-tracing!", reset_future_logs_for_tracking, 0, 0, newenv);
   ADD_PRIM_W_ARITY("mark-future-trace-end!", mark_future_trace_end, 0, 0, newenv);
+
+  scheme_addto_prim_instance("thread/parallel",
+                             scheme_make_prim_w_arity(scheme_thread_parallel, "thread/parallel", 3, 3),
+                             newenv);
+  scheme_addto_prim_instance("make-parallel-thread-pool",
+                             scheme_make_prim_w_arity(make_parallel_pool, "make-parallel-thread-pool", 0, 1),
+                             newenv);
+  scheme_addto_prim_instance("parallel-thread-pool-close",
+                             scheme_make_prim_w_arity(parallel_pool_close, "parallel-thread-pool-close", 1, 1),
+                             newenv);
+  scheme_addto_prim_instance("parallel-thread-pool?",
+                             scheme_make_prim_w_arity(parallel_pool_p, "parallel-thread-pool?", 0, 1),
+                             newenv);
+
 }
 
 #ifdef MZ_USE_FUTURES
@@ -3779,6 +3797,47 @@ future_t *get_pending_future(Scheme_Future_State *fs)
 }
 
 #endif
+
+/**********************************************************************/
+/*                       thread pool stubs                            */
+/**********************************************************************/
+
+static Scheme_Object *make_parallel_pool(int argc, Scheme_Object *args[])
+{
+  Scheme_Object *o, *n;
+
+  if (argc > 0) {
+    n = args[0];
+    if (!(SCHEME_INTP(n) || SCHEME_BIGNUMP(n))
+        || !scheme_is_positive(n))
+      scheme_wrong_contract("make-parallel-thread-pool", "exact-positive-integer?", 0, argc, args);
+  }
+
+  o = scheme_malloc_small_tagged(sizeof(Scheme_Simple_Object));
+  o->type = scheme_parallel_pool_type;
+  SCHEME_INT1_VAL(o) = 1;
+  
+  return o;
+}
+
+static Scheme_Object *parallel_pool_close(int argc, Scheme_Object *args[])
+{
+  const char *who = "parallel-thread-pool-close";
+  
+  if (!SAME_TYPE(SCHEME_TYPE(args[0]), scheme_parallel_pool_type))
+    scheme_wrong_contract(who, "parallel-thread-pool?", 0, argc, args);
+
+  SCHEME_INT1_VAL(args[0]) = 0;
+
+  return scheme_void;
+}
+
+static Scheme_Object *parallel_pool_p(int argc, Scheme_Object *args[])
+{
+  return (SAME_TYPE(SCHEME_TYPE(args[0]), scheme_parallel_pool_type)
+          ? scheme_true
+          : scheme_false);
+}
 
 /**********************************************************************/
 /*                           Precise GC                               */

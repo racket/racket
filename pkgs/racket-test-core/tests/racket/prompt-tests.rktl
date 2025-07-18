@@ -278,6 +278,24 @@
 
 (test-breaks-ok)
 
+(with-cc-variants
+ (test 35
+       'transfer-result
+       (let ([retry #f]
+             [result #f])
+         (thread-wait
+          (thread
+           (lambda ()
+             (+ 28
+                (let/cc k
+                  (set! retry k)
+                  17)))))
+         (thread-wait
+          (thread
+           (lambda ()
+             (retry 7))
+           #:keep 'results)))))
+
 ;; Catch continuation in composed continuation:
 (with-cc-variants
  (test 89

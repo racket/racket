@@ -1,13 +1,16 @@
 #lang racket/base
 (require racket/private/primitive-table
-         "internal-error.rkt"
          (only-in '#%linklet primitive-table)
          (for-syntax racket/base))
 
+(define (startup-error s)
+  (raise (exn:fail (string-append "startup error: " s)
+                   (current-continuation-marks))))
+
 (void (unless (primitive-table '#%engine)
-        (internal-error "engines not provided by host")))
+        (startup-error "engines not provided by host")))
 (void (unless (primitive-table '#%pthread)
-        (internal-error "pthreads not provided by host")))
+        (startup-error "pthreads not provided by host")))
 
 (define-syntax (bounce stx)
   (syntax-case stx ()
@@ -34,6 +37,8 @@
 
 (bounce #%engine
         make-engine
+        make-engine-thread-cell-state
+        set-engine-thread-cell-state!
         engine-timeout
         engine-return
         engine-roots
@@ -103,4 +108,5 @@
         continuation-current-primitive
 
         [prop:unsafe-authentic-override host:prop:unsafe-authentic-override]
-        [get-system-stats host:get-system-stats])
+        [get-system-stats host:get-system-stats]
+        [internal-error host:internal-error])

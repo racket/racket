@@ -18,64 +18,64 @@
 ;; mode should be used only by the implementation of
 ;; engines and control in "engine.ss" and "control.ss".
 
-(define-virtual-register current-in-uninterrupted #f)
+(define-virtual-register current-in-engine-uninterrupted #f)
 (define-virtual-register pending-interrupt-callback #f)
 
 (meta-cond
  [(= (optimize-level) 3)
-  (define-syntax CHECK-uninterrupted
+  (define-syntax CHECK-engine-uninterrupted
     (syntax-rules ()
       [(_ e ...) (void)]))]
  [else
-  (define-syntax CHECK-uninterrupted
+  (define-syntax CHECK-engine-uninterrupted
     (syntax-rules ()
       [(_ e ...) (begin e ...)]))])
 
-(define (start-uninterrupted who)
-  (CHECK-uninterrupted
-   (when (current-in-uninterrupted)
-     (internal-error 'start-uninterrupted (format "~a: already started" who))))
-  (current-in-uninterrupted #t))
+(define (start-engine-uninterrupted who)
+  (CHECK-engine-uninterrupted
+   (when (current-in-engine-uninterrupted)
+     (internal-error 'start-engine-uninterrupted (format "~a: already started" who))))
+  (current-in-engine-uninterrupted #t))
 
-(define (end-uninterrupted who)
-  (CHECK-uninterrupted
-   (unless (current-in-uninterrupted)
-     (internal-error 'end-uninterrupted (format "~a: not started" who))))
-  (current-in-uninterrupted #f)
+(define (end-engine-uninterrupted who)
+  (CHECK-engine-uninterrupted
+   (unless (current-in-engine-uninterrupted)
+     (internal-error 'end-engine-uninterrupted (format "~a: not started" who))))
+  (current-in-engine-uninterrupted #f)
   (when (pending-interrupt-callback)
     (pariah
      (let ([callback (pending-interrupt-callback)])
        (pending-interrupt-callback #f)
        (callback)))))
 
-(define (assert-in-uninterrupted who)
-  (CHECK-uninterrupted
-   (unless (current-in-uninterrupted)
-     (internal-error 'assert-in-uninterrupted (format "~a: assertion failed" who)))))
+(define (assert-in-engine-uninterrupted who)
+  (CHECK-engine-uninterrupted
+   (unless (current-in-engine-uninterrupted)
+     (internal-error 'assert-in-engine-uninterrupted (format "~a: assertion failed" who)))))
 
-(define (assert-not-in-uninterrupted who)
-  (CHECK-uninterrupted
-   (when (current-in-uninterrupted)
-     (internal-error 'assert-not-in-uninterrupted (format "~a: assertion failed" who)))))
+(define (assert-not-in-engine-uninterrupted who)
+  (CHECK-engine-uninterrupted
+   (when (current-in-engine-uninterrupted)
+     (internal-error 'assert-not-in-engine-uninterrupted (format "~a: assertion failed" who)))))
 
 ;; An implicit context is when a relevant interrupt can't happen, but
-;; `assert-in-uninterrupted` might be called.
+;; `assert-in-engine-uninterrupted` might be called.
 
-(define (start-implicit-uninterrupted who)
-  (CHECK-uninterrupted
-   (when (current-in-uninterrupted)
-     (internal-error 'start-implicit-uninterrupted (format "~a: already started" who)))
+(define (start-implicit-engine-uninterrupted who)
+  (CHECK-engine-uninterrupted
+   (when (current-in-engine-uninterrupted)
+     (internal-error 'start-implicit-engine-uninterrupted (format "~a: already started" who)))
    (unless (fx= 0 (set-timer 0))
-     (internal-error 'start-implicit-uninterrupted (format "~a: timer is running" who)))
-   (current-in-uninterrupted #t)))
+     (internal-error 'start-implicit-engine-uninterrupted (format "~a: timer is running" who)))
+   (current-in-engine-uninterrupted #t)))
 
-(define (end-implicit-uninterrupted who)
-  (CHECK-uninterrupted
-   (unless (current-in-uninterrupted)
-     (internal-error 'end-implicit-uninterrupted (format "~a: not started" who)))
-   (current-in-uninterrupted #f)))
+(define (end-implicit-engine-uninterrupted who)
+  (CHECK-engine-uninterrupted
+   (unless (current-in-engine-uninterrupted)
+     (internal-error 'end-implicit-engine-uninterrupted (format "~a: not started" who)))
+   (current-in-engine-uninterrupted #f)))
 
 (define (internal-error who s)
-  (CHECK-uninterrupted
+  (CHECK-engine-uninterrupted
    (chez:fprintf (current-error-port) "~a: ~a\n" who s)
    (#%exit 1)))

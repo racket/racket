@@ -2719,9 +2719,10 @@
 (define schedule-info-current-exts
   (hash-ref table 'schedule-info-current-exts))
 (define current-sandman (hash-ref table 'current-sandman))
-(define start-atomic/no-interrupts
-  (hash-ref table 'start-atomic/no-interrupts))
-(define end-atomic/no-interrupts (hash-ref table 'end-atomic/no-interrupts))
+(define start-atomic/no-gc-interrupts
+  (hash-ref table 'start-atomic/no-gc-interrupts))
+(define end-atomic/no-gc-interrupts
+  (hash-ref table 'end-atomic/no-gc-interrupts))
 (define in-atomic-mode? (hash-ref table 'in-atomic-mode?))
 (define 1/unsafe-custodian-register
   (hash-ref table 'unsafe-custodian-register))
@@ -10154,7 +10155,14 @@
    (lambda (p_0)
      (let ((fd_0 (fd-port-fd p_0)))
        (if fd_0
-         (|#%app| rktio_fd_is_terminal (unsafe-place-local-ref cell.1) fd_0)
+         (begin
+           (unsafe-start-atomic)
+           (begin0
+             (|#%app|
+              rktio_fd_is_terminal
+              (unsafe-place-local-ref cell.1)
+              fd_0)
+             (unsafe-end-atomic)))
          #f)))))
 (define fd-port-fd
   (lambda (p_0)
@@ -10172,10 +10180,14 @@
        (if cp_0
          (if (fd-output-port? cp_0)
            (let ((fd_0 (fd-port-fd cp_0)))
-             (|#%app|
-              rktio_fd_is_pending_open
-              (unsafe-place-local-ref cell.1)
-              fd_0))
+             (begin
+               (unsafe-start-atomic)
+               (begin0
+                 (|#%app|
+                  rktio_fd_is_pending_open
+                  (unsafe-place-local-ref cell.1)
+                  fd_0)
+                 (unsafe-end-atomic))))
            #f)
          (if (1/input-port? p_0)
            #f
@@ -27867,10 +27879,15 @@
        (if (path-string? p_0)
          (void)
          (raise-argument-error 'directory-exists? "path-string?" p_0))
-       (|#%app|
-        rktio_directory_exists
-        (unsafe-place-local-ref cell.1)
-        (->host p_0 'directory-exists? '(exists)))))))
+       (let ((host-path_0 (->host p_0 'directory-exists? '(exists))))
+         (begin
+           (unsafe-start-atomic)
+           (begin0
+             (|#%app|
+              rktio_directory_exists
+              (unsafe-place-local-ref cell.1)
+              host-path_0)
+             (unsafe-end-atomic))))))))
 (define 1/file-exists?
   (|#%name|
    file-exists?
@@ -27884,10 +27901,14 @@
                (special-filename?.1 #f host-path_0)
                #f)
            #t
-           (|#%app|
-            rktio_file_exists
-            (unsafe-place-local-ref cell.1)
-            host-path_0)))))))
+           (begin
+             (unsafe-start-atomic)
+             (begin0
+               (|#%app|
+                rktio_file_exists
+                (unsafe-place-local-ref cell.1)
+                host-path_0)
+               (unsafe-end-atomic)))))))))
 (define 1/link-exists?
   (|#%name|
    link-exists?
@@ -27896,10 +27917,15 @@
        (if (path-string? p_0)
          (void)
          (raise-argument-error 'link-exists? "path-string?" p_0))
-       (|#%app|
-        rktio_link_exists
-        (unsafe-place-local-ref cell.1)
-        (->host p_0 'link-exists? '(exists)))))))
+       (let ((host-path_0 (->host p_0 'link-exists? '(exists))))
+         (begin
+           (unsafe-start-atomic)
+           (begin0
+             (|#%app|
+              rktio_link_exists
+              (unsafe-place-local-ref cell.1)
+              host-path_0)
+             (unsafe-end-atomic))))))))
 (define 1/file-or-directory-type
   (let ((file-or-directory-type_0
          (|#%name|
@@ -27919,10 +27945,14 @@
                       #f)
                   'file
                   (let ((r_0
-                         (|#%app|
-                          rktio_file_type
-                          (unsafe-place-local-ref cell.1)
-                          host-path_0)))
+                         (begin
+                           (unsafe-start-atomic)
+                           (begin0
+                             (|#%app|
+                              rktio_file_type
+                              (unsafe-place-local-ref cell.1)
+                              host-path_0)
+                             (unsafe-end-atomic)))))
                     (if (eqv? r_0 1)
                       'file
                       (if (eqv? r_0 2)
@@ -27965,11 +27995,15 @@
                      perms_0))
                   (let ((host-path_0 (->host p4_0 'make-directory '(write))))
                     (let ((r_0
-                           (|#%app|
-                            rktio_make_directory_with_permissions
-                            (unsafe-place-local-ref cell.1)
-                            host-path_0
-                            perms_0)))
+                           (begin
+                             (unsafe-start-atomic)
+                             (begin0
+                               (|#%app|
+                                rktio_make_directory_with_permissions
+                                (unsafe-place-local-ref cell.1)
+                                host-path_0
+                                perms_0)
+                               (unsafe-end-atomic)))))
                       (if (vector? r_0)
                         (raise-filesystem-error
                          'make-directory
@@ -28092,20 +28126,25 @@
          (void)
          (raise-argument-error 'delete-file "path-string?" p_0))
        (let ((host-path_0 (->host p_0 'delete-file '(delete))))
-         (let ((r_0
-                (|#%app|
-                 rktio_delete_file
-                 (unsafe-place-local-ref cell.1)
-                 host-path_0
-                 (1/current-force-delete-permissions))))
-           (if (vector? r_0)
-             (raise-filesystem-error
-              'delete-file
-              r_0
-              (let ((app_0
-                     (string-append "cannot delete file\n" "  path: ~a")))
-                (1/format app_0 (host-> host-path_0))))
-             (void))))))))
+         (let ((force-perms_0 (1/current-force-delete-permissions)))
+           (let ((r_0
+                  (begin
+                    (unsafe-start-atomic)
+                    (begin0
+                      (|#%app|
+                       rktio_delete_file
+                       (unsafe-place-local-ref cell.1)
+                       host-path_0
+                       force-perms_0)
+                      (unsafe-end-atomic)))))
+             (if (vector? r_0)
+               (raise-filesystem-error
+                'delete-file
+                r_0
+                (let ((app_0
+                       (string-append "cannot delete file\n" "  path: ~a")))
+                  (1/format app_0 (host-> host-path_0))))
+               (void)))))))))
 (define 1/delete-directory
   (|#%name|
    delete-directory
@@ -28115,22 +28154,29 @@
          (void)
          (raise-argument-error 'delete-directory "path-string?" p_0))
        (let ((host-path_0 (->host p_0 'delete-directory '(delete))))
-         (let ((r_0
-                (let ((app_0 (->host (current-directory$1) #f #f)))
-                  (|#%app|
-                   rktio_delete_directory
-                   (unsafe-place-local-ref cell.1)
-                   host-path_0
-                   app_0
-                   (1/current-force-delete-permissions)))))
-           (if (vector? r_0)
-             (raise-filesystem-error
-              'delete-directory
-              r_0
-              (let ((app_0
-                     (string-append "cannot delete directory\n" "  path: ~a")))
-                (1/format app_0 (host-> host-path_0))))
-             (void))))))))
+         (let ((host-dir-path_0 (->host (current-directory$1) #f #f)))
+           (let ((force-perms_0 (1/current-force-delete-permissions)))
+             (let ((r_0
+                    (begin
+                      (unsafe-start-atomic)
+                      (begin0
+                        (|#%app|
+                         rktio_delete_directory
+                         (unsafe-place-local-ref cell.1)
+                         host-path_0
+                         host-dir-path_0
+                         force-perms_0)
+                        (unsafe-end-atomic)))))
+               (if (vector? r_0)
+                 (raise-filesystem-error
+                  'delete-directory
+                  r_0
+                  (let ((app_0
+                         (string-append
+                          "cannot delete directory\n"
+                          "  path: ~a")))
+                    (1/format app_0 (host-> host-path_0))))
+                 (void))))))))))
 (define 1/rename-file-or-directory
   (let ((rename-file-or-directory_0
          (|#%name|
@@ -28155,12 +28201,16 @@
                   (let ((host-new_0
                          (->host new8_0 'rename-file-or-directory '(write))))
                     (let ((r_0
-                           (|#%app|
-                            rktio_rename_file
-                            (unsafe-place-local-ref cell.1)
-                            host-new_0
-                            host-old_0
-                            exists-ok?6_0)))
+                           (begin
+                             (unsafe-start-atomic)
+                             (begin0
+                               (|#%app|
+                                rktio_rename_file
+                                (unsafe-place-local-ref cell.1)
+                                host-new_0
+                                host-old_0
+                                exists-ok?6_0)
+                               (unsafe-end-atomic)))))
                       (if (vector? r_0)
                         (raise-filesystem-error
                          'rename-file-or-directory
@@ -28332,17 +28382,21 @@
                         'file-or-directory-permissions
                         (if (integer? mode9_0) '(write) '(read)))))
                   (let ((r_0
-                         (if (integer? mode9_0)
-                           (|#%app|
-                            rktio_set_file_or_directory_permissions
-                            (unsafe-place-local-ref cell.1)
-                            host-path_0
-                            mode9_0)
-                           (|#%app|
-                            rktio_get_file_or_directory_permissions
-                            (unsafe-place-local-ref cell.1)
-                            host-path_0
-                            (eq? mode9_0 'bits)))))
+                         (begin
+                           (unsafe-start-atomic)
+                           (begin0
+                             (if (integer? mode9_0)
+                               (|#%app|
+                                rktio_set_file_or_directory_permissions
+                                (unsafe-place-local-ref cell.1)
+                                host-path_0
+                                mode9_0)
+                               (|#%app|
+                                rktio_get_file_or_directory_permissions
+                                (unsafe-place-local-ref cell.1)
+                                host-path_0
+                                (eq? mode9_0 'bits)))
+                             (unsafe-end-atomic)))))
                     (begin
                       (if (vector? r_0)
                         (raise-filesystem-error
@@ -28563,20 +28617,28 @@
                                                 (unsafe-place-local-ref cell.1)
                                                 cp_0)
                                              (let ((r_0
-                                                    (|#%app|
-                                                     rktio_copy_file_finish_permissions
-                                                     (unsafe-place-local-ref
-                                                      cell.1)
-                                                     cp_0)))
+                                                    (begin
+                                                      (unsafe-start-atomic)
+                                                      (begin0
+                                                        (|#%app|
+                                                         rktio_copy_file_finish_permissions
+                                                         (unsafe-place-local-ref
+                                                          cell.1)
+                                                         cp_0)
+                                                        (unsafe-end-atomic)))))
                                                (if (vector? r_0)
                                                  (report-error_0 r_0)
                                                  (void)))
                                              (let ((r_0
-                                                    (|#%app|
-                                                     rktio_copy_file_step
-                                                     (unsafe-place-local-ref
-                                                      cell.1)
-                                                     cp_0)))
+                                                    (begin
+                                                      (unsafe-start-atomic)
+                                                      (begin0
+                                                        (|#%app|
+                                                         rktio_copy_file_step
+                                                         (unsafe-place-local-ref
+                                                          cell.1)
+                                                         cp_0)
+                                                        (unsafe-end-atomic)))))
                                                (begin
                                                  (if (vector? r_0)
                                                    (report-error_0 r_0)
@@ -28637,27 +28699,32 @@
                      to-path_0
                      'make-file-or-directory-link
                      (host-> path-host_0))))
-               (let ((r_0
-                      (|#%app|
-                       rktio_make_link
-                       (unsafe-place-local-ref cell.1)
-                       path-host_0
-                       to-host_0
-                       (directory-path?.1 #f to-path_0))))
-                 (if (vector? r_0)
-                   (raise-filesystem-error
-                    'make-file-or-directory-link
-                    r_0
-                    (let ((app_0
-                           (string-append
-                            "cannot make link~a\n"
-                            "  path: ~a")))
-                      (let ((app_1
-                             (if (racket-error? r_0 4)
-                               ";\n the path already exists"
-                               "")))
-                        (1/format app_0 app_1 (host-> path-host_0)))))
-                   (void)))))))))))
+               (let ((dir?_0 (directory-path?.1 #f to-path_0)))
+                 (let ((r_0
+                        (begin
+                          (unsafe-start-atomic)
+                          (begin0
+                            (|#%app|
+                             rktio_make_link
+                             (unsafe-place-local-ref cell.1)
+                             path-host_0
+                             to-host_0
+                             dir?_0)
+                            (unsafe-end-atomic)))))
+                   (if (vector? r_0)
+                     (raise-filesystem-error
+                      'make-file-or-directory-link
+                      r_0
+                      (let ((app_0
+                             (string-append
+                              "cannot make link~a\n"
+                              "  path: ~a")))
+                        (let ((app_1
+                               (if (racket-error? r_0 4)
+                                 ";\n the path already exists"
+                                 "")))
+                          (1/format app_0 app_1 (host-> path-host_0)))))
+                     (void))))))))))))
 (define do-resolve-path
   (lambda (p_0 who_0)
     (begin
@@ -29095,11 +29162,15 @@
                           (let ((ht_0 (environment-variables-ht e3_0)))
                             (if (not ht_0)
                               (let ((r_0
-                                     (|#%app|
-                                      rktio_setenv
-                                      (unsafe-place-local-ref cell.1)
-                                      k_0
-                                      v_0)))
+                                     (begin
+                                       (unsafe-start-atomic)
+                                       (begin0
+                                         (|#%app|
+                                          rktio_setenv
+                                          (unsafe-place-local-ref cell.1)
+                                          k_0
+                                          v_0)
+                                         (unsafe-end-atomic)))))
                                 (if (vector? r_0)
                                   (if (eq? fail_0 none)
                                     (let ((base-msg_0 "change failed"))
@@ -31586,7 +31657,7 @@
 (define add-log-receiver!
   (lambda (logger_0 lr_0 backref_0)
     (begin
-      (|#%app| start-atomic/no-interrupts)
+      (|#%app| start-atomic/no-gc-interrupts)
       (begin0
         (begin
           (if (zero? (logger-prune-counter logger_0))
@@ -31635,7 +31706,7 @@
                     (semaphore-post (unbox sema-box_0))
                     (set-box! sema-box_0 #f))
                   (void))))))
-        (|#%app| end-atomic/no-interrupts)))))
+        (|#%app| end-atomic/no-gc-interrupts)))))
 (define log-receiver-send!
   (lambda (r_0 msg_0 in-interrupt?_0)
     (if (let ((or-part_0 (not in-interrupt?_0)))
@@ -31697,10 +31768,10 @@
 (define logger-max-wanted-level
   (lambda (logger_0)
     (begin
-      (|#%app| start-atomic/no-interrupts)
+      (|#%app| start-atomic/no-gc-interrupts)
       (begin0
         (logger-max-wanted-level* logger_0)
-        (|#%app| end-atomic/no-interrupts)))))
+        (|#%app| end-atomic/no-gc-interrupts)))))
 (define logger-max-wanted-level*
   (lambda (logger_0)
     (if (let ((app_0 (logger-local-level-timestamp logger_0)))
@@ -31987,13 +32058,14 @@
                                      (list
                                       (level->user-representation
                                        (begin
-                                         (|#%app| start-atomic/no-interrupts)
+                                         (|#%app|
+                                          start-atomic/no-gc-interrupts)
                                          (begin0
                                            (logger-wanted-level
                                             logger_0
                                             topic_0)
                                            (|#%app|
-                                            end-atomic/no-interrupts))))
+                                            end-atomic/no-gc-interrupts))))
                                       topic_0)
                                      fold-var_0)))
                                (values fold-var_1))))
@@ -32069,10 +32141,10 @@
                  topic3_0))
               (if (not (eq? level5_0 'none))
                 (begin
-                  (|#%app| start-atomic/no-interrupts)
+                  (|#%app| start-atomic/no-gc-interrupts)
                   (begin0
                     (log-level?* logger4_0 level5_0 topic3_0)
-                    (|#%app| end-atomic/no-interrupts)))
+                    (|#%app| end-atomic/no-gc-interrupts)))
                 #f))))))
     (|#%name|
      log-level?
@@ -32083,17 +32155,17 @@
 (define logging-future-events?
   (lambda ()
     (begin
-      (|#%app| start-atomic/no-interrupts)
+      (|#%app| start-atomic/no-gc-interrupts)
       (begin0
         (log-level?* (unsafe-place-local-ref cell.1$6) 'debug 'future)
-        (|#%app| end-atomic/no-interrupts)))))
+        (|#%app| end-atomic/no-gc-interrupts)))))
 (define logging-place-events?
   (lambda ()
     (begin
-      (|#%app| start-atomic/no-interrupts)
+      (|#%app| start-atomic/no-gc-interrupts)
       (begin0
         (log-level?* (unsafe-place-local-ref cell.1$6) 'debug 'place)
-        (|#%app| end-atomic/no-interrupts)))))
+        (|#%app| end-atomic/no-gc-interrupts)))))
 (define log-level?*
   (lambda (logger_0 level_0 topic_0)
     (let ((a_0 (logger-wanted-level logger_0 topic_0)))
@@ -32116,10 +32188,10 @@
                  topic6_0))
               (level->user-representation
                (begin
-                 (|#%app| start-atomic/no-interrupts)
+                 (|#%app| start-atomic/no-gc-interrupts)
                  (begin0
                    (logger-wanted-level logger7_0 topic6_0)
-                   (|#%app| end-atomic/no-interrupts)))))))))
+                   (|#%app| end-atomic/no-gc-interrupts)))))))))
     (|#%name|
      log-max-level
      (case-lambda
@@ -32248,7 +32320,7 @@
       (if (eq? level_0 'none)
         (void)
         (begin
-          (|#%app| start-atomic/no-interrupts)
+          (|#%app| start-atomic/no-gc-interrupts)
           (begin0
             (log-message*
              logger_0
@@ -32258,11 +32330,11 @@
              data_0
              prefix?_0
              #f)
-            (|#%app| end-atomic/no-interrupts)))))))
+            (|#%app| end-atomic/no-gc-interrupts)))))))
 (define log-future-event
   (lambda (message_0 data_0)
     (begin
-      (|#%app| start-atomic/no-interrupts)
+      (|#%app| start-atomic/no-gc-interrupts)
       (begin0
         (log-message*
          (unsafe-place-local-ref cell.1$6)
@@ -32272,11 +32344,11 @@
          data_0
          #t
          #f)
-        (|#%app| end-atomic/no-interrupts)))))
+        (|#%app| end-atomic/no-gc-interrupts)))))
 (define log-place-event
   (lambda (message_0 data_0)
     (begin
-      (|#%app| start-atomic/no-interrupts)
+      (|#%app| start-atomic/no-gc-interrupts)
       (begin0
         (log-message*
          (unsafe-place-local-ref cell.1$6)
@@ -32286,7 +32358,7 @@
          data_0
          #t
          #f)
-        (|#%app| end-atomic/no-interrupts)))))
+        (|#%app| end-atomic/no-gc-interrupts)))))
 (define log-message*
   (lambda (logger_0 level_0 topic_0 message_0 data_0 prefix?_0 in-interrupt?_0)
     (let ((msg_0 #f))
@@ -33166,11 +33238,15 @@
                                              maybe-wait
                                              (lambda (fd_0)
                                                (if (if fd_0
-                                                     (|#%app|
-                                                      rktio_fd_is_pending_open
-                                                      (unsafe-place-local-ref
-                                                       cell.1)
-                                                      (fd-port-fd fd_0))
+                                                     (begin
+                                                       (unsafe-start-atomic)
+                                                       (begin0
+                                                         (|#%app|
+                                                          rktio_fd_is_pending_open
+                                                          (unsafe-place-local-ref
+                                                           cell.1)
+                                                          (fd-port-fd fd_0))
+                                                         (unsafe-end-atomic)))
                                                      #f)
                                                  (sync fd_0)
                                                  (void))))))
@@ -33658,50 +33734,60 @@
                             (if (unsafe-fx< index_0 11)
                               9
                               (if (unsafe-fx< index_0 12) 10 11))))))))
-               (let ((r_0
-                      (let ((app_0
-                             (if verb_0 (1/string->bytes/utf-8 verb_0) #f)))
-                        (let ((app_1 (1/string->bytes/utf-8 target_0)))
-                          (let ((app_2 (1/string->bytes/utf-8 parameters_0)))
-                            (|#%app|
-                             rktio_shell_execute
-                             (unsafe-place-local-ref cell.1)
-                             app_0
-                             app_1
-                             app_2
-                             (->host (->path dir_0) 'shell-execute '(exists))
-                             show_mode_0))))))
-                 (begin
-                   (if (vector? r_0)
-                     (let ((base-msg_0 "failed"))
-                       (raise
-                        (let ((app_0
-                               (let ((msg_0
-                                      (string-append
-                                       base-msg_0
-                                       "\n  system error: "
-                                       (format-rktio-system-error-message
-                                        r_0))))
-                                 (error-message->adjusted-string
-                                  'shell-execute
-                                  'racket/primitive
-                                  msg_0
-                                  'racket/primitive))))
-                          (|#%app|
-                           exn:fail
-                           app_0
-                           (current-continuation-marks)))))
-                     (void))
-                   #f))))))))))
-(define effect_3140
+               (let ((verb-bytes_0
+                      (if verb_0 (1/string->bytes/utf-8 verb_0) #f)))
+                 (let ((target-bytes_0 (1/string->bytes/utf-8 target_0)))
+                   (let ((param-bytes_0 (1/string->bytes/utf-8 parameters_0)))
+                     (let ((host-dir-path_0
+                            (->host (->path dir_0) 'shell-execute '(exists))))
+                       (let ((r_0
+                              (begin
+                                (unsafe-start-atomic)
+                                (begin0
+                                  (|#%app|
+                                   rktio_shell_execute
+                                   (unsafe-place-local-ref cell.1)
+                                   verb-bytes_0
+                                   target-bytes_0
+                                   param-bytes_0
+                                   host-dir-path_0
+                                   show_mode_0)
+                                  (unsafe-end-atomic)))))
+                         (begin
+                           (if (vector? r_0)
+                             (let ((base-msg_0 "failed"))
+                               (raise
+                                (let ((app_0
+                                       (let ((msg_0
+                                              (string-append
+                                               base-msg_0
+                                               "\n  system error: "
+                                               (format-rktio-system-error-message
+                                                r_0))))
+                                         (error-message->adjusted-string
+                                          'shell-execute
+                                          'racket/primitive
+                                          msg_0
+                                          'racket/primitive))))
+                                  (|#%app|
+                                   exn:fail
+                                   app_0
+                                   (current-continuation-marks)))))
+                             (void))
+                           #f))))))))))))))
+(define effect_2348
   (begin
     (void
      (|#%app|
       set-get-subprocesses-time!
       (lambda ()
-        (|#%app|
-         rktio_get_process_children_milliseconds
-         (unsafe-place-local-ref cell.1)))))
+        (begin
+          (unsafe-start-atomic)
+          (begin0
+            (|#%app|
+             rktio_get_process_children_milliseconds
+             (unsafe-place-local-ref cell.1))
+            (unsafe-end-atomic))))))
     (void)))
 (define 1/processor-count
   (|#%name|
@@ -37544,16 +37630,20 @@
            (let ((write?_0 (memq 'write mode_0)))
              (let ((refcount_0 (box (if (if read?_0 write?_0 #f) 2 1))))
                (let ((fd_0
-                      (|#%app|
-                       rktio_system_fd
-                       (unsafe-place-local-ref cell.1)
-                       system-fd_0
-                       (let ((app_0 (if (memq 'text mode_0) 4 0)))
-                         (bitwise-ior
-                          (if read?_0 1 0)
-                          (if write?_0 2 0)
-                          app_0
-                          (if (memq 'regular-file mode_0) 512 0))))))
+                      (begin
+                        (unsafe-start-atomic)
+                        (begin0
+                          (|#%app|
+                           rktio_system_fd
+                           (unsafe-place-local-ref cell.1)
+                           system-fd_0
+                           (let ((app_0 (if (memq 'text mode_0) 4 0)))
+                             (bitwise-ior
+                              (if read?_0 1 0)
+                              (if write?_0 2 0)
+                              app_0
+                              (if (memq 'regular-file mode_0) 512 0))))
+                          (unsafe-end-atomic)))))
                  (let ((i_0
                         (if read?_0
                           (open-input-fd.1
@@ -37604,15 +37694,22 @@
    unsafe-port->file-descriptor
    (lambda (p_0)
      (let ((fd_0 (fd-port-fd p_0)))
-       (if fd_0
-         (if (not
-              (|#%app|
-               rktio_fd_is_pending_open
-               (unsafe-place-local-ref cell.1)
-               fd_0))
-           (|#%app| rktio_fd_system_fd (unsafe-place-local-ref cell.1) fd_0)
-           #f)
-         #f)))))
+       (begin
+         (unsafe-start-atomic)
+         (begin0
+           (if fd_0
+             (if (not
+                  (|#%app|
+                   rktio_fd_is_pending_open
+                   (unsafe-place-local-ref cell.1)
+                   fd_0))
+               (|#%app|
+                rktio_fd_system_fd
+                (unsafe-place-local-ref cell.1)
+                fd_0)
+               #f)
+             #f)
+           (unsafe-end-atomic)))))))
 (define 1/unsafe-port->socket
   (|#%name|
    unsafe-port->socket

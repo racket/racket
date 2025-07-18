@@ -7,6 +7,7 @@
 
 (provide path-or-fd-stat)
 
+;; in atomic mode on entry, leaves atomic mode
 (define (path-or-fd-stat who
                          #:host-path [host-path #f]
                          #:as-link? [as-link? #f] ; used only if `host-path`

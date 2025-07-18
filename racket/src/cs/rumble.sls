@@ -54,6 +54,8 @@
 
           ;; not exported to Racket:
           make-engine
+          make-engine-thread-cell-state
+          set-engine-thread-cell-state!
           engine-block
           engine-timeout
           engine-return

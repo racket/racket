@@ -135,8 +135,8 @@
                          'current-sandman current-sandman
                          'unsafe-start-atomic start-atomic
                          'unsafe-end-atomic end-atomic
-                         'start-atomic/no-interrupts start-atomic
-                         'end-atomic/no-interrupts end-atomic
+                         'start-atomic/no-gc-interrupts start-atomic
+                         'end-atomic/no-gc-interrupts end-atomic
                          'in-atomic-mode? in-atomic-mode?
                          'current-custodian current-custodian
                          'custodian-shut-down? (lambda (c)

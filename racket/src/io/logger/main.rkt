@@ -69,15 +69,15 @@
   (check who #:or-false symbol? topic)
   (and
    (not (eq? level 'none))
-   (atomically/no-interrupts/no-wind
+   (atomically/no-gc-interrupts/no-wind
     (log-level?* logger level topic))))
 
 (define (logging-future-events?)
-  (atomically/no-interrupts/no-wind
+  (atomically/no-gc-interrupts/no-wind
    (log-level?* root-logger 'debug 'future)))
 
 (define (logging-place-events?)
-  (atomically/no-interrupts/no-wind
+  (atomically/no-gc-interrupts/no-wind
    (log-level?* root-logger 'debug 'place)))
 
 ;; In atomic mode with interrupts disabled
@@ -88,7 +88,7 @@
   (check who logger? logger)
   (check who #:or-false symbol? topic)
   (level->user-representation
-   (atomically/no-interrupts/no-wind
+   (atomically/no-gc-interrupts/no-wind
     (logger-wanted-level logger topic))))
 
 (define/who (log-all-levels logger)
@@ -145,15 +145,15 @@
   (check who #:or-false symbol? topic)
   (check who string? message)
   (unless (eq? level 'none)
-    (atomically/no-interrupts/no-wind
+    (atomically/no-gc-interrupts/no-wind
      (log-message* logger level topic message data prefix? #f))))
 
 (define (log-future-event message data)
-  (atomically/no-interrupts/no-wind
+  (atomically/no-gc-interrupts/no-wind
    (log-message* root-logger 'debug 'future message data #t #f)))
 
 (define (log-place-event message data)
-  (atomically/no-interrupts/no-wind
+  (atomically/no-gc-interrupts/no-wind
    (log-message* root-logger 'debug 'place message data #t #f)))
 
 ;; In atomic mode with interrupts disabled

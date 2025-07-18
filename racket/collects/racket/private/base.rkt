@@ -15,7 +15,8 @@
              "generic-interfaces.rkt"
              "print-value-columns.rkt"
              "kw-syntax-binding.rkt" ; shadows `syntax-binding-set-extend`
-             "kw-syntax-serialize.rkt" ; shadows `syntax-serialize` and `syntax-deserialize
+             "kw-syntax-serialize.rkt" ; shadows `syntax-serialize` and `syntax-deserialize`
+             "kw-thread.rkt" ; shadows `thread`
              (for-syntax "stxcase-scheme.rkt"))
 
   (#%provide (all-from-except "pre-base.rkt"
@@ -48,6 +49,7 @@
              (all-from "print-value-columns.rkt")
              (all-from "kw-syntax-binding.rkt")
              (all-from "kw-syntax-serialize.rkt")
+             (all-from "kw-thread.rkt")
              (for-syntax syntax-rules syntax-id-rules ... _)
              (rename -open-input-file open-input-file)
              (rename -open-output-file open-output-file)

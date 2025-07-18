@@ -24,11 +24,11 @@
          [result #f]
          [q (or async-callback-queue orig-place-async-callback-queue)]
          [m (async-callback-queue-lock q)])
-    (when interrupts-disabled? (enable-interrupts)) ; interrupt "lock" ordered after mutex
     (when need-atomic?  ; don't abandon engine after mutex is acquired
       (if (or (not allow-swap?) (current-future))
           (scheduler-start-atomic/counter-only)
           (scheduler-start-atomic)))
+    (when interrupts-disabled? (enable-interrupts)) ; interrupt "lock" ordered after mutex
     (mutex-acquire m)
     (set-async-callback-queue-in! q (cons (lambda ()
                                             (run-thunk
@@ -52,11 +52,11 @@
           (condition-wait (async-callback-queue-condition q) m)
           (loop))))
     (mutex-release m)
+    (when interrupts-disabled? (disable-interrupts))
     (when need-atomic?
       (if (or (not allow-swap?) (current-future))
           (scheduler-end-atomic/counter-only)
           (scheduler-end-atomic)))
-    (when interrupts-disabled? (disable-interrupts))
     result))
 
 ;; Called with all threads all stopped:
@@ -76,7 +76,9 @@
 ;; when ths function is called.
 (define (poll-async-callbacks)
   (let ([q (current-async-callback-queue)])
+    (disable-interrupts)
     (mutex-acquire (async-callback-queue-lock q))
+    (enable-interrupts)
     (let ([in (async-callback-queue-in q)]
           [gc? (async-callback-queue-gc? q)])
       (append
