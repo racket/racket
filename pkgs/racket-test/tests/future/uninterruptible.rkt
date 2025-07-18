@@ -32,8 +32,6 @@
                      (f/uninterruptible i)]
                     [(allocator/block)
                      (f/block i)]
-                    [(allocator/block/uninterruptible)
-                     (f/block/uninterruptible i)]
                     [(dynamic-wind)
                      (for ([j (in-range 10)])
                        (g i))]
@@ -60,7 +58,6 @@
 (run 'allocator)
 (run 'allocator/uninterruptible)
 (run 'allocator/block)
-(run 'allocator/block/uninterruptible)
 (run 'dynamic-wind)
 (run 'atomic 10)
 (run 'uninterruptible 10)

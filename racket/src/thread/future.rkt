@@ -583,11 +583,7 @@
                                      k))]
        [else
         ;; extra atomicity is from `start-uninterrupted`s
-        (define n (fx- (current-atomic) 1))
-        (current-atomic 1)
-        (set-future*-thunk! me-f (lambda ()
-                                   (current-atomic (+ n (current-atomic)))
-                                   (k)))])
+        (internal-error "attempting to suspend a future in uninterruptible mode")])
      ;; no future-scheduler swap out from here on:
      (unless (in-racket-thread?)
        (define p (future*-parallel me-f))

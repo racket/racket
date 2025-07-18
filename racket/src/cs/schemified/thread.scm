@@ -12148,15 +12148,9 @@
                (if (if (future*-parallel me-f_0) (in-future-thread?) #f)
                  (lambda () (call-in-continuation k_0 1/check-for-break))
                  k_0))
-              (let ((n_0 (fx- (current-atomic) 1)))
-                (begin
-                  (current-atomic 1)
-                  (set-future*-thunk!
-                   me-f_0
-                   (lambda ()
-                     (begin
-                       (current-atomic (+ n_0 (current-atomic)))
-                       (|#%app| k_0)))))))
+              (|#%app|
+               host:internal-error
+               "attempting to suspend a future in uninterruptible mode"))
             (if (in-racket-thread?)
               (void)
               (let ((p_0 (future*-parallel me-f_0)))
