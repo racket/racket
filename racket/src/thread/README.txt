@@ -21,31 +21,31 @@ precisely: the worker Chez Scheme threads that belong to that
 scheduler) drives engines.
 
 When a thread or future is doing scheduler-sensitive work, it needs to
-go into "uninterruptable" mode with `start-uninterruptable` and
-`end-uninterruptable`, at least.
+go into "uninterruptible" mode with `start-uninterruptible` and
+`end-uninterruptible`, at least.
 
 The `start-atomic` and `end-atomic` functions imply
-`start-uninterruptable` and `end-uninterruptable`, but `start-atomic`
-futher insists on being in a coroutine thread, because it's doing
+`start-uninterruptible` and `end-uninterruptible`, but `start-atomic`
+further insists on being in a coroutine thread, because it's doing
 something that the coroutine thread is sensitive to. When
 `start-atomic` is used not in a coroutine thread, it will block or
 move over to a coroutine thread; see "Futures" and "Parallel Threads"
 below. Within a coroutine thread, if the scheduler wanted to interrupt
 the thread but it was in atomic mode, then it queues a function to be
 called when `end-atomic` is reached; that's among the reasons that
-`start-atomic` should not be balanced by `end-uninterruptable`.
+`start-atomic` should not be balanced by `end-uninterruptible`.
 
 The `current-atomic` thread register (at the Chez Scheme thread level)
-technically should be called `current-uninterruptable-level`, but
-`current-atomic` is more succint. Similarly, `in-atomic-mode?` and
-`not-atomic-mode?` more precisely check for uninterruptable mode.
+technically should be called `current-uninterruptible-level`, but
+`current-atomic` is more succinct. Similarly, `in-atomic-mode?` and
+`not-atomic-mode?` more precisely check for uninterruptible mode.
 
 Thread
 ------
 
-"Thread" or "Racket thread" by default means a Racket coruoutine
+"Thread" or "Racket thread" by default means a Racket coroutine
 thread. These are coroutines or "green threads" within a place; they
-do not run concurrent with each other. Synchronization at this level
+do not run in parallel with each other. Synchronization at this level
 is often implemented by using atomic mode via `start-atomic` and
 `end-atomic`.
 
@@ -59,7 +59,7 @@ There are places in the implementation of threads where atomic mode
 has been exited, but the thread isn't supposed to be running anymore,
 and it's on its way to being descheduled. In those places, it's
 important to use `end-atomic/no-barrier-exit`, so that the
-continaution isn't moved to the future for a parallel thread (where
+continuation isn't moved to the future for a parallel thread (where
 the running coroutine thread is part of the implementation of a
 parallel thread). See "Parallel Threads" below.
 
@@ -87,7 +87,7 @@ original Racket BC implementation:
    future. For example, attempting to use a port will invariably go
    into atomic mode, so port operations are still "unsafe". Any
    attempt to use a semaphore or channel will also involve atomic
-   mode, so those are unsafe in the sense of blocking a fututre.
+   mode, so those are unsafe in the sense of blocking a future.
 
    Attempting to use any operation that depends on the current
    continuation or the current thread will also block, as it must.
@@ -109,8 +109,8 @@ original Racket BC implementation:
    as an unsafe step inside `fprintf`.
 
 Each future has a lock that owns the future's representation. Taking a
-future's lock implies `start-uninterruptable`, and releasing the lock
-implies `end-uninterruptable` (and crucially to many contexts, not
+future's lock implies `start-uninterruptible`, and releasing the lock
+implies `end-uninterruptible` (and crucially to many contexts, not
 `end-atomic`).
 
 Parallel Threads
@@ -126,14 +126,14 @@ to a coroutine thread can move back to the future after the blocking
 operation is handled (e.g., at `end-atomic`).
 
 The internal coroutine thread associated with a parallel thread is
-used as the external repesentative of the parallel thread. If it is
+used as the external representative of the parallel thread. If it is
 shut down or sent a break signal, the future is terminated or
-signalled accordingly.
+signaled accordingly.
 
 When `end-atomic` exits atomic mode, then it calls
 `future-barrier-exit`, which is an inlined check. If it detects the
 potential for an associated parallel future, it calls the more general
-`future-unbock` function. The `future-unblock` function detects
+`future-unblock` function. The `future-unblock` function detects
 precisely when a parallel future is available to continue the work of
 the current coroutine thread, and it kicks the continuation back over
 to the parallel thread's future if so.

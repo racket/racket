@@ -1904,9 +1904,9 @@
 (define 1/current-future (make-pthread-parameter #f))
 (define in-racket-thread? (lambda () (if (current-thread/in-racket) #t #f)))
 (define in-future-thread? (lambda () (not (current-thread/in-racket))))
-(define start-uninterruptable
+(define start-uninterruptible
   (lambda () (current-atomic (fx+ (current-atomic) 1))))
-(define end-uninterruptable
+(define end-uninterruptible
   (lambda () (current-atomic (fx- (current-atomic) 1))))
 (define start-atomic
   (lambda ()
@@ -6968,13 +6968,13 @@
 (define thread-representative-custodian
   (lambda (t_0)
     (begin
-      (start-uninterruptable)
+      (start-uninterruptible)
       (let ((cs_0 (thread-custodian-references t_0)))
         (let ((c_0
                (if (pair? cs_0)
                  (custodian-reference->custodian (car cs_0))
                  #f)))
-          (begin (end-uninterruptable) c_0))))))
+          (begin (end-uninterruptible) c_0))))))
 (define run-kill-callbacks!
   (lambda (t_0)
     (begin
@@ -11144,7 +11144,7 @@
 (define lock-acquire
   (lambda (lock_0)
     (begin
-      (start-uninterruptable)
+      (start-uninterruptible)
       (letrec*
        ((loop_0
          (|#%name|
@@ -11159,7 +11159,7 @@
     (begin
       (memory-order-release)
       (if (unsafe-box*-cas! lock_0 1 0)
-        (end-uninterruptable)
+        (end-uninterruptible)
         (if (eq? (unbox lock_0) 0)
           (|#%app| host:internal-error "lock release failed!")
           (lock-release lock_0))))))
@@ -11589,7 +11589,7 @@
                          finish!
                          (lambda (results_0 state_0)
                            (begin
-                             (start-uninterruptable)
+                             (start-uninterruptible)
                              (begin
                                (lock-acquire (future*-lock f6_0))
                                (begin
@@ -11606,7 +11606,7 @@
                                          (lock-release (future*-lock f6_0))
                                          (future-notify-dependents deps_0)
                                          (wakeup-racket-thread f6_0)
-                                         (end-uninterruptable)
+                                         (end-uninterruptible)
                                          (let ((temp45_0 (future*-id f6_0)))
                                            (log-future.1
                                             #f
@@ -11625,7 +11625,7 @@
                         (lambda ()
                           (call-with-continuation-prompt
                            (lambda ()
-                             (begin (end-uninterruptable) (|#%app| thunk_0)))
+                             (begin (end-uninterruptible) (|#%app| thunk_0)))
                            future-start-prompt-tag
                            (lambda args_0 (void))))
                         (lambda results_0 (finish!_0 results_0 'done))))
@@ -12102,17 +12102,17 @@
 (define future-block
   (lambda ()
     (begin
-      (start-uninterruptable)
+      (start-uninterruptible)
       (let ((me-f_0 (current-future-in-future-thread)))
         (if me-f_0
           (begin
             (lock-acquire (future*-lock me-f_0))
-            (end-uninterruptable)
+            (end-uninterruptible)
             (future-maybe-notify-stop me-f_0)
             (set-future*-state! me-f_0 'blocked)
             (on-transition-to-unfinished)
             (future-suspend.1 #f #f #f))
-          (end-uninterruptable))))))
+          (end-uninterruptible))))))
 (define future-unblock
   (lambda ()
     (if (not-atomic-mode?)
@@ -12275,14 +12275,14 @@
 (define future-sync
   (lambda (who_0 thunk_0)
     (begin
-      (start-uninterruptable)
+      (start-uninterruptible)
       (let ((me-f_0 (1/current-future)))
         (if (not me-f_0)
-          (begin (end-uninterruptable) (|#%app| thunk_0))
+          (begin (end-uninterruptible) (|#%app| thunk_0))
           (if (eq? (future*-kind me-f_0) 'would-be)
             (begin
               (1/current-future #f)
-              (end-uninterruptable)
+              (end-uninterruptible)
               (let ((temp95_0 (future*-id me-f_0)))
                 (log-future.1 #f who_0 'sync temp95_0))
               (let ((v_0 (|#%app| thunk_0)))
@@ -12292,11 +12292,11 @@
                   (1/current-future me-f_0)
                   v_0)))
             (if (future*-parallel me-f_0)
-              (begin (end-uninterruptable) (|#%app| thunk_0))
+              (begin (end-uninterruptible) (|#%app| thunk_0))
               (if (in-racket-thread?)
-                (begin (end-uninterruptable) (|#%app| thunk_0))
+                (begin (end-uninterruptible) (|#%app| thunk_0))
                 (begin
-                  (end-uninterruptable)
+                  (end-uninterruptible)
                   (engine-block)
                   (|#%app|
                    host:call-as-asynchronous-callback
@@ -12489,7 +12489,7 @@
    schedule-future!
    (lambda (check-pool-open?25_0 front?24_0 f28_0)
      (begin
-       (start-uninterruptable)
+       (start-uninterruptible)
        (begin
          (if (future*-parallel f28_0)
            (increment-place-parallel-count! 1)
@@ -12535,7 +12535,7 @@
                          (set-scheduler-futures-tail! s_0 f28_0))))
                    (|#%app| host:condition-signal (scheduler-cond s_0))
                    (|#%app| host:mutex-release (scheduler-mutex s_0))
-                   (end-uninterruptable)))))))))))
+                   (end-uninterruptible)))))))))))
 (define try-deschedule-future?.1
   (|#%name|
    try-deschedule-future?
@@ -12711,7 +12711,7 @@
                  #t)
                 #t)))
           (begin
-            (start-uninterruptable)
+            (start-uninterruptible)
             (|#%app|
              call-with-engine-completion
              (lambda (done_0)
