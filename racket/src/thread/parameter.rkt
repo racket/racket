@@ -10,7 +10,7 @@
 ;; These definitions are specially recognized for Racket on
 ;; Chez Scheme and converted to use a virtual register.
 
-;; Mre precisely, "current uninterruptable level":
+;; Mre precisely, "current uninterruptible level":
 (define current-atomic (make-pthread-parameter 0))
 
 ;; The `current-thread/in-racket` register is `#f` in

@@ -441,12 +441,12 @@
 
 ;; can be called in any pthread, including a GCing pthread
 (define (thread-representative-custodian t)
-  (start-uninterruptable)
+  (start-uninterruptible)
   (define cs (thread-custodian-references t))
   (define c
     (and (pair? cs)
          (custodian-reference->custodian (car cs))))
-  (end-uninterruptable)
+  (end-uninterruptible)
   c)
 
 ;; Called in atomic mode:

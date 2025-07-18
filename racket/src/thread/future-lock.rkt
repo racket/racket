@@ -42,7 +42,7 @@
 (define (make-lock) (box 0))
 
 (define (lock-acquire lock)
-  (start-uninterruptable)
+  (start-uninterruptible)
   (let loop ()
     (if (box-cas! lock 0 1)
         (memory-order-acquire)
@@ -52,7 +52,7 @@
   (memory-order-release)
   (cond
     [(box-cas! lock 1 0)
-     (end-uninterruptable)]
+     (end-uninterruptible)]
     [(eq? (unbox lock) 0)
      ;; not just a spurious failure...
      (internal-error "lock release failed!")]
