@@ -59,12 +59,12 @@
   (unless (procedure-arity-includes? proc 1)
     (raise-argument-error who expected proc)))
 
-(define ((allocator d #:merely-uninterruptable? [merely-uninterruptable? #f]) proc)
+(define ((allocator d #:merely-uninterruptible? [merely-uninterruptible? #f]) proc)
   (check-arity-includes-1 'allocator d)
   (cond
     [(not proc) #f]
     [else
-     (define call-as-atomic* (if merely-uninterruptable? call-as-uninterruptable call-as-atomic))
+     (define call-as-atomic* (if merely-uninterruptible? call-as-uninterruptible call-as-atomic))
      (rename
       (let-values ([(_ allowed-kws) (procedure-keywords proc)])
         (define (register v)
@@ -89,10 +89,10 @@
       proc)]))
 
 (define ((deallocator [get-arg car]
-                      #:merely-uninterruptable? [merely-uninterruptable? #f])
+                      #:merely-uninterruptible? [merely-uninterruptible? #f])
          proc)
   (check-arity-includes-1 'deallocator get-arg "(-> list/c any/c)")
-  (define call-as-atomic* (if merely-uninterruptable? call-as-uninterruptable call-as-atomic))
+  (define call-as-atomic* (if merely-uninterruptible? call-as-uninterruptible call-as-atomic))
   (rename
    (let-values ([(_ allowed-kws) (procedure-keywords proc)])
      (define (handle v)
@@ -121,7 +121,7 @@
    proc))
 
 (define ((retainer d [get-arg car]
-                   #:merely-uninterruptable? [merely-uninterruptable? #f])
+                   #:merely-uninterruptible? [merely-uninterruptible? #f])
          proc)
   (check-arity-includes-1 'retainer d)
   (check-arity-includes-1 'retainer get-arg "(-> list/c any/c)")
@@ -134,7 +134,7 @@
        (hash-set! allocated v ds)
        (unless next-ds
          (register-finalizer v deallocate)))
-     (define call-as-atomic* (if merely-uninterruptable? call-as-uninterruptable call-as-atomic))
+     (define call-as-atomic* (if merely-uninterruptible? call-as-uninterruptible call-as-atomic))
      (cond
        [(null? allowed-kws)
         (lambda args

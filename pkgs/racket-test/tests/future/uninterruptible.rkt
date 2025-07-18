@@ -11,10 +11,10 @@
       #f))
 
 (define f ((allocator void) make-false))
-(define f/uninterruptable ((allocator void #:merely-uninterruptable? #t) make-false))
+(define f/uninterruptible ((allocator void #:merely-uninterruptible? #t) make-false))
 
 (define f/block ((allocator void) make-usually-false))
-(define f/block/uninterruptable ((allocator void #:merely-uninterruptable? #t) make-usually-false))
+(define f/block/uninterruptible ((allocator void #:merely-uninterruptible? #t) make-usually-false))
 
 (define g (lambda (x) (dynamic-wind void (lambda () x) void)))
 
@@ -28,12 +28,12 @@
                   (case mode
                     [(allocator)
                      (f i)]
-                    [(allocator/uninterruptable)
-                     (f/uninterruptable i)]
+                    [(allocator/uninterruptible)
+                     (f/uninterruptible i)]
                     [(allocator/block)
                      (f/block i)]
-                    [(allocator/block/uninterruptable)
-                     (f/block/uninterruptable i)]
+                    [(allocator/block/uninterruptible)
+                     (f/block/uninterruptible i)]
                     [(dynamic-wind)
                      (for ([j (in-range 10)])
                        (g i))]
@@ -41,16 +41,16 @@
                      (begin
                        (start-atomic)
                        (end-atomic))]
-                    [(uninterruptable)
+                    [(uninterruptible)
                      (begin
-                       (start-uninterruptable)
-                       (end-uninterruptable))]
+                       (start-uninterruptible)
+                       (end-uninterruptible))]
                     [(call-as-atomic)
                      (call-as-atomic
                       (lambda ()
                         (void)))]
-                    [(call-as-uninterruptable)
-                     (call-as-uninterruptable
+                    [(call-as-uninterruptible)
+                     (call-as-uninterruptible
                       (lambda ()
                         (void)))]
                     [else (error "unknown mode")]))))))
@@ -58,11 +58,11 @@
   (time (for-each touch fs)))
 
 (run 'allocator)
-(run 'allocator/uninterruptable)
+(run 'allocator/uninterruptible)
 (run 'allocator/block)
-(run 'allocator/block/uninterruptable)
+(run 'allocator/block/uninterruptible)
 (run 'dynamic-wind)
 (run 'atomic 10)
-(run 'uninterruptable 10)
+(run 'uninterruptible 10)
 (run 'call-as-atomic)
-(run 'call-as-uninterruptable)
+(run 'call-as-uninterruptible)

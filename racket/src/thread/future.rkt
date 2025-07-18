@@ -603,7 +603,7 @@
   ;; still supposed to run.
   ;; We take advantage of `current-atomic` to disable interruptions,
   ;; both directly here and in the implementation of
-  ;; `unsafe-{start, end}-uninterruptable`.
+  ;; `unsafe-{start, end}-uninterruptible`.
   (define e (make-engine (lambda ()
                            ;; decrements `(current-atomic)`
                            (run-future f))

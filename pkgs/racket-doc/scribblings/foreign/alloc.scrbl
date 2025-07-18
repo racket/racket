@@ -9,7 +9,7 @@
 ensuring that values allocated through foreign functions are reliably
 deallocated.}
 
-@defproc[((allocator [dealloc (any/c . -> . any)] [#:merely-uninterruptable? uninterruptable? any/c #f])
+@defproc[((allocator [dealloc (any/c . -> . any)] [#:merely-uninterruptible? uninterruptible? any/c #f])
           [alloc (or/c procedure? #f)])
          (or/c procedure? #f)]{
 
@@ -23,10 +23,10 @@ If and only if @racket[alloc] is @racket[#f], @racket[((allocator
 alloc) dealloc)] produces @racket[#f].
 
 The resulting @tech{allocator} calls @racket[alloc] in @tech{atomic
-mode} (see @racket[call-as-atomic]), unless @racket[uninterruptable?]
-is true, in which case @tech{uninterruptable mode} is used (see
-@racket[call-as-uninterruptable]). The result from @racket[alloc] is
-received and registered in atomic or uninterruptable mode, so that the result is reliably
+mode} (see @racket[call-as-atomic]), unless @racket[uninterruptible?]
+is true, in which case @tech{uninterruptible mode} is used (see
+@racket[call-as-uninterruptible]). The result from @racket[alloc] is
+received and registered in atomic or uninterruptible mode, so that the result is reliably
 deallocated as long as no exception is raised.
 
 The @racket[dealloc] procedure will be called in atomic mode, and it
@@ -53,12 +53,12 @@ a new deallocation action that will run earlier.
                                    all remaining @racket[dealloc]s.}
          #:changed "7.4.0.4" @elem{Produce @racket[#f] when @racket[alloc]
                                    is @racket[#f].}
-         #:changed "8.17.0.7" @elem{Added the @racket[#:merely-uninterruptable?]
+         #:changed "8.17.0.7" @elem{Added the @racket[#:merely-uninterruptible?]
                                     optional argument.}]}
 
 @deftogether[(
 @defproc[((deallocator [get-arg (list? . -> . any/c) car]
-                       [#:merely-uninterruptable? uninterruptable? any/c #f])
+                       [#:merely-uninterruptible? uninterruptible? any/c #f])
           [dealloc procedure?])
          procedure?]
 @defproc[((releaser [get-arg (list? . -> . any/c) car]) [dealloc procedure?]) 
@@ -67,8 +67,8 @@ a new deallocation action that will run earlier.
 
 Produces a @deftech{deallocator} procedure that behaves like
 @racket[dealloc]. The @tech{deallocator} calls @racket[dealloc] in
-@tech{atomic mode} (see @racket[call-as-atomic]) or @tech{uninterruptable mode} (see
-@racket[call-as-uninterruptable]), and for one of its
+@tech{atomic mode} (see @racket[call-as-atomic]) or @tech{uninterruptible mode} (see
+@racket[call-as-uninterruptible]), and for one of its
 arguments, the it cancels the most recent remaining deallocator
 registered by a @tech{allocator} or @tech{retainer}.
 
@@ -83,13 +83,13 @@ require and accept the same keyword arguments as @racket[dealloc], if any.
 The @racket[releaser] procedure is a synonym for
 @racket[deallocator].
 
-@history[#:changed "8.17.0.7" @elem{Added the @racket[#:merely-uninterruptable?]
+@history[#:changed "8.17.0.7" @elem{Added the @racket[#:merely-uninterruptible?]
                                     optional argument.}]}
 
 
 @defproc[((retainer [release (any/c . -> . any)]
                     [get-arg (list? . -> . any/c) car]
-                    [#:merely-uninterruptable? uninterruptable? any/c #f])
+                    [#:merely-uninterruptible? uninterruptible? any/c #f])
           [retain procedure?]) 
          procedure?]{
 
@@ -121,5 +121,5 @@ require and accept the same keyword arguments as @racket[retain], if any.
 @history[#:changed "7.0.0.4" @elem{Added atomic mode for @racket[release]
                                    and changed non-main place exits to call
                                    all remaining @racket[release]s.}
-         #:changed "8.17.0.7" @elem{Added the @racket[#:merely-uninterruptable?]
+         #:changed "8.17.0.7" @elem{Added the @racket[#:merely-uninterruptible?]
                                     optional argument.}]}
