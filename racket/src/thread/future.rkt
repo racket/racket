@@ -309,7 +309,8 @@
   (check who (procedure-arity-includes/c 0) thunk)
   (check who (lambda (v) (or (eq? v 'own) (parallel-thread-pool? v)))
          #:contract "(or/c #f 'own parallel-thread-pool?)"
-         pool-in)         
+         pool-in)
+  (check who (lambda (v) (or (not v) (eq? v 'results))) #:contract "(or/c #f 'results)" keep-result?)
   (cond
     [(not (futures-enabled?))
      (thread thunk)]

@@ -294,7 +294,7 @@
           (thread
            (lambda ()
              (retry 7))
-           #:keep-results? #t)))))
+           #:keep 'results)))))
 
 ;; Catch continuation in composed continuation:
 (with-cc-variants

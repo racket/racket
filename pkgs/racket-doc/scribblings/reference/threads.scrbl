@@ -38,7 +38,7 @@ A thread can be used as a @tech{synchronizable event} (see
 
 @defproc[(thread [thunk (-> any)]
                  [#:pool pool (or/c #f 'own parallel-thread-pool?) #f]
-                 [#:keep-results? keep-results? any/c #f])
+                 [#:keep keep (or/c #f 'results) #f])
          thread?]{
 
 Calls @racket[thunk] with no arguments in a new thread of control. The
@@ -55,12 +55,12 @@ pool, and the pool is closed (in the sense of
 created in that pool, meaning that it shares processor resources with
 other threads in the same pool.
 
-If @racket[keep-results?] is @racket[#f], then the results of
-@racket[thunk] are ignored. Otherwise, results are recorded with the
+If @racket[keep] is @racket['results], results are recorded with the
 thread so that they can be reported by @racket[thread-wait].
+Otherwise, then the results of @racket[thunk] are ignored.
 
 @history[#:changed "8.18.0.2" @elem{Added the @racket[#:pool] and
-                                    @racket[#:keep-results?] arguments.}]}
+                                    @racket[#:keep] arguments.}]}
 
 @defproc[(thread? [v any/c]) thread?]{Returns @racket[#t] if
 @racket[v] is a @tech{thread descriptor}, @racket[#f] otherwise.}
@@ -220,7 +220,7 @@ Blocks execution of the current thread until @racket[thd] has
 terminated. If the thread's procedure raised an exception or otherwise
 aborted to the thread's initial @tech{prompt}, @racket[fail-k] is
 called to produce the result of @racket[thread-wait]. Otherwise, if
-the thread records its results (see @racket[#:keep-results?] in
+the thread records its results (see @racket[#:keep] in
 @racket[thread]), those results are returned, while @|void-const| is
 return if the thread does not keep its results.
 

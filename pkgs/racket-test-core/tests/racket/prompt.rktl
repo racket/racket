@@ -79,11 +79,11 @@
                                    tag
                                    (lambda (thunk) (thunk)))]))
 
-(define (thread-for-composable thunk #:keep-results? [keep-results? #f])
+(define (thread-for-composable thunk #:keep [keep #f])
   (thread (lambda ()
             (call-with-continuation-prompt-for-composable
              (lambda () (thunk))))
-          #:keep-results? keep-results?))
+          #:keep keep))
 
 (define-syntax (with-cc-variants stx)
   (syntax-case stx ()

@@ -197,7 +197,6 @@
                                                                      (current-break-enabled-cell))]
                         #:schedule? [schedule? #t]
                         #:keep-result? [keep-result? #f])
-  (check who (procedure-arity-includes/c 0) proc)
   (define p (if (or at-root? initial?)
                 root-thread-group
                 (current-thread-group)))
@@ -259,11 +258,15 @@
 
 (define make-thread
   (let ([thread (lambda (proc [keep-result? #f])
+                  (define who 'thread)
+                  (check who (procedure-arity-includes/c 0) proc)
+                  (check who (lambda (v) (or (not v) (eq? v 'results))) #:contract "(or/c #f 'results)" keep-result?)
                   (do-make-thread 'thread proc #:keep-result? keep-result?))])
     thread))
 
-(define (thread/suspend-to-kill proc)
-  (do-make-thread 'thread/suspend-to-kill proc #:suspend-to-kill? #t))
+(define/who (thread/suspend-to-kill proc)
+  (check who (procedure-arity-includes/c 0) proc)
+  (do-make-thread who proc #:suspend-to-kill? #t))
 
 (define (make-initial-thread thunk)
   (let ([t (do-make-thread 'thread thunk #:initial? #t)])

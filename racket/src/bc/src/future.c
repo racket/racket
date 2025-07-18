@@ -32,7 +32,6 @@ static Scheme_Object *futures_enabled(int argc, Scheme_Object *argv[])
 static void register_traversers(void);
 #endif
 
-static Scheme_Object *thread_parallel(int argc, Scheme_Object *argv[]);
 static Scheme_Object *make_parallel_pool(int argc, Scheme_Object *argv[]);
 static Scheme_Object *parallel_pool_p(int argc, Scheme_Object *argv[]);
 static Scheme_Object *parallel_pool_close(int argc, Scheme_Object *argv[]);
@@ -527,7 +526,7 @@ void scheme_init_futures(Scheme_Startup_Env *newenv)
   ADD_PRIM_W_ARITY("mark-future-trace-end!", mark_future_trace_end, 0, 0, newenv);
 
   scheme_addto_prim_instance("thread/parallel",
-                             scheme_make_prim_w_arity(thread_parallel, "thread/parallel", 3, 3),
+                             scheme_make_prim_w_arity(scheme_thread_parallel, "thread/parallel", 3, 3),
                              newenv);
   scheme_addto_prim_instance("make-parallel-thread-pool",
                              scheme_make_prim_w_arity(make_parallel_pool, "make-parallel-thread-pool", 0, 1),
@@ -3800,39 +3799,8 @@ future_t *get_pending_future(Scheme_Future_State *fs)
 #endif
 
 /**********************************************************************/
-/*                     thread/parallel stubs                          */
+/*                       thread pool stubs                            */
 /**********************************************************************/
-
-static Scheme_Object *thread_parallel(int argc, Scheme_Object *args[])
-{
-  const char *who = "thread";
-  Scheme_Object *p;
-  int keep_results;
-  
-  scheme_check_proc_arity(who, 0, 0, argc, args);
-  scheme_custodian_check_available(NULL, who, "thread");
-
-  if (argc > 1) {
-    if (!SAME_TYPE(SCHEME_TYPE(args[1]), scheme_parallel_pool_type)) {
-      if (!SCHEME_FALSEP(args[1]) && (!SCHEME_SYMBOLP(args[1])
-                                      || (SCHEME_SYM_LEN(args[1]) != 3)
-                                      || strcmp(SCHEME_SYM_VAL(args[1]), "own")
-                                      || SCHEME_SYM_UNINTERNEDP(args[1])))
-        scheme_wrong_contract(who, "(or/c #f 'own parallel-thread-pool?)", 1, argc, args);
-    } else {
-      if (SCHEME_INT1_VAL(args[1]) == 0)
-        scheme_contract_error(who, "parallel thread pool is closed");
-    }
-  }
-  keep_results = (argc > 2) && SCHEME_TRUEP(args[2]);
-
-  p = scheme_thread(args[0]);
-
-  if (keep_results)
-    ((Scheme_Thread *)p)->results = scheme_true;
-
-  return p;
-}
 
 static Scheme_Object *make_parallel_pool(int argc, Scheme_Object *args[])
 {

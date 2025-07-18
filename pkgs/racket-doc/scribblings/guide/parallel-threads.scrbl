@@ -21,12 +21,12 @@ means that the thread gets its own, single-thread pool.
    [else (+ (fib (- n 1)) (fib (- n 2)))]))   
 (define n1 (thread (lambda () (fib 35))
                    #:pool 'own
-                   #:keep-results? #t))
+                   #:keep 'results))
 (define n2 (thread (lambda () (fib 35))
                    #:pool 'own
-                   #:keep-results? #t))
-(time (= (thread-block n1)
-         (thread-block n2)))
+                   #:keep 'results))
+(time (= (thread-wait n1)
+         (thread-wait n2)))
 ]
 
 Whether parallel threads improve performance depends on the nature of

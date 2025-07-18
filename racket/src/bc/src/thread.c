@@ -191,6 +191,7 @@ ROSYM static Scheme_Object *major_symbol, *minor_symbol, *incremental_symbol;
 ROSYM static Scheme_Object *cumulative_symbol, *peak_symbol;
 ROSYM static Scheme_Object *gc_symbol, *gc_major_symbol;
 ROSYM static Scheme_Object *racket_symbol;
+ROSYM static Scheme_Object *results_symbol, *own_symbol;
 
 THREAD_LOCAL_DECL(static int do_atomic = 0);
 THREAD_LOCAL_DECL(static int missed_context_switch = 0);
@@ -521,6 +522,11 @@ void scheme_init_thread(Scheme_Startup_Env *env)
 
   REGISTER_SO(racket_symbol);
   racket_symbol = scheme_intern_symbol("racket");
+
+  REGISTER_SO(results_symbol);
+  REGISTER_SO(own_symbol);
+  results_symbol = scheme_intern_symbol("results");
+  own_symbol = scheme_intern_symbol("own");
 
   ADD_PRIM_W_ARITY("dump-memory-stats"            , scheme_dump_gc_stats, 0, -1, env);
   ADD_PRIM_W_ARITY("vector-set-performance-stats!", current_stats       , 1, 2, env);
@@ -3525,16 +3531,27 @@ Scheme_Object *scheme_thread(Scheme_Object *thunk)
   return scheme_thread_w_details(thunk, NULL, NULL, NULL, NULL, 0);
 }
 
+static int extract_keep_results(const char *who, int i, int argc, Scheme_Object *args[])
+{
+  if (i >= argc)
+    return 0;
+  if (SCHEME_FALSEP(args[i]))
+    return 0;
+  if (!SAME_OBJ(args[i], results_symbol))
+    scheme_wrong_contract(who, "(or/c #f 'results)", i, argc, args);
+  return 1;
+}
+
 static Scheme_Object *sch_thread(int argc, Scheme_Object *args[])
 {
+  const char *who = "thread";
   Scheme_Object *p;
   int keep_results;
   
-  scheme_check_proc_arity("thread", 0, 0, argc, args);
-  scheme_custodian_check_available(NULL, "thread", "thread");
+  scheme_check_proc_arity(who, 0, 0, argc, args);
+  scheme_custodian_check_available(NULL, who, "thread");
+  keep_results = extract_keep_results(who, 1, argc, args);
 
-  keep_results = (argc > 1) && SCHEME_TRUEP(args[1]);
-  
   p = scheme_thread(args[0]);
 
   if (keep_results)
@@ -3561,6 +3578,34 @@ static Scheme_Object *sch_thread_nokill(int argc, Scheme_Object *args[])
   scheme_custodian_check_available(NULL, "thread/suspend-to-kill", "thread");
 
   return scheme_thread_w_details(args[0], NULL, NULL, NULL, NULL, 1);
+}
+
+Scheme_Object *scheme_thread_parallel(int argc, Scheme_Object *args[])
+{
+  const char *who = "thread";
+  Scheme_Object *p;
+  int keep_results;
+
+  scheme_check_proc_arity(who, 0, 0, argc, args);
+  scheme_custodian_check_available(NULL, who, "thread");
+
+  if (argc > 1) {
+    if (!SAME_TYPE(SCHEME_TYPE(args[1]), scheme_parallel_pool_type)) {
+      if (!SCHEME_FALSEP(args[1]) && !SAME_OBJ(args[1], own_symbol))
+        scheme_wrong_contract(who, "(or/c #f 'own parallel-thread-pool?)", 1, argc, args);
+    } else {
+      if (SCHEME_INT1_VAL(args[1]) == 0)
+        scheme_contract_error(who, "parallel thread pool is closed");
+    }
+  }
+  keep_results = extract_keep_results(who, 2, argc, args);
+
+  p = scheme_thread(args[0]);
+
+  if (keep_results)
+    ((Scheme_Thread *)p)->results = scheme_true;
+
+  return p;
 }
 
 static Scheme_Object *sch_current(int argc, Scheme_Object *args[])

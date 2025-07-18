@@ -6505,107 +6505,114 @@
                     break-enabled-default-cell
                     (current-break-enabled-cell))
                   break-enabled-cell7_0)))
-           (begin
-             (if (if (procedure? proc19_0)
-                   (procedure-arity-includes? proc19_0 0)
-                   #f)
-               (void)
-               (raise-argument-error
-                who18_0
-                "(procedure-arity-includes/c 0)"
-                proc19_0))
-             (let ((p_0
-                    (if (if at-root?4_0 at-root?4_0 initial?5_0)
-                      (unsafe-place-local-ref cell.1)
-                      (1/current-thread-group))))
-               (let ((cells_0
+           (let ((p_0
+                  (if (if at-root?4_0 at-root?4_0 initial?5_0)
+                    (unsafe-place-local-ref cell.1)
+                    (1/current-thread-group))))
+             (let ((cells_0
+                    (|#%app|
+                     make-engine-thread-cell-state
+                     break-enabled-cell_0
+                     at-root?4_0)))
+               (let ((e_0
                       (|#%app|
-                       make-engine-thread-cell-state
-                       break-enabled-cell_0
+                       make-engine
+                       proc19_0
+                       (default-continuation-prompt-tag)
+                       no-results-on-abort-handler
+                       cells_0
                        at-root?4_0)))
-                 (let ((e_0
-                        (|#%app|
-                         make-engine
-                         proc19_0
-                         (default-continuation-prompt-tag)
-                         no-results-on-abort-handler
-                         cells_0
-                         at-root?4_0)))
-                   (let ((t_0
-                          (thread1.1
-                           'none
-                           'none
-                           name_0
-                           e_0
-                           p_0
-                           #f
-                           #f
-                           null
-                           null
-                           suspend-to-kill?6_0
-                           null
-                           null
-                           (not schedule?8_0)
-                           (if schedule?8_0 #f 'future)
-                           #f
-                           #f
-                           #f
-                           #f
-                           #f
-                           #f
-                           #f
-                           (make-queue)
-                           void
-                           (if keep-result?9_0 'pending 'pending/none)
-                           0
-                           #f
-                           cells_0)))
-                     (begin
-                       (|#%app|
-                        (begin
-                          (start-atomic)
-                          (begin0
-                            (let ((cref_0
-                                   (if c_0
-                                     (custodian-register-thread
-                                      c_0
-                                      t_0
-                                      remove-thread-custodian)
-                                     #f)))
-                              (if (let ((or-part_0 (not c_0)))
-                                    (if or-part_0 or-part_0 cref_0))
-                                (begin
-                                  (set-thread-custodian-references!
-                                   t_0
-                                   (list cref_0))
-                                  (if schedule?8_0
-                                    (thread-group-add! p_0 t_0)
-                                    (void))
-                                  void)
-                                (lambda ()
-                                  (raise-arguments-error
-                                   who18_0
-                                   "the custodian has been shut down"
-                                   "custodian"
-                                   c_0))))
-                            (end-atomic))))
-                       t_0))))))))))))
+                 (let ((t_0
+                        (thread1.1
+                         'none
+                         'none
+                         name_0
+                         e_0
+                         p_0
+                         #f
+                         #f
+                         null
+                         null
+                         suspend-to-kill?6_0
+                         null
+                         null
+                         (not schedule?8_0)
+                         (if schedule?8_0 #f 'future)
+                         #f
+                         #f
+                         #f
+                         #f
+                         #f
+                         #f
+                         #f
+                         (make-queue)
+                         void
+                         (if keep-result?9_0 'pending 'pending/none)
+                         0
+                         #f
+                         cells_0)))
+                   (begin
+                     (|#%app|
+                      (begin
+                        (start-atomic)
+                        (begin0
+                          (let ((cref_0
+                                 (if c_0
+                                   (custodian-register-thread
+                                    c_0
+                                    t_0
+                                    remove-thread-custodian)
+                                   #f)))
+                            (if (let ((or-part_0 (not c_0)))
+                                  (if or-part_0 or-part_0 cref_0))
+                              (begin
+                                (set-thread-custodian-references!
+                                 t_0
+                                 (list cref_0))
+                                (if schedule?8_0
+                                  (thread-group-add! p_0 t_0)
+                                  (void))
+                                void)
+                              (lambda ()
+                                (raise-arguments-error
+                                 who18_0
+                                 "the custodian has been shut down"
+                                 "custodian"
+                                 c_0))))
+                          (end-atomic))))
+                     t_0)))))))))))
 (define make-thread
   (let ((thread_0
          (|#%name|
           thread
           (lambda (proc48_0 keep-result?47_0)
-            (do-make-thread.1
-             #f
-             unsafe-undefined
-             unsafe-undefined
-             #f
-             keep-result?47_0
-             unsafe-undefined
-             #t
-             #f
-             'thread
-             proc48_0)))))
+            (begin
+              (if (if (procedure? proc48_0)
+                    (procedure-arity-includes? proc48_0 0)
+                    #f)
+                (void)
+                (raise-argument-error
+                 'thread
+                 "(procedure-arity-includes/c 0)"
+                 proc48_0))
+              (if (let ((or-part_0 (not keep-result?47_0)))
+                    (if or-part_0 or-part_0 (eq? keep-result?47_0 'results)))
+                (void)
+                (raise-argument-error
+                 'thread
+                 "(or/c #f 'results)"
+                 keep-result?47_0))
+              (do-make-thread.1
+               #f
+               unsafe-undefined
+               unsafe-undefined
+               #f
+               keep-result?47_0
+               unsafe-undefined
+               #t
+               #f
+               'thread
+               proc48_0))))))
     (|#%name|
      thread
      (case-lambda
@@ -6615,17 +6622,24 @@
   (|#%name|
    thread/suspend-to-kill
    (lambda (proc_0)
-     (do-make-thread.1
-      #f
-      unsafe-undefined
-      unsafe-undefined
-      #f
-      #f
-      unsafe-undefined
-      #t
-      #t
-      'thread/suspend-to-kill
-      proc_0))))
+     (begin
+       (if (if (procedure? proc_0) (procedure-arity-includes? proc_0 0) #f)
+         (void)
+         (raise-argument-error
+          'thread/suspend-to-kill
+          "(procedure-arity-includes/c 0)"
+          proc_0))
+       (do-make-thread.1
+        #f
+        unsafe-undefined
+        unsafe-undefined
+        #f
+        #f
+        unsafe-undefined
+        #t
+        #t
+        'thread/suspend-to-kill
+        proc_0)))))
 (define make-initial-thread
   (lambda (thunk_0)
     (let ((t_0
@@ -6645,11 +6659,11 @@
   (|#%name|
    unsafe-thread-at-root
    (lambda (proc_0)
-     (let ((root-custodian61_0 (unsafe-place-local-ref cell.1$7)))
+     (let ((root-custodian62_0 (unsafe-place-local-ref cell.1$7)))
        (do-make-thread.1
         #t
         unsafe-undefined
-        root-custodian61_0
+        root-custodian62_0
         #f
         #f
         unsafe-undefined
@@ -11857,6 +11871,13 @@
                  'thread
                  "(or/c #f 'own parallel-thread-pool?)"
                  pool-in9_0))
+              (if (let ((or-part_0 (not keep-result?10_0)))
+                    (if or-part_0 or-part_0 (eq? keep-result?10_0 'results)))
+                (void)
+                (raise-argument-error
+                 'thread
+                 "(or/c #f 'results)"
+                 keep-result?10_0))
               (if (not (1/futures-enabled?))
                 (make-thread thunk11_0)
                 (let ((cust_0 (1/current-custodian)))

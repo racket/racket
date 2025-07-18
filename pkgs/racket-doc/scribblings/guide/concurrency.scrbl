@@ -65,13 +65,13 @@ thread exits:
 (displayln "Worker finished")
 ]
 
-To receive a result back from a thread, use @racket[#:keep-results?]
+To receive a result back from a thread, use @racket[#:keep 'results]
 when creating the thread, and then @racket[thread-wait] can return the
 values that the thread's procedure returned:
 
 @racketblock[
 (define worker (thread (lambda () (+ 1 2))
-                       #:keep-results? #t))
+                       #:keep 'results))
 (thread-wait worker)
 ]
 

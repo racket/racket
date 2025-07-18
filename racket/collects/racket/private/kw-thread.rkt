@@ -8,8 +8,8 @@
            parallel-thread-pool-close)
 
   (define (thread thunk
-                  #:keep-results? [keep-results? #f]
+                  #:keep [keep #f]
                   #:pool [pool #f])
     (if pool
-        (thread/parallel thunk pool keep-results?)
-        (k:thread thunk keep-results?))))
+        (thread/parallel thunk pool keep)
+        (k:thread thunk keep))))
