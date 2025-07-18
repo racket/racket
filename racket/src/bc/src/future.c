@@ -527,7 +527,7 @@ void scheme_init_futures(Scheme_Startup_Env *newenv)
   ADD_PRIM_W_ARITY("mark-future-trace-end!", mark_future_trace_end, 0, 0, newenv);
 
   scheme_addto_prim_instance("thread/parallel",
-                             scheme_make_prim_w_arity(thread_parallel, "thread/parallel", 1, 2),
+                             scheme_make_prim_w_arity(thread_parallel, "thread/parallel", 3, 3),
                              newenv);
   scheme_addto_prim_instance("make-parallel-thread-pool",
                              scheme_make_prim_w_arity(make_parallel_pool, "make-parallel-thread-pool", 0, 1),
@@ -3805,36 +3805,61 @@ future_t *get_pending_future(Scheme_Future_State *fs)
 
 static Scheme_Object *thread_parallel(int argc, Scheme_Object *args[])
 {
-  const char *who = "thread/parallel";
+  const char *who = "thread";
+  Scheme_Object *p;
+  int keep_results;
   
   scheme_check_proc_arity(who, 0, 0, argc, args);
   scheme_custodian_check_available(NULL, who, "thread");
 
   if (argc > 1) {
-    if (!SAME_TYPE(SCHEME_TYPE(args[1]), scheme_parallel_pool_type))
-      scheme_wrong_contract(who, "thread/parallel", 0, argc, args);
+    if (!SAME_TYPE(SCHEME_TYPE(args[1]), scheme_parallel_pool_type)) {
+      if (!SCHEME_FALSEP(args[1]) && (!SCHEME_SYMBOLP(args[1])
+                                      || (SCHEME_SYM_LEN(args[1]) != 3)
+                                      || strcmp(SCHEME_SYM_VAL(args[1]), "own")
+                                      || SCHEME_SYM_UNINTERNEDP(args[1])))
+        scheme_wrong_contract(who, "(or/c #f 'own parallel-thread-pool?)", 1, argc, args);
+    } else {
+      if (SCHEME_INT1_VAL(args[1]) == 0)
+        scheme_contract_error(who, "parallel thread pool is closed");
+    }
   }
+  keep_results = (argc > 2) && SCHEME_TRUEP(args[2]);
 
-  return scheme_thread(args[0]);
+  p = scheme_thread(args[0]);
+
+  if (keep_results)
+    ((Scheme_Thread *)p)->results = scheme_true;
+
+  return p;
 }
 
 static Scheme_Object *make_parallel_pool(int argc, Scheme_Object *args[])
 {
-  Scheme_Object *o, *n = args[0];
+  Scheme_Object *o, *n;
 
-  if (!(SCHEME_INTP(n) && !SCHEME_BIGNUMP(n))
-      || !scheme_is_positive(n))
-    scheme_wrong_contract("make-parallel-thread-pool", "exact-positive-integer?", 0, argc, args);
+  if (argc > 0) {
+    n = args[0];
+    if (!(SCHEME_INTP(n) || SCHEME_BIGNUMP(n))
+        || !scheme_is_positive(n))
+      scheme_wrong_contract("make-parallel-thread-pool", "exact-positive-integer?", 0, argc, args);
+  }
 
-  o = scheme_alloc_small_object();
+  o = scheme_malloc_small_tagged(sizeof(Scheme_Simple_Object));
   o->type = scheme_parallel_pool_type;
+  SCHEME_INT1_VAL(o) = 1;
+  
   return o;
 }
 
-static Scheme_Object *parallel_poll_close(int argc, Scheme_Object *args[])
+static Scheme_Object *parallel_pool_close(int argc, Scheme_Object *args[])
 {
+  const char *who = "parallel-thread-pool-close";
+  
   if (!SAME_TYPE(SCHEME_TYPE(args[0]), scheme_parallel_pool_type))
-    scheme_wrong_contract(who, "parallel-thread-pool-close", 0, argc, args);
+    scheme_wrong_contract(who, "parallel-thread-pool?", 0, argc, args);
+
+  SCHEME_INT1_VAL(args[0]) = 0;
 
   return scheme_void;
 }

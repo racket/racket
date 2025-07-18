@@ -525,13 +525,13 @@ void scheme_init_thread(Scheme_Startup_Env *env)
   ADD_PRIM_W_ARITY("dump-memory-stats"            , scheme_dump_gc_stats, 0, -1, env);
   ADD_PRIM_W_ARITY("vector-set-performance-stats!", current_stats       , 1, 2, env);
 
-  ADD_PRIM_W_ARITY("thread"                , sch_thread         , 1, 1, env);
+  ADD_PRIM_W_ARITY("thread"                , sch_thread         , 1, 2, env);
   ADD_PRIM_W_ARITY("thread/suspend-to-kill", sch_thread_nokill  , 1, 1, env);
   ADD_PRIM_W_ARITY("sleep"                 , sch_sleep          , 0, 1, env);
   ADD_FOLDING_PRIM("thread?"               , thread_p           , 1, 1, 1, env);
   ADD_PRIM_W_ARITY("thread-running?"       , thread_running_p   , 1, 1, env);
   ADD_PRIM_W_ARITY("thread-dead?"          , thread_dead_p      , 1, 1, env);
-  ADD_PRIM_W_ARITY("thread-wait"           , thread_wait        , 1, 1, env);
+  ADD_PRIM_W_ARITY("thread-wait"           , thread_wait        , 1, 2, env);
   ADD_PRIM_W_ARITY("current-thread"        , sch_current        , 0, 0, env);
   ADD_PRIM_W_ARITY("kill-thread"           , kill_thread        , 1, 1, env);
   ADD_PRIM_W_ARITY("break-thread"          , break_thread       , 1, 2, env);
@@ -3394,6 +3394,8 @@ static void start_child(Scheme_Thread * volatile child,
 	/* Run the main thunk: */
 	/* (checks for break before doing anything else) */
 	result = scheme_apply_thread_thunk(child_eval);
+      } else {
+        scheme_current_thread->results = scheme_false;
       }
     }
 
@@ -3422,6 +3424,19 @@ static void start_child(Scheme_Thread * volatile child,
           scheme_longjmpup(&oflow->jmp->cont);
         }
       }
+    }
+
+    if (SAME_OBJ(scheme_current_thread->results, scheme_true)) {
+      Scheme_Object *results;
+      if (SAME_OBJ(result, SCHEME_MULTIPLE_VALUES)) {
+        intptr_t rc = scheme_multiple_count;
+        Scheme_Object **mv = scheme_multiple_array;
+        scheme_detach_multple_array(mv);
+        results = scheme_build_list(rc, mv);
+      } else {
+        results = scheme_make_pair(result, scheme_null);
+      }
+      scheme_current_thread->results = results;
     }
 
     scheme_end_current_thread();
@@ -3512,10 +3527,20 @@ Scheme_Object *scheme_thread(Scheme_Object *thunk)
 
 static Scheme_Object *sch_thread(int argc, Scheme_Object *args[])
 {
+  Scheme_Object *p;
+  int keep_results;
+  
   scheme_check_proc_arity("thread", 0, 0, argc, args);
   scheme_custodian_check_available(NULL, "thread", "thread");
 
-  return scheme_thread(args[0]);
+  keep_results = (argc > 1) && SCHEME_TRUEP(args[1]);
+  
+  p = scheme_thread(args[0]);
+
+  if (keep_results)
+    ((Scheme_Thread *)p)->results = scheme_true;
+
+  return p;
 }
 
 static Scheme_Object *unsafe_thread_at_root(int argc, Scheme_Object *args[])
@@ -3597,16 +3622,35 @@ static int thread_wait_done(Scheme_Object *p, Scheme_Schedule_Info *sinfo)
 
 static Scheme_Object *thread_wait(int argc, Scheme_Object *args[])
 {
+  const char *who = "thread-wait";
   Scheme_Thread *p;
+  Scheme_Object *fail_k;
 
   if (!SCHEME_THREADP(args[0]))
-    scheme_wrong_contract("thread-wait", "thread?", 0, argc, args);
+    scheme_wrong_contract(who, "thread?", 0, argc, args);
+  if (argc > 1) {
+    fail_k = args[1];
+    scheme_check_proc_arity(who, 0, 1, argc, args);
+  } else
+    fail_k = NULL;
 
   p = (Scheme_Thread *)args[0];
 
   if (MZTHREAD_STILL_RUNNING(p->running)) {
     sch_sync(1, args);
   }
+
+  if (p->results) {
+    if (SAME_OBJ(p->results, scheme_false)) {
+      if (fail_k)
+        return _scheme_apply_multi(fail_k, 0, NULL);
+    } else {
+      Scheme_Object *a[2];
+      a[0] = scheme_values_proc;
+      a[1] = p->results;
+      return _scheme_apply_multi(scheme_apply_proc, 2, a);
+    }
+  } 
 
   return scheme_void;
 }

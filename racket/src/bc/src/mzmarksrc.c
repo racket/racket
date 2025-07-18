@@ -799,6 +799,7 @@ thread_val {
   gcMARK2(pr->resumed_box, gc);
   gcMARK2(pr->running_box, gc);
   gcMARK2(pr->sync_box, gc);
+  gcMARK2(pr->results, gc);
 
   gcMARK2(pr->mbox_first, gc);
   gcMARK2(pr->mbox_last, gc);

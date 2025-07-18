@@ -220,5 +220,3 @@ static int sequential_fsemaphore_FIXUP(void *p, struct NewGC *gc) {
 
 #endif
 
-
-
