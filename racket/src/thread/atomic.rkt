@@ -18,8 +18,8 @@
          start-atomic/no-interrupts
          end-atomic/no-interrupts
 
-         start-uninterruptable
-         end-uninterruptable
+         start-uninterruptible
+         end-uninterruptible
 
          in-atomic-mode?
 
@@ -120,10 +120,10 @@
 ;; allowed in a future thread: does not necessary make a Racket (or
 ;; Scheme) thread atomic with respect to other threads, but does
 ;; ensure that a thread or future will be allowed to continue to
-;; `end-uninterruptable` before it can be externally stopped
-(define (start-uninterruptable)
+;; `end-uninterruptible` before it can be externally stopped
+(define (start-uninterruptible)
   (current-atomic (fx+ (current-atomic) 1)))
-(define (end-uninterruptable)
+(define (end-uninterruptible)
   (end-atomic))
 
 (define (in-atomic-mode?)

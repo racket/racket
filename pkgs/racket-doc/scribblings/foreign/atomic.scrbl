@@ -117,46 +117,46 @@ When used not in the dynamic extent of a call to
 
 @defproc[(in-atomic-mode?) boolean?]{
 
-Returns @racket[#t] when in @tech{atomic mode} or @tech{uninterruptable mode} (within the current
+Returns @racket[#t] when in @tech{atomic mode} or @tech{uninterruptible mode} (within the current
 @tech[#:doc reference.scrbl]{place}), @racket[#f] otherwise.}
 
 
 @deftogether[(
-@defproc[(start-uninterruptable) void?]
-@defproc[(end-uninterruptable) void?]
+@defproc[(start-uninterruptible) void?]
+@defproc[(end-uninterruptible) void?]
 )]{
 
 Like @racket[start-atomic] and @racket[end-atomic], but with the
-intent that the continuation after @racket[start-uninterruptable] and
-before @racket[end-uninterruptable] may run concurrently with other Racket
-threads, but in @deftech{uninterruptable mode}: it should reach
-@racket[end-uninterruptable] without interruption from other threads.
+intent that the continuation after @racket[start-uninterruptible] and
+before @racket[end-uninterruptible] may run concurrently with other Racket
+threads, but in @deftech{uninterruptible mode}: it should reach
+@racket[end-uninterruptible] without interruption from other threads.
 Uninterruptable mode is unsafe, just like
 @elemref["atomic-unsafe"]{atomic mode is unsafe}.
 
 Uninterruptable mode is currently implemented using
 @racket[start-atomic] and @racket[end-atomic], except when used within
 a @tech[#:doc reference.scrbl]{future}. Unlike @racket[start-atomic],
-@racket[start-uninterruptable] in the @CS[] implementation does not block a future that is
+@racket[start-uninterruptible] in the @CS[] implementation does not block a future that is
 running concurrently with Racket threads. At the same time, it is the
 responsibility of such a future to not perform any action that
-blocks the future, otherwise the ``uninterruptable'' sequence is
+blocks the future, otherwise the ``uninterruptible'' sequence is
 interrupted, and it will be completed only when a Racket thread
 @racket[touch]es the future (at which point it will run uninterrupted
-in the Racket thread until @racket[end-uninterruptable]).
+in the Racket thread until @racket[end-uninterruptible]).
 
-Calls to @racket[start-uninterruptable] and
-@racket[end-uninterruptable] can be nested, and they can be mutually
+Calls to @racket[start-uninterruptible] and
+@racket[end-uninterruptible] can be nested, and they can be mutually
 nested with calls to @racket[start-atomic] and @racket[end-atomic]. A
-call to @racket[start-atomic] nested in uninterruptable mode will
+call to @racket[start-atomic] nested in uninterruptible mode will
 still block a future that is running concurrently to Racket threads.
 
 @history[#:added "8.17.0.7"]}
 
 
-@defproc[(call-as-uninterruptable [thunk (-> any)]) any]{
+@defproc[(call-as-uninterruptible [thunk (-> any)]) any]{
 
 Similar to @racket[call-as-atomic], but for
-@tech{uninterruptable mode}.
+@tech{uninterruptible mode}.
 
 @history[#:added "8.17.0.7"]}

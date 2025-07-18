@@ -655,17 +655,17 @@ scheme_init_unsafe_thread (Scheme_Startup_Env *env)
 						      "unsafe-in-atomic?",
 						      0, 0),
 			     env);
-  scheme_addto_prim_instance("unsafe-start-uninterruptable",
-                             /* Since `unsafe_start_atomic blocks`, trying uninterruptable mode
+  scheme_addto_prim_instance("unsafe-start-uninterruptible",
+                             /* Since `unsafe_start_atomic blocks`, trying uninterruptible mode
                                 blocks and defers to a Racket thread, which is supposed to
                                 continue in atomic mode --- so, all consistent, though useless. */
 			     scheme_make_prim_w_arity(unsafe_start_atomic,
-						      "unsafe-start-uninterruptable",
+						      "unsafe-start-uninterruptible",
 						      0, 0),
 			     env);
-  scheme_addto_prim_instance("unsafe-end-uninterruptable",
+  scheme_addto_prim_instance("unsafe-end-uninterruptible",
 			     scheme_make_prim_w_arity(unsafe_end_atomic,
-						      "unsafe-end-uninterruptable",
+						      "unsafe-end-uninterruptible",
 						      0, 0),
 			     env);
 
