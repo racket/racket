@@ -7,7 +7,7 @@
          "debug.rkt"
          (for-syntax racket/base))
 
-(provide current-atomic ; tecnicall
+(provide current-atomic
 
          start-uninterruptible
          end-uninterruptible

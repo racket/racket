@@ -996,7 +996,7 @@ more pessimistic mode.
 that provide different trade-offs in sharing constraints and performance.
 @tech{Futures} sometimes achieve better performance by limiting
 operations that run in parallel; as a result, they can created and
-completed more cheaply, and they can fall back more consistently fall
+completed more cheaply, and they can fall back more consistently
 to coroutine performance in cases where parallel threads would become
 slow. @tech{Places} can sometimes achieve better performance by
 limiting sharing (somewhat like separate processes at the
@@ -1005,7 +1005,7 @@ optimistically. A place has its own set of @tech{coroutine threads}
 that it schedules with sequential consistency, but the can run
 in parallel to coroutine threads in other places.
 Both futures and places include the possibly of
-shared state, and they the same kind of weak ordering on operations
+shared state, and they have the same kind of weak ordering on operations
 as parallel threads.
 
 @;------------------------------------------------------------------------

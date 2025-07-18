@@ -11,12 +11,12 @@ that key so that an engine-specific default thread cell is produced.
 Engine
 ------
 
-A couroutine thread or parallel thread normally runs inside an engine,
+A coroutine thread or parallel thread normally runs inside an engine,
 which is responsible for running a continuation for some number of
 steps and then pausing it, maybe to check for breaks. The coroutine
 thread scheduler (in "schedule.rkt") drives engines, and so some of
 its implementation lives outside an engine. Similarly, a scheduler for
-futures or the scheduler of a thread pool for parallel therads (more
+futures or the scheduler of a thread pool for parallel threads (more
 precisely: the worker Chez Scheme threads that belong to that
 scheduler) drives engines.
 
@@ -26,9 +26,9 @@ go into "uninterruptable" mode with `start-uninterruptable` and
 
 The `start-atomic` and `end-atomic` functions imply
 `start-uninterruptable` and `end-uninterruptable`, but `start-atomic`
-futher insists on being in a couroutine thread, because it's doing
-something that the couroutine thread is sensitive to. When
-`start-atomic` is used not in a couroutine thread, it will block or
+futher insists on being in a coroutine thread, because it's doing
+something that the coroutine thread is sensitive to. When
+`start-atomic` is used not in a coroutine thread, it will block or
 move over to a coroutine thread; see "Futures" and "Parallel Threads"
 below. Within a coroutine thread, if the scheduler wanted to interrupt
 the thread but it was in atomic mode, then it queues a function to be
@@ -37,7 +37,7 @@ called when `end-atomic` is reached; that's among the reasons that
 
 The `current-atomic` thread register (at the Chez Scheme thread level)
 technically should be called `current-uninterruptable-level`, but
-`current-atomic` is more succient. Similarly, `in-atomic-mode?` and
+`current-atomic` is more succint. Similarly, `in-atomic-mode?` and
 `not-atomic-mode?` more precisely check for uninterruptable mode.
 
 Thread
@@ -49,18 +49,18 @@ do not run concurrent with each other. Synchronization at this level
 is often implemented by using atomic mode via `start-atomic` and
 `end-atomic`.
 
-Anything that touches the couroutine thread scheduler and the
+Anything that touches the coroutine thread scheduler and the
 `thread-...` family of functions needs to be running in a coroutine
 thread. As explained further below, if a relevant operation is tried
 in a parallel thread, it will block and send the operation to a
 coroutine thread.
 
-There are places in the impleemntation of threads where atomic mode
+There are places in the implementation of threads where atomic mode
 has been exited, but the thread isn't supposed to be running anymore,
 and it's on its way to being descheduled. In those places, it's
 important to use `end-atomic/no-barrier-exit`, so that the
 continaution isn't moved to the future for a parallel thread (where
-the running couroutine thread is part of the implementation of a
+the running coroutine thread is part of the implementation of a
 parallel thread). See "Parallel Threads" below.
 
 Futures
@@ -125,7 +125,7 @@ automatically, as if by `touch`; and (2) a continuation that was moved
 to a coroutine thread can move back to the future after the blocking
 operation is handled (e.g., at `end-atomic`).
 
-The internal coroutine thread associated witha a parallel thread is
+The internal coroutine thread associated with a parallel thread is
 used as the external repesentative of the parallel thread. If it is
 shut down or sent a break signal, the future is terminated or
 signalled accordingly.
