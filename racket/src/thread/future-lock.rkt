@@ -30,9 +30,7 @@
 (provide with-lock
          make-lock
          lock-acquire
-         lock-release
-         start-future-uninterrupted
-         end-future-uninterrupted)
+         lock-release)
 
 (define-syntax-rule (with-lock lock-expr expr ...)
   (let ([lock lock-expr])
@@ -43,14 +41,8 @@
 
 (define (make-lock) (box 0))
 
-(define (start-future-uninterrupted)
-  (current-atomic (fx+ (current-atomic) 1)))
-
-(define (end-future-uninterrupted)
-  (current-atomic (fx- (current-atomic) 1)))
-
 (define (lock-acquire lock)
-  (start-future-uninterrupted)
+  (start-uninterruptable)
   (let loop ()
     (if (box-cas! lock 0 1)
         (memory-order-acquire)
@@ -60,7 +52,7 @@
   (memory-order-release)
   (cond
     [(box-cas! lock 1 0)
-     (end-future-uninterrupted)]
+     (end-uninterruptable)]
     [(eq? (unbox lock) 0)
      ;; not just a spurious failure...
      (internal-error "lock release failed!")]

@@ -705,7 +705,7 @@
 ;; Install a callback to reschedule the current thread if an
 ;; asynchronous selection happens, and then deschedule the thread
 (define (suspend-syncing-thread s timeout-at)
-  ((atomically/no-exit-barrier
+  ((atomically/no-barrier-exit
     (let retry ()
       (define nss (nested-syncings s s)) ; sets `syncing-wakeup` propagation
       (cond
@@ -713,9 +713,9 @@
             (for/or ([ns (in-list nss)])
               (syncing-selected ns)))
         ;; don't suspend after all
-        future-exit-barrier]
+        future-barrier-exit]
        [else
-        (define t (current-thread/in-atomic))
+        (define t (current-thread/in-racket))
         (set-syncing-wakeup!
          s
          ;; In atomic mode
@@ -739,7 +739,7 @@
                               ;; In non-atomic mode and tail position:
                               (lambda ()
                                 ;; Continue from suspend or ignored break...
-                                ((atomically/no-exit-barrier
+                                ((atomically/no-barrier-exit
                                   (unless (syncing-selected s)
                                     (syncing-retry! s))
                                   (retry))))))])))))

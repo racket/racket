@@ -173,14 +173,14 @@
           (or (future->thread f)
               (let ()
                 (future-barrier)
-                (current-thread/in-atomic))))]
+                (current-thread/in-racket))))]
     [else
-     (current-thread/in-atomic)]))
+     (current-thread/in-racket)]))
 
 (define (thread-engine-block)
   (future-barrier)
   (engine-block)
-  (future-exit-barrier))
+  (future-barrier-exit))
 
 ;; ----------------------------------------
 ;; Thread creation
@@ -362,13 +362,13 @@
 
 ;; Called in atomic mode or in a thread that has the only access to the thread:
 (define (thread-push-kill-callback! cb [t-in #f])
-  (define t (or t-in (current-thread/in-atomic)))
+  (define t (or t-in (current-thread/in-racket)))
   (set-thread-kill-callbacks! t (cons cb (thread-kill-callbacks t))))
 
 ;; Called in atomic mode:
 (define (thread-pop-kill-callback!)
   (assert-atomic-mode)
-  (define t (current-thread/in-atomic))
+  (define t (current-thread/in-racket))
   (set-thread-kill-callbacks! t (cdr (thread-kill-callbacks t))))
 
 (define/who (kill-thread t)
@@ -379,7 +379,7 @@
      ((atomically
        (do-thread-suspend t)))]
     [else
-     (atomically/no-exit-barrier
+     (atomically/no-barrier-exit
       (do-kill-thread t)
       (void))
      (when (eq? t (current-thread))
@@ -561,14 +561,14 @@
      (thread-unscheduled-for-work-tracking! t)
      (when timeout-at
        (add-to-sleeping-threads! t (sandman-merge-timeout #f timeout-at)))
-     (when (eq? t (current-thread/in-atomic))
+     (when (eq? t (current-thread/in-racket))
        (thread-did-work!))])
   ;; Beware that this thunk is not used when a thread is descheduled
   ;; by a custodian callback
   (lambda ()
     (when (eq? t (current-thread))
       (let loop ()
-        (when (positive? (current-atomic))
+        (when (in-atomic-mode?)
           (if (force-atomic-timeout-callback)
               (loop)
               (begin
@@ -587,7 +587,7 @@
 ;; `thread-resume`.
 (define (thread-deschedule! t timeout-at interrupt-callback)
   (define retry-callback #f)
-  (atomically/no-exit-barrier
+  (atomically/no-barrier-exit
    (set-thread-interrupt-callback! t (if (eq? interrupt-callback 'future)
                                          'future
                                          (lambda ()
@@ -600,8 +600,8 @@
    ;; swap it out anyway
    (lambda ()
      (unless (eq? t (current-thread))
-       (when (eqv? 0 (current-atomic))
-         (future-exit-barrier)))
+       (when (not-atomic-mode?)
+         (future-barrier-exit)))
      ;; In non-atomic mode:
      (finish)
      (when retry-callback
@@ -624,9 +624,9 @@
 (define/who (thread-suspend t)
   (check who thread? t)
   (check-current-custodian-manages who t)
-  ((atomically/no-exit-barrier
+  ((atomically/no-barrier-exit
     (do-thread-suspend t)))
-  (future-exit-barrier))
+  (future-barrier-exit))
 
 ;; in atomic mode
 ;; Returns a thunk to call to handle the case that
@@ -779,14 +779,14 @@
 
 ;; Called in atomic mode or before the thread is shared:
 ;; Given callbacks are also called in atomic mode
-(define (thread-push-suspend+resume-callbacks! s-cb r-cb [t (current-thread/in-atomic)])
+(define (thread-push-suspend+resume-callbacks! s-cb r-cb [t (current-thread/in-racket)])
   (set-thread-suspend+resume-callbacks! t (cons (cons s-cb r-cb)
                                                 (thread-suspend+resume-callbacks t))))
 
 ;; Called in atomic mode:
 (define (thread-pop-suspend+resume-callbacks!)
   (assert-atomic-mode)
-  (define t (current-thread/in-atomic))
+  (define t (current-thread/in-racket))
   (set-thread-suspend+resume-callbacks! t (cdr (thread-suspend+resume-callbacks t))))
 
 ;; Called in atomic mode:
@@ -872,13 +872,13 @@
 ;; are paused, then `sched-info` contains information (such as a
 ;; timeout for the current thread's sleep) needed for a global sleep
 (define (thread-yield sched-info)
-  (atomically/no-exit-barrier
+  (atomically/no-barrier-exit
    (cond
     [(or (not sched-info)
          (schedule-info-did-work? sched-info))
      (thread-did-work!)]
-    [else (thread-poll-done! (current-thread/in-atomic))])
-   (set-thread-sched-info! (current-thread/in-atomic) sched-info))
+    [else (thread-poll-done! (current-thread/in-racket))])
+   (set-thread-sched-info! (current-thread/in-racket) sched-info))
   (thread-engine-block))
 
 ;; Sleep for a while
@@ -889,7 +889,7 @@
          secs)
   (cond
     [(and (zero? secs)
-          (zero? (current-atomic)))
+          (not-atomic-mode?))
      (thread-yield #f)]
     [else
      (define until-msecs (+ (* secs 1000.0)
@@ -1005,7 +1005,7 @@
              [else void]))
          (if exit-barrier?
              (end-atomic)
-             (end-atomic/no-exit-barrier))
+             (end-atomic/no-barrier-exit))
          finish)))))
 
 ;; The break-enabled transition hook is called by the host
@@ -1024,7 +1024,7 @@
 
 ;; Might be called in atomic mode, but `check-t` is #f in that case
 (define (do-break-thread t kind check-t)
-  ((atomically/no-exit-barrier
+  ((atomically/no-barrier-exit
     (cond
       [(thread-dead? t) void]
       [(thread-forward-break-to t)
@@ -1057,8 +1057,8 @@
        ;; approach is to document the limitation (e.g., when breaking
        ;; the current thread in a foreign callback).
        (add-end-atomic-callback! check-for-break))]
-    [(eqv? 0 (current-atomic))
-     (future-exit-barrier)]))
+    [(not-atomic-mode?)
+     (future-barrier-exit)]))
 
 (define (break>? k1 k2)
   (cond
@@ -1157,7 +1157,7 @@
 
 (define (thread-receive)
   ((atomically
-    (define t (current-thread/in-atomic))
+    (define t (current-thread/in-racket))
     (cond
       [(is-mail? t)
        (define v (dequeue-mail! t))
@@ -1182,7 +1182,7 @@
  
 (define (thread-try-receive)
   (atomically
-   (define t (current-thread/in-atomic))
+   (define t (current-thread/in-racket))
    (if (is-mail? t)
        (dequeue-mail! t)
        #f)))
@@ -1190,7 +1190,7 @@
 (define/who (thread-rewind-receive lst)
   (check who list? lst)
   (atomically
-   (define t (current-thread/in-atomic))
+   (define t (current-thread/in-racket))
    (for-each (lambda (msg)
                (push-mail! t msg))
              lst)))
@@ -1202,7 +1202,7 @@
                        ;; in atomic mode:
                        (lambda (self poll-ctx)
                          (assert-atomic-mode)
-                         (define t (current-thread/in-atomic))
+                         (define t (current-thread/in-racket))
                          (cond
                            [(is-mail? t) (values (list self) #f)]
                            [(poll-ctx-poll? poll-ctx) (values #f self)]

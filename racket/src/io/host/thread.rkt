@@ -6,7 +6,7 @@
          end-atomic
          atomically
          non-atomically
-         atomically/no-interrupts/no-wind
+         atomically/no-gc-interrupts/no-wind
          assert-atomic
          check-current-custodian)
 
@@ -72,8 +72,8 @@
          async-evt
          schedule-info-current-exts
          current-sandman
-         start-atomic/no-interrupts ; => disable GC, too, if GC can call back
-         end-atomic/no-interrupts
+         start-atomic/no-gc-interrupts ; => disable GC, too, if GC can call back
+         end-atomic/no-gc-interrupts
          in-atomic-mode?
          unsafe-custodian-register
          unsafe-custodian-unregister
@@ -104,12 +104,12 @@
 ;; an unforced constraint: don't use anything related
 ;; to `dynamic-wind`, continuations, or continuation marks.
 ;; Cannot be exited with `non-atomically`.
-(define-syntax-rule (atomically/no-interrupts/no-wind e ...)
+(define-syntax-rule (atomically/no-gc-interrupts/no-wind e ...)
   (begin
-    (start-atomic/no-interrupts)
+    (start-atomic/no-gc-interrupts)
     (begin0
       (let () e ...)
-      (end-atomic/no-interrupts))))
+      (end-atomic/no-gc-interrupts))))
 
 ;; Enable for debugging
 (define (assert-atomic)

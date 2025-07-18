@@ -156,7 +156,7 @@
 ;; ----------------------------------------
 
 (define (add-log-receiver! logger lr backref)
-  (atomically/no-interrupts/no-wind
+  (atomically/no-gc-interrupts/no-wind
    ;; Add receiver to the logger's list, pruning empty boxes
    ;; every time the list length doubles (roughly):
    (cond

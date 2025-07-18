@@ -107,7 +107,7 @@
 (define (current-parallel-future-in-racket-thread)
   (define f (current-future))
   (and f
-       (let ([t (current-thread/in-atomic)])
+       (let ([t (current-thread/in-racket)])
          (and t (future*-parallel f)))
        f))
 
@@ -130,7 +130,7 @@
 
 ;; called with lock on f held;
 ;; in a non-main pthread, caller is responsible for logging 'end-work;
-;; in a non-mail thread, calls `(end-future-uninterrupted)` just before starting thunk
+;; in a non-mail thread, calls `(end-uninterruptable)` just before starting thunk
 (define (run-future f
                     #:was-blocked? [was-blocked? #f]
                     #:as-unblock? [as-unblock? #f])
@@ -155,7 +155,7 @@
   (unless (eq? (future*-kind f) 'was)
     (log-future 'start-work (future*-id f)))
   (define (finish! results state)
-    (start-future-uninterrupted)
+    (start-uninterruptable)
     (lock-acquire (future*-lock f))
     (future-maybe-notify-stop f)
     (set-future*-results! f results)
@@ -167,7 +167,7 @@
     ;; that dependents get rescheduled
     (future-notify-dependents deps)
     (wakeup-racket-thread f)
-    (end-future-uninterrupted)
+    (end-uninterruptable)
     (log-future 'complete (future*-id f)))
   (cond
     [(current-future-in-future-thread)
@@ -178,7 +178,7 @@
      (call-with-values (lambda ()
                          (call-with-continuation-prompt
                           (lambda ()
-                            (end-future-uninterrupted) ; balances start in `run-future-in-worker`
+                            (end-uninterruptable) ; balances start in `run-future-in-worker`
                             (thunk))
                           future-start-prompt-tag
                           (lambda args (void))))
@@ -234,7 +234,7 @@
      (would-be-future thunk)]
     [else     
      (define me-f (current-future))
-     (when (and me-f (future*-parallel me-f)) (future-block))
+     (when (and me-f (future*-parallel me-f)) (future-block)) ; note: don't block plain futures
      (define cust (future-custodian me-f))
      (when (and cust (not me-f))
        (maybe-start-scheduler)
@@ -248,7 +248,7 @@
 (define/who (would-be-future thunk)
   (check who (procedure-arity-includes/c 0) thunk)
   (define me-f (current-future))
-  (when (and me-f (future*-parallel me-f)) (future-block))
+  (when (and me-f (future*-parallel me-f)) (future-block)) ; note: don't block plain futures
   (ensure-place-wakeup-handle)
   (define cust (future-custodian (current-future)))
   (when (and me-f (future*-parallel me-f)) (future-unblock))
@@ -260,7 +260,7 @@
   (assert (or (not (current-future)) (not (future*-parallel (current-future)))))
   (if me-f
       (future*-custodian me-f)
-      (thread-representative-custodian (current-thread/in-atomic))))
+      (thread-representative-custodian (current-thread/in-racket))))
 
 (define (custodian-shut-down?/other-pthread* c)
   ;; parallel thread futures have no custodian of their own
@@ -413,14 +413,14 @@
                       (current-continuation-marks)))]
     [(let ([cf (current-future)])
        (and cf (future*-parallel cf)))
-     ;; We're in a `thread/parallel` future pthread, but `f` must be
-     ;; in the futures different scheduler;
+     ;; We're in a `thread/parallel` future pthread, but since `f` is
+     ;; some other future, it must be one that can be referenced directly,
+     ;; and it's managed by the scheduler for `future`-created futures;
      ;; block so that the future is handled in a Racket thread
-     (future-barrier)
-     (call-with-values (lambda () (touch f))
-                       (lambda results
-                         (future-exit-barrier)
-                         (apply values results)))]
+     (future-block)
+     (begin0
+       (touch f)
+       (future-barrier-exit))]
     [(eq? s 'blocked)
      (cond
        [(current-future-in-future-thread)
@@ -504,7 +504,7 @@
      ;; the future is not blocked; suspend and get resumed if/when
      ;; needed again
      (lock-release (future*-lock f))
-     ((thread-deschedule! (current-thread/in-atomic) #f 'future))
+     ((thread-deschedule! (current-thread/in-racket) #f 'future))
      ;; only reason we should get rescheduled is `wakeup-racket-thread`
      ;; or (if that one is skipped by a stop request) `future-external-resume`
      (touch-blocked f)]))
@@ -532,23 +532,23 @@
 ;; or in a Racket thread is that is a future's unblock thread;
 ;; can be called from Rumble layer
 (define (future-block)
-  (start-future-uninterrupted)
+  (start-uninterruptable)
   (define me-f (current-future-in-future-thread))
   (cond
     [me-f
      (lock-acquire (future*-lock me-f))
-     (end-future-uninterrupted) ; future lock covers it at this point
+     (end-uninterruptable) ; future lock covers it at this point
      (future-maybe-notify-stop me-f)
      (set-future*-state! me-f 'blocked)
      (on-transition-to-unfinished)
      (future-suspend)]
     [else
-     (end-future-uninterrupted)]))
+     (end-uninterruptable)]))
 
 ;; called in a Racket thread running a would-be future or as an unblock thread;
 ;; only does something if the thread matches the future's unblock thread
 (define (future-unblock)
-  (when (eqv? (current-atomic) 0)
+  (when (not-atomic-mode?)
     (define me-f (current-parallel-future-in-racket-thread))
     (when me-f
       (assert (continuation-prompt-available? future-start-prompt-tag))
@@ -694,33 +694,33 @@
 ;; Can be in a future thread
 ;; Call `thunk` in the place's main thread:
 (define (future-sync who thunk)
-  (start-future-uninterrupted)
+  (start-uninterruptable)
   (define me-f (current-future))
   (cond
     [(not me-f)
      ;; Between the time that `future-sync` was requested and
      ;; we get here, the continuation was apparently moved
-     (end-future-uninterrupted)
+     (end-uninterruptable)
      (thunk)]
     [(eq? (future*-kind me-f) 'would-be)
      (current-future #f)
-     (end-future-uninterrupted)
+     (end-uninterruptable)
      (log-future 'sync (future*-id me-f) #:prim-name who)
      (let ([v (thunk)])
        (log-future 'result (future*-id me-f))
        (current-future me-f)
        v)]
     [(future*-parallel me-f)
-     (end-future-uninterrupted)
+     (end-uninterruptable)
      ;; can run directly within a parallel thread, whether in
      ;; a future pthread or Racket thread
      (thunk)]
     [(in-racket-thread?)
-     (end-future-uninterrupted)
+     (end-uninterruptable)
      ;; can run directly, since we're not in a future pthread
      (thunk)]
     [else
-     (end-future-uninterrupted)
+     (end-uninterruptable)
      ;; In case the main thread is trying to shut down futures, check in:
      (engine-block)
      ;; Host's `call-as-asynchronous-callback` will post `thunk`
@@ -828,7 +828,7 @@
 (define (schedule-future! f
                           #:front? [front? #f]
                           #:check-pool-open? [check-pool-open? #f])
-  (start-future-uninterrupted)
+  (start-uninterruptable)
   (assert (not (future-scheduled? f)))
   (assert (future*-thunk f))
   (assert (not (future*-state f)))
@@ -863,7 +863,7 @@
      (set-scheduler-futures-tail! s f)])
   (host:condition-signal (scheduler-cond s))
   (host:mutex-release (scheduler-mutex s))
-  (end-future-uninterrupted))
+  (end-uninterruptable))
 
 ;; called with lock on f held, but not the queue lock
 (define (try-deschedule-future? f #:decrement-count? [decrement-count? #t])
@@ -941,7 +941,7 @@
   (define th
     (fork-pthread
      (lambda ()
-       (current-thread/in-atomic #f)
+       (current-thread/in-racket #f)
        (current-future 'worker)
        (host:mutex-acquire (scheduler-mutex s))
        (let loop ()
@@ -1007,22 +1007,23 @@
   ;; still supposed to run.
   ;; We take advantage of `current-atomic` to disable interruptions,
   ;; both directly here and in the implementation of
-  ;; `unsafe-{start, end}-uninterruptible`.
+  ;; `unsafe-{start, end}-uninterruptible`, so this is an example where
+  ;; "atomic" really means "uninterruptible".
   (define e (make-engine (lambda ()
-                           ;; includes balancing `(end-future-uninterrupted)` at start of thunk
+                           ;; includes balancing `(end-uninterruptable)` at start of thunk
                            (run-future f))
                          future-scheduler-prompt-tag
                          void
                          (make-engine-thread-cell-state break-enabled-default-cell
                                                         #t)
                          #t))
-  (start-future-uninterrupted)
+  (start-uninterruptable)
   (call-with-engine-completion
    (lambda (done)
      (let loop ([e e])
        (e TICKS
           (lambda ()
-            (when (zero? (current-atomic))
+            (when (not-atomic-mode?)
               ;; Check in for termination request
               (define-values (exit? shut-down?)
                 (cond

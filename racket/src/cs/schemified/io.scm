@@ -2719,9 +2719,10 @@
 (define schedule-info-current-exts
   (hash-ref table 'schedule-info-current-exts))
 (define current-sandman (hash-ref table 'current-sandman))
-(define start-atomic/no-interrupts
-  (hash-ref table 'start-atomic/no-interrupts))
-(define end-atomic/no-interrupts (hash-ref table 'end-atomic/no-interrupts))
+(define start-atomic/no-gc-interrupts
+  (hash-ref table 'start-atomic/no-gc-interrupts))
+(define end-atomic/no-gc-interrupts
+  (hash-ref table 'end-atomic/no-gc-interrupts))
 (define in-atomic-mode? (hash-ref table 'in-atomic-mode?))
 (define 1/unsafe-custodian-register
   (hash-ref table 'unsafe-custodian-register))
@@ -31586,7 +31587,7 @@
 (define add-log-receiver!
   (lambda (logger_0 lr_0 backref_0)
     (begin
-      (|#%app| start-atomic/no-interrupts)
+      (|#%app| start-atomic/no-gc-interrupts)
       (begin0
         (begin
           (if (zero? (logger-prune-counter logger_0))
@@ -31635,7 +31636,7 @@
                     (semaphore-post (unbox sema-box_0))
                     (set-box! sema-box_0 #f))
                   (void))))))
-        (|#%app| end-atomic/no-interrupts)))))
+        (|#%app| end-atomic/no-gc-interrupts)))))
 (define log-receiver-send!
   (lambda (r_0 msg_0 in-interrupt?_0)
     (if (let ((or-part_0 (not in-interrupt?_0)))
@@ -31697,10 +31698,10 @@
 (define logger-max-wanted-level
   (lambda (logger_0)
     (begin
-      (|#%app| start-atomic/no-interrupts)
+      (|#%app| start-atomic/no-gc-interrupts)
       (begin0
         (logger-max-wanted-level* logger_0)
-        (|#%app| end-atomic/no-interrupts)))))
+        (|#%app| end-atomic/no-gc-interrupts)))))
 (define logger-max-wanted-level*
   (lambda (logger_0)
     (if (let ((app_0 (logger-local-level-timestamp logger_0)))
@@ -31987,13 +31988,14 @@
                                      (list
                                       (level->user-representation
                                        (begin
-                                         (|#%app| start-atomic/no-interrupts)
+                                         (|#%app|
+                                          start-atomic/no-gc-interrupts)
                                          (begin0
                                            (logger-wanted-level
                                             logger_0
                                             topic_0)
                                            (|#%app|
-                                            end-atomic/no-interrupts))))
+                                            end-atomic/no-gc-interrupts))))
                                       topic_0)
                                      fold-var_0)))
                                (values fold-var_1))))
@@ -32069,10 +32071,10 @@
                  topic3_0))
               (if (not (eq? level5_0 'none))
                 (begin
-                  (|#%app| start-atomic/no-interrupts)
+                  (|#%app| start-atomic/no-gc-interrupts)
                   (begin0
                     (log-level?* logger4_0 level5_0 topic3_0)
-                    (|#%app| end-atomic/no-interrupts)))
+                    (|#%app| end-atomic/no-gc-interrupts)))
                 #f))))))
     (|#%name|
      log-level?
@@ -32083,17 +32085,17 @@
 (define logging-future-events?
   (lambda ()
     (begin
-      (|#%app| start-atomic/no-interrupts)
+      (|#%app| start-atomic/no-gc-interrupts)
       (begin0
         (log-level?* (unsafe-place-local-ref cell.1$6) 'debug 'future)
-        (|#%app| end-atomic/no-interrupts)))))
+        (|#%app| end-atomic/no-gc-interrupts)))))
 (define logging-place-events?
   (lambda ()
     (begin
-      (|#%app| start-atomic/no-interrupts)
+      (|#%app| start-atomic/no-gc-interrupts)
       (begin0
         (log-level?* (unsafe-place-local-ref cell.1$6) 'debug 'place)
-        (|#%app| end-atomic/no-interrupts)))))
+        (|#%app| end-atomic/no-gc-interrupts)))))
 (define log-level?*
   (lambda (logger_0 level_0 topic_0)
     (let ((a_0 (logger-wanted-level logger_0 topic_0)))
@@ -32116,10 +32118,10 @@
                  topic6_0))
               (level->user-representation
                (begin
-                 (|#%app| start-atomic/no-interrupts)
+                 (|#%app| start-atomic/no-gc-interrupts)
                  (begin0
                    (logger-wanted-level logger7_0 topic6_0)
-                   (|#%app| end-atomic/no-interrupts)))))))))
+                   (|#%app| end-atomic/no-gc-interrupts)))))))))
     (|#%name|
      log-max-level
      (case-lambda
@@ -32248,7 +32250,7 @@
       (if (eq? level_0 'none)
         (void)
         (begin
-          (|#%app| start-atomic/no-interrupts)
+          (|#%app| start-atomic/no-gc-interrupts)
           (begin0
             (log-message*
              logger_0
@@ -32258,11 +32260,11 @@
              data_0
              prefix?_0
              #f)
-            (|#%app| end-atomic/no-interrupts)))))))
+            (|#%app| end-atomic/no-gc-interrupts)))))))
 (define log-future-event
   (lambda (message_0 data_0)
     (begin
-      (|#%app| start-atomic/no-interrupts)
+      (|#%app| start-atomic/no-gc-interrupts)
       (begin0
         (log-message*
          (unsafe-place-local-ref cell.1$6)
@@ -32272,11 +32274,11 @@
          data_0
          #t
          #f)
-        (|#%app| end-atomic/no-interrupts)))))
+        (|#%app| end-atomic/no-gc-interrupts)))))
 (define log-place-event
   (lambda (message_0 data_0)
     (begin
-      (|#%app| start-atomic/no-interrupts)
+      (|#%app| start-atomic/no-gc-interrupts)
       (begin0
         (log-message*
          (unsafe-place-local-ref cell.1$6)
@@ -32286,7 +32288,7 @@
          data_0
          #t
          #f)
-        (|#%app| end-atomic/no-interrupts)))))
+        (|#%app| end-atomic/no-gc-interrupts)))))
 (define log-message*
   (lambda (logger_0 level_0 topic_0 message_0 data_0 prefix?_0 in-interrupt?_0)
     (let ((msg_0 #f))

@@ -242,7 +242,7 @@
 
 (define/who (custodian-shutdown-all c)
   (check who custodian? c)
-  (atomically/no-exit-barrier
+  (atomically/no-barrier-exit
    (do-custodian-shutdown-all c))
   ;; Set in "thread.rkt" to check whether the current thread
   ;; should be swapped out
@@ -425,7 +425,7 @@
   (check who exact-nonnegative-integer? need-amt)
   (check who custodian? stop-cust)
   (place-ensure-wakeup!)
-  (atomically/no-interrupts
+  (atomically/no-gc-interrupts
    (unless (or (custodian-shut-down? limit-cust)
                (custodian-shut-down? stop-cust))
      (set-custodian-memory-limits! limit-cust
@@ -643,7 +643,7 @@
          (cond
            [(eq? c initial-place-root-custodian) all]
            [else
-            (when (atomically/no-interrupts
+            (when (atomically/no-gc-interrupts
                    (host:mutex-acquire memory-limit-lock)
                    (cond
                      [(zero? compute-memory-sizes)

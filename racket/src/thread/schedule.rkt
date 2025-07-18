@@ -128,7 +128,7 @@
        (loop child callbacks (lambda (callbacks) (loop g none-k callbacks)))])))
 
 (define (swap-in-thread t leftover-ticks callbacks)
-  (current-thread/in-atomic t)
+  (current-thread/in-racket t)
   (define e (thread-engine t))
   ;; Remove `e` from the thread in `check-breaks-prefix`, in case
   ;; a GC happens between here and there, because `e` needs to
@@ -150,7 +150,7 @@
       (thread-poll-not-done! t))))
 
 (define (current-thread-now-running!)
-  (set-thread-engine! (current-thread/in-atomic) 'running))
+  (set-thread-engine! (current-thread/in-racket) 'running))
 
 (define (swap-in-engine e t leftover-ticks)
   (assert-no-end-atomic-callbacks)
@@ -167,10 +167,10 @@
           (thread-maybe-set-results! t results)
           (accum-cpu-time! t #t)
           (set-thread-future! t #f)
-          (current-thread/in-atomic #f)
+          (current-thread/in-racket #f)
           (set-place-current-thread! current-place #f)
           (current-future #f)
-          (unless (zero? (current-atomic))
+          (when (in-atomic-mode?)
             (abort-atomic)
             (internal-error "terminated in atomic mode!"))
           (flush-end-atomic-callbacks!)
@@ -182,7 +182,7 @@
          [else
           ;; Thread continues
           (cond
-            [(zero? (current-atomic))
+            [(not-atomic-mode?)
              (flush-end-atomic-callbacks!)
              (when (thread-dead? root-thread)
                (force-exit 0))
@@ -193,7 +193,7 @@
              (set-place-current-thread! current-place #f)
              (unless (eq? (thread-engine t) 'done)
                (set-thread-engine! t e))
-             (current-thread/in-atomic #f)
+             (current-thread/in-racket #f)
              (poll-and-select-thread! new-leftover-ticks)]
             [else
              ;; Swap out when the atomic region ends and at a point
@@ -291,7 +291,7 @@
   (start-atomic)
   (for ([callback (in-list callbacks)])
     (callback))
-  (end-atomic/no-exit-barrier))
+  (end-atomic/no-barrier-exit))
 
 ;; ----------------------------------------
 
