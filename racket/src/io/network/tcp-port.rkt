@@ -19,6 +19,7 @@
   [abandon? #f]
   #:override
   [on-close
+   ;; in atomic mode
    (lambda ()
      (unless abandon?
        (rktio_socket_shutdown rktio fd RKTIO_SHUTDOWN_READ)))]
@@ -44,6 +45,7 @@
   [abandon? #f]
   #:override
   [on-close
+   ;; in atomic mode
    (lambda ()
      (unless abandon?
        (rktio_socket_shutdown rktio fd RKTIO_SHUTDOWN_WRITE)))]
@@ -51,6 +53,7 @@
    (lambda (n)
      (raise-network-error #f n "error writing to stream port"))]
   [buffer-mode
+   ;; in atomic mode
    (case-lambda
      [() buffer-mode]
      [(mode)

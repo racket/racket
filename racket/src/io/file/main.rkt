@@ -48,7 +48,8 @@
 
 (define/who (directory-exists? p)
   (check who path-string? p)
-  (rktio_directory_exists rktio (->host p who '(exists))))
+  (define host-path (->host p who '(exists)))
+  (atomically (rktio_directory_exists rktio host-path)))
 
 (define/who (file-exists? p)
   (check who path-string? p)
@@ -58,11 +59,13 @@
           (special-filename? host-path #:immediate? #f))
      #t]
     [else
-     (rktio_file_exists rktio host-path)]))
+     (atomically
+      (rktio_file_exists rktio host-path))]))
 
 (define/who (link-exists? p)
   (check who path-string? p)
-  (rktio_link_exists rktio (->host p who '(exists))))
+  (define host-path (->host p who '(exists)))
+  (atomically (rktio_link_exists rktio host-path)))
 
 (define/who (file-or-directory-type p [must-exist? #f])
   (check who path-string? p)
@@ -72,7 +75,7 @@
           (special-filename? host-path #:immediate? #f))
      'file]
     [else
-     (define r (rktio_file_type rktio host-path))
+     (define r (atomically (rktio_file_type rktio host-path)))
      (cond
        [(eqv? r RKTIO_FILE_TYPE_FILE) 'file]
        [(eqv? r RKTIO_FILE_TYPE_DIRECTORY) 'directory]
@@ -91,7 +94,7 @@
   (check who path-string? p)
   (check who permissions? #:contract permissions-desc perms)
   (define host-path (->host p who '(write)))
-  (define r (rktio_make_directory_with_permissions rktio host-path perms))
+  (define r (atomically (rktio_make_directory_with_permissions rktio host-path perms)))
   (when (rktio-error? r)
     (raise-filesystem-error who
                             r
@@ -155,9 +158,10 @@
 (define/who (delete-file p)
   (check who path-string? p)
   (define host-path (->host p who '(delete)))
-  (define r (rktio_delete_file rktio
-                               host-path
-                               (current-force-delete-permissions)))
+  (define force-perms (current-force-delete-permissions))
+  (define r (atomically (rktio_delete_file rktio
+                                           host-path
+                                           force-perms)))
   (when (rktio-error? r)
     (raise-filesystem-error who
                             r
@@ -169,10 +173,12 @@
 (define/who (delete-directory p)
   (check who path-string? p)
   (define host-path (->host p who '(delete)))
-  (define r (rktio_delete_directory rktio
-                                    host-path
-                                    (->host (current-directory) #f #f)
-                                    (current-force-delete-permissions)))
+  (define host-dir-path (->host (current-directory) #f #f))
+  (define force-perms (current-force-delete-permissions))
+  (define r (atomically (rktio_delete_directory rktio
+                                                host-path
+                                                host-dir-path
+                                                force-perms)))
   (when (rktio-error? r)
     (raise-filesystem-error who
                             r
@@ -186,7 +192,7 @@
   (check who path-string? new)
   (define host-old (->host old who '(read)))
   (define host-new (->host new who '(write)))
-  (define r (rktio_rename_file rktio host-new host-old exists-ok?))
+  (define r (atomically (rktio_rename_file rktio host-new host-old exists-ok?)))
   (when (rktio-error? r)
     (raise-filesystem-error who
                             r
@@ -257,9 +263,10 @@
          mode)
   (define host-path (->host p who (if (integer? mode) '(write) '(read))))
   (define r
-    (if (integer? mode)
-        (rktio_set_file_or_directory_permissions rktio host-path mode)
-        (rktio_get_file_or_directory_permissions rktio host-path (eq? mode 'bits))))
+    (atomically
+     (if (integer? mode)
+         (rktio_set_file_or_directory_permissions rktio host-path mode)
+         (rktio_get_file_or_directory_permissions rktio host-path (eq? mode 'bits)))))
   (when (rktio-error? r)
     (raise-filesystem-error who
                             r
@@ -363,10 +370,10 @@
           (let loop ()
             (cond
               [(rktio_copy_file_is_done rktio cp)
-               (define r (rktio_copy_file_finish_permissions rktio cp))
+               (define r (atomically (rktio_copy_file_finish_permissions rktio cp)))
                (when (rktio-error? r) (report-error r))]
               [else
-               (define r (rktio_copy_file_step rktio cp))
+               (define r (atomically (rktio_copy_file_step rktio cp)))
                (when (rktio-error? r) (report-error r))
                (loop)])))
         (lambda ()
@@ -381,7 +388,8 @@
   (define to-path (->path to))
   (define path-host (->host path who '(write)))
   (define to-host (->host/as-is to-path who (host-> path-host)))
-  (define r (rktio_make_link rktio path-host to-host (directory-path? to-path)))
+  (define dir? (directory-path? to-path))
+  (define r (atomically (rktio_make_link rktio path-host to-host dir?)))
   (when (rktio-error? r)
     (raise-filesystem-error who
                             r

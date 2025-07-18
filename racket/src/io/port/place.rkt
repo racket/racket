@@ -45,6 +45,7 @@
 
 ;; ----------------------------------------
 
+;; in atomic mode
 (define (dup-fd fd cleanup during)
   (define new-fd (rktio_dup rktio fd))
   (when (rktio-error? new-fd)
@@ -53,6 +54,7 @@
     (raise-rktio-error 'dynamic-place new-fd (string-append "error during " during)))
   new-fd)
 
+;; in atomic mode
 (define (pipe cleanup during)
   (define p (rktio_make_pipe rktio (bitwise-ior RKTIO_NO_INHERIT_INPUT RKTIO_NO_INHERIT_OUTPUT)))
   (when (rktio-error? p)

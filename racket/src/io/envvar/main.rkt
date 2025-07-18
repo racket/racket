@@ -79,7 +79,7 @@
   (define ht (environment-variables-ht e))
   (cond
     [(not ht)
-     (define r (rktio_setenv rktio k v))
+     (define r (atomically (rktio_setenv rktio k v)))
      (when (rktio-error? r)
        (cond
          [(eq? fail none)

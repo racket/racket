@@ -53,7 +53,7 @@
   [is-converted #f]
   
   #:public
-  [on-close (lambda () (void))]
+  [on-close (lambda () (void))] ; in atomic mode
   [raise-read-error (lambda (n)
                       (raise-filesystem-error #f n "error reading from stream port"))]
 
@@ -388,7 +388,7 @@
 (define (terminal-port? p)
   (define fd (fd-port-fd p))
   (and fd
-       (rktio_fd_is_terminal rktio fd)))
+       (atomically (rktio_fd_is_terminal rktio fd))))
 
 (define (fd-port-fd p)
   (define cp (or (->core-input-port p #:default #f)
@@ -407,7 +407,7 @@
      (cond
        [(fd-output-port? cp)
         (define fd (fd-port-fd cp))
-        (rktio_fd_is_pending_open rktio fd)]
+        (atomically (rktio_fd_is_pending_open rktio fd))]
        [else #f])]
     [(input-port? p) #f]
     [else

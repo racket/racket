@@ -135,7 +135,7 @@
 
         ;; If `stdout` or `stderr` is a fifo with no read end open, wait for it:
         (define (maybe-wait fd)
-          (when (and fd (rktio_fd_is_pending_open rktio (fd-port-fd fd)))
+          (when (and fd (atomically (rktio_fd_is_pending_open rktio (fd-port-fd fd))))
             (sync fd)))
         (maybe-wait stdout)
         (unless (eq? stderr 'stdout)
@@ -323,12 +323,17 @@
   ;; Let `rktio_shell_execute` handle its own atomicity. That's because
   ;; it can yield to Windows events, and events need to be handled by callbacks
   ;; starting from a mode that's like a Racket foreign call.
-  (define r (rktio_shell_execute rktio
-                                 (and verb (string->bytes/utf-8 verb))
-                                 (string->bytes/utf-8 target)
-                                 (string->bytes/utf-8 parameters)
-                                 (->host (->path dir) who '(exists))
-                                 show_mode))
+  (define verb-bytes (and verb (string->bytes/utf-8 verb)))
+  (define target-bytes (string->bytes/utf-8 target))
+  (define param-bytes (string->bytes/utf-8 parameters))
+  (define host-dir-path (->host (->path dir) who '(exists)))
+  (define r (atomically
+             (rktio_shell_execute rktio
+                                  verb-bytes
+                                  target-bytes
+                                  param-bytes
+                                  host-dir-path
+                                  show_mode)))
   (when (rktio-error? r) (raise-rktio-error who r "failed"))
   #f)
 
@@ -337,4 +342,5 @@
 (void
  (set-get-subprocesses-time!
   (lambda ()
-    (rktio_get_process_children_milliseconds rktio))))
+    (atomically
+     (rktio_get_process_children_milliseconds rktio)))))
