@@ -117,7 +117,7 @@ Finally, in the process of building a target, a @racket[_rebuild]
 procedure may discover additional dependencies. A discovered
 dependency sent to @racket[build/dep] is recorded as a dependency of
 the target in addition to the ones that were reported by
-@racket[_get-deps]. Any changes in these additional targets trigger a
+@racket[_get-rule]. Any changes in these additional targets trigger a
 rebuild of the target in the future. Meanwhile, the build system
 assumes that if none of the dependencies change, then the set of
 additional dependencies discovered by @racket[_rebuild] would be the
@@ -243,7 +243,7 @@ targets that it creates.
 @section{Parallelism}
 
 A build runs in a @tech{threading context}, so a target's
-@racket[_get-deps] or @racket[_rebuild] procedure can use
+@racket[_get-rule] or @racket[_rebuild] procedure can use
 @racket[thread-process-wait] to wait on a process. Doing
 so can enable parallelism among targets, depending on the
 @racket['jobs] option provided to @racket[build] or
@@ -253,8 +253,8 @@ provided by GNU make and communicated through the @envvar{MAKEFLAGS}
 environment variable, or the @envvar{ZUO_JOBS} environment variable.
 
 When calling @racket[build] for a nested build from a target's
-@racket[_get-deps] or @racket[_rebuild] procedures, supply the
-@tech{build token} that is passed to @racket[_get-deps] to the
+@racket[_get-rule] or @racket[_rebuild] procedures, supply the
+@tech{build token} that is passed to @racket[_get-rule] to the
 @racket[build] call. That way, parallelism configured for the
 enclosing build will be extended to the nested build.
 
@@ -303,11 +303,11 @@ not need to be globally unique.}
 
 
 @defproc*[([(target [name path-string?]
-                    [get-deps (path-string? token? . -> . rule?)]
+                    [get-rule (path-string? token? . -> . rule?)]
                     [options hash? (hash)])
             target?]
            [(target [name symbol?]
-                    [get-deps (token? . -> . phony-rule?)]
+                    [get-rule (token? . -> . phony-rule?)]
                     [options hash? (hash)])
             target?])]{
 
@@ -316,11 +316,11 @@ is a path string, then it represents a file build target whose results
 are recorded to avoid rebuilding. If @racket[name] is a symbol, then
 it represents a @tech{phony} target that is always rebuilt.
 
-In the case of a file target, @racket[get-deps] receives @racket[name]
+In the case of a file target, @racket[get-rule] receives @racket[name]
 back, because that's often more convenient for constructing a target
 when applying an @racket[_at-dir] function to create @racket[name].
 
-The @deftech{build token} argument to @racket[get-deps] represents the
+The @deftech{build token} argument to @racket[get-rule] represents the
 target build in progress. It's useful with @racket[file-sha256] to take
 advantage of caching, with @racket[build/dep] to report
 discovered targets, and with @racket[build/no-dep] or @racket[build].
@@ -337,13 +337,13 @@ The following keys are recognized in @racket[options]:
 
 @item{@racket['precious?] mapped to any value: if non-@racket[#f] for
       a non-phony target, @racket[name] is not deleted if the
-      @racket[get-deps] function or its result's @racket[_rebuild]
+      @racket[get-rule] function or its result's @racket[_rebuild]
       function fails.}
 
 @item{@racket['command?] mapped to any value: if non-@racket[#f], when
       @racket[build/command-line] runs the target as the first one
       named on the command line, all arguments from the command line
-      after the target name are provided @racket[_get-deps] as
+      after the target name are provided @racket[_get-rule] as
       additional arguments. When building a target directly instead
       of through @racket[build/command-line], use
       @racket[command-target->target] to supply arguments.}
@@ -463,7 +463,7 @@ following keys are recognized:
 ]
 
 If @racket[token] is not @racket[#f], it must be a @tech{build token}
-that was passed to a target's @racket[_get-deps] to represent a build
+that was passed to a target's @racket[_get-rule] to represent a build
 in progress (but paused to run this one). The new build process uses
 parallelism available within the in-progress build for the new build
 process.
@@ -487,7 +487,7 @@ the same build.
 @defproc[(build/dep [target (or target? path-string?)] [token token?]) void?]{
 
 Like @racket[build], but continues a build in progress as represented
-by a @racket[token] that was passed to a target's @racket[_get-deps]
+by a @racket[token] that was passed to a target's @racket[_get-rule]
 or @racket[_rebuild] procedure. Targets reachable through
 @racket[target] may have been built or have been in progress already,
 for example. After @racket[target] is built, it is registered as a
@@ -671,7 +671,7 @@ target. When a @racket[':target] has multiple @racket[_path]s, they
 must all be path strings.
 
 A @racket[_build-proc] accepts a path (if not phony) and a @tech{build
-token}, just like a @racket[_get-deps] procedure for @racket[target],
+token}, just like a @racket[_get-rule] procedure for @racket[target],
 but @racket[_build-proc] should build the target like the
 @racket[_rebuild] procedure for @racket[rule] (or @racket[phony-rule]).
 When a @racket[':target] line has multiple @racket[_path]s, only the
