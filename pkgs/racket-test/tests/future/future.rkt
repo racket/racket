@@ -43,8 +43,11 @@ We should also test deep continuations.
 
 (define (get-blocks-on prim log)
   (filter (λ (e)
-            (equal? (future-event-prim-name e)
-                    prim))
+            (define n (future-event-prim-name e)) 
+            (or (equal? n prim)
+                (let ([s (format "~a via" prim)]
+                      [n (symbol->string n)])
+                  (equal? s (substring n 0 (min (string-length n) (string-length s)))))))
           (get-blocks log)))
 
 (define (get-sync-blocks-on prim log)

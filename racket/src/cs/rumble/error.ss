@@ -874,7 +874,7 @@
   (set! primitive-names primitives))
 
 ;; Simplified variant of `continuation->trace` that can be called to
-;; get a likely primitive to blame for a blocking future.
+;; get blame for a blocking future.
 (define (continuation-current-primitive k exclusions inclusions)
   (let ([k (if (#%procedure? k)
                ;; as a convenience for the futures scheduler, find a
@@ -887,28 +887,35 @@
                                (loop (fx- len 1))))]))
                k)])
     (let loop ([k (if (full-continuation? k) (full-continuation-k k) k)]
-               [fallback #f])
+               [fallback #f]
+               [more 1])
       (cond
         [(or (not (#%$continuation? k))
              (eq? k #%$null-continuation))
          fallback]
         [else
-         (let* ([name (or (let ([n #f])
-                            (and n
-                                 (string->symbol (format "body of ~a" n))))
-                          (let* ([c (#%$continuation-return-code k)]
-                                 [n (#%$code-name c)])
-                            (and n (string->symbol n))))])
+         (let* ([c (#%$continuation-return-code k)]
+                [n (#%$code-name c)]
+                [name (let ([s (and n
+                                    (procedure-name-string->visible-name-string n))])
+                        (if (string? s)
+                            (string->symbol s)
+                            s))])
            (cond
              [(and name
-                   (or (hash-ref primitive-names name #f)
-                       (#%memq name inclusions))
                    (not (#%memq name exclusions)))
-              name]
+              (let ([next (and (positive? more)
+                               (begin
+                                 (#%$split-continuation k 0)
+                                 (loop (#%$continuation-link k) #f (sub1 more))))])
+                (if next
+                    (string->symbol (format "~a via ~a"  name next))
+                    name))]
              [else
               (#%$split-continuation k 0)
               (loop (#%$continuation-link k)
-                    (or fallback name))]))]))))
+                    (or fallback (cons name (#%$continuation-link k)))
+                    more)]))]))))
 
 (define (traces->context ls realms?)
   (let loop ([l '()] [ls ls])
