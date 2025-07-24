@@ -980,7 +980,8 @@
                (or (not (future->thread (current-future)))
                    ;; and not when the future is already trying to swap out
                    (future-swapping-out? (current-future))))
-    (define t (current-thread))
+    (define t (or (current-thread/in-racket) ; avoid blocking would-be future
+                  (current-thread)))
     (when (and
            ;; allow `check-for-break` before threads are running:
            t

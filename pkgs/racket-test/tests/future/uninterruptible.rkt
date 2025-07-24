@@ -19,7 +19,7 @@
 (define g (lambda (x) (dynamic-wind void (lambda () x) void)))
 
 (define (run mode [factor 1])
-  (define n (* 1000000 factor))
+  (define n (* 100000 factor))
   (println mode)
   (define fs
     (for/list ([i (in-range 8)])
@@ -59,7 +59,7 @@
 (run 'allocator/uninterruptible)
 (run 'allocator/block)
 (run 'dynamic-wind)
-(run 'atomic 10)
-(run 'uninterruptible 10)
+(run 'atomic 100)
+(run 'uninterruptible 100)
 (run 'call-as-atomic)
-(run 'call-as-uninterruptible)
+(run 'call-as-uninterruptible 10)

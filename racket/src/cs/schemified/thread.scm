@@ -8011,7 +8011,9 @@
              #f)
            #f)
        (void)
-       (let ((t_0 (1/current-thread)))
+       (let ((t_0
+              (let ((or-part_0 (current-thread/in-racket)))
+                (if or-part_0 or-part_0 (1/current-thread)))))
          (if (if t_0 (thread-pending-break t_0) #f)
            (let ((exit-barrier?_0
                   (if (1/current-future) (in-future-thread?) #f)))
