@@ -231,8 +231,11 @@
        [(evt-impersonator? evt)
         (do-sync 'sync/timeout timeout (list evt))]
        [(and (eqv? timeout 0)
-             (semaphore? evt))
-        (if (semaphore-try-wait? evt)
+             (or (semaphore? evt)
+                 (semaphore-peek-evt? evt)))
+        (if (if (semaphore? evt)
+                (unsafe-semaphore-try-wait? evt #t)
+                (unsafe-semaphore-try-peek? evt))
             evt
             #f)]
        [(not timeout)

@@ -16,7 +16,10 @@
     (define v (unbox lock-box))
     (cond
      [(or (not v)
-          (sync/timeout 0 (car v) (or (weak-box-value (cdr v)) never-evt)))
+          (sync/timeout 0 (car v) (or (let ([t (weak-box-value (cdr v))])
+                                        (and (not (eq? (current-thread) t))
+                                             t))
+                                      never-evt)))
       (define sema (make-semaphore))
       (define lock (cons (semaphore-peek-evt sema) (make-weak-box (current-thread))))
       ((dynamic-wind

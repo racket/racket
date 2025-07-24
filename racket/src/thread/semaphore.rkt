@@ -29,7 +29,9 @@
          semaphore-post-all/atomic
 
          unsafe-semaphore-post
-         unsafe-semaphore-wait)
+         unsafe-semaphore-wait
+         unsafe-semaphore-try-wait?
+         unsafe-semaphore-try-peek?)
 
 (module+ for-thread
   ;; for creating subtypes in "thread.rkt"
@@ -156,14 +158,33 @@
 
 (define/who (semaphore-try-wait? s)
   (check who semaphore? s)
-  (atomically
-   (call-pre-poll-external-callbacks)
-   (define c (semaphore-count s))
-   (cond
-     [(positive? c)
-      (set-semaphore-count! s (sub1 c))
-      #t]
-     [else #f])))
+  (unsafe-semaphore-try-wait? s #t))
+
+(define/who (unsafe-semaphore-try-wait? s decrement?)
+  (define c (semaphore-count s))
+  (cond
+    [(and (positive? c)
+          (let ([f (current-future)])
+            (or (not f)
+                (future-can-take-lock? f)))
+          (unsafe-struct*-cas! s count-field-pos c (if decrement?
+                                                       (sub1 c)
+                                                       c)))
+     (memory-order-acquire)
+     #t]
+    [else
+     (atomically
+      (call-pre-poll-external-callbacks)
+      (define c (semaphore-count s))
+      (cond
+        [(positive? c)
+         (when decrement?
+           (set-semaphore-count! s (sub1 c)))
+         #t]
+        [else #f]))]))
+
+(define/who (unsafe-semaphore-try-peek? evt)
+  (unsafe-semaphore-try-wait? (semaphore-peek-evt-sema evt) #f))
 
 (define/who (semaphore-wait s)
   (check who semaphore? s)

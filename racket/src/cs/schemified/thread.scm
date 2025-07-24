@@ -4187,15 +4187,37 @@
        (if (1/semaphore? s_0)
          (void)
          (raise-argument-error 'semaphore-try-wait? "semaphore?" s_0))
-       (start-atomic)
-       (begin0
-         (begin
-           (call-pre-poll-external-callbacks)
-           (let ((c_0 (semaphore-count s_0)))
-             (if (positive? c_0)
-               (begin (set-semaphore-count! s_0 (sub1 c_0)) #t)
-               #f)))
-         (end-atomic))))))
+       (unsafe-semaphore-try-wait? s_0 #t)))))
+(define unsafe-semaphore-try-wait?
+  (lambda (s_0 decrement?_0)
+    (let ((c_0 (semaphore-count s_0)))
+      (if (if (positive? c_0)
+            (if (let ((f_0 (1/current-future)))
+                  (let ((or-part_0 (not f_0)))
+                    (if or-part_0
+                      or-part_0
+                      (|#%app| future-can-take-lock? f_0))))
+              (unsafe-struct*-cas! s_0 2 c_0 (if decrement?_0 (sub1 c_0) c_0))
+              #f)
+            #f)
+        (memory-order-acquire)
+        (begin
+          (start-atomic)
+          (begin0
+            (begin
+              (call-pre-poll-external-callbacks)
+              (let ((c_1 (semaphore-count s_0)))
+                (if (positive? c_1)
+                  (begin
+                    (if decrement?_0
+                      (set-semaphore-count! s_0 (sub1 c_1))
+                      (void))
+                    #t)
+                  #f)))
+            (end-atomic)))))))
+(define unsafe-semaphore-try-peek?
+  (lambda (evt_0)
+    (unsafe-semaphore-try-wait? (semaphore-peek-evt-sema evt_0) #f)))
 (define 1/semaphore-wait
   (|#%name|
    semaphore-wait
@@ -9763,8 +9785,15 @@
      (if (|#%app| evt-impersonator? evt_0)
        (let ((temp67_0 (list evt_0)))
          (do-sync.1 #f 'sync/timeout timeout_0 temp67_0))
-       (if (if (eqv? timeout_0 0) (1/semaphore? evt_0) #f)
-         (if (1/semaphore-try-wait? evt_0) evt_0 #f)
+       (if (if (eqv? timeout_0 0)
+             (let ((or-part_0 (1/semaphore? evt_0)))
+               (if or-part_0 or-part_0 (1/semaphore-peek-evt? evt_0)))
+             #f)
+         (if (if (1/semaphore? evt_0)
+               (unsafe-semaphore-try-wait? evt_0)
+               (unsafe-semaphore-try-peek? evt_0))
+           evt_0
+           #f)
          (if (not timeout_0)
            (if (1/semaphore? evt_0)
              (begin (1/semaphore-wait evt_0) evt_0)
