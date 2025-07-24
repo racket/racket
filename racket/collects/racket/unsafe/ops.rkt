@@ -16,6 +16,9 @@
                      unsafe-start-atomic unsafe-end-atomic
                      unsafe-start-breakable-atomic unsafe-end-breakable-atomic
                      unsafe-in-atomic?
+                     unsafe-start-uninterruptible unsafe-end-uninterruptible
+                     unsafe-make-uninterruptible-lock
+                     unsafe-uninterruptible-lock-acquire unsafe-uninterruptible-lock-release
                      unsafe-poller
                      unsafe-poll-ctx-fd-wakeup
                      unsafe-poll-ctx-eventmask-wakeup

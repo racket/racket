@@ -148,6 +148,8 @@
                 (1/unsafe-in-atomic? unsafe-in-atomic?)
                 (1/unsafe-make-custodian-at-root unsafe-make-custodian-at-root)
                 (1/unsafe-make-os-semaphore unsafe-make-os-semaphore)
+                (1/unsafe-make-uninterruptible-lock
+                 unsafe-make-uninterruptible-lock)
                 (1/unsafe-os-semaphore-post unsafe-os-semaphore-post)
                 (1/unsafe-os-semaphore-wait unsafe-os-semaphore-wait)
                 (1/unsafe-os-thread-enabled? unsafe-os-thread-enabled?)
@@ -158,6 +160,10 @@
                 (1/unsafe-start-breakable-atomic unsafe-start-breakable-atomic)
                 (1/unsafe-start-uninterruptible unsafe-start-uninterruptible)
                 (1/unsafe-thread-at-root unsafe-thread-at-root)
+                (1/unsafe-uninterruptible-lock-acquire
+                 unsafe-uninterruptible-lock-acquire)
+                (1/unsafe-uninterruptible-lock-release
+                 unsafe-uninterruptible-lock-release)
                 (1/vector-set-performance-stats! vector-set-performance-stats!)
                 (1/will-execute will-execute)
                 (1/will-executor? will-executor?)
@@ -4124,22 +4130,38 @@
          (void)
          (raise-argument-error 'semaphore-post "semaphore?" s_0))
        (unsafe-semaphore-post s_0)))))
+(define current-future-can-take-lock?
+  (lambda ()
+    (let ((or-part_0 (current-thread/in-racket)))
+      (if or-part_0
+        or-part_0
+        (let ((f_0 (1/current-future)))
+          (let ((or-part_1 (not f_0)))
+            (if or-part_1 or-part_1 (|#%app| future-can-take-lock? f_0))))))))
+(define cas-only-mode?
+  (lambda () (if (in-atomic-mode?) (not (current-thread/in-racket)) #f)))
 (define unsafe-semaphore-post
   (lambda (s_0)
     (let ((c_0 (semaphore-count s_0)))
       (if (if (>= c_0 0)
-            (if (let ((f_0 (1/current-future)))
-                  (let ((or-part_0 (not f_0)))
-                    (if or-part_0
-                      or-part_0
-                      (|#%app| future-can-take-lock? f_0))))
+            (if (current-future-can-take-lock?)
               (begin
                 (memory-order-release)
                 (unsafe-struct*-cas! s_0 2 c_0 (add1 c_0)))
               #f)
             #f)
         (void)
-        (begin (start-atomic) (semaphore-post/atomic s_0) (end-atomic))))))
+        (if (cas-only-mode?)
+          (if (not (current-future-can-take-lock?))
+            (|#%app|
+             host:internal-error
+             "posted to a semaphore from a future in uninterruptible mode")
+            (if (unsafe-struct*-cas! s_0 2 -1 -1)
+              (|#%app|
+               host:internal-error
+               "posted in uninterruptible mode to a semaphore that has been contested")
+              (unsafe-semaphore-post s_0)))
+          (begin (start-atomic) (semaphore-post/atomic s_0) (end-atomic)))))))
 (define semaphore-post/atomic
   (lambda (s_0)
     (letrec*
@@ -4185,29 +4207,33 @@
   (lambda (s_0 decrement?_0)
     (let ((c_0 (semaphore-count s_0)))
       (if (if (positive? c_0)
-            (if (let ((f_0 (1/current-future)))
-                  (let ((or-part_0 (not f_0)))
-                    (if or-part_0
-                      or-part_0
-                      (|#%app| future-can-take-lock? f_0))))
+            (if (current-future-can-take-lock?)
               (unsafe-struct*-cas! s_0 2 c_0 (if decrement?_0 (sub1 c_0) c_0))
               #f)
             #f)
         (begin (memory-order-acquire) #t)
-        (begin
-          (start-atomic)
-          (begin0
-            (begin
-              (call-pre-poll-external-callbacks)
-              (let ((c_1 (semaphore-count s_0)))
-                (if (positive? c_1)
-                  (begin
-                    (if decrement?_0
-                      (set-semaphore-count! s_0 (sub1 c_1))
-                      (void))
-                    #t)
-                  #f)))
-            (end-atomic)))))))
+        (if (cas-only-mode?)
+          (if (not (current-future-can-take-lock?))
+            (|#%app|
+             host:internal-error
+             "waited on a semaphore from a future in uninterruptible mode")
+            (if (unsafe-struct*-cas! s_0 2 c_0 c_0)
+              #f
+              (unsafe-semaphore-try-wait? s_0 decrement?_0)))
+          (begin
+            (start-atomic)
+            (begin0
+              (begin
+                (call-pre-poll-external-callbacks)
+                (let ((c_1 (semaphore-count s_0)))
+                  (if (positive? c_1)
+                    (begin
+                      (if decrement?_0
+                        (set-semaphore-count! s_0 (sub1 c_1))
+                        (void))
+                      #t)
+                    #f)))
+              (end-atomic))))))))
 (define unsafe-semaphore-try-peek?
   (lambda (evt_0)
     (unsafe-semaphore-try-wait? (semaphore-peek-evt-sema evt_0) #f)))
@@ -4224,39 +4250,45 @@
   (lambda (s_0)
     (let ((c_0 (semaphore-count s_0)))
       (if (if (positive? c_0)
-            (if (let ((f_0 (1/current-future)))
-                  (let ((or-part_0 (not f_0)))
-                    (if or-part_0
-                      or-part_0
-                      (|#%app| future-can-take-lock? f_0))))
+            (if (current-future-can-take-lock?)
               (unsafe-struct*-cas! s_0 2 c_0 (sub1 c_0))
               #f)
             #f)
         (memory-order-acquire)
-        (|#%app|
-         (begin
-           (start-atomic)
-           (begin0
-             (let ((c_1 (semaphore-count s_0)))
-               (if (positive? c_1)
-                 (begin
-                   (set-semaphore-count! s_0 (sub1 c_1))
-                   future-barrier-exit)
-                 (begin
-                   (ready-nonempty-queue s_0)
-                   (let ((w_0 (current-thread/in-racket)))
-                     (let ((n_0 (queue-add! s_0 w_0)))
-                       (let ((interrupt-cb_0
-                              (lambda ()
-                                (begin
-                                  (queue-remove-node! s_0 n_0)
-                                  (ready-empty-queue s_0)
-                                  (lambda () (unsafe-semaphore-wait s_0))))))
-                         (|#%app|
-                          (waiter-methods-suspend (waiter-ref w_0))
-                          w_0
-                          interrupt-cb_0)))))))
-             (end-atomic/no-barrier-exit))))))))
+        (if (cas-only-mode?)
+          (if (not (current-future-can-take-lock?))
+            (|#%app|
+             host:internal-error
+             "waited on a semaphore from a future in uninterruptible mode")
+            (if (unsafe-struct*-cas! s_0 2 0 0)
+              (|#%app|
+               host:internal-error
+               "waited in uninterruptible mode on a not-ready semaphore")
+              (unsafe-semaphore-wait s_0)))
+          (|#%app|
+           (begin
+             (start-atomic)
+             (begin0
+               (let ((c_1 (semaphore-count s_0)))
+                 (if (positive? c_1)
+                   (begin
+                     (set-semaphore-count! s_0 (sub1 c_1))
+                     future-barrier-exit)
+                   (begin
+                     (ready-nonempty-queue s_0)
+                     (let ((w_0 (current-thread/in-racket)))
+                       (let ((n_0 (queue-add! s_0 w_0)))
+                         (let ((interrupt-cb_0
+                                (lambda ()
+                                  (begin
+                                    (queue-remove-node! s_0 n_0)
+                                    (ready-empty-queue s_0)
+                                    (lambda () (unsafe-semaphore-wait s_0))))))
+                           (|#%app|
+                            (waiter-methods-suspend (waiter-ref w_0))
+                            w_0
+                            interrupt-cb_0)))))))
+               (end-atomic/no-barrier-exit)))))))))
 (define semaphore-wait/poll.1
   (|#%name|
    semaphore-wait/poll
@@ -14373,6 +14405,24 @@
   (|#%name|
    unsafe-end-uninterruptible
    (lambda () (end-atomic/no-barrier-exit))))
+(define 1/unsafe-make-uninterruptible-lock
+  (|#%name|
+   unsafe-make-uninterruptible-lock
+   (lambda () (if (|#%app| threaded?) (|#%app| host:make-mutex) 'dummy-lock))))
+(define 1/unsafe-uninterruptible-lock-acquire
+  (|#%name|
+   unsafe-uninterruptible-lock-acquire
+   (lambda (m_0)
+     (begin
+       (start-uninterruptible)
+       (if (|#%app| threaded?) (|#%app| host:mutex-acquire m_0) (void))))))
+(define 1/unsafe-uninterruptible-lock-release
+  (|#%name|
+   unsafe-uninterruptible-lock-release
+   (lambda (m_0)
+     (begin
+       (if (|#%app| threaded?) (|#%app| host:mutex-release m_0) (void))
+       (end-atomic/no-barrier-exit)))))
 (define 1/current-process-milliseconds
   (let ((current-process-milliseconds_0
          (|#%name|

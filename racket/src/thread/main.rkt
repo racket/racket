@@ -163,6 +163,10 @@
          unsafe-start-uninterruptible
          unsafe-end-uninterruptible
 
+         unsafe-make-uninterruptible-lock
+         unsafe-uninterruptible-lock-acquire
+         unsafe-uninterruptible-lock-release
+
          unsafe-thread-at-root
          unsafe-make-custodian-at-root
          unsafe-custodian-register

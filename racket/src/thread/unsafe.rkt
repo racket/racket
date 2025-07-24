@@ -3,7 +3,12 @@
          "atomic.rkt"
          "thread.rkt"
          "schedule.rkt"
-         "evt.rkt")
+         "evt.rkt"
+         (only-in "host.rkt"
+                  threaded?
+                  host:make-mutex
+                  host:mutex-acquire
+                  host:mutex-release))
 
 (provide unsafe-start-atomic
          unsafe-end-atomic
@@ -13,7 +18,11 @@
          unsafe-set-on-atomic-timeout!
 
          unsafe-start-uninterruptible
-         unsafe-end-uninterruptible)
+         unsafe-end-uninterruptible
+
+         unsafe-make-uninterruptible-lock
+         unsafe-uninterruptible-lock-acquire
+         unsafe-uninterruptible-lock-release)
 
 (define (unsafe-start-breakable-atomic)
   (start-atomic)
@@ -38,4 +47,17 @@
 (define (unsafe-start-uninterruptible)
   (start-uninterruptible))
 (define (unsafe-end-uninterruptible)
+  (end-uninterruptible))
+
+(define (unsafe-make-uninterruptible-lock)
+  (if (threaded?)
+      (host:make-mutex)
+      'dummy-lock))
+(define (unsafe-uninterruptible-lock-acquire m)
+  (start-uninterruptible)
+  (when (threaded?)
+    (host:mutex-acquire m)))
+(define (unsafe-uninterruptible-lock-release m)
+  (when (threaded?)
+    (host:mutex-release m))
   (end-uninterruptible))

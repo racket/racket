@@ -11,10 +11,10 @@
 (meta chez:define io-register-count 32)
 
 (meta chez:define regexp-register-start (+ io-register-start io-register-count))
-(meta chez:define regexp-register-count 32)
+(meta chez:define regexp-register-count 16)
 
 (meta chez:define expander-register-start (+ regexp-register-start regexp-register-count))
-(meta chez:define expander-register-count 32)
+(meta chez:define expander-register-count 48)
 
 ;; ----------------------------------------
 

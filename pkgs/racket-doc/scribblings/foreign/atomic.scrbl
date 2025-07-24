@@ -149,6 +149,17 @@ blocks the future or requires synchronization with coroutine threads;
 successful use of uninterruptible mode in a future
 or parallel thread thus requires knowledge of Racket's internals.
 
+As a special case, an @racket[equal?]-based mutable hash table (created
+by @racket[make-hash], for example) or a semaphore (created by
+@racket[make-semaphore]) can be used an in uninterruptible mode if it
+is used @emph{only} in uninterruptible mode, never concurrently; in
+the case of a semaphore, the semaphore's internal counter must be
+non-zero when waiting on the semaphore. Direct use of a semaphore in
+uninterrupted mode would not make sense, but the special case allows
+uninterrupted mode to use data structures that normally rely on
+semaphores for locking, as long as they are used consistently that
+way. See also @racket[make-uninterruptible-lock].
+
 Calls to @racket[start-uninterruptible] and
 @racket[end-uninterruptible] can be nested, and they can be mutually
 nested with calls to @racket[start-atomic] and @racket[end-atomic]
@@ -167,3 +178,29 @@ Similar to @racket[call-as-atomic], but for
 @tech{uninterruptible mode}.
 
 @history[#:added "8.17.0.7"]}
+
+
+
+@deftogether[(
+@defproc[(make-uninterruptible-lock) any/c]
+@defproc[(uninterruptible-lock-acquire [lock any/c]) void?]
+@defproc[(uninterruptible-lock-release [lock any/c]) void?]
+)]{
+
+An @deftech{uninterruptible lock} provides low-level synchronization
+that cooperates with @tech{uninterruptible mode} across parallel
+threads and futures. In particular, since a hash table or semaphore
+can be used in uninterruptible mode but non-concurrently, an
+uninterruptable lock can be used to guard access to the hash table or
+semaphore.
+
+An uninterruptable lock does not cooperate with coroutine thread
+scheduling. The @racket[uninterruptible-lock-acquire] function enters
+uninterruptable mode immediately, before taking the lock or even
+waiting for it, and @racket[uninterruptible-lock-release] exits
+uninterruptable mode only after releasing the lock. An uninterruptable
+lock is therefore useful only to guard predictably short actions
+that are reasonably considered atomic from the perspective of Racket
+threads.
+
+@history[#:added "8.18.0.5"]}

@@ -103,17 +103,36 @@
   (check who semaphore? s)
   (unsafe-semaphore-post s))
 
+(define (current-future-can-take-lock?)
+  (or (current-thread/in-racket)
+      (let ([f (current-future)])
+        (or (not f)
+            (future-can-take-lock? f)))))
+
+(define (cas-only-mode?)
+  (and (in-atomic-mode?)
+       (not (current-thread/in-racket)))) ; => really uninterruptible mode, not atomic mode
+
 (define (unsafe-semaphore-post s)
   (define c (semaphore-count s))
   (cond
     [(and (c . >= . 0)
-          (let ([f (current-future)])
-            (or (not f)
-                (future-can-take-lock? f)))
+          (current-future-can-take-lock?)
           (begin
             (memory-order-release)
             (unsafe-struct*-cas! s count-field-pos c (add1 c))))
      (void)]
+    [(cas-only-mode?)
+     ;; ensure that an uncontested semaphore works in uninterruptible mode,
+     ;; which means accommodating a spurious CAS failure
+     (cond
+       [(not (current-future-can-take-lock?))
+        (internal-error "posted to a semaphore from a future in uninterruptible mode")]
+       [(unsafe-struct*-cas! s count-field-pos -1 -1)
+        (internal-error "posted in uninterruptible mode to a semaphore that has been contested")]
+       [else
+        ;; try again
+        (unsafe-semaphore-post s)])]
     [else
      (atomically
       (semaphore-post/atomic s)
@@ -164,14 +183,20 @@
   (define c (semaphore-count s))
   (cond
     [(and (positive? c)
-          (let ([f (current-future)])
-            (or (not f)
-                (future-can-take-lock? f)))
-          (unsafe-struct*-cas! s count-field-pos c (if decrement?
-                                                       (sub1 c)
-                                                       c)))
+          (current-future-can-take-lock?)
+          (unsafe-struct*-cas! s count-field-pos c (if decrement? (sub1 c) c)))
      (memory-order-acquire)
      #t]
+    [(cas-only-mode?)
+     ;; ensure that an uncontested semaphore works in uninterruptible mode,
+     ;; which means accommodating a spurious CAS failure
+     (cond
+       [(not (current-future-can-take-lock?))
+        (internal-error "waited on a semaphore from a future in uninterruptible mode")]
+       [(unsafe-struct*-cas! s count-field-pos c c)
+        #f]
+       [else
+        (unsafe-semaphore-try-wait? s decrement?)])]
     [else
      (atomically
       (call-pre-poll-external-callbacks)
@@ -194,11 +219,20 @@
   (define c (semaphore-count s))
   (cond
     [(and (positive? c)
-          (let ([f (current-future)])
-            (or (not f)
-                (future-can-take-lock? f)))
+          (current-future-can-take-lock?)
           (unsafe-struct*-cas! s count-field-pos c (sub1 c)))
      (memory-order-acquire)]
+    [(cas-only-mode?)
+     ;; ensure that an uncontested semaphore works in uninterruptible mode,
+     ;; which means accommodating a spurious CAS failure
+     (cond
+       [(not (current-future-can-take-lock?))
+        (internal-error "waited on a semaphore from a future in uninterruptible mode")]
+       [(unsafe-struct*-cas! s count-field-pos 0 0)
+        (internal-error "waited in uninterruptible mode on a not-ready semaphore")]
+       [else
+        ;; try again
+        (unsafe-semaphore-wait s)])]
     [else
      ((atomically/no-barrier-exit
        (define c (semaphore-count s))

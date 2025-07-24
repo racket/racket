@@ -316,27 +316,29 @@
 ;; generic module path, so that compilation can recognize references within
 ;; the module to itself, and so on
 (define-place-local generic-self-mpis (make-weak-hash))
+(define-place-local generic-self-mpis-lock (make-uninterruptible-lock))
 (define generic-module-name '|expanded module|)
 
 (define (module-path-place-init!)
-  (set! generic-self-mpis (make-weak-hash)))
+  (set! generic-self-mpis (make-weak-hash))
+  (set! generic-self-mpis-lock (make-uninterruptible-lock)))
 
 ;; Return a module path index that is the same for a given
 ;; submodule path in the given self module path index
 (define (make-generic-self-module-path-index self)
   (define r (resolved-module-path-to-generic-resolved-module-path
              (module-path-index-resolved self)))
-  ;; The use of `generic-self-mpis` must be atomic, so that the
+  ;; The use of `generic-self-mpis` must be uninterruptible, so that the
   ;; current thread cannot be killed, since that could leave
   ;; the table locked
-  (start-atomic)
+  (uninterruptible-lock-acquire generic-self-mpis-lock)
   (begin0
     (or (let ([e (hash-ref generic-self-mpis r #f)])
           (and e (ephemeron-value e)))
         (let ([mpi (module-path-index #f #f r empty-shift-cache)])
           (hash-set! generic-self-mpis r (make-ephemeron r mpi))
           mpi))
-    (end-atomic)))
+    (uninterruptible-lock-release generic-self-mpis-lock)))
 
 (define (resolved-module-path-to-generic-resolved-module-path r)
   (define name (resolved-module-path-name r))

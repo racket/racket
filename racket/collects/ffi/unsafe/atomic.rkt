@@ -12,7 +12,10 @@
                       call-as-nonatomic
                       start-uninterruptible
                       end-uninterruptible
-                      call-as-uninterruptible))
+                      call-as-uninterruptible
+                      make-uninterruptible-lock
+                      uninterruptible-lock-acquire
+                      uninterruptible-lock-release))
 
 (define (start-atomic)
   (unsafe-start-atomic))
@@ -34,6 +37,13 @@
 
 (define (end-uninterruptible)
   (unsafe-end-uninterruptible))
+
+(define (make-uninterruptible-lock)
+  (unsafe-make-uninterruptible-lock))
+(define (uninterruptible-lock-acquire lock)
+  (unsafe-uninterruptible-lock-acquire lock))
+(define (uninterruptible-lock-release lock)
+  (unsafe-uninterruptible-lock-release lock))
 
 ;; ----------------------------------------
 

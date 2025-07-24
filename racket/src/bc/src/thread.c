@@ -405,6 +405,7 @@ static Scheme_Object *unsafe_end_atomic(int argc, Scheme_Object **argv);
 static Scheme_Object *unsafe_start_breakable_atomic(int argc, Scheme_Object **argv);
 static Scheme_Object *unsafe_end_breakable_atomic(int argc, Scheme_Object **argv);
 static Scheme_Object *unsafe_in_atomic_p(int argc, Scheme_Object **argv);
+static Scheme_Object *unsafe_make_unint_lock(int argc, Scheme_Object **argv);
 
 static Scheme_Object *unsafe_poll_fd(int argc, Scheme_Object **argv);
 static Scheme_Object *unsafe_poll_ctx_fd_wakeup(int argc, Scheme_Object **argv);
@@ -669,11 +670,12 @@ scheme_init_unsafe_thread (Scheme_Startup_Env *env)
 						      "unsafe-start-uninterruptible",
 						      0, 0),
 			     env);
-  scheme_addto_prim_instance("unsafe-end-uninterruptible",
-			     scheme_make_prim_w_arity(unsafe_end_atomic,
-						      "unsafe-end-uninterruptible",
-						      0, 0),
-			     env);
+
+  /* Trying to acquire an uninterruptable lock similarly blocks: it's the same as
+     starting and ending atomic mode --- so consistent, though useless. */
+  ADD_PRIM_W_ARITY("unsafe-make-uninterruptible-lock", unsafe_make_unint_lock, 0, 0, env);
+  ADD_PRIM_W_ARITY("unsafe-uninterruptible-lock-acquire", unsafe_start_atomic, 1, 1, env);
+  ADD_PRIM_W_ARITY("unsafe-uninterruptible-lock-release", unsafe_end_atomic, 1, 1, env);
 
   ADD_PRIM_W_ARITY("unsafe-thread-at-root", unsafe_thread_at_root, 1, 1, env);
  
@@ -5516,6 +5518,10 @@ static Scheme_Object *unsafe_in_atomic_p(int argc, Scheme_Object **argv)
   return (scheme_is_atomic() ? scheme_true : scheme_false);
 }
 
+static Scheme_Object *unsafe_make_unint_lock(int argc, Scheme_Object **argv)
+{
+  return scheme_intern_symbol("dummy-lock");
+}
 
 void scheme_weak_suspend_thread(Scheme_Thread *r)
 {

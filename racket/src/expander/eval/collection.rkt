@@ -150,9 +150,11 @@
 
 ;; map from link-file names to cached information:
 (define-place-local links-cache (make-weak-hash))
+(define-place-local links-cache-lock (make-uninterruptible-lock))
 
 (define (collection-place-init!)
-  (set! links-cache (make-weak-hash)))
+  (set! links-cache (make-weak-hash))
+  (set! links-cache-lock (make-uninterruptible-lock)))
 
 
 ;; used for low-level exception abort below:
@@ -238,8 +240,9 @@
                              (current-continuation-marks))))
             (void))
         (when ts
-          (call-as-atomic
-           (lambda () (hash-set! links-cache links-path (cons ts #hasheq())))))
+          (uninterruptible-lock-acquire links-cache-lock)
+          (hash-set! links-cache links-path (cons ts #hasheq()))
+          (uninterruptible-lock-release links-cache-lock))
         (if (exn:fail? exn)
             (esc (make-hasheq))
             ;; re-raise the exception (which is probably a break)
@@ -247,7 +250,9 @@
     (call-with-exception-handler
      (make-handler #f)
      (lambda ()
-       (define links-stamp+cache (call-as-atomic (lambda () (hash-ref links-cache links-path '(#f . #hasheq())))))
+       (uninterruptible-lock-acquire links-cache-lock)
+       (define links-stamp+cache (hash-ref links-cache links-path '(#f . #hasheq())))
+       (uninterruptible-lock-release links-cache-lock)
        (define a-links-stamp (car links-stamp+cache))
        (define ts (file->stamp links-path a-links-stamp))
        (cond
@@ -320,7 +325,9 @@
                  ht
                  (lambda (k v) (hash-set! ht k (reverse v))))
                 ;; save table & file content:
-                (call-as-atomic (lambda () (hash-set! links-cache links-path (cons ts ht))))
+                (uninterruptible-lock-acquire links-cache-lock)
+                (hash-set! links-cache links-path (cons ts ht))
+                (uninterruptible-lock-release links-cache-lock)
                 ht))))])))))
 
 (define (normalize-collection-reference collection collection-path)
