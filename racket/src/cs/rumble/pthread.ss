@@ -24,7 +24,7 @@
   ]
  [else
   (define make-pthread-parameter #%make-parameter)
-  (define (fork-pthread) (void))
+  (define (fork-pthread thunk) (thunk))
   (define (get-initial-pthread) #f)
   (define (pthread?) #f)
   (define (in-original-host-thread?) #t)

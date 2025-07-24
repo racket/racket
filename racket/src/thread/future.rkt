@@ -57,7 +57,9 @@
            future-maybe-notify-stop
            future-suspend
            future-notify-dependent
-           wakeup-this-place))
+           wakeup-this-place
+           future-unblock
+           call-in-future))
 
 (define (init-future-place!)
   (init-future-logging-place!))
@@ -67,17 +69,21 @@
 
 ;; ----------------------------------------
 
-(struct future-evt (future)
+(struct future-evt (future wait-done?)
   #:property prop:evt (poller (lambda (fe poll-ctx)
                                 (define f (future-evt-future fe))
                                 (lock-acquire (future*-lock f))
                                 (define s (future*-state f))
                                 (lock-release (future*-lock f))
                                 (cond
-                                  [(or (eq? s 'running)
-                                       (eq? s 'fsema))
+                                  [(if (future-evt-wait-done? fe)
+                                       (not (eq? s 'done))
+                                       (or (eq? s 'running)
+                                           (eq? s 'fsema)))
                                    (values #f fe)]
                                   [else (values '(#t) #f)]))))
+
+(define-place-local fsemaphore-wait-poll #f)
 
 (define (create-future thunk cust would-be?)
   (define id (get-next-id))
@@ -179,7 +185,9 @@
   (cond
     [(current-future-in-future-thread)
      (when (future*-parallel f)
-       (set-engine-thread-cell-state! (thread-cells (parallel*-thread (future*-parallel f)))))
+       (define th (parallel*-thread (future*-parallel f)))
+       (when th
+         (set-engine-thread-cell-state! (thread-cells th))))
      ;; An attempt to escape will cause the future to block, so
      ;; we only need to handle success
      (call-with-values (lambda ()
@@ -296,6 +304,8 @@
           ;; the thread is GCed
           (host:will-register custodian-will-executor pool close)
           pool]
+         [(not cust)
+          pool]
          [else
           (define cref (custodian-register-pool cust pool (lambda (pool c) (close pool))))
           (set-parallel-thread-pool-custodian-reference! pool cref)
@@ -377,6 +387,38 @@
      ;; this is the step (internally atomic) that commits the thread to running:
      (schedule-future! me-f #:check-pool-open? #t)
      th]))
+
+;; in Racket thread
+;; used to implement `fsemaphore-wait` when not in a future
+(define (call-in-future thunk)
+  (define me-f
+    (cond
+      [(futures-enabled?)
+       (define me-f (create-future thunk #f #f))
+       (define pool
+         (atomically
+          (or fsemaphore-wait-poll
+              (let ([pool (create-parallel-thread-pool 'call-in-future 1 +inf.0 #f #f)])
+                (set! fsemaphore-wait-poll pool)
+                pool))))
+       (set-future*-parallel! me-f (parallel* pool #f #f))
+       me-f]
+      [else (would-be-future thunk)]))
+  (dynamic-wind
+    (lambda ()
+      (atomically
+       (thread-push-kill-callback! (lambda () (future-external-stop me-f)))
+       (thread-push-suspend+resume-callbacks! (lambda () (future-external-stop me-f))
+                                              (lambda () (future-external-resume me-f)))))
+    (lambda ()
+      (when (futures-enabled?)
+        (schedule-future! me-f))
+      (sync (future-evt me-f #t)))
+    (lambda ()
+      (atomically
+       (future-external-stop me-f)
+       (thread-pop-suspend+resume-callbacks!)
+       (thread-pop-kill-callback!)))))
 
 ;; When two futures interact, we may need to adjust both;
 ;; to keep locks ordered, take lock of future with the
@@ -465,7 +507,7 @@
         (set-future*-dependents! f (hash-set (future*-dependents f) 'place #t))
         (lock-release (future*-lock f))
         (log-future 'touch-pause (future*-id f))
-        (sync (future-evt f))
+        (sync (future-evt f #f))
         (log-future 'touch-resume (future*-id f))
         (touch f)])]
     [(future? s)
@@ -487,7 +529,7 @@
         ;; Wait until fsemaphore post succeeds for the future, then try again.
         (lock-release (future*-lock f))
         (log-future 'touch-pause (future*-id f))
-        (sync (future-evt f))
+        (sync (future-evt f #f))
         (log-future 'touch-resume (future*-id f))
         (touch f)])]
     [else
@@ -633,49 +675,56 @@
   (when p
     (unless (parallel*-stop? p)
       (define th (parallel*-thread p))
-      (assert (in-future-thread?))
-      (set-engine-thread-cell-state! #f)
-      (host:post-as-asynchronous-callback
-       (lambda ()
-         ;; in atomic mode and in arbitrary Racket thread selected by scheduler
-         (cond
-           [(thread-descheduled? th)
-            ;; If the thread wasn't descheduled most recently by its future,
-            ;; then the Racket thread could still have noticed the waiting
-            ;; future thread early, ran it, and then get descheduled for some
-            ;; other good reason
-            (when (eq? 'future (thread-interrupt-callback th))
-              (set-thread-interrupt-callback! th #f)
-              (unless (or (is-thread-dead? th)
-                          (thread-suspended? th))
-                (thread-reschedule! th)))]
-           [else
-            ;; Racket thread should be on its way back to `touch-blocked` or
-            ;; already noticed the reader future; in the former case, it will
-            ;; check on the future without needing to be rescheduled
-            (void)])))
+      (when th
+        (assert (in-future-thread?))
+        (set-engine-thread-cell-state! #f)
+        (host:post-as-asynchronous-callback
+         (lambda ()
+           ;; in atomic mode and in arbitrary Racket thread selected by scheduler
+           (cond
+             [(thread-descheduled? th)
+              ;; If the thread wasn't descheduled most recently by its future,
+              ;; then the Racket thread could still have noticed the waiting
+              ;; future thread early, ran it, and then get descheduled for some
+              ;; other good reason
+              (when (eq? 'future (thread-interrupt-callback th))
+                (set-thread-interrupt-callback! th #f)
+                (unless (or (is-thread-dead? th)
+                            (thread-suspended? th))
+                  (thread-reschedule! th)))]
+             [else
+              ;; Racket thread should be on its way back to `touch-blocked` or
+              ;; already noticed the reader future; in the former case, it will
+              ;; check on the future without needing to be rescheduled
+              (void)]))))
       (wakeup-this-place))))
 
 ;; in atomic mode in Racket thread when an unblocking thread is killed or suspended;
 ;; the future can be in any state on entry; it ends up descheduled and not running
 (define (future-external-stop f)
-  (lock-acquire (future*-lock f))
   (cond
-    [(try-deschedule-future? f)
-     (set-parallel*-stop?! (future*-parallel f) #t)
-     (lock-release (future*-lock f))]
+    [(futures-enabled?)
+     (lock-acquire (future*-lock f))
+     (cond
+       [(try-deschedule-future? f)
+        (set-parallel*-stop?! (future*-parallel f) #t)
+        (lock-release (future*-lock f))]
+       [else
+        (set-parallel*-stop?! (future*-parallel f) #t)
+        (let loop ()
+          (define done? (not (eq? (future*-state f) 'running)))
+          (lock-release (future*-lock f))
+          (unless done?
+            (drain-async-callbacks)
+            ;; relying on the fact that an asychornous callback post
+            ;; will also wake up the place
+            (sleep-this-place)
+            (lock-acquire (future*-lock f))
+            (loop)))])]
     [else
-     (set-parallel*-stop?! (future*-parallel f) #t)
-     (let loop ()
-       (define done? (not (eq? (future*-state f) 'running)))
-       (lock-release (future*-lock f))
-       (unless done?
-         (drain-async-callbacks)
-         ;; relying on the fact that an asychornous callback post
-         ;; will also wake up the place
-         (sleep-this-place)
-         (lock-acquire (future*-lock f))
-         (loop)))]))
+     ;; used by `call-in-future` on a would-be future
+     (when (eq? (future*-state f) 'running)
+       (set-future*-state! f 'stop))]))
 
 ;; lock on f is held
 (define (future-maybe-notify-stop f)
@@ -687,19 +736,27 @@
 
 ;; in atomic mode in Racket thread when an unblocking thread is resumed
 (define (future-external-resume f)
-  (lock-acquire (future*-lock f))
-  (set-parallel*-stop?! (future*-parallel f) #f)
-  (define th (parallel*-thread (future*-parallel f)))
-  (when (eq? 'future (thread-interrupt-callback th))
-    (case (future*-state f)
-      [(#f)
-       (schedule-future! f)]
-      [(blocked)
-       ;; the future may have queued a reschedule already, or maybe it
-       ;; skipped the reschedule due to `paralle*-stop?` being set;
-       ;; clear the interrupt callback so the thread can be rescheduled
-       (set-thread-interrupt-callback! th #f)]))
-  (lock-release (future*-lock f)))
+  (cond
+    [(futures-enabled?)
+     (lock-acquire (future*-lock f))
+     (set-parallel*-stop?! (future*-parallel f) #f)
+     (define th (parallel*-thread (future*-parallel f)))
+     (when (or (not th)
+               (eq? 'future (thread-interrupt-callback th)))
+       (case (future*-state f)
+         [(#f)
+          (schedule-future! f)]
+         [(blocked)
+          (assert th)
+          ;; the future may have queued a reschedule already, or maybe it
+          ;; skipped the reschedule due to `paralle*-stop?` being set;
+          ;; clear the interrupt callback so the thread can be rescheduled
+          (set-thread-interrupt-callback! th #f)]))
+     (lock-release (future*-lock f))]
+    [else
+     ;; used by `call-in-future` on a would-be future
+     (when (eq? (future*-state f) 'stop)
+       (set-future*-state! f 'running))]))
 
 ;; ----------------------------------------
 
@@ -841,7 +898,8 @@
   (assert (future*-thunk f))
   (assert (not (future*-state f)))
   (assert (let ([p (future*-parallel f)])
-            (or (not p) (not (thread-suspended? (parallel*-thread p))))))
+            (or (not p) (let ([th (parallel*-thread p)])
+                          (or (not th) (not (thread-suspended? th)))))))
   (when (future*-parallel f)
     (increment-place-parallel-count! 1))
   (define s (future-scheduler f))
@@ -913,21 +971,26 @@
 ;; called in any pthread
 ;; called maybe holding an fsemaphore lock, but nothing else
 (define (future-notify-dependent f)
-  (lock-acquire (future*-lock f))
-  (define p (future*-parallel f))
   (cond
-    [(and p (parallel*-stop? p))
-     (lock-release (future*-lock f))
-     #f]
+    [(futures-enabled?)
+     (lock-acquire (future*-lock f))
+     (define p (future*-parallel f))
+     (cond
+       [(and p (parallel*-stop? p))
+        (lock-release (future*-lock f))
+        #f]
+       [else
+        (set-future*-state! f #f)
+        (unless (future*-kind f)
+          (schedule-future! f #:front? #t))
+        (lock-release (future*-lock f))
+        (on-transition-to-unfinished)
+        (when (future*-kind f)
+          (wakeup-this-place))
+        #t])]
     [else
-     (set-future*-state! f #f)
-     (unless (future*-kind f)
-       (schedule-future! f #:front? #t))
-     (lock-release (future*-lock f))
-     (on-transition-to-unfinished)
-     (when (future*-kind f)
-       (wakeup-this-place))
-     #t]))
+     ;; relevant to `call-in-future` on a would-be future
+     (not (eq? (future*-state f) 'stop))]))
 
 ;; called in atomic mode in Racket thread or scheduling thread;
 ;; close a schduler when its thread pool will never have new work
@@ -1154,8 +1217,9 @@
       (define f (unbox (worker-current-future-box w)))
       (when f
         (define c (or (future*-custodian f)
-                      (thread-representative-custodian
-                       (parallel*-thread (future*-parallel f)))))
+                      (let ([th (parallel*-thread (future*-parallel f))])
+                        (and th
+                             (thread-representative-custodian th)))))
         (when c
           (hash-set! ht c (cons (worker-pthread w)
                                 (hash-ref ht c null))))))))

@@ -13,26 +13,18 @@
          fsemaphore-try-wait?
          fsemaphore-count)
 
-(struct fsemaphore ([c #:mutable]          ; counter
+(struct fsemaphore ([c #:mutable] ; counter
                     lock
-                    [dependents #:mutable] ; dependent futures
-                    [dep-box #:mutable])   ; for waiting by non-futures
+                    [queue-head #:mutable]
+                    [queue-tail #:mutable])
   #:authentic)
-
-(struct fsemaphore-box-evt (b)
-  #:property prop:evt (poller (lambda (fsb poll-ctx)
-                                (define b (fsemaphore-box-evt-b fsb))
-                                (cond
-                                  [(unbox b) (values '(#t) #f)]
-                                  [else (values #f fsb)]))))
-
 
 (define/who (make-fsemaphore init)
   (check who exact-nonnegative-integer? init)
   (fsemaphore init
               (make-lock)
-              #hasheq()
-              #f))
+              null
+              null))
 
 (define/who (fsemaphore-post fs)
   (check who fsemaphore? fs)
@@ -41,55 +33,43 @@
     (cond
       [(zero? c)
        (let loop ()
-         (define b (fsemaphore-dep-box fs))
-         (define deps (fsemaphore-dependents fs))
-         ;; If a future is waiting on the semaphore, it wins over any
-         ;; non-future threads that are blocked on the fsemaphore.
-         ;; That's not a great choice, but it means we don't have to worry
-         ;; about keeping track of threads that are in still line versus
-         ;; threads that have been interrupted.
+         (define queue-head (fsemaphore-queue-head fs))
          (cond
-           [(not (hash-empty? deps))
-            (define f (hash-iterate-key deps (hash-iterate-first deps)))
-            (set-fsemaphore-dependents! fs (hash-remove deps f))
+           [(pair? queue-head)
+            (define f (car queue-head))
+            (set-fsemaphore-queue-head! fs (cdr queue-head))
             (unless (future-notify-dependent f)
-              ;; future for `thread/parallel` was terminated; try next
+              ;; future for `thread/parallel` was terminated or suspended; try next
               (loop))]
+           [(pair? (fsemaphore-queue-tail fs))
+            (set-fsemaphore-queue-head! fs (reverse (fsemaphore-queue-tail fs)))
+            (set-fsemaphore-queue-tail! fs null)
+            (loop)]
            [else
-            (set-fsemaphore-c! fs 1)
-            (when b
-              ;; This is a kind of broadcast wakeup, and then the
-              ;; awakened threads will compete for the fsemaphore:
-              (set-fsemaphore-dep-box! fs #f)
-              (set-box! b #t)
-              (wakeup-this-place))]))]
+            (set-fsemaphore-c! fs 1)]))]
       [else
        (set-fsemaphore-c! fs (add1 c))])))
 
 (define/who (fsemaphore-wait fs)
   (check who fsemaphore? fs)
+  (future-unblock) ; in case we should be a in a future pthread, but aren't
   (lock-acquire (fsemaphore-lock fs))
   (define c (fsemaphore-c fs))
   (cond
-    [(zero? c)     
+    [(zero? c)
      (define me-f (current-future))
      (cond
        [me-f
         (lock-acquire (future*-lock me-f))
-        (set-fsemaphore-dependents! fs (hash-set (fsemaphore-dependents fs) me-f #t))
+        (set-fsemaphore-queue-tail! fs (cons me-f (fsemaphore-queue-tail fs)))
         (future-maybe-notify-stop me-f)
         (set-future*-state! me-f 'fsema)
         (lock-release (fsemaphore-lock fs))
         (future-suspend) ; expects lock on me-f and releases it
         (void)]
        [else
-        (define dep-box (or (fsemaphore-dep-box fs)
-                            (let ([b (box #f)])
-                              (set-fsemaphore-dep-box! fs b)
-                              b)))
         (lock-release (fsemaphore-lock fs))
-        (sync (fsemaphore-box-evt dep-box))
-        (fsemaphore-wait fs)])]
+        (call-in-future (lambda () (fsemaphore-wait fs)))])]
     [else
      (set-fsemaphore-c! fs (sub1 c))
      (lock-release (fsemaphore-lock fs))]))
