@@ -1,8 +1,8 @@
 #lang racket/base
 (require "../common/check.rkt"
-         "../host/thread.rkt"
          "../host/place-local.rkt"
          "logger.rkt"
+         "lock.rkt"
          "level.rkt"
          "wanted.rkt"
          "receiver.rkt")
@@ -47,7 +47,8 @@
 
 (define (logger-init!)
   (set! root-logger (make-root-logger))
-  (current-logger root-logger))
+  (current-logger root-logger)
+  (logger-init-lock!))
 
 (define (make-logger [topic #f] [parent #f] . filters)
   (unless (or (not topic) (symbol? topic))
@@ -60,27 +61,28 @@
 
 ;; Can be called in any host Scheme thread, including in an interrupt
 ;; handler (where "interrupt" is a host-Scheme concept, such as a GC
-;; handler). If it's not the thread that runs Racket, then it's in
-;; atomic, non-interrupt mode and we assume that the argument checks
-;; will pass.
+;; handler). If it's not a Racket thread, then it must be in an interrupt
+;; handler, which is as strong as the lock, and we assume that the argument
+;; checks will pass.
 (define/who (log-level? logger level [topic #f])
   (check who logger? logger)
   (check-level who level)
   (check who #:or-false symbol? topic)
   (and
    (not (eq? level 'none))
-   (atomically/no-gc-interrupts/no-wind
+   (uninterruptibly/with-logger-lock/no-gc-interrupts/no-wind
     (log-level?* logger level topic))))
 
 (define (logging-future-events?)
-  (atomically/no-gc-interrupts/no-wind
+  (uninterruptibly/with-logger-lock/no-gc-interrupts/no-wind
    (log-level?* root-logger 'debug 'future)))
 
 (define (logging-place-events?)
-  (atomically/no-gc-interrupts/no-wind
+  (uninterruptibly/with-logger-lock/no-gc-interrupts/no-wind
    (log-level?* root-logger 'debug 'place)))
 
-;; In atomic mode with interrupts disabled
+;; with logger lock effectively held (uninterruptible, but possibly not in atomic mode)
+;; see `log-level?` for more on "effectively" through that path
 (define/who (log-level?* logger level topic)
   (level>=? (logger-wanted-level logger topic) level))
 
@@ -88,17 +90,18 @@
   (check who logger? logger)
   (check who #:or-false symbol? topic)
   (level->user-representation
-   (atomically/no-gc-interrupts/no-wind
+   (uninterruptibly/with-logger-lock/no-gc-interrupts/no-wind
     (logger-wanted-level logger topic))))
 
 (define/who (log-all-levels logger)
   (check who logger? logger)
-  (logger-all-levels logger))
+  (uninterruptibly/with-logger-lock/no-gc-interrupts/no-wind
+   (logger-all-levels logger)))
 
 (define/who (log-level-evt logger)
   (check who logger? logger)
   (define s
-    (atomically
+    (uninterruptibly/with-logger-lock/no-gc-interrupts/no-wind
      (cond
        [(unbox (logger-level-sema-box logger))
         => (lambda (s) s)]
@@ -145,20 +148,20 @@
   (check who #:or-false symbol? topic)
   (check who string? message)
   (unless (eq? level 'none)
-    (atomically/no-gc-interrupts/no-wind
+    (atomically/with-logger-lock/no-gc-interrupts/no-wind
      (log-message* logger level topic message data prefix? #f))))
 
 (define (log-future-event message data)
-  (atomically/no-gc-interrupts/no-wind
+  (atomically/with-logger-lock/no-gc-interrupts/no-wind
    (log-message* root-logger 'debug 'future message data #t #f)))
 
 (define (log-place-event message data)
-  (atomically/no-gc-interrupts/no-wind
+  (atomically/with-logger-lock/no-gc-interrupts/no-wind
    (log-message* root-logger 'debug 'place message data #t #f)))
 
-;; In atomic mode with interrupts disabled
-;; Can be called in any host Scheme thread and in interrupt handler,
-;; like `log-level?*`
+;; Can be called in any host Scheme thread in interrupt handler,
+;; similar to `log-level?*` (see `log-level?`), but in atomic mode
+;; when not called via an interrupt (so always effectively in atomic mode)
 (define (log-message* logger level topic message data prefix? in-interrupt?)
   (define msg #f)
   (when ((logger-max-wanted-level* logger) . level>=? . level)

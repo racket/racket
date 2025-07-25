@@ -20,7 +20,7 @@
 (define (call-pre-poll-external-callbacks)
   (when (eq? current-place initial-place)
     (unless (null? pre-poll-callbacks)
-      ;; disable interrupts to avoid a case with `unsafe-add-pre-poll-callback!`
+      ;; disable interrupts to avoid a race with `unsafe-add-pre-poll-callback!`
       (host:disable-interrupts)
       (define l pre-poll-callbacks)
       (set! pre-poll-callbacks null)

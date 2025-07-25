@@ -1954,6 +1954,12 @@
   (lambda () (begin (start-atomic) (|#%app| host:disable-interrupts))))
 (define end-atomic/no-gc-interrupts
   (lambda () (begin (|#%app| host:enable-interrupts) (end-atomic))))
+(define start-uninterruptible/no-gc-interrupts
+  (lambda ()
+    (begin (start-uninterruptible) (|#%app| host:disable-interrupts))))
+(define end-uninterruptible/no-gc-interrupts
+  (lambda ()
+    (begin (|#%app| host:enable-interrupts) (end-atomic/no-barrier-exit))))
 (define in-atomic-mode? (lambda () (not (eqv? (current-atomic) 0))))
 (define not-atomic-mode? (lambda () (eqv? (current-atomic) 0)))
 (define future-barrier
@@ -14526,6 +14532,10 @@
    start-atomic/no-gc-interrupts
    'end-atomic/no-gc-interrupts
    end-atomic/no-gc-interrupts
+   'start-uninterruptible/no-gc-interrupts
+   start-uninterruptible/no-gc-interrupts
+   'end-uninterruptible/no-gc-interrupts
+   end-uninterruptible/no-gc-interrupts
    'in-atomic-mode?
    in-atomic-mode?
    'current-custodian

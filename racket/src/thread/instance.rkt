@@ -58,6 +58,8 @@
           'unsafe-end-atomic unsafe-end-atomic
           'start-atomic/no-gc-interrupts start-atomic/no-gc-interrupts
           'end-atomic/no-gc-interrupts end-atomic/no-gc-interrupts
+          'start-uninterruptible/no-gc-interrupts start-uninterruptible/no-gc-interrupts
+          'end-uninterruptible/no-gc-interrupts end-uninterruptible/no-gc-interrupts
           'in-atomic-mode? in-atomic-mode?
           'current-custodian current-custodian
           'custodian-shut-down? custodian-shut-down?

@@ -1,6 +1,6 @@
 #lang racket/base
-(require "../host/thread.rkt"
-         "logger.rkt"
+(require "logger.rkt"
+         "lock.rkt"
          "receiver.rkt"
          "level.rkt")
 
@@ -9,7 +9,7 @@
          logger-max-wanted-level*
          logger-all-levels)
 
-;; in atomic mode with interrupts disabled
+;; with logger lock held (uninterruptible, but possibly not in atomic mode)
 (define (logger-wanted-level logger topic)
   (cond
     [(not topic) (logger-max-wanted-level logger)]
@@ -31,10 +31,10 @@
         (logger-wanted-level logger topic)])]))
 
 (define (logger-max-wanted-level logger)
-  (atomically/no-gc-interrupts/no-wind
+  (uninterruptibly/with-logger-lock/no-gc-interrupts/no-wind
    (logger-max-wanted-level* logger)))
 
-;; in atomic mode with interrupts disabled
+;; with logger lock held (uninterruptible, but possibly not in atomic mode)
 (define (logger-max-wanted-level* logger)
   (cond
     [((logger-local-level-timestamp logger) . >= . (unbox (logger-root-level-timestamp-box logger)))
@@ -45,6 +45,7 @@
      (update-logger-wanted-level! logger #f)
      (logger-max-receiver-level logger)]))
 
+;; with logger lock held (uninterruptible, but possibly not in atomic mode)
 (define (update-logger-wanted-level! logger topic)
   (unless ((logger-local-level-timestamp logger) . >= . (unbox (logger-root-level-timestamp-box logger)))
     (define cache (logger-topic-level-cache logger))
@@ -100,8 +101,8 @@
               (vector-set! cache (+ i 3) (vector-ref cache (+ i 1))))
             (vector-set! cache 0 topic)
             (vector-set! cache 1 topic-max-level))))])))
-  
 
+;; with logger lock held (uninterruptible, but possibly not in atomic mode)
 (define (logger-all-levels logger)
   (define-values (topics default-level)
     (let loop ([topics #hasheq()] [default-level 'none] [max-default-level 'debug] [logger logger])
@@ -123,6 +124,6 @@
           append
           (for/list ([topic (in-hash-keys topics)])
             (list (level->user-representation
-                   (atomically/no-gc-interrupts/no-wind
+                   (uninterruptibly/with-logger-lock/no-gc-interrupts/no-wind
                     (logger-wanted-level logger topic)))
                   topic)))))

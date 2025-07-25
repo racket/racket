@@ -1,14 +1,15 @@
 #lang racket/base
 (require "../common/check.rkt"
          "../../common/queue.rkt"
-         "../host/thread.rkt"
          "../host/pthread.rkt"
+         "../host/thread.rkt"
          "../host/rktio.rkt"
          "../string/convert.rkt"
          "../path/system.rkt"
          "../path/path.rkt"
          "level.rkt"
-         "logger.rkt")
+         "logger.rkt"
+         "lock.rkt")
 
 (provide (struct-out log-receiver)
          make-log-receiver
@@ -19,12 +20,14 @@
          receiver-add-topics)
 
 (struct log-receiver (filters))
+;; `filters` is immutable, so it can be read when not in atomic mode
 
 (define-values (prop:receiver-send receiver-send? receiver-send-ref)
   (make-struct-type-property 'receiver-send))
 
 ;; ----------------------------------------
 
+;; A log-receiver is modified in atomic mode (i.e., not just uninterruptably, but doesn't need logger lock necessarily)
 (struct queue-log-receiver log-receiver (msgs     ; queue of messages ready for `sync` [if `waiters` is null]
                                          waiters  ; queue of (box callback) to receive ready messages [if `msgs` is null]
                                          backref) ; box to make a self reference to avoid GC of a waiting receiver
@@ -45,6 +48,7 @@
   #:property
   prop:evt
   (poller (lambda (lr ctx)
+            ;; called in atomic mode
             (define msg (queue-remove! (queue-log-receiver-msgs lr)))
             (cond
               [msg
@@ -99,7 +103,7 @@
   #:property
   prop:receiver-send
   (lambda (lr msg)
-    ;; called in atomic mode and possibly in host interrupt handler
+    ;; called in atomic mode or in host interrupt handler (=> effectively atomic)
     (define rktio (stdio-log-receiver-rktio lr))
     (define rktio-mutex+sleep (stdio-log-receiver-rktio-mutex+sleep lr))
     (define bstr (bytes-append (string->bytes/utf-8 (vector-ref msg 1)) #"\n"))
@@ -121,7 +125,7 @@
                                  rktio
                                  rktio-mutex+sleep
                                  which))
-  (atomically
+  (atomically/with-logger-lock/no-gc-interrupts/no-wind
    (add-log-receiver! logger lr #f)
    (set-logger-permanent-receivers! logger (cons lr (logger-permanent-receivers logger)))))
 
@@ -157,14 +161,14 @@
                                   rktio
                                   rktio-mutex+sleep
                                   (path-bytes (find-system-path 'run-file))))
-  (atomically
+  (atomically/with-logger-lock/no-gc-interrupts/no-wind
    (add-log-receiver! logger lr #f)
    (set-logger-permanent-receivers! logger (cons lr (logger-permanent-receivers logger)))))
 
 ;; ----------------------------------------
 
 (define (add-log-receiver! logger lr backref)
-  (atomically/no-gc-interrupts/no-wind
+  (atomically/with-logger-lock/no-gc-interrupts/no-wind
    ;; Add receiver to the logger's list, pruning empty boxes
    ;; every time the list length doubles (roughly):
    (cond
@@ -190,7 +194,7 @@
      (semaphore-post (unbox sema-box))
      (set-box! sema-box #f))))
 
-;; Called in atomic mode and with interrupts disabled
+;; Called in atomic mode (effectively)
 (define (log-receiver-send! r msg in-interrupt?)
   (if (or (not in-interrupt?)
           ;; We can run stdio loggers in atomic/interrupt mode:

@@ -8,7 +8,6 @@
          end-uninterruptible
          atomically
          non-atomically
-         atomically/no-gc-interrupts/no-wind
          assert-atomic
          check-current-custodian)
 
@@ -55,6 +54,9 @@
         unsafe-end-atomic
         unsafe-start-uninterruptible
         unsafe-end-uninterruptible
+        unsafe-make-uninterruptible-lock
+        unsafe-uninterruptible-lock-acquire
+        unsafe-uninterruptible-lock-release
         current-custodian
         custodian-shut-down?
         current-plumber
@@ -79,6 +81,8 @@
          current-sandman
          start-atomic/no-gc-interrupts ; => disable GC, too, if GC can call back
          end-atomic/no-gc-interrupts
+         start-uninterruptible/no-gc-interrupts ; => disable GC, too, if GC can call back
+         end-uninterruptible/no-gc-interrupts
          in-atomic-mode?
          unsafe-custodian-register
          unsafe-custodian-unregister
@@ -106,17 +110,6 @@
     (begin0
       (let () e ...)
       (start-atomic))))
-
-;; Disables host interrupts, but the "no wind" part is
-;; an unforced constraint: don't use anything related
-;; to `dynamic-wind`, continuations, or continuation marks.
-;; Cannot be exited with `non-atomically`.
-(define-syntax-rule (atomically/no-gc-interrupts/no-wind e ...)
-  (begin
-    (start-atomic/no-gc-interrupts)
-    (begin0
-      (let () e ...)
-      (end-atomic/no-gc-interrupts))))
 
 ;; Enable for debugging
 (define (assert-atomic)

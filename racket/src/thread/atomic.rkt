@@ -20,6 +20,9 @@
 
          atomically
          atomically/no-gc-interrupts
+
+         start-uninterruptible/no-gc-interrupts
+         end-uninterruptible/no-gc-interrupts
          start-atomic/no-gc-interrupts
          end-atomic/no-gc-interrupts
 
@@ -149,12 +152,22 @@
   (internal-error "not in atomic mode to end"))
 
 (define (start-atomic/no-gc-interrupts)
+  ;; start atomide mode *before* disabling interrupts, since we
+  ;; want any needed transition to a Racket thread to happen first
   (start-atomic)
   (host:disable-interrupts))
 
 (define (end-atomic/no-gc-interrupts)
   (host:enable-interrupts)
   (end-atomic))
+
+(define (start-uninterruptible/no-gc-interrupts)
+  (start-uninterruptible)
+  (host:disable-interrupts))
+
+(define (end-uninterruptible/no-gc-interrupts)
+  (host:enable-interrupts)
+  (end-uninterruptible))
 
 (define (in-atomic-mode?)
   (not (eqv? (current-atomic) 0)))

@@ -147,8 +147,13 @@
                          'unsafe-end-atomic end-atomic
                          'start-atomic/no-gc-interrupts start-atomic
                          'end-atomic/no-gc-interrupts end-atomic
+                         'start-uninterruptible/no-gc-interrupts start-atomic
+                         'end-uninterruptible/no-gc-interrupts end-atomic
                          'unsafe-start-uninterruptible start-atomic ; because mutex & condition are implemented as semaphores
                          'unsafe-end-uninterruptible end-atomic
+                         'unsafe-make-uninterruptible-lock (lambda () 'dummy)
+                         'unsafe-uninterruptible-lock-acquire void
+                         'unsafe-uninterruptible-lock-release void
                          'in-atomic-mode? in-atomic-mode?
                          'current-custodian current-custodian
                          'custodian-shut-down? (lambda (c)

@@ -2707,6 +2707,11 @@
 (define 1/unsafe-end-atomic unsafe-end-atomic)
 (define 1/unsafe-start-uninterruptible unsafe-start-uninterruptible)
 (define 1/unsafe-end-uninterruptible unsafe-end-uninterruptible)
+(define 1/unsafe-make-uninterruptible-lock unsafe-make-uninterruptible-lock)
+(define 1/unsafe-uninterruptible-lock-acquire
+  unsafe-uninterruptible-lock-acquire)
+(define 1/unsafe-uninterruptible-lock-release
+  unsafe-uninterruptible-lock-release)
 (define 1/current-custodian current-custodian)
 (define 1/custodian-shut-down? custodian-shut-down?)
 (define 1/current-plumber current-plumber)
@@ -2732,6 +2737,10 @@
   (hash-ref table 'start-atomic/no-gc-interrupts))
 (define end-atomic/no-gc-interrupts
   (hash-ref table 'end-atomic/no-gc-interrupts))
+(define start-uninterruptible/no-gc-interrupts
+  (hash-ref table 'start-uninterruptible/no-gc-interrupts))
+(define end-uninterruptible/no-gc-interrupts
+  (hash-ref table 'end-uninterruptible/no-gc-interrupts))
 (define in-atomic-mode? (hash-ref table 'in-atomic-mode?))
 (define 1/unsafe-custodian-register
   (hash-ref table 'unsafe-custodian-register))
@@ -3572,12 +3581,12 @@
         (void)))))
 (define sandman-poll-ctx-poll?
   (lambda (poll-ctx_0) (|#%app| poll-ctx-poll? poll-ctx_0)))
-(define cell.1$11 (unsafe-make-place-local #f))
+(define cell.1$12 (unsafe-make-place-local #f))
 (define cell.2$4 (unsafe-make-place-local #f))
 (define sandman-set-background-sleep!
   (lambda (sleep_0 fd_0)
     (begin
-      (unsafe-place-local-set! cell.1$11 sleep_0)
+      (unsafe-place-local-set! cell.1$12 sleep_0)
       (unsafe-place-local-set! cell.2$4 fd_0))))
 (define effect_2513
   (begin
@@ -3619,7 +3628,7 @@
                        (begin
                          (if (if sleep-secs_0 (<= sleep-secs_0 0.0) #f)
                            (void)
-                           (if (unsafe-place-local-ref cell.1$11)
+                           (if (unsafe-place-local-ref cell.1$12)
                              (begin
                                (|#%app|
                                 rktio_start_sleep
@@ -3628,7 +3637,7 @@
                                 ps_0
                                 (unsafe-place-local-ref cell.1$5)
                                 (unsafe-place-local-ref cell.2$4))
-                               (|#%app| (unsafe-place-local-ref cell.1$11))
+                               (|#%app| (unsafe-place-local-ref cell.1$12))
                                (|#%app|
                                 rktio_end_sleep
                                 (unsafe-place-local-ref cell.1)))
@@ -10039,12 +10048,12 @@
        unsafe-undefined
        temp6_0
        'stderr))))
-(define cell.1$10 (unsafe-make-place-local (make-stdin)))
+(define cell.1$11 (unsafe-make-place-local (make-stdin)))
 (define cell.2$3 (unsafe-make-place-local (make-stdout)))
 (define cell.3 (unsafe-make-place-local (make-stderr)))
 (define 1/current-input-port
   (make-parameter
-   (unsafe-place-local-ref cell.1$10)
+   (unsafe-place-local-ref cell.1$11)
    (lambda (v_0)
      (begin
        (if (1/input-port? v_0)
@@ -10076,10 +10085,10 @@
   (lambda (in-fd_0 out-fd_0 err-fd_0 cust_0 plumber_0)
     (begin
       (unsafe-place-local-set!
-       cell.1$10
+       cell.1$11
        (let ((temp10_0 "stdin"))
          (open-input-fd.1 cust_0 unsafe-undefined in-fd_0 temp10_0)))
-      (1/current-input-port (unsafe-place-local-ref cell.1$10))
+      (1/current-input-port (unsafe-place-local-ref cell.1$11))
       (unsafe-place-local-set!
        cell.2$3
        (let ((temp13_0 "stdout"))
@@ -12477,7 +12486,7 @@
       ((p1_0) (flush-output_0 p1_0))))))
 (define maybe-flush-stdout
   (lambda (in_0)
-    (if (eq? in_0 (unsafe-place-local-ref cell.1$10))
+    (if (eq? in_0 (unsafe-place-local-ref cell.1$11))
       (begin
         (if (1/terminal-port? (unsafe-place-local-ref cell.2$3))
           (1/flush-output (unsafe-place-local-ref cell.2$3))
@@ -15383,21 +15392,21 @@
          (raise-argument-error 'current-locale "(or/c #f string?)" v_0))
        (if v_0 (string->immutable-string v_0) #f)))
    'current-locale))
-(define cell.1$9 (unsafe-make-place-local #f))
+(define cell.1$10 (unsafe-make-place-local #f))
 (define sync-locale!
   (lambda ()
     (let ((loc_0 (1/current-locale)))
       (if (let ((or-part_0 (not loc_0)))
             (if or-part_0
               or-part_0
-              (equal? (unsafe-place-local-ref cell.1$9) loc_0)))
+              (equal? (unsafe-place-local-ref cell.1$10) loc_0)))
         (void)
         (begin
-          (unsafe-place-local-set! cell.1$9 (1/current-locale))
+          (unsafe-place-local-set! cell.1$10 (1/current-locale))
           (|#%app|
            rktio_set_locale
            (unsafe-place-local-ref cell.1)
-           (1/string->bytes/utf-8 (unsafe-place-local-ref cell.1$9))))))))
+           (1/string->bytes/utf-8 (unsafe-place-local-ref cell.1$10))))))))
 (define effect_2455 (begin (void (|#%app| rktio_set_default_locale #vu8())) (void)))
 (define effect_2454 (begin (void (sync-locale!)) (void)))
 (define locale-encoding-is-utf-8?
@@ -17164,32 +17173,32 @@
 (define set-cache-from!
   (|#%name| set-cache-from! (record-mutator struct:cache 3)))
 (define new-cache (lambda () (cache1.1 #f #f #f #f)))
-(define cell.1$8 (unsafe-make-place-local (new-cache)))
+(define cell.1$9 (unsafe-make-place-local (new-cache)))
 (define cell.2$2
   (unsafe-make-place-local (|#%app| 1/unsafe-make-custodian-at-root)))
 (define convert-cache-init!
   (lambda ()
     (begin
-      (unsafe-place-local-set! cell.1$8 (new-cache))
+      (unsafe-place-local-set! cell.1$9 (new-cache))
       (unsafe-place-local-set!
        cell.2$2
        (|#%app| 1/unsafe-make-custodian-at-root)))))
 (define cache-clear!
   (lambda (get_0 update!_0)
-    (let ((c_0 (|#%app| get_0 (unsafe-place-local-ref cell.1$8))))
+    (let ((c_0 (|#%app| get_0 (unsafe-place-local-ref cell.1$9))))
       (begin
-        (|#%app| update!_0 (unsafe-place-local-ref cell.1$8) #f)
+        (|#%app| update!_0 (unsafe-place-local-ref cell.1$9) #f)
         (if c_0 (1/bytes-close-converter c_0) (void))))))
 (define cache-lookup!
   (lambda (enc_0 get_0 update!_0)
     (begin
       (unsafe-start-atomic)
       (begin0
-        (if (equal? enc_0 (cache-enc (unsafe-place-local-ref cell.1$8)))
-          (let ((c_0 (|#%app| get_0 (unsafe-place-local-ref cell.1$8))))
+        (if (equal? enc_0 (cache-enc (unsafe-place-local-ref cell.1$9)))
+          (let ((c_0 (|#%app| get_0 (unsafe-place-local-ref cell.1$9))))
             (begin
               (if c_0
-                (|#%app| update!_0 (unsafe-place-local-ref cell.1$8) #f)
+                (|#%app| update!_0 (unsafe-place-local-ref cell.1$9) #f)
                 (void))
               c_0))
           #f)
@@ -17201,18 +17210,18 @@
         (unsafe-start-atomic)
         (begin0
           (begin
-            (if (equal? enc_0 (cache-enc (unsafe-place-local-ref cell.1$8)))
+            (if (equal? enc_0 (cache-enc (unsafe-place-local-ref cell.1$9)))
               (void)
               (begin
                 (cache-clear! cache-to set-cache-to!)
                 (cache-clear! cache-to_3068 set-cache-to2!)
                 (cache-clear! cache-from set-cache-from!)
-                (set-cache-enc! (unsafe-place-local-ref cell.1$8) enc_0)))
-            (if (|#%app| get_0 (unsafe-place-local-ref cell.1$8))
+                (set-cache-enc! (unsafe-place-local-ref cell.1$9) enc_0)))
+            (if (|#%app| get_0 (unsafe-place-local-ref cell.1$9))
               (1/bytes-close-converter c_0)
               (begin
                 (bytes-reset-converter c_0)
-                (|#%app| update!_0 (unsafe-place-local-ref cell.1$8) c_0))))
+                (|#%app| update!_0 (unsafe-place-local-ref cell.1$9) c_0))))
           (unsafe-end-atomic)))
       (void))))
 (define bytes-open-converter/cached-to
@@ -32795,6 +32804,10 @@
                      (for-loop_0 fold-var_1 rest_0))))
                fold-var_0)))))
         (for-loop_0 null lst_0))))))
+(define cell.1$7 (unsafe-make-place-local (unsafe-make-uninterruptible-lock)))
+(define logger-init-lock!
+  (lambda ()
+    (unsafe-place-local-set! cell.1$7 (unsafe-make-uninterruptible-lock))))
 (define level->value
   (lambda (lvl_0)
     (if (eq? lvl_0 'none)
@@ -33351,14 +33364,18 @@
                   (unsafe-place-local-ref cell.2$1)
                   which_0)))))
         (begin
-          (unsafe-start-atomic)
+          (|#%app| start-atomic/no-gc-interrupts)
+          (unsafe-uninterruptible-lock-acquire
+           (unsafe-place-local-ref cell.1$7))
           (begin0
             (begin
               (add-log-receiver! logger_0 lr_0 #f)
               (set-logger-permanent-receivers!
                logger_0
                (cons lr_0 (logger-permanent-receivers logger_0))))
-            (unsafe-end-atomic)))))))
+            (unsafe-uninterruptible-lock-release
+             (unsafe-place-local-ref cell.1$7))
+            (|#%app| end-atomic/no-gc-interrupts)))))))
 (define add-stderr-log-receiver!
   (lambda (logger_0 . args_0)
     (add-stdio-log-receiver!
@@ -33508,18 +33525,22 @@
                   app_2
                   (path-bytes (1/find-system-path 'run-file))))))))
       (begin
-        (unsafe-start-atomic)
+        (|#%app| start-atomic/no-gc-interrupts)
+        (unsafe-uninterruptible-lock-acquire (unsafe-place-local-ref cell.1$7))
         (begin0
           (begin
             (add-log-receiver! logger_0 lr_0 #f)
             (set-logger-permanent-receivers!
              logger_0
              (cons lr_0 (logger-permanent-receivers logger_0))))
-          (unsafe-end-atomic))))))
+          (unsafe-uninterruptible-lock-release
+           (unsafe-place-local-ref cell.1$7))
+          (|#%app| end-atomic/no-gc-interrupts))))))
 (define add-log-receiver!
   (lambda (logger_0 lr_0 backref_0)
     (begin
       (|#%app| start-atomic/no-gc-interrupts)
+      (unsafe-uninterruptible-lock-acquire (unsafe-place-local-ref cell.1$7))
       (begin0
         (begin
           (if (zero? (logger-prune-counter logger_0))
@@ -33568,6 +33589,7 @@
                     (semaphore-post (unbox sema-box_0))
                     (set-box! sema-box_0 #f))
                   (void))))))
+        (unsafe-uninterruptible-lock-release (unsafe-place-local-ref cell.1$7))
         (|#%app| end-atomic/no-gc-interrupts)))))
 (define log-receiver-send!
   (lambda (r_0 msg_0 in-interrupt?_0)
@@ -33630,10 +33652,12 @@
 (define logger-max-wanted-level
   (lambda (logger_0)
     (begin
-      (|#%app| start-atomic/no-gc-interrupts)
+      (|#%app| start-uninterruptible/no-gc-interrupts)
+      (unsafe-uninterruptible-lock-acquire (unsafe-place-local-ref cell.1$7))
       (begin0
         (logger-max-wanted-level* logger_0)
-        (|#%app| end-atomic/no-gc-interrupts)))))
+        (unsafe-uninterruptible-lock-release (unsafe-place-local-ref cell.1$7))
+        (|#%app| end-uninterruptible/no-gc-interrupts)))))
 (define logger-max-wanted-level*
   (lambda (logger_0)
     (if (let ((app_0 (logger-local-level-timestamp logger_0)))
@@ -33921,13 +33945,17 @@
                                       (level->user-representation
                                        (begin
                                          (|#%app|
-                                          start-atomic/no-gc-interrupts)
+                                          start-uninterruptible/no-gc-interrupts)
+                                         (unsafe-uninterruptible-lock-acquire
+                                          (unsafe-place-local-ref cell.1$7))
                                          (begin0
                                            (logger-wanted-level
                                             logger_0
                                             topic_0)
+                                           (unsafe-uninterruptible-lock-release
+                                            (unsafe-place-local-ref cell.1$7))
                                            (|#%app|
-                                            end-atomic/no-gc-interrupts))))
+                                            end-uninterruptible/no-gc-interrupts))))
                                       topic_0)
                                      fold-var_0)))
                                (values fold-var_1))))
@@ -33937,11 +33965,11 @@
                     fold-var_0)))))
              (for-loop_0 null (hash-iterate-first topics_0)))))))))))
 (define make-root-logger (lambda () (create-logger.1 #f 'none #f)))
-(define cell.1$7 (unsafe-make-place-local (make-root-logger)))
-(define unsafe-root-logger (lambda () (unsafe-place-local-ref cell.1$7)))
+(define cell.1$8 (unsafe-make-place-local (make-root-logger)))
+(define unsafe-root-logger (lambda () (unsafe-place-local-ref cell.1$8)))
 (define 1/current-logger
   (make-parameter
-   (unsafe-place-local-ref cell.1$7)
+   (unsafe-place-local-ref cell.1$8)
    (lambda (l_0)
      (begin
        (if (1/logger? l_0)
@@ -33952,8 +33980,9 @@
 (define logger-init!
   (lambda ()
     (begin
-      (unsafe-place-local-set! cell.1$7 (make-root-logger))
-      (1/current-logger (unsafe-place-local-ref cell.1$7)))))
+      (unsafe-place-local-set! cell.1$8 (make-root-logger))
+      (1/current-logger (unsafe-place-local-ref cell.1$8))
+      (logger-init-lock!))))
 (define 1/make-logger
   (let ((make-logger_0
          (|#%name|
@@ -34003,10 +34032,14 @@
                  topic3_0))
               (if (not (eq? level5_0 'none))
                 (begin
-                  (|#%app| start-atomic/no-gc-interrupts)
+                  (|#%app| start-uninterruptible/no-gc-interrupts)
+                  (unsafe-uninterruptible-lock-acquire
+                   (unsafe-place-local-ref cell.1$7))
                   (begin0
                     (log-level?* logger4_0 level5_0 topic3_0)
-                    (|#%app| end-atomic/no-gc-interrupts)))
+                    (unsafe-uninterruptible-lock-release
+                     (unsafe-place-local-ref cell.1$7))
+                    (|#%app| end-uninterruptible/no-gc-interrupts)))
                 #f))))))
     (|#%name|
      log-level?
@@ -34017,17 +34050,21 @@
 (define logging-future-events?
   (lambda ()
     (begin
-      (|#%app| start-atomic/no-gc-interrupts)
+      (|#%app| start-uninterruptible/no-gc-interrupts)
+      (unsafe-uninterruptible-lock-acquire (unsafe-place-local-ref cell.1$7))
       (begin0
-        (log-level?* (unsafe-place-local-ref cell.1$7) 'debug 'future)
-        (|#%app| end-atomic/no-gc-interrupts)))))
+        (log-level?* (unsafe-place-local-ref cell.1$8) 'debug 'future)
+        (unsafe-uninterruptible-lock-release (unsafe-place-local-ref cell.1$7))
+        (|#%app| end-uninterruptible/no-gc-interrupts)))))
 (define logging-place-events?
   (lambda ()
     (begin
-      (|#%app| start-atomic/no-gc-interrupts)
+      (|#%app| start-uninterruptible/no-gc-interrupts)
+      (unsafe-uninterruptible-lock-acquire (unsafe-place-local-ref cell.1$7))
       (begin0
-        (log-level?* (unsafe-place-local-ref cell.1$7) 'debug 'place)
-        (|#%app| end-atomic/no-gc-interrupts)))))
+        (log-level?* (unsafe-place-local-ref cell.1$8) 'debug 'place)
+        (unsafe-uninterruptible-lock-release (unsafe-place-local-ref cell.1$7))
+        (|#%app| end-uninterruptible/no-gc-interrupts)))))
 (define log-level?*
   (lambda (logger_0 level_0 topic_0)
     (let ((a_0 (logger-wanted-level logger_0 topic_0)))
@@ -34050,10 +34087,14 @@
                  topic6_0))
               (level->user-representation
                (begin
-                 (|#%app| start-atomic/no-gc-interrupts)
+                 (|#%app| start-uninterruptible/no-gc-interrupts)
+                 (unsafe-uninterruptible-lock-acquire
+                  (unsafe-place-local-ref cell.1$7))
                  (begin0
                    (logger-wanted-level logger7_0 topic6_0)
-                   (|#%app| end-atomic/no-gc-interrupts)))))))))
+                   (unsafe-uninterruptible-lock-release
+                    (unsafe-place-local-ref cell.1$7))
+                   (|#%app| end-uninterruptible/no-gc-interrupts)))))))))
     (|#%name|
      log-max-level
      (case-lambda
@@ -34067,7 +34108,13 @@
        (if (1/logger? logger_0)
          (void)
          (raise-argument-error 'log-all-levels "logger?" logger_0))
-       (logger-all-levels logger_0)))))
+       (|#%app| start-uninterruptible/no-gc-interrupts)
+       (unsafe-uninterruptible-lock-acquire (unsafe-place-local-ref cell.1$7))
+       (begin0
+         (logger-all-levels logger_0)
+         (unsafe-uninterruptible-lock-release
+          (unsafe-place-local-ref cell.1$7))
+         (|#%app| end-uninterruptible/no-gc-interrupts))))))
 (define 1/log-level-evt
   (|#%name|
    log-level-evt
@@ -34078,7 +34125,9 @@
          (raise-argument-error 'log-level-evt "logger?" logger_0))
        (let ((s_0
               (begin
-                (unsafe-start-atomic)
+                (|#%app| start-uninterruptible/no-gc-interrupts)
+                (unsafe-uninterruptible-lock-acquire
+                 (unsafe-place-local-ref cell.1$7))
                 (begin0
                   (let ((c1_0 (unbox (logger-level-sema-box logger_0))))
                     (if c1_0
@@ -34087,7 +34136,9 @@
                         (begin
                           (set-box! (logger-level-sema-box logger_0) s_0)
                           s_0))))
-                  (unsafe-end-atomic)))))
+                  (unsafe-uninterruptible-lock-release
+                   (unsafe-place-local-ref cell.1$7))
+                  (|#%app| end-uninterruptible/no-gc-interrupts)))))
          (semaphore-peek-evt s_0))))))
 (define 1/log-message
   (|#%name|
@@ -34183,6 +34234,8 @@
         (void)
         (begin
           (|#%app| start-atomic/no-gc-interrupts)
+          (unsafe-uninterruptible-lock-acquire
+           (unsafe-place-local-ref cell.1$7))
           (begin0
             (log-message*
              logger_0
@@ -34192,34 +34245,40 @@
              data_0
              prefix?_0
              #f)
+            (unsafe-uninterruptible-lock-release
+             (unsafe-place-local-ref cell.1$7))
             (|#%app| end-atomic/no-gc-interrupts)))))))
 (define log-future-event
   (lambda (message_0 data_0)
     (begin
       (|#%app| start-atomic/no-gc-interrupts)
+      (unsafe-uninterruptible-lock-acquire (unsafe-place-local-ref cell.1$7))
       (begin0
         (log-message*
-         (unsafe-place-local-ref cell.1$7)
+         (unsafe-place-local-ref cell.1$8)
          'debug
          'future
          message_0
          data_0
          #t
          #f)
+        (unsafe-uninterruptible-lock-release (unsafe-place-local-ref cell.1$7))
         (|#%app| end-atomic/no-gc-interrupts)))))
 (define log-place-event
   (lambda (message_0 data_0)
     (begin
       (|#%app| start-atomic/no-gc-interrupts)
+      (unsafe-uninterruptible-lock-acquire (unsafe-place-local-ref cell.1$7))
       (begin0
         (log-message*
-         (unsafe-place-local-ref cell.1$7)
+         (unsafe-place-local-ref cell.1$8)
          'debug
          'place
          message_0
          data_0
          #t
          #f)
+        (unsafe-uninterruptible-lock-release (unsafe-place-local-ref cell.1$7))
         (|#%app| end-atomic/no-gc-interrupts)))))
 (define log-message*
   (lambda (logger_0 level_0 topic_0 message_0 data_0 prefix?_0 in-interrupt?_0)
