@@ -50,14 +50,14 @@ all elements, so for mutable data, mutating an element will affect other element
 This function takes time proportional to @racket[size].
 
 A common mistake is using @racket[make-vector] to create nested vectors.
-The following creates a vector that contain 3 vectors to the same vector.
+The following creates a vector that contain 3 references to the same vector.
 @examples[
-  (make-vector 3 (vector)) ; wrong
+  (make-vector 3 (vector)) ; probably not what you'd want
 ]
 
 To create nested vectors, do this instead:
 @examples[
-(for/vector ([_ (in-range 0 n)])
+(for/vector ([_ 3)])
   (vector))
 ]
 }
