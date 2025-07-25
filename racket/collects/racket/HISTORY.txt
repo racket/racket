@@ -1,4 +1,16 @@
-Version 8.17
+Version 8.18, July 2025
+Build-system improvements support containers registered at Docker Hub
+ to build for all platforms that have downloads form the main Racket
+ download site; improvements also support Unix-style builds for Mac
+ OS a la MacPorts
+Use Unicode 16.0 for character and string operations
+Change `struct` to support `#:properties prop-alist-expr`
+Improve `expt` on a flonum to a large exact power
+xml: Change structs to serializable
+ffi/unsafe: Add `{star,end}-uninterruptible`
+net/imap: Add `imap-move`
+
+Version 8.17, April 2025
 Package manager: support a file URL without associated ".CHECKSUM"
  file, and instead the download the file as needed to infer
 Add `bitwise-first-bit-set`
@@ -14,7 +26,7 @@ json: Add `#:replace-malformed-surrogate?` argument
 net/http-client: Avoid sending "Content-Length: 0" when no body
 compiler/demod: Improve pruning of unused assignments
 
-Version 8.16
+Version 8.16, January 2025
 Add `treelist-filter, `treelist-index-of`, `treelist-flatten`,
  `treelist-append*`, and `sequence->treelist` in `racket/treelist`,
   repair `treelist-set` on non-leftwise-dense subtrees,
@@ -37,7 +49,7 @@ Add `error-syntax->name-handler`
 Add `racket/serialize-structs`
 BC: upgrade to libffi 3.4.6
 
-Version 8.15, Ocotober 2024
+Version 8.15, October 2024
 Sort and highlight documentation-search results by core documentation
  and main-distribution packages
 Add "language family" to documents, support filtering searches by
