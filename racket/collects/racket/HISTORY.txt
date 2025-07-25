@@ -7,7 +7,7 @@ Use Unicode 16.0 for character and string operations
 Change `struct` to support `#:properties prop-alist-expr`
 Improve `expt` on a flonum to a large exact power
 xml: Change structs to serializable
-ffi/unsafe: Add `{star,end}-uninterruptible`
+ffi/unsafe: Add `start-uninterruptible`, `end-uninterruptible`
 net/imap: Add `imap-move`
 
 Version 8.17, April 2025
