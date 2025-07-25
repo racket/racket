@@ -120,6 +120,7 @@
     (<decl> [(DEFINE ID <expr>) `(define-constant ,$2 ,$3)]
             [(DEFINE __RKTIO_H__ <expr>) #f]
             [(DEFINE EXTERN ID) #f]
+            [(DEFINE EXTERN EXTERN) #f]
             [(DEFINE EXTERN/NOERR EXTERN) #f]
             [(DEFINE EXTERN/STEP EXTERN) #f]
             [(DEFINE EXTERN/ERR OPEN ID CLOSE EXTERN) #f]

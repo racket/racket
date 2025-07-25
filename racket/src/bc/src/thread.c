@@ -670,6 +670,11 @@ scheme_init_unsafe_thread (Scheme_Startup_Env *env)
 						      "unsafe-start-uninterruptible",
 						      0, 0),
 			     env);
+  scheme_addto_prim_instance("unsafe-end-uninterruptible",
+                             scheme_make_prim_w_arity(unsafe_end_atomic,
+                                                      "unsafe-end-uninterruptible",
+                                                      0, 0),
+                             env);
 
   /* Trying to acquire an uninterruptable lock similarly blocks: it's the same as
      starting and ending atomic mode --- so consistent, though useless. */
