@@ -621,6 +621,7 @@ if test "${enable_natipkg}" = "yes" ; then
   CONFIGURE_RACKET_SO_COMPILE="${CONFIGURE_RACKET_SO_COMPILE} PLT_CS_SLSP_SUFFIX=-natipkg"
   PLT_CS_SLSP_SUFFIX="-natipkg"
   dist_install_missing_pkgs=yes
+  use_own_zlibs=yes
 fi
 if test "${enable_nonatipkg}" = "yes" ; then
   if test "${enable_natipkg}" = "yes" ; then
@@ -630,6 +631,7 @@ if test "${enable_nonatipkg}" = "yes" ; then
   CONFIGURE_RACKET_SO_COMPILE="${CONFIGURE_RACKET_SO_COMPILE} PLT_CS_SLSP_SUFFIX=-nonatipkg"
   PLT_CS_SLSP_SUFFIX="-nonatipkg"
   dist_install_missing_pkgs=no
+  use_own_zlibs=no
 fi
 
 ############## ubsan ################
