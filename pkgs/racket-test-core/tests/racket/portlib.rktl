@@ -9,6 +9,9 @@
          ffi/unsafe
          ffi/unsafe/port)
 
+(define thread-procs (list thread
+                           (lambda (thunk) (thread #:pool 'own thunk))))
+
 ;; ----------------------------------------
 
 (let* ([p (lambda () (open-input-string "hello\r\nthere"))])
@@ -76,7 +79,7 @@
 ;; ----------------------------------------
 
 ;; pipe and pipe-with-specials commmit tests
-(define (test-pipe-commit make-pipe)
+(define (test-pipe-commit make-pipe thread)
   (let-values ([(in out) (make-pipe)])
     (display "apple" out)
     (test #"app" peek-bytes 3 0 in)
@@ -155,11 +158,12 @@
       (go 2 #f 'kill)
       (go 2 #t 'kill)
       (go 3 #f 'kill))))
-(test-pipe-commit make-pipe)
-(test-pipe-commit (lambda () (make-pipe-with-specials 10000 'special-pipe 'spec-pipe)))
+(for ([thread (in-list thread-procs)])
+  (test-pipe-commit make-pipe thread)
+  (test-pipe-commit (lambda () (make-pipe-with-specials 10000 'special-pipe 'spec-pipe)) thread))
 
 ;; pipe-with-specials and limit; also used to test peeked-input-port
-(define (test-special-pipe make-pipe-with-specials)
+(define (test-special-pipe make-pipe-with-specials thread)
   (let-values ([(in out) (make-pipe-with-specials 10)])
     ;; Check that write events work
     (test 5 sync (write-bytes-avail-evt #"12345" out))
@@ -199,10 +203,12 @@
       (bg (lambda () (test 0 write-bytes-avail* #"c" out)) #f #f #f)
       (bg (lambda () (test #t write-special 'c out)) #t #t #f)
       (bg (lambda () (test (void) close-output-port out)) #t #f #t))))
-(test-special-pipe make-pipe-with-specials)
-(test-special-pipe (lambda (limit)
-		     (let-values ([(in out) (make-pipe-with-specials limit)])
-		       (values (peeking-input-port in) out))))
+(for ([thread (in-list thread-procs)])
+  (test-special-pipe make-pipe-with-specials thread)
+  (test-special-pipe (lambda (limit)
+                       (let-values ([(in out) (make-pipe-with-specials limit)])
+                         (values (peeking-input-port in) out)))
+                     thread))
 
 ;; copy-port and make-pipe-with-specials tests
 (let ([s (let loop ([n 10000][l null])
@@ -236,58 +242,59 @@
 					    (max 1 (random (- (bytes-length s) (bytes-length a))))))]
 	 [c (subbytes s (+ (bytes-length a) (bytes-length b)))])
     (define (go-stream close? copy? threads? peek?)
-      (printf "Go stream: ~a ~a ~a ~a\n" close? copy? threads? peek?)
-      (let*-values ([(in1 out) (make-pipe-with-specials)]
-		    [(in out1) (if copy?
-				   (make-pipe-with-specials)
-				   (values in1 out))])
-	(let ([w-th
-	       (lambda ()
-		 (display a out)
-		 (write-special '(first one) out)
-		 (display b out)
-		 (write-special '(second one) out)
-		 (display c out)
-		 (when close?
-		   (close-output-port out)))]
-	      [c-th (lambda ()
-		      (when copy?
-			(copy-port in1 out1)
-			(close-output-port out1)))]
-	      [r-th (lambda ()
-		      (let ([get-one-str
-			     (lambda (a)
-			       (let ([dest (make-bytes (bytes-length s))]
-				     [target (bytes-length a)])
-				 (let loop ([n 0])
-				   (let ([v (read-bytes-avail! dest in n)])
-				     (if (= target (+ v n))
-					 (test #t `(same? ,target) (equal? (subbytes dest 0 target) a))
-					 (loop (+ n v)))))))]
-			    [get-one-special
-			     (lambda (spec)
-			       (let ([v (read-bytes-avail! (make-bytes 10) in)])
-				 (test #t procedure? v)
-				 (test spec v 'ok 5 5 5)))])
-			(when peek?
-			  (test '(second one) peek-byte-or-special in (+ (bytes-length a) 1 (bytes-length b))))
-			(get-one-str a)
-			(get-one-special '(first one))
-			(get-one-str b)
-			(get-one-special '(second one))
-			(get-one-str c)
-			(if close?
-			    (test eof read-byte in)
-			    (test #f sync/timeout 0 in))))])
-	  (let ([th (if threads?
-			thread
-			(lambda (f) (f)))])
-	    (for-each (lambda (t)
-			(and (thread? t) (thread-wait t)))
-		      (list
-		       (th w-th)
-		       (th c-th)
-		       (th r-th)))))))
+      (for ([thread (in-list (if threads? thread-procs (list 'no-thread)))])
+        (printf "Go stream: ~a ~a ~a ~a\n" close? copy? thread peek?)
+        (let*-values ([(in1 out) (make-pipe-with-specials)]
+                      [(in out1) (if copy?
+                                     (make-pipe-with-specials)
+                                     (values in1 out))])
+          (let ([w-th
+                 (lambda ()
+                   (display a out)
+                   (write-special '(first one) out)
+                   (display b out)
+                   (write-special '(second one) out)
+                   (display c out)
+                   (when close?
+                     (close-output-port out)))]
+                [c-th (lambda ()
+                        (when copy?
+                          (copy-port in1 out1)
+                          (close-output-port out1)))]
+                [r-th (lambda ()
+                        (let ([get-one-str
+                               (lambda (a)
+                                 (let ([dest (make-bytes (bytes-length s))]
+                                       [target (bytes-length a)])
+                                   (let loop ([n 0])
+                                     (let ([v (read-bytes-avail! dest in n)])
+                                       (if (= target (+ v n))
+                                           (test #t `(same? ,target) (equal? (subbytes dest 0 target) a))
+                                           (loop (+ n v)))))))]
+                              [get-one-special
+                               (lambda (spec)
+                                 (let ([v (read-bytes-avail! (make-bytes 10) in)])
+                                   (test #t procedure? v)
+                                   (test spec v 'ok 5 5 5)))])
+                          (when peek?
+                            (test '(second one) peek-byte-or-special in (+ (bytes-length a) 1 (bytes-length b))))
+                          (get-one-str a)
+                          (get-one-special '(first one))
+                          (get-one-str b)
+                          (get-one-special '(second one))
+                          (get-one-str c)
+                          (if close?
+                              (test eof read-byte in)
+                              (test #f sync/timeout 0 in))))])
+            (let ([th (if threads?
+                          thread
+                          (lambda (f) (f)))])
+              (for-each (lambda (t)
+                          (and (thread? t) (thread-wait t)))
+                        (list
+                         (th w-th)
+                         (th c-th)
+                         (th r-th))))))))
     (go-stream #f #f #f #f)
     (go-stream #t #f #f #f)
     (go-stream #t #t #f #f)
@@ -300,45 +307,46 @@
 
 ;; Check port shortcuts for `make-input-port' and `make-output-port' with
 ;; pipes and specials
-(let-values ([(i o) (make-pipe-with-specials 5)])
-  (define i2 (make-input-port
-              (object-name i)
-              i
-              i
-              void))
-  (define o2 (make-output-port
-              (object-name o)
-              o
-              o
-              void
-              o))
-  (test #f sync/timeout 0 i2)
-  (test o2 sync/timeout 0 o2)
-  (write-bytes #"01234" o2)
-  (test #f sync/timeout 0 o2)
-  (test i2 sync/timeout 0 i2)
-  (test #"01234" read-bytes 5 i2)
-  (test 0 read-bytes-avail!* (make-bytes 3) i2)
-  (thread (lambda () 
-            (sync (system-idle-evt))
-            (write-bytes #"5" o2)))
-  (test #\5 read-char i2)
-  (let ([s (make-bytes 6)])
+(for ([thread (in-list thread-procs)])
+  (let-values ([(i o) (make-pipe-with-specials 5)])
+    (define i2 (make-input-port
+                (object-name i)
+                i
+                i
+                void))
+    (define o2 (make-output-port
+                (object-name o)
+                o
+                o
+                void
+                o))
+    (test #f sync/timeout 0 i2)
+    (test o2 sync/timeout 0 o2)
+    (write-bytes #"01234" o2)
+    (test #f sync/timeout 0 o2)
+    (test i2 sync/timeout 0 i2)
+    (test #"01234" read-bytes 5 i2)
+    (test 0 read-bytes-avail!* (make-bytes 3) i2)
     (thread (lambda () 
               (sync (system-idle-evt))
-              (test 5 write-bytes-avail #"6789ab" o2)))
-    (test 5 read-bytes-avail! s i2)
-    (test #"6789a\0" values s))
+              (write-bytes #"5" o2)))
+    (test #\5 read-char i2)
+    (let ([s (make-bytes 6)])
+      (thread (lambda () 
+                (sync (system-idle-evt))
+                (test 5 write-bytes-avail #"6789ab" o2)))
+      (test 5 read-bytes-avail! s i2)
+      (test #"6789a\0" values s))
 
-  (test #t port-writes-special? o2)
-  (write-special 'ok o2)
-  (test 'ok read-byte-or-special i2)
+    (test #t port-writes-special? o2)
+    (write-special 'ok o2)
+    (test 'ok read-byte-or-special i2)
 
-  (test #t write-special-avail* 'ok-again o2)
-  (test i2 sync i2)
-  (test 'ok-again read-byte-or-special i2)
+    (test #t write-special-avail* 'ok-again o2)
+    (test i2 sync i2)
+    (test 'ok-again read-byte-or-special i2)
 
-  (void))
+    (void)))
 
 ;; make-input-port/read-to-peek
 (define (make-list-port #:eof-as-special? [eof-as-special? #f] . l)
@@ -486,7 +494,8 @@
               (let ([spun (- (current-process-milliseconds) now)])
                 (unless (< spun (/ (* SLEEP-TIME 1000) 10))
                   (loop (sub1 tries)))))))))
-  (try (lambda (i) (sync/timeout SLEEP-TIME (thread (lambda () (read-byte i))))))
+  (for ([thread (in-list thread-procs)])
+    (try (lambda (i) (sync/timeout SLEEP-TIME (thread (lambda () (read-byte i)))))))
   (try (lambda (i) (sync/timeout SLEEP-TIME i))))
 
 ;; read synchronization events
@@ -559,14 +568,15 @@
 (define (sync/poll . args) (apply sync/timeout 0 args))
 (go (lambda () (open-input-bytes #"hello")) sync/poll test test)
 
-(define (delay-hello)
+(define ((make-delay-hello thread))
   (let-values ([(r w) (make-pipe)])
     (thread (lambda ()
 	      (sync (system-idle-evt))
 	      (write-string "hello" w)
 	      (close-output-port w)))
     r))
-(go delay-hello sync test test)
+(for ([thread (in-list thread-procs)])
+  (go (make-delay-hello thread) sync test test))
 
 (go (lambda ()
       (let-values ([(r w) (make-pipe)])
@@ -679,21 +689,22 @@
   (do-tests '("apple" "banana"))
   (do-tests '("ax" "b" "cz")))
 ;; input-port-append and not-ready inputs
-(let ([p0 (open-input-bytes #"123")])
-  (let-values ([(p1 out) (make-pipe)])
-    (let ([p (input-port-append #f p0 p1)])
-      (display "4" out)
-      (test #"1234" peek-bytes 4 0 p)
-      (test #"34" peek-bytes 2 2 p)
-      (test #"4" peek-bytes 1 3 p)
-      (let* ([v #f]
-	     [t (thread (lambda ()
-			  (set! v (read-bytes 6 p))))])
-	(test (void) sync (system-idle-evt) t)
-	(display "56" out)
-	(test (void) sync (system-idle-evt))
-	(test t sync/timeout SLEEP-TIME t)
-	(test #"123456" values v)))))
+(for ([thread (in-list thread-procs)])
+  (let ([p0 (open-input-bytes #"123")])
+    (let-values ([(p1 out) (make-pipe)])
+      (let ([p (input-port-append #f p0 p1)])
+        (display "4" out)
+        (test #"1234" peek-bytes 4 0 p)
+        (test #"34" peek-bytes 2 2 p)
+        (test #"4" peek-bytes 1 3 p)
+        (let* ([v #f]
+               [t (thread (lambda ()
+                            (set! v (read-bytes 6 p))))])
+          (test (void) sync (system-idle-evt) t)
+          (display "56" out)
+          (test (void) sync (system-idle-evt))
+          (test t sync/timeout SLEEP-TIME t)
+          (test #"123456" values v))))))
 
 ;; make-limited-input-port tests
 (let* ([s (open-input-string "123456789")]
@@ -730,7 +741,7 @@
 
 ;; Make sure that blocking on a limited input port doesn't
 ;; block in the case of a peek after available bytes:
-(let ()
+(for ([thread (in-list thread-procs)])
   (define-values (i o) (make-pipe))
   (write-char #\a o)
   (write-char #\a o)
@@ -744,7 +755,7 @@
 ;; Check that events raise an exception in the right thread
 ;; when a point goes bad
 
-(let ()
+(for ([thread (in-list thread-procs)])
   (define (check make-evt)
     (define-values (p fail)
       (let* ([s (make-semaphore)]
@@ -1054,70 +1065,72 @@
 
 ;; --------------------------------------------------
 ;; test combine-output
-(let ([port-a (open-output-string)]
-      [port-b (open-output-string)])
-  (define two-byte-port (make-output-port
-                          `two-byte-port
-                          port-b
-                          (lambda (s start end non-blocking? breakable?)
-                            (cond
-                              [non-blocking?
-                               (write-bytes-avail* (subbytes
-                                                    s
-                                                    start
-                                                    (if (< start (- end 1)) (+ start 2) end))
+(for ([thread (in-list thread-procs)])
+  (let ([port-a (open-output-string)]
+        [port-b (open-output-string)])
+    (define two-byte-port (make-output-port
+                           `two-byte-port
+                           port-b
+                           (lambda (s start end non-blocking? breakable?)
+                             (cond
+                               [non-blocking?
+                                (write-bytes-avail* (subbytes
+                                                     s
+                                                     start
+                                                     (if (< start (- end 1)) (+ start 2) end))
                                                     port-b)]
-                              [breakable?
-                               (write-bytes-avail/enable-break
-                                (subbytes
-                                 s
-                                 start
-                                 (if (< start (- end 1)) (+ start 2) end))
+                               [breakable?
+                                (write-bytes-avail/enable-break
+                                 (subbytes
+                                  s
+                                  start
+                                  (if (< start (- end 1)) (+ start 2) end))
                                  port-b)]
-                              [else
-                               (write-bytes s port-b)]))
-                          void))
-  (define port-ab (combine-output port-a two-byte-port))
-  (test 12  write-bytes #"hello, world" port-ab)
-  (test "hello, world" get-output-string port-a)
-  (test "he" get-output-string port-b)
-  (test 0 write-bytes-avail* #" test" port-ab)
-  (test "hello, world" get-output-string port-a)
-  (test "hell" get-output-string port-b)
-  (test (void) flush-output port-ab)
-  (test "hello, world" get-output-string port-a)
-  (test "hello, world" get-output-string port-b)
-  (define worker1 (thread
-                   (lambda ()
-                     (for ([i 10])
-                       (write-bytes (string->bytes/utf-8 (number->string i)) port-ab)))))
-  (define worker2 (thread
-                   (lambda ()
-                     (write-bytes-avail* #"0123456789" port-ab))))
-  (thread-wait worker1)
-  (thread-wait worker2)
-  (test "hello, world01234567890123456789" get-output-string port-a)
-  (test "hello, world01234567890123456789" get-output-string port-b)
-  (test (void) close-output-port port-ab)
-  (test (void) close-output-port port-a)
-  (test (void) close-output-port port-b)
-  (define-values (i1 o1) (make-pipe 10 'i1 'o1))
-  (define-values (i2 o2) (make-pipe 10 'i2 'o2))
-  (define two-pipes (combine-output o1 o2))
-  (test 10 write-bytes #"0123456789" two-pipes)
-  (define sync-test-var 0)
-  (define sync-thread (thread (lambda ()
-                                (begin
-                                  (sync two-pipes)
-                                  (set! sync-test-var 1)))))
-  (test #t equal? sync-test-var 0)
-  (test "01234" read-string 5 i1)
-  (test #t equal? sync-test-var 0)
-  (test "012" read-string 3 i2)
-  (thread-wait sync-thread)
-  (test #t equal? sync-test-var 1)
-  (let ([n (write-bytes-avail* #"test123" two-pipes)]) 
-    (test #t <= 1 n 5)))
+                               [else
+                                (write-bytes s port-b)]))
+                           void))
+    (define port-ab (combine-output port-a two-byte-port))
+    (test 12  write-bytes #"hello, world" port-ab)
+    (test "hello, world" get-output-string port-a)
+    (test "he" get-output-string port-b)
+    (test 0 write-bytes-avail* #" test" port-ab)
+    (test "hello, world" get-output-string port-a)
+    (test "hell" get-output-string port-b)
+    (test (void) flush-output port-ab)
+    (test "hello, world" get-output-string port-a)
+    (test "hello, world" get-output-string port-b)
+    (define worker1 (thread
+                     (lambda ()
+                       (for ([i 10])
+                         (write-bytes (string->bytes/utf-8 (number->string i)) port-ab)))))
+    (define worker2 (thread
+                     (lambda ()
+                       (write-bytes-avail* #"0123456789" port-ab))))
+    (thread-wait worker1)
+    (thread-wait worker2)
+    (flush-output port-ab)
+    (test "hello, world01234567890123456789" get-output-string port-a)
+    (test "hello, world01234567890123456789" get-output-string port-b)
+    (test (void) close-output-port port-ab)
+    (test (void) close-output-port port-a)
+    (test (void) close-output-port port-b)
+    (define-values (i1 o1) (make-pipe 10 'i1 'o1))
+    (define-values (i2 o2) (make-pipe 10 'i2 'o2))
+    (define two-pipes (combine-output o1 o2))
+    (test 10 write-bytes #"0123456789" two-pipes)
+    (define sync-test-var 0)
+    (define sync-thread (thread (lambda ()
+                                  (begin
+                                    (sync two-pipes)
+                                    (set! sync-test-var 1)))))
+    (test #t equal? sync-test-var 0)
+    (test "01234" read-string 5 i1)
+    (test #t equal? sync-test-var 0)
+    (test "012" read-string 3 i2)
+    (thread-wait sync-thread)
+    (test #t equal? sync-test-var 1)
+    (let ([n (write-bytes-avail* #"test123" two-pipes)]) 
+      (test #t <= 1 n 5))))
 
 ;; --------------------------------------------------
 
@@ -1230,53 +1243,57 @@
 ;; check that commit-based reading counts against a port limit;
 ;; this test also checks an interaction of `make-limited-input-port'
 ;; and progress evts, so run it several times
-(for ([i 100])
-  (let* ([p (make-limited-input-port
-             (open-input-string "A\nB\nC\nD\n") 
-             4)]
-         [N 6]
-         [chs (for/list ([i N])
-                (let ([ch (make-channel)])
-                  (thread
-                   (lambda ()
-                     (channel-put ch (list (sync (read-bytes-line-evt p))
-                                           (file-position p)))))
-                  ch))]
-         [r (for/list ([ch chs])
-              (channel-get ch))])
-    (test #t list? r)))
-
-;; check proper locking for concurrent access:
-(for ([mk-p (list
-             (lambda ()
-               (open-input-string "A\nB\n"))
-             (lambda ()
-               (make-limited-input-port
-                (open-input-string "A\nB\nC\nD\n") 
-                4)))])
+(for ([thread (in-list thread-procs)])
   (for ([i 100])
-    (let* ([p (mk-p)]
+    (let* ([p (make-limited-input-port
+               (open-input-string "A\nB\nC\nD\n") 
+               4)]
            [N 6]
            [chs (for/list ([i N])
                   (let ([ch (make-channel)])
                     (thread
                      (lambda ()
-                       (when (even? i) (sleep))
                        (channel-put ch (list (sync (read-bytes-line-evt p))
-                                             (file-position p)
-                                             (let ()
-                                               (define-values (l c pos) (port-next-location p))
-                                               (sub1 pos))))))
+                                             (file-position p)))))
                     ch))]
-           [rs (for/list ([ch chs])
-                 (channel-get ch))])
-      (test 2 apply + (for/list ([r rs]) (if (bytes? (car r)) 1 0)))
-      (for ([r rs]) 
-        (if (eof-object? (car r))
-            (test 4 cadr r)
-            (let ([memq? (lambda (a l) (and (memq a l) #t))])
-              (test #t memq? (cadr r) '(2 4))
-              (test #t = (cadr r) (caddr r))))))))
+           [r (for/list ([ch chs])
+                (channel-get ch))])
+      (test #t list? r))))
+
+;; check proper locking for concurrent access:
+(for ([thread (in-list thread-procs)])
+  (for ([mk-p (list
+               (lambda ()
+                 (open-input-string "A\nB\n"))
+               (lambda ()
+                 (make-limited-input-port
+                  (open-input-string "A\nB\nC\nD\n") 
+                  4)))])
+    (for ([i 100])
+      (let* ([p (mk-p)]
+             [N 6]
+             [chs (for/list ([i N])
+                    (let ([ch (make-channel)])
+                      (thread
+                       (lambda ()
+                         (when (even? i) (sleep))
+                         (channel-put ch (list (sync (read-bytes-line-evt p))
+                                               (file-position p)
+                                               (let ()
+                                                 (define-values (l c pos) (port-next-location p))
+                                                 (sub1 pos))))))
+                      ch))]
+             [rs (for/list ([ch chs])
+                   (channel-get ch))])
+        (test 2 apply + (for/list ([r rs]) (if (bytes? (car r)) 1 0)))
+        (for ([r rs]) 
+          (if (eof-object? (car r))
+              (test 4 cadr r)
+              (let ([memq? (lambda (a l) (and (memq a l) #t))])
+                (test #t memq? (cadr r) '(2 4))
+                ;; no guarantee that the positions will be the same, but the
+                ;; position should not go backward
+                (test #t <= (cadr r) (caddr r)))))))))
 
 (let-values ([(in out) (make-pipe-with-specials)])
   (struct str (v)    
@@ -1296,7 +1313,7 @@
 ;; --------------------------------------------------
 ;; check that `read-bytes-evt' gets
 
-(let ()
+(for ([thread (in-list thread-procs)])
   (define-values (i o) (make-pipe))
   (define res #f)
   
@@ -1320,7 +1337,7 @@
 ;; --------------------------------------------------
 ;; check that string and byte-string evts can be reused
 
-(let ()
+(for ([thread (in-list thread-procs)])
   (define (check-can-reuse read-bytes-evt read-bytes write-bytes integer->byte list->bytes bytes?)
     (define N 10)
     (define M 160)

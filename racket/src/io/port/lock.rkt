@@ -13,6 +13,7 @@
          merely-atomically
          also-atomically
          port-lock-require-atomic!
+         port-lock-just-became-atomic?
          port-lock-init-atomic-mode)
 
 ;; A port lock implies uninterruptable mode, but not necessarily
@@ -56,7 +57,8 @@
               [was-atomic? #:mutable]
               [locked? #:mutable]
               mutex
-              condition))
+              condition)
+  #:authentic)
 
 (define-syntax-rule (core-port-lock-cas! p old-v new-v)
   (unsafe-struct*-cas! p 2 old-v new-v))
@@ -126,7 +128,8 @@
        (start-uninterruptible)
        (port-lock-slow p))]
     [(or (eq? lock #t)
-         (eq? lock 'in-atomic))
+         (eq? lock 'in-atomic)
+         (eq? lock 'to-atomic))
      ;; lock is taken, try switching to general mode
      (define new-lock (make-lock (eq? lock 'in-atomic)))
      (core-port-lock-cas! p #t new-lock) ; ok for CAS to fail
@@ -198,6 +201,9 @@
      (set-lock-atomic?! lock atomic?)]
     [else
      (internal-error "tried to set port lock atomicity without holding it")]))
+
+(define (port-lock-just-became-atomic? p)
+  (eq? (core-port-lock p) 'to-atomic))
 
 (define (port-lock-init-atomic-mode p)
   (set-core-port-lock! p 'atomic)

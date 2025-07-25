@@ -873,6 +873,13 @@
 (define (install-primitives-table! primitives)
   (set! primitive-names primitives))
 
+(define future-trace-extra-depth
+  (or (let ([s (getenv "PLT_FUTURE_TRACE_DEPTH")])
+        (and s (let ([n (string->number s)])
+                 (and (integer? n) (exact? n) (positive? n)
+                      (sub1 n)))))
+      0))
+
 ;; Simplified variant of `continuation->trace` that can be called to
 ;; get blame for a blocking future.
 (define (continuation-current-primitive k exclusions inclusions)
@@ -888,7 +895,7 @@
                k)])
     (let loop ([k (if (full-continuation? k) (full-continuation-k k) k)]
                [fallback #f]
-               [more 1])
+               [more future-trace-extra-depth])
       (cond
         [(or (not (#%$continuation? k))
              (eq? k #%$null-continuation))

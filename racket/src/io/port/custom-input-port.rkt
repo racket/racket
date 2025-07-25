@@ -86,7 +86,7 @@
          (bytes-copy! dest-bstr dest-start user-bstr 0 n))
        n]))
 
-  ;; with lock held, which implies in atomic mode
+  ;; with lock held, but may release and reacquire the lock if `r` is a pipe
   (define (check-read-result who r self dest-start dest-end #:peek? [peek? #f] #:ok-false? [ok-false? #f])
     (cond
       [(exact-nonnegative-integer? r)
@@ -104,7 +104,11 @@
                                                " a special read result is not allowed")
                                 "special result" r))]
       [(pipe-input-port? r)
-       (set! input-pipe r)]
+       (port-lock-require-atomic! self #t)
+       (set! input-pipe r)
+       (when (port-lock-just-became-atomic? self)
+         (port-unlock self)
+         (port-lock self))]
       [(evt? r) r]
       [(and peek? (not r))
        (unless ok-false?
@@ -124,9 +128,10 @@
                             ")")
                            r)]))
 
-  ;; possibly with lock held, which implies in atomic mode
+  ;; possibly with lock held
   (define (wrap-check-read-evt-result who evt self dest-start dest-end peek? ok-false?)
     (wrap-evt evt (lambda (r)
+                    ;; in atomic mode
                     (port-lock self)
                     (check-read-result who r self dest-start dest-end #:peek? peek? #:ok-false? ok-false?)
                     (port-unlock self)
@@ -136,7 +141,7 @@
                        (wrap-check-read-evt-result who r self dest-start dest-end peek? ok-false?)]
                       [else r]))))
 
-  ;; possibly with lock held, which implies in atomic mode
+  ;; possibly with lock held
   (define (wrap-procedure-result r)
     (define called? #f)
     (define (called!)
@@ -157,7 +162,7 @@
       [else
        four-args]))
 
-  ;; with lock held, which implies in atomic mode
+  ;; with lock held, which implies in atomic mode if `input-pipe` is a pipe
   (define (read-in self dest-bstr dest-start dest-end copy?)
     (cond
       [input-pipe
@@ -182,11 +187,11 @@
           (wrap-procedure-result r)]
          [else r])]))
 
-  ;; with lock held, which implies in atomic mode
+  ;; with lock held, which implies in atomic mode if `input-pipe` is a pipe
   (define (read-in/inner self dest-bstr dest-start dest-end copy? to-buffer)
     (read-in self dest-bstr dest-start dest-end copy?))
 
-  ;; with lock held, which implies in atomic mode
+  ;; with lock held, which implies in atomic mode if `input-pipe` is a pipe
   ;; Used only if `user-peek-in` is a function:
   (define (peek-in self dest-bstr dest-start dest-end skip-k progress-evt copy?)
     (cond
@@ -213,7 +218,7 @@
           (wrap-procedure-result r)]
          [else r])]))
 
-  ;; with lock held, which implies in atomic mode
+  ;; with lock held, which implies in atomic mode if `input-pipe` is a pipe
   ;; Used only if `user-peek-in` is a function:
   (define (byte-ready self work-done!)
     (cond
@@ -228,7 +233,7 @@
          [(evt? v) v]
          [else (not (eqv? v 0))])]))
 
-  ;; with lock held, which implies in atomic mode
+  ;; with lock held, which implies in atomic mode if `input-pipe` is a pipe
   (define (close self)
     (port-unlock self)
     (user-close)
@@ -241,7 +246,7 @@
       (raise-result-error '|user port progress-evt| "evt?" r))
     r)
 
-  ;; with lock held, which implies in atomic mode
+  ;; with lock held, which implies in atomic mode if `input-pipe` is a pipe
   (define (commit self amt evt ext-evt finish)
     (define r
       (parameterize-break #f
@@ -252,12 +257,12 @@
       [(bytes? r) (finish r) #t]
       [else (finish (make-bytes amt (char->integer #\x))) #t]))
 
-  ;; with lock held, which implies in atomic mode
+  ;; with lock held
   (define get-location
     (and user-get-location
          (make-get-location user-get-location)))
 
-  ;; with lock held, which implies in atomic mode
+  ;; with lock held
   (define count-lines!
     (and user-count-lines!
          (lambda (self) (port-unlock self) (user-count-lines!) (port-lock self))))
@@ -265,51 +270,50 @@
   (define-values (init-offset file-position)
     (make-init-offset+file-position user-init-position))
 
-  ;; with lock held, which implies in atomic mode
+  ;; with lock held
   (define buffer-mode
     (and user-buffer-mode
          (make-buffer-mode user-buffer-mode)))
 
   (finish-port/count
-   (port-lock-init-atomic-mode
-    (cond
-      [user-peek-in
-       (new core-input-port
-            #:field
-            [name name]
-            [offset init-offset]
-            #:override
-            [read-in (if (input-port? user-read-in)
-                         user-read-in
-                         read-in)]
-            [peek-in (if (input-port? user-peek-in)
-                         user-peek-in
-                         peek-in)]
-            [byte-ready (if (input-port? user-peek-in)
-                            user-peek-in
-                            byte-ready)]
-            [close close]
-            [get-progress-evt (and user-get-progress-evt get-progress-evt)]
-            [commit (and user-commit commit)]
-            [get-location get-location]
-            [count-lines! count-lines!]
-            [file-position file-position]
-            [buffer-mode buffer-mode])]
-      [else
-       (new peek-via-read-input-port
-            #:field
-            [name name]
-            [offset init-offset]
-            #:override
-            [read-in/inner read-in/inner]
-            [close (values
-                    (lambda (self)
-                      (close self)
-                      (send peek-via-read-input-port self close-peek-buffer)))]
-            [get-location  get-location]
-            [count-lines! count-lines!]
-            [file-position file-position]
-            [buffer-mode (or buffer-mode
-                             (case-lambda
-                               [(self) (send peek-via-read-input-port self default-buffer-mode)]
-                               [(self mode) (send peek-via-read-input-port self default-buffer-mode mode)]))])]))))
+   (cond
+     [user-peek-in
+      (new core-input-port
+           #:field
+           [name name]
+           [offset init-offset]
+           #:override
+           [read-in (if (input-port? user-read-in)
+                        user-read-in
+                        read-in)]
+           [peek-in (if (input-port? user-peek-in)
+                        user-peek-in
+                        peek-in)]
+           [byte-ready (if (input-port? user-peek-in)
+                           user-peek-in
+                           byte-ready)]
+           [close close]
+           [get-progress-evt (and user-get-progress-evt get-progress-evt)]
+           [commit (and user-commit commit)]
+           [get-location get-location]
+           [count-lines! count-lines!]
+           [file-position file-position]
+           [buffer-mode buffer-mode])]
+     [else
+      (new peek-via-read-input-port
+           #:field
+           [name name]
+           [offset init-offset]
+           #:override
+           [read-in/inner read-in/inner]
+           [close (values
+                   (lambda (self)
+                     (close self)
+                     (send peek-via-read-input-port self close-peek-buffer)))]
+           [get-location  get-location]
+           [count-lines! count-lines!]
+           [file-position file-position]
+           [buffer-mode (or buffer-mode
+                            (case-lambda
+                              [(self) (send peek-via-read-input-port self default-buffer-mode)]
+                              [(self mode) (send peek-via-read-input-port self default-buffer-mode mode)]))])])))

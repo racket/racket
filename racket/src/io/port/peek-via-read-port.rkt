@@ -6,7 +6,6 @@
          "input-port.rkt"
          "output-port.rkt"
          "lock.rkt"
-         "pipe.rkt"
          "commit-port.rkt")
 
 (provide peek-via-read-input-port)
@@ -127,7 +126,7 @@
      (when o
        (set! offset (- (+ o amt) s))))]
 
-  ;; with lock hald
+  ;; with lock held
   [slow-mode!
    (lambda ()
      (define b buffer)
@@ -146,7 +145,7 @@
    (lambda ()
      (pause-waiting-commit))]
   
-  ;; in atomic mode
+  ;; with lock held
   [read-in
    (lambda (dest-bstr start end copy?)
      (slow-mode!)
@@ -177,7 +176,7 @@
                (progress!))
              v])])))]
 
-  ;; with lock held
+  ;; with lock held, and in atomic mode if `progress-evt`
   [peek-in
    (lambda (dest-bstr start end skip progress-evt copy?)
      (let try-again ()
