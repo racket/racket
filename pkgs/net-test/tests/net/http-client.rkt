@@ -462,37 +462,29 @@
   ;; Test that a RST from a client during body transfer doesn't deadlock.
   (when (memq (system-type 'os) '(unix macosx))
     (for ([chunked? (in-list '(#f #t))])
-      (match-define (list stdout stdin _pid stderr control)
+      (match-define (list stdout stdin _pid stderr _control)
         (parameterize ([current-subprocess-custodian-mode 'kill]
                        [subprocess-group-enabled #t])
           (define mode (if chunked? "chunked" "full"))
           (process* (find-system-path 'exec-file) rst-server.rkt mode)))
-      (dynamic-wind
-        void
-        (lambda ()
-          (define stderr-thd (thread (lambda () (copy-port stderr (current-error-port)))))
-          (match-define (regexp #rx"PORT: (.+)" (list _ (app string->number port)))
-            (read-line stdout))
-          (define stdout-thd (thread (lambda () (copy-port stdout (current-output-port)))))
-          (define c (hc:http-conn))
-          (hc:http-conn-open! c "127.0.0.1" #:port port)
-          (check-true (hc:http-conn-live? c))
-          (define-values (_status _headers in)
-            (hc:http-conn-sendrecv! c "/"))
-          (check-exn
-           #rx"Connection reset by peer"
-           (lambda ()
-             (println (read-line in))))
-          ;; Ensure the port stays in an errored state.
-          (check-exn
-           #rx"Connection reset by peer"
-           (lambda ()
-             (println (read-line in))))
-          (kill-thread stdout-thd)
-          (kill-thread stderr-thd))
-        (lambda ()
-          (control 'interrupt)
-          (control 'wait)
-          (close-input-port stdout)
-          (close-input-port stderr)
-          (close-output-port stdin))))))
+      (define stderr-thd (thread (lambda () (copy-port stderr (current-error-port)))))
+      (match-define (regexp #rx"PORT: (.+)" (list _ (app string->number port)))
+        (read-line stdout))
+      (define stdout-thd (thread (lambda () (copy-port stdout (current-output-port)))))
+      (define c (hc:http-conn))
+      (hc:http-conn-open! c "127.0.0.1" #:port port)
+      (check-true (hc:http-conn-live? c))
+      (define-values (_status _headers in)
+        (hc:http-conn-sendrecv! c "/"))
+      (check-exn
+       #rx"Connection reset by peer"
+       (λ () (read-line in)))
+      ;; Ensure the port stays in an errored state.
+      (check-exn
+       #rx"Connection reset by peer"
+       (λ () (read-line in)))
+      (kill-thread stdout-thd)
+      (kill-thread stderr-thd)
+      (close-input-port stdout)
+      (close-input-port stderr)
+      (close-output-port stdin))))
