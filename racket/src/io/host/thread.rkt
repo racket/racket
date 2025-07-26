@@ -74,6 +74,8 @@
          poll-ctx-sched-info
          set-poll-ctx-incomplete?!
          delayed-poll
+         channel-get-poll-or-semaphore
+         channel-put-poll-or-semaphore
          schedule-info-did-work!
          control-state-evt
          async-evt

@@ -98,6 +98,7 @@ static Scheme_Object *set_port_next_location(int, Scheme_Object **args);
 static Scheme_Object *filesystem_change_evt(int, Scheme_Object **args);
 static Scheme_Object *filesystem_change_evt_p(int, Scheme_Object **args);
 static Scheme_Object *filesystem_change_evt_cancel(int, Scheme_Object **args);
+static Scheme_Object *filesystem_change_evt_ready_p(int argc, Scheme_Object **argv);
 
 static Scheme_Object *sch_default_read_handler(void *ignore, int argc, Scheme_Object *argv[]);
 static Scheme_Object *sch_default_display_handler(int argc, Scheme_Object *argv[]);
@@ -251,6 +252,7 @@ scheme_init_port_fun(Scheme_Startup_Env *env)
   ADD_PRIM_W_ARITY("filesystem-change-evt",  filesystem_change_evt,   1, 2, env);
   ADD_NONCM_PRIM("filesystem-change-evt?",   filesystem_change_evt_p, 1, 1, env);
   ADD_NONCM_PRIM("filesystem-change-evt-cancel",  filesystem_change_evt_cancel, 1, 1, env);
+  ADD_NONCM_PRIM("filesystem-change-evt-ready?",  filesystem_change_evt_ready_p, 1, 1, env);
 
   ADD_NONCM_PRIM("read-char",                      read_char,                      0, 1, env);
   ADD_PRIM_W_ARITY2("read-char-or-special",        read_char_spec,                 0, 3, 0, -1, env);
@@ -4408,6 +4410,16 @@ static Scheme_Object *filesystem_change_evt_cancel(int argc, Scheme_Object **arg
   scheme_filesystem_change_evt_cancel(argv[0], NULL);
 
   return scheme_void;
+}
+
+static Scheme_Object *filesystem_change_evt_ready_p(int argc, Scheme_Object **argv)
+{
+  if (!SAME_TYPE(scheme_filesystem_change_evt_type, SCHEME_TYPE(argv[0])))
+    scheme_wrong_contract("filesystem-change-evt-ready?", "filesystem-change-evt?", 0, argc, argv);
+
+  return (scheme_filesystem_change_evt_ready(argv[0], NULL)
+          ? scheme_true
+          : scheme_false);
 }
 
 static Scheme_Object *abs_directory_p(const char *name, Scheme_Object *d)

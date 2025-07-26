@@ -100,6 +100,7 @@
                 (1/file-truncate file-truncate)
                 (1/filesystem-change-evt filesystem-change-evt)
                 (1/filesystem-change-evt-cancel filesystem-change-evt-cancel)
+                (1/filesystem-change-evt-ready? filesystem-change-evt-ready?)
                 (1/filesystem-change-evt? filesystem-change-evt?)
                 (1/filesystem-root-list filesystem-root-list)
                 (1/find-system-path find-system-path)
@@ -2727,6 +2728,10 @@
 (define poll-ctx-sched-info (hash-ref table 'poll-ctx-sched-info))
 (define set-poll-ctx-incomplete?! (hash-ref table 'set-poll-ctx-incomplete?!))
 (define delayed-poll (hash-ref table 'delayed-poll))
+(define channel-get-poll-or-semaphore
+  (hash-ref table 'channel-get-poll-or-semaphore))
+(define channel-put-poll-or-semaphore
+  (hash-ref table 'channel-put-poll-or-semaphore))
 (define schedule-info-did-work! (hash-ref table 'schedule-info-did-work!))
 (define control-state-evt (hash-ref table 'control-state-evt))
 (define async-evt (hash-ref table 'async-evt))
@@ -6109,13 +6114,13 @@
 (define maybe-raise-missing-module void)
 (define set-maybe-raise-missing-module!
   (lambda (proc_0) (set! maybe-raise-missing-module proc_0)))
-(define finish_2616
+(define finish_2075
   (make-struct-type-install-properties
    '(commit-manager)
    3
    0
    #f
-   null
+   (list (cons prop:authentic #t))
    (current-inspector)
    #f
    '(0 1 2)
@@ -6129,83 +6134,34 @@
    #f
    #f
    '(3 . 0)))
-(define effect_2594 (finish_2616 struct:commit-manager))
+(define effect_2594 (finish_2075 struct:commit-manager))
 (define commit-manager1.1
   (|#%name|
    commit-manager
    (record-constructor
     (make-record-constructor-descriptor struct:commit-manager #f #f))))
-(define commit-manager?_2038
-  (|#%name| commit-manager? (record-predicate struct:commit-manager)))
 (define commit-manager?
-  (|#%name|
-   commit-manager?
-   (lambda (v)
-     (if (commit-manager?_2038 v)
-       #t
-       ($value
-        (if (impersonator? v)
-          (commit-manager?_2038 (impersonator-val v))
-          #f))))))
-(define commit-manager-pause-channel_2672
-  (|#%name|
-   commit-manager-pause-channel
-   (record-accessor struct:commit-manager 0)))
+  (|#%name| commit-manager? (record-predicate struct:commit-manager)))
 (define commit-manager-pause-channel
   (|#%name|
    commit-manager-pause-channel
-   (lambda (s)
-     (if (commit-manager?_2038 s)
-       (commit-manager-pause-channel_2672 s)
-       ($value
-        (impersonate-ref
-         commit-manager-pause-channel_2672
-         struct:commit-manager
-         0
-         s
-         'pause-channel))))))
-(define commit-manager-commit-channel_2862
-  (|#%name|
-   commit-manager-commit-channel
-   (record-accessor struct:commit-manager 1)))
+   (record-accessor struct:commit-manager 0)))
 (define commit-manager-commit-channel
   (|#%name|
    commit-manager-commit-channel
-   (lambda (s)
-     (if (commit-manager?_2038 s)
-       (commit-manager-commit-channel_2862 s)
-       ($value
-        (impersonate-ref
-         commit-manager-commit-channel_2862
-         struct:commit-manager
-         1
-         s
-         'commit-channel))))))
-(define commit-manager-thread_2564
-  (|#%name| commit-manager-thread (record-accessor struct:commit-manager 2)))
+   (record-accessor struct:commit-manager 1)))
 (define commit-manager-thread
-  (|#%name|
-   commit-manager-thread
-   (lambda (s)
-     (if (commit-manager?_2038 s)
-       (commit-manager-thread_2564 s)
-       ($value
-        (impersonate-ref
-         commit-manager-thread_2564
-         struct:commit-manager
-         2
-         s
-         'thread))))))
-(define finish_2581
+  (|#%name| commit-manager-thread (record-accessor struct:commit-manager 2)))
+(define finish_2247
   (make-struct-type-install-properties
    '(commit-request)
-   5
+   6
    0
    #f
-   null
+   (list (cons prop:authentic #t))
    (current-inspector)
    #f
-   '(0 1 2 3 4)
+   '(0 1 2 3 4 5)
    #f
    'commit-request))
 (define struct:commit-request
@@ -6215,113 +6171,40 @@
    (|#%nongenerative-uid| commit-request)
    #f
    #f
-   '(5 . 0)))
-(define effect_2646 (finish_2581 struct:commit-request))
+   '(6 . 0)))
+(define effect_2646 (finish_2247 struct:commit-request))
 (define commit-request2.1
   (|#%name|
    commit-request
    (record-constructor
     (make-record-constructor-descriptor struct:commit-request #f #f))))
-(define commit-request?_2595
-  (|#%name| commit-request? (record-predicate struct:commit-request)))
 (define commit-request?
-  (|#%name|
-   commit-request?
-   (lambda (v)
-     (if (commit-request?_2595 v)
-       #t
-       ($value
-        (if (impersonator? v)
-          (commit-request?_2595 (impersonator-val v))
-          #f))))))
-(define commit-request-ext-evt_2428
-  (|#%name| commit-request-ext-evt (record-accessor struct:commit-request 0)))
+  (|#%name| commit-request? (record-predicate struct:commit-request)))
 (define commit-request-ext-evt
-  (|#%name|
-   commit-request-ext-evt
-   (lambda (s)
-     (if (commit-request?_2595 s)
-       (commit-request-ext-evt_2428 s)
-       ($value
-        (impersonate-ref
-         commit-request-ext-evt_2428
-         struct:commit-request
-         0
-         s
-         'ext-evt))))))
-(define commit-request-progress-evt_2907
-  (|#%name|
-   commit-request-progress-evt
-   (record-accessor struct:commit-request 1)))
+  (|#%name| commit-request-ext-evt (record-accessor struct:commit-request 0)))
 (define commit-request-progress-evt
   (|#%name|
    commit-request-progress-evt
-   (lambda (s)
-     (if (commit-request?_2595 s)
-       (commit-request-progress-evt_2907 s)
-       ($value
-        (impersonate-ref
-         commit-request-progress-evt_2907
-         struct:commit-request
-         1
-         s
-         'progress-evt))))))
-(define commit-request-abandon-evt_2705
-  (|#%name|
-   commit-request-abandon-evt
-   (record-accessor struct:commit-request 2)))
+   (record-accessor struct:commit-request 1)))
 (define commit-request-abandon-evt
   (|#%name|
    commit-request-abandon-evt
-   (lambda (s)
-     (if (commit-request?_2595 s)
-       (commit-request-abandon-evt_2705 s)
-       ($value
-        (impersonate-ref
-         commit-request-abandon-evt_2705
-         struct:commit-request
-         2
-         s
-         'abandon-evt))))))
-(define commit-request-finish_2610
-  (|#%name| commit-request-finish (record-accessor struct:commit-request 3)))
+   (record-accessor struct:commit-request 2)))
 (define commit-request-finish
-  (|#%name|
-   commit-request-finish
-   (lambda (s)
-     (if (commit-request?_2595 s)
-       (commit-request-finish_2610 s)
-       ($value
-        (impersonate-ref
-         commit-request-finish_2610
-         struct:commit-request
-         3
-         s
-         'finish))))))
-(define commit-request-result-ch_2336
-  (|#%name|
-   commit-request-result-ch
-   (record-accessor struct:commit-request 4)))
+  (|#%name| commit-request-finish (record-accessor struct:commit-request 3)))
 (define commit-request-result-ch
   (|#%name|
    commit-request-result-ch
-   (lambda (s)
-     (if (commit-request?_2595 s)
-       (commit-request-result-ch_2336 s)
-       ($value
-        (impersonate-ref
-         commit-request-result-ch_2336
-         struct:commit-request
-         4
-         s
-         'result-ch))))))
-(define finish_2113
+   (record-accessor struct:commit-request 4)))
+(define commit-request-thread
+  (|#%name| commit-request-thread (record-accessor struct:commit-request 5)))
+(define finish_2621
   (make-struct-type-install-properties
    '(commit-response)
    2
    0
    #f
-   null
+   (list (cons prop:authentic #t))
    (current-inspector)
    #f
    '(0 1)
@@ -6335,58 +6218,22 @@
    #f
    #f
    '(2 . 0)))
-(define effect_2529 (finish_2113 struct:commit-response))
+(define effect_2529 (finish_2621 struct:commit-response))
 (define commit-response3.1
   (|#%name|
    commit-response
    (record-constructor
     (make-record-constructor-descriptor struct:commit-response #f #f))))
-(define commit-response?_2041
-  (|#%name| commit-response? (record-predicate struct:commit-response)))
 (define commit-response?
-  (|#%name|
-   commit-response?
-   (lambda (v)
-     (if (commit-response?_2041 v)
-       #t
-       ($value
-        (if (impersonator? v)
-          (commit-response?_2041 (impersonator-val v))
-          #f))))))
-(define commit-response-abandon-evt_3225
-  (|#%name|
-   commit-response-abandon-evt
-   (record-accessor struct:commit-response 0)))
+  (|#%name| commit-response? (record-predicate struct:commit-response)))
 (define commit-response-abandon-evt
   (|#%name|
    commit-response-abandon-evt
-   (lambda (s)
-     (if (commit-response?_2041 s)
-       (commit-response-abandon-evt_3225 s)
-       ($value
-        (impersonate-ref
-         commit-response-abandon-evt_3225
-         struct:commit-response
-         0
-         s
-         'abandon-evt))))))
-(define commit-response-result-put-evt_2135
-  (|#%name|
-   commit-response-result-put-evt
-   (record-accessor struct:commit-response 1)))
+   (record-accessor struct:commit-response 0)))
 (define commit-response-result-put-evt
   (|#%name|
    commit-response-result-put-evt
-   (lambda (s)
-     (if (commit-response?_2041 s)
-       (commit-response-result-put-evt_2135 s)
-       ($value
-        (impersonate-ref
-         commit-response-result-put-evt_2135
-         struct:commit-response
-         1
-         s
-         'result-put-evt))))))
+   (record-accessor struct:commit-response 1)))
 (define make-commit-manager
   (lambda ()
     (let ((pause-ch_0 (make-channel)))
@@ -6405,105 +6252,207 @@
                    (lambda () (poll-commit-liveness reqs_0 resps_0))
                    (lambda (live-reqs_0 new-resps_0)
                      (let ((live-resps_0 (drop-abandoned new-resps_0)))
-                       (let ((app_0
-                              (handle-evt
-                               pause-ch_0
-                               (lambda (evt_0)
-                                 (begin
-                                   (sync evt_0)
-                                   (loop_0 live-reqs_0 live-resps_0))))))
-                         (let ((app_1
-                                (handle-evt
-                                 commit-ch_0
-                                 (lambda (req_0)
-                                   (loop_0
-                                    (cons req_0 live-reqs_0)
-                                    live-resps_0)))))
-                           (apply
-                            sync
-                            app_0
-                            app_1
-                            (let ((app_2
-                                   (1/reverse
-                                    (letrec*
-                                     ((for-loop_0
-                                       (|#%name|
-                                        for-loop
-                                        (lambda (fold-var_0 lst_0)
-                                          (if (pair? lst_0)
-                                            (let ((req_0 (unsafe-car lst_0)))
-                                              (let ((rest_0
-                                                     (unsafe-cdr lst_0)))
-                                                (let ((fold-var_1
-                                                       (let ((fold-var_1
-                                                              (cons
-                                                               (handle-evt
-                                                                (commit-request-ext-evt
+                       (call-with-values
+                        (lambda ()
+                          (letrec*
+                           ((for-loop_0
+                             (|#%name|
+                              for-loop
+                              (lambda (req-peek-evts_0 reqs_1 resps_1 lst_0)
+                                (if (pair? lst_0)
+                                  (let ((req_0 (unsafe-car lst_0)))
+                                    (let ((rest_0 (unsafe-cdr lst_0)))
+                                      (call-with-values
+                                       (lambda ()
+                                         (call-with-values
+                                          (lambda ()
+                                            (begin
+                                              (unsafe-start-atomic)
+                                              (begin0
+                                                (if (sync/timeout
+                                                     0
+                                                     (commit-request-progress-evt
+                                                      req_0))
+                                                  (values
+                                                   req-peek-evts_0
+                                                   reqs_1
+                                                   (cons
+                                                    (commit-response3.1
+                                                     (commit-request-abandon-evt
+                                                      req_0)
+                                                     (channel-put-evt
+                                                      (commit-request-result-ch
+                                                       req_0)
+                                                      #f))
+                                                    resps_1))
+                                                  (if (not
+                                                       (thread-running?
+                                                        (commit-request-thread
+                                                         req_0)))
+                                                    (let ((app_0
+                                                           (cons
+                                                            (thread-resume-evt
+                                                             (commit-request-thread
+                                                              req_0))
+                                                            req-peek-evts_0)))
+                                                      (values
+                                                       app_0
+                                                       (cons req_0 reqs_1)
+                                                       resps_1))
+                                                    (let ((evt_0
+                                                           (commit-request-ext-evt
+                                                            req_0)))
+                                                      (let ((results-or-peeking-evt_0
+                                                             (if (semaphore?
+                                                                  evt_0)
+                                                               (if (sync/timeout
+                                                                    0
+                                                                    evt_0)
+                                                                 null
+                                                                 (semaphore-peek-evt
+                                                                  evt_0))
+                                                               (if (channel?
+                                                                    evt_0)
+                                                                 (|#%app|
+                                                                  channel-get-poll-or-semaphore
+                                                                  evt_0)
+                                                                 (if (channel-put-evt?
+                                                                      evt_0)
+                                                                   (|#%app|
+                                                                    channel-put-poll-or-semaphore
+                                                                    evt_0)
+                                                                   (if (sync/timeout
+                                                                        0
+                                                                        evt_0)
+                                                                     null
+                                                                     evt_0))))))
+                                                        (if (let ((or-part_0
+                                                                   (pair?
+                                                                    results-or-peeking-evt_0)))
+                                                              (if or-part_0
+                                                                or-part_0
+                                                                (null?
+                                                                 results-or-peeking-evt_0)))
+                                                          (begin
+                                                            (|#%app|
+                                                             (commit-request-finish
+                                                              req_0))
+                                                            (values
+                                                             req-peek-evts_0
+                                                             reqs_1
+                                                             (cons
+                                                              (commit-response3.1
+                                                               (commit-request-abandon-evt
+                                                                req_0)
+                                                               (channel-put-evt
+                                                                (commit-request-result-ch
                                                                  req_0)
-                                                                (lambda (v_0)
-                                                                  (begin
-                                                                    (unsafe-start-atomic)
-                                                                    (begin0
-                                                                      (|#%app|
-                                                                       (commit-request-finish
-                                                                        req_0))
-                                                                      (unsafe-end-atomic))
-                                                                    (let ((app_2
-                                                                           (do-remove
-                                                                            'remq
-                                                                            req_0
-                                                                            live-reqs_0
-                                                                            eq?)))
-                                                                      (loop_0
-                                                                       app_2
-                                                                       (cons
-                                                                        (let ((app_3
-                                                                               (commit-request-abandon-evt
-                                                                                req_0)))
-                                                                          (commit-response3.1
-                                                                           app_3
-                                                                           (channel-put-evt
-                                                                            (commit-request-result-ch
-                                                                             req_0)
-                                                                            #t)))
-                                                                        live-resps_0))))))
-                                                               fold-var_0)))
-                                                         (values fold-var_1))))
-                                                  (for-loop_0
-                                                   fold-var_1
-                                                   rest_0))))
-                                            fold-var_0)))))
-                                     (for-loop_0 null live-reqs_0)))))
-                              (append
-                               app_2
-                               (1/reverse
-                                (letrec*
-                                 ((for-loop_0
-                                   (|#%name|
-                                    for-loop
-                                    (lambda (fold-var_0 lst_0)
-                                      (if (pair? lst_0)
-                                        (let ((resp_0 (unsafe-car lst_0)))
-                                          (let ((rest_0 (unsafe-cdr lst_0)))
-                                            (let ((fold-var_1
+                                                                #t))
+                                                              resps_1)))
+                                                          (values
+                                                           (cons
+                                                            results-or-peeking-evt_0
+                                                            req-peek-evts_0)
+                                                           (cons req_0 reqs_1)
+                                                           resps_1))))))
+                                                (unsafe-end-atomic))))
+                                          (lambda (req-peek-evts_1
+                                                   reqs_2
+                                                   resps_2)
+                                            (values
+                                             req-peek-evts_1
+                                             reqs_2
+                                             resps_2))))
+                                       (lambda (req-peek-evts_1 reqs_2 resps_2)
+                                         (for-loop_0
+                                          req-peek-evts_1
+                                          reqs_2
+                                          resps_2
+                                          rest_0)))))
+                                  (values req-peek-evts_0 reqs_1 resps_1))))))
+                           (for-loop_0 null null live-resps_0 live-reqs_0)))
+                        (lambda (req-peek-evts_0 remain-reqs_0 all-resps_0)
+                          (let ((app_0
+                                 (handle-evt
+                                  pause-ch_0
+                                  (lambda (evt_0)
+                                    (begin
+                                      (sync evt_0)
+                                      (loop_0 remain-reqs_0 all-resps_0))))))
+                            (let ((app_1
+                                   (handle-evt
+                                    commit-ch_0
+                                    (lambda (req_0)
+                                      (loop_0
+                                       (cons req_0 remain-reqs_0)
+                                       all-resps_0)))))
+                              (apply
+                               sync
+                               app_0
+                               app_1
+                               (let ((app_2
+                                      (1/reverse
+                                       (letrec*
+                                        ((for-loop_0
+                                          (|#%name|
+                                           for-loop
+                                           (lambda (fold-var_0 lst_0)
+                                             (if (pair? lst_0)
+                                               (let ((req-peek-evt_0
+                                                      (unsafe-car lst_0)))
+                                                 (let ((rest_0
+                                                        (unsafe-cdr lst_0)))
                                                    (let ((fold-var_1
-                                                          (cons
-                                                           (handle-evt
-                                                            (commit-response-result-put-evt
-                                                             resp_0)
-                                                            (lambda (ignored_0)
-                                                              (loop_0
-                                                               live-reqs_0
-                                                               (do-remove
-                                                                'remq
-                                                                resp_0
-                                                                live-resps_0
-                                                                eq?))))
-                                                           fold-var_0)))
-                                                     (values fold-var_1))))
-                                              (for-loop_0 fold-var_1 rest_0))))
-                                        fold-var_0)))))
-                                 (for-loop_0 null live-resps_0)))))))))))))))
+                                                          (let ((fold-var_1
+                                                                 (cons
+                                                                  (handle-evt
+                                                                   req-peek-evt_0
+                                                                   (lambda (v_0)
+                                                                     (loop_0
+                                                                      remain-reqs_0
+                                                                      all-resps_0)))
+                                                                  fold-var_0)))
+                                                            (values
+                                                             fold-var_1))))
+                                                     (for-loop_0
+                                                      fold-var_1
+                                                      rest_0))))
+                                               fold-var_0)))))
+                                        (for-loop_0 null req-peek-evts_0)))))
+                                 (append
+                                  app_2
+                                  (1/reverse
+                                   (letrec*
+                                    ((for-loop_0
+                                      (|#%name|
+                                       for-loop
+                                       (lambda (fold-var_0 lst_0)
+                                         (if (pair? lst_0)
+                                           (let ((resp_0 (unsafe-car lst_0)))
+                                             (let ((rest_0 (unsafe-cdr lst_0)))
+                                               (let ((fold-var_1
+                                                      (let ((fold-var_1
+                                                             (cons
+                                                              (handle-evt
+                                                               (commit-response-result-put-evt
+                                                                resp_0)
+                                                               (lambda (ignored_0)
+                                                                 (loop_0
+                                                                  remain-reqs_0
+                                                                  (do-remove
+                                                                   'remq
+                                                                   resp_0
+                                                                   all-resps_0
+                                                                   eq?))))
+                                                              fold-var_0)))
+                                                        (values fold-var_1))))
+                                                 (for-loop_0
+                                                  fold-var_1
+                                                  rest_0))))
+                                           fold-var_0)))))
+                                    (for-loop_0
+                                     null
+                                     all-resps_0)))))))))))))))))
              (loop_0 '() '())))))))))
 (define poll-commit-liveness
   (lambda (reqs_0 resps_0)
@@ -6514,26 +6463,10 @@
         (lambda (reqs_1 live-reqs_0 resps_1)
           (if (null? reqs_1)
             (values live-reqs_0 resps_1)
-            (if (sync/timeout 0 (commit-request-progress-evt (car reqs_1)))
+            (if (sync/timeout 0 (commit-request-abandon-evt (car reqs_1)))
+              (loop_0 (cdr reqs_1) live-reqs_0 resps_1)
               (let ((app_0 (cdr reqs_1)))
-                (loop_0
-                 app_0
-                 live-reqs_0
-                 (cons
-                  (let ((app_1 (commit-request-abandon-evt (car reqs_1))))
-                    (commit-response3.1
-                     app_1
-                     (channel-put-evt
-                      (commit-request-result-ch (car reqs_1))
-                      #f)))
-                  resps_1)))
-              (if (sync/timeout 0 (commit-request-abandon-evt (car reqs_1)))
-                (loop_0 (cdr reqs_1) live-reqs_0 resps_1)
-                (let ((app_0 (cdr reqs_1)))
-                  (loop_0
-                   app_0
-                   (cons (car reqs_1) live-reqs_0)
-                   resps_1)))))))))
+                (loop_0 app_0 (cons (car reqs_1) live-reqs_0) resps_1))))))))
      (loop_0 reqs_0 '() resps_0))))
 (define drop-abandoned
   (lambda (resps_0)
@@ -6568,18 +6501,18 @@
                (unsafe-end-atomic)
                (begin0
                  (begin
-                   (let ((app_0 (commit-manager-thread mgr_0)))
-                     (thread-resume app_0 (current-thread)))
+                   (thread-resume
+                    (commit-manager-thread mgr_0)
+                    (current-thread))
                    (sync
-                    (let ((app_0 (commit-manager-pause-channel mgr_0)))
-                      (channel-put-evt
-                       app_0
-                       (|#%app|
-                        1/choice-evt
-                        (list
-                         lock_0
-                         suspend-evt_0
-                         (thread-dead-evt (current-thread))))))))
+                    (channel-put-evt
+                     (commit-manager-pause-channel mgr_0)
+                     (|#%app|
+                      1/choice-evt
+                      (list
+                       lock_0
+                       suspend-evt_0
+                       (thread-dead-evt (current-thread)))))))
                  (unsafe-start-atomic))))
            (lambda () (semaphore-post lock_0)))
           (if (sync/timeout 0 suspend-evt_0)
@@ -6597,17 +6530,21 @@
              (begin0
                (begin
                  (sync
-                  (let ((app_0 (commit-manager-commit-channel mgr_0)))
-                    (channel-put-evt
-                     app_0
+                  (channel-put-evt
+                   (commit-manager-commit-channel mgr_0)
+                   (let ((app_0
+                          (|#%app|
+                           1/choice-evt
+                           (list
+                            abandon-evt_0
+                            (thread-dead-evt (current-thread))))))
                      (commit-request2.1
                       ext-evt_0
                       progress-evt_0
-                      (|#%app|
-                       1/choice-evt
-                       (list abandon-evt_0 (thread-dead-evt (current-thread))))
+                      app_0
                       finish_0
-                      result-ch_0))))
+                      result-ch_0
+                      (current-thread)))))
                  (sync result-ch_0))
                (unsafe-start-atomic))))
          (lambda () (semaphore-post abandon-evt_0)))))))
@@ -34345,7 +34282,7 @@
                     (void))))))))
          (loop_0 logger_0))
         (void)))))
-(define finish_2558
+(define finish_2790
   (make-struct-type-install-properties
    '(filesystem-change-evt)
    2
@@ -34357,30 +34294,30 @@
      (|#%app|
       poller
       (lambda (fc_0 ctx_0)
-        (let ((rfc_0 (fs-change-evt-rfc fc_0)))
-          (if (not rfc_0)
-            (values (list fc_0) #f)
-            (if (eqv?
-                 (begin
-                   (start-rktio)
-                   (begin0
+        (begin
+          (start-rktio)
+          (begin0
+            (let ((rfc_0 (fs-change-evt-rfc fc_0)))
+              (if (not rfc_0)
+                (values (list fc_0) #f)
+                (if (eqv?
                      (|#%app|
                       rktio_poll_fs_change_ready
                       (unsafe-place-local-ref cell.1)
                       rfc_0)
-                     (end-rktio)))
-                 1)
-              (values (list fc_0) #f)
-              (begin
-                (sandman-poll-ctx-add-poll-set-adder!
-                 ctx_0
-                 (lambda (ps_0)
-                   (|#%app|
-                    rktio_poll_add_fs_change
-                    (unsafe-place-local-ref cell.1)
-                    rfc_0
-                    ps_0)))
-                (values #f fc_0)))))))))
+                     1)
+                  (values (list fc_0) #f)
+                  (begin
+                    (sandman-poll-ctx-add-poll-set-adder!
+                     ctx_0
+                     (lambda (ps_0)
+                       (|#%app|
+                        rktio_poll_add_fs_change
+                        (unsafe-place-local-ref cell.1)
+                        rfc_0
+                        ps_0)))
+                    (values #f fc_0)))))
+            (end-rktio)))))))
    (current-inspector)
    #f
    '()
@@ -34394,7 +34331,7 @@
    #f
    #f
    '(2 . 3)))
-(define effect_3368 (finish_2558 struct:fs-change-evt))
+(define effect_3368 (finish_2790 struct:fs-change-evt))
 (define fs-change-evt1.1
   (|#%name|
    fs-change-evt
@@ -34619,7 +34556,33 @@
           "filesystem-change-evt?"
           fc_0))
        (unsafe-start-atomic)
-       (begin0 (close-fc fc_0) (unsafe-end-atomic))))))
+       (begin0
+         (begin (start-rktio) (begin0 (close-fc fc_0) (end-rktio)))
+         (unsafe-end-atomic))))))
+(define 1/filesystem-change-evt-ready?
+  (|#%name|
+   filesystem-change-evt-ready?
+   (lambda (fc_0)
+     (begin
+       (if (fs-change-evt? fc_0)
+         (void)
+         (raise-argument-error
+          'filesystem-change-evt-ready?
+          "filesystem-change-evt?"
+          fc_0))
+       (start-rktio)
+       (begin0
+         (let ((rfc_0 (fs-change-evt-rfc fc_0)))
+           (let ((or-part_0 (not rfc_0)))
+             (if or-part_0
+               or-part_0
+               (eqv?
+                (|#%app|
+                 rktio_poll_fs_change_ready
+                 (unsafe-place-local-ref cell.1)
+                 rfc_0)
+                1))))
+         (end-rktio))))))
 (define close-fc
   (lambda (fc_0)
     (let ((rfc_0 (fs-change-evt-rfc fc_0)))

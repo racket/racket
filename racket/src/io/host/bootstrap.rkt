@@ -122,6 +122,12 @@
                          'make-channel make-channel
                          'channel-put-evt channel-put-evt
                          'wrap-evt wrap-evt
+                         'channel-get-poll-or-semaphore (lambda (ch)
+                                                          (or (sync/timeout 0 (handle-evt ch list))
+                                                              never-evt))
+                         'channel-put-poll-or-semaphore (lambda (put-evt)
+                                                          (or (sync/timeout 0 (handle-evt put-evt list))
+                                                              never-evt))
                          'handle-evt handle-evt
                          'always-evt always-evt
                          'choice-evt (lambda (l) (apply choice-evt l))

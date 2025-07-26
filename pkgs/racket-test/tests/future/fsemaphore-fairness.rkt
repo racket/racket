@@ -26,9 +26,12 @@
 
 counts
 
-(unless (eq? (system-type 'vm) 'racket) ; BC implementation is not fair
-  (for ([i (in-range (sub1 (vector-length counts)))])
-    (unless (< (/ (vector-ref counts 0) 2)
-               (vector-ref counts (add1 i))
-               (* (vector-ref counts 0) 2))
-      (error "imbalanced"))))
+(define str (getenv "PLT_RUN_UNRELIABLE_TESTS"))
+(when (and str (regexp-match? #rx"(^|,)timing(,|$)" str))
+  (unless (eq? (system-type 'vm) 'racket) ; BC implementation is not fair
+    (for ([i (in-range (sub1 (vector-length counts)))])
+      (unless (< (/ (vector-ref counts 0) 2)
+                 (vector-ref counts (add1 i))
+                 (* (vector-ref counts 0) 2))
+        (error "imbalanced")))))
+

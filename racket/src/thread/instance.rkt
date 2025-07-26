@@ -32,6 +32,8 @@
           'semaphore-peek-evt semaphore-peek-evt
           'make-channel make-channel
           'channel-put-evt channel-put-evt
+          'channel-get-poll-or-semaphore channel-get-poll-or-semaphore
+          'channel-put-poll-or-semaphore channel-put-poll-or-semaphore
           'wrap-evt wrap-evt
           'handle-evt handle-evt
           'always-evt always-evt

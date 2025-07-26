@@ -410,6 +410,7 @@
   [filesystem-change-evt (known-procedure/no-prompt 6)]
   [filesystem-change-evt-cancel (known-procedure/no-prompt 2)]
   [filesystem-change-evt? (known-procedure/pure/folding 2)]
+  [filesystem-change-evt-ready? (known-procedure/no-prompt 2)]
   [filesystem-root-list (known-procedure/no-prompt 1)]
   [find-system-path (known-procedure/no-prompt 2)]
   [fixnum? (known-procedure/pure 2)]

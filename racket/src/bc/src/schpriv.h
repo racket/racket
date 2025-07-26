@@ -3774,6 +3774,7 @@ intptr_t scheme_redirect_get_or_peek_bytes(Scheme_Input_Port *orig_port,
 
 Scheme_Object *scheme_filesystem_change_evt(Scheme_Object *path, int flags, int report_errs);
 void scheme_filesystem_change_evt_cancel(Scheme_Object *evt, void *ignored_data);
+int scheme_filesystem_change_evt_ready(Scheme_Object *evt, Scheme_Schedule_Info *sinfo);
 
 void scheme_init_fd_semaphores(void);
 void scheme_release_fd_semaphores(void);

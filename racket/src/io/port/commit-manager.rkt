@@ -8,10 +8,13 @@
          commit-manager-pause         
          commit-manager-wait)
 
-(struct commit-manager (pause-channel commit-channel thread))
+(struct commit-manager (pause-channel commit-channel thread)
+  #:authentic)
 
-(struct commit-request (ext-evt progress-evt abandon-evt finish result-ch))
-(struct commit-response (abandon-evt result-put-evt))
+(struct commit-request (ext-evt progress-evt abandon-evt finish result-ch thread)
+  #:authentic)
+(struct commit-response (abandon-evt result-put-evt)
+  #:authentic)
 
 (define (make-commit-manager)
   (define pause-ch (make-channel))
@@ -28,6 +31,67 @@
         ;; Drop abandoned responses, too:
         (define live-resps
           (drop-abandoned new-resps))
+        (define-values (req-peek-evts remain-reqs all-resps)
+          (for/fold ([req-peek-evts null] [reqs null] [resps live-resps]) ([req (in-list live-reqs)])
+            ;; need to atomically succeed synchronizing and calling finish,
+            ;; or gether a peek-style event that will tell us when it's worth
+            ;; trying again
+            (atomically
+             (cond
+               [(sync/timeout 0 (commit-request-progress-evt req))
+                ;; commit fails due to progress
+                (values req-peek-evts
+                        reqs
+                        (cons (commit-response
+                               (commit-request-abandon-evt req)
+                               (channel-put-evt
+                                (commit-request-result-ch req)
+                                #f))
+                              resps))]
+               [(not (thread-running? (commit-request-thread req)))
+                ;; a suspended thread should not complete a commit;
+                ;; wake up and try again when the thread resumes
+                (values (cons (thread-resume-evt (commit-request-thread req))
+                              req-peek-evts)
+                        (cons req reqs)
+                        resps)]
+               [else
+                (define evt (commit-request-ext-evt req))
+                (define results-or-peeking-evt
+                  (cond
+                    [(semaphore? evt)
+                     (if (sync/timeout 0 evt)
+                         null
+                         (semaphore-peek-evt evt))]
+                    [(channel? evt)
+                     (channel-get-poll-or-semaphore evt)]
+                    [(channel-put-evt? evt)
+                     (channel-put-poll-or-semaphore evt)]
+                    [else
+                     ;; anything else can be polled or `sync`ed multiple times
+                     (if (sync/timeout 0 evt)
+                         null
+                         evt)]))
+                (cond
+                  [(or (pair? results-or-peeking-evt)
+                       (null? results-or-peeking-evt))
+                   ;; success, so call finishing function while
+                   ;; still in atomic mode; note that this may
+                   ;; cause some other requests to see progress
+                   ((commit-request-finish req))
+                   (values req-peek-evts
+                           reqs
+                           (cons (commit-response
+                                  (commit-request-abandon-evt req)
+                                  (channel-put-evt
+                                   (commit-request-result-ch req)
+                                   #t))
+                                 resps))]
+                  [else
+                   ;; wake up and try again when the peeking evt is ready
+                   (values (cons results-or-peeking-evt req-peek-evts)
+                           (cons req reqs)
+                           resps)])]))))
         (apply
          sync
          (handle-evt pause-ch
@@ -36,45 +100,28 @@
                        ;; threads only while the manager thread is
                        ;; right here, before the `sync` completes:
                        (sync evt)
-                       (loop live-reqs live-resps)))
+                       (loop remain-reqs all-resps)))
          (handle-evt commit-ch
                      (lambda (req)
-                       (loop (cons req live-reqs) live-resps)))
+                       (loop (cons req remain-reqs) all-resps)))
          (append
-          (for/list ([req (in-list live-reqs)])
-            (handle-evt (commit-request-ext-evt req)
+          (for/list ([req-peek-evt (in-list req-peek-evts)])
+            (handle-evt req-peek-evt
                         (lambda (v)
-                          ;; commit request succeeds
-                          (atomically
-                           ((commit-request-finish req)))
-                          (loop (remq req live-reqs)
-                                (cons (commit-response
-                                       (commit-request-abandon-evt req)
-                                       (channel-put-evt
-                                        (commit-request-result-ch req)
-                                        #t))
-                                      live-resps)))))
-          (for/list ([resp (in-list live-resps)])
+                          ;; loop to poll requests, since the corresponding
+                          ;; request may now succeed
+                          (loop remain-reqs all-resps))))
+          (for/list ([resp (in-list all-resps)])
             (handle-evt (commit-response-result-put-evt resp)
                         (lambda (ignored)
                           ;; response delivered
-                          (loop live-reqs
-                                (remq resp live-resps))))))))))))
+                          (loop remain-reqs
+                                (remq resp all-resps))))))))))))
 
 (define (poll-commit-liveness reqs resps)
   (let loop ([reqs reqs] [live-reqs '()] [resps resps])
     (cond
       [(null? reqs) (values live-reqs resps)]
-      [(sync/timeout 0 (commit-request-progress-evt (car reqs)))
-       ;; commit fails
-       (loop (cdr reqs)
-             live-reqs
-             (cons (commit-response
-                    (commit-request-abandon-evt (car reqs))
-                    (channel-put-evt
-                     (commit-request-result-ch (car reqs))
-                     #f))
-                   resps))]
       [(sync/timeout 0 (commit-request-abandon-evt (car reqs)))
        ;; request abandoned
        (loop (cdr reqs) live-reqs resps)]
@@ -98,11 +145,11 @@
    void
    (lambda ()
      (non-atomically
-      ;; the manager thread, just in case:
+      ;; resume the manager thread, just in case:
       (thread-resume (commit-manager-thread mgr) (current-thread))
       ;; ask the manager to pause; syncing on the channel means that
       ;; it has stopped trying a commit sync; we let the manager
-      ;; thread resume by posting to th elock --- but beware that
+      ;; thread resume by posting to the lock --- but beware that
       ;; *this* thread might get suspended or killed
       (sync
        (channel-put-evt (commit-manager-pause-channel mgr)
@@ -133,7 +180,8 @@
                                         (choice-evt (list abandon-evt
                                                           (thread-dead-evt (current-thread))))
                                         finish
-                                        result-ch)))
+                                        result-ch
+                                         (current-thread))))
       (sync result-ch)))
    (lambda ()
      (semaphore-post abandon-evt))))

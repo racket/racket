@@ -16,30 +16,32 @@
 
 (provide filesystem-change-evt?
          filesystem-change-evt
-         filesystem-change-evt-cancel)
+         filesystem-change-evt-cancel         
+         filesystem-change-evt-ready?)
 
 (module+ init
   (provide rktio-filesyste-change-evt-init!))
 
-;; locked by atomic mode
+;; locked by rktio
 (struct fs-change-evt ([rfc #:mutable]
                        [cust-ref #:mutable])
   #:reflection-name 'filesystem-change-evt
   #:property prop:evt (poller
                        ;; in atomic mode
                        (lambda (fc ctx)
-                         (define rfc (fs-change-evt-rfc fc))
-                         (cond
-                           [(not rfc) (values (list fc) #f)]
-                           [(eqv? (rktioly (rktio_poll_fs_change_ready rktio rfc)) RKTIO_POLL_READY)
-                            (values (list fc) #f)]
-                           [else
-                            (sandman-poll-ctx-add-poll-set-adder!
-                             ctx
-                             ;; atomic and in rktio, must not start nested rktio
-                             (lambda (ps)
-                               (rktio_poll_add_fs_change rktio rfc ps)))
-                            (values #f fc)]))))
+                         (rktioly
+                          (define rfc (fs-change-evt-rfc fc))
+                          (cond
+                            [(not rfc) (values (list fc) #f)]
+                            [(eqv? (rktio_poll_fs_change_ready rktio rfc) RKTIO_POLL_READY)
+                             (values (list fc) #f)]
+                            [else
+                             (sandman-poll-ctx-add-poll-set-adder!
+                              ctx
+                              ;; atomic and in rktio, must not start nested rktio
+                              (lambda (ps)
+                                (rktio_poll_add_fs_change rktio rfc ps)))
+                             (values #f fc)])))))
 
 (define (filesystem-change-evt? v)
   (fs-change-evt? v))
@@ -96,9 +98,17 @@
 (define/who (filesystem-change-evt-cancel fc)
   (check who filesystem-change-evt? fc)
   (atomically
-   (close-fc fc)))
+   (rktioly
+    (close-fc fc))))
 
-;; in atomic mode
+(define/who (filesystem-change-evt-ready? fc)
+  (check who filesystem-change-evt? fc)
+  (rktioly
+   (define rfc (fs-change-evt-rfc fc))
+   (or (not rfc)
+       (eqv? (rktio_poll_fs_change_ready rktio rfc) RKTIO_POLL_READY))))
+
+;; in atomic mode and rktio mode
 (define (close-fc fc)
   (define rfc (fs-change-evt-rfc fc))
   (when rfc

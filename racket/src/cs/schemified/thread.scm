@@ -8428,10 +8428,10 @@
                 #f))))
        (set! thread-engine-for-roots thread-engine_0)))
     (void)))
-(define finish_2800
+(define finish_2112
   (make-struct-type-install-properties
    '(channel)
-   2
+   4
    0
    #f
    (list
@@ -8451,8 +8451,8 @@
    (|#%nongenerative-uid| channel)
    #f
    #f
-   '(2 . 0)))
-(define effect_2481 (finish_2800 struct:channel))
+   '(4 . 12)))
+(define effect_2481 (finish_2112 struct:channel))
 (define channel1.1
   (|#%name|
    channel
@@ -8497,6 +8497,70 @@
          1
          s
          'put-queue))))))
+(define channel-get-queued-sema_2275
+  (|#%name| channel-get-queued-sema (record-accessor struct:channel 2)))
+(define channel-get-queued-sema
+  (|#%name|
+   channel-get-queued-sema
+   (lambda (s)
+     (if (1/channel?_2784 s)
+       (channel-get-queued-sema_2275 s)
+       ($value
+        (impersonate-ref
+         channel-get-queued-sema_2275
+         struct:channel
+         2
+         s
+         'get-queued-sema))))))
+(define channel-put-queued-sema_2136
+  (|#%name| channel-put-queued-sema (record-accessor struct:channel 3)))
+(define channel-put-queued-sema
+  (|#%name|
+   channel-put-queued-sema
+   (lambda (s)
+     (if (1/channel?_2784 s)
+       (channel-put-queued-sema_2136 s)
+       ($value
+        (impersonate-ref
+         channel-put-queued-sema_2136
+         struct:channel
+         3
+         s
+         'put-queued-sema))))))
+(define set-channel-get-queued-sema!_2643
+  (|#%name| set-channel-get-queued-sema! (record-mutator struct:channel 2)))
+(define set-channel-get-queued-sema!
+  (|#%name|
+   set-channel-get-queued-sema!
+   (lambda (s v)
+     (if (1/channel?_2784 s)
+       (set-channel-get-queued-sema!_2643 s v)
+       ($value
+        (impersonate-set!
+         set-channel-get-queued-sema!_2643
+         struct:channel
+         2
+         2
+         s
+         v
+         'get-queued-sema))))))
+(define set-channel-put-queued-sema!_2735
+  (|#%name| set-channel-put-queued-sema! (record-mutator struct:channel 3)))
+(define set-channel-put-queued-sema!
+  (|#%name|
+   set-channel-put-queued-sema!
+   (lambda (s v)
+     (if (1/channel?_2784 s)
+       (set-channel-put-queued-sema!_2735 s v)
+       ($value
+        (impersonate-set!
+         set-channel-put-queued-sema!_2735
+         struct:channel
+         3
+         3
+         s
+         v
+         'put-queued-sema))))))
 (define finish_1979
   (make-struct-type-install-properties
    '(channel-put-evt)
@@ -8635,7 +8699,8 @@
 (define 1/make-channel
   (|#%name|
    make-channel
-   (lambda () (let ((app_0 (make-queue))) (channel1.1 app_0 (make-queue))))))
+   (lambda ()
+     (let ((app_0 (make-queue))) (channel1.1 app_0 (make-queue) #f #f)))))
 (define channel-get
   (lambda (ch_0)
     (begin
@@ -8680,6 +8745,11 @@
                        (end-atomic/no-barrier-exit))))))))
              (receive_0))
             (unbox b_0)))))))
+(define channel-get-poll-or-semaphore
+  (lambda (ch_0)
+    (call-with-values
+     (lambda () (channel-get/poll ch_0 'sema))
+     (lambda (results_0 sema_0) (if results_0 results_0 sema_0)))))
 (define channel-get/poll
   (lambda (ch_0 poll-ctx_0)
     (let ((pq_0 (channel-put-queue ch_0)))
@@ -8689,39 +8759,59 @@
             (let ((w_0 (car pw+v_0)))
               (|#%app| (waiter-methods-resume (waiter-ref w_0)) w_0 (void)))
             (values (list (cdr pw+v_0)) #f))
-          (if (poll-ctx-poll? poll-ctx_0)
-            (values #f ch_0)
-            (let ((b_0 (box #f)))
-              (let ((gq_0 (channel-get-queue ch_0)))
-                (let ((gw_0
-                       (channel-select-waiter3.1
-                        (poll-ctx-select-proc poll-ctx_0)
-                        (current-thread/in-racket))))
-                  (let ((n_0 (queue-add! gq_0 (cons gw_0 b_0))))
-                    (values
-                     #f
-                     (control-state-evt9.1
-                      the-async-evt
-                      (lambda (v_0) (unbox b_0))
-                      (lambda () (queue-remove-node! gq_0 n_0))
-                      void
-                      (lambda ()
-                        (let ((pw+v_1
-                               (queue-fremove!
-                                pq_0
-                                not-matching-select-waiter)))
-                          (if pw+v_1
-                            (begin
-                              (let ((w_0 (car pw+v_1)))
-                                (|#%app|
-                                 (waiter-methods-resume (waiter-ref w_0))
-                                 w_0
-                                 (void)))
-                              (set-box! b_0 (cdr pw+v_1))
-                              (values #t #t))
-                            (begin
-                              (set! n_0 (queue-add! gq_0 (cons gw_0 b_0)))
-                              (values #f #f)))))))))))))))))
+          (if (eq? poll-ctx_0 'sema)
+            (begin
+              (if (channel-put-queued-sema ch_0)
+                (void)
+                (set-channel-put-queued-sema! ch_0 (1/make-semaphore)))
+              (values #f (channel-put-queued-sema ch_0)))
+            (if (poll-ctx-poll? poll-ctx_0)
+              (values #f ch_0)
+              (let ((b_0 (box #f)))
+                (let ((gq_0 (channel-get-queue ch_0)))
+                  (let ((gw_0
+                         (channel-select-waiter3.1
+                          (poll-ctx-select-proc poll-ctx_0)
+                          (current-thread/in-racket))))
+                    (let ((n_0 (queue-add! gq_0 (cons gw_0 b_0))))
+                      (let ((post-queued_0
+                             (|#%name|
+                              post-queued
+                              (lambda ()
+                                (let ((sema_0 (channel-get-queued-sema ch_0)))
+                                  (if sema_0
+                                    (begin
+                                      (semaphore-post-all/atomic sema_0)
+                                      (set-channel-get-queued-sema! ch_0 #f))
+                                    (void)))))))
+                        (begin
+                          (post-queued_0)
+                          (values
+                           #f
+                           (control-state-evt9.1
+                            the-async-evt
+                            (lambda (v_0) (unbox b_0))
+                            (lambda () (queue-remove-node! gq_0 n_0))
+                            void
+                            (lambda ()
+                              (let ((pw+v_1
+                                     (queue-fremove!
+                                      pq_0
+                                      not-matching-select-waiter)))
+                                (if pw+v_1
+                                  (begin
+                                    (let ((w_0 (car pw+v_1)))
+                                      (|#%app|
+                                       (waiter-methods-resume (waiter-ref w_0))
+                                       w_0
+                                       (void)))
+                                    (set-box! b_0 (cdr pw+v_1))
+                                    (values #t #t))
+                                  (begin
+                                    (set! n_0
+                                      (queue-add! gq_0 (cons gw_0 b_0)))
+                                    (post-queued_0)
+                                    (values #f #f))))))))))))))))))))
 (define channel-put
   (lambda (ch_0 v_0)
     (begin
@@ -8757,6 +8847,13 @@
                         v_0))
                      void))))
              (end-atomic/no-barrier-exit))))))))
+(define channel-put-poll-or-semaphore
+  (lambda (put-evt_0)
+    (let ((ch_0 (channel-put-evt*-ch put-evt_0)))
+      (let ((v_0 (channel-put-evt*-v put-evt_0)))
+        (call-with-values
+         (lambda () (channel-put/poll ch_0 v_0 put-evt_0 'sema))
+         (lambda (results_0 sema_0) (if results_0 results_0 sema_0)))))))
 (define channel-put/poll
   (lambda (ch_0 v_0 self_0 poll-ctx_0)
     (let ((gq_0 (channel-get-queue ch_0)))
@@ -8767,36 +8864,57 @@
             (let ((w_0 (car gw+b_0)))
               (|#%app| (waiter-methods-resume (waiter-ref w_0)) w_0 v_0))
             (values (list self_0) #f))
-          (if (poll-ctx-poll? poll-ctx_0)
-            (values #f self_0)
-            (let ((pq_0 (channel-put-queue ch_0)))
-              (let ((pw_0
-                     (channel-select-waiter3.1
-                      (poll-ctx-select-proc poll-ctx_0)
-                      (current-thread/in-racket))))
-                (let ((n_0 (queue-add! pq_0 (cons pw_0 v_0))))
-                  (values
-                   #f
-                   (control-state-evt9.1
-                    the-async-evt
-                    (lambda (v_1) self_0)
-                    (lambda () (queue-remove-node! pq_0 n_0))
-                    void
-                    (lambda ()
-                      (let ((gw+b_1
-                             (queue-fremove! gq_0 not-matching-select-waiter)))
-                        (if gw+b_1
-                          (begin
-                            (set-box! (cdr gw+b_1) v_0)
-                            (let ((w_0 (car gw+b_1)))
-                              (|#%app|
-                               (waiter-methods-resume (waiter-ref w_0))
-                               w_0
-                               v_0))
-                            (values self_0 #t))
-                          (begin
-                            (set! n_0 (queue-add! pq_0 (cons pw_0 v_0)))
-                            (values #f #f))))))))))))))))
+          (if (eq? poll-ctx_0 'sema)
+            (begin
+              (if (channel-get-queued-sema ch_0)
+                (void)
+                (set-channel-get-queued-sema! ch_0 (1/make-semaphore)))
+              (values #f (channel-get-queued-sema ch_0)))
+            (if (poll-ctx-poll? poll-ctx_0)
+              (values #f self_0)
+              (let ((pq_0 (channel-put-queue ch_0)))
+                (let ((pw_0
+                       (channel-select-waiter3.1
+                        (poll-ctx-select-proc poll-ctx_0)
+                        (current-thread/in-racket))))
+                  (let ((n_0 (queue-add! pq_0 (cons pw_0 v_0))))
+                    (let ((post-queued_0
+                           (|#%name|
+                            post-queued
+                            (lambda ()
+                              (let ((sema_0 (channel-put-queued-sema ch_0)))
+                                (if sema_0
+                                  (begin
+                                    (semaphore-post-all/atomic sema_0)
+                                    (set-channel-put-queued-sema! ch_0 #f))
+                                  (void)))))))
+                      (begin
+                        (post-queued_0)
+                        (values
+                         #f
+                         (control-state-evt9.1
+                          the-async-evt
+                          (lambda (v_1) self_0)
+                          (lambda () (queue-remove-node! pq_0 n_0))
+                          void
+                          (lambda ()
+                            (let ((gw+b_1
+                                   (queue-fremove!
+                                    gq_0
+                                    not-matching-select-waiter)))
+                              (if gw+b_1
+                                (begin
+                                  (set-box! (cdr gw+b_1) v_0)
+                                  (let ((w_0 (car gw+b_1)))
+                                    (|#%app|
+                                     (waiter-methods-resume (waiter-ref w_0))
+                                     w_0
+                                     v_0))
+                                  (values self_0 #t))
+                                (begin
+                                  (set! n_0 (queue-add! pq_0 (cons pw_0 v_0)))
+                                  (post-queued_0)
+                                  (values #f #f)))))))))))))))))))
 (define 1/channel-put-evt
   (|#%name|
    channel-put-evt
@@ -14480,6 +14598,10 @@
    1/make-channel
    'channel-put-evt
    1/channel-put-evt
+   'channel-get-poll-or-semaphore
+   channel-get-poll-or-semaphore
+   'channel-put-poll-or-semaphore
+   channel-put-poll-or-semaphore
    'wrap-evt
    wrap-evt7.1
    'handle-evt

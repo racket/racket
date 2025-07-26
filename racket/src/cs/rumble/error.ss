@@ -894,12 +894,20 @@
                                (loop (fx- len 1))))]))
                k)])
     (let loop ([k (if (full-continuation? k) (full-continuation-k k) k)]
+               [mc (if (full-continuation? k) (continuation-mc k) null)]
                [fallback #f]
                [more future-trace-extra-depth])
       (cond
         [(or (not (#%$continuation? k))
              (eq? k #%$null-continuation))
-         fallback]
+         (cond
+           [(null? mc)
+            fallback]
+           [else
+            (loop (metacontinuation-frame-resume-k (car mc))
+                  (cdr mc)
+                  fallback
+                  more)])]
         [else
          (let* ([c (#%$continuation-return-code k)]
                 [n (#%$code-name c)]
@@ -914,13 +922,14 @@
               (let ([next (and (positive? more)
                                (begin
                                  (#%$split-continuation k 0)
-                                 (loop (#%$continuation-link k) #f (sub1 more))))])
+                                 (loop (#%$continuation-link k) mc #f (sub1 more))))])
                 (if next
                     (string->symbol (format "~a via ~a"  name next))
                     name))]
              [else
               (#%$split-continuation k 0)
               (loop (#%$continuation-link k)
+                    mc
                     (or fallback (cons name (#%$continuation-link k)))
                     more)]))]))))
 

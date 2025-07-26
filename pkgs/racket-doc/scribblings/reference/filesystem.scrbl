@@ -874,6 +874,14 @@ event.
 @history[#:changed "7.3.0.8" @elem{Allow @racket[#f] for @racket[failure-thunk].}]}
 
 
+@defproc[(filesystem-change-evt-ready? [evt filesystem-change-evt?])
+         boolean?]{
+
+Equivalent to @racket[(and (sync/timeout 0 evt) #t)].
+
+@history[#:added "8.18.0.6"]}
+
+
 @defproc[(filesystem-change-evt-cancel [evt filesystem-change-evt?])
          void?]{
 

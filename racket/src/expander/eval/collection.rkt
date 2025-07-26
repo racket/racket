@@ -169,7 +169,7 @@
   (cond
     [(and old-stamp
           (cdr old-stamp)
-          (not (sync/timeout 0 (cdr old-stamp))))
+          (not (filesystem-change-evt-ready? (cdr old-stamp))))
      old-stamp]
     [else
      (call-with-continuation-prompt

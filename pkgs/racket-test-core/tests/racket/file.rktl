@@ -1838,6 +1838,9 @@
 ;; Filesystem-change events
 
 (test #f filesystem-change-evt? 'evt)
+(err/rt-test (filesystem-change-evt 'evt))
+(err/rt-test (filesystem-change-evt-cancel 'evt))
+(err/rt-test (filesystem-change-evt-ready? 'evt))
 
 (let ([dir (make-temporary-file "change~a" 'directory)])
   (define known-supported? (vector-ref (system-type 'fs-change) 0))
@@ -1873,6 +1876,8 @@
     (when f1-e
       (test #f sync/timeout 0 f1-e)
       (test #f sync/timeout 0 f2-e)
+      (test #f filesystem-change-evt-ready? f1-e)
+      (test #f filesystem-change-evt-ready? f2-e)
       
       (call-with-output-file (if as-file?
                                  f1
@@ -1880,26 +1885,34 @@
         #:exists 'append 
         (lambda (o) (newline o)))
       (test f1-e sync f1-e)
+      (test #t filesystem-change-evt-ready? f1-e)
       (when known-x-supported?
-        (test #f sync/timeout 0 f2-e))
+        (test #f sync/timeout 0 f2-e)
+        (test #f filesystem-change-evt-ready? f2-e))
 
       (call-with-output-file (if as-file?
                                  f2
                                  (build-path f2 "y"))
         #:exists 'append 
         (lambda (o) (newline o)))
+      (test #t filesystem-change-evt-ready? f2-e)
       (test f2-e sync/timeout 0 f2-e)
       (test f2-e sync f2-e)
       (test f1-e sync f1-e)
+      (test #t filesystem-change-evt-ready? f2-e)
+      (test #t filesystem-change-evt-ready? f1-e)
 
       (define f1-e2 (filesystem-change-evt f1 (lambda () #f)))
       (when known-x-supported?
-        (test #f sync/timeout 0 f1-e2))
+        (test #f sync/timeout 0 f1-e2)
+        (test #f filesystem-change-evt-ready? f1-e2))
       (test f1-e sync/timeout 0 f1-e)
       (test f1-e sync f1-e)
+      (test #t filesystem-change-evt-ready? f1-e)
 
       (filesystem-change-evt-cancel f1-e2)
       (test f1-e2 sync/timeout 0 f1-e2)
+      (test #t filesystem-change-evt-ready? f1-e2)
 
       (define cust (make-custodian))
       (define f1-e3 (parameterize ([current-custodian cust])
@@ -1907,7 +1920,8 @@
       (when known-x-supported?
         (test #f sync/timeout 0 f1-e3))
       (custodian-shutdown-all cust)
-      (test f1-e3 sync/timeout 0 f1-e3)))
+      (test f1-e3 sync/timeout 0 f1-e3)
+      (test #t filesystem-change-evt-ready? f1-e3)))
 
   (check "f1" "f2" #t known-file-supported?)
   (check "f1d" "f2d" #f known-supported?)

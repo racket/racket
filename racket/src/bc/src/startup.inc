@@ -59795,7 +59795,7 @@ static const char *startup_source =
 "(file->stamp)"
 "(lambda(path_0 old-stamp_0)"
 "(begin"
-"(if(if old-stamp_0(if(cdr old-stamp_0)(not(sync/timeout 0(cdr old-stamp_0))) #f) #f)"
+"(if(if old-stamp_0(if(cdr old-stamp_0)(not(filesystem-change-evt-ready?(cdr old-stamp_0))) #f) #f)"
 "(let-values() old-stamp_0)"
 "(let-values()"
 "(call-with-continuation-prompt"

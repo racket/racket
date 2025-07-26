@@ -1313,26 +1313,27 @@
 ;; --------------------------------------------------
 ;; check that `read-bytes-evt' gets
 
-(for ([thread (in-list thread-procs)])
-  (define-values (i o) (make-pipe))
-  (define res #f)
-  
-  (define t
-    (thread
-     (lambda ()
-       (set! res (sync (read-bytes-evt 2 i))))))
-  
-  (write-bytes #"1" o)
-  (sync (system-idle-evt))
-  (thread-suspend t)
-  (write-bytes #"2" o)
-  (test #"1" read-bytes 1 i)
-  (thread-resume t)
-  (sleep)
-  (write-bytes #"34" o)
-  
-  (sync t)
-  (test #"23" values res))
+(for ([i (in-range 100)])
+  (for ([thread (in-list thread-procs)])
+    (define-values (i o) (make-pipe))
+    (define res #f)
+
+    (define t
+      (thread
+       (lambda ()
+         (set! res (sync (read-bytes-evt 2 i))))))
+
+    (write-bytes #"1" o)
+    (sync (system-idle-evt))
+    (thread-suspend t)
+    (write-bytes #"2" o)
+    (test #"1" read-bytes 1 i)
+    (thread-resume t)
+    (sleep)
+    (write-bytes #"34" o)
+
+    (sync t)
+    (test #"23" values res)))
 
 ;; --------------------------------------------------
 ;; check that string and byte-string evts can be reused

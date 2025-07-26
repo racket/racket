@@ -234,7 +234,6 @@ static void rw_evt_wakeup(Scheme_Object *rww, void *fds);
 
 static int progress_evt_ready(Scheme_Object *rww, Scheme_Schedule_Info *sinfo);
 static int closed_evt_ready(Scheme_Object *rww, Scheme_Schedule_Info *sinfo);
-static int filesystem_change_evt_ready(Scheme_Object *evt, Scheme_Schedule_Info *sinfo);
 
 static void filesystem_change_evt_need_wakeup (Scheme_Object *port, void *fds);
 
@@ -396,7 +395,7 @@ void scheme_init_port_wait()
   scheme_add_evt(scheme_progress_evt_type, (Scheme_Ready_Fun)progress_evt_ready, NULL, NULL, 1);
   scheme_add_evt(scheme_write_evt_type, (Scheme_Ready_Fun)rw_evt_ready, rw_evt_wakeup, NULL, 1);
   scheme_add_evt(scheme_port_closed_evt_type, (Scheme_Ready_Fun)closed_evt_ready, NULL, NULL, 1);
-  scheme_add_evt(scheme_filesystem_change_evt_type, (Scheme_Ready_Fun)filesystem_change_evt_ready, 
+  scheme_add_evt(scheme_filesystem_change_evt_type, (Scheme_Ready_Fun)scheme_filesystem_change_evt_ready,
                  filesystem_change_evt_need_wakeup, NULL, 1);
 }
 
@@ -4614,7 +4613,7 @@ void scheme_filesystem_change_evt_cancel(Scheme_Object *evt, void *ignored_data)
   }
 }
 
-static int filesystem_change_evt_ready(Scheme_Object *evt, Scheme_Schedule_Info *sinfo)
+int scheme_filesystem_change_evt_ready(Scheme_Object *evt, Scheme_Schedule_Info *sinfo)
 {
   Scheme_Filesystem_Change_Evt *fc = (Scheme_Filesystem_Change_Evt *)evt;
 
