@@ -4284,7 +4284,7 @@
              (if who3_0
                (raise-argument-error who3_0 "input-port?" v4_0)
                default_0))))))))
-(define finish_2724
+(define finish_2260
   (make-struct-type-install-properties
    '(core-input-port)
    2
@@ -4329,7 +4329,7 @@
                                 (if (unsafe-struct*-cas! i_1 2 #t #f)
                                   (void)
                                   (port-unlock-slow i_1))
-                                (unsafe-end-uninterruptible))))))
+                                (unsafe-end-atomic))))))
                      (if (evt? v_0)
                        (values #f v_0)
                        (if (eq? v_0 #t)
@@ -4348,7 +4348,7 @@
    #f
    #f
    '(2 . 3)))
-(define effect_2528 (finish_2724 struct:core-input-port))
+(define effect_2528 (finish_2260 struct:core-input-port))
 (define create-core-input-port
   (|#%name|
    create-core-input-port
@@ -4607,7 +4607,7 @@
              (if who3_0
                (raise-argument-error who3_0 "output-port?" v4_0)
                default_0))))))))
-(define finish_2483
+(define finish_2345
   (make-struct-type-install-properties
    '(core-output-port)
    4
@@ -4641,7 +4641,7 @@
                                (if (unsafe-struct*-cas! o_1 2 #t #f)
                                  (void)
                                  (port-unlock-slow o_1))
-                               (unsafe-end-uninterruptible))))
+                               (unsafe-end-atomic))))
                        (values '(#t) #f)
                        (values #f self_0)))))))
             (list app_0 (core-output-port-evt o_1))))))))
@@ -4658,7 +4658,7 @@
    #f
    #f
    '(4 . 15)))
-(define effect_2808 (finish_2483 struct:core-output-port))
+(define effect_2808 (finish_2345 struct:core-output-port))
 (define create-core-output-port
   (|#%name|
    create-core-output-port
@@ -4872,7 +4872,7 @@
                  (if (unsafe-struct*-cas! out_0 2 #t #f)
                    (void)
                    (port-unlock-slow out_0))
-                 (unsafe-end-uninterruptible))
+                 (unsafe-end-atomic))
                (if (evt? v_0)
                  (values #f (replace-evt v_0 self-evt_0))
                  (if (procedure? v_0)
@@ -6592,7 +6592,7 @@
   (|#%name|
    set-commit-input-port-commit-manager!
    (record-mutator struct:commit-input-port 1)))
-(define finish_2484
+(define finish_2483
   (make-struct-type-install-properties
    '(commit-input-port-methods)
    1
@@ -6612,7 +6612,7 @@
    #f
    #f
    '(1 . 0)))
-(define effect_3199 (finish_2484 struct:commit-input-port-methods.1))
+(define effect_3199 (finish_2483 struct:commit-input-port-methods.1))
 (define commit-input-port-methods5.1
   (|#%name|
    commit-input-port-methods
@@ -7132,7 +7132,7 @@
                   (if (unsafe-struct*-cas! this-id_0 2 #t #f)
                     (void)
                     (port-unlock-slow this-id_0))
-                  (unsafe-end-uninterruptible))))))
+                  (unsafe-end-atomic))))))
          (|#%name|
           commit
           (lambda (this-id_0
@@ -7193,7 +7193,7 @@
                        (if (unsafe-struct*-cas! this-id_0 2 #t #f)
                          (void)
                          (port-unlock-slow this-id_0))
-                       (unsafe-end-uninterruptible)))))))))
+                       (unsafe-end-atomic)))))))))
          (commit-input-port-methods-no-more-atomic-for-progress.1
           commit-input-port-vtable.1)
          (|#%name|
@@ -7484,7 +7484,7 @@
         (begin
           (memory-order-release)
           (if (unsafe-struct*-cas! p_0 2 #t #f) (void) (port-unlock-slow p_0))
-          (unsafe-end-uninterruptible))))))
+          (unsafe-end-atomic))))))
 (define set-closed-state!
   (lambda (p_0)
     (if (core-port-closed? p_0)
@@ -7549,7 +7549,7 @@
                         (if (unsafe-struct*-cas! p_1 2 #t #f)
                           (void)
                           (port-unlock-slow p_1))
-                        (unsafe-end-uninterruptible))))
+                        (unsafe-end-atomic))))
                   (unsafe-end-atomic)))))
          (let ((self_0 #f))
            (begin
@@ -7569,7 +7569,7 @@
              (if (unsafe-struct*-cas! cp4_0 2 #t #f)
                (void)
                (port-unlock-slow cp4_0))
-             (unsafe-end-uninterruptible)))
+             (unsafe-end-atomic)))
          (let ((input?_0 (core-input-port? cp4_0)))
            (raise
             (let ((app_0
@@ -7623,7 +7623,7 @@
              (if (unsafe-struct*-cas! p_0 2 #t #f)
                (void)
                (port-unlock-slow p_0))
-             (unsafe-end-uninterruptible))))))))
+             (unsafe-end-atomic))))))))
 (define 1/file-stream-buffer-mode
   (|#%name|
    file-stream-buffer-mode
@@ -7651,7 +7651,7 @@
                (if (unsafe-struct*-cas! p_1 2 #t #f)
                  (void)
                  (port-unlock-slow p_1))
-               (unsafe-end-uninterruptible)))))))
+               (unsafe-end-atomic)))))))
     ((p_0 mode_0)
      (begin
        (if (let ((or-part_0 (1/input-port? p_0)))
@@ -7702,7 +7702,7 @@
                            (if (unsafe-struct*-cas! p_1 2 #t #f)
                              (void)
                              (port-unlock-slow p_1))
-                           (unsafe-end-uninterruptible))))))))
+                           (unsafe-end-atomic))))))))
              (begin
                (if (1/input-port? p_0)
                  (let ((or-part_0
@@ -7792,7 +7792,7 @@
                    (if (unsafe-struct*-cas! cp_0 2 #t #f)
                      (void)
                      (port-unlock-slow cp_0))
-                   (unsafe-end-uninterruptible))))
+                   (unsafe-end-atomic))))
              (raise-arguments-error
               'file-position
               "setting position allowed for file-stream and string ports only"
@@ -7830,7 +7830,7 @@
                   (if (unsafe-struct*-cas! p_0 2 #t #f)
                     (void)
                     (port-unlock-slow p_0))
-                  (unsafe-end-uninterruptible))
+                  (unsafe-end-atomic))
                 (do-simple-file-position who_0 file-position_0 fail-k_0))
               (let ((pos_0
                      (let ((or-part_0
@@ -7844,7 +7844,7 @@
                     (if (unsafe-struct*-cas! p_0 2 #t #f)
                       (void)
                       (port-unlock-slow p_0))
-                    (unsafe-end-uninterruptible))
+                    (unsafe-end-atomic))
                   (if pos_0 pos_0 (|#%app| fail-k_0)))))))))))
 (define 1/port-count-lines-enabled
   (make-parameter #f (lambda (v_0) (if v_0 #t #f)) 'port-count-lines-enabled))
@@ -7893,7 +7893,7 @@
              (if (unsafe-struct*-cas! p_1 2 #t #f)
                (void)
                (port-unlock-slow p_1))
-             (unsafe-end-uninterruptible))))))))
+             (unsafe-end-atomic))))))))
 (define 1/port-counts-lines?
   (|#%name|
    port-counts-lines?
@@ -7941,7 +7941,7 @@
                  (if (unsafe-struct*-cas! p_1 2 #t #f)
                    (void)
                    (port-unlock-slow p_1))
-                 (unsafe-end-uninterruptible))))
+                 (unsafe-end-atomic))))
            (if (core-port-methods-file-position.1 (core-port-vtable p_1))
              (let ((offset_0
                     (do-simple-file-position
@@ -7964,7 +7964,7 @@
                           (if (unsafe-struct*-cas! p_1 2 #t #f)
                             (void)
                             (port-unlock-slow p_1))
-                          (unsafe-end-uninterruptible))))))
+                          (unsafe-end-atomic))))))
                (values #f #f (if offset_0 (add1 offset_0) #f))))))))))
 (define 1/set-port-next-location!
   (|#%name|
@@ -8022,7 +8022,7 @@
                (if (unsafe-struct*-cas! p_1 2 #t #f)
                  (void)
                  (port-unlock-slow p_1))
-               (unsafe-end-uninterruptible)))))))))
+               (unsafe-end-atomic)))))))))
 (define port-count!
   (lambda (in_0 amt_0 bstr_0 start_0)
     (begin
@@ -8306,7 +8306,7 @@
                    (if (unsafe-struct*-cas! p5_0 2 #t #f)
                      (void)
                      (port-unlock-slow p5_0))
-                   (unsafe-end-uninterruptible))
+                   (unsafe-end-atomic))
                  (let ((base-msg_0 "error closing stream port"))
                    (raise
                     (let ((app_0
@@ -8498,7 +8498,7 @@
                             (if (unsafe-struct*-cas! this-id_0 2 #t #f)
                               (void)
                               (port-unlock-slow this-id_0))
-                            (unsafe-end-uninterruptible))
+                            (unsafe-end-atomic))
                           (unsafe-start-atomic)
                           (begin
                             (unsafe-start-uninterruptible)
@@ -8639,7 +8639,7 @@
                                     (if (unsafe-struct*-cas! this-id_0 2 #t #f)
                                       (void)
                                       (port-unlock-slow this-id_0))
-                                    (unsafe-end-uninterruptible))
+                                    (unsafe-end-atomic))
                                   (|#%app|
                                    (fd-input-port-methods-raise-read-error.1
                                     (core-port-vtable this-id_0))
@@ -8746,7 +8746,7 @@
               p17_0
               (register-fd-close cust_0 fd_0 fd-refcount_0 #f p17_0))
              (finish-port/count p17_0))))))))
-(define finish_3020
+(define finish_1860
   (make-struct-type-install-properties
    '(fd-output-port)
    8
@@ -8779,7 +8779,7 @@
                  (if (unsafe-struct*-cas! p_0 2 #t #f)
                    (void)
                    (port-unlock-slow p_0))
-                 (unsafe-end-uninterruptible))
+                 (unsafe-end-atomic))
                (let ((base-msg_0 "error setting file size"))
                  (raise
                   (let ((app_0
@@ -8810,7 +8810,7 @@
    #f
    #f
    '(8 . 255)))
-(define effect_2896 (finish_3020 struct:fd-output-port))
+(define effect_2896 (finish_1860 struct:fd-output-port))
 (define create-fd-output-port
   (|#%name|
    create-fd-output-port
@@ -8975,7 +8975,7 @@
                       (if (unsafe-struct*-cas! this-id_0 2 #t #f)
                         (void)
                         (port-unlock-slow this-id_0))
-                      (unsafe-end-uninterruptible))
+                      (unsafe-end-atomic))
                     (unsafe-start-atomic)
                     (begin
                       (unsafe-start-uninterruptible)
@@ -9136,7 +9136,7 @@
                                 (if (unsafe-struct*-cas! this-id_0 2 #t #f)
                                   (void)
                                   (port-unlock-slow this-id_0))
-                                (unsafe-end-uninterruptible))
+                                (unsafe-end-atomic))
                               (|#%app|
                                (fd-output-port-methods-raise-write-error.1
                                 (core-port-vtable this-id_0))
@@ -9253,7 +9253,7 @@
                      (if (unsafe-struct*-cas! this-id_0 2 #t #f)
                        (void)
                        (port-unlock-slow this-id_0))
-                     (unsafe-end-uninterruptible))
+                     (unsafe-end-atomic))
                    (|#%app|
                     (fd-output-port-methods-raise-write-error.1
                      (core-port-vtable this-id_0))
@@ -9289,7 +9289,7 @@
                  (if (unsafe-struct*-cas! this-id_0 2 #t #f)
                    (void)
                    (port-unlock-slow this-id_0))
-                 (unsafe-end-uninterruptible))
+                 (unsafe-end-atomic))
                (if enable-break?668_0
                  (sync/enable-break (core-output-port-evt this-id_0))
                  (sync (core-output-port-evt this-id_0)))
@@ -9353,7 +9353,7 @@
            (if (unsafe-struct*-cas! this-id_0 2 #t #f)
              (void)
              (port-unlock-slow this-id_0))
-           (unsafe-end-uninterruptible))
+           (unsafe-end-atomic))
          (sync (rktio-fd-flushed-evt46.1 this-id_0))
          (begin
            (unsafe-start-uninterruptible)
@@ -9453,7 +9453,7 @@
                                  (if (unsafe-struct*-cas! p43_0 2 #t #f)
                                    (void)
                                    (port-unlock-slow p43_0))
-                                 (unsafe-end-uninterruptible))))))
+                                 (unsafe-end-atomic))))))
                         #f)))
                  (let ((custodian-reference_0
                         (register-fd-close
@@ -9521,7 +9521,7 @@
                  (if (unsafe-struct*-cas! cp_0 2 #t #f)
                    (void)
                    (port-unlock-slow cp_0))
-                 (unsafe-end-uninterruptible))))
+                 (unsafe-end-atomic))))
            #f)
          (if (1/input-port? p_0)
            #f
@@ -9565,7 +9565,7 @@
             (if (unsafe-struct*-cas! p_0 2 #t #f)
               (void)
               (port-unlock-slow p_0))
-            (unsafe-end-uninterruptible))
+            (unsafe-end-atomic))
           (let ((base-msg_0 "error setting stream position"))
             (raise
              (let ((app_0
@@ -9830,7 +9830,7 @@
                (if (unsafe-struct*-cas! port_1 2 #t #f)
                  (void)
                  (port-unlock-slow port_1))
-               (unsafe-end-uninterruptible))))))
+               (unsafe-end-atomic))))))
      #f
      #f)))
 (define-values
@@ -9854,7 +9854,7 @@
             (if (unsafe-struct*-cas! port_0 2 #t #f)
               (void)
               (port-unlock-slow port_0))
-            (unsafe-end-uninterruptible))
+            (unsafe-end-atomic))
           #f)
         (let ((input?_0 (1/input-port? port_0)))
           (let ((fd-dup_0 (dup-port-fd port_0)))
@@ -9888,7 +9888,7 @@
                     (if (unsafe-struct*-cas! port_0 2 #t #f)
                       (void)
                       (port-unlock-slow port_0))
-                    (unsafe-end-uninterruptible))
+                    (unsafe-end-atomic))
                   (lambda ()
                     (begin
                       (unsafe-start-atomic)
@@ -9912,7 +9912,7 @@
                   (if (unsafe-struct*-cas! port_0 2 #t #f)
                     (void)
                     (port-unlock-slow port_0))
-                  (unsafe-end-uninterruptible))
+                  (unsafe-end-atomic))
                 (let ((base-msg_0 "error during dup of file descriptor"))
                   (raise
                    (let ((app_0
@@ -10247,7 +10247,7 @@
                         (if (unsafe-struct*-cas! in_1 2 #t #f)
                           (void)
                           (port-unlock-slow in_1))
-                        (unsafe-end-uninterruptible)))))))))))
+                        (unsafe-end-atomic)))))))))))
     (|#%name|
      port-commit-peeked
      (case-lambda
@@ -10303,7 +10303,7 @@
                    (if (unsafe-struct*-cas! in_0 2 #t #f)
                      (void)
                      (port-unlock-slow in_0))
-                   (unsafe-end-uninterruptible))
+                   (unsafe-end-atomic))
                  0)
                (if (core-port-closed? in_0)
                  (check-not-closed.1 #f who13_0 in_0)
@@ -10317,7 +10317,7 @@
                        (if (unsafe-struct*-cas! in_0 2 #t #f)
                          (void)
                          (port-unlock-slow in_0))
-                       (unsafe-end-uninterruptible))
+                       (unsafe-end-atomic))
                      eof)
                    (let ((buffer_0 (core-port-buffer in_0)))
                      (let ((buf-pos_0 (direct-pos buffer_0)))
@@ -10352,7 +10352,7 @@
                                    (if (unsafe-struct*-cas! in_0 2 #t #f)
                                      (void)
                                      (port-unlock-slow in_0))
-                                   (unsafe-end-uninterruptible))
+                                   (unsafe-end-atomic))
                                  v_0)))
                            (let ((read-in_0
                                   (core-input-port-methods-read-in.1
@@ -10396,7 +10396,7 @@
                                                 #f)
                                              (void)
                                              (port-unlock-slow in_0))
-                                           (unsafe-end-uninterruptible))
+                                           (unsafe-end-atomic))
                                          (if (exact-nonnegative-integer? v_1)
                                            (if (zero? v_1)
                                              (if zero-ok?1_0
@@ -10491,7 +10491,7 @@
                                    (if (unsafe-struct*-cas! in_0 2 #t #f)
                                      (void)
                                      (port-unlock-slow in_0))
-                                   (unsafe-end-uninterruptible))
+                                   (unsafe-end-atomic))
                                  (let ((app_0
                                         (->core-input-port.1
                                          unsafe-undefined
@@ -10538,7 +10538,7 @@
                    (if (unsafe-struct*-cas! in_0 2 #t #f)
                      (void)
                      (port-unlock-slow in_0))
-                   (unsafe-end-uninterruptible))
+                   (unsafe-end-atomic))
                  0)
                (if (if progress-evt19_0 (sync/timeout 0 progress-evt19_0) #f)
                  (begin
@@ -10547,7 +10547,7 @@
                      (if (unsafe-struct*-cas! in_0 2 #t #f)
                        (void)
                        (port-unlock-slow in_0))
-                     (unsafe-end-uninterruptible))
+                     (unsafe-end-atomic))
                    0)
                  (if (core-port-closed? in_0)
                    (check-not-closed.1 #f who31_0 in_0)
@@ -10558,7 +10558,7 @@
                          (if (unsafe-struct*-cas! in_0 2 #t #f)
                            (void)
                            (port-unlock-slow in_0))
-                         (unsafe-end-uninterruptible))
+                         (unsafe-end-atomic))
                        eof)
                      (let ((buffer_0 (core-port-buffer in_0)))
                        (let ((buf-pos_0 (+ (direct-pos buffer_0) skip36_0)))
@@ -10580,7 +10580,7 @@
                                    (if (unsafe-struct*-cas! in_0 2 #t #f)
                                      (void)
                                      (port-unlock-slow in_0))
-                                   (unsafe-end-uninterruptible))
+                                   (unsafe-end-atomic))
                                  v_0))
                              (let ((peek-in_0
                                     (core-input-port-methods-peek-in.1
@@ -10602,7 +10602,7 @@
                                        (if (unsafe-struct*-cas! in_0 2 #t #f)
                                          (void)
                                          (port-unlock-slow in_0))
-                                       (unsafe-end-uninterruptible))
+                                       (unsafe-end-atomic))
                                      (letrec*
                                       ((result-loop_0
                                         (|#%name|
@@ -10678,7 +10678,7 @@
                                      (if (unsafe-struct*-cas! in_0 2 #t #f)
                                        (void)
                                        (port-unlock-slow in_0))
-                                     (unsafe-end-uninterruptible))
+                                     (unsafe-end-atomic))
                                    (loop_0
                                     (->core-input-port.1
                                      unsafe-undefined
@@ -10710,7 +10710,7 @@
                    (if (unsafe-struct*-cas! in41_0 2 #t #f)
                      (void)
                      (port-unlock-slow in41_0))
-                   (unsafe-end-uninterruptible))
+                   (unsafe-end-atomic))
                  b_0))
              (begin
                (begin
@@ -10718,7 +10718,7 @@
                  (if (unsafe-struct*-cas! in41_0 2 #t #f)
                    (void)
                    (port-unlock-slow in41_0))
-                 (unsafe-end-uninterruptible))
+                 (unsafe-end-atomic))
                (read-byte-via-bytes.1 special-ok?38_0 who40_0 in41_0)))))))))
 (define read-byte-via-bytes.1
   (|#%name|
@@ -10760,7 +10760,7 @@
                    (if (unsafe-struct*-cas! in51_0 2 #t #f)
                      (void)
                      (port-unlock-slow in51_0))
-                   (unsafe-end-uninterruptible))
+                   (unsafe-end-atomic))
                  b_0))
              (begin
                (begin
@@ -10768,7 +10768,7 @@
                  (if (unsafe-struct*-cas! in51_0 2 #t #f)
                    (void)
                    (port-unlock-slow in51_0))
-                 (unsafe-end-uninterruptible))
+                 (unsafe-end-atomic))
                (peek-byte-via-bytes.1
                 #f
                 special-ok?48_0
@@ -10837,7 +10837,7 @@
                                   (if (unsafe-struct*-cas! in_0 2 #t #f)
                                     (void)
                                     (port-unlock-slow in_0))
-                                  (unsafe-end-uninterruptible))
+                                  (unsafe-end-atomic))
                                 result_0))))))))
                 (letrec*
                  ((loop_0
@@ -10851,7 +10851,7 @@
                             (if (unsafe-struct*-cas! in_0 2 #t #f)
                               (void)
                               (port-unlock-slow in_0))
-                            (unsafe-end-uninterruptible))
+                            (unsafe-end-atomic))
                           #f)
                         (let ((b_0 (unsafe-bytes-ref bstr_0 i_0)))
                           (if (if lf?_0 (eqv? b_0 10) #f)
@@ -10873,7 +10873,7 @@
                                         (if (unsafe-struct*-cas! in_0 2 #t #f)
                                           (void)
                                           (port-unlock-slow in_0))
-                                        (unsafe-end-uninterruptible))
+                                        (unsafe-end-atomic))
                                       #f)
                                     (finish_0 i_0 (fx+ i_0 1)))
                                   (loop_0 (fx+ i_0 1))))
@@ -10933,7 +10933,7 @@
              (if (unsafe-struct*-cas! p_0 2 #t #f)
                (void)
                (port-unlock-slow p_0))
-             (unsafe-end-uninterruptible))))))))
+             (unsafe-end-atomic))))))))
 (define finish_2207
   (make-struct-type-install-properties
    '(pipe-data)
@@ -11433,7 +11433,7 @@
                 (if (unsafe-struct*-cas! this-id_0 2 #t #f)
                   (void)
                   (port-unlock-slow this-id_0))
-                (unsafe-end-uninterruptible))))))
+                (unsafe-end-atomic))))))
        (|#%name|
         commit
         (lambda (this-id_0 amt577_0 progress-evt578_0 ext-evt579_0 finish580_0)
@@ -11503,7 +11503,7 @@
                      (if (unsafe-struct*-cas! this-id_0 2 #t #f)
                        (void)
                        (port-unlock-slow this-id_0))
-                     (unsafe-end-uninterruptible)))))))))
+                     (unsafe-end-atomic)))))))))
        (|#%name| no-more-atomic-for-progress (lambda (this-id_0) (void)))))))
 (define temp13.1
   (|#%name| on-resize (lambda (this-id_0) (temp12.1 this-id_0))))
@@ -12123,7 +12123,7 @@
        (make-pipe_0 limit_0 input-name_0 output-name26_0))
       ((limit_0 input-name25_0) (make-pipe_0 limit_0 input-name25_0 'pipe))
       ((limit24_0) (make-pipe_0 limit24_0 'pipe 'pipe))))))
-(define finish_2161
+(define finish_2531
   (make-struct-type-install-properties
    '(pipe-write-poller)
    1
@@ -12168,7 +12168,7 @@
                           (if (unsafe-struct*-cas! in_0 2 #t #f)
                             (void)
                             (port-unlock-slow in_0))
-                          (unsafe-end-uninterruptible)))
+                          (unsafe-end-atomic)))
                       (void))
                     (values
                      #f
@@ -12188,7 +12188,7 @@
    #f
    #f
    '(1 . 0)))
-(define effect_2599 (finish_2161 struct:pipe-write-poller))
+(define effect_2599 (finish_2531 struct:pipe-write-poller))
 (define pipe-write-poller27.1
   (|#%name|
    pipe-write-poller
@@ -12221,7 +12221,7 @@
          0
          s
          'd))))))
-(define finish_2685
+(define finish_2239
   (make-struct-type-install-properties
    '(pipe-read-poller)
    1
@@ -12266,7 +12266,7 @@
                           (if (unsafe-struct*-cas! out_0 2 #t #f)
                             (void)
                             (port-unlock-slow out_0))
-                          (unsafe-end-uninterruptible)))
+                          (unsafe-end-atomic)))
                       (void))
                     (values
                      #f
@@ -12286,7 +12286,7 @@
    #f
    #f
    '(1 . 0)))
-(define effect_2907 (finish_2685 struct:pipe-read-poller))
+(define effect_2907 (finish_2239 struct:pipe-read-poller))
 (define pipe-read-poller28.1
   (|#%name|
    pipe-read-poller
@@ -12381,7 +12381,7 @@
                                                  #f)
                                               (void)
                                               (port-unlock-slow out_0))
-                                            (unsafe-end-uninterruptible))
+                                            (unsafe-end-atomic))
                                           (letrec*
                                            ((r-loop_0
                                              (|#%name|
@@ -12413,7 +12413,7 @@
                                     (if (unsafe-struct*-cas! out_0 2 #t #f)
                                       (void)
                                       (port-unlock-slow out_0))
-                                    (unsafe-end-uninterruptible))))
+                                    (unsafe-end-atomic))))
                               (wo-loop_0 write-out_0)))))))))
                  (wo-loop_0 p_0))))))))
     (|#%name|
@@ -14132,7 +14132,7 @@
                    (if (unsafe-struct*-cas! out_0 2 #t #f)
                      (void)
                      (port-unlock-slow out_0))
-                   (unsafe-end-uninterruptible))
+                   (unsafe-end-atomic))
                  0)
                (let ((buffer_0 (core-port-buffer out_0)))
                  (let ((buf-pos_0 (direct-pos buffer_0)))
@@ -14166,7 +14166,7 @@
                              (if (unsafe-struct*-cas! out_0 2 #t #f)
                                (void)
                                (port-unlock-slow out_0))
-                             (unsafe-end-uninterruptible))
+                             (unsafe-end-atomic))
                            v_0))
                        (begin
                          (check-not-closed.1 #f who9_0 out_0)
@@ -14201,7 +14201,7 @@
                                                 #f)
                                              (void)
                                              (port-unlock-slow out_0))
-                                           (unsafe-end-uninterruptible))
+                                           (unsafe-end-atomic))
                                          (if zero-ok?3_0
                                            0
                                            (try-again_0
@@ -14224,7 +14224,7 @@
                                                   #f)
                                                (void)
                                                (port-unlock-slow out_0))
-                                             (unsafe-end-uninterruptible))
+                                             (unsafe-end-atomic))
                                            v_1)
                                          (if (evt? v_1)
                                            (begin
@@ -14237,7 +14237,7 @@
                                                     #f)
                                                  (void)
                                                  (port-unlock-slow out_0))
-                                               (unsafe-end-uninterruptible))
+                                               (unsafe-end-atomic))
                                              (if zero-ok?3_0
                                                0
                                                (let ((new-v_0
@@ -14266,7 +14266,7 @@
                                                     #f)
                                                  (void)
                                                  (port-unlock-slow out_0))
-                                               (unsafe-end-uninterruptible))
+                                               (unsafe-end-atomic))
                                              (internal-error
                                               (format
                                                "write-some-bytes: weird result ~s for ~s ~s ~s at ~s"
@@ -14282,7 +14282,7 @@
                                  (if (unsafe-struct*-cas! out_0 2 #t #f)
                                    (void)
                                    (port-unlock-slow out_0))
-                                 (unsafe-end-uninterruptible))
+                                 (unsafe-end-atomic))
                                (let ((app_0
                                       (->core-output-port.1
                                        unsafe-undefined
@@ -14340,14 +14340,14 @@
                   (if (unsafe-struct*-cas! out_0 2 #t #f)
                     (void)
                     (port-unlock-slow out_0))
-                  (unsafe-end-uninterruptible)))
+                  (unsafe-end-atomic)))
               (begin
                 (begin
                   (memory-order-release)
                   (if (unsafe-struct*-cas! out_0 2 #t #f)
                     (void)
                     (port-unlock-slow out_0))
-                  (unsafe-end-uninterruptible))
+                  (unsafe-end-atomic))
                 (let ((temp34_0 (bytes b_0)))
                   (write-some-bytes.1
                    #t
@@ -14676,7 +14676,7 @@
                                     (if (unsafe-struct*-cas! out_1 2 #t #f)
                                       (void)
                                       (port-unlock-slow out_1))
-                                    (unsafe-end-uninterruptible))
+                                    (unsafe-end-atomic))
                                   (raise-arguments-error
                                    'write-bytes-avail-evt
                                    "port does not support output events"
@@ -14693,7 +14693,7 @@
                           (if (unsafe-struct*-cas! out_1 2 #t #f)
                             (void)
                             (port-unlock-slow out_1))
-                          (unsafe-end-uninterruptible))))))))))))
+                          (unsafe-end-atomic))))))))))))
     (|#%name|
      write-bytes-avail-evt
      (case-lambda
@@ -14729,7 +14729,7 @@
                    (if (unsafe-struct*-cas! out_1 2 #t #f)
                      (void)
                      (port-unlock-slow out_1))
-                   (unsafe-end-uninterruptible))))
+                   (unsafe-end-atomic))))
            #t
            #f))))))
 (define 1/write-char
@@ -14913,7 +14913,7 @@
                                                 #f)
                                              (void)
                                              (port-unlock-slow o_1))
-                                           (unsafe-end-uninterruptible))
+                                           (unsafe-end-atomic))
                                          (if retry?1_0 (loop_0) #f))
                                        (if (evt? r_1)
                                          (begin
@@ -14926,7 +14926,7 @@
                                                   #f)
                                                (void)
                                                (port-unlock-slow o_1))
-                                             (unsafe-end-uninterruptible))
+                                             (unsafe-end-atomic))
                                            (if retry?1_0
                                              (result-loop_0 (sync r_1))
                                              #f))
@@ -14946,7 +14946,7 @@
                                                   #f)
                                                (void)
                                                (port-unlock-slow o_1))
-                                             (unsafe-end-uninterruptible))
+                                             (unsafe-end-atomic))
                                            #t)))))))
                                 (result-loop_0 r_0))))))))
                       (loop_0))))))))))
@@ -18848,7 +18848,7 @@
                   (if (unsafe-struct*-cas! this-id_0 2 #t #f)
                     (void)
                     (port-unlock-slow this-id_0))
-                  (unsafe-end-uninterruptible))))))
+                  (unsafe-end-atomic))))))
          (|#%name|
           commit
           (lambda (this-id_0
@@ -18894,7 +18894,7 @@
                      (if (unsafe-struct*-cas! this-id_0 2 #t #f)
                        (void)
                        (port-unlock-slow this-id_0))
-                     (unsafe-end-uninterruptible))))))))
+                     (unsafe-end-atomic))))))))
          (commit-input-port-methods-no-more-atomic-for-progress.1
           commit-input-port-vtable.1))))))
 (define temp3.1$1
@@ -19100,7 +19100,7 @@
                                   (if (unsafe-struct*-cas! this-id_0 2 #t #f)
                                     (void)
                                     (port-unlock-slow this-id_0))
-                                  (unsafe-end-uninterruptible))
+                                  (unsafe-end-atomic))
                                 (raise-arguments-error
                                  'file-position
                                  "new position is too large"
@@ -19309,7 +19309,7 @@
                             (if (unsafe-struct*-cas! o_0 2 #t #f)
                               (void)
                               (port-unlock-slow o_0))
-                            (unsafe-end-uninterruptible))
+                            (unsafe-end-atomic))
                           (raise-range-error
                            'get-output-bytes
                            "port content"
@@ -19330,7 +19330,7 @@
                                 (if (unsafe-struct*-cas! o_0 2 #t #f)
                                   (void)
                                   (port-unlock-slow o_0))
-                                (unsafe-end-uninterruptible))
+                                (unsafe-end-atomic))
                               (raise-range-error
                                'get-output-bytes
                                "port content"
@@ -19359,7 +19359,7 @@
                                 (if (unsafe-struct*-cas! o_0 2 #t #f)
                                   (void)
                                   (port-unlock-slow o_0))
-                                (unsafe-end-uninterruptible))
+                                (unsafe-end-atomic))
                               bstr_0)))))))))))))
     (|#%name|
      get-output-bytes
@@ -19571,7 +19571,7 @@
                                   (if (unsafe-struct*-cas! this-id_0 2 #t #f)
                                     (void)
                                     (port-unlock-slow this-id_0))
-                                  (unsafe-end-uninterruptible))
+                                  (unsafe-end-atomic))
                                 (let ((wrote-len_0
                                        (let ((app_7
                                               (max-output-port-o this-id_0)))
@@ -19620,7 +19620,7 @@
                           (if (unsafe-struct*-cas! this-id_0 2 #t #f)
                             (void)
                             (port-unlock-slow this-id_0))
-                          (unsafe-end-uninterruptible))
+                          (unsafe-end-atomic))
                         (let ((len_0
                                (1/write-bytes
                                 src-bstr4_0
@@ -26667,7 +26667,7 @@
                           (if (unsafe-struct*-cas! cp_0 2 #t #f)
                             (void)
                             (port-unlock-slow cp_0))
-                          (unsafe-end-uninterruptible)))))
+                          (unsafe-end-atomic)))))
                  (path-or-fd-identity.1
                   #f
                   fd_0
@@ -26839,7 +26839,7 @@
                           (if (unsafe-struct*-cas! cp_0 2 #t #f)
                             (void)
                             (port-unlock-slow cp_0))
-                          (unsafe-end-uninterruptible)))))
+                          (unsafe-end-atomic)))))
                  (path-or-fd-stat.1
                   #f
                   fd_0
@@ -26975,7 +26975,7 @@
           (if (unsafe-struct*-cas! self_0 2 #t #f)
             (void)
             (port-unlock-slow self_0))
-          (unsafe-end-uninterruptible))
+          (unsafe-end-atomic))
         (call-with-values
          (lambda () (|#%app| user-get-location_0))
          (case-lambda
@@ -27104,7 +27104,7 @@
            (if (unsafe-struct*-cas! self_0 2 #t #f)
              (void)
              (port-unlock-slow self_0))
-           (unsafe-end-uninterruptible))
+           (unsafe-end-atomic))
          (let ((m_0 (|#%app| user-buffer-mode3_0)))
            (if (let ((or-part_0 (not m_0)))
                  (if or-part_0
@@ -27137,7 +27137,7 @@
            (if (unsafe-struct*-cas! self_0 2 #t #f)
              (void)
              (port-unlock-slow self_0))
-           (unsafe-end-uninterruptible))
+           (unsafe-end-atomic))
          (|#%app| user-buffer-mode3_0 m_0)
          (begin
            (unsafe-start-uninterruptible)
@@ -27396,7 +27396,7 @@
                                                               (void)
                                                               (port-unlock-slow
                                                                self18_0))
-                                                            (unsafe-end-uninterruptible))
+                                                            (unsafe-end-atomic))
                                                           (raise-arguments-error
                                                            who16_0
                                                            "result integer is larger than the supplied byte string"
@@ -27427,7 +27427,7 @@
                                                                   (void)
                                                                   (port-unlock-slow
                                                                    self18_0))
-                                                                (unsafe-end-uninterruptible))
+                                                                (unsafe-end-atomic))
                                                               (raise-arguments-error
                                                                who16_0
                                                                (string-append
@@ -27456,7 +27456,7 @@
                                                                       (void)
                                                                       (port-unlock-slow
                                                                        self18_0))
-                                                                    (unsafe-end-uninterruptible))
+                                                                    (unsafe-end-atomic))
                                                                   (begin
                                                                     (unsafe-start-uninterruptible)
                                                                     (if (unsafe-struct*-cas!
@@ -27487,7 +27487,7 @@
                                                                         (void)
                                                                         (port-unlock-slow
                                                                          self18_0))
-                                                                      (unsafe-end-uninterruptible))
+                                                                      (unsafe-end-atomic))
                                                                     (raise-arguments-error
                                                                      who16_0
                                                                      "returned #f when no progress evt was supplied")))
@@ -27502,7 +27502,7 @@
                                                                       (void)
                                                                       (port-unlock-slow
                                                                        self18_0))
-                                                                    (unsafe-end-uninterruptible))
+                                                                    (unsafe-end-atomic))
                                                                   (raise-result-error
                                                                    who16_0
                                                                    (string-append
@@ -27561,7 +27561,7 @@
                                                            (void)
                                                            (port-unlock-slow
                                                             self_0))
-                                                         (unsafe-end-uninterruptible))
+                                                         (unsafe-end-atomic))
                                                        (if (pipe-input-port?*
                                                             r_0)
                                                          0
@@ -27714,7 +27714,7 @@
                                                                        (void)
                                                                        (port-unlock-slow
                                                                         self_0))
-                                                                     (unsafe-end-uninterruptible))
+                                                                     (unsafe-end-atomic))
                                                                    (begin0
                                                                      (protect-in_0
                                                                       dest-bstr_0
@@ -27838,7 +27838,7 @@
                                                                           (void)
                                                                           (port-unlock-slow
                                                                            self_0))
-                                                                        (unsafe-end-uninterruptible))
+                                                                        (unsafe-end-atomic))
                                                                       (begin0
                                                                         (protect-in_0
                                                                          dest-bstr_0
@@ -27943,7 +27943,7 @@
                                                                      (void)
                                                                      (port-unlock-slow
                                                                       self_0))
-                                                                   (unsafe-end-uninterruptible))
+                                                                   (unsafe-end-atomic))
                                                                  (|#%app|
                                                                   user-close10_0)
                                                                  (begin
@@ -28000,7 +28000,7 @@
                                                                                    (void)
                                                                                    (port-unlock-slow
                                                                                     self_0))
-                                                                                 (unsafe-end-uninterruptible))
+                                                                                 (unsafe-end-atomic))
                                                                                (begin0
                                                                                  (|#%app|
                                                                                   user-commit2_0
@@ -28056,7 +28056,7 @@
                                                                                (void)
                                                                                (port-unlock-slow
                                                                                 self_0))
-                                                                             (unsafe-end-uninterruptible))
+                                                                             (unsafe-end-atomic))
                                                                            (|#%app|
                                                                             user-count-lines!4_0)
                                                                            (begin
@@ -28518,7 +28518,7 @@
                                                               (void)
                                                               (port-unlock-slow
                                                                self17_0))
-                                                            (unsafe-end-uninterruptible))
+                                                            (unsafe-end-atomic))
                                                           (raise-arguments-error
                                                            who15_0
                                                            (string-append
@@ -28588,7 +28588,7 @@
                                                                   (void)
                                                                   (port-unlock-slow
                                                                    self17_0))
-                                                                (unsafe-end-uninterruptible))
+                                                                (unsafe-end-atomic))
                                                               (begin
                                                                 (unsafe-start-uninterruptible)
                                                                 (if (unsafe-struct*-cas!
@@ -28652,7 +28652,7 @@
                                                          (void)
                                                          (port-unlock-slow
                                                           self_0))
-                                                       (unsafe-end-uninterruptible))
+                                                       (unsafe-end-atomic))
                                                      (if (pipe-output-port?*
                                                           r_0)
                                                        0
@@ -28763,7 +28763,7 @@
                                                                         (void)
                                                                         (port-unlock-slow
                                                                          self_0))
-                                                                      (unsafe-end-uninterruptible))
+                                                                      (unsafe-end-atomic))
                                                                     (begin0
                                                                       (|#%app|
                                                                        user-write-out10_0
@@ -28853,7 +28853,7 @@
                                                                (void)
                                                                (port-unlock-slow
                                                                 self_0))
-                                                             (unsafe-end-uninterruptible))
+                                                             (unsafe-end-atomic))
                                                            (let ((r_0
                                                                   (|#%app|
                                                                    user-get-write-evt2_0
@@ -28915,7 +28915,7 @@
                                                                    (void)
                                                                    (port-unlock-slow
                                                                     self_0))
-                                                                 (unsafe-end-uninterruptible))
+                                                                 (unsafe-end-atomic))
                                                                (begin0
                                                                  (|#%app|
                                                                   user-write-out-special1_0
@@ -28954,7 +28954,7 @@
                                                                     (void)
                                                                     (port-unlock-slow
                                                                      self_0))
-                                                                  (unsafe-end-uninterruptible))
+                                                                  (unsafe-end-atomic))
                                                                 (|#%app|
                                                                  user-count-lines!5_0)
                                                                 (begin
@@ -28996,7 +28996,7 @@
                                                                          (void)
                                                                          (port-unlock-slow
                                                                           self_0))
-                                                                       (unsafe-end-uninterruptible))
+                                                                       (unsafe-end-atomic))
                                                                      (|#%app|
                                                                       user-close11_0)
                                                                      (begin
@@ -29509,7 +29509,7 @@
                                       (if (unsafe-struct*-cas! in_1 2 #t #f)
                                         (void)
                                         (port-unlock-slow in_1))
-                                      (unsafe-end-uninterruptible))
+                                      (unsafe-end-atomic))
                                     (let ((or-part_0 (eq? #t r_0)))
                                       (if or-part_0
                                         or-part_0
@@ -34825,7 +34825,7 @@
                   (begin (|#%app| final_0 p_0 bstr_0) bstr_0))))))))))
 (define port-insist-atomic-lock
   (lambda (p_0) (begin (1/port-closed-evt p_0) (void))))
-(define finish_2345
+(define finish_2346
   (make-struct-type-install-properties
    '(subprocess)
    3
@@ -34871,7 +34871,7 @@
    #f
    #f
    '(3 . 3)))
-(define effect_2289 (finish_2345 struct:subprocess))
+(define effect_2289 (finish_2346 struct:subprocess))
 (define make-subprocess
   (|#%name|
    make-subprocess

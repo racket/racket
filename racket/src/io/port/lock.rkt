@@ -75,7 +75,10 @@
     (memory-order-release)
     (unless (core-port-lock-cas! p #t #f)
       (port-unlock-slow p))
-    (end-uninterruptible)))
+    ;; The intent of ending uninterruptible mode with
+    ;; `end-atomic` is to include a future barrier exit, in
+    ;; case `also-aotmically` was used
+    (end-atomic)))
 
 (define-syntax-rule (with-lock p-expr e ...)
   (let ([p p-expr])
