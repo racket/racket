@@ -179,6 +179,8 @@
 
 # define RKTIO_STAT_TIMESPEC_FIELD
 
+# define RKTIO_KILLPG_EPERM_FOR_ZOMBIE
+
 # endif
 
   /************ QNX *************/

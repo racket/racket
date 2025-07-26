@@ -35549,13 +35549,13 @@
     (let ((p_0 (subprocess-process sp_0)))
       (if p_0
         (|#%app| rktio_process_kill (unsafe-place-local-ref cell.1) p_0)
-        (void)))))
+        #f))))
 (define interrupt-subprocess
   (lambda (sp_0)
     (let ((p_0 (subprocess-process sp_0)))
       (if p_0
         (|#%app| rktio_process_interrupt (unsafe-place-local-ref cell.1) p_0)
-        (void)))))
+        #f))))
 (define 1/subprocess-kill
   (|#%name|
    subprocess-kill
@@ -35564,10 +35564,30 @@
        (if (1/subprocess? sp_0)
          (void)
          (raise-argument-error 'subprocess-kill "subprocess?" sp_0))
-       (start-rktio)
-       (begin0
-         (if force?_0 (kill-subprocess sp_0) (interrupt-subprocess sp_0))
-         (end-rktio))))))
+       (let ((r_0
+              (begin
+                (start-rktio)
+                (begin0
+                  (if force?_0
+                    (kill-subprocess sp_0)
+                    (interrupt-subprocess sp_0))
+                  (end-rktio)))))
+         (if (vector? r_0)
+           (let ((base-msg_0 "operation failed"))
+             (raise
+              (let ((app_0
+                     (let ((msg_0
+                            (string-append
+                             base-msg_0
+                             "\n  system error: "
+                             (format-rktio-system-error-message r_0))))
+                       (error-message->adjusted-string
+                        'subprocess-kill
+                        'racket/primitive
+                        msg_0
+                        'racket/primitive))))
+                (|#%app| exn:fail app_0 (current-continuation-marks)))))
+           (void)))))))
 (define no-custodian!
   (lambda (sp_0)
     (if (subprocess-cust-ref sp_0)

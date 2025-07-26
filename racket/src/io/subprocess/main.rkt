@@ -248,20 +248,22 @@
 ;; in rktio mode
 (define (kill-subprocess sp)
   (define p (subprocess-process sp))
-  (when p
-    (rktio_process_kill rktio p)))
+  (and p
+       (rktio_process_kill rktio p)))
 
 ;; in rktio mode
 (define (interrupt-subprocess sp)
   (define p (subprocess-process sp))
-  (when p
-    (rktio_process_interrupt rktio p)))
+  (and p
+       (rktio_process_interrupt rktio p)))
 
 (define/who (subprocess-kill sp force?)
   (check who subprocess? sp)
-  (rktioly (if force?
-               (kill-subprocess sp)
-               (interrupt-subprocess sp))))
+  (define r (rktioly (if force?
+                         (kill-subprocess sp)
+                         (interrupt-subprocess sp))))
+  (when (rktio-error? r)
+    (raise-rktio-error who r "operation failed")))
 
 ;; ----------------------------------------
 
