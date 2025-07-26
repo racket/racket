@@ -534,6 +534,10 @@
 	(output 'me)))
      c1)))
 
+(let ()
+  (local-require ffi/unsafe/atomic)
+  (when (in-atomic-mode?) (error "oops")))
+
 (thread-wait
  (thread/parallel
   (lambda ()

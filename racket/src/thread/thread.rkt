@@ -974,12 +974,16 @@
 ;; changed, or when a thread is just swapped in, then
 ;; `check-for-break` should be called.
 (define (check-for-break)
-  (unless (and (current-future)
-               (in-future-thread?)
-               ;; but not a future pthread that is running a parallel-thread future?
-               (or (not (future->thread (current-future)))
-                   ;; and not when the future is already trying to swap out
-                   (future-swapping-out? (current-future))))
+  (unless (or (and (current-future)
+                   (in-future-thread?)
+                   ;; but not a future pthread that is running a parallel-thread future?
+                   (or (not (future->thread (current-future)))
+                       ;; and not when the future is already trying to swap out
+                       (future-swapping-out? (current-future))))
+              ;; normally would not expect to here here in atomic mode,
+              ;; but an explicit `(check-for-break)` can be inserted by
+              ;; `parameterize-break`, for example
+              (in-atomic-mode?))
     (define t (or (current-thread/in-racket) ; avoid blocking would-be future
                   (current-thread)))
     (when (and

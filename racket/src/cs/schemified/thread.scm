@@ -8004,18 +8004,20 @@
   (|#%name|
    check-for-break
    (lambda ()
-     (if (if (1/current-future)
-           (if (in-future-thread?)
-             (let ((or-part_0
-                    (not
-                     (let ((app_0 future->thread))
-                       (|#%app| app_0 (1/current-future))))))
-               (if or-part_0
-                 or-part_0
-                 (let ((app_0 future-swapping-out?$1))
-                   (|#%app| app_0 (1/current-future)))))
-             #f)
-           #f)
+     (if (let ((or-part_0
+                (if (1/current-future)
+                  (if (in-future-thread?)
+                    (let ((or-part_0
+                           (not
+                            (let ((app_0 future->thread))
+                              (|#%app| app_0 (1/current-future))))))
+                      (if or-part_0
+                        or-part_0
+                        (let ((app_0 future-swapping-out?$1))
+                          (|#%app| app_0 (1/current-future)))))
+                    #f)
+                  #f)))
+           (if or-part_0 or-part_0 (in-atomic-mode?)))
        (void)
        (let ((t_0
               (let ((or-part_0 (current-thread/in-racket)))
