@@ -47,7 +47,20 @@ all elements, so for mutable data, mutating an element will affect other element
   v
 ]
 
-This function takes time proportional to @racket[size].}
+This function takes time proportional to @racket[size].
+
+A common mistake is using @racket[make-vector] to create nested vectors.
+The following creates a vector that contain 3 references to the same vector.
+@examples[
+  (make-vector 3 (vector)) ; probably not what you'd want
+]
+
+To create nested vectors, do this instead:
+@examples[
+(for/vector ([_ 3)])
+  (vector))
+]
+}
 
 
 @defproc[(vector [v any/c] ...) vector?]{
