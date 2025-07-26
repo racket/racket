@@ -854,7 +854,7 @@ rktio_status_t *rktio_process_status(rktio_t *rktio, rktio_process_t *sp)
   return result;
 }
 
-static int do_subprocess_kill(rktio_t *rktio, rktio_process_t *sp, int as_kill, int eperm_recovery)
+static int do_subprocess_kill(rktio_t *rktio, rktio_process_t *sp, int as_kill)
 {
 #if defined(RKTIO_SYSTEM_UNIX)
 # if defined(CENTRALIZED_SIGCHILD)
@@ -868,7 +868,7 @@ static int do_subprocess_kill(rktio_t *rktio, rktio_process_t *sp, int as_kill, 
 
     /* Don't allow group checking unless eperm_recovery, because we don't want to wait
        on a group if we haven't already: */
-    if (centralized_get_child_status(sp->pid, sp->in_group, eperm_recovery, &status)) {
+    if (centralized_get_child_status(sp->pid, sp->in_group, 0, &status)) {
       sp->status = status;
       sp->done = 1;
       centralized_wait_resume();
@@ -897,19 +897,13 @@ static int do_subprocess_kill(rktio_t *rktio, rktio_process_t *sp, int as_kill, 
         return 1;
       }
 # ifdef RKTIO_KILLPG_EPERM_FOR_ZOMBIE
-      if (errno == EPERM) {
-        /* Maybe all processes in the group have exited. In that case,
-           Mac OS incorrect reports EPERM:
+      if ((errno == EPERM) && sp->in_group) {
+        /* Maybe all processes in the group have exited. In that case, Mac OS incorrectly reports EPERM:
            https://stackoverflow.com/questions/22334761/how-to-kill-all-processes-with-the-same-name-using-os-x-terminal
-        */
-        if (!eperm_recovery) {
-          /* Try again, this time in a recovery mode that checks for termination,
-             with the drawback that checking for termination of the main process
-             means that further attempts to signal other processes in the group
-             will be ignored. */
-          centralized_wait_resume();
-          return do_subprocess_kill(rktio, sp, as_kill, 1);
-        }
+           It doesn't seem to work to try polling with waitpid to see if the main process exited,
+           so no workaround is obvious. We just discard the error. */
+        centralized_wait_resume();
+        return 1;
       }
 # endif
     } else {
@@ -959,12 +953,12 @@ static int do_subprocess_kill(rktio_t *rktio, rktio_process_t *sp, int as_kill, 
 
 int rktio_process_kill(rktio_t *rktio, rktio_process_t *sp)
 {
-  return do_subprocess_kill(rktio, sp, 1, 0);
+  return do_subprocess_kill(rktio, sp, 1);
 }
 
 int rktio_process_interrupt(rktio_t *rktio, rktio_process_t *sp)
 {
-  return do_subprocess_kill(rktio, sp, 0, 0);
+  return do_subprocess_kill(rktio, sp, 0);
 }
 
 void rktio_process_forget(rktio_t *rktio, rktio_process_t *sp)
