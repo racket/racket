@@ -866,7 +866,7 @@ static int do_subprocess_kill(rktio_t *rktio, rktio_process_t *sp, int as_kill)
 
     centralized_wait_suspend();
 
-    /* Don't allow group checking unless eperm_recovery, because we don't want to wait
+    /* Don't allow group checking, because we don't want to wait
        on a group if we haven't already: */
     if (centralized_get_child_status(sp->pid, sp->in_group, 0, &status)) {
       sp->status = status;
@@ -880,9 +880,9 @@ static int do_subprocess_kill(rktio_t *rktio, rktio_process_t *sp, int as_kill)
   {
     System_Child *sc = (System_Child *)sp->handle;
 
-    /* Don't pass sp->pid unless eperm_recovery, because we don't want to wait
+    /* Don't pass sp->pid, because we don't want to wait
        on a group if we haven't already: */
-    check_child_done(rktio, eperm_recovery ? sp->pid : 0);
+    check_child_done(rktio, 0);
     if (sc->done)
       return 1;
   }
