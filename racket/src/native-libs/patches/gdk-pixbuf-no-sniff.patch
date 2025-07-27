@@ -1,0 +1,11 @@
+diff -r -u old/gdk-pixbuf-2.36.11/configure new/gdk-pixbuf-2.36.11/configure
+--- old/gdk-pixbuf-2.36.11/configure	2017-10-02 09:32:14
++++ new/gdk-pixbuf-2.36.11/configure	2025-07-27 14:19:35
+@@ -5298,6 +5298,7 @@
+ $as_echo "$os_win32" >&6; }
+ 
+ 
++gio_can_sniff=no
+ 
+ 
+ case $host in

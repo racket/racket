@@ -1,0 +1,12 @@
+diff -u -r old/gtk+-2.24.24/Makefile.in new/gtk+-2.24.24/Makefile.in
+--- old/gtk+-2.24.24/Makefile.in	2014-06-23 10:04:43
++++ new/gtk+-2.24.24/Makefile.in	2025-07-27 14:50:11
+@@ -553,7 +553,7 @@
+ 	|| { echo "Gtk+Tests:ERROR: Failed to start Xvfb environment for X11 target tests."; exit 1; } \
+ 	&& DISPLAY=:$$XID && export DISPLAY
+ 
+-SRC_SUBDIRS = gdk gtk modules demos tests perf
++SRC_SUBDIRS = gdk gtk modules
+ SUBDIRS = po po-properties $(SRC_SUBDIRS) docs m4macros build
+ 
+ # require automake 1.4

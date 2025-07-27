@@ -230,7 +230,19 @@
 
 ;; libffi via MinGW for AArch64:
 (define-runtime-path libffi-arm64nt-patch "patches/libffi-arm64nt.patch")
-  
+
+;; Avoid shared-mime-info and libxml2 dependency:
+(define-runtime-path gdk-pixbuf-no-sniff-patch "patches/gdk-pixbuf-no-sniff.patch")
+
+;; Make the Gtk+ build work with a newer GDK that deprecates some bindings
+(define-runtime-path gtk-with-newer-gdk-patch "patches/gtk-with-newer-gdk.patch")
+
+;; Disable test and demo executables
+(define-runtime-path gtk-no-demos-patch "patches/gtk-no-demos.patch")
+
+;; Replacement "config.guess" for some old packages to add AArch64
+(define-runtime-path config.guess "../lt/config.guess")
+
 ;; --------------------------------------------------
 
 (define (replace-in-file file orig new)
@@ -558,7 +570,9 @@
                            (list "./Configure"
                                  #f
                                  "shared"
-                                 "linux-x86_64")])
+                                 (if aarch64?
+                                     "linux-aarch64"
+                                     "linux-x86_64"))])
              #:post-patches (if (and win? aarch64?)
                                 (list openssl-no-rcflags-patch)
                                 null)
@@ -600,11 +614,16 @@
       "libXext"
       "libXrender")
      (linux-only)
-     (config #:env path-flags)]
+     (config #:env path-flags
+             #:setup (if aarch64?
+                         (list
+                          (~a "cp " config.guess " config.guess"))
+                         null))]
     [("gdk-pixbuf")
      (linux-only)
      (config #:depends '("libX11")
 	     #:configure '("--without-libtiff")
+             #:patches (list gdk-pixbuf-no-sniff-patch)
 	     #:env (append path-flags
 			   ld-library-path-flags))]
     [("atk")
@@ -612,10 +631,15 @@
                            '("libX11")
                            '())
 	     #:env (append path-flags
-			   ld-library-path-flags))]
+			   ld-library-path-flags
+                           (if linux?
+                               (list (list "LDFLAGS" (~a "-Wl,-rpath," dest "/lib")))
+                               null)))]
     [("gtk+")
      (linux-only)
      (config #:depends '("gdk-pixbuf" "atk" "libXrender")
+             #:patches (list gtk-with-newer-gdk-patch
+                             gtk-no-demos-patch)
 	     #:env (append path-flags
 			   ld-library-path-flags))]
     [("freefont")
@@ -668,9 +692,12 @@
                                                    (if mac?
                                                        " -include Kernel/uuid/uuid.h"
                                                        "")))
-                             "LDFLAGS" (if (and win? (not aarch64?))
-                                           "-Wl,--allow-multiple-definition"
-                                           ""))
+                             "LDFLAGS" (cond
+                                         [(and win? (not aarch64?))
+                                          "-Wl,--allow-multiple-definition"]
+                                         [linux?
+                                          (~a "-Wl,-rpath," dest "/lib")]
+                                         [else ""]))
              #:patches (cond
                          [win? (list glib-strerror-patch)]
                          [mac? (list glib-objc-mixed-def-patch)]
@@ -735,7 +762,11 @@
                                  (add-flag path-flags
                                            "LDFLAGS"
                                            "-static-libgcc -static-libstdc++ -Wl,-static -Wl,--whole-archive -lwinpthread -Wl,-shared -Wl,--no-whole-archive")
-                                 path-flags)
+                                 (if linux?
+                                     (add-flag path-flags
+                                           "LDFLAGS"
+                                           (~a "-Wl,-rpath," dest "/lib"))
+                                     path-flags))
                              "CPPFLAGS"
                              (if mac?
                                  " -include Kernel/uuid/uuid.h"
@@ -859,6 +890,11 @@
        "libtool"
        #:exists 'truncate
        (lambda (o) (display s2 o))))))
+
+(when (and linux? aarch64?)
+  (unless (link-exists? (build-path dest "lib" "aarch64-linux-gnu"))
+    (make-directory* (build-path dest "lib"))
+    (make-file-or-directory-link "." (build-path dest "lib" "aarch64-linux-gnu"))))
 
 (parameterize ([current-directory package-dir]
                [current-environment-variables

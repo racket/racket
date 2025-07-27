@@ -23,7 +23,7 @@
 (when (and mac? aarch64? (not sign-as))
   (error "supply `--sign-as` for AArch64 Mac OS"))
 
-;; Hack to make AArch64 Mac OS and Windows libraries look like other Macs:
+;; Hack to make AArch64 libraries look like other architecture:
 (define aarch64-renames
   `(("libmpfr.6" "libmpfr.4")))
 
@@ -74,7 +74,7 @@
 (define macx86-libs
   '("PSMTabBarControl.framework"))
 
-(define stuck-on-openssl1? (or linux?
+(define stuck-on-openssl1? (or (and linux? (not aarch64?))
                                (and mac? (or m32? ppc?))))
 
 (define nonwin-libs
@@ -664,9 +664,10 @@
     ;; Might fail if there are no external references:
     (system (format "chrpath -r '$ORIGIN' ~a" p-new)))
 
-  (define platform (~a (if m32?
-                           "i386"
-                           "x86_64")
+  (define platform (~a (cond
+                         [aarch64? "aarch64"]
+                         [m32? "i386"]
+                         [else "x86_64"])
                        "-linux-natipkg"))
 
   (define (add-so orig-p)
@@ -683,28 +684,36 @@
         "libatk-1.0"
         "libgdk-x11-2.0"
         "libgtk-x11-2.0"))
-    (let loop ([p orig-p] [suffix ""])
+    (let loop ([p orig-p] [suffix ""] [skip-exists? #f])
       (define p-so (string-append p ".so" suffix))
       (cond
-       [(or (file-exists? (build-path from p-so))
+        [(or (file-exists? (build-path from p-so))
+             skip-exists?
             (and only-meta? (member p special-cases)))
         p-so]
        [else
         (define m (regexp-match #rx"^(.*)[.](.*)$" p))
         (cond
          [m
-          (loop (cadr m) (string-append "." (caddr m) suffix))]
+          (define skip-exists?
+            (for/or ([rn (in-list renames)])
+              (and (equal? orig-p (cadr rn)))))
+          (loop (cadr m) (string-append "." (caddr m) suffix) skip-exists?)]
          [only-meta?
           p-so]
          [else
           (error 'add-so "not found: ~s" orig-p)])])))
+
+  (define renames (if aarch64?
+                      aarch64-renames
+                      null))
 
   (install platform platform add-so fixup
            (append (remove* linux-remove-libs
                             libs)
                    nonwin-libs
                    linux-libs)
-           null))
+           renames))
 
 (cond
  [win? (install-win)]
