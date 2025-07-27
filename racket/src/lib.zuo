@@ -497,6 +497,11 @@
                 (if (equal? pkg-catalog "")
                     '()
                     (list "--catalog" pkg-catalog))
+                (if (equal? (hash-ref config 'MISSING_PKGS_SOURCE_MODE "") "yes")
+                    ;; use `--source` mode to be consistent with starting from sources;
+                    ;; otherwise, a copytree merge step can fail on built bytecode
+                    (list "--source")
+                    '())
                 (string-split pkgs)
                 missing-pkgs)
       (alert "packages installed")))
@@ -551,7 +556,8 @@
                                                  "--no-foreign-libs"
                                                  "--no-install"
                                                  "--no-post-install"
-                                                 "--no-pkg-deps"))
+                                                 "--no-pkg-deps")
+                             'MISSING_PKGS_SOURCE_MODE "yes")
                   built-racket
                   #f '()))
 
