@@ -111,6 +111,12 @@
         (for/fold ([t #hasheq()]) ([i (in-range 0 N)])
           (hash-set t i i))))
 
+  (bm hasheq "+ hasheq-set!"
+      (for/fold ([r #f]) ([i (in-range 0 M)])
+        (define t (make-hasheq))
+        (for ([i (in-range 0 N)])
+          (hash-set! t i i))))
+
   (bm gvector "+ for/gvector"
       (for/fold ([r #f]) ([i (in-range 0 M)])
         (for/gvector ([i (in-range 0 N)])
@@ -241,6 +247,12 @@
           (for/fold ([ht ht]) ([i (in-range 0 N)])
             (hash-set ht i (+ i j))))))
 
+  (bm hasheq "! hasheq-set!"
+      (let ([ht (hash-copy (for/hasheq ([i (in-range 0 N)]) (values i i)))])
+        (for ([j (in-range 0 M)])
+          (for ([i (in-range 0 N)])
+            (hash-set! ht i (+ i j))))))
+
   (when (N . <= . 10)
     (bm cons "! list-set"
         (let ([l (for/list ([i (in-range 0 N)]) i)])
@@ -284,6 +296,12 @@
           (for/fold ([v #f]) ([i (in-hash-keys ht)])
             i))))
 
+  (bm hasheq "^ in-hash-keys!"
+      (let ([ht (hash-copy (for/hasheq ([i (in-range 0 N)]) (values i i)))])
+        (for/fold ([r #f]) ([i (in-range 0 M)])
+          (for/fold ([v #f]) ([i (in-hash-keys ht)])
+            i))))
+
   (bm vector "^ vector-ref"
       (let ([l (for/vector ([i (in-range 0 N)]) i)])
         (for/fold ([r #f]) ([i (in-range 0 M)])
@@ -311,6 +329,12 @@
 
   (bm hasheq "^ hasheq-ref"
       (let ([ht (for/hasheq ([i (in-range 0 N)]) (values i i))])
+        (for/fold ([r #f]) ([i (in-range 0 M)])
+          (for/fold ([v #f]) ([i (in-range 0 N)])
+            (hash-ref ht i)))))
+
+    (bm hasheq "^ hasheq-ref!"
+      (let ([ht (hash-copy (for/hasheq ([i (in-range 0 N)]) (values i i)))])
         (for/fold ([r #f]) ([i (in-range 0 M)])
           (for/fold ([v #f]) ([i (in-range 0 N)])
             (hash-ref ht i)))))
