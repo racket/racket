@@ -855,10 +855,10 @@ In more detail, the steps are as follows:
   the server always builds from sources.
 
   The `PACK_BUILT_OPTIONS` variable can be set to `--mode <mode>` to set
-  the package mode for built packages. The default `infer` mode infers
-  uses the package’s `distribution-preference` `"info.rkt"` field, if
-  any, infers `binary` if the package has any native libraries and no
-  Racket sources, and infers `built` otherwise.
+  the package mode for built packages. The default `infer` mode uses the
+  package’s `distribution-preference` `"info.rkt"` field, if any, infers
+  `binary` if the package has any native libraries and no Racket
+  sources, and infers `built` otherwise.
 
   The server provides README files from the `"build/readmes"` directory.
   If `"README.txt"` does not exist when the sever is started, a default

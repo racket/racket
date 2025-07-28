@@ -258,7 +258,7 @@
                                      #:strip (or (and source 'source)
                                                  (and binary 'binary)
                                                  (and binary-lib 'binary-lib))
-                                     #:force-strip? force
+                                     #:force-strip? (or force force-strip)
                                      #:multi-clone-behavior (or multi-clone
                                                                 (if batch
                                                                     'fail
@@ -365,7 +365,7 @@
                                     #:strip (or (and source 'source)
                                                 (and binary 'binary)
                                                 (and binary-lib 'binary-lib))
-                                    #:force-strip? force
+                                    #:force-strip? (or force force-strip)
                                     #:lookup-for-clone? lookup?
                                     #:multi-clone-behavior (or multi-clone
                                                                (if batch
@@ -514,7 +514,7 @@
                                 #:strip (or (and source 'source)
                                             (and binary 'binary)
                                             (and binary-lib 'binary-lib))
-                                #:force-strip? force
+                                #:force-strip? (or force force-strip)
                                 #:dry-run? dry-run))))
               (setup "migrated" no-setup no-docs recompile-only recompile-cache #f setup-collects jobs)))]
           ;; ----------------------------------------
@@ -760,6 +760,7 @@
  #:install-force-flags
  ([#:bool all-platforms () "Follow package dependencies for all platforms"]
   [#:bool force () "Ignore conflicts"]
+  [#:bool force-strip () "Ignore strip mismatches; implied by `--force`"]
   [#:bool ignore-checksums () "Ignore checksums"]
   [#:bool strict-doc-conflicts () "Report doc-name conflicts, even for user scope"]
   [#:bool no-cache () "Disable download cache"])

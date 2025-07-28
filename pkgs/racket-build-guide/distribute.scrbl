@@ -243,7 +243,7 @@ In more detail, the steps are as follows:
 
       The @exec{PACK_BUILT_OPTIONS} variable can be set to
       @exec{--mode @nonterm{mode}} to set the package mode for built
-      packages. The default @exec{infer} mode infers uses the
+      packages. The default @exec{infer} mode uses the
       package's @exec{distribution-preference} @filepath{info.rkt}
       field, if any, infers @exec{binary} if the package has any
       native libraries and no Racket sources, and infers @exec{built}

@@ -89,6 +89,13 @@
            (loop (+ i 1) (+ i 1)))]
       [else (loop (+ i 1) start)])))
 
+(define (deep-replace l v new-v)
+  (cond
+    [(equal? l v) new-v]
+    [(pair? l) (cons (deep-replace (car l) v new-v)
+                     (deep-replace (cdr l) v new-v))]
+    [else l]))
+
 (define (target->path t) (if (target? t) (target-path t) t))
 
 (define (process/wait command . args)
@@ -460,6 +467,11 @@
                args
                options)]))
 
+  (define setup-args (list
+                      "-N" "raco" "-l-" "setup"
+                      (extras 'INSTALL_SETUP_FLAGS)
+                      (extras 'PLT_SETUP_OPTIONS)))
+
   (define pkgs (hash-ref config 'INSTALL_PKGS ""))
   (define missing-pkgs? (let ([v (hash-ref config 'INSTALL_MISSING_PKGS "")])
                           (or (equal? v "yes")
@@ -470,12 +482,8 @@
   (unless (and (equal? pkgs "") (not missing-pkgs?))
     (define pkg-catalog (hash-ref config 'INSTALL_PKG_CATALOG ""))
     (alert "setting up enough to install packages")
-    (run-raco '()
-              "-N" "raco" "-l-" "setup"
-              (extras 'INSTALL_SETUP_FLAGS)
-              (extras 'PLT_SETUP_OPTIONS)
-              "-D"
-              "pkg")
+    (run-raco '() setup-args
+              "-D" "pkg")
     (define missing-pkgs
       (cond
         [missing-pkgs?
@@ -499,17 +507,21 @@
                     (list "--catalog" pkg-catalog))
                 (if (equal? (hash-ref config 'MISSING_PKGS_SOURCE_MODE "") "yes")
                     ;; use `--source` mode to be consistent with starting from sources;
-                    ;; otherwise, a copytree merge step can fail on built bytecode
-                    (list "--source")
+                    ;; otherwise, a copytree merge step can fail on built bytecode;
+                    ;; use `--force-srip` to accomodate foreign-library packages that
+                    ;; are in 'binary mode (which, in turn, is to avoid copies of
+                    ;; native libraries in installer distributions)
+                    (list "--source" "--force-strip")
                     '())
                 (string-split pkgs)
                 missing-pkgs)
+      ;; ensure that any package-supplied native libraries are moved into place;
+      ;; for example Windows needs SQLite before `raco setup` starts
+      (run-raco '()
+                (deep-replace (deep-replace setup-args "--no-foreign-libs" '()) "-F" '())
+                "--no-zo"
+                "--pkgs" missing-pkgs)
       (alert "packages installed")))
-
-  (define setup-args (list
-                      "-N" "raco" "-l-" "setup"
-                      (extras 'INSTALL_SETUP_FLAGS)
-                      (extras 'PLT_SETUP_OPTIONS)))
   (run-raco '() setup-args))
 
 (define (raco-setup-prepare-to-here config built-racket at-dir at-root-dir)

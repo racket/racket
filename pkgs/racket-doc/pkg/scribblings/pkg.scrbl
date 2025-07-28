@@ -605,7 +605,10 @@ sub-commands.
 
   @item{@DFlag{force} --- Ignores module conflicts, including conflicts due to installing a single
         package in multiple scopes. Forcing an installation may leave package content in an
-        inconsistent state.}
+        inconsistent state. Implies @DFlag{force-strip}.}
+
+  @item{@DFlag{force-strip} --- When using @DFlag{source}, @DFlag{binary}, or @DFlag{binary-lib},
+        ignore a mismatch between the package's state and the requested state.}
 
   @item{@DFlag{ignore-checksums} --- Ignores errors verifying package @tech{checksums} (unsafe).}
 
@@ -694,7 +697,8 @@ sub-commands.
          #:changed "7.4.0.4" @elem{Added the @DFlag{no-docs}, @Flag{D} flags.}
          #:changed "7.6.0.14" @elem{Allowed multiple @DFlag{catalog} flags.}
          #:changed "8.0.0.13" @elem{Added @litchar{git-url} as a @DFlag{type} option.}
-         #:changed "8.17.0.2" @elem{Added the @litchar{recompile-cache} flag.}]}
+         #:changed "8.17.0.2" @elem{Added the @DFlag{recompile-cache} flag.}
+         #:changed "8.18.0.7" @elem{Added the @DFlag{force-strip} flag.}]}
 
 
 @subcommand{@command/toc{update} @nonterm{option} ... @nonterm{pkg-source} ...
@@ -796,6 +800,7 @@ the given @nonterm{pkg-source}s.
  @item{@DFlag{skip-uninstalled} --- Ignores any @nonterm{pkg-source} that does not correspond to an installed package.}
  @item{@DFlag{all-platforms} --- Same as for @command-ref{install}.}
  @item{@DFlag{force} --- Same as for @command-ref{install}.}
+ @item{@DFlag{force-strip} --- Same as for @command-ref{install}.}
  @item{@DFlag{ignore-checksums} --- Same as for @command-ref{install}.}
  @item{@DFlag{strict-doc-conflicts} --- Same as for @command-ref{install}.}
  @item{@DFlag{no-cache} --- Same as for @command-ref{install}.}
@@ -829,7 +834,8 @@ the given @nonterm{pkg-source}s.
          #:changed "7.2.0.8" @elem{Added the @DFlag{recompile-only} flag.}
          #:changed "7.4.0.4" @elem{Added the @DFlag{no-docs}, @Flag{D} flags.}
          #:changed "7.6.0.14" @elem{Allowed multiple @DFlag{catalog} flags.}
-         #:changed "8.17.0.2" @elem{Added the @litchar{recompile-cache} flag.}]}
+         #:changed "8.17.0.2" @elem{Added the @DFlag{recompile-cache} flag.}
+         #:changed "8.18.0.7" @elem{Added the @DFlag{force-strip} flag.}]}
 
 @subcommand{@command/toc{uninstall} @nonterm{option} ... @nonterm{pkg} ...
 --- Attempts to uninstall the given packages. By default, if a package is the dependency
@@ -954,6 +960,7 @@ package is created.
   @item{@DFlag{catalog} @nonterm{catalog} --- Same as for @command-ref{install}.}
   @item{@DFlag{all-platforms} --- Same as for @command-ref{install}.}
   @item{@DFlag{force} --- Same as for @command-ref{install}.}
+  @item{@DFlag{force-strip} --- Same as for @command-ref{install}.}
   @item{@DFlag{ignore-checksums} --- Same as for @command-ref{install}.}
   @item{@DFlag{strict-doc-conflicts} --- Same as for @command-ref{install}.}
   @item{@DFlag{no-cache} --- Same as for @command-ref{install}.}
@@ -969,7 +976,8 @@ package is created.
          #:changed "7.2.0.8" @elem{Added the @DFlag{recompile-only} flag.}
          #:changed "7.4.0.4" @elem{Added the @DFlag{no-docs}, @Flag{D} flags.}
          #:changed "7.6.0.14" @elem{Allowed multiple @DFlag{catalog} flags.}
-         #:changed "8.17.0.2" @elem{Added the @litchar{recompile-cache} flag.}]}
+         #:changed "8.17.0.2" @elem{Added the @DFlag{recompile-cache} flag.}
+         #:changed "8.18.0.7" @elem{Added the @DFlag{force-strip} flag.}]}
 
 @subcommand{@command/toc{create} @nonterm{option} ... @nonterm{directory-or-package}
 --- Bundles a package into an archive. Bundling

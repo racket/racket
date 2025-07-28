@@ -650,6 +650,7 @@
       (copytree "share"  'sharerkt #:missing 'skip))
     (copytree "doc"      'doc      #:missing 'skip)
     (copytree "etc"      'config   #:missing 'skip)
+    (copytree "lib"      'librkt   #:missing 'skip)
     (unless (equal-path? (dir: 'pkgs) (build-path (dir: 'sharerkt) "pkgs"))
       (fix-pkg-links (dir: 'sharerkt) (dir: 'pkgs)))
     (when prepared-dir
