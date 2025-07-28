@@ -51,7 +51,7 @@
 (define (unsafe-poll-ctx-eventmask-wakeup poll-ctx event-mask)
   (when poll-ctx
     (sandman-poll-ctx-add-poll-set-adder! poll-ctx
-                                          ;; in atomic and in rktio, must not start nested rktio
+                                          ;; in atomic and in rktio-sleep-relevant (not rktio), must not start nested rktio
                                           (lambda (ps)
                                             (rktio_poll_set_add_eventmask rktio ps event-mask)))))
 

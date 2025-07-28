@@ -4,16 +4,14 @@
 
 (provide call-with-resource)
 
-;; in atomic mode
+;; In uninterruptable mode
 ;;
-;; Calls `handle` in atomic mode, but expects any escape to be out of
-;; atomic mode.
-;;
-;; The `destroy` function is called in atomic mode only if `handle`
-;; hasn't returned by the time of an escape or thread kill and only if
-;; the resource `r` is not a rktio error or a boxed rktio error. So,
+;; The `destroy` function is called in uninterruptible mode only if `handle`
+;; hasn't returned by the time of an escape or thread kill, and only if
+;; the resource `r` is not a rktio error or a boxed rktio error. In the case
+;; of a thread kill, `destroy` is called in atomic mode. So,
 ;; at the point where `r` is destoyed by `handle`, `handle` must
-;; return still in atomic mode to ensure that `destroy` is not
+;; return still in uninterruptable mode to ensure that `destroy` is not
 ;; triggered.
 ;;
 (define (call-with-resource r destroy handle)
@@ -27,7 +25,7 @@
      (define (do-destroy)
        (unless completed?
          (destroy r)))
-     (thread-push-kill-callback! do-destroy) ; needs to be in atomic mode
+     (thread-push-kill-callback! do-destroy)
      (dynamic-wind
       void
       (lambda ()
@@ -35,9 +33,9 @@
           (handle r)
           (set! completed? #t)))
       (lambda ()
+        (thread-pop-kill-callback!)
         ;; In case of an escape out of the body, we
         ;; may not be in atomic mode:
-        (start-atomic)
-        (thread-pop-kill-callback!) ; needs to be in atomic mode
+        (start-uninterruptible)
         (do-destroy)
-        (end-atomic)))]))
+        (end-uninterruptible)))]))

@@ -186,6 +186,8 @@ rktio_path_to_wide_path
 rktio_wide_path_to_path
 rktio_processor_count
 rktio_syslog
+rktio_syslog_best_effort
+rktio_std_write_in_best_effort
 rktio_convert_properties
 rktio_converter_open
 rktio_converter_close

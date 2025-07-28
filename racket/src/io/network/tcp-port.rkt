@@ -20,7 +20,7 @@
   [abandon? #f]
   #:override
   [on-close
-   ;; with lock held and in rktio mode
+   ;; with lock held and in rktio and rktio-sleep-relevant mode
    (lambda ()
      (unless abandon?
        (rktio_socket_shutdown rktio fd RKTIO_SHUTDOWN_READ)))]
@@ -32,7 +32,7 @@
   [prop:fd-place-message-opener (lambda (fd name)
                                   (make-tcp-input-port fd name))])
 
-;; in atomic mode
+;; with custodian lock
 (define (make-tcp-input-port fd name
                              #:fd-refcount [fd-refcount (box 1)])
   (finish-fd-input-port
@@ -67,7 +67,7 @@
   [prop:fd-place-message-opener (lambda (fd name)
                                   (make-tcp-output-port fd name))])
 
-;; in atomic mode
+;; in uninterrupted mode or with custodian lock
 (define (make-tcp-output-port fd name
                               #:fd-refcount [fd-refcount (box 1)])
   (finish-fd-output-port
@@ -81,7 +81,7 @@
 
 ;; ----------------------------------------
 
-;; in atomic mode
+;; in rktio mode or with custodian lock
 (define (open-input-output-tcp fd name #:close? [close? #t])
   (define refcount (box (if close? 2 3)))
   (values

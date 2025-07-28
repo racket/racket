@@ -42,7 +42,7 @@ void rktio_syslog_clean(rktio_t *rktio)
 #endif
 }
 
-rktio_ok_t rktio_syslog(rktio_t *rktio, int level, const char *name, const char *msg, const char *exec_name)
+static rktio_ok_t do_syslog(rktio_t *rktio, int level, const char *name, const char *msg, const char *exec_name, int record_err)
 {
 #ifdef RKTIO_SYSTEM_UNIX
   int pri;
@@ -78,10 +78,12 @@ rktio_ok_t rktio_syslog(rktio_t *rktio, int level, const char *name, const char 
     char *naya = NULL;
     int ok;
 
+    /* FIXME: race condition when `record_err` */
     if (rktio->hEventLog == INVALID_HANDLE_VALUE) {
       rktio->hEventLog = do_RegisterEventSource(NULL, WIDE_PATH_temp(exec_name));
       if (rktio->hEventLog == INVALID_HANDLE_VALUE) {
-        get_windows_error();
+        if (record_err)
+          get_windows_error();
         return 0;
       }
     }
@@ -127,7 +129,7 @@ rktio_ok_t rktio_syslog(rktio_t *rktio, int level, const char *name, const char 
                         NULL, 
                         1, 0,
                         a, NULL);
-    if (!ok)
+    if (!ok && record_err)
       get_windows_error();
     
     if (naya)
@@ -135,8 +137,21 @@ rktio_ok_t rktio_syslog(rktio_t *rktio, int level, const char *name, const char 
 
     return ok;
   } else {
-    set_racket_error(RKTIO_ERROR_UNSUPPORTED);
+    if (record_err)
+      set_racket_error(RKTIO_ERROR_UNSUPPORTED);
     return 0;
   }
 #endif
+}
+
+rktio_ok_t rktio_syslog(rktio_t *rktio, int level, const char *name, const char *msg, const char *exec_name)
+{
+  return do_syslog(rktio, level, name, msg, exec_name, 1);
+}
+
+void rktio_syslog_best_effort(rktio_t *rktio, int level,
+                              rktio_const_string_t name, rktio_const_string_t msg,
+                              rktio_const_string_t exec_name)
+{
+  (void)do_syslog(rktio, level, name, msg, exec_name, 0);
 }

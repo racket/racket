@@ -58,10 +58,11 @@ Return type conventions:
 
 Thread and signal conventions:
 
- - A given `rktio_t` can be used from only one thread at a time.
-   Otherwise, as long as the initial call to `rktio_init` returns
-   before a second call, different `rktio_t` values can be used freely
-   from different threads.
+ - A given `rktio_t` can be used from only one thread at a time,
+   except as specified for some functions. Otherwise, as long as the
+   initial call to `rktio_init` returns before a second call,
+   different `rktio_t` values can be used freely from different
+   threads.
 
  - Unless otherwise specified, anything created with a particular
    `rktio_t` must be used with that same `rktio_t` thereafter (and in
@@ -74,6 +75,10 @@ Thread and signal conventions:
  - A function declared as `RKTIO_EXTERN_ATOMIC` or
    `RKTIO_EXTERN_ATOMIC_NOERR` can be called concurrently with
    anything else, even though it has a `rktio_t` argument.
+
+ - A function declared as `RKTIO_EXTERN_POLL` or
+   `RKTIO_EXTERN_POLL_NOERR` has special concurrency rules with
+   respect to `rktio_sleep`. See `rktio_sleep` for more information.
 
  - SIGCHLD may be enabled, blocked, and/or handled by the `rktio`
    library.
@@ -97,6 +102,9 @@ Thread and signal conventions:
 
 #define RKTIO_EXTERN_ATOMIC        RKTIO_EXTERN
 #define RKTIO_EXTERN_ATOMIC_NOERR  RKTIO_EXTERN
+
+#define RKTIO_EXTERN_POLL       RKTIO_EXTERN
+#define RKTIO_EXTERN_POLL_NOERR RKTIO_EXTERN_NOERR
 
 #define RKTIO_NULLABLE      /* empty; pointer type can be NULL */
 #define RKTIO_BLOCKING      /* empty; function blocks indefinitely */
@@ -716,12 +724,12 @@ rktio_tri_t rktio_poll_fs_change_ready(rktio_t *rktio, rktio_fs_change_t *fc);
 
 typedef struct rktio_poll_set_t rktio_poll_set_t;
 
-RKTIO_EXTERN rktio_poll_set_t *rktio_make_poll_set(rktio_t *rktio);
-RKTIO_EXTERN void rktio_poll_set_forget(rktio_t *rktio, rktio_poll_set_t *fds);
+RKTIO_EXTERN_POLL rktio_poll_set_t *rktio_make_poll_set(rktio_t *rktio);
+RKTIO_EXTERN_POLL void rktio_poll_set_forget(rktio_t *rktio, rktio_poll_set_t *fds);
 /* Don't reuse a poll set after calling `rktio_sleep`, but do
    explicitly forget it afterward. */
 
-RKTIO_EXTERN void rktio_poll_add(rktio_t *rktio, rktio_fd_t *rfd, rktio_poll_set_t *fds, int modes);
+RKTIO_EXTERN_POLL void rktio_poll_add(rktio_t *rktio, rktio_fd_t *rfd, rktio_poll_set_t *fds, int modes);
 /* Registers a wait on a file descriptor in read and/or write mode or
    flush mode. The flush mode corresponds to
    `rktio_poll_write_flushed`.
@@ -730,22 +738,22 @@ RKTIO_EXTERN void rktio_poll_add(rktio_t *rktio, rktio_fd_t *rfd, rktio_poll_set
 #define RKTIO_POLL_WRITE  RKTIO_OPEN_WRITE
 #define RKTIO_POLL_FLUSH  (RKTIO_OPEN_WRITE << 2)
 
-RKTIO_EXTERN void rktio_poll_add_accept(rktio_t *rktio, rktio_listener_t *listener, rktio_poll_set_t *fds);
-RKTIO_EXTERN void rktio_poll_add_connect(rktio_t *rktio, rktio_connect_t *conn, rktio_poll_set_t *fds);
-RKTIO_EXTERN void rktio_poll_add_addrinfo_lookup(rktio_t *rktio, rktio_addrinfo_lookup_t *lookup, rktio_poll_set_t *fds);
-RKTIO_EXTERN void rktio_poll_add_process(rktio_t *rktio, rktio_process_t *sp, rktio_poll_set_t *fds);
-RKTIO_EXTERN void rktio_poll_add_fs_change(rktio_t *rktio, rktio_fs_change_t *fc, rktio_poll_set_t *fds);
+RKTIO_EXTERN_POLL void rktio_poll_add_accept(rktio_t *rktio, rktio_listener_t *listener, rktio_poll_set_t *fds);
+RKTIO_EXTERN_POLL void rktio_poll_add_connect(rktio_t *rktio, rktio_connect_t *conn, rktio_poll_set_t *fds);
+RKTIO_EXTERN_POLL void rktio_poll_add_addrinfo_lookup(rktio_t *rktio, rktio_addrinfo_lookup_t *lookup, rktio_poll_set_t *fds);
+RKTIO_EXTERN_POLL void rktio_poll_add_process(rktio_t *rktio, rktio_process_t *sp, rktio_poll_set_t *fds);
+RKTIO_EXTERN_POLL void rktio_poll_add_fs_change(rktio_t *rktio, rktio_fs_change_t *fc, rktio_poll_set_t *fds);
 /* Registers various other waits. */
 
-RKTIO_EXTERN void rktio_poll_set_add_nosleep(rktio_t *rktio, rktio_poll_set_t *fds);
+RKTIO_EXTERN_POLL void rktio_poll_set_add_nosleep(rktio_t *rktio, rktio_poll_set_t *fds);
 /* Causes a sleep given `fds` to return immediately. */
 
-RKTIO_EXTERN void rktio_poll_set_add_handle(rktio_t *rktio, intptr_t h, rktio_poll_set_t *fds, int repost);
-RKTIO_EXTERN void rktio_poll_set_add_eventmask(rktio_t *rktio, rktio_poll_set_t *fds, int mask);
+RKTIO_EXTERN_POLL void rktio_poll_set_add_handle(rktio_t *rktio, intptr_t h, rktio_poll_set_t *fds, int repost);
+RKTIO_EXTERN_POLL void rktio_poll_set_add_eventmask(rktio_t *rktio, rktio_poll_set_t *fds, int mask);
 /* When sleeping on Windows, extra handles or eventmasks can be added
    to trigger a wake up. The functions do nothing  on other platforms. */
 
-RKTIO_EXTERN void rkio_reset_sleep_backoff(rktio_t *rktio);
+RKTIO_EXTERN_POLL void rkio_reset_sleep_backoff(rktio_t *rktio);
 /* Call this function when using `rktio_poll_set_add_eventmask` and
    when matching events are not always consumed from the queue between
    sleeps. To accommodate messages that are not consumed, the poll set
@@ -772,7 +780,7 @@ RKTIO_EXTERN void rktio_ltps_close(rktio_t *rktio, rktio_ltps_t *lt);
    `rktio_ltps_get_signaled_handle` is you need to clean up any
    per-handle data: */
 
-RKTIO_EXTERN rktio_ltps_handle_t *rktio_ltps_add(rktio_t *rktio, rktio_ltps_t *lt, rktio_fd_t *rfd, int mode);
+RKTIO_EXTERN_POLL rktio_ltps_handle_t *rktio_ltps_add(rktio_t *rktio, rktio_ltps_t *lt, rktio_fd_t *rfd, int mode);
 /* Don't free the returned handle; use it with `rktio_ltps_handle_set_data`
    and `rktio_ltps_handle_get_data`, and free it only when the same handle
    is returned by `rktio_ltps_get_signaled_handle`. Using the `RKTIO_LTPS_REMOVE`
@@ -793,8 +801,8 @@ enum {
   RKTIO_LTPS_REMOVE_VNODE
 };
 
-RKTIO_EXTERN void rktio_ltps_handle_set_data(rktio_t *rktio, rktio_ltps_handle_t *h, void *data);
-RKTIO_EXTERN_NOERR void *rktio_ltps_handle_get_data(rktio_t *rktio, rktio_ltps_handle_t *h);
+RKTIO_EXTERN_POLL void rktio_ltps_handle_set_data(rktio_t *rktio, rktio_ltps_handle_t *h, void *data);
+RKTIO_EXTERN_POLL_NOERR void *rktio_ltps_handle_get_data(rktio_t *rktio, rktio_ltps_handle_t *h);
 
 RKTIO_EXTERN void rktio_ltps_remove_all(rktio_t *rktio, rktio_ltps_t *lt);
 /* Removes all additions, signaling all handles. */
@@ -821,7 +829,12 @@ enum {
 RKTIO_EXTERN RKTIO_BLOCKING void rktio_sleep(rktio_t *rktio, float nsecs, rktio_poll_set_t *fds, rktio_ltps_t *lt);
 /* Waits up to `nsecs` seconds (or forever if `nsecs` is 0), until
    something registered with `fds` or `lt` is ready, or until there's
-   some other activity that sometimes causes an early wakeup. */
+   some other activity that sometimes causes an early wakeup.
+   This function and functions marked as `RKTIO_EXTERN_POLL` or `RKTIO_EXTERN_POLL_NOERR`
+   can be called concurrent with other functions for the same `rktio`, except for
+   functions that close file descriptors that has been added to `fds` or `lt`.
+   This funciton and `RKTIO_EXTERN_POLL`/`RKTIO_EXTERN_POLL_NOERR` cannot be called
+   concurrent with each other for the same `fds` or `lt`. */
 
 /*************************************************/
 /* Sleeping in a background thread               */
@@ -1198,6 +1211,17 @@ enum {
   RKTIO_LOG_INFO,
   RKTIO_LOG_DEBUG
 };
+
+RKTIO_EXTERN_ATOMIC_NOERR void rktio_syslog_best_effort(rktio_t *rktio, int level,
+                                                        rktio_const_string_t name, rktio_const_string_t msg,
+                                                        rktio_const_string_t exec_name);
+/* Like `rktio_syslog`, but fails silently, so it can be treated as atomic. */
+
+RKTIO_EXTERN_ATOMIC_NOERR void rktio_std_write_in_best_effort(rktio_t *rktio, int which,
+                                                              char *buffer, intptr_t start, intptr_t end);
+/* Write a the standard destination `RKTIO_STDOUT` or `RKTIO_STDERR`, blocking
+   until the write completes or an error is encountered. This function is meant to used
+   used in a way similar to `rktio_syslog_best_effort`, but for writing to stdout or stderr. */
 
 /*************************************************/
 /* Encoding conversion                           */

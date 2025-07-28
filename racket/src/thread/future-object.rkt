@@ -39,7 +39,8 @@
 
 (struct parallel* (pool               ; futures scheduler that manages the future, #f implies `(current-scheduler)`
                    [thread #:mutable] ; a Racket thread or or 'stop termination request
-                   [stop? #:mutable]))
+                   [stop? #:mutable]
+                   cells))            ; thread cells
 
 (define (future-stop? f)
   (define p (future*-parallel f))

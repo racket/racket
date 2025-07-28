@@ -19,6 +19,8 @@
                      unsafe-start-uninterruptible unsafe-end-uninterruptible
                      unsafe-make-uninterruptible-lock
                      unsafe-uninterruptible-lock-acquire unsafe-uninterruptible-lock-release
+                     unsafe-uninterruptible-custodian-lock-acquire
+                     unsafe-uninterruptible-custodian-lock-release
                      unsafe-poller
                      unsafe-poll-ctx-fd-wakeup
                      unsafe-poll-ctx-eventmask-wakeup

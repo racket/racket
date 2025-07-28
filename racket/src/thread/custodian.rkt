@@ -96,7 +96,8 @@
 (define (set-root-custodian! c)
   (set! root-custodian c)
   (current-custodian c)
-  (set! custodian-will-executor (host:make-late-will-executor void #f)))
+  (set! custodian-will-executor (host:make-late-will-executor void #f))
+  (init-custodian-lock!))
 
 (define/who (make-custodian [parent (current-custodian)])
   (check who custodian? parent)
@@ -131,44 +132,47 @@
                                #:weak? [weak? #f]       ; not used if `callback-wrapped?`
                                #:late? [late? #f]       ; not used if `callback-wrapped?`
                                #:gc-root? [gc-root? #f])
-  (atomically
-   (cond
-     [(custodian-shut-down? cust) #f]
-     [else
-      (define we (and (not callback-wrapped?)
-                      (not weak?)
-                      (if late?
-                          ;; caller is responsible for ensuring that a late
-                          ;; executor makes sense for `obj` --- especially
-                          ;; that it doesn't refer back to itself
-                          (host:make-late-will-executor void #f)
-                          (host:make-will-executor void))))
-      (hash-set! (custodian-children cust)
-                 obj
-                 (cond
-                   [callback-wrapped? callback]
-                   [weak? (if late? (late-callback callback) callback)]
-                   [at-exit? (at-exit-callback callback we late?)]
-                   [else (willed-callback callback we late?)]))
-      (when we
-        ;; Registering with a will executor that we retain but never
-        ;; poll has the effect of turning a semi-weak reference
-        ;; (allows other finalizers, but doesn't clear weak boxes)
-        ;; into a strong one when there are no other references;
-        ;; we're assuming that no wills were previously registered
-        ;; so that this one is last on the stack of wills:
-        (host:will-register we obj void))
-      (when gc-root?
-        (host:disable-interrupts)
-        (unless (custodian-gc-roots cust)
-          (set-custodian-gc-roots! cust (host:unsafe-make-weak-hasheq)))
-        (hash-set! (custodian-gc-roots cust) obj #t)
-        (check-limit-custodian cust)
-        (host:enable-interrupts))
-      (or (custodian-self-reference cust)
-          (let ([cref (custodian-reference (make-weak-box cust))])
-            (set-custodian-self-reference! cust cref)
-            cref))])))
+  (lock-custodians)
+  (define cref
+    (cond
+      [(custodian-shut-down? cust) #f]
+      [else
+       (define we (and (not callback-wrapped?)
+                       (not weak?)
+                       (if late?
+                           ;; caller is responsible for ensuring that a late
+                           ;; executor makes sense for `obj` --- especially
+                           ;; that it doesn't refer back to itself
+                           (host:make-late-will-executor void #f)
+                           (host:make-will-executor void))))
+       (hash-set! (custodian-children cust)
+                  obj
+                  (cond
+                    [callback-wrapped? callback]
+                    [weak? (if late? (late-callback callback) callback)]
+                    [at-exit? (at-exit-callback callback we late?)]
+                    [else (willed-callback callback we late?)]))
+       (when we
+         ;; Registering with a will executor that we retain but never
+         ;; poll has the effect of turning a semi-weak reference
+         ;; (allows other finalizers, but doesn't clear weak boxes)
+         ;; into a strong one when there are no other references;
+         ;; we're assuming that no wills were previously registered
+         ;; so that this one is last on the stack of wills:
+         (host:will-register we obj void))
+       (when gc-root?
+         (host:disable-interrupts)
+         (unless (custodian-gc-roots cust)
+           (set-custodian-gc-roots! cust (host:unsafe-make-weak-hasheq)))
+         (hash-set! (custodian-gc-roots cust) obj #t)
+         (check-limit-custodian cust)
+         (host:enable-interrupts))
+       (or (custodian-self-reference cust)
+           (let ([cref (custodian-reference (make-weak-box cust))])
+             (set-custodian-self-reference! cust cref)
+             cref))]))
+  (unlock-custodians)
+  cref)
 
 (define (unsafe-custodian-register cust obj callback at-exit? weak? [late? #f])
   (do-custodian-register cust obj callback #:at-exit? at-exit? #:weak? weak? #:late? late?))
@@ -183,28 +187,29 @@
   (do-custodian-register cust obj callback))
 
 (define (custodian-register-also cref obj callback at-exit? weak?)
-  (assert-atomic-mode)
+  (assert-custodians-locked)
   (define c (custodian-reference->custodian cref))
   (unless (hash-ref (custodian-children c) obj #f)
     (unsafe-custodian-register c obj callback at-exit? weak?)))
 
 (define (unsafe-custodian-unregister obj cref)
   (when cref
-    (atomically
-     (define c (custodian-reference->custodian cref))
-     (when c
-       (unless (custodian-shut-down? c)
-         (hash-remove! (custodian-children c) obj))
-       (host:disable-interrupts)
-       (define gc-roots (custodian-gc-roots c))
-       (when gc-roots
-         (hash-remove! gc-roots obj)
-         (check-limit-custodian c))
-       (host:enable-interrupts)))
-    (void)))
+    (lock-custodians)
+    (define c (custodian-reference->custodian cref))
+    (when c
+      (unless (custodian-shut-down? c)
+        (hash-remove! (custodian-children c) obj))
+      (host:disable-interrupts)
+      (define gc-roots (custodian-gc-roots c))
+      (when gc-roots
+        (hash-remove! gc-roots obj)
+        (check-limit-custodian c))
+      (host:enable-interrupts))
+    (unlock-custodians)))
 
 ;; Called by scheduler (so atomic) when `c` is unreachable
 (define (merge-custodian-into-parent c)
+  (lock-custodians)
   (unless (custodian-shut-down? c)
     (define p-cref (custodian-parent-reference c))
     (define parent (custodian-reference->custodian p-cref))
@@ -225,7 +230,8 @@
                                           (custodian-post-shutdown parent)))
     (set-custodian-post-shutdown! c null)
     (when gc-roots (hash-clear! gc-roots))
-    (check-limit-custodian parent)))
+    (check-limit-custodian parent))
+  (unlock-custodians))
   
 ;; Called in scheduler thread:
 (define (poll-custodian-will-executor)
@@ -257,7 +263,8 @@
 ;; callback) while modifying this list:
 (define queued-shutdowns null)
 
-;; In atomic mode, in an arbitrary host thread but with other threads
+;; In atomic mode with gc interrupts off, via GC callback, so
+;; in an arbitrary host thread but with other threads
 ;; suspended:
 (define (queue-custodian-shutdown! c)
   (unless (custodian-need-shutdown c)
@@ -321,8 +328,9 @@
 (define (custodian-this-place? c)
   (eq? (custodian-place c) current-place))
 
-;; In atomic mode
+;; In atomic mode (as promised with `custodian-shut-down?`
 (define (do-custodian-shutdown-all c [only-at-exit? #f])
+  (lock-custodians)
   (unless (custodian-shut-down? c)
     (set-custodian-shut-down! c)
     (when (custodian-sync-futures? c)
@@ -351,17 +359,23 @@
     (define p-cref (custodian-parent-reference c))
     (when p-cref
       (unsafe-custodian-unregister c p-cref))
+    (host:disable-interrupts)
     (remove-limit-custodian! c)
-    (set-custodian-memory-limits! c null)))
+    (set-custodian-memory-limits! c null)
+    (host:enable-interrupts))
+  (unlock-custodians))
 
 (define (custodian-get-shutdown-sema c)
-  (atomically
-   (or (custodian-shutdown-sema c)
-       (let ([sema (make-semaphore)])
-         (set-custodian-shutdown-sema! c sema)
-         (when (custodian-shut-down? c)
-           (semaphore-post-all sema))
-         sema))))
+  (lock-custodians)
+  (define sema
+    (or (custodian-shutdown-sema c)
+        (let ([sema (make-semaphore)])
+          (set-custodian-shutdown-sema! c sema)
+          (when (custodian-shut-down? c)
+            (semaphore-post-all sema))
+          sema)))
+  (unlock-custodians)
+  sema)  
 
 (define/who (unsafe-add-post-custodian-shutdown proc [custodian #f])
   (check who (procedure-arity-includes/c 0) proc)
@@ -369,8 +383,9 @@
   (define c (or custodian (place-custodian current-place)))
   (unless (and (not (place-parent current-place))
                (eq? c (place-custodian current-place)))
-    (atomically
-     (set-custodian-post-shutdown! c (cons proc (custodian-post-shutdown c))))))
+    (lock-custodians)
+    (set-custodian-post-shutdown! c (cons proc (custodian-post-shutdown c)))
+    (unlock-custodians)))
 
 (define (custodian-subordinate? c super-c)
   (let loop ([p-cref (custodian-parent-reference c)])
@@ -425,30 +440,32 @@
   (check who exact-nonnegative-integer? need-amt)
   (check who custodian? stop-cust)
   (place-ensure-wakeup!)
-  (atomically/no-gc-interrupts
-   (unless (or (custodian-shut-down? limit-cust)
-               (custodian-shut-down? stop-cust))
-     (set-custodian-memory-limits! limit-cust
-                                   (cons (cons need-amt (if (eq? limit-cust stop-cust)
-                                                            #f ; => self
-                                                            stop-cust))
-                                         (custodian-memory-limits limit-cust)))
-     (when (eq? stop-cust limit-cust)
-       (define old-limit (custodian-immediate-limit limit-cust))
-       (when (or (not old-limit) (old-limit . > . need-amt))
-         (set-custodian-immediate-limit! limit-cust need-amt)))
-     (check-limit-custodian limit-cust)))
-  (void))
+  (lock-custodians)
+  (unless (or (custodian-shut-down? limit-cust)
+              (custodian-shut-down? stop-cust))
+    (host:disable-interrupts)
+    (set-custodian-memory-limits! limit-cust
+                                  (cons (cons need-amt (if (eq? limit-cust stop-cust)
+                                                           #f ; => self
+                                                           stop-cust))
+                                        (custodian-memory-limits limit-cust)))
+    (host:enable-interrupts)
+    (when (eq? stop-cust limit-cust)
+      (define old-limit (custodian-immediate-limit limit-cust))
+      (when (or (not old-limit) (old-limit . > . need-amt))
+        (set-custodian-immediate-limit! limit-cust need-amt)))
+    (check-limit-custodian limit-cust))
+  (unlock-custodians))
 
 ;; Ensures that custodians with memory limits and children are not
 ;; treated as inaccessible and merged; use only while holding the
 ;; memory-limit lock and with interrupts disabled (or be in a GC)
 (define custodians-with-limits (host:unsafe-make-hasheq))
 
-;; In atomic mode
+;; In uninterruptible mode, possibly with GC interrupts already disabled
 (define (check-limit-custodian limit-cust)
+  (host:disable-interrupts)
   (when (pair? (custodian-memory-limits limit-cust))
-    (host:disable-interrupts)
     (host:mutex-acquire memory-limit-lock)
     (cond
       [(and (custodian-gc-roots limit-cust)
@@ -457,10 +474,10 @@
        (set! compute-memory-sizes (max compute-memory-sizes 1))]
       [else
        (hash-remove! custodians-with-limits limit-cust)])
-    (host:mutex-release memory-limit-lock)
-    (host:enable-interrupts)))
+    (host:mutex-release memory-limit-lock))
+  (host:enable-interrupts))
 
-;; In atomic mode
+;; With custodian lock held and GC interrupts disabled
 (define (remove-limit-custodian! c)
   (when (and (custodian-gc-roots c)
              (positive? (hash-count (custodian-gc-roots c))))
@@ -664,13 +681,16 @@
 
 (define (custodian-check-immediate-limit mref n)
   (unless (in-atomic-mode?)
+    (lock-custodians)
     (let loop ([mref mref])
       (when mref
         (define c (custodian-reference->custodian mref))
         (when c
           (define limit (custodian-immediate-limit c))
           (when (and limit (n . >= . limit))
+            (unlock-custodians)
             (raise (exn:fail:out-of-memory
                     (error-message->string #f "out of memory")
                     (current-continuation-marks))))
-          (loop (custodian-parent-reference c)))))))
+          (loop (custodian-parent-reference c)))))
+    (unlock-custodians)))

@@ -199,6 +199,8 @@
   [unsafe-unbox (known-procedure 2)]
   [unsafe-unbox* (known-procedure/succeeds 2)]
   [unsafe-undefined (known-constant)]
+  [unsafe-uninterruptible-custodian-lock-acquire (known-procedure 1)]
+  [unsafe-uninterruptible-custodian-lock-release (known-procedure 1)]
   [unsafe-uninterruptible-lock-acquire (known-procedure 2)]
   [unsafe-uninterruptible-lock-release (known-procedure 2)]
   [unsafe-vector*-append (known-procedure/succeeds -1)]

@@ -40,7 +40,6 @@
          parallel-thread-pool-close
          parallel-thread-pool?
          future-block
-         future-sync
          current-future-prompt
          currently-running-future
          reset-future-logs-for-tracing!
@@ -184,10 +183,9 @@
     (log-future 'complete (future*-id f)))
   (cond
     [(current-future-in-future-thread)
-     (when (future*-parallel f)
-       (define th (parallel*-thread (future*-parallel f)))
-       (when th
-         (set-engine-thread-cell-state! (thread-cells th))))
+     (define p (future*-parallel f))
+     (when p
+       (set-engine-thread-cell-state! (parallel*-cells p)))
      ;; An attempt to escape will cause the future to block, so
      ;; we only need to handle success
      (call-with-values (lambda ()
@@ -203,7 +201,7 @@
      ;; result is ignored, and will not block, but might suspend
      ;; to be rescheduled to run in a future pthread
      (current-future f)
-     (set-engine-thread-cell-state! (thread-cells (parallel*-thread (future*-parallel f))))
+     (set-engine-thread-cell-state! (parallel*-cells (future*-parallel f)))
      ;; unblock thread's start has `future-start-prompt-tag` prompt:
      (thunk)]
     [(and (eq? (future*-kind f) 'would-be)
@@ -362,13 +360,14 @@
           (default-continuation-prompt-tag)
           no-results-on-abort-handler)))
      (define me-f (create-future thunk-in-prompt #f #f))
-     (define th
+     (define-values (th cells)
        (do-make-thread who
                        #:name (object-name thunk)
                        #:break-enabled-cell parallel-break-disabled-cell
                        #:custodian cust
                        #:schedule? #f
                        #:keep-result? keep-result?
+                       #:return-cells? #t
                        (lambda ()
                          (let loop ()
                            (call-with-continuation-prompt
@@ -376,11 +375,10 @@
                             future-start-prompt-tag
                             (lambda args
                               (loop)))))))
-     (set-future*-parallel! me-f (parallel* pool th #f))
-     (thread-push-kill-callback! (lambda ()
-                                   (future-external-stop me-f)
-                                   (thread-pool-departure pool -1))
-                                 th)
+     (set-future*-parallel! me-f (parallel* pool th #f cells))
+     (thread-init-kill-callback! th (lambda ()
+                                      (future-external-stop me-f)
+                                      (thread-pool-departure pool -1)))
      (thread-push-suspend+resume-callbacks! (lambda () (future-external-stop me-f))
                                             (lambda () (future-external-resume me-f))
                                             th)
@@ -401,7 +399,7 @@
               (let ([pool (create-parallel-thread-pool 'call-in-future 1 +inf.0 #f #f)])
                 (set! fsemaphore-wait-poll pool)
                 pool))))
-       (set-future*-parallel! me-f (parallel* pool #f #f))
+       (set-future*-parallel! me-f (parallel* pool #f #f #f))
        me-f]
       [else (would-be-future thunk)]))
   (dynamic-wind
@@ -757,48 +755,6 @@
      ;; used by `call-in-future` on a would-be future
      (when (eq? (future*-state f) 'stop)
        (set-future*-state! f 'running))]))
-
-;; ----------------------------------------
-
-;; Can be in a future thread
-;; Call `thunk` in the place's main thread, where it can
-;; run atomically and return a result
-(define (future-sync who thunk)
-  (start-uninterruptible)
-  (define me-f (current-future))
-  (cond
-    [(not me-f)
-     ;; Between the time that `future-sync` was requested and
-     ;; we get here, the continuation was apparently moved
-     (end-uninterruptible)
-     (thunk)]
-    [(eq? (future*-kind me-f) 'would-be)
-     (current-future #f)
-     (end-uninterruptible)
-     (log-future 'sync (future*-id me-f) #:prim-name who)
-     (let ([v (thunk)])
-       (log-future 'result (future*-id me-f))
-       (current-future me-f)
-       v)]
-    [(in-racket-thread?)
-     (end-uninterruptible)
-     ;; can run directly, since we're not in a future pthread
-     (thunk)]
-    [else
-     (end-uninterruptible)
-     ;; In case the main thread is trying to shut down futures, check in:
-     (engine-block)
-     ;; Host's `call-as-asynchronous-callback` will post `thunk`
-     ;; so that it's returned by `host:poll-async-callbacks` to
-     ;; the scheduler in the place's main thread; it will also
-     ;; tell the scheduler to be in atomic mode so that we don't
-     ;; get terminated or swapped out while blocking on the main thread
-     (host:call-as-asynchronous-callback
-      (lambda ()
-        (log-future 'sync (future*-id me-f) #:prim-name who)
-        (let ([v (thunk)])
-          (log-future 'result (future*-id me-f))
-          v)))]))
 
 ;; ----------------------------------------
 

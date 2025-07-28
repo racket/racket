@@ -3,6 +3,7 @@
          "atomic.rkt"
          "thread.rkt"
          "schedule.rkt"
+         "custodian-object.rkt"
          "evt.rkt"
          (only-in "host.rkt"
                   threaded?
@@ -22,7 +23,10 @@
 
          unsafe-make-uninterruptible-lock
          unsafe-uninterruptible-lock-acquire
-         unsafe-uninterruptible-lock-release)
+         unsafe-uninterruptible-lock-release
+
+         unsafe-uninterruptible-custodian-lock-release
+         unsafe-uninterruptible-custodian-lock-acquire)
 
 (define (unsafe-start-breakable-atomic)
   (start-atomic)
@@ -48,7 +52,7 @@
   (start-uninterruptible))
 (define (unsafe-end-uninterruptible)
   (end-uninterruptible))
-
+  
 (define (unsafe-make-uninterruptible-lock)
   (if (threaded?)
       (host:make-mutex)
@@ -61,3 +65,8 @@
   (when (threaded?)
     (host:mutex-release m))
   (end-uninterruptible))
+
+(define (unsafe-uninterruptible-custodian-lock-acquire)
+  (lock-custodians))
+(define (unsafe-uninterruptible-custodian-lock-release)
+  (unlock-custodians))

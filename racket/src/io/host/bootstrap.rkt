@@ -160,6 +160,8 @@
                          'unsafe-make-uninterruptible-lock (lambda () 'dummy)
                          'unsafe-uninterruptible-lock-acquire void
                          'unsafe-uninterruptible-lock-release void
+                         'unsafe-uninterruptible-custodian-lock-acquire void
+                         'unsafe-uninterruptible-custodian-lock-release void
                          'in-atomic-mode? in-atomic-mode?
                          'current-custodian current-custodian
                          'custodian-shut-down? (lambda (c)

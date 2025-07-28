@@ -18,14 +18,14 @@
          end-rktio
          rktioly
 
+         start-rktio-sleep-relevant
+         end-rktio-sleep-relevant
+
          maybe-start-sleep-rktio
          end-sleep-rktio
 
-         rktio-mutex+sleep
-         start-some-rktio
-         end-some-rktio
-
          end-rktio+atomic
+         end-rktio+uninterruptible
 
          rktio-place-init!
          rktio-place-destroy!)
@@ -102,26 +102,36 @@
 ;; rktio lock order:
 ;;
 ;;    - atomic/uninterruptible mode (reentrant)
-;;    - port locks (*not* reentrant, implies uninterruptable mode)
-;;    - rktio lock (reentrant, implies uninterruptable mode)
+;;    - port locks (not reentrant, implies uninterruptable mode)
+;;    - rktio lock (not reentrant, implies uninterruptable mode)
+;;    - rktio-sleep-relevant lock (not reentrant, implies uninterruptable mode)
+;;    - custodian lock
 ;;
-;; The rktio lock needs to be used for any rktio operation,
-;; unless "rktio.h" says that the operation is atomic.
+;; The rktio lock needs to be used for almost any rktio operation,
+;; unless "rktio.h" says that the operation is atomic or the operation
+;; is `RKTIO_EXTERN_POLL`.
+;;
+;; I the operation is `RKTIO_EXTERN_POLL` or it's `rktio_sleep`, then
+;; the rktio-sleep-relevant lock is needed, instead. A `rktio_sleep`
+;; call should take the lock with `maybe-start-sleep-rktio`, while
+;; all other contexts should use `start-rktio-sleep-relevant` to take
+;; the lock. The `start-rktio-sleep-relevant` operation will wake up
+;; a sleep, if necessary (which makes that lock much tricker than others).
 
 (struct m+s (mutex sleep handle)
   #:authentic)
 
-(define (make-rktio-mutex+sleep rktio)
-  (m+s (make-mutex)
-       (box #f)
-       (rktio_get_signal_handle rktio)))
+;; this implementation of the rktio lock is reentrant, even though
+;; it is specified (above) and checked (in via asserts) as non-reentrant
+(define-place-local rktio-mutex (make-mutex))
 
-(define-place-local rktio-mutex+sleep (make-rktio-mutex+sleep rktio))
 (define (start-rktio)
   (start-uninterruptible)
-  (mutex-acquire/wakeup-sleep rktio-mutex+sleep))
+  (assert-push-lock-level! 'rktio)
+  (mutex-acquire rktio-mutex))
 (define (end-rktio)
-  (mutex-release/allow-sleep rktio-mutex+sleep)
+  (mutex-release rktio-mutex)
+  (assert-pop-lock-level! 'rktio)
   (end-uninterruptible))
 (define-syntax-rule (rktioly e ...)
   (begin
@@ -129,18 +139,38 @@
     (begin0
       (let () e ...)
       (end-rktio))))
+
+(define (make-rktio-mutex+sleep rktio)
+  (m+s (make-mutex)
+       (box #f)
+       (rktio_get_signal_handle rktio)))
+
+(define-place-local rktio-mutex+sleep (make-rktio-mutex+sleep rktio))
+
+(define (start-rktio-sleep-relevant)
+  (start-uninterruptible)
+  (assert-push-lock-level! 'rktio-sleep-relevant)
+  (mutex-acquire/wakeup-sleep rktio-mutex+sleep))
+(define (end-rktio-sleep-relevant)
+  (mutex-release/allow-sleep rktio-mutex+sleep)
+  (assert-pop-lock-level! 'rktio-sleep-relevant)
+  (end-uninterruptible))
+
 (define (maybe-start-sleep-rktio) ; in scheduler, so already uninterruptible
   (maybe-mutex-acquire/start-sleep rktio-mutex+sleep))
 (define (end-sleep-rktio) ; in scheduler, so already uninterruptible
-  (mutex-release/end-sleep rktio-mutex+sleep))
-(define (start-some-rktio mutex+sleep) (mutex-acquire/wakeup-sleep mutex+sleep))
-(define (end-some-rktio mutex+sleep) (mutex-release/allow-sleep mutex+sleep))
+  (mutex-release/end-sleep rktio-mutex+sleep)
+  (assert-pop-lock-level! 'rktio-sleep-relevant))
+
 (define (end-rktio+atomic)
   (end-rktio)
   (end-atomic))
+(define (end-rktio+uninterruptible)
+  (end-rktio)
+  (end-uninterruptible))
 
 ;; used by thread other than the scheduler, because a sleeping
-;; scheduler may need to be woken up to release the rktio lock
+;; scheduler may need to be woken up to release the rktio-sleep-relevant lock
 (define (mutex-acquire/wakeup-sleep mutex+sleep)
   (define (maybe-increment-sleep-wakeup)
     (define n (unbox (m+s-sleep mutex+sleep)))
@@ -180,6 +210,7 @@
 (define (maybe-mutex-acquire/start-sleep mutex+sleep)
   (cond
     [(box-cas! (m+s-sleep mutex+sleep) #f 'sleep)
+     (assert-push-lock-level! 'rktio-sleep-relevant)
      (mutex-acquire (m+s-mutex mutex+sleep))
      ;; It's possible that we set to 'sleep, but a non-sleep
      ;; thread managed to switch to 1 and then got the mutex
@@ -194,6 +225,7 @@
               (ping-sleep-wakeup (m+s-sleep mutex+sleep)))
           ;; release mutex, and assume others are waiting
           (mutex-release (m+s-mutex mutex+sleep))
+          (assert-pop-lock-level! 'rktio-sleep-relevant)
           #f]
          [else
           ;; must be a spurious CAS failure, so try checking again
@@ -220,6 +252,7 @@
 
 (define (rktio-place-init!)
   (set! rktio (rktio_init))
+  (set! rktio-mutex (make-mutex))
   (set! rktio-mutex+sleep (make-rktio-mutex+sleep rktio)))
 
 (define (rktio-place-destroy!)

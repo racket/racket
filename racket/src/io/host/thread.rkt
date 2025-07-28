@@ -57,12 +57,16 @@
         unsafe-make-uninterruptible-lock
         unsafe-uninterruptible-lock-acquire
         unsafe-uninterruptible-lock-release
+        unsafe-uninterruptible-custodian-lock-acquire
+        unsafe-uninterruptible-custodian-lock-release
         current-custodian
         custodian-shut-down?
         current-plumber
         plumber-add-flush!
         plumber-flush-handle-remove!
-        prop:place-message)
+        prop:place-message
+        assert-push-lock-level!
+        assert-pop-lock-level!)
 
 (bounce* choice-evt ; raw variant that takes a list of evts
          prop:secondary-evt
@@ -120,8 +124,8 @@
   (unless (in-atomic-mode?)
     (error 'assert-atomic "not in atomic mode")))
 
-;; in atomic mode
-(define (check-current-custodian who #:unlock [unlock end-atomic])
+;; with a lock (if any) balanced by `unlock`
+(define (check-current-custodian who #:unlock unlock)
   (when (custodian-shut-down? (current-custodian))
     (unlock)
     (raise

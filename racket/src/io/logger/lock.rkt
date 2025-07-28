@@ -24,20 +24,24 @@
 (define-syntax-rule (atomically/with-logger-lock/no-gc-interrupts/no-wind e ...)
   (begin
     (start-atomic/no-gc-interrupts)
+    (assert-push-lock-level! 'logger)
     (unsafe-uninterruptible-lock-acquire logger-lock)
     (begin0
       (let () e ...)
       (unsafe-uninterruptible-lock-release logger-lock)
+      (assert-pop-lock-level! 'logger)
       (end-atomic/no-gc-interrupts))))
 
 
 (define-syntax-rule (uninterruptibly/with-logger-lock/no-gc-interrupts/no-wind e ...)
   (begin
     (start-uninterruptible/no-gc-interrupts)
+    (assert-push-lock-level! 'logger)
     (unsafe-uninterruptible-lock-acquire logger-lock)
     (begin0
       (let () e ...)
       (unsafe-uninterruptible-lock-release logger-lock)
+      (assert-pop-lock-level! 'logger)
       (end-uninterruptible/no-gc-interrupts))))
 
 (define (logger-init-lock!)

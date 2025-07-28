@@ -85,34 +85,44 @@
 (define (do-udp-send-to who u hostname port-no bstr start end
                         #:wait? [wait? #t]
                         #:enable-break? [enable-break? #f])
-  (atomically ; because `call-with-resolved-address`
-   (call-with-resolved-address
-    #:who who
-    hostname port-no
-    #:tcp? #f
-    (lambda (addr)
-      (do-udp-maybe-send-to-addr who u addr bstr start end
-                                 #:wait? wait?
-                                 #:enable-break? enable-break?)))))
+  (start-uninterruptible) ; because `call-with-resolved-address`
+  (define result
+    (call-with-resolved-address
+     #:who who
+     hostname port-no
+     #:tcp? #f
+     ;; in uninterruptible mode:
+     (lambda (addr)
+       (do-udp-maybe-send-to-addr who u addr bstr start end
+                                  #:wait? wait?
+                                  #:enable-break? enable-break?))))
+  (end-uninterruptible)
+  result)
+  
 
 (define (do-udp-send-to-evt who u hostname port-no bstr start end)
-  (atomically ; because `call-with-resolved-address`
-   (call-with-resolved-address
-    #:who who
-    hostname port-no
-    #:tcp? #f
-    #:retain-address? #t
-    (lambda (addr)
-      (udp-sending-evt
-       u
-       ;; in atomic mode:
-       (lambda ()
-         (when addr (register-address-finalizer addr))
-         (do-udp-maybe-send-to-addr who u addr bstr start end
-                                    #:wait? #f
-                                    #:handle-error (lambda (thunk) thunk))))))))
+  (poll-address-finalizations) ; not in uninterruptible mode
+  (start-uninterruptible) ; because `call-with-resolved-address`
+  (define evt
+    (call-with-resolved-address
+     #:who who
+     hostname port-no
+     #:tcp? #f
+     #:retain-address? #t
+     (lambda (addr)
+       (udp-sending-evt
+        u
+        ;; in atomic mode:
+        (lambda ()
+          (when addr (register-address-finalizer addr))
+          (do-udp-maybe-send-to-addr who u addr bstr start end
+                                     #:wait? #f
+                                     #:handle-error (lambda (thunk) thunk)))))))
+  (end-uninterruptible)
+  evt)
 
-; in atomic mode, *not* rktio mode
+; in uninterruptible mode (maybe atomic), *not* rktio mode
+;; if atomic, then `handle-error` returns its argument, and `wait?` is `#f`
 (define (do-udp-maybe-send-to-addr who u addr bstr start end
                                    #:wait? [wait? #t]
                                    #:enable-break? [enable-break? #f]
@@ -127,12 +137,12 @@
      #:continue
      (lambda ()
        (cond
-         [(and addr (udp-connected? u))
+         [(and addr (udp-is-connected? u))
           (handle-error
            (lambda ()
              (raise-network-arguments-error who "udp socket is connected"
                                             "socket" u)))]
-         [(and (not addr) (not (udp-connected? u)))
+         [(and (not addr) (not (udp-is-connected? u)))
           (handle-error
            (lambda ()
              (raise-network-arguments-error who "udp socket is not connected"
@@ -151,16 +161,16 @@
                [(not wait?) #f]
                [else
                 (end-rktio)
-                (end-atomic)
+                (end-uninterruptible)
                 ((if enable-break? sync/enable-break sync)
                  (rktio-evt (lambda ()
                               (or (not (udp-s u))
                                   (not (eqv? (rktio_poll_write_ready rktio (udp-s u))
                                              RKTIO_POLL_NOT_READY))))
-                            ;; in atomic and in rktio, must not start nested rktio
+                            ;; in atomic and in rktio-sleep-relevant (not rktio), must not start nested rktio
                             (lambda (ps)
                               (rktio_poll_add rktio (udp-s u) ps RKTIO_POLL_WRITE))))
-                (start-atomic)
+                (start-uninterruptible)
                 (loop)])]
             [(= r (- end start))
              (end-rktio)
@@ -194,7 +204,7 @@
        [else
         (sandman-poll-ctx-add-poll-set-adder!
          poll-ctx
-         ;; in atomic and in rktio, must not start nested rktio
+         ;; in atomic and in rktio-sleep-relevant (not rktio), must not start nested rktio
          (lambda (ps)
            (rktio_poll_add rktio (udp-s (udp-sending-evt-u self)) ps RKTIO_POLL_READ)))
         (values #f self)])))

@@ -682,6 +682,9 @@ scheme_init_unsafe_thread (Scheme_Startup_Env *env)
   ADD_PRIM_W_ARITY("unsafe-uninterruptible-lock-acquire", unsafe_start_atomic, 1, 1, env);
   ADD_PRIM_W_ARITY("unsafe-uninterruptible-lock-release", unsafe_end_atomic, 1, 1, env);
 
+  ADD_PRIM_W_ARITY("unsafe-uninterruptible-custodian-lock-acquire", unsafe_start_atomic, 0, 0, env);
+  ADD_PRIM_W_ARITY("unsafe-uninterruptible-custodian-lock-release", unsafe_end_atomic, 0, 0, env);
+
   ADD_PRIM_W_ARITY("unsafe-thread-at-root", unsafe_thread_at_root, 1, 1, env);
  
   ADD_PRIM_W_ARITY("unsafe-make-custodian-at-root", unsafe_make_custodian_at_root, 0, 0, env);

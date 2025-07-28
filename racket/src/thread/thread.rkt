@@ -103,10 +103,10 @@
 (module* for-future #f
   (provide break-enabled-default-cell
            do-make-thread
+           thread-init-kill-callback!
            thread-descheduled?
            thread-suspended?
            is-thread-dead?
-           thread-cells
            thread-interrupt-callback
            set-thread-interrupt-callback!
            set-future->thread!
@@ -131,8 +131,8 @@
                      [transitive-resumes #:mutable] ; a list of `transitive-resume`s
 
                      suspend-to-kill?
-                     [kill-callbacks #:mutable] ; list of callbacks
-                     
+                     [kill-callbacks #:mutable] ; list of callbacks or vector of callbacks and pre-callback
+
                      [suspend+resume-callbacks #:mutable] ; list of (cons callback callback)
                      [descheduled? #:mutable]
                      [interrupt-callback #:mutable] ; non-#f => wake up on kill; 'future means future half is running
@@ -153,8 +153,7 @@
 
                      [cpu-time #:mutable] ; accumulates CPU time in milliseconds
 
-                     [future #:mutable]   ; saved would-be future or parallel-thread future
-                     cells) ; thread-cell state
+                     [future #:mutable])  ; saved would-be future or parallel-thread future
   #:authentic
   #:sealed
   #:property host:prop:unsafe-authentic-override #t ; allow evt chaperone
@@ -198,7 +197,8 @@
                                                                      break-enabled-default-cell
                                                                      (current-break-enabled-cell))]
                         #:schedule? [schedule? #t]
-                        #:keep-result? [keep-result? #f])
+                        #:keep-result? [keep-result? #f]
+                        #:return-cells? [return-cells? #f])
   (define p (if (or at-root? initial?)
                 root-thread-group
                 (current-thread-group)))
@@ -245,8 +245,7 @@
 
                     0 ; cpu-time
 
-                    #f ; future
-                    cells)) ; thread-cell state
+                    #f)) ; future
   ((atomically
     (define cref (and c (custodian-register-thread c t remove-thread-custodian)))
     (cond
@@ -256,7 +255,9 @@
          (thread-group-add! p t))
        void]
       [else (lambda () (raise-custodian-is-shut-down who c))])))
-  t)
+  (if return-cells?
+      (values t cells)
+      t))
 
 (define make-thread
   (let ([thread (lambda (proc [keep-result? #f])
@@ -369,16 +370,35 @@
 ;; ----------------------------------------
 ;; Thread termination
 
-;; Called in atomic mode or in a thread that has the only access to the thread:
-(define (thread-push-kill-callback! cb [t-in #f])
-  (define t (or t-in (current-thread/in-racket)))
-  (set-thread-kill-callbacks! t (cons cb (thread-kill-callbacks t))))
+;; Called before `t` is scheduled when creating a parallel thread
+(define (thread-init-kill-callback! t cb)
+  (set-thread-kill-callbacks! t (vector null cb)))
 
-;; Called in atomic mode:
+;; Called in atomic mode, unless callbacks as a vector, in which case called in any pthread
+(define (thread-push-kill-callback! cb)
+  (define t (current-thread))
+  (define kcbs (thread-kill-callbacks t))
+  (cond
+    [(vector? kcbs)
+     (let loop ()
+       (define cbs (vector-ref kcbs 0))
+       (unless (vector-cas! kcbs 0 cbs (cons cb cbs))
+         (loop)))]
+    [else
+     (set-thread-kill-callbacks! t (cons cb kcbs))]))
+
+;; Called in atomic mode, unless callbacks as a vector, in which case called in any pthread
 (define (thread-pop-kill-callback!)
-  (assert-atomic-mode)
-  (define t (current-thread/in-racket))
-  (set-thread-kill-callbacks! t (cdr (thread-kill-callbacks t))))
+  (define t (current-thread))
+  (define kcbs (thread-kill-callbacks t))
+  (cond
+    [(vector? kcbs)
+     (let loop ()
+       (define cbs (vector-ref kcbs 0))
+       (unless (vector-cas! kcbs 0 cbs (cdr cbs))
+         (loop)))]
+    [else
+     (set-thread-kill-callbacks! t (cdr kcbs))]))
 
 (define/who (kill-thread t)
   (check who thread? t)
@@ -458,7 +478,15 @@
 ;; Called in atomic mode:
 (define (run-kill-callbacks! t)
   (assert-atomic-mode)
-  (for ([cb (in-list (thread-kill-callbacks t))])
+  (define kcbs (thread-kill-callbacks t))  
+  (define cbs
+    (cond
+      [(vector? kcbs)
+       ;; terminate future, first:
+       ((vector-ref kcbs 1))
+       (vector-ref kcbs 0)]
+      [else kcbs]))
+  (for ([cb (in-list cbs)])
     (cb))
   (set-thread-kill-callbacks! t null))
 
@@ -526,8 +554,10 @@
                 [(dead-evt? evt)
                  (define refs (thread-custodian-references t))
                  (set-dead-evt-custodian-references! evt refs)
+                 (lock-custodians)
                  (for ([cr (in-list refs)])
-                   (custodian-register-also cr evt remove-dead-evt-custodian #f #t))])))
+                   (custodian-register-also cr evt remove-dead-evt-custodian #f #t))
+                 (unlock-custodians)])))
            (thread-dead-evt t))])
     thread-dead-evt))
 
@@ -727,13 +757,17 @@
           (set-thread-custodian-references! t refs)
           (let ([evt (thread-dead-evt t)])
             (when (dead-evt? evt)
+              (lock-custodians)
               (custodian-register-also cr evt remove-dead-evt-custodian #f #t)
+              (unlock-custodians)
               (set-dead-evt-custodian-references! evt refs)))
           (let ([suspended-evt (thread-suspended-evt t)])
             (when (suspend-evt? suspended-evt)
               (define sema (suspend-resume-evt-sema suspended-evt))
               (when (suspend-semaphore? sema)
+                (lock-custodians)
                 (custodian-register-also cr sema remove-suspend-semaphore-custodian #f #t)
+                (unlock-custodians)
                 (set-suspend-semaphore-custodian-references! sema refs))))
           (do-resume-transitive-resumes t c)
           #t])]
@@ -863,8 +897,10 @@
                     [(thread-suspend-to-kill? t)
                      (define refs (thread-custodian-references t))
                      (define sema (suspend-semaphore #f #f 0 refs))
+                     (lock-custodians)
                      (for ([cr (in-list refs)])
                        (custodian-register-also cr sema remove-suspend-semaphore-custodian #f #t))
+                     (unlock-custodians)
                      sema]
                     [else (make-semaphore)])]
                  [s (suspend-evt sema (and (thread-suspend-to-kill? t)

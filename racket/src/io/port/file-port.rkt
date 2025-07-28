@@ -31,16 +31,19 @@
       [(text) RKTIO_OPEN_TEXT]
       [else 0]))
   (define host-path (->host path who '(read)))
-  (start-atomic)
-  (check-current-custodian who)
-  (define fd (rktioly
-              (rktio_open rktio
-                          host-path
-                          (+ RKTIO_OPEN_READ
-                             (mode->flags mode1)
-                             (mode->flags mode2)))))
+  (start-rktio)
+  (unsafe-uninterruptible-custodian-lock-acquire)
+  (check-current-custodian who #:unlock (lambda ()
+                                          (unsafe-uninterruptible-custodian-lock-release)
+                                          (end-rktio)))
+  (define fd (rktio_open rktio
+                         host-path
+                         (+ RKTIO_OPEN_READ
+                            (mode->flags mode1)
+                            (mode->flags mode2))))
+  (end-rktio)
   (when (rktio-error? fd)
-    (end-atomic)
+    (unsafe-uninterruptible-custodian-lock-release)
     (when (or (eq? mode1 'module) (eq? mode2 'module))
       (maybe-raise-missing-module who (host-> host-path) "" "" ""
                                   (format-rktio-system-error-message fd)))
@@ -51,7 +54,7 @@
                                      "  path: ~a")
                                     (host-> host-path))))
   (define p (open-input-fd fd (host-> host-path)))
-  (end-atomic)
+  (unsafe-uninterruptible-custodian-lock-release)
   (when (port-count-lines-enabled)
     (port-count-lines! p))
   p)
@@ -82,15 +85,17 @@
                                                      (mode? 'must-update))
                                                  '(read)
                                                  '()))))
-  (start-atomic)
-  (check-current-custodian who)
+  (start-rktio)
+  (unsafe-uninterruptible-custodian-lock-acquire)
+  (check-current-custodian who #:unlock (lambda ()
+                                          (unsafe-uninterruptible-custodian-lock-release)
+                                          (end-rktio)))
   (define flags
     (+ RKTIO_OPEN_WRITE
        (if plus-input? RKTIO_OPEN_READ 0)
        (mode->flags mode1)
        (mode->flags mode2)
        (if replace-perms? RKTIO_OPEN_REPLACE_PERMS 0)))
-  (start-rktio)
   (define fd0
     (rktio_open_with_create_permissions rktio host-path flags perms))
   (define fd
@@ -103,8 +108,8 @@
                                     host-path
                                     (current-force-delete-permissions)))
        (when (rktio-error? r)
+         (unsafe-uninterruptible-custodian-lock-release)
          (end-rktio)
-         (end-atomic)
          (raise-filesystem-error who
                                  r
                                  (format (string-append
@@ -113,9 +118,9 @@
                                          (host-> host-path))))
        (rktio_open_with_create_permissions rktio host-path flags perms)]
       [else fd0]))
-  (end-rktio)
   (when (rktio-error? fd)
-    (end-atomic)
+    (end-rktio)
+    (unsafe-uninterruptible-custodian-lock-release)
     (raise-filesystem-error who
                             fd
                             (format (string-append
@@ -128,12 +133,14 @@
                                        "path is a directory"]
                                       [else "error opening file"])
                                     (host-> host-path))))
+  (define is-terminal? (rktio_fd_is_terminal rktio fd))
+  (end-rktio)
   (define opened-path (host-> host-path))
   (define refcount (box (if plus-input? 2 1)))
-  (define op (open-output-fd fd opened-path #:fd-refcount refcount))
+  (define op (open-output-fd fd opened-path #:fd-refcount refcount #:is-terminal? is-terminal?))
   (define ip (and plus-input?
                   (open-input-fd fd opened-path #:fd-refcount refcount)))
-  (end-atomic)
+  (unsafe-uninterruptible-custodian-lock-release)
   (when (port-count-lines-enabled)
     (port-count-lines! op)
     (when plus-input?

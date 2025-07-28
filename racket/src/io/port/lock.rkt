@@ -66,6 +66,7 @@
 (define-syntax-rule (port-lock p-expr)
   (let ([p p-expr])
     (start-uninterruptible)
+    (assert-push-lock-level! 'port)
     (unless (core-port-lock-cas! p #f #t)
       (port-lock-slow p))
     (memory-order-acquire)))
@@ -75,6 +76,7 @@
     (memory-order-release)
     (unless (core-port-lock-cas! p #t #f)
       (port-unlock-slow p))
+    (assert-pop-lock-level! 'port)
     ;; The intent of ending uninterruptible mode with
     ;; `end-atomic` is to include a future barrier exit, in
     ;; case `also-aotmically` was used
@@ -100,8 +102,10 @@
 (define-syntax-rule (merely-atomically p-expr e ...)
   (let ([p p-expr])
     (port-unlock-slow p)
+    (assert-pop-lock-level! 'port)
     (begin0
       (let () e ...)
+      (assert-push-lock-level! 'port)
       (port-lock-slow p))))
 
 ;; Releases the lock at the beginning, but retains it after starting `e ...`
@@ -124,11 +128,15 @@
      (unless (core-port-lock-cas! p #f #t)
        (port-lock-slow p))]
     [(eq? lock 'atomic)
+     (assert-pop-lock-level! 'port)
      (end-uninterruptible)
      (start-atomic)
+     (assert-push-lock-level! 'port)
      (unless (core-port-lock-cas! p 'atomic 'in-atomic)
+       (assert-pop-lock-level! 'port)
        (end-atomic)
        (start-uninterruptible)
+       (assert-push-lock-level! 'port)
        (port-lock-slow p))]
     [(or (eq? lock #t)
          (eq? lock 'in-atomic)
@@ -138,8 +146,10 @@
      (core-port-lock-cas! p #t new-lock) ; ok for CAS to fail
      (port-lock-slow p)]
     [(lock-atomic? lock)
+     (assert-pop-lock-level! 'port)
      (end-uninterruptible)
      (start-atomic)
+     (assert-push-lock-level! 'port)
      (lock-acquire lock)
      (set-lock-was-atomic?! lock #t)]
     [(lock? lock)
@@ -168,14 +178,18 @@
     [(eq? lock 'in-atomic)
      (cond
        [(core-port-lock-cas! p 'in-atomic 'atomic)
+        (assert-pop-lock-level! 'port)
         (end-atomic)
-        (start-uninterruptible)]
+        (start-uninterruptible)
+        (assert-push-lock-level! 'port)]
        [else
         (port-unlock-slow p)])]
     [(lock-was-atomic? lock)
      (lock-release lock)
+     (assert-pop-lock-level! 'port)
      (end-atomic)
-     (start-uninterruptible)]
+     (start-uninterruptible)
+     (assert-push-lock-level! 'port)]
     [(lock? lock)
      (lock-release lock)]
     [else

@@ -41,3 +41,15 @@
   ])
 
 (define (active-pthreads) #%$active-threads)
+
+(meta-cond
+ [#f ; debug locks instead of foreign calls?
+  (define-syntax-rule (begin-foreign-checking e ...)
+    (void))
+  (define-syntax-rule (meta-if-foreign-checking a b)
+    b)]
+ [else
+  (define-syntax-rule (begin-foreign-checking e ...)
+    (begin e ...))
+  (define-syntax-rule (meta-if-foreign-checking a b)
+    a)])

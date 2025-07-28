@@ -72,12 +72,16 @@
         #f]
        [else
         (start-rktio)
-        (unless cust (check-current-custodian who))
+        (unsafe-uninterruptible-custodian-lock-acquire)
+        (unless cust (check-current-custodian who #:unlock (lambda ()
+                                                             (unsafe-uninterruptible-custodian-lock-release)
+                                                             (end-rktio))))
         (define c (rktio_converter_open rktio
                                         (encoding->bytes who to-str)
                                         (encoding->bytes who from-str)))
         (cond
           [(rktio-error? c)
+           (unsafe-uninterruptible-custodian-lock-release)
            (end-rktio)
            #;
            (raise-rktio-error who c "failed")
@@ -86,6 +90,7 @@
            (define converter (bytes-converter c #f))
            (define cref (unsafe-custodian-register (or cust (current-custodian)) converter close-converter #f #f))
            (set-bytes-converter-custodian-reference! converter cref)
+           (unsafe-uninterruptible-custodian-lock-release)
            (end-rktio)
            converter])])]))
 

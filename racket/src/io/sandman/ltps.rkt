@@ -36,7 +36,7 @@
 
 ;; ----------------------------------------
 
-;; in rktio mode
+;; in rktio-sleep-relevant mode (not necesarily rktio mode)
 (define (fd-semaphore-update! fd mode)
   (cond
     [(eq? shared-ltps rktio_NULL) #f]
@@ -62,22 +62,25 @@
            (rktio_ltps_handle_set_data rktio h (immobile-cell->address ib))
            s])])]))
 
-;; in atomic mode, *not* rktio mode
+;; in atomic mode, *not* rktio mode or rktio-sleep-relevant mode
 (define (fd-semaphore-poll-ready?)
   (cond
     [(eq? shared-ltps rktio_NULL) #f]
     [else
-     (rktioly
-      (rktio_ltps_poll rktio shared-ltps)
-      (let loop ([did? #f])
-        (define h (rktio_ltps_get_signaled_handle rktio shared-ltps))
-        (cond
-          [(rktio-error? h)
-           ;; Could log an error that isn't RKTIO_ERROR_LTPS_NOT_FOUND
-           did?]
-          [else
-           (define ib (address->immobile-cell (rktio_ltps_handle_get_data rktio h)))
-           (semaphore-post-all (immobile-cell-ref ib))
-           (free-immobile-cell ib)
-           (rktio_free h)
-           (loop #t)])))]))
+     (start-rktio)
+     (start-rktio-sleep-relevant)
+     (rktio_ltps_poll rktio shared-ltps)
+     (let loop ([did? #f])
+       (define h (rktio_ltps_get_signaled_handle rktio shared-ltps))
+       (cond
+         [(rktio-error? h)
+          ;; Could log an error if it isn't RKTIO_ERROR_LTPS_NOT_FOUND
+          (end-rktio-sleep-relevant)
+          (end-rktio)
+          did?]
+         [else
+          (define ib (address->immobile-cell (rktio_ltps_handle_get_data rktio h)))
+          (semaphore-post-all (immobile-cell-ref ib))
+          (free-immobile-cell ib)
+          (rktio_free h)
+          (loop #t)]))]))

@@ -1415,8 +1415,12 @@
          save-errno)
   (check who string? :or-false lock-name))
 
-;; For sanity checking of callbacks during a blocking callout:
-(define-virtual-register currently-blocking? #f)
+;; For sanity checking of callbacks during a blocking callout,
+;; or checking lock order, but we can support only one at a
+;; time:
+(meta-if-foreign-checking
+ (define-virtual-register current-lock-status #f)
+ (define-virtual-register current-lock-status null))
 
 (define-syntax-rule (retain v ... e)
   ;; Make sure that the `v ...` stay live until `e` produces a result,
@@ -1612,7 +1616,8 @@
                            (let ([go (lambda ()
                                        (when lock (mutex-acquire lock))
                                        (with-interrupts-disabled*
-                                        (when blocking? (currently-blocking? #t))
+                                        (begin-foreign-checking
+                                         (when blocking? (current-lock-status #t)))
                                         (retain
                                          orig-args
                                          (let ([r (let ([args (append
@@ -1631,9 +1636,11 @@
                                                         (lambda () (#%apply proc args))
                                                         (lambda ()
                                                           (when lock (mutex-release lock))
-                                                          (when blocking? (currently-blocking? #f))))]))])
+                                                          (begin-foreign-checking
+                                                           (when blocking? (current-lock-status #f)))))]))])
                                            (when lock (mutex-release lock))
-                                           (when blocking? (currently-blocking? #f))
+                                           (begin-foreign-checking
+                                            (when blocking? (current-lock-status #f)))
                                            (case save-errno
                                              [(posix) (thread-cell-set! errno-cell (get-errno))]
                                              [(windows) (thread-cell-set! errno-cell (get-last-error))])
@@ -1653,11 +1660,12 @@
         (gen-proc (lambda args ; if ret-size, includes an extra initial argument to receive the result
                     (let ([v (call-as-atomic-callback
                               (lambda ()
-                                (unless async-apply
-                                  ;; Sanity check; if the check fails, things can go bad from here on,
-                                  ;; but we try to continue, anyway
-                                  (when (currently-blocking?)
-                                    (#%printf "non-async in callback during blocking: ~s\n" to-wrap)))
+                                (begin-foreign-checking
+                                 (unless async-apply
+                                   ;; Sanity check; if the check fails, things can go bad from here on,
+                                   ;; but we try to continue, anyway
+                                   (when (current-lock-status)
+                                     (#%printf "non-async in callback during blocking: ~s\n" to-wrap))))
                                 ((ctype-s->c out-type)
                                  'callback
                                  (apply to-wrap

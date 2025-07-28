@@ -36,7 +36,7 @@
         (values #f (dup-fd (fd-port-fd err) clean-out+in "stderr dup"))
         (pipe clean-out+in "stderr pipe")))
   (values (and parent-in-fd
-               (open-output-fd parent-in-fd "place-in"))
+               (open-output-fd parent-in-fd "place-in" #:is-terminal? #f))
           (and parent-out-fd
                (open-input-fd parent-out-fd "place-out"))
           (and parent-err-fd

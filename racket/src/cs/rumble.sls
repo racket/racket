@@ -824,6 +824,8 @@
           call-as-asynchronous-callback
           post-as-asynchronous-callback
           ensure-virtual-registers
+          current-lock-status
+          meta-if-foreign-checking
 
           ;; compile-time use in "thread.sls"
           current-atomic-virtual-register

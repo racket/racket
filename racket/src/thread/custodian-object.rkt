@@ -1,7 +1,13 @@
 #lang racket/base
 (require "place-local.rkt"
+         "atomic.rkt"
          (only-in "host.rkt"
-                  host:unsafe-make-weak-hasheq))
+                  host:unsafe-make-weak-hasheq
+                  host:make-mutex
+                  host:mutex-acquire
+                  host:mutex-release
+                  assert-push-lock-level!
+                  assert-pop-lock-level!))
 
 (provide (struct-out custodian)
          create-custodian
@@ -11,18 +17,44 @@
          set-custodian-shut-down!
 
          initial-place-root-custodian
-         root-custodian)
+         root-custodian
+
+         lock-custodians
+         unlock-custodians
+         init-custodian-lock!
+         assert-custodians-locked)
+
+;; The custodian lock cannot be taken inside a region where gc-interrupts are disabled.
+;; Other locks cannot be taken inside the custodian lock.
+;; The custodian lock implies uninterrupible mode.
+(define-place-local custodian-lock (host:make-mutex))
+
+(define (lock-custodians)
+  (start-uninterruptible)
+  (assert-push-lock-level! 'custodian)
+  (host:mutex-acquire custodian-lock))
+(define (unlock-custodians)  
+  (host:mutex-release custodian-lock)
+  (assert-pop-lock-level! 'custodian)
+  (end-uninterruptible))
+
+(define (init-custodian-lock!)
+  (set! custodian-lock (host:make-mutex)))
+
+;; No way to check this, currently:
+(define-syntax-rule (assert-custodians-locked)
+  (begin))
 
 (struct custodian (children     ; weakly maps maps object to callback
                    shut-down?-box ; box of boolean
                    [shutdown-sema #:mutable]
-                   [need-shutdown #:mutable] ; queued asynchronous shutdown: #f, 'needed, or 'needed/sent-wakeup
+                   [need-shutdown #:mutable] ; queued asynchronous shutdown: #f, 'needed, or 'needed/sent-wakeup; lock with atomic/no-gc
                    [parent-reference #:mutable]
                    [self-reference #:mutable]
                    [place #:mutable]      ; place containing the custodian
-                   [memory-use #:mutable] ; set after a major GC
-                   [gc-roots #:mutable]   ; weak references to charge to custodian; access without interrupts
-                   [memory-limits #:mutable]   ; list of (cons limit #f-or-cust) where #f means "self"
+                   [memory-use #:mutable] ; set after a major GC; lock with atomic/no-gc
+                   [gc-roots #:mutable]   ; weak references to charge to custodian; access without interrupts; lock with atomic/npo-gc
+                   [memory-limits #:mutable]   ; list of (cons limit #f-or-cust) where #f means "self"; lock with atomic/no-gc
                    [immediate-limit #:mutable] ; limit on immediate allocation
                    [sync-futures? #:mutable]   ; whether a sync with future threads is needed on shutdown
                    [post-shutdown #:mutable])  ; callbacks to run in atomic mode after shutdown
@@ -43,12 +75,17 @@
              #f     ; sync-futures?
              null)) ; post-shutdown
 
-;; Call only from a place's main pthread, and only a
-;; place's main thread should change the box value.
+;; Might be called with the custodian lock already held or in atomic mode, so that
+;; a shut-down check can guard work that sholdn't be done if
+;; it can't be registered with the custodian. (A custodian can only
+;; be shut down with the lock and in atomic mode.)
 (define (custodian-shut-down? c)
-  (unbox* (custodian-shut-down?-box c)))
+  (lock-custodians)
+  (define shut-down? (unbox* (custodian-shut-down?-box c)))
+  (unlock-custodians)
+  shut-down?)
 
-;; Call only from a place's main pthread
+;; Called with the custodian lock
 (define (set-custodian-shut-down! c)
   (unless (box-cas! (custodian-shut-down?-box c) #f #t)
     (set-custodian-shut-down! c)))

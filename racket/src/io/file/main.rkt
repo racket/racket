@@ -118,51 +118,56 @@
 		       ;; Need to avoid "." and "..", so simplify
 		       (->host (simplify-path/dl (host-> host-path/initial)) #f '())]
 		      [else host-path/initial]))
-  (atomically ; because `call-with-resource`
-   (call-with-resource
-    (rktioly (rktio_directory_list_start rktio host-path))
-    ;; in atomic mode, *not* in rktio mode
-    (lambda (dl) (rktioly (rktio_directory_list_stop rktio dl)))
-    ;; in atomic mode, *not* in rktio mode
-    (lambda (dl)
-      (cond
-        [(rktio-error? dl)
-         (end-atomic)
-         (raise-filesystem-error who
-                                 dl
-                                 (format (string-append
-                                          "could not open directory\n"
-                                          "  path: ~a")
-                                         (host-> host-path)))]
-        [else
-         (start-rktio)
-         (let loop ([accum null] [len 0])
-           (define fnp (rktio_directory_list_step rktio dl))
-           (define fn (if (rktio-error? fnp)
-                          fnp
-                          (rktio_to_bytes fnp)))
-           (cond
-             [(rktio-error? fn)
-              (end-rktio)
-              (end-atomic)
-              (check-rktio-error fn "error reading directory")]
-             [(equal? fn #"")
-              ;; `dl` is no longer valid; need to return still in
-              ;; atomic mode, so that `dl` is not destroyed again
-              (end-rktio)
-              accum]
-             [else
-              (define new-accum (cons (host-element-> fn) accum))
-              (rktio_free fnp)
-              (cond
-                [(= len 128)
-                 (end-rktio)
-                 (end-atomic)
-                 (start-atomic)
-                 (start-rktio)
-                 (loop new-accum 0)]
-                [else
-                 (loop new-accum (add1 len))])]))])))))
+  (start-uninterruptible) ; because `call-with-resource`
+  (define lst
+    (call-with-resource
+     (rktioly (rktio_directory_list_start rktio host-path))
+     ;; in uninterruptible mode (possibly atomic), *not* in rktio mode
+     (lambda (dl) (rktioly (rktio_directory_list_stop rktio dl)))
+     ;; in uninterruptible mode, *not* in rktio mode
+     (lambda (dl)
+       (cond
+         [(rktio-error? dl)
+          (end-uninterruptible)
+          (raise-filesystem-error who
+                                  dl
+                                  (format (string-append
+                                           "could not open directory\n"
+                                           "  path: ~a")
+                                          (host-> host-path)))]
+         [else
+          (start-rktio)
+          (let loop ([accum null] [len 0])
+            (define fnp (rktio_directory_list_step rktio dl))
+            (define fn (if (rktio-error? fnp)
+                           fnp
+                           (rktio_to_bytes fnp)))
+            (cond
+              [(rktio-error? fn)
+               (end-rktio)
+               (end-uninterruptible)
+               (check-rktio-error fn "error reading directory")]
+              [(equal? fn #"")
+               ;; `dl` is no longer valid; need to return still in
+               ;; uninterrupible mode, so that `dl` is not destroyed again
+               (end-rktio)
+               accum]
+              [else
+               (define new-accum (cons (host-element-> fn) accum))
+               (rktio_free fnp)
+               (cond
+                 [(= len 128)
+                  ;; go out of uninterruptable and back to give another
+                  ;; thread a chance to run
+                  (end-rktio)
+                  (end-uninterruptible)
+                  (start-uninterruptible)
+                  (start-rktio)
+                  (loop new-accum 0)]
+                 [else
+                  (loop new-accum (add1 len))])]))]))))
+  (end-uninterruptible)
+  lst)
 
 (define/who (delete-file p)
   (check who path-string? p)
@@ -352,7 +357,7 @@
   (define src-host (->host src who '(read)))
   (define dest-host (->host dest who '(write delete)))
   (define (report-error r)
-    (end-atomic)
+    (end-uninterruptible)
     (raise-filesystem-error who
                             r
                             (format (string-append
@@ -362,42 +367,43 @@
                                     (copy-file-step-string r)
                                     (host-> src-host)
                                     (host-> dest-host))))
-  (atomically ; because `call-with-resource`
-   (call-with-resource
-    (rktioly (rktio_copy_file_start_permissions rktio dest-host src-host exists-ok?
-                                                permissions (or permissions 0)
-                                                override-create-permissions?))
-    ;; in atomic mode, *not* in rktio mode
-    (lambda (cp) (rktioly (rktio_copy_file_stop rktio cp)))
-    ;; in atomic mode, *not* in rktio mode
-    (lambda (cp)
-      (cond
-        [(rktio-error? cp)
-         (report-error cp)]
-        [else
-         (start-rktio)
-         (let loop ([steps 0])
-           (cond
-             [(rktio_copy_file_is_done rktio cp)
-              (define r (rktio_copy_file_finish_permissions rktio cp))
-              (when (rktio-error? r)
+  (start-uninterruptible); because `call-with-resource`
+  (call-with-resource
+   (rktioly (rktio_copy_file_start_permissions rktio dest-host src-host exists-ok?
+                                               permissions (or permissions 0)
+                                               override-create-permissions?))
+   ;; in uninterruptible mode (possibly atomic), *not* in rktio mode
+   (lambda (cp) (rktioly (rktio_copy_file_stop rktio cp)))
+   ;; in uninterruptible mode, *not* in rktio mode
+   (lambda (cp)
+     (cond
+       [(rktio-error? cp)
+        (report-error cp)]
+       [else
+        (start-rktio)
+        (let loop ([steps 0])
+          (cond
+            [(rktio_copy_file_is_done rktio cp)
+             (define r (rktio_copy_file_finish_permissions rktio cp))
+             (when (rktio-error? r)
+               (end-uninterruptible)
+               (report-error r))
+             (rktio_copy_file_stop rktio cp)
+             (end-rktio)]
+            [else
+             (define r (rktio_copy_file_step rktio cp))
+             (when (rktio-error? r)
+               (end-rktio)
+               (report-error r))
+             (cond
+               [(= steps 10)
                 (end-rktio)
-                (report-error r))
-              (rktio_copy_file_stop rktio cp)
-              (end-rktio)]
-             [else
-              (define r (rktio_copy_file_step rktio cp))
-              (when (rktio-error? r)
-                (end-rktio)
-                (report-error r))
-              (cond
-                [(= steps 10)
-                 (end-rktio)
-                 (end-atomic)
-                 (start-atomic)
-                 (start-rktio)
-                 (loop 0)]
-                [else (loop (add1 steps))])]))])))))
+                (end-uninterruptible)
+                (start-uninterruptible)
+                (start-rktio)
+                (loop 0)]
+               [else (loop (add1 steps))])]))])))
+  (end-uninterruptible))
 
 (define/who (make-file-or-directory-link to path)
   (check who path-string? to)

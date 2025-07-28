@@ -1349,6 +1349,24 @@
   (rktio_const_string_t name)
   (rktio_const_string_t msg)
   (rktio_const_string_t exec_name)))
+(define-function
+ ()
+ void
+ rktio_syslog_best_effort
+ (((ref rktio_t) rktio)
+  (int level)
+  (rktio_const_string_t name)
+  (rktio_const_string_t msg)
+  (rktio_const_string_t exec_name)))
+(define-function
+ ()
+ void
+ rktio_std_write_in_best_effort
+ (((ref rktio_t) rktio)
+  (int which)
+  ((*ref char) buffer)
+  (intptr_t start)
+  (intptr_t end)))
 (define-function () int rktio_convert_properties (((ref rktio_t) rktio)))
 (define-function/errno
  NULL

@@ -33,7 +33,18 @@
         unsafe-place-local-set!
         unsafe-root-continuation-prompt-tag
         break-enabled-key
-        engine-block)
+        engine-block
+        assert-push-lock-level!
+        assert-pop-lock-level!        
+        [get-thread-id get-pthread-id]
+        [make-condition host:make-condition]
+        [condition-wait host:condition-wait]
+        [condition-signal host:condition-signal]
+        [condition-broadcast host:condition-broadcast]
+        [make-mutex host:make-mutex]
+        [mutex-acquire host:mutex-acquire]
+        [mutex-release host:mutex-release]
+        threaded?)
 
 (bounce #%engine
         make-engine
@@ -95,15 +106,6 @@
 
         fork-pthread
         pthread?
-        [get-thread-id get-pthread-id]
-        [make-condition host:make-condition]
-        [condition-wait host:condition-wait]
-        [condition-signal host:condition-signal]
-        [condition-broadcast host:condition-broadcast]
-        [make-mutex host:make-mutex]
-        [mutex-acquire host:mutex-acquire]
-        [mutex-release host:mutex-release]
-        threaded?
 
         [call-as-asynchronous-callback host:call-as-asynchronous-callback]
         [post-as-asynchronous-callback host:post-as-asynchronous-callback]

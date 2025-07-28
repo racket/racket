@@ -171,6 +171,8 @@
          unsafe-make-custodian-at-root
          unsafe-custodian-register
          unsafe-custodian-unregister
+         unsafe-uninterruptible-custodian-lock-acquire
+         unsafe-uninterruptible-custodian-lock-release
 
          dynamic-place  ; not the one from `racket/place`
          place?
@@ -199,7 +201,6 @@
          would-be-future
          current-future
          future-block
-         future-sync
          current-future-prompt
          reset-future-logs-for-tracing!
          mark-future-trace-end!

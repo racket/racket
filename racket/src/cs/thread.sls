@@ -17,20 +17,11 @@
                   [engine-roots rumble:engine-roots]
                   [call-with-engine-completion rumble:call-with-engine-completion]
                   [call-with-current-continuation-roots rumble:call-with-current-continuation-roots]
-                  [make-condition rumble:make-condition]
-                  [condition-wait rumble:condition-wait]
-                  [condition-signal rumble:condition-signal]
-                  [condition-broadcast rumble:condition-broadcast]
-                  [make-mutex rumble:make-mutex]
-                  [mutex-acquire rumble:mutex-acquire]
-                  [mutex-release rumble:mutex-release]
                   [pthread? rumble:thread?]
                   [fork-place rumble:fork-place]
                   [place-get-inherit rumble:place-get-inherit]
                   [start-place rumble:start-place]
                   [fork-pthread rumble:fork-thread]
-                  [threaded? rumble:threaded?]
-                  [get-thread-id rumble:get-thread-id]
                   [get-initial-pthread rumble:get-initial-pthread]
                   [current-place-roots rumble:current-place-roots]
                   [call-as-asynchronous-callback rumble:call-as-asynchronous-callback]
@@ -148,19 +139,68 @@
                       (fx+ n 1))))]))))
     (#%exit 1))
 
+  ;; Lock-order assertion --- using a vrtual register that is otherwise used
+  ;; for a check in the foreign interface, so enable assertion checking by
+  ;; flipping the mode in "rumble/pthread.ss".
+  ;; The lock order checking here spans the "thread" and "io" layers.
+  (meta-if-foreign-checking
+   (begin
+     (define-syntax (assert-push-lock-level! stx)
+       #'(void))
+     (define-syntax (assert-pop-lock-level! stx)
+       #'(void)))
+   (begin
+     (define (assert-push-lock-level! v)
+       (let ([status (current-lock-status)])
+         (when (case (and (pair? status) (car status))
+                 [(rktio) (memq v '(rktio port))] ; rktio is non-reentrant
+                 [(rktio-sleep-relevant) (memq v '(rktio-sleep-relevant rktio port))] ; also non-reentrant
+                 [(custodian) (and (memq v '(logger rktio-sleep-relevant rktio port))
+                                   ;; ok to retake lock, even after others:
+                                   (not (memq 'custodian status)))]
+                 [(logger) (memq v '(custodian rktio-sleep-relevant rktio port))]
+                 [else #f])
+           (#%display (#%format "<< ~s >>\n" (cons v status)))
+           (internal-error "misordered lock"))
+         #;(#%display (#%format "+ ~s take ~s\n" (#%get-thread-id)  (cons v status)))
+         (current-lock-status (cons v status))))
+     (define (assert-pop-lock-level! v)
+       #;(#%display (#%format "- ~s drop ~s\n" (#%get-thread-id)  (current-lock-status)))
+       (current-lock-status (let loop ([status (current-lock-status)])
+                              (cond
+                                [(null? status)
+                                 (#%display (#%format "<< ~s ~s >>\n" v (current-lock-status)))
+                                 (internal-error "releasing unheld lock")]
+                                [(eq? v (car status)) (cdr status)]
+                                [else (cons (car status) (loop (cdr status)))]))))))
+  (export assert-push-lock-level!
+          assert-pop-lock-level!)
+
   (define (primitive-table key)
     (case key
       [(|#%pthread|)
        ;; Entries in the `#%pthread` table are referenced more
        ;; directly in "compiled/thread.scm". To make that work, the
        ;; entries need to be either primitives in all Racket
-       ;; implemenations or registered as built-in names with the
-       ;; expander and listed in "primitive/internal.ss".
+       ;; implementations or registered as built-in names with the
+       ;; expander and listed in "primitive/internal.ss". And since
+       ;; the table isn't going to be used, we skip creating it.
+       (hasheq)
+       #;
        (hasheq
         'make-pthread-parameter make-pthread-parameter
         'unsafe-root-continuation-prompt-tag unsafe-root-continuation-prompt-tag
         'break-enabled-key break-enabled-key
         'engine-block engine-block
+        'make-mutex make-mutex
+        'mutex-acquire mutex-acquire
+        'mutex-release mutex-release
+        'make-condition make-condition
+        'condition-wait condition-wait
+        'condition-signal condition-signal
+        'condition-broadcast condition-broadcast
+        'threaded? threaded?
+        'get-thread-id get-thread-id
         ;; These are actually redirected by "place-register.ss", but
         ;; we list them here for compatibility with the bootstrapping
         ;; variant of `#%pthread`
@@ -211,15 +251,6 @@
         'pthread? rumble:thread?
         'call-as-asynchronous-callback rumble:call-as-asynchronous-callback
         'post-as-asynchronous-callback rumble:post-as-asynchronous-callback
-        'get-thread-id rumble:get-thread-id
-        'make-condition rumble:make-condition
-        'condition-wait rumble:condition-wait
-        'condition-signal rumble:condition-signal
-        'condition-broadcast rumble:condition-broadcast
-        'make-mutex rumble:make-mutex
-        'mutex-acquire rumble:mutex-acquire
-        'mutex-release rumble:mutex-release
-        'threaded? rumble:threaded?
         'continuation-current-primitive rumble:continuation-current-primitive
         'prop:unsafe-authentic-override prop:unsafe-authentic-override
         'get-system-stats get-system-stats
@@ -250,4 +281,4 @@
                                       (lambda ()
                                         (current-atomic (fx- (current-atomic) 1))))
 
-  (set-future-callbacks! future-block future-unblock future-sync current-future-prompt))
+  (set-future-callbacks! future-block future-unblock current-future-prompt))

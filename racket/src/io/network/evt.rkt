@@ -5,7 +5,7 @@
 
 (provide rktio-evt)
 
-;; the `add-to-poll-set` function is in atomic and rktio, must not start nested rktio
+;; the `add-to-poll-set` function is in atomic and rktio-sleep-relevant (not rktio), must not start nested rktio
 (struct rktio-evt (poll add-to-poll-set)
   #:property
   prop:evt

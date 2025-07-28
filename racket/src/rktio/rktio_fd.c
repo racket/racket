@@ -160,7 +160,8 @@ static intptr_t recount_output_text(const char *orig_buffer, const char *buffer,
 
 static wchar_t *convert_output_wtext(const char *buffer, intptr_t *_towrite,
 				     int *_can_leftover, int *_keep_leftover,
-				     int leftover_len, char *leftover);
+				     int leftover_len, char *leftover,
+				     int max_convert);
 static intptr_t recount_output_wtext(wchar_t *w_buffer, intptr_t winwrote);
 
 #define MIN_VIA_WIDE_BUFFER_SIZE 6
@@ -1568,7 +1569,8 @@ intptr_t rktio_write(rktio_t *rktio, rktio_fd_t *rfd, const char *buffer, intptr
       /* Decode UTF-8 and write a chunk on a character boundary. */
       w_buffer = convert_output_wtext(buffer, &towrite,
 				      &can_leftover, &keep_leftover,
-				      rfd->leftover_len, rfd->leftover);
+				      rfd->leftover_len, rfd->leftover,
+				      1024);
     }
     
     while (1) {
@@ -1611,7 +1613,7 @@ intptr_t rktio_write(rktio_t *rktio, rktio_fd_t *rfd, const char *buffer, intptr
       /* Convert wchar count to byte count, taking into account leftovers */
       int wrote_all = (winwrote == towrite);
       if (winwrote) {
-	/* Recounting only works right if the outptu was well-formed
+	/* Recounting only works right if the output was well-formed
 	   UTF-8. Weird things happen otherwise... but we guard against
 	   external inconsistency with the `max_winwrote` check below. */
 	winwrote = recount_output_wtext(w_buffer, winwrote);
@@ -1866,6 +1868,109 @@ intptr_t rktio_write(rktio_t *rktio, rktio_fd_t *rfd, const char *buffer, intptr
 #endif
 }
 
+void rktio_std_write_in_best_effort(rktio_t *rktio, int which, char *buffer, intptr_t start, intptr_t end) {
+#ifdef RKTIO_SYSTEM_UNIX
+  intptr_t amt, len;
+
+  while (start < end) {
+    do {
+      amt = end - start;
+      amt = LIMIT_REQUEST_SIZE(amt);
+
+      do {
+        len = write(which, buffer + start, amt);
+      } while ((len == -1) && (errno == EINTR));
+    
+      amt = amt >> 1;
+    } while ((len == -1) && (errno == EAGAIN) && (amt > 0));
+
+    if (len == -1)
+      return;
+
+    start += len;
+  }
+#endif
+#ifdef RKTIO_SYSTEM_WINDOWS
+  HANDLE h;
+  int ok, to_console, can_leftover = 0, keep_leftover = 0;
+  intptr_t towrite = end - start, amt;
+  wchar_t *w_buffer;
+  DWORD winwrote;
+  int err;
+
+  switch (which) {
+  case RKTIO_STDOUT:
+    which = STD_OUTPUT_HANDLE;
+    break;
+  case RKTIO_STDERR:
+    which = STD_ERROR_HANDLE;
+    break;
+  }
+
+  h = get_std_handle(which);  
+  if ((h == INVALID_HANDLE_VALUE) || (h == NULL)) {
+    rktio_create_console();
+    h = get_std_handle(which);
+    if ((h == INVALID_HANDLE_VALUE) || (h == NULL))
+      return;
+  }
+
+  /* Decode UTF-8 */
+  w_buffer = convert_output_wtext(buffer + start, &towrite,
+                                  &can_leftover, &keep_leftover,
+                                  0, NULL,
+				  0);
+
+  start = 0;
+  amt = towrite;
+  while (towrite > 0) {
+    ok = WriteConsoleW(h, w_buffer + start, amt, &winwrote, NULL);
+    
+    if (!ok) {
+      err = GetLastError();
+      
+      if (err == ERROR_NOT_ENOUGH_MEMORY) {
+        amt = amt >> 1;
+        if (!amt) {
+          towrite = 0;
+          can_leftover = 0;
+        }
+      } else {
+        towrite = 0;
+        can_leftover = 0;
+      }
+    } else {
+      start += winwrote;
+      towrite -= winwrote;
+      amt = towrite;
+    }
+  }
+
+  amt = can_leftover;
+  while (can_leftover > 0) {
+    ok = WriteFile(h, buffer + end - can_leftover, amt, &winwrote, NULL);
+    
+    if (!ok) {
+      err = GetLastError();
+      
+      if (err == ERROR_NOT_ENOUGH_MEMORY) {
+        amt = amt >> 1;
+        if (!amt) {
+          can_leftover = 0;
+        }
+      } else {
+        can_leftover = 0;
+      }
+    } else {
+      can_leftover -= winwrote;
+      amt = can_leftover;
+    }
+  }
+
+  free(w_buffer);
+#endif
+}
+
 #ifdef RKTIO_SYSTEM_WINDOWS
 
 static const char *adjust_output_text(const char *buffer, intptr_t *towrite)
@@ -1918,7 +2023,8 @@ static intptr_t recount_output_text(const char *orig_buffer, const char *buffer,
 
 static wchar_t *convert_output_wtext(const char *buffer, intptr_t *_towrite,
 				     int *_can_leftover, int *_keep_leftover,
-				     int leftover_len, char *leftover)
+				     int leftover_len, char *leftover,
+				     int max_convert)
 {
   /* Figure out how many bytes we can convert to complete wide
      characters. To avoid quadratic behavior overall, we'll limit the
@@ -1945,7 +2051,7 @@ static wchar_t *convert_output_wtext(const char *buffer, intptr_t *_towrite,
     span = 0;
   want = span - leftover_len;
 
-  for (i = 0, count = 0; (i < len) && (count < 1024); i++) {
+  for (i = 0, count = 0; (i < len) && (!max_convert || (count < max_convert)); i++) {
     int v = ((unsigned char *)buffer)[i];
     if (want) {
       if ((v & 0xC0) == 0x80) {

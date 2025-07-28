@@ -40,12 +40,19 @@
   [make-pthread-parameter (known-procedure 2)]
   [engine-block (known-procedure 1)]
 
+  [assert-push-lock-level! (known-procedure 2)]
+  [assert-pop-lock-level! (known-procedure 2)]
+
   [make-mutex (known-procedure 1)]
   [make-condition (known-procedure 1)]
   [mutex-acquire (known-procedure 2)]
   [mutex-release (known-procedure 2)]
   [condition-wait (known-procedure 4)]
   [condition-signal (known-procedure 2)]
+  [condition-broadcast (known-procedure 2)]
+
+  [get-thread-id (known-procedure 1)]
+  [threaded? (known-procedure 1)]
 
   [ptr-ref/int8 (known-procedure 8)]
   [ptr-ref/uint8 (known-procedure 8)]

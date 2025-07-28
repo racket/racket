@@ -15,7 +15,9 @@
                       call-as-uninterruptible
                       make-uninterruptible-lock
                       uninterruptible-lock-acquire
-                      uninterruptible-lock-release))
+                      uninterruptible-lock-release
+                      uninterruptible-custodian-lock-acquire
+                      uninterruptible-custodian-lock-release))
 
 (define (start-atomic)
   (unsafe-start-atomic))
@@ -44,6 +46,11 @@
   (unsafe-uninterruptible-lock-acquire lock))
 (define (uninterruptible-lock-release lock)
   (unsafe-uninterruptible-lock-release lock))
+
+(define (uninterruptible-custodian-lock-acquire)
+  (unsafe-uninterruptible-custodian-lock-acquire))
+(define (uninterruptible-custodian-lock-release)
+  (unsafe-uninterruptible-custodian-lock-release))
 
 ;; ----------------------------------------
 

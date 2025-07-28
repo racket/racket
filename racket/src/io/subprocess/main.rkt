@@ -30,7 +30,7 @@
          current-subprocess-keep-file-descriptors
          shell-execute)
 
-(struct subprocess ([process #:mutable]
+(struct subprocess ([process #:mutable] ; locked by atomic mode
                     [cust-ref #:mutable]
                     is-group?)
   #:constructor-name make-subprocess
@@ -42,7 +42,7 @@
               [(eqv? v 0)
                (sandman-poll-ctx-add-poll-set-adder!
                 ctx
-                ;; in atomic and in rktio, must not start nested rktio
+                ;; in atomic and in rktio-sleep-relevant (not rktio), must not start nested rktio
                 (lambda (ps)
                   (rktio_poll_add_process rktio (subprocess-process sp) ps)))
                (values #f sp)]
@@ -54,19 +54,24 @@
 
 (define do-subprocess
   (let ()
-    (define/who (subprocess stdout stdin stderr group/command . command/args)
+    (define/who (subprocess orig-stdout orig-stdin orig-stderr group/command . command/args)
       (check who
              (lambda (p) (or (not p) (and (output-port? p) (file-stream-port? p))))
              #:contract "(or/c (and/c output-port? file-stream-port?) #f)"
-             stdout)
+             orig-stdout)
       (check who
              (lambda (p) (or (not p) (and (input-port? p) (file-stream-port? p))))
              #:contract "(or/c (and/c input-port? file-stream-port?) #f)"
-             stdin)
+             orig-stdin)
       (check who
              (lambda (p) (or (not p) (eq? p 'stdout) (and (output-port? p) (file-stream-port? p))))
              #:contract "(or/c (and/c output-port? file-stream-port?) #f 'stdout)"
-             stderr)
+             orig-stderr)
+      (define stdout (and orig-stdout (->core-output-port orig-stdout)))
+      (define stdin (and orig-stdin (->core-input-port orig-stdin)))
+      (define stderr (if (eq? orig-stderr 'stdout)
+                         'stdout
+                         (and orig-stderr (->core-output-port orig-stderr))))
       (define-values (group command exact/args)
         (cond
           [(path-string? group/command)
@@ -112,7 +117,7 @@
                                "exact command" (car args)))
 
       (define cust-mode (current-subprocess-custodian-mode))
-      (define env-vars (current-environment-variables))
+      (define env-vars (environment-variables-copy (current-environment-variables)))
 
       (let* ([flags (if (eq? stderr 'stdout)
                         RKTIO_PROCESS_STDOUT_AS_STDERR
@@ -152,7 +157,7 @@
         (when stdin (check-not-closed who stdin #:unlock end-atomic))
         (when (and stderr (not (eq? stderr 'stdout))) (check-not-closed who stderr #:unlock end-atomic))
         (poll-subprocess-finalizations)
-        (check-current-custodian who)
+        (check-current-custodian who #:unlock end-atomic)
         (start-rktio)
         (define envvars (rktio_empty_envvars rktio))
         (for ([name (in-list (environment-variables-names env-vars))])
@@ -188,7 +193,7 @@
         (define in (let ([fd (rktio_process_result_stdout_fd r)])
                      (and fd (open-input-fd fd 'subprocess-stdout))))
         (define out (let ([fd (rktio_process_result_stdin_fd r)])
-                      (and fd (open-output-fd fd 'subprocess-stdin))))
+                      (and fd (open-output-fd fd 'subprocess-stdin #:is-terminal? (rktio_fd_is_terminal rktio fd)))))
         (define err (let ([fd (rktio_process_result_stderr_fd r)])
                       (and fd (open-input-fd fd 'subprocess-stderr))))
         (define sp (make-subprocess (rktio_process_result_process r)

@@ -238,7 +238,9 @@
                   'unsafe-add-global-finalizer (lambda (v proc) (void))
                   'unsafe-root-continuation-prompt-tag unsafe-root-continuation-prompt-tag
                   'break-enabled-key break-enabled-key
-                  'engine-block engine-block))
+                  'engine-block engine-block
+                  'assert-push-lock-level! void
+                  'assert-pop-lock-level! void))
 (primitive-table '#%engine
                  (hash 
                   'make-engine make-engine
@@ -294,9 +296,19 @@
                   'condition-broadcast (lambda args
                                          (error "condition-broadcast: not ready"))
                   'threaded? (lambda () #f)
-                  'make-mutex (lambda () (make-semaphore 1))
-                  'mutex-acquire (lambda (s) (semaphore-wait s))
-                  'mutex-release (lambda (s) (semaphore-post s))
+                  'make-mutex (lambda () (vector #f 0 (make-semaphore 1)))
+                  'mutex-acquire (lambda (s) (cond
+                                               [(eq? (vector-ref s 0) (current-thread))
+                                                (vector-set! s 1 (add1 (vector-ref s 1)))]
+                                               [else
+                                                (semaphore-wait (vector-ref s 2))
+                                                (vector-set! s 0 (current-thread))]))
+                  'mutex-release (lambda (s) (cond
+                                               [(eqv? (vector-ref s 1) 0)
+                                                (vector-set! s 0 #f)
+                                                (semaphore-post (vector-ref s 2))]
+                                               [else
+                                                (vector-set! s 1 (sub1 (vector-ref s 1)))]))
                   'call-as-asynchronous-callback (lambda (thunk) (thunk))
                   'post-as-asynchronous-callback (lambda (thunk) (thunk))
                   'continuation-current-primitive (lambda (k excls incls) #f)

@@ -532,7 +532,10 @@
      (nonmac-only)
      (config #:fixup (and win?
                           (~a "cd " (build-path dest "bin")
-                              " && mv libsqlite3-0.dll sqlite3.dll")))]
+                              " && mv libsqlite3-0.dll sqlite3.dll"))
+             #:env (if linux?
+                       (list (list "LDFLAGS" (~a "-Wl,-rpath," dest "/lib")))
+                       null))]
     [("openssl-1" "openssl-3")
      (define make
        (if linux?
