@@ -21,7 +21,8 @@
              [(output-port? p) (->core-output-port p)]
              [else
               (raise-argument-error 'close-input-port "port?" p)])])
-    (core-port-closed? p)))
+    (with-lock p
+      (core-port-closed? p))))
 
 ;; maybe in atomic mode via custodian shutdown:
 (define (close-port p)
@@ -52,15 +53,14 @@
              [else
               (raise-argument-error 'port-closed-evt "port?" p)])])
     (define sema
-      (atomically
-       (with-lock p
-         (or (core-port-closed-sema p)
-             (let ([s (make-semaphore)])
-               (set-core-port-closed-sema! p s)
-               (port-lock-require-atomic! p #t)
-               (when (core-port-closed? p)
-                 (semaphore-post s))
-               s)))))
+      (with-lock p
+        (or (core-port-closed-sema p)
+            (let ([s (make-semaphore)])
+              (set-core-port-closed-sema! p s)
+              (port-lock-require-atomic! p #t)
+              (when (core-port-closed? p)
+                (semaphore-post s))
+              s))))
     (define self #f)
     (set! self (wrap-evt (semaphore-peek-evt sema)
                          (lambda (v) self)))

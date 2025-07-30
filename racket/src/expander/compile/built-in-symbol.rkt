@@ -87,6 +87,10 @@
                mutex-release
                condition-wait
                condition-signal
+               assert-push-lock-level!
+               assert-pop-lock-level!
+               get-thread-id
+               threaded?
                make-record-type-descriptor
                make-record-type-descriptor*
                make-record-constructor-descriptor

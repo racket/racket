@@ -37,4 +37,6 @@
         mutex-acquire
         mutex-release
         condition-wait
-        condition-signal)
+        condition-signal
+        assert-push-lock-level!
+        assert-pop-lock-level!)

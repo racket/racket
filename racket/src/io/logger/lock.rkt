@@ -1,5 +1,6 @@
 #lang racket/base
 (require "../host/thread.rkt"
+         "../host/pthread.rkt"
          "../host/place-local.rkt")
 
 (provide uninterruptibly/with-logger-lock/no-gc-interrupts/no-wind

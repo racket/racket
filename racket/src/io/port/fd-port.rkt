@@ -453,8 +453,11 @@
      (cond
        [(fd-output-port? cp)
         (with-lock cp
-          (define fd (fd-port-fd cp))
-          (rktioly (rktio_fd_is_pending_open rktio fd)))]
+          (cond
+            [(core-port-closed? cp) #f]
+            [else
+             (define fd (fd-port-fd cp))
+             (rktioly (rktio_fd_is_pending_open rktio fd))]))]
        [else #f])]
     [(input-port? p) #f]
     [else
@@ -602,7 +605,7 @@
 (define (fd-port->place-message port)
   (port-lock port)
   (cond
-    [(port-closed? port)
+    [(core-port-closed? port)
      (port-unlock port)
      #f]
     [else

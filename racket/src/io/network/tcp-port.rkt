@@ -34,13 +34,15 @@
 
 ;; with custodian lock
 (define (make-tcp-input-port fd name
+                             #:custodian [custodian (current-custodian)]
                              #:fd-refcount [fd-refcount (box 1)])
   (finish-fd-input-port
    (new tcp-input-port
         #:field
         [name name]
         [fd fd]
-        [fd-refcount fd-refcount])))
+        [fd-refcount fd-refcount])
+   #:custodian custodian))
 
 (class tcp-output-port #:extends fd-output-port
   #:field
@@ -69,6 +71,7 @@
 
 ;; in uninterrupted mode or with custodian lock
 (define (make-tcp-output-port fd name
+                              #:custodian [custodian (current-custodian)]
                               #:fd-refcount [fd-refcount (box 1)])
   (finish-fd-output-port
    (new tcp-output-port
@@ -77,18 +80,23 @@
         [fd fd]
         [fd-refcount fd-refcount]
         [buffer-mode 'block])
+   #:custodian custodian
    #:plumber #f))
 
 ;; ----------------------------------------
 
 ;; in rktio mode or with custodian lock
-(define (open-input-output-tcp fd name #:close? [close? #t])
+(define (open-input-output-tcp fd name
+                               #:close? [close? #t]
+                               #:custodian [custodian (current-custodian)])
   (define refcount (box (if close? 2 3)))
   (values
    (make-tcp-input-port fd name
-                        #:fd-refcount refcount)
+                        #:fd-refcount refcount
+                        #:custodian custodian)
    (make-tcp-output-port fd name
-                         #:fd-refcount refcount)))
+                         #:fd-refcount refcount
+                         #:custodian custodian)))
 
 (define/who (tcp-port? p)
   (define cp (or (->core-input-port p #:default #f)

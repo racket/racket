@@ -10,11 +10,12 @@
 
 (provide check-not-closed)
 
-;; with p lock held
-;; Atomic mode is required on entry because an operation
+;; with p lock held or in atomic mode with lock requires atomic
+;; ... and `unlock` required in the latter case
+;; Some uninterrupted mode is required on entry because an operation
 ;; that is prefixed when a port-closed check normally needs
 ;; to happen atomically with respect to the check.
-(define (check-not-closed who cp  #:unlock [unlock #f])
+(define (check-not-closed who cp #:unlock [unlock #f])
   (when (core-port-closed? cp)
     (if unlock
         (unlock)

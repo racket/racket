@@ -140,10 +140,19 @@
         
         (define command-bstr (->host (->path command) who '(execute)))
 
+        (define send-args-list (cons command-bstr
+                                     (for/list ([arg (in-list args)])
+                                       (cond
+                                         [(string? arg)
+                                          (string->bytes/locale arg (char->integer #\?))]
+                                         [(path? arg)
+                                          (path-bytes arg)]
+                                         [else arg]))))
+
         ;; If `stdout` or `stderr` is a fifo with no read end open, wait for it:
-        (define (maybe-wait fd)
-          (when (and fd (rktioly (rktio_fd_is_pending_open rktio (fd-port-fd fd))))
-            (sync fd)))
+        (define (maybe-wait port)
+          (when (and port (port-waiting-peer? port))
+            (sync port)))
         (maybe-wait stdout)
         (unless (eq? stderr 'stdout)
           (maybe-wait stderr))
@@ -163,15 +172,7 @@
         (for ([name (in-list (environment-variables-names env-vars))])
           (rktio_envvars_set rktio envvars name (environment-variables-ref env-vars name)))
 
-        (define send-args (rktio_from_bytes_list
-                           (cons command-bstr
-                                 (for/list ([arg (in-list args)])
-                                   (cond
-                                     [(string? arg)
-                                      (string->bytes/locale arg (char->integer #\?))]
-                                     [(path? arg)
-                                      (path-bytes arg)]
-                                     [else arg])))))
+        (define send-args (rktio_from_bytes_list send-args-list))
 
         (define r (rktio_process rktio command-bstr (add1 (length args)) send-args
                                  (and stdout (fd-port-fd stdout))

@@ -2001,14 +2001,19 @@
   (define t
     (thread
      (lambda ()
-       (parameterize ([current-custodian c])
-         (set!-values (i o) (apply values (sync (tcp-accept-evt l))))))))
-  
+       (define evt (parameterize ([current-custodian c])
+                     (tcp-accept-evt l)))
+       (set!-values (i o) (apply values (sync evt))))))
+
   (define-values (ci co) (tcp-connect "localhost" port))
   (sync t)
   
   (custodian-shutdown-all c)
   (test #t port-closed? i)
+  (err/rt-test (parameterize ([current-custodian c])
+                 (tcp-accept-evt l))
+               exn:fail?
+               #rx"custodian has been shut down")
   (tcp-close l)
   (close-input-port ci)
   (close-output-port co))

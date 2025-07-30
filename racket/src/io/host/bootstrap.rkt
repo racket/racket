@@ -105,7 +105,9 @@
                                            (semaphore-post m)
                                            (semaphore-wait c)
                                            (semaphore-wait m))
-                         'condition-signal semaphore-post))
+                         'condition-signal semaphore-post
+                         'assert-push-lock-level! void
+                         'assert-pop-lock-level! void))
 
 (primitive-table '#%thread
                  (hasheq 'thread thread

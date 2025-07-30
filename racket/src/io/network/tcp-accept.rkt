@@ -72,24 +72,27 @@
 
 (define/who (tcp-accept-evt listener)
   (check who tcp-listener? listener)
-  (accept-evt listener))
+  ;; will have to check the custodian again later, but catch early errors:
+  (check-current-custodian 'tcp-accept-evt #:unlock void)
+  (accept-evt listener (current-custodian)))
 
-(struct accept-evt (listener)
+(struct accept-evt (listener custodian)
   #:property
   prop:evt
   (poller
    ;; in atomic mode
    (lambda (self poll-ctx)
      (define listener (accept-evt-listener self))
+     (define custodian (accept-evt-custodian self))
      (cond
        [(tcp-listener-closed? listener)
         (error-result (lambda () ; out of atomic mode
                         (start-rktio)
                         (closed-error 'tcp-accept-evt listener)))]
-       [(custodian-shut-down? (current-custodian))
-        (let ([c (current-custodian)])
+       [(custodian-shut-down? custodian)
+        (let ([c (accept-evt-listener self)])
           (error-result (lambda () ; out of atomic mode
-                          (parameterize ([current-custodian c])
+                          (parameterize ([current-custodian custodian])
                             (check-current-custodian 'tcp-accept-evt #:unlock void)))))]
        [else
         (start-rktio)
@@ -102,7 +105,7 @@
               (error-result (lambda () ; out of atomic mode
                               (raise-network-error 'tcp-accept-evt fd "accept from listener failed")))]
              [else
-              (define results (call-with-values (lambda () (open-input-output-accepted-tcp fd))
+              (define results (call-with-values (lambda () (open-input-output-accepted-tcp fd #:custodian custodian))
                                                 list))
               (end-rktio)
               (values (list results)
@@ -140,7 +143,7 @@
                          "listener" listener))
 
 ;; in rktio mode
-(define (open-input-output-accepted-tcp fd)
+(define (open-input-output-accepted-tcp fd #:custodian [custodian (current-custodian)])
   (rktio_tcp_nodelay rktio fd #t) ; initially block buffered
   (rktio_tcp_keepalive rktio fd #t)
-  (open-input-output-tcp fd "tcp-accepted"))
+  (open-input-output-tcp fd "tcp-accepted" #:custodian custodian))
