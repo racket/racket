@@ -4158,7 +4158,10 @@
           (let ((or-part_1 (not f_0)))
             (if or-part_1 or-part_1 (|#%app| future-can-take-lock? f_0))))))))
 (define cas-only-mode?
-  (lambda () (if (in-atomic-mode?) (not (current-thread/in-racket)) #f)))
+  (lambda ()
+    (if (in-atomic-mode?)
+      (if (not (current-thread/in-racket)) (1/current-future) #f)
+      #f)))
 (define unsafe-semaphore-post
   (lambda (s_0)
     (let ((c_0 (semaphore-count s_0)))

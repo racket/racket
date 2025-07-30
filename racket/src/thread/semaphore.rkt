@@ -111,7 +111,8 @@
 
 (define (cas-only-mode?)
   (and (in-atomic-mode?)
-       (not (current-thread/in-racket)))) ; => really uninterruptible mode, not atomic mode
+       (not (current-thread/in-racket))  ; => really uninterruptible mode, not atomic mode
+       (current-future))) ; => not in a foreign callback during a scheduler sleep (e.g., a GUI callback)
 
 (define (unsafe-semaphore-post s)
   (define c (semaphore-count s))
