@@ -1896,6 +1896,7 @@ void rktio_std_write_in_best_effort(rktio_t *rktio, int which, char *buffer, int
   intptr_t towrite = end - start, amt;
   wchar_t *w_buffer;
   DWORD winwrote;
+  DWORD mode;
   int err;
 
   switch (which) {
@@ -1915,35 +1916,41 @@ void rktio_std_write_in_best_effort(rktio_t *rktio, int which, char *buffer, int
       return;
   }
 
-  /* Decode UTF-8 */
-  w_buffer = convert_output_wtext(buffer + start, &towrite,
-                                  &can_leftover, &keep_leftover,
-                                  0, NULL,
-				  0);
-
-  start = 0;
-  amt = towrite;
-  while (towrite > 0) {
-    ok = WriteConsoleW(h, w_buffer + start, amt, &winwrote, NULL);
+  if ((GetFileType(h) == FILE_TYPE_CHAR) && GetConsoleMode(h, &mode)) {
+    /* Decode UTF-8 */
+    w_buffer = convert_output_wtext(buffer + start, &towrite,
+                                    &can_leftover, &keep_leftover,
+                                    0, NULL,
+                                    0);
     
-    if (!ok) {
-      err = GetLastError();
+    start = 0;
+    amt = towrite;
+    while (towrite > 0) {
+      ok = WriteConsoleW(h, w_buffer + start, amt, &winwrote, NULL);
       
-      if (err == ERROR_NOT_ENOUGH_MEMORY) {
-        amt = amt >> 1;
-        if (!amt) {
+      if (!ok) {
+        err = GetLastError();
+
+        if (err == ERROR_NOT_ENOUGH_MEMORY) {
+          amt = amt >> 1;
+          if (!amt) {
+            towrite = 0;
+            can_leftover = 0;
+          }
+        } else {
           towrite = 0;
           can_leftover = 0;
         }
       } else {
-        towrite = 0;
-        can_leftover = 0;
+        start += winwrote;
+        towrite -= winwrote;
+        amt = towrite;
       }
-    } else {
-      start += winwrote;
-      towrite -= winwrote;
-      amt = towrite;
     }
+
+    free(w_buffer);
+  } else {
+    can_leftover = towrite;
   }
 
   amt = can_leftover;
@@ -1952,8 +1959,9 @@ void rktio_std_write_in_best_effort(rktio_t *rktio, int which, char *buffer, int
     
     if (!ok) {
       err = GetLastError();
-      
-      if (err == ERROR_NOT_ENOUGH_MEMORY) {
+
+      if ((err == ERROR_NOT_ENOUGH_MEMORY)
+          || (err == ERROR_PIPE_BUSY)) {
         amt = amt >> 1;
         if (!amt) {
           can_leftover = 0;
@@ -1961,13 +1969,16 @@ void rktio_std_write_in_best_effort(rktio_t *rktio, int which, char *buffer, int
       } else {
         can_leftover = 0;
       }
+    } if (!winwrote) {
+      amt = amt >> 1;
+      if (!amt) {
+        can_leftover = 0;
+      }
     } else {
       can_leftover -= winwrote;
       amt = can_leftover;
     }
   }
-
-  free(w_buffer);
 #endif
 }
 
