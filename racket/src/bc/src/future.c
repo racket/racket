@@ -134,11 +134,9 @@ static Scheme_Object *touch(int argc, Scheme_Object *argv[])
   return NULL;
 }
 
-
-
 static Scheme_Object *processor_count(int argc, Scheme_Object *argv[])
 {
-  return scheme_make_integer(1);
+  return scheme_make_integer(rktio_processor_count(scheme_rktio));
 }
 
 int scheme_is_multithreaded(int now)
