@@ -400,6 +400,38 @@
   (intptr_t len)
   ((*ref char) is_converted)
   (intptr_t converted_start)))
+(define-function/result_t
+ rktio_result_integer
+ ()
+ (ref rktio_result_t)
+ rktio_read_in_r
+ (((ref rktio_t) rktio)
+  ((ref rktio_fd_t) fd)
+  ((*ref char) buffer)
+  (intptr_t start)
+  (intptr_t end)))
+(define-function/result_t
+ rktio_result_integer
+ ()
+ (ref rktio_result_t)
+ rktio_read_converted_in_r
+ (((ref rktio_t) rktio)
+  ((ref rktio_fd_t) fd)
+  ((*ref char) buffer)
+  (intptr_t start)
+  (intptr_t len)
+  ((*ref char) is_converted)
+  (intptr_t converted_start)))
+(define-function/result_t
+ rktio_result_integer
+ ()
+ (ref rktio_result_t)
+ rktio_write_in_r
+ (((ref rktio_t) rktio)
+  ((ref rktio_fd_t) fd)
+  ((*ref char) buffer)
+  (intptr_t start)
+  (intptr_t end)))
 (define-function
  ()
  intptr_t
@@ -422,6 +454,24 @@
  ()
  rktio_tri_t
  rktio_poll_write_flushed
+ (((ref rktio_t) rktio) ((ref rktio_fd_t) rfd)))
+(define-function/result_t
+ rktio_result_integer
+ ()
+ (ref rktio_result_t)
+ rktio_poll_read_ready_r
+ (((ref rktio_t) rktio) ((ref rktio_fd_t) rfd)))
+(define-function/result_t
+ rktio_result_integer
+ ()
+ (ref rktio_result_t)
+ rktio_poll_write_ready_r
+ (((ref rktio_t) rktio) ((ref rktio_fd_t) rfd)))
+(define-function/result_t
+ rktio_result_integer
+ ()
+ (ref rktio_result_t)
+ rktio_poll_write_flushed_r
  (((ref rktio_t) rktio) ((ref rktio_fd_t) rfd)))
 (define-function/errno
  RKTIO_LOCK_ERROR
@@ -1194,6 +1244,18 @@
  (ref char)
  rktio_directory_list_step
  (((ref rktio_t) rktio) ((ref rktio_directory_list_t) dl)))
+(define-function/alloc_result_t
+ rktio_result_directory_list
+ ()
+ (ref rktio_result_t)
+ rktio_directory_list_start_r
+ (((ref rktio_t) rktio) (rktio_const_string_t dirname)))
+(define-function/result_t
+ rktio_result_string
+ ()
+ (ref rktio_result_t)
+ rktio_directory_list_step_r
+ (((ref rktio_t) rktio) ((ref rktio_directory_list_t) dl)))
 (define-function
  ()
  void
@@ -1535,8 +1597,11 @@
   (dll_find_object_proc dll_find_object)
   (dll_close_proc dll_close)))
 (define-function () int rktio_get_last_error_kind (((ref rktio_t) rktio)))
+(define-function () int rktio_get_error_kind (((ref rktio_result_t) res)))
 (define-function () int rktio_get_last_error (((ref rktio_t) rktio)))
+(define-function () int rktio_get_error (((ref rktio_result_t) res)))
 (define-function () int rktio_get_last_error_step (((ref rktio_t) rktio)))
+(define-function () int rktio_get_error_step (((ref rktio_result_t) res)))
 (define-function
  ()
  void
@@ -1548,6 +1613,7 @@
  rktio_set_last_error_step
  (((ref rktio_t) rktio) (int step)))
 (define-function () void rktio_remap_last_error (((ref rktio_t) rktio)))
+(define-function () void rktio_remap_error (((ref rktio_result_t) res)))
 (define-function
  ()
  (ref char)
@@ -1558,4 +1624,20 @@
  (ref char)
  rktio_get_error_string
  (((ref rktio_t) rktio) (int kind) (int errid)))
+(define-function
+ ()
+ rktio_bool_t
+ rktio_result_is_success
+ (((ref rktio_result_t) res)))
+(define-function () intptr_t rktio_result_integer (((ref rktio_result_t) res)))
+(define-function
+ ()
+ (ref char)
+ rktio_result_string
+ (((ref rktio_result_t) res)))
+(define-function
+ ()
+ (ref rktio_directory_list_t)
+ rktio_result_directory_list
+ (((ref rktio_result_t) res)))
 )

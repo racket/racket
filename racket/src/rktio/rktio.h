@@ -56,6 +56,17 @@ Return type conventions:
    to be reported by `rktio_get_last_error_step` when it returns a
    value that indicates an error.
 
+ - A return type `rktio_result_t *` means that a result encodes either
+   success or an error. Such functions can be called concurrently with
+   other functions, though typically with a constraint on concurrent
+   calls with a common argument (other than a rktio_t`). The result
+   sometimes needs to be deallocated with `rktio_free`, in which case
+   the function is annotated with `RKTIO_EXTERN_ALLOC_RESULT`. The
+   annotation `RKTIO_EXTERN_RESULT` means that no deallocation is
+   needed, but the result will be valid only as noted. Either of those
+   annotations mentions the accessor that applies to get a success
+   result.
+
 Thread and signal conventions:
 
  - A given `rktio_t` can be used from only one thread at a time,
@@ -71,6 +82,10 @@ Thread and signal conventions:
  - If a function doesn't take a `rktio_t` argument, then it can be
    called concurrently with anything else. Notably,
    `rktio_signal_received_at` does not take a `rktio_t`.
+
+ - If a function returns a `rktio_result_t *`, then it can be called
+   concurrently with other functions, but typically there is an
+   argument that must be different for concurrent calls.
 
  - A function declared as `RKTIO_EXTERN_ATOMIC` or
    `RKTIO_EXTERN_ATOMIC_NOERR` can be called concurrently with
@@ -105,6 +120,9 @@ Thread and signal conventions:
 
 #define RKTIO_EXTERN_POLL       RKTIO_EXTERN
 #define RKTIO_EXTERN_POLL_NOERR RKTIO_EXTERN_NOERR
+
+#define RKTIO_EXTERN_RESULT(acc) RKTIO_EXTERN
+#define RKTIO_EXTERN_ALLOC_RESULT(acc) RKTIO_EXTERN
 
 #define RKTIO_NULLABLE      /* empty; pointer type can be NULL */
 #define RKTIO_BLOCKING      /* empty; function blocks indefinitely */
@@ -152,6 +170,13 @@ typedef const char *rktio_const_string_t;
 /* An argument that is a NUL-terminated string, as opposed to a buffer
    where a length is provided separately and doesn't need to be
    NUL-terminated. */
+
+typedef struct rktio_result_t rktio_result_t;
+/* A `rktio_err_t *` result is an alterntaive to `rktio_ok_t` that
+   allows a function to be simlar to `RKTIO_EXTERN_ATOMIC`. The result
+   needs to be freed with `rktio_free` in cases that are annotated
+   with `RKTIO_EXTERN_ALLOC_RESULT`; otherwise, the function describes
+   how long the result lasts. */
 
 /*************************************************/
 /* DLL paths                                     */
@@ -215,18 +240,18 @@ RKTIO_EXTERN_NOERR intptr_t rktio_fd_system_fd(rktio_t *rktio, rktio_fd_t *rfd);
 /* Extracts a native file descriptor or socket. A file descriptor must
    not be in pending-open mode as reported by `rktio_fd_is_pending_open`. */
 
-RKTIO_EXTERN rktio_bool_t rktio_fd_is_regular_file(rktio_t *rktio, rktio_fd_t *rfd);
-RKTIO_EXTERN rktio_bool_t rktio_fd_is_directory(rktio_t *rktio, rktio_fd_t *rfd);
-RKTIO_EXTERN rktio_bool_t rktio_fd_is_socket(rktio_t *rktio, rktio_fd_t *rfd);
-RKTIO_EXTERN rktio_bool_t rktio_fd_is_udp(rktio_t *rktio, rktio_fd_t *rfd);
-RKTIO_EXTERN rktio_bool_t rktio_fd_is_terminal(rktio_t *rktio, rktio_fd_t *rfd);
+RKTIO_EXTERN_ATOMIC rktio_bool_t rktio_fd_is_regular_file(rktio_t *rktio, rktio_fd_t *rfd);
+RKTIO_EXTERN_ATOMIC rktio_bool_t rktio_fd_is_directory(rktio_t *rktio, rktio_fd_t *rfd);
+RKTIO_EXTERN_ATOMIC rktio_bool_t rktio_fd_is_socket(rktio_t *rktio, rktio_fd_t *rfd);
+RKTIO_EXTERN_ATOMIC rktio_bool_t rktio_fd_is_udp(rktio_t *rktio, rktio_fd_t *rfd);
+RKTIO_EXTERN_ATOMIC rktio_bool_t rktio_fd_is_terminal(rktio_t *rktio, rktio_fd_t *rfd);
 /* The functions mostly report values of recorded mode flags. */
 
-RKTIO_EXTERN rktio_bool_t rktio_fd_is_text_converted(rktio_t *rktio, rktio_fd_t *rfd);
+RKTIO_EXTERN_ATOMIC rktio_bool_t rktio_fd_is_text_converted(rktio_t *rktio, rktio_fd_t *rfd);
 /* Reports whether `RKTIO_OPEN_TEXT` was used and has an effect. The
    `RKTIO_OPEN_TEXT` flag has an effect only on Windows. */
 
-RKTIO_EXTERN rktio_bool_t rktio_fd_is_pending_open(rktio_t *rktio, rktio_fd_t *rfd);
+RKTIO_EXTERN_ATOMIC rktio_bool_t rktio_fd_is_pending_open(rktio_t *rktio, rktio_fd_t *rfd);
 /* Reports whether `rfd` will block on writing because it corresponds
    to the write end of a fifo that has no open reader. In that case,
    `rktio_fd_system_fd` cannot report a file descriptor and `rktio_ltps_add`
@@ -330,6 +355,24 @@ intptr_t rktio_read_converted_in(rktio_t *rktio, rktio_fd_t *fd, char *buffer, i
 /* Like `rktio_read`, `rktio_write`, and `rktio_read_converted` but
    accepting start and end positions within `buffer`. */
 
+
+RKTIO_EXTERN_RESULT(rktio_result_integer)
+rktio_result_t *rktio_read_in_r(rktio_t *rktio, rktio_fd_t *fd, char *buffer, intptr_t start, intptr_t end);
+RKTIO_EXTERN_RESULT(rktio_result_integer)
+rktio_result_t *rktio_read_converted_in_r(rktio_t *rktio, rktio_fd_t *fd, char *buffer, intptr_t start, intptr_t len,
+                                          char *is_converted, intptr_t converted_start);
+/* Like `rktio_read_in` or `rktio_read_read_coverted_in`, but using
+   the `rktio_result_t` protocol. Concurrent calls with any other
+   function must not supply the same `fd`, and the result is valid
+   until `fd` is used again. */
+
+RKTIO_EXTERN_RESULT(rktio_result_integer)
+rktio_result_t *rktio_write_in_r(rktio_t *rktio, rktio_fd_t *fd,
+                                 const char *buffer, intptr_t start, intptr_t end);
+/* Like `rktio_write_in`, but using the `rktio_result_t` protocol.
+   Concurrent calls with any other function must not supply the same
+   `fd`, and the result is valid until `fd` is used again. */
+
 RKTIO_EXTERN_NOERR intptr_t rktio_buffered_byte_count(rktio_t *rktio, rktio_fd_t *fd);
 /* Reports the number of bytes that are buffered from the file descriptor.
    The result is normally zero, but text-mode conversion and the rare
@@ -350,6 +393,17 @@ rktio_tri_t rktio_poll_write_flushed(rktio_t *rktio, rktio_fd_t *rfd);
    only on Windows, and only for a pipe or similar non-regular file.
    A pipe counts as "flushed" when the other end has received the data
    (because the sent data doesn't persist beyond closing the pipe). */
+
+RKTIO_EXTERN_RESULT(rktio_result_integer)
+rktio_result_t *rktio_poll_read_ready_r(rktio_t *rktio, rktio_fd_t *rfd);
+RKTIO_EXTERN_RESULT(rktio_result_integer)
+rktio_result_t *rktio_poll_write_ready_r(rktio_t *rktio, rktio_fd_t *rfd);
+RKTIO_EXTERN_RESULT(rktio_result_integer)
+rktio_result_t *rktio_poll_write_flushed_r(rktio_t *rktio, rktio_fd_t *rfd);
+/* Result-returning variants of `rktio_poll_read_ready`,
+   `rktio_poll_write_ready`, and `rktio_poll_write_flushed`. These can
+   be used concurrently with other rktio calls that are not for the
+   same `fd`. The result is valid until `fd` is used again. */
 
 RKTIO_EXTERN_ERR(RKTIO_LOCK_ERROR)
 rktio_tri_t rktio_file_lock_try(rktio_t *rktio, rktio_fd_t *rfd, rktio_bool_t excl);
@@ -853,10 +907,10 @@ RKTIO_EXTERN void rktio_end_sleep(rktio_t *rktio);
 /*************************************************/
 /* Files, directories, and links                 */
 
-RKTIO_EXTERN rktio_bool_t rktio_file_exists(rktio_t *rktio, rktio_const_string_t filename);
-RKTIO_EXTERN rktio_bool_t rktio_directory_exists(rktio_t *rktio, rktio_const_string_t dirname);
-RKTIO_EXTERN rktio_bool_t rktio_link_exists(rktio_t *rktio, rktio_const_string_t filename);
-RKTIO_EXTERN rktio_bool_t rktio_is_regular_file(rktio_t *rktio, rktio_const_string_t filename);
+RKTIO_EXTERN_ATOMIC rktio_bool_t rktio_file_exists(rktio_t *rktio, rktio_const_string_t filename);
+RKTIO_EXTERN_ATOMIC rktio_bool_t rktio_directory_exists(rktio_t *rktio, rktio_const_string_t dirname);
+RKTIO_EXTERN_ATOMIC rktio_bool_t rktio_link_exists(rktio_t *rktio, rktio_const_string_t filename);
+RKTIO_EXTERN_ATOMIC rktio_bool_t rktio_is_regular_file(rktio_t *rktio, rktio_const_string_t filename);
 /* On Windows, check for special filenames (like "aux") before calling
    the `rktio_file_exists` or `rktio_is_regular_file`. */
 
@@ -969,7 +1023,16 @@ RKTIO_EXTERN char *rktio_directory_list_step(rktio_t *rktio, rktio_directory_lis
    is complete. A NULL result would mean an error without deallocating
    `dl`, but that doesn't currently happen. */
 
-RKTIO_EXTERN void rktio_directory_list_stop(rktio_t *rktio, rktio_directory_list_t *dl);
+RKTIO_EXTERN_ALLOC_RESULT(rktio_result_directory_list)
+rktio_result_t *rktio_directory_list_start_r(rktio_t *rktio, rktio_const_string_t dirname);
+RKTIO_EXTERN_RESULT(rktio_result_string)
+rktio_result_t *rktio_directory_list_step_r(rktio_t *rktio, rktio_directory_list_t *dl);
+/* Atomic-friendly versions of `rktio_directory_list_start` and
+   `rktio_directory_list_step`. For `rktio_directory_list_step_r`, the
+   same `dl` must not be used in any concurrent call, and the result
+   is valid until `dl` is used again. */
+
+RKTIO_EXTERN_ATOMIC void rktio_directory_list_stop(rktio_t *rktio, rktio_directory_list_t *dl);
 /* Interrupt a directory list in progress, not needed after
    `rktio_directory_list_step` returns "": */
 
@@ -1431,6 +1494,7 @@ RKTIO_EXTERN void rktio_set_dll_procs(dll_open_proc dll_open,
 /* Errors                                        */
 
 RKTIO_EXTERN_NOERR int rktio_get_last_error_kind(rktio_t *rktio);
+RKTIO_EXTERN_ATOMIC_NOERR int rktio_get_error_kind(rktio_result_t *res);
 
 /* Kinds of error values: */
 enum {
@@ -1441,6 +1505,7 @@ enum {
 };
 
 RKTIO_EXTERN_NOERR int rktio_get_last_error(rktio_t *rktio);
+RKTIO_EXTERN_ATOMIC_NOERR int rktio_get_error(rktio_result_t *res);
 
 /* Error IDs of kind RKTIO_ERROR_KIND_RACKET */
 enum {
@@ -1479,6 +1544,7 @@ enum {
 };
 
 RKTIO_EXTERN_NOERR int rktio_get_last_error_step(rktio_t *rktio);
+RKTIO_EXTERN_ATOMIC_NOERR int rktio_get_error_step(rktio_result_t *res);
 /* Some operations report further information about the step that
    failed. The meaning of a step number is operation-specific. */
 
@@ -1487,6 +1553,7 @@ RKTIO_EXTERN void rktio_set_last_error_step(rktio_t *rktio, int step);
 /* In case you need to save and restore error information. */
 
 RKTIO_EXTERN void rktio_remap_last_error(rktio_t *rktio);
+RKTIO_EXTERN void rktio_remap_error(rktio_result_t *res);
 /* In a few cases, rktio substitutes a `RKTIO_ERROR_KIND_RACKET` error
    for an OS-supplied error. This function can sometimes undo the
    substitition, modifying the current error and kind. */
@@ -1496,6 +1563,15 @@ RKTIO_EXTERN_NOERR const char *rktio_get_error_string(rktio_t *rktio, int kind, 
 /* The returned string for `rktio_...error_string` should not be
    deallocated, but it only lasts reliably until the next call to
    either of the functions. */
+
+RKTIO_EXTERN_NOERR rktio_bool_t rktio_result_is_success(rktio_result_t *res);
+/* Detects a `rktio_result_t` pointer representing success. */
+
+RKTIO_EXTERN_NOERR intptr_t rktio_result_integer(rktio_result_t *res);
+RKTIO_EXTERN_NOERR char *rktio_result_string(rktio_result_t *res);
+RKTIO_EXTERN_NOERR rktio_directory_list_t *rktio_result_directory_list(rktio_result_t *res);
+/* Extracts a success result. The available value depends on the
+   function returning the `rktio_result_t` pointer. */
 
 /*************************************************/
 

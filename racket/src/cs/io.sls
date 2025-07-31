@@ -157,32 +157,56 @@
 
     (define-syntax (define-function*/errno stx)
       (syntax-case stx ()
-        [(_ err-val err-expr flags ret-type name ([rktio-type rktio] [arg-type arg] ...))
+        [(_ err? make-err make-val flags ret-type name ([rktio-type rktio] [arg-type arg] ...))
          (with-syntax ([rhs (convert-function
                              #'(define-function flags ret-type name ([rktio-type rktio] [arg-type arg] ...)))])
            #'(define name
                (let ([proc rhs])
                  (lambda (rktio arg ...)
                    (let ([v (proc rktio arg ...)])
-                     (if (eqv? v err-val)
-                         err-expr
-                         v))))))]))
+                     (if (err? v)
+                         (make-err v)
+                         (make-val v)))))))]))
 
     (define-syntax define-function/errno
       (syntax-rules ()
         [(_ err-val flags ret-type name ([rktio-type rktio] [arg-type arg] ...))
-         (define-function*/errno err-val
-           (vector (rktio_get_last_error_kind rktio)
-                   (rktio_get_last_error rktio))
+         (define-function*/errno (lambda (v) (eqv? v err-val))
+           (lambda (v) (vector (rktio_get_last_error_kind rktio)
+                               (rktio_get_last_error rktio)))
+           (lambda (v) v)
            flags ret-type name ([rktio-type rktio] [arg-type arg] ...))]))
     
     (define-syntax define-function/errno+step
       (syntax-rules ()
         [(_ err-val flags ret-type name ([rktio-type rktio] [arg-type arg] ...))
-         (define-function*/errno err-val
-           (vector (rktio_get_last_error_kind rktio)
-                   (rktio_get_last_error rktio)
-                   (rktio_get_last_error_step rktio))
+         (define-function*/errno (lambda (v) (eqv? v err-val))
+           (lambda (v) (vector (rktio_get_last_error_kind rktio)
+                               (rktio_get_last_error rktio)
+                               (rktio_get_last_error_step rktio)))
+           (lambda (v) v)
+           flags ret-type name ([rktio-type rktio] [arg-type arg] ...))]))
+
+    (define-syntax define-function/result_t
+      (syntax-rules ()
+        [(_ success-accessor flags ret-type name ([rktio-type rktio] [arg-type arg] ...))
+         (define-function*/errno (lambda (res) (not (rktio_result_is_success res)))
+           (lambda (res) (vector (rktio_get_error_kind res)
+                                 (rktio_get_error res)))
+           (lambda (res) (success-accessor res))
+           flags ret-type name ([rktio-type rktio] [arg-type arg] ...))]))
+
+    (define-syntax define-function/alloc_result_t
+      (syntax-rules ()
+        [(_ success-accessor flags ret-type name ([rktio-type rktio] [arg-type arg] ...))
+         (define-function*/errno (lambda (res) (not (rktio_result_is_success res)))
+           (lambda (res) (let ([vec (vector (rktio_get_error_kind res)
+                                            (rktio_get_error res))])
+                           (rktio_free res)
+                           vec))
+           (lambda (res) (let ([val (success-accessor res)])
+                           (rktio_free res)
+                           val))
            flags ret-type name ([rktio-type rktio] [arg-type arg] ...))]))
 
     (define loaded-librktio
@@ -412,7 +436,9 @@
                           define-struct-type
                           define-function
                           define-function/errno
-                          define-function/errno+step)
+                          define-function/errno+step
+                          define-function/result_t
+                          define-function/alloc_result_t)
             [(_ accum) (hasheq . accum)]
             [(_ accum (define-constant . _) . rest)
              (extract-functions accum . rest)]
@@ -425,6 +451,10 @@
             [(_ accum (define-function/errno _ _ _ id . _) . rest)
              (extract-functions ('id id . accum) . rest)]
             [(_ accum (define-function/errno+step _ _ _ id . _) . rest)
+             (extract-functions ('id id . accum) . rest)]
+            [(_ accum (define-function/result_t _ _ _ id . _) . rest)
+             (extract-functions ('id id . accum) . rest)]
+            [(_ accum (define-function/alloc_result_t _ _ _ id . _) . rest)
              (extract-functions ('id id . accum) . rest)]))
         (define-syntax begin
           (syntax-rules ()

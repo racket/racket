@@ -38,7 +38,7 @@
                   #:discard-errors? [discard-errors? #f])
   (set-box! fd-refcount (sub1 (unbox fd-refcount)))
   (when (zero? (unbox fd-refcount))
-    (fd-semaphore-update! fd 'remove)
+    (fd-semaphore-update!* fd 'remove)
     (define v (rktio_close rktio fd))
     (when (and (rktio-error? v)
                (not discard-errors?))
@@ -65,36 +65,35 @@
   #:override
   [read-in/inner
    (lambda (dest-bstr start end copy? to-buffer?)
-     (rktioly
-      (define n
-        (cond
-          [(and to-buffer?
-                (rktio_fd_is_text_converted rktio fd))
-           ;; need to keep track of whether any bytes in the buffer were converted
-           (when (or (not is-converted)
-                     ((bytes-length is-converted) . < . end))
-             (define new-is-converted (make-bytes end))
-             (when is-converted
-               (bytes-copy! new-is-converted 0 is-converted))
-             (set! is-converted new-is-converted))
-           (rktio_read_converted_in rktio fd dest-bstr start end is-converted start)]
-          [else
-           (rktio_read_in rktio fd dest-bstr start end)]))
-      (cond
-        [(rktio-error? n)
-         (end-rktio)
-         (port-unlock this)
-         (send fd-input-port this raise-read-error n)]
-        [(eqv? n RKTIO_READ_EOF) eof]
-        [(eqv? n 0) (or (fd-semaphore-update! fd 'read)
-                        (fd-evt fd RKTIO_POLL_READ fd-refcount))]
-        [else n])))]
+     ;; avoiding rktio mode here, so use only atomic operations
+     (define n
+       (cond
+         [(and to-buffer?
+               (rktio_fd_is_text_converted rktio fd))
+          ;; need to keep track of whether any bytes in the buffer were converted
+          (when (or (not is-converted)
+                    ((bytes-length is-converted) . < . end))
+            (define new-is-converted (make-bytes end))
+            (when is-converted
+              (bytes-copy! new-is-converted 0 is-converted))
+            (set! is-converted new-is-converted))
+          (rktio_read_converted_in_r rktio fd dest-bstr start end is-converted start)]
+         [else
+          (rktio_read_in_r rktio fd dest-bstr start end)]))
+     (cond
+       [(rktio-error? n)
+        (port-unlock this)
+        (send fd-input-port this raise-read-error n)]
+       [(eqv? n RKTIO_READ_EOF) eof]
+       [(eqv? n 0) (or (fd-semaphore-update! fd 'read)
+                       (fd-evt fd RKTIO_POLL_READ fd-refcount))]
+       [else n]))]
 
   [byte-ready/inner
    (lambda (work-done!)
      (rktioly
       (cond
-        [(eqv? (rktio_poll_read_ready rktio fd) RKTIO_POLL_READY)
+        [(eqv? (rktio_poll_read_ready_r rktio fd) RKTIO_POLL_READY)
          #t]
         [else (or (fd-semaphore-update! fd 'read)
                   (fd-evt fd RKTIO_POLL_READ fd-refcount))])))]
@@ -204,7 +203,7 @@
      (slow-mode!)
      (cond
        [(not (fx= start-pos end-pos))
-        (define n (rktioly (rktio_write_in rktio fd bstr start-pos end-pos)))
+        (define n (rktio_write_in_r rktio fd bstr start-pos end-pos))
         (cond
           [(rktio-error? n)
            ;; Discard buffer content before reporting the error. This
@@ -306,7 +305,7 @@
        [(not (flush-buffer no-escape?))
         (wrap-evt evt (lambda (v) #f))]
        [else
-        (define n (rktio_write_in rktio fd src-bstr src-start src-end))
+        (define n (rktio_write_in_r rktio fd src-bstr src-start src-end))
         (cond
           [(rktio-error? n)
            (cond
@@ -506,34 +505,38 @@
    ;; This function is called by the scheduler for `sync` to check
    ;; whether the file descriptor has data available:
    (lambda (fde ctx)
+     (start-rktio) ; so the port can't close concurrently
      (cond
        [(zero? (unbox (fd-evt-fd-refcount fde)))
+        (end-rktio)
         (values '(0) #f)]
        [else
         (define mode (fd-evt-mode fde))
         (define ready?
           (or
            (and (eqv? RKTIO_POLL_READ (bitwise-and mode RKTIO_POLL_READ))
-                (eqv? (rktio_poll_read_ready rktio (fd-evt-fd fde))
+                (eqv? (rktio_poll_read_ready_r rktio (fd-evt-fd fde))
                       RKTIO_POLL_READY))
            (and (eqv? RKTIO_POLL_WRITE (bitwise-and mode RKTIO_POLL_WRITE))
-                (eqv? (rktio_poll_write_ready rktio (fd-evt-fd fde))
+                (eqv? (rktio_poll_write_ready_r rktio (fd-evt-fd fde))
                       RKTIO_POLL_READY))))
         (cond
           [ready?
+           (end-rktio)
            (values '(0) #f)]
           ;; If the called is going to block (i.e., not just polling), then
           ;; try to get a semaphore to represent the file descriptor, because
           ;; that can be more scalable (especially for lots of TCP sockets)
           [(and (not (sandman-poll-ctx-poll? ctx))
-                (rktioly
-                 (fd-semaphore-update! (fd-evt-fd fde)
-                                       (if (eqv? RKTIO_POLL_READ (bitwise-and mode RKTIO_POLL_READ))
-                                           'read
-                                           'write))))
+                (fd-semaphore-update! (fd-evt-fd fde)
+                                      (if (eqv? RKTIO_POLL_READ (bitwise-and mode RKTIO_POLL_READ))
+                                          'read
+                                          'write)))
            => (lambda (s) ; got a semaphore
+                (end-rktio)
                 (values #f (wrap-evt s (lambda (s) 0))))]
           [else
+           (end-rktio)
            ;; If `sched-info` in `poll-ctx` is not #f, then we can register this file
            ;; descriptor so that if no thread is able to make progress,
            ;; the Racket process will sleep, but it will wake up when

@@ -49,7 +49,7 @@
 (define/who (directory-exists? p)
   (check who path-string? p)
   (define host-path (->host p who '(exists)))
-  (rktioly (rktio_directory_exists rktio host-path)))
+  (uninterruptibly (rktio_directory_exists rktio host-path)))
 
 (define/who (file-exists? p)
   (check who path-string? p)
@@ -59,13 +59,13 @@
           (special-filename? host-path #:immediate? #f))
      #t]
     [else
-     (rktioly
+     (uninterruptibly
       (rktio_file_exists rktio host-path))]))
 
 (define/who (link-exists? p)
   (check who path-string? p)
   (define host-path (->host p who '(exists)))
-  (rktioly (rktio_link_exists rktio host-path)))
+  (uninterruptibly (rktio_link_exists rktio host-path)))
 
 (define/who (file-or-directory-type p [must-exist? #f])
   (check who path-string? p)
@@ -118,12 +118,12 @@
 		       ;; Need to avoid "." and "..", so simplify
 		       (->host (simplify-path/dl (host-> host-path/initial)) #f '())]
 		      [else host-path/initial]))
-  (start-uninterruptible) ; because `call-with-resource`
+  (start-uninterruptible) ; because `call-with-resource` and avoiding rktio lock
   (define lst
     (call-with-resource
-     (rktioly (rktio_directory_list_start rktio host-path))
+     (rktio_directory_list_start_r rktio host-path)
      ;; in uninterruptible mode (possibly atomic), *not* in rktio mode
-     (lambda (dl) (rktioly (rktio_directory_list_stop rktio dl)))
+     (lambda (dl) (rktio_directory_list_stop rktio dl))
      ;; in uninterruptible mode, *not* in rktio mode
      (lambda (dl)
        (cond
@@ -136,21 +136,18 @@
                                            "  path: ~a")
                                           (host-> host-path)))]
          [else
-          (start-rktio)
           (let loop ([accum null] [len 0])
-            (define fnp (rktio_directory_list_step rktio dl))
+            (define fnp (rktio_directory_list_step_r rktio dl))
             (define fn (if (rktio-error? fnp)
                            fnp
                            (rktio_to_bytes fnp)))
             (cond
               [(rktio-error? fn)
-               (end-rktio)
                (end-uninterruptible)
                (check-rktio-error fn "error reading directory")]
               [(equal? fn #"")
                ;; `dl` is no longer valid; need to return still in
                ;; uninterrupible mode, so that `dl` is not destroyed again
-               (end-rktio)
                accum]
               [else
                (define new-accum (cons (host-element-> fn) accum))
@@ -159,10 +156,8 @@
                  [(= len 128)
                   ;; go out of uninterruptable and back to give another
                   ;; thread a chance to run
-                  (end-rktio)
                   (end-uninterruptible)
                   (start-uninterruptible)
-                  (start-rktio)
                   (loop new-accum 0)]
                  [else
                   (loop new-accum (add1 len))])]))]))))

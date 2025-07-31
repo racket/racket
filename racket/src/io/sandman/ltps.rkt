@@ -8,6 +8,7 @@
          shared-ltps-place-init!
 
          fd-semaphore-update!
+         fd-semaphore-update!*
          fd-semaphore-poll-ready?)
 
 (define (make-ltps)
@@ -36,8 +37,15 @@
 
 ;; ----------------------------------------
 
-;; in rktio-sleep-relevant mode (not necesarily rktio mode)
+;; *not* in in rktio-sleep-relevant mode
 (define (fd-semaphore-update! fd mode)
+  (start-rktio-sleep-relevant)
+  (define r (fd-semaphore-update!* fd mode))
+  (end-rktio-sleep-relevant)
+  r)
+
+;; in rktio-sleep-relevant mode (not necesarily rktio mode)
+(define (fd-semaphore-update!* fd mode)
   (cond
     [(eq? shared-ltps rktio_NULL) #f]
     [else

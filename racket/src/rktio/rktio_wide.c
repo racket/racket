@@ -265,7 +265,7 @@ static intptr_t utf16ish_to_utf8ish(const unsigned short *us, intptr_t end, unsi
 
 #define RKTIO_MAX_IDEAL_BUFFER_SIZE 4096
 
-wchar_t *rktio_convert_to_wchar(rktio_t *rktio, const char *s, int do_copy)
+wchar_t *rktio_convert_to_wchar(rktio_t *rktio, rktio_err_t *err, const char *s, int do_copy)
 {
   intptr_t len, l;
   wchar_t *ws;
@@ -274,7 +274,7 @@ wchar_t *rktio_convert_to_wchar(rktio_t *rktio, const char *s, int do_copy)
 
   len = utf8ish_to_utf16ish((unsigned char *)s, l, NULL);
   if (len < 0) {
-    set_racket_error(RKTIO_ERROR_INVALID_PATH);
+    rktio_set_racket_error(err, RKTIO_ERROR_INVALID_PATH);
     return NULL;
   }
   
@@ -320,7 +320,7 @@ char *rktio_convert_from_wchar(const wchar_t *ws, int free_given)
 
 rktio_char16_t *rktio_path_to_wide_path(rktio_t *rktio, const char *p)
 {
-  return WIDE_PATH_copy(p);
+  return WIDE_PATH_copy(p, &rktio->err);
 }
 
 char *rktio_wide_path_to_path(rktio_t *rktio, const rktio_char16_t *wp)

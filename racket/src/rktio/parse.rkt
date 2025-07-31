@@ -22,6 +22,8 @@
 ;;                 => fails when result equals <err-v>
 ;;             | (define-function/errno+step <err-v> <type> <id> ([<type> <arg-name>] ...))
 ;;                 => fails when result equals <err-v>, keep step
+;;             | (define-function/result_t <type> <id> ([<type> <arg-name>] ...))
+;;                 => fails when result is non-NULL
 ;;
 ;;  <type> = <prim-type>
 ;;         | (ref <type>)  ; opaque, needs to be deallocated somehow
@@ -50,7 +52,7 @@
 (define-empty-tokens delim-tokens
   (EOF WHITESPACE
        OPEN CLOSE BOPEN BCLOSE COPEN CCLOSE SEMI COMMA STAR LSHIFT EQUAL
-       __RKTIO_H__ EXTERN EXTERN/NOERR EXTERN/STEP EXTERN/ERR
+       __RKTIO_H__ EXTERN EXTERN/NOERR EXTERN/STEP EXTERN/ERR EXTERN/RES EXTERN/ARES
        DEFINE TYPEDEF ENUM STRUCT VOID UNSIGNED SHORT INT CHAR
        CONST NULLABLE BLOCKING MSG_QUEUE))
 
@@ -87,6 +89,8 @@
    ["RKTIO_EXTERN_ATOMIC_NOERR" 'EXTERN/NOERR]
    ["RKTIO_EXTERN_STEP" 'EXTERN/STEP]
    ["RKTIO_EXTERN_ERR" 'EXTERN/ERR]
+   ["RKTIO_EXTERN_RESULT" 'EXTERN/RES]
+   ["RKTIO_EXTERN_ALLOC_RESULT" 'EXTERN/ARES]
    ["RKTIO_NULLABLE" 'NULLABLE]
    ["RKTIO_BLOCKING" 'BLOCKING]
    ["RKTIO_MSG_QUEUE" 'MSG_QUEUE]
@@ -127,6 +131,8 @@
             [(DEFINE EXTERN/NOERR EXTERN/NOERR) #f]
             [(DEFINE EXTERN/STEP EXTERN) #f]
             [(DEFINE EXTERN/ERR OPEN ID CLOSE EXTERN) #f]
+            [(DEFINE EXTERN/RES OPEN ID CLOSE EXTERN) #f]
+            [(DEFINE EXTERN/ARES OPEN ID CLOSE EXTERN) #f]
             [(DEFINE NULLABLE) #f]
             [(DEFINE BLOCKING) #f]
             [(DEFINE MSG_QUEUE) #f]
@@ -151,7 +157,9 @@
     (<extern> [(EXTERN) 'define-function/errno]
               [(EXTERN/STEP) 'define-function/errno+step]
               [(EXTERN/NOERR) 'define-function]
-              [(EXTERN/ERR OPEN ID CLOSE) `(define-function/errno ,$3)])
+              [(EXTERN/ERR OPEN ID CLOSE) `(define-function/errno ,$3)]
+              [(EXTERN/RES OPEN ID CLOSE) `(define-function/result_t ,$3)]
+              [(EXTERN/ARES OPEN ID CLOSE) `(define-function/alloc_result_t ,$3)])
     (<flags> [(BLOCKING) '(blocking)]
              [(MSG_QUEUE) '(msg-queue)]
              [() '()])
@@ -329,7 +337,9 @@
   (and (pair? e)
        (or (eq? 'define-function (car e))
            (eq? 'define-function/errno (car e))
-           (eq? 'define-function/errno+step (car e)))))
+           (eq? 'define-function/errno+step (car e))
+           (eq? 'define-function/result_t (car e))
+           (eq? 'define-function/alloc_result_t (car e)))))
 
 (define (show-content)
   (cond

@@ -1269,10 +1269,10 @@ static intptr_t do_spawnv(rktio_t *rktio,
     cr_flag |= CREATE_NEW_PROCESS_GROUP;
   cr_flag |= CREATE_UNICODE_ENVIRONMENT;
 
-  cmdline_w = WIDE_PATH_copy(cmdline);
+  cmdline_w = WIDE_PATH_copy(cmdline, &rktio->err);
   if (!exact_cmdline)
     free(cmdline);
-  wd_w = WIDE_PATH_copy(wd);
+  wd_w = WIDE_PATH_copy(wd, &rktio->err);
   command_w = WIDE_PATH_temp(command);
 
   if (disable_inherit) {

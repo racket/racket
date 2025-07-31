@@ -143,15 +143,12 @@
     ;; `rktio_poll_add_connect` doesn't work, at least on Mac OS.
     (define fd (rktio_connect_trying rktio (connect-progress-conn conn-prog)))
     (set-connect-progress-trying-fd! conn-prog fd)
-    (start-rktio-sleep-relevant)
-    (void (fd-semaphore-update! fd 'write))
-    (end-rktio-sleep-relevant)))
+    (fd-semaphore-update! fd 'write)
+    (void)))
 
 ;; in uninterruptible mode and rktio mode
 (define (remove-trying-fd! conn-prog)
   (define fd (connect-progress-trying-fd conn-prog))
   (when fd
-    (start-rktio-sleep-relevant)
     (fd-semaphore-update! fd 'remove)
-    (end-rktio-sleep-relevant)
     (set-connect-progress-trying-fd! conn-prog #f)))

@@ -181,7 +181,8 @@
 
 ;; Make sure that `for/list` doesn't tigger quadtradic-time behavior
 ;; from `in-producer`, based on test constructed by @kalbr
-(unless (eq? 'cgc (system-type 'gc))
+(when (and (run-unreliable-tests? 'timing)
+           (not (eq? 'cgc (system-type 'gc))))
   (define (make-real-generator N)
     (generator
      ()
@@ -199,7 +200,7 @@
   (let loop ([tries 3])
     (when ((time-it 40000) . > . (* 3 (time-it 20000)))
       (if (zero? tries)
-          (error "doubling an `in-producer` sequence seems to take more than twice as long")
-        (loop (sub1 tries))))))
+          (test #t error "doubling an `in-producer` sequence seems to take more than twice as long")
+          (loop (sub1 tries))))))
   
 (report-errs)

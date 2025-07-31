@@ -8,6 +8,7 @@
          end-uninterruptible
          atomically
          non-atomically
+         uninterruptibly
          assert-atomic
          check-current-custodian)
 
@@ -114,6 +115,13 @@
     (begin0
       (let () e ...)
       (start-atomic))))
+
+(define-syntax-rule (uninterruptibly e ...)
+  (begin
+    (start-uninterruptible)
+    (begin0
+      (let () e ...)
+      (end-uninterruptible))))
 
 ;; Enable for debugging
 (define (assert-atomic)

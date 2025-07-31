@@ -50,6 +50,8 @@ struct rktio_fd_t {
   char leftover[6];
   int w_buf_count; /* number of console wide chars in `buffer` pending to encode */
 #endif
+
+  rktio_result_t res;
 };
 
 struct rktio_fd_transfer_t {
@@ -172,9 +174,25 @@ static int read_console_via_wide(HANDLE fd,
 #endif
 
 /*========================================================================*/
+/* returning a result                                                     */
+/*========================================================================*/
+
+static rktio_result_t *maybe_success(intptr_t r, rktio_result_t *res, int err_val)
+{
+  if (r != err_val) {
+    res->is_success = 1;
+    res->success.i = r;
+  } else
+    res->is_success = 0;
+
+  return res;
+}
+
+/*========================================================================*/
 /* creating an fd                                                         */
 /*========================================================================*/
 
+/* Internally, we use this function as no-error atomic  */
 rktio_fd_t *rktio_system_fd(rktio_t *rktio, intptr_t system_fd, int modes)
 {
   rktio_fd_t *rfd;
@@ -223,7 +241,7 @@ rktio_fd_t *rktio_system_fd(rktio_t *rktio, intptr_t system_fd, int modes)
   
   if ((modes & RKTIO_OPEN_SOCKET) && (modes & RKTIO_OPEN_OWN))
     rktio_socket_own(rktio, rfd);
-  
+
   return rfd;
 }
 
@@ -231,7 +249,7 @@ int rktio_fd_is_pending_open(rktio_t *rktio, rktio_fd_t *rfd)
 {
 #ifdef RKTIO_USE_PENDING_OPEN
   if (rfd->pending)
-    rktio_pending_open_poll(rktio, rfd, rfd->pending);
+    rktio_pending_open_poll(rktio, rfd, rfd->pending, &rktio->err);
   return !!rfd->pending;
 #else
   return 0;
@@ -609,7 +627,7 @@ static int try_get_fd_char(int fd, int *ready)
 }
 #endif
 
-int rktio_poll_read_ready(rktio_t *rktio, rktio_fd_t *rfd)
+static int do_poll_read_ready(rktio_t *rktio, rktio_fd_t *rfd, rktio_err_t *err)
 {
   if (rktio_fd_is_regular_file(rktio, rfd))
     return RKTIO_POLL_READY;
@@ -669,7 +687,7 @@ int rktio_poll_read_ready(rktio_t *rktio, rktio_fd_t *rfd)
 #endif
 #ifdef RKTIO_SYSTEM_WINDOWS
   if (rfd->modes & RKTIO_OPEN_SOCKET)
-    return rktio_socket_poll_read_ready(rktio, rfd);
+    return rktio_socket_poll_read_ready(rktio, rfd, err);
 
   init_read_fd(rktio, rfd);
 
@@ -704,7 +722,17 @@ int rktio_poll_read_ready(rktio_t *rktio, rktio_fd_t *rfd)
 #endif
 }
 
-int poll_write_ready_or_flushed(rktio_t *rktio, rktio_fd_t *rfd, int check_flushed)
+int rktio_poll_read_ready(rktio_t *rktio, rktio_fd_t *rfd)
+{
+  return do_poll_read_ready(rktio, rfd, &rktio->err);
+}
+
+rktio_result_t *rktio_poll_read_ready_r(rktio_t *rktio, rktio_fd_t *rfd)
+{
+  return maybe_success(do_poll_read_ready(rktio, rfd, &rfd->res.err), &rfd->res, RKTIO_POLL_ERROR);
+}
+
+static int poll_write_ready_or_flushed(rktio_t *rktio, rktio_fd_t *rfd, int check_flushed, rktio_err_t *err)
 {
 #ifdef RKTIO_SYSTEM_UNIX
   if (check_flushed)
@@ -714,10 +742,10 @@ int poll_write_ready_or_flushed(rktio_t *rktio, rktio_fd_t *rfd, int check_flush
 
 # ifdef RKTIO_USE_PENDING_OPEN
     if (rfd->pending) {
-      int errval = rktio_pending_open_poll(rktio, rfd, rfd->pending);
+      int errval = rktio_pending_open_poll(rktio, rfd, rfd->pending, err);
       if (errval) {
         errno = errval;
-        get_posix_error();
+        rktio_get_posix_error(err);
         return RKTIO_POLL_ERROR;
       } else if (rfd->pending)
         return RKTIO_POLL_NOT_READY;
@@ -754,7 +782,7 @@ int poll_write_ready_or_flushed(rktio_t *rktio, rktio_fd_t *rfd, int check_flush
 # endif
 
     if (sr == -1) {
-      get_posix_error();
+      rktio_get_posix_error(err);
       return RKTIO_POLL_ERROR;
     } else
       return (sr != 0);
@@ -767,7 +795,7 @@ int poll_write_ready_or_flushed(rktio_t *rktio, rktio_fd_t *rfd, int check_flush
   if (rfd->modes & RKTIO_OPEN_SOCKET) {
     if (check_flushed)
       return RKTIO_POLL_READY;
-    return rktio_socket_poll_write_ready(rktio, rfd);
+    return rktio_socket_poll_write_ready(rktio, rfd, err);
   }
   
   if (rfd->oth) {
@@ -818,13 +846,28 @@ int poll_write_ready_or_flushed(rktio_t *rktio, rktio_fd_t *rfd, int check_flush
 
 int rktio_poll_write_ready(rktio_t *rktio, rktio_fd_t *rfd)
 {
-  return poll_write_ready_or_flushed(rktio, rfd, 0);
+  return poll_write_ready_or_flushed(rktio, rfd, 0, &rktio->err);
 }
 
 int rktio_poll_write_flushed(rktio_t *rktio, rktio_fd_t *rfd)
 {
-  return poll_write_ready_or_flushed(rktio, rfd, 1);
+  return poll_write_ready_or_flushed(rktio, rfd, 1, &rktio->err);
 }
+
+rktio_result_t *rktio_poll_write_ready_r(rktio_t *rktio, rktio_fd_t *rfd)
+{
+  return maybe_success(poll_write_ready_or_flushed(rktio, rfd, 0, &rfd->res.err), &rfd->res, RKTIO_POLL_ERROR);
+}
+
+rktio_result_t *rktio_poll_write_flushed_r(rktio_t *rktio, rktio_fd_t *rfd)
+{
+  return maybe_success(poll_write_ready_or_flushed(rktio, rfd, 1, &rfd->res.err), &rfd->res, RKTIO_POLL_ERROR);
+}
+
+rktio_result_t *rktio_poll_read_ready_r(rktio_t *rktio, rktio_fd_t *rfd);
+RKTIO_EXTERN_RESULT(rktio_result_integer)
+rktio_result_t *rktio_poll_write_ready_r(rktio_t *rktio, rktio_fd_t *rfd);
+
 
 void rktio_poll_add(rktio_t *rktio, rktio_fd_t *rfd, rktio_poll_set_t *fds, int modes)
 {
@@ -926,14 +969,14 @@ void rktio_poll_add(rktio_t *rktio, rktio_fd_t *rfd, rktio_poll_set_t *fds, int 
 /* reading                                                                */
 /*========================================================================*/
 
-intptr_t rktio_read_converted(rktio_t *rktio, rktio_fd_t *rfd, char *buffer, intptr_t len,
-                              char *is_converted)
+static intptr_t do_read_converted(rktio_t *rktio, rktio_fd_t *rfd, char *buffer, intptr_t len,
+                                  char *is_converted, rktio_err_t *err)
 {
 #ifdef RKTIO_SYSTEM_UNIX
   intptr_t bc;
 
   if (rfd->modes & RKTIO_OPEN_SOCKET)
-    return rktio_socket_read(rktio, rfd, buffer, len);
+    return rktio_socket_read(rktio, rfd, buffer, len, err);
 
 # ifdef SOME_FDS_ARE_NOT_SELECTABLE
   if (rfd->bufcount && len) {
@@ -952,7 +995,7 @@ intptr_t rktio_read_converted(rktio_t *rktio, rktio_fd_t *rfd, char *buffer, int
     } while ((bc == -1) && (errno == EINTR));
 
     if (bc == -1) {
-      get_posix_error();
+      rktio_get_posix_error(err);
       return RKTIO_READ_ERROR;
     } else if (bc == 0)
       return RKTIO_READ_EOF;
@@ -979,7 +1022,7 @@ intptr_t rktio_read_converted(rktio_t *rktio, rktio_fd_t *rfd, char *buffer, int
     } while ((bc == -1) && errno == EINTR);
 
     if ((bc == -1) && (errno != EAGAIN))
-      get_posix_error();
+      rktio_get_posix_error(err);
     
     if (!(old_flags & RKTIO_NONBLOCKING))
       fcntl(rfd->fd, F_SETFL, old_flags);
@@ -997,7 +1040,7 @@ intptr_t rktio_read_converted(rktio_t *rktio, rktio_fd_t *rfd, char *buffer, int
 #endif
 #ifdef RKTIO_SYSTEM_WINDOWS
   if (rfd->modes & RKTIO_OPEN_SOCKET)
-    return rktio_socket_read(rktio, rfd, buffer, len);
+    return rktio_socket_read(rktio, rfd, buffer, len, err);
 
   init_read_fd(rktio, rfd);
 
@@ -1084,7 +1127,7 @@ intptr_t rktio_read_converted(rktio_t *rktio, rktio_fd_t *rfd, char *buffer, int
     }
 
     if (!ready) {
-      get_windows_error();
+      rktio_get_windows_error(err);
       return RKTIO_READ_ERROR;
     }
 
@@ -1115,7 +1158,7 @@ intptr_t rktio_read_converted(rktio_t *rktio, rktio_fd_t *rfd, char *buffer, int
       return RKTIO_READ_EOF;
     } else if (rfd->th->err) {
       ReleaseSemaphore(rfd->th->lock_sema, 1, NULL);
-      set_windows_error(rfd->th->err);
+      rktio_set_windows_error(err, rfd->th->err);
       return RKTIO_READ_ERROR;
     } else {
       intptr_t bc = rfd->th->avail;
@@ -1131,10 +1174,25 @@ intptr_t rktio_read_converted(rktio_t *rktio, rktio_fd_t *rfd, char *buffer, int
 #endif
 }
 
+intptr_t rktio_read_converted(rktio_t *rktio, rktio_fd_t *rfd, char *buffer, intptr_t len,
+                              char *is_converted)
+{
+  return do_read_converted(rktio, rfd, buffer, len, is_converted, &rktio->err);
+}
+
 intptr_t rktio_read_converted_in(rktio_t *rktio, rktio_fd_t *rfd, char *buffer, intptr_t start, intptr_t end,
                                  char *is_converted, intptr_t converted_start)
 {
-  return rktio_read_converted(rktio, rfd, buffer+start, end-start, is_converted+converted_start);
+  return do_read_converted(rktio, rfd, buffer+start, end-start, is_converted+converted_start, &rktio->err);
+}
+
+rktio_result_t *rktio_read_converted_in_r(rktio_t *rktio, rktio_fd_t *rfd, char *buffer, intptr_t start, intptr_t end,
+                                          char *is_converted, intptr_t converted_start)
+{
+  return maybe_success(do_read_converted(rktio, rfd, buffer+start, end-start, is_converted+converted_start,
+                                         &rfd->res.err),
+                       &rfd->res,
+                       RKTIO_READ_ERROR);
 }
 
 intptr_t rktio_read(rktio_t *rktio, rktio_fd_t *rfd, char *buffer, intptr_t len)
@@ -1147,9 +1205,11 @@ intptr_t rktio_read_in(rktio_t *rktio, rktio_fd_t *rfd, char *buffer, intptr_t s
   return rktio_read_converted(rktio, rfd, buffer+start, end-start, NULL);
 }
 
-intptr_t rktio_write_in(rktio_t *rktio, rktio_fd_t *rfd, const char *buffer, intptr_t start, intptr_t end)
+rktio_result_t *rktio_read_in_r(rktio_t *rktio, rktio_fd_t *rfd, char *buffer, intptr_t start, intptr_t end)
 {
-  return rktio_write(rktio, rfd, buffer+start, end-start);
+  return maybe_success(do_read_converted(rktio, rfd, buffer+start, end-start, NULL, &rfd->res.err),
+                       &rfd->res,
+                       RKTIO_READ_ERROR);
 }
 
 RKTIO_EXTERN intptr_t rktio_buffered_byte_count(rktio_t *rktio, rktio_fd_t *fd)
@@ -1482,21 +1542,22 @@ int read_console_via_wide(HANDLE fd,
 /* writing                                                                */
 /*========================================================================*/
 
-intptr_t rktio_write(rktio_t *rktio, rktio_fd_t *rfd, const char *buffer, intptr_t len)
+static intptr_t do_write(rktio_t *rktio, rktio_fd_t *rfd, const char *buffer, intptr_t len,
+                         rktio_err_t *err)
 {
 #ifdef RKTIO_SYSTEM_UNIX
   int flags, errsaved;
   intptr_t amt;
 
   if (rfd->modes & RKTIO_OPEN_SOCKET)
-    return rktio_socket_write(rktio, rfd, buffer, len);
+    return rktio_socket_write(rktio, rfd, buffer, len, err);
 
 # ifdef RKTIO_USE_PENDING_OPEN
   if (rfd->pending) {
-    int errval = rktio_pending_open_poll(rktio, rfd, rfd->pending);
+    int errval = rktio_pending_open_poll(rktio, rfd, rfd->pending, err);
     if (errval) {
       errno = errval;
-      get_posix_error();
+      rktio_get_posix_error(err);
       return RKTIO_WRITE_ERROR;
     } else if (rfd->pending)
       return 0;
@@ -1522,10 +1583,10 @@ intptr_t rktio_write(rktio_t *rktio, rktio_fd_t *rfd, const char *buffer, intptr
 
   if (len == -1) {
     errsaved = errno;
-    get_posix_error();
+    rktio_get_posix_error(err);
   } else
     errsaved = 0;
-  
+
   if (!(flags & RKTIO_NONBLOCKING))
     fcntl(rfd->fd, F_SETFL, flags);
 
@@ -1541,7 +1602,7 @@ intptr_t rktio_write(rktio_t *rktio, rktio_fd_t *rfd, const char *buffer, intptr
   DWORD winwrote;
 
   if (rfd->modes & RKTIO_OPEN_SOCKET)
-    return rktio_socket_write(rktio, rfd, buffer, len);
+    return rktio_socket_write(rktio, rfd, buffer, len, err);
 
   force_console(rfd);
 
@@ -1557,7 +1618,7 @@ intptr_t rktio_write(rktio_t *rktio, rktio_fd_t *rfd, const char *buffer, intptr
     const char *orig_buffer = buffer;
     wchar_t *w_buffer = NULL;
     DWORD max_winwrote;
-    int err;
+    int errv;
 
     if (rfd->modes & RKTIO_OPEN_TEXT)
       buffer = adjust_output_text(buffer, &towrite);
@@ -1587,9 +1648,9 @@ intptr_t rktio_write(rktio_t *rktio, rktio_fd_t *rfd, const char *buffer, intptr
       }
 
       if (!ok)
-        err = GetLastError();
+        errv = GetLastError();
 
-      if (!ok && (err == ERROR_NOT_ENOUGH_MEMORY)) {
+      if (!ok && (errv == ERROR_NOT_ENOUGH_MEMORY)) {
         towrite = towrite >> 1;
         if (towrite && (buffer != orig_buffer)) {
           /* don't write half of a CRLF: */
@@ -1603,7 +1664,7 @@ intptr_t rktio_write(rktio_t *rktio, rktio_fd_t *rfd, const char *buffer, intptr
     }
 
     if (!ok) {
-      get_windows_error();
+      rktio_get_windows_error(errv);
       if (buffer != orig_buffer)
 	free((char *)buffer);
       return RKTIO_WRITE_ERROR;
@@ -1862,10 +1923,25 @@ intptr_t rktio_write(rktio_t *rktio, rktio_fd_t *rfd, const char *buffer, intptr
     if (ok)
       return out_len;
 
-    set_windows_error(errsaved);
+    rktio_set_windows_error(err, errsaved);
     return RKTIO_WRITE_ERROR;
   }
 #endif
+}
+
+intptr_t rktio_write(rktio_t *rktio, rktio_fd_t *rfd, const char *buffer, intptr_t len)
+{
+  return do_write(rktio, rfd, buffer, len, &rktio->err);
+}
+
+intptr_t rktio_write_in(rktio_t *rktio, rktio_fd_t *rfd, const char *buffer, intptr_t start, intptr_t end)
+{
+  return rktio_write(rktio, rfd, buffer+start, end-start);
+}
+
+rktio_result_t *rktio_write_in_r(rktio_t *rktio, rktio_fd_t *rfd, const char *buffer, intptr_t start, intptr_t end)
+{
+  return maybe_success(do_write(rktio, rfd, buffer+start, end-start, &rfd->res.err), &rfd->res, RKTIO_WRITE_ERROR);
 }
 
 void rktio_std_write_in_best_effort(rktio_t *rktio, int which, char *buffer, intptr_t start, intptr_t end) {

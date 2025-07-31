@@ -15,11 +15,16 @@
 (define self
   (parameterize ([current-directory (find-system-path 'orig-dir)])
     (find-executable-path (find-system-path 'exec-file) #f)))
-(define cat (find-executable-path 
-	     (if (eq? 'windows (system-type)) 
-		 "cat.exe"
-		 "cat")
-	     #f))
+(define cat (or (find-executable-path
+		 (if (eq? 'windows (system-type))
+		     "cat.exe"
+		     "cat")
+		 #f)
+		;; a likely place to find `cat.exe`:
+		(let ([cat "c:/program files/git/usr/bin/cat.exe"])
+		  (and (file-exists? cat)
+		       (simple-form-path cat)))))
+
 (define tmpfile (build-path (find-system-path 'temp-dir) "cattmp"))
 (define tmpfile2 (build-path (find-system-path 'temp-dir) "cattmp2"))
 

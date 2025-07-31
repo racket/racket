@@ -143,7 +143,7 @@ int rktio_setenv(rktio_t *rktio, const char *name, const char *val)
   if (!name_w) return 0;
   
   if (val) {
-    val_w = WIDE_PATH_copy(val);
+    val_w = WIDE_PATH_copy(val, &rktio->err);
     if (!val_w) return 0;
   } else
     val_w = NULL;

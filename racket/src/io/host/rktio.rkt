@@ -57,6 +57,10 @@
   (define-function () #f name))
 (define-syntax-rule (define-function/errno+step _ _ _ name . _)
   (define-function () #f name))
+(define-syntax-rule (define-function/result_t _ _ _ name . _)
+  (define-function () #f name))
+(define-syntax-rule (define-function/alloc_result_t _ _ _ name . _)
+  (define-function () #f name))
 
 (include "../../rktio/rktio.rktl")
 

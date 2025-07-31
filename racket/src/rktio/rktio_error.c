@@ -2,6 +2,7 @@
 #include "rktio_private.h"
 #include <errno.h>
 #include <string.h>
+#include <stdlib.h>
 
 typedef struct err_str_t {
   int id;
@@ -43,88 +44,119 @@ err_str_t err_strs[]  = {
   { 0, NULL }
 };
 
-void rktio_get_posix_error(rktio_t *rktio)
+void rktio_get_posix_error(rktio_err_t *err)
 {
-  rktio->errid = errno;
-  rktio->errkind = RKTIO_ERROR_KIND_POSIX;
+  err->errid = errno;
+  err->errkind = RKTIO_ERROR_KIND_POSIX;
 }
 
-void rktio_set_racket_error(rktio_t *rktio, int new_errid)
+void rktio_set_racket_error(rktio_err_t *err, int new_errid)
 {
-  rktio->errid = new_errid;
-  rktio->errkind = RKTIO_ERROR_KIND_RACKET;
+  err->errid = new_errid;
+  err->errkind = RKTIO_ERROR_KIND_RACKET;
 }
 
 #ifdef RKTIO_SYSTEM_WINDOWS
-void rktio_get_windows_error(rktio_t *rktio)
+void rktio_get_windows_error(rktio_err_t *err)
 {
-  rktio->errid = GetLastError();
-  rktio->errkind = RKTIO_ERROR_KIND_WINDOWS;
+  err->errid = GetLastError();
+  err->errkind = RKTIO_ERROR_KIND_WINDOWS;
 }
 
-void rktio_set_windows_error(rktio_t *rktio, int errid)
+void rktio_set_windows_error(rktio_err_t *err, int errid)
 {
-  rktio->errid = errid;
-  rktio->errkind = RKTIO_ERROR_KIND_WINDOWS;
+  err->errid = errid;
+  err->errkind = RKTIO_ERROR_KIND_WINDOWS;
 }
 #endif
 
 int rktio_get_last_error(rktio_t *rktio)
 {
-  return rktio->errid;
+  return rktio->err.errid;
+}
+
+int rktio_get_error(rktio_result_t *res)
+{
+  return res->err.errid;
 }
 
 int rktio_get_last_error_kind(rktio_t *rktio)
 {
-  return rktio->errkind;
+  return rktio->err.errkind;
+}
+
+int rktio_get_error_kind(rktio_result_t *res)
+{
+  return res->err.errkind;
 }
 
 int rktio_get_last_error_step(rktio_t *rktio)
 {
-  return rktio->errstep;
+  return rktio->err.errstep;
+}
+
+int rktio_get_error_step(rktio_result_t *res)
+{
+  return res->err.errstep;
 }
 
 void rktio_set_last_error(rktio_t *rktio, int kind, int errid)
 {
-  rktio->errkind = kind;
-  rktio->errid = errid;
+  rktio->err.errkind = kind;
+  rktio->err.errid = errid;
+}
+
+void rktio_set_error(rktio_err_t *err, int kind, int errid)
+{
+  err->errkind = kind;
+  err->errid = errid;
 }
 
 void rktio_set_last_error_step(rktio_t *rktio, int new_errstep)
 {
-  rktio->errstep = new_errstep;
+  rktio->err.errstep = new_errstep;
 }
 
-void rktio_remap_last_error(rktio_t *rktio)
+static void do_remap_error(rktio_err_t *err)
 {
-  if (rktio->errkind == RKTIO_ERROR_KIND_RACKET) {
-    switch (rktio->errid) {
+  if (err->errkind == RKTIO_ERROR_KIND_RACKET) {
+    switch (err->errid) {
     case RKTIO_ERROR_DOES_NOT_EXIST:
 #ifdef RKTIO_SYSTEM_UNIX
-      rktio_set_last_error(rktio, RKTIO_ERROR_KIND_POSIX, ENOENT);
+      rktio_set_error(err, RKTIO_ERROR_KIND_POSIX, ENOENT);
 #endif
 #ifdef RKTIO_SYSTEM_WINDOWS
-      rktio_set_last_error(rktio, RKTIO_ERROR_KIND_WINDOWS, ERROR_FILE_NOT_FOUND);
+      rktio_set_error(err, RKTIO_ERROR_KIND_WINDOWS, ERROR_FILE_NOT_FOUND);
 #endif
       break;
     case RKTIO_ERROR_EXISTS:
 #ifdef RKTIO_SYSTEM_UNIX
-      rktio_set_last_error(rktio, RKTIO_ERROR_KIND_POSIX, EEXIST);
+      rktio_set_error(err, RKTIO_ERROR_KIND_POSIX, EEXIST);
 #endif
 #ifdef RKTIO_SYSTEM_WINDOWS
-      rktio_set_last_error(rktio, RKTIO_ERROR_KIND_WINDOWS, RKTIO_ERROR_EXISTS);
+      rktio_set_error(err, RKTIO_ERROR_KIND_WINDOWS, RKTIO_ERROR_EXISTS);
 #endif
       break;
     case RKTIO_ERROR_ACCESS_DENIED:
 #ifdef RKTIO_SYSTEM_UNIX
-      rktio_set_last_error(rktio, RKTIO_ERROR_KIND_POSIX, EACCES);
+      rktio_set_error(err, RKTIO_ERROR_KIND_POSIX, EACCES);
 #endif
 #ifdef RKTIO_SYSTEM_WINDOWS
-      rktio_set_last_error(rktio, RKTIO_ERROR_KIND_WINDOWS, ERROR_ACCESS_DENIED);
+      rktio_set_error(err, RKTIO_ERROR_KIND_WINDOWS, ERROR_ACCESS_DENIED);
 #endif
       break;
     }
   }
+}
+
+void rktio_remap_last_error(rktio_t *rktio)
+{
+  do_remap_error(&rktio->err);
+}
+
+void rktio_remap_error(rktio_result_t *res)
+{
+  do_remap_error(&res->err);
 }
 
 const char *rktio_get_error_string(rktio_t *rktio, int kind, int errid)
@@ -190,4 +222,39 @@ void rktio_error_clean(rktio_t *rktio)
   if (rktio->last_err_str)
     free(rktio->last_err_str);
 #endif
+}
+
+rktio_result_t *rktio_make_error(rktio_err_t *err)
+{
+  rktio_result_t *res = (rktio_result_t *)malloc(sizeof(rktio_result_t));
+  res->is_success = 0;
+  memcpy(&res->err, err, sizeof(rktio_err_t));
+  return res;
+}
+
+rktio_result_t *rktio_make_success(void)
+{
+  rktio_result_t *res = (rktio_result_t *)malloc(sizeof(rktio_result_t));
+  res->is_success = 1;
+  return res;
+}
+
+rktio_bool_t rktio_result_is_success(rktio_result_t *res)
+{
+  return res->is_success;
+}
+
+intptr_t rktio_result_integer(rktio_result_t *res)
+{
+  return res->success.i;
+}
+
+char *rktio_result_string(rktio_result_t *res)
+{
+  return res->success.str;
+}
+
+rktio_directory_list_t *rktio_result_directory_list(rktio_result_t *res)
+{
+  return res->success.dir_list;
 }

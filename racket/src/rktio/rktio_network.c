@@ -100,31 +100,31 @@ typedef struct SOCKADDR_IN rktio_unspec_address;
 
 #endif
 
-static void do_get_socket_error(rktio_t *rktio) {
-  rktio->errid = SOCK_ERRNO();
+static void do_get_socket_error(rktio_err_t *err) {
+  err->errid = SOCK_ERRNO();
 #ifdef RKTIO_SYSTEM_WINDOWS
-  rktio->errkind = RKTIO_ERROR_KIND_WINDOWS;
+  err->errkind = RKTIO_ERROR_KIND_WINDOWS;
 #else
-  rktio->errkind = RKTIO_ERROR_KIND_POSIX;
+  err->errkind = RKTIO_ERROR_KIND_POSIX;
 #endif
 }
-#define get_socket_error() do_get_socket_error(rktio)
+#define get_socket_error() do_get_socket_error(&rktio->err)
 
-static void do_set_socket_error(rktio_t *rktio, int errid) {
-  rktio->errid = errid;
+static void do_set_socket_error(rktio_err_t *err, int errid) {
+  err->errid = errid;
 #ifdef RKTIO_SYSTEM_WINDOWS
-  rktio->errkind = RKTIO_ERROR_KIND_WINDOWS;
+  err->errkind = RKTIO_ERROR_KIND_WINDOWS;
 #else
-  rktio->errkind = RKTIO_ERROR_KIND_POSIX;
+  err->errkind = RKTIO_ERROR_KIND_POSIX;
 #endif
 }
-#define set_socket_error(errid) do_set_socket_error(rktio, errid)
+#define set_socket_error(errid) do_set_socket_error(&rktio->err, errid)
 
-static void do_set_gai_error(rktio_t *rktio, int errid) {
-  rktio->errid = errid;
-  rktio->errkind = RKTIO_ERROR_KIND_GAI;
+static void do_set_gai_error(rktio_err_t *err, int errid) {
+  err->errid = errid;
+  err->errkind = RKTIO_ERROR_KIND_GAI;
 }
-#define set_gai_error(err) do_set_gai_error(rktio, err)
+#define set_gai_error(errv) do_set_gai_error(&rktio->err, errv)
 
 #define TCP_BUFFER_SIZE 4096
 
@@ -920,7 +920,7 @@ void rktio_socket_init(rktio_t *rktio, rktio_fd_t *rfd)
 # ifdef SO_BROADCAST
     {
       int bc = 1;
-      setsockopt(s, SOL_SOCKET, SO_BROADCAST, &bc, sizeof(bc));
+      setsockopt(s, SOL_SOCKET, SO_BROADCAST, (char *)&bc, sizeof(bc));
     }
 # endif
 #endif
@@ -983,7 +983,7 @@ int rktio_tcp_nodelay(rktio_t *rktio, rktio_fd_t *rfd, rktio_bool_t enable)
 {
   rktio_socket_t s = rktio_fd_socket(rktio, rfd);
   int nd = (enable ? 1 : 0), r;
-  r = setsockopt(s, IPPROTO_TCP, TCP_NODELAY, &nd, sizeof(nd));
+  r = setsockopt(s, IPPROTO_TCP, TCP_NODELAY, (char *)&nd, sizeof(nd));
   if (r) {
     get_socket_error();
     return 0;
@@ -996,7 +996,7 @@ int rktio_tcp_keepalive(rktio_t *rktio, rktio_fd_t *rfd, rktio_bool_t enable)
 #ifdef SO_KEEPALIVE
   rktio_socket_t s = rktio_fd_socket(rktio, rfd);
   int nd = (enable ? 1 : 0), r;
-  r = setsockopt(s, IPPROTO_TCP, SO_KEEPALIVE, &nd, sizeof(nd));
+  r = setsockopt(s, IPPROTO_TCP, SO_KEEPALIVE, (char *)&nd, sizeof(nd));
   if (r) {
     get_socket_error();
     return 0;
@@ -1005,7 +1005,7 @@ int rktio_tcp_keepalive(rktio_t *rktio, rktio_fd_t *rfd, rktio_bool_t enable)
   return 1;
 }
 
-int rktio_socket_poll_write_ready(rktio_t *rktio, rktio_fd_t *rfd)
+int rktio_socket_poll_write_ready(rktio_t *rktio, rktio_fd_t *rfd, rktio_err_t *err)
 {
 #ifdef RKTIO_SYSTEM_UNIX
   return rktio_poll_write_ready(rktio, rfd);
@@ -1029,7 +1029,7 @@ int rktio_socket_poll_write_ready(rktio_t *rktio, rktio_fd_t *rfd)
     sr = select(RKTIO_SOCKS(s + 1), NULL, writefds, exnfds, &time);
 
     if (sr == -1) {
-      get_socket_error();
+      do_get_socket_error(err);
       return RKTIO_POLL_ERROR;
     } else if (sr)
       return RKTIO_POLL_READY;
@@ -1039,7 +1039,7 @@ int rktio_socket_poll_write_ready(rktio_t *rktio, rktio_fd_t *rfd)
 #endif
 }
 
-int rktio_socket_poll_read_ready(rktio_t *rktio, rktio_fd_t *rfd)
+int rktio_socket_poll_read_ready(rktio_t *rktio, rktio_fd_t *rfd, rktio_err_t *err)
 {
 #ifdef RKTIO_SYSTEM_UNIX
   return rktio_poll_read_ready(rktio, rfd);
@@ -1063,7 +1063,7 @@ int rktio_socket_poll_read_ready(rktio_t *rktio, rktio_fd_t *rfd)
     sr = select(RKTIO_SOCKS(s + 1), readfds, NULL, exnfds, &time);
     
     if (sr == -1) {
-      get_socket_error();
+      do_get_socket_error(err);
       return RKTIO_POLL_ERROR;
     } else if (sr)
       return RKTIO_POLL_READY;
@@ -1097,7 +1097,7 @@ rktio_fd_t *rktio_socket_dup(rktio_t *rktio, rktio_fd_t *rfd)
 #endif
 }
 
-intptr_t rktio_socket_read(rktio_t *rktio, rktio_fd_t *rfd, char *buffer, intptr_t len)
+intptr_t rktio_socket_read(rktio_t *rktio, rktio_fd_t *rfd, char *buffer, intptr_t len, rktio_err_t *err)
 {
   rktio_socket_t s = rktio_fd_socket(rktio, rfd);
   int rn;
@@ -1113,17 +1113,18 @@ intptr_t rktio_socket_read(rktio_t *rktio, rktio_fd_t *rfd, char *buffer, intptr
   else if (rn == 0)
     return RKTIO_READ_EOF;
   else {
-    int err = SOCK_ERRNO();
-    if (WAS_EAGAIN(err))
+    int errv = SOCK_ERRNO();
+    if (WAS_EAGAIN(errv))
       return 0;
     else {
-      get_socket_error();
+      do_get_socket_error(err);
       return RKTIO_READ_ERROR;
     }
   }
 }
 
 static intptr_t do_socket_write(rktio_t *rktio, rktio_fd_t *rfd, const char *buffer, intptr_t len,
+                                rktio_err_t *err,
                                 /* for UDP sendto: */
                                 rktio_addrinfo_t *addr)
 {
@@ -1173,15 +1174,15 @@ static intptr_t do_socket_write(rktio_t *rktio, rktio_fd_t *rfd, const char *buf
       /* split the message and try again: */
       len >>= 1;
     } else {
-      get_socket_error();
+      do_get_socket_error(err);
       return RKTIO_WRITE_ERROR;
     }
   }
 }
 
-intptr_t rktio_socket_write(rktio_t *rktio, rktio_fd_t *rfd, const char *buffer, intptr_t len)
+intptr_t rktio_socket_write(rktio_t *rktio, rktio_fd_t *rfd, const char *buffer, intptr_t len, rktio_err_t *err)
 {
-  return do_socket_write(rktio, rfd, buffer, LIMIT_REQUEST_SIZE(len), NULL);
+  return do_socket_write(rktio, rfd, buffer, LIMIT_REQUEST_SIZE(len), err, NULL);
 }
 
 /*========================================================================*/
@@ -1279,7 +1280,7 @@ static rktio_connect_t *try_connect(rktio_t *rktio, rktio_connect_t *conn)
 int rktio_poll_connect_ready(rktio_t *rktio, rktio_connect_t *conn)
 {
   if (conn->inprogress)
-    return rktio_socket_poll_write_ready(rktio, conn->trying_fd);
+    return rktio_socket_poll_write_ready(rktio, conn->trying_fd, &rktio->err);
   else
     return RKTIO_POLL_READY;
 }
@@ -1450,7 +1451,7 @@ rktio_listener_t *rktio_listen(rktio_t *rktio, rktio_addrinfo_t *src, int backlo
 	    int ok;
 # ifdef IPV6_V6ONLY
 	    int on = 1;
-	    ok = setsockopt(s, IPPROTO_IPV6, IPV6_V6ONLY, &on, sizeof(on));
+	    ok = setsockopt(s, IPPROTO_IPV6, IPV6_V6ONLY, (char *)&on, sizeof(on));
 # else
 	    ok = -1;
 # endif
@@ -1910,7 +1911,7 @@ int rktio_udp_connect(rktio_t *rktio, rktio_fd_t *rfd, rktio_addrinfo_t *addr)
 
 intptr_t rktio_udp_sendto(rktio_t *rktio, rktio_fd_t *rfd, rktio_addrinfo_t *addr, const char *buffer, intptr_t len)
 {
-  return do_socket_write(rktio, rfd, buffer, len, addr);
+  return do_socket_write(rktio, rfd, buffer, len, &rktio->err, addr);
 }
 
 intptr_t rktio_udp_sendto_in(rktio_t *rktio, rktio_fd_t *rfd, rktio_addrinfo_t *addr, const char *buffer,
