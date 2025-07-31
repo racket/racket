@@ -181,8 +181,6 @@
 
 # define RKTIO_KILLPG_EPERM_FOR_ZOMBIE
 
-# define RKTIO_NO_SO_KEEPALIVE
-
 # endif
 
   /************ QNX *************/
