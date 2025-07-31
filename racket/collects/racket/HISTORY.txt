@@ -6,6 +6,7 @@ Build-system improvements support containers registered at Docker Hub
 Use Unicode 16.0 for character and string operations
 Change `struct` to support `#:properties prop-alist-expr`
 Improve `expt` on a flonum to a large exact power
+Change TCP ports to use SO_KEEPALIVE correctly
 xml: Change structs to serializable
 ffi/unsafe: Add `start-uninterruptible`, `end-uninterruptible`
 net/imap: Add `imap-move`
