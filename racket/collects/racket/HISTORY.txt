@@ -1,3 +1,14 @@
+Version ...
+Add support for recording a thread's results via the `#:keep` option
+ to `thread`; results are returned by `thread-wait`
+CS: Add support for parallel threads via the `#:pool` argument to
+ `thread`
+CS: Expand the set of primitives that can be used in futures without
+ blocking, although the changes are mainly meant to enable more
+ parallelism via parallel threads
+Adapt and expand the role of "uninterruptible" mode and the API
+ provided by `ffi/unsafe/atomic`
+
 Version 8.18, July 2025
 Build-system improvements support containers registered at Docker Hub
  to build for all platforms that have downloads form the main Racket
@@ -6,6 +17,7 @@ Build-system improvements support containers registered at Docker Hub
 Use Unicode 16.0 for character and string operations
 Change `struct` to support `#:properties prop-alist-expr`
 Improve `expt` on a flonum to a large exact power
+Change TCP ports to use SO_KEEPALIVE correctly
 xml: Change structs to serializable
 ffi/unsafe: Add `start-uninterruptible`, `end-uninterruptible`
 net/imap: Add `imap-move`
