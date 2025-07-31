@@ -993,7 +993,8 @@ int rktio_tcp_nodelay(rktio_t *rktio, rktio_fd_t *rfd, rktio_bool_t enable)
 
 int rktio_tcp_keepalive(rktio_t *rktio, rktio_fd_t *rfd, rktio_bool_t enable)
 {
-#ifdef SO_KEEPALIVE
+#ifndef RKTIO_NO_SO_KEEPALIVE
+# ifdef SO_KEEPALIVE
   rktio_socket_t s = rktio_fd_socket(rktio, rfd);
   int nd = (enable ? 1 : 0), r;
   r = setsockopt(s, IPPROTO_TCP, SO_KEEPALIVE, (char *)&nd, sizeof(nd));
@@ -1001,6 +1002,7 @@ int rktio_tcp_keepalive(rktio_t *rktio, rktio_fd_t *rfd, rktio_bool_t enable)
     get_socket_error();
     return 0;
   }
+# endif
 #endif
   return 1;
 }
