@@ -432,7 +432,7 @@
 (define (make-syntax-literal-data-instance-from-compiled-in-memory cim)
   (make-instance 'syntax-literal-data #f #f
                  deserialize-syntax-id void
-                 deserialized-syntax-vector-id (compiled-in-memory-syntax-literals cim)))
+                 deserialized-syntax-vector-id (box (compiled-in-memory-syntax-literals cim))))
 
 (define empty-syntax-literals-instance/empty-namespace
   (make-instance 'empty-stx/empty-ns #f 'constant

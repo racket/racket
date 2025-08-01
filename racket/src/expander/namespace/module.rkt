@@ -163,6 +163,10 @@
           get-all-variables
           get-portal-syntax-callback))
 
+;; A `module-instance` represents the instantiation of a module in a particular
+;; namespace. If a module instance is attached from one namespace to another,
+;; it's really the `namespace` within the instance that is shared, not the
+;; `module-instance` object.
 (struct module-instance (namespace
                          module                        ; can be #f for the module being expanded
                          [shifted-requires #:mutable]  ; computed on demand; shifted from `module-requires` or `module-flattened-requires`

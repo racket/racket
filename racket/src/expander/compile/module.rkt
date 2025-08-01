@@ -297,8 +297,7 @@
              (,deserialized-syntax-vector-id
               ,deserialize-syntax-id)
              ;; body
-             (define-values (,deserialized-syntax-vector-id)
-               (make-vector ,(syntax-literals-count syntax-literals) #f))
+             (define-values (,deserialized-syntax-vector-id) (box #f))
              ,@(performance-region
                 ['compile 'module 'serialize]
                 (generate-lazy-syntax-literals-data! syntax-literals mpis))))))

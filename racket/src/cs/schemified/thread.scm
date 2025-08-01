@@ -1187,6 +1187,8 @@
   unsafe-root-continuation-prompt-tag)
 (define 1/break-enabled-key break-enabled-key)
 (define 1/engine-block engine-block)
+(define 1/assert-push-lock-level! assert-push-lock-level!)
+(define 1/assert-pop-lock-level! assert-pop-lock-level!)
 (define get-pthread-id get-thread-id)
 (define host:make-condition make-condition)
 (define host:condition-wait condition-wait)
@@ -1195,6 +1197,7 @@
 (define host:make-mutex make-mutex)
 (define host:mutex-acquire mutex-acquire)
 (define host:mutex-release mutex-release)
+(define 1/threaded? threaded?)
 (define make-engine (hash-ref (primitive-table '|#%engine|) 'make-engine #f))
 (define make-engine-thread-cell-state
   (hash-ref (primitive-table '|#%engine|) 'make-engine-thread-cell-state #f))

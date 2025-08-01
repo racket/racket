@@ -1062,10 +1062,13 @@
 ;; shift a syntax-object literal for a given module instantiation.
 (define (force-syntax-object syntax-literals pos
                              mpi self-mpi phase-shift inspector
-                             deserialized-syntax-vector bulk-binding-registry
+                             deserialized-syntax-vector/box bulk-binding-registry
                              deserialize-syntax)
-  (unless (vector*-ref deserialized-syntax-vector 0)
-    (deserialize-syntax bulk-binding-registry))
+  (define deserialized-syntax-vector
+    (or (unbox deserialized-syntax-vector/box)
+        (begin
+          (deserialize-syntax bulk-binding-registry)
+          (unbox deserialized-syntax-vector/box))))
   (define stx (syntax-module-path-index-shift
                (syntax-shift-phase-level
                 (vector*-ref deserialized-syntax-vector pos)

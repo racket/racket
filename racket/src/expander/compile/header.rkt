@@ -142,16 +142,22 @@
         ;; declaration on the grounds that all declarations should
         ;; provide the same information for bulk bindings.
         (lambda (,bulk-binding-registry-id)
-          (begin
-            (vector-copy!
-             ,deserialized-syntax-vector-id
-             '0
-             (let-values ([(,inspector-id) #f])
-               ,(generate-deserialize (vector->immutable-vector
-                                       (list->vector
-                                        (reverse (syntax-literals-stxes sl))))
-                                      #:mpis mpis)))
-            (set! ,deserialize-syntax-id #f)))))]))
+          (let-values ([(vec) (let-values ([(,inspector-id) #f])
+                                ,(generate-deserialize (vector->immutable-vector
+                                                        (list->vector
+                                                         (reverse (syntax-literals-stxes sl))))
+                                                       #:mpis mpis))])
+            (begin
+              (letrec-values ([(loop)
+                               (lambda ()
+                                 (if (box-cas! ,deserialized-syntax-vector-id #f vec)
+                                     vec
+                                     (let-values ([(other-vec) (unbox ,deserialized-syntax-vector-id)])
+                                       (if other-vec
+                                           other-vec
+                                           (loop)))))])
+                (loop))
+              (set! ,deserialize-syntax-id #f))))))]))
 
 (define (generate-lazy-syntax-literal-lookup pos)
   `(,get-syntax-literal!-id ,pos))

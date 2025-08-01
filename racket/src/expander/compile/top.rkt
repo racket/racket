@@ -130,8 +130,7 @@
                ,syntax-literals-id)
               (define-values (,mpi-vector-id)
                 ,(generate-module-path-index-deserialize mpis))
-              (define-values (,deserialized-syntax-vector-id) 
-                (make-vector ,(add1 phase) #f))
+              (define-values (,deserialized-syntax-vector-id) (box #f))
               (define-values (phase-to-link-modules) ,phase-to-link-module-uses-expr)
               (define-values (,syntax-literals-id) ,syntax-literals-expr))))
          

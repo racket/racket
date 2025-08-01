@@ -61,7 +61,7 @@
 
 (define empty-syntax-literals-data-instance
   (make-instance 'empty-stx-data #f 'constant
-                 deserialized-syntax-vector-id (vector)
+                 deserialized-syntax-vector-id (box (vector))
                  deserialize-syntax-id void))
 
 (define empty-instance-instance

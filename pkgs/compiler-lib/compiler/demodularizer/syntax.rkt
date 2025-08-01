@@ -32,12 +32,13 @@
      (define stx-data-instance (instantiate-linklet stx-data-linklet
                                                     (list real-deserialize-instance
                                                           data-instance)))
-     (define vec (instance-variable-value stx-data-instance '.deserialized-syntax-vector))
+     (define vec-box (instance-variable-value stx-data-instance '.deserialized-syntax-vector))
      (cond
-       [vec
-        (unless (vector-ref vec 0)
+       [vec-box
+        (unless (unbox vec-box)
           (define deserialize-syntax (instance-variable-value stx-data-instance '.deserialize-syntax))
           (deserialize-syntax bulk-binding-registry))
+        (define vec (unbox vec-box))
         ;; Shift to an mpi with the actual path so that bulk bindings can be found in modules
         ;; relative to this one, and so we can recognize the full path when re-serializing syntax
         (define stx-mpi (module-path-index-join (if (null? submod) path `(submod ,path ,@submod)) #f))
@@ -179,16 +180,22 @@
          [.mpi-vector])
         (.deserialized-syntax-vector
          .deserialize-syntax)
-      (define-values (.deserialized-syntax-vector)
-        (make-vector ,(vector-length stx-vec) #f))
+      (define-values (.deserialized-syntax-vector) (box #f))
       (define-values (.deserialize-syntax)
         (lambda (.bulk-binding-registry)
-          (begin
-            (vector-copy! .deserialized-syntax-vector
-                          '0
-                          (let-values ([(.inspector) #f])
-                            ,serialized-stx))
-            (set! .deserialize-syntax #f)))))))
+          (let-values ([(vec) (let-values ([(.inspector) #f])
+                                ,serialized-stx)])
+            (begin
+                (letrec-values ([(loop)
+                                 (lambda ()
+                                   (if (box-cas! .deserialized-syntax-vector #f vec)
+                                       vec
+                                       (let-values ([(other-vec) (unbox .deserialized-syntax-vector)])
+                                         (if other-vec
+                                             other-vec
+                                             (loop)))))])
+                  (loop))
+                (set! .deserialize-syntax #f))))))))
 
 (define (build-stx-linklet stx-vec)
   (s-exp->linklet
