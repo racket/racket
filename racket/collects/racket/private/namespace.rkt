@@ -19,9 +19,12 @@
     (let* ([this-ns (variable-reference->empty-namespace orig-varref)]
            [ns (parameterize ([current-namespace this-ns]) ; ensures correct phase
                  (make-empty-namespace))])
-      (namespace-attach-module this-ns
-                               'racket/base 
-                               ns)
+      (namespace-call-with-registry-lock
+       this-ns
+       (lambda ()
+         (namespace-attach-module this-ns
+                                  'racket/base 
+                                  ns)))
       ns))
 
   (define (make-base-namespace)
