@@ -1622,7 +1622,7 @@
        (lambda (v) (and v (cast v _pointer ctype)))))))
 
 (provide _gcable)
-(define/assert-representation _gcable  _pointer
+(define/assert-representation _gcable  _gcpointer
   (lambda (ctype)
     (define t (ctype-coretype ctype))
     (cond

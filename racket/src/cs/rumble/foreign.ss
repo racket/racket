@@ -1765,7 +1765,9 @@
     (unless (and (ctype? ctype1)
                  (ctype? ctype2)
                  (#%equal? (ctype-host-rep ctype1) (ctype-host-rep ctype2)))
-      (#%error 'assert-ctype-representation "mismatch between ~s vs. ~s" ctype1 ctype2))])
+      (#%errorf 'assert-ctype-representation "mismatch between ~s vs. ~s"
+                (and (ctype? ctype1) (ctype-host-rep ctype1))
+                (and (ctype? ctype2) (ctype-host-rep ctype2))))])
   ctype2)
 
 (define (types->reps types next!-id)
