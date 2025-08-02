@@ -8618,32 +8618,28 @@
                       (lambda (this-id_0)
                         (begin
                           (start-rktio)
-                          (if (zero?
-                               (unbox (fd-input-port-fd-refcount this-id_0)))
-                            (void)
-                            (begin
-                              (start-rktio-sleep-relevant)
-                              (unsafe-uninterruptible-custodian-lock-acquire)
-                              (|#%app|
-                               (fd-input-port-methods-on-close.1
-                                (core-port-vtable this-id_0))
-                               this-id_0)
-                              (let ((fd80_0 (fd-input-port-fd this-id_0)))
-                                (let ((fd-refcount81_0
-                                       (fd-input-port-fd-refcount this-id_0)))
-                                  (let ((fd80_1 fd80_0))
-                                    (fd-close.1
-                                     #f
-                                     fd80_1
-                                     fd-refcount81_0
-                                     this-id_0))))
-                              (|#%app|
-                               1/unsafe-custodian-unregister
-                               this-id_0
-                               (fd-input-port-custodian-reference this-id_0))
-                              (unsafe-uninterruptible-custodian-lock-release)
-                              (end-rktio-sleep-relevant)
-                              (temp7.1 this-id_0)))
+                          (start-rktio-sleep-relevant)
+                          (unsafe-uninterruptible-custodian-lock-acquire)
+                          (|#%app|
+                           (fd-input-port-methods-on-close.1
+                            (core-port-vtable this-id_0))
+                           this-id_0)
+                          (let ((fd80_0 (fd-input-port-fd this-id_0)))
+                            (let ((fd-refcount81_0
+                                   (fd-input-port-fd-refcount this-id_0)))
+                              (let ((fd80_1 fd80_0))
+                                (fd-close.1
+                                 #f
+                                 fd80_1
+                                 fd-refcount81_0
+                                 this-id_0))))
+                          (|#%app|
+                           1/unsafe-custodian-unregister
+                           this-id_0
+                           (fd-input-port-custodian-reference this-id_0))
+                          (unsafe-uninterruptible-custodian-lock-release)
+                          (end-rktio-sleep-relevant)
+                          (temp7.1 this-id_0)
                           (end-rktio))))
                      app_0
                      app_1
@@ -8768,28 +8764,24 @@
                      (|#%name|
                       byte-ready/inner
                       (lambda (this-id_0 work-done!182_0)
-                        (begin
-                          (start-rktio)
-                          (begin0
-                            (if (eqv?
-                                 (|#%app|
-                                  rktio_poll_read_ready_r
-                                  (unsafe-place-local-ref cell.1)
-                                  (fd-input-port-fd this-id_0))
-                                 1)
-                              #t
-                              (let ((or-part_0
-                                     (fd-semaphore-update!
-                                      (fd-input-port-fd this-id_0)
-                                      'read)))
-                                (if or-part_0
-                                  or-part_0
-                                  (let ((app_9 (fd-input-port-fd this-id_0)))
-                                    (fd-evt47.1
-                                     app_9
-                                     1
-                                     (fd-input-port-fd-refcount this-id_0))))))
-                            (end-rktio)))))
+                        (if (eqv?
+                             (|#%app|
+                              rktio_poll_read_ready_r
+                              (unsafe-place-local-ref cell.1)
+                              (fd-input-port-fd this-id_0))
+                             1)
+                          #t
+                          (let ((or-part_0
+                                 (fd-semaphore-update!
+                                  (fd-input-port-fd this-id_0)
+                                  'read)))
+                            (if or-part_0
+                              or-part_0
+                              (let ((app_9 (fd-input-port-fd this-id_0)))
+                                (fd-evt47.1
+                                 app_9
+                                 1
+                                 (fd-input-port-fd-refcount this-id_0))))))))
                      (|#%name| on-close (lambda (this-id_0) (void)))
                      (|#%name|
                       raise-read-error
@@ -9076,31 +9068,24 @@
                     (start-rktio)
                     (start-rktio-sleep-relevant)
                     (unsafe-uninterruptible-custodian-lock-acquire)
-                    (if (fd-output-port-bstr this-id_0)
-                      (begin
-                        (|#%app|
-                         (fd-output-port-methods-on-close.1
-                          (core-port-vtable this-id_0))
-                         this-id_0)
-                        (if (fd-output-port-flush-handle this-id_0)
-                          (plumber-flush-handle-remove!
-                           (fd-output-port-flush-handle this-id_0))
-                          (void))
-                        (set-fd-output-port-bstr! this-id_0 #f)
-                        (let ((fd305_0 (fd-output-port-fd this-id_0)))
-                          (let ((fd-refcount306_0
-                                 (fd-output-port-fd-refcount this-id_0)))
-                            (let ((fd305_1 fd305_0))
-                              (fd-close.1
-                               #f
-                               fd305_1
-                               fd-refcount306_0
-                               this-id_0))))
-                        (|#%app|
-                         1/unsafe-custodian-unregister
-                         this-id_0
-                         (fd-output-port-custodian-reference this-id_0)))
+                    (|#%app|
+                     (fd-output-port-methods-on-close.1
+                      (core-port-vtable this-id_0))
+                     this-id_0)
+                    (if (fd-output-port-flush-handle this-id_0)
+                      (plumber-flush-handle-remove!
+                       (fd-output-port-flush-handle this-id_0))
                       (void))
+                    (set-fd-output-port-bstr! this-id_0 #f)
+                    (let ((fd305_0 (fd-output-port-fd this-id_0)))
+                      (let ((fd-refcount306_0
+                             (fd-output-port-fd-refcount this-id_0)))
+                        (let ((fd305_1 fd305_0))
+                          (fd-close.1 #f fd305_1 fd-refcount306_0 this-id_0))))
+                    (|#%app|
+                     1/unsafe-custodian-unregister
+                     this-id_0
+                     (fd-output-port-custodian-reference this-id_0))
                     (unsafe-uninterruptible-custodian-lock-release)
                     (end-rktio-sleep-relevant)
                     (end-rktio))
@@ -9301,7 +9286,7 @@
        (if or-part_0
          or-part_0
          (|#%app|
-          rktio_poll_write_flushed
+          rktio_poll_write_flushed_r
           (unsafe-place-local-ref cell.1)
           (fd-output-port-fd this-id_0)))))))
 (define temp19.1$1
@@ -9436,7 +9421,7 @@
   (|#%name|
    flush-rktio-buffer-fully
    (lambda (this-id_0)
-     (if (begin (start-rktio) (begin0 (temp26.1 this-id_0) (end-rktio)))
+     (if (temp26.1 this-id_0)
        (void)
        (begin
          (begin
@@ -9575,14 +9560,10 @@
            (begin0
              (let ((fd_0 (fd-port-fd cp_0)))
                (if fd_0
-                 (begin
-                   (start-rktio)
-                   (begin0
-                     (|#%app|
-                      rktio_fd_is_terminal
-                      (unsafe-place-local-ref cell.1)
-                      fd_0)
-                     (end-rktio)))
+                 (|#%app|
+                  rktio_fd_is_terminal
+                  (unsafe-place-local-ref cell.1)
+                  fd_0)
                  #f))
              (begin
                (memory-order-release)
@@ -9815,7 +9796,7 @@
          2
          s
          'fd-refcount))))))
-(define finish_2655
+(define finish_2931
   (make-struct-type-install-properties
    '(rktio-fd-flushed-evt)
    1
@@ -9828,23 +9809,55 @@
       poller
       (lambda (ffe_0 ctx_0)
         (let ((p_0 (rktio-fd-flushed-evt-p ffe_0)))
-          (if (begin (start-rktio) (begin0 (temp26.1 p_0) (end-rktio)))
+          (if (begin
+                (begin
+                  (unsafe-start-uninterruptible)
+                  (assert-push-lock-level! 'port)
+                  (if (unsafe-struct*-cas! p_0 2 #f #t)
+                    (void)
+                    (port-lock-slow p_0))
+                  (memory-order-acquire))
+                (begin0
+                  (temp26.1 p_0)
+                  (begin
+                    (memory-order-release)
+                    (if (unsafe-struct*-cas! p_0 2 #t #f)
+                      (void)
+                      (port-unlock-slow p_0))
+                    (assert-pop-lock-level! 'port)
+                    (unsafe-end-atomic))))
             (values '(#t) #f)
             (begin
               (sandman-poll-ctx-add-poll-set-adder!
                ctx_0
                (lambda (ps_0)
-                 (if (temp26.1 p_0)
-                   (|#%app|
-                    rktio_poll_set_add_nosleep
-                    (unsafe-place-local-ref cell.1)
-                    ps_0)
-                   (|#%app|
-                    rktio_poll_add
-                    (unsafe-place-local-ref cell.1)
-                    (fd-output-port-fd p_0)
-                    ps_0
-                    8))))
+                 (begin
+                   (begin
+                     (unsafe-start-uninterruptible)
+                     (assert-push-lock-level! 'port)
+                     (if (unsafe-struct*-cas! p_0 2 #f #t)
+                       (void)
+                       (port-lock-slow p_0))
+                     (memory-order-acquire))
+                   (begin0
+                     (if (temp26.1 p_0)
+                       (|#%app|
+                        rktio_poll_set_add_nosleep
+                        (unsafe-place-local-ref cell.1)
+                        ps_0)
+                       (|#%app|
+                        rktio_poll_add
+                        (unsafe-place-local-ref cell.1)
+                        (fd-output-port-fd p_0)
+                        ps_0
+                        8))
+                     (begin
+                       (memory-order-release)
+                       (if (unsafe-struct*-cas! p_0 2 #t #f)
+                         (void)
+                         (port-unlock-slow p_0))
+                       (assert-pop-lock-level! 'port)
+                       (unsafe-end-atomic))))))
               (values #f (list ffe_0)))))))))
    (current-inspector)
    #f
@@ -9859,7 +9872,7 @@
    #f
    #f
    '(1 . 0)))
-(define effect_2170 (finish_2655 struct:rktio-fd-flushed-evt))
+(define effect_2170 (finish_2931 struct:rktio-fd-flushed-evt))
 (define rktio-fd-flushed-evt48.1
   (|#%name|
    rktio-fd-flushed-evt
@@ -9973,14 +9986,10 @@
             (let ((name_0 (core-port-name port_0)))
               (let ((is-terminal?_0
                      (if (not input?_0)
-                       (begin
-                         (start-rktio)
-                         (begin0
-                           (|#%app|
-                            rktio_fd_is_terminal
-                            (unsafe-place-local-ref cell.1)
-                            (unbox fd-dup_0))
-                           (end-rktio)))
+                       (|#%app|
+                        rktio_fd_is_terminal
+                        (unsafe-place-local-ref cell.1)
+                        (unbox fd-dup_0))
                        #f)))
                 (let ((opener_0
                        (let ((or-part_0

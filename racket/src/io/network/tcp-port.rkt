@@ -20,7 +20,7 @@
   [abandon? #f]
   #:override
   [on-close
-   ;; with lock held and in rktio and rktio-sleep-relevant mode
+   ;; with lock held, in rktio and rktio-sleep-relevant mode, and with custodian lock
    (lambda ()
      (unless abandon?
        (rktio_socket_shutdown rktio fd RKTIO_SHUTDOWN_READ)))]
@@ -49,7 +49,7 @@
   [abandon? #f]
   #:override
   [on-close
-   ;; with lock held and in rktio mode
+   ;; with lock held, in rktio and rktio-sleep-relevant mode, and with custodian lock
    (lambda ()
      (unless abandon?
        (rktio_socket_shutdown rktio fd RKTIO_SHUTDOWN_WRITE)))]
