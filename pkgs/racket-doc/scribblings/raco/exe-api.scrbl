@@ -498,7 +498,7 @@ A unit that imports nothing and exports @racket[compiler:embed^].}
 @defmodule[compiler/find-exe]
 
 @defproc[(find-exe [#:cross? cross? any/c #f]
-                   [#:untetherd? untethered? any/c #f]
+                   [#:untethered? untethered? any/c #f]
                    [gracket? any/c #f]
                    [variant (or/c 'cgc '3m 'cs) (if cross?
                                                     (cross-system-type 'gc)
