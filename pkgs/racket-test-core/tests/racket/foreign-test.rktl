@@ -783,6 +783,14 @@
                                 _bytes
                                 _pointer))))
 
+;; test immobile cells
+(for ([free-via-non-gcable? (in-list '(#f #t))])
+  (let ([b (malloc-immobile-cell 'hello)])
+    (test 'hello ptr-ref b _racket)
+    (define b/non-gcable (cast (cast b _pointer _intptr) _intptr _pointer))
+    (test 'hello ptr-ref b/non-gcable _racket)
+    (free-immobile-cell (if free-via-non-gcable? b/non-gcable b))))
+
 ;; test 'interior allocation mode
 (let ()
   ;; Example by Ron Garcia

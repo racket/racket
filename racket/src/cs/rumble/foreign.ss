@@ -1281,10 +1281,12 @@
     (foreign-free (ftype-pointer-address p))))
 
 (define/who (lock-cpointer p)
-  (lock-object (ftype-scheme-object-pointer-object p)))
+  (when (ftype-scheme-object-pointer? p)
+    (lock-object (ftype-scheme-object-pointer-object p))))
 
 (define/who (unlock-cpointer p)
-  (unlock-object (ftype-scheme-object-pointer-object p)))
+  (when (ftype-scheme-object-pointer? p)
+    (unlock-object (ftype-scheme-object-pointer-object p))))
 
 (define-record-type (cpointer/cell make-cpointer/cell cpointer/cell?)
   (parent cpointer)
@@ -1299,12 +1301,23 @@
      (eq-hashtable-set! immobile-cells vec #t))
     (fptr->cptr (make-ftype-scheme-object-pointer vec))))
 
+(define (cptr->immobile-cell-object who b)
+  (let ([f (cptr->fptr who b)])
+    (cond
+      [(ftype-scheme-object-pointer? f) (ftype-scheme-object-pointer-object f)]
+      [else
+       ;; an immobile cell pointer might go through a path that doesn't claim the
+       ;; pointer as GCable, since that's one of the main roles of an immobile
+       ;; cell; in that case, we need to cast
+       (reference-address->object (ftype-pointer-address f))])))
+
 (define/who (free-immobile-cell b)
-  (with-global-lock
-   (eq-hashtable-delete! immobile-cells (ftype-scheme-object-pointer-object (cptr->fptr who b)))))
+  (let ([obj (cptr->immobile-cell-object who b)])
+    (with-global-lock
+     (eq-hashtable-delete! immobile-cells obj))))
 
 (define/who (immobile-cell-ref b)
-  (bytevector-reference-ref  (ftype-scheme-object-pointer-object (cptr->fptr who b)) 0))
+  (bytevector-reference-ref (cptr->immobile-cell-object who b) 0))
 
 (define (immobile-cell->address b)
   (ftype-pointer-address (cpointer-fptr b)))
