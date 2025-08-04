@@ -161,6 +161,9 @@
 (define (mutable-hash-set! ht k v)
   (lock-acquire (mutable-hash-lock ht))
   (hashtable-set! (mutable-hash-ht ht) k v)
+  ;; Flushing `cells` allows the vector to shrink if entries are removed
+  (set-locked-iterable-hash-cells! ht #f)
+  ;; Setting `hash-retry?` ensures that the vector is grown until it covers all entries
   (set-locked-iterable-hash-retry?! ht #t)
   (lock-release (mutable-hash-lock ht)))
 
@@ -184,6 +187,8 @@
       ;; Clear cell, because it may be in `(locked-iterable-hash-cells ht)`
       (set-car! cell #!bwp)
       (set-cdr! cell #!bwp)
+      ;; Setting `hash-retry?` allows an in-progress traversal to keep going,
+      ;; and it will pick up existing keys if they get reordered to earlier
       (set-locked-iterable-hash-retry?! ht #t)]
      [else
       (hashtable-delete! (mutable-hash-ht ht) k)]))

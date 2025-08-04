@@ -5777,35 +5777,49 @@
        (if (1/custodian? c_0)
          (void)
          (raise-argument-error 'custodian-managed-list "custodian?" c_0))
-       (if (1/custodian? super-c_0)
-         (void)
-         (raise-argument-error 'custodian-managed-list "custodian?" super-c_0))
-       (if (custodian-subordinate? c_0 super-c_0)
-         (void)
-         (raise-arguments-error
-          'custodian-managed-list
-          "the second custodian does not manage the first custodian"
-          "first custodian"
-          c_0
-          "second custodian"
-          super-c_0))
-       (reverse$1
-        (let ((ht_0 (custodian-children c_0)))
-          (letrec*
-           ((for-loop_0
-             (|#%name|
-              for-loop
-              (lambda (fold-var_0 i_0)
-                (if i_0
-                  (let ((v_0 (hash-iterate-key ht_0 i_0)))
-                    (let ((fold-var_1
-                           (if (not (1/custodian-box? v_0))
-                             (let ((fold-var_1 (cons v_0 fold-var_0)))
-                               (values fold-var_1))
-                             fold-var_0)))
-                      (for-loop_0 fold-var_1 (hash-iterate-next ht_0 i_0))))
-                  fold-var_0)))))
-           (for-loop_0 null (hash-iterate-first ht_0)))))))))
+       (begin
+         (if (1/custodian? super-c_0)
+           (void)
+           (raise-argument-error
+            'custodian-managed-list
+            "custodian?"
+            super-c_0))
+         (begin
+           (if (custodian-subordinate? c_0 super-c_0)
+             (void)
+             (raise-arguments-error
+              'custodian-managed-list
+              "the second custodian does not manage the first custodian"
+              "first custodian"
+              c_0
+              "second custodian"
+              super-c_0))
+           (begin
+             (lock-custodians)
+             (let ((lst_0
+                    (reverse$1
+                     (let ((ht_0 (custodian-children c_0)))
+                       (letrec*
+                        ((for-loop_0
+                          (|#%name|
+                           for-loop
+                           (lambda (fold-var_0 i_0)
+                             (if i_0
+                               (let ((v_0 (hash-iterate-key ht_0 i_0 #f)))
+                                 (let ((fold-var_1
+                                        (if (if v_0
+                                              (not (1/custodian-box? v_0))
+                                              #f)
+                                          (let ((fold-var_1
+                                                 (cons v_0 fold-var_0)))
+                                            (values fold-var_1))
+                                          fold-var_0)))
+                                   (for-loop_0
+                                    fold-var_1
+                                    (hash-iterate-next ht_0 i_0))))
+                               fold-var_0)))))
+                        (for-loop_0 null (hash-iterate-first ht_0)))))))
+               (begin (unlock-custodians) lst_0)))))))))
 (define 1/custodian-memory-accounting-available?
   (|#%name| custodian-memory-accounting-available? (lambda () #t)))
 (define 1/custodian-require-memory
