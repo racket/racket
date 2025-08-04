@@ -54,6 +54,12 @@ pool, and the pool is closed (in the sense of
 @racket[pool] is a parallel thread pool, then the new thread is
 created in that pool, meaning that it shares processor resources with
 other threads in the same pool.
+@;
+@margin-note*{See @guidesecref["parallel-threads"] for information about parallel threads and
+performance. Parallel threads do not run in parallel on the @tech{BC}
+variant of Racket or when Racket is built without support for
+parallelism. For more information, see the description of
+@tech{parallel thread pools}.}
 
 If @racket[keep] is @racket['results], results are recorded with the
 thread so that they can be reported by @racket[thread-wait].
@@ -365,6 +371,13 @@ but in addition, no parallel threads in the pool will be able to
 continue. The threads will not count as terminated (since each thread
 has its own custodians for that purpose), but they will cease to make
 progress.
+
+A parallel thread pool cannot run threads in parallel on the @tech{BC}
+variant of Racket or when Racket is compiled without support for
+parallelism. In that case, parallel threads behave the same as
+@tech{coroutine threads}. For the @tech{CS} variant of Racket, the
+@racket[futures-enabled?] predicate can be used to detect when
+parallel threads behave differently from coroutine threads.
 
 @history[#:added "8.18.0.2"]}
 

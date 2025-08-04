@@ -6,16 +6,15 @@ variants, we expect users to install C-implemented libraries (usually
 through the operating system's package manager). For Windows and Mac
 OS, we supply pre-built libraries in platform-specific packages; the
 corresponding Racket packages include platform-specific dependencies
-on those packages. The "x86_64-linux-natipkg" variant of Racket is
-like Windows and Mac OS, expecting packages to supply native libraries
-for 64-bit Linux.
+on those packages. The "x86_64-linux-natipkg" and
+"aarch64-linux-natipkg" variants of Racket are like Windows and Mac
+OS, expecting packages to supply native libraries for Linux.
 
 This directory contains scripts and patches to build Windows, Mac OS,
 and Linux libraries in a consistent and portable way. Naturally, the
 script and patches are fragile, so we upgrade libraries infrequently.
 Currently, we use the following external packages and versions for
-actively supported platforms (i.e., 32-bit PPC and x86 Mac OS may use
-older versions):
+actively supported platforms:
 
  pkg-config-0.28
  sed-4.2 (Windows only, to avoid non-GNU `sed`)
