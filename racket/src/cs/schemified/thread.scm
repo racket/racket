@@ -6785,19 +6785,24 @@
   (|#%name|
    unsafe-thread-at-root
    (lambda (proc_0)
-     (let ((root-custodian62_0 (unsafe-place-local-ref cell.2$4)))
-       (do-make-thread.1
-        #t
-        unsafe-undefined
-        root-custodian62_0
-        #f
-        #f
-        unsafe-undefined
-        #f
-        #t
-        #f
-        'unsafe-thread-at-root
-        proc_0)))))
+     (|#%app|
+      (if (current-thread/in-racket)
+        (lambda (thunk_0) (|#%app| thunk_0))
+        host:call-as-asynchronous-callback)
+      (lambda ()
+        (let ((root-custodian62_0 (unsafe-place-local-ref cell.2$4)))
+          (do-make-thread.1
+           #t
+           unsafe-undefined
+           root-custodian62_0
+           #f
+           #f
+           unsafe-undefined
+           #f
+           #t
+           #f
+           'unsafe-thread-at-root
+           proc_0)))))))
 (define no-results-on-abort-handler
   (case-lambda
    ((abort-thunk_0)

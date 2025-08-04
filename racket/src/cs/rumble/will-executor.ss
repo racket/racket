@@ -73,37 +73,38 @@
   ;; Poll the guardian (which is shared among will executors)
   ;; for ready values, and add any ready value to the receiving will
   ;; executor
-  (let loop ()
-    (let ([v (guardian)])
-      (when v
-        (let we-loop ([l (hashtable-ref will-stacks v '())])
-          (cond
-           [(pair? l)
-            (let* ([e+proc (car l)]
-                   [e (car e+proc)]
-                   [proc (cdr e+proc)]
-                   [l (cdr l)])
-              (cond
-               [(eq? #!bwp e)
-                ;; The will executor became inaccesible, so continue looking
-                (we-loop l)]
-               [else
+  (with-global-lock
+   (let loop ()
+     (let ([v (guardian)])
+       (when v
+         (let we-loop ([l (hashtable-ref will-stacks v '())])
+           (cond
+             [(pair? l)
+              (let* ([e+proc (car l)]
+                     [e (car e+proc)]
+                     [proc (cdr e+proc)]
+                     [l (cdr l)])
                 (cond
-                 [(null? l)
-                  (hashtable-delete! will-stacks v)]
-                 [else
-                  ;; Re-finalize for the next will registration
-                  (hashtable-set! will-stacks v l)
-                  (guardian v)])
-                ((will-executor-notify e))
-                (will-executor-ready-set! e (cons (cons proc v) (will-executor-ready e)))
-                (when (will-executor-keep? e)
-                  ;; Ensure that a late will executor stays live
-                  ;; in this place as long as there are wills to execute
-                  (hashtable-set! late-will-executors-with-pending e #t))]))]
-           [else
-            (hashtable-delete! will-stacks v)]))
-        (loop)))))
+                  [(eq? #!bwp e)
+                   ;; The will executor became inaccesible, so continue looking
+                   (we-loop l)]
+                  [else
+                   (cond
+                     [(null? l)
+                      (hashtable-delete! will-stacks v)]
+                     [else
+                      ;; Re-finalize for the next will registration
+                      (hashtable-set! will-stacks v l)
+                      (guardian v)])
+                   ((will-executor-notify e))
+                   (will-executor-ready-set! e (cons (cons proc v) (will-executor-ready e)))
+                   (when (will-executor-keep? e)
+                     ;; Ensure that a late will executor stays live
+                     ;; in this place as long as there are wills to execute
+                     (hashtable-set! late-will-executors-with-pending e #t))]))]
+             [else
+              (hashtable-delete! will-stacks v)]))
+         (loop))))))
 
 (define (poll-will-executors)
   (poll-guardian the-will-guardian the-will-stacks)

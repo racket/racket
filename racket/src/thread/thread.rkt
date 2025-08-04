@@ -276,10 +276,15 @@
     (set! root-thread t)
     t))
 
+;; Can be called in any pthread, but blocks on an asynchronous call in a non-Racket pthread
 (define (unsafe-thread-at-root proc)
-  (do-make-thread 'unsafe-thread-at-root proc
-                  #:at-root? #t
-                  #:custodian root-custodian))
+  ((if (current-thread/in-racket)
+       (lambda (thunk) (thunk))
+       host:call-as-asynchronous-callback)
+   (lambda ()
+     (do-make-thread 'unsafe-thread-at-root proc
+                     #:at-root? #t
+                     #:custodian root-custodian))))
 
 ;; ----------------------------------------
 ;; Thread results

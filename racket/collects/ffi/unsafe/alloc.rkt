@@ -174,21 +174,26 @@
 ;; ----------------------------------------
 
 (define all-nodes #f)
+(define nodes-lock (make-uninterruptible-lock))
 
 (define (add-node! ds)
+  (uninterruptible-lock-acquire nodes-lock)
   (set-node-next! ds all-nodes)
   (when all-nodes
     (set-node-prev! all-nodes ds))
-  (set! all-nodes ds))
+  (set! all-nodes ds)
+  (uninterruptible-lock-release nodes-lock))
 
 (define (remove-node! ds)
+  (uninterruptible-lock-acquire nodes-lock)
   (define prev (node-prev ds))
   (define next (node-next ds))
   (if prev
       (set-node-next! prev next)
       (set! all-nodes next))
   (when next
-    (set-node-prev! next prev)))
+    (set-node-prev! next prev))
+  (uninterruptible-lock-release nodes-lock))
 
 (define (release-all)
   (define ds all-nodes)

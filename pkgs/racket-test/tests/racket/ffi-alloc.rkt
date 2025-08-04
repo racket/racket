@@ -1,9 +1,28 @@
 #lang racket/base
 (require racket/place
+         racket/future
          ffi/unsafe
+         ffi/unsafe/define
          ffi/unsafe/alloc)
 
 (module+ test
+  ;; Basic test for `#:merely-uninterruptible?`.
+  ;; Run this first to catch a potential issue
+  ;; with the first allocator running in a future.
+  (let ()
+    (define-ffi-definer define-c #f)
+    (define-c free (_fun _pointer -> _void)
+      #:wrap (deallocator #:merely-uninterruptible? #t))
+    (define-c malloc (_fun _size -> _pointer)
+      #:wrap (allocator free #:merely-uninterruptible? #t))
+    (define fs
+      (for/list ([i (in-range 16)])
+        (future (lambda ()
+                  (for ([i (in-range 5000)])
+                    (free (malloc i)))))))
+    (for-each touch fs))
+  (printf "ok\n")
+
   (define-syntax-rule (test expect got)
     (let ([e expect]
           [g got])

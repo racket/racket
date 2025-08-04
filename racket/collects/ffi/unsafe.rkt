@@ -5,7 +5,9 @@
          (only-in '#%unsafe
                   unsafe-thread-at-root
                   unsafe-make-security-guard-at-root
-                  unsafe-add-post-custodian-shutdown)
+                  unsafe-add-post-custodian-shutdown
+                  unsafe-start-uninterruptible
+                  unsafe-end-uninterruptible)
          (for-syntax racket/base racket/list syntax/stx racket/syntax
                      racket/struct-info))
 
@@ -2251,7 +2253,7 @@
 
 (define killer-thread #f)
 
-(define* register-finalizer 
+(define* register-finalizer
   ;; We bind `killer-executor' as a location variable, instead of a module
   ;; variable, so that the loop for `killer-thread' doesn't have a namespace
   ;; (via a prefix) in its continuation:
@@ -2264,32 +2266,38 @@
     ;; are run after non-late weak boxes are cleared).
     (lambda (obj finalizer)
       (unless killer-thread
-        ;; We need to make a thread that runs in a privildged custodian and
-        ;; that doesn't retain the current namespace --- either directly
-        ;; or indirectly through some parameter setting in the current thread.
-        (let ([logger (current-logger)]
-              [cweh #f]) ; <- avoids a reference to a module-level binding
-          (set! cweh call-with-exception-handler)
-          (set! killer-thread
-                (unsafe-thread-at-root
-                 (lambda ()
-                   (let retry-loop ()
-                     (call-with-continuation-prompt
-                      (lambda ()
-                        (cweh
-                         (lambda (exn)
-                           (log-message logger
-                                        'error
-                                        (if (exn? exn)
-                                            (exn-message exn)
-                                            (format "~s" exn))
-                                        #f)
-                           (abort-current-continuation
-                            (default-continuation-prompt-tag)
-                            void))
-                         (lambda ()
-                           (let loop () (will-execute killer-executor) (loop))))))
-                     (retry-loop)))))))
+        (unsafe-start-uninterruptible)
+        (unless killer-thread
+          ;; We need to make a thread that runs in a privildged custodian and
+          ;; that doesn't retain the current namespace --- either directly
+          ;; or indirectly through some parameter setting in the current thread.
+          ;; There's a race if multiple parallel threads try to register the
+          ;; first finalizer, but that's ok, because multiple finalizer threads
+          ;; should be fine.
+          (let ([cweh #f]) ; <- avoids a reference to a module-level binding
+            (set! cweh call-with-exception-handler)
+            (set! killer-thread
+                  (unsafe-thread-at-root
+                   (lambda ()
+                     (define logger (current-logger))
+                     (let retry-loop ()
+                       (call-with-continuation-prompt
+                        (lambda ()
+                          (cweh
+                           (lambda (exn)
+                             (log-message logger
+                                          'error
+                                          (if (exn? exn)
+                                              (exn-message exn)
+                                              (format "~s" exn))
+                                          #f)
+                             (abort-current-continuation
+                              (default-continuation-prompt-tag)
+                              void))
+                           (lambda ()
+                             (let loop () (will-execute killer-executor) (loop))))))
+                       (retry-loop)))))))
+        (unsafe-end-uninterruptible))
       (will-register killer-executor obj finalizer))))
 
 ;; The same as `void`, but written so that the compiler cannot
