@@ -160,11 +160,19 @@
 
 (define (mutable-hash-set! ht k v)
   (lock-acquire (mutable-hash-lock ht))
-  (hashtable-set! (mutable-hash-ht ht) k v)
-  ;; Flushing `cells` allows the vector to shrink if entries are removed
-  (set-locked-iterable-hash-cells! ht #f)
-  ;; Setting `hash-retry?` ensures that the vector is grown until it covers all entries
-  (set-locked-iterable-hash-retry?! ht #t)
+  (cond
+    [(locked-iterable-hash-cells ht)
+     ;; If `k` is already mapped, we're obliged to keep a cells vector that
+     ;; may be in progress, but if it's new, we can flush
+     (let ([p (hashtable-cell (mutable-hash-ht ht) k none2)])
+       (when (eq? (cdr p) none2)
+         ;; Flushing `cells` allows the vector to shrink if entries are removed
+         (set-locked-iterable-hash-cells! ht #f)
+         ;; Setting `hash-retry?` ensures that the vector is grown until it covers all entries
+         (set-locked-iterable-hash-retry?! ht #t))
+       (set-cdr! p v))]
+    [else
+     (hashtable-set! (mutable-hash-ht ht) k v)])
   (lock-release (mutable-hash-lock ht)))
 
 (define (hash-remove! ht k)

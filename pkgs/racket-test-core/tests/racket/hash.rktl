@@ -1129,5 +1129,31 @@
   (test #t > (hash-count ht) 200000))
 
 ;; ----------------------------------------
+;; Check that no keys are lost during mutating traversal
+;; that doesn't add keys
+
+(let ()
+  (define ht (make-hasheq))
+  
+  (define N 100000)
+  
+  (for ([i (in-range N)])
+    (hash-set! ht i i))
+
+  (test N
+        'mutate-half
+        (for/sum ([i (in-hash-keys ht)])
+          (when (even? i)
+            (hash-remove! ht i))
+          1))
+
+  (test (/ N 2)
+        'mutate-later
+        (for/sum ([i (in-hash-keys ht)])
+          (when (i . > . (/ N 2))
+            (hash-set! ht i (add1 i)))
+          1)))
+
+;; ----------------------------------------
 
 (report-errs)
