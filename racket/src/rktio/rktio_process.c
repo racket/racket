@@ -1177,6 +1177,7 @@ typedef void (*rktio_DeleteProcThreadAttributeList_t)(void *lpAttributeList);
 static rktio_DeleteProcThreadAttributeList_t rktio_DeleteProcThreadAttributeList;
 static void init_thread_attr_procs()
 {
+  WaitForSingleObject(rktio_global_lock, INFINITE);
   if (!rktio_InitializeProcThreadAttributeList
       || !rktio_UpdateProcThreadAttribute) {
     HMODULE hm;
@@ -1189,6 +1190,7 @@ static void init_thread_attr_procs()
 
     FreeLibrary(hm);
   }
+  ReleaseSemaphore(rktio_global_lock, 1, NULL);
 }
 
 static intptr_t do_spawnv(rktio_t *rktio,

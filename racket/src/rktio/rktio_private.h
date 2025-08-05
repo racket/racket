@@ -479,3 +479,10 @@ int rktio_system_time_is_dst(SYSTEMTIME *st, TIME_ZONE_INFORMATION *_tz);
 void rktio_console_ctl_c(void);
 void rktio_set_console_handler(void);
 #endif
+
+#ifdef RKTIO_SYSTEM_WINDOWS
+/* A lazy solution to some lazy-initialization synchronization,
+   depends on the first call to rktio_init() not being concurrent
+   (as does some other initialization for Windows): */
+extern HANDLE rktio_global_lock;
+#endif

@@ -44,13 +44,12 @@ void rktio_convert_deinit(rktio_t *rktio) {
 # define HAVE_CODESET 0
 # define ICONV_errno 0
 # define RKTIO_CHK_PROC(x) 0
-# define iconv_ready 1
 
 typedef intptr_t iconv_t;
 static size_t iconv(iconv_t cd, char **in, size_t *in_left, char **out, size_t *out_left) { return (size_t)-1; }
 static iconv_t iconv_open(const char *to, const char *from) { return -1; }
 static void iconv_close(iconv_t cd) { }
-static void init_iconv() { }
+static void init_iconv(void) { }
 
 void rktio_set_dll_path(rktio_char16_t *p) { }
 rktio_char16_t *rktio_get_dll_path(rktio_char16_t *s) { return NULL; }
@@ -84,13 +83,20 @@ static int get_iconv_errno(void)
 # define CODESET 0
 # define ICONV_errno get_iconv_errno()
 # define RKTIO_CHK_PROC(x) x
-static int iconv_ready = 0;
+static int iconv_is_ready = 0;
 
 static void init_iconv()
 {
   HMODULE m = NULL;
   wchar_t *p;
   int hook_handle = 0;
+
+  WaitForSingleObject(rktio_global_lock, INFINITE);
+
+  if (iconv_is_ready) {
+    ReleaseSemaphore(rktio_global_lock, 1, NULL);
+    return;
+  }
 
   /* Try embedded "libiconv-2.dll", first: */
   m = rktio_load_library("libiconv-2.dll");
@@ -177,7 +183,8 @@ static void init_iconv()
     }
   }
 
-  iconv_ready = 1;
+  iconv_is_ready = 1;
+  ReleaseSemaphore(rktio_global_lock, 1, NULL);
 }
 
 rktio_char16_t *rktio_get_dll_path(rktio_char16_t *s)
@@ -213,7 +220,6 @@ void rktio_set_dll_path(rktio_char16_t *p)
 
 # include <errno.h>
 # define ICONV_errno errno
-# define iconv_ready 1
 # define RKTIO_CHK_PROC(x) 1
 static void init_iconv() { }
 
@@ -230,7 +236,7 @@ int rktio_convert_properties(rktio_t *rktio)
 {
   int flags = 0;
 
-  if (!iconv_ready) init_iconv();
+  init_iconv();
 
   if (RKTIO_CHK_PROC(iconv_errno))
     flags = RKTIO_CONVERTER_SUPPORTED;
@@ -484,7 +490,7 @@ rktio_converter_t *rktio_converter_open(rktio_t *rktio, const char *to_enc, cons
   iconv_t cd;
   rktio_converter_t *cvt;
 
-  if (!iconv_ready) init_iconv();
+  init_iconv();
 
   cd = iconv_open(to_enc, from_enc);
   if (cd == (iconv_t)-1) {

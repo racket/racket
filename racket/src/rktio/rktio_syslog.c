@@ -78,15 +78,30 @@ static rktio_ok_t do_syslog(rktio_t *rktio, int level, const char *name, const c
     char *naya = NULL;
     int ok;
 
-    /* FIXME: race condition when `record_err` */
+    WaitForSingleObject(rktio_global_lock, INFINITE);
     if (rktio->hEventLog == INVALID_HANDLE_VALUE) {
-      rktio->hEventLog = do_RegisterEventSource(NULL, WIDE_PATH_temp(exec_name));
-      if (rktio->hEventLog == INVALID_HANDLE_VALUE) {
-        if (record_err)
-          get_windows_error();
-        return 0;
+      int ok = 1;
+      rktio_err_t err;
+      wchar_t *wp = WIDE_PATH_copy(exec_name, &err);
+      if (wp) {
+	rktio->hEventLog = do_RegisterEventSource(NULL, wp);
+	if (rktio->hEventLog == INVALID_HANDLE_VALUE) {
+	  if (record_err)
+	    get_windows_error();
+	  ok = 0;
+	}
+	free(wp);
+      } else {
+	if (record_err)
+	  memcpy(&rktio->err, &err, sizeof(rktio_err_t));
+	ok = 0;
+      }
+      if (!ok) {
+	ReleaseSemaphore(rktio_global_lock, 1, NULL);
+	return 0;
       }
     }
+    ReleaseSemaphore(rktio_global_lock, 1, NULL);
     
     switch (level) {
     case RKTIO_LOG_FATAL:

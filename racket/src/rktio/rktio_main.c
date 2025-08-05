@@ -7,12 +7,21 @@
 # include <sys/sysctl.h>
 #endif
 
+#ifdef RKTIO_SYSTEM_WINDOWS
+HANDLE rktio_global_lock;
+#endif
+
 rktio_t *rktio_init(void)
 {
   rktio_t *rktio;
 
   rktio = malloc(sizeof(rktio_t));
   memset(rktio, 0, sizeof(rktio_t));
+
+#ifdef RKTIO_SYSTEM_WINDOWS
+  if (!rktio_global_lock)
+    rktio_global_lock = CreateSemaphore(NULL, 1, 1, NULL);
+#endif
 
   if (!rktio_environ_init(rktio)) {
     rktio_destroy(rktio);
