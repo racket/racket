@@ -740,11 +740,9 @@ void scheme_reset_hash_table(Scheme_Hash_Table *table, int *history)
 Scheme_Object *scheme_hash_table_next(Scheme_Hash_Table *hash,
 				      mzlonglong start)
 {
-    int i, sz = hash->size;
-    if (start >= 0) {
-      if ((start >= sz) || !hash->vals[start])
-        return NULL;
-    }
+    intptr_t i, sz = hash->size;
+    if (start >= sz)
+      return NULL;
     for (i = start + 1; i < sz; i++) {
       if (hash->vals[i])
         return scheme_make_integer(i);
@@ -1269,13 +1267,10 @@ Scheme_Object *scheme_bucket_table_next(Scheme_Bucket_Table *hash,
 					mzlonglong start)
 {
   Scheme_Bucket *bucket;
-  int i, sz = hash->size;
+  intptr_t i, sz = hash->size;
     
-  if (start >= 0) {
-    bucket = ((start < sz) ? hash->buckets[start] : NULL);
-    if (!bucket || !bucket->val || !bucket->key)
-      return NULL;      
-  }
+  if (start >= sz)
+    return NULL;
   for (i = start + 1; i < sz; i++) {
     bucket = hash->buckets[i];
     if (bucket && bucket->val && bucket->key) {

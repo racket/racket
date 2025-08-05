@@ -1132,21 +1132,28 @@
 ;; Check that no keys are lost during mutating traversal
 ;; that doesn't add keys
 
-(let ()
-  (define ht (make-hasheq))
-  
+(for* ([remove-via-map? (in-list '(#f #t))]
+       [ht (in-list (list (make-hasheq)
+                          (make-hash)
+                          (make-weak-hasheq)
+                          (make-weak-hash)))])
   (define N 100000)
-  
+  (test 0 hash-count ht)
   (for ([i (in-range N)])
     (hash-set! ht i i))
-
   (test N
         'mutate-half
-        (for/sum ([i (in-hash-keys ht)])
-          (when (even? i)
-            (hash-remove! ht i))
-          1))
-
+        (cond
+          [remove-via-map?
+           (hash-map ht (lambda (i v)
+                          (when (even? i)
+                            (hash-remove! ht i))))
+           (* 2 (hash-count ht))]
+          [else
+           (for/sum ([i (in-hash-keys ht)])
+             (when (even? i)
+               (hash-remove! ht i))
+             1)]))
   (test (/ N 2)
         'mutate-later
         (for/sum ([i (in-hash-keys ht)])

@@ -407,6 +407,16 @@ each element in the sequence.
   Returns a sequence equivalent to @racket[hash], except when @racket[bad-index-v]
   is supplied.
 
+  Like @racket[hash-map], iteration via @racket[in-hash] can adapt to
+  certain modifications to a mutable hash table while a traversal is
+  in progress. Keys removes or remapped by the traversing
+  thread have no immediate adverse affects; the change does not affect
+  a traversal if the key has been seen already, otherwise the
+  traversal skips a deleted key or uses the remapped key's new value.
+
+  Other concurrent modifications, including key removal by a different
+  thread, can lead to skipped entries or an exception if an expected
+  entry key was removed before its key or value could be fetched.
   If @racket[bad-index-v] is supplied, then @racket[bad-index-v] is
   returned as both the key and the value in the case that the
   @racket[hash] is modified concurrently so that iteration does not have a
@@ -423,31 +433,39 @@ each element in the sequence.
 
   @info-on-seq["hashtables" "hash tables"]
 
-  @history[#:changed "7.0.0.10" @elem{Added the optional @racket[bad-index-v] argument.}]}
+  @history[#:changed "7.0.0.10" @elem{Added the optional @racket[bad-index-v] argument.}
+           #:changed "8.18.0.11" @elem{Strengthened the guarantees about traversal with
+                                       same-thread modifications to a mutable hash table.}]}
 
 @defproc*[([(in-hash-keys [hash hash?]) sequence?]
            [(in-hash-keys [hash hash?] [bad-index-v any/c]) sequence?])]{
   Returns a sequence whose elements are the keys of @racket[hash], using
-  @racket[bad-index-v] in the same way as @racket[in-hash].
+  @racket[bad-index-v] in the same way as @racket[in-hash], and with
+  concurrent-modification guarantees analogous to those of @racket[in-hash].
 
   @examples[
     (define table (hash 'a 1 'b 2))
     (for ([key (in-hash-keys table)])
       (printf "key: ~a\n" key))]
 
-  @history[#:changed "7.0.0.10" @elem{Added the optional @racket[bad-index-v] argument.}]}
+  @history[#:changed "7.0.0.10" @elem{Added the optional @racket[bad-index-v] argument.}
+           #:changed "8.18.0.11" @elem{Strengthened the guarantees about traversal with
+                                       same-thread modifications to a mutable hash table.}]}
 
 @defproc*[([(in-hash-values [hash hash?]) sequence?]
            [(in-hash-values [hash hash?] [bad-index-v any/c]) sequence?])]{
   Returns a sequence whose elements are the values of @racket[hash], using
-  @racket[bad-index-v] in the same way as @racket[in-hash].
+  @racket[bad-index-v] in the same way as @racket[in-hash], and with
+  concurrent-modification guarantees analogous to those of @racket[in-hash].
 
   @examples[
     (define table (hash 'a 1 'b 2))
     (for ([value (in-hash-values table)])
       (printf "value: ~a\n" value))]
 
-  @history[#:changed "7.0.0.10" @elem{Added the optional @racket[bad-index-v] argument.}]}
+  @history[#:changed "7.0.0.10" @elem{Added the optional @racket[bad-index-v] argument.}
+           #:changed "8.18.0.11" @elem{Strengthened the guarantees about traversal with
+                                       same-thread modifications to a mutable hash table.}]}
 
 @defproc*[([(in-hash-pairs [hash hash?]) sequence?]
            [(in-hash-pairs [hash hash?] [bad-index-v any/c]) sequence?])]{
@@ -459,14 +477,17 @@ each element in the sequence.
   The @racket[bad-index-v] argument, if supplied, is used in the same
   way as by @racket[in-hash]. When an invalid index is encountered,
   the pair in the sequence with have @racket[bad-index-v] as both its
-  @racket[car] and @racket[cdr].
+  @racket[car] and @racket[cdr]. The concurrent-modification
+  guarantees for @racket[in-hash-pairs] are analogous to those of @racket[in-hash].
 
   @examples[
     (define table (hash 'a 1 'b 2))
     (for ([key+value (in-hash-pairs table)])
       (printf "key and value: ~a\n" key+value))]
 
-  @history[#:changed "7.0.0.10" @elem{Added the optional @racket[bad-index-v] argument.}]}
+  @history[#:changed "7.0.0.10" @elem{Added the optional @racket[bad-index-v] argument.}
+           #:changed "8.18.0.11" @elem{Strengthened the guarantees about traversal with
+                                       same-thread modifications to a mutable hash table.}]}
 
 @deftogether[(
 @defproc[(in-mutable-hash
@@ -588,7 +609,7 @@ each element in the sequence.
 
    @history[#:added "6.4.0.6"
             #:changed "7.0.0.10" @elem{Added the optional @racket[bad-index-v] argument.}
-         #:changed "8.0.0.10" @elem{Added @schemeidfont{ephemeron} variants.}]
+            #:changed "8.0.0.10" @elem{Added @schemeidfont{ephemeron} variants.}]
 }
 
 

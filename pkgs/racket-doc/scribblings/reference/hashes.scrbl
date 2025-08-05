@@ -43,7 +43,7 @@ hashing is treated as a deeper hash, but the @racket[cdr] of a
 A hash table can be used as a two-valued @tech{sequence} (see
 @secref["sequences"]). The keys and values of the hash table serve as
 elements of the sequence (i.e., each element is a key and its
-associated value). If a mapping is added to or removed from the hash
+associated value). If a mapping is added to or removed from a mutable hash
 table during iteration, then an iteration step may fail with
 @racket[exn:fail:contract], or the iteration may skip or duplicate
 keys and values.  See also @racket[in-hash], @racket[in-hash-keys],
