@@ -16,24 +16,26 @@
     (define v (unbox lock-box))
     (cond
      [(or (not v)
-          (sync/timeout 0 (car v) (or (let ([t (weak-box-value (cdr v))])
-                                        (and (not (eq? (current-thread) t))
-                                             t))
-                                      never-evt)))
+          (sync/timeout 0 (car v) (let ([t (weak-box-value (cdr v))])
+                                    (if (eq? t (current-thread))
+                                        never-evt
+                                        (or t always-evt)))))
+      ;; Lock holder is released its semaphore or terminated
       (define sema (make-semaphore))
       (define lock (cons (semaphore-peek-evt sema) (make-weak-box (current-thread))))
       ((dynamic-wind
         void
         (lambda ()
           (cond
-           [(box-cas! lock-box v lock)
-            (call-with-values
-             proc
-             (lambda results
-               (lambda () (apply values results))))]
-           [else
-            ;; CAS failed; take it from the top
-            (lambda () (loop))]))
+            [(box-cas! lock-box v lock)
+             ;; This thread became the lock holder
+             (call-with-values
+              proc
+              (lambda results
+                (lambda () (apply values results))))]
+            [else
+             ;; CAS failed; take it from the top
+             (lambda () (loop))]))
         (lambda ()
           (semaphore-post sema))))]
      [(eq? (current-thread) (weak-box-value (cdr v)))
@@ -41,5 +43,5 @@
       (proc)]
      [else
       ; Wait and try again:
-      (sync (car v) (or (weak-box-value (cdr v)) never-evt))
+      (sync (car v) (or (weak-box-value (cdr v)) always-evt))
       (loop)])))
