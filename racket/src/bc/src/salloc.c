@@ -10,6 +10,9 @@
 #ifndef WINDOWS_PROCESSES
 # include <signal.h>
 #endif
+#ifdef MZ_USE_MAP_JIT
+# include <pthread.h>
+#endif
 
 #ifdef DOS_FAR_POINTERS
 # include <alloc.h>

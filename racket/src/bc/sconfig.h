@@ -554,7 +554,7 @@
 
 # define WINDOWS_PROCESSES
 # define WINDOWS_FILE_HANDLES
-# ifndef MZ_USE_DETERMINSTIC_FUEL
+# if !defined(MZ_USE_DETERMINSTIC_FUEL) && !defined(MZ_USE_PSEUDORANDOM_FUEL)
 #  define USE_WIN32_THREAD_TIMER
 # endif
 
@@ -680,7 +680,7 @@
 # define SYSTEM_TYPE_NAME "macosx"
 #endif
 
-# ifndef MZ_USE_DETERMINSTIC_FUEL
+# if !defined(MZ_USE_DETERMINSTIC_FUEL) && !defined(MZ_USE_PSEUDORANDOM_FUEL)
 #  undef USE_ITIMER
 #  define USE_PTHREAD_THREAD_TIMER
 # endif
@@ -720,6 +720,8 @@
 # define POW_HANDLES_CASES_CORRECTLY
 
 # define MZ_JIT_USE_MPROTECT
+
+# define MZ_ALWAYS_USE_MZRT
 
 # define FLAGS_ALREADY_SET
 

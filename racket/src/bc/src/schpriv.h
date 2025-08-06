@@ -775,7 +775,8 @@ THREAD_LOCAL_DECL(extern volatile int scheme_fuel_counter);
 
 THREAD_LOCAL_DECL(extern Scheme_Thread *scheme_main_thread);
 
-#if defined(MZ_USE_PLACES) || defined(MZ_USE_FUTURES) || defined(USE_PTHREAD_THREAD_TIMER) || defined(WINDOWS_FILE_HANDLES)
+#if defined(MZ_USE_PLACES) || defined(MZ_USE_FUTURES) || defined(USE_PTHREAD_THREAD_TIMER) \
+    || defined(WINDOWS_FILE_HANDLES) || defined(MZ_ALWAYS_USE_MZRT)
 # define MZ_USE_MZRT
 #endif
 

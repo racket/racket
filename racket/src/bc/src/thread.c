@@ -2570,7 +2570,11 @@ static Scheme_Thread *make_thread(Scheme_Config *config,
     prefix = 1;
   }
 
+#ifdef MZ_USE_PSEUDORANDOM_FUEL
+  process->engine_weight = MZ_USE_PSEUDORANDOM_FUEL;
+#else
   process->engine_weight = 10000;
+#endif
 
   process->cont_mark_pos = (MZ_MARK_POS_TYPE)1;
   process->cont_mark_stack = 0;
@@ -5134,7 +5138,11 @@ void scheme_thread_block(float sleep_time)
         || (do_atomic <= atomic_timeout_atomic_level)) {
       if (atomic_timeout_auto_suspend) {
         atomic_timeout_auto_suspend++;
+# ifdef MZ_USE_PSEUDORANDOM_FUEL
+        scheme_fuel_counter = (p->engine_weight >> 1) + (random() % p->engine_weight);
+# else
         scheme_fuel_counter = p->engine_weight;
+#endif
         scheme_jit_stack_boundary = scheme_stack_boundary;
       }
       call_on_atomic_timeout(0);
@@ -5229,7 +5237,11 @@ void scheme_thread_block(float sleep_time)
   if (do_atomic)
     missed_context_switch = 1;
 
+#ifdef MZ_USE_PSEUDORANDOM_FUEL
+  scheme_fuel_counter = (p->engine_weight >> 1) + (random() % p->engine_weight);
+#else
   scheme_fuel_counter = p->engine_weight;
+#endif
   scheme_jit_stack_boundary = scheme_stack_boundary;
 
   scheme_kickoff_green_thread_time_slice_timer(MZ_THREAD_QUANTUM_USEC);

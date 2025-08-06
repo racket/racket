@@ -1539,23 +1539,18 @@ int scheme_unless_ready(Scheme_Object *unless)
 void scheme_wait_input_allowed(Scheme_Input_Port *ip, int nonblock)
 {
   while (ip->input_lock) {
+    ip->direct_read_waiting = 1;
     scheme_post_sema_all(ip->input_giveup);
     scheme_wait_sema(ip->input_lock, nonblock ? -1 : 0);
   }
 }
 
-static void release_input_lock(Scheme_Input_Port *ip)
+static void release_input_lock_and_elect_new_leader(Scheme_Input_Port *ip)
 {
   scheme_post_sema_all(ip->input_lock);
   ip->input_lock = NULL;
   ip->input_giveup = NULL;
 
-  if (scheme_current_thread->running & MZTHREAD_NEED_SUSPEND_CLEANUP)
-    scheme_current_thread->running -= MZTHREAD_NEED_SUSPEND_CLEANUP;
-}
-
-static void elect_new_main(Scheme_Input_Port *ip)
-{
   if (ip->input_extras_ready) {
     scheme_post_sema_all(ip->input_extras_ready);
     ip->input_extras = NULL;
@@ -1563,14 +1558,13 @@ static void elect_new_main(Scheme_Input_Port *ip)
   }
 }
 
-static void release_input_lock_and_elect_new_main(void *_ip)
+static void do_release_input_lock_and_elect_new_leader(void *_ip)
 {
   Scheme_Input_Port *ip;
 
   ip = scheme_input_port_record(_ip);
 
-  release_input_lock(ip);
-  elect_new_main(ip);
+  release_input_lock_and_elect_new_leader(ip);
 }
 
 static void check_suspended()
@@ -1579,16 +1573,13 @@ static void check_suspended()
     scheme_thread_block(0.0);
 }
 
-static void remove_extra(void *ip_v)
+static void remove_extra(Scheme_Input_Port *ip, Scheme_Object *v)
 {
-  Scheme_Input_Port *ip;
-  Scheme_Object *v = SCHEME_CDR(ip_v), *ll, *prev;
-
-  ip = scheme_input_port_record(SCHEME_CAR(ip_v));
+  Scheme_Object *ll, *prev;
 
   prev = NULL;
   for (ll = ip->input_extras; ll; prev = ll, ll = SCHEME_CDR(ll)) {
-    if (SAME_OBJ(ll, SCHEME_CDR(v))) {
+    if (SAME_OBJ(v, SCHEME_CAR(ll))) {
       if (prev)
 	SCHEME_CDR(prev) = SCHEME_CDR(ll);
       else
@@ -1598,7 +1589,21 @@ static void remove_extra(void *ip_v)
     }
   }
 
-  /* Tell the main commit thread (if any) to reset */
+  /* Tell the leader commit thread (if any) to reset */
+  if (ip->input_giveup)
+    scheme_post_sema_all(ip->input_giveup);
+}
+
+static void remove_extra_and_reset(void *ip_v)
+{
+  Scheme_Input_Port *ip;
+  Scheme_Object *v = SCHEME_CDR(ip_v);
+
+  ip = scheme_input_port_record(SCHEME_CAR(ip_v));
+
+  remove_extra(ip, v);
+
+  /* Tell the leader commit thread (if any) to reset */
   if (ip->input_giveup)
     scheme_post_sema_all(ip->input_giveup);
 }
@@ -1737,56 +1742,80 @@ int scheme_peeked_read_via_get(Scheme_Input_Port *ip,
   while (1) {
     if (scheme_wait_sema(unless_evt, 1)) {
       if (current_leader)
-	elect_new_main(ip);
+	release_input_lock_and_elect_new_leader(ip);
       return 0;
     }
 
     if (!current_leader && ip->input_giveup) {
-      /* Some other thread is already trying to commit.
+      /* Some other thread is already trying to commit and is the leader.
 	 Ask it to sync on our target, too */
       v = scheme_make_pair(scheme_make_integer(_size), target_evt);
       l = scheme_make_raw_pair(v, ip->input_extras);
       ip->input_extras = l;
-
-      scheme_post_sema_all(ip->input_giveup);
 
       if (!ip->input_extras_ready) {
 	sema = scheme_make_sema(0);
 	ip->input_extras_ready = sema;
       }
 
+      /* Notify leader of a change */
+      scheme_post_sema_all(ip->input_giveup);
+
       a[0] = ip->input_extras_ready;
+      a[1] = scheme_get_thread_suspend(scheme_current_thread); /* if this thread is suspended, then stop trying to commit */
+
+      scheme_current_thread->running |= MZTHREAD_NEED_SUSPEND_CLEANUP;
       l = scheme_make_pair((Scheme_Object *)ip, v);
-      BEGIN_ESCAPEABLE(remove_extra, l);
-      scheme_sync(1, a);
+      BEGIN_ESCAPEABLE(remove_extra_and_reset, l);
+      scheme_sync(2, a);
       END_ESCAPEABLE();
+
+      if (scheme_current_thread->running & MZTHREAD_NEED_SUSPEND_CLEANUP)
+        scheme_current_thread->running -= MZTHREAD_NEED_SUSPEND_CLEANUP;
+
+      if (ip->input_extras)
+        remove_extra(ip, v);
+
+      check_suspended();
 
       if (!SCHEME_CDR(v)) {
 	/* We were selected, so the commit succeeded. */
 	return SCHEME_TRUEP(SCHEME_CAR(v)) ? 1 : 0;
       }
+
+      if (ip->direct_read_waiting)
+        scheme_thread_block(0.0);
     } else {
-      /* No other thread is trying to commit. This one is hereby
-	 elected "main" if multiple threads try to commit. */
+      /* We're already the leader, or no other thread is trying to commit.
+         This one is hereby elected leader (if it isn't already), in case
+         multiple threads try to commit. */
 
       if (SAME_TYPE(t, scheme_always_evt_type)) {
 	/* Fast path: always-evt is ready */
+        if (current_leader)
+          release_input_lock_and_elect_new_leader(ip);
 	return complete_peeked_read_via_get(ip, size);
       }
 
-      /* This sema makes other threads wait before reading: */
-      sema = scheme_make_sema(0);
-      ip->input_lock = sema;
+      /* This sema makes other threads wait before reading : */
+      if (!current_leader) {
+        sema = scheme_make_sema(0);
+        ip->input_lock = sema;
+      }
       ip->slow = 1;
       
       /* This sema lets other threads try to make progress,
 	 if the current target doesn't work out */
-      sema = scheme_make_sema(0);
-      ip->input_giveup = sema;
+      if (!current_leader) {
+        sema = scheme_make_sema(0);
+        ip->input_giveup = sema;
+      }
+
+      current_leader = 1;
       
       if (ip->input_extras) {
 	/* There are other threads trying to commit, and
-	   as main thread, we'll help them out. */
+	   as leader thread, we'll help them out. */
 	n = 3;
 	for (l = ip->input_extras; l; l = SCHEME_CDR(l)) {
 	  n++;
@@ -1813,21 +1842,24 @@ int scheme_peeked_read_via_get(Scheme_Input_Port *ip,
       aa[2] = v;
 
       scheme_current_thread->running |= MZTHREAD_NEED_SUSPEND_CLEANUP;
-      BEGIN_ESCAPEABLE(release_input_lock_and_elect_new_main, ip);
+      BEGIN_ESCAPEABLE(do_release_input_lock_and_elect_new_leader, ip);
       v = scheme_sync(n, aa);
       END_ESCAPEABLE();
 
-      release_input_lock(ip);
-      
+      if (scheme_current_thread->running & MZTHREAD_NEED_SUSPEND_CLEANUP)
+        scheme_current_thread->running -= MZTHREAD_NEED_SUSPEND_CLEANUP;
+
       if (SAME_OBJ(v, target_evt)) {
 	int r;
-	elect_new_main(ip);
+        release_input_lock_and_elect_new_leader(ip);
 	r = complete_peeked_read_via_get(ip, size);
 	check_suspended();
 	return r;
-      }
-
-      if (n > 3) {
+      } else if (SAME_OBJ(v, ip->input_giveup)) {
+        /* need to reset give-up semaphore so we can be woken again */
+        sema = scheme_make_sema(0);
+        ip->input_giveup = sema;
+      } else if (n > 3) {
 	/* Check whether one of the others was selected: */
 	for (l = ip->input_extras; l; l = SCHEME_CDR(l)) {
 	  if (SAME_OBJ(v, SCHEME_CDR(SCHEME_CAR(l)))) {
@@ -1836,7 +1868,7 @@ int scheme_peeked_read_via_get(Scheme_Input_Port *ip,
 	    v = SCHEME_CAR(l);
 	    SCHEME_CDR(v) = NULL;
 	    size = SCHEME_INT_VAL(SCHEME_CAR(v));
-	    elect_new_main(ip);
+	    release_input_lock_and_elect_new_leader(ip);
 	    if (complete_peeked_read_via_get(ip, size))
 	      SCHEME_CAR(v) = scheme_true;
 	    else
@@ -1848,20 +1880,27 @@ int scheme_peeked_read_via_get(Scheme_Input_Port *ip,
       }
 
       if (scheme_current_thread->running & MZTHREAD_USER_SUSPENDED) {
-	elect_new_main(ip);
+	release_input_lock_and_elect_new_leader(ip);
 	current_leader = 0;
 	check_suspended();
       } else {
-	current_leader = 1;
-	
 	/* Technically redundant, but avoid a thread swap
 	   if we know the commit isn't going to work: */
 	if (scheme_wait_sema(unless_evt, 1)) {
-	  elect_new_main(ip);
+	  release_input_lock_and_elect_new_leader(ip);
 	  return 0;
 	}
-      
+
+        if (ip->direct_read_waiting) {
+          /* A non-commit read is waiting, so release the lock
+             to give it a chance */
+          current_leader = 0;
+          release_input_lock_and_elect_new_leader(ip);
+        }
+
 	scheme_thread_block(0.0);
+
+        ip->direct_read_waiting = 0;
       }
     }
   }
