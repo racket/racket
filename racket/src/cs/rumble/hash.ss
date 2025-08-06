@@ -222,6 +222,7 @@
 (define (mutable-hash-clear! ht)
   (lock-acquire (mutable-hash-lock ht))
   (set-locked-iterable-hash-cells! ht #f)
+  (set-locked-iterable-hash-retry?! ht #t)
   (hashtable-clear! (mutable-hash-ht ht))
   (lock-release (mutable-hash-lock ht)))
 

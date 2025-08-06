@@ -1161,6 +1161,16 @@
             (hash-set! ht i (add1 i)))
           1)))
 
+(let ()
+  (define ht (make-hasheqv))
+  (for ([idx (in-range 32)])
+    (hash-set! ht idx 1))
+  (test 32 length (hash-values ht))
+  (hash-clear! ht)
+  (for ([idx (in-range 64)])
+    (hash-set! ht idx 1))
+  (test 64 length (hash-values ht)))
+
 ;; ----------------------------------------
 
 (report-errs)
