@@ -4251,10 +4251,6 @@ regstrcspn(char *s1, char *e1, char *s2)
   return(count);
 }
 
-#ifndef strncpy
-  extern char *strncpy();
-#endif
-
 /*
    - regsub - perform substitutions after a regexp match
    */
