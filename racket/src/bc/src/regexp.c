@@ -4252,7 +4252,7 @@ regstrcspn(char *s1, char *e1, char *s2)
 }
 
 #ifndef strncpy
-  extern char *strncpy();
+  extern char *strncpy(char *, const char *, long unsigned int);
 #endif
 
 /*
