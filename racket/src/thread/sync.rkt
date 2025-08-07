@@ -599,6 +599,7 @@
 ;;  selected for this synchronization
 (define (syncing-done! s selected-sr)
   (assert-atomic-mode)
+  (assert (not (syncing-selected s)))
   (set-syncing-selected! s selected-sr)
   (for ([callback (in-list (syncer-commits selected-sr))])
     (callback))
@@ -611,6 +612,7 @@
               (interrupt))))
         (for ([abandon (in-list (syncer-abandons sr))])
           (abandon)))
+      (set-syncer-interrupt! sr #f) ; in case an interrupt happens after done
       (loop (syncer-next sr))))
   (when (syncing-disable-break s)
     ((syncing-disable-break s)))

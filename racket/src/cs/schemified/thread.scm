@@ -4124,24 +4124,26 @@
 (define ready-nonempty-queue
   (lambda (s_0)
     (if (not (queue-start s_0))
-      (begin
-        (set-semaphore-count! s_0 -1)
-        (if (custodian-accessible-semaphore? s_0)
-          (unsafe-place-local-set!
-           cell.1$8
-           (hash-set (unsafe-place-local-ref cell.1$8) s_0 #t))
-          (void)))
-      (void))))
+      (if (unsafe-struct*-cas! s_0 2 0 -1)
+        (begin
+          (if (custodian-accessible-semaphore? s_0)
+            (unsafe-place-local-set!
+             cell.1$8
+             (hash-set (unsafe-place-local-ref cell.1$8) s_0 #t))
+            (void))
+          #t)
+        #f)
+      #t)))
 (define ready-empty-queue
   (lambda (s_0)
     (if (not (queue-start s_0))
-      (begin
-        (set-semaphore-count! s_0 0)
+      (if (unsafe-struct*-cas! s_0 2 -1 0)
         (if (custodian-accessible-semaphore? s_0)
           (unsafe-place-local-set!
            cell.1$8
            (hash-remove (unsafe-place-local-ref cell.1$8) s_0))
-          (void)))
+          (void))
+        (ready-empty-queue s_0))
       (void))))
 (define 1/semaphore-post
   (|#%name|
@@ -4196,25 +4198,30 @@
         (lambda ()
           (let ((w_0 (queue-remove! s_0)))
             (if (not w_0)
-              (set-semaphore-count! s_0 (add1 (semaphore-count s_0)))
+              (let ((c_0 (semaphore-count s_0)))
+                (if (unsafe-struct*-cas! s_0 2 c_0 (add1 c_0))
+                  (void)
+                  (loop_0)))
               (begin
-                (|#%app| (waiter-methods-resume (waiter-ref w_0)) w_0 s_0)
                 (ready-empty-queue s_0)
+                (|#%app| (waiter-methods-resume (waiter-ref w_0)) w_0 s_0)
                 (if (semaphore-peek-select-waiter? w_0) (loop_0) (void)))))))))
      (loop_0))))
 (define semaphore-post-all/atomic
   (lambda (s_0)
-    (begin
-      (set-semaphore-count! s_0 +inf.0)
-      (queue-remove-all!
-       s_0
-       (lambda (w_0)
-         (|#%app| (waiter-methods-resume (waiter-ref w_0)) w_0 s_0)))
-      (if (custodian-accessible-semaphore? s_0)
-        (unsafe-place-local-set!
-         cell.1$8
-         (hash-remove (unsafe-place-local-ref cell.1$8) s_0))
-        (void)))))
+    (let ((c_0 (semaphore-count s_0)))
+      (if (unsafe-struct*-cas! s_0 2 c_0 +inf.0)
+        (begin
+          (queue-remove-all!
+           s_0
+           (lambda (w_0)
+             (|#%app| (waiter-methods-resume (waiter-ref w_0)) w_0 s_0)))
+          (if (custodian-accessible-semaphore? s_0)
+            (unsafe-place-local-set!
+             cell.1$8
+             (hash-remove (unsafe-place-local-ref cell.1$8) s_0))
+            (void)))
+        (semaphore-post-all/atomic s_0)))))
 (define semaphore-post-all
   (lambda (s_0)
     (begin (start-atomic) (semaphore-post-all/atomic s_0) (end-atomic))))
@@ -4273,90 +4280,115 @@
        (unsafe-semaphore-wait s_0)))))
 (define unsafe-semaphore-wait
   (lambda (s_0)
-    (let ((c_0 (semaphore-count s_0)))
-      (if (if (positive? c_0)
-            (if (current-future-can-take-lock?)
-              (unsafe-struct*-cas! s_0 2 c_0 (sub1 c_0))
-              #f)
-            #f)
-        (memory-order-acquire)
-        (if (cas-only-mode?)
-          (if (not (current-future-can-take-lock?))
-            (|#%app|
-             host:internal-error
-             "waited on a semaphore from a future in uninterruptible mode")
-            (if (unsafe-struct*-cas! s_0 2 0 0)
-              (|#%app|
-               host:internal-error
-               "waited in uninterruptible mode on a not-ready semaphore")
-              (unsafe-semaphore-wait s_0)))
-          (|#%app|
-           (begin
-             (start-atomic)
-             (begin0
-               (let ((c_1 (semaphore-count s_0)))
-                 (if (positive? c_1)
+    (begin
+      (letrec*
+       ((loop_0
+         (|#%name|
+          loop
+          (lambda ()
+            (let ((c_0 (semaphore-count s_0)))
+              (if (if (positive? c_0)
+                    (if (current-future-can-take-lock?)
+                      (unsafe-struct*-cas! s_0 2 c_0 (sub1 c_0))
+                      #f)
+                    #f)
+                (memory-order-acquire)
+                (if (cas-only-mode?)
+                  (if (not (current-future-can-take-lock?))
+                    (|#%app|
+                     host:internal-error
+                     "waited on a semaphore from a future in uninterruptible mode")
+                    (if (unsafe-struct*-cas! s_0 2 0 0)
+                      (|#%app|
+                       host:internal-error
+                       "waited in uninterruptible mode on a not-ready semaphore")
+                      (unsafe-semaphore-wait s_0)))
+                  (|#%app|
                    (begin
-                     (set-semaphore-count! s_0 (sub1 c_1))
-                     future-barrier-exit)
-                   (begin
-                     (ready-nonempty-queue s_0)
-                     (let ((w_0 (current-thread/in-racket)))
-                       (let ((n_0 (queue-add! s_0 w_0)))
-                         (let ((interrupt-cb_0
-                                (lambda ()
-                                  (begin
-                                    (queue-remove-node! s_0 n_0)
-                                    (ready-empty-queue s_0)
-                                    (lambda () (unsafe-semaphore-wait s_0))))))
-                           (|#%app|
-                            (waiter-methods-suspend (waiter-ref w_0))
-                            w_0
-                            interrupt-cb_0)))))))
-               (end-atomic/no-barrier-exit)))))))))
+                     (start-atomic)
+                     (begin0
+                       (let ((c_1 (semaphore-count s_0)))
+                         (if (positive? c_1)
+                           (lambda () (loop_0))
+                           (if (ready-nonempty-queue s_0)
+                             (let ((w_0 (current-thread/in-racket)))
+                               (let ((n_0 (queue-add! s_0 w_0)))
+                                 (let ((interrupt-cb_0
+                                        (lambda ()
+                                          (begin
+                                            (queue-remove-node! s_0 n_0)
+                                            (ready-empty-queue s_0)
+                                            (lambda () (loop_0))))))
+                                   (|#%app|
+                                    (waiter-methods-suspend (waiter-ref w_0))
+                                    w_0
+                                    interrupt-cb_0))))
+                             (lambda () (loop_0)))))
+                       (end-atomic/no-barrier-exit)))))))))))
+       (loop_0))
+      (future-barrier-exit))))
 (define semaphore-wait/poll.1
   (|#%name|
    semaphore-wait/poll
    (lambda (peek?6_0 result7_0 s10_0 self11_0 poll-ctx12_0)
      (let ((result_0 (if (eq? result7_0 unsafe-undefined) s10_0 result7_0)))
-       (let ((c_0 (semaphore-count s10_0)))
-         (if (positive? c_0)
-           (begin
-             (if peek?6_0 (void) (set-semaphore-count! s10_0 (sub1 c_0)))
-             (values (list result_0) #f))
-           (if (poll-ctx-poll? poll-ctx12_0)
-             (values #f self11_0)
-             (begin
-               (ready-nonempty-queue s10_0)
-               (let ((w_0
-                      (if peek?6_0
-                        (semaphore-peek-select-waiter4.1
-                         (poll-ctx-select-proc poll-ctx12_0))
-                        (select-waiter7.1
-                         (poll-ctx-select-proc poll-ctx12_0)))))
-                 (let ((n_0 (queue-add! s10_0 w_0)))
-                   (values
-                    #f
-                    (control-state-evt9.1
-                     the-async-evt
-                     (lambda (v_0) result_0)
-                     (lambda ()
-                       (begin
-                         (queue-remove-node! s10_0 n_0)
-                         (ready-empty-queue s10_0)))
-                     void
-                     (lambda ()
-                       (let ((c_1 (semaphore-count s10_0)))
-                         (if (positive? c_1)
-                           (begin
-                             (if peek?6_0
-                               (void)
-                               (set-semaphore-count! s10_0 (sub1 c_1)))
-                             (values result_0 #t))
-                           (begin
-                             (ready-nonempty-queue s10_0)
-                             (set! n_0 (queue-add! s10_0 w_0))
-                             (values #f #f)))))))))))))))))
+       (letrec*
+        ((loop_0
+          (|#%name|
+           loop
+           (lambda ()
+             (let ((c_0 (semaphore-count s10_0)))
+               (if (positive? c_0)
+                 (if (if peek?6_0
+                       peek?6_0
+                       (unsafe-struct*-cas! s10_0 2 c_0 (sub1 c_0)))
+                   (values (list result_0) #f)
+                   (loop_0))
+                 (if (poll-ctx-poll? poll-ctx12_0)
+                   (values #f self11_0)
+                   (if (ready-nonempty-queue s10_0)
+                     (let ((w_0
+                            (if peek?6_0
+                              (semaphore-peek-select-waiter4.1
+                               (poll-ctx-select-proc poll-ctx12_0))
+                              (select-waiter7.1
+                               (poll-ctx-select-proc poll-ctx12_0)))))
+                       (let ((n_0 (queue-add! s10_0 w_0)))
+                         (values
+                          #f
+                          (control-state-evt9.1
+                           the-async-evt
+                           (lambda (v_0) result_0)
+                           (lambda ()
+                             (begin
+                               (queue-remove-node! s10_0 n_0)
+                               (ready-empty-queue s10_0)))
+                           void
+                           (lambda ()
+                             (letrec*
+                              ((inner-loop_0
+                                (|#%name|
+                                 inner-loop
+                                 (lambda ()
+                                   (let ((c_1 (semaphore-count s10_0)))
+                                     (if (positive? c_1)
+                                       (if (if peek?6_0
+                                             peek?6_0
+                                             (unsafe-struct*-cas!
+                                              s10_0
+                                              2
+                                              c_1
+                                              (sub1 c_1)))
+                                         (values result_0 #t)
+                                         (inner-loop_0))
+                                       (if (ready-nonempty-queue s10_0)
+                                         (begin
+                                           (set! n_0 (queue-add! s10_0 w_0))
+                                           (values #f #f))
+                                         (inner-loop_0))))))))
+                              (inner-loop_0)))))))
+                     (loop_0)))))))))
+        (loop_0))))))
 (define semaphore-wait/atomic
   (lambda (s_0)
     (let ((c_0 (semaphore-count s_0)))
@@ -6443,7 +6475,7 @@
                 (void))))))
          (loop_0 mref_0))
         (unlock-custodians)))))
-(define finish_2534
+(define finish_2277
   (make-struct-type-install-properties
    '(thread)
    24
@@ -6462,13 +6494,13 @@
            (let ((app_4
                   (cons
                    prop:waiter
-                   (let ((temp45_0
+                   (let ((temp51_0
                           (lambda (t_0 i-cb_0)
-                            (thread-deschedule! t_0 #f i-cb_0))))
-                     (let ((temp46_0
+                            (thread-deschedule!.1 void t_0 #f i-cb_0))))
+                     (let ((temp52_0
                             (lambda (t_0 v_0)
                               (begin (thread-reschedule! t_0) v_0))))
-                       (make-waiter-methods.1 temp46_0 temp45_0))))))
+                       (make-waiter-methods.1 temp52_0 temp51_0))))))
              (list
               app_0
               app_1
@@ -6489,7 +6521,7 @@
    #t
    #f
    '(24 . 16777082)))
-(define effect_2668 (finish_2534 struct:thread))
+(define effect_2668 (finish_2277 struct:thread))
 (define thread1.1
   (|#%name|
    thread
@@ -6708,40 +6740,40 @@
   (let ((thread_0
          (|#%name|
           thread
-          (lambda (proc48_0 keep-result?47_0)
+          (lambda (proc57_0 keep-result?56_0)
             (begin
-              (if (if (procedure? proc48_0)
-                    (procedure-arity-includes? proc48_0 0)
+              (if (if (procedure? proc57_0)
+                    (procedure-arity-includes? proc57_0 0)
                     #f)
                 (void)
                 (raise-argument-error
                  'thread
                  "(procedure-arity-includes/c 0)"
-                 proc48_0))
-              (if (let ((or-part_0 (not keep-result?47_0)))
-                    (if or-part_0 or-part_0 (eq? keep-result?47_0 'results)))
+                 proc57_0))
+              (if (let ((or-part_0 (not keep-result?56_0)))
+                    (if or-part_0 or-part_0 (eq? keep-result?56_0 'results)))
                 (void)
                 (raise-argument-error
                  'thread
                  "(or/c #f 'results)"
-                 keep-result?47_0))
+                 keep-result?56_0))
               (do-make-thread.1
                #f
                unsafe-undefined
                unsafe-undefined
                #f
-               keep-result?47_0
+               keep-result?56_0
                unsafe-undefined
                #f
                #t
                #f
                'thread
-               proc48_0))))))
+               proc57_0))))))
     (|#%name|
      thread
      (case-lambda
       ((proc_0) (thread_0 proc_0 #f))
-      ((proc_0 keep-result?47_0) (thread_0 proc_0 keep-result?47_0))))))
+      ((proc_0 keep-result?56_0) (thread_0 proc_0 keep-result?56_0))))))
 (define 1/thread/suspend-to-kill
   (|#%name|
    thread/suspend-to-kill
@@ -6790,11 +6822,11 @@
         (lambda (thunk_0) (|#%app| thunk_0))
         host:call-as-asynchronous-callback)
       (lambda ()
-        (let ((root-custodian62_0 (unsafe-place-local-ref cell.2$4)))
+        (let ((root-custodian71_0 (unsafe-place-local-ref cell.2$4)))
           (do-make-thread.1
            #t
            unsafe-undefined
-           root-custodian62_0
+           root-custodian71_0
            #f
            #f
            unsafe-undefined
@@ -7378,28 +7410,34 @@
              (loop_0))
             (thread-engine-block))
           (void))))))
-(define thread-deschedule!
-  (lambda (t_0 timeout-at_0 interrupt-callback_0)
-    (let ((retry-callback_0 #f))
-      (begin
-        (start-atomic)
-        (begin0
-          (begin
-            (set-thread-interrupt-callback!
-             t_0
-             (if (eq? interrupt-callback_0 'future)
-               'future
-               (lambda ()
-                 (set! retry-callback_0 (|#%app| interrupt-callback_0)))))
-            (let ((finish_0 (do-thread-deschedule! t_0 timeout-at_0)))
-              (lambda ()
-                (begin
-                  (if (eq? t_0 (1/current-thread))
-                    (void)
-                    (if (not-atomic-mode?) (future-barrier-exit) (void)))
-                  (|#%app| finish_0)
-                  (if retry-callback_0 (|#%app| retry-callback_0) (void))))))
-          (end-atomic/no-barrier-exit))))))
+(define thread-deschedule!.1
+  (|#%name|
+   thread-deschedule!
+   (lambda (last-step27_0 t29_0 timeout-at30_0 interrupt-callback31_0)
+     (let ((retry-callback_0 #f))
+       (begin
+         (start-atomic)
+         (begin0
+           (begin
+             (set-thread-interrupt-callback!
+              t29_0
+              (if (eq? interrupt-callback31_0 'future)
+                'future
+                (lambda ()
+                  (set! retry-callback_0 (|#%app| interrupt-callback31_0)))))
+             (let ((finish_0 (do-thread-deschedule! t29_0 timeout-at30_0)))
+               (begin
+                 (|#%app| last-step27_0)
+                 (lambda ()
+                   (begin
+                     (if (eq? t29_0 (1/current-thread))
+                       (void)
+                       (if (not-atomic-mode?) (future-barrier-exit) (void)))
+                     (|#%app| finish_0)
+                     (if retry-callback_0
+                       (|#%app| retry-callback_0)
+                       (void)))))))
+           (end-atomic/no-barrier-exit)))))))
 (define thread-reschedule!
   (lambda (t_0)
     (begin
@@ -7458,39 +7496,39 @@
   (let ((thread-resume_0
          (|#%name|
           thread-resume
-          (lambda (t28_0 benefactor27_0)
+          (lambda (t34_0 benefactor33_0)
             (begin
-              (if (1/thread? t28_0)
+              (if (1/thread? t34_0)
                 (void)
-                (raise-argument-error 'thread-resume "thread?" t28_0))
-              (if (let ((or-part_0 (not benefactor27_0)))
+                (raise-argument-error 'thread-resume "thread?" t34_0))
+              (if (let ((or-part_0 (not benefactor33_0)))
                     (if or-part_0
                       or-part_0
-                      (let ((or-part_1 (1/thread? benefactor27_0)))
+                      (let ((or-part_1 (1/thread? benefactor33_0)))
                         (if or-part_1
                           or-part_1
-                          (1/custodian? benefactor27_0)))))
+                          (1/custodian? benefactor33_0)))))
                 (void)
                 (raise-argument-error
                  'thread-resume
                  "(or/c #f thread? custodian?)"
-                 benefactor27_0))
+                 benefactor33_0))
               (if (begin
                     (start-atomic)
                     (begin0
-                      (do-thread-resume t28_0 benefactor27_0)
+                      (do-thread-resume t34_0 benefactor33_0)
                       (end-atomic)))
                 (void)
                 (raise-arguments-error
                  'thread-resume
                  "the custodian has been shut down"
                  "custodian"
-                 benefactor27_0)))))))
+                 benefactor33_0)))))))
     (|#%name|
      thread-resume
      (case-lambda
       ((t_0) (thread-resume_0 t_0 #f))
-      ((t_0 benefactor27_0) (thread-resume_0 t_0 benefactor27_0))))))
+      ((t_0 benefactor33_0) (thread-resume_0 t_0 benefactor33_0))))))
 (define do-thread-resume
   (lambda (t_0 benefactor_0)
     (if (is-thread-dead? t_0)
@@ -7626,7 +7664,7 @@
    #f
    '(2 . 0)))
 (define effect_3100 (finish_2826 struct:transitive-resume))
-(define transitive-resume29.1
+(define transitive-resume35.1
   (|#%name|
    transitive-resume
    (record-constructor
@@ -7654,7 +7692,7 @@
                      (set-thread-suspended?! b-t_0 (thread-suspended? b-t_0))
                      (list
                       (let ((app_0 (make-weak-box b-t_0)))
-                        (transitive-resume29.1
+                        (transitive-resume35.1
                          app_0
                          (thread-suspended-box b-t_0)))))
                    (let ((o-t_0
@@ -7695,20 +7733,20 @@
   (let ((thread-push-suspend+resume-callbacks!_0
          (|#%name|
           thread-push-suspend+resume-callbacks!
-          (lambda (s-cb31_0 r-cb32_0 t30_0)
+          (lambda (s-cb37_0 r-cb38_0 t36_0)
             (let ((t_0
-                   (if (eq? t30_0 unsafe-undefined)
+                   (if (eq? t36_0 unsafe-undefined)
                      (current-thread/in-racket)
-                     t30_0)))
+                     t36_0)))
               (set-thread-suspend+resume-callbacks!
                t_0
-               (let ((app_0 (cons s-cb31_0 r-cb32_0)))
+               (let ((app_0 (cons s-cb37_0 r-cb38_0)))
                  (cons app_0 (thread-suspend+resume-callbacks t_0)))))))))
     (case-lambda
      ((s-cb_0 r-cb_0)
       (thread-push-suspend+resume-callbacks!_0 s-cb_0 r-cb_0 unsafe-undefined))
-     ((s-cb_0 r-cb_0 t30_0)
-      (thread-push-suspend+resume-callbacks!_0 s-cb_0 r-cb_0 t30_0)))))
+     ((s-cb_0 r-cb_0 t36_0)
+      (thread-push-suspend+resume-callbacks!_0 s-cb_0 r-cb_0 t36_0)))))
 (define thread-pop-suspend+resume-callbacks!
   (lambda ()
     (let ((t_0 (current-thread/in-racket)))
@@ -7770,7 +7808,7 @@
    #f
    '(2 . 2)))
 (define effect_2478 (finish_2360 struct:suspend-resume-evt))
-(define suspend-resume-evt33.1
+(define suspend-resume-evt39.1
   (|#%name|
    suspend-resume-evt
    (record-constructor
@@ -7861,7 +7899,7 @@
    #f
    '(0 . 0)))
 (define effect_2442 (finish_2344 struct:suspend-evt))
-(define suspend-evt34.1
+(define suspend-evt40.1
   (|#%name|
    suspend-evt
    (record-constructor
@@ -7897,7 +7935,7 @@
    #f
    '(0 . 0)))
 (define effect_2874 (finish_2494 struct:resume-evt))
-(define resume-evt35.1
+(define resume-evt41.1
   (|#%name|
    resume-evt
    (record-constructor
@@ -7933,7 +7971,7 @@
    #f
    '(1 . 1)))
 (define effect_3021 (finish_2484 struct:suspend-semaphore))
-(define suspend-semaphore36.1
+(define suspend-semaphore42.1
   (|#%name|
    suspend-semaphore
    (record-constructor
@@ -7959,14 +7997,14 @@
        (start-atomic)
        (begin0
          (if (is-thread-dead? t_0)
-           (resume-evt35.1 the-never-evt #f)
+           (resume-evt41.1 the-never-evt #f)
            (if (thread-suspended? t_0)
              (let ((or-part_0 (thread-resumed-evt t_0)))
                (if or-part_0
                  or-part_0
-                 (let ((r_0 (resume-evt35.1 (1/make-semaphore) #f)))
+                 (let ((r_0 (resume-evt41.1 (1/make-semaphore) #f)))
                    (begin (set-thread-resumed-evt! t_0 r_0) r_0))))
-             (resume-evt35.1 the-always-evt t_0)))
+             (resume-evt41.1 the-always-evt t_0)))
          (end-atomic))))))
 (define 1/thread-suspend-evt
   (|#%name|
@@ -7979,9 +8017,9 @@
        (start-atomic)
        (begin0
          (if (is-thread-dead? t_0)
-           (suspend-evt34.1 the-never-evt #f)
+           (suspend-evt40.1 the-never-evt #f)
            (if (thread-suspended? t_0)
-             (suspend-evt34.1 the-always-evt t_0)
+             (suspend-evt40.1 the-always-evt t_0)
              (let ((or-part_0 (thread-suspended-evt t_0)))
                (if or-part_0
                  or-part_0
@@ -7989,7 +8027,7 @@
                         (if (thread-suspend-to-kill? t_0)
                           (let ((refs_0 (thread-custodian-references t_0)))
                             (let ((sema_0
-                                   (suspend-semaphore36.1 #f #f 0 refs_0)))
+                                   (suspend-semaphore42.1 #f #f 0 refs_0)))
                               (begin
                                 (lock-custodians)
                                 (letrec*
@@ -8015,7 +8053,7 @@
                                 sema_0)))
                           (1/make-semaphore))))
                    (let ((s_0
-                          (suspend-evt34.1
+                          (suspend-evt40.1
                            sema_0
                            (if (thread-suspend-to-kill? t_0) t_0 #f))))
                      (begin (set-thread-suspended-evt! t_0 s_0) s_0)))))))
@@ -8039,15 +8077,15 @@
   (let ((sleep_0
          (|#%name|
           sleep
-          (lambda (secs37_0)
+          (lambda (secs43_0)
             (begin
-              (if (if (real? secs37_0) (>= secs37_0 0) #f)
+              (if (if (real? secs43_0) (>= secs43_0 0) #f)
                 (void)
-                (raise-argument-error 'sleep "(>=/c 0)" secs37_0))
-              (if (if (zero? secs37_0) (not-atomic-mode?) #f)
+                (raise-argument-error 'sleep "(>=/c 0)" secs43_0))
+              (if (if (zero? secs43_0) (not-atomic-mode?) #f)
                 (thread-yield #f)
                 (let ((until-msecs_0
-                       (let ((app_0 (* secs37_0 1000.0)))
+                       (let ((app_0 (* secs43_0 1000.0)))
                          (+ app_0 (current-inexact-monotonic-milliseconds)))))
                   (letrec*
                    ((loop_0
@@ -8055,14 +8093,18 @@
                       loop
                       (lambda ()
                         (|#%app|
-                         (thread-deschedule!
-                          (1/current-thread)
-                          until-msecs_0
-                          (lambda () (lambda () (loop_0)))))))))
+                         (let ((temp89_0 (1/current-thread)))
+                           (let ((temp91_0 (lambda () (lambda () (loop_0)))))
+                             (let ((temp89_1 temp89_0))
+                               (thread-deschedule!.1
+                                void
+                                temp89_1
+                                until-msecs_0
+                                temp91_0)))))))))
                    (loop_0)))))))))
     (|#%name|
      sleep
-     (case-lambda (() (sleep_0 0)) ((secs37_0) (sleep_0 secs37_0))))))
+     (case-lambda (() (sleep_0 0)) ((secs43_0) (sleep_0 secs43_0))))))
 (define cell.2$1 (unsafe-make-place-local hash2610))
 (define thread-poll-done!
   (lambda (t_0)
@@ -8183,30 +8225,30 @@
   (let ((break-thread_0
          (|#%name|
           break-thread
-          (lambda (t39_0 kind38_0)
+          (lambda (t45_0 kind44_0)
             (begin
-              (if (1/thread? t39_0)
+              (if (1/thread? t45_0)
                 (void)
-                (raise-argument-error 'break-thread "thread?" t39_0))
-              (if (let ((or-part_0 (not kind38_0)))
+                (raise-argument-error 'break-thread "thread?" t45_0))
+              (if (let ((or-part_0 (not kind44_0)))
                     (if or-part_0
                       or-part_0
-                      (let ((or-part_1 (eq? kind38_0 'hang-up)))
-                        (if or-part_1 or-part_1 (eq? kind38_0 'terminate)))))
+                      (let ((or-part_1 (eq? kind44_0 'hang-up)))
+                        (if or-part_1 or-part_1 (eq? kind44_0 'terminate)))))
                 (void)
                 (raise-argument-error
                  'break-thread
                  "(or/c #f 'hang-up 'terminate)"
-                 kind38_0))
+                 kind44_0))
               (do-break-thread
-               t39_0
-               (if kind38_0 kind38_0 'break)
+               t45_0
+               (if kind44_0 kind44_0 'break)
                (1/current-thread)))))))
     (|#%name|
      break-thread
      (case-lambda
       ((t_0) (break-thread_0 t_0 #f))
-      ((t_0 kind38_0) (break-thread_0 t_0 kind38_0))))))
+      ((t_0 kind44_0) (break-thread_0 t_0 kind44_0))))))
 (define do-break-thread
   (lambda (t_0 kind_0 check-t_0)
     (begin
@@ -8317,20 +8359,20 @@
   (let ((thread-send_0
          (|#%name|
           thread-send
-          (lambda (thd41_0 v42_0 fail-thunk40_0)
+          (lambda (thd47_0 v48_0 fail-thunk46_0)
             (let ((fail-thunk_0
-                   (if (eq? fail-thunk40_0 unsafe-undefined)
+                   (if (eq? fail-thunk46_0 unsafe-undefined)
                      (|#%name|
                       fail-thunk
                       (lambda ()
                         (raise-arguments-error
                          'thread-send
                          "target thread is not running")))
-                     fail-thunk40_0)))
+                     fail-thunk46_0)))
               (begin
-                (if (1/thread? thd41_0)
+                (if (1/thread? thd47_0)
                   (void)
-                  (raise-argument-error 'thread-send "thread?" thd41_0))
+                  (raise-argument-error 'thread-send "thread?" thd47_0))
                 (if (let ((or-part_0 (not fail-thunk_0)))
                       (if or-part_0
                         or-part_0
@@ -8346,12 +8388,12 @@
                  (begin
                    (start-atomic)
                    (begin0
-                     (if (not (is-thread-dead? thd41_0))
+                     (if (not (is-thread-dead? thd47_0))
                        (begin
-                         (queue-add! (thread-mailbox thd41_0) v42_0)
-                         (let ((wakeup_0 (thread-mailbox-wakeup thd41_0)))
+                         (queue-add! (thread-mailbox thd47_0) v48_0)
+                         (let ((wakeup_0 (thread-mailbox-wakeup thd47_0)))
                            (begin
-                             (set-thread-mailbox-wakeup! thd41_0 void)
+                             (set-thread-mailbox-wakeup! thd47_0 void)
                              (|#%app| wakeup_0)
                              void)))
                        (if fail-thunk_0 fail-thunk_0 (lambda () #f)))
@@ -8360,7 +8402,7 @@
      thread-send
      (case-lambda
       ((thd_0 v_0) (thread-send_0 thd_0 v_0 unsafe-undefined))
-      ((thd_0 v_0 fail-thunk40_0) (thread-send_0 thd_0 v_0 fail-thunk40_0))))))
+      ((thd_0 v_0 fail-thunk46_0) (thread-send_0 thd_0 v_0 fail-thunk46_0))))))
 (define 1/thread-receive
   (|#%name|
    thread-receive
@@ -8376,16 +8418,13 @@
                 (set-thread-mailbox-wakeup!
                  t_0
                  (lambda () (thread-reschedule! t_0)))
-                (let ((do-yield_0
-                       (thread-deschedule!
-                        t_0
-                        #f
-                        (lambda ()
-                          (begin
-                            (set-thread-mailbox-wakeup! t_0 void)
-                            void)))))
-                  (lambda ()
-                    (begin (|#%app| do-yield_0) (1/thread-receive)))))))
+                (let ((temp96_0
+                       (lambda ()
+                         (begin (set-thread-mailbox-wakeup! t_0 void) void))))
+                  (let ((do-yield_0
+                         (thread-deschedule!.1 void t_0 #f temp96_0)))
+                    (lambda ()
+                      (begin (|#%app| do-yield_0) (1/thread-receive))))))))
           (end-atomic)))))))
 (define 1/thread-try-receive
   (|#%name|
@@ -8476,7 +8515,7 @@
    #f
    '(0 . 0)))
 (define effect_2506 (finish_2796 struct:thread-receiver-evt))
-(define thread-receiver-evt43.1
+(define thread-receiver-evt49.1
   (|#%name|
    thread-receiver-evt
    (record-constructor
@@ -8494,7 +8533,7 @@
           (thread-receiver-evt?_2591 (impersonator-val v))
           #f))))))
 (define 1/thread-receive-evt
-  (|#%name| thread-receive-evt (lambda () (thread-receiver-evt43.1))))
+  (|#%name| thread-receive-evt (lambda () (thread-receiver-evt49.1))))
 (define future->thread (lambda (f_0) #f))
 (define future-swapping-out?$1
   (|#%name| future-swapping-out? (lambda (f_0) #f)))
@@ -10680,6 +10719,7 @@
                               (values))))))
                        (for-loop_0 lst_0)))
                     (void)))
+                (set-syncer-interrupt! sr_0 #f)
                 (loop_0 (syncer-next sr_0)))
               (void))))))
        (loop_0 (syncing-syncers s_0)))
@@ -10840,26 +10880,29 @@
                             (if (thread-descheduled? t_0)
                               (thread-reschedule! t_0)
                               (void)))))
-                       (thread-deschedule!
-                        t_0
-                        timeout-at_0
-                        (lambda ()
-                          (begin
-                            (set-syncing-wakeup! s_0 void)
-                            (if (syncing-selected s_0)
-                              (void)
-                              (syncing-interrupt! s_0))
-                            (lambda ()
-                              (|#%app|
-                               (begin
-                                 (start-atomic)
-                                 (begin0
-                                   (begin
-                                     (if (syncing-selected s_0)
-                                       (void)
-                                       (syncing-retry! s_0))
-                                     (retry_0))
-                                   (end-atomic/no-barrier-exit))))))))))))))))
+                       (let ((temp88_0
+                              (lambda ()
+                                (begin
+                                  (set-syncing-wakeup! s_0 void)
+                                  (if (syncing-selected s_0)
+                                    (void)
+                                    (syncing-interrupt! s_0))
+                                  (lambda ()
+                                    (|#%app|
+                                     (begin
+                                       (start-atomic)
+                                       (begin0
+                                         (begin
+                                           (if (syncing-selected s_0)
+                                             (void)
+                                             (syncing-retry! s_0))
+                                           (retry_0))
+                                         (end-atomic/no-barrier-exit)))))))))
+                         (thread-deschedule!.1
+                          void
+                          t_0
+                          timeout-at_0
+                          temp88_0))))))))))
           (retry_0))
          (end-atomic/no-barrier-exit))))))
 (define finish_2891
@@ -11023,9 +11066,9 @@
                (replacing-evt34.1
                 (lambda ()
                   (let ((s_0
-                         (let ((temp89_0
+                         (let ((temp92_0
                                 (evts->syncers 'replace-evt (list evt_0))))
-                           (make-syncing.1 #f temp89_0))))
+                           (make-syncing.1 #f temp92_0))))
                     (values
                      #f
                      (control-state-evt9.1
@@ -11037,11 +11080,11 @@
              orig-evt_0)))))))
 (define poll-nested-sync
   (lambda (ns_0 just-poll?_0 fast-only?_0 sched-info_0)
-    (let ((temp90_0 (nested-sync-evt-s ns_0)))
-      (let ((temp91_0
+    (let ((temp93_0 (nested-sync-evt-s ns_0)))
+      (let ((temp94_0
              (lambda (sched-info_1 polled-all?_0 no-wrappers?_0)
                (values polled-all?_0 ns_0))))
-        (let ((temp92_0
+        (let ((temp95_0
                (lambda (thunk_0)
                  (let ((next_0 (nested-sync-evt-next ns_0)))
                    (let ((orig-evt_0 (nested-sync-evt-orig-evt ns_0)))
@@ -11060,16 +11103,16 @@
                        'reset
                        void
                        'reset)))))))
-          (let ((temp91_1 temp91_0) (temp90_1 temp90_0))
+          (let ((temp94_1 temp94_0) (temp93_1 temp93_0))
             (sync-poll.1
              #f
              #f
-             temp91_1
+             temp94_1
              fast-only?_0
              just-poll?_0
              sched-info_0
-             temp92_0
-             temp90_1)))))))
+             temp95_0
+             temp93_1)))))))
 (define 1/current-evt-pseudo-random-generator
   (make-parameter
    (make-pseudo-random-generator)
@@ -12553,9 +12596,12 @@
             (if (eq? s_0 'aborted)
               (begin (lock-release (future*-lock f_0)) #f)
               (begin
-                (lock-release (future*-lock f_0))
                 (|#%app|
-                 (thread-deschedule! (current-thread/in-racket) #f 'future))
+                 (let ((temp88_0
+                        (lambda () (lock-release (future*-lock f_0)))))
+                   (let ((temp89_0 (current-thread/in-racket)))
+                     (let ((temp88_1 temp88_0))
+                       (thread-deschedule!.1 temp88_1 temp89_0 #f 'future)))))
                 (touch-blocked f_0)))))))))
 (define dependent-on-future
   (lambda (f_0)
@@ -12594,14 +12640,14 @@
              authentic
              break-enabled-key
              parallel-break-disabled-cell
-             (let ((temp90_0
+             (let ((temp94_0
                     (lambda ()
                       (begin
                         (1/current-future #f)
                         (unsafe-abort-current-continuation/no-wind
                          future-start-prompt-tag
                          (void))))))
-               (future-suspend.1 temp90_0 #t #f))))
+               (future-suspend.1 temp94_0 #t #f))))
           (void)))
       (void))))
 (define future-suspend.1
@@ -12643,24 +12689,24 @@
                   (if reschedule?12_0 (schedule-future!.1 #f #f me-f_0) (void))
                   (lock-release (future*-lock me-f_0))
                   (if touching-f16_0
-                    (let ((temp93_0 (future*-id me-f_0)))
-                      (let ((temp94_0 (future*-id touching-f16_0)))
-                        (let ((temp95_0
+                    (let ((temp97_0 (future*-id me-f_0)))
+                      (let ((temp98_0 (future*-id touching-f16_0)))
+                        (let ((temp99_0
                                (if timestamp_0
                                  timestamp_0
                                  (current-inexact-milliseconds))))
-                          (let ((temp94_1 temp94_0) (temp93_1 temp93_0))
+                          (let ((temp98_1 temp98_0) (temp97_1 temp97_0))
                             (log-future.1
-                             temp94_1
+                             temp98_1
                              #f
                              #f
-                             temp95_0
+                             temp99_0
                              'touch
-                             temp93_1)))))
+                             temp97_1)))))
                     (void))
                   (if timestamp_0
-                    (let ((temp97_0 (future*-id me-f_0)))
-                      (log-future.1 #f #f #f timestamp_0 'suspend temp97_0))
+                    (let ((temp101_0 (future*-id me-f_0)))
+                      (log-future.1 #f #f #f timestamp_0 'suspend temp101_0))
                     (void))
                   (if reschedule13_0
                     (|#%app| reschedule13_0)
@@ -13242,9 +13288,9 @@
                                                       (future-stop? f_0)))
                                                  (begin
                                                    (set-future*-state! f_0 #f)
-                                                   (let ((temp114_0
+                                                   (let ((temp118_0
                                                           (not stop?_0)))
-                                                     (let ((temp115_0
+                                                     (let ((temp119_0
                                                             (lambda ()
                                                               (begin
                                                                 (|#%app|
@@ -13254,8 +13300,8 @@
                                                                  future-scheduler-prompt-tag
                                                                  (void))))))
                                                        (future-suspend.1
-                                                        temp115_0
-                                                        temp114_0
+                                                        temp119_0
+                                                        temp118_0
                                                         #f)))
                                                    (void)))))
                                            (void))))))
@@ -13272,8 +13318,8 @@
                               (void))
                             (|#%app| done_0 (void))))))))))
                 (loop_0 e_0))))
-            (let ((temp112_0 (future*-id f_0)))
-              (log-future.1 #f #f #f unsafe-undefined 'end-work temp112_0))
+            (let ((temp116_0 (future*-id f_0)))
+              (log-future.1 #f #f #f unsafe-undefined 'end-work temp116_0))
             (1/current-future 'worker)
             (set-box! (worker-current-future-box w_0) #f)
             (if (scheduler-round-robin s_0)

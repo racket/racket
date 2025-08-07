@@ -629,7 +629,8 @@
 ;; was previously called, and neither is called if the thread is
 ;; "internal"-resumed normally instead of by a break signal of a
 ;; `thread-resume`.
-(define (thread-deschedule! t timeout-at interrupt-callback)
+(define (thread-deschedule! t timeout-at interrupt-callback
+                            #:last-step [last-step void])
   (define retry-callback #f)
   (atomically/no-barrier-exit
    (set-thread-interrupt-callback! t (if (eq? interrupt-callback 'future)
@@ -639,6 +640,7 @@
                                            ;; then remember that we need a retry
                                            (set! retry-callback (interrupt-callback)))))
    (define finish (do-thread-deschedule! t timeout-at))
+   (last-step)
    ;; It's ok if the thread gets interrupted
    ;; outside the atomic region, because we'd
    ;; swap it out anyway

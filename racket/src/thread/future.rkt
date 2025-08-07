@@ -550,9 +550,12 @@
      #f]
     [else
      ;; the future is not blocked; suspend and get resumed if/when
-     ;; needed again
-     (lock-release (future*-lock f))
-     ((thread-deschedule! (current-thread/in-racket) #f 'future))
+     ;; needed again; make sure we deschedule while still in atomic
+     ;; mode (via the future locks' uninterruptible mode), so that
+     ;; the thread is definitely descheduled and can be reshceduled by
+     ;; the future via `wakeup-racket-thread`
+     ((thread-deschedule! #:last-step (lambda () (lock-release (future*-lock f)))
+                          (current-thread/in-racket) #f 'future))
      ;; only reason we should get rescheduled is `wakeup-racket-thread`
      ;; or (if that one is skipped by a stop request) `future-external-resume`
      (touch-blocked f)]))
