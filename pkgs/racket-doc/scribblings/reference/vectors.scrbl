@@ -52,11 +52,11 @@ This function takes time proportional to @racket[size].
 A common mistake is using @racket[make-vector] to create nested vectors.
 The fact that @racket[v] is shared for all elements means that @racket[(make-vector 3 (make-vector 4))]
 would not be a good way of representing a mutable 3x4 matrix, for example, since just one mutable vector
-would be shared three times. Using `for/vector` as follows more likely produces the intended result, since
-it evaluates `(make-vector 4)` separately for each iteration:
+would be shared three times. Using @racket[for/vector] as follows more likely produces the intended result, since
+it evaluates @racket[(make-vector 4)] separately for each iteration:
 
 @examples[
-(for/vector ([i (in-range 3))])
+(for/vector ([i (in-range 3)])
   (make-vector 4))
 ]
 }
