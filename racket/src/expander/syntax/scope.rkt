@@ -345,7 +345,7 @@
 
 ;; The intern table used for interned scopes. A lock is needed for
 ;; updates to enable `hash-keys` and `in-hash-values. Furthermore,
-;; locked access to the table must be uninterruptable so that the
+;; locked access to the table must be uninterruptible so that the
 ;; table is not left locked if the expansion thread is killed.
 (define-place-local interned-scopes-table (make-ephemeron-hasheq))
 (define-place-local interned-scopes-table-lock (make-uninterruptible-lock))

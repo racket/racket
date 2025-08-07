@@ -16,7 +16,7 @@
          port-lock-just-became-atomic?
          port-lock-init-atomic-mode)
 
-;; A port lock implies uninterruptable mode, but not necessarily
+;; A port lock implies uninterruptible mode, but not necessarily
 ;; atomic mode --- and an upgrade to atomic mode is not allowed. Also,
 ;; beware that a port lock is not reentrant. Since port locks have no
 ;; order, only one port lock can be taken at a time. It's fine to take

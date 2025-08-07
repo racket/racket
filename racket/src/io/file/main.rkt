@@ -154,7 +154,7 @@
                (rktio_free fnp)
                (cond
                  [(= len 128)
-                  ;; go out of uninterruptable and back to give another
+                  ;; go out of uninterruptible and back to give another
                   ;; thread a chance to run
                   (end-uninterruptible)
                   (start-uninterruptible)

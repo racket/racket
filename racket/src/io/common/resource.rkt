@@ -4,14 +4,14 @@
 
 (provide call-with-resource)
 
-;; In uninterruptable mode
+;; In uninterruptible mode
 ;;
 ;; The `destroy` function is called in uninterruptible mode only if `handle`
 ;; hasn't returned by the time of an escape or thread kill, and only if
 ;; the resource `r` is not a rktio error or a boxed rktio error. In the case
 ;; of a thread kill, `destroy` is called in atomic mode. So,
 ;; at the point where `r` is destoyed by `handle`, `handle` must
-;; return still in uninterruptable mode to ensure that `destroy` is not
+;; return still in uninterruptible mode to ensure that `destroy` is not
 ;; triggered.
 ;;
 (define (call-with-resource r destroy handle)

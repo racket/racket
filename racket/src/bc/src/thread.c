@@ -676,7 +676,7 @@ scheme_init_unsafe_thread (Scheme_Startup_Env *env)
                                                       0, 0),
                              env);
 
-  /* Trying to acquire an uninterruptable lock similarly blocks: it's the same as
+  /* Trying to acquire an uninterruptible lock similarly blocks: it's the same as
      starting and ending atomic mode --- so consistent, though useless. */
   ADD_PRIM_W_ARITY("unsafe-make-uninterruptible-lock", unsafe_make_unint_lock, 0, 0, env);
   ADD_PRIM_W_ARITY("unsafe-uninterruptible-lock-acquire", unsafe_start_atomic, 1, 1, env);

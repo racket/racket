@@ -12,7 +12,7 @@
          poll-address-finalizations
          address-init!)
 
-;; in uninterruptable mode and *not* rktio mode
+;; in uninterruptible mode and *not* rktio mode
 (define (call-with-resolved-address hostname port-no proc
                                     #:who [who #f] ; not #f => report errors
                                     #:which [which ""] ; for error reporting, including trailing space

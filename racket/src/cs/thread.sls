@@ -66,7 +66,7 @@
         [(_ id (lambda () expr ...))
          (#%memq (syntax->datum #'id) '(start-atomic end-atomic end-atomic/no-barrier-exit
                                                      future-barrier future-barrier-exit
-                                                     start-uninterruptable end-uninterruptable
+                                                     start-uninterruptible end-uninterruptible
                                                      in-atomic-mode? not-atomic-mode?))
          #'(begin
              (define proc (let ([id (lambda () expr ...)]) id))

@@ -106,9 +106,9 @@
 ;; rktio lock order:
 ;;
 ;;    - atomic/uninterruptible mode (reentrant)
-;;    - port locks (not reentrant, implies uninterruptable mode)
-;;    - rktio lock (not reentrant, implies uninterruptable mode)
-;;    - rktio-sleep-relevant lock (not reentrant, implies uninterruptable mode)
+;;    - port locks (not reentrant, implies uninterruptible mode)
+;;    - rktio lock (not reentrant, implies uninterruptible mode)
+;;    - rktio-sleep-relevant lock (not reentrant, implies uninterruptible mode)
 ;;    - custodian lock
 ;;
 ;; The rktio lock needs to be used for almost any rktio operation,

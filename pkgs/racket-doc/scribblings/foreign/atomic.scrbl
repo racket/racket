@@ -168,7 +168,7 @@ and requires synchronization in a parallel thread, it cannot be used
 in uninterruptible mode in a future or parallel thread.
 
 @history[#:added "8.17.0.7"
-         #:changed "8.18.0.2" @elem{Constrain the use of uninterruptable mode in
+         #:changed "8.18.0.2" @elem{Constrain the use of uninterruptible mode in
                                     futures and parallel threads.}]}
 
 
@@ -191,14 +191,14 @@ An @deftech{uninterruptible lock} provides low-level synchronization
 that cooperates with @tech{uninterruptible mode} across parallel
 threads and futures. In particular, since a hash table or semaphore
 can be used in uninterruptible mode but non-concurrently, an
-uninterruptable lock can be used to guard access to the hash table or
+uninterruptible lock can be used to guard access to the hash table or
 semaphore.
 
-An uninterruptable lock does not cooperate with coroutine thread
+An uninterruptible lock does not cooperate with coroutine thread
 scheduling. The @racket[uninterruptible-lock-acquire] function enters
-uninterruptable mode immediately, before taking the lock or even
+uninterruptible mode immediately, before taking the lock or even
 waiting for it, and @racket[uninterruptible-lock-release] exits
-uninterruptable mode only after releasing the lock. An uninterruptable
+uninterruptible mode only after releasing the lock. An uninterruptible
 lock is therefore useful only to guard predictably short actions
 that are reasonably considered atomic from the perspective of Racket
 threads.

@@ -1,8 +1,8 @@
 #lang racket/base
 (require ffi/unsafe/atomic)
 
-;; make sure an `equal?`-based hash table can be used in uninterruptable mode,
-;; as long as it is use *only* in uninterruptable mode
+;; make sure an `equal?`-based hash table can be used in uninterruptible mode,
+;; as long as it is use *only* in uninterruptible mode
 
 (for ([i (in-range 10)])
   (define ht (make-hash))
