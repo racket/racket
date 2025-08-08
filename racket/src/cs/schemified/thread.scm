@@ -603,6 +603,42 @@
                      (loop_0 r1_1 r2_0))))))))))
       (loop_0 l1_0 l2_0)))
     ((f_0 l_0 . args_0) (gen-for-each f_0 (cons l_0 args_0))))))
+(define andmap_2814
+  (|#%name|
+   andmap
+   (case-lambda
+    ((f_0 l_0)
+     (if (null? l_0)
+       #t
+       (letrec*
+        ((loop_0
+          (|#%name|
+           loop
+           (lambda (l_1)
+             (if (null? (cdr l_1))
+               (|#%app| f_0 (car l_1))
+               (let ((r_0 (cdr l_1)))
+                 (if (|#%app| f_0 (car l_1)) (loop_0 r_0) #f)))))))
+        (loop_0 l_0))))
+    ((f_0 l1_0 l2_0)
+     (if (null? l1_0)
+       #t
+       (letrec*
+        ((loop_0
+          (|#%name|
+           loop
+           (lambda (l1_1 l2_1)
+             (if (null? (cdr l1_1))
+               (let ((app_0 (car l1_1))) (|#%app| f_0 app_0 (car l2_1)))
+               (let ((r1_0 (cdr l1_1)))
+                 (let ((r2_0 (cdr l2_1)))
+                   (let ((r1_1 r1_0))
+                     (if (let ((app_0 (car l1_1)))
+                           (|#%app| f_0 app_0 (car l2_1)))
+                       (loop_0 r1_1 r2_0)
+                       #f)))))))))
+        (loop_0 l1_0 l2_0))))
+    ((f_0 l_0 . args_0) (gen-andmap f_0 (cons l_0 args_0))))))
 (define check-args
   (lambda (who_0 f_0 ls_0)
     (begin
@@ -770,6 +806,24 @@
                 (begin
                   (apply f_0 (map_2353 car ls_1))
                   (loop_0 next-ls_0))))))))
+       (loop_0 ls_0)))))
+(define gen-andmap
+  (lambda (f_0 ls_0)
+    (begin
+      #t
+      (letrec*
+       ((loop_0
+         (|#%name|
+          loop
+          (lambda (ls_1)
+            (if (null? (car ls_1))
+              #t
+              (if (null? (cdar ls_1))
+                (apply f_0 (map_2353 car ls_1))
+                (let ((next-ls_0 (map_2353 cdr ls_1)))
+                  (if (apply f_0 (map_2353 car ls_1))
+                    (loop_0 next-ls_0)
+                    #f))))))))
        (loop_0 ls_0)))))
 (define -random
   (|#%name|
@@ -1287,6 +1341,11 @@
   (hash-ref (primitive-table '|#%engine|) 'call-as-asynchronous-callback #f))
 (define host:post-as-asynchronous-callback
   (hash-ref (primitive-table '|#%engine|) 'post-as-asynchronous-callback #f))
+(define host:post-as-asynchronous-scheduler-callback
+  (hash-ref
+   (primitive-table '|#%engine|)
+   'post-as-asynchronous-scheduler-callback
+   #f))
 (define continuation-current-primitive
   (hash-ref (primitive-table '|#%engine|) 'continuation-current-primitive #f))
 (define host:prop:unsafe-authentic-override
@@ -12741,7 +12800,7 @@
                 (begin
                   (|#%app| set-engine-thread-cell-state! #f)
                   (|#%app|
-                   host:post-as-asynchronous-callback
+                   host:post-as-asynchronous-scheduler-callback
                    (lambda ()
                      (if (thread-descheduled? th_0)
                        (if (eq? 'future (thread-interrupt-callback th_0))
@@ -13442,7 +13501,11 @@
               (if (pair? lst_0)
                 (let ((callback_0 (unsafe-car lst_0)))
                   (let ((rest_0 (unsafe-cdr lst_0)))
-                    (begin (|#%app| callback_0) (for-loop_0 rest_0))))
+                    (begin
+                      (if (box? callback_0)
+                        (|#%app| (unbox callback_0))
+                        (|#%app| callback_0))
+                      (for-loop_0 rest_0))))
                 (values))))))
          (for-loop_0 callbacks_0))
         (void)))))
@@ -13598,23 +13661,12 @@
                                      (|#%name|
                                       run-callbacks-in-new-thread
                                       (lambda (callbacks_1)
-                                        (begin
-                                          (let ((temp4_0 (lambda () (void))))
-                                            (do-make-thread.1
-                                             #t
-                                             unsafe-undefined
-                                             #f
-                                             #f
-                                             #f
-                                             unsafe-undefined
-                                             #f
-                                             #t
-                                             #f
-                                             'callbacks
-                                             temp4_0))
+                                        (let ((remaining-callbacks_0
+                                               (make-thread-or-run-callbacks
+                                                callbacks_1)))
                                           (poll-and-select-thread!
                                            TICKS
-                                           callbacks_1))))))
+                                           remaining-callbacks_0))))))
                                 (if (all-threads-poll-done?)
                                   (if (not (null? callbacks_0))
                                     (run-callbacks-in-new-thread_0 callbacks_0)
@@ -13765,20 +13817,8 @@
 (define maybe-done
   (lambda (callbacks_0)
     (if (pair? callbacks_0)
-      (begin
-        (do-make-thread.1
-         #f
-         unsafe-undefined
-         #f
-         #f
-         #f
-         unsafe-undefined
-         #f
-         #t
-         #f
-         'scheduler-make-thread
-         void)
-        (poll-and-select-thread! 0 callbacks_0))
+      (let ((remaining-callbacks_0 (make-thread-or-run-callbacks callbacks_0)))
+        (poll-and-select-thread! 0 remaining-callbacks_0))
       (if (if (not (sandman-any-sleepers?)) (not (any-idle-waiters?)) #f)
         (if (let ((or-part_0
                    (1/thread-running? (unsafe-place-local-ref cell.1$1))))
@@ -13843,11 +13883,47 @@
             (if (pair? lst_0)
               (let ((callback_0 (unsafe-car lst_0)))
                 (let ((rest_0 (unsafe-cdr lst_0)))
-                  (begin (|#%app| callback_0) (for-loop_0 rest_0))))
+                  (begin
+                    (if (box? callback_0)
+                      (|#%app| (unbox callback_0))
+                      (|#%app| callback_0))
+                    (for-loop_0 rest_0))))
               (values))))))
        (for-loop_0 callbacks_0))
       (void)
       (end-atomic/no-barrier-exit))))
+(define make-thread-or-run-callbacks
+  (lambda (callbacks_0)
+    (if (andmap_2814 box? callbacks_0)
+      (begin
+        (letrec*
+         ((for-loop_0
+           (|#%name|
+            for-loop
+            (lambda (lst_0)
+              (if (pair? lst_0)
+                (let ((callback_0 (unsafe-car lst_0)))
+                  (let ((rest_0 (unsafe-cdr lst_0)))
+                    (begin (|#%app| (unbox callback_0)) (for-loop_0 rest_0))))
+                (values))))))
+         (for-loop_0 callbacks_0))
+        (void)
+        null)
+      (begin
+        (let ((temp4_0 (lambda () (void))))
+          (do-make-thread.1
+           #t
+           unsafe-undefined
+           #f
+           #f
+           #f
+           unsafe-undefined
+           #f
+           #t
+           #f
+           'callbacks
+           temp4_0))
+        callbacks_0))))
 (define all-threads-poll-done?
   (lambda ()
     (let ((app_0 (hash-count (unsafe-place-local-ref cell.2$1))))

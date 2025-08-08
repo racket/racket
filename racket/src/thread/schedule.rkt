@@ -81,12 +81,8 @@
       (force-exit 0)))
   (flush-future-log)
   (define (run-callbacks-in-new-thread callbacks)
-    ;; Need to run atomic callbacks in some thread, so make one
-    (do-make-thread 'callbacks
-                    (lambda () (void))
-                    #:custodian #f
-                    #:at-root? #t)
-    (poll-and-select-thread! TICKS callbacks))
+    (define remaining-callbacks (make-thread-or-run-callbacks callbacks))
+    (poll-and-select-thread! TICKS remaining-callbacks))
   (cond
     [(all-threads-poll-done?)
      ;; May need to sleep
@@ -215,12 +211,8 @@
 (define (maybe-done callbacks)
   (cond
     [(pair? callbacks)
-     ;; We have callbacks to run and no thread willing
-     ;; to run them. Make a new thread.
-     (do-make-thread 'scheduler-make-thread
-                     void
-                     #:custodian #f)
-     (poll-and-select-thread! 0 callbacks)]
+     (define remaining-callbacks (make-thread-or-run-callbacks callbacks))
+     (poll-and-select-thread! 0 remaining-callbacks)]
     [(and (not (sandman-any-sleepers?))
           (not (any-idle-waiters?)))
      ;; all threads done or blocked
@@ -290,8 +282,25 @@
 (define (run-callbacks callbacks)
   (start-atomic)
   (for ([callback (in-list callbacks)])
-    (callback))
+    (if (box? callback)
+        ((unbox callback))
+        (callback)))
   (end-atomic/no-barrier-exit))
+
+(define (make-thread-or-run-callbacks callbacks)
+  (cond
+    [(andmap box? callbacks)
+     ;; All are scheduler callbacks that can run directly
+     (for ([callback (in-list callbacks)])
+       ((unbox callback)))
+     null]
+    [else
+     ;; Need to run atomic callbacks in some thread, so make one
+     (do-make-thread 'callbacks
+                     (lambda () (void))
+                     #:custodian #f
+                     #:at-root? #t)
+     callbacks]))
 
 ;; ----------------------------------------
 

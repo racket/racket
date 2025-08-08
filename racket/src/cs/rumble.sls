@@ -823,6 +823,7 @@
           continuation-current-primitive
           call-as-asynchronous-callback
           post-as-asynchronous-callback
+          post-as-asynchronous-scheduler-callback
           ensure-virtual-registers
           current-lock-status
           meta-if-foreign-checking

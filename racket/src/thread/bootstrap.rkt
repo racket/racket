@@ -311,6 +311,7 @@
                   'call-with-current-continuation-roots (lambda (proc) (proc null))
                   'call-as-asynchronous-callback (lambda (thunk) (thunk))
                   'post-as-asynchronous-callback (lambda (thunk) (thunk))
+                  'post-as-asynchronous-scheduler-callback (lambda (thunk) (thunk))
                   'continuation-current-primitive (lambda (k excls incls) #f)
                   'prop:unsafe-authentic-override prop:unsafe-authentic-override
                   'get-system-stats (lambda () (values 0))

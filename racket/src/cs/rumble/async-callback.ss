@@ -59,6 +59,14 @@
           (scheduler-end-atomic)))
     result))
 
+(define (post-as-asynchronous-scheduler-callback thunk)
+  (let* ([q (current-async-callback-queue)]
+         [m (async-callback-queue-lock q)])
+    (mutex-acquire m)
+    (set-async-callback-queue-in! q (cons (box thunk) (async-callback-queue-in q)))
+    ((async-callback-queue-wakeup q))
+    (mutex-release m)))
+
 ;; Called with all threads all stopped:
 (define (async-callback-queue-major-gc!)
   (let ([q orig-place-async-callback-queue])
@@ -73,12 +81,12 @@
   (set-async-callback-queue-wakeup! (current-async-callback-queue) (make-async-callback-poll-wakeup)))
 
 ;; Returns callbacks to run in atomic mode. Interrupts must not be disabled
-;; when ths function is called.
+;; when ths function is called. A boxed function was queued by
+;; `post-as-asynchronous-scheduler-callback`, which is intended as a more
+;; lightweight protocol.
 (define (poll-async-callbacks)
   (let ([q (current-async-callback-queue)])
-    (disable-interrupts)
     (mutex-acquire (async-callback-queue-lock q))
-    (enable-interrupts)
     (let ([in (async-callback-queue-in q)]
           [gc? (async-callback-queue-gc? q)])
       (append

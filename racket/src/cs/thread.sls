@@ -26,6 +26,7 @@
                   [current-place-roots rumble:current-place-roots]
                   [call-as-asynchronous-callback rumble:call-as-asynchronous-callback]
                   [post-as-asynchronous-callback rumble:post-as-asynchronous-callback]
+                  [post-as-asynchronous-scheduler-callback rumble:post-as-asynchronous-scheduler-callback]
                   [set-ctl-c-handler! rumble:set-ctl-c-handler!]
                   [set-break-enabled-transition-hook! rumble:set-break-enabled-transition-hook!]
                   [set-reachable-size-increments-callback! rumble:set-reachable-size-increments-callback!]
@@ -251,6 +252,7 @@
         'pthread? rumble:thread?
         'call-as-asynchronous-callback rumble:call-as-asynchronous-callback
         'post-as-asynchronous-callback rumble:post-as-asynchronous-callback
+        'post-as-asynchronous-scheduler-callback rumble:post-as-asynchronous-scheduler-callback
         'continuation-current-primitive rumble:continuation-current-primitive
         'prop:unsafe-authentic-override prop:unsafe-authentic-override
         'get-system-stats get-system-stats

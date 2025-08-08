@@ -109,6 +109,7 @@
 
         [call-as-asynchronous-callback host:call-as-asynchronous-callback]
         [post-as-asynchronous-callback host:post-as-asynchronous-callback]
+        [post-as-asynchronous-scheduler-callback host:post-as-asynchronous-scheduler-callback]
 
         continuation-current-primitive
 

@@ -679,7 +679,7 @@
       (when th
         (assert (in-future-thread?))
         (set-engine-thread-cell-state! #f)
-        (host:post-as-asynchronous-callback
+        (host:post-as-asynchronous-scheduler-callback
          (lambda ()
            ;; in atomic mode and in arbitrary Racket thread selected by scheduler
            (cond
@@ -1165,7 +1165,9 @@
 (define (drain-async-callbacks)
   (define callbacks (host:poll-async-callbacks))
   (for ([callback (in-list callbacks)])
-    (callback)))
+    (if (box? callback)
+        ((unbox callback))
+        (callback))))
 
 ;; ----------------------------------------
 
