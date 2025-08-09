@@ -35,9 +35,7 @@ in @secref["DrRacket-perf"] also apply to futures; notably,
 debugging instrumentation currently defeats futures.
 
 @margin-note{Other functions, such as @racket[thread], support the
-creation of reliably concurrent tasks. However, threads never run truly
-in parallel, even if the hardware and operating system support
-parallelism.}
+creation of reliably concurrent tasks.}
 
 As a starting example, the @racket[any-double?] function below takes a
 list of numbers and determines whether any number in the list has a
@@ -88,7 +86,7 @@ input ports, output ports, and @racket[equal?]-based hash tables,
 where concurrent access is managed either internally or explicitly via
 locks. The remainder of this section works through an example to illustrate
 safety and continuation obstacles, and it also shows how the
-@defterm{futures visualizer} (provided by @racketmodname[future-visualizer #:indirect])
+@deftech{futures visualizer} (provided by @racketmodname[future-visualizer #:indirect])
 can help shed light on those obstacles.
 
 Consider the following core of a Mandelbrot-set computation:
