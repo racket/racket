@@ -4,10 +4,10 @@ If this directory is part of a Racket source code distribution, then
 the distribution may include additional packages. Those extra packages
 will be installed and built with the `make install` step.
 
-If this directory is part of a clone of the Git repository for Racket,
-then the clone's root directory includes a makefile to both build
+If this directory is a checkout of the Git repository for Racket, then
+the checkout's root directory includes a makefile to both build
 minimal Racket and install packages, and you should start there,
-instead of here. See "build.md" in the clone's root directory.
+instead of here. See "build.md" in the checkout's root directory.
 
 ========================================================================
  License and external links
@@ -78,7 +78,7 @@ Quick instructions:
  From this directory (where the `configure` file is), run the
  following commands:
 
-   # see extra commands below when building withing a Git clone
+   # see extra commands below when building within a Git checkout
 
    mkdir build
    cd build
@@ -98,9 +98,9 @@ Quick instructions:
  Some build modes may require GNU Make. See "Dependency details" below
  for more information about dependencies.
 
- When working from a clone of the Racket Git repository, as opposed to
- a source code distribution, and when you do not want to use the
- makefiles in the clone's root directory, then prefix the above
+ When working from a Git checkout of the Racket repository (as opposed
+ to a source code distribution), and when you do not want to use the
+ makefiles in the checkout's root directory, then prefix the above
  commands with
   
    make --directory=../../ pb-fetch
@@ -115,11 +115,12 @@ Detailed instructions:
     remove it (unless you are using an "in-place" build as described
     below).
 
-    When building from a clone of the Racket Git repository, note that
-    "../../build.md" has more information about build options in that
-    mode. If you work from here, though, an extra step is needed to
-    download or update sources in "ChezScheme/boot/pb" (which are
-    already present in a source code distribution):
+    When building from a Git checkout of the Racket repository (as
+    opposed to a source code distribution), note that "../../build.md"
+    has more information about build options in that mode. If you work
+    from here, though, an extra step is needed to download or update
+    sources in "ChezScheme/boot/pb" (which are already present in a
+    source code distribution):
 
        make --directory=../../ pb-fetch
 
@@ -297,10 +298,11 @@ Detailed instructions:
     without `--enable-shared`, you can safely move the install tree,
     because all file references within the installation are relative.
 
- 6. When building from a Git clone, after `make install`, the Racket
-    installation is still more "minimal" than a "Minimal Racket"
-    distribution, because it does not have the "racket-lib" package
-    installed. Consider adding that package with
+ 6. When building from a Git checkout (as opposed to a source code
+    distribution), after `make install`, the Racket installation is
+    still more "minimal" than a "Minimal Racket" distribution, because
+    it does not have the "racket-lib" package installed. Consider
+    adding that package with
 
        raco pkg install -i racket-lib
 
@@ -356,19 +358,21 @@ but note the following:
 
  * If you are building from a source distribution (as opposed to a Git
    repository checkout), then beware that the distribution does not
-   include native libraries that are needed on Mac OS. The install
-   step will fetch missing packages. With a Git repository checkout,
-   `raco pkg install -i racket-lib` will be needed as described in the
-   Unix instructions.
+   include native libraries that are needed on Mac OS; the install
+   step will fetch and install missing Racket packages that supply
+   those libraries. With a Git repository checkout (as opposed to a
+   source code distribution), an extra step is needed as described in
+   the Unix instructions: `raco pkg install -i racket-lib`.
 
  * The Racket build creates a framework, "Racket.framework", which is
    installed into "racket/lib".  This framework is used by the `racket`
    executable that goes into "racket/bin" unless the `--enable-embedfw`
    flag is used.
 
- * The GRacket build creates a GUI-executable variant of the Racket
-   executable. The GRacket build process also downloads (from GitHub)
-   pre-built libraries for Cairo, Pango, etc.
+ * The GRacket part of the build creates a GUI-executable variant of
+   the Racket executable. Pre-built libraries for Cairo, Pango, etc.,
+   to support Racket drawing and GUI libraries are installed as Racket
+   packages.
 
  * The `--enable-shared` flag for `configure` must not be used,
    because builds create and use frameworks by default. Furthermore,
@@ -612,7 +616,7 @@ source directory but meant to be used from a build directory. A file
 named "main.zuo" is analogous to "Makefile", where the directory
 containing "main.zuo" is the build directory. The `configure` and
 `winfig.bat` scripts generate a "main.zuo" in a build directory that
-bounces to "build.zuo" in the source directiry. A file named
+bounces to "build.zuo" in the source directory. A file named
 "buildmain.zuo" is even more like "Makefile.in" in the sense that
 "buildmain.zuo" is instantiated in a build directory as "main.zuo".
 
@@ -627,7 +631,7 @@ have in common is updating the Racket version number. The source for
 the Racket version number is shared in "version/racket_version.h".
 
 The version number for the "base" package needs to be updated
-separately. If this directory is part of a clone of the Git repository
+separately. If this directory is in a checkout of the Git repository
 for Racket, then the "base" version is in "../../pkgs/base/info.rkt".
 
 Unfortunately, there's no single source for the version number in both
@@ -715,7 +719,7 @@ Sources shared by both Racket implementations
    If you change the expander, run `zuo` in its directory to generate
    the "startup.inc" file that holds the expander's implementation for
    Racket BC. Also, run `zuo` in "cs" to rebuild expanded libraries
-   for Racket CS. (See "Make vesus Zuo" above for information on
+   for Racket CS. (See "Make versus Zuo" above for information on
    running `zuo`.)
 
  * "rktio" --- portability layer for low-level I/O
@@ -808,9 +812,9 @@ Racket variant
 --enable-crossany
 
  Creates a Racket build, whether CS or BC, that by default compiles to
- a machine- and variant-indendent format. That format is normally used
+ a machine- and variant-independent format. That format is normally used
  as a stepping stone to a machine- and variant-specific format, since
- loading variant-inpendent bytecode can be very slow.
+ loading variant-independent bytecode can be very slow.
 
 --enable-gracket (BC only)
 
@@ -841,10 +845,10 @@ Installation directory structure
   --guibindir=<dir>
 
    Executables for GUI programs for in <dir>, instead of the same
-   dierctory as other executables. This separate directory makes the
+   directory as other executables. This separate directory makes the
    most sense for Mac OS, where GUI executables mean ".app" bundles
    (but launcher scripts for those applications are still written in
-   the non-GUI excutable destination).
+   the non-GUI executable destination).
 
   --sysconfdir=<dir>
 
@@ -867,17 +871,17 @@ Installation directory structure
 
   --collectsdir=<dir>
 
-   Racket's initial linbrary collection sources go in <dir>. If
+   Racket's initial library collection sources go in <dir>. If
    `--enable-sharezo` is used, then compiled forms go here, too.
 
   --pkgsdir=<dir>
 
-   Sources for packages in installtion scope go in <dir>. If
+   Sources for packages in installation scope go in <dir>. If
    `--enable-sharezo` is used, then compiled forms go here, too.
 
   --docdir=<dir>
 
-   Docuemntation goes in <dir>.
+   Documentation goes in <dir>.
 
   --mandir=<dir>
 
@@ -889,7 +893,7 @@ Installation directory structure
 
   --includedir=<dir>
 
-    C header files (for Racket C ABI) go in <di>
+    C header files (for Racket C ABI) go in <dir>.
 
 --enable-origtree
 
@@ -955,7 +959,7 @@ Racket functionality and OS libraries
 --enable-curseslib=<libs>
 
  Use <libs> for linking to curses library, instead of letting
- `configure` automtaically find a suitable curses or ncurses library.
+ `configure` automatically find a suitable curses or ncurses library.
 
 --enable-portable
 
@@ -1015,7 +1019,7 @@ Racket functionality and OS libraries
 
 --enable-generations (BC only)
 
- Enable by default: Support generational garbage colleciton in the 3m
+ Enable by default: Support generational garbage collection in the 3m
  variant.
 
 --enable-backtrace (BC only, expensive debugging mode)
@@ -1129,7 +1133,7 @@ Target configuration and cross compilation
  but also potentially to bootstrap parts of the build instead of
  starting from more primitive layers. Use "auto" as <path> for a cross
  build to automatically generate the host-platform Racket that is
- needed for cross compialtion. See "Cross compilation" above for more
+ needed for cross compilation. See "Cross compilation" above for more
  information.
 
 --enable-scheme=<path> (CS only)
@@ -1159,8 +1163,8 @@ Target configuration and cross compilation
 
 --enable-pb (CS only)
 
- Build for pb (portable byetcode) interpretation instead of
- native-code generatation for Racket programs. A pb variant with
+ Build for pb (portable bytecode) interpretation instead of
+ native-code generation for Racket programs. A pb variant with
  suitable threading, word size, endianness will be inferred, such as
  `tpb46le`. The `--enable-pb` flag might be used in combination with
  `--enable-mach=<mach>`, in which case the `<mach>` helps infer the
@@ -1260,7 +1264,7 @@ C compiler and linker configuration
 
  Use <path> as a sysroot directory (e.g., for Android).
 
---enable-postlink=<cmd> a
+--enable-postlink=<cmd>
 
  Apply <cmd> to executable after linking.
 
@@ -1300,4 +1304,4 @@ C compiler and linker configuration
 --enable-lt=<prog> (BC only)
 
  Use <prog> instead of `libtool`. Use `--disable-lt` to always use a
- vendered `libtool`.
+ vendored `libtool`.

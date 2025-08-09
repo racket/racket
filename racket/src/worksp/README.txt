@@ -82,17 +82,19 @@ Completing the Build
 
 If you are building from a source distribution (as opposed to a Git
 repository checkout), then beware that the distribution does not
-include native libraries that are needed on Windows. The install step
-will fetch missing packages.
+include native libraries that are needed on Windows, but the install
+step will fetch and install missing Racket packages that supply those
+libraries.
 
-With a Git repository checkout, the build scripts for Racket do not
-install support DLLs for encoding conversion, extflonums (in BC), and
-OpenSLL. To install those libraries, finish with
+With a Git repository checkout (as opposed to a source distribution),
+the build scripts for Racket do not install native libraries that
+support encoding conversion, extflonums (in BC), and OpenSSL. To
+install those libraries, finish with
 
-   ..\raco pkg install racket-lib
+   ..\raco pkg install -i racket-lib
 
-Only if you are starting completely from scratch, see also
-"..\..\native-lib\README.txt".
+If you are interested in more information about these native
+libraries, see "..\native-lib\README.txt".
 
 
 ========================================================================
