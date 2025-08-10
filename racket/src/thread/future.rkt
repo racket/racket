@@ -697,8 +697,7 @@
               ;; Racket thread should be on its way back to `touch-blocked` or
               ;; already noticed the reader future; in the former case, it will
               ;; check on the future without needing to be rescheduled
-              (void)]))))
-      (wakeup-this-place))))
+              (void)])))))))
 
 ;; in atomic mode in Racket thread when an unblocking thread is killed or suspended;
 ;; the future can be in any state on entry; it ends up descheduled and not running

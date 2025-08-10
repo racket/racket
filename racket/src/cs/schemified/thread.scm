@@ -12795,27 +12795,25 @@
         (if (parallel*-stop? p_0)
           (void)
           (let ((th_0 (parallel*-thread p_0)))
-            (begin
-              (if th_0
-                (begin
-                  (|#%app| set-engine-thread-cell-state! #f)
-                  (|#%app|
-                   host:post-as-asynchronous-scheduler-callback
-                   (lambda ()
-                     (if (thread-descheduled? th_0)
-                       (if (eq? 'future (thread-interrupt-callback th_0))
-                         (begin
-                           (set-thread-interrupt-callback! th_0 #f)
-                           (if (let ((or-part_0 (is-thread-dead? th_0)))
-                                 (if or-part_0
-                                   or-part_0
-                                   (thread-suspended? th_0)))
-                             (void)
-                             (thread-reschedule! th_0)))
-                         (void))
-                       (void)))))
-                (void))
-              (|#%app| wakeup-this-place))))
+            (if th_0
+              (begin
+                (|#%app| set-engine-thread-cell-state! #f)
+                (|#%app|
+                 host:post-as-asynchronous-scheduler-callback
+                 (lambda ()
+                   (if (thread-descheduled? th_0)
+                     (if (eq? 'future (thread-interrupt-callback th_0))
+                       (begin
+                         (set-thread-interrupt-callback! th_0 #f)
+                         (if (let ((or-part_0 (is-thread-dead? th_0)))
+                               (if or-part_0
+                                 or-part_0
+                                 (thread-suspended? th_0)))
+                           (void)
+                           (thread-reschedule! th_0)))
+                       (void))
+                     (void)))))
+              (void))))
         (void)))))
 (define future-external-stop
   (lambda (f_0)
