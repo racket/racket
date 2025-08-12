@@ -12438,9 +12438,13 @@
                                         (lambda ()
                                           (begin
                                             (future-external-stop me-f_0)
-                                            (thread-pool-departure
-                                             pool_0
-                                             -1)))))
+                                            (if (eq?
+                                                 (future*-state me-f_0)
+                                                 'failed)
+                                              (void)
+                                              (thread-pool-departure
+                                               pool_0
+                                               -1))))))
                                    (set-thread-kill-callbacks!
                                     th_0
                                     (vector null cb_0)))
@@ -13074,9 +13078,12 @@
                        (if (>= capacity_0 0)
                          (void)
                          (begin
+                           (set-future*-state! f28_0 'failed)
+                           (increment-place-parallel-count! -1)
                            (mutex-release (scheduler-mutex s_0))
+                           (end-atomic/no-barrier-exit)
                            (raise-arguments-error
-                            'thread/parallel
+                            'thread
                             "the parallel thread pool has been closed")))
                        (set-parallel-thread-pool-capacity! pool_0 capacity_0)
                        (set-parallel-thread-pool-swimmers!

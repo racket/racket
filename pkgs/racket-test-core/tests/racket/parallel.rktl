@@ -21,6 +21,11 @@
 (err/rt-test (thread 5 #:pool 8) type?)
 (err/rt-test (thread 5 #:pool own #:keep 8) type?)
 
+(let ()
+  (define p (make-parallel-thread-pool))
+  (parallel-thread-pool-close p)
+  (err/rt-test (thread void #:pool p)))
+
 ;; ----------------------------------------
 ;; Thread/Parallel sets
 
