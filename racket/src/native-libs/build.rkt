@@ -114,7 +114,7 @@
 (define-runtime-path cairo-coretext-patch "patches/cairo-coretext.patch")
 
 ;; Fix a problem with blank glyphs triggering Type 3 substitutions:
-(define-runtime-path cairo-emptyglyph.patch "patches/cairo-emptyglyph.patch")
+(define-runtime-path cairo-emptyglyph-patch "patches/cairo-emptyglyph.patch")
 
 ;; Hack to workaround broken Courier New in Mac OS 10.{7.8}:
 (define-runtime-path courier-new-patch "patches/courier-new.patch")
@@ -781,7 +781,8 @@
                         (list courier-new-patch
                               cairo-cg-surface-patch
                               cairo-quartz-advance-patch
-                              cairo-empty-font-subset-patch)
+                              cairo-empty-font-subset-patch
+                              cairo-emptyglyph-patch)
                         (if win?
                             (list cairo-win-pthread-patch)
                             null)))]
