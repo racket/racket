@@ -3609,7 +3609,9 @@ Scheme_Object *scheme_thread_parallel(int argc, Scheme_Object *args[])
         scheme_wrong_contract(who, "(or/c #f 'own parallel-thread-pool?)", 1, argc, args);
     } else {
       if (SCHEME_INT1_VAL(args[1]) == 0)
-        scheme_contract_error(who, "parallel thread pool is closed");
+        scheme_contract_error(who, "parallel thread pool is closed",
+                              "parallel thread pool", 1, args[1],
+                              NULL);
     }
   }
   keep_results = extract_keep_results(who, 2, argc, args);
