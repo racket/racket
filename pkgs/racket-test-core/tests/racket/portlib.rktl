@@ -636,7 +636,6 @@
              (move! 1)
              1)
            (lambda (bstr skip progress-evt)
-             (printf "peek ~s\n" skip)
              (get-byte bstr skip)
              1)
            void
@@ -645,11 +644,10 @@
            (lambda (amt progress done)
              (cond
                [(sync/timeout 0 progress) #f]
-               [(sync/timeout 0 done) #f]
-               [else
-                (printf "commit ~s\n" amt)
+               [(sync/timeout 0 done)
                 (move! amt)
-                #t])))])
+                #t]
+               [else #f])))])
   (test "012345678" sync (read-line-evt p)))
 
 ;; input-port-append tests
