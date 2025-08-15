@@ -203,20 +203,20 @@
      (lambda (stx)
        (syntax-case stx ()
          [(_ mode in ...)
-          (let ([base-mode (extract-mode stx #'mode)])
-            (shift-subs #'(for-mode in ...) base-mode))]))
+          (let ([mode-shift (extract-mode stx #'mode)])
+            (shift-subs #'(for-mode in ...) mode-shift))]))
      (lambda (stx modes)
        (syntax-case stx ()
          [(_ mode out ...)
-          (let ([base-mode (extract-mode stx #'mode)])
+          (let ([base-mode (phase+space+ 0 (extract-mode stx #'mode))])
             (exports-at-mode #'(for-mode out ...) modes base-mode))]))
      (lambda (stx modes)
        (syntax-case stx ()
          [(for-mode mode out ...)
-          (let* ([base-mode (extract-mode stx #'mode)]
+          (let* ([mode-shift (extract-mode stx #'mode)]
                  [modes (if (null? modes)
-                            (list base-mode)
-                            (map (lambda (v) (phase+space+ v base-mode)) modes))])
+                            (list (phase+space+ 0 mode-shift))
+                            (map (lambda (v) (phase+space+ v mode-shift)) modes))])
             (with-syntax ([(out ...) (map (lambda (o)
                                             (pre-expand-export o modes))
                                           (syntax->list #'(out ...)))])
@@ -248,7 +248,8 @@
                   "space must be #f or an identifier"
                   stx
                   mode))
-               (phase+space 0 base-mode)))])
+               ;; a `phase+space-shift?`, not `phase+space?`:
+               (cons 0 base-mode)))])
       (make-for-mode extract-space)))
   
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

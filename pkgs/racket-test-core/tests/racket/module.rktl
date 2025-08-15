@@ -613,6 +613,19 @@
   (provide (for-space #f x))
   (define x "ok"))
 
+;; make sure `for-space #f` works right for `require`, too
+
+(module provide-x-at-phase-0-default-space racket
+  (define x 1)
+  (provide x))
+(module reprovide-x-at-phase-0-space-s racket
+  (require (for-space s 'provide-x-at-phase-0-default-space))
+  (provide (for-space s x)))
+(module require-x-at-phase-0-default-space racket
+  (require (for-space #false 'reprovide-x-at-phase-0-space-s))
+  (void x))
+(dynamic-require ''require-x-at-phase-0-default-space #f)
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Test proper bindings for `#%module-begin'
 
