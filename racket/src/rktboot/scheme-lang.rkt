@@ -132,6 +132,8 @@
                      [sub1 fx1-]
                      [add1 1+]
                      [sub1 1-]
+                     [+ $fxx+]
+                     [- $fxx-]
                      [fxand fxlogand]
                      [fxior fxlogor]
                      [fxior fxlogior]
