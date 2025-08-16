@@ -330,7 +330,6 @@
 (test 'a append '() 'a)
 (test 1 append 1)
 (test '(1 . 2) append '(1) 2)
-(test '(1 . 2) append '(1) 2)
 (err/rt-test (append '(1 2 . 3) 1))
 (err/rt-test (append '(1 2 3) 1 '(4 5 6)))
 
