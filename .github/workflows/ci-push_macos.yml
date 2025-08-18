@@ -25,7 +25,7 @@ jobs:
       RACKET_EXTRA_CONFIGURE_ARGS: ""
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v5
       with:
         fetch-depth: 100
     - name: Setup cify if enabled1
@@ -79,7 +79,7 @@ jobs:
       RACKET_EXTRA_CONFIGURE_ARGS: ""
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v5
       with:
         fetch-depth: 100
     - name: Setup cify if enabled
@@ -134,7 +134,7 @@ jobs:
     needs: build-racketcgc
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v5
       with:
         fetch-depth: 100
     - uses: actions/download-artifact@v4
@@ -180,7 +180,7 @@ jobs:
     runs-on: macos-14
     needs: build-racketcs
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: actions/download-artifact@v4
         with:
           name: racketcs-macos-aarch64_git${{ github.sha }}
@@ -216,7 +216,7 @@ jobs:
     needs: build-racketcgc
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: actions/download-artifact@v4
         with:
           name: racketcgc-macos-${{ matrix.cify }}-aarch64_git${{ github.sha }}
@@ -247,7 +247,7 @@ jobs:
     needs: build-racket3m
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: actions/download-artifact@v4
         with:
           name: racket3m-macos-${{ matrix.cify }}-aarch64_git${{ github.sha }}
@@ -273,7 +273,7 @@ jobs:
     needs: build-racketcs
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: actions/download-artifact@v4
         with:
           name: racketcs-macos-aarch64_git${{ github.sha }}

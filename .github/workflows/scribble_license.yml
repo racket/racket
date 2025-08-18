@@ -21,7 +21,7 @@ jobs:
     runs-on: ubuntu-22.04
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v5
     - uses: Bogdanp/setup-racket@v1.14
       with:
         architecture: 'x64'
@@ -35,7 +35,7 @@ jobs:
     runs-on: ubuntu-22.04
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v5
     - uses: Bogdanp/setup-racket@v1.14
       with:
         architecture: 'x64'
