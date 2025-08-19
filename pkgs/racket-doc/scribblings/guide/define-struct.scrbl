@@ -88,8 +88,7 @@ modified.
 ]
 
 The @racket[_struct-id] that appears after @racket[struct-copy] must
-be a structure type name bound by @racket[struct] (i.e., the
-name that cannot be used directly as an expression). The
+be a structure type name bound by @racket[struct]. The
 @racket[_struct-expr] must produce an instance of the structure type.
 The result is a new instance of the structure type that is like the old
 one, except that the field indicated by each @racket[_field-id] gets
