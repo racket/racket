@@ -21,6 +21,7 @@
 
 (define aarch64-machine-type #x0100000C)
 (define MH_EXECUTE #x2)
+(define MH_DYLIB #x6)
 
 (define (read-ulong p)
   (integer-bytes->integer (read-bytes 4 p) #f (current-big-endian)))
@@ -37,9 +38,9 @@
 (define (write-be-ulong v out)
   (display (integer->integer-bytes v 4 #f #t) out))
 
-(define (check-same a b)
-  (unless (= a b)
-    (error 'check-same "not: ~e ~e" a b)))
+(define (check-member b as)
+  (unless (memv b as)
+    (error 'check-member "not: ~e ~e" b as)))
 
 (define (round-up-page v machine-type)
   (if (eqv? machine-type aarch64-machine-type)
@@ -86,7 +87,7 @@
           (check-exe-id exe-id)
           (define machine-id (read-ulong p))
           (read-ulong p)
-          (check-same MH_EXECUTE (read-ulong p))
+          (check-member (read-ulong p) (list MH_EXECUTE MH_DYLIB))
           (let* ([total-cnt (read-ulong p)]
                  [cmdssz (read-ulong p)]
                  [min-used (round-up-page cmdssz machine-id)]
@@ -254,22 +255,20 @@
                        (set! linkedit-limit-offset (max linkedit-limit-offset (+ offset size))))]
                     [(#x1D)
                      ;; LC_CODE_SIGNATURE
-                     (if (= cnt 1)
-                         (let ([offset (read-ulong p)]
-                               [size (read-ulong p)])
-                           (file-position p (+ offset size))
-                           (if (eof-object? (read-byte p))
-                               (begin
-                                 (unless ((abs (- offset linkedit-limit-offset)) . < . 16)
-                                   (error 'check-header
-                                          "code signature does not line up with end of other linkedit blocks: ~s vs. ~s"
-                                          offset linkedit-limit-offset))
-                                 (set! code-signature-pos pos)
-                                 (set! code-signature-lc-sz sz)
-                                 ;; Claim a larger size to account for padding:
-                                 (set! code-signature-size (- link-edit-len (- linkedit-limit-offset link-edit-offset))))
-                               (log-warning "WARNING: code signature is not at end of file")))
-                         (log-warning "WARNING: code signature is not last load command"))]
+                     (let ([offset (read-ulong p)]
+                           [size (read-ulong p)])
+                       (file-position p (+ offset size))
+                       (if (eof-object? (read-byte p))
+                           (begin
+                             (unless ((abs (- offset linkedit-limit-offset)) . < . 16)
+                               (error 'check-header
+                                      "code signature does not line up with end of other linkedit blocks: ~s vs. ~s"
+                                      offset linkedit-limit-offset))
+                             (set! code-signature-pos pos)
+                             (set! code-signature-lc-sz sz)
+                             ;; Claim a larger size to account for padding:
+                             (set! code-signature-size (- link-edit-len (- linkedit-limit-offset link-edit-offset))))
+                           (error "code signature is not at end of file")))]
                     [(#x2B)
                      ;; LC_DYLIB_CODE_SIGN_DRS
                      (let ([offset (read-ulong p)]
@@ -309,6 +308,13 @@
                   (error 'check-header 
                          "no room for a new section load command (current end is ~a; min used is ~a; need ~a)"
                          end-cmd min-used new-cmd-sz))
+                ;; Shift commands (if any) after removed code-signature command (if any)
+                (when (and code-signature-pos
+                           (> end-cmd (+ code-signature-pos code-signature-lc-sz)))
+                  (file-position p (+ code-signature-pos code-signature-lc-sz))
+                  (let ([s (read-bytes (- end-cmd (+ code-signature-pos code-signature-lc-sz)) p)])
+                    (file-position out code-signature-pos)
+                    (display s out)))
                 ;; Shift commands starting with link-edit command:
                 (unless link-edit-pos (error "LINKEDIT not found"))
                 (file-position p link-edit-pos)
@@ -494,7 +500,7 @@
           (define file-identity (let-values ([(base name dir?) (split-path file)])
                                   (bytes-append (path->bytes name) #"\0")))
           (read-ulong p)
-          (check-same MH_EXECUTE (read-ulong p))
+          (check-member (read-ulong p) (list MH_EXECUTE MH_DYLIB))
           (let* ([total-cnt (read-ulong p)]
                  [cmdssz (read-ulong p)]
                  [min-used (round-up-page cmdssz machine-id)]
@@ -650,7 +656,9 @@
        (close-input-port p)
        (close-output-port out)))))
 
-(define (get/set-dylib-path file rx new-path)
+(define (get/set-dylib-path file rx new-path
+                            #:path-callback [path-callback void]
+                            #:include-self? [include-self? #f])
   (let-values ([(p out) (if new-path
                             (open-input-output-file file #:exists 'update)
                             (values (open-input-file file)
@@ -674,15 +682,15 @@
                   (let ([pos (file-position p)]
                         [cmd (read-ulong p)]
                         [sz (read-ulong p)])
-                    (case cmd
-                      [(#xC)
-                       ;; LC_LOAD_DYLIB
+                    (define (fixup self?)
                        (let ([offset (read-ulong p)])
                          (file-position p (+ pos offset))
                          (let* ([namelen (- sz offset)]
                                 [segname (read-bytes namelen p)]
                                 [segname (car (regexp-match #rx#"^[^\0]*" segname))])
-                           (if (regexp-match rx segname)
+                           (unless self?
+                             (path-callback segname))
+                           (if (and rx (regexp-match rx segname))
                                (let* ([newnamelen (and out
                                                        (mult-of-8 (+ 1 (bytes-length new-path))))]
                                       [delta (if out
@@ -718,10 +726,21 @@
                                  (loop (sub1 cnt) pos delta (cons segname result)))
                                (begin
                                  (file-position p (+ pos sz))
-                                 (loop (sub1 cnt) base delta result)))))]
+                                 (loop (sub1 cnt) base delta result))))))
+                    (define (no-fixup)
+                      (file-position p (+ pos sz))
+                      (loop (sub1 cnt) base delta result))
+                    (case cmd
+                      [(#xC)
+                       ;; LC_LOAD_DYLIB
+                       (fixup #f)]
+                      [(#xD)
+                       ;; LC_ID_DYLIB
+                       (if include-self?
+                           (fixup #t)
+                           (no-fixup))]
                       [else
-                       (file-position p (+ pos sz))
-                       (loop (sub1 cnt) base delta result)]))))))
+                       (no-fixup)]))))))
         (lambda ()
           (close-input-port p)
           (when out
