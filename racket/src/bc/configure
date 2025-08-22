@@ -778,7 +778,7 @@ collectsdir
 htmldir
 infodir
 docdir
-oldincludedir
+guibindir
 includedir
 localstatedir
 sharedstatedir
@@ -908,7 +908,7 @@ sysconfdir='${prefix}/etc'
 sharedstatedir='${prefix}/com'
 localstatedir='${prefix}/var'
 includedir='${prefix}/include'
-oldincludedir='/usr/include'
+guibindir='${bindir}'
 docdir='${datarootdir}/doc/${PACKAGE}'
 infodir='${datarootdir}/info'
 htmldir='${docdir}'
@@ -1127,14 +1127,14 @@ do
   | --no-recurs | --no-recur | --no-recu | --no-rec | --no-re | --no-r)
     no_recursion=yes ;;
 
-  -oldincludedir | --oldincludedir | --oldincludedi | --oldincluded \
+  -guibindir | --guibindir | --guibindi | --guibind \
   | --oldinclude | --oldinclud | --oldinclu | --oldincl | --oldinc \
   | --oldin | --oldi | --old | --ol | --o)
-    ac_prev=oldincludedir ;;
-  -oldincludedir=* | --oldincludedir=* | --oldincludedi=* | --oldincluded=* \
+    ac_prev=guibindir ;;
+  -guibindir=* | --guibindir=* | --guibindi=* | --guibind=* \
   | --oldinclude=* | --oldinclud=* | --oldinclu=* | --oldincl=* | --oldinc=* \
   | --oldin=* | --oldi=* | --old=* | --ol=* | --o=*)
-    oldincludedir=$ac_optarg ;;
+    guibindir=$ac_optarg ;;
 
   -prefix | --prefix | --prefi | --pref | --pre | --pr | --p)
     ac_prev=prefix ;;
@@ -1322,7 +1322,7 @@ fi
 # Check all directory arguments for consistency.
 for ac_var in	exec_prefix prefix bindir sbindir libexecdir datarootdir \
 		datadir sysconfdir sharedstatedir localstatedir includedir \
-		oldincludedir docdir infodir htmldir collectsdir appsdir psdir \
+		guibindir docdir infodir htmldir collectsdir appsdir psdir \
 		libdir appsdir mandir
 do
   eval ac_val=\$$ac_var

@@ -85,7 +85,11 @@ exit 0
          [(equal? l "  --dvidir=DIR            dvi documentation [DOCDIR]")
           (displayln "  --collectsdir=DIR       base collections [EPREFIX/share/PACKAGE/collects]")]
          [else
-          (displayln (regexp-replace* "pdf" (regexp-replace* #rx"dvi" l "collects") "apps"))])
+          (displayln (regexp-replace* #rx"oldinclude"
+                                      (regexp-replace* "pdf"
+                                                       (regexp-replace* #rx"dvi" l "collects")
+                                                       "apps")
+                                      "guibin"))])
         (loop)]
        [(regexp-match #rx"pdfdir" l)
         ;; Hack: take over "pdfdir" for "pkgsdir":
@@ -100,12 +104,12 @@ exit 0
        [(regexp-match #rx"oldincludedir" l)
         ;; Hack: take over "oldincludedir" for "guibindir":
         (cond
-         [(equal? l "oldincludedir='${exec_prefix}/sbin'")
+         [(equal? l "oldincludedir='/usr/include'")
           (displayln "guibindir='${bindir}'")]
          [(equal? l "  --oldincludedir=DIR     C header files for non-gcc [/usr/include]")
           (displayln "  --guibindir=DIR         GUI programs [BINDIR]")]
          [else
-          (displayln (regexp-replace* #rx"sbin" l "guibin"))])
+          (displayln (regexp-replace* #rx"oldinclude" l "guibin"))])
         (loop)]
        [(regexp-match #rx"localedir" l)
         ;; Hack: take over "localedir" for "appsdir":
