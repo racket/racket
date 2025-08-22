@@ -34,17 +34,17 @@ exit 0
 (define skip-rxs
   (map (lambda (s)
 	 (regexp (format "^  --~a=DIR" s)))
-       '(;; sbindir   - converted to "guibindir" 
+       '(sbindir
          libexecdir
 	 sharedstatedir
 	 localstatedir
-	 oldincludedir
 	 runstatedir
 	 infodir
          htmldir
          ;; Note: any arguments converted this way need to be excluded in "rktio_keep.m4"
          ;;  dvidir - converted to "collectsdir"
          ;;  pdfdir - converted to "pkgsdir"
+	 ;;  oldincludedir - converted to "guibindir"
          psdir
          ;;  localedir - converted to "appsdir"
         )))
@@ -97,12 +97,12 @@ exit 0
          [else
           (displayln (regexp-replace* #rx"pdf" l "pkgs"))])
         (loop)]
-       [(regexp-match #rx"sbindir" l)
-        ;; Hack: take over "sbindir" for "guibindir":
+       [(regexp-match #rx"oldincludedir" l)
+        ;; Hack: take over "oldincludedir" for "guibindir":
         (cond
-         [(equal? l "sbindir='${exec_prefix}/sbin'")
+         [(equal? l "oldincludedir='${exec_prefix}/sbin'")
           (displayln "guibindir='${bindir}'")]
-         [(equal? l "  --sbindir=DIR           system admin executables [EPREFIX/sbin]")
+         [(equal? l "  --oldincludedir=DIR     C header files for non-gcc [/usr/include]")
           (displayln "  --guibindir=DIR         GUI programs [BINDIR]")]
          [else
           (displayln (regexp-replace* #rx"sbin" l "guibin"))])

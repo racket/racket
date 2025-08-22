@@ -757,7 +757,7 @@ sysconfdir
 datadir
 datarootdir
 libexecdir
-guibindir
+sbindir
 bindir
 program_transform_name
 prefix
@@ -862,7 +862,7 @@ x_libraries=NONE
 # Use braces instead of parens because sh, perl, etc. also accept them.
 # (The list follows the same order as the GNU Coding Standards.)
 bindir='${exec_prefix}/bin'
-guibindir='${bindir}'
+sbindir='${exec_prefix}/sbin'
 libexecdir='${exec_prefix}/libexec'
 datarootdir='${prefix}/share'
 datadir='${datarootdir}'
@@ -1148,11 +1148,11 @@ do
   | -silent | --silent | --silen | --sile | --sil)
     silent=yes ;;
 
-  -guibindir | --guibindir | --guibindi | --guibind | --guibin | --sbi | --sb)
-    ac_prev=guibindir ;;
-  -guibindir=* | --guibindir=* | --guibindi=* | --guibind=* | --guibin=* \
+  -sbindir | --sbindir | --sbindi | --sbind | --sbin | --sbi | --sb)
+    ac_prev=sbindir ;;
+  -sbindir=* | --sbindir=* | --sbindi=* | --sbind=* | --sbin=* \
   | --sbi=* | --sb=*)
-    guibindir=$ac_optarg ;;
+    sbindir=$ac_optarg ;;
 
   -sharedstatedir | --sharedstatedir | --sharedstatedi \
   | --sharedstated | --sharedstate | --sharedstat | --sharedsta \
@@ -1282,7 +1282,7 @@ if test -n "$ac_unrecognized_opts"; then
 fi
 
 # Check all directory arguments for consistency.
-for ac_var in	exec_prefix prefix bindir guibindir libexecdir datarootdir \
+for ac_var in	exec_prefix prefix bindir sbindir libexecdir datarootdir \
 		datadir sysconfdir sharedstatedir localstatedir includedir \
 		oldincludedir docdir infodir htmldir collectsdir appsdir psdir \
 		libdir appsdir mandir
@@ -1434,10 +1434,10 @@ For better control, use the options below.
 
 Fine tuning of the installation directories:
   --bindir=DIR            user executables [EPREFIX/bin]
-  --guibindir=DIR         GUI programs [BINDIR]
   --sysconfdir=DIR        read-only single-machine data [PREFIX/etc]
   --libdir=DIR            object code libraries [EPREFIX/lib]
   --includedir=DIR        C header files [PREFIX/include]
+  --guibindir=DIR         GUI programs [BINDIR]
   --datarootdir=DIR       read-only arch.-independent data root [PREFIX/share]
   --datadir=DIR           read-only architecture-independent data [DATAROOTDIR]
   --appsdir=DIR           .desktop files [EPREFIX/share/applications]
