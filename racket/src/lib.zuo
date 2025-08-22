@@ -483,7 +483,7 @@
     (define pkg-catalog (hash-ref config 'INSTALL_PKG_CATALOG ""))
     (alert "setting up enough to install packages")
     (run-raco '() setup-args
-              "-D" "pkg")
+              "-D" "pkg" "net" "openssl")
     (define missing-pkgs
       (cond
         [missing-pkgs?
