@@ -21,7 +21,7 @@ typedef struct racket_boot_arguments_t {
   long boot3_len; /* 0 => unknown length; REQUIRED non-0 when `boot3_data` */
 
   /* Command-line arguments are handled in the same way as the
-     `racket` exectuable. The `argv` array should *not* include the
+     `racket` executable. The `argv` array should *not* include the
      executable name like `argv` passed to `main`. */
   int argc;
   char **argv; /* NULL => "-n", which does nothing after booting */

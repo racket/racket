@@ -249,13 +249,13 @@
                            (if (string? dir)
                                (string->path dir)
                                dir))))
-    (when (exectuable-for-signing? file)
+    (when (executable-for-signing? file)
       (remove-signature file))
     (fix-one #rx#"coLLECTs dIRECTORy:" "collects" (dir: 'collects))
     (fix-one #rx#"coNFIg dIRECTORy:" "config" (dir: 'config))
     (when mach-o?
       (update-framework-path (path->directory-path (dir: 'librkt)) file #f))
-    (when (exectuable-for-signing? file)
+    (when (executable-for-signing? file)
       (add-ad-hoc-signature file)))
   (define (fix-script file)
     (let* ([size (file-size file)]

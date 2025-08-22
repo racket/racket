@@ -5,7 +5,7 @@
          remove-signature
          add-ad-hoc-signature
          get/set-dylib-path
-         exectuable-for-signing?)
+         executable-for-signing?)
 
 (define current-big-endian (make-parameter (system-big-endian?)))
 
@@ -747,7 +747,7 @@
             (close-output-port out))))))
 
 
-(define (exectuable-for-signing? path)
+(define (executable-for-signing? path)
   (call-with-input-file*
    path
    (lambda (p)
