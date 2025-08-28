@@ -1126,7 +1126,9 @@ intptr_t rktio_socket_read(rktio_t *rktio, rktio_fd_t *rfd, char *buffer, intptr
 static intptr_t do_socket_write(rktio_t *rktio, rktio_fd_t *rfd, const char *buffer, intptr_t len,
                                 rktio_err_t *err,
                                 /* for UDP sendto: */
-                                rktio_addrinfo_t *addr)
+                                rktio_addrinfo_t *addr,
+                                /* alternative address mode for UDP sendto: */
+                                const char *addr_bytes, intptr_t addr_bytes_len)
 {
   rktio_socket_t s = rktio_fd_socket(rktio, rfd);
   intptr_t sent;
@@ -1156,6 +1158,12 @@ static intptr_t do_socket_write(rktio_t *rktio, rktio_fd_t *rfd, const char *buf
         if (!WAS_EBADADDRESS(errid))
           break;
       }
+    } else if (addr_bytes) {
+      do {
+        sent = sendto(s, buffer, len, 0, (const struct sockaddr *)addr_bytes, addr_bytes_len);
+      } while ((sent == -1) && NOT_WINSOCK(errno == EINTR));
+      if (sent < 0)
+        errid = SOCK_ERRNO();
     } else {
       do {
         sent = send(s, buffer, len, 0);
@@ -1182,7 +1190,7 @@ static intptr_t do_socket_write(rktio_t *rktio, rktio_fd_t *rfd, const char *buf
 
 intptr_t rktio_socket_write(rktio_t *rktio, rktio_fd_t *rfd, const char *buffer, intptr_t len, rktio_err_t *err)
 {
-  return do_socket_write(rktio, rfd, buffer, LIMIT_REQUEST_SIZE(len), err, NULL);
+  return do_socket_write(rktio, rfd, buffer, LIMIT_REQUEST_SIZE(len), err, NULL, NULL, 0);
 }
 
 /*========================================================================*/
@@ -1911,7 +1919,7 @@ int rktio_udp_connect(rktio_t *rktio, rktio_fd_t *rfd, rktio_addrinfo_t *addr)
 
 intptr_t rktio_udp_sendto(rktio_t *rktio, rktio_fd_t *rfd, rktio_addrinfo_t *addr, const char *buffer, intptr_t len)
 {
-  return do_socket_write(rktio, rfd, buffer, len, &rktio->err, addr);
+  return do_socket_write(rktio, rfd, buffer, len, &rktio->err, addr, NULL, 0);
 }
 
 intptr_t rktio_udp_sendto_in(rktio_t *rktio, rktio_fd_t *rfd, rktio_addrinfo_t *addr, const char *buffer,
@@ -1920,10 +1928,15 @@ intptr_t rktio_udp_sendto_in(rktio_t *rktio, rktio_fd_t *rfd, rktio_addrinfo_t *
   return rktio_udp_sendto(rktio, rfd, addr, buffer + start, end - start);
 }
 
-rktio_length_and_addrinfo_t *rktio_udp_recvfrom(rktio_t *rktio, rktio_fd_t *rfd, char *buffer, intptr_t len)
+intptr_t rktio_udp_sendto_addr_bytes(rktio_t *rktio, rktio_fd_t *rfd, const char *addr, intptr_t addr_len,
+                                     const char *buffer, intptr_t start, intptr_t end)
+{
+  return do_socket_write(rktio, rfd, buffer + start, end - start, &rktio->err, NULL, addr, addr_len);
+}
+
+static void *do_rktio_udp_recvfrom(rktio_t *rktio, rktio_fd_t *rfd, char *buffer, intptr_t len, int decode_address)
 {
   rktio_socket_t s = rktio_fd_socket(rktio, rfd);
-  rktio_length_and_addrinfo_t *r;
   int rn, errid;
   char src_addr[RKTIO_SOCK_NAME_MAX_LEN];
   rktio_sockopt_len_t asize = sizeof(src_addr);
@@ -1964,17 +1977,49 @@ rktio_length_and_addrinfo_t *rktio_udp_recvfrom(rktio_t *rktio, rktio_fd_t *rfd,
       break;
   }
 
-  r = malloc(sizeof(rktio_length_and_addrinfo_t));
-  r->len = rn;
-  r->address = get_numeric_strings(rktio, src_addr, asize);
+  if (decode_address) {
+    rktio_length_and_addrinfo_t *r;
 
-  return r;
+    r = malloc(sizeof(rktio_length_and_addrinfo_t));
+    r->len = rn;
+    r->address = get_numeric_strings(rktio, src_addr, asize);
+
+    return r;
+  } else {
+    rktio_length_and_addr_bytes_t *r;
+    char *addr_bytes;
+
+    addr_bytes = malloc(asize);
+    memcpy(addr_bytes, src_addr, asize);
+
+    r = malloc(sizeof(rktio_length_and_addr_bytes_t));
+    r->len = rn;
+    r->addr_len = asize;
+    r->addr_bytes = addr_bytes;
+
+    return r;
+  }
+}
+
+rktio_length_and_addrinfo_t *rktio_udp_recvfrom(rktio_t *rktio, rktio_fd_t *rfd, char *buffer, intptr_t len)
+{
+  return do_rktio_udp_recvfrom(rktio, rfd, buffer, len, 1);
 }
 
 rktio_length_and_addrinfo_t *rktio_udp_recvfrom_in(rktio_t *rktio, rktio_fd_t *rfd,
                                                    char *buffer, intptr_t start, intptr_t end)
 {
   return rktio_udp_recvfrom(rktio, rfd, buffer + start, end - start);
+}
+
+rktio_length_and_addr_bytes_t *rktio_udp_recvfrom_addr_bytes(rktio_t *rktio, rktio_fd_t *rfd,
+                                                             char *buffer, intptr_t start, intptr_t end)
+{
+  return do_rktio_udp_recvfrom(rktio, rfd, buffer + start, end - start, 0);
+}
+
+char **rktio_addr_bytes_address(rktio_t *rktio, const char *addr, intptr_t len) {
+  return get_numeric_strings(rktio, (void *)addr, len);
 }
 
 int rktio_udp_set_receive_buffer_size(rktio_t *rktio, rktio_fd_t *rfd, int size)

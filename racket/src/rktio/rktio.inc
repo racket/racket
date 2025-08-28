@@ -71,8 +71,10 @@ Sforeign_symbol("rktio_udp_bind", (void *)rktio_udp_bind);
 Sforeign_symbol("rktio_udp_connect", (void *)rktio_udp_connect);
 Sforeign_symbol("rktio_udp_sendto", (void *)rktio_udp_sendto);
 Sforeign_symbol("rktio_udp_sendto_in", (void *)rktio_udp_sendto_in);
+Sforeign_symbol("rktio_udp_sendto_addr_bytes", (void *)rktio_udp_sendto_addr_bytes);
 Sforeign_symbol("rktio_udp_recvfrom", (void *)rktio_udp_recvfrom);
 Sforeign_symbol("rktio_udp_recvfrom_in", (void *)rktio_udp_recvfrom_in);
+Sforeign_symbol("rktio_udp_recvfrom_addr_bytes", (void *)rktio_udp_recvfrom_addr_bytes);
 Sforeign_symbol("rktio_udp_set_receive_buffer_size", (void *)rktio_udp_set_receive_buffer_size);
 Sforeign_symbol("rktio_udp_set_ttl", (void *)rktio_udp_set_ttl);
 Sforeign_symbol("rktio_udp_get_ttl", (void *)rktio_udp_get_ttl);
@@ -86,6 +88,7 @@ Sforeign_symbol("rktio_udp_change_multicast_group", (void *)rktio_udp_change_mul
 Sforeign_symbol("rktio_socket_address", (void *)rktio_socket_address);
 Sforeign_symbol("rktio_socket_peer_address", (void *)rktio_socket_peer_address);
 Sforeign_symbol("rktio_listener_address", (void *)rktio_listener_address);
+Sforeign_symbol("rktio_addr_bytes_address", (void *)rktio_addr_bytes_address);
 Sforeign_symbol("rktio_is_ok_envvar_name", (void *)rktio_is_ok_envvar_name);
 Sforeign_symbol("rktio_are_envvar_names_case_insensitive", (void *)rktio_are_envvar_names_case_insensitive);
 Sforeign_symbol("rktio_getenv", (void *)rktio_getenv);

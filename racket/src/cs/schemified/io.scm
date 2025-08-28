@@ -3001,8 +3001,12 @@
 (define rktio_udp_connect (hash-ref rktio-table 'rktio_udp_connect))
 (define rktio_udp_sendto (hash-ref rktio-table 'rktio_udp_sendto))
 (define rktio_udp_sendto_in (hash-ref rktio-table 'rktio_udp_sendto_in))
+(define rktio_udp_sendto_addr_bytes
+  (hash-ref rktio-table 'rktio_udp_sendto_addr_bytes))
 (define rktio_udp_recvfrom (hash-ref rktio-table 'rktio_udp_recvfrom))
 (define rktio_udp_recvfrom_in (hash-ref rktio-table 'rktio_udp_recvfrom_in))
+(define rktio_udp_recvfrom_addr_bytes
+  (hash-ref rktio-table 'rktio_udp_recvfrom_addr_bytes))
 (define rktio_udp_set_receive_buffer_size
   (hash-ref rktio-table 'rktio_udp_set_receive_buffer_size))
 (define rktio_udp_set_ttl (hash-ref rktio-table 'rktio_udp_set_ttl))
@@ -3025,6 +3029,8 @@
 (define rktio_socket_peer_address
   (hash-ref rktio-table 'rktio_socket_peer_address))
 (define rktio_listener_address (hash-ref rktio-table 'rktio_listener_address))
+(define rktio_addr_bytes_address
+  (hash-ref rktio-table 'rktio_addr_bytes_address))
 (define rktio_is_ok_envvar_name
   (hash-ref rktio-table 'rktio_is_ok_envvar_name))
 (define rktio_are_envvar_names_case_insensitive
@@ -3243,6 +3249,10 @@
 (define rktio_is_timestamp (hash-ref rktio-table 'rktio_is_timestamp))
 (define rktio_recv_length_ref (hash-ref rktio-table 'rktio_recv_length_ref))
 (define rktio_recv_address_ref (hash-ref rktio-table 'rktio_recv_address_ref))
+(define rktio_recv_with_addr_bytes_length_ref
+  (hash-ref rktio-table 'rktio_recv_with_addr_bytes_length_ref))
+(define rktio_recv_with_addr_bytes_to_bytes
+  (hash-ref rktio-table 'rktio_recv_with_addr_bytes_to_bytes))
 (define rktio_stat_to_vector (hash-ref rktio-table 'rktio_stat_to_vector))
 (define rktio_identity_to_vector
   (hash-ref rktio-table 'rktio_identity_to_vector))
@@ -3308,17 +3318,17 @@
 (define m+s-mutex (|#%name| m+s-mutex (record-accessor struct:m+s 0)))
 (define m+s-sleep (|#%name| m+s-sleep (record-accessor struct:m+s 1)))
 (define m+s-handle (|#%name| m+s-handle (record-accessor struct:m+s 2)))
-(define cell.2$4 (unsafe-make-place-local (make-mutex)))
+(define cell.2$3 (unsafe-make-place-local (make-mutex)))
 (define start-rktio
   (lambda ()
     (begin
       (unsafe-start-uninterruptible)
       (assert-push-lock-level! 'rktio)
-      (mutex-acquire (unsafe-place-local-ref cell.2$4)))))
+      (mutex-acquire (unsafe-place-local-ref cell.2$3)))))
 (define end-rktio
   (lambda ()
     (begin
-      (mutex-release (unsafe-place-local-ref cell.2$4))
+      (mutex-release (unsafe-place-local-ref cell.2$3))
       (assert-pop-lock-level! 'rktio)
       (unsafe-end-uninterruptible))))
 (define make-rktio-mutex+sleep
@@ -3433,7 +3443,7 @@
   (lambda ()
     (begin
       (unsafe-place-local-set! cell.1 (|#%app| rktio_init))
-      (unsafe-place-local-set! cell.2$4 (make-mutex))
+      (unsafe-place-local-set! cell.2$3 (make-mutex))
       (unsafe-place-local-set!
        cell.3$1
        (make-rktio-mutex+sleep (unsafe-place-local-ref cell.1))))))
@@ -3644,12 +3654,12 @@
 (define sandman-poll-ctx-poll?
   (lambda (poll-ctx_0) (|#%app| poll-ctx-poll? poll-ctx_0)))
 (define cell.1$12 (unsafe-make-place-local #f))
-(define cell.2$3 (unsafe-make-place-local #f))
+(define cell.2$2 (unsafe-make-place-local #f))
 (define sandman-set-background-sleep!
   (lambda (sleep_0 fd_0)
     (begin
       (unsafe-place-local-set! cell.1$12 sleep_0)
-      (unsafe-place-local-set! cell.2$3 fd_0))))
+      (unsafe-place-local-set! cell.2$2 fd_0))))
 (define effect_2513
   (begin
     (void
@@ -3698,7 +3708,7 @@
                                 (if sleep-secs_0 sleep-secs_0 0.0)
                                 ps_0
                                 (unsafe-place-local-ref cell.1$5)
-                                (unsafe-place-local-ref cell.2$3))
+                                (unsafe-place-local-ref cell.2$2))
                                (|#%app| (unsafe-place-local-ref cell.1$12))
                                (|#%app|
                                 rktio_end_sleep
@@ -10132,7 +10142,7 @@
              temp7_1
              'stderr)))))))
 (define cell.1$11 (unsafe-make-place-local (make-stdin)))
-(define cell.2$2 (unsafe-make-place-local (make-stdout)))
+(define cell.2$1 (unsafe-make-place-local (make-stdout)))
 (define cell.3 (unsafe-make-place-local (make-stderr)))
 (define 1/current-input-port
   (make-parameter
@@ -10146,7 +10156,7 @@
    'current-input-port))
 (define 1/current-output-port
   (make-parameter
-   (unsafe-place-local-ref cell.2$2)
+   (unsafe-place-local-ref cell.2$1)
    (lambda (v_0)
      (begin
        (if (1/output-port? v_0)
@@ -10173,7 +10183,7 @@
          (open-input-fd.1 cust_0 unsafe-undefined in-fd_0 temp12_0)))
       (1/current-input-port (unsafe-place-local-ref cell.1$11))
       (unsafe-place-local-set!
-       cell.2$2
+       cell.2$1
        (let ((temp15_0 "stdout"))
          (let ((temp18_0
                 (|#%app|
@@ -10189,7 +10199,7 @@
               plumber_0
               out-fd_0
               temp15_1)))))
-      (1/current-output-port (unsafe-place-local-ref cell.2$2))
+      (1/current-output-port (unsafe-place-local-ref cell.2$1))
       (unsafe-place-local-set!
        cell.3
        (let ((temp20_0 "srderr"))
@@ -12626,8 +12636,8 @@
   (lambda (in_0)
     (if (eq? in_0 (unsafe-place-local-ref cell.1$11))
       (begin
-        (if (1/terminal-port? (unsafe-place-local-ref cell.2$2))
-          (1/flush-output (unsafe-place-local-ref cell.2$2))
+        (if (1/terminal-port? (unsafe-place-local-ref cell.2$1))
+          (1/flush-output (unsafe-place-local-ref cell.2$1))
           (void))
         (if (1/terminal-port? (unsafe-place-local-ref cell.3))
           (1/flush-output (unsafe-place-local-ref cell.3))
@@ -17345,14 +17355,14 @@
   (|#%name| set-cache-from! (record-mutator struct:cache 3)))
 (define new-cache (lambda () (cache1.1 #f #f #f #f)))
 (define cell.1$9 (unsafe-make-place-local (new-cache)))
-(define cell.2$1
+(define cell.2
   (unsafe-make-place-local (|#%app| 1/unsafe-make-custodian-at-root)))
 (define convert-cache-init!
   (lambda ()
     (begin
       (unsafe-place-local-set! cell.1$9 (new-cache))
       (unsafe-place-local-set!
-       cell.2$1
+       cell.2
        (|#%app| 1/unsafe-make-custodian-at-root)))))
 (define cache-clear!
   (lambda (get_0 update!_0)
@@ -17402,7 +17412,7 @@
         or-part_0
         (bytes-open-converter-in-custodian
          'bytes-open-converter/cached-to
-         (unsafe-place-local-ref cell.2$1)
+         (unsafe-place-local-ref cell.2)
          ucs-4-encoding
          enc_0)))))
 (define bytes-open-converter/cached-to2
@@ -17412,7 +17422,7 @@
         or-part_0
         (bytes-open-converter-in-custodian
          'bytes-open-converter/cached-to2
-         (unsafe-place-local-ref cell.2$1)
+         (unsafe-place-local-ref cell.2)
          ucs-4-encoding
          enc_0)))))
 (define bytes-open-converter/cached-from
@@ -17422,7 +17432,7 @@
         or-part_0
         (bytes-open-converter-in-custodian
          'bytes-open-converter/cached-from
-         (unsafe-place-local-ref cell.2$1)
+         (unsafe-place-local-ref cell.2)
          enc_0
          "UTF-8")))))
 (define bytes-close-converter/cached-to
@@ -38417,6 +38427,80 @@
                  0
                  len_0
                  start_0)))))))))
+(define cell.1$2 (unsafe-make-place-local (box null)))
+(define address-bytes-cache-bytes-ref
+  (lambda (address-bstr_0)
+    (let ((lst_0 (unbox (unsafe-place-local-ref cell.1$2))))
+      (letrec*
+       ((for-loop_0
+         (|#%name|
+          for-loop
+          (lambda (result_0 lst_1)
+            (if (pair? lst_1)
+              (let ((p_0 (unsafe-car lst_1)))
+                (let ((rest_0 (unsafe-cdr lst_1)))
+                  (let ((result_1
+                         (let ((result_1
+                                (if (equal? (car p_0) address-bstr_0)
+                                  (cdr p_0)
+                                  #f)))
+                           (values result_1))))
+                    (if (if (not (let ((x_0 (list p_0))) result_1)) #t #f)
+                      (for-loop_0 result_1 rest_0)
+                      result_1))))
+              result_0)))))
+       (for-loop_0 #f lst_0)))))
+(define address-bytes-cache-ref
+  (lambda (hostname_0 port-no_0)
+    (let ((lst_0 (unbox (unsafe-place-local-ref cell.1$2))))
+      (letrec*
+       ((for-loop_0
+         (|#%name|
+          for-loop
+          (lambda (result_0 lst_1)
+            (if (pair? lst_1)
+              (let ((p_0 (unsafe-car lst_1)))
+                (let ((rest_0 (unsafe-cdr lst_1)))
+                  (let ((result_1
+                         (let ((result_1
+                                (if (equal? (cadr p_0) hostname_0)
+                                  (if (equal? (cddr p_0) port-no_0)
+                                    (car p_0)
+                                    #f)
+                                  #f)))
+                           (values result_1))))
+                    (if (if (not (let ((x_0 (list p_0))) result_1)) #t #f)
+                      (for-loop_0 result_1 rest_0)
+                      result_1))))
+              result_0)))))
+       (for-loop_0 #f lst_0)))))
+(define address-bytes-cache-set!
+  (lambda (address-bstr_0 address+pos_0)
+    (let ((old-l_0 (unbox (unsafe-place-local-ref cell.1$2))))
+      (let ((app_0 (cons address-bstr_0 address+pos_0)))
+        (let ((new-l_0
+               (cons
+                app_0
+                (if (> (length old-l_0) 5)
+                  (letrec*
+                   ((loop_0
+                     (|#%name|
+                      loop
+                      (lambda (old-l_1)
+                        (if (null? (cdr old-l_1))
+                          null
+                          (let ((app_1 (car old-l_1)))
+                            (cons app_1 (loop_0 (cdr old-l_1)))))))))
+                   (loop_0 old-l_0))
+                  old-l_0))))
+          (let ((or-part_0
+                 (unsafe-box*-cas!
+                  (unsafe-place-local-ref cell.1$2)
+                  old-l_0
+                  new-l_0)))
+            (if or-part_0
+              or-part_0
+              (address-bytes-cache-set! address-bstr_0 address+pos_0))))))))
 (define 1/udp-send
   (let ((udp-send_0
          (|#%name|
@@ -38778,49 +38862,61 @@
             end51_0)
      (begin
        (unsafe-start-uninterruptible)
-       (let ((temp127_0
-              (lambda (addr_0)
-                (do-udp-maybe-send-to-addr.1
-                 enable-break?42_0
-                 unsafe-undefined
-                 wait?41_0
-                 who45_0
-                 u46_0
-                 addr_0
-                 bstr49_0
-                 start50_0
-                 end51_0))))
-         (let ((result_0
-                (call-with-resolved-address.1
-                 #f
-                 unsafe-undefined
-                 #f
-                 #t
-                 #f
-                 #f
-                 ""
-                 who45_0
-                 hostname47_0
-                 port-no48_0
-                 temp127_0)))
-           (begin (unsafe-end-uninterruptible) result_0)))))))
+       (let ((result_0
+              (let ((c1_0 (address-bytes-cache-ref hostname47_0 port-no48_0)))
+                (if c1_0
+                  (do-udp-maybe-send-to-addr.1
+                   enable-break?42_0
+                   unsafe-undefined
+                   wait?41_0
+                   who45_0
+                   u46_0
+                   c1_0
+                   bstr49_0
+                   start50_0
+                   end51_0)
+                  (let ((temp135_0
+                         (lambda (addr_0)
+                           (do-udp-maybe-send-to-addr.1
+                            enable-break?42_0
+                            unsafe-undefined
+                            wait?41_0
+                            who45_0
+                            u46_0
+                            addr_0
+                            bstr49_0
+                            start50_0
+                            end51_0))))
+                    (call-with-resolved-address.1
+                     #f
+                     unsafe-undefined
+                     #f
+                     #t
+                     #f
+                     #f
+                     ""
+                     who45_0
+                     hostname47_0
+                     port-no48_0
+                     temp135_0))))))
+         (begin (unsafe-end-uninterruptible) result_0))))))
 (define do-udp-send-to-evt
   (lambda (who_0 u_0 hostname_0 port-no_0 bstr_0 start_0 end_0)
     (begin
       (poll-address-finalizations)
       (begin
         (unsafe-start-uninterruptible)
-        (let ((temp141_0
+        (let ((temp149_0
                (lambda (addr_0)
                  (udp-sending-evt66.1
                   u_0
                   (lambda ()
                     (begin
                       (if addr_0 (register-address-finalizer addr_0) (void))
-                      (let ((temp149_0 (lambda (thunk_0) thunk_0)))
+                      (let ((temp157_0 (lambda (thunk_0) thunk_0)))
                         (do-udp-maybe-send-to-addr.1
                          #f
-                         temp149_0
+                         temp157_0
                          #f
                          who_0
                          u_0
@@ -38840,7 +38936,7 @@
                   who_0
                   hostname_0
                   port-no_0
-                  temp141_0)))
+                  temp149_0)))
             (begin (unsafe-end-uninterruptible) evt_0)))))))
 (define do-udp-maybe-send-to-addr.1
   (|#%name|
@@ -38865,7 +38961,7 @@
            (lambda ()
              (begin
                (start-rktio)
-               (let ((temp153_0
+               (let ((temp161_0
                       (lambda ()
                         (if (if addr61_0 (udp-is-connected? u60_0) #f)
                           (|#%app|
@@ -38890,14 +38986,25 @@
                             (begin
                               (set-udp-is-bound?! u60_0 #t)
                               (let ((r_0
-                                     (|#%app|
-                                      rktio_udp_sendto_in
-                                      (unsafe-place-local-ref cell.1)
-                                      (unbox (udp-s-box u60_0))
-                                      addr61_0
-                                      bstr62_0
-                                      start63_0
-                                      end64_0)))
+                                     (if (bytes? addr61_0)
+                                       (let ((app_0 (unbox (udp-s-box u60_0))))
+                                         (|#%app|
+                                          rktio_udp_sendto_addr_bytes
+                                          (unsafe-place-local-ref cell.1)
+                                          app_0
+                                          addr61_0
+                                          (unsafe-bytes-length addr61_0)
+                                          bstr62_0
+                                          start63_0
+                                          end64_0))
+                                       (|#%app|
+                                        rktio_udp_sendto_in
+                                        (unsafe-place-local-ref cell.1)
+                                        (unbox (udp-s-box u60_0))
+                                        addr61_0
+                                        bstr62_0
+                                        start63_0
+                                        end64_0))))
                                 (if (vector? r_0)
                                   (|#%app|
                                    handle-error_0
@@ -38966,7 +39073,7 @@
                                              app_0
                                              (current-continuation-marks))))))))))))))))
                  (check-udp-closed.1
-                  temp153_0
+                  temp161_0
                   handle-error_0
                   who59_0
                   u60_0)))))))
@@ -39277,7 +39384,7 @@
                                 u38_0)))
                             (let ((r_0
                                    (|#%app|
-                                    rktio_udp_recvfrom_in
+                                    rktio_udp_recvfrom_addr_bytes
                                     (unsafe-place-local-ref cell.1)
                                     (unbox (udp-s-box u38_0))
                                     bstr39_0
@@ -39328,48 +39435,61 @@
                                       r_0
                                       "receive failed"))))
                                 (let ((len_0
-                                       (|#%app| rktio_recv_length_ref r_0)))
-                                  (let ((address_0
+                                       (|#%app|
+                                        rktio_recv_with_addr_bytes_length_ref
+                                        r_0)))
+                                  (let ((address-bstr_0
                                          (|#%app|
-                                          rktio_to_bytes_list
-                                          (|#%app| rktio_recv_address_ref r_0)
-                                          2)))
+                                          rktio_recv_with_addr_bytes_to_bytes
+                                          r_0)))
                                     (begin
                                       (|#%app| rktio_free r_0)
-                                      (let ((app_0
-                                             (if (let ((app_0 (car address_0)))
-                                                   (bytes=?
-                                                    app_0
-                                                    (unsafe-place-local-ref
-                                                     cell.1$2)))
-                                               (unsafe-place-local-ref cell.2)
-                                               (begin
-                                                 (unsafe-place-local-set!
-                                                  cell.1$2
-                                                  (car address_0))
-                                                 (unsafe-place-local-set!
-                                                  cell.2
-                                                  (string->immutable-string
-                                                   (1/bytes->string/utf-8
-                                                    (unsafe-place-local-ref
-                                                     cell.1$2)
-                                                    '#\x3f)))
-                                                 (unsafe-place-local-ref
-                                                  cell.2)))))
-                                        (values
-                                         len_0
-                                         app_0
-                                         (string->integer
-                                          (1/bytes->string/utf-8
-                                           (cadr address_0))))))))))))))
+                                      (let ((address+port_0
+                                             (let ((or-part_0
+                                                    (address-bytes-cache-bytes-ref
+                                                     address-bstr_0)))
+                                               (if or-part_0
+                                                 or-part_0
+                                                 (let ((address+port-bstrs_0
+                                                        (|#%app|
+                                                         rktio_to_bytes_list
+                                                         (|#%app|
+                                                          rktio_addr_bytes_address
+                                                          (unsafe-place-local-ref
+                                                           cell.1)
+                                                          address-bstr_0
+                                                          (unsafe-bytes-length
+                                                           address-bstr_0))
+                                                         2)))
+                                                   (let ((address+pos_0
+                                                          (let ((app_0
+                                                                 (string->immutable-string
+                                                                  (1/bytes->string/utf-8
+                                                                   (car
+                                                                    address+port-bstrs_0)
+                                                                   '#\x3f))))
+                                                            (cons
+                                                             app_0
+                                                             (string->integer
+                                                              (1/bytes->string/latin-1
+                                                               (cadr
+                                                                address+port-bstrs_0)))))))
+                                                     (begin
+                                                       (address-bytes-cache-set!
+                                                        address-bstr_0
+                                                        address+pos_0)
+                                                       address+pos_0)))))))
+                                        (let ((app_0 (car address+port_0)))
+                                          (values
+                                           len_0
+                                           app_0
+                                           (cdr address+port_0)))))))))))))
                    (check-udp-closed.1
                     temp86_0
                     handle-error_0
                     who37_0
                     u38_0))))))
             (loop_0))))))))
-(define cell.1$2 (unsafe-make-place-local #vu8()))
-(define cell.2 (unsafe-make-place-local ""))
 (define finish_2403
   (make-struct-type-install-properties
    '(udp-receive-evt)

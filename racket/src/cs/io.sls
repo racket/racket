@@ -246,6 +246,17 @@
       (make-ptr
        (ftype-ref rktio_length_and_addrinfo_t (address) (make-ftype-pointer rktio_length_and_addrinfo_t (ptr->address fs)) 0)))
 
+    (define (rktio_recv_with_addr_bytes_length_ref fs)
+      (ftype-ref rktio_length_and_addr_bytes_t (len) (make-ftype-pointer rktio_length_and_addr_bytes_t (ptr->address fs)) 0))
+
+    (define (rktio_recv_with_addr_bytes_to_bytes fs)
+      (let* ([addr (ptr->address fs)]
+             [len (ftype-ref rktio_length_and_addr_bytes_t (addr_len) (make-ftype-pointer rktio_length_and_addr_bytes_t addr) 0)]
+             [x (ftype-ref rktio_length_and_addr_bytes_t (addr_bytes) (make-ftype-pointer rktio_length_and_addr_bytes_t addr) 0)]
+             [addr-bytes (copy-bytes x len)])
+        (rktio_free (make-ptr x))
+        addr-bytes))
+
     (define (rktio_stat_to_vector p)
       (let ([p (make-ftype-pointer rktio_stat_t (ptr->address p))])
         (vector
@@ -466,6 +477,8 @@
                                  'rktio_is_timestamp rktio_is_timestamp
                                  'rktio_recv_length_ref rktio_recv_length_ref
                                  'rktio_recv_address_ref rktio_recv_address_ref
+                                 'rktio_recv_with_addr_bytes_length_ref rktio_recv_with_addr_bytes_length_ref
+                                 'rktio_recv_with_addr_bytes_to_bytes rktio_recv_with_addr_bytes_to_bytes
                                  'rktio_stat_to_vector rktio_stat_to_vector
                                  'rktio_identity_to_vector rktio_identity_to_vector
                                  'rktio_seconds_to_date* rktio_seconds_to_date*

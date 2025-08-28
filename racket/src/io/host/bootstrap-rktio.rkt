@@ -130,6 +130,15 @@
 (define (rktio_recv_address_ref p)
   (Rrktio_length_and_addrinfo_t-address (cast p _pointer rktio_length_and_addrinfo_t)))
 
+(define (rktio_recv_with_addr_bytes_length_ref p)
+  (Rrktio_length_and_addr_bytes_t-len (cast p _pointer rktio_length_and_addr_bytes_t)))
+
+(define (rktio_recv_with_addr_bytes_to_bytes p)
+  (define r (cast p _pointer rktio_length_and_addr_bytes_t))
+  (define bstr (make-bytes (Rrktio_length_and_addr_bytes_t-addr_len r)))
+  (memcpy bstr 0 (Rrktio_length_and_addr_bytes_t-addr_bytes r) 0 (bytes-length bstr))
+  bstr)
+
 (define (rktio_stat_to_vector p)
   (let ([p (cast p _pointer _Rrktio_stat_t-pointer)])
     (vector
@@ -316,6 +325,8 @@
                                           'rktio_is_timestamp rktio_is_timestamp
                                           'rktio_recv_length_ref rktio_recv_length_ref
                                           'rktio_recv_address_ref rktio_recv_address_ref
+                                          'rktio_recv_with_addr_bytes_length_ref rktio_recv_with_addr_bytes_length_ref
+                                          'rktio_recv_with_addr_bytes_to_bytes rktio_recv_with_addr_bytes_to_bytes
                                           'rktio_stat_to_vector rktio_stat_to_vector
                                           'rktio_identity_to_vector rktio_identity_to_vector
                                           'rktio_seconds_to_date* rktio_seconds_to_date*

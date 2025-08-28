@@ -9,7 +9,8 @@
          "address.rkt"
          "udp-socket.rkt"
          "error.rkt"
-         "evt.rkt")
+         "evt.rkt"
+         "address-cache.rkt")
 
 (provide udp-send
          udp-send*
@@ -87,18 +88,24 @@
                         #:enable-break? [enable-break? #f])
   (start-uninterruptible) ; because `call-with-resolved-address`
   (define result
-    (call-with-resolved-address
-     #:who who
-     hostname port-no
-     #:tcp? #f
-     ;; in uninterruptible mode:
-     (lambda (addr)
-       (do-udp-maybe-send-to-addr who u addr bstr start end
-                                  #:wait? wait?
-                                  #:enable-break? enable-break?))))
+    (cond
+      [(address-bytes-cache-ref hostname port-no)
+       => (lambda (addr-bstr)
+            (do-udp-maybe-send-to-addr who u addr-bstr bstr start end
+                                       #:wait? wait?
+                                       #:enable-break? enable-break?))]
+      [else
+       (call-with-resolved-address
+        #:who who
+        hostname port-no
+        #:tcp? #f
+        ;; in uninterruptible mode:
+        (lambda (addr)
+          (do-udp-maybe-send-to-addr who u addr bstr start end
+                                     #:wait? wait?
+                                     #:enable-break? enable-break?)))]))
   (end-uninterruptible)
   result)
-  
 
 (define (do-udp-send-to-evt who u hostname port-no bstr start end)
   (poll-address-finalizations) ; not in uninterruptible mode
@@ -150,7 +157,9 @@
          [else
           ;; if the socket is not bound already, send[to] binds it
           (set-udp-is-bound?! u #t)
-          (define r (rktio_udp_sendto_in rktio (udp-s u) addr bstr start end))
+          (define r (if (bytes? addr)
+                        (rktio_udp_sendto_addr_bytes rktio (udp-s u) addr (bytes-length addr) bstr start end)
+                        (rktio_udp_sendto_in rktio (udp-s u) addr bstr start end)))
           (cond
             [(rktio-error? r)
              (handle-error

@@ -584,10 +584,21 @@ intptr_t rktio_udp_sendto_in(rktio_t *rktio, rktio_fd_t *rfd, RKTIO_NULLABLE rkt
                              const char *buffer, intptr_t start, intptr_t end);
 /* Like `rktio_udp_sendto`, but with starting and ending offsets within `buffer`. */
 
+RKTIO_EXTERN_ERR(RKTIO_WRITE_ERROR)
+intptr_t rktio_udp_sendto_addr_bytes(rktio_t *rktio, rktio_fd_t *rfd, const char *addr, intptr_t addr_len,
+                                     const char *buffer, intptr_t start, intptr_t end);
+/* Like `rktio_udp_sendto_in`, but with an address as raw bytes. */
+
 typedef struct rktio_length_and_addrinfo_t {
   intptr_t len;
   char **address; /* like the result of `rktio_socket_address` */
 } rktio_length_and_addrinfo_t;
+
+typedef struct rktio_length_and_addr_bytes_t {
+  intptr_t len;
+  intptr_t addr_len;
+  char *addr_bytes;
+} rktio_length_and_addr_bytes_t;
 
 RKTIO_EXTERN rktio_length_and_addrinfo_t *rktio_udp_recvfrom(rktio_t *rktio, rktio_fd_t *rfd,
                                                              char *buffer, intptr_t len);
@@ -598,6 +609,10 @@ RKTIO_EXTERN rktio_length_and_addrinfo_t *rktio_udp_recvfrom(rktio_t *rktio, rkt
 RKTIO_EXTERN rktio_length_and_addrinfo_t *rktio_udp_recvfrom_in(rktio_t *rktio, rktio_fd_t *rfd,
                                                                 char *buffer, intptr_t start, intptr_t end);
 /* Like `rktio_udp_recvfrom`, but with starting and ending offsets. */
+
+RKTIO_EXTERN rktio_length_and_addr_bytes_t *rktio_udp_recvfrom_addr_bytes(rktio_t *rktio, rktio_fd_t *rfd,
+                                                                          char *buffer, intptr_t start, intptr_t end);
+/* Like `rktio_udp_recvfrom_in`, but returning an address as raw bytes. */
 
 RKTIO_EXTERN rktio_ok_t rktio_udp_set_receive_buffer_size(rktio_t *rktio, rktio_fd_t *rfd, int size);
 
@@ -631,6 +646,7 @@ enum {
 RKTIO_EXTERN char **rktio_socket_address(rktio_t *rktio, rktio_fd_t *rfd);
 RKTIO_EXTERN char **rktio_socket_peer_address(rktio_t *rktio, rktio_fd_t *rfd);
 RKTIO_EXTERN char **rktio_listener_address(rktio_t *rktio, rktio_listener_t *lnr);
+RKTIO_EXTERN char **rktio_addr_bytes_address(rktio_t *rktio, const char *addr, intptr_t len);
 /* These return two strings in an array (where the array itself should
    be deallocated): address and service. */
 

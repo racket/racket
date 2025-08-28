@@ -1,6 +1,5 @@
 #lang racket/base
-(require "../host/place-local.rkt"
-         "../common/check.rkt"
+(require "../common/check.rkt"
          "../host/thread.rkt"
          "../host/rktio.rkt"
          "../sandman/main.rkt"
@@ -12,7 +11,8 @@
          "address.rkt"
          "udp-socket.rkt"
          "error.rkt"
-         "evt.rkt")
+         "evt.rkt"
+         "address-cache.rkt")
 
 (provide udp-receive!
          udp-receive!*
@@ -95,7 +95,7 @@
               (raise-network-arguments-error who "udp socket is not bound"
                                              "socket" u)))]
           [else
-           (define r (rktio_udp_recvfrom_in rktio (udp-s u) bstr start end))
+           (define r (rktio_udp_recvfrom_addr_bytes rktio (udp-s u) bstr start end))
            (cond
              [(rktio-error? r)
               (cond
@@ -120,21 +120,24 @@
                   (lambda ()
                     (raise-network-error who r "receive failed")))])]
              [else
-              (define len (rktio_recv_length_ref r))
-              (define address (rktio_to_bytes_list (rktio_recv_address_ref r) 2))
+              (define len (rktio_recv_with_addr_bytes_length_ref r))
+              (define address-bstr (rktio_recv_with_addr_bytes_to_bytes r))
               (rktio_free r)
+              (define address+port
+                (or (address-bytes-cache-bytes-ref address-bstr)
+                    (let ()
+                      (define address+port-bstrs (rktio_to_bytes_list
+                                                  (rktio_addr_bytes_address rktio address-bstr (bytes-length address-bstr))
+                                                  2))
+                      (define address+pos
+                        (cons (string->immutable-string
+                               (bytes->string/utf-8 (car address+port-bstrs) #\?))
+                              (string->integer (bytes->string/latin-1 (cadr address+port-bstrs)))))
+                      (address-bytes-cache-set! address-bstr address+pos)
+                      address+pos)))
               (values len
-                      (if (bytes=? (car address) cached-address-bytes)
-                          cached-address-string
-                          (begin
-                            (set! cached-address-bytes (car address))
-                            (set! cached-address-string (string->immutable-string
-                                                         (bytes->string/utf-8 cached-address-bytes #\?)))
-                            cached-address-string))
-                      (string->integer (bytes->string/utf-8 (cadr address))))])])))))
-
-(define-place-local cached-address-bytes #"")
-(define-place-local cached-address-string "")
+                      (car address+port)
+                      (cdr address+port))])])))))
 
 ;; ----------------------------------------
 

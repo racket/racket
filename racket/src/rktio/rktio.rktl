@@ -170,6 +170,9 @@
  rktio_length_and_addrinfo_t
  ((intptr_t len) ((ref (ref char)) address)))
 (define-struct-type
+ rktio_length_and_addr_bytes_t
+ ((intptr_t len) (intptr_t addr_len) ((ref char) addr_bytes)))
+(define-struct-type
  rktio_process_result_t
  (((ref rktio_process_t) process)
   ((ref rktio_fd_t) stdin_fd)
@@ -685,6 +688,18 @@
   (intptr_t start)
   (intptr_t end)))
 (define-function/errno
+ RKTIO_WRITE_ERROR
+ ()
+ intptr_t
+ rktio_udp_sendto_addr_bytes
+ (((ref rktio_t) rktio)
+  ((ref rktio_fd_t) rfd)
+  ((*ref char) addr)
+  (intptr_t addr_len)
+  ((*ref char) buffer)
+  (intptr_t start)
+  (intptr_t end)))
+(define-function/errno
  NULL
  ()
  (ref rktio_length_and_addrinfo_t)
@@ -698,6 +713,16 @@
  ()
  (ref rktio_length_and_addrinfo_t)
  rktio_udp_recvfrom_in
+ (((ref rktio_t) rktio)
+  ((ref rktio_fd_t) rfd)
+  ((*ref char) buffer)
+  (intptr_t start)
+  (intptr_t end)))
+(define-function/errno
+ NULL
+ ()
+ (ref rktio_length_and_addr_bytes_t)
+ rktio_udp_recvfrom_addr_bytes
  (((ref rktio_t) rktio)
   ((ref rktio_fd_t) rfd)
   ((*ref char) buffer)
@@ -787,6 +812,12 @@
  (ref (ref char))
  rktio_listener_address
  (((ref rktio_t) rktio) ((ref rktio_listener_t) lnr)))
+(define-function/errno
+ NULL
+ ()
+ (ref (ref char))
+ rktio_addr_bytes_address
+ (((ref rktio_t) rktio) ((*ref char) addr) (intptr_t len)))
 (define-function
  ()
  rktio_bool_t
