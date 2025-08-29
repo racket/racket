@@ -256,12 +256,16 @@
       (define sort-order (format "~a" (lookup-extra 'sort-order 0)))
       (define language-family (format-list (map quote-string
                                                 (lookup-extra 'language-family '("Racket")))))
+      (define kind (let ([kind (lookup-extra 'kind #f)])
+                     (if kind (quote-string kind) "false")))
       (and href
+           ;; Array order matches `IDX_KEY`, etc., in "search.js"
            (string-append "[" (quote-string text) ","
                           (quote-string href) ","
                           html "," from-libs ","
                           pkg-name "," sort-order "," language-family ","
-                          display-from-libs "," key-from-libs "]"))))
+                          display-from-libs "," key-from-libs
+                          "," kind "]"))))
   (define l (filter values l-all))
 
   (define user (if user-dir? "user_" ""))

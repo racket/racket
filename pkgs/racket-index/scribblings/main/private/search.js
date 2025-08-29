@@ -156,6 +156,9 @@ function InitializeSearch() {
            +' &ldquo;<kbd><i>str</i></kbd>&rdquo; should match the module name'
            +' exactly; &ldquo;<kbd>L:</kbd>&rdquo; by'
            +' itself will restrict results to module names only.</li>'
+        +'<li>&ldquo;<kbd>K:<i>str</i></kbd>&rdquo; restricts results to ones who'
+           +' kind is &ldquo;<kbd><i>str</i></kbd>&rdquo;. Use double quotes'
+           +' around &ldquo;<kbd><i>str</i></kbd>&rdquo; to include spaces.</li>'
         +'<li>&ldquo;<kbd>T:<i>str</i></kbd>&rdquo; restricts results to ones in'
            +' the &ldquo;<kbd><i>str</i></kbd>&rdquo; manual (naming the'
            +' directory where the manual is found).</li>'
@@ -428,6 +431,19 @@ function UrlToManual(url) {
             .replace(/^(.*\/|>)/, ""); // and directory.
 }
 
+
+// Index array entry constants:
+const IDX_KEY = 0;
+const IDX_URL = 1;
+const IDX_KEY_HTML = 2;
+const IDX_LIBS_SEXP = 3;
+const IDX_PACKAGE = 4;
+const IDX_SORT_ORDER = 5;
+const IDX_LANG_FAMILY = 6;
+const IDX_LIBS_HTML = 7;
+const IDX_LIBS_TEXT = 8;
+const IDX_KIND = 9;
+    
 // Tests for matches and highlights:
 //   "append"
 //   "L:racket append"
@@ -443,7 +459,7 @@ function UrlToManual(url) {
 // mostly for context queries.
 
 function CompileTerm(term) {
-  var op = ((term.search(/^[NFLMHRTQ]:/) == 0) && term.substring(0,1));
+  var op = ((term.search(/^[NFLMHRTQK]:/) == 0) && term.substring(0,1));
   if (op) term = term.substring(2);
   term = term.toLowerCase();
   switch (op) {
@@ -453,55 +469,60 @@ function CompileTerm(term) {
     return function(x) { return (op(x) >= C_match) ? C_fail : C_exact; };
   case "F":
     return function(x) {
-        fams = x[6].map((x) => x.toLowerCase())
+        fams = x[IDX_LANG_FAMILY].map((x) => x.toLowerCase())
         if (!fams) return C_fail;
         return (MaxCompares(term,fams) >= C_exact) ? C_exact : C_fail;
     };
   case "L":
     return function(x) {
-      if (!x[3]) return C_fail;
-      if (x[3] == "module" || x[3] == "language" || x[3] == "reader") // rexact allowed, show partial module matches
-        return Compare(term,x[0]);
-      return (MaxCompares(term,x[3]) >= C_exact) ? C_exact : C_fail;
+      if (!x[IDX_LIBS_SEXP]) return C_fail;
+      if (x[IDX_LIBS_SEXP] == "module" || x[IDX_LIBS_SEXP] == "language" || x[IDX_LIBS_SEXP] == "reader") // rexact allowed, show partial module matches
+        return Compare(term,x[IDX_KEY]);
+      return (MaxCompares(term,x[IDX_LIBS_SEXP]) >= C_exact) ? C_exact : C_fail;
     };
   case "M":
     return function(x) {
-      if (!x[3]) return C_fail;
-      if (x[3] == "module" || x[3] == "language" || x[3] == "reader") return Compare(term,x[0]); // rexact allowed
-        return (MaxCompares(term,x[8]?x[8]:x[3]) >= C_match) ? C_exact : C_fail;
+      if (!x[IDX_LIBS_SEXP]) return C_fail;
+      if (x[IDX_LIBS_SEXP] == "module" || x[IDX_LIBS_SEXP] == "language" || x[IDX_LIBS_SEXP] == "reader") return Compare(term,x[IDX_KEY]); // rexact allowed
+        return (MaxCompares(term,x[IDX_LIBS_TEXT]?x[IDX_LIBS_TEXT]:x[IDX_LIBS_SEXP]) >= C_match) ? C_exact : C_fail;
     };
   case "H":
     return function(x) {
-      if (!x[3]) return C_fail;
-      if (x[3] == "language") return Compare(term,x[0]);
-        return (MaxCompares(term,x[8]?x[8]:x[3]) >= C_exact) ? C_exact : C_fail;
+      if (!x[IDX_LIBS_SEXP]) return C_fail;
+      if (x[IDX_LIBS_SEXP] == "language") return Compare(term,x[IDX_KEY]);
+        return (MaxCompares(term,x[IDX_LIBS_TEXT]?x[IDX_LIBS_TEXT]:x[IDX_LIBS_SEXP]) >= C_exact) ? C_exact : C_fail;
     };
   case "R":
     return function(x) {
-      if (!x[3]) return C_fail;
-      if (x[3] == "reader") return Compare(term,x[0]);
-      return (MaxCompares(term,x[8]?x[8]:x[3]) >= C_exact) ? C_exact : C_fail;
+      if (!x[IDX_LIBS_SEXP]) return C_fail;
+      if (x[IDX_LIBS_SEXP] == "reader") return Compare(term,x[IDX_KEY]);
+      return (MaxCompares(term,x[IDX_LIBS_TEXT]?x[IDX_LIBS_TEXT]:x[IDX_LIBS_SEXP]) >= C_exact) ? C_exact : C_fail;
     };
   case "T":
     return function(x) {
-      if (Compare(term,UrlToManual(x[1])) < C_exact) return C_fail;
-      else if (x[1].search(/\/index\.html$/) > 0) return C_rexact;
+      if (Compare(term,UrlToManual(x[IDX_URL])) < C_exact) return C_fail;
+      else if (x[IDX_URL].search(/\/index\.html$/) > 0) return C_rexact;
       else return C_exact;
+    };
+  case "K":
+    return function(x) {
+      if (!x[IDX_KIND]) return C_fail;
+      return Compare(term,x[IDX_KIND]);
     };
   /* a case for "Q" is not needed -- same as the default case below */
   default:
     var compare_words = CompileWordCompare(term);
     return CompileOrTerms([
       function(x) {
-        var r = Compare(term,x[0]);
+        var r = Compare(term,x[IDX_KEY]);
         // only bindings can be used for rexact matches
-        if (r >= C_rexact) return (x[3] ? r : C_exact);
+        if (r >= C_rexact) return (x[IDX_LIBS_SEXP] ? r : C_exact);
         if (r > C_words3) return r;
-        else return compare_words(x[0]);
+        else return compare_words(x[IDX_KEY]);
       },
       function(x) {
-        if (x[1].search(/\/index\.html$/) > 0) {
-          return Compare(term,UrlToManual(x[1]));
+        if (x[IDX_URL].search(/\/index\.html$/) > 0) {
+          return Compare(term,UrlToManual(x[IDX_URL]));
         } else {
           return C_fail;
         }
@@ -584,25 +605,31 @@ function MakeShowProgress() {
 }
 
 function packageAndOrderCompare(a, b) {
-  var a_is_base = plt_base_pkgs.indexOf(a[4]) >= 0;
-  var b_is_base = plt_base_pkgs.indexOf(b[4]) >= 0;
+  var a_is_base = plt_base_pkgs.indexOf(a[IDX_PACKAGE]) >= 0;
+  var b_is_base = plt_base_pkgs.indexOf(b[IDX_PACKAGE]) >= 0;
   if (a_is_base && b_is_base) return 0;
   if (a_is_base) return -1;
   if (b_is_base) return 1;
 
-  var a_in_main = plt_main_dist_pkgs.indexOf(a[4]) >= 0;
-  var b_in_main = plt_main_dist_pkgs.indexOf(b[4]) >= 0;
+  var a_in_main = plt_main_dist_pkgs.indexOf(a[IDX_PACKAGE]) >= 0;
+  var b_in_main = plt_main_dist_pkgs.indexOf(b[IDX_PACKAGE]) >= 0;
   if (a_in_main && b_in_main) return 0;
   if (a_in_main) return -1;
   if (b_in_main) return 1;
 
   // Same name: sort using `sort-order`
-  if (a[0] == b[0]) {
-      if (a[5] < b[5]) return -1;
-      if (b[5] < a[5]) return 1;
+  if (a[IDX_KEY] == b[IDX_KEY]) {
+      if (a[IDX_SORT_ORDER] < b[IDX_SORT_ORDER]) return -1;
+      if (b[IDX_SORT_ORDER] < a[IDX_SORT_ORDER]) return 1;
   }
 
   return 0;
+}
+
+function splitWithQuotes(input) {
+  return input.match(/(?:[^\s"]|"[^"]*")+/g).map(token =>
+    token.replace(/"([^"]*)"/g, "$1")
+  );
 }
 
 function Search(data, term, is_pre, K) {
@@ -611,7 +638,7 @@ function Search(data, term, is_pre, K) {
   var t = false;
   function Killer() { if (t) clearTimeout(t); };
   // term comes with normalized spaces (trimmed, and no double spaces)
-  var preds = (term=="") ? [] : CompileTerms(term.split(/ /), false);
+  var preds = (term=="") ? [] : CompileTerms(splitWithQuotes(term), false);
   if (preds.length == 0) {
     var ret = is_pre ? [0,data] : [0,[]];
     if (K) { K(ret); return Killer; }
@@ -783,10 +810,10 @@ function UpdateResults() {
   for (var i=0; i<result_links.length; i++) {
     var n = i + first_search_result;
     if (n < search_results.length) {
-        var note = false, res = search_results[n], desc = res[3], lang_fams = res[6];
+        var note = false, res = search_results[n], desc = res[IDX_LIBS_SEXP], lang_fams = res[IDX_LANG_FAMILY];
       if ((desc instanceof Array) && (desc.length > 0)) {
-        var desc_key = res[8] ? res[8] : desc;
-        var desc_display = res[7];
+        var desc_key = res[IDX_LIBS_TEXT] ? res[IDX_LIBS_TEXT] : desc;
+        var desc_display = res[IDX_LIBS_HTML];
         note = '<span class="smaller">provided from</span> ';
         for (var j=0; j<desc.length; j++)
           note +=
@@ -805,7 +832,7 @@ function UpdateResults() {
         note = '<span class="smaller">language</span>';
       }
       if (show_manuals == 2 || (show_manuals == 1 && !desc)) {
-        var manual = UrlToManual(res[1]),
+        var manual = UrlToManual(res[IDX_URL]),
             idx = (show_manual_titles && plt_manual_ptrs[manual]);
         note = (note ? (note + " ") : "");
         note += '<span class="smaller">in</span> '
@@ -816,7 +843,7 @@ function UpdateResults() {
                    +' onclick="return new_query(this,\'\');"'
                    +' oncontextmenu="return refine_query(this);">'
                 + ((typeof idx == "number")
-                   ? ('<i>'+UncompactHtml(search_data[idx][2])+'</i>')
+                   ? ('<i>'+UncompactHtml(search_data[idx][IDX_KEY_HTML])+'</i>')
                    : manual)
                 + '</a>';
       }
@@ -824,7 +851,7 @@ function UpdateResults() {
         note = '&nbsp;&nbsp;<span class="smaller">' + note + '</span>';
       if (show_family && (lang_fams[0] != plt_main_language_family))
         note = '<div class="language-family">' + lang_fams[0] + "</div>" + note;
-      var href = UncompactUrl(res[1]);
+      var href = UncompactUrl(res[IDX_URL]);
       if (link_args) {
         var hash = href.indexOf("#");
         if (hash >= 0)
@@ -836,15 +863,15 @@ function UpdateResults() {
       result_links[i].innerHTML =
         '<div title="" class="search-result-row"><a href="' + href
         + '" class="indexlink" tabIndex="2">'
-        + UncompactHtml(res[2]) + '</a>' + (note || "") + '</div>';
+        + UncompactHtml(res[IDX_KEY_HTML]) + '</a>' + (note || "") + '</div>';
       result_links[i].classList.remove(
         'search-result-wrapper-pkg-base',
         'search-result-wrapper-pkg-main-dist'
       );
-      if (plt_base_pkgs.indexOf(res[4]) >= 0) {
+      if (plt_base_pkgs.indexOf(res[IDX_PACKAGE]) >= 0) {
         result_links[i].classList.add('search-result-wrapper-pkg-base');
         result_links[i].title = "from base language's official documentation";
-      } else if (plt_main_dist_pkgs.indexOf(res[4]) >= 0) {
+      } else if (plt_main_dist_pkgs.indexOf(res[IDX_PACKAGE]) >= 0) {
         result_links[i].classList.add('search-result-wrapper-pkg-main-dist');
         result_links[i].title = "from distribution's official documentation";
       } else {
