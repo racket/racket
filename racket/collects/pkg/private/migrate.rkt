@@ -53,7 +53,9 @@
            [(list 'clone path url) (values url 'clone (enclosing-path-for-repo
                                                        url
                                                        (path->complete-path path installed-dir)))]
-           [(list 'git url) (values url 'git-url #f)]))
+           [(list 'git url) (values url 'git-url #f)]
+           [(list 'file path) (values (path->complete-string path) 'file #f)]
+           [(list 'dir path) (values (path->complete-string path) 'dir #f)]))
        (pkg-desc source type name #f #f dir))
      string<?
      #:key pkg-desc-name))
