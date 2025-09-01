@@ -875,14 +875,7 @@ produces @racket[#t].
 
 @mz-examples[(bitwise-first-bit-set 128)]
 
-@history[#:added "8.16.0.4"]
-
-
-This operation is equivalent to
-@racket[(not (zero? (bitwise-and n (arithmetic-shift 1 m))))],
-but it is faster and runs in constant time when @racket[n] is positive.
-
-@mz-examples[(bitwise-bit-set? 5 0) (bitwise-bit-set? 5 2) (bitwise-bit-set? -5 (expt 2 700))]}
+@history[#:added "8.16.0.4"]}
 
 
 @defproc[(bitwise-bit-field [n exact-integer?]
