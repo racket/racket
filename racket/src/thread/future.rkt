@@ -44,7 +44,8 @@
          currently-running-future
          reset-future-logs-for-tracing!
          mark-future-trace-end!
-         set-processor-count!)
+         set-processor-count!
+         poll-parallel-thread-will-executor)
 
 (module+ for-place
   (provide set-place-future-procs!
@@ -61,7 +62,8 @@
            call-in-future))
 
 (define (init-future-place!)
-  (init-future-logging-place!))
+  (init-future-logging-place!)
+  (init-parallel-thread-will-executor!))
 
 (define (futures-enabled?)
   (threaded?))
@@ -289,35 +291,46 @@
        (define s (start-scheduler n #t))
        (set-place-schedulers! current-place (hash-set (place-schedulers current-place) s #t))
        (define pool (parallel-thread-pool s capacity 0 #f))
-       (define (close pool)
-         (define s (parallel-thread-pool-scheduler pool))
-         (define schedulers (place-schedulers current-place))
-         (when (hash-ref schedulers s #f)
-           (kill-future-scheduler s)
-           (set-place-schedulers! current-place (hash-remove schedulers s)))
-         (unsafe-custodian-unregister pool (parallel-thread-pool-custodian-reference pool)))
        (cond
          [own?
-          ;; leave custodian shutdown to thread, but register a will in case
-          ;; the thread is GCed
-          (host:will-register custodian-will-executor pool close)
+          ;; leave custodian shutdown to thread; thread will need a will to ensure
+          ;; pool shutdown if the thread is GCed, but that's up to `thread/parallel`
           pool]
          [(not cust)
           pool]
          [else
-          (define cref (custodian-register-pool cust pool (lambda (pool c) (close pool))))
+          (define cref (custodian-register-pool cust pool (lambda (pool c)
+                                                            (do-parallel-thread-pool-close pool))))
           (set-parallel-thread-pool-custodian-reference! pool cref)
           (and cref pool)]))
       (raise-custodian-is-shut-down who cust)))
 
 (define/who (parallel-thread-pool-close pool)
   (check who parallel-thread-pool? pool)
+  (atomically
+   (do-parallel-thread-pool-close pool)))
+
+;; Call in atomic mode or in scheduler thread:
+(define (do-parallel-thread-pool-close pool)
   (define s (parallel-thread-pool-scheduler pool))
   (host:mutex-acquire (scheduler-mutex s))
   (set-parallel-thread-pool-capacity! pool 0)
   (host:mutex-release (scheduler-mutex s))
-  (atomically
-   (thread-pool-departure pool 0)))
+  (thread-pool-departure pool 0)
+  (unsafe-custodian-unregister pool (parallel-thread-pool-custodian-reference pool)))
+
+(define-place-local parallel-thread-will-executor (host:make-will-executor void))
+
+(define (init-parallel-thread-will-executor!)
+  (set! parallel-thread-will-executor (host:make-will-executor void)))
+
+;; Called in scheduler thread:
+(define (poll-parallel-thread-will-executor)
+  (cond
+    [(host:will-try-execute parallel-thread-will-executor)
+     => (lambda (p)
+          ((car p) (cdr p))
+          (poll-parallel-thread-will-executor))]))
 
 (define (thread/parallel thunk [pool-in 'own] [keep-result? #f])
   (define who 'thread)
@@ -383,9 +396,16 @@
      (thread-push-suspend+resume-callbacks! (lambda () (future-external-stop me-f))
                                             (lambda () (future-external-resume me-f))
                                             th)
+     ;; if the thread becomes unreachable, need an explicit termination
+     ;; to exit the pool (which will maybe cause the pool to be shut down)
+     (host:will-register parallel-thread-will-executor th parallel-thread-unreachable)
      ;; this is the step (internally atomic) that commits the thread to running:
      (schedule-future! me-f #:check-pool-open? #t)
      th]))
+
+;; called in scheduler thread
+(define (parallel-thread-unreachable th)
+  (do-kill-thread th))
 
 ;; in Racket thread
 ;; used to implement `fsemaphore-wait` when not in a future
@@ -959,10 +979,12 @@
 (define (thread-pool-departure pool delta)
   (define s (parallel-thread-pool-scheduler pool))
   (host:mutex-acquire (scheduler-mutex s))
-  (set-parallel-thread-pool-swimmers! pool (+ (parallel-thread-pool-swimmers pool) delta))
+  (define swimmers (+ (parallel-thread-pool-swimmers pool) delta))
+  (set-parallel-thread-pool-swimmers! pool swimmers)
   (define capacity (parallel-thread-pool-capacity pool))
   (host:mutex-release (scheduler-mutex s))
-  (when (zero? capacity)
+  (when (and (zero? swimmers)
+             (zero? capacity))
     (kill-future-scheduler s)
     (set-place-schedulers! current-place (hash-remove (place-schedulers current-place) s))))
 

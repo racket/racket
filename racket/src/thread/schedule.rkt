@@ -72,6 +72,7 @@
   (define poll-now? (leftover-ticks . <= . 0))
   (host:poll-will-executors)
   (poll-custodian-will-executor)
+  (poll-parallel-thread-will-executor)
   (when poll-now?
     (check-external-events))
   (call-pre-poll-external-callbacks)

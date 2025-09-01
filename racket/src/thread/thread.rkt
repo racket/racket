@@ -107,6 +107,7 @@
            thread-descheduled?
            thread-suspended?
            is-thread-dead?
+           do-kill-thread
            thread-interrupt-callback
            set-thread-interrupt-callback!
            set-future->thread!

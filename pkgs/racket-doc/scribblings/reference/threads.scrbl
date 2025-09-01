@@ -366,11 +366,9 @@ parallel, but they will still all run concurrently.
 
 The new thread pool is placed into the management of the current
 @tech{custodian}. If the custodian is shut down, then the pool is
-closed in the same way as with @racket[parallel-thread-pool-close],
-but in addition, no parallel threads in the pool will be able to
-continue. The threads will not count as terminated (since each thread
-has its own custodians for that purpose), but they will cease to make
-progress.
+closed in the same way as with @racket[parallel-thread-pool-close].
+Any threads already in the pool can continue to run and use the pool's
+resources (unless they are also shut down by the same custodian).
 
 A parallel thread pool cannot run threads in parallel on the @tech{BC}
 variant of Racket or when Racket is compiled without support for
