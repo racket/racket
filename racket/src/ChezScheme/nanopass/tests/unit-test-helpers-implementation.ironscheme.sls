@@ -3,7 +3,14 @@
 
 (library (tests unit-test-helpers-implementation)
   (export with-output-to-string display-condition format-error-message)
-  (import (ikarus))
+  (import (ironscheme))
+
+  ;; easy enough to define ;p
+  (define (with-output-to-string thunk)
+    (let-values (((p g) (open-string-output-port)))
+      (parameterize ([current-output-port p])
+       (thunk)
+       (g))))
 
   (define display-condition
     (case-lambda
@@ -23,7 +30,7 @@
                    (format "~s" (syntax-violation-form c)))
                ""))
          op)]))
-
+         
   (define-syntax format-error-message
     (syntax-rules ()
       [(_ args ...) (format args ...)])))

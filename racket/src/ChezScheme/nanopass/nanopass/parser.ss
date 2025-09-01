@@ -8,6 +8,15 @@
           (nanopass syntaxconvert)
           (nanopass nano-syntax-dispatch))
 
+  (define-syntax np-parse-fail-token
+    (let ([sym (datum->syntax #'* (gensym "np-parse-fail-token"))])
+      (make-variable-transformer
+        (lambda (x)
+          (syntax-case x ()
+            [id (identifier? #'id) (with-syntax ([sym sym]) #''sym)]
+            [(set! _ e) (syntax-violation 'np-parse-fail-token "misplaced use of keyword" x)]
+            [(_ e ...) (syntax-violation 'np-parse-fail-token "misplaced use of keyword" x)])))))
+
   (define-syntax parse-or
     (syntax-rules (on-error)
       [(_ (on-error ?err0)) ?err0]
@@ -105,10 +114,10 @@
                                         [(msg ...) (map (lambda (x) #f) #'(field-var ...))]
                                         [field-pats (datum->syntax #'* (pair-alt-pattern alt))])
                             #`[#,(if (pair-alt-implicit? alt)
-                                     #'(nano-syntax-dispatch s-exp 'field-pats)
+                                     #'(nano-syntax-dispatch s-exp field-pats)
                                      (with-syntax ([key (car (alt-syn alt))])
                                        #'(and (eq? 'key (car s-exp))
-                                              (nano-syntax-dispatch (cdr s-exp) 'field-pats))))
+                                              (nano-syntax-dispatch (cdr s-exp) field-pats))))
                                =>
                                (lambda (ls)
                                  (apply

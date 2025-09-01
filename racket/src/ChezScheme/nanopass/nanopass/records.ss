@@ -1,13 +1,13 @@
-;;; Copyright (c) 2000-2015 Dipanwita Sarkar, Andrew W. Keep, R. Kent Dybvig, Oscar Waddell
+;;; Copyright (c) 2000-2018 Dipanwita Sarkar, Andrew W. Keep, R. Kent Dybvig, Oscar Waddell
 ;;; See the accompanying file Copyright for details
 
 (library (nanopass records)
-  (export find-spec nonterminal-meta? nano-alt->ntspec 
+  (export find-spec nonterminal-meta?
           nonterm-id->ntspec? nonterm-id->ntspec id->spec term-id->tspec?
 
           meta-name->tspec meta-name->ntspec
 
-          make-nano-dots nano-dots? nano-dots-x 
+          make-nano-dots nano-dots? nano-dots-x
 
           make-nano-quote nano-quote? nano-quote-x
 
@@ -20,7 +20,7 @@
           nano-cata-maybe?
 
           make-language language? language-name language-entry-ntspec
-          language-tspecs language-ntspecs 
+          language-tspecs language-ntspecs
           language-tag-mask language-nongenerative-id
 
           make-tspec tspec-meta-vars tspec-type tspec-pred
@@ -38,7 +38,7 @@
           make-terminal-alt terminal-alt? terminal-alt-tspec
           make-nonterminal-alt nonterminal-alt? nonterminal-alt-ntspec
 
-          has-implicit-alt? 
+          has-implicit-alt?
           spec-all-pred
           spec-type
 
@@ -52,7 +52,10 @@
 
           #;define-nanopass-record-types
 
-          exists-alt?)
+          exists-alt?
+
+          make-pass-info pass-info? pass-info-input-language
+          pass-info-output-language)
   (import (rnrs) (nanopass helpers) (nanopass syntaxconvert))
 
   (define-nanopass-record)
@@ -165,11 +168,12 @@
                                       (syntax->datum (spec-name spec)) (syntax->datum lang-name))
                                     mv)))
                               (cdr specs))))
-                        (spec-meta-vars test-spec))))))))
+                        (spec-meta-vars test-spec)))
+                    (f (cdr specs)))))))
           (check-meta! name tspecs ntspecs)
           (new name entry-ntspec tspecs ntspecs #f #f #f nongen-id)))))
 
-  (define-record-type tspec 
+  (define-record-type tspec
     (fields meta-vars type handler (mutable pred) (mutable tag) (mutable parent?))
     (nongenerative)
     (protocol
@@ -253,23 +257,23 @@
       (cond
         [(tspec? x) (tspec-type x)]
         [(ntspec? x) (ntspec-name x)]
-        [else (error who "unrecognized type" x)]))) 
+        [else (error who "unrecognized type" x)])))
 
-  ;;; records produced by meta parsers 
+  ;;; records produced by meta parsers
   (define-record-type nano-dots (fields x) (nongenerative) (sealed #t))
 
   (define-record-type nano-quote (fields x) (nongenerative) (sealed #t))
-  
+
   (define-record-type nano-unquote (fields x) (nongenerative) (sealed #t))
-  
+
   (define-record-type nano-meta (fields alt fields) (nongenerative) (sealed #t))
-  
+
   (define-record-type nano-cata
     (fields itype syntax procexpr maybe-inid* outid* maybe?)
     (nongenerative)
     (sealed #t))
-  
-  ;; record helpers 
+
+  ;; record helpers
   (define find-spec
     (lambda (m lang)
       (let ([name (meta-var->raw-meta-var (syntax->datum m))])
@@ -285,14 +289,14 @@
     (lambda (m ntspec*)
       (let ([m (meta-var->raw-meta-var (syntax->datum m))])
         (exists (lambda (x) (memq m (syntax->datum (ntspec-meta-vars x))))
-          ntspec*)))) 
-  
+          ntspec*))))
+
   (define nonterminal-meta->ntspec
     (lambda (meta ntspecs)
       (let ([meta (meta-var->raw-meta-var (syntax->datum meta))])
         (find (lambda (x) (memq meta (syntax->datum (ntspec-meta-vars x))))
           ntspecs))))
-  
+
   (define terminal-meta->tspec
     (lambda (meta tspecs)
       (let ([meta (meta-var->raw-meta-var (syntax->datum meta))])
@@ -311,13 +315,7 @@
                          (tspec-pred tspec)))
               (language-tspecs lang))
             (syntax-violation #f "meta not found" (language-name lang) m)))))
-  
-  ;;; TODO, figure out if this can ever be called, if not remove the
-  ;;;       reference to it, if so, figure out what should be implemented.
-  (define nano-alt->ntspec
-    (lambda (alt ntspecs)
-      (error 'nano-alt->ntspec "Not implemented"))) 
-  
+
   (define id->spec
     (lambda (id lang)
       (or (nonterm-id->ntspec? id (language-ntspecs lang))
@@ -346,14 +344,14 @@
     (lambda (m tspecs)
       (let ([m (meta-var->raw-meta-var (syntax->datum m))])
         (find (lambda (tspec)
-                (memq m (syntax->datum (tspec-meta-vars tspec)))) 
+                (memq m (syntax->datum (tspec-meta-vars tspec))))
           tspecs))))
-  
+
   (define-who meta-name->ntspec
     (lambda (m ntspecs)
       (let ([m (meta-var->raw-meta-var (syntax->datum m))])
         (find (lambda (ntspec)
-                (memq m (syntax->datum (ntspec-meta-vars ntspec)))) 
+                (memq m (syntax->datum (ntspec-meta-vars ntspec))))
           ntspecs))))
 
   (define subspec?
@@ -384,7 +382,7 @@
                      (cons spec seen*))))))))
 
   (define type->pred-prefixes
-    (lambda (id mrec) 
+    (lambda (id mrec)
       (define find-related-ntspecs
         (lambda (ntspec mrec)
           (let ([ntspecs (language-ntspecs mrec)])
@@ -400,7 +398,7 @@
           (cond
             [(null? specs) #f]
             [(eq? (syntax->datum id)
-               (syntax->datum 
+               (syntax->datum
                  (let ([spec (car specs)])
                    (cond
                      [(tspec? spec) (tspec-type spec)]
@@ -419,8 +417,8 @@
                     (cons found ntspecs))
                   (error 'type->pred-prefixes "unrecognized non-terminal"
                     id)))))))
-  
-  (define has-implicit-alt? 
+
+  (define has-implicit-alt?
     (lambda (ntspec)
       (exists
         (lambda (alt)
@@ -461,7 +459,7 @@
                         (tspec-parent?-set! tspec #f #;(r t #'*nanopass-record-is-parent*))
                         (fxior tag tspec-tag-all))
                       tspec-tag-all)))))
-          (define annotate-alt*!
+          (define-who annotate-alt*!
             (lambda (bits)
               (lambda (alt-all-tag ntspec)
                 (let ([tag (ntspec-tag ntspec)] [nt-rtd (ntspec-rtd ntspec)] [ntname (ntspec-name ntspec)])
@@ -520,7 +518,8 @@
                                    (syntax-violation 'define-language "no terminal for meta-variable"
                                      lang-name (alt-syn a)))
                                  (terminal-alt-tspec-set! a tspec)
-                                 (f alt* next alt-all-tag))])))))))))
+                                 (f alt* next alt-all-tag))]
+                              [else (errorf who "unexpected terminal alt ~s" a)])))))))))
           (define annotate-ntspec*!
             (lambda (ntspec*)
               (let f ([nt-counter 0] [ntspec* ntspec*])
@@ -584,7 +583,8 @@
                               (let-values ([(pred term-pred new-tag) (annotate-all-pred! (nonterminal-alt-ntspec alt))])
                                 (f (cdr alt*) (cons pred pred*)
                                    (if term-pred (cons term-pred term-pred*) term-pred*)
-                                   (append new-tag tag)))]))))]))))
+                                   (append new-tag tag)))]
+                             [else (errorf who "unexpected alt ~s" alt)]))))]))))
           (let ([lang-rtd (make-record-type-descriptor (syntax->datum lang-name)
                             (record-type-descriptor nanopass-record)
                             (let ([nongen-id (language-nongenerative-id lang)])
@@ -620,7 +620,7 @@
             ; TODO: handle fld and msgs that are lists.
             (define build-field-check
               (lambda (fld msg level maybe?)
-                (with-values 
+                (with-values
                   (cond
                     [(nonterminal-meta->ntspec fld ntspecs) =>
                      (lambda (ntspec) (values (ntspec-all-pred ntspec) (ntspec-name ntspec)))]
@@ -631,6 +631,11 @@
                               (syntax->datum (language-name lang)))
                             fld)])
                   (lambda (pred? name)
+                    (define (build-list-of-string level name)
+                      (let loop ([level level] [str ""])
+                        (if (fx=? level 0)
+                            (string-append str (symbol->string (syntax->datum name)))
+                            (loop (fx- level 1) (string-append str "list of ")))))
                     (with-syntax ([pred? (if maybe?
                                              #`(lambda (x) (or (eq? x #f) (#,pred? x)))
                                              pred?)])
@@ -647,7 +652,21 @@
                                                "expected ~s but received ~s in field ~s of ~s"
                                                '#,name x '#,fld '#,(alt-syn alt))))))
                                  #`(lambda (x)
-                                     (for-each #,(f (fx- level 1)) x))))
+                                     (let loop ([x x])
+                                       (cond
+                                         [(pair? x)
+                                          (#,(f (fx- level 1)) (car x))
+                                          (loop (cdr x))]
+                                         [(null? x)]
+                                         [else
+                                          (let ([msg #,msg])
+                                            (if msg
+                                                (errorf who
+                                                  "expected ~a but received ~s in field ~s of ~s from ~a"
+                                                  #,(build-list-of-string level name) x '#,fld '#,(alt-syn alt) msg)
+                                                (errorf who
+                                                  "expected ~a but received ~s in field ~s of ~s"
+                                                  #,(build-list-of-string level name) x '#,fld '#,(alt-syn alt))))])))))
                           #,fld))))))
             (with-syntax ([(fld ...) (pair-alt-field-names alt)])
               (with-syntax ([(msg ...) (generate-temporaries #'(fld ...))]
@@ -739,7 +758,7 @@
                             (if (terminal-alt? alt)
                                 (cons (tspec-pred (terminal-alt-tspec alt)) term?*)
                                 term?*))))))))))))
-  
+
   ;; utilities moved out of pass.ss
   (define-who exists-alt?
     (lambda (ialt ntspec)
@@ -753,30 +772,33 @@
                       (or (f (ntspec-alts (nonterminal-alt-ntspec alt)))
                           (f (cdr alt*)))
                       (if (pred? alt) alt (f (cdr alt*)))))))))
-      (let ([syn (alt-syn ialt)])
-        (cond
-          [(terminal-alt? ialt)
-           (let ([type (syntax->datum (tspec-type (terminal-alt-tspec ialt)))])
-             (scan-alts
-               (lambda (alt)
-                 (and (terminal-alt? alt)
-                      (eq? (syntax->datum (tspec-type (terminal-alt-tspec alt))) type)))))]
-          [(pair-alt? ialt)
-           (if (pair-alt-implicit? ialt)
-               (let ([pattern (pair-alt-pattern ialt)])
-                 (scan-alts
-                   (lambda (alt)
-                     (and (pair-alt? alt)
-                          (pair-alt-implicit? alt)
-                          (let ([apattern (pair-alt-pattern alt)])
-                            (equal? apattern pattern))))))
-               (let ([pattern (pair-alt-pattern ialt)])
-                 (scan-alts
-                   (lambda (alt)
-                     (and (pair-alt? alt)
-                          (not (pair-alt-implicit? alt))
-                          (let ([asyn (alt-syn alt)])
-                            (let ([apattern (pair-alt-pattern alt)])
-                              (and (eq? (syntax->datum (car asyn)) (syntax->datum (car syn)))
-                                   (equal? apattern pattern)))))))))]
-          [else (error who "unexpected alt" ialt)])))))
+      (cond
+        [(terminal-alt? ialt)
+         (let ([type (syntax->datum (tspec-type (terminal-alt-tspec ialt)))])
+           (scan-alts
+             (lambda (alt)
+               (and (terminal-alt? alt)
+                    (eq? (syntax->datum (tspec-type (terminal-alt-tspec alt))) type)))))]
+        [(pair-alt? ialt)
+         (if (pair-alt-implicit? ialt)
+             (let ([pattern (pair-alt-pattern ialt)])
+               (scan-alts
+                 (lambda (alt)
+                   (and (pair-alt? alt)
+                        (pair-alt-implicit? alt)
+                        (let ([apattern (pair-alt-pattern alt)])
+                          (equal? apattern pattern))))))
+             (let ([pattern (pair-alt-pattern ialt)])
+               (scan-alts
+                 (lambda (alt)
+                   (and (pair-alt? alt)
+                        (not (pair-alt-implicit? alt))
+                        (let ([apattern (pair-alt-pattern alt)])
+                          (and (eq? (syntax->datum (car (alt-syn alt))) (syntax->datum (car (alt-syn ialt))))
+                               (equal? apattern pattern))))))))]
+        [else (error who "unexpected alt" ialt)])))
+
+  ;; record type used to transport data in the compile-time environment.
+  (define-record-type pass-info
+    (nongenerative)
+    (fields input-language output-language)))

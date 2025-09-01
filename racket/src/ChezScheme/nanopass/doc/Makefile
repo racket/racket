@@ -1,4 +1,7 @@
 # define default document pathname here
+
+Scheme=scheme
+STEXLIB=${HOME}/stex
 # override on command line with 'make x=newdoc'
 x = user-guide
 

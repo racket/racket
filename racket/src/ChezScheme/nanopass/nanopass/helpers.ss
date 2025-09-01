@@ -1,4 +1,4 @@
-;;; Copyright (c) 2000-2015 Dipanwita Sarkar, Andrew W. Keep, R. Kent Dybvig, Oscar Waddell
+;;; Copyright (c) 2000-2018 Dipanwita Sarkar, Andrew W. Keep, R. Kent Dybvig, Oscar Waddell
 ;;; See the accompanying file Copyright for details
 
 (library (nanopass helpers)
@@ -17,7 +17,7 @@
     meta-var->raw-meta-var combine unique-name
 
     ;; convenience syntactic forms
-    rec with-values define-who 
+    rec with-values define-who trace-define-who
 
     ;; source information funtions
     syntax->source-info 
@@ -38,7 +38,7 @@
     indirect-export
 
     ;; compile-time environment helpers
-    make-compile-time-value
+    define-property make-compile-time-value
 
     ;; code organization helpers
     module
@@ -58,16 +58,25 @@
     ;; the base record, so that we can use gensym syntax
     define-nanopass-record
 
-    ;; failure token so that we can know when parsing fails with a gensym
-    np-parse-fail-token
-
     ;; handy syntactic stuff
     with-implicit with-r6rs-quasiquote with-extended-quasiquote
     extended-quasiquote with-auto-unquote
 
     ;; abstraction of the grabbing the syntactic environment that will work in
     ;; Chez, Ikarus, & Vicare
-    with-compile-time-environment)
+    with-compile-time-environment
+
+    ;; expose the source information stuff
+    syntax->source-information
+    source-information-source-file
+    source-information-byte-offset-start
+    source-information-char-offset-start
+    source-information-byte-offset-end
+    source-information-char-offset-end
+    source-information-position-line
+    source-information-position-column
+    source-information-type
+    provide-full-source-information)
   (import (rnrs) (nanopass implementation-helpers))
 
   (define-syntax datum
@@ -78,8 +87,8 @@
     (lambda (x)
       (syntax-case x ()
         [(k . body)
-         (with-implicit (k quasiquote)
-           #'(let-syntax ([quasiquote (syntax-rules () [(_ x) `x])]) . body))])))
+         #`(let-syntax ([#,(datum->syntax #'k 'quasiquote) (syntax-rules () [(_ x) `x])])
+             . body)])))
 
   (define-syntax extended-quasiquote
     (lambda (x)
@@ -89,10 +98,14 @@
             (syntax-case body (unquote unquote-splicing)
               [(unquote x)
                (identifier? #'x)
-               (values body (cons #'x t*) (cons #'x e*))]
+               (if (memp (lambda (t) (bound-identifier=? t #'x)) t*)
+                   (values body t* e*)
+                   (values body (cons #'x t*) (cons #'x e*)))]
               [(unquote-splicing x)
                (identifier? #'x)
-               (values body (cons #'x t*) (cons #'x e*))]
+               (if (memp (lambda (t) (bound-identifier=? t #'x)) t*)
+                   (values body t* e*)
+                   (values body (cons #'x t*) (cons #'x e*)))]
               [(unquote e)
                (with-syntax ([(t) (generate-temporaries '(t))])
                  (values #'(unquote t) (cons #'t t*) (cons #'e e*)))]
@@ -246,6 +259,15 @@
            #'(define name (let () (define who 'name) expr)))]
         [(k (name . fmls) expr exprs ...)
          #'(define-who name (lambda (fmls) expr exprs ...))])))
+
+  (define-syntax trace-define-who
+    (lambda (x)
+      (syntax-case x ()
+        [(k name expr)
+         (with-implicit (k who)
+           #'(trace-define name (let () (define who 'name) expr)))]
+        [(k (name . fmls) expr exprs ...)
+         #'(trace-define-who name (lambda (fmls) expr exprs ...))])))
 
   ;;; moved from meta-syntax-dispatch.ss and nano-syntax-dispatch.ss
   (define combine

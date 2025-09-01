@@ -53,7 +53,7 @@
     with-implicit
 
     ;; abstraction of the grabbing the syntactic environment that will work in
-    ;; Chez, Ikarus, & Vicare
+    ;; Chez, Ikarus, Vicare and IronScheme
     with-compile-time-environment
 
     ;; apparently not neeaded (or no longer needed)
@@ -61,7 +61,16 @@
     ; scheme-version<= with-scheme-version gensym? errorf with-output-to-string
     ; with-input-from-string
     )
-  (import (rnrs) (rnrs eval) (ikarus) (nanopass syntactic-property))
+  (import 
+    (rnrs) 
+    (rnrs eval) 
+    (ironscheme) 
+    (nanopass syntactic-property)
+    (ironscheme core)
+    (ironscheme clr)
+    (ironscheme reader))
+
+  (define optimize-level (make-parameter 0)) ;; not sure what this is used for (yet)
 
   (define-syntax with-implicit
     (syntax-rules ()
@@ -74,7 +83,7 @@
       (syntax-case x ()
         [(k) (with-implicit (k nanopass-record nanopass-record? nanopass-record-tag)
                #'(define-record-type (nanopass-record make-nanopass-record nanopass-record?)
-                   (nongenerative #{nanopass-record d47f8omgluol6otrw1yvu5-0})
+                   (nongenerative nanopass-record-d47f8omgluol6otrw1yvu5-0)
                    (fields (immutable tag nanopass-record-tag))))])))
  
   (define-syntax eq-hashtable-set! (identifier-syntax hashtable-set!))
@@ -93,28 +102,34 @@
       (let loop ([n n] [ls '()])
         (if (fxzero? n)
             ls
-            (let ([n (- n 1)])
+            (let ([n (fx- n 1)])
               (loop n (cons n ls)))))))
 
+  (define (gensym? s) (eq? s (ungensym s)))              
+
+  ;; just stuffing info for now... I guess it is needed for prettiness only?
   (define regensym
     (case-lambda
       [(gs extra)
        (unless (gensym? gs) (errorf 'regensym "~s is not a gensym" gs))
        (unless (string? extra) (errorf 'regensym "~s is not a string" extra))
-       (let ([pretty-name (parameterize ([print-gensym #f]) (format "~s" gs))]
-             [unique-name (gensym->unique-string gs)])
-         (with-input-from-string (format "#{~a ~a~a}" pretty-name unique-name extra) read))]
+      ;  (let ([pretty-name (parameterize ([print-gensym #f]) (format "~s" gs))]
+      ;        [unique-name (gensym->unique-string gs)])
+      ;    (with-input-from-string (format "~a-~a~a" pretty-name unique-name extra) read))
+       (gensym (format "~a~a" gs extra))]
       [(gs extra0 extra1)
        (unless (gensym? gs) (errorf 'regensym "~s is not a gensym" gs))
        (unless (string? extra0) (errorf 'regensym "~s is not a string" extra0))
        (unless (string? extra1) (errorf 'regensym "~s is not a string" extra1))
-       (with-output-to-string (lambda () (format "~s" gs)))
-       (let ([pretty-name (parameterize ([print-gensym #f]) (format "~s" gs))]
-             [unique-name (gensym->unique-string gs)])
-         (with-input-from-string (format "#{~a~a ~a~a}" pretty-name extra0 unique-name extra1) read))]))
+      ; (with-output-to-string (lambda () (format "~s" gs)))
+      ;  (let ([pretty-name (parameterize ([print-gensym #f]) (format "~s" gs))]
+      ;        [unique-name (gensym->unique-string gs)])
+      ;    (with-input-from-string (format "~a~a-~a~a" pretty-name extra0 unique-name extra1) read))
+       (gensym (format "~a~a~a" gs extra0 extra1))
+      ]))
 
   (define provide-full-source-information
-    (make-parameter #t (lambda (x) (and x #t))))
+    (make-parameter #f (lambda (x) (and x #t))))
 
   (define-record-type source-information
     (nongenerative)
@@ -124,8 +139,9 @@
     (protocol
       (lambda (new)
         (lambda (a type)
-          (let ([as (annotation-source a)])
-            (let ([fn (car as)] [cp (cdr as)])
+          (let* ([as (annotation-source a)][cp (car (clr-static-call IronScheme.Runtime.Builtins SourceLocation (cdr as)))])
+            (let ([fn (car as)] [line (car cp)][col (cdr cp)])
+              ;; the line/col info from the reader is pretty accurate, do I need the stuff below?
               (if (provide-full-source-information)
                   (call-with-input-file fn
                     (lambda (ip)
@@ -136,23 +152,17 @@
                               (if (char=? c #\newline)
                                   (loop (- n 1) (fx+ line 1) 0)
                                   (loop (- n 1) line (fx+ col 1)))))))) 
-                  (new fn #f cp #f #f #f #f type))))))))
-
-  (define syntax->annotation
-    (lambda (x)
-      (and (struct? x)                      ;; syntax objects are structs
-           (string=? (struct-name x) "stx") ;; with the name syntax
-           (let ([e (struct-ref x 0)])      ;; the 0th element is potentially an annotation
-             (and (annotation? e) e)))))    ;; if it is an annotation return it
+                  (new fn #f #f #f #f line col type))))))))
 
   (define syntax->source-information
     (lambda (stx)
       (let loop ([stx stx] [type 'at])
         (cond
-          [(syntax->annotation stx) =>
-           (lambda (a) (make-source-information a type))]
+          [(stx? stx)
+           (let ([e (stx-expr stx)])
+             (and (annotation? e) (make-source-information e type)))]
           [(pair? stx) (or (loop (car stx) 'near) (loop (cdr stx) 'near))]
-          [else #f]))))
+          [else #f]))))          
 
   (define-syntax errorf
     (syntax-rules ()

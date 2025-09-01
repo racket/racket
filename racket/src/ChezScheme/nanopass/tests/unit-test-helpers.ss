@@ -1,10 +1,10 @@
-;;; Copyright (c) 2000-2015 Andrew W. Keep, R. Kent Dybvig
+;;; Copyright (c) 2000-2018 Andrew W. Keep, R. Kent Dybvig
 ;;; See the accompanying file Copyright for details
 
 (library (tests unit-test-helpers)
-  (export test-suite test assert-equal? with-output-to-string)
-  (import (rnrs) (tests unit-test-helpers-implementation))
-  
+  (export test-suite test assert-equal? assert-error with-output-to-string format-error-message)
+  (import (rnrs) (tests unit-test-helpers-implementation) (only (nanopass helpers) errorf))
+
   (define-syntax test-suite
     (lambda (x)
       (define name->run-name
@@ -32,8 +32,9 @@
                          (write failures)
                          (display " failures, and ")
                          (write exceptions)
-                         (display " exceptions\n"))
-                       (guard (e [else 
+                         (display " exceptions\n")
+                         (and (= failures 0) (= exceptions 0)))
+                       (guard (e [else
                                    (display "    caught expection... ")
                                    (display-condition e)
                                    (newline)
@@ -43,11 +44,11 @@
                                 (write result)
                                 (newline)
                                 (if result
-                                    (f (cdr tests) (+ successes 1) failures 
+                                    (f (cdr tests) (+ successes 1) failures
                                        exceptions)
                                     (f (cdr tests) successes (+ failures 1)
                                        exceptions)))))))))])))
-  
+
   (define-syntax test
     (syntax-rules ()
       [(_ name assertion assertion* ...)
@@ -56,16 +57,42 @@
          (write (quote name))
          (display " ...")
          (and assertion assertion* ...))]))
-  
+
+  ;; extended to cover record equality, but not doing the union-find
+  ;; equality we should be doing.
+  (define stupid-extended-equal?
+    (lambda (x y)
+      (or (equal? x y)
+          (and (record? x)
+               (record? y)
+               (record=? x y)))))
+
+  (define record-type-accessors
+    (lambda (rtd)
+      (let loop ([i (vector-length (record-type-field-names rtd))] [ls '()])
+        (if (fx=? i 0)
+            ls
+            (let ([i (fx- i 1)])
+              (loop i (cons (record-accessor rtd i) ls)))))))
+
+  (define record=?
+    (lambda (x y)
+      (let ([rtd (record-rtd x)])
+        (and (eq? rtd (record-rtd y))
+             (let loop ([rtd rtd])
+               (or (eq? rtd #f)
+                   (and (for-all (lambda (ac) (stupid-extended-equal? (ac x) (ac y))) (record-type-accessors rtd))
+                        (loop (record-type-parent rtd)))))))))
+
   (define-syntax assert-equal?
     (syntax-rules ()
       [(_ expected actual)
-       (or (equal? expected actual)
+       (or (stupid-extended-equal? expected actual)
            (begin
              (newline)
              (display "!!! ")
              (write actual)
-             (display " does not match expected: ") 
+             (display " does not match expected: ")
              (write expected)
              (newline)
              #f))]))
@@ -75,25 +102,23 @@
       [(_ ?msg ?expr)
        (let ([msg ?msg])
          (guard (e [else
-                    (let ([e-msg
-                           (or (and (format-condition? e)
-                                    (apply format (condition-message e)
-                                           (condition-irritants e)))
-                               (and (message-condition? e)
-                                    (string=? msg (condition-message e))))])
+                    (let ([e-msg (with-output-to-string
+                                   (lambda ()
+                                     (display-condition e)))])
                       (or (string=? msg e-msg)
-                          #t
-                          (raise (condition
-                                   (make-format-condition)
-                                   (make-message-condition
-                                     "expected error message of ~s but got ~s")
-                                   (make-irritants (list msg e-mesg))
-                                   e))))])
+                          (begin
+                            (newline)
+                            (display "!!! expected error message ")
+                            (write msg)
+                            (display " does not match ")
+                            (write e-msg)
+                            (newline)
+                            #f)))])
            (let ([t ?expr])
-             (raise
-               (condition
-                 (make-format-condition)
-                 (make-message-condition
-                   "exptected error with message of ~s but instead got result ~s")
-                 (make-irritants (list msg t)))))))])))
-
+             (newline)
+             (display "!!! expected error with message ")
+             (write msg)
+             (display " but got result ")
+             (write t)
+             (newline)
+             #f)))])))

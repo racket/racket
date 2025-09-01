@@ -1,4 +1,4 @@
-;;; Copyright (c) 2000-2015 Dipanwita Sarkar, Andrew W. Keep, R. Kent Dybvig, Oscar Waddell
+;;; Copyright (c) 2000-2018 Dipanwita Sarkar, Andrew W. Keep, R. Kent Dybvig, Oscar Waddell
 ;;; See the accompanying file Copyright for details
 #!chezscheme
 (library (nanopass implementation-helpers)
@@ -29,7 +29,7 @@
     indirect-export
 
     ;; compile-time environment helpers
-    make-compile-time-value
+    define-property make-compile-time-value
 
     ;; code organization helpers
     module
@@ -48,9 +48,6 @@
 
     ;; the base record, so that we can use gensym syntax
     define-nanopass-record
-
-    ;; failure token so that we can know when parsing fails with a gensym
-    np-parse-fail-token
 
     ;; handy syntactic stuff
     with-implicit
@@ -75,9 +72,6 @@
                    (nongenerative #{nanopass-record d47f8omgluol6otrw1yvu5-0})
                    (fields (immutable tag nanopass-record-tag))))])))
  
-  ;; another gensym listed into this library
-  (define np-parse-fail-token '#{np-parse-fail-token dlkcd4b37swscag1dvmuiz-13})
-
   ;; the following should get moved into Chez Scheme proper (and generally
   ;; cleaned up with appropriate new Chez Scheme primitives for support)
   (define regensym
@@ -150,7 +144,7 @@
          (finish #'(pat ...) #'((e1 e2 ...) ...) #'())])))
 
   (define provide-full-source-information
-    (make-parameter #f (lambda (n) (and n #t))))
+    (make-parameter #t (lambda (n) (and n #t))))
 
   (define-record-type source-information
     (nongenerative)
