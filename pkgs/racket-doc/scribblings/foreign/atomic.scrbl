@@ -11,12 +11,16 @@
 @deftech{Atomic mode} evaluates a Racket expression without switching
 among Racket threads and with limited support for events. An atomic
 computation in this sense is @emph{not} atomic with respect to other
-@tech[#:doc reference.scrbl]{places}, but only to other @tech[#:doc
-reference.scrbl]{threads} within a place.
+@tech[#:doc reference.scrbl]{places}, @tech[#:doc reference.scrbl]{futures},
+or @tech[#:doc reference.scrbl]{parallel threads}, but only to
+@tech[#:doc reference.scrbl]{coroutine threads} within a place.
+Asynchronous break exceptions (in the sense of @racket[break-thread])
+are also disabled in atomic mode except as started by
+@racket[start-breakable-atomic].
 
 @elemtag["atomic-unsafe"]{Atomic mode} is @tech[#:doc reference.scrbl]{unsafe}, because the
 Racket scheduler is not able to operate while execution is in atomic
-mode: (1) the scheduler cannot switch threads or poll certain kinds of
+mode: (1) the scheduler cannot switch coroutine threads or poll certain kinds of
 events, which can lead to deadlock or starvation of other threads; and
 (2) calling a scheduler-related function in atomic mode has unspecified
 behavior, where misuse is not necessarily caught with a check.
@@ -24,19 +28,27 @@ Functions that are directly scheduler-related include @racket[thread],
 @racket[sleep], @racket[semaphore-wait], @racket[semaphore-post],
 @racket[channel-put], @racket[channel-get], and @racket[sync].
 Beware that other operations can involve such synchronization, such as
-writing to an output port. Even if an output target is known to be
+writing to an output port or using an @racket[equal?]-based hash table. Even if an output target is known to be
 free of synchronization, beware that values can have arbitrary
 printing procedures attached through @racket[prop:custom-write].
 Successful use of atomic mode requires a detailed knowledge of any
 implementation that might be reached during atomic mode to ensure that
 it terminates and does not involve synchronization.
 
+@tech{Uninterruptible mode} is related to @tech{atomic mode}. It is
+also @tech[#:doc reference.scrbl]{unsafe} and practically the same as
+atomic mode in a @tech[#:doc reference.scrbl]{coroutine thread}, but
+uninterruptible mode does not force a @tech[#:doc
+reference.scrbl]{parallel thread} to synchronize with all coroutine
+threads. Uninterrupted mode also allows the use of @emph{uncontested}
+semaphores and @racket[equal?]-based hash tables.
+
 @deftogether[(
 @defproc[(start-atomic) void?]
 @defproc[(end-atomic) void?]
 )]{
 
-Disables/re-enables concurrency with any Racket
+Starts and ends @tech{atomic mode} by disabling/re-enabling concurrency with any Racket
 @tech[#:doc reference.scrbl]{coroutine threads} in the same
 place, and also suspends/resumes delivery of break exceptions (independent of the
 result of @racket[break-enabled]). Calls to @racket[start-atomic] and
@@ -75,7 +87,7 @@ Unlike @racket[call-as-atomic], @racket[start-atomic] and
 effect outside of Racket threads. Using @racket[start-atomic] in a @tech[#:doc
 reference.scrbl]{future} that is not running in a Racket thread
 blocks the future until it is resumed by @racket[touch] in a Racket
-thread. Using @racket[start-atomic] in a tech[#:doc
+thread. Using @racket[start-atomic] in a @tech[#:doc
 reference.scrbl]{parallel thread} synchronizes with all
 @tech[#:doc reference.scrbl]{coroutine threads} in the same
 @tech[#:doc reference.scrbl]{place}, but not other parallel threads or futures.
@@ -98,7 +110,7 @@ benefit in a context where breaks are disabled.}
 
 @defproc[(call-as-atomic [thunk (-> any)]) any]{
 
-Calls @racket[thunk] in atomic mode, where @racket[call-as-nonatomic]
+Calls @racket[thunk] in @tech{atomic mode}, where @racket[call-as-nonatomic]
 can be used during the dynamic extent of the call to revert to
 non-atomic mode for a nested computation.
 

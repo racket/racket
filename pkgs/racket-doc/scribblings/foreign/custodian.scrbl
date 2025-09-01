@@ -16,8 +16,9 @@ registering shutdown callbacks with custodians.}
                                       [#:ordered? ordered? any/c #f])
           cpointer?]{
 
-Registers @racket[callback] to be applied (in atomic mode and an
-unspecified Racket thread) to @racket[v] when @racket[custodian] is
+Registers @racket[callback] to be applied (in @tech{atomic mode} and an
+@elemref["unspecified thread"]{unspecified Racket thread}) to @racket[v]
+when @racket[custodian] is
 shutdown. If @racket[custodian] is already shut down, the result is
 @racket[#f] and @racket[v] is not registered. Otherwise, the result is
 a pointer that can be supplied to
@@ -81,7 +82,8 @@ is taken.}
                  [#:custodian-unavailable unavailable-callback ((-> void?) . -> . any) (lambda (_reg-fnl) (_reg-fnl))])
          any]{
 
-Registers @racket[callback] to be applied (in atomic mode) to
+Registers @racket[callback] to be applied (in @tech{atomic mode} and an
+@elemref["unspecified thread"]{unspecified Racket thread}) to
 @racket[v] when @racket[custodian] is shutdown or when @racket[v] is
 about to be collected by the garbage collector, whichever happens
 first. The @racket[callback] is only applied to @racket[v] once. The

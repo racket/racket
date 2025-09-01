@@ -59,8 +59,13 @@ by @racket[make-os-semaphore].}
 
 Analogous to @racket[semaphore-wait], but waits on a semaphore created
 by @racket[make-os-semaphore]. Waiting blocks the current thread; if
-the current thread is a Racket thread, then waiting also blocks all
-Racket threads.}
+the current thread is a Racket @tech[#:doc reference.scrbl]{coroutine threads},
+then waiting also blocks all other coroutine threads in the same
+@tech[#:doc reference.scrbl]{place}. Waiting from a @tech[#:doc reference.scrbl]{parallel thread},
+does not necessarily block other Racket threads, but it consumes
+a processor resource for the thread's pool, and it may block coroutine
+threads or others if they attempt to synchronize with the blocked
+parallel thread.}
 
 @; ----------------------------------------
 
