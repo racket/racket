@@ -18,6 +18,12 @@
 (require (prefix-in mod: 'mod))
 
 
+(define-syntax-rule (catch e)
+  (with-handlers ([(λ (_) #true) values])
+    e
+    #false))
+
+
 (test-case "define-deprecated-alias"
 
   (test-case "deprecated alias of a constant"
@@ -54,14 +60,80 @@
     (check-true (is-deprecated? mod:b)))
 
   (test-case "deprecated alias of unbound identifier is a syntax error"
-    (define thrown
-      (convert-syntax-error
-       (let ()
-         (define-deprecated-alias a x)
-         #false)))
-    (unless thrown
-      (fail-check "no compile-time error was raised"))
-    (check-pred exn:fail:syntax:unbound? thrown)
-    (check-regexp-match #rx"target identifier" (exn-message thrown))
-    (define expr-datums (map syntax->datum (exn:fail:syntax-exprs thrown)))
-    (check-equal? expr-datums '((define-deprecated-alias a x) x))))
+    (define thrown (catch (convert-syntax-error (let () (define-deprecated-alias a x) (void)))))
+    (check-pred exn:fail:syntax? thrown)
+    (with-check-info (['thrown thrown])
+      (check-regexp-match #rx"define-deprecated-alias: " (exn-message thrown))
+      (check-regexp-match #rx"target identifier" (exn-message thrown))
+      (define expr-datums (map syntax->datum (exn:fail:syntax-exprs thrown)))
+      (check-equal? expr-datums '(x (define-deprecated-alias a x)))))
+
+  (test-case "module-level deprecated alias can be defined before target"
+    (check-not-exn
+     (λ ()
+       (eval
+        #'(module foo racket/base
+            (require racket/deprecation)
+            (define-deprecated-alias a x)
+            (define x 42))))))
+
+  (test-case "module-level deprecated alias can be defined after target"
+    (check-not-exn
+     (λ ()
+       (eval
+        #'(module foo racket/base
+            (require racket/deprecation)
+            (define x 42)
+            (define-deprecated-alias a x))))))
+
+  (test-case "top-level deprecated alias cannot be defined before target"
+    (define thrown (catch (eval #'(begin (define-deprecated-alias a x) (define x 42)))))
+    (check-pred exn:fail:syntax? thrown)
+    (with-check-info (['thrown thrown])
+      (check-regexp-match #rx"define-deprecated-alias: " (exn-message thrown))
+      (check-regexp-match #rx"target identifier" (exn-message thrown))
+      (define expr-datums (map syntax->datum (exn:fail:syntax-exprs thrown)))
+      (check-equal? expr-datums '(x (define-deprecated-alias a x)))))
+
+  (test-case "top-level deprecated alias can be defined after target"
+    (check-not-exn (λ () (eval #'(begin (define x 42) (define-deprecated-alias a x))))))
+
+  (test-case "deprecated alias in definition context within module can be defined before target"
+    (check-not-exn
+     (λ ()
+       (eval
+        #'(module foo racket/base
+            (require racket/deprecation)
+            (define (f)
+              (define-deprecated-alias a x)
+              (define x 42)
+              a))))))
+
+  (test-case "deprecated alias in definition context within module can be defined after target"
+    (check-not-exn
+     (λ ()
+       (eval
+        #'(module foo racket/base
+            (require racket/deprecation)
+            (define (f)
+              (define x 42)
+              (define-deprecated-alias a x)
+              a))))))
+
+  (test-case "deprecated alias in definition context at top-level can be defined before target"
+    (check-not-exn
+     (λ ()
+       (eval
+        #'(define (f)
+            (define-deprecated-alias a x)
+            (define x 42)
+            a)))))
+
+  (test-case "deprecated alias in definition context at top-level can be defined after target"
+    (check-not-exn
+     (λ ()
+       (eval
+        #'(define (f)
+            (define x 42)
+            (define-deprecated-alias a x)
+            a))))))
