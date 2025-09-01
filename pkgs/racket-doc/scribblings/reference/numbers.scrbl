@@ -875,7 +875,7 @@ produces @racket[#t].
 
 @mz-examples[(bitwise-first-bit-set 128)]
 
-@history[#:added "8.16.0.4"]}
+@history[#:added "8.16.0.4"]
 
 
 This operation is equivalent to
