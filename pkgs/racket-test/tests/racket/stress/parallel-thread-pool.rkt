@@ -8,9 +8,6 @@
       (vm-eval '(foreign-procedure "(cs)threads" () scheme-object))
       (lambda () null)))
 
-(unless (positive? (length ($threads)))
-  (error "bad thread list"))
-
 (define orig-custodian (current-custodian))
 (define keep null)
 
@@ -35,6 +32,8 @@
     (custodian-shutdown-all c)))
 
 (when (eq? 'cs (system-type 'gc))
+  (unless (positive? (length ($threads)))
+    (error "bad thread list"))
   (go 1)
   (go 2)
   (go 1 #:in-same-custodian? #t)
