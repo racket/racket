@@ -12845,7 +12845,7 @@
                       (if done?_0
                         (void)
                         (begin
-                          (drain-async-callbacks)
+                          (drain-async-callbacks$1)
                           (|#%app| sleep-this-place)
                           (lock-acquire (future*-lock f_0))
                           (loop_0)))))))))
@@ -13476,7 +13476,7 @@
                   (if done?_0
                     (void)
                     (begin
-                      (drain-async-callbacks)
+                      (drain-async-callbacks$1)
                       (|#%app| sleep-this-place)
                       (loop_0))))))))))
        (loop_0)))))
@@ -13497,26 +13497,28 @@
     (if (eq? (worker-state w_0) 'cust-request)
       (begin (set-worker-state! w_0 'cust) (|#%app| wakeup-this-place))
       (void))))
-(define drain-async-callbacks
-  (lambda ()
-    (let ((callbacks_0 (|#%app| host:poll-async-callbacks)))
-      (begin
-        (letrec*
-         ((for-loop_0
-           (|#%name|
-            for-loop
-            (lambda (lst_0)
-              (if (pair? lst_0)
-                (let ((callback_0 (unsafe-car lst_0)))
-                  (let ((rest_0 (unsafe-cdr lst_0)))
-                    (begin
-                      (if (box? callback_0)
-                        (|#%app| (unbox callback_0))
-                        (|#%app| callback_0))
-                      (for-loop_0 rest_0))))
-                (values))))))
-         (for-loop_0 callbacks_0))
-        (void)))))
+(define drain-async-callbacks$1
+  (|#%name|
+   drain-async-callbacks
+   (lambda ()
+     (let ((callbacks_0 (|#%app| host:poll-async-callbacks)))
+       (begin
+         (letrec*
+          ((for-loop_0
+            (|#%name|
+             for-loop
+             (lambda (lst_0)
+               (if (pair? lst_0)
+                 (let ((callback_0 (unsafe-car lst_0)))
+                   (let ((rest_0 (unsafe-cdr lst_0)))
+                     (begin
+                       (if (box? callback_0)
+                         (|#%app| (unbox callback_0))
+                         (|#%app| callback_0))
+                       (for-loop_0 rest_0))))
+                 (values))))))
+          (for-loop_0 callbacks_0))
+         (void))))))
 (define scheduler-add-thread-custodian-mapping!
   (lambda (s_0 ht_0)
     (if s_0
@@ -15599,8 +15601,29 @@
                     (void)
                     (begin
                       (|#%app| (sandman-do-sleep the-sandman) #f)
+                      (drain-async-callbacks)
                       (loop_0))))))))))
        (loop_0)))))
+(define drain-async-callbacks
+  (lambda ()
+    (let ((callbacks_0 (|#%app| host:poll-async-callbacks)))
+      (begin
+        (letrec*
+         ((for-loop_0
+           (|#%name|
+            for-loop
+            (lambda (lst_0)
+              (if (pair? lst_0)
+                (let ((callback_0 (unsafe-car lst_0)))
+                  (let ((rest_0 (unsafe-cdr lst_0)))
+                    (begin
+                      (if (box? callback_0)
+                        (|#%app| (unbox callback_0))
+                        (|#%app| callback_0))
+                      (for-loop_0 rest_0))))
+                (values))))))
+         (for-loop_0 callbacks_0))
+        (void)))))
 (define finish_2272
   (make-struct-type-install-properties
    '(place-dead-evt)

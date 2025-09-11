@@ -266,7 +266,18 @@
     (host:mutex-release (place-lock p))
     (unless result
       (sandman-sleep #f)
+      (drain-async-callbacks)
       (loop))))
+
+;; in atomic mode
+;; While we're trying to shut down a place, finalizations
+;; may use callbacks that need to run in the original place
+(define (drain-async-callbacks)
+  (define callbacks (host:poll-async-callbacks))
+  (for ([callback (in-list callbacks)])
+    (if (box? callback)
+        ((unbox callback))
+        (callback))))
 
 (struct place-done-evt (p get-result?)
   #:property prop:evt (poller (lambda (self poll-ctx)
