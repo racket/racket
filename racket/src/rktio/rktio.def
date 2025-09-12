@@ -71,8 +71,10 @@ rktio_udp_bind
 rktio_udp_connect
 rktio_udp_sendto
 rktio_udp_sendto_in
+rktio_udp_sendto_addr_bytes
 rktio_udp_recvfrom
 rktio_udp_recvfrom_in
+rktio_udp_recvfrom_addr_bytes
 rktio_udp_set_receive_buffer_size
 rktio_udp_set_ttl
 rktio_udp_get_ttl
@@ -86,6 +88,7 @@ rktio_udp_change_multicast_group
 rktio_socket_address
 rktio_socket_peer_address
 rktio_listener_address
+rktio_addr_bytes_address
 rktio_is_ok_envvar_name
 rktio_are_envvar_names_case_insensitive
 rktio_getenv

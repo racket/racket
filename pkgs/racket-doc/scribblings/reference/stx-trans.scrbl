@@ -492,7 +492,8 @@ transformer environment).
 
 @defproc[(syntax-local-apply-transformer
           [transformer procedure?]
-          [binding-id (or/c identifier? #f)]
+          [binding-id/insp (or/c #f identifier? inspector?
+                                 (list identifier? inspector?))]
           [context-v (or/c 'expression 'top-level 'module 'module-begin list?)]
           [intdef-ctx (or/c internal-definition-context? #f)]
           [v any/c] ...)
@@ -507,14 +508,27 @@ those that are syntax objects.
 
 The @racket[context-v] argument is as in @racket[local-expand], and the
 @racket[intdef-ctx] is an @tech{internal-definition context} value or
-@racket[#f]. The @racket[binding-id] specifies a @tech{binding} associated with
-the @racket[transformer], which the expander uses to determine whether to add
-@tech{use-site scopes} and which @tech{code inspector} to use during
-expansion.
+@racket[#f].
+
+The @racket[binding-id/insp] argument encodes up to two additional
+arguments: @racket[_biding-id] as an identifier and
+@racket[_expander-insp] as an @tech{inspector}. The
+@racket[_binding-id] part, if supplied, specifies a @tech{binding}
+associated with the @racket[transformer], which the expander uses to
+determine whether to add @tech{use-site scopes} and which @tech{code
+inspector} to use during expansion. The @racket[_expander-insp] part
+specifies a @tech{code inspector} for the expander itself, which
+defaults to the code inspector associated with the binding of the
+transformer currently in progress. The relevant inspector is the inferior
+(in the sense of @racket[inspector-superior?]) of the one implied by
+@racket[_binding-id] and @racket[_expander-insp] if the inspector are
+comparable, or no inspector otherwise.
 
 @transform-time[]
 
-@history[#:added "8.2.0.7"]}
+@history[#:added "8.2.0.7"
+         #:changed "8.18.0.15" @elem{Changed the @racket[binding-id/insp] to allow
+                                     an @racket[_expander-insp] component.}]}
 
 
 @defproc[(internal-definition-context? [v any/c]) boolean?]{

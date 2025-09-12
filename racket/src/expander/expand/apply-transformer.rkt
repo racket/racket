@@ -22,15 +22,20 @@
         v)))
 
 ;; the `local-expand`-like bits are in this function
-(define/who (syntax-local-apply-transformer transformer binding-id context intdef-ctx . args)
+(define/who (syntax-local-apply-transformer transformer binding-id/insp context intdef-ctx . args)
   (check who procedure? transformer)
   (check who
-         (lambda (binding-id)
-           (or (identifier? binding-id)
-               (eq? binding-id #f)))
+         (lambda (binding-id/insp)
+           (or (eq? binding-id/insp #f)
+               (identifier? binding-id/insp)
+               (inspector? binding-id/insp)
+               (and (list? binding-id/insp)
+                    (= 2 (length binding-id/insp))
+                    (identifier? (car binding-id/insp))
+                    (inspector? (cadr binding-id/insp)))))
          #:contract
-         "(or/c identifier? #f)"
-         binding-id)
+         "(or/c identifier? inspector? (list/c internal-definition-context? inspector?) #f)"
+         binding-id/insp)
   (check who
          (lambda (context)
            (or (list? context)
@@ -43,8 +48,18 @@
            (or (not intdef-ctx)
                (internal-definition-context? intdef-ctx)))
          #:contract
-         "(or/c internal-definition-context? #f)"
+         "(or/c #f internal-definition-context?)"
          intdef-ctx)
+
+  (define binding-id (or (and (identifier? binding-id/insp)
+                              binding-id/insp)
+                         (and (pair? binding-id/insp)
+                              (car binding-id/insp))))
+  (define expander-insp (or (and (inspector? binding-id/insp)
+                                 binding-id/insp)
+                            (and (pair? binding-id/insp)
+                                 (cadr binding-id/insp))
+                            (current-module-code-inspector)))
 
   (define ctx (get-current-expand-context who))
 
@@ -70,7 +85,8 @@
                         transformer
                         scoped-binding-id
                         scoped-args
-                        local-ctx)))
+                        local-ctx
+                        expander-insp)))
 
   (define result-vals (transform-syntax-vals
                        (lambda (s) (flip-introduction-scopes s ctx))
@@ -79,7 +95,7 @@
   (apply values result-vals))
 
 ;; the macro application-like bits are in this function
-(define (apply-transformer who transformer binding-id args ctx)
+(define (apply-transformer who transformer binding-id args ctx expander-insp)
   (define-values (binding insp-of-t)
     (if binding-id
         (let ([binding (resolve+shift binding-id (expand-context-phase ctx)
@@ -105,7 +121,8 @@
   (define transformed-vals
     (apply-transformer-in-context transformer scoped-args ctx
                                   intro-scope use-scopes
-                                  binding-id insp-of-t))
+                                  binding-id insp-of-t
+                                  expander-insp))
 
   (define (scope-res s)
     (define result-s (flip-scope s intro-scope))
@@ -118,7 +135,8 @@
 
 (define (apply-transformer-in-context transformer args ctx
                                       intro-scope use-scopes
-                                      binding-id insp-of-t)
+                                      binding-id insp-of-t
+                                      expander-insp)
 
   (define m-ctx (struct*-copy expand-context ctx
                               [current-introduction-scopes (list intro-scope)]
@@ -131,7 +149,7 @@
       (parameterize-like
        #:with ([current-expand-context m-ctx]
                [current-module-code-inspector
-                (weaker-inspector insp-of-t (current-module-code-inspector))])
+                (weaker-inspector insp-of-t expander-insp)])
        (call-with-continuation-barrier
         (lambda ()
           (call-with-values

@@ -504,6 +504,8 @@
 ; Check syntax-local-apply-transformer runs the transformer with
 ; the weaker of the calling macro's code inspector and the inspector
 ; associated with the binding of the binding-id argument.
+; If it has access to one, a stronger inspector can be provided by
+; the caller of `syntax-local-apply-transformer`.
 (parameterize ([current-namespace (make-base-namespace)])
   ; Trusted DSL expander
   (eval '(module Exp racket
@@ -525,6 +527,8 @@
            (define secret 'secret)
            ; Should be allowed to use `datum->syntax` in its own macros
            (define-syntax (secret-m stx) #`(begin #,(datum->syntax internal-id 'secret) 'safe))))
+
+  (define powerful-inspector (current-code-inspector))
 
   ; Sandboxed code...
   (parameterize ([current-code-inspector (make-inspector (current-code-inspector))])
@@ -548,8 +552,19 @@
                                  #'secret-m
                                  'expression #f))])
          (attack-m)))
+    (err/rt-test (eval attack-2) exn:fail:syntax?)
 
-    (err/rt-test (eval attack-2) exn:fail:syntax?)))
+    ; Attack will be successful if the expanding macro has a powerful inspector
+    (define attack-3
+      `(let-syntax ([attack-m (lambda (stx)
+                                (syntax-local-apply-transformer
+                                 (lambda ()
+                                   (datum->syntax internal-id 'secret))
+                                 (list #'secret-m ,powerful-inspector)
+                                 'expression
+                                 #f))])
+         (attack-m)))
+    (test 'secret eval attack-3)))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; make sure that re-exporting a protected binding is allowed consistently
