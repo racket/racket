@@ -136,4 +136,13 @@
                            (define-generics AA [meth AA . a])
                            (meth 1 2))))
              "rest args present")
+
+  ;; https://github.com/racket/racket/issues/1711
+
+  (check-exn #rx"struct: .* not a parenthesized sequence of method definitions"
+             (lambda () (convert-compile-time-error
+                         (let ()
+                           (define-generics foo (do-foo foo))
+                           (struct inst () #:methods gen:foo "not methods")
+                           'ignore))))
   )
