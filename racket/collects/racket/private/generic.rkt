@@ -164,7 +164,9 @@
               (list
                (cons derived-prop
                      (lambda (impl)
-                       (let ([method-name (vector-ref impl 'method-index)] ...)
+                       (let ([method-name
+                              (or (vector-ref impl 'method-index)
+                                  fallback)] ...)
                          derived-impl)))
                ...)
               #t))
