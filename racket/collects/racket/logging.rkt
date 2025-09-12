@@ -40,22 +40,21 @@
                 (intercept l)
                 (loop)]))))))
 
-(define (with-intercepted-logging interceptor proc #:logger [logger #f]
+(define (with-intercepted-logging interceptor proc #:logger [logger-arg #f]
                                   . log-spec)
-  (let* ([orig-logger (current-logger)]
-         ;; Unless we're provided with an explicit logger to monitor we
-         ;; use a local logger to avoid getting messages that didn't
-         ;; originate from proc. Since it's a child of the original logger,
-         ;; the rest of the program still sees the log entries.
-         [logger      (or logger (make-logger #f orig-logger))]
-         [receiver    (apply make-log-receiver logger log-spec)]
-         [stop-chan   (make-channel)]
-         [t           (receiver-thread receiver stop-chan interceptor)])
-    (begin0
-        (parameterize ([current-logger logger])
-          (proc))
+  (define logger (or logger-arg (current-logger)))
+  (when logger
+    (define receiver (apply make-log-receiver logger log-spec))
+    (define stop-chan #f)
+    (define t #f)
+    (dynamic-wind
+      (λ ()
+        (set! stop-chan (make-channel))
+        (set! t (receiver-thread receiver stop-chan interceptor)))
+      proc
+      (λ ()
       (channel-put stop-chan 'stop) ; stop the receiver thread
-      (thread-wait t))))
+        (thread-wait t)))))
 
 (define (with-logging-to-port port proc #:logger [logger #f] . log-spec)
   (apply with-intercepted-logging
