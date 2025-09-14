@@ -576,9 +576,10 @@ static void do_place_kill(Scheme_Place *place)
       do {
         /* We need to block until the place is really finished; that
            should happen quickly, so block atomically (with a little
-           cooperation for GCing, just in case). */
+           cooperation for GCing and foreign callbacks, just in case). */
         mzrt_mutex_unlock(place_obj->lock);
         GC_check_master_gc_request();
+        scheme_check_foreign_work();
         scheme_start_atomic();
         scheme_thread_block(0.0);
         scheme_end_atomic_no_swap();
