@@ -349,6 +349,11 @@
                  (car p)
                  " is not a name for a generic interface"
                  (cadr p)))
+          (unless (list? (syntax-e gen-defs))
+            (bad "the second argument to the"
+                 (car p)
+                 " is not a parenthesized sequence of method definitions"
+                 gen-defs))
           (loop (list* #'#:property
                        (quasisyntax/loc gen-id
                          (generic-property #,gen-id))
