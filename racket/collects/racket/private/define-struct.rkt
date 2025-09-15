@@ -1001,6 +1001,9 @@
                  (struct-field-info-list compile-time-info))))
 
   (define-for-syntax (struct-copy-core stx)
+    (syntax-case stx ()
+      [(_ _ _ . _) (void)]
+      [_ (raise-syntax-error #f "bad syntax" stx)])
     (with-syntax ([(form-name info struct-expr field+val ...) stx])
       (define ans (syntax->list #'(field+val ...)))
       ;; Check syntax:
