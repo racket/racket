@@ -134,7 +134,7 @@ then the raised exception is either
                                                        'replace 'truncate 
                                                        'must-truncate 'truncate/replace) 'error]
                            [#:permissions permissions (integer-in 0 65535) @#,default-permissions]
-                           [#:replace-permissions? replace-permissions? #f])
+                           [#:replace-permissions? replace-permissions? any/c #f])
           output-port?]{
 
 Opens the file specified by @racket[path] for output. The
@@ -260,7 +260,7 @@ then @exnraise[exn:fail:filesystem:errno].
                                                        'replace 'truncate 
                                                        'must-truncate 'truncate/replace) 'error]
                            [#:permissions permissions (integer-in 0 65535) @#,default-permissions]
-                           [#:replace-permissions? replace-permissions? #f])
+                           [#:replace-permissions? replace-permissions? any/c #f])
           (values input-port? output-port?)]{
 
 Like @racket[open-output-file], but producing two values: an input
@@ -301,10 +301,10 @@ when @racket[proc] returns.
                                                             'replace 'truncate 
                                                             'must-truncate 'truncate/replace) 'error]
                                 [#:permissions permissions (integer-in 0 65535) @#,default-permissions]
-                                [#:replace-permissions? replace-permissions? #f])
+                                [#:replace-permissions? replace-permissions? any/c #f])
          any]{
 Analogous to @racket[call-with-input-file], but passing @racket[path],
-@racket[mode-flag], @racket[exists-flag], and @racket[permissions] to
+@racket[mode-flag], @racket[exists-flag], @racket[permissions], and @racket[replace-permissions?] to
 @racket[open-output-file].
 
 @file-examples[
@@ -368,7 +368,7 @@ the current input port (see @racket[current-input-port]) using
                                                           'replace 'truncate 
                                                           'must-truncate 'truncate/replace) 'error]
                               [#:permissions permissions (integer-in 0 65535) @#,default-permissions]
-                              [#:replace-permissions? replace-permissions? #f])
+                              [#:replace-permissions? replace-permissions? any/c #f])
          any]{
 Like @racket[call-with-output-file*], but instead of passing the newly
 opened port to the given procedure argument, the port is installed as
