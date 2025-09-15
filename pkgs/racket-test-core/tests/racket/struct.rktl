@@ -1947,5 +1947,13 @@
                 (read (open-input-bytes (get-output-bytes o)))))))
 
 ;; ----------------------------------------
+;; Report malformed struct-copy correctly
+;; https://github.com/racket/racket/issues/5194
+
+(syntax-test #'struct-copy #px"struct-copy: bad syntax")
+(syntax-test #'(struct-copy) #px"struct-copy: bad syntax")
+(syntax-test #'(struct-copy (foo 1 2)) #px"struct-copy: bad syntax")
+
+;; ----------------------------------------
 
 (report-errs)
