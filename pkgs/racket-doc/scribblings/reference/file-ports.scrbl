@@ -335,7 +335,7 @@ return, a continuation application, or a prompt-based abort.}
                                                              'replace 'truncate
                                                              'must-truncate 'truncate/replace) 'error]
                                  [#:permissions permissions (integer-in 0 65535) @#,default-permissions]
-                                 [#:replace-permissions? replace-permissions? #f])
+                                 [#:replace-permissions? replace-permissions? any/c #f])
          any]{
 Like @racket[call-with-output-file], but the newly opened port is
 closed whenever control escapes the dynamic extent of the
