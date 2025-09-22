@@ -4777,8 +4777,7 @@
   (lambda (sched-info_0)
     (let ((or-part_0 (schedule-info-did-work? sched-info_0)))
       (if or-part_0 or-part_0 (schedule-info-exts sched-info_0)))))
-(define reference-sink
-  (lambda (v_0) (ephemeron-value (make-ephemeron #f (void)) (void) v_0)))
+(define reference-sink (lambda (v_0) (begin (black-box v_0) (void))))
 (define finish_2437
   (make-struct-type-install-properties
    '(plumber)

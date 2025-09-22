@@ -2323,7 +2323,8 @@ int scheme_generate_inlined_unary(mz_jit_state *jitter, Scheme_App2_Rec *app, in
     } else if (IS_NAMED_PRIM(rator, "make-vector")) {
       return generate_make_vector_alloc(jitter, rator, app->rand, NULL, dest);
     } else if (IS_NAMED_PRIM(rator, "list*")
-               || IS_NAMED_PRIM(rator, "values")) {
+               || IS_NAMED_PRIM(rator, "values")
+               || IS_NAMED_PRIM(rator, "black-box")) {
       /* on a single argument, `list*' or `values' is identity */
       mz_runstack_skipped(jitter, 1);
       scheme_generate_non_tail(app->rand, jitter, 0, 1, 0);

@@ -113,6 +113,7 @@ static Scheme_Object *extract_one_cc_mark (int argc, Scheme_Object *argv[]);
 static Scheme_Object *call_with_immediate_cc_mark (int argc, Scheme_Object *argv[]);
 static Scheme_Object *void_func (int argc, Scheme_Object *argv[]);
 static Scheme_Object *void_p (int argc, Scheme_Object *argv[]);
+static Scheme_Object *black_box (int argc, Scheme_Object *argv[]);
 static Scheme_Object *dynamic_wind (int argc, Scheme_Object *argv[]);
 static Scheme_Object *time_apply(int argc, Scheme_Object *argv[]);
 static Scheme_Object *current_milliseconds(int argc, Scheme_Object **argv);
@@ -466,7 +467,10 @@ scheme_init_fun (Scheme_Startup_Env *env)
   SCHEME_PRIM_PROC_FLAGS(scheme_void_proc) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_OMITABLE);
   scheme_addto_prim_instance("void", scheme_void_proc, env);
 
-  
+  scheme_addto_prim_instance("black-box",
+                             scheme_make_noncm_prim(black_box, "black-box", 1, 1),
+                             env);
+
   REGISTER_SO(scheme_void_p_proc);
   scheme_void_p_proc = scheme_make_folding_prim(void_p, "void?", 1, 1, 1);
   SCHEME_PRIM_PROC_FLAGS(scheme_void_p_proc) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNARY_INLINED
@@ -2381,6 +2385,12 @@ static Scheme_Object *
 void_p (int argc, Scheme_Object *argv[])
 {
   return SAME_OBJ(argv[0], scheme_void) ? scheme_true : scheme_false;
+}
+
+static Scheme_Object *
+black_box (int argc, Scheme_Object *argv[])
+{
+  return argv[0];
 }
 
 Scheme_Object *

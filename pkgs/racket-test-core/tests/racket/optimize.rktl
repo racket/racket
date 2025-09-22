@@ -7608,4 +7608,86 @@
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(test 5 black-box 5)
+
+(module does-not-do-the-work-at-run-time racket/base
+  (#%declare #:unsafe)
+  (provide f)
+  (define (f N)
+    (lambda ()
+      (let ([to-power (black-box 100)])
+        (let loop ([i 1000])
+          (unless (zero? i)
+            (expt 2 to-power)
+            (loop (sub1 i))))))))
+
+(when (run-unreliable-tests? 'timing)
+  (define (plain-loop N)
+    (let loop ([i N])
+      (unless (zero? i)
+        (loop (sub1 i)))))
+  
+  (define N (let loop ([N 1000])
+              (define-values (plain-r plain-cpu plain-real plain-gc) (time-apply plain-loop (list N)))
+              (if (zero? plain-cpu)
+                  (loop (* N 2))
+                  (* N 2))))
+  
+  (define (does-the-work-at-run-time? thunk)
+    (let loop ([tries 5] [fast-n 0] [slow-n 0])
+      (cond
+        [(zero? tries)
+         (slow-n . > . fast-n)]
+        [else
+         (define-values (plain-r plain-cpu plain-real plain-gc) (time-apply plain-loop (list N)))
+         (define-values (r cpu real gc) (time-apply thunk null))
+         (if (cpu . <= . (* 2 plain-cpu))
+             (loop (sub1 tries) (add1 fast-n) slow-n)
+             (loop (sub1 tries) fast-n (add1 slow-n)))])))
+         
+  (test #f does-the-work-at-run-time?
+        (lambda ()
+          (let ([to-power 100])
+            (let loop ([i N])
+              (unless (zero? i)
+                ;; call to `expt` is optimized away entirely, since there's
+                ;; no effect and the result is unused:
+                (expt 2 to-power)
+                (loop (sub1 i)))))))
+
+  (test #f does-the-work-at-run-time?
+        (lambda ()
+          (let ([to-power 100])
+            (let loop ([i N])
+              (unless (zero? i)
+                ;; optimize to just returning a folded constant, instead of
+                ;; calling `expt` each iteration:
+                (black-box (expt 2 to-power))
+                (loop (sub1 i)))))))
+
+  (test #t does-the-work-at-run-time?
+        (lambda ()
+          (let ([to-power (black-box 100)])
+            (let loop ([i N])
+              (unless (zero? i)
+                ;; in safe mode, calls `expt`, because `to-power` is not known
+                ;; to be a number, but likely optimized away in unsafe mode:
+                (expt 2 to-power)
+                (loop (sub1 i)))))))
+
+  (test #f does-the-work-at-run-time?
+        ((dynamic-require ''does-not-do-the-work-at-run-time 'f) N))
+
+  (test #t does-the-work-at-run-time?
+        (lambda ()
+          (let ([to-power (black-box 100)])
+            (let loop ([i N])
+              (unless (zero? i)
+                ;; arithmetic really performed every iteration, since `to-power` value
+                ;; is assumed unknown, and `expt` result is assumed to be used
+                (black-box (expt 2 to-power))
+                (loop (sub1 i))))))))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (report-errs)

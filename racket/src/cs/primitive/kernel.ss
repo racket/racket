@@ -35,6 +35,7 @@
   [assv (known-procedure/no-prompt 4)]
   [atan (known-procedure/folding 6)]
   [banner (known-procedure/pure 1)]
+  [black-box (known-procedure/no-prompt 2)]
   [bitwise-and (known-procedure/folding -1)]
   [bitwise-bit-field (known-procedure/folding 8)]
   [bitwise-bit-set? (known-procedure/folding 4)]

@@ -3,4 +3,5 @@
 (provide reference-sink)
 
 (define (reference-sink v)
-  (ephemeron-value (make-ephemeron #f (void)) (void) v))
+  (black-box v)
+  (void))
