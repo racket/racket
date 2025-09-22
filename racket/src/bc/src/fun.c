@@ -466,7 +466,10 @@ scheme_init_fun (Scheme_Startup_Env *env)
   SCHEME_PRIM_PROC_FLAGS(scheme_void_proc) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_OMITABLE);
   scheme_addto_prim_instance("void", scheme_void_proc, env);
 
-  
+  scheme_addto_prim_instance("black-box",
+                             scheme_make_noncm_prim(void_func, "black-box", 1, 1),
+                             env);
+
   REGISTER_SO(scheme_void_p_proc);
   scheme_void_p_proc = scheme_make_folding_prim(void_p, "void?", 1, 1, 1);
   SCHEME_PRIM_PROC_FLAGS(scheme_void_p_proc) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNARY_INLINED
