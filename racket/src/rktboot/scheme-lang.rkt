@@ -349,6 +349,7 @@
          priminfo-libraries
          $c-bufsiz
          $foreign-procedure
+         $foreign-entry
          $separator-character
          make-guardian
          $lambda/lift-barrier)
@@ -1390,6 +1391,10 @@
 (define-syntax ($foreign-procedure stx)
   (syntax-case stx ()
     [(_ _ name . _) #'name]))
+
+(define-syntax ($foreign-entry stx)
+  (syntax-case stx ()
+    [(_ name) #'name]))
 
 (define ($separator-character)
   (if (eq? (system-type) 'windows)
