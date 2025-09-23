@@ -70,7 +70,7 @@
     (raise-argument-error 'sequence-ref "exact-nonnegative-integer?" i))
   (let ([v (for/fold ([c #f]) ([v (in-values*-sequence s)]
                                [j (in-range (add1 i))]
-                               #:unless (j . < . i))
+                               #:final (j . >= . i))
              (or v '(#f)))])
     (cond
      [(not v)
