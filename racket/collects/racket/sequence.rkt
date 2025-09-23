@@ -68,15 +68,19 @@
   (unless (sequence? s) (raise-argument-error 'sequence-ref "sequence?" s))
   (unless (exact-nonnegative-integer? i)
     (raise-argument-error 'sequence-ref "exact-nonnegative-integer?" i))
-  (define-values (more? get) (sequence-generate s))
-  (for ([_ (in-range i)] #:when (more?)) (get))
-  (unless (more?)
-    (raise-arguments-error
-     'sequence-ref
-     "sequence ended before index"
-     "index" i
-     "sequence" s))
-  (get))
+  (let ([v (for/first ([v (in-values*-sequence s)]
+                       [j (in-range (add1 i))]
+                       #:unless (j . < . i))
+             (or v '(#f)))])
+    (cond
+      [(not v)
+       (raise-arguments-error
+        'sequence-ref
+        "sequence ended before index"
+        "index" i
+        "sequence" s)]
+      [(list? v) (apply values v)]
+      [else v])))
 
 (define (sequence-tail seq i)
   (unless (sequence? seq) (raise-argument-error 'sequence-tail "sequence?" seq))
