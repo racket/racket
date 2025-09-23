@@ -73,14 +73,14 @@
                        #:unless (j . < . i))
              (or v '(#f)))])
     (cond
-      [(not v)
-       (raise-arguments-error
-        'sequence-ref
-        "sequence ended before index"
-        "index" i
-        "sequence" s)]
-      [(list? v) (apply values v)]
-      [else v])))
+     [(not v)
+      (raise-arguments-error
+       'sequence-ref
+       "sequence ended before index"
+       "index" i
+       "sequence" s)]
+     [(list? v) (apply values v)]
+     [else v])))
 
 (define (sequence-tail seq i)
   (unless (sequence? seq) (raise-argument-error 'sequence-tail "sequence?" seq))
