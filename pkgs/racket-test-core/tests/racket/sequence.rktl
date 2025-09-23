@@ -174,8 +174,8 @@
   (define s
     (make-do-sequence
      (λ ()
-       (define (pos->element _) v)
-       (define (continue-with-pos? _) (set! v (add1 v)) (< v 100))
+       (define (pos->element _) (set! v (add1 v)) v)
+       (define (continue-with-pos? _) (< v 100))
        (values pos->element void (void) continue-with-pos? #f #f))))
   (define-values (more? get) (sequence-generate s))
   (test 1 'sequence-ref (get))
