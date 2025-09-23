@@ -69,7 +69,7 @@
   (unless (exact-nonnegative-integer? i)
     (raise-argument-error 'sequence-ref "exact-nonnegative-integer?" i))
   (define-values (more? get) (sequence-generate s))
-  (for ([_ (in-range i)]) (when (more?) (get)))
+  (for (#:when (more?) [_ (in-range i)]) (get))
   (unless (more?)
     (raise-arguments-error
      'sequence-ref
