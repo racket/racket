@@ -184,7 +184,7 @@
   (test 5 'sequence-ref (sequence-ref s 1))
   (test 7 'sequence-ref (sequence-ref s 1))
   (test 8 'sequence-ref (get))
-  (test 91 'sequence-length (sequence-length s)))
+  (test 92 'sequence-length (sequence-length s)))
 
 (test-values '(2 3) (lambda () (sequence-ref (in-parallel '(2) '(3)) 0)))
 (test-values '(8 12) (lambda () (sequence-ref (in-parallel '(2 5 8 -1) '(3 9 12 0)) 2)))
