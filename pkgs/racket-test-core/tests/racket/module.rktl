@@ -2353,6 +2353,36 @@ case of module-leve bindings; it doesn't cover local bindings.
                (regexp-match? #rx" already" (exn-message exn))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check that multiple imports of a name are allowed
+;; when they have different binding scopes, even if the
+;; same name is provided by the module language
+
+(module ok-module-with-two-lambdas racket/base
+  (provide result)
+  (define-syntax-rule (in)
+    (require (only-in racket/base lambda)))
+  (in)
+  (module lam racket/base
+    (define lambda 5)
+    (provide lambda))
+  (require 'lam)
+  (define result lambda))
+
+(module ok-module-with-two-lambdas/bulk racket/base
+  (provide result)
+  (define-syntax-rule (in)
+    (require (only-in racket/base)))
+  (in)
+  (module lam racket/base
+    (define lambda 6)
+    (provide lambda))
+  (require 'lam)
+  (define result lambda))
+
+(test 5 dynamic-require ''ok-module-with-two-lambdas 'result)
+(test 6 dynamic-require ''ok-module-with-two-lambdas/bulk 'result)
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Check re-export of an identifier from `#%kernel`
 ;; through a rename transformer:
 

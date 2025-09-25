@@ -473,7 +473,11 @@
                 [define-shadowing-require? #f]
                 [else
                  (define nr (normalize-required r mpi nominal-phase+space-shift (syntax-e id)))
-                 (if (eqv? (required-phase+space nr) (intern-phase+space phase space))
+                 (if (and (eqv? (required-phase+space nr) (intern-phase+space phase space))
+                          ;; This check is needed in case `id` is provided by the module's
+                          ;; language (so that we get here), but the `require`d name has
+                          ;; different scopes
+                          (bound-identifier=? id (required-id nr) phase))
                      (raise-already-bound defined? r)
                      only-can-can-shadow-require?)])))
           (cond
