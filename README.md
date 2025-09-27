@@ -13,12 +13,13 @@ Other parts of the Racket distribution are maintained in separate repositories u
 
 ---
 
-## Table of Contents
+## 📌 Table of Contents 
 
 - [What is Racket?](#what-is-racket)
 - [Install](#install)
 - [Building from Source](#building-from-source)
 - [Documentation](#documentation)
+- [Example Code](#example-code)
 - [Contributing](#contributing)
 - [Community](#community)
 - [License](#license)
@@ -65,6 +66,20 @@ make
 - [Tutorials and Guides](https://docs.racket-lang.org/#tutorials)
 - [Racket Package Index (pkgs.racket-lang.org)](https://pkgs.racket-lang.org)
 - [How to Design Programs (HTDP)](https://htdp.org/)
+
+## Example Code
+
+```racket
+#lang racket
+
+(define (square x)
+  (* x x))
+
+(define (sum-of-squares a b)
+  (+ (square a) (square b)))
+
+(displayln (sum-of-squares 3 4)) ; Output: 25
+```
 
 ## Contributing
 
