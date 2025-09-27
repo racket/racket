@@ -1,56 +1,104 @@
-[Racket](https://racket-lang.org/) is a general-purpose programming
-language and an ecosystem for language-oriented programming.
+# Racket Programming Language
 
-This repository holds the source code for the core of Racket plus some
-related packages. The rest of the Racket distribution source code is
-in other repositories, mostly under [the Racket GitHub
-organization](https://github.com/racket).
+![Build](https://img.shields.io/github/actions/workflow/status/racket/racket/ci.yml)
+![License: MIT/Apache/LGPL](https://img.shields.io/badge/license-MIT%2FApache%2FLGPL-blue)
+![Made with Scheme](https://img.shields.io/badge/Made%20with-Scheme-lightgrey?logo=racket)
 
-Quick Start
------------
+<img width="396" height="120" alt="image" src="https://github.com/user-attachments/assets/0526b430-699e-488d-9378-7040f8458c72" />
 
-Pre-built versions of Racket for a variety of operating systems and
-architectures, as well as convenient source distributions are
-available at
+**Racket** is a general-purpose, multi-paradigm programming language in the Lisp/Scheme family, and an ecosystem for language-oriented programming.
 
-  [https://download.racket-lang.org](https://download.racket-lang.org)
+This repository contains the source code for the core Racket system and some related packages.  
+Other parts of the Racket distribution are maintained in separate repositories under the [Racket GitHub organization](https://github.com/racket).
 
-Racket comes with extensive documentation, including several tutorials.
-You can read all of this documentation, as well as documentation for
-third-party packages at
+---
 
-  [https://docs.racket-lang.org](https://docs.racket-lang.org)
+## Table of Contents
 
-Building from Source
---------------------
+- [What is Racket?](#what-is-racket)
+- [Install](#install)
+- [Building from Source](#building-from-source)
+- [Documentation](#documentation)
+- [Contributing](#contributing)
+- [Community](#community)
+- [License](#license)
 
-For information on building Racket from this repository, see the
-[Build Guide](build.md).
+---
 
-Contributing
-------------
+## What is Racket?
 
-Contribute to Racket by
-* [submitting a pull request](https://github.com/racket/racket)
-* visiting the Racket forums 
-  * [Racket Discussions Discourse](https://racket.discourse.group/)
-  * [Racket Discord](https://discord.gg/6Zq8sH5) #internals
-  * [Slack](https://racket-slack.herokuapp.com/)
+Racket is a mature, functional-first language with support for multiple paradigms and a focus on language creation.
 
+### Key Features
 
-By making a contribution, you are agreeing that your contribution is
-licensed under the LGPLv3, Apache 2.0, and MIT licenses. Those
-licenses are available in this repository in the files
-racket/src/LICENSE-LGPL.txt, racket/src/LICENSE-APACHE.txt, and
-racket/src/LICENSE-MIT.txt.
+- Multi-paradigm: functional, imperative, object-oriented, logic programming
+- Language-oriented: create new syntaxes and DSLs with powerful macros
+- Comes with DrRacket, a beginner-friendly IDE
+- Popular in education and academic research
+- Package ecosystem, module system, and REPL
 
-See the [Building, Distributing, and Contributing to Racket](build.md) 
-for more guidance on contributing.
+> “Racket is not just a language — it’s a platform for building languages.”
 
-The [Friendly Environment Policy](https://racket-lang.org/friendly.html) 
-contains guidelines on expected behavior within the Racket community.
+---
 
-License
--------
+## Install
 
-Racket is free software; see [LICENSE](LICENSE.txt) for more details.
+Prebuilt binaries for major platforms are available at:  
+👉 [https://download.racket-lang.org](https://download.racket-lang.org)
+
+---
+
+## Building from Source
+
+To build Racket from this repository:
+
+```bash
+git clone https://github.com/racket/racket
+cd racket
+make
+```
+> For detailed instructions, see the Build Guide
+
+## Documentation
+
+- [Official Documentation](https://docs.racket-lang.org)
+- [Tutorials and Guides](https://docs.racket-lang.org/#tutorials)
+- [Racket Package Index (pkgs.racket-lang.org)](https://pkgs.racket-lang.org)
+- [How to Design Programs (HTDP)](https://htdp.org/)
+
+## Contributing
+
+We welcome contributions of all kinds, including code, documentation, and issue reports.
+
+- Fork this repository and open a pull request
+- Follow the instructions in the [Build Guide](build.md#contributing)
+- Look for [good first issues](https://github.com/racket/racket/labels/good%20first%20issue)
+
+By contributing, you agree to license your work under:
+
+- MIT License
+- Apache License 2.0
+- GNU LGPLv3
+
+See the LICENSE files in `racket/src/` for more information.
+
+## Community
+
+Stay connected with the Racket community:
+
+- [Discourse Forum](https://racket.discourse.group/)
+- [Discord Server](https://discord.gg/6Zq8sH5) — check the `#internals` channel
+- [Slack Workspace](https://racket-slack.herokuapp.com/)
+
+Please read our [Friendly Environment Policy](https://racket-lang.org/friendly.html) to ensure respectful and inclusive communication.
+
+## License
+
+This project is distributed under the following licenses:
+
+- [MIT License](racket/src/LICENSE-MIT.txt)
+- [Apache License 2.0](racket/src/LICENSE-APACHE.txt)
+- [GNU LGPLv3 License](racket/src/LICENSE-LGPL.txt)
+
+See the [LICENSE.txt](LICENSE.txt) file for general information.
+
