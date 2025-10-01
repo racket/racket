@@ -1,12 +1,11 @@
 # Racket Programming Language
 
-![Build](https://img.shields.io/github/actions/workflow/status/racket/racket/ci.yml)
 ![License: MIT/Apache/LGPL](https://img.shields.io/badge/license-MIT%2FApache%2FLGPL-blue)
 ![Made with Scheme](https://img.shields.io/badge/Made%20with-Scheme-lightgrey?logo=racket)
 
 <img width="396" height="120" alt="image" src="https://github.com/user-attachments/assets/0526b430-699e-488d-9378-7040f8458c72" />
 
-**Racket** is a general-purpose, multi-paradigm programming language in the Lisp/Scheme family, and an ecosystem for language-oriented programming.
+**Racket** is a general-purpose programming language in the Lisp/Scheme family and an ecosystem for language-oriented programming.
 
 This repository contains the source code for the core Racket system and some related packages.  
 Other parts of the Racket distribution are maintained in separate repositories under the [Racket GitHub organization](https://github.com/racket).
@@ -32,13 +31,13 @@ Racket is a mature, functional-first language with support for multiple paradigm
 
 ### Key Features
 
-- Multi-paradigm: functional, imperative, object-oriented, logic programming
+- Supports functional, imperative, object-oriented, and logic programming
 - Language-oriented: create new syntaxes and DSLs with powerful macros
 - Comes with DrRacket, a beginner-friendly IDE
-- Popular in education and academic research
-- Package ecosystem, module system, and REPL
+- Used in education, research, and production
+- Includes a package ecosystem, module system, and REPL
 
-> “Racket is not just a language — it’s a platform for building languages.”
+For detailed instructions, see the [Build Guide](build.md)
 
 ---
 
@@ -78,7 +77,8 @@ make
 (define (sum-of-squares a b)
   (+ (square a) (square b)))
 
-(displayln (sum-of-squares 3 4)) ; Output: 25
+(sum-of-squares 3 4) ; => 25
+
 ```
 
 ## Contributing
