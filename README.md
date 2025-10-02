@@ -37,7 +37,7 @@ Racket is a mature, functional-first language with support for multiple paradigm
 - Used in education, research, and production
 - Includes a package ecosystem, module system, and REPL
 
-For detailed instructions, see the [Build Guide](build.md)
+> For detailed instructions, see the [Build Guide](https://github.com/racket/racket/blob/master/build.md)
 
 ---
 
@@ -57,7 +57,7 @@ git clone https://github.com/racket/racket
 cd racket
 make
 ```
-> For detailed instructions, see the Build Guide
+> For detailed instructions, see the [Build Guide](https://github.com/racket/racket/blob/master/build.md)
 
 ## Documentation
 
