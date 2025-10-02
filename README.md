@@ -39,15 +39,11 @@ Racket is a mature, functional-first language with support for multiple paradigm
 
 For detailed instructions, see the [Build Guide](https://github.com/racket/racket/blob/master/build.md)
 
----
-
 ## Install
 
 Prebuilt binaries for major platforms are available at:
 - 👉  [https://download.racket-lang.org](https://download.racket-lang.org)
 > **Note**: Prebuilt packages are available for most operating systems.
-
----
 
 ## Building from Source
 
@@ -76,15 +72,17 @@ make
 ```racket
 #lang racket
 
-(define (square x)
-  (* x x))
+(define-syntax-rule (factorial n)
+  (let loop ([i n] [acc 1])
+    (if (<= i 1)
+        acc
+        (loop (sub1 i) (* acc i)))))
 
-(define (sum-of-squares a b)
-  (+ (square a) (square b)))
-
-(sum-of-squares 3 4) ; => 25
-
+(factorial 5)
+; => 120
 ```
+
+For more Racket examples, visit the [Official Racket Examples page](https://docs.racket-lang.org/quick/index.html)
 
 ## Contributing
 
@@ -101,15 +99,15 @@ By contributing, you agree to license your work under the following licenses:
 
 See the [LICENSE.txt](LICENSE.txt) file and the LICENSE files in `racket/src/` for more information.
 
+Please read our [Friendly Environment Policy](https://racket-lang.org/friendly.html) to ensure respectful and inclusive communication.
+
 ## Community
 
 Stay connected with the Racket community:
 
 - [Discourse Forum](https://racket.discourse.group/)
+- [Discourse Chat](https://racket.discourse.group/chat)
 - [Discord Server](https://discord.gg/6Zq8sH5)—the '#internals' channel is used for discussions about the Racket implementation
-- [Slack Workspace](https://racket-slack.herokuapp.com/)
-
-Please read our [Friendly Environment Policy](https://racket-lang.org/friendly.html) to ensure respectful and inclusive communication.
 
 ## License
 
