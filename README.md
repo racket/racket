@@ -3,7 +3,7 @@
 ![License: MIT/Apache/LGPL](https://img.shields.io/badge/license-MIT%2FApache%2FLGPL-blue)
 ![Made with Scheme](https://img.shields.io/badge/Made%20with-Scheme-lightgrey?logo=racket)
 
-<img width="396" height="120" alt="image" src="https://github.com/user-attachments/assets/0526b430-699e-488d-9378-7040f8458c72" />
+<img alt="Racket Logo" src="https://racket-lang.org/img/racket-logo.svg" width="200" height="auto" />
 
 **Racket** is a general-purpose programming language in the Lisp/Scheme family and an ecosystem for language-oriented programming.
 
@@ -51,13 +51,17 @@ Prebuilt binaries for major platforms are available at:
 ## Building from Source
 
 To build Racket from this repository:
-
+- This repository is intended for Racket development or contributions.
+- Follow the instructions in the [Build Guide](https://github.com/racket/racket/blob/master/build.md)
+  
 ```bash
 git clone https://github.com/racket/racket
 cd racket
 make
 ```
-For detailed instructions, see the [Build Guide](https://github.com/racket/racket/blob/master/build.md)
+
+> **Note**: For detailed instructions, see the [Build Guide](build.md).
+> - ※ To build the released version of Racket from source tarballs, visit [https://download.racket-lang.org](https://download.racket-lang.org).
 
 ## Documentation
 
@@ -85,17 +89,16 @@ For detailed instructions, see the [Build Guide](https://github.com/racket/racke
 
 We welcome contributions of all kinds, including code, documentation, and issue reports.
 
-- Fork this repository and open a pull request
-- Follow the instructions in the [Build Guide](build.md#contributing)
-- Look for [good first issues](https://github.com/racket/racket/labels/good%20first%20issue)
+- Fork this repository and open a pull request.
+- Follow the instructions in the [Build Guide](build.md#contributing).
+- Look for [good first issues](https://github.com/racket/racket/labels/good%20first%20issue).
 
-By contributing, you agree to license your work under:
+By contributing, you agree to license your work under the following licenses:
+- [MIT License](racket/src/LICENSE-MIT.txt)
+- [Apache License 2.0](racket/src/LICENSE-APACHE.txt)
+- [GNU LGPLv3 License](racket/src/LICENSE-LGPL.txt)
 
-- MIT License
-- Apache License 2.0
-- GNU LGPLv3
-
-See the LICENSE files in `racket/src/` for more information.
+See the [LICENSE.txt](LICENSE.txt) file and the LICENSE files in `racket/src/` for more information.
 
 ## Community
 
@@ -116,4 +119,3 @@ This project is distributed under the following licenses:
 - [GNU LGPLv3 License](racket/src/LICENSE-LGPL.txt)
 
 See the [LICENSE.txt](LICENSE.txt) file for general information.
-
