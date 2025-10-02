@@ -43,8 +43,9 @@ For detailed instructions, see the [Build Guide](https://github.com/racket/racke
 
 ## Install
 
-Prebuilt binaries for major platforms are available at:  
-👉 [https://download.racket-lang.org](https://download.racket-lang.org)
+Prebuilt binaries for major platforms are available at:
+- 👉  [https://download.racket-lang.org](https://download.racket-lang.org)
+> **Note**: Prebuilt packages are available for most operating systems.
 
 ---
 
@@ -105,7 +106,7 @@ See the [LICENSE.txt](LICENSE.txt) file and the LICENSE files in `racket/src/` f
 Stay connected with the Racket community:
 
 - [Discourse Forum](https://racket.discourse.group/)
-- [Discord Server](https://discord.gg/6Zq8sH5) — check the `#internals` channel
+- [Discord Server](https://discord.gg/6Zq8sH5)—the '#internals' channel is used for discussions about the Racket implementation
 - [Slack Workspace](https://racket-slack.herokuapp.com/)
 
 Please read our [Friendly Environment Policy](https://racket-lang.org/friendly.html) to ensure respectful and inclusive communication.
