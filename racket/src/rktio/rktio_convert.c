@@ -744,7 +744,7 @@ static UConverter rktio_ucnv_open_and_set_callbacks(const char *converterName,
   if (U_FAILURE(*error))
     return NULL;
   *error = U_ZERO_ERROR;
-  ucnv_setToCallBack(ucnv, UCNV_TO_U_CALLBACK_STOP, NULL, NULL, NULL, error);
+  ucnv_setToUCallBack(ucnv, UCNV_TO_U_CALLBACK_STOP, NULL, NULL, NULL, error);
   if (U_FAILURE(*error))
     return NULL;
   *error = U_ZERO_ERROR;
