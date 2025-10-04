@@ -729,8 +729,8 @@ static intptr_t rktio_iconv_convert(rktio_t *rktio,
   return (intptr_t)r;
 }
 
-static UConverter rktio_ucnv_open_and_set_callbacks(const char *converterName,
-                                                    UErrorCode *error)
+static UConverter *rktio_ucnv_open_and_set_callbacks(const char *converterName,
+                                                     UErrorCode *error)
 {
   /* internal helper: use instead of ucnv_open
    * to stop on illegal/unmapped/invalid sequences
