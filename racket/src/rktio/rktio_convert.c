@@ -740,7 +740,7 @@ static UConverter rktio_ucnv_open_and_set_callbacks(const char *converterName,
   *error = U_MEMORY_ALLOCATION_ERROR;
   return NULL;
 #else
-  UConverter ucnv = ucnv_open(from_enc, error);
+  UConverter ucnv = ucnv_open(converterName, error);
   if (U_FAILURE(*error))
     return NULL;
   *error = U_ZERO_ERROR;
