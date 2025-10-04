@@ -63,7 +63,6 @@ void rktio_convert_deinit(rktio_t *rktio) {
 
 # define HAVE_CODESET 0
 # define ICONV_errno 0
-# define RKTIO_CHK_PROC(x) 0
 
 typedef intptr_t iconv_t;
 static size_t iconv(iconv_t cd, char **in, size_t *in_left, char **out, size_t *out_left) { return (size_t)-1; }
@@ -105,7 +104,6 @@ static int get_iconv_errno(void)
 # define HAVE_CODESET 1
 # define CODESET 0
 # define ICONV_errno get_iconv_errno()
-# define RKTIO_CHK_PROC(x) x
 
 static void init_iconv()
 {
@@ -243,7 +241,6 @@ void rktio_set_dll_path(rktio_char16_t *p)
 
 # include <errno.h>
 # define ICONV_errno errno
-# define RKTIO_CHK_PROC(x) 1
 static void init_iconv(void) {
   if (INIT_NOT_YET == iconv_init_status)
     iconv_init_status = INIT_YES;
