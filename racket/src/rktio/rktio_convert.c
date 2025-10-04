@@ -288,10 +288,11 @@ typedef void (*ucnv_convertEx_proc_t)(UConverter *targetCnv, UConverter *sourceC
                                       const UChar *pivotLimit,
                                       UBool reset, UBool flush, UErrorCode *pErrorCode);
 typedef void (*UConverterToUCallback)(const void *context, void *args,
-                                      const char *codeUnits, int32_t length,
+                                      const char *codeUnits, rktio_icu_int32_t length,
                                       rktio_icu_int32_t reason, UErrorCode *pErrorCode);
 typedef void (*UConverterFromUCallback)(const void *context, void *args,
-                                        const UChar *codeUnits, int32_t length, int32_t codePoint,
+                                        const UChar *codeUnits, rktio_icu_int32_t length,
+                                        rktio_icu_int32_t codePoint,
                                         rktio_icu_int32_t reason, UErrorCode *pErrorCode);
 typedef void (*ucnv_setToUCallBack_proc_t)(UConverter *converter,
                                            UConverterToUCallback newAction, const void *newContext,
