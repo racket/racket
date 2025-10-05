@@ -132,18 +132,17 @@
             info)]
           [else (maybe-immediate-values)])]
        [`((,prop:s ,s? ,s-ref) (make-struct-type-property ,_ . ,rest))
-        (define type (string->uninterned-symbol (symbol->string (unwrap prop:s))))
         (values
-         (let* ([knowns (hash-set knowns (unwrap s-ref) (known-accessor 2 type))]
-                [knowns (hash-set knowns (unwrap s?) (known-predicate 2 type))])
-           ;; Check whether the property type has an immediate (or no) guard:
-           (cond
-             [(or (null? (unwrap rest))
-                  (and (not (wrap-car rest))
-                       (null? (unwrap (wrap-cdr rest)))))
-              (hash-set knowns (unwrap prop:s) (known-struct-type-property/immediate-guard))]
-             [else knowns]))
+         (add-struct-type-property-known prop:s s-ref s?
+                                         ;; Check whether the property type has an immediate (or no) guard:
+                                         (or (null? (unwrap rest))
+                                             (and (not (wrap-car rest))
+                                                  (null? (unwrap (wrap-cdr rest)))))
+                                         knowns)
          #f)]
+       [`((,prop:s ,s? ,s-ref) (unsafe-make-struct-type-property/guard-calls-no-arguments . ,_))
+        (values (add-struct-type-property-known prop:s s-ref s? #t knowns)
+                #f)]
        [`,_ (maybe-immediate-values)])]
     [`,_ (nothing)]))
 

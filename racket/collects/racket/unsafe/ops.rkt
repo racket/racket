@@ -54,7 +54,8 @@
                      unsafe-remove-collect-callbacks
                      unsafe-make-place-local
                      unsafe-place-local-ref
-                     unsafe-place-local-set!)
+                     unsafe-place-local-set!
+                     unsafe-make-struct-type-property/guard-calls-no-arguments)
          (rename-out [new:unsafe-impersonate-procedure unsafe-impersonate-procedure]
                      [new:unsafe-chaperone-procedure unsafe-chaperone-procedure])
          (prefix-out unsafe-

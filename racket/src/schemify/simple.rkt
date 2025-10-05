@@ -65,15 +65,19 @@
            [else
             (and (simple? (car es) #f)
                  (loop (cdr es)))]))))
-    (define (ok-to-call? v zero-args?)
+    (define (ok-to-call? proc-name v n-args)
       (if pure?
           (and (or (if no-alloc?
                        (known-procedure/pure? v)
-                       (known-procedure/allocates? v))
+                       (or (known-procedure/allocates? v)
+                           (and n-args
+                                (or (eq? proc-name 'hasheq)
+                                    (eq? proc-name 'hasheqv))
+                                (even? n-args))))
                    (and ordered?
                         (or (known-procedure/then-pure? v)
                             (and succeeds?
-                                 zero-args?
+                                 (eqv? n-args 0)
                                  (known-procedure/parameter? v))
                             ;; in unsafe mode, we can assume no contract error:
                             (and unsafe-mode?
@@ -83,8 +87,7 @@
                (returns 1))
           (or (and (known-procedure/no-prompt? v)
                    (returns 1))
-              (and succeeds?
-                   zero-args?
+              (and (eqv? n-args 0)
                    (known-procedure/parameter? v)
                    (returns 1))
               (and (known-procedure/no-prompt/multi? v)
@@ -94,6 +97,10 @@
                    (returns 1))
               (and (known-field-mutator? v)
                    (known-field-mutator-authentic? v)
+                   (returns 1))
+              (and (known-procedure/no-prompt-up-to? v)
+                   n-args
+                   (<= n-args (known-procedure/no-prompt-up-to-n v))
                    (returns 1)))))
     (match e
       [`(lambda . ,_) (returns 1)]
@@ -153,7 +160,7 @@
                (and (symbol? proc)
                     (let ([v (or (hash-ref-either knowns imports proc)
                                  (hash-ref prim-knowns proc #f))])
-                      (ok-to-call? v #f))))
+                      (ok-to-call? proc v #f))))
              (for/and ([e (in-list es)])
                (simple? e 1))))]
       [`(,proc . ,args)
@@ -162,7 +169,7 @@
           (and (symbol? proc)
                (let ([v (or (hash-ref-either knowns imports proc)
                             (hash-ref prim-knowns proc #f))])
-                 (and (ok-to-call? v (null? args))
+                 (and (ok-to-call? proc v (length args))
                       (bitwise-bit-set? (known-procedure-arity-mask v) (length args))))
                (simple-mutated-state? (hash-ref mutated proc #f))
                (for/and ([arg (in-list args)])

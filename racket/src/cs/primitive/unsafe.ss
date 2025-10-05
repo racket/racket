@@ -137,6 +137,7 @@
   [unsafe-make-security-guard-at-root (known-procedure 15)]
   [unsafe-make-signal-received (known-procedure/succeeds 1)]
   [unsafe-make-srcloc (known-procedure/then-pure 32)]
+  [unsafe-make-struct-type-property/guard-calls-no-arguments (known-procedure 254)]
   [unsafe-make-uninterruptible-lock (known-procedure 1)]
   [unsafe-mcar (known-procedure/succeeds 2)]
   [unsafe-mcdr (known-procedure/succeeds 2)]

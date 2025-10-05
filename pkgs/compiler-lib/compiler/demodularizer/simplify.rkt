@@ -121,7 +121,7 @@
             (and (or (memq rator
                            ;; primitives that don't immediately call any
                            ;; function that they are given:
-                           '(make-struct-type-property
+                           '(unsafe-make-struct-type-property/guard-calls-no-arguments
                              make-struct-type
                              make-struct-field-accessor
                              make-struct-field-mutator
@@ -130,6 +130,10 @@
                              cons
                              current-inspector
                              check-inspector))
+                     (and (eq? rator 'make-struct-type-property)
+                          (or ((length args) . <= . 1)
+                              (and (not (cadr args))
+                                   ((length args) . <= . 2))))
                      (eq? (hash-ref defined-ready rator #f) 'constructor))
                  (for/and ([arg (in-list args)])
                    (immediate? arg)))

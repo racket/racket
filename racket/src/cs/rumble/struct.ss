@@ -121,6 +121,9 @@
                  pred
                  acc)))]))
 
+(define/who unsafe-make-struct-type-property/guard-calls-no-arguments
+  make-struct-type-property)
+
 (define (struct-type-property-accessor-procedure? v)
   (let ([v (strip-impersonator v)])
     (and (#%procedure? v)

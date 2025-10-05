@@ -238,6 +238,7 @@
           unquoted-printing-string-value
 
           make-struct-type-property
+          unsafe-make-struct-type-property/guard-calls-no-arguments
           struct-type-property?
           struct-type-property-accessor-procedure?
           struct-type-property-predicate-procedure?

@@ -2621,6 +2621,78 @@
         (if (impersonator? v)
           (known-procedure/no-prompt/multi?_2394 (impersonator-val v))
           #f))))))
+(define finish_2412
+  (make-struct-type-install-properties
+   '(known-procedure/no-prompt-up-to)
+   1
+   0
+   (if (struct-type? struct:known-procedure)
+     struct:known-procedure
+     (check-struct-type 'struct struct:known-procedure))
+   null
+   'prefab
+   #f
+   '(0)
+   #f
+   'known-procedure/no-prompt-up-to))
+(define struct:known-procedure/no-prompt-up-to
+  (make-record-type-descriptor
+   'known-procedure/no-prompt-up-to
+   (if (struct-type? struct:known-procedure)
+     struct:known-procedure
+     (check-struct-type 'struct struct:known-procedure))
+   (structure-type-lookup-prefab-uid
+    'known-procedure/no-prompt-up-to
+    (if (struct-type? struct:known-procedure)
+      struct:known-procedure
+      (check-struct-type 'struct struct:known-procedure))
+    1
+    0
+    #f
+    '(0))
+   #f
+   #f
+   '(1 . 1)))
+(define effect_2754 (finish_2412 struct:known-procedure/no-prompt-up-to))
+(define known-procedure/no-prompt-up-to
+  (|#%name|
+   known-procedure/no-prompt-up-to
+   (record-constructor
+    (make-record-constructor-descriptor
+     struct:known-procedure/no-prompt-up-to
+     #f
+     #f))))
+(define known-procedure/no-prompt-up-to?_2279
+  (|#%name|
+   known-procedure/no-prompt-up-to?
+   (record-predicate struct:known-procedure/no-prompt-up-to)))
+(define known-procedure/no-prompt-up-to?
+  (|#%name|
+   known-procedure/no-prompt-up-to?
+   (lambda (v)
+     (if (known-procedure/no-prompt-up-to?_2279 v)
+       #t
+       ($value
+        (if (impersonator? v)
+          (known-procedure/no-prompt-up-to?_2279 (impersonator-val v))
+          #f))))))
+(define known-procedure/no-prompt-up-to-n_2628
+  (|#%name|
+   known-procedure/no-prompt-up-to-n
+   (record-accessor struct:known-procedure/no-prompt-up-to 0)))
+(define known-procedure/no-prompt-up-to-n
+  (|#%name|
+   known-procedure/no-prompt-up-to-n
+   (lambda (s)
+     (if (known-procedure/no-prompt-up-to?_2279 s)
+       (known-procedure/no-prompt-up-to-n_2628 s)
+       ($value
+        (impersonate-ref
+         known-procedure/no-prompt-up-to-n_2628
+         struct:known-procedure/no-prompt-up-to
+         0
+         s
+         'n))))))
 (define finish_2574
   (make-struct-type-install-properties
    '(known-procedure/no-return)
@@ -5188,12 +5260,29 @@
                (let ((ok-to-call?_0
                       (|#%name|
                        ok-to-call?
-                       (lambda (v_0 zero-args?_0)
+                       (lambda (proc-name_0 v_0 n-args_0)
                          (if pure?1_0
                            (if (let ((or-part_0
                                       (if no-alloc?2_0
                                         (known-procedure/pure? v_0)
-                                        (known-procedure/allocates? v_0))))
+                                        (let ((or-part_0
+                                               (known-procedure/allocates?
+                                                v_0)))
+                                          (if or-part_0
+                                            or-part_0
+                                            (if n-args_0
+                                              (if (let ((or-part_1
+                                                         (eq?
+                                                          proc-name_0
+                                                          'hasheq)))
+                                                    (if or-part_1
+                                                      or-part_1
+                                                      (eq?
+                                                       proc-name_0
+                                                       'hasheqv)))
+                                                (even? n-args_0)
+                                                #f)
+                                              #f))))))
                                  (if or-part_0
                                    or-part_0
                                    (if ordered?3_0
@@ -5203,7 +5292,7 @@
                                          or-part_1
                                          (let ((or-part_2
                                                 (if succeeds?4_0
-                                                  (if zero-args?_0
+                                                  (if (eqv? n-args_0 0)
                                                     (known-procedure/parameter?
                                                      v_0)
                                                     #f)
@@ -5229,11 +5318,9 @@
                              (if or-part_0
                                or-part_0
                                (let ((or-part_1
-                                      (if succeeds?4_0
-                                        (if zero-args?_0
-                                          (if (known-procedure/parameter? v_0)
-                                            (returns_0 1)
-                                            #f)
+                                      (if (eqv? n-args_0 0)
+                                        (if (known-procedure/parameter? v_0)
+                                          (returns_0 1)
                                           #f)
                                         #f)))
                                  (if or-part_1
@@ -5254,12 +5341,27 @@
                                                 #f)))
                                          (if or-part_3
                                            or-part_3
-                                           (if (known-field-mutator? v_0)
-                                             (if (known-field-mutator-authentic?
-                                                  v_0)
-                                               (returns_0 1)
-                                               #f)
-                                             #f))))))))))))))
+                                           (let ((or-part_4
+                                                  (if (known-field-mutator?
+                                                       v_0)
+                                                    (if (known-field-mutator-authentic?
+                                                         v_0)
+                                                      (returns_0 1)
+                                                      #f)
+                                                    #f)))
+                                             (if or-part_4
+                                               or-part_4
+                                               (if (known-procedure/no-prompt-up-to?
+                                                    v_0)
+                                                 (if n-args_0
+                                                   (if (<=
+                                                        n-args_0
+                                                        (known-procedure/no-prompt-up-to-n
+                                                         v_0))
+                                                     (returns_0 1)
+                                                     #f)
+                                                   #f)
+                                                 #f))))))))))))))))
                  (let ((hd_0
                         (let ((p_0 (unwrap e_0)))
                           (if (pair? p_0) (unwrap (car p_0)) #f))))
@@ -7017,6 +7119,7 @@
                                                                                                proc_1
                                                                                                #f)))))
                                                                                      (ok-to-call?_0
+                                                                                      proc_1
                                                                                       v_0
                                                                                       #f))
                                                                                    #f))
@@ -7190,8 +7293,9 @@
                                                                                              proc_1
                                                                                              #f)))))
                                                                                    (if (ok-to-call?_0
+                                                                                        proc_1
                                                                                         v_0
-                                                                                        (null?
+                                                                                        (length
                                                                                          args_0))
                                                                                      (let ((app_0
                                                                                             (known-procedure-arity-mask
@@ -9566,62 +9670,58 @@
                 (let ((app_0 (reverse$1 props_0)))
                   (values app_0 (reverse$1 vals_0)))))))
          (lambda (props_0 vals_0)
-           (if (letrec*
-                ((for-loop_0
-                  (|#%name|
-                   for-loop
-                   (lambda (result_0 lst_0 lst_1)
-                     (if (if (pair? lst_0) (pair? lst_1) #f)
-                       (let ((prop_0 (unsafe-car lst_0)))
-                         (let ((rest_0 (unsafe-cdr lst_0)))
-                           (let ((val_0 (unsafe-car lst_1)))
-                             (let ((rest_1 (unsafe-cdr lst_1)))
-                               (let ((result_1
-                                      (let ((result_1
-                                             (let ((u-prop_0 (unwrap prop_0)))
-                                               (if (symbol? u-prop_0)
-                                                 (if (known-struct-type-property/immediate-guard?
-                                                      (call-with-values
-                                                       (lambda ()
-                                                         (find-known+import
-                                                          u-prop_0
-                                                          prim-knowns_0
-                                                          knowns_0
-                                                          imports_0
-                                                          mutated_0))
-                                                       (lambda (k_0 im_0)
-                                                         k_0)))
-                                                   (simple?.1
-                                                    #f
-                                                    #t
-                                                    #t
-                                                    1
-                                                    #t
-                                                    val_0
-                                                    prim-knowns_0
-                                                    knowns_0
-                                                    imports_0
-                                                    mutated_0
-                                                    simples_0
-                                                    #f)
-                                                   #f)
-                                                 #f))))
-                                        (values result_1))))
-                                 (if (if (not
-                                          (let ((x_0 (list prop_0)))
-                                            (not result_1)))
-                                       (if (not
-                                            (let ((x_0 (list val_0)))
-                                              (not result_1)))
-                                         #t
-                                         #f)
-                                       #f)
-                                   (for-loop_0 result_1 rest_0 rest_1)
-                                   result_1))))))
-                       result_0)))))
-                (for-loop_0 #t props_0 vals_0))
-             vals_0
-             #f)))
+           (reverse$1
+            (letrec*
+             ((for-loop_0
+               (|#%name|
+                for-loop
+                (lambda (fold-var_0 lst_0 lst_1)
+                  (if (if (pair? lst_0) (pair? lst_1) #f)
+                    (let ((prop_0 (unsafe-car lst_0)))
+                      (let ((rest_0 (unsafe-cdr lst_0)))
+                        (let ((val_0 (unsafe-car lst_1)))
+                          (let ((rest_1 (unsafe-cdr lst_1)))
+                            (let ((fold-var_1
+                                   (let ((fold-var_1
+                                          (cons
+                                           (let ((u-prop_0 (unwrap prop_0)))
+                                             (let ((nice-prop?_0
+                                                    (if (symbol? u-prop_0)
+                                                      (if (known-struct-type-property/immediate-guard?
+                                                           (call-with-values
+                                                            (lambda ()
+                                                              (find-known+import
+                                                               u-prop_0
+                                                               prim-knowns_0
+                                                               knowns_0
+                                                               imports_0
+                                                               mutated_0))
+                                                            (lambda (k_0 im_0)
+                                                              k_0)))
+                                                        (simple?.1
+                                                         #f
+                                                         #f
+                                                         #f
+                                                         1
+                                                         #f
+                                                         val_0
+                                                         prim-knowns_0
+                                                         knowns_0
+                                                         imports_0
+                                                         mutated_0
+                                                         simples_0
+                                                         #f)
+                                                        #f)
+                                                      #f)))
+                                               (list*
+                                                nice-prop?_0
+                                                prop_0
+                                                val_0)))
+                                           fold-var_0)))
+                                     (values fold-var_1))))
+                              (for-loop_0 fold-var_1 rest_0 rest_1))))))
+                    fold-var_0)))))
+             (for-loop_0 null props_0 vals_0)))))
         (if (let ((app_0 (unwrap 'null))) (eq? app_0 (unwrap e_0)))
           null
           (if (if (eq? 'quote hd_0)
@@ -9786,6 +9886,23 @@
                  #f)
                #f))))
         #f))))
+(define add-struct-type-property-known
+  (lambda (prop:s_0 s-ref_0 s?_0 immediate-guard?_0 knowns_0)
+    (let ((type_0
+           (string->uninterned-symbol (symbol->string (unwrap prop:s_0)))))
+      (let ((knowns_1
+             (let ((app_0 (unwrap s-ref_0)))
+               (hash-set knowns_0 app_0 (known-accessor 2 type_0)))))
+        (let ((knowns_2
+               (let ((app_0 (unwrap s?_0)))
+                 (hash-set knowns_1 app_0 (known-predicate 2 type_0)))))
+          (if immediate-guard?_0
+            (let ((app_0 (unwrap prop:s_0)))
+              (hash-set
+               knowns_2
+               app_0
+               (known-struct-type-property/immediate-guard)))
+            knowns_2))))))
 (define literal?
   (lambda (v_0)
     (let ((u_0 (unwrap v_0)))
@@ -16681,38 +16798,103 @@
                                          s-ref_1
                                          rest_0)))))))
                              (lambda (prop:s_0 s?_0 s-ref_0 rest_0)
-                               (let ((type_0
-                                      (string->uninterned-symbol
-                                       (symbol->string (unwrap prop:s_0)))))
+                               (values
+                                (add-struct-type-property-known
+                                 prop:s_0
+                                 s-ref_0
+                                 s?_0
+                                 (let ((or-part_0 (null? (unwrap rest_0))))
+                                   (if or-part_0
+                                     or-part_0
+                                     (if (not (wrap-car rest_0))
+                                       (null? (unwrap (wrap-cdr rest_0)))
+                                       #f)))
+                                 knowns9_0)
+                                #f)))
+                            (if (let ((p_0 (unwrap v_0)))
+                                  (if (pair? p_0)
+                                    (if (let ((a_0 (car p_0)))
+                                          (let ((p_1 (unwrap a_0)))
+                                            (if (pair? p_1)
+                                              (let ((a_1 (cdr p_1)))
+                                                (let ((p_2 (unwrap a_1)))
+                                                  (if (pair? p_2)
+                                                    (let ((a_2 (cdr p_2)))
+                                                      (let ((p_3 (unwrap a_2)))
+                                                        (if (pair? p_3)
+                                                          (let ((a_3
+                                                                 (cdr p_3)))
+                                                            (let ((app_0
+                                                                   (unwrap
+                                                                    '())))
+                                                              (eq?
+                                                               app_0
+                                                               (unwrap a_3))))
+                                                          #f)))
+                                                    #f)))
+                                              #f)))
+                                      (let ((a_0 (cdr p_0)))
+                                        (let ((p_1 (unwrap a_0)))
+                                          (if (pair? p_1)
+                                            (if (let ((a_1 (car p_1)))
+                                                  (let ((p_2 (unwrap a_1)))
+                                                    (if (pair? p_2)
+                                                      (if (let ((a_2
+                                                                 (car p_2)))
+                                                            (let ((app_0
+                                                                   (unwrap
+                                                                    'unsafe-make-struct-type-property/guard-calls-no-arguments)))
+                                                              (eq?
+                                                               app_0
+                                                               (unwrap a_2))))
+                                                        #t
+                                                        #f)
+                                                      #f)))
+                                              (let ((a_1 (cdr p_1)))
+                                                (let ((app_0 (unwrap '())))
+                                                  (eq? app_0 (unwrap a_1))))
+                                              #f)
+                                            #f)))
+                                      #f)
+                                    #f))
+                              (call-with-values
+                               (lambda ()
+                                 (let ((a_0 (car (unwrap v_0))))
+                                   (let ((p_0 (unwrap a_0)))
+                                     (let ((prop:s_0
+                                            (let ((a_1 (car p_0))) a_1)))
+                                       (call-with-values
+                                        (lambda ()
+                                          (let ((d_0 (cdr p_0)))
+                                            (let ((p_1 (unwrap d_0)))
+                                              (let ((s?_0
+                                                     (let ((a_1 (car p_1)))
+                                                       a_1)))
+                                                (let ((s-ref_0
+                                                       (let ((d_1 (cdr p_1)))
+                                                         (let ((a_1
+                                                                (car
+                                                                 (unwrap
+                                                                  d_1))))
+                                                           a_1))))
+                                                  (let ((s?_1 s?_0))
+                                                    (values s?_1 s-ref_0)))))))
+                                        (lambda (s?_0 s-ref_0)
+                                          (let ((prop:s_1 prop:s_0))
+                                            (values
+                                             prop:s_1
+                                             s?_0
+                                             s-ref_0))))))))
+                               (lambda (prop:s_0 s?_0 s-ref_0)
                                  (values
-                                  (let ((knowns_0
-                                         (let ((app_0 (unwrap s-ref_0)))
-                                           (hash-set
-                                            knowns9_0
-                                            app_0
-                                            (known-accessor 2 type_0)))))
-                                    (let ((knowns_1
-                                           (let ((app_0 (unwrap s?_0)))
-                                             (hash-set
-                                              knowns_0
-                                              app_0
-                                              (known-predicate 2 type_0)))))
-                                      (if (let ((or-part_0
-                                                 (null? (unwrap rest_0))))
-                                            (if or-part_0
-                                              or-part_0
-                                              (if (not (wrap-car rest_0))
-                                                (null?
-                                                 (unwrap (wrap-cdr rest_0)))
-                                                #f)))
-                                        (let ((app_0 (unwrap prop:s_0)))
-                                          (hash-set
-                                           knowns_1
-                                           app_0
-                                           (known-struct-type-property/immediate-guard)))
-                                        knowns_1)))
-                                  #f))))
-                            (maybe-immediate-values_0)))))))))
+                                  (add-struct-type-property-known
+                                   prop:s_0
+                                   s-ref_0
+                                   s?_0
+                                   #t
+                                   knowns9_0)
+                                  #f)))
+                              (maybe-immediate-values_0))))))))))
              (nothing_0))))))))
 (define find-one-definition.1
   (|#%name|
@@ -21621,58 +21803,179 @@
                                                                              (unsafe-cdr
                                                                               lst_2)))
                                                                         (begin
-                                                                          (let ((prop-vals_0
-                                                                                 (if (=
-                                                                                      pos_0
-                                                                                      0)
+                                                                          (if (=
+                                                                               pos_0
+                                                                               0)
+                                                                            (let ((prop-vals_0
                                                                                    (pure-properties-list
                                                                                     e_0
                                                                                     prim-knowns_0
                                                                                     knowns_1
                                                                                     imports_0
                                                                                     mutated_0
-                                                                                    simples_0)
-                                                                                   #f)))
-                                                                            (if prop-vals_0
-                                                                              (begin
-                                                                                (letrec*
-                                                                                 ((for-loop_2
-                                                                                   (|#%name|
-                                                                                    for-loop
-                                                                                    (lambda (lst_3)
-                                                                                      (if (pair?
-                                                                                           lst_3)
-                                                                                        (let ((e_1
-                                                                                               (unsafe-car
-                                                                                                lst_3)))
-                                                                                          (let ((rest_2
-                                                                                                 (unsafe-cdr
-                                                                                                  lst_3)))
-                                                                                            (begin
-                                                                                              (find-mutated!
-                                                                                               e_1
-                                                                                               ids_0
-                                                                                               prim-knowns_0
-                                                                                               knowns_1
-                                                                                               imports_0
-                                                                                               mutated_0
-                                                                                               simples_0
-                                                                                               unsafe-mode?_0)
-                                                                                              (for-loop_2
-                                                                                               rest_2))))
-                                                                                        (values))))))
-                                                                                 (for-loop_2
-                                                                                  prop-vals_0))
-                                                                                (void))
-                                                                              (find-mutated!
-                                                                               e_0
-                                                                               ids_0
-                                                                               prim-knowns_0
-                                                                               knowns_1
-                                                                               imports_0
-                                                                               mutated_0
-                                                                               simples_0
-                                                                               unsafe-mode?_0)))
+                                                                                    simples_0)))
+                                                                              (if prop-vals_0
+                                                                                (begin
+                                                                                  (let ((lst_3
+                                                                                         '(#f
+                                                                                           #t)))
+                                                                                    (letrec*
+                                                                                     ((for-loop_2
+                                                                                       (|#%name|
+                                                                                        for-loop
+                                                                                        (lambda (lst_4)
+                                                                                          (if (pair?
+                                                                                               lst_4)
+                                                                                            (let ((do-nice?_0
+                                                                                                   (unsafe-car
+                                                                                                    lst_4)))
+                                                                                              (let ((rest_2
+                                                                                                     (unsafe-cdr
+                                                                                                      lst_4)))
+                                                                                                (begin
+                                                                                                  (begin
+                                                                                                    (letrec*
+                                                                                                     ((for-loop_3
+                                                                                                       (|#%name|
+                                                                                                        for-loop
+                                                                                                        (lambda (lst_5)
+                                                                                                          (if (pair?
+                                                                                                               lst_5)
+                                                                                                            (let ((nice?+key+val_0
+                                                                                                                   (unsafe-car
+                                                                                                                    lst_5)))
+                                                                                                              (let ((rest_3
+                                                                                                                     (unsafe-cdr
+                                                                                                                      lst_5)))
+                                                                                                                (begin
+                                                                                                                  (if (let ((p_0
+                                                                                                                             (unwrap
+                                                                                                                              nice?+key+val_0)))
+                                                                                                                        (if (pair?
+                                                                                                                             p_0)
+                                                                                                                          (let ((a_0
+                                                                                                                                 (cdr
+                                                                                                                                  p_0)))
+                                                                                                                            (let ((p_1
+                                                                                                                                   (unwrap
+                                                                                                                                    a_0)))
+                                                                                                                              (if (pair?
+                                                                                                                                   p_1)
+                                                                                                                                #t
+                                                                                                                                #f)))
+                                                                                                                          #f))
+                                                                                                                    (call-with-values
+                                                                                                                     (lambda ()
+                                                                                                                       (let ((p_0
+                                                                                                                              (unwrap
+                                                                                                                               nice?+key+val_0)))
+                                                                                                                         (let ((nice?_0
+                                                                                                                                (let ((a_0
+                                                                                                                                       (car
+                                                                                                                                        p_0)))
+                                                                                                                                  a_0)))
+                                                                                                                           (call-with-values
+                                                                                                                            (lambda ()
+                                                                                                                              (let ((d_0
+                                                                                                                                     (cdr
+                                                                                                                                      p_0)))
+                                                                                                                                (let ((p_1
+                                                                                                                                       (unwrap
+                                                                                                                                        d_0)))
+                                                                                                                                  (let ((key_0
+                                                                                                                                         (let ((a_0
+                                                                                                                                                (car
+                                                                                                                                                 p_1)))
+                                                                                                                                           a_0)))
+                                                                                                                                    (let ((val_0
+                                                                                                                                           (let ((d_1
+                                                                                                                                                  (cdr
+                                                                                                                                                   p_1)))
+                                                                                                                                             d_1)))
+                                                                                                                                      (let ((key_1
+                                                                                                                                             key_0))
+                                                                                                                                        (values
+                                                                                                                                         key_1
+                                                                                                                                         val_0)))))))
+                                                                                                                            (lambda (key_0
+                                                                                                                                     val_0)
+                                                                                                                              (let ((nice?_1
+                                                                                                                                     nice?_0))
+                                                                                                                                (values
+                                                                                                                                 nice?_1
+                                                                                                                                 key_0
+                                                                                                                                 val_0)))))))
+                                                                                                                     (lambda (nice?_0
+                                                                                                                              key_0
+                                                                                                                              val_0)
+                                                                                                                       (if nice?_0
+                                                                                                                         (if do-nice?_0
+                                                                                                                           (find-mutated!
+                                                                                                                            val_0
+                                                                                                                            ids_0
+                                                                                                                            prim-knowns_0
+                                                                                                                            knowns_1
+                                                                                                                            imports_0
+                                                                                                                            mutated_0
+                                                                                                                            simples_0
+                                                                                                                            unsafe-mode?_0)
+                                                                                                                           (void))
+                                                                                                                         (if (not
+                                                                                                                              do-nice?_0)
+                                                                                                                           (begin
+                                                                                                                             (find-mutated!
+                                                                                                                              key_0
+                                                                                                                              #f
+                                                                                                                              prim-knowns_0
+                                                                                                                              knowns_1
+                                                                                                                              imports_0
+                                                                                                                              mutated_0
+                                                                                                                              simples_0
+                                                                                                                              unsafe-mode?_0)
+                                                                                                                             (find-mutated!
+                                                                                                                              val_0
+                                                                                                                              #f
+                                                                                                                              prim-knowns_0
+                                                                                                                              knowns_1
+                                                                                                                              imports_0
+                                                                                                                              mutated_0
+                                                                                                                              simples_0
+                                                                                                                              unsafe-mode?_0))
+                                                                                                                           (void)))))
+                                                                                                                    (error
+                                                                                                                     'match
+                                                                                                                     "failed ~e"
+                                                                                                                     nice?+key+val_0))
+                                                                                                                  (for-loop_3
+                                                                                                                   rest_3))))
+                                                                                                            (values))))))
+                                                                                                     (for-loop_3
+                                                                                                      prop-vals_0))
+                                                                                                    (void))
+                                                                                                  (for-loop_2
+                                                                                                   rest_2))))
+                                                                                            (values))))))
+                                                                                     (for-loop_2
+                                                                                      lst_3)))
+                                                                                  (void))
+                                                                                (find-mutated!
+                                                                                 e_0
+                                                                                 #f
+                                                                                 prim-knowns_0
+                                                                                 knowns_1
+                                                                                 imports_0
+                                                                                 mutated_0
+                                                                                 simples_0
+                                                                                 unsafe-mode?_0)))
+                                                                            (find-mutated!
+                                                                             e_0
+                                                                             ids_0
+                                                                             prim-knowns_0
+                                                                             knowns_1
+                                                                             imports_0
+                                                                             mutated_0
+                                                                             simples_0
+                                                                             unsafe-mode?_0))
                                                                           (for-loop_1
                                                                            rest_1
                                                                            (+
@@ -22829,174 +23132,208 @@
                                             #t
                                             #f)
                                         (void)
-                                        (if (let ((p_0 (unwrap v_0)))
-                                              (if (pair? p_0)
-                                                (let ((a_0 (cdr p_0)))
-                                                  (wrap-list? a_0))
-                                                #f))
-                                          (call-with-values
-                                           (lambda ()
-                                             (let ((p_0 (unwrap v_0)))
-                                               (let ((rator_0
-                                                      (let ((a_0 (car p_0)))
-                                                        a_0)))
-                                                 (let ((exps_0
-                                                        (let ((d_0 (cdr p_0)))
-                                                          (unwrap-list d_0))))
-                                                   (let ((rator_1 rator_0))
-                                                     (values
-                                                      rator_1
-                                                      exps_0))))))
-                                           (lambda (rator_0 exps_0)
-                                             (if (if ids_1
-                                                   (let ((rator_1
-                                                          (unwrap rator_0)))
-                                                     (if (symbol? rator_1)
-                                                       (if (let ((v_1
-                                                                  (call-with-values
-                                                                   (lambda ()
-                                                                     (find-known+import
-                                                                      rator_1
-                                                                      prim-knowns_0
-                                                                      knowns_0
-                                                                      imports_0
-                                                                      mutated_0))
-                                                                   (lambda (k_0
-                                                                            im_0)
-                                                                     k_0))))
-                                                             (if (let ((or-part_0
-                                                                        (known-constructor?
+                                        (if (if (eq? 'values hd_0)
+                                              (let ((a_0 (cdr (unwrap v_0))))
+                                                (let ((p_0 (unwrap a_0)))
+                                                  (if (pair? p_0)
+                                                    (let ((a_1 (cdr p_0)))
+                                                      (let ((app_0
+                                                             (unwrap '())))
+                                                        (eq?
+                                                         app_0
+                                                         (unwrap a_1))))
+                                                    #f)))
+                                              #f)
+                                          (let ((exp_0
+                                                 (let ((d_0
+                                                        (cdr (unwrap v_0))))
+                                                   (let ((a_0
+                                                          (car (unwrap d_0))))
+                                                     a_0))))
+                                            (find-mutated!_0 exp_0 ids_1))
+                                          (if (let ((p_0 (unwrap v_0)))
+                                                (if (pair? p_0)
+                                                  (let ((a_0 (cdr p_0)))
+                                                    (wrap-list? a_0))
+                                                  #f))
+                                            (call-with-values
+                                             (lambda ()
+                                               (let ((p_0 (unwrap v_0)))
+                                                 (let ((rator_0
+                                                        (let ((a_0 (car p_0)))
+                                                          a_0)))
+                                                   (let ((exps_0
+                                                          (let ((d_0
+                                                                 (cdr p_0)))
+                                                            (unwrap-list
+                                                             d_0))))
+                                                     (let ((rator_1 rator_0))
+                                                       (values
+                                                        rator_1
+                                                        exps_0))))))
+                                             (lambda (rator_0 exps_0)
+                                               (if (if ids_1
+                                                     (let ((rator_1
+                                                            (unwrap rator_0)))
+                                                       (if (symbol? rator_1)
+                                                         (if (let ((v_1
+                                                                    (call-with-values
+                                                                     (lambda ()
+                                                                       (find-known+import
+                                                                        rator_1
+                                                                        prim-knowns_0
+                                                                        knowns_0
+                                                                        imports_0
+                                                                        mutated_0))
+                                                                     (lambda (k_0
+                                                                              im_0)
+                                                                       k_0))))
+                                                               (if (let ((or-part_0
+                                                                          (known-constructor?
+                                                                           v_1)))
+                                                                     (if or-part_0
+                                                                       or-part_0
+                                                                       (let ((or-part_1
+                                                                              (eq?
+                                                                               rator_1
+                                                                               'cons)))
+                                                                         (if or-part_1
+                                                                           or-part_1
+                                                                           (let ((or-part_2
+                                                                                  (eq?
+                                                                                   rator_1
+                                                                                   'list)))
+                                                                             (if or-part_2
+                                                                               or-part_2
+                                                                               (let ((or-part_3
+                                                                                      (eq?
+                                                                                       rator_1
+                                                                                       'list*)))
+                                                                                 (if or-part_3
+                                                                                   or-part_3
+                                                                                   (let ((or-part_4
+                                                                                          (eq?
+                                                                                           rator_1
+                                                                                           'vector)))
+                                                                                     (if or-part_4
+                                                                                       or-part_4
+                                                                                       (let ((or-part_5
+                                                                                              (eq?
+                                                                                               rator_1
+                                                                                               'hasheq)))
+                                                                                         (if or-part_5
+                                                                                           or-part_5
+                                                                                           (eq?
+                                                                                            rator_1
+                                                                                            'make-struct-type-property)))))))))))))
+                                                                 (let ((app_0
+                                                                        (known-procedure-arity-mask
                                                                          v_1)))
-                                                                   (if or-part_0
-                                                                     or-part_0
-                                                                     (let ((or-part_1
-                                                                            (eq?
-                                                                             rator_1
-                                                                             'cons)))
-                                                                       (if or-part_1
-                                                                         or-part_1
-                                                                         (let ((or-part_2
-                                                                                (eq?
-                                                                                 rator_1
-                                                                                 'list)))
-                                                                           (if or-part_2
-                                                                             or-part_2
-                                                                             (let ((or-part_3
-                                                                                    (eq?
-                                                                                     rator_1
-                                                                                     'vector)))
-                                                                               (if or-part_3
-                                                                                 or-part_3
-                                                                                 (eq?
-                                                                                  rator_1
-                                                                                  'make-struct-type-property)))))))))
-                                                               (let ((app_0
-                                                                      (known-procedure-arity-mask
-                                                                       v_1)))
-                                                                 (bitwise-bit-set?
-                                                                  app_0
-                                                                  (length
-                                                                   exps_0)))
-                                                               #f))
-                                                         (letrec*
-                                                          ((for-loop_0
-                                                            (|#%name|
-                                                             for-loop
-                                                             (lambda (result_0
+                                                                   (bitwise-bit-set?
+                                                                    app_0
+                                                                    (length
+                                                                     exps_0)))
+                                                                 #f))
+                                                           (letrec*
+                                                            ((for-loop_0
+                                                              (|#%name|
+                                                               for-loop
+                                                               (lambda (result_0
+                                                                        lst_0)
+                                                                 (if (pair?
                                                                       lst_0)
-                                                               (if (pair?
-                                                                    lst_0)
-                                                                 (let ((exp_0
-                                                                        (unsafe-car
-                                                                         lst_0)))
-                                                                   (let ((rest_0
-                                                                          (unsafe-cdr
+                                                                   (let ((exp_0
+                                                                          (unsafe-car
                                                                            lst_0)))
-                                                                     (let ((result_1
-                                                                            (let ((result_1
-                                                                                   (simple?.1
-                                                                                    #f
-                                                                                    #t
-                                                                                    #t
-                                                                                    1
-                                                                                    #t
-                                                                                    exp_0
-                                                                                    prim-knowns_0
-                                                                                    knowns_0
-                                                                                    imports_0
-                                                                                    mutated_0
-                                                                                    simples_0
-                                                                                    unsafe-mode?_0)))
-                                                                              (values
-                                                                               result_1))))
-                                                                       (if (if (not
-                                                                                (let ((x_0
-                                                                                       (list
-                                                                                        exp_0)))
-                                                                                  (not
-                                                                                   result_1)))
-                                                                             #t
-                                                                             #f)
-                                                                         (for-loop_0
-                                                                          result_1
-                                                                          rest_0)
-                                                                         result_1))))
-                                                                 result_0)))))
-                                                          (for-loop_0
-                                                           #t
-                                                           exps_0))
-                                                         #f)
-                                                       #f))
-                                                   #f)
-                                               (delay!_0
-                                                ids_1
-                                                (lambda ()
-                                                  (find-mutated!*_0
-                                                   exps_0
-                                                   #f)))
-                                               (begin
-                                                 (find-mutated!_0 rator_0 #f)
-                                                 (find-mutated!*_0
-                                                  exps_0
-                                                  #f)))))
-                                          (let ((v_1 (unwrap v_0)))
-                                            (if (symbol? v_1)
-                                              (let ((state_0
-                                                     (hash-ref
-                                                      mutated_0
-                                                      v_1
-                                                      #f)))
-                                                (if (eq? state_0 'not-ready)
-                                                  (if unsafe-mode?_0
-                                                    (void)
-                                                    (hash-set!
-                                                     mutated_0
-                                                     v_1
-                                                     'too-early))
-                                                  (if (procedure? state_0)
-                                                    (if ids_1
-                                                      (delay!_0
-                                                       ids_1
-                                                       (lambda ()
-                                                         (begin
-                                                           (if (eq?
-                                                                (hash-ref
-                                                                 mutated_0
-                                                                 v_1
-                                                                 #f)
-                                                                state_0)
-                                                             (hash-remove!
-                                                              mutated_0
-                                                              v_1)
-                                                             (void))
-                                                           (|#%app| state_0))))
-                                                      (begin
-                                                        (hash-remove!
-                                                         mutated_0
-                                                         v_1)
-                                                        (|#%app| state_0)))
-                                                    (void))))
-                                              (void))))))))))))))))))))))
+                                                                     (let ((rest_0
+                                                                            (unsafe-cdr
+                                                                             lst_0)))
+                                                                       (let ((result_1
+                                                                              (let ((result_1
+                                                                                     (simple?.1
+                                                                                      #f
+                                                                                      #f
+                                                                                      #f
+                                                                                      1
+                                                                                      #f
+                                                                                      exp_0
+                                                                                      prim-knowns_0
+                                                                                      knowns_0
+                                                                                      imports_0
+                                                                                      mutated_0
+                                                                                      simples_0
+                                                                                      unsafe-mode?_0)))
+                                                                                (values
+                                                                                 result_1))))
+                                                                         (if (if (not
+                                                                                  (let ((x_0
+                                                                                         (list
+                                                                                          exp_0)))
+                                                                                    (not
+                                                                                     result_1)))
+                                                                               #t
+                                                                               #f)
+                                                                           (for-loop_0
+                                                                            result_1
+                                                                            rest_0)
+                                                                           result_1))))
+                                                                   result_0)))))
+                                                            (for-loop_0
+                                                             #t
+                                                             exps_0))
+                                                           #f)
+                                                         #f))
+                                                     #f)
+                                                 (delay!_0
+                                                  ids_1
+                                                  (lambda ()
+                                                    (find-mutated!*_0
+                                                     exps_0
+                                                     #f)))
+                                                 (begin
+                                                   (find-mutated!_0 rator_0 #f)
+                                                   (find-mutated!*_0
+                                                    exps_0
+                                                    #f)))))
+                                            (let ((v_1 (unwrap v_0)))
+                                              (if (symbol? v_1)
+                                                (let ((state_0
+                                                       (hash-ref
+                                                        mutated_0
+                                                        v_1
+                                                        #f)))
+                                                  (if (eq? state_0 'not-ready)
+                                                    (if unsafe-mode?_0
+                                                      (void)
+                                                      (hash-set!
+                                                       mutated_0
+                                                       v_1
+                                                       'too-early))
+                                                    (if (procedure? state_0)
+                                                      (if ids_1
+                                                        (delay!_0
+                                                         ids_1
+                                                         (lambda ()
+                                                           (begin
+                                                             (if (eq?
+                                                                  (hash-ref
+                                                                   mutated_0
+                                                                   v_1
+                                                                   #f)
+                                                                  state_0)
+                                                               (hash-remove!
+                                                                mutated_0
+                                                                v_1)
+                                                               (void))
+                                                             (|#%app|
+                                                              state_0))))
+                                                        (begin
+                                                          (hash-remove!
+                                                           mutated_0
+                                                           v_1)
+                                                          (|#%app| state_0)))
+                                                      (void))))
+                                                (void)))))))))))))))))))))))
        (find-mutated!_0 top-v_0 ids_0)))))
 (define update-mutated-state!
   (lambda (l_0 mut-l_0 mutated_0)
@@ -24667,180 +25004,88 @@
                                   (lambda (new-grp_0)
                                     (set! new-grps_0
                                       (cons new-grp_0 new-grps_0))))))
-                            (let ((exports_0
-                                   (let ((exports_0
-                                          (let ((exports_0 (hasheq)))
-                                            exports_0)))
-                                     (letrec*
-                                      ((for-loop_0
-                                        (|#%name|
-                                         for-loop
-                                         (lambda (exports_1 lst_0)
-                                           (if (pair? lst_0)
-                                             (let ((ex-id_0
-                                                    (unsafe-car lst_0)))
-                                               (let ((rest_0
-                                                      (unsafe-cdr lst_0)))
-                                                 (let ((exports_2
-                                                        (let ((exports_2
-                                                               (let ((id_0
-                                                                      (ex-int-id_0
-                                                                       ex-id_0)))
-                                                                 (hash-set
-                                                                  exports_1
-                                                                  id_0
-                                                                  (let ((app_0
-                                                                         (deterministic-gensym
-                                                                          id_0)))
-                                                                    (export1.1
-                                                                     app_0
-                                                                     (ex-ext-id_0
-                                                                      ex-id_0)))))))
-                                                          (values exports_2))))
-                                                   (for-loop_0
-                                                    exports_2
-                                                    rest_0))))
-                                             exports_1)))))
-                                      (for-loop_0 exports_0 ex-ids_0)))))
-                              (let ((src-syms_0
-                                     (get-definition-source-syms bodys_0)))
-                                (call-with-values
-                                 (lambda ()
-                                   (schemify-body*
-                                    bodys_0
-                                    prim-knowns_0
-                                    primitives_0
-                                    imports_0
-                                    exports_0
-                                    serializable?-box_0
-                                    datum-intern?_0
-                                    allow-set!-undefined?_0
-                                    add-import!_0
-                                    target_0
-                                    unsafe-mode?_0
-                                    enforce-constant?_0
-                                    allow-inline?_0
-                                    no-prompt?_0
-                                    #t
-                                    compiler-query_0))
-                                 (lambda (new-body_0 defn-info_0 mutated_0)
-                                   (let ((all-grps_0
-                                          (append
-                                           grps_0
-                                           (reverse$1 new-grps_0))))
-                                     (let ((app_0
-                                            (list*
-                                             'lambda
-                                             (list*
-                                              'instance-variable-reference
-                                              (let ((app_0
-                                                     (reverse$1
-                                                      (letrec*
-                                                       ((for-loop_0
-                                                         (|#%name|
-                                                          for-loop
-                                                          (lambda (fold-var_0
-                                                                   lst_0)
-                                                            (if (pair? lst_0)
-                                                              (let ((grp_0
-                                                                     (unsafe-car
-                                                                      lst_0)))
-                                                                (let ((rest_0
-                                                                       (unsafe-cdr
+                            (let ((exports_0 (hasheq)))
+                              (let ((exports_1
+                                     (let ((exports_1 exports_0))
+                                       (letrec*
+                                        ((for-loop_0
+                                          (|#%name|
+                                           for-loop
+                                           (lambda (exports_2 lst_0)
+                                             (if (pair? lst_0)
+                                               (let ((ex-id_0
+                                                      (unsafe-car lst_0)))
+                                                 (let ((rest_0
+                                                        (unsafe-cdr lst_0)))
+                                                   (let ((exports_3
+                                                          (let ((exports_3
+                                                                 (let ((id_0
+                                                                        (ex-int-id_0
+                                                                         ex-id_0)))
+                                                                   (hash-set
+                                                                    exports_2
+                                                                    id_0
+                                                                    (let ((app_0
+                                                                           (deterministic-gensym
+                                                                            id_0)))
+                                                                      (export1.1
+                                                                       app_0
+                                                                       (ex-ext-id_0
+                                                                        ex-id_0)))))))
+                                                            (values
+                                                             exports_3))))
+                                                     (for-loop_0
+                                                      exports_3
+                                                      rest_0))))
+                                               exports_2)))))
+                                        (for-loop_0 exports_1 ex-ids_0)))))
+                                (let ((src-syms_0
+                                       (get-definition-source-syms bodys_0)))
+                                  (call-with-values
+                                   (lambda ()
+                                     (schemify-body*
+                                      bodys_0
+                                      prim-knowns_0
+                                      primitives_0
+                                      imports_0
+                                      exports_1
+                                      serializable?-box_0
+                                      datum-intern?_0
+                                      allow-set!-undefined?_0
+                                      add-import!_0
+                                      target_0
+                                      unsafe-mode?_0
+                                      enforce-constant?_0
+                                      allow-inline?_0
+                                      no-prompt?_0
+                                      #t
+                                      compiler-query_0))
+                                   (lambda (new-body_0 defn-info_0 mutated_0)
+                                     (let ((all-grps_0
+                                            (append
+                                             grps_0
+                                             (reverse$1 new-grps_0))))
+                                       (let ((app_0
+                                              (list*
+                                               'lambda
+                                               (list*
+                                                'instance-variable-reference
+                                                (let ((app_0
+                                                       (reverse$1
+                                                        (letrec*
+                                                         ((for-loop_0
+                                                           (|#%name|
+                                                            for-loop
+                                                            (lambda (fold-var_0
+                                                                     lst_0)
+                                                              (if (pair? lst_0)
+                                                                (let ((grp_0
+                                                                       (unsafe-car
                                                                         lst_0)))
-                                                                  (let ((fold-var_1
-                                                                         (let ((lst_1
-                                                                                (import-group-imports
-                                                                                 grp_0)))
-                                                                           (letrec*
-                                                                            ((for-loop_1
-                                                                              (|#%name|
-                                                                               for-loop
-                                                                               (lambda (fold-var_1
-                                                                                        lst_2)
-                                                                                 (if (pair?
-                                                                                      lst_2)
-                                                                                   (let ((im_0
-                                                                                          (unsafe-car
-                                                                                           lst_2)))
-                                                                                     (let ((rest_1
-                                                                                            (unsafe-cdr
-                                                                                             lst_2)))
-                                                                                       (let ((fold-var_2
-                                                                                              (let ((fold-var_2
-                                                                                                     (cons
-                                                                                                      (import-id
-                                                                                                       im_0)
-                                                                                                      fold-var_1)))
-                                                                                                (values
-                                                                                                 fold-var_2))))
-                                                                                         (for-loop_1
-                                                                                          fold-var_2
-                                                                                          rest_1))))
-                                                                                   fold-var_1)))))
-                                                                            (for-loop_1
-                                                                             fold-var_0
-                                                                             lst_1)))))
-                                                                    (for-loop_0
-                                                                     fold-var_1
-                                                                     rest_0))))
-                                                              fold-var_0)))))
-                                                       (for-loop_0
-                                                        null
-                                                        all-grps_0)))))
-                                                (qq-append
-                                                 app_0
-                                                 (reverse$1
-                                                  (letrec*
-                                                   ((for-loop_0
-                                                     (|#%name|
-                                                      for-loop
-                                                      (lambda (fold-var_0
-                                                               lst_0)
-                                                        (if (pair? lst_0)
-                                                          (let ((ex-id_0
-                                                                 (unsafe-car
-                                                                  lst_0)))
-                                                            (let ((rest_0
-                                                                   (unsafe-cdr
-                                                                    lst_0)))
-                                                              (let ((fold-var_1
-                                                                     (let ((fold-var_1
-                                                                            (cons
-                                                                             (export-id
-                                                                              (hash-ref
-                                                                               exports_0
-                                                                               (ex-int-id_0
-                                                                                ex-id_0)))
-                                                                             fold-var_0)))
-                                                                       (values
-                                                                        fold-var_1))))
-                                                                (for-loop_0
-                                                                 fold-var_1
-                                                                 rest_0))))
-                                                          fold-var_0)))))
-                                                   (for-loop_0
-                                                    null
-                                                    ex-ids_0))))))
-                                             new-body_0)))
-                                       (let ((app_1
-                                              (reverse$1
-                                               (letrec*
-                                                ((for-loop_0
-                                                  (|#%name|
-                                                   for-loop
-                                                   (lambda (fold-var_0 lst_0)
-                                                     (if (pair? lst_0)
-                                                       (let ((grp_0
-                                                              (unsafe-car
-                                                               lst_0)))
-                                                         (let ((rest_0
-                                                                (unsafe-cdr
-                                                                 lst_0)))
-                                                           (let ((fold-var_1
-                                                                  (let ((fold-var_1
-                                                                         (cons
-                                                                          (reverse$1
+                                                                  (let ((rest_0
+                                                                         (unsafe-cdr
+                                                                          lst_0)))
+                                                                    (let ((fold-var_1
                                                                            (let ((lst_1
                                                                                   (import-group-imports
                                                                                    grp_0)))
@@ -24861,7 +25106,7 @@
                                                                                          (let ((fold-var_2
                                                                                                 (let ((fold-var_2
                                                                                                        (cons
-                                                                                                        (import-ext-id
+                                                                                                        (import-id
                                                                                                          im_0)
                                                                                                         fold-var_1)))
                                                                                                   (values
@@ -24871,19 +25116,51 @@
                                                                                             rest_1))))
                                                                                      fold-var_1)))))
                                                                               (for-loop_1
-                                                                               null
-                                                                               lst_1))))
-                                                                          fold-var_0)))
-                                                                    (values
-                                                                     fold-var_1))))
-                                                             (for-loop_0
-                                                              fold-var_1
-                                                              rest_0))))
-                                                       fold-var_0)))))
-                                                (for-loop_0
-                                                 null
-                                                 all-grps_0)))))
-                                         (let ((app_2
+                                                                               fold-var_0
+                                                                               lst_1)))))
+                                                                      (for-loop_0
+                                                                       fold-var_1
+                                                                       rest_0))))
+                                                                fold-var_0)))))
+                                                         (for-loop_0
+                                                          null
+                                                          all-grps_0)))))
+                                                  (qq-append
+                                                   app_0
+                                                   (reverse$1
+                                                    (letrec*
+                                                     ((for-loop_0
+                                                       (|#%name|
+                                                        for-loop
+                                                        (lambda (fold-var_0
+                                                                 lst_0)
+                                                          (if (pair? lst_0)
+                                                            (let ((ex-id_0
+                                                                   (unsafe-car
+                                                                    lst_0)))
+                                                              (let ((rest_0
+                                                                     (unsafe-cdr
+                                                                      lst_0)))
+                                                                (let ((fold-var_1
+                                                                       (let ((fold-var_1
+                                                                              (cons
+                                                                               (export-id
+                                                                                (hash-ref
+                                                                                 exports_1
+                                                                                 (ex-int-id_0
+                                                                                  ex-id_0)))
+                                                                               fold-var_0)))
+                                                                         (values
+                                                                          fold-var_1))))
+                                                                  (for-loop_0
+                                                                   fold-var_1
+                                                                   rest_0))))
+                                                            fold-var_0)))))
+                                                     (for-loop_0
+                                                      null
+                                                      ex-ids_0))))))
+                                               new-body_0)))
+                                         (let ((app_1
                                                 (reverse$1
                                                  (letrec*
                                                   ((for-loop_0
@@ -24891,7 +25168,7 @@
                                                      for-loop
                                                      (lambda (fold-var_0 lst_0)
                                                        (if (pair? lst_0)
-                                                         (let ((ex-id_0
+                                                         (let ((grp_0
                                                                 (unsafe-car
                                                                  lst_0)))
                                                            (let ((rest_0
@@ -24900,24 +25177,39 @@
                                                              (let ((fold-var_1
                                                                     (let ((fold-var_1
                                                                            (cons
-                                                                            (let ((sym_0
-                                                                                   (ex-ext-id_0
-                                                                                    ex-id_0)))
-                                                                              (let ((int-sym_0
-                                                                                     (ex-int-id_0
-                                                                                      ex-id_0)))
-                                                                                (let ((src-sym_0
-                                                                                       (hash-ref
-                                                                                        src-syms_0
-                                                                                        int-sym_0
-                                                                                        sym_0)))
-                                                                                  (if (eq?
-                                                                                       sym_0
-                                                                                       src-sym_0)
-                                                                                    sym_0
-                                                                                    (cons
-                                                                                     sym_0
-                                                                                     src-sym_0)))))
+                                                                            (reverse$1
+                                                                             (let ((lst_1
+                                                                                    (import-group-imports
+                                                                                     grp_0)))
+                                                                               (letrec*
+                                                                                ((for-loop_1
+                                                                                  (|#%name|
+                                                                                   for-loop
+                                                                                   (lambda (fold-var_1
+                                                                                            lst_2)
+                                                                                     (if (pair?
+                                                                                          lst_2)
+                                                                                       (let ((im_0
+                                                                                              (unsafe-car
+                                                                                               lst_2)))
+                                                                                         (let ((rest_1
+                                                                                                (unsafe-cdr
+                                                                                                 lst_2)))
+                                                                                           (let ((fold-var_2
+                                                                                                  (let ((fold-var_2
+                                                                                                         (cons
+                                                                                                          (import-ext-id
+                                                                                                           im_0)
+                                                                                                          fold-var_1)))
+                                                                                                    (values
+                                                                                                     fold-var_2))))
+                                                                                             (for-loop_1
+                                                                                              fold-var_2
+                                                                                              rest_1))))
+                                                                                       fold-var_1)))))
+                                                                                (for-loop_1
+                                                                                 null
+                                                                                 lst_1))))
                                                                             fold-var_0)))
                                                                       (values
                                                                        fold-var_1))))
@@ -24927,215 +25219,260 @@
                                                          fold-var_0)))))
                                                   (for-loop_0
                                                    null
-                                                   ex-ids_0)))))
-                                           (let ((app_3
-                                                  (if (null? new-grps_0)
-                                                    import-keys_0
-                                                    (let ((len_0
-                                                           (length
-                                                            all-grps_0)))
-                                                      (begin
-                                                        (if (exact-nonnegative-integer?
-                                                             len_0)
-                                                          (void)
-                                                          (1/raise-argument-error
-                                                           'for/vector
-                                                           "exact-nonnegative-integer?"
-                                                           len_0))
-                                                        (let ((v_0
-                                                               (make-vector
-                                                                len_0
-                                                                0)))
-                                                          (begin
-                                                            (if (zero? len_0)
-                                                              (void)
-                                                              (letrec*
-                                                               ((for-loop_0
-                                                                 (|#%name|
-                                                                  for-loop
-                                                                  (lambda (i_0
-                                                                           lst_0)
-                                                                    (if (pair?
-                                                                         lst_0)
-                                                                      (let ((grp_0
-                                                                             (unsafe-car
-                                                                              lst_0)))
-                                                                        (let ((rest_0
-                                                                               (unsafe-cdr
-                                                                                lst_0)))
-                                                                          (let ((i_1
-                                                                                 (let ((i_1
-                                                                                        (begin
-                                                                                          (unsafe-vector*-set!
-                                                                                           v_0
-                                                                                           i_0
-                                                                                           (import-group-key
-                                                                                            grp_0))
-                                                                                          (unsafe-fx+
-                                                                                           1
-                                                                                           i_0))))
-                                                                                   (values
-                                                                                    i_1))))
-                                                                            (if (if (not
-                                                                                     (let ((x_0
-                                                                                            (list
-                                                                                             grp_0)))
-                                                                                       (unsafe-fx=
-                                                                                        i_1
-                                                                                        len_0)))
-                                                                                  #t
-                                                                                  #f)
-                                                                              (for-loop_0
-                                                                               i_1
-                                                                               rest_0)
-                                                                              i_1))))
-                                                                      i_0)))))
-                                                               (for-loop_0
-                                                                0
-                                                                all-grps_0)))
-                                                            v_0)))))))
-                                             (let ((app_4
-                                                    (reverse$1
-                                                     (letrec*
-                                                      ((for-loop_0
-                                                        (|#%name|
-                                                         for-loop
-                                                         (lambda (fold-var_0
-                                                                  lst_0)
-                                                           (if (pair? lst_0)
-                                                             (let ((grp_0
-                                                                    (unsafe-car
+                                                   all-grps_0)))))
+                                           (let ((app_2
+                                                  (reverse$1
+                                                   (letrec*
+                                                    ((for-loop_0
+                                                      (|#%name|
+                                                       for-loop
+                                                       (lambda (fold-var_0
+                                                                lst_0)
+                                                         (if (pair? lst_0)
+                                                           (let ((ex-id_0
+                                                                  (unsafe-car
+                                                                   lst_0)))
+                                                             (let ((rest_0
+                                                                    (unsafe-cdr
                                                                      lst_0)))
-                                                               (let ((rest_0
-                                                                      (unsafe-cdr
+                                                               (let ((fold-var_1
+                                                                      (let ((fold-var_1
+                                                                             (cons
+                                                                              (let ((sym_0
+                                                                                     (ex-ext-id_0
+                                                                                      ex-id_0)))
+                                                                                (let ((int-sym_0
+                                                                                       (ex-int-id_0
+                                                                                        ex-id_0)))
+                                                                                  (let ((src-sym_0
+                                                                                         (hash-ref
+                                                                                          src-syms_0
+                                                                                          int-sym_0
+                                                                                          sym_0)))
+                                                                                    (if (eq?
+                                                                                         sym_0
+                                                                                         src-sym_0)
+                                                                                      sym_0
+                                                                                      (cons
+                                                                                       sym_0
+                                                                                       src-sym_0)))))
+                                                                              fold-var_0)))
+                                                                        (values
+                                                                         fold-var_1))))
+                                                                 (for-loop_0
+                                                                  fold-var_1
+                                                                  rest_0))))
+                                                           fold-var_0)))))
+                                                    (for-loop_0
+                                                     null
+                                                     ex-ids_0)))))
+                                             (let ((app_3
+                                                    (if (null? new-grps_0)
+                                                      import-keys_0
+                                                      (let ((len_0
+                                                             (length
+                                                              all-grps_0)))
+                                                        (begin
+                                                          (if (exact-nonnegative-integer?
+                                                               len_0)
+                                                            (void)
+                                                            (1/raise-argument-error
+                                                             'for/vector
+                                                             "exact-nonnegative-integer?"
+                                                             len_0))
+                                                          (let ((v_0
+                                                                 (make-vector
+                                                                  len_0
+                                                                  0)))
+                                                            (begin
+                                                              (if (zero? len_0)
+                                                                (void)
+                                                                (letrec*
+                                                                 ((for-loop_0
+                                                                   (|#%name|
+                                                                    for-loop
+                                                                    (lambda (i_0
+                                                                             lst_0)
+                                                                      (if (pair?
+                                                                           lst_0)
+                                                                        (let ((grp_0
+                                                                               (unsafe-car
+                                                                                lst_0)))
+                                                                          (let ((rest_0
+                                                                                 (unsafe-cdr
+                                                                                  lst_0)))
+                                                                            (let ((i_1
+                                                                                   (let ((i_1
+                                                                                          (begin
+                                                                                            (unsafe-vector*-set!
+                                                                                             v_0
+                                                                                             i_0
+                                                                                             (import-group-key
+                                                                                              grp_0))
+                                                                                            (unsafe-fx+
+                                                                                             1
+                                                                                             i_0))))
+                                                                                     (values
+                                                                                      i_1))))
+                                                                              (if (if (not
+                                                                                       (let ((x_0
+                                                                                              (list
+                                                                                               grp_0)))
+                                                                                         (unsafe-fx=
+                                                                                          i_1
+                                                                                          len_0)))
+                                                                                    #t
+                                                                                    #f)
+                                                                                (for-loop_0
+                                                                                 i_1
+                                                                                 rest_0)
+                                                                                i_1))))
+                                                                        i_0)))))
+                                                                 (for-loop_0
+                                                                  0
+                                                                  all-grps_0)))
+                                                              v_0)))))))
+                                               (let ((app_4
+                                                      (reverse$1
+                                                       (letrec*
+                                                        ((for-loop_0
+                                                          (|#%name|
+                                                           for-loop
+                                                           (lambda (fold-var_0
+                                                                    lst_0)
+                                                             (if (pair? lst_0)
+                                                               (let ((grp_0
+                                                                      (unsafe-car
                                                                        lst_0)))
-                                                                 (let ((fold-var_1
-                                                                        (let ((fold-var_1
-                                                                               (cons
-                                                                                (let ((im-ready?_0
-                                                                                       (import-group-lookup-ready?
-                                                                                        grp_0)))
-                                                                                  (reverse$1
-                                                                                   (let ((lst_1
-                                                                                          (import-group-imports
-                                                                                           grp_0)))
-                                                                                     (letrec*
-                                                                                      ((for-loop_1
-                                                                                        (|#%name|
-                                                                                         for-loop
-                                                                                         (lambda (fold-var_1
+                                                                 (let ((rest_0
+                                                                        (unsafe-cdr
+                                                                         lst_0)))
+                                                                   (let ((fold-var_1
+                                                                          (let ((fold-var_1
+                                                                                 (cons
+                                                                                  (let ((im-ready?_0
+                                                                                         (import-group-lookup-ready?
+                                                                                          grp_0)))
+                                                                                    (reverse$1
+                                                                                     (let ((lst_1
+                                                                                            (import-group-imports
+                                                                                             grp_0)))
+                                                                                       (letrec*
+                                                                                        ((for-loop_1
+                                                                                          (|#%name|
+                                                                                           for-loop
+                                                                                           (lambda (fold-var_1
+                                                                                                    lst_2)
+                                                                                             (if (pair?
                                                                                                   lst_2)
-                                                                                           (if (pair?
-                                                                                                lst_2)
-                                                                                             (let ((im_0
-                                                                                                    (unsafe-car
-                                                                                                     lst_2)))
-                                                                                               (let ((rest_1
-                                                                                                      (unsafe-cdr
+                                                                                               (let ((im_0
+                                                                                                      (unsafe-car
                                                                                                        lst_2)))
-                                                                                                 (let ((fold-var_2
-                                                                                                        (let ((fold-var_2
-                                                                                                               (cons
-                                                                                                                (if im-ready?_0
-                                                                                                                  (let ((k_0
-                                                                                                                         (import-group-lookup
-                                                                                                                          grp_0
-                                                                                                                          (import-ext-id
-                                                                                                                           im_0))))
-                                                                                                                    (if (known-constant?
-                                                                                                                         k_0)
-                                                                                                                      (if (known-procedure?
+                                                                                                 (let ((rest_1
+                                                                                                        (unsafe-cdr
+                                                                                                         lst_2)))
+                                                                                                   (let ((fold-var_2
+                                                                                                          (let ((fold-var_2
+                                                                                                                 (cons
+                                                                                                                  (if im-ready?_0
+                                                                                                                    (let ((k_0
+                                                                                                                           (import-group-lookup
+                                                                                                                            grp_0
+                                                                                                                            (import-ext-id
+                                                                                                                             im_0))))
+                                                                                                                      (if (known-constant?
                                                                                                                            k_0)
-                                                                                                                        'proc
-                                                                                                                        (if (known-struct-type?
+                                                                                                                        (if (known-procedure?
                                                                                                                              k_0)
-                                                                                                                          (known-struct-type-field-count
-                                                                                                                           k_0)
-                                                                                                                          #t))
-                                                                                                                      #f))
-                                                                                                                  #f)
-                                                                                                                fold-var_1)))
-                                                                                                          (values
-                                                                                                           fold-var_2))))
-                                                                                                   (for-loop_1
-                                                                                                    fold-var_2
-                                                                                                    rest_1))))
-                                                                                             fold-var_1)))))
-                                                                                      (for-loop_1
-                                                                                       null
-                                                                                       lst_1)))))
-                                                                                fold-var_0)))
-                                                                          (values
-                                                                           fold-var_1))))
-                                                                   (for-loop_0
-                                                                    fold-var_1
-                                                                    rest_0))))
-                                                             fold-var_0)))))
-                                                      (for-loop_0
-                                                       null
-                                                       all-grps_0)))))
-                                               (values
-                                                app_0
-                                                app_1
-                                                app_2
-                                                app_3
-                                                app_4
-                                                (let ((knowns_0
-                                                       (let ((knowns_0
-                                                              (hasheq)))
-                                                         knowns_0)))
-                                                  (letrec*
-                                                   ((for-loop_0
-                                                     (|#%name|
-                                                      for-loop
-                                                      (lambda (knowns_1 lst_0)
-                                                        (if (pair? lst_0)
-                                                          (let ((ex-id_0
-                                                                 (unsafe-car
-                                                                  lst_0)))
-                                                            (let ((rest_0
-                                                                   (unsafe-cdr
-                                                                    lst_0)))
-                                                              (let ((knowns_2
-                                                                     (let ((knowns_2
-                                                                            (let ((id_0
-                                                                                   (ex-int-id_0
-                                                                                    ex-id_0)))
-                                                                              (let ((v_0
-                                                                                     (known-inline->export-known
-                                                                                      (hash-ref
-                                                                                       defn-info_0
-                                                                                       id_0
-                                                                                       #f)
-                                                                                      prim-knowns_0
-                                                                                      imports_0
-                                                                                      exports_0
-                                                                                      serializable?-box_0)))
-                                                                                (if (not
-                                                                                     (set!ed-mutated-state?
-                                                                                      (hash-ref
-                                                                                       mutated_0
-                                                                                       id_0
-                                                                                       #f)))
-                                                                                  (let ((ext-id_0
-                                                                                         (ex-ext-id_0
-                                                                                          ex-id_0)))
-                                                                                    (hash-set
-                                                                                     knowns_1
-                                                                                     ext-id_0
-                                                                                     (if v_0
-                                                                                       v_0
-                                                                                       a-known-constant)))
-                                                                                  knowns_1)))))
-                                                                       (values
-                                                                        knowns_2))))
-                                                                (for-loop_0
-                                                                 knowns_2
-                                                                 rest_0))))
-                                                          knowns_1)))))
-                                                   (for-loop_0
-                                                    knowns_0
-                                                    ex-ids_0))))))))))))))))))))
+                                                                                                                          'proc
+                                                                                                                          (if (known-struct-type?
+                                                                                                                               k_0)
+                                                                                                                            (known-struct-type-field-count
+                                                                                                                             k_0)
+                                                                                                                            #t))
+                                                                                                                        #f))
+                                                                                                                    #f)
+                                                                                                                  fold-var_1)))
+                                                                                                            (values
+                                                                                                             fold-var_2))))
+                                                                                                     (for-loop_1
+                                                                                                      fold-var_2
+                                                                                                      rest_1))))
+                                                                                               fold-var_1)))))
+                                                                                        (for-loop_1
+                                                                                         null
+                                                                                         lst_1)))))
+                                                                                  fold-var_0)))
+                                                                            (values
+                                                                             fold-var_1))))
+                                                                     (for-loop_0
+                                                                      fold-var_1
+                                                                      rest_0))))
+                                                               fold-var_0)))))
+                                                        (for-loop_0
+                                                         null
+                                                         all-grps_0)))))
+                                                 (values
+                                                  app_0
+                                                  app_1
+                                                  app_2
+                                                  app_3
+                                                  app_4
+                                                  (let ((knowns_0 (hasheq)))
+                                                    (let ((knowns_1 knowns_0))
+                                                      (letrec*
+                                                       ((for-loop_0
+                                                         (|#%name|
+                                                          for-loop
+                                                          (lambda (knowns_2
+                                                                   lst_0)
+                                                            (if (pair? lst_0)
+                                                              (let ((ex-id_0
+                                                                     (unsafe-car
+                                                                      lst_0)))
+                                                                (let ((rest_0
+                                                                       (unsafe-cdr
+                                                                        lst_0)))
+                                                                  (let ((knowns_3
+                                                                         (let ((knowns_3
+                                                                                (let ((id_0
+                                                                                       (ex-int-id_0
+                                                                                        ex-id_0)))
+                                                                                  (let ((v_0
+                                                                                         (known-inline->export-known
+                                                                                          (hash-ref
+                                                                                           defn-info_0
+                                                                                           id_0
+                                                                                           #f)
+                                                                                          prim-knowns_0
+                                                                                          imports_0
+                                                                                          exports_1
+                                                                                          serializable?-box_0)))
+                                                                                    (if (not
+                                                                                         (set!ed-mutated-state?
+                                                                                          (hash-ref
+                                                                                           mutated_0
+                                                                                           id_0
+                                                                                           #f)))
+                                                                                      (let ((ext-id_0
+                                                                                             (ex-ext-id_0
+                                                                                              ex-id_0)))
+                                                                                        (hash-set
+                                                                                         knowns_2
+                                                                                         ext-id_0
+                                                                                         (if v_0
+                                                                                           v_0
+                                                                                           a-known-constant)))
+                                                                                      knowns_2)))))
+                                                                           (values
+                                                                            knowns_3))))
+                                                                    (for-loop_0
+                                                                     knowns_3
+                                                                     rest_0))))
+                                                              knowns_2)))))
+                                                       (for-loop_0
+                                                        knowns_1
+                                                        ex-ids_0))))))))))))))))))))))
                  (error 'match "failed ~e" lk_0))))))))))
 (define schemify-body
   (lambda (l_0
@@ -25236,790 +25573,713 @@
                   unsafe-mode?_0
                   target_0
                   enforce-constant?_0)))
-            (let ((knowns_0
-                   (let ((knowns_0 (let ((knowns_0 (hasheq))) knowns_0)))
-                     (letrec*
-                      ((for-loop_0
-                        (|#%name|
-                         for-loop
-                         (lambda (knowns_1 lst_0)
-                           (if (pair? lst_0)
-                             (let ((form_0 (unsafe-car lst_0)))
-                               (let ((rest_0 (unsafe-cdr lst_0)))
-                                 (let ((knowns_2
-                                        (let ((knowns_2
-                                               (call-with-values
-                                                (lambda ()
-                                                  (find-definitions.1
-                                                   compiler-query_0
-                                                   #t
-                                                   primitives_0
-                                                   form_0
-                                                   prim-knowns_0
-                                                   knowns_1
-                                                   imports_0
-                                                   mutated_0
-                                                   simples_0
-                                                   unsafe-mode?_0
-                                                   target_0))
-                                                (lambda (new-knowns_0 info_0)
-                                                  new-knowns_0))))
-                                          (values knowns_2))))
-                                   (for-loop_0 knowns_2 rest_0))))
-                             knowns_1)))))
-                      (for-loop_0 knowns_0 l_0)))))
-              (let ((final-knowns_0 knowns_0))
-                (let ((schemified_0
+            (let ((knowns_0 (hasheq)))
+              (let ((knowns_1
+                     (let ((knowns_1 knowns_0))
                        (letrec*
-                        ((loop_0
+                        ((for-loop_0
                           (|#%name|
-                           loop
-                           (lambda (l_1
-                                    in-mut-l_0
-                                    accum-exprs_0
-                                    accum-ids_0
-                                    knowns_1)
-                             (let ((mut-l_0
-                                    (update-mutated-state!
-                                     l_1
-                                     in-mut-l_0
-                                     mutated_0)))
-                               (let ((make-set-variables_0
-                                      (|#%name|
-                                       make-set-variables
-                                       (lambda ()
-                                         (if (let ((or-part_0
-                                                    (eq? target_0 'cify)))
-                                               (if or-part_0
-                                                 or-part_0
-                                                 (eq? target_0 'interp)))
-                                           (reverse$1
-                                            (letrec*
-                                             ((for-loop_0
-                                               (|#%name|
-                                                for-loop
-                                                (lambda (fold-var_0 lst_0)
-                                                  (if (pair? lst_0)
-                                                    (let ((id_0
-                                                           (unsafe-car lst_0)))
-                                                      (let ((rest_0
-                                                             (unsafe-cdr
-                                                              lst_0)))
-                                                        (let ((fold-var_1
-                                                               (if (let ((or-part_0
-                                                                          (hash-ref
-                                                                           exports_0
-                                                                           (unwrap
-                                                                            id_0)
-                                                                           #f)))
-                                                                     (if or-part_0
-                                                                       or-part_0
-                                                                       (hash-ref
-                                                                        extra-variables_0
-                                                                        (unwrap
-                                                                         id_0)
-                                                                        #f)))
-                                                                 (let ((fold-var_1
-                                                                        (cons
-                                                                         (make-set-variable
-                                                                          id_0
-                                                                          exports_0
-                                                                          knowns_1
-                                                                          mutated_0
-                                                                          extra-variables_0)
-                                                                         fold-var_0)))
-                                                                   (values
-                                                                    fold-var_1))
-                                                                 fold-var_0)))
-                                                          (for-loop_0
-                                                           fold-var_1
-                                                           rest_0))))
-                                                    fold-var_0)))))
-                                             (for-loop_0 null accum-ids_0)))
-                                           (letrec*
-                                            ((loop_1
-                                              (|#%name|
-                                               loop
-                                               (lambda (accum-ids_1
-                                                        consistent-ids_0)
-                                                 (if (null? accum-ids_1)
-                                                   (make-set-consistent-variables
-                                                    consistent-ids_0
-                                                    exports_0
-                                                    knowns_1
-                                                    mutated_0
-                                                    extra-variables_0)
-                                                   (let ((id_0
-                                                          (car accum-ids_1)))
-                                                     (let ((u-id_0
-                                                            (unwrap id_0)))
-                                                       (if (let ((or-part_0
-                                                                  (hash-ref
-                                                                   exports_0
-                                                                   u-id_0
-                                                                   #f)))
-                                                             (if or-part_0
-                                                               or-part_0
-                                                               (hash-ref
-                                                                extra-variables_0
-                                                                u-id_0
-                                                                #f)))
-                                                         (if (eq?
-                                                              'consistent
-                                                              (variable-constance
-                                                               u-id_0
-                                                               knowns_1
-                                                               mutated_0))
-                                                           (let ((app_0
-                                                                  (cdr
-                                                                   accum-ids_1)))
-                                                             (loop_1
-                                                              app_0
-                                                              (cons
-                                                               id_0
-                                                               consistent-ids_0)))
-                                                           (let ((app_0
-                                                                  (make-set-consistent-variables
-                                                                   consistent-ids_0
-                                                                   exports_0
-                                                                   knowns_1
-                                                                   mutated_0
-                                                                   extra-variables_0)))
-                                                             (append
-                                                              app_0
-                                                              (let ((app_1
-                                                                     (make-set-variable
-                                                                      id_0
-                                                                      exports_0
-                                                                      knowns_1
-                                                                      mutated_0
-                                                                      extra-variables_0)))
-                                                                (cons
-                                                                 app_1
-                                                                 (loop_1
-                                                                  (cdr
-                                                                   accum-ids_1)
-                                                                  '()))))))
-                                                         (loop_1
-                                                          (cdr accum-ids_1)
-                                                          consistent-ids_0)))))))))
-                                            (loop_1 accum-ids_0 null)))))))
-                                 (let ((make-expr-defns_0
+                           for-loop
+                           (lambda (knowns_2 lst_0)
+                             (if (pair? lst_0)
+                               (let ((form_0 (unsafe-car lst_0)))
+                                 (let ((rest_0 (unsafe-cdr lst_0)))
+                                   (let ((knowns_3
+                                          (let ((knowns_3
+                                                 (call-with-values
+                                                  (lambda ()
+                                                    (find-definitions.1
+                                                     compiler-query_0
+                                                     #t
+                                                     primitives_0
+                                                     form_0
+                                                     prim-knowns_0
+                                                     knowns_2
+                                                     imports_0
+                                                     mutated_0
+                                                     simples_0
+                                                     unsafe-mode?_0
+                                                     target_0))
+                                                  (lambda (new-knowns_0 info_0)
+                                                    new-knowns_0))))
+                                            (values knowns_3))))
+                                     (for-loop_0 knowns_3 rest_0))))
+                               knowns_2)))))
+                        (for-loop_0 knowns_1 l_0)))))
+                (let ((final-knowns_0 knowns_1))
+                  (let ((schemified_0
+                         (letrec*
+                          ((loop_0
+                            (|#%name|
+                             loop
+                             (lambda (l_1
+                                      in-mut-l_0
+                                      accum-exprs_0
+                                      accum-ids_0
+                                      knowns_2)
+                               (let ((mut-l_0
+                                      (update-mutated-state!
+                                       l_1
+                                       in-mut-l_0
+                                       mutated_0)))
+                                 (let ((make-set-variables_0
                                         (|#%name|
-                                         make-expr-defns
-                                         (lambda (es_0)
+                                         make-set-variables
+                                         (lambda ()
                                            (if (let ((or-part_0
                                                       (eq? target_0 'cify)))
                                                  (if or-part_0
                                                    or-part_0
                                                    (eq? target_0 'interp)))
-                                             (reverse$1 es_0)
                                              (reverse$1
-                                              (let ((lst_0 (reverse$1 es_0)))
-                                                (letrec*
-                                                 ((for-loop_0
-                                                   (|#%name|
-                                                    for-loop
-                                                    (lambda (fold-var_0 lst_1)
-                                                      (if (pair? lst_1)
-                                                        (let ((e_0
-                                                               (unsafe-car
-                                                                lst_1)))
-                                                          (let ((rest_0
-                                                                 (unsafe-cdr
-                                                                  lst_1)))
-                                                            (let ((fold-var_1
+                                              (letrec*
+                                               ((for-loop_0
+                                                 (|#%name|
+                                                  for-loop
+                                                  (lambda (fold-var_0 lst_0)
+                                                    (if (pair? lst_0)
+                                                      (let ((id_0
+                                                             (unsafe-car
+                                                              lst_0)))
+                                                        (let ((rest_0
+                                                               (unsafe-cdr
+                                                                lst_0)))
+                                                          (let ((fold-var_1
+                                                                 (if (let ((or-part_0
+                                                                            (hash-ref
+                                                                             exports_0
+                                                                             (unwrap
+                                                                              id_0)
+                                                                             #f)))
+                                                                       (if or-part_0
+                                                                         or-part_0
+                                                                         (hash-ref
+                                                                          extra-variables_0
+                                                                          (unwrap
+                                                                           id_0)
+                                                                          #f)))
                                                                    (let ((fold-var_1
                                                                           (cons
-                                                                           (make-expr-defn
-                                                                            e_0)
+                                                                           (make-set-variable
+                                                                            id_0
+                                                                            exports_0
+                                                                            knowns_2
+                                                                            mutated_0
+                                                                            extra-variables_0)
                                                                            fold-var_0)))
                                                                      (values
-                                                                      fold-var_1))))
-                                                              (for-loop_0
-                                                               fold-var_1
-                                                               rest_0))))
-                                                        fold-var_0)))))
-                                                 (for-loop_0
-                                                  null
-                                                  lst_0)))))))))
-                                   (if (null? l_1)
-                                     (begin
-                                       (set! final-knowns_0 knowns_1)
-                                       (let ((set-vars_0
-                                              (make-set-variables_0)))
-                                         (if (null? set-vars_0)
-                                           (if (null? accum-exprs_0)
-                                             '((void))
-                                             (reverse$1 accum-exprs_0))
-                                           (reverse$1
-                                            (append
-                                             set-vars_0
-                                             accum-exprs_0)))))
-                                     (let ((form_0 (car l_1)))
-                                       (let ((schemified_0
-                                              (schemify
-                                               form_0
-                                               prim-knowns_0
-                                               primitives_0
-                                               knowns_1
-                                               mutated_0
-                                               imports_0
-                                               exports_0
-                                               extra-variables_0
-                                               simples_0
-                                               allow-set!-undefined?_0
-                                               add-import!_0
-                                               serializable?-box_0
-                                               datum-intern?_0
-                                               target_0
-                                               unsafe-mode?_0
-                                               allow-inline?_0
-                                               no-prompt?_0
-                                               explicit-unnamed?_0
-                                               compiler-query_0
-                                               (if (if no-prompt?_0
-                                                     (null? (cdr l_1))
-                                                     #f)
-                                                 'tail
-                                                 'fresh))))
-                                         (let ((finish-definition_0
+                                                                      fold-var_1))
+                                                                   fold-var_0)))
+                                                            (for-loop_0
+                                                             fold-var_1
+                                                             rest_0))))
+                                                      fold-var_0)))))
+                                               (for-loop_0 null accum-ids_0)))
+                                             (letrec*
+                                              ((loop_1
                                                 (|#%name|
-                                                 finish-definition
-                                                 (lambda (knowns17_0
-                                                          next-k19_0
-                                                          schemified18_0
-                                                          ids25_0
-                                                          accum-exprs23_0
-                                                          accum-ids24_0)
-                                                   (let ((accum-exprs_1
-                                                          (if (eq?
-                                                               accum-exprs23_0
-                                                               unsafe-undefined)
-                                                            accum-exprs_0
-                                                            accum-exprs23_0)))
-                                                     (let ((accum-ids_1
-                                                            (if (eq?
-                                                                 accum-ids24_0
-                                                                 unsafe-undefined)
-                                                              accum-ids_0
-                                                              accum-ids24_0)))
-                                                       (let ((knowns_2
-                                                              (if (eq?
-                                                                   knowns17_0
-                                                                   unsafe-undefined)
-                                                                knowns_1
-                                                                knowns17_0)))
-                                                         (let ((schemified_1
-                                                                (if (eq?
-                                                                     schemified18_0
-                                                                     unsafe-undefined)
-                                                                  schemified_0
-                                                                  schemified18_0)))
-                                                           (let ((next-knowns_0
-                                                                  (if (if (pair?
-                                                                           ids25_0)
-                                                                        (if (null?
-                                                                             (cdr
-                                                                              ids25_0))
-                                                                          (can-improve-infer-known?
-                                                                           (hash-ref
-                                                                            knowns_2
-                                                                            (unwrap
-                                                                             (car
-                                                                              ids25_0))
-                                                                            #f))
-                                                                          #f)
-                                                                        #f)
-                                                                    (let ((id_0
-                                                                           (car
-                                                                            ids25_0)))
-                                                                      (let ((k_0
-                                                                             (let ((hd_0
-                                                                                    (let ((p_0
-                                                                                           (unwrap
-                                                                                            schemified_1)))
-                                                                                      (if (pair?
-                                                                                           p_0)
-                                                                                        (unwrap
-                                                                                         (car
-                                                                                          p_0))
-                                                                                        #f))))
-                                                                               (if (if (eq?
-                                                                                        'define
-                                                                                        hd_0)
-                                                                                     (let ((a_0
-                                                                                            (cdr
-                                                                                             (unwrap
-                                                                                              schemified_1))))
-                                                                                       (let ((p_0
-                                                                                              (unwrap
-                                                                                               a_0)))
-                                                                                         (if (pair?
-                                                                                              p_0)
-                                                                                           (let ((a_1
-                                                                                                  (cdr
-                                                                                                   p_0)))
-                                                                                             (let ((p_1
-                                                                                                    (unwrap
-                                                                                                     a_1)))
-                                                                                               (if (pair?
-                                                                                                    p_1)
-                                                                                                 (let ((a_2
-                                                                                                        (cdr
-                                                                                                         p_1)))
-                                                                                                   (let ((app_0
-                                                                                                          (unwrap
-                                                                                                           '())))
-                                                                                                     (eq?
-                                                                                                      app_0
-                                                                                                      (unwrap
-                                                                                                       a_2))))
-                                                                                                 #f)))
-                                                                                           #f)))
-                                                                                     #f)
-                                                                                 (call-with-values
-                                                                                  (lambda ()
-                                                                                    (let ((d_0
-                                                                                           (cdr
-                                                                                            (unwrap
-                                                                                             schemified_1))))
-                                                                                      (let ((p_0
-                                                                                             (unwrap
-                                                                                              d_0)))
-                                                                                        (let ((id_1
-                                                                                               (let ((a_0
-                                                                                                      (car
-                                                                                                       p_0)))
-                                                                                                 a_0)))
-                                                                                          (let ((rhs_0
-                                                                                                 (let ((d_1
-                                                                                                        (cdr
-                                                                                                         p_0)))
-                                                                                                   (let ((a_0
-                                                                                                          (car
-                                                                                                           (unwrap
-                                                                                                            d_1))))
-                                                                                                     a_0))))
-                                                                                            (let ((id_2
-                                                                                                   id_1))
-                                                                                              (values
-                                                                                               id_2
-                                                                                               rhs_0)))))))
-                                                                                  (lambda (id_1
-                                                                                           rhs_0)
-                                                                                    (infer-known.1
-                                                                                     unsafe-undefined
-                                                                                     #f
-                                                                                     #t
-                                                                                     rhs_0
-                                                                                     id_1
-                                                                                     knowns_2
-                                                                                     prim-knowns_0
-                                                                                     imports_0
-                                                                                     mutated_0
-                                                                                     simples_0
-                                                                                     unsafe-mode?_0
-                                                                                     target_0)))
-                                                                                 (error
-                                                                                  'match
-                                                                                  "failed ~e"
-                                                                                  schemified_1)))))
-                                                                        (if k_0
-                                                                          (hash-set
-                                                                           knowns_2
-                                                                           (unwrap
-                                                                            id_0)
-                                                                           k_0)
-                                                                          knowns_2)))
-                                                                    knowns_2)))
+                                                 loop
+                                                 (lambda (accum-ids_1
+                                                          consistent-ids_0)
+                                                   (if (null? accum-ids_1)
+                                                     (make-set-consistent-variables
+                                                      consistent-ids_0
+                                                      exports_0
+                                                      knowns_2
+                                                      mutated_0
+                                                      extra-variables_0)
+                                                     (let ((id_0
+                                                            (car accum-ids_1)))
+                                                       (let ((u-id_0
+                                                              (unwrap id_0)))
+                                                         (if (let ((or-part_0
+                                                                    (hash-ref
+                                                                     exports_0
+                                                                     u-id_0
+                                                                     #f)))
+                                                               (if or-part_0
+                                                                 or-part_0
+                                                                 (hash-ref
+                                                                  extra-variables_0
+                                                                  u-id_0
+                                                                  #f)))
+                                                           (if (eq?
+                                                                'consistent
+                                                                (variable-constance
+                                                                 u-id_0
+                                                                 knowns_2
+                                                                 mutated_0))
                                                              (let ((app_0
-                                                                    (make-expr-defns_0
-                                                                     accum-exprs_1)))
-                                                               (append
+                                                                    (cdr
+                                                                     accum-ids_1)))
+                                                               (loop_1
                                                                 app_0
                                                                 (cons
-                                                                 schemified_1
-                                                                 (letrec*
-                                                                  ((id-loop_0
-                                                                    (|#%name|
-                                                                     id-loop
-                                                                     (lambda (ids_0
-                                                                              accum-exprs_2
-                                                                              accum-ids_2)
-                                                                       (if (null?
-                                                                            ids_0)
-                                                                         (if next-k19_0
-                                                                           (|#%app|
-                                                                            next-k19_0
-                                                                            accum-exprs_2
-                                                                            accum-ids_2
-                                                                            next-knowns_0)
-                                                                           (loop_0
-                                                                            (cdr
-                                                                             l_1)
-                                                                            mut-l_0
-                                                                            accum-exprs_2
-                                                                            accum-ids_2
-                                                                            next-knowns_0))
-                                                                         (if (let ((or-part_0
-                                                                                    (eq?
-                                                                                     target_0
-                                                                                     'interp)))
-                                                                               (let ((or-part_1
-                                                                                      (if or-part_0
-                                                                                        or-part_0
-                                                                                        (eq?
-                                                                                         target_0
-                                                                                         'cify))))
-                                                                                 (if or-part_1
-                                                                                   or-part_1
-                                                                                   (via-variable-mutated-state?
-                                                                                    (hash-ref
-                                                                                     mutated_0
-                                                                                     (unwrap
-                                                                                      (car
-                                                                                       ids_0))
-                                                                                     #f)))))
-                                                                           (let ((id_0
-                                                                                  (unwrap
-                                                                                   (car
-                                                                                    ids_0))))
-                                                                             (if (let ((or-part_0
-                                                                                        (hash-ref
-                                                                                         exports_0
-                                                                                         id_0
-                                                                                         #f)))
-                                                                                   (if or-part_0
-                                                                                     or-part_0
-                                                                                     (hash-ref
-                                                                                      extra-variables_0
-                                                                                      id_0
-                                                                                      #f)))
-                                                                               (let ((app_1
-                                                                                      (cdr
-                                                                                       ids_0)))
-                                                                                 (id-loop_0
-                                                                                  app_1
-                                                                                  (cons
-                                                                                   (make-set-variable
-                                                                                    id_0
-                                                                                    exports_0
-                                                                                    knowns_2
-                                                                                    mutated_0
-                                                                                    extra-variables_0)
-                                                                                   accum-exprs_2)
-                                                                                  accum-ids_2))
-                                                                               (id-loop_0
-                                                                                (cdr
-                                                                                 ids_0)
-                                                                                accum-exprs_2
-                                                                                accum-ids_2)))
-                                                                           (let ((app_1
-                                                                                  (cdr
-                                                                                   ids_0)))
-                                                                             (id-loop_0
-                                                                              app_1
-                                                                              accum-exprs_2
-                                                                              (cons
-                                                                               (car
-                                                                                ids_0)
-                                                                               accum-ids_2)))))))))
-                                                                  (id-loop_0
-                                                                   ids25_0
-                                                                   null
-                                                                   accum-ids_1))))))))))))))
-                                           (let ((finish-wrapped-definition_0
+                                                                 id_0
+                                                                 consistent-ids_0)))
+                                                             (let ((app_0
+                                                                    (make-set-consistent-variables
+                                                                     consistent-ids_0
+                                                                     exports_0
+                                                                     knowns_2
+                                                                     mutated_0
+                                                                     extra-variables_0)))
+                                                               (append
+                                                                app_0
+                                                                (let ((app_1
+                                                                       (make-set-variable
+                                                                        id_0
+                                                                        exports_0
+                                                                        knowns_2
+                                                                        mutated_0
+                                                                        extra-variables_0)))
+                                                                  (cons
+                                                                   app_1
+                                                                   (loop_1
+                                                                    (cdr
+                                                                     accum-ids_1)
+                                                                    '()))))))
+                                                           (loop_1
+                                                            (cdr accum-ids_1)
+                                                            consistent-ids_0)))))))))
+                                              (loop_1 accum-ids_0 null)))))))
+                                   (let ((make-expr-defns_0
+                                          (|#%name|
+                                           make-expr-defns
+                                           (lambda (es_0)
+                                             (if (let ((or-part_0
+                                                        (eq? target_0 'cify)))
+                                                   (if or-part_0
+                                                     or-part_0
+                                                     (eq? target_0 'interp)))
+                                               (reverse$1 es_0)
+                                               (reverse$1
+                                                (let ((lst_0 (reverse$1 es_0)))
+                                                  (letrec*
+                                                   ((for-loop_0
+                                                     (|#%name|
+                                                      for-loop
+                                                      (lambda (fold-var_0
+                                                               lst_1)
+                                                        (if (pair? lst_1)
+                                                          (let ((e_0
+                                                                 (unsafe-car
+                                                                  lst_1)))
+                                                            (let ((rest_0
+                                                                   (unsafe-cdr
+                                                                    lst_1)))
+                                                              (let ((fold-var_1
+                                                                     (let ((fold-var_1
+                                                                            (cons
+                                                                             (make-expr-defn
+                                                                              e_0)
+                                                                             fold-var_0)))
+                                                                       (values
+                                                                        fold-var_1))))
+                                                                (for-loop_0
+                                                                 fold-var_1
+                                                                 rest_0))))
+                                                          fold-var_0)))))
+                                                   (for-loop_0
+                                                    null
+                                                    lst_0)))))))))
+                                     (if (null? l_1)
+                                       (begin
+                                         (set! final-knowns_0 knowns_2)
+                                         (let ((set-vars_0
+                                                (make-set-variables_0)))
+                                           (if (null? set-vars_0)
+                                             (if (null? accum-exprs_0)
+                                               '((void))
+                                               (reverse$1 accum-exprs_0))
+                                             (reverse$1
+                                              (append
+                                               set-vars_0
+                                               accum-exprs_0)))))
+                                       (let ((form_0 (car l_1)))
+                                         (let ((schemified_0
+                                                (schemify
+                                                 form_0
+                                                 prim-knowns_0
+                                                 primitives_0
+                                                 knowns_2
+                                                 mutated_0
+                                                 imports_0
+                                                 exports_0
+                                                 extra-variables_0
+                                                 simples_0
+                                                 allow-set!-undefined?_0
+                                                 add-import!_0
+                                                 serializable?-box_0
+                                                 datum-intern?_0
+                                                 target_0
+                                                 unsafe-mode?_0
+                                                 allow-inline?_0
+                                                 no-prompt?_0
+                                                 explicit-unnamed?_0
+                                                 compiler-query_0
+                                                 (if (if no-prompt?_0
+                                                       (null? (cdr l_1))
+                                                       #f)
+                                                   'tail
+                                                   'fresh))))
+                                           (let ((finish-definition_0
                                                   (|#%name|
-                                                   finish-wrapped-definition
-                                                   (lambda (ids_0 rhs_0)
-                                                     (let ((app_0
-                                                            (make-expr-defns_0
-                                                             accum-exprs_0)))
-                                                       (let ((app_1
-                                                              (make-expr-defns_0
-                                                               (make-set-variables_0))))
-                                                         (append
-                                                          app_0
-                                                          app_1
-                                                          (if no-prompt?_0
-                                                            (let ((app_2
-                                                                   (if (if unsafe-mode?_0
-                                                                         unsafe-mode?_0
-                                                                         (let ((or-part_0
-                                                                                (eq?
-                                                                                 target_0
-                                                                                 'system)))
-                                                                           (if or-part_0
-                                                                             or-part_0
-                                                                             (if (pair?
+                                                   finish-definition
+                                                   (lambda (knowns17_0
+                                                            next-k19_0
+                                                            schemified18_0
+                                                            ids25_0
+                                                            accum-exprs23_0
+                                                            accum-ids24_0)
+                                                     (let ((accum-exprs_1
+                                                            (if (eq?
+                                                                 accum-exprs23_0
+                                                                 unsafe-undefined)
+                                                              accum-exprs_0
+                                                              accum-exprs23_0)))
+                                                       (let ((accum-ids_1
+                                                              (if (eq?
+                                                                   accum-ids24_0
+                                                                   unsafe-undefined)
+                                                                accum-ids_0
+                                                                accum-ids24_0)))
+                                                         (let ((knowns_3
+                                                                (if (eq?
+                                                                     knowns17_0
+                                                                     unsafe-undefined)
+                                                                  knowns_2
+                                                                  knowns17_0)))
+                                                           (let ((schemified_1
+                                                                  (if (eq?
+                                                                       schemified18_0
+                                                                       unsafe-undefined)
+                                                                    schemified_0
+                                                                    schemified18_0)))
+                                                             (let ((next-knowns_0
+                                                                    (if (if (pair?
+                                                                             ids25_0)
+                                                                          (if (null?
+                                                                               (cdr
+                                                                                ids25_0))
+                                                                            (can-improve-infer-known?
+                                                                             (hash-ref
+                                                                              knowns_3
+                                                                              (unwrap
+                                                                               (car
+                                                                                ids25_0))
+                                                                              #f))
+                                                                            #f)
+                                                                          #f)
+                                                                      (let ((id_0
+                                                                             (car
+                                                                              ids25_0)))
+                                                                        (let ((k_0
+                                                                               (let ((hd_0
+                                                                                      (let ((p_0
+                                                                                             (unwrap
+                                                                                              schemified_1)))
+                                                                                        (if (pair?
+                                                                                             p_0)
+                                                                                          (unwrap
+                                                                                           (car
+                                                                                            p_0))
+                                                                                          #f))))
+                                                                                 (if (if (eq?
+                                                                                          'define
+                                                                                          hd_0)
+                                                                                       (let ((a_0
+                                                                                              (cdr
+                                                                                               (unwrap
+                                                                                                schemified_1))))
+                                                                                         (let ((p_0
+                                                                                                (unwrap
+                                                                                                 a_0)))
+                                                                                           (if (pair?
+                                                                                                p_0)
+                                                                                             (let ((a_1
+                                                                                                    (cdr
+                                                                                                     p_0)))
+                                                                                               (let ((p_1
+                                                                                                      (unwrap
+                                                                                                       a_1)))
+                                                                                                 (if (pair?
+                                                                                                      p_1)
+                                                                                                   (let ((a_2
+                                                                                                          (cdr
+                                                                                                           p_1)))
+                                                                                                     (let ((app_0
+                                                                                                            (unwrap
+                                                                                                             '())))
+                                                                                                       (eq?
+                                                                                                        app_0
+                                                                                                        (unwrap
+                                                                                                         a_2))))
+                                                                                                   #f)))
+                                                                                             #f)))
+                                                                                       #f)
+                                                                                   (call-with-values
+                                                                                    (lambda ()
+                                                                                      (let ((d_0
+                                                                                             (cdr
+                                                                                              (unwrap
+                                                                                               schemified_1))))
+                                                                                        (let ((p_0
+                                                                                               (unwrap
+                                                                                                d_0)))
+                                                                                          (let ((id_1
+                                                                                                 (let ((a_0
+                                                                                                        (car
+                                                                                                         p_0)))
+                                                                                                   a_0)))
+                                                                                            (let ((rhs_0
+                                                                                                   (let ((d_1
+                                                                                                          (cdr
+                                                                                                           p_0)))
+                                                                                                     (let ((a_0
+                                                                                                            (car
+                                                                                                             (unwrap
+                                                                                                              d_1))))
+                                                                                                       a_0))))
+                                                                                              (let ((id_2
+                                                                                                     id_1))
+                                                                                                (values
+                                                                                                 id_2
+                                                                                                 rhs_0)))))))
+                                                                                    (lambda (id_1
+                                                                                             rhs_0)
+                                                                                      (infer-known.1
+                                                                                       unsafe-undefined
+                                                                                       #f
+                                                                                       #t
+                                                                                       rhs_0
+                                                                                       id_1
+                                                                                       knowns_3
+                                                                                       prim-knowns_0
+                                                                                       imports_0
+                                                                                       mutated_0
+                                                                                       simples_0
+                                                                                       unsafe-mode?_0
+                                                                                       target_0)))
+                                                                                   (error
+                                                                                    'match
+                                                                                    "failed ~e"
+                                                                                    schemified_1)))))
+                                                                          (if k_0
+                                                                            (hash-set
+                                                                             knowns_3
+                                                                             (unwrap
+                                                                              id_0)
+                                                                             k_0)
+                                                                            knowns_3)))
+                                                                      knowns_3)))
+                                                               (let ((app_0
+                                                                      (make-expr-defns_0
+                                                                       accum-exprs_1)))
+                                                                 (append
+                                                                  app_0
+                                                                  (cons
+                                                                   schemified_1
+                                                                   (letrec*
+                                                                    ((id-loop_0
+                                                                      (|#%name|
+                                                                       id-loop
+                                                                       (lambda (ids_0
+                                                                                accum-exprs_2
+                                                                                accum-ids_2)
+                                                                         (if (null?
+                                                                              ids_0)
+                                                                           (if next-k19_0
+                                                                             (|#%app|
+                                                                              next-k19_0
+                                                                              accum-exprs_2
+                                                                              accum-ids_2
+                                                                              next-knowns_0)
+                                                                             (loop_0
+                                                                              (cdr
+                                                                               l_1)
+                                                                              mut-l_0
+                                                                              accum-exprs_2
+                                                                              accum-ids_2
+                                                                              next-knowns_0))
+                                                                           (if (let ((or-part_0
+                                                                                      (eq?
+                                                                                       target_0
+                                                                                       'interp)))
+                                                                                 (let ((or-part_1
+                                                                                        (if or-part_0
+                                                                                          or-part_0
+                                                                                          (eq?
+                                                                                           target_0
+                                                                                           'cify))))
+                                                                                   (if or-part_1
+                                                                                     or-part_1
+                                                                                     (via-variable-mutated-state?
+                                                                                      (hash-ref
+                                                                                       mutated_0
+                                                                                       (unwrap
+                                                                                        (car
+                                                                                         ids_0))
+                                                                                       #f)))))
+                                                                             (let ((id_0
+                                                                                    (unwrap
+                                                                                     (car
+                                                                                      ids_0))))
+                                                                               (if (let ((or-part_0
+                                                                                          (hash-ref
+                                                                                           exports_0
+                                                                                           id_0
+                                                                                           #f)))
+                                                                                     (if or-part_0
+                                                                                       or-part_0
+                                                                                       (hash-ref
+                                                                                        extra-variables_0
+                                                                                        id_0
+                                                                                        #f)))
+                                                                                 (let ((app_1
+                                                                                        (cdr
+                                                                                         ids_0)))
+                                                                                   (id-loop_0
+                                                                                    app_1
+                                                                                    (cons
+                                                                                     (make-set-variable
+                                                                                      id_0
+                                                                                      exports_0
+                                                                                      knowns_3
+                                                                                      mutated_0
+                                                                                      extra-variables_0)
+                                                                                     accum-exprs_2)
+                                                                                    accum-ids_2))
+                                                                                 (id-loop_0
+                                                                                  (cdr
+                                                                                   ids_0)
+                                                                                  accum-exprs_2
+                                                                                  accum-ids_2)))
+                                                                             (let ((app_1
+                                                                                    (cdr
+                                                                                     ids_0)))
+                                                                               (id-loop_0
+                                                                                app_1
+                                                                                accum-exprs_2
+                                                                                (cons
+                                                                                 (car
                                                                                   ids_0)
-                                                                               (null?
-                                                                                (cdr
-                                                                                 ids_0))
-                                                                               #f))))
-                                                                     schemified_0
-                                                                     (list
-                                                                      'define-values
-                                                                      ids_0
-                                                                      (list
-                                                                       'call-with-values
+                                                                                 accum-ids_2)))))))))
+                                                                    (id-loop_0
+                                                                     ids25_0
+                                                                     null
+                                                                     accum-ids_1))))))))))))))
+                                             (let ((finish-wrapped-definition_0
+                                                    (|#%name|
+                                                     finish-wrapped-definition
+                                                     (lambda (ids_0 rhs_0)
+                                                       (let ((app_0
+                                                              (make-expr-defns_0
+                                                               accum-exprs_0)))
+                                                         (let ((app_1
+                                                                (make-expr-defns_0
+                                                                 (make-set-variables_0))))
+                                                           (append
+                                                            app_0
+                                                            app_1
+                                                            (if no-prompt?_0
+                                                              (let ((app_2
+                                                                     (if (if unsafe-mode?_0
+                                                                           unsafe-mode?_0
+                                                                           (let ((or-part_0
+                                                                                  (eq?
+                                                                                   target_0
+                                                                                   'system)))
+                                                                             (if or-part_0
+                                                                               or-part_0
+                                                                               (if (pair?
+                                                                                    ids_0)
+                                                                                 (null?
+                                                                                  (cdr
+                                                                                   ids_0))
+                                                                                 #f))))
+                                                                       schemified_0
                                                                        (list
-                                                                        'lambda
-                                                                        '()
-                                                                        rhs_0)
-                                                                       (list
-                                                                        'case-lambda
+                                                                        'define-values
+                                                                        ids_0
                                                                         (list
-                                                                         ids_0
-                                                                         (list*
-                                                                          'values
-                                                                          ids_0))
-                                                                        (list
-                                                                         'vals
-                                                                         (list*
-                                                                          'raise-definition-result-arity-error
+                                                                         'call-with-values
+                                                                         (list
+                                                                          'lambda
+                                                                          '()
+                                                                          rhs_0)
+                                                                         (list
+                                                                          'case-lambda
                                                                           (list
-                                                                           'quote
-                                                                           ids_0)
-                                                                          '(vals)))))))))
-                                                              (cons
-                                                               app_2
-                                                               (let ((app_3
-                                                                      (cdr
-                                                                       l_1)))
-                                                                 (loop_0
-                                                                  app_3
-                                                                  mut-l_0
-                                                                  null
-                                                                  (reverse$1
-                                                                   ids_0)
-                                                                  knowns_1))))
-                                                            (let ((app_2
-                                                                   (list
-                                                                    'lambda
-                                                                    '()
-                                                                    rhs_0)))
-                                                              (let ((expr_0
-                                                                     (let ((app_3
+                                                                           ids_0
+                                                                           (list*
+                                                                            'values
+                                                                            ids_0))
+                                                                          (list
+                                                                           'vals
+                                                                           (list*
+                                                                            'raise-definition-result-arity-error
                                                                             (list
                                                                              'quote
-                                                                             ids_0)))
-                                                                       (let ((app_4
+                                                                             ids_0)
+                                                                            '(vals)))))))))
+                                                                (cons
+                                                                 app_2
+                                                                 (let ((app_3
+                                                                        (cdr
+                                                                         l_1)))
+                                                                   (loop_0
+                                                                    app_3
+                                                                    mut-l_0
+                                                                    null
+                                                                    (reverse$1
+                                                                     ids_0)
+                                                                    knowns_2))))
+                                                              (let ((app_2
+                                                                     (list
+                                                                      'lambda
+                                                                      '()
+                                                                      rhs_0)))
+                                                                (let ((expr_0
+                                                                       (let ((app_3
                                                                               (list
                                                                                'quote
-                                                                               (reverse$1
-                                                                                (letrec*
-                                                                                 ((for-loop_0
-                                                                                   (|#%name|
-                                                                                    for-loop
-                                                                                    (lambda (fold-var_0
+                                                                               ids_0)))
+                                                                         (let ((app_4
+                                                                                (list
+                                                                                 'quote
+                                                                                 (reverse$1
+                                                                                  (letrec*
+                                                                                   ((for-loop_0
+                                                                                     (|#%name|
+                                                                                      for-loop
+                                                                                      (lambda (fold-var_0
+                                                                                               lst_0)
+                                                                                        (if (pair?
                                                                                              lst_0)
-                                                                                      (if (pair?
-                                                                                           lst_0)
-                                                                                        (let ((id_0
-                                                                                               (unsafe-car
-                                                                                                lst_0)))
-                                                                                          (let ((rest_0
-                                                                                                 (unsafe-cdr
+                                                                                          (let ((id_0
+                                                                                                 (unsafe-car
                                                                                                   lst_0)))
-                                                                                            (let ((fold-var_1
-                                                                                                   (let ((fold-var_1
-                                                                                                          (cons
-                                                                                                           (variable-constance
-                                                                                                            (unwrap
-                                                                                                             id_0)
-                                                                                                            knowns_1
-                                                                                                            mutated_0)
-                                                                                                           fold-var_0)))
-                                                                                                     (values
-                                                                                                      fold-var_1))))
-                                                                                              (for-loop_0
-                                                                                               fold-var_1
-                                                                                               rest_0))))
-                                                                                        fold-var_0)))))
-                                                                                 (for-loop_0
-                                                                                  null
-                                                                                  ids_0))))))
-                                                                         (list*
-                                                                          'call-with-module-prompt
-                                                                          app_2
-                                                                          app_3
-                                                                          app_4
-                                                                          (reverse$1
-                                                                           (letrec*
-                                                                            ((for-loop_0
-                                                                              (|#%name|
-                                                                               for-loop
-                                                                               (lambda (fold-var_0
-                                                                                        lst_0)
-                                                                                 (if (pair?
-                                                                                      lst_0)
-                                                                                   (let ((id_0
-                                                                                          (unsafe-car
-                                                                                           lst_0)))
-                                                                                     (let ((rest_0
-                                                                                            (unsafe-cdr
-                                                                                             lst_0)))
-                                                                                       (let ((fold-var_1
+                                                                                            (let ((rest_0
+                                                                                                   (unsafe-cdr
+                                                                                                    lst_0)))
                                                                                               (let ((fold-var_1
-                                                                                                     (cons
-                                                                                                      (id-to-variable
-                                                                                                       (unwrap
-                                                                                                        id_0)
-                                                                                                       exports_0
-                                                                                                       extra-variables_0)
-                                                                                                      fold-var_0)))
-                                                                                                (values
-                                                                                                 fold-var_1))))
-                                                                                         (for-loop_0
-                                                                                          fold-var_1
-                                                                                          rest_0))))
-                                                                                   fold-var_0)))))
-                                                                            (for-loop_0
-                                                                             null
-                                                                             ids_0))))))))
-                                                                (let ((defns_0
-                                                                       (reverse$1
-                                                                        (letrec*
-                                                                         ((for-loop_0
-                                                                           (|#%name|
-                                                                            for-loop
-                                                                            (lambda (fold-var_0
+                                                                                                     (let ((fold-var_1
+                                                                                                            (cons
+                                                                                                             (variable-constance
+                                                                                                              (unwrap
+                                                                                                               id_0)
+                                                                                                              knowns_2
+                                                                                                              mutated_0)
+                                                                                                             fold-var_0)))
+                                                                                                       (values
+                                                                                                        fold-var_1))))
+                                                                                                (for-loop_0
+                                                                                                 fold-var_1
+                                                                                                 rest_0))))
+                                                                                          fold-var_0)))))
+                                                                                   (for-loop_0
+                                                                                    null
+                                                                                    ids_0))))))
+                                                                           (list*
+                                                                            'call-with-module-prompt
+                                                                            app_2
+                                                                            app_3
+                                                                            app_4
+                                                                            (reverse$1
+                                                                             (letrec*
+                                                                              ((for-loop_0
+                                                                                (|#%name|
+                                                                                 for-loop
+                                                                                 (lambda (fold-var_0
+                                                                                          lst_0)
+                                                                                   (if (pair?
+                                                                                        lst_0)
+                                                                                     (let ((id_0
+                                                                                            (unsafe-car
+                                                                                             lst_0)))
+                                                                                       (let ((rest_0
+                                                                                              (unsafe-cdr
+                                                                                               lst_0)))
+                                                                                         (let ((fold-var_1
+                                                                                                (let ((fold-var_1
+                                                                                                       (cons
+                                                                                                        (id-to-variable
+                                                                                                         (unwrap
+                                                                                                          id_0)
+                                                                                                         exports_0
+                                                                                                         extra-variables_0)
+                                                                                                        fold-var_0)))
+                                                                                                  (values
+                                                                                                   fold-var_1))))
+                                                                                           (for-loop_0
+                                                                                            fold-var_1
+                                                                                            rest_0))))
+                                                                                     fold-var_0)))))
+                                                                              (for-loop_0
+                                                                               null
+                                                                               ids_0))))))))
+                                                                  (let ((defns_0
+                                                                         (reverse$1
+                                                                          (letrec*
+                                                                           ((for-loop_0
+                                                                             (|#%name|
+                                                                              for-loop
+                                                                              (lambda (fold-var_0
+                                                                                       lst_0)
+                                                                                (if (pair?
                                                                                      lst_0)
-                                                                              (if (pair?
-                                                                                   lst_0)
-                                                                                (let ((id_0
-                                                                                       (unsafe-car
-                                                                                        lst_0)))
-                                                                                  (let ((rest_0
-                                                                                         (unsafe-cdr
+                                                                                  (let ((id_0
+                                                                                         (unsafe-car
                                                                                           lst_0)))
-                                                                                    (let ((fold-var_1
-                                                                                           (let ((fold-var_1
-                                                                                                  (cons
-                                                                                                   (make-define-variable
-                                                                                                    id_0
-                                                                                                    exports_0
-                                                                                                    knowns_1
-                                                                                                    mutated_0
-                                                                                                    extra-variables_0)
-                                                                                                   fold-var_0)))
-                                                                                             (values
-                                                                                              fold-var_1))))
-                                                                                      (for-loop_0
-                                                                                       fold-var_1
-                                                                                       rest_0))))
-                                                                                fold-var_0)))))
-                                                                         (for-loop_0
-                                                                          null
-                                                                          ids_0)))))
-                                                                  (let ((app_3
-                                                                         (if (eq?
-                                                                              target_0
-                                                                              'interp)
-                                                                           expr_0
-                                                                           (make-expr-defn
-                                                                            expr_0))))
-                                                                    (cons
-                                                                     app_3
-                                                                     (append
-                                                                      defns_0
-                                                                      (loop_0
-                                                                       (cdr
-                                                                        l_1)
-                                                                       mut-l_0
-                                                                       null
-                                                                       null
-                                                                       knowns_1)))))))))))))))
-                                             (let ((hd_0
-                                                    (let ((p_0
-                                                           (unwrap
-                                                            schemified_0)))
-                                                      (if (pair? p_0)
-                                                        (unwrap (car p_0))
-                                                        #f))))
-                                               (if (if (eq? 'define hd_0)
-                                                     (let ((a_0
-                                                            (cdr
+                                                                                    (let ((rest_0
+                                                                                           (unsafe-cdr
+                                                                                            lst_0)))
+                                                                                      (let ((fold-var_1
+                                                                                             (let ((fold-var_1
+                                                                                                    (cons
+                                                                                                     (make-define-variable
+                                                                                                      id_0
+                                                                                                      exports_0
+                                                                                                      knowns_2
+                                                                                                      mutated_0
+                                                                                                      extra-variables_0)
+                                                                                                     fold-var_0)))
+                                                                                               (values
+                                                                                                fold-var_1))))
+                                                                                        (for-loop_0
+                                                                                         fold-var_1
+                                                                                         rest_0))))
+                                                                                  fold-var_0)))))
+                                                                           (for-loop_0
+                                                                            null
+                                                                            ids_0)))))
+                                                                    (let ((app_3
+                                                                           (if (eq?
+                                                                                target_0
+                                                                                'interp)
+                                                                             expr_0
+                                                                             (make-expr-defn
+                                                                              expr_0))))
+                                                                      (cons
+                                                                       app_3
+                                                                       (append
+                                                                        defns_0
+                                                                        (loop_0
+                                                                         (cdr
+                                                                          l_1)
+                                                                         mut-l_0
+                                                                         null
+                                                                         null
+                                                                         knowns_2)))))))))))))))
+                                               (let ((hd_0
+                                                      (let ((p_0
                                                              (unwrap
-                                                              schemified_0))))
-                                                       (let ((p_0
-                                                              (unwrap a_0)))
-                                                         (if (pair? p_0)
-                                                           (let ((a_1
-                                                                  (cdr p_0)))
-                                                             (let ((p_1
-                                                                    (unwrap
-                                                                     a_1)))
-                                                               (if (pair? p_1)
-                                                                 (let ((a_2
-                                                                        (cdr
-                                                                         p_1)))
-                                                                   (let ((app_0
-                                                                          (unwrap
-                                                                           '())))
-                                                                     (eq?
-                                                                      app_0
-                                                                      (unwrap
-                                                                       a_2))))
-                                                                 #f)))
-                                                           #f)))
-                                                     #f)
-                                                 (call-with-values
-                                                  (lambda ()
-                                                    (let ((d_0
-                                                           (cdr
-                                                            (unwrap
-                                                             schemified_0))))
-                                                      (let ((p_0 (unwrap d_0)))
-                                                        (let ((id_0
-                                                               (let ((a_0
-                                                                      (car
-                                                                       p_0)))
-                                                                 a_0)))
-                                                          (let ((rhs_0
-                                                                 (let ((d_1
-                                                                        (cdr
-                                                                         p_0)))
-                                                                   (let ((a_0
-                                                                          (car
-                                                                           (unwrap
-                                                                            d_1))))
-                                                                     a_0))))
-                                                            (let ((id_1 id_0))
-                                                              (values
-                                                               id_1
-                                                               rhs_0)))))))
-                                                  (lambda (id_0 rhs_0)
-                                                    (if (simple?.1
-                                                         #f
-                                                         #f
-                                                         #f
-                                                         1
-                                                         #f
-                                                         rhs_0
-                                                         prim-knowns_0
-                                                         knowns_1
-                                                         imports_0
-                                                         mutated_0
-                                                         simples_0
-                                                         unsafe-mode?_0)
-                                                      (let ((temp45_0
-                                                             (list id_0)))
-                                                        (finish-definition_0
-                                                         unsafe-undefined
-                                                         #f
-                                                         unsafe-undefined
-                                                         temp45_0
-                                                         unsafe-undefined
-                                                         unsafe-undefined))
-                                                      (finish-wrapped-definition_0
-                                                       (list id_0)
-                                                       rhs_0))))
-                                                 (if (if (eq?
-                                                          'define-values
-                                                          hd_0)
+                                                              schemified_0)))
+                                                        (if (pair? p_0)
+                                                          (unwrap (car p_0))
+                                                          #f))))
+                                                 (if (if (eq? 'define hd_0)
                                                        (let ((a_0
                                                               (cdr
                                                                (unwrap
@@ -26055,7 +26315,7 @@
                                                                schemified_0))))
                                                         (let ((p_0
                                                                (unwrap d_0)))
-                                                          (let ((ids_0
+                                                          (let ((id_0
                                                                  (let ((a_0
                                                                         (car
                                                                          p_0)))
@@ -26069,337 +26329,423 @@
                                                                              (unwrap
                                                                               d_1))))
                                                                        a_0))))
-                                                              (let ((ids_1
-                                                                     ids_0))
+                                                              (let ((id_1
+                                                                     id_0))
                                                                 (values
-                                                                 ids_1
+                                                                 id_1
                                                                  rhs_0)))))))
-                                                    (lambda (ids_0 rhs_0)
-                                                      (if (let ((temp54_0
-                                                                 (length
-                                                                  ids_0)))
-                                                            (simple?.1
-                                                             #f
-                                                             #f
-                                                             #f
-                                                             temp54_0
-                                                             #f
-                                                             rhs_0
-                                                             prim-knowns_0
-                                                             knowns_1
-                                                             imports_0
-                                                             mutated_0
-                                                             simples_0
-                                                             unsafe-mode?_0))
-                                                        (let ((hd_1
-                                                               (let ((p_0
-                                                                      (unwrap
-                                                                       rhs_0)))
-                                                                 (if (pair?
-                                                                      p_0)
-                                                                   (unwrap
-                                                                    (car p_0))
-                                                                   #f))))
-                                                          (if (if (eq?
-                                                                   'values
-                                                                   hd_1)
-                                                                (let ((a_0
-                                                                       (cdr
-                                                                        (unwrap
-                                                                         rhs_0))))
-                                                                  (wrap-list?
-                                                                   a_0))
-                                                                #f)
-                                                            (let ((rhss_0
-                                                                   (let ((d_0
-                                                                          (cdr
-                                                                           (unwrap
-                                                                            rhs_0))))
-                                                                     (unwrap-list
-                                                                      d_0))))
-                                                              (if (if (let ((app_0
-                                                                             (length
-                                                                              rhss_0)))
-                                                                        (=
-                                                                         app_0
-                                                                         (length
-                                                                          ids_0)))
-                                                                    (letrec*
-                                                                     ((for-loop_0
-                                                                       (|#%name|
-                                                                        for-loop
-                                                                        (lambda (result_0
-                                                                                 lst_0)
-                                                                          (if (pair?
-                                                                               lst_0)
-                                                                            (let ((rhs_1
-                                                                                   (unsafe-car
-                                                                                    lst_0)))
-                                                                              (let ((rest_0
-                                                                                     (unsafe-cdr
-                                                                                      lst_0)))
-                                                                                (let ((result_1
-                                                                                       (let ((result_1
-                                                                                              (simple?.1
-                                                                                               #f
-                                                                                               #t
-                                                                                               #t
-                                                                                               1
-                                                                                               #f
-                                                                                               rhs_1
-                                                                                               prim-knowns_0
-                                                                                               knowns_1
-                                                                                               imports_0
-                                                                                               mutated_0
-                                                                                               simples_0
-                                                                                               unsafe-mode?_0)))
-                                                                                         (values
-                                                                                          result_1))))
-                                                                                  (if (if (not
-                                                                                           (let ((x_0
-                                                                                                  (list
-                                                                                                   rhs_1)))
-                                                                                             (not
-                                                                                              result_1)))
-                                                                                        #t
-                                                                                        #f)
-                                                                                    (for-loop_0
-                                                                                     result_1
-                                                                                     rest_0)
-                                                                                    result_1))))
-                                                                            result_0)))))
-                                                                     (for-loop_0
-                                                                      #t
-                                                                      rhss_0))
-                                                                    #f)
-                                                                (letrec*
-                                                                 ((values-loop_0
-                                                                   (|#%name|
-                                                                    values-loop
-                                                                    (lambda (ids_1
-                                                                             rhss_1
-                                                                             accum-exprs_1
-                                                                             accum-ids_1
-                                                                             knowns_2)
-                                                                      (if (null?
-                                                                           ids_1)
-                                                                        (loop_0
-                                                                         (cdr
-                                                                          l_1)
-                                                                         mut-l_0
-                                                                         accum-exprs_1
-                                                                         accum-ids_1
-                                                                         knowns_2)
-                                                                        (let ((id_0
-                                                                               (car
-                                                                                ids_1)))
-                                                                          (let ((rhs_1
-                                                                                 (car
-                                                                                  rhss_1)))
-                                                                            (let ((temp63_0
-                                                                                   (list
-                                                                                    id_0)))
-                                                                              (let ((temp67_0
-                                                                                     (list
-                                                                                      'define
-                                                                                      id_0
-                                                                                      rhs_1)))
-                                                                                (let ((temp68_0
-                                                                                       (lambda (accum-exprs_2
-                                                                                                accum-ids_2
-                                                                                                knowns_3)
-                                                                                         (let ((app_0
-                                                                                                (cdr
-                                                                                                 ids_1)))
-                                                                                           (values-loop_0
-                                                                                            app_0
-                                                                                            (cdr
-                                                                                             rhss_1)
-                                                                                            accum-exprs_2
-                                                                                            accum-ids_2
-                                                                                            knowns_3)))))
-                                                                                  (finish-definition_0
-                                                                                   knowns_2
-                                                                                   temp68_0
-                                                                                   temp67_0
-                                                                                   temp63_0
-                                                                                   accum-exprs_1
-                                                                                   accum-ids_1)))))))))))
-                                                                 (values-loop_0
-                                                                  ids_0
-                                                                  rhss_0
-                                                                  accum-exprs_0
-                                                                  accum-ids_0
-                                                                  knowns_1))
-                                                                (finish-definition_0
-                                                                 unsafe-undefined
-                                                                 #f
-                                                                 unsafe-undefined
-                                                                 ids_0
-                                                                 unsafe-undefined
-                                                                 unsafe-undefined)))
-                                                            (finish-definition_0
-                                                             unsafe-undefined
-                                                             #f
-                                                             unsafe-undefined
-                                                             ids_0
-                                                             unsafe-undefined
-                                                             unsafe-undefined)))
+                                                    (lambda (id_0 rhs_0)
+                                                      (if (simple?.1
+                                                           #f
+                                                           #f
+                                                           #f
+                                                           1
+                                                           #f
+                                                           rhs_0
+                                                           prim-knowns_0
+                                                           knowns_2
+                                                           imports_0
+                                                           mutated_0
+                                                           simples_0
+                                                           unsafe-mode?_0)
+                                                        (let ((temp45_0
+                                                               (list id_0)))
+                                                          (finish-definition_0
+                                                           unsafe-undefined
+                                                           #f
+                                                           unsafe-undefined
+                                                           temp45_0
+                                                           unsafe-undefined
+                                                           unsafe-undefined))
                                                         (finish-wrapped-definition_0
-                                                         ids_0
+                                                         (list id_0)
                                                          rhs_0))))
-                                                   (if (if (if (eq?
-                                                                'quote
-                                                                hd_0)
-                                                             (let ((a_0
-                                                                    (cdr
-                                                                     (unwrap
-                                                                      schemified_0))))
-                                                               (let ((p_0
-                                                                      (unwrap
-                                                                       a_0)))
-                                                                 (if (pair?
-                                                                      p_0)
-                                                                   (let ((a_1
-                                                                          (cdr
-                                                                           p_0)))
-                                                                     (let ((app_0
-                                                                            (unwrap
-                                                                             '())))
-                                                                       (eq?
-                                                                        app_0
-                                                                        (unwrap
-                                                                         a_1))))
-                                                                   #f)))
-                                                             #f)
-                                                         (let ((or-part_0
-                                                                (pair?
-                                                                 (cdr l_1))))
-                                                           (if or-part_0
-                                                             or-part_0
-                                                             (pair?
-                                                              accum-ids_0)))
-                                                         #f)
-                                                     (loop_0
-                                                      (cdr l_1)
-                                                      mut-l_0
-                                                      accum-exprs_0
-                                                      accum-ids_0
-                                                      knowns_1)
-                                                     (let ((hd_1
-                                                            (let ((p_0
-                                                                   (unwrap
-                                                                    form_0)))
-                                                              (if (pair? p_0)
-                                                                (unwrap
-                                                                 (car p_0))
-                                                                #f))))
-                                                       (if (if (eq?
-                                                                'define-values
-                                                                hd_1)
-                                                             (let ((a_0
-                                                                    (cdr
-                                                                     (unwrap
-                                                                      form_0))))
-                                                               (let ((p_0
-                                                                      (unwrap
-                                                                       a_0)))
-                                                                 (if (pair?
-                                                                      p_0)
-                                                                   (let ((a_1
-                                                                          (cdr
-                                                                           p_0)))
-                                                                     (let ((p_1
-                                                                            (unwrap
-                                                                             a_1)))
-                                                                       (if (pair?
-                                                                            p_1)
-                                                                         (let ((a_2
-                                                                                (cdr
-                                                                                 p_1)))
-                                                                           (let ((app_0
-                                                                                  (unwrap
-                                                                                   '())))
-                                                                             (eq?
-                                                                              app_0
-                                                                              (unwrap
-                                                                               a_2))))
-                                                                         #f)))
-                                                                   #f)))
-                                                             #f)
-                                                         (let ((ids_0
-                                                                (let ((d_0
-                                                                       (cdr
-                                                                        (unwrap
-                                                                         form_0))))
-                                                                  (let ((a_0
-                                                                         (car
-                                                                          (unwrap
-                                                                           d_0))))
-                                                                    a_0))))
-                                                           (let ((set-vars_0
-                                                                  (make-set-variables_0)))
-                                                             (let ((temp72_0
-                                                                    (append
-                                                                     set-vars_0
-                                                                     accum-exprs_0)))
-                                                               (finish-definition_0
-                                                                unsafe-undefined
-                                                                #f
-                                                                unsafe-undefined
-                                                                ids_0
-                                                                temp72_0
-                                                                null))))
-                                                         (if (simple?.1
-                                                              #f
-                                                              #f
-                                                              #f
-                                                              #f
-                                                              #f
-                                                              schemified_0
-                                                              prim-knowns_0
-                                                              knowns_1
-                                                              imports_0
-                                                              mutated_0
-                                                              simples_0
-                                                              unsafe-mode?_0)
-                                                           (let ((app_0
-                                                                  (cdr l_1)))
-                                                             (loop_0
-                                                              app_0
-                                                              mut-l_0
-                                                              (cons
-                                                               schemified_0
-                                                               accum-exprs_0)
-                                                              accum-ids_0
-                                                              knowns_1))
-                                                           (let ((set-vars_0
-                                                                  (make-set-variables_0)))
-                                                             (let ((expr_0
-                                                                    (if no-prompt?_0
-                                                                      schemified_0
-                                                                      (list
-                                                                       'call-with-module-prompt
-                                                                       (list
-                                                                        'lambda
-                                                                        '()
-                                                                        schemified_0)))))
-                                                               (let ((app_0
+                                                   (if (if (eq?
+                                                            'define-values
+                                                            hd_0)
+                                                         (let ((a_0
+                                                                (cdr
+                                                                 (unwrap
+                                                                  schemified_0))))
+                                                           (let ((p_0
+                                                                  (unwrap
+                                                                   a_0)))
+                                                             (if (pair? p_0)
+                                                               (let ((a_1
                                                                       (cdr
-                                                                       l_1)))
-                                                                 (loop_0
-                                                                  app_0
-                                                                  mut-l_0
-                                                                  (cons
-                                                                   expr_0
-                                                                   (append
-                                                                    set-vars_0
-                                                                    accum-exprs_0))
-                                                                  null
-                                                                  knowns_1)))))))))))))))))))))))
-                        (loop_0 l_0 l_0 null null knowns_0))))
-                  (let ((app_0 (add-extra-variables_0 schemified_0)))
-                    (values app_0 final-knowns_0 mutated_0)))))))))))
+                                                                       p_0)))
+                                                                 (let ((p_1
+                                                                        (unwrap
+                                                                         a_1)))
+                                                                   (if (pair?
+                                                                        p_1)
+                                                                     (let ((a_2
+                                                                            (cdr
+                                                                             p_1)))
+                                                                       (let ((app_0
+                                                                              (unwrap
+                                                                               '())))
+                                                                         (eq?
+                                                                          app_0
+                                                                          (unwrap
+                                                                           a_2))))
+                                                                     #f)))
+                                                               #f)))
+                                                         #f)
+                                                     (call-with-values
+                                                      (lambda ()
+                                                        (let ((d_0
+                                                               (cdr
+                                                                (unwrap
+                                                                 schemified_0))))
+                                                          (let ((p_0
+                                                                 (unwrap d_0)))
+                                                            (let ((ids_0
+                                                                   (let ((a_0
+                                                                          (car
+                                                                           p_0)))
+                                                                     a_0)))
+                                                              (let ((rhs_0
+                                                                     (let ((d_1
+                                                                            (cdr
+                                                                             p_0)))
+                                                                       (let ((a_0
+                                                                              (car
+                                                                               (unwrap
+                                                                                d_1))))
+                                                                         a_0))))
+                                                                (let ((ids_1
+                                                                       ids_0))
+                                                                  (values
+                                                                   ids_1
+                                                                   rhs_0)))))))
+                                                      (lambda (ids_0 rhs_0)
+                                                        (if (let ((temp54_0
+                                                                   (length
+                                                                    ids_0)))
+                                                              (simple?.1
+                                                               #f
+                                                               #f
+                                                               #f
+                                                               temp54_0
+                                                               #f
+                                                               rhs_0
+                                                               prim-knowns_0
+                                                               knowns_2
+                                                               imports_0
+                                                               mutated_0
+                                                               simples_0
+                                                               unsafe-mode?_0))
+                                                          (let ((hd_1
+                                                                 (let ((p_0
+                                                                        (unwrap
+                                                                         rhs_0)))
+                                                                   (if (pair?
+                                                                        p_0)
+                                                                     (unwrap
+                                                                      (car
+                                                                       p_0))
+                                                                     #f))))
+                                                            (if (if (eq?
+                                                                     'values
+                                                                     hd_1)
+                                                                  (let ((a_0
+                                                                         (cdr
+                                                                          (unwrap
+                                                                           rhs_0))))
+                                                                    (wrap-list?
+                                                                     a_0))
+                                                                  #f)
+                                                              (let ((rhss_0
+                                                                     (let ((d_0
+                                                                            (cdr
+                                                                             (unwrap
+                                                                              rhs_0))))
+                                                                       (unwrap-list
+                                                                        d_0))))
+                                                                (if (if (let ((app_0
+                                                                               (length
+                                                                                rhss_0)))
+                                                                          (=
+                                                                           app_0
+                                                                           (length
+                                                                            ids_0)))
+                                                                      (letrec*
+                                                                       ((for-loop_0
+                                                                         (|#%name|
+                                                                          for-loop
+                                                                          (lambda (result_0
+                                                                                   lst_0)
+                                                                            (if (pair?
+                                                                                 lst_0)
+                                                                              (let ((rhs_1
+                                                                                     (unsafe-car
+                                                                                      lst_0)))
+                                                                                (let ((rest_0
+                                                                                       (unsafe-cdr
+                                                                                        lst_0)))
+                                                                                  (let ((result_1
+                                                                                         (let ((result_1
+                                                                                                (simple?.1
+                                                                                                 #f
+                                                                                                 #t
+                                                                                                 #t
+                                                                                                 1
+                                                                                                 #f
+                                                                                                 rhs_1
+                                                                                                 prim-knowns_0
+                                                                                                 knowns_2
+                                                                                                 imports_0
+                                                                                                 mutated_0
+                                                                                                 simples_0
+                                                                                                 unsafe-mode?_0)))
+                                                                                           (values
+                                                                                            result_1))))
+                                                                                    (if (if (not
+                                                                                             (let ((x_0
+                                                                                                    (list
+                                                                                                     rhs_1)))
+                                                                                               (not
+                                                                                                result_1)))
+                                                                                          #t
+                                                                                          #f)
+                                                                                      (for-loop_0
+                                                                                       result_1
+                                                                                       rest_0)
+                                                                                      result_1))))
+                                                                              result_0)))))
+                                                                       (for-loop_0
+                                                                        #t
+                                                                        rhss_0))
+                                                                      #f)
+                                                                  (letrec*
+                                                                   ((values-loop_0
+                                                                     (|#%name|
+                                                                      values-loop
+                                                                      (lambda (ids_1
+                                                                               rhss_1
+                                                                               accum-exprs_1
+                                                                               accum-ids_1
+                                                                               knowns_3)
+                                                                        (if (null?
+                                                                             ids_1)
+                                                                          (loop_0
+                                                                           (cdr
+                                                                            l_1)
+                                                                           mut-l_0
+                                                                           accum-exprs_1
+                                                                           accum-ids_1
+                                                                           knowns_3)
+                                                                          (let ((id_0
+                                                                                 (car
+                                                                                  ids_1)))
+                                                                            (let ((rhs_1
+                                                                                   (car
+                                                                                    rhss_1)))
+                                                                              (let ((temp63_0
+                                                                                     (list
+                                                                                      id_0)))
+                                                                                (let ((temp67_0
+                                                                                       (list
+                                                                                        'define
+                                                                                        id_0
+                                                                                        rhs_1)))
+                                                                                  (let ((temp68_0
+                                                                                         (lambda (accum-exprs_2
+                                                                                                  accum-ids_2
+                                                                                                  knowns_4)
+                                                                                           (let ((app_0
+                                                                                                  (cdr
+                                                                                                   ids_1)))
+                                                                                             (values-loop_0
+                                                                                              app_0
+                                                                                              (cdr
+                                                                                               rhss_1)
+                                                                                              accum-exprs_2
+                                                                                              accum-ids_2
+                                                                                              knowns_4)))))
+                                                                                    (finish-definition_0
+                                                                                     knowns_3
+                                                                                     temp68_0
+                                                                                     temp67_0
+                                                                                     temp63_0
+                                                                                     accum-exprs_1
+                                                                                     accum-ids_1)))))))))))
+                                                                   (values-loop_0
+                                                                    ids_0
+                                                                    rhss_0
+                                                                    accum-exprs_0
+                                                                    accum-ids_0
+                                                                    knowns_2))
+                                                                  (finish-definition_0
+                                                                   unsafe-undefined
+                                                                   #f
+                                                                   unsafe-undefined
+                                                                   ids_0
+                                                                   unsafe-undefined
+                                                                   unsafe-undefined)))
+                                                              (finish-definition_0
+                                                               unsafe-undefined
+                                                               #f
+                                                               unsafe-undefined
+                                                               ids_0
+                                                               unsafe-undefined
+                                                               unsafe-undefined)))
+                                                          (finish-wrapped-definition_0
+                                                           ids_0
+                                                           rhs_0))))
+                                                     (if (if (if (eq?
+                                                                  'quote
+                                                                  hd_0)
+                                                               (let ((a_0
+                                                                      (cdr
+                                                                       (unwrap
+                                                                        schemified_0))))
+                                                                 (let ((p_0
+                                                                        (unwrap
+                                                                         a_0)))
+                                                                   (if (pair?
+                                                                        p_0)
+                                                                     (let ((a_1
+                                                                            (cdr
+                                                                             p_0)))
+                                                                       (let ((app_0
+                                                                              (unwrap
+                                                                               '())))
+                                                                         (eq?
+                                                                          app_0
+                                                                          (unwrap
+                                                                           a_1))))
+                                                                     #f)))
+                                                               #f)
+                                                           (let ((or-part_0
+                                                                  (pair?
+                                                                   (cdr l_1))))
+                                                             (if or-part_0
+                                                               or-part_0
+                                                               (pair?
+                                                                accum-ids_0)))
+                                                           #f)
+                                                       (loop_0
+                                                        (cdr l_1)
+                                                        mut-l_0
+                                                        accum-exprs_0
+                                                        accum-ids_0
+                                                        knowns_2)
+                                                       (let ((hd_1
+                                                              (let ((p_0
+                                                                     (unwrap
+                                                                      form_0)))
+                                                                (if (pair? p_0)
+                                                                  (unwrap
+                                                                   (car p_0))
+                                                                  #f))))
+                                                         (if (if (eq?
+                                                                  'define-values
+                                                                  hd_1)
+                                                               (let ((a_0
+                                                                      (cdr
+                                                                       (unwrap
+                                                                        form_0))))
+                                                                 (let ((p_0
+                                                                        (unwrap
+                                                                         a_0)))
+                                                                   (if (pair?
+                                                                        p_0)
+                                                                     (let ((a_1
+                                                                            (cdr
+                                                                             p_0)))
+                                                                       (let ((p_1
+                                                                              (unwrap
+                                                                               a_1)))
+                                                                         (if (pair?
+                                                                              p_1)
+                                                                           (let ((a_2
+                                                                                  (cdr
+                                                                                   p_1)))
+                                                                             (let ((app_0
+                                                                                    (unwrap
+                                                                                     '())))
+                                                                               (eq?
+                                                                                app_0
+                                                                                (unwrap
+                                                                                 a_2))))
+                                                                           #f)))
+                                                                     #f)))
+                                                               #f)
+                                                           (let ((ids_0
+                                                                  (let ((d_0
+                                                                         (cdr
+                                                                          (unwrap
+                                                                           form_0))))
+                                                                    (let ((a_0
+                                                                           (car
+                                                                            (unwrap
+                                                                             d_0))))
+                                                                      a_0))))
+                                                             (let ((set-vars_0
+                                                                    (make-set-variables_0)))
+                                                               (let ((temp72_0
+                                                                      (append
+                                                                       set-vars_0
+                                                                       accum-exprs_0)))
+                                                                 (finish-definition_0
+                                                                  unsafe-undefined
+                                                                  #f
+                                                                  unsafe-undefined
+                                                                  ids_0
+                                                                  temp72_0
+                                                                  null))))
+                                                           (if (simple?.1
+                                                                #f
+                                                                #f
+                                                                #f
+                                                                #f
+                                                                #f
+                                                                schemified_0
+                                                                prim-knowns_0
+                                                                knowns_2
+                                                                imports_0
+                                                                mutated_0
+                                                                simples_0
+                                                                unsafe-mode?_0)
+                                                             (let ((app_0
+                                                                    (cdr l_1)))
+                                                               (loop_0
+                                                                app_0
+                                                                mut-l_0
+                                                                (cons
+                                                                 schemified_0
+                                                                 accum-exprs_0)
+                                                                accum-ids_0
+                                                                knowns_2))
+                                                             (let ((set-vars_0
+                                                                    (make-set-variables_0)))
+                                                               (let ((expr_0
+                                                                      (if no-prompt?_0
+                                                                        schemified_0
+                                                                        (list
+                                                                         'call-with-module-prompt
+                                                                         (list
+                                                                          'lambda
+                                                                          '()
+                                                                          schemified_0)))))
+                                                                 (let ((app_0
+                                                                        (cdr
+                                                                         l_1)))
+                                                                   (loop_0
+                                                                    app_0
+                                                                    mut-l_0
+                                                                    (cons
+                                                                     expr_0
+                                                                     (append
+                                                                      set-vars_0
+                                                                      accum-exprs_0))
+                                                                    null
+                                                                    knowns_2)))))))))))))))))))))))
+                          (loop_0 l_0 l_0 null null knowns_1))))
+                    (let ((app_0 (add-extra-variables_0 schemified_0)))
+                      (values app_0 final-knowns_0 mutated_0))))))))))))
 (define make-set-variable
   (let ((make-set-variable_0
          (|#%name|

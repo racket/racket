@@ -228,16 +228,11 @@
            'stop)
          same?))]))
 
-(define (vm->machine sym)
-  (if (eq? sym 'racket)
-      sym
-      'chez-scheme))
-
 (define (test-comp expr1 expr2 [same? #t]
                    #:except [except '()])
-  (unless (or (eq? (system-type 'vm) (vm->machine except))
+  (unless (or (eq? (system-type 'vm) except)
               (and (list? except)
-                   (eq? (system-type 'vm) (vm->machine except))))
+                   (memq (system-type 'vm) except)))
     (define (->stx s)
       ;; Give `s` a minimal location, so that other macro locations
       ;; don't bleed through:
@@ -4203,6 +4198,50 @@
               #t
               (lambda (x) (set-a-x! x 5))))
 
+;; check that property guards do not contaminate anaylsis of value expressions for other properties
+(test-comp #:except 'racket
+           '(module m racket/base
+              (define-values (p:a a? a-ref) (make-struct-type-property 'a))
+              (define-values (p:b b? b-ref) (make-struct-type-property 'b (lambda (v i) (v))))
+              (struct s (x y) #:omit-define-syntaxes
+                #:property p:a (lambda () s-x)
+                #:property p:b (lambda () 'ok))
+              (s? (s 1 2)))
+           '(module m racket/base
+              (define-values (p:a a? a-ref) (make-struct-type-property 'a))
+              (define-values (p:b b? b-ref) (make-struct-type-property 'b (lambda (v i) (v))))
+              (struct s (x y) #:omit-define-syntaxes
+                #:property p:a (lambda () s-x)
+                #:property p:b (lambda () 'ok))
+              #t))
+
+(module uses-constructor-too-early-via-property-guard racket/base
+  (define-values (p:a a? a-ref) (make-struct-type-property 'a))
+  (define-values (p:b b? b-ref) (make-struct-type-property 'b (lambda (v i) (v))))
+  (struct s (x y) #:omit-define-syntaxes
+    #:property p:b (lambda () (s? (s 1 2)))
+    #:property p:a (lambda () 'ok))
+  (s? (s 1 2)))
+(err/rt-test/once (dynamic-require ''uses-constructor-too-early-via-property-guard #f))
+(module uses-constructor-too-early-via-property-guard2 racket/base
+  (define-values (p:a a? a-ref) (make-struct-type-property 'a))
+  (define-values (p:b b? b-ref) (make-struct-type-property 'b (lambda (v i) (v))))
+  (struct s (x y) #:omit-define-syntaxes
+    #:property p:a (lambda () 'ok)
+    #:property p:b (lambda () (s? (s 1 2))))
+  (s? (s 1 2)))
+(err/rt-test/once (dynamic-require ''uses-constructor-too-early-via-property-guard2 #f))
+
+(test-comp '(module m racket/base
+              (define-values (p:b b? b-ref) (make-struct-type-property 'b (lambda (v i) (v))))
+              (struct s (x y) #:omit-define-syntaxes
+                #:property p:b (lambda () (s? (s 1 2)))))
+           '(module m racket/base
+              (define-values (p:b b? b-ref) (make-struct-type-property 'b (lambda (v i) (v))))
+              (struct s (x y) #:omit-define-syntaxes
+                #:property p:b (lambda () #t)))
+           #f)
+
 (test-comp #:except 'chez-scheme ; not able to remove pure `make-struct-type`
            '(lambda ()
              (make-struct-type 'a #f 0 0 #f)
@@ -6935,7 +6974,16 @@
                   [(define (equal-proc x y recursive-equal?) pie-type #t)
                    (define (hash-code x hc) 1)
                    (define hash-proc  hash-code)
-                   (define hash2-proc hash-code)]))])
+                   (define hash2-proc hash-code)])
+               '(begin
+                  (require racket/unsafe/struct-type-property)
+                  (define-values (prop:p p? p-ref)
+                    (unsafe-make-struct-type-property/guard-calls-no-arguments
+                     'p
+                     (lambda (v si)
+                       (hash-set (hash) 'ok v))))
+                  (struct pie (type)
+                    #:property prop:p (lambda () pie-type))))])
     (test #t
           list?
           (let loop ([tries 3])

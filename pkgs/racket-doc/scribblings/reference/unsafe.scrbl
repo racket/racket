@@ -1,6 +1,7 @@
 #lang scribble/doc
 @(require "mz.rkt"
           (for-label racket/unsafe/ops
+                     racket/unsafe/struct-type-property
                      racket/flonum
                      racket/fixnum
                      racket/extflonum
@@ -1013,6 +1014,46 @@ the same as @racket[(unsafe-car x)] makes both branches of the
 @racket[if] the same, and then @racket[pair?] test can be eliminated.
 
 @history[#:added "8.0.0.11"]}
+
+@; ------------------------------------------------------------------------
+
+@section[#:tag "unsafe-struct-type-prop"]{Unsafe Structure Type Properties}
+
+@note-lib-only[racket/unsafe/struct-type-property]
+
+@defproc[(unsafe-make-struct-type-property/guard-calls-no-arguments
+          [name symbol?]
+          [guard (or/c procedure? #f 'can-impersonate) #f]
+          [supers (listof (cons/c struct-type-property?
+                                  (any/c . -> . any/c)))
+                  null]
+          [can-impersonate? any/c #f]
+          [accessor-name (or/c symbol? #f) #f]
+          [contract-str (or/c string? symbol? #f) #f]
+          [realm symbol? 'racket])
+         (values struct-type-property?
+                 (any/c . -> . boolean?)
+                 procedure?)]{
+
+The same as @racket[make-struct-type-property], but asserts that
+@racket[guard] does not call any procedures that are contained in its
+property-value argument. Similarly, no procedure in @racket[supers]
+calls a contained procedure, and properties in @racket[supers] have no
+guards or conversions that call contained procedures.
+
+Asserting that given procedures are not called by a property's guards
+can reduce checks and improve optimization on operations for structure
+types that use the property. Specifically, when the property created by
+@racket[unsafe-make-struct-type-property/guard-calls-no-arguments] is
+used in a structure-type declaration, and when a value that is given
+for the property includes procedures that refer back to the
+structure-type declaration's bindings (which is a common pattern for
+method-like properties), the compiler can more easily conclude that
+the defined name that is referenced in a property value cannot be
+referenced too early.
+
+@history[#:added "8.18.0.18"]}
+
 
 @; ------------------------------------------------------------------------
 
