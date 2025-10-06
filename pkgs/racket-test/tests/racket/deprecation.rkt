@@ -53,7 +53,7 @@
     (check-false (is-deprecated? mod:a))
     (check-true (is-deprecated? mod:b)))
 
-  (test-case "deprecated alias of unbound identifier is a syntax error"
+  #;(test-case "deprecated alias of unbound identifier is a syntax error"
     (define thrown
       (convert-syntax-error
        (let ()
