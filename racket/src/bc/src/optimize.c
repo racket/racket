@@ -660,7 +660,8 @@ int scheme_omittable_expr(Scheme_Object *o, int vals, int fuel, int flags,
       }
     }
 
-    if (!SAME_OBJ(scheme_make_struct_type_property_proc, app->rator))
+    if (!SAME_OBJ(scheme_make_struct_type_property_proc, app->rator)
+        && !SAME_OBJ(scheme_unsafe_make_struct_type_property_proc, app->rator))
       return 0;
   }
 
@@ -687,7 +688,8 @@ int scheme_omittable_expr(Scheme_Object *o, int vals, int fuel, int flags,
       }
     }
 
-    if (!SAME_OBJ(scheme_make_struct_type_property_proc, app->rator))
+    if (!SAME_OBJ(scheme_make_struct_type_property_proc, app->rator)
+        && !SAME_OBJ(scheme_unsafe_make_struct_type_property_proc, app->rator))
       return 0;
   }
 
@@ -1507,7 +1509,8 @@ static int is_constant_super(Scheme_Object *arg,
 
 static int ok_constant_property_without_guard(void *data, Scheme_Object *v, int mode)
 {
-  intptr_t k = -1; 
+  intptr_t k = -1;
+  int allow_noncalling_guard = SCHEME_TRUEP(data);
 
   if (mode == OK_CONSTANT_SHAPE) {
     if (SAME_TYPE(SCHEME_TYPE(v), scheme_struct_prop_proc_shape_type)) {
@@ -1530,7 +1533,8 @@ static int ok_constant_property_without_guard(void *data, Scheme_Object *v, int 
     }
   } else if (mode == OK_CONSTANT_VALUE) {
     if (SAME_TYPE(SCHEME_TYPE(v), scheme_struct_property_type)) {
-      if (!((Scheme_Struct_Property *)v)->guard)
+      if (!((Scheme_Struct_Property *)v)->guard
+          || (allow_noncalling_guard && scheme_known_noncalling_guard_struct_type_property(v)))
         return 1;
     }
   }
@@ -1542,10 +1546,11 @@ static int is_struct_type_property_without_guard(Scheme_Object *arg,
                                                  Optimize_Info *info,
                                                  Scheme_Hash_Table *top_level_table,
                                                  Scheme_Object **runstack, int rs_delta,
-                                                 Scheme_Linklet *enclosing_linklet)
+                                                 Scheme_Linklet *enclosing_linklet,
+                                                 int allow_noncalling_guard)
 /* Does `arg` produce a structure type property that has no guard (so that any value is ok)? */
 {
-  return is_ok_value(ok_constant_property_without_guard, NULL,
+  return is_ok_value(ok_constant_property_without_guard, allow_noncalling_guard ? scheme_true : scheme_false,
                      arg,
                      info,
                      top_level_table,
@@ -1558,7 +1563,8 @@ static int is_simple_property_list(Scheme_Object *a, int resolved,
                                    Scheme_Hash_Table *top_level_table,
                                    Scheme_Object **runstack, int rs_delta,
                                    Scheme_Linklet *enclosing_linklet,
-                                   int just_for_authentic, int *_authentic)
+                                   int just_for_authentic, int *_authentic,
+                                   int allow_noncalling_guard)
 /* Does `a` produce a property list that always lets `make-struct-type` succeed? */
 {
   Scheme_Object *arg;
@@ -1605,7 +1611,8 @@ static int is_simple_property_list(Scheme_Object *a, int resolved,
                                                     info,
                                                     top_level_table,
                                                     runstack, rs_delta,
-                                                    enclosing_linklet)) {
+                                                    enclosing_linklet,
+                                                    allow_noncalling_guard)) {
             if (!scheme_omittable_expr(a3->rand2, 1, 3, (resolved ? OMITTABLE_RESOLVED : 0), NULL, NULL))
               return 0;
           } else
@@ -1683,15 +1690,16 @@ Scheme_Object *scheme_is_simple_make_struct_type(Scheme_Object *e, int vals, int
                    or selectors in a way that matters (although supplying the
                    `prop:chaperone-unsafe-undefined` property can affect the
                    constructor in an optimizer-irrelevant way) */
-                || (!(flags & CHECK_STRUCT_TYPE_ALWAYS_SUCCEED)
+                || (!(flags & (CHECK_STRUCT_TYPE_ALWAYS_SUCCEED | CHECK_STRUCT_TYPE_NONCALLING_PROP))
                     && scheme_omittable_expr(app->args[6], 1, 4, (resolved ? OMITTABLE_RESOLVED : 0), NULL, NULL))
-                || ((flags & CHECK_STRUCT_TYPE_ALWAYS_SUCCEED)
+                || ((flags & (CHECK_STRUCT_TYPE_ALWAYS_SUCCEED | CHECK_STRUCT_TYPE_NONCALLING_PROP))
                     && is_simple_property_list(app->args[6], resolved,
                                                info,
                                                top_level_table,
                                                runstack, rs_delta,
                                                enclosing_linklet,
-                                               0, NULL)))
+                                               0, NULL,
+                                               !(flags & CHECK_STRUCT_TYPE_ALWAYS_SUCCEED))))
             && ((app->num_args < 7)
                 /* inspector: */
                 || SCHEME_FALSEP(app->args[7])
@@ -1741,7 +1749,8 @@ Scheme_Object *scheme_is_simple_make_struct_type(Scheme_Object *e, int vals, int
                                            top_level_table,
                                            runstack, rs_delta,
                                            enclosing_linklet,
-                                           1, &authentic))
+                                           1, &authentic,
+                                           !(flags & CHECK_STRUCT_TYPE_ALWAYS_SUCCEED)))
               _stinfo->authentic = authentic;
             _stinfo->nonfail_constructor = (super_nonfail_constr
                                             && ((app->num_args < 10) || SCHEME_FALSEP(app->args[10])));
@@ -1841,7 +1850,8 @@ int scheme_is_simple_make_struct_type_property(Scheme_Object *e, int vals, int f
 
   if (SAME_TYPE(SCHEME_TYPE(e), scheme_application2_type)) {
     Scheme_App2_Rec *app = (Scheme_App2_Rec *)e;
-    if (SAME_OBJ(app->rator, scheme_make_struct_type_property_proc)) {
+    if (SAME_OBJ(app->rator, scheme_make_struct_type_property_proc)
+        || SAME_OBJ(app->rator, scheme_unsafe_make_struct_type_property_proc)) {
       if (SCHEME_SYMBOLP(app->rand)) {
         if (_has_guard) *_has_guard = 0;
         return 1;
@@ -1851,7 +1861,8 @@ int scheme_is_simple_make_struct_type_property(Scheme_Object *e, int vals, int f
   
   if (SAME_TYPE(SCHEME_TYPE(e), scheme_application3_type)) {
     Scheme_App3_Rec *app = (Scheme_App3_Rec *)e;
-    if (SAME_OBJ(app->rator, scheme_make_struct_type_property_proc)) {
+    if (SAME_OBJ(app->rator, scheme_make_struct_type_property_proc)
+        || SAME_OBJ(app->rator, scheme_unsafe_make_struct_type_property_proc)) {
       if (SCHEME_SYMBOLP(app->rand1)
           && (!(flags & CHECK_STRUCT_TYPE_ALWAYS_SUCCEED)
               || SCHEME_FALSEP(app->rand2)
@@ -1865,7 +1876,8 @@ int scheme_is_simple_make_struct_type_property(Scheme_Object *e, int vals, int f
   
   if (SAME_TYPE(SCHEME_TYPE(e), scheme_application_type)) {
     Scheme_App_Rec *app = (Scheme_App_Rec *)e;
-    if (SAME_OBJ(app->args[0], scheme_make_struct_type_property_proc)
+    if ((SAME_OBJ(app->args[0], scheme_make_struct_type_property_proc)
+         || SAME_OBJ(app->args[0], scheme_unsafe_make_struct_type_property_proc))
         && ((app->num_args >= 2) && (app->num_args < 7))) {
       if (SCHEME_SYMBOLP(app->args[1])
           && (!(flags & CHECK_STRUCT_TYPE_ALWAYS_SUCCEED)
@@ -9252,7 +9264,7 @@ Scheme_Linklet *scheme_optimize_linklet(Scheme_Linklet *linklet,
             cnst = 1;
             sproc = 1;
           }
-        } else if (scheme_is_simple_make_struct_type(e, n, 0, NULL, 
+        } else if (scheme_is_simple_make_struct_type(e, n, CHECK_STRUCT_TYPE_NONCALLING_PROP, NULL,
                                                      &stinfo, &parent_identity,
                                                      info, 
                                                      NULL, NULL, 0, NULL,

@@ -18,6 +18,7 @@ READ_ONLY Scheme_Object *scheme_make_struct_type_proc;
 READ_ONLY Scheme_Object *scheme_make_struct_field_accessor_proc;
 READ_ONLY Scheme_Object *scheme_make_struct_field_mutator_proc;
 READ_ONLY Scheme_Object *scheme_make_struct_type_property_proc;
+READ_ONLY Scheme_Object *scheme_unsafe_make_struct_type_property_proc;
 READ_ONLY Scheme_Object *scheme_struct_type_p_proc;
 READ_ONLY Scheme_Object *scheme_current_inspector_proc;
 READ_ONLY Scheme_Object *scheme_make_inspector_proc;
@@ -486,6 +487,12 @@ scheme_init_struct (Scheme_Startup_Env *env)
                              scheme_make_struct_type_property_proc,
                              env);
 
+  REGISTER_SO(scheme_unsafe_make_struct_type_property_proc);
+  scheme_unsafe_make_struct_type_property_proc = scheme_make_prim_w_arity2(make_struct_type_property,
+                                                                           "unsafe-make-struct-type-property/guard-calls-no-arguments",
+                                                                           1, 7,
+                                                                           3, 3);
+
   REGISTER_SO(scheme_make_struct_field_accessor_proc);
   scheme_make_struct_field_accessor_proc = scheme_make_prim_w_arity(make_struct_field_accessor,
                                                                     "make-struct-field-accessor",
@@ -498,6 +505,7 @@ scheme_init_struct (Scheme_Startup_Env *env)
   scheme_make_struct_field_mutator_proc = scheme_make_prim_w_arity(make_struct_field_mutator,
                                                                    "make-struct-field-mutator",
                                                                    2, 5);
+
   scheme_addto_prim_instance("make-struct-field-mutator",
 			     scheme_make_struct_field_mutator_proc,
 			     env);
@@ -1490,6 +1498,16 @@ static Scheme_Object *guard_property(Scheme_Object *prop, Scheme_Object *v, Sche
     } else
       return v;
   }
+}
+
+int scheme_known_noncalling_guard_struct_type_property(Scheme_Object *v)
+{
+  return (SAME_OBJ(v, write_property)
+          || SAME_OBJ(v, scheme_equal_property)
+          || SAME_OBJ(v, print_attribute_property)
+          || SAME_OBJ(v, evt_property)
+          || SAME_OBJ(v, proc_property)
+          || SAME_OBJ(v, method_property));
 }
 
 /*========================================================================*/

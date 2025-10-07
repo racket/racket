@@ -765,7 +765,7 @@ scheme_init_unsafe_fun (Scheme_Startup_Env *env)
   ADD_PRIM_W_ARITY("unsafe-root-continuation-prompt-tag", unsafe_root_continuation_prompt_tag, 0, 0, env);
 
   scheme_addto_prim_instance("unsafe-make-struct-type-property/guard-calls-no-arguments",
-                             scheme_make_struct_type_property_proc,
+                             scheme_unsafe_make_struct_type_property_proc,
                              env);
 }
 

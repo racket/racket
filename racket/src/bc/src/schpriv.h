@@ -590,6 +590,7 @@ extern Scheme_Object *scheme_make_struct_type_proc;
 extern Scheme_Object *scheme_make_struct_field_accessor_proc;
 extern Scheme_Object *scheme_make_struct_field_mutator_proc;
 extern Scheme_Object *scheme_make_struct_type_property_proc;
+extern Scheme_Object *scheme_unsafe_make_struct_type_property_proc;
 extern Scheme_Object *scheme_struct_to_vector_proc;
 extern Scheme_Object *scheme_struct_type_p_proc;
 extern Scheme_Object *scheme_current_inspector_proc;
@@ -3192,6 +3193,9 @@ int scheme_is_simple_make_struct_type_property(Scheme_Object *app, int vals, int
 #define CHECK_STRUCT_TYPE_RESOLVED         0x1
 #define CHECK_STRUCT_TYPE_ALWAYS_SUCCEED   0x2
 #define CHECK_STRUCT_TYPE_DELAY_AUTO_CHECK 0x4
+#define CHECK_STRUCT_TYPE_NONCALLING_PROP  0x8
+
+int scheme_known_noncalling_guard_struct_type_property(Scheme_Object *v);
 
 Scheme_Object *scheme_intern_struct_proc_shape(int shape);
 intptr_t scheme_get_struct_proc_shape(int k, Simple_Struct_Type_Info *sinfo);
