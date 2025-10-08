@@ -241,7 +241,7 @@ In addition, it re-exports @racket[for-syntax] everything from
   (bib-entry #:key "Sapin18"
              #:author "Simon Sapin"
              #:title "The WTF-8 Encoding"
-             #:url "http://simonsapin.github.io/wtf-8/"
+             #:url "https://wtf-8.codeberg.page"
              #:date "2018")
 
   (bib-entry #:key "Shan04"
