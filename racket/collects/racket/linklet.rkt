@@ -12,6 +12,7 @@
          linklet-export-variables
          linklet-add-target-machine-info
          linklet-summarize-target-machine-info
+         decompile-linklet
 
          linklet-directory?
          hash->linklet-directory

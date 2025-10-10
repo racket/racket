@@ -171,11 +171,16 @@ Racket @BC bytecode has a structure that is close enough to Racket's
 @defmodule[compiler/decompile]
 
 @defproc[(decompile [top (or/c linkl-directory? linkl-bundle? linkl?
-                               linklet? faslable-correlated-linklet?)])
+                               linklet? faslable-correlated-linklet?)]
+                    [#:to-linklets? to-linklets? any/c #f])
          any/c]{
 
 Consumes the result of parsing bytecode and returns an S-expression
-(as described above) that represents the compiled code.}
+(as described above) that represents the compiled code.
+
+If @racket[to-linklets?] is true, then the result S-expression shows
+raw @racket[linklet] forms within @racket[top] instead of
+reconstructing a @racket[module] form.}
 
 @; ------------------------------------------------------------
 

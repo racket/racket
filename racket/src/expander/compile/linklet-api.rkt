@@ -9,18 +9,25 @@
                     [linklet-export-variables raw:linklet-export-variables])
          (rename-in "linklet.rkt"
                     [linklet-directory? raw:linklet-directory?]
-                    [linklet-directory->hash raw:linklet-directory->hash])
+                    [linklet-directory->hash raw:linklet-directory->hash]
+                    [linklet-bundle? raw:linklet-bundle?]
+                    [linklet-bundle->hash raw:linklet-bundle->hash])
          "compiled-in-memory.rkt"
          "correlated-linklet.rkt"
          "built-in-symbol.rkt")
 
 (provide linklet-directory?
          linklet-directory->hash
+         linklet-bundle?
+         linklet-bundle->hash
          (except-out (all-from-out "linklet.rkt")
                      raw:linklet-directory?
-                     raw:linklet-directory->hash)
+                     raw:linklet-directory->hash
+                     raw:linklet-bundle?
+                     raw:linklet-bundle->hash)
          linklet?
          recompile-linklet
+         decompile-linklet
          eval-linklet
          instantiate-linklet
          linklet-import-variables
@@ -29,12 +36,25 @@
 
 (define (linklet-directory? v)
   (or (raw:linklet-directory? v)
-      (compiled-in-memory? v)))
+      (and (compiled-in-memory? v)
+           (raw:linklet-directory?
+            (compiled-in-memory-linklet-directory v)))))
+
+(define (linklet-bundle? v)
+  (or (raw:linklet-bundle? v)
+      (and (compiled-in-memory? v)
+           (raw:linklet-bundle?
+            (compiled-in-memory-linklet-directory v)))))
 
 (define (linklet-directory->hash ld)
   (raw:linklet-directory->hash (if (compiled-in-memory? ld)
                                    (compiled-in-memory-linklet-directory ld)
                                    ld)))
+
+(define (linklet-bundle->hash lb)
+  (raw:linklet-bundle->hash (if (compiled-in-memory? lb)
+                                (compiled-in-memory-linklet-directory lb)
+                                lb)))
 
 (define (linklet? l)
   (or (raw:linklet? l)
@@ -59,6 +79,11 @@
 
 (define (linklet-export-variables lnk)
   (raw:linklet-export-variables (force-compile-linklet lnk)))
+
+(define/who (decompile-linklet lnk)
+  (check who linklet? lnk)
+  (and (correlated-linklet? lnk)
+       (correlated-linklet-expr lnk)))
 
 (define/who (linklet-body-reserved-symbol? s)
   (check who symbol? s)

@@ -24,7 +24,9 @@ Information in a @tech{linklet bundle} is keyed by either a symbol or
 a @tech{fixnum}. A @tech{linklet bundle} containing
 @tech{linklet}s can be marshaled to and from a byte stream by
 @racket[write] and (with @racket[read-accept-compiled] is enabled)
-@racket[read].
+@racket[read]. A compiled form in the sense of
+@racket[compiled-expression?] (such as the result from
+@racket[compile]) may be a linklet bundle.
 
 When a Racket module has submodules, the @tech{linklet bundles} for
 the module and the submodules are grouped together in a
@@ -38,6 +40,8 @@ equivalently viewed as a mapping from a lists of symbols to a
 directory} can be marshaled to and from a byte stream by
 @racket[write] and @racket[read]; the marshaled form allows individual
 @tech{linklet bundles} to be loaded independently.
+A compiled form in the sense of @racket[compiled-expression?] (such as
+the result from @racket[compile]) may be a linklet directory.
 
 A linklet consists of a set of variable definitions and expressions,
 an exported subset of the defined variable names, a set of variables to export
@@ -367,6 +371,18 @@ for @racket[linklet-add-target-machine-info], but in a form that can be
 portably serialized via @racketmodname[racket/fasl].
 
 @history[#:added "8.17.0.3"]}
+
+
+@defproc[(decompile-linklet [linklet linklet?]) (or/c #f correlated? any/c)]{
+
+Attempts to recompile a linklet back into the S-expression form that
+@racket[compile-linklet] expects. If the linklet cannot be decompiled,
+the result is @racket[#f]. A linklet that is generated via
+@racket[compile] with @racket[current-compile-target-machine] set to
+@racket[#f] (for machine-independent bytecode) always can be
+decompiled.
+
+@history[#:added "8.18.0.19"]}
 
 
 @defproc[(linklet-directory? [v any/c]) boolean?]{
