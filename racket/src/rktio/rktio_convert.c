@@ -22,7 +22,7 @@
 
 #if defined(RKTIO_SYSTEM_WINDOWS)
 # define RKTIO_HAVE_ICU /* we avoid needing a header on Windows */
-#elif defined(RLTIO_HAVE_ICU)
+#elif defined(RKTIO_HAVE_ICU)
 # include "unicode/utypes.h" /* Basic ICU data types  */
 # include "unicode/ucnv.h"   /* C Converter API */
 # include "unicode/uloc.h"   /* for precautionary thread initialization */
@@ -740,7 +740,7 @@ static UConverter *rktio_ucnv_open_and_set_callbacks(const char *converterName,
   *error = U_MEMORY_ALLOCATION_ERROR;
   return NULL;
 #else
-  UConverter ucnv = ucnv_open(converterName, error);
+  UConverter *ucnv = ucnv_open(converterName, error);
   if (U_FAILURE(*error))
     return NULL;
   *error = U_ZERO_ERROR;
@@ -817,7 +817,7 @@ static void rktio_icu_convert_reset(rktio_t *rktio, rktio_icu_converter_t *cvt)
 #endif
 }
 
-static intptr_t rktio_UFailure_to_racket(UErrorCode errorCode)
+static intptr_t rktio_UFailure_to_racket(rktio_t *rktio, UErrorCode errorCode)
 {
   /* invariant: UFailure(errorCode) */
   if (U_BUFFER_OVERFLOW_ERROR == errorCode)
@@ -877,7 +877,7 @@ static intptr_t rktio_icu_convert(rktio_t *rktio,
                      &errorCode);
       *out_left = *out_left - (target - *out);
       *out = target;
-      return (U_SUCCESS(errorCode)) ? 0 : rktio_UFailure_to_racket(errorCode);
+      return (U_SUCCESS(errorCode)) ? 0 : rktio_UFailure_to_racket(rktio, errorCode);
     };
   } else {
     /* Main case: in is not NULL and *in is not NULL */
@@ -902,7 +902,7 @@ static intptr_t rktio_icu_convert(rktio_t *rktio,
     *in = source;
     *out_left = *out_left - (target - *out);
     *out = target;
-    return (U_SUCCESS(errorCode)) ? (intptr_t)ret : rktio_UFailure_to_racket(errorCode);
+    return (U_SUCCESS(errorCode)) ? (intptr_t)ret : rktio_UFailure_to_racket(rktio, errorCode);
   };
 #endif
 }
