@@ -817,6 +817,20 @@ static void rktio_icu_convert_reset(rktio_t *rktio, rktio_icu_converter_t *cvt)
 #endif
 }
 
+static intptr_t rktio_UErrorCode_to_racket(UErrorCode errorCode)
+{
+  /* invariant: UFailure(errorCode) */
+  if (U_BUFFER_OVERFLOW_ERROR == errorCode)
+    set_racket_error(RKTIO_ERROR_CONVERT_NOT_ENOUGH_SPACE);
+  else if (U_TRUNCATED_CHAR_FOUND == errorCode)
+    set_racket_error(RKTIO_ERROR_CONVERT_PREMATURE_END);
+  else if ((U_ILLEGAL_CHAR_FOUND == errorCode) || (U_INVALID_CHAR_FOUND == errorCode))
+    set_racket_error(RKTIO_ERROR_CONVERT_BAD_SEQUENCE);
+  else
+    set_racket_error(RKTIO_ERROR_CONVERT_OTHER);
+  return RKTIO_CONVERT_ERROR;
+}
+
 static intptr_t rktio_icu_convert(rktio_t *rktio,
                                   rktio_icu_converter_t *cvt,
                                   char **in, intptr_t *in_left,
@@ -863,14 +877,7 @@ static intptr_t rktio_icu_convert(rktio_t *rktio,
                      &errorCode);
       *out_left = *out_left - (target - *out);
       *out = target;
-      if (U_SUCCESS(errorCode)) {
-        return 0;
-      } else {
-        set_racket_error((U_BUFFER_OVERFLOW_ERROR == errorCode)
-                         ? RKTIO_ERROR_CONVERT_NOT_ENOUGH_SPACE
-                         : RKTIO_ERROR_CONVERT_OTHER); /* ? */
-        return RKTIO_CONVERT_ERROR;
-      };
+      return (U_SUCCESS(errorCode)) ? 0 : rktio_UErrorCode_to_racket(errorCode);
     };
   } else {
     /* Main case: in is not NULL and *in is not NULL */
@@ -895,17 +902,7 @@ static intptr_t rktio_icu_convert(rktio_t *rktio,
     *in = source;
     *out_left = *out_left - (target - *out);
     *out = target;
-    if (U_SUCCESS(errorCode))
-      return (intptr_t)ret;
-    if (U_BUFFER_OVERFLOW_ERROR == errorCode)
-      set_racket_error(RKTIO_ERROR_CONVERT_NOT_ENOUGH_SPACE);
-    else if (U_TRUNCATED_CHAR_FOUND == errorCode)
-      set_racket_error(RKTIO_ERROR_CONVERT_PREMATURE_END);
-    else if ((U_ILLEGAL_CHAR_FOUND == errorCode) || (U_INVALID_CHAR_FOUND == errorCode))
-      set_racket_error(RKTIO_ERROR_CONVERT_BAD_SEQUENCE);
-    else
-      set_racket_error(RKTIO_ERROR_CONVERT_OTHER);
-    return RKTIO_CONVERT_ERROR;
+    return (U_SUCCESS(errorCode)) ? (intptr_t)ret : rktio_UErrorCode_to_racket(errorCode);
   };
 #endif
 }
