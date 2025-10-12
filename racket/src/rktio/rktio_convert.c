@@ -817,7 +817,7 @@ static void rktio_icu_convert_reset(rktio_t *rktio, rktio_icu_converter_t *cvt)
 #endif
 }
 
-static intptr_t rktio_UErrorCode_to_racket(UErrorCode errorCode)
+static intptr_t rktio_UFailure_to_racket(UErrorCode errorCode)
 {
   /* invariant: UFailure(errorCode) */
   if (U_BUFFER_OVERFLOW_ERROR == errorCode)
@@ -877,7 +877,7 @@ static intptr_t rktio_icu_convert(rktio_t *rktio,
                      &errorCode);
       *out_left = *out_left - (target - *out);
       *out = target;
-      return (U_SUCCESS(errorCode)) ? 0 : rktio_UErrorCode_to_racket(errorCode);
+      return (U_SUCCESS(errorCode)) ? 0 : rktio_UFailure_to_racket(errorCode);
     };
   } else {
     /* Main case: in is not NULL and *in is not NULL */
@@ -902,7 +902,7 @@ static intptr_t rktio_icu_convert(rktio_t *rktio,
     *in = source;
     *out_left = *out_left - (target - *out);
     *out = target;
-    return (U_SUCCESS(errorCode)) ? (intptr_t)ret : rktio_UErrorCode_to_racket(errorCode);
+    return (U_SUCCESS(errorCode)) ? (intptr_t)ret : rktio_UFailure_to_racket(errorCode);
   };
 #endif
 }
