@@ -3950,9 +3950,9 @@ char *scheme_strdup_and_free(const char *str);
 Scheme_Object *scheme_maybe_build_path(Scheme_Object *base, Scheme_Object *elem);
 
 #ifdef SCHEME_BIG_ENDIAN
-# define MZ_UCS4_NAME "UCS-4BE"
+# define MZ_UCS4_NAME "UTF-32BE"
 #else
-# define MZ_UCS4_NAME "UCS-4LE"
+# define MZ_UCS4_NAME "UTF-32LE"
 #endif
 
 #define SCHEME_SYM_UNINTERNEDP(o) (MZ_OPT_HASH_KEY(&((Scheme_Symbol *)(o))->iso) & 0x1)
