@@ -844,8 +844,8 @@ static intptr_t rktio_UFailure_to_racket(rktio_t *rktio, UErrorCode errorCode)
     break;
   default:
     set_racket_error(RKTIO_ERROR_CONVERT_OTHER);
-    return RKTIO_CONVERT_ERROR;
   };
+  return RKTIO_CONVERT_ERROR;
 }
 
 static intptr_t rktio_icu_convert(rktio_t *rktio,
