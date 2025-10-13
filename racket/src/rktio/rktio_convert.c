@@ -758,15 +758,14 @@ static UConverter *rktio_ucnv_open_and_set_callbacks(const char *converterName,
   return NULL;
 #else
   UConverter *ucnv = ucnv_open(converterName, error);
-  if (U_FAILURE(*error))
-    return NULL;
-  *error = U_ZERO_ERROR;
   ucnv_setToUCallBack(ucnv, UCNV_TO_U_CALLBACK_STOP, NULL, NULL, NULL, error);
-  if (U_FAILURE(*error))
-    return NULL;
-  *error = U_ZERO_ERROR;
   ucnv_setFromUCallBack(ucnv, UCNV_FROM_U_CALLBACK_STOP,  NULL, NULL, NULL, error);
-  return (U_FAILURE(*error)) ? NULL : ucnv;
+  if (U_FAILURE(*error)) {
+    if (NULL != ucnv)
+      ucnv_close(ucnv);
+    return NULL;
+  }
+  return ucnv;
 #endif
 }
 
@@ -779,11 +778,12 @@ static rktio_icu_converter_t *rktio_icu_converter_open(rktio_t *rktio,
   return NULL;
 #else
   UErrorCode errorCode = U_ZERO_ERROR;
-  rktio_icu_converter_t *cvt = (rktio_icu_converter_t *)calloc(1, sizeof(rktio_icu_converter_t));
+  rktio_icu_converter_t *cvt; 
   if (INIT_YES != icu_init_status) {
     set_racket_error(RKTIO_ERROR_UNSUPPORTED);
     return NULL;
   }
+  cvt = (rktio_icu_converter_t *)calloc(1, sizeof(rktio_icu_converter_t));
   if (NULL == cvt) {
     errno = ENOMEM;
     get_posix_error();
@@ -792,16 +792,10 @@ static rktio_icu_converter_t *rktio_icu_converter_open(rktio_t *rktio,
   cvt->pivotSource = &cvt->buf[0];
   cvt->pivotTarget = &cvt->buf[0];
   cvt->sourceCnv = rktio_ucnv_open_and_set_callbacks(from_enc, &errorCode);
-  if (U_FAILURE(errorCode)) {
-    free(cvt);
-    errno = (U_MEMORY_ALLOCATION_ERROR == errorCode) ? ENOMEM : EINVAL;
-    get_posix_error();
-    return NULL;
-  }
-  errorCode = U_ZERO_ERROR;
   cvt->targetCnv = rktio_ucnv_open_and_set_callbacks(to_enc, &errorCode);
   if (U_FAILURE(errorCode)) {
-    ucnv_close(cvt->sourceCnv);
+    if (NULL != cvt->sourceCnv)
+      ucnv_close(cvt->sourceCnv);
     free(cvt);
     errno = (U_MEMORY_ALLOCATION_ERROR == errorCode) ? ENOMEM : EINVAL;
     get_posix_error();
@@ -837,15 +831,21 @@ static void rktio_icu_convert_reset(rktio_t *rktio, rktio_icu_converter_t *cvt)
 static intptr_t rktio_UFailure_to_racket(rktio_t *rktio, UErrorCode errorCode)
 {
   /* invariant: UFailure(errorCode) */
-  if (U_BUFFER_OVERFLOW_ERROR == errorCode)
+  switch (errorCode) {
+  case U_BUFFER_OVERFLOW_ERROR:
     set_racket_error(RKTIO_ERROR_CONVERT_NOT_ENOUGH_SPACE);
-  else if (U_TRUNCATED_CHAR_FOUND == errorCode)
+    break;
+  case U_TRUNCATED_CHAR_FOUND:
     set_racket_error(RKTIO_ERROR_CONVERT_PREMATURE_END);
-  else if ((U_ILLEGAL_CHAR_FOUND == errorCode) || (U_INVALID_CHAR_FOUND == errorCode))
+    break;
+  case U_ILLEGAL_CHAR_FOUND:
+  case U_INVALID_CHAR_FOUND:
     set_racket_error(RKTIO_ERROR_CONVERT_BAD_SEQUENCE);
-  else
+    break;
+  default:
     set_racket_error(RKTIO_ERROR_CONVERT_OTHER);
-  return RKTIO_CONVERT_ERROR;
+    return RKTIO_CONVERT_ERROR;
+  };
 }
 
 static intptr_t rktio_icu_convert(rktio_t *rktio,
@@ -915,7 +915,7 @@ static intptr_t rktio_icu_convert(rktio_t *rktio,
                    0, /* flush */
                    &errorCode);
     ret = source - *in;
-    *in_left = *in_left - (ret);
+    *in_left = *in_left - ret;
     *in = source;
     *out_left = *out_left - (target - *out);
     *out = target;
