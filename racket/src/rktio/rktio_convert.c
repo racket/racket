@@ -38,29 +38,12 @@ static init_status_t icu_init_status = INIT_NOT_YET;
 static void init_iconv();
 static void init_icu();
 
-#include <stdio.h>
-char *init_status_to_string(init_status_t status) {
-  switch (status) {
-  case INIT_YES:
-    return "yes";
-  case INIT_NO:
-    return "no";
-  case INIT_NOT_YET:
-    return "not_yet";
-  default:
-    return "oops";
-  };
-}
-
 void rktio_convert_init(rktio_t *rktio) {
 #ifdef RKTIO_USE_XLOCALE
   rktio->locale = LC_GLOBAL_LOCALE;
 #endif
   init_iconv();
   init_icu();
-  fprintf(stderr, "%s : %s\n%s : %s\n",
-          "iconv_init_status", init_status_to_string(iconv_init_status),
-          "icu_init_status", init_status_to_string(icu_init_status));
 }
 
 void rktio_convert_deinit(rktio_t *rktio) {
@@ -928,13 +911,11 @@ rktio_converter_t *rktio_converter_open(rktio_t *rktio,
                                         const char *to_enc,
                                         const char *from_enc)
 {
-  if (INIT_YES == icu_init_status) {
-    fprintf(stderr, "icu to %s from %s\n", to_enc, from_enc);
+  if (INIT_YES == icu_init_status)
     return (rktio_converter_t *)rktio_icu_converter_open(rktio, to_enc, from_enc);
-  } else if (INIT_YES == iconv_init_status) {
-    fprintf(stderr, "ionv to %s from %s\n", to_enc, from_enc);
+  else if (INIT_YES == iconv_init_status)
     return (rktio_converter_t *)rktio_iconv_converter_open(rktio, to_enc, from_enc);
-  } else {
+  else {
     set_racket_error(RKTIO_ERROR_UNSUPPORTED);
     return NULL;
   }
