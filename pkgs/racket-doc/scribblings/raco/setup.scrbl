@@ -208,11 +208,16 @@ flags:
    documentation.}
 
  @item{@DFlag{doc-pdf} @nonterm{dir} --- in addition to building HTML
-   documentation, render documentation to PDF and place files in
-   @nonterm{dir}.}
+ documentation, render documentation to PDF and place files in
+ @nonterm{dir}.}
+
+ @item{@DFlag{doc-markdown} @nonterm{dir} --- in
+ addition to building HTML documentation, render documentation to
+ Markdown (using Scribble's Markdown backend) and place files in
+ @nonterm{dir}.}
 
  @item{@DFlag{no-pkg-deps} or @Flag{K} --- refrain from checking
-  whether dependencies among libraries are properly reflected by
+ whether dependencies among libraries are properly reflected by
   package-level dependency declarations, whether modules are declared
   by multiple packages, and whether package version dependencies are
   satisfied. See @secref["setup-check-deps"] for more information.}
