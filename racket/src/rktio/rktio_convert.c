@@ -280,16 +280,6 @@ typedef enum {
   UCNV_CLOSE = 4,        
   UCNV_CLONE = 5         
 } UConverterCallbackReason;
-typedef struct {
-  uint16_t size;              
-  UBool flush;                
-  UConverter *converter;      
-  const UChar *source;        
-  const UChar *sourceLimit;   
-  char *target;               
-  const char *targetLimit;    
-  int32_t *offsets;           
-} UConverterFromUnicodeArgs;
 #endif
 
 #ifdef RKTIO_SYSTEM_WINDOWS
