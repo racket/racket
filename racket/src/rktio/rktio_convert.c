@@ -262,7 +262,6 @@ rktio_char16_t *rktio_get_dll_path(rktio_char16_t *s) { return NULL; }
    supporting ICU minimizes conditional compilation later. */
 typedef rktio_char16_t UChar;
 typedef intptr_t UConverter;
-/* TODO: are the rest of these actually needed as stubs for non-Windows? */
 typedef char UBool;
 typedef int UErrorCode;
 # define U_ZERO_ERROR               0
@@ -273,10 +272,27 @@ typedef int UErrorCode;
 # define U_BUFFER_OVERFLOW_ERROR   15
 # define U_SUCCESS(x) ((x)<=U_ZERO_ERROR)
 # define U_FAILURE(x) ((x)>U_ZERO_ERROR)
+typedef enum {
+  UCNV_UNASSIGNED = 0,
+  UCNV_ILLEGAL = 1,
+  UCNV_IRREGULAR = 2,
+  UCNV_RESET = 3,
+  UCNV_CLOSE = 4,
+  UCNV_CLONE = 5
+} UConverterCallbackReason;
+typedef struct {
+  rktio_char16_t size;
+  UBool flush;
+  UConverter *converter;
+  const char *source;
+  const char *sourceLimit;
+  UChar *target;
+  const UChar *targetLimit;
+  rktio_int32_t *offsets;
+} UConverterToUnicodeArgs;
 #endif
 
 #ifdef RKTIO_SYSTEM_WINDOWS
-typedef int rktio_icu_int32_t;
 typedef UConverter (*ucnv_open_proc_t)(const char *converterName, UErrorCode *err);
 typedef void (*ucnv_close_proc_t)(UConverter *converter);
 typedef void (*ucnv_reset_proc_t)(UConverter *converter);
@@ -287,13 +303,8 @@ typedef void (*ucnv_convertEx_proc_t)(UConverter *targetCnv, UConverter *sourceC
                                       UChar **pivotSource, UChar **pivotTarget,
                                       const UChar *pivotLimit,
                                       UBool reset, UBool flush, UErrorCode *pErrorCode);
-typedef void (*UConverterToUCallback)(const void *context, void *args,
-                                      const char *codeUnits, rktio_icu_int32_t length,
-                                      rktio_icu_int32_t reason, UErrorCode *pErrorCode);
-typedef void (*UConverterFromUCallback)(const void *context, void *args,
-                                        const UChar *codeUnits, rktio_icu_int32_t length,
-                                        rktio_icu_int32_t codePoint,
-                                        rktio_icu_int32_t reason, UErrorCode *pErrorCode);
+typedef void *UConverterToUCallback;
+typedef void *UConverterFromUCallback;
 typedef void (*ucnv_setToUCallBack_proc_t)(UConverter *converter,
                                            UConverterToUCallback newAction, const void *newContext,
                                            UConverterToUCallback *oldAction, const void **oldContext,
@@ -309,7 +320,6 @@ static ucnv_reset_proc_t ucnv_reset = NULL;
 static ucnv_convertEx_proc_t ucnv_convertEx = NULL;
 static ucnv_setToUCallBack_proc_t ucnv_setToUCallBack = NULL;
 static ucnv_setFromUCallBack_proc_t ucnv_setFromUCallBack = NULL;
-static UConverterToUCallback UCNV_TO_U_CALLBACK_STOP = NULL;
 static UConverterFromUCallback UCNV_FROM_U_CALLBACK_STOP = NULL;
 #endif
 
@@ -336,7 +346,7 @@ static void init_icu()
 #else
   /* Since Windows 10 version 1903, icu.dll is provided as a system DLL.
      We could push support back to 1703 by using icuuc.dll,
-     but we would need to arrange to call CoInitializeEx from each thread before usinc ICU,
+     but we would need to arrange to call CoInitializeEx from each thread before using ICU,
      which is not needed with icu.dll.
      https://learn.microsoft.com/en-us/windows/win32/intl/international-components-for-unicode--icu-
   */
@@ -357,14 +367,12 @@ static void init_icu()
     ucnv_convertEx = (ucnv_convertEx_proc_t)GetProcAddress(m, "ucnv_convertEx");
     ucnv_setToUCallBack = (ucnv_setToUCallBack_proc_t)GetProcAddress(m, "ucnv_setToUCallBack");
     ucnv_setFromUCallBack = (ucnv_setFromUCallBack_proc_t)GetProcAddress(m, "ucnv_setFromUCallBack");
-    UCNV_TO_U_CALLBACK_STOP = (UConverterToUCallback)GetProcAddress(m, "UCNV_TO_U_CALLBACK_STOP");
     UCNV_FROM_U_CALLBACK_STOP = (UConverterFromUCallback)GetProcAddress(m, "UCNV_FROM_U_CALLBACK_STOP");
     uloc_getDefault = (uloc_getDefault_proc_t)GetProcAddress(m, "uloc_getDefault");
   }
   
   if (!ucnv_open || !ucnv_close || !ucnv_reset || !ucnv_convertEx
-      || !ucnv_setToUCallBack || !ucnv_setFromUCallBack
-      || !UCNV_TO_U_CALLBACK_STOP || !UCNV_FROM_U_CALLBACK_STOP
+      || !ucnv_setToUCallBack || !ucnv_setFromUCallBack || !UCNV_FROM_U_CALLBACK_STOP
       || !uloc_getDefault) {
     ucnv_open = NULL;
     ucnv_close = NULL;
@@ -372,7 +380,6 @@ static void init_icu()
     ucnv_convertEx = NULL;
     ucnv_setToUCallBack = NULL;
     ucnv_setFromUCallBack = NULL;
-    UCNV_TO_U_CALLBACK_STOP = NULL;
     UCNV_FROM_U_CALLBACK_STOP = NULL;
     uloc_getDefault = NULL;
     icu_init_status = INIT_NO;
@@ -729,6 +736,26 @@ static intptr_t rktio_iconv_convert(rktio_t *rktio,
   return (intptr_t)r;
 }
 
+void rktio_to_u_callback(const void *userData,
+                         UConverterToUnicodeArgs *toUArgs,
+                         const char *codeUnits,
+                         rktio_int32_t length,
+                         UConverterCallbackReason reason,
+                         UErrorCode *errorCode)
+{
+  /* supplied to ucnv_setToUCallBack */
+  switch (reason) {
+  case UCNV_RESET:
+  case UCNV_CLOSE:
+  case UCNV_CLONE:
+    return;
+  default:
+    /* back up to before the bad bytes */
+    toUArgs->source = toUArgs->source - length;
+    return;
+  };
+}
+
 static UConverter *rktio_ucnv_open_and_set_callbacks(const char *converterName,
                                                      UErrorCode *error)
 {
@@ -741,7 +768,7 @@ static UConverter *rktio_ucnv_open_and_set_callbacks(const char *converterName,
   return NULL;
 #else
   UConverter *ucnv = ucnv_open(converterName, error);
-  ucnv_setToUCallBack(ucnv, UCNV_TO_U_CALLBACK_STOP, NULL, NULL, NULL, error);
+  ucnv_setToUCallBack(ucnv, rktio_to_u_callback, NULL, NULL, NULL, error);
   ucnv_setFromUCallBack(ucnv, UCNV_FROM_U_CALLBACK_STOP,  NULL, NULL, NULL, error);
   if (U_FAILURE(*error)) {
     if (NULL != ucnv)
