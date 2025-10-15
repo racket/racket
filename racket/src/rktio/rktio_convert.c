@@ -262,7 +262,6 @@ rktio_char16_t *rktio_get_dll_path(rktio_char16_t *s) { return NULL; }
    supporting ICU minimizes conditional compilation later. */
 typedef rktio_char16_t UChar;
 typedef intptr_t UConverter;
-/* TODO: are the rest of these actually needed as stubs for non-Windows? */
 typedef char UBool;
 typedef int UErrorCode;
 # define U_ZERO_ERROR               0
@@ -273,10 +272,17 @@ typedef int UErrorCode;
 # define U_BUFFER_OVERFLOW_ERROR   15
 # define U_SUCCESS(x) ((x)<=U_ZERO_ERROR)
 # define U_FAILURE(x) ((x)>U_ZERO_ERROR)
+typedef enum {
+  UCNV_UNASSIGNED = 0,  
+  UCNV_ILLEGAL = 1,     
+  UCNV_IRREGULAR = 2,   
+  UCNV_RESET = 3,       
+  UCNV_CLOSE = 4,        
+  UCNV_CLONE = 5         
+} UConverterCallbackReason;
 #endif
 
 #ifdef RKTIO_SYSTEM_WINDOWS
-typedef int rktio_icu_int32_t;
 typedef UConverter (*ucnv_open_proc_t)(const char *converterName, UErrorCode *err);
 typedef void (*ucnv_close_proc_t)(UConverter *converter);
 typedef void (*ucnv_reset_proc_t)(UConverter *converter);
@@ -287,13 +293,8 @@ typedef void (*ucnv_convertEx_proc_t)(UConverter *targetCnv, UConverter *sourceC
                                       UChar **pivotSource, UChar **pivotTarget,
                                       const UChar *pivotLimit,
                                       UBool reset, UBool flush, UErrorCode *pErrorCode);
-typedef void (*UConverterToUCallback)(const void *context, void *args,
-                                      const char *codeUnits, rktio_icu_int32_t length,
-                                      rktio_icu_int32_t reason, UErrorCode *pErrorCode);
-typedef void (*UConverterFromUCallback)(const void *context, void *args,
-                                        const UChar *codeUnits, rktio_icu_int32_t length,
-                                        rktio_icu_int32_t codePoint,
-                                        rktio_icu_int32_t reason, UErrorCode *pErrorCode);
+typedef void *UConverterToUCallback;
+typedef void *UConverterFromUCallback;
 typedef void (*ucnv_setToUCallBack_proc_t)(UConverter *converter,
                                            UConverterToUCallback newAction, const void *newContext,
                                            UConverterToUCallback *oldAction, const void **oldContext,
@@ -309,7 +310,6 @@ static ucnv_reset_proc_t ucnv_reset = NULL;
 static ucnv_convertEx_proc_t ucnv_convertEx = NULL;
 static ucnv_setToUCallBack_proc_t ucnv_setToUCallBack = NULL;
 static ucnv_setFromUCallBack_proc_t ucnv_setFromUCallBack = NULL;
-static UConverterToUCallback UCNV_TO_U_CALLBACK_STOP = NULL;
 static UConverterFromUCallback UCNV_FROM_U_CALLBACK_STOP = NULL;
 #endif
 
@@ -357,14 +357,12 @@ static void init_icu()
     ucnv_convertEx = (ucnv_convertEx_proc_t)GetProcAddress(m, "ucnv_convertEx");
     ucnv_setToUCallBack = (ucnv_setToUCallBack_proc_t)GetProcAddress(m, "ucnv_setToUCallBack");
     ucnv_setFromUCallBack = (ucnv_setFromUCallBack_proc_t)GetProcAddress(m, "ucnv_setFromUCallBack");
-    UCNV_TO_U_CALLBACK_STOP = (UConverterToUCallback)GetProcAddress(m, "UCNV_TO_U_CALLBACK_STOP");
     UCNV_FROM_U_CALLBACK_STOP = (UConverterFromUCallback)GetProcAddress(m, "UCNV_FROM_U_CALLBACK_STOP");
     uloc_getDefault = (uloc_getDefault_proc_t)GetProcAddress(m, "uloc_getDefault");
   }
   
   if (!ucnv_open || !ucnv_close || !ucnv_reset || !ucnv_convertEx
-      || !ucnv_setToUCallBack || !ucnv_setFromUCallBack
-      || !UCNV_TO_U_CALLBACK_STOP || !UCNV_FROM_U_CALLBACK_STOP
+      || !ucnv_setToUCallBack || !ucnv_setFromUCallBack || !UCNV_FROM_U_CALLBACK_STOP
       || !uloc_getDefault) {
     ucnv_open = NULL;
     ucnv_close = NULL;
@@ -372,7 +370,6 @@ static void init_icu()
     ucnv_convertEx = NULL;
     ucnv_setToUCallBack = NULL;
     ucnv_setFromUCallBack = NULL;
-    UCNV_TO_U_CALLBACK_STOP = NULL;
     UCNV_FROM_U_CALLBACK_STOP = NULL;
     uloc_getDefault = NULL;
     icu_init_status = INIT_NO;
@@ -646,14 +643,22 @@ typedef struct rktio_iconv_converter_t {
 } rktio_iconv_converter_t;
 
 #define ICU_BUF_SIZE 1024
+typedef struct rktio_icu_context_t rktio_icu_context_t;
 typedef struct rktio_icu_converter_t {
   rktio_converter_t tag;
+  rktio_icu_context_t *context;
   UConverter *sourceCnv;
   UConverter *targetCnv;
   UChar *pivotSource; /* pointer info buf */
   UChar *pivotTarget; /* pointer info buf */
   UChar buf[ICU_BUF_SIZE];
 } rktio_icu_converter_t;
+struct rktio_icu_context_t {
+  /* do a dance to work around callback contexts being `const void *` */
+  rktio_int32_t toUCallBack_error_length;
+  rktio_icu_converter_t converter; /* contains pointer back to this */
+};
+
 
 static rktio_iconv_converter_t *rktio_iconv_converter_open(rktio_t *rktio,
                                                            const char *to_enc,
@@ -729,19 +734,44 @@ static intptr_t rktio_iconv_convert(rktio_t *rktio,
   return (intptr_t)r;
 }
 
-static UConverter *rktio_ucnv_open_and_set_callbacks(const char *converterName,
+void rktio_to_u_callback(const void *userData,
+                         UConverterToUnicodeArgs *toUArgs,
+                         const char *codeUnits,
+                         rktio_int32_t length,
+                         UConverterCallbackReason reason,
+                         UErrorCode *errorCode)
+{
+  /* supplied to ucnv_setToUCallBack */
+  const rktio_icu_converter_t *cvt = (const rktio_icu_converter_t *)userData;
+  switch (reason) {
+  case UCNV_RESET:
+  case UCNV_CLOSE:
+    return;
+  case UCNV_CLONE:
+    /* TODO */
+    return;
+  default:
+    cvt->context->toUCallBack_error_length = length;
+    return;
+  };
+}
+
+static UConverter *rktio_ucnv_open_and_set_callbacks(rktio_icu_converter_t *cvt,
+                                                     const char *converterName,
                                                      UErrorCode *error)
 {
   /* internal helper: use instead of ucnv_open
    * to stop on illegal/unmapped/invalid sequences
    * (default behavior is to use a substitution character)
+   *
+   * NOTE: the rktio_icu_converter_t is not fully initiallized
    */
 #ifndef RKTIO_HAVE_ICU
   *error = U_MEMORY_ALLOCATION_ERROR;
   return NULL;
 #else
   UConverter *ucnv = ucnv_open(converterName, error);
-  ucnv_setToUCallBack(ucnv, UCNV_TO_U_CALLBACK_STOP, NULL, NULL, NULL, error);
+  ucnv_setToUCallBack(ucnv, rktio_to_u_callback, cvt, NULL, NULL, error);
   ucnv_setFromUCallBack(ucnv, UCNV_FROM_U_CALLBACK_STOP,  NULL, NULL, NULL, error);
   if (U_FAILURE(*error)) {
     if (NULL != ucnv)
@@ -761,25 +791,29 @@ static rktio_icu_converter_t *rktio_icu_converter_open(rktio_t *rktio,
   return NULL;
 #else
   UErrorCode errorCode = U_ZERO_ERROR;
+  rktio_icu_context_t *ctxt;
   rktio_icu_converter_t *cvt; 
   if (INIT_YES != icu_init_status) {
     set_racket_error(RKTIO_ERROR_UNSUPPORTED);
     return NULL;
   }
-  cvt = (rktio_icu_converter_t *)calloc(1, sizeof(rktio_icu_converter_t));
-  if (NULL == cvt) {
+  ctxt = (rktio_icu_context_t *)calloc(1, sizeof(rktio_icu_context_t));
+  if (NULL == ctxt) {
     errno = ENOMEM;
     get_posix_error();
     return NULL;
   }
+  ctxt->toUCallBack_error_length = 0;
+  cvt = &ctxt->converter;
+  cvt->context = ctxt;
   cvt->pivotSource = &cvt->buf[0];
   cvt->pivotTarget = &cvt->buf[0];
-  cvt->sourceCnv = rktio_ucnv_open_and_set_callbacks(from_enc, &errorCode);
-  cvt->targetCnv = rktio_ucnv_open_and_set_callbacks(to_enc, &errorCode);
+  cvt->sourceCnv = rktio_ucnv_open_and_set_callbacks(cvt, from_enc, &errorCode);
+  cvt->targetCnv = rktio_ucnv_open_and_set_callbacks(cvt, to_enc, &errorCode);
   if (U_FAILURE(errorCode)) {
     if (NULL != cvt->sourceCnv)
       ucnv_close(cvt->sourceCnv);
-    free(cvt);
+    free(ctxt); /* cnv is allocated inside ctxt */
     errno = (U_MEMORY_ALLOCATION_ERROR == errorCode) ? ENOMEM : EINVAL;
     get_posix_error();
     return NULL;
@@ -794,7 +828,7 @@ static void rktio_icu_converter_close(rktio_t *rktio, rktio_icu_converter_t *cvt
   if (INIT_YES == icu_init_status) {
     ucnv_close(cvt->sourceCnv);
     ucnv_close(cvt->targetCnv);
-    free(cvt);
+    free(cvt->context); /* cvt allocated as part of context */
   }
 #endif
 }
@@ -803,6 +837,7 @@ static void rktio_icu_convert_reset(rktio_t *rktio, rktio_icu_converter_t *cvt)
 {
 #ifdef RKTIO_HAVE_ICU
   if (INIT_YES == icu_init_status) {
+    cvt->context->toUCallBack_error_length = 0;
     ucnv_reset(cvt->sourceCnv);
     ucnv_reset(cvt->targetCnv);
     cvt->pivotSource = &cvt->buf[0];
@@ -877,6 +912,7 @@ static intptr_t rktio_icu_convert(rktio_t *rktio,
                      &errorCode);
       *out_left = *out_left - (target - *out);
       *out = target;
+      cvt->context->toUCallBack_error_length = 0;
       return (U_SUCCESS(errorCode)) ? 0 : rktio_UFailure_to_racket(rktio, errorCode);
     };
   } else {
@@ -897,7 +933,8 @@ static intptr_t rktio_icu_convert(rktio_t *rktio,
                    0, /* reset */
                    0, /* flush */
                    &errorCode);
-    ret = source - *in;
+    ret = (source - *in) - cvt->context->toUCallBack_error_length;
+    cvt->context->toUCallBack_error_length = 0;
     *in_left = *in_left - ret;
     *in = source;
     *out_left = *out_left - (target - *out);
