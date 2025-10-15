@@ -261,6 +261,7 @@ rktio_char16_t *rktio_get_dll_path(rktio_char16_t *s) { return NULL; }
    but making these few definitions available when we are *not* actually
    supporting ICU minimizes conditional compilation later. */
 typedef rktio_char16_t UChar;
+typedef int rktio_int32_t; /* FIXME why is the one in "rktio_config.h" not seed? */
 typedef intptr_t UConverter;
 typedef char UBool;
 typedef int UErrorCode;
