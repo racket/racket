@@ -273,23 +273,23 @@ typedef int UErrorCode;
 # define U_SUCCESS(x) ((x)<=U_ZERO_ERROR)
 # define U_FAILURE(x) ((x)>U_ZERO_ERROR)
 typedef enum {
-  UCNV_UNASSIGNED = 0,
-  UCNV_ILLEGAL = 1,
-  UCNV_IRREGULAR = 2,
-  UCNV_RESET = 3,
-  UCNV_CLOSE = 4,
-  UCNV_CLONE = 5
+  UCNV_UNASSIGNED = 0,  
+  UCNV_ILLEGAL = 1,     
+  UCNV_IRREGULAR = 2,   
+  UCNV_RESET = 3,       
+  UCNV_CLOSE = 4,        
+  UCNV_CLONE = 5         
 } UConverterCallbackReason;
 typedef struct {
-  rktio_uint16_t size;
-  UBool flush;
-  UConverter *converter;
-  const char *source;
-  const char *sourceLimit;
-  UChar *target;
-  const UChar *targetLimit;
-  rktio_int32_t *offsets;
-} UConverterToUnicodeArgs;
+  uint16_t size;              
+  UBool flush;                
+  UConverter *converter;      
+  const UChar *source;        
+  const UChar *sourceLimit;   
+  char *target;               
+  const char *targetLimit;    
+  int32_t *offsets;           
+} UConverterFromUnicodeArgs;
 #endif
 
 #ifdef RKTIO_SYSTEM_WINDOWS
