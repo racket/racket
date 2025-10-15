@@ -281,7 +281,7 @@ typedef enum {
   UCNV_CLONE = 5
 } UConverterCallbackReason;
 typedef struct {
-  rktio_char16_t size;
+  rktio_uint16_t size;
   UBool flush;
   UConverter *converter;
   const char *source;
