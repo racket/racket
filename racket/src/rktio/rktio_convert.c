@@ -934,11 +934,11 @@ static intptr_t rktio_icu_convert(rktio_t *rktio,
                    0, /* flush */
                    &errorCode);
     ret = (source - *in) - cvt->context->toUCallBack_error_length;
+    cvt->context->toUCallBack_error_length = 0;
     *in_left = *in_left - ret;
-    *in = source - cvt->context->toUCallBack_error_length;
+    *in = source;
     *out_left = *out_left - (target - *out);
     *out = target;
-    cvt->context->toUCallBack_error_length = 0;
     return (U_SUCCESS(errorCode)) ? (intptr_t)ret : rktio_UFailure_to_racket(rktio, errorCode);
   };
 #endif
