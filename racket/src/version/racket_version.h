@@ -13,10 +13,10 @@
    needs to be updated separately.
 */
 
-#define MZSCHEME_VERSION_X 8
-#define MZSCHEME_VERSION_Y 18
+#define MZSCHEME_VERSION_X 9
+#define MZSCHEME_VERSION_Y 0
 #define MZSCHEME_VERSION_Z 0
-#define MZSCHEME_VERSION_W 19
+#define MZSCHEME_VERSION_W 1
 
 /* A level of indirection makes `#` work as needed: */
 #define AS_a_STR_HELPER(x) #x
