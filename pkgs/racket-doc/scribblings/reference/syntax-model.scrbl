@@ -951,6 +951,17 @@ module is attached to a namespace through
 are transitively attached, but instances are attached only at
 phases at or below the namespace's @tech{base phase}.
 
+When a module is instantiated at a phase other than 0, any syntax
+literals in the module are shifted by the instantiation phase. When a
+module is imported with @racket[for-label], then provided bindings
+from multiple phases are all mapped to the @tech{label phase level},
+and they are unaffected by further phase shifting of a syntax object
+with those bindings. When a syntax object is shifted into the label
+phase level, however, only bindings in phase level 0 become bindings
+in the label phase level, and further phase shifting can adjust which
+of the original phase levels is shifted into the label phase; see
+@racket[syntax-shift-phase-level].
+
 @;------------------------------------------------------------------------
 @subsection[#:tag "macro-introduced-bindings"]{Macro-Introduced Bindings}
 

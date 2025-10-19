@@ -371,8 +371,14 @@ if a former representative becomes otherwise unreachable, then
 Returns a syntax object that is like @racket[stx], but with all of its
 top-level and module bindings shifted by @racket[shift] @tech{phase
 levels}. If @racket[shift] is @racket[#f], then only bindings
-at @tech{phase level} 0 are shifted to the @tech{label phase level}.
-If @racket[shift] is @racket[0], then the result is @racket[stx].}
+at @tech{phase level} 0 are shifted to the @tech{label phase level};
+shifting by an integer @racket[shift] effectively shifts
+which phase has been moved into the @tech{label phase level}.
+If @racket[shift] is @racket[0], then the result is @racket[stx].
+
+@history[#:changed "9.0.0.1" @elem{Shifting by an integer phase level adjust which
+                                   original phase is seen in the
+                                   @tech{label phase level}.}]}
 
 
 @defproc[(generate-temporaries [v stx-list?])

@@ -1621,6 +1621,57 @@
  (test #t eval '(lift)))
 
 ;; ----------------------------------------
+;; Check portal and label-phase shifting
+
+(module defines-portals-at-two-phases racket/base
+  (require (for-syntax racket/base))
+
+  (#%require
+   (portal r1 r2))
+  (#%require
+   (portal r2 dr))
+  (define dr 'ok)
+  (provide r1)
+
+  (begin-for-syntax
+    (#%require
+     (portal p0 d0))
+    (define d0 'ok)
+    (provide p0))
+
+  (begin-for-syntax
+    (#%require
+     (portal p1 p2))
+    (#%require
+     (portal p2 dp))
+    (define dp 'ok)
+    (provide p1)))
+
+(module uses-portals-at-two-phases racket/base
+  (require (for-label 'defines-portals-at-two-phases))
+  (provide results)
+
+  (define r1-id (identifier-binding-portal-syntax #'r1 #f))
+  (define p0-id (identifier-binding-portal-syntax #'p0 #f))
+  (define p1-id (identifier-binding-portal-syntax #'p1 #f))
+
+  (define results
+    (list
+     (and r1-id
+          (identifier-binding-portal-syntax
+           r1-id
+           #f))
+     (and p0-id
+          (syntax-shift-phase-level p0-id -1))
+     (and p1-id
+          (identifier-binding-portal-syntax
+           (syntax-shift-phase-level p1-id -1)
+           #f)))))
+
+(test '(dr d0 dp) map (lambda (id) (and id (syntax-e id)))
+      (dynamic-require ''uses-portals-at-two-phases 'results))
+
+;; ----------------------------------------
 ;; Check module lifting in a top-level context
 
 (define-syntax (do-lift-example-1 stx)

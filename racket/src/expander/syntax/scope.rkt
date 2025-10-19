@@ -816,8 +816,10 @@
       (intern-shifted-multi-scope (shifted-to-label-phase (phase- 0 (shifted-multi-scope-phase sms)))
                                   (shifted-multi-scope-multi-scope sms))])]
    [(shifted-to-label-phase? (shifted-multi-scope-phase sms))
-    ;; Numeric shift has no effect on bindings in phase #f
-    sms]
+    ;; Numeric shift on bindings in phase #f
+    (define from (shifted-to-label-phase-from (shifted-multi-scope-phase sms)))
+    (intern-shifted-multi-scope (shifted-to-label-phase (phase+ delta from))
+                                (shifted-multi-scope-multi-scope sms))]
    [else
     ;; Numeric shift added to an existing numeric shift
     (intern-shifted-multi-scope (phase+ delta (shifted-multi-scope-phase sms))
