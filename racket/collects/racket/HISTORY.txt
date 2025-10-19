@@ -1,4 +1,4 @@
-Version ...
+Version 9.0, October 2025
 Add support for recording a thread's results via the `#:keep` option
  to `thread`; results are returned by `thread-wait`
 CS: Add support for parallel threads via the `#:pool` argument to
@@ -8,6 +8,11 @@ CS: Expand the set of primitives that can be used in futures without
  parallelism via parallel threads
 Adapt and expand the role of "uninterruptible" mode and the API
  provided by `ffi/unsafe/atomic`
+Add `black-box`
+racket/linklet: Add `decompile-linklet`
+BC: Change `processor-count` to always return parallel count
+Add AArch64 "natipkg" packages, which are useful for package-build
+ and package-testing infrastructure
 
 Version 8.18, July 2025
 Build-system improvements support containers registered at Docker Hub
