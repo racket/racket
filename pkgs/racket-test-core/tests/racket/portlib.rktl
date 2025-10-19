@@ -980,6 +980,29 @@
  (lambda (exn)
    (regexp-match? #rx"^reencode-output-port:" (exn-message exn))))
 
+(let ()
+  (define (available? from to)
+    (cond
+      [(bytes-open-converter from to)
+       => bytes-close-converter]
+      [else
+       #f]))
+  (define (bytes-convert-once from to bs)
+    (define c (bytes-open-converter from to))
+    (dynamic-wind
+      void
+      (lambda ()
+        (call-with-values (lambda ()
+                            (bytes-convert c bs))
+          list))
+      (lambda ()
+        (bytes-close-converter c))))
+  ;; lower-case "utf-8" goes through iconv/icu
+  (when (available? "utf-8" "UTF-8")
+    (test '(#"" 0 error) bytes-convert-once "utf-8" "UTF-8" #"\xFF\xFF"))
+  (when (available? "UTF-8" "utf-8")
+    (test '(#"" 0 error) bytes-convert-once "UTF-8" "utf-8" #"\xFF\xFF")))
+
 ;; Check that slow input stream is handled correctly:
 (let ()
   (define poem (bytes-append #"\307\256\314\306\272\376\264\272\320\320\n\n\271\302\311\275\313\302\261\261"
