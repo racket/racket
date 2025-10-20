@@ -22,6 +22,7 @@
 (provide make-requires+provides
          requires+provides-self
          requires+provides-can-cross-phase-persistent?
+         requires+provides-why-not-cross-phase-persistent
          
          requires+provides-all-bindings-simple?
          set-requires+provides-all-bindings-simple?!
@@ -65,7 +66,7 @@
                            also-required ; sym -> binding
                            spaces     ; sym -> #t to track all relevant spaces from requires
                            portal-syntaxes ; phase -> sym -> syntax
-                           [can-cross-phase-persistent? #:mutable]
+                           [required-non-cross-phase-module/#f #:mutable]
                            [all-bindings-simple? #:mutable] ; tracks whether bindings are easily reconstructed
                            [definitions-shadow-imports? #:mutable])
   #:authentic)
@@ -103,7 +104,7 @@
                      (make-hasheq)  ; also-required
                      (make-hasheq)  ; spaces
                      portal-syntaxes
-                     #t   ; can-cross-phase-persistent?
+                     #f   ; required-not-xpp-module/#f
                      #t   ; all-bindings-simple?
                      #t)) ; definitions-shadow-imports?
 
@@ -116,6 +117,15 @@
   (hash-clear! (requires+provides-phase-to-defined-syms r+p))
   (hash-clear! (requires+provides-also-required r+p))
   (hash-clear! (requires+provides-spaces r+p)))
+
+(define (requires+provides-can-cross-phase-persistent? r+p)
+  (not (requires+provides-required-non-cross-phase-module/#f r+p)))
+
+(define (requires+provides-why-not-cross-phase-persistent r+p)
+  (define m (requires+provides-required-non-cross-phase-module/#f r+p))
+  (unless m
+    (error 'requires+provides-why-not-cross-phase-persistent "internal error: module could be cross-phase-persistent"))
+  m)
 
 ;; ----------------------------------------
 
@@ -144,7 +154,7 @@
                phase+space-shift
                (make-hasheq)))
   (unless is-cross-phase-persistent?
-    (set-requires+provides-can-cross-phase-persistent?! r+p #f))
+    (set-requires+provides-required-non-cross-phase-module/#f! r+p mod-name))
   mpi)
 
 ;; Register a specific identifier that is required;
