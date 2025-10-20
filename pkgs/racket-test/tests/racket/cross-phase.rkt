@@ -1,18 +1,28 @@
 #lang racket/base
 
-(define (check-cross-phase is? form)
+(require racket/string
+         racket/exn)
+
+(define (check-cross-phase is? form #:why-not-message [why-not-regexp #f])
   (parameterize ([current-namespace (make-base-namespace)])
     (define o (open-output-bytes))
-    (define syntax-error?
-      (with-handlers ([exn:fail:syntax? (lambda (exn) #t)])
+    (define syntax-error
+      (with-handlers ([exn:fail:syntax? (lambda (exn) exn)])
         (write (compile `(module m racket/kernel (#%declare #:cross-phase-persistent) ,form)) o)
         #f))
     (close-output-port o)
     (define i (open-input-bytes (get-output-bytes o)))
     (define e (parameterize ([read-accept-compiled #t])
                 (read i)))
-    (unless (equal? is? (and (not syntax-error?)
-                             (module-compiled-cross-phase-persistent? e)))
+    (unless
+        (if is?
+            (and (not syntax-error)
+                 (not (eof-object? e))
+                 (module-compiled-cross-phase-persistent? e))
+            (and syntax-error
+                 (string-contains? (exn->string syntax-error) "cross-phase")
+                 (or (not why-not-regexp) (regexp-match? why-not-regexp (exn->string syntax-error)))
+                 (eof-object? e)))
       (error 'cross-phase "failed: ~s ~s" is? form))))
 
 (check-cross-phase #t '(define-values (x) 5))
