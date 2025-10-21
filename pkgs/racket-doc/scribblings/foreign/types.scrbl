@@ -57,7 +57,16 @@ The @racket[racket-to-c] function takes any value and, if it is a
 valid representation of the new type, converts it to a representation
 of @racket[type]. The @racket[c-to-racket] function takes a
 representation of @racket[type] and produces a representation of the
-new type.}
+new type.
+
+When the result type is used for an argument in a foreign call, beware
+that only the original argument value is specifically retained for the
+call, and not a result of @racket[racket-to-c]. If the foreign call
+leads to a Racket callback, a garbage collection during the callback
+may move or reclaim an argument value that is otherwise unreferenced.
+Consider registering a mapping from the argument to result of
+@racket[racket-to-c] in an ephemeron hash table so that the result
+remains reachable as long as the argument is reachable.}
 
 
 @defproc[(ctype? [v any/c]) boolean?]{
@@ -674,7 +683,13 @@ For @tech{callouts} to foreign functions with the generated type:
        garbage collector until the called foreign function returns. If
        the foreign function invokes Racket callbacks, however, beware
        that values managed by the Racket garbage collector might be
-       moved in memory by the garbage collector.}
+       moved in memory by the garbage collector. Also, beware that each
+       argument is retained only as supplied, and not as potentially
+       converted to a different representation based the argument's type
+       (via layers of @racket[_racket-to-c] procedures for @racket[make-ctype]);
+       a converter procedure associated with a type may need to create
+       a reference connection between the original and converted values
+       using an ephemeron hash table.}
 
  @item{A @tech{callout} object is finalized internally. Beware
        of trying to use a @tech{callout} object that is reachable
