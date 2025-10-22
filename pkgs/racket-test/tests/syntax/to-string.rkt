@@ -12,6 +12,9 @@
 ; we can't find where . is, default to earliest position
 (check-equal? (syntax->string #'((  a  b  .  c))) "(  a  b .   c)")
 
+(check-equal? (syntax->string #'(#&1)) "#&1")
+(check-equal? (syntax->string #'(#&(1 .    2))) "#&(1 .    2)")
+
 ;; quote tests
 (check-equal? (syntax->string #'('a)) "'a")
 (check-equal? (syntax->string #'('  a)) "'  a")
