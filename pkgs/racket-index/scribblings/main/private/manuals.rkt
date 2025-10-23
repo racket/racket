@@ -1,4 +1,4 @@
-#lang scheme/base
+#lang racket/base
 
 (require scribble/manual
          scribble/struct
@@ -133,6 +133,7 @@
                      (if (sec-label sec)
                          (list
                           (plain-line (let loop ([s (sec-label sec)])
+
                                         (match s
                                           [(list 'elem parts ...)
                                            (apply elem (map loop parts))]
@@ -158,11 +159,14 @@
                             (lambda (ad bd)
                               (if (= (car ad) (car bd))
                                   (let ([str (lambda (x)
-                                               (element->string
-                                                (cadr (paragraph-content
-                                                       (car (flow-paragraphs
-                                                             (caadr x)))))
-                                                renderer part resolve-info))])
+                                               (regexp-replace
+                                                #rx"(?:The|A|An) "
+                                                (element->string
+                                                 (cadr (paragraph-content
+                                                        (car (flow-paragraphs
+                                                              (caadr x)))))
+                                                 renderer part resolve-info)
+                                                ""))])
                                     (string-ci<? (str ad) (str bd)))
                                   (> (car ad) (car bd)))))))])))
          sections+custom))))

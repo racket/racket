@@ -144,6 +144,42 @@
 (test-sequence [(0 1 2) (a b c)] (in-parallel (in-range 3) (in-list '(a b c d))))
 (test-sequence [(0 1 2) (a b c)] (in-parallel (in-range 3) '(a b c)))
 
+
+(err/rt-test (in-parallel-values #f))
+(err/rt-test (in-parallel-values 1))
+(err/rt-test (in-parallel-values 1 #f))
+(test #t sequence? (in-parallel-values 1 (in-naturals)))
+(test #t sequence? (in-parallel-values 1 (in-naturals) 1 (in-naturals)))
+(test '((0 "x" 1))
+      (for/list ([(i k v) (in-parallel-values 1 (in-naturals)
+                                              2 (in-hash (hash "x" 1)))])
+        (list i k v)))
+(test '((0 "x" 1))
+      (for/list ([(k v i) (in-parallel-values 2 (in-hash (hash "x" 1))
+                                              1 (in-naturals))])
+        (list i k v)))
+(test '((0 "x" 1 "y" 7))
+      (for/list ([(k v i k2 v2) (in-parallel-values 2 (in-hash (hash "x" 1))
+                                                    1 (in-naturals)
+                                                    2 (in-hash (hash "y" 7)))])
+        (list i k v k2 v2)))
+(test '((0 2 0 0 1) (1 3 1 1 2))
+      (for/list ([(i j k l m) (in-parallel-values 2 (in-parallel (in-naturals) (in-naturals 2))
+                                                  1 (in-range 2)
+                                                  2 (in-parallel (in-naturals) (in-naturals 1)))])
+        (list i j k l m)))
+(test '((0 2 0 0 1) (1 3 1 1 2))
+      (for/list ([(i j k l m) (in-parallel-values 2 (in-parallel (in-naturals) (in-naturals 2))
+                                                  1 (stop-after (in-naturals) (lambda (x) (= x 1)))
+                                                  2 (in-parallel (in-naturals) (in-naturals 1)))])
+        (list i j k l m)))
+(test '((0 2 0 0 1) (1 3 1 1 2))
+      (for/list ([(i j k l m) (in-parallel-values 2 (in-parallel (in-naturals) (in-naturals 2))
+                                                  1 (stop-before (in-naturals) (lambda (x) (= x 2)))
+                                                  2 (in-parallel (in-naturals) (in-naturals 1)))])
+        (list i j k l m)))
+
+
 (test-sequence [(a b c)] (stop-after (in-list '(a b c d e)) (lambda (x) (equal? x 'c))))
 (test-sequence [(a b c)] (stop-before (in-list '(a b c d e)) (lambda (x) (equal? x 'd))))
 (test-sequence [(3 4 5)] (stop-before (in-naturals 3) (lambda (x) (= x 6))))
@@ -1689,6 +1725,173 @@
                    (#:when #t
                     [x (in-list a)])
           (cons x (force a)))))
+
+;; ----------------------------------------
+;; Check `#:on-length-mismatch`
+
+(test '(0 1 2)
+      (for/list ([i (in-range 3)]
+                 #:on-length-mismatch (error "oops"))
+        i))
+
+(test '(1)
+      (for/list (#:on-length-mismatch (error "oops"))
+        1))
+
+(test '(0 2 4)
+      (for/list ([i (in-range 3)]
+                 [j (in-range 3)]
+                 #:on-length-mismatch (error "oops"))
+        (+ i j)))
+
+(test '((0 0) (0 2) (0 4))
+      (for/list ([i (in-range 3)]
+                 [j (in-range 3)]
+                 #:on-length-mismatch (error "oops")
+                 [k (in-range 1)])
+        (list k (+ i j))))
+
+(err/rt-test (for/list ([i (in-range 2)]
+                        [j (in-range 3)]
+                        #:on-length-mismatch (error "oops"))
+               (+ i j))
+             exn:fail?
+             #rx"oops")
+
+(err/rt-test (for/list ([i (in-range 3)]
+                        [j (in-range 2)]
+                        #:on-length-mismatch (error "oops"))
+               (+ i j))
+             exn:fail?
+             #rx"oops")
+
+(err/rt-test (for/list ([i (in-range 2)]
+                        [v '(1 2 3)]
+                        [j (in-range 2)]
+                        #:on-length-mismatch (error "oops"))
+               (+ i v j))
+             exn:fail?
+             #rx"oops")
+
+(err/rt-test (for/list ([i (in-range 2)]
+                        [j (in-range 3)]
+                        #:on-length-mismatch (error "oops")
+                        [k (in-range 3)])
+               (+ i j))
+             exn:fail?
+             #rx"oops")
+
+(err/rt-test (for/fold ([v #f]) ([i (in-range 2)]
+                                 [j (in-range 3)]
+                                 #:on-length-mismatch (error "oops" v))
+               (+ i j))
+             exn:fail?
+             #rx"oops 2")
+
+(err/rt-test (let ([i 'i]
+                   [j 'j])
+               (for/fold ([v #f]) ([i (in-range 2)]
+                                   [j (in-range 3)]
+                                   #:on-length-mismatch (error "oops" i j))
+                 (+ i j)))
+               exn:fail?
+               #rx"oops 'i 'j")
+
+(test '(0 1 2 3 4)
+      'for/foldr-one-seq
+      (for/foldr ([lst '()])
+                 ([i (in-range 5)]
+                  [j (in-range 5)]
+                  #:on-length-mismatch (error "oops"))
+        (cons i lst)))
+
+(err/rt-test (let ([lst 'lst])
+               (for/foldr ([lst '()])
+                          ([i (in-range 5)]
+                           [j (in-range 4)]
+                           #:on-length-mismatch (error "oops" lst))
+                 (cons i lst)))
+               exn:fail?
+               #rx"oops 'lst")
+
+(test (hash 1 12 13 14)
+      (for/hash ([(k v) (hash 1 2 3 4)]
+                 [i (in-range 2)]
+                 #:on-length-mismatch (error "oops"))
+        (values (+ k (* i 10)) (+ v 10))))
+
+(err/rt-test (for/hash ([(k v) (hash 1 2 3 4)]
+                        [i (in-range 3)]
+                        #:on-length-mismatch (error "oops"))
+               (values (+ k (* i 10)) (+ v 10)))
+             exn:fail?
+             #rx"oops")
+
+(test '((0 0) (1 1) (2 2))
+      (for/list ([i (in-range 3)]
+                 [j (stop-before (in-range 10) (lambda (i) (= i 3)))]
+                 #:on-length-mismatch (error "oops"))
+        (list i j)))
+
+(err/rt-test (for/list ([i (in-range 3)]
+                        [j (stop-before (in-range 10) (lambda (i) (= i 4)))]
+                        #:on-length-mismatch (error "oops"))
+               (list i j))
+             exn:fail?
+             #rx"oops")
+
+(err/rt-test (for/list ([i (in-range 3)]
+                        [j (stop-before (in-range 10) (lambda (i) (= i 2)))]
+                        #:on-length-mismatch (error "oops"))
+               (list i j))
+             exn:fail?
+             #rx"oops")
+
+(test '((0 0) (1 1) (2 2))
+      (for/list ([i (in-range 3)]
+                 [j (stop-after (in-range 10) (lambda (i) (= i 2)))]
+                 #:on-length-mismatch (error "oops"))
+        (list i j)))
+
+(err/rt-test (for/list ([i (in-range 3)]
+                        [j (stop-after (in-range 10) (lambda (i) (= i 3)))]
+                        #:on-length-mismatch (error "oops"))
+               (list i j))
+             exn:fail?
+             #rx"oops")
+
+(err/rt-test (for/list ([i (in-range 3)]
+                        [j (stop-after (in-range 10) (lambda (i) (= i 1)))]
+                        #:on-length-mismatch (error "oops"))
+               (list i j))
+             exn:fail?
+             #rx"oops")
+
+(test '(("a" 1) ("b" 2) ("c" 3))
+      (for/list ([(s i) (in-parallel (in-list '("a" "b" "c"))
+                                     (in-vector '#(1 2 3 4 5)))]
+                 #:on-length-mismatch (error "oops"))
+        (list s i)))
+
+(test '(("a" 0) ("b" 1) ("c" 2))
+      (for/list ([(s i) (in-indexed (in-list '("a" "b" "c")))]
+                 #:on-length-mismatch (error "oops"))
+        (list s i)))
+
+(err/rt-test (for/list ([(s i) (in-parallel (in-list '("a" "b" "c"))
+                                            (in-vector '#(1 2 3 4 5)))]
+                        [(x) (in-list (list 1 2))]
+                        #:on-length-mismatch (error "oops"))
+               (list s i))
+             exn:fail?
+             #rx"oops")
+
+(err/rt-test (for/list ([(s i) (in-indexed (in-list '("a" "b" "c")))]
+                        [(x) (in-list (list 1 2))]
+                        #:on-length-mismatch (error "oops"))
+               (list s i))
+             exn:fail?
+             #rx"oops")
 
 ;; ----------------------------------------
 

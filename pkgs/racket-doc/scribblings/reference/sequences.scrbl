@@ -728,9 +728,19 @@ each element in the sequence.
 
 @defproc[(in-parallel [seq sequence?] ...) sequence?]{
   Returns a sequence where each element has as many values as the
-  number of supplied @racket[seq]s; the values, in order, are the
-  values of each @racket[seq].  The elements of each @racket[seq] must
+  number of supplied @racket[seq]s; the values are, in order, the
+  value of each @racket[seq].  The elements of each @racket[seq] must
   be single-valued.}
+
+@defproc[(in-parallel-values [n exact-nonnegative-integer?] [seq sequence?] ... ...) sequence?]{
+  Returns a sequence where each element has as many values as the
+  sum of the number of values produced by the supplied @racket[seq]s,
+  where each @racket[seq] is preceded by the number of values @racket[n]
+  that it produces (so, the resulting number of values is the sum
+  of the @racket[n]s). The values of the new sequence are, in order, the
+  values of each @racket[seq].
+
+  @history[#:added "9.0.0.2"]}
 
 @defproc[(in-values-sequence [seq sequence?]) sequence?]{
   Returns a sequence that is like @racket[seq], but it combines
