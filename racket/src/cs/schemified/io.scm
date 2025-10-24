@@ -31156,8 +31156,8 @@
                      (let ((val0_0 (cadr args_1)))
                        (let ((val_0
                               (if (bytes? val0_0)
-                                (if (bytes->immutable-bytes val0_0) val0_0 #f)
-                                #f)))
+                                (bytes->immutable-bytes val0_0)
+                                val0_0)))
                          (begin
                            (if (bytes-no-nuls? val_0)
                              (void)

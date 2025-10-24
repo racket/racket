@@ -43,9 +43,9 @@
                                  "key" (car args))]
          [else
           (define val0 (cadr args))
-          (define val (and (bytes? val0)
-                           (bytes->immutable-bytes val0)
-                           val0))
+          (define val (if (bytes? val0)
+                          (bytes->immutable-bytes val0)
+                          val0))
           (check who bytes-no-nuls? val)
           (loop (cddr args) (hash-set ht (normalize-key key) (cons key val)))])])))
 

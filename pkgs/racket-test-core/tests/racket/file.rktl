@@ -1719,6 +1719,11 @@
 (test #f environment-variables-ref (make-environment-variables #"a" #"1" #"b" #"two") #"c")
 (test #f environment-variables-ref (make-environment-variables) #"a")
 
+(err/rt-test (make-environment-variables "badstr" #"a") exn:fail:contract? #rx"bytes-environment-variable-name[?].*badstr")
+(err/rt-test (make-environment-variables #"a" "badstr") exn:fail:contract? #rx"bytes-no-nuls[?].*badstr")
+(err/rt-test (make-environment-variables #"badstr\0" #"a") exn:fail:contract? #rx"bytes-environment-variable-name[?].*badstr")
+(err/rt-test (make-environment-variables #"a" #"badstr\0") exn:fail:contract? #rx"bytes-no-nuls[?].*badstr")
+
 (define (env-var-tests)
   (define success-1? (putenv "APPLE" "AnApple"))
   (define success-2? (putenv "BANANA" "AnotherApple"))
