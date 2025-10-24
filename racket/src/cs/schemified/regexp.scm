@@ -5276,10 +5276,18 @@
                       stack_0)))
                 (if or-part_0
                   or-part_0
-                  (restore-groups state_0 old-state_0 n-start_0 num-n_0)))
+                  (begin
+                    (if old-state_0
+                      (vector-copy! state_0 n-start_0 old-state_0)
+                      (void))
+                    #f)))
               #f)
             (if pos2_0
-              (restore-groups state_0 old-state_0 n-start_0 num-n_0)
+              (begin
+                (if old-state_0
+                  (vector-copy! state_0 n-start_0 old-state_0)
+                  (void))
+                #f)
               (|#%app|
                next-m_0
                s_0
@@ -5335,14 +5343,18 @@
                                 stack_0)))
                           (if or-part_0
                             or-part_0
-                            (restore-groups
-                             state_0
-                             old-state_0
-                             n-start_0
-                             num-n_0)))
+                            (begin
+                              (if old-state_0
+                                (vector-copy! state_0 n-start_0 old-state_0)
+                                (void))
+                              #f)))
                         (loop_0 (sub1 lb-pos_0)))
                       (if pos2_0
-                        (restore-groups state_0 old-state_0 n-start_0 num-n_0)
+                        (begin
+                          (if old-state_0
+                            (vector-copy! state_0 n-start_0 old-state_0)
+                            (void))
+                          #f)
                         (|#%app|
                          next-m_0
                          s_0
@@ -5385,7 +5397,11 @@
                   stack_0))))
           (if or-part_0
             or-part_0
-            (restore-groups state_0 old-state_0 n-start_0 num-n_0)))))))
+            (begin
+              (if old-state_0
+                (vector-copy! state_0 n-start_0 old-state_0)
+                (void))
+              #f)))))))
 (define cut-matcher
   (lambda (sub-m_0 n-start_0 num-n_0 next-m_0)
     (lambda (s_0 pos_0 start_0 limit_0 end_0 state_0 stack_0)
@@ -5405,7 +5421,11 @@
                     stack_0)))
               (if or-part_0
                 or-part_0
-                (restore-groups state_0 old-state_0 n-start_0 num-n_0)))
+                (begin
+                  (if old-state_0
+                    (vector-copy! state_0 n-start_0 old-state_0)
+                    (void))
+                  #f)))
             #f))))))
 (define save-groups
   (lambda (state_0 n-start_0 num-n_0)

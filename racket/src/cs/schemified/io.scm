@@ -7018,8 +7018,9 @@
          (|#%name|
           buffer-mode
           (case-lambda
-           ((this-id_0) (temp9.1 this-id_0))
-           ((this-id_0 mode43_0) (temp9.1 this-id_0 mode43_0))))
+           ((this-id_0) (peek-via-read-input-port-buffer-mode this-id_0))
+           ((this-id_0 mode43_0)
+            (set-peek-via-read-input-port-buffer-mode! this-id_0 mode43_0))))
          (|#%name| prepare-change (lambda (this-id_0) (temp2.1 this-id_0)))
          (|#%name|
           read-in
@@ -8850,7 +8851,7 @@
               p17_0
               (register-fd-close cust_0 fd_0 fd-refcount_0 #f p17_0))
              (finish-port/count p17_0))))))))
-(define finish_2391
+(define finish_2985
   (make-struct-type-install-properties
    '(fd-output-port)
    8
@@ -8865,7 +8866,7 @@
      prop:file-truncate
      (lambda (p_0 pos_0)
        (begin
-         (temp25.1 p_0)
+         (temp20.1 p_0 #f)
          (let ((result_0
                 (begin
                   (start-rktio)
@@ -8915,7 +8916,7 @@
    #f
    #f
    '(8 . 255)))
-(define effect_2896 (finish_2391 struct:fd-output-port))
+(define effect_2896 (finish_2985 struct:fd-output-port))
 (define create-fd-output-port
   (|#%name|
    create-fd-output-port
@@ -9527,7 +9528,7 @@
                                  (port-lock-slow p45_0))
                                (memory-order-acquire))
                              (begin0
-                               (temp25.1 p45_0)
+                               (temp20.1 p45_0 #f)
                                (begin
                                  (memory-order-release)
                                  (if (unsafe-struct*-cas! p45_0 2 #t #f)
@@ -11559,7 +11560,7 @@
                             (let ((out_0
                                    (let ((r_0 (pipe-data-output-ref o_0)))
                                      (weak-box-value r_0))))
-                              (if out_0 (temp19.1 out_0) (void)))))
+                              (if out_0 (temp17.1 out_0) (void)))))
                         (let ((evt_0
                                (if (zero? skip431_0)
                                  (pipe-data-read-ready-evt o_0)
@@ -11913,7 +11914,7 @@
                                                     (pipe-data-input-ref o_0)))
                                                (weak-box-value r_0))))
                                         (begin
-                                          (if in_0 (temp13.1 in_0) (void))
+                                          (if in_0 (temp12.1 in_0) (void))
                                           (let ((new-bstr_0
                                                  (make-bytes
                                                   (let ((app_6
@@ -12326,7 +12327,7 @@
        (make-pipe_0 limit_0 input-name_0 output-name26_0))
       ((limit_0 input-name25_0) (make-pipe_0 limit_0 input-name25_0 'pipe))
       ((limit24_0) (make-pipe_0 limit24_0 'pipe 'pipe))))))
-(define finish_2456
+(define finish_2435
   (make-struct-type-install-properties
    '(pipe-write-poller)
    1
@@ -12366,7 +12367,7 @@
                             (void)
                             (port-lock-slow in_0))
                           (memory-order-acquire))
-                        (temp14.1 in_0)
+                        (temp12.1 in_0)
                         (begin
                           (memory-order-release)
                           (if (unsafe-struct*-cas! in_0 2 #t #f)
@@ -12393,7 +12394,7 @@
    #f
    #f
    '(1 . 0)))
-(define effect_2599 (finish_2456 struct:pipe-write-poller))
+(define effect_2599 (finish_2435 struct:pipe-write-poller))
 (define pipe-write-poller27.1
   (|#%name|
    pipe-write-poller
@@ -12426,7 +12427,7 @@
          0
          s
          'd))))))
-(define finish_2472
+(define finish_2170
   (make-struct-type-install-properties
    '(pipe-read-poller)
    1
@@ -12466,7 +12467,7 @@
                             (void)
                             (port-lock-slow out_0))
                           (memory-order-acquire))
-                        (temp18.1 out_0)
+                        (temp17.1 out_0)
                         (begin
                           (memory-order-release)
                           (if (unsafe-struct*-cas! out_0 2 #t #f)
@@ -12493,7 +12494,7 @@
    #f
    #f
    '(1 . 0)))
-(define effect_2907 (finish_2472 struct:pipe-read-poller))
+(define effect_2907 (finish_2170 struct:pipe-read-poller))
 (define pipe-read-poller28.1
   (|#%name|
    pipe-read-poller
@@ -28491,11 +28492,11 @@
                                                                                                buffer-mode_0
                                                                                                (case-lambda
                                                                                                 ((self_0)
-                                                                                                 (temp9.1
+                                                                                                 (peek-via-read-input-port-buffer-mode
                                                                                                   self_0))
                                                                                                 ((self_0
                                                                                                   mode_0)
-                                                                                                 (temp9.1
+                                                                                                 (set-peek-via-read-input-port-buffer-mode!
                                                                                                   self_0
                                                                                                   mode_0))))
                                                                                              app_0
@@ -34257,7 +34258,9 @@
                   (unsafe-uninterruptible-lock-acquire
                    (unsafe-place-local-ref cell.1$7))
                   (begin0
-                    (log-level?* logger4_0 level5_0 topic3_0)
+                    (let ((a_0 (logger-wanted-level logger4_0 topic3_0)))
+                      (let ((app_0 (level->value a_0)))
+                        (>= app_0 (level->value level5_0))))
                     (unsafe-uninterruptible-lock-release
                      (unsafe-place-local-ref cell.1$7))
                     (assert-pop-lock-level! 'logger)
@@ -34276,7 +34279,10 @@
       (assert-push-lock-level! 'logger)
       (unsafe-uninterruptible-lock-acquire (unsafe-place-local-ref cell.1$7))
       (begin0
-        (log-level?* (unsafe-place-local-ref cell.1$8) 'debug 'future)
+        (let ((logger_0 (unsafe-place-local-ref cell.1$8)))
+          (let ((a_0 (logger-wanted-level logger_0 'future)))
+            (let ((app_0 (level->value a_0)))
+              (>= app_0 (level->value 'debug)))))
         (unsafe-uninterruptible-lock-release (unsafe-place-local-ref cell.1$7))
         (assert-pop-lock-level! 'logger)
         (|#%app| end-uninterruptible/no-gc-interrupts)))))
@@ -34287,7 +34293,10 @@
       (assert-push-lock-level! 'logger)
       (unsafe-uninterruptible-lock-acquire (unsafe-place-local-ref cell.1$7))
       (begin0
-        (log-level?* (unsafe-place-local-ref cell.1$8) 'debug 'place)
+        (let ((logger_0 (unsafe-place-local-ref cell.1$8)))
+          (let ((a_0 (logger-wanted-level logger_0 'place)))
+            (let ((app_0 (level->value a_0)))
+              (>= app_0 (level->value 'debug)))))
         (unsafe-uninterruptible-lock-release (unsafe-place-local-ref cell.1$7))
         (assert-pop-lock-level! 'logger)
         (|#%app| end-uninterruptible/no-gc-interrupts)))))

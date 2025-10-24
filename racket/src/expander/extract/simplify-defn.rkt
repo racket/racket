@@ -108,6 +108,8 @@
        [(#t) (simp e1)]
        [(#f) (simp e2)]
        [else `(if ,e0* ,(simp e1) ,(simp e2))])]
+    [`(let-values () ,e)
+     (simp e)]
     [`(let-values ,cl ,e)
      (define names (apply append (map car cl)))
      (define simp-body (simplify-expr e vars (lambda (e) (or (memq e names) (safe-ref? e))) seen-defns))
@@ -127,6 +129,8 @@
                       [else (list vars rhs)]))
                   cl))
      `(let-values ,cl* ,simp-body)]
+    [`(letrec-values () ,e)
+     (simp e)]
     [`(letrec-values ,cl ,e)
      (define names (apply append (map car cl)))
      (define cl* (map (lambda (c) (list (car c) (simp (cadr c)))) cl))
