@@ -203,7 +203,7 @@ regcomp(char *expstr, rxpos exp, int explen, int pcre, Scheme_Object *handler)
       return NULL;
     FAIL("unknown regexp failure");
   }
-  
+
   /* Small enough for pointer-storage convention? */
   if (regcodemax >= 32767L)		/* Probably could be 65535L. */
     FAIL("regexp too big");
@@ -4845,6 +4845,23 @@ static int translate(unsigned char *s, int len, char **result, int pcre)
 	range_len *= 2;
 	/* Sort the ranges by the starting index. */
 	my_qsort(range_array, range_len >> 1, 2 * sizeof(unsigned int), compare_ranges);
+
+        /* Merge adjacent ranges */
+        if (range_len > 0) {
+          int dp = 2;
+          for (rp = 2; rp < range_len; rp += 2) {
+            if (range_array[rp] <= range_array[dp-1]+1) {
+              if (range_array[rp+1] > range_array[dp-1])
+                range_array[dp-1] = range_array[rp+1];
+            } else {
+              range_array[dp] = range_array[rp];
+              range_array[dp + 1] = range_array[rp + 1];
+              dp += 2;
+            }
+          }
+          if (dp < range_len)
+            range_len = dp;
+        }
 	
 	/* If a range starts below 128, fill in the simple array */
 	for (rp = 0; rp < range_len; rp += 2) {
