@@ -37,7 +37,10 @@
 (define (read-bytes-line/not-eof ip kind)
   (define bs (read-bytes-line ip kind))
   (when (eof-object? bs)
-    (error 'http-client "Connection ended early"))
+    (raise
+     (exn:fail:network
+      "http-client: Connection ended early"
+      (current-continuation-marks))))
   bs)
 
 (define (regexp-member rx l)
