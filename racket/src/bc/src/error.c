@@ -2981,7 +2981,7 @@ static Scheme_Object *do_error(const char *who, int mode, int argc, Scheme_Objec
   } else {
     Scheme_Object *strout;
     char *str;
-    intptr_t len, i;
+    intptr_t len, i, width;
 
     /* String followed by other values: */
     if (!SCHEME_CHAR_STRINGP(argv[0]))
@@ -2989,10 +2989,16 @@ static Scheme_Object *do_error(const char *who, int mode, int argc, Scheme_Objec
 
     strout = scheme_make_byte_string_output_port();
 
+    if (argc > 1)
+      width = scheme_get_print_width();
+    else
+      width = 0;
+
     scheme_internal_display(argv[0], strout);
     for (i = 1; i < argc ; i++) {
       scheme_write_byte_string(" ", 1, strout);
-      scheme_internal_write(argv[i], strout);
+      str = error_write_to_string_w_max(argv[i], width, &len);
+      scheme_write_byte_string(str, len, strout);
     }
 
     str = scheme_get_sized_byte_string_output(strout, &len);

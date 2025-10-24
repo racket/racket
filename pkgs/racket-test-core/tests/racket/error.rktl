@@ -7,6 +7,22 @@
 (test #f (current-error-message-adjuster) 'i-just-made-up-this-new-mode)
 (err/rt-test ((current-error-message-adjuster) "oops"))
 
+(err/rt-test (error "message")
+             exn:fail?
+             #rx"message")
+(err/rt-test (error "message" 'argument)
+             exn:fail?
+             #rx"message 'argument")
+(err/rt-test (error 'who "message: ~a" "argument")
+             exn:fail?
+             #rx"who: message: argument")
+(err/rt-test (error 'who "message: ~s" "argument")
+             exn:fail?
+             #rx"who: message: \"argument\"")
+(err/rt-test (error 'who "message: ~v" 'argument)
+             exn:fail?
+             #rx"who: message: 'argument")
+
 (define-syntax-rule (test-error-match rx e)
   (test #t
         regexp-match?
