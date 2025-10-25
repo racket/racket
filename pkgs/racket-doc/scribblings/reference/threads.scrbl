@@ -223,8 +223,9 @@ otherwise.}
          any]{
 
 Blocks execution of the current thread until @racket[thd] has
-terminated. If the thread's procedure raised an exception or otherwise
-aborted to the thread's initial @tech{prompt}, @racket[fail-k] is
+terminated. If the thread's procedure raised an exception, otherwise
+aborted to the thread's initial @tech{prompt}, or was terminated by
+being killed, then @racket[fail-k] is
 called to produce the result of @racket[thread-wait]. Otherwise, if
 the thread records its results (see @racket[#:keep] in
 @racket[thread]), those results are returned, while @|void-const| is
