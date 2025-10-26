@@ -321,6 +321,15 @@ supplies set method implementations for a structure type via the
 be used to implement any of the methods documented as
 @secref["set-methods"].
 
+A set should also be a @tech{sequence}, but @racket[gen:set] by itself
+does not by itself imply @racket[prop:sequence]. A use of
+@racket[gen:set] typically should be combined with a use of
+@racket[prop:sequence] with @racket[in-set] or a more specific sequence
+constructor. Note that @racket[in-set] requires @supp{supporting}
+@racket[set->stream] (e.g., by implementing @racket[set->stream] or
+another supporting combination, such as @racket[set-first], @racket[set-remove], and
+@racket[set-empty?]).
+
 @examples[
 #:eval set-eval
 (struct binary-set [integer]
@@ -333,7 +342,12 @@ be used to implement any of the methods documented as
                               (arithmetic-shift 1 i))))
    (define (set-remove st i)
      (binary-set (bitwise-and (binary-set-integer st)
-                              (bitwise-not (arithmetic-shift 1 i)))))])
+                              (bitwise-not (arithmetic-shift 1 i)))))
+   (define (set-first st)
+     (sub1 (integer-length (binary-set-integer st))))
+   (define (set-empty? st)
+     (= (binary-set-integer st) 0))]
+  #:property prop:sequence in-set)
 (define bset (binary-set 5))
 bset
 (generic-set? bset)
@@ -342,6 +356,9 @@ bset
 (set-member? bset 2)
 (set-add bset 4)
 (set-remove bset 2)
+(set-first bset)
+(require racket/sequence)
+(sequence->list bset)
 ]
 
 }
