@@ -492,9 +492,6 @@
    (define set-union! fallback-union!)
    (define set-intersect! fallback-intersect!)
    (define set-subtract! fallback-subtract!)
-   (define set-symmetric-difference! fallback-symmetric-difference!)]
-
-  #:derive-property prop:sequence
-  (lambda (s) (in-set s)))
+   (define set-symmetric-difference! fallback-symmetric-difference!)])
 
 (define (generic-set? x) (set? x))
