@@ -108,7 +108,7 @@ jobs:
     - name: Setup efp if disabled
       if: matrix.efp == 'noefp'
       run: echo "EFP_OPTIONS=--disable-extflonums --disable-places --disable-futures" >> $GITHUB_ENV
-    - uses: actions/download-artifact@v5
+    - uses: actions/download-artifact@v6
       with:
         name: racketcgc-debian10-nocify-x64_git${{ github.sha }}
         path: /tmp
@@ -164,7 +164,7 @@ jobs:
     - uses: actions/checkout@v5
       with:
         fetch-depth: 100
-    - uses: actions/download-artifact@v5
+    - uses: actions/download-artifact@v6
       with:
         name: racketcgc-debian10-nocify-x64_git${{ github.sha }}
         path: /tmp
@@ -219,7 +219,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v5
-      - uses: actions/download-artifact@v5
+      - uses: actions/download-artifact@v6
         with:
           name: racketcgc-debian10-${{ matrix.cify }}-x64_git${{ github.sha }}
           path: /tmp
@@ -268,7 +268,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v5
-      - uses: actions/download-artifact@v5
+      - uses: actions/download-artifact@v6
         with:
           name: racket3m-debian10-${{ matrix.cify }}-${{ matrix.jit }}-${{ matrix.efp }}-x64_git${{ github.sha }}
           path: /tmp
@@ -305,7 +305,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v5
-      - uses: actions/download-artifact@v5
+      - uses: actions/download-artifact@v6
         with:
           name: racketcs-debian10-x64-${{ matrix.cc }}_git${{ github.sha }}
           path: /tmp
