@@ -54,7 +54,7 @@
              dprintf
              prepare1
              check/invalidate-cache
-             sync-call)
+             worker-call)
     (inherit-field DEBUG?)
 
     (define/override (call-with-lock fsym proc)
@@ -216,7 +216,7 @@
                        (lambda (e)
                          (A* #:db db (when db (sqlite3_reset stmt) (sqlite3_clear_bindings stmt)))
                          (raise e))])
-        ((sync-call
+        ((worker-call
           (lambda (worker?)
             (when worker?
               (define timeout (inexact->exact (ceiling (* 1000 busy-retry-delay))))

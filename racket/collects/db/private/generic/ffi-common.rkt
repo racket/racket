@@ -1,12 +1,15 @@
 #lang racket/base
 (require racket/class
+         racket/future
+         racket/unsafe/ops
          ffi/unsafe/atomic
          ffi/unsafe/custodian
          ffi/unsafe/os-thread
          ffi/unsafe/os-async-channel
          "interfaces.rkt")
 (provide (protect-out
-          ffi-connection-mixin))
+          ffi-connection-mixin)
+         worker-modes)
 
 ;; Convention: methods names starting with "-" usually indicate methods that
 ;; must be called in atomic mode.
@@ -40,76 +43,206 @@
            ;; Partially disconnect
            (define do-disconnect (-get-do-disconnect))
            ;; Finish disconnecting
-           (cond [os-req-chan
-                  ;; OS thread might be using db, stmts
-                  (define resp-chan (make-os-async-channel))
-                  (define (shutdown _db)
-                    (define done (do-disconnect))
-                    (when resp-chan (os-async-channel-put resp-chan done)))
-                  (log-db-debug "disconnect delayed to OS thread")
-                  (os-async-channel-put os-req-chan (cons shutdown #f))
-                  (when resp-chan
-                    (parameterize ((current-custodian (make-custodian-at-root)))
-                      (thread
-                       (lambda ()
-                         (define done (sync resp-chan))
-                         (log-db-debug "finished delayed disconnect")
-                         (done)))))
+           (cond [do-work
+                  ;; Worker thread might be using db, stmts
+                  (log-db-debug "disconnect delayed to worker thread")
+                  (define finish (do-work do-disconnect #f))
+                  (parameterize ((current-custodian (make-custodian-at-root)))
+                    (thread
+                     (lambda ()
+                       (finish)
+                       (log-db-debug "finished delayed disconnect"))))
                   (void)]
                  [else ((do-disconnect))])))))
 
     ;; ----------------------------------------
-    ;; OS Thread Support
+    ;; Worker Thread Support
 
-    (define use-os-thread? #f)
-    (define os-req-chan #f)  ;; #f or OS-Async-Channel
-    (define os-resp-chan #f) ;; #f or OS-Async-Channel
+    ;; do-work : #f or ((-> X) Boolean -> (-> X)), mutated
+    (define do-work #f)
 
-    (define/public (get-use-os-thread?) use-os-thread?)
+    ;; use-worker-mode : Symbol/#f -> Void
+    ;; Should be called at most once, before connection is in use. Disconnect
+    ;; assumes worker-mode is unchanging.
+    (define/public (use-worker-mode mode)
+      (when do-work
+        (do-work void #f)
+        (set! do-work #f))
+      (case mode
+        [(mailbox) (set! do-work (make-worker/mailbox))]
+        [(queue) (set! do-work (make-worker/queue))]
+        [(fqueue) (set! do-work (make-worker/fqueue))]
+        [(os-thread) (set! do-work (make-worker/os-thread))]
+        [(#f) (void)]
+        [else (error 'use-worker-mode "unknown mode: ~e" mode)]))
 
-    (define/public (use-os-thread use?)
-      (when use?
-        (unless (os-thread-enabled?)
-          (raise (exn:fail:unsupported "use-os-thread: not supported"
-                                       (current-continuation-marks)))))
-      (call-with-lock 'use-os-thread
-        (lambda ()
-          (set! use-os-thread? (and use? #t))
-          (when use?
-            (call-as-atomic
-             (lambda ()
-               (unless os-req-chan
-                 (define db (-get-db))
-                 (define req-chan (make-os-async-channel))
-                 (define resp-chan (make-os-async-channel))
-                 (call-in-os-thread
-                  (lambda ()
-                    (let loop ()
-                      (define msg (os-async-channel-get req-chan))
-                      (define proc (car msg))
-                      (define loop? (cdr msg))
-                      (os-async-channel-put resp-chan (proc db))
-                      (when loop? (loop)))))
-                 (set! os-req-chan req-chan)
-                 (set! os-resp-chan resp-chan))))))))
-
-    ;; sync-call-in-os-thread : (DB/#f -> X) -> X
-    ;; Calls proc either normally or in an OS thread. If in OS thread, proc is
-    ;; passed the saved DB value (in case of partial disconnects); if called
-    ;; normally, proc is passed #f.
-    (define/public (sync-call-in-os-thread proc)
-      (start-atomic)
-      (cond [(-get-db)
-             (when os-req-chan
-               (os-async-channel-put os-req-chan (cons proc #t)))
-             (end-atomic)]
-            [else
-             (end-atomic)
-             (error/disconnect-in-lock 'sqlite3)])
-      (sync os-resp-chan))
-
-    ;; sync-call : (DB/#f -> X) -> X
-    (define/public (sync-call proc)
-      (cond [use-os-thread? (sync-call-in-os-thread proc)]
-            [else (proc #f)]))
+    ;; worker-call : (Boolean -> X) -> X
+    ;; Calls proc either normally or through worker. Argument to proc is #t if
+    ;; in worker thread, #f if called normally.  To support error reporting from
+    ;; OS threads, where parameters such as error-value->string-handler are not
+    ;; available, if proc raises a procedure, then it is applied and the result
+    ;; re-raised. (But usually the raised procedure itself will escape rather
+    ;; than returning a value to raise.)
+    (define/public (worker-call proc)
+      (cond [do-work ((do-work (lambda () (proc #t)) #t))]
+            [else (with-handlers ([procedure? (lambda (p) (raise (p)))])
+                    (proc #f))]))
     ))
+
+(define worker-modes
+  (append (if (os-thread-enabled?) '(os-thread) '())
+          (if (futures-enabled?) '(mailbox queue fqueue) '())))
+
+;; ----------------------------------------
+
+;; Worker request queues should be short: at most two elements (at most one from
+;; lock holder, at most one from async custodian shutdown). So prefer simple
+;; impl over better asymptotic complexity.
+
+;; (Queue X) = (queue (U Semaphore FSemaphore) (Listof X))
+;; List stored in insertion order.
+(struct queue (sema [vs #:mutable]))
+(define (queue-cas-vs! q old-vs new-vs)
+  (unsafe-struct*-cas! q 1 old-vs new-vs))
+
+;; Only used by worker threads, so doesn't need atomic/uninterruptible mode.
+(define (queue-get q)
+  (define sema (queue-sema q))
+  (cond [(semaphore? sema) (semaphore-wait sema)]
+        [(fsemaphore? sema) (fsemaphore-wait sema)])
+  (let loop ()
+    (define vs (queue-vs q))
+    (if (queue-cas-vs! q vs (cdr vs)) (car vs) (loop))))
+
+;; ----------------------------------------
+
+(define (make-queue)
+  (queue (make-semaphore 0) null))
+
+(define (queue-put q v)
+  (define sema (queue-sema q))
+  (start-atomic)
+  (let loop ()
+    (define vs (queue-vs q))
+    (unless (queue-cas-vs! q vs (append vs (list v)))
+      (loop)))
+  (semaphore-post sema)
+  (end-atomic))
+
+;; ----------------------------------------
+
+(define (make-fqueue)
+  (queue (make-fsemaphore 0) null))
+
+(define (fqueue-put q v)
+  (define sema (queue-sema q))
+  (start-uninterruptible)
+  (let loop ()
+    (define vs (queue-vs q))
+    (unless (queue-cas-vs! q vs (append vs (list v)))
+      (loop)))
+  (fsemaphore-post sema)
+  (end-uninterruptible))
+
+;; ----------------------------------------
+
+;; make-worker/* : -> (-> X) Boolean -> (-> X)
+;; 2nd request argument indicates whether worker should continue (#t) or quit (#f).
+
+;; send will enter atomic
+;; recv will sync
+(define (make-worker/mailbox)
+  (unless (futures-enabled?) (mode-not-supported 'mailbox))
+  (define (handle-requests)
+    (when ((thread-receive))
+      (handle-requests)))
+  (define handler-thread
+    (parameterize ((current-custodian (make-custodian-at-root)))
+      (thread #:pool 'own handle-requests)))
+  (lambda (proc continue?)
+    (define sema (make-semaphore 0))
+    (define resultb (box #f))
+    (define (wrapped-proc)
+      (set-box! resultb (call/thunk proc))
+      (semaphore-post sema)
+      continue?)
+    (thread-send handler-thread wrapped-proc #f)
+    (lambda ()
+      (semaphore-wait sema)
+      ((unbox resultb)))))
+
+;; send will enter atomic
+;; recv will sync
+(define (make-worker/queue)
+  (unless (futures-enabled?) (mode-not-supported 'queue))
+  (define req-q (make-queue))
+  (define (handle-requests)
+    (when ((queue-get req-q))
+      (handle-requests)))
+  (define handler-thread
+    (parameterize ((current-custodian (make-custodian-at-root)))
+      (thread #:pool 'own handle-requests)))
+  (lambda (proc continue?)
+    (define sema (make-semaphore 0))
+    (define resultb (box #f))
+    (define (wrapped-proc)
+      (set-box! resultb (call/thunk proc))
+      (semaphore-post sema)
+      continue?)
+    (queue-put req-q wrapped-proc)
+    (lambda ()
+      (semaphore-wait sema)
+      ((unbox resultb)))))
+
+;; send will enter uninterruptible
+;; recv will fsemaphore-wait (if coroutine, sync via call-in-future)
+(define (make-worker/fqueue)
+  (unless (futures-enabled?) (mode-not-supported 'fqueue))
+  (define req-fq (make-fqueue))
+  (define (handle-requests)
+    (when ((queue-get req-fq))
+      (handle-requests)))
+  (define handler-thread
+    (parameterize ((current-custodian (make-custodian-at-root)))
+      (thread #:pool 'own handle-requests)))
+  (lambda (proc continue?)
+    (define fsema (make-fsemaphore 0))
+    (define resultb (box #f))
+    (define (wrapped-proc)
+      (set-box! resultb (call/thunk proc))
+      (fsemaphore-post fsema)
+      continue?)
+    (fqueue-put req-fq wrapped-proc)
+    (lambda ()
+      (fsemaphore-wait fsema)
+      ((unbox resultb)))))
+
+;; send will enter atomic
+;; recv will sync
+(define (make-worker/os-thread)
+  (unless (os-thread-enabled?) (mode-not-supported 'os-thread))
+  (define req-os-chan (make-os-async-channel))
+  (define (handle-requests)
+    (when ((os-async-channel-get req-os-chan))
+      (handle-requests)))
+  (call-in-os-thread (lambda () (handle-requests)))
+  (lambda (proc continue?)
+    (define resp-os-chan (make-os-async-channel))
+    (define (wrapped-proc)
+      (os-async-channel-put resp-os-chan (call/thunk proc))
+      continue?)
+    (os-async-channel-put req-os-chan wrapped-proc)
+    (lambda ()
+      ((sync resp-os-chan)))))
+
+;; call/thunk : (-> X) -> (-> X)
+;; If proc raises a procedure, then the result thunk applies it and raises its
+;; value. (See worker-call comment.)
+(define (call/thunk proc)
+  (with-handlers ([procedure? (lambda (p) (lambda () (raise (p))))]
+                  [void (lambda (e) (lambda () (raise e)))])
+    (let ([v (proc)]) (lambda () v))))
+
+(define (mode-not-supported mode)
+  (define msg (format "db connection: ~a mode not supported" mode))
+  (raise (exn:fail:unsupported msg (current-continuation-marks))))
