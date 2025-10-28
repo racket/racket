@@ -221,12 +221,16 @@
                 (identifier? #'form)
                 (sequence-transformer? (syntax-local-value #'form (lambda () #f))))
            (let ([m (syntax-local-value #'form)])
-             (let ([xformer (sequence-transformer-ref m 1)]
-                   [introducer (make-syntax-introducer)])
-               (let ([xformed (xformer (introducer (syntax-local-introduce clause)))])
+             (let ([xformer (sequence-transformer-ref m 1)])
+               (let ([xformed
+                      (syntax-local-apply-transformer xformer
+                                                      #'form
+                                                      'expression
+                                                      #f
+                                                      clause)])
                  (if xformed
                      (let ([r (expand-clause orig-stx
-                                             (syntax-local-introduce (introducer xformed))
+                                             xformed
                                              flatten-ok?)])
                        (syntax-property r
                                         'disappeared-use
@@ -446,25 +450,26 @@
        (define-syntax id
          (create-splicing-for-clause-transformer transformer-expr))]))
 
-  (define-for-syntax syntax-local-splicing-clause-introducer
-    (make-parameter (lambda (stx) stx)))
   (define-for-syntax (syntax-local-splicing-for-clause-introduce stx)
     (unless (syntax? stx)
       (raise-argument-error 'syntax-local-splicing-for-clause-introduce "syntax?" stx))
-    ((syntax-local-splicing-clause-introducer) stx))
+    (syntax-local-introduce stx))
 
   (define-for-syntax (expand-splicing-clause orig-form form)
     (syntax-case form ()
       [(id . _)
        (and (identifier? #'id)
             (splicing-for-clause-transformer? (syntax-local-value #'id (lambda () #f))))
-       (let ([xformer (splicing-for-clause-transformer-ref (syntax-local-value #'id) 0)]
-             [introducer (make-syntax-introducer)])
-         (let ([xformed (parameterize ([syntax-local-splicing-clause-introducer introducer])
-                          (xformer (introducer (syntax-local-introduce form))))])
+       (let ([xformer (splicing-for-clause-transformer-ref (syntax-local-value #'id) 0)])
+         (let ([xformed
+                (syntax-local-apply-transformer xformer
+                                                #'id
+                                                'expression
+                                                #f
+                                                form)])
            (syntax-case xformed ()
              [(_ ...)
-              (cons #'id (syntax-local-introduce (introducer xformed)))]
+              (cons #'id xformed)]
              [_
               (raise-syntax-error #f
                                   "expansion is not a sequence"

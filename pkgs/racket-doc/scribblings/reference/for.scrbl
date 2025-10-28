@@ -899,10 +899,12 @@ sequence of forms, and the forms are spliced in place of the
 
 @defproc[(syntax-local-splicing-for-clause-introduce [stx syntax?]) syntax?]{
 
-Analogous to @racket[syntax-local-introduce], but for use in an
+Equivalent to @racket[syntax-local-introduce], intended for use in an
 expander bound with @racket[define-splicing-for-clause-syntax].
 
-@history[#:added "8.11.1.4"]}
+@history[#:added "8.11.1.4"
+         #:changed "9.0.0.2" @elem{Changed to be equivalent to
+                                   @racket[syntax-local-introduce].}]}
 
 @;------------------------------------------------------------------------
 @section{Do Loops}
