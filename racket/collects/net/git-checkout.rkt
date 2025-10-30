@@ -228,8 +228,10 @@
 
 (define (http-request-headers username password)
   ;; bitbucket.org seems to require a "git" value for "User-Agent",
-  ;; otherwise it returns a "broken link" web page
-  (define base-headers '("User-Agent: git/1.9"))
+  ;; otherwise it returns a "broken link" web page;
+  ;; some servers particularly want to see "Accept"
+  (define base-headers '("User-Agent: git/1.9"
+                         "Accept: */*"))
   ;; include an Authorization header if credentials are provided
   (if (and username password)
       (cons (~a "Authorization: Basic " (base64-encode (string->bytes/utf-8 (~a username ":" password)) #""))
