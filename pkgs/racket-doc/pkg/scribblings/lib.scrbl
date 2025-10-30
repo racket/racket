@@ -116,6 +116,18 @@ used.
 @history[#:added "6.3"]}
 
 
+@deftogether[(
+@defparam[current-pkg-network-timeout max-seconds (or/c #f real?)]
+)]{
+
+A parameter that determines the number of seconds to wait for a network communication,
+such as a download or a checksum fetch. If
+a parameter's value is @racket[#f], then the user's configuration is
+used.
+
+@history[#:added "9.0.0.2"]}
+
+
 @defproc[(pkg-directory [name string?]
                         [#:cache cache (or/c #f (and/c hash? (not/c immutable?))) #f])
          (or/c path-string? #f)]{
@@ -789,3 +801,26 @@ The package lock must be held; see @racket[with-pkg-lock]. Note that
 called with a lock that is wider than the narrowest relevant scope.
 
 @history[#:added "7.7.0.9"]}
+
+
+@defproc[(call-in-pkg-timeout-sandbox [thunk (-> any)]
+                                      [#:make-exn make-exn exn:fail (string? continuation-mark-set? . -> . any/c)])
+         any]{
+
+Calls @racket[thunk] in a thread and under a custodian that is
+shutdown when the thread terminates. If the thread does not terminate
+within the number of seconds indicated by @racket[current-pkg-network-timeout],
+the thread is forcibly terminated by shutting down its custodian.
+
+The result of @racket[thunk] is returned as the result of
+@racket[call-in-pkg-timeout-sandbox]. If the thread raises an
+exception, the exception is re-@racket[raise]d by
+@racket[call-in-pkg-timeout-sandbox] in the current thread.
+
+The result of @racket[make-exn] is @racket[raise]d if the thread
+terminates without returning a result or throwing an exception and if
+the timeout expires. If the thread terminates without returning a
+result or throwing an exception before the timeout, a ``thread
+terminated'' exception is raised.
+
+@history[#:added "9.0.0.2"]}

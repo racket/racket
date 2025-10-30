@@ -1080,11 +1080,14 @@ for @nonterm{key}.
         to the trash folder or @command-ref{empty-trash} is used.}
   @item{@exec{network-retries} --- The number of times to retry a network communication that
         fails due to a connection error.}
+  @item{@exec{network-timeout} --- The maximum number of seconds to wait for a
+        network communication to complete, such as a download or a checksum fetch.}
  ]
 
 @history[#:changed "6.1.1.6" @elem{Added @exec{trash-max-packages} and @exec{trash-max-seconds}.}
          #:changed "6.3" @elem{Added @exec{network-retries}.}
-         #:changed "6.6.0.5" @elem{Added @exec{git-checkout-credentials}.}]}
+         #:changed "6.6.0.5" @elem{Added @exec{git-checkout-credentials}.}
+         #:changed "9.0.0.2" @elem{Added @exec{network-timeout}.}]}
 
 
 @subcommand{@command/toc{catalog-show} @nonterm{option} ... @nonterm{package-name} ...

@@ -33,7 +33,8 @@
          "prefetch.rkt"
          "checkout-credentials.rkt"
          "network.rkt"
-         "github-url.rkt")
+         "github-url.rkt"
+         "timeout.rkt")
 
 (provide (struct-out install-info)
          remote-package-checksum
@@ -808,27 +809,29 @@
               ;; Supplying `#:dest-dir #f` means that we just resolve `branch`
               ;; to an ID:
               (define checksum
-                (git-checkout host #:port port repo
-                              #:dest-dir #f
-                              #:ref branch
-                              #:status-printf
-                              (lambda (fmt . args)
-                                (define (strip-ending-newline s)
-                                  (regexp-replace #rx"\n$" s ""))
-                                (log-pkg-debug
-                                 (strip-ending-newline (apply format fmt args))))
-                              #:initial-error
-                              (lambda ()
-                                (raise
-                                 ;; This is a git error so that
-                                 ;; call-with-git-checkout-credentials will retry
-                                 (exn:fail:git
-                                  (~a "pkg: Git checkout initial protocol failed;\n"
-                                      " the given URL might not refer to a Git repository\n"
-                                      "  given URL: "
-                                      pkg-url-str)
-                                  (current-continuation-marks))))
-                              #:transport transport))
+                (call-in-pkg-timeout-sandbox
+                 (lambda ()
+                   (git-checkout host #:port port repo
+                                 #:dest-dir #f
+                                 #:ref branch
+                                 #:status-printf
+                                 (lambda (fmt . args)
+                                   (define (strip-ending-newline s)
+                                     (regexp-replace #rx"\n$" s ""))
+                                   (log-pkg-debug
+                                    (strip-ending-newline (apply format fmt args))))
+                                 #:initial-error
+                                 (lambda ()
+                                   (raise
+                                    ;; This is a git error so that
+                                    ;; call-with-git-checkout-credentials will retry
+                                    (exn:fail:git
+                                     (~a "pkg: Git checkout initial protocol failed;\n"
+                                         " the given URL might not refer to a Git repository\n"
+                                         "  given URL: "
+                                         pkg-url-str)
+                                     (current-continuation-marks))))
+                                 #:transport transport))))
               (when cache
                 (hash-set! cache key checksum))
               checksum])))))]

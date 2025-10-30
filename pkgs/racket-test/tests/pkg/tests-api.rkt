@@ -2,6 +2,7 @@
 (require rackunit
          racket/file
          pkg/strip
+         pkg/lib
          setup/getinfo
          "util.rkt")
 
@@ -62,5 +63,21 @@
        'package-content-state
        (lambda () 'no-package-content-state)))
     'no-package-content-state)
+
+   (check-equal? (call-in-pkg-timeout-sandbox (lambda () 10)) 10)
+   (check-equal? (call-with-values (lambda () (call-in-pkg-timeout-sandbox (lambda () (values 1 2))))
+                                   list)
+                 (list 1 2))
+   (check-exn #rx"something wrong"
+              (lambda () (call-in-pkg-timeout-sandbox (lambda () (error "something wrong")))))
+   (check-exn #rx"timeout"
+              (lambda ()
+                (parameterize ([current-pkg-network-timeout 1])
+                  (call-in-pkg-timeout-sandbox (lambda () (sleep 100))))))
+   (check-exn #rx"alt exn"
+              (lambda ()
+                (parameterize ([current-pkg-network-timeout 1])
+                  (call-in-pkg-timeout-sandbox (lambda () (sleep 100))
+                                               #:make-exn (lambda (msg cm) (exn:fail "alt exn" cm))))))
 
    ))

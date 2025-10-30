@@ -27,7 +27,8 @@
          "private/catalog-archive.rkt"
          "private/suggestions.rkt"
          "private/archive.rkt"
-         "private/trash.rkt")
+         "private/trash.rkt"
+         "private/timeout.rkt")
   
 (define dep-behavior/c
   (or/c #f 'fail 'force 'search-ask 'search-auto))
@@ -69,6 +70,8 @@
   [current-pkg-trash-max-seconds
    (parameter/c (or/c #f real?))]
   [current-pkg-network-retries
+   (parameter/c (or/c #f real?))]
+  [current-pkg-network-timeout
    (parameter/c (or/c #f real?))]
   [pkg-directory
    (->* (string?)
@@ -301,4 +304,8 @@
                                            (#:namespace namespace?
                                                         #:system-type (or/c #f symbol?)
                                                         #:system-library-subpath (or/c #f path-for-some-system?))
-                                           (listof (cons/c symbol? string?)))]))
+                                           (listof (cons/c symbol? string?)))]
+
+  [call-in-pkg-timeout-sandbox (->* ((-> any))
+                                    (#:make-exn (-> string? continuation-mark-set? any/c))
+                                    any)]))
