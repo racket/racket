@@ -539,7 +539,7 @@ variable. If a variable for @racket[name] exists as constant, the
           void?]{
 
 Registers information about @racket[name] in @racket[instance] that
-may be useful for compiling linklets where the instance is return via
+may be useful for compiling linklets where the instance is returned via
 the @racket[_get-import] callback to @racket[compile-linklet]. The
 @racket[desc-v] description can be any value; the recognized
 descriptions depend on virtual machine, but may include the following:
