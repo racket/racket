@@ -1621,6 +1621,17 @@
   (test (void) break-thread t)
   (test #t thread-dead? t))
 
+;; --------------------
+;; Check blocking `thread-receive` on a thread/parallel
+
+(let ()
+  (define sema (make-semaphore 0))
+  (define t (thread/parallel (lambda () (thread-receive) (semaphore-post sema))))
+  (sync (system-idle-evt))  ;; wait until t blocks
+  (thread-send t 'ok)
+  (sync t)
+  (test #t semaphore-try-wait? sema))
+
 ; --------------------
 
 (report-errs)

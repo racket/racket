@@ -8471,7 +8471,8 @@
         (begin0
           (let ((t_0 (current-thread/in-racket)))
             (if (is-mail? t_0)
-              (let ((v_0 (dequeue-mail! t_0))) (lambda () v_0))
+              (let ((v_0 (dequeue-mail! t_0)))
+                (lambda () (begin (future-barrier-exit) v_0)))
               (begin
                 (set-thread-mailbox-wakeup!
                  t_0
@@ -8483,7 +8484,7 @@
                          (thread-deschedule!.1 void t_0 #f temp96_0)))
                     (lambda ()
                       (begin (|#%app| do-yield_0) (1/thread-receive))))))))
-          (end-atomic)))))))
+          (end-atomic/no-barrier-exit)))))))
 (define 1/thread-try-receive
   (|#%name|
    thread-try-receive
