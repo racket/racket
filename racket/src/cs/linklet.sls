@@ -1253,7 +1253,10 @@
         inst)]))
 
   (define (instance-variable-names i)
-    (hash-map (instance-hash i) (lambda (k v) k)))
+    (#%filter values
+              (hash-map (instance-hash i)
+                        (lambda (k v) (and (not (eq? (variable-val v) variable-undefined))
+                                           k)))))
 
   (define instance-variable-value
     (case-lambda

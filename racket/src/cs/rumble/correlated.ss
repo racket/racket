@@ -39,18 +39,48 @@
 
 (define (correlated->datum e)
   (cond
-   [(correlated? e) (correlated->datum (correlated-e e))]
-   [(pair? e) (let ([a (correlated->datum (car e))]
-                    [d (correlated->datum (cdr e))])
-                (if (and (eq? a (car e))
-                         (eq? d (cdr e)))
+    [(correlated? e) (correlated->datum (correlated-e e))]
+    [(impersonator? e) e]
+    [(pair? e) (let ([a (correlated->datum (car e))]
+                     [d (correlated->datum (cdr e))])
+                 (if (and (eq? a (car e))
+                          (eq? d (cdr e)))
+                     e
+                     (cons a d)))]
+    [(box? e) (let ([a (correlated->datum (unbox e))])
+                (if (eq? a (unbox e))
                     e
-                    (cons a d)))]
-   [else e]))
+                    (box a)))]
+    [(vector? e) (let ([v (vector-map correlated->datum e)]
+                       [len (vector-length e)])
+                   (if (let loop ([i 0])
+                         (or (= i len)
+                             (and (eq? (vector-ref v i)
+                                       (vector-ref e i))
+                                  (loop (add1 i)))))
+                       e
+                       v))]
+    [(immutable-hash? e) (let* ([l1 (hash-map e cons)]
+                                [l2 (map (lambda (p) (cons (car p) (correlated->datum (cdr p)))) l1)])
+                           (if (andmap (lambda (p1 p2) (eq? (cdr p1) (cdr p2))) l1 l2)
+                               e
+                               (fold-left (lambda (ht p2)
+                                            (hash-set ht (car p2) (cdr p2)))
+                                          (hash-clear e)
+                                          l2)))]
+    [(prefab-struct-key e)
+     => (lambda (key)
+          (let* ([vec1 (struct->vector e)]
+                 [vec2 (correlated->datum vec1)])
+            (if (eq? vec1 vec2)
+                e
+                (apply make-prefab-struct key (cdr (vector->list vec2))))))]
+    [else e]))
 
 (define/who (correlated-property-symbol-keys v)
   (check who correlated? v)
-  (hash-map (correlated-props v) (lambda (k v) k)))
+  (#%filter (lambda (s) (and (symbol? s) (symbol-interned? s)))
+            (hash-map (correlated-props v) (lambda (k v) k))))
 
 (define/who correlated-property
   (case-lambda
