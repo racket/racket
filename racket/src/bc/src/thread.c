@@ -5841,6 +5841,8 @@ static int do_kill_thread(Scheme_Thread *p)
   if (p == scheme_current_thread)
     kill_self = 1;
 
+  p->results = scheme_false;
+
   return kill_self;
 }
 
