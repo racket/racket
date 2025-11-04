@@ -587,9 +587,14 @@
                               " && mv libcrypto-" vers (if m32? "" "-x64") ".dll libeay32.dll"))
              #:fixup-proc (and win?
                                (lambda ()
+                                 (define orig-name (bytes-append #"libcrypto-" vers (if m32? #"" #"-x64") #".dll\0"))
+                                 (define new-name #"libeay32.dll\0")
                                  (replace-in-file (build-path dest "bin" "ssleay32.dll")
-                                                  (bytes-append #"libcrypto-" vers (if m32? #"" #"-x64") #".dll\0")
-                                                  #"libeay32.dll\0"))))]
+                                                  orig-name
+                                                  new-name)
+                                 (replace-in-file (build-path dest (if m32? "lib" "lib64") "ossl-modules" "legacy.dll")
+                                                  orig-name
+                                                  new-name))))]
     [("expat") (config)]
     [("gettext") (config #:depends (if win? '("libiconv") '())
                          #:configure (append
