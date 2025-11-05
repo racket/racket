@@ -32,7 +32,7 @@
      gen
      i
      (cond
-      [(eq? d 'top) (error 'deserialize-module-path-indexes "expected top")]
+      [(eq? d 'top) (error 'deserialize-module-path-indexes "unexpected top")]
       [(box? d)
        (define v (module-path-index-join #f #f))
        v]
