@@ -115,7 +115,7 @@ positions are initialized with the given @racket[b]s.
 
 
 @defproc[(bytes-copy [bstr bytes?]) bytes?]{ Returns
- @racket[(subbytes str 0)].}
+ @racket[(subbytes bstr 0)].}
 
 
 @defproc[(bytes-copy! [dest (and/c bytes? (not/c immutable?))]
