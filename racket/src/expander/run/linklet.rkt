@@ -311,6 +311,7 @@
 
 (define orig-eval (current-eval))
 (define orig-compile (current-compile))
+(define orig-code-inspector (current-code-inspector))
 
 (define linklet-compile-to-s-expr (make-parameter #f #f 'linklet-compile-to-s-expr))
 
@@ -324,7 +325,8 @@
        (define plain-c (desugar-linklet c))
        (parameterize ([current-namespace cu-namespace]
                       [current-eval orig-eval]
-                      [current-compile orig-compile])
+                      [current-compile orig-compile]
+                      [current-code-inspector orig-code-inspector])
          ;; Use a vector to list the exported variables
          ;; with the compiled bytecode
          (compiled-linklet (compile plain-c)
