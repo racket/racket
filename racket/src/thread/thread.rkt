@@ -932,7 +932,9 @@
      (thread-did-work!)]
     [else (thread-poll-done! (current-thread/in-racket))])
    (set-thread-sched-info! (current-thread/in-racket) sched-info))
-  (thread-engine-block))
+  (if sched-info
+      (engine-block) ; no barrier exit
+      (thread-engine-block)))
 
 ;; Sleep for a while
 (define/who (sleep [secs 0])

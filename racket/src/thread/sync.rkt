@@ -118,7 +118,9 @@
                                     [(procedure? timeout)
                                      (if thunk-result?
                                          timeout
-                                         (timeout))]
+                                         (begin
+                                           (future-barrier-exit)
+                                           (timeout)))]
                                     [else
                                      (if thunk-result?
                                          (lambda () #f)
@@ -191,6 +193,7 @@
      ;; before chaining to `go`:
      (sync-poll s
                 #:fail-k (lambda (sched-info polled-all? no-wrappers?)
+                           (future-barrier-exit)
                            (cond
                              [polled-all?
                               (cond
@@ -372,6 +375,10 @@
 
 ;; Run through the events of a `sync` one time; returns a thunk to
 ;; call in tail position --- possibly one that calls `none-k`.
+;; When `none-k` is called, atomic mode is exited with `/no-barrier-exit`,
+;; because a poll may be relying on an external signal to tigger
+;; a re-poll, and we need to stay in a coroutine thread to make sure
+;; that will happen; on success, a plain `end-atomic` is used, instead.
 (define (sync-poll s
                    #:fail-k none-k
                    #:success-k [success-k #f] ; non-#f => result thunk passed to `success-k`
@@ -397,15 +404,15 @@
       [(not sr)
        (when (and just-poll? done-after-poll? polled-all-so-far? (not fast-only?))
          (syncing-done! s none-syncer))
-       (end-atomic)
+       (end-atomic/no-barrier-exit)
        (none-k sched-info polled-all-so-far? no-wrappers?)]
       [(= retries MAX-SYNC-TRIES-ON-ONE-EVT)
        (schedule-info-did-work! sched-info)
-       (end-atomic)
+       (end-atomic/no-barrier-exit)
        (loop (syncer-next sr) 0 #f #f)]
       [(nested-sync-evt? (syncer-evt sr))
        ;; Have to go out of atomic mode to continue:
-       (end-atomic)
+       (end-atomic/no-barrier-exit)
        (define-values (same? new-evt) (poll-nested-sync (syncer-evt sr) just-poll? fast-only? sched-info))
        (cond
          [same?
@@ -413,7 +420,7 @@
          [else
           ;; Since we left atomic mode, double-check that we're
           ;; still syncing before installing the replacement event:
-          (atomically
+          (atomically/no-barrier-exit
            (unless (syncing-selected s)
              (set-syncer-evt! sr new-evt))
            (void))
@@ -449,14 +456,14 @@
           (make-result sr results success-k)]
          [(delayed-poll? new-evt)
           ;; Have to go out of atomic mode to continue:
-          (end-atomic)
+          (end-atomic/no-barrier-exit)
           (cond
             [fast-only? (none-k sched-info #f #f)]
             [else
              (let ([new-evt ((delayed-poll-resume new-evt))])
                ;; Since we left atomic mode, double-check that we're
                ;; still syncing before installing the replacement event:
-               (atomically
+               (atomically/no-barrier-exit
                 (unless (syncing-selected s)
                   (set-syncer-evt! sr new-evt))
                 (void))
@@ -476,12 +483,12 @@
             [(not new-syncers)
              ;; Empty choice, so drop it:
              (syncer-remove! sr s)
-             (end-atomic)
+             (end-atomic/no-barrier-exit)
              (loop (syncer-next sr) 0 polled-all-so-far? no-wrappers?)]
             [else
              ;; Splice in new syncers, and start there
              (syncer-replace! sr new-syncers s)
-             (end-atomic)
+             (end-atomic/no-barrier-exit)
              (loop new-syncers (add1 retries) polled-all-so-far? no-wrappers?)])]
          [(wrap-evt? new-evt)
           (set-syncer-wraps! sr (cons (wrap-evt-wrap new-evt)
@@ -502,7 +509,7 @@
              ;; `make-result` is responsible for leaving atomic mode
              (make-result sr (list always-evt) success-k)]
             [else
-             (end-atomic)
+             (end-atomic/no-barrier-exit)
              (loop sr (add1 retries) polled-all-so-far? #f)])]
          [(control-state-evt? new-evt)
           (define wrap-proc (control-state-evt-wrap-proc new-evt))
@@ -526,7 +533,7 @@
                (when (syncer-retry sr) (internal-error "syncer already has an retry callback"))
                (set-syncer-retry! sr retry-proc)]))
           (set-syncer-evt! sr (control-state-evt-evt new-evt))
-          (end-atomic)
+          (end-atomic/no-barrier-exit)
           (cond
             [(and fast-only?
                   (not (and (eq? interrupt-proc void)
@@ -537,7 +544,7 @@
              (loop sr (add1 retries) polled-all-so-far? no-wrappers?)])]
          [(poll-guard-evt? new-evt)
           ;; Must leave atomic mode:
-          (end-atomic)
+          (end-atomic/no-barrier-exit)
           (cond
             [fast-only? (none-k sched-info #f #f)]
             [else
@@ -555,16 +562,16 @@
                (null? (syncer-abandons sr)))
           ;; Drop this event, since it will never get selected
           (syncer-remove! sr s)
-          (end-atomic)
+          (end-atomic/no-barrier-exit)
           (loop (syncer-next sr) 0 polled-all-so-far? no-wrappers?)]
          [(and (eq? new-evt (syncer-evt sr))
                (not (poll-ctx-incomplete? ctx)))
           ;; No progress on this evt
-          (end-atomic)
+          (end-atomic/no-barrier-exit)
           (loop (syncer-next sr) 0 polled-all-so-far? no-wrappers?)]
          [else
           (set-syncer-evt! sr new-evt)
-          (end-atomic)
+          (end-atomic/no-barrier-exit)
           (loop sr (add1 retries) polled-all-so-far? no-wrappers?)])])))
 
 ;; Called in atomic mode, but leaves atomic mode
@@ -670,7 +677,7 @@
 ;; where an asynchronous selection event is installed, then we can
 ;; completely suspend this thread
 (define (all-asynchronous? s)
-  (atomically
+  (atomically/no-barrier-exit
    (let loop ([sr (syncing-syncers s)])
     (cond
      [(not sr) #t]
