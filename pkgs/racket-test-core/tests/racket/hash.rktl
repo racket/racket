@@ -206,10 +206,14 @@
       (λ (k v) (and (eqv? k 3.14) (string=? v "pi"))))
 
 ;; Filtering by key-value pairs in an ephemeron hash table with equal-always?
-(test (make-ephemeron-hashalw (list (cons (list 'a) "list-a")))
-      hash-filter
-      (make-ephemeron-hashalw (list (cons (list 'a) "list-a") (cons (list 'b) "list-b")))
-      (λ (k v) (and (equal? k (list 'a)) (string=? v "list-a"))))
+(let ([al1 (list 'a)]
+      [al2 (list 'a)])
+  (test (make-ephemeron-hashalw (list (cons al1 "list-a")))
+        hash-filter
+        (make-ephemeron-hashalw (list (cons al2 "list-a") (cons (list 'b) "list-b")))
+        (λ (k v) (and (equal? k (list 'a)) (string=? v "list-a"))))
+  (black-box al1)
+  (black-box al2))
 
 ;; Weak hashes with equal comparator
 (test (make-weak-hash (list (cons 'melon "fruit")))
@@ -1170,6 +1174,21 @@
   (for ([idx (in-range 64)])
     (hash-set! ht idx 1))
   (test 64 length (hash-values ht)))
+
+;; ----------------------------------------
+;; check that various functions work ok with disappearing keys
+
+(for ([i (in-range 10000)])
+  (black-box
+   (equal? (make-ephemeron-hashalw (list (cons (list 'a) "list-a")))
+           (hash-filter
+            (make-ephemeron-hashalw (list (cons (list 'a) "list-a") (cons (list 'b) "list-b")))
+            (λ (k v) (and (equal? k (list 'a)) (string=? v "list-a")))))))
+
+(for ([i (in-range 10000)])
+  (black-box
+   (hash-union! (make-ephemeron-hashalw (list (cons (list 'c) "list-a")))
+                (make-ephemeron-hashalw (list (cons (list 'a) "list-a") (cons (list 'b) "list-b"))))))
 
 ;; ----------------------------------------
 

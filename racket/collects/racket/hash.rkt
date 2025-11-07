@@ -33,7 +33,9 @@
                             (lambda (_ x y) (combine x y))
                             (hash-duplicate-error 'hash-union!))]
          one . rest)
-  (for* ([two (in-list rest)] [(k v) (in-hash two)])
+  (define no-value (cons 'fresh 'no-value))
+  (for* ([two (in-list rest)] [(k v) (in-hash two no-value)]
+                              #:unless (eq? k no-value))
     (hash-set! one k (if (hash-has-key? one k)
                          (combine/key k (hash-ref one k) v)
                          v))))
@@ -70,8 +72,11 @@
                           #:unless (pred k v))
        (hash-remove ht k))]
     [else
+     (define no-value (cons 'fresh 'no-value))
      (define new-ht (hash-copy-clear ht))
-     (for ([(k v) (in-hash ht)] #:when (pred k v))
+     (for ([(k v) (in-hash ht no-value)]
+           #:unless (eq? k no-value)
+           #:when (pred k v))
        (hash-set! new-ht k v))
      new-ht]))
 
