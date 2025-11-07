@@ -1956,4 +1956,22 @@
 
 ;; ----------------------------------------
 
+(let-values ([(insp) (make-inspector)])
+  (let-values ([(type1 make1 pred1 sel1 set1) (make-struct-type 'foo1 #f 0 0 #f null insp)]
+               [(type2 make2 pred2 sel2 set2) (make-struct-type 'foo2 #f 0 0 #f null 'current)]
+               [(type3 make3 pred3 sel3 set3) (parameterize ([current-inspector insp])
+                                                (make-struct-type 'foo3 #f 0 0 #f null))]
+               [(type4 make4 pred4 sel4 set4) (parameterize ([current-inspector insp])
+                                                (make-struct-type 'foo4 #f 0 0 #f null 'current))])
+    (test '#t (begin (struct-type-info type1) #t))
+    (err/rt-test (begin (struct-type-info type2) #t) exn? "inspector")
+    (test '#t (begin (struct-type-info type3) #t))
+    (test '#t (begin (struct-type-info type4) #t))
+    (parameterize ([current-inspector insp])
+      (err/rt-test (begin (struct-type-info type1) #t) exn:fail? "inspector")
+      (err/rt-test (begin (struct-type-info type3) #t) exn:fail? "inspector")
+      (err/rt-test (begin (struct-type-info type4) #t) exn:fail? "inspector"))))
+
+;; ----------------------------------------
+
 (report-errs)
