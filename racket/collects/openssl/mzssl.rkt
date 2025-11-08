@@ -103,8 +103,8 @@ TO DO:
         path-string?
         void?)]
   [ssl-load-verify-source!
-   (c-> ssl-context?
-        verify-source/c
+   (->* (ssl-context? verify-source/c)
+        (#:try? any/c)
         void?)]
   [ssl-load-suggested-certificate-authorities!
    (c-> (or/c ssl-context? ssl-listener?)
