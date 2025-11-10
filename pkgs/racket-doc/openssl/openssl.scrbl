@@ -552,7 +552,9 @@ collection for testing purposes. Since @filepath{test.pem} is public,
 such a test configuration obviously provides no security.
 
 @history[#:changed "8.4.0.5" @elem{Added @racket[(list 'macosx-keychain #f)]
-                             variant.}]}
+                             variant.}
+         #:changed "9.0.0.4" @elem{Exposed the @racket[#:try?] argument, which
+                             was documented but previously available only internally.}]}
 
 @defparam[ssl-default-verify-sources srcs
           (let ([source/c (or/c path-string?
