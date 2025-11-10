@@ -111,19 +111,28 @@
           (when delenda
             (for ([pst (in-hash-values delenda)])
               (send pst finalize #f)))
-          (A (sqlite3_reset stmt)
-             (sqlite3_clear_bindings stmt))
-          (for ([i (in-naturals 1)]
-                [param (in-list params)])
-            (load-param fsym stmt i param))
-          (let* ([info
-                  (for/list ([i (in-range (A (sqlite3_column_count stmt)))])
-                    (A `((name . ,(sqlite3_column_name stmt i))
-                         (decltype . ,(sqlite3_column_decltype stmt i)))))]
-                 [saved-last-insert-rowid
-                  (and (null? info) (A #:db db (sqlite3_last_insert_rowid db)))]
-                 [saved-total-changes
-                  (and (null? info) (A #:db db (sqlite3_total_changes db)))])
+          (define-values (load-params-ok? info saved-last-insert-rowid saved-total-changes)
+            (A #:db db
+               (sqlite3_reset stmt)
+               (sqlite3_clear_bindings stmt)
+               (define load-params-ok?
+                 ;; Try to load params without retry loop.
+                 (for/and ([i (in-naturals 1)] [param (in-list params)])
+                   (define s (-load-param stmt i param))
+                   (= (simplify-status s) SQLITE_OK)))
+               (define column-count (sqlite3_column_count stmt))
+               (define info (for/list ([i (in-range (sqlite3_column_count stmt))])
+                              `((name . ,(sqlite3_column_name stmt i))
+                                (decltype . ,(sqlite3_column_decltype stmt i)))))
+               (define saved-last-insert-rowid (sqlite3_last_insert_rowid db))
+               (define saved-total-changes (sqlite3_total_changes db))
+               (values load-params-ok? info saved-last-insert-rowid saved-total-changes)))
+          (unless load-params-ok?
+            ;; If needed, try again with individual HANDLE wrappers.
+            (for ([i (in-naturals 1)]
+                  [param (in-list params)])
+              (load-param fsym stmt i param)))
+          (let ()
             (define-values (result last-insert-rowid total-changes changes)
               (if cursor?
                   (values #t #f #f #f)
@@ -187,19 +196,20 @@
                (send pst bind fsym null))]))
 
     (define/private (load-param fsym stmt i param)
-      (HANDLE fsym
-       (cond [(int64? param)
-              (A (sqlite3_bind_int64 stmt i param))]
-             [(real? param) ;; includes >64-bit exact integers
-              (A (sqlite3_bind_double stmt i (exact->inexact param)))]
-             [(string? param)
-              (A (sqlite3_bind_text stmt i param))]
-             [(bytes? param)
-              (A (sqlite3_bind_blob stmt i param))]
-             [(sql-null? param)
-              (A (sqlite3_bind_null stmt i))]
-             [else
-              (error/internal* fsym "bad parameter value" '("value" value) param)])))
+      (HANDLE fsym (A (-load-param stmt i param))))
+
+    ;; PRE: in atomic mode
+    (define/private (-load-param stmt i param)
+      (cond [(int64? param)
+             (sqlite3_bind_int64 stmt i param)]
+            [(real? param) ;; includes >64-bit exact integers
+             (sqlite3_bind_double stmt i (real->double-flonum param))]
+            [(string? param)
+             (sqlite3_bind_text stmt i param)]
+            [(bytes? param)
+             (sqlite3_bind_blob stmt i param)]
+            [else ;; (sql-null? param)
+             (sqlite3_bind_null stmt i)]))
 
     (define/private (get-result who stmt end-box fetch-limit pst changes?)
       (with-handlers ([exn:fail?
@@ -255,7 +265,7 @@
       (step*))
 
     ;; -get-row : Symbol stmt -> (U Vector (-> Error))
-    ;; PRE: in atomic mode (or uninterruptible mode in worker)
+    ;; PRE: in atomic mode (or in worker)
     (define/private (-get-row fsym stmt)
       (define column-count (sqlite3_column_count stmt))
       (define vec (make-vector column-count))
@@ -282,42 +292,37 @@
 
     (define/override (prepare1* fsym sql close-on-exec? stmt-type)
       (dprintf "  >> prepare ~e~a\n" sql (if close-on-exec? " close-on-exec" ""))
-      (let ()
-        (define-values (prep-status stmt)
-          (HANDLE fsym
-                  ;; Do not allow break/kill between prepare and
-                  ;; entry of stmt in table.
-                  ((A #:db db
-                      (let-values ([(prep-status stmt tail?)
-                                    (sqlite3_prepare_v2 db sql)])
-                        (cond [(not (zero? prep-status))
-                               (when stmt (sqlite3_finalize stmt))
-                               (lambda () (values prep-status #f))]
-                              [tail?
-                               (when stmt (sqlite3_finalize stmt))
-                               (lambda () ;; escape atomic mode (see A)
-                                 (error fsym "multiple statements given\n  value: ~e" sql))]
-                              [else
-                               (when stmt (hash-set! stmt-table stmt #t))
-                               (lambda () (values prep-status stmt))]))))))
-        (when DEBUG?
-          (dprintf "  << prepared statement #x~x\n" (cast stmt _pointer _uintptr)))
-        (unless stmt (error* fsym "SQL syntax error" '("given" value) sql))
-        (let* ([param-typeids
-                (for/list ([i (in-range (A (sqlite3_bind_parameter_count stmt)))])
-                  'any)]
-               [result-dvecs
-                (for/list ([i (in-range (A (sqlite3_column_count stmt)))])
-                  '#(any))]
-               [pst (new prepared-statement%
-                         (handle stmt)
-                         (close-on-exec? close-on-exec?)
-                         (param-typeids param-typeids)
-                         (result-dvecs result-dvecs)
-                         (stmt-type stmt-type)
-                         (stmt sql)
-                         (owner this))])
-          pst)))
+      (define-values (prep-status stmt param-count column-count)
+        (HANDLE fsym
+                ;; Do not allow break/kill between prepare and entry of stmt in table.
+                ((A #:db db
+                    (define-values (prep-status stmt tail?)
+                      (sqlite3_prepare_v2 db sql))
+                    (cond [(not (zero? prep-status))
+                           (when stmt (sqlite3_finalize stmt))
+                           (lambda () (values prep-status #f #f #f))]
+                          [tail?
+                           (when stmt (sqlite3_finalize stmt))
+                           (lambda () ;; escape atomic mode
+                             (error fsym "multiple statements given\n  value: ~e" sql))]
+                          [else
+                           (when stmt (hash-set! stmt-table stmt #t))
+                           (define param-count (and stmt (sqlite3_bind_parameter_count stmt)))
+                           (define column-count (and stmt (sqlite3_column_count stmt)))
+                           (lambda () (values prep-status stmt param-count column-count))])))))
+      (when DEBUG?
+        (dprintf "  << prepared statement #x~x\n" (cast stmt _pointer _uintptr)))
+      (unless stmt (error* fsym "SQL syntax error" '("given" value) sql))
+      (define param-typeids (for/list ([i (in-range param-count)]) 'any))
+      (define result-dvecs (for/list ([i (in-range column-count)]) '#(any)))
+      (new prepared-statement%
+           (handle stmt)
+           (close-on-exec? close-on-exec?)
+           (param-typeids param-typeids)
+           (result-dvecs result-dvecs)
+           (stmt-type stmt-type)
+           (stmt sql)
+           (owner this)))
 
     (define/override (-get-do-disconnect) ;; PRE: atomic
       ;; Save and clear fields
