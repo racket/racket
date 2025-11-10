@@ -651,7 +651,8 @@
                                        ;; check for break on apply in Racket thread,
                                        ;; since `no-wind` won't check automatically
                                        (call-in-continuation k check-for-break))
-                                     k))]
+                                     (lambda ()
+                                       (k (void)))))]
        [else
         ;; extra atomicity is from `start-uninterrupted`s
         (internal-error "attempting to suspend a future in uninterruptible mode")])

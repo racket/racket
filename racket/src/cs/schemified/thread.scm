@@ -12744,7 +12744,7 @@
                me-f_0
                (if (if (future*-parallel me-f_0) (in-future-thread?) #f)
                  (lambda () (call-in-continuation k_0 1/check-for-break))
-                 k_0))
+                 (lambda () (|#%app| k_0 (void)))))
               (|#%app|
                host:internal-error
                "attempting to suspend a future in uninterruptible mode"))

@@ -1633,5 +1633,21 @@
   (test #t semaphore-try-wait? sema))
 
 ; --------------------
+;; Regression check that `semaphore-post` doesn't incorrectly return 0 values
+
+(let ()
+  (define sema (make-semaphore 0))
+  (define waiting-thread
+    (thread (lambda () (semaphore-wait sema))))
+  (sync (system-idle-evt))
+  (define posting-thread
+    (thread #:pool 'own
+            #:keep 'results
+            (lambda ()
+              (define v (semaphore-post sema))
+              v)))
+  (test (void) thread-wait posting-thread (lambda () #f)))
+
+; --------------------
 
 (report-errs)
