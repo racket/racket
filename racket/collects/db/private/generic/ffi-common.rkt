@@ -16,44 +16,63 @@
 
 (define (ffi-connection-mixin %)
   (class %
-    (inherit call-with-lock)
+    (inherit call-with-lock connected?)
     (super-new)
 
-    ;; -get-db : -> DB/#f
-    (abstract -get-db)
-
-    ;; -get-do-disconnect : -> (-> (-> Void))
-    ;; Partially disconnect (ie, mark as disconnected) and return a closure that
-    ;; finishes disconnecting and returns a closure to report disconnection errors.
-    ;; The first closure result may be called in an OS thread.
-    ;; The second closure result is always called in a Racket thread (but maybe atomic).
-    (abstract -get-do-disconnect)
+    ;; -stage-disconnect : -> (-> (-> Void))
+    ;; Performs disconnect in three stages:
+    ;; - Stage 1 (atomic): mark as disconnected, return stage 2 closure
+    ;; - Stage 2 (atomic or worker): finish disconnect, return stage 3 closure
+    ;; - Stage 3 (non-atomic): report disconnect errors, if any
+    (abstract -stage-disconnect)
 
     ;; ----------------------------------------
     ;; Disconnect
 
-    (define/override (disconnect* _politely?)
-      (super disconnect* _politely?)
+    (define/override (disconnect* politely?)
+      (super disconnect* politely?)
       (real-disconnect))
 
     (define/public (real-disconnect)
-      (call-as-atomic
-       (lambda ()
-         (when (-get-db)
-           ;; Partially disconnect
-           (define do-disconnect (-get-do-disconnect))
-           ;; Finish disconnecting
-           (cond [do-work
-                  ;; Worker thread might be using db, stmts
-                  (log-db-debug "disconnect delayed to worker thread")
-                  (define finish (do-work do-disconnect #f))
-                  (parameterize ((current-custodian (make-custodian-at-root)))
-                    (thread
-                     (lambda ()
-                       (finish)
-                       (log-db-debug "finished delayed disconnect"))))
-                  (void)]
-                 [else ((do-disconnect))])))))
+      (define (thread-at-root proc)
+        (parameterize ((current-custodian (make-custodian-at-root)))
+          (thread proc)))
+      (start-atomic)
+      (cond [(connected?)
+             ;; Stage 1 (atomic)
+             (define do-disconnect (-stage-disconnect))
+             ;; Stage 2 (atomic or worker)
+             (cond [do-work
+                    ;; Worker thread might be using db, stmts
+                    (log-db-debug "disconnect/stage2 in worker thread")
+                    (do-work (lambda ()
+                               (define finish (do-disconnect))
+                               ;; Stage 3 (non-atomic):
+                               (cond [(eq? finish void)
+                                      (log-db-debug "disconnect/stage3 skipped (void)")]
+                                     [else
+                                      (log-db-debug "disconnect/stage3 in new thread")
+                                      (thread-at-root finish)]))
+                             #f)
+                    (end-atomic)]
+                   [else
+                    (log-db-debug "disconnect/stage2 in atomic mode")
+                    (define finish (do-disconnect))
+                    (end-atomic)
+                    ;; Stage 3 (non-atomic):
+                    (cond [(eq? finish void)
+                           (log-db-debug "disconnect/stage3 skipped (void)")]
+                          [(in-atomic-mode?)
+                           (log-db-debug "disconnect/stage3 in new thread")
+                           (thread-at-root finish)]
+                          [else
+                           (log-db-debug "disconnect/stage3 in original thread")
+                           (finish)])])]
+            [else
+             (when do-work
+               (do-work void #f))
+             (end-atomic)])
+      (void))
 
     ;; ----------------------------------------
     ;; Worker Thread Support

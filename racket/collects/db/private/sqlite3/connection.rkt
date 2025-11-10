@@ -86,10 +86,6 @@
                  (begin0 (go db) (end-uninterruptible)))]
               [else (A #:db db (go db))])))
 
-    (define/private (get-db fsym)
-      (or -db (error/not-connected fsym)))
-    (define/override (-get-db) -db)
-
     (define/public (get-dbsystem) dbsystem)
     (define/override (connected?) (and -db #t))
 
@@ -324,7 +320,8 @@
            (stmt sql)
            (owner this)))
 
-    (define/override (-get-do-disconnect) ;; PRE: atomic
+    (define/override (-stage-disconnect)
+      ;; Stage 1 (atomic):
       ;; Save and clear fields
       (define dont-gc this%)
       (define db -db)
@@ -337,14 +334,16 @@
       (memory-order-release)
       ;; Actually disconnect
       (lambda ()
+        ;; Stage 2 (worker or atomic):
         ;; Free all of connection's prepared statements. This will leave
         ;; pst objects with dangling foreign objects, so don't try to free
         ;; them again---check that -db is not-#f.
         (for-each sqlite3_finalize stmts)
-        (HANDLE 'disconnect (sqlite3_close db))
+        (define s (sqlite3_close db))
         (void/reference-sink dont-gc)
-        ;; FIXME: move handle here?
-        void))
+        ;; Stage 3 (called in non-atomic mode):
+        (cond [(= (simplify-status s) SQLITE_OK) void]
+              [else (lambda () (handle-status* 'disconnect s #f db-spec #f))])))
 
     (define/public (get-base) this)
 
