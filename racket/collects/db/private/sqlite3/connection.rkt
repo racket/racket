@@ -12,7 +12,6 @@
          "ffi.rkt"
          "dbsystem.rkt")
 (provide connection%
-         handle-status*
          (protect-out unsafe-load-extension
                       unsafe-create-function
                       unsafe-create-aggregate))
@@ -25,18 +24,15 @@
 
 (define connection%
   (class* (ffi-connection-mixin statement-cache%) (connection<%>)
-    (init db)
+    (init connect)
     (init-private db-spec ;; #f or (list path mode)
                   busy-retry-limit
                   busy-retry-delay)
     (super-new)
 
-    (define -db db)
+    (define -db #f)
+    (define -unregister #f)     ;; unregister finalizer+custodian callback
     (define saved-tx-status #f) ;; set by with-lock, only valid while locked
-    (define creg (register-custodian-shutdown this shutdown-connection #:ordered? #t))
-    (register-finalizer this shutdown-connection)
-
-    (sqlite3_extended_result_codes db #t)
 
     ;; Must finalize all stmts before closing db, but also want stmts to be
     ;; independently finalizable. So db needs strong refs to stmts (but no
@@ -44,6 +40,27 @@
     ;; stmt list internally, but sqlite3_next_stmt is not available on Mac OS
     ;; 10.5.* versions of libsqlite3.
     (define stmt-table (make-hasheq)) ;; hasheq[_sqlite3_statement => #t]
+
+    (let ()
+      (start-atomic)
+      (register-finalizer-and-custodian-shutdown
+       this shutdown-connection
+       #:custodian-available
+       (lambda (unregister)
+         (set! -unregister unregister))
+       #:custodian-unavailable
+       (lambda (register-finalizer)
+         (begin (end-atomic) (error 'sqlite3-connect "custodian shut down"))))
+      (define-values (db status) (connect))
+      (unless (= (simplify-status status) SQLITE_OK)
+        (define msg (and db (sqlite3_errmsg db)))
+        (when db (sqlite3_close db))
+        (-unregister this)
+        (end-atomic)
+        (handle-fail-status 'sqlite3-connect status #:db-spec db-spec #:msg msg))
+      (sqlite3_extended_result_codes db #t)
+      (set! -db db)
+      (end-atomic))
 
     (inherit call-with-lock*
              add-delayed-call!
@@ -329,10 +346,9 @@
       (set! -db #f)
       (hash-clear! stmt-table)
       ;; Unregister custodian shutdown, unless called from custodian.
-      (when creg (unregister-custodian-shutdown this creg))
-      (set! creg #f)
-      (memory-order-release)
-      ;; Actually disconnect
+      (when -unregister
+        (-unregister this)
+        (set! -unregister #f))
       (lambda ()
         ;; Stage 2 (worker or atomic):
         ;; Free all of connection's prepared statements. This will leave
@@ -512,7 +528,7 @@
       (handle-status* who full-s this db-spec pst))
 
     (define/public (get-error-message)
-      (A #:db db (sqlite3_errmsg db)))
+      (A* #:db db (and db (sqlite3_errmsg db))))
     ))
 
 (define shutdown-connection
@@ -521,63 +537,64 @@
   (let ([dont-gc connection%])
     (lambda (obj)
       (send obj real-disconnect)
-      ;; Dummy result to prevent reference from being optimized away
-      dont-gc)))
+      (void/reference-sink dont-gc))))
 
 ;; ----------------------------------------
 
 ;; handle-status* : symbol integer [...] -> integer
 ;; Returns the status code if no error occurred, otherwise
 ;; raises an exception with an appropriate message.
-(define (handle-status* who full-s db db-spec pst)
+(define (handle-status* who full-s dbc db-spec pst)
   (define s (simplify-status full-s))
-  (define db-file (and db-spec (car db-spec)))
-  (define db-mode (and db-spec (cadr db-spec)))
-  (define sql (and pst (send pst get-stmt)))
   (cond [(or (= s SQLITE_OK)
              (= s SQLITE_ROW)
              (= s SQLITE_DONE))
          s]
         [else
-         (let* ([info
-                 (or (assoc s error-table)
-                     '(#f unknown "unknown error code"))]
-                [sym
-                 (cadr info)]
-                [message
-                 (cond [(= s SQLITE_ERROR)
-                        (cond [(is-a? db connection%)
-                               (send db get-error-message)]
-                              [(sqlite3_database? db)
-                               (sqlite3_errmsg db)]
-                              [else (caddr info)])]
-                       [else (caddr info)])])
-           (define extra
-             (string-append
-              ;; error code
-              (format "\n  error code: ~s" full-s)
-              ;; query, if available
-              (cond [sql (format "\n  SQL: ~e" sql)]
-                    [else ""])
-              ;; db file and mode, if relevant and available
-              (cond [(memv s include-db-file-status-list)
-                     (string-append
-                      (format "\n  database: ~e" (or db-file 'unknown))
-                      (format "\n  mode: ~e" (or db-mode 'unknown))
-                      (if (path-string? db-file)
-                          (format "\n  file permissions: ~s"
-                                  (file-or-directory-permissions db-file))
-                          ""))]
-                    [else ""])))
-           (raise (make-exn:fail:sql (format "~a: ~a~a" who message extra)
-                                     (current-continuation-marks)
-                                     sym
-                                     `((code . ,sym)
-                                       (message . ,message)
-                                       (errcode . ,full-s)
-                                       (sql . ,sql)
-                                       (db-file . ,db-file)
-                                       (db-mode . ,db-mode)))))]))
+         (define message
+           (and (= s SQLITE_ERROR) dbc (send dbc get-error-message)))
+         (define sql (and pst (send pst get-stmt)))
+         (handle-fail-status who full-s #:db-spec db-spec #:msg message #:sql sql)]))
+
+(define (handle-fail-status who full-s
+                            #:db-spec [db-spec #f]
+                            #:msg [message0 #f]
+                            #:sql [sql #f])
+  (define s (simplify-status full-s))
+  (define db-file (and db-spec (car db-spec)))
+  (define db-mode (and db-spec (cadr db-spec)))
+  (define info
+    (or (assoc full-s error-table)
+        (assoc s error-table)
+        '(#f unknown "unknown error code")))
+  (define sym (cadr info))
+  (define message (or message0 (caddr info)))
+  (define extra
+    (string-append
+     ;; error code
+     (format "\n  error code: ~s" full-s)
+     ;; query, if available
+     (cond [sql (format "\n  SQL: ~e" sql)]
+           [else ""])
+     ;; db file and mode, if relevant and available
+     (cond [(memv s include-db-file-status-list)
+            (string-append
+             (format "\n  database: ~e" (or db-file 'unknown))
+             (format "\n  mode: ~e" (or db-mode 'unknown))
+             (if (path-string? db-file)
+                 (format "\n  file permissions: ~s"
+                         (file-or-directory-permissions db-file))
+                 ""))]
+           [else ""])))
+  (raise (make-exn:fail:sql (format "~a: ~a~a" who message extra)
+                            (current-continuation-marks)
+                            sym
+                            `((code . ,sym)
+                              (message . ,message)
+                              (errcode . ,full-s)
+                              (sql . ,sql)
+                              (db-file . ,db-file)
+                              (db-mode . ,db-mode)))))
 
 (define (simplify-status s)
   (cond
