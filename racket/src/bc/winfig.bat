@@ -8,6 +8,7 @@ echo srcdir=%SRCDIR% > Makefile
 echo CPPFLAGS=/DWIN32 >> Makefile
 echo CFLAGS=/Ox /GS- >> Makefile
 echo INSTALL_MISSING_PKGS=dist >> Makefile
+echo INSTALL_SETUP_FLAGS=--no-user >> Makefile
 
 cl.exe /nologo /Fe: winfig.exe "%SRCDIR%\..\worksp\winfig.c"
 winfig.exe >> Makefile

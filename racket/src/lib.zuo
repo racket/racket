@@ -519,7 +519,7 @@
       ;; for example Windows needs SQLite before `raco setup` starts
       (run-raco '()
                 (deep-replace (deep-replace setup-args "--no-foreign-libs" '()) "-F" '())
-                "--no-zo"
+                "--only-foreign-libs"
                 "--pkgs" missing-pkgs)
       (alert "packages installed")))
   (run-raco '() setup-args))
