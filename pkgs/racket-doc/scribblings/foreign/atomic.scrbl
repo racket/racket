@@ -40,7 +40,7 @@ also @tech[#:doc reference.scrbl]{unsafe} and practically the same as
 atomic mode in a @tech[#:doc reference.scrbl]{coroutine thread}, but
 uninterruptible mode does not force a @tech[#:doc
 reference.scrbl]{parallel thread} to synchronize with all coroutine
-threads. Uninterrupted mode also allows the use of @emph{uncontested}
+threads. Uninterruptible mode also allows the use of @emph{uncontested}
 semaphores and @racket[equal?]-based hash tables.
 
 @deftogether[(
