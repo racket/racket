@@ -1177,3 +1177,15 @@
        (pattern ((~or* (~and (~seq))
                        (~var _ id)))))
      (void))))
+
+;; issue #5376 (11/2025)
+(test-case "filter out no-fail failures"
+  (define-syntax-class nofail
+    (pattern (1 2))
+    (pattern x))
+  ;; Previously, this caused an internal error.
+  (check-exn
+   #rx"m: expected the literal 0"
+   (lambda ()
+     (syntax-parse '(m (1 3) 4)
+       [(_ a:nofail 0) 'ok]))))

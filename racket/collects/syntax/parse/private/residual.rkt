@@ -148,6 +148,7 @@
   ;; A Failure is (failure PS ExpectStack)
 
   ;; A FailureSet is one of
+  ;; - #t           -- failure within a cannot-fail context
   ;; - Failure
   ;; - (cons FailureSet FailureSet)
 

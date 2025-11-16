@@ -10,7 +10,7 @@
          "kws.rkt")
 (provide call-current-failure-handler
          current-failure-handler
-         invert-failure
+         invert-failureset
          maximal-failures
          invert-ps
          ps->stx+index)
@@ -51,7 +51,7 @@
 
 ;; handle-failureset : (list Symbol/#f Syntax) FailureSet -> escapes
 (define (handle-failureset ctx fs)
-  (define inverted-fs (map invert-failure (reverse (flatten fs))))
+  (define inverted-fs (invert-failureset fs))
   (define maximal-classes (maximal-failures inverted-fs))
   (define ess (map failure-expectstack (append* maximal-classes)))
   (define report (report/sync-shared ess))
@@ -64,11 +64,16 @@
 
 ;; An RFailure is (failure IPS RExpectList)
 
-;; invert-failure : Failure -> RFailure
+;; invert-failureset : FailureSet -> (Listof RFailure)
+(define (invert-failureset fs)
+  (append* (map invert-failure (reverse (flatten fs)))))
+
+;; invert-failure : Failure/#t -> (Listof RFailure)
 (define (invert-failure f)
   (match f
     [(failure ps es)
-     (failure (invert-ps ps) (invert-expectstack es (ps->stx+index ps)))]))
+     (list (failure (invert-ps ps) (invert-expectstack es (ps->stx+index ps))))]
+    ['#t null]))
 
 ;; A Report is (report String (Listof String) Syntax/#f Syntax/#f)
 (define-struct report (message context stx within-stx) #:prefab)
