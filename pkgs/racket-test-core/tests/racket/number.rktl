@@ -2488,6 +2488,9 @@
   (test 1543. z-round (* 1000 (cos 0+i))))
 (test 272-1084.i z-round (* 1000 (tan 1-i)))
 (test -272+1084.i z-round (* 1000 (tan -1+i)))
+(test +nan.0+nan.0i tan +nan.0+1000i)
+(test 495. round (* 1e20 (* 1e300 (real-part (tan 1.57e308+365.6576i)))))
+(test 1637.-1e+180i z-round (* 1e180 (tan 1.57-200.6576i)))
 
 (test 693.+3142.i z-round (* 1000 (log -2)))
 (test 710073.+785.i z-round (* 1000 (log 1.7e308+1.7e308i)))
