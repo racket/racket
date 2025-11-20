@@ -723,25 +723,38 @@
              (cflslowcosh z)))))
 
 (define cfltanh
-   ; from Kahan
-   (let ([theta (fl/ acosh-omega 4.0)])
-      (lambda (z)
-         (let ([x (cfl-real-part z)] [y (cfl-imag-part z)])
-            (let ([ax (flabs x)])
-               (if (fl> ax theta)
+   ; from Kahan + alternative formula when ax > acosh-omega / 2 to avoid underflow
+   (let ([theta_1 (fl/ acosh-omega 1.9)]
+         [theta_2 (fl/ acosh-omega 2.0)]
+         [theta_4 (fl/ acosh-omega 4.0)]
+         [omega_2 (fl/ omega 2.0)])
+     (lambda (z)
+       (let ([x (cfl-real-part z)] [y (cfl-imag-part z)])
+         (let ([ax (flabs x)])
+           (if (fl> ax theta_4)
+               (if ($nan? y)
+                   (fl-make-rectangular +nan.0 +nan.0)
                    (fl-make-rectangular
-                      (if (negated-flonum? x) -1.0 1.0)
-                      (if (negated-flonum? y) (fl- 0.0) 0.0))
-                   (let ([t ($fltan y)]
-                         [s (flsinh x)])
-                      (let ([beta (fl+ 1.0 (fl* t t))]
-                            [ss (fl* s s)])
-                         (let ([rho ($flsqrt (fl+ 1.0 ss))])
-                            (if (infinity? t)
-                                (fl-make-rectangular (fl/ rho s) (/ t))
-                                (let ([k (/ (fl+ 1.0 (fl* beta ss)))])
-                                   (fl-make-rectangular (fl* beta rho s k)
-                                                        (fl* t k)))))))))))))
+                    (if (negated-flonum? x) -1.0 1.0)
+                    (if (fl> ax theta_1)
+                        (if (negated-flonum? y) (fl- 0.0) 0.0)
+                        (let ([s (if (fl< (flabs y) omega_2)
+                                     (flsin (fl* 2.0 y))
+                                     (fl* 2.0 (flsin y) (flcos y)))])
+                          (if (fl> ax theta_2)
+                              (let ([c (flcosh x)])
+                                (fl/ (fl/ (fl/ s c) c) 2.0))
+                              (fl/ s (flcosh (fl* 2.0 x))))))))
+               (let ([t ($fltan y)]
+                     [s (flsinh x)])
+                 (let ([beta (fl+ 1.0 (fl* t t))]
+                       [ss (fl* s s)])
+                   (let ([rho ($flsqrt (fl+ 1.0 ss))])
+                     (if (infinity? t)
+                         (fl-make-rectangular (fl/ rho s) (/ t))
+                         (let ([k (/ (fl+ 1.0 (fl* beta ss)))])
+                           (fl-make-rectangular (fl* beta rho s k)
+                                                (fl* t k)))))))))))))
 
 (define cflacosh
    ; from Kahan

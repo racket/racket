@@ -3048,9 +3048,66 @@ static Scheme_Object *complex_cos(Scheme_Object *c)
 }
 
 
-static Scheme_Object *complex_tan(Scheme_Object *c)
+static Scheme_Object *complex_tan(Scheme_Object *z)
 {
-  return scheme_bin_div(complex_sin(c), complex_cos(c));
+# define THETA_1   373.93466319681255 /* (/ (acosh +max.0) 1.9)*/
+# define THETA_2   355.23793003697193 /* (/ (acosh +max.0) 2.0)*/
+# define THETA_4   177.61896501848597 /* (/ (acosh +max.0) 4.0)*/
+# define OMEGA_2   8.988465674311579e+307 /* (/ (acosh +max.0) 4.0)*/
+# define IS_NEG(x) (((x) < 0.0) || ((x == 0.0) && scheme_minus_zero_p(x)))
+  double x, y, ay, r, i;
+
+  if (SCHEME_COMPLEXP(z)) {
+    x = scheme_real_to_double(_scheme_complex_real_part(z));
+    y = scheme_real_to_double(_scheme_complex_imaginary_part(z));
+  } else {
+    x = scheme_real_to_double(z);
+    y = 0.0;
+  }
+  
+  ay = fabs(y);
+  if ( THETA_4 < ay ) {
+    i = ( IS_NEG(y) ? -1.0 : 1.0 );
+    if ( MZ_IS_NAN(x) ) {
+      return scheme_make_complex(scheme_nan_object, scheme_nan_object);
+    } else if ( THETA_1 < ay) {
+      r = ( IS_NEG(x) ? -0.0 : 0.0);
+    } else {
+      double s, c;
+      s = ( fabs(x) < OMEGA_2 ? sin(2*x) : 2*sin(x)*cos(x) );
+      if ( THETA_2 < ay ) {
+        c = cosh(y);
+        r = s/c/c/2;
+      } else {
+        r = s/cosh(2*y);
+      }
+    }
+  } else {
+    //From Chez Scheme's "tanh" that uses Kahan
+    double t, s, ss, rho, beta, k;
+    t    = tan(x);
+    s    = sinh(y);
+    ss   = s*s;
+    rho  = sqrt(1.0+ss);
+    if ( MZ_IS_INFINITY(t) ) {
+      r = 1.0/t;
+      i = rho/s;
+    } else {
+      beta = 1.0+t*t;
+      k    = 1.0 / (1.0+(beta*ss));
+      r = t*k;
+      i = beta*rho*s*k;
+    }
+  }
+
+#ifdef MZ_USE_SINGLE_FLOATS
+  if (SCHEME_FLTP(_scheme_complex_real_part(z))
+      || SCHEME_FLTP(_scheme_complex_imaginary_part(z))) {
+    return scheme_make_complex(scheme_make_float(r), scheme_make_float(i));
+  }
+#endif
+
+  return scheme_make_complex(scheme_make_double(r), scheme_make_double(i));
 }
 
 static Scheme_Object *complex_asin(Scheme_Object *c)
