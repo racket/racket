@@ -74,6 +74,9 @@
    unsafe-root-add
    (rename-out [empty-node unsafe-empty-root]
                [treelist unsafe-treelist])
+   ;; Skips argument checks:
+   unsafe-treelist-ref
+   unsafe-treelist-length
    ;; For implementing mutable-treelist:
    treelist-copy-for-mutable
    treelist-set!
@@ -358,6 +361,10 @@
      (check-treelist-index 'treelist-ref tl (treelist-size tl) index)
      (define-values (node pos) (treelist-node-for tl index))
      (node-ref node pos)]))
+
+(define (unsafe-treelist-ref tl index)
+  (define-values (node pos) (treelist-node-for tl index))
+  (node-ref node pos))
 
 (define (treelist-first tl)
   (cond
@@ -693,6 +700,9 @@ minimum required storage. |#
 
 (define (treelist-length tl)
   (check-treelist 'treelist-length tl)
+  (treelist-size tl))
+
+(define (unsafe-treelist-length tl)
   (treelist-size tl))
 
 ;; trees that are a result of this method may not meet invariants, but rebalancing is costly
