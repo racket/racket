@@ -17,7 +17,7 @@ jobs:
     container: racket/racket-ci:latest
 
     steps:
-    - uses: actions/checkout@v5
+    - uses: actions/checkout@v6
       with:
         fetch-depth: 100
     - name: Create logs directory
@@ -99,7 +99,7 @@ jobs:
     container: racket/racket-ci:latest
 
     steps:
-    - uses: actions/checkout@v5
+    - uses: actions/checkout@v6
       with:
         fetch-depth: 100
     - name: Create logs directory
