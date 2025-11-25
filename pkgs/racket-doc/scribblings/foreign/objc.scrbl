@@ -296,6 +296,13 @@ Returns the superclass of @racket[cls].
 @history[#:added "6.3"]}
 
 
+@defproc[(objc-class-has-instance-method? [cls _Class] [sel _SEL]) boolean?]{
+
+Reports report @racket[cls] offers an instance method @racket[sel].
+
+@history[#:added "9.0.0.6"]}
+
+
 @defproc[(objc-dispose-class [cls _Class]) void?]{
 
 Destroys @racket[cls], which must have no existing instances or
