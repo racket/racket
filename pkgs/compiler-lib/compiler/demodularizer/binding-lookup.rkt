@@ -17,7 +17,8 @@
      (values sym phase)]
     [else
      (define src-int-name (or (hash-ref (hash-ref (one-mod-exports one-m)
-                                                  phase)
+                                                  phase
+                                                  #hasheq())
                                         sym
                                         #f)
                               ;; not mapped as a linklet export; assume

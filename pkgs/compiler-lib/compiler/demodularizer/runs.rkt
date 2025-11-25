@@ -87,7 +87,8 @@
 
            ;; Adding after requires, so that each list in `phase-runs` ends up in the
            ;; reverse order that we want to emit code
-           (when linkl (hash-set! phase-rev-runs root-phase (cons r (hash-ref phase-rev-runs root-phase null))))]))))
+           (when (or linkl meta-linkl)
+             (hash-set! phase-rev-runs root-phase (cons r (hash-ref phase-rev-runs root-phase null))))]))))
 
   (define (clear-redundant-excluded-to-require!)
     ;; Clear redundant requires based on transitive requires of the source modules.

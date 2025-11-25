@@ -41,8 +41,9 @@
       (define new-body
         (apply
          append
-         (for/list ([r (in-list runs)])
-           (define linkl (run-linkl r))
+         (for/list ([r (in-list runs)]
+                    #:do [(define linkl (run-linkl r))]
+                    #:when linkl)
            (define import-map (run-import-map r))
 
            (define body (linklet*-body linkl))
