@@ -338,6 +338,7 @@
   [exit (known-procedure 3)]
   [exit-handler (known-procedure/single-valued 3)]
   [exn (known-constant)]
+  [exn-classify-errno (known-procedure/single-valued 2)]
   [exn-continuation-marks (known-procedure/single-valued 2)]
   [exn-message (known-procedure/single-valued 2)]
   [exn:break (known-constant)]
