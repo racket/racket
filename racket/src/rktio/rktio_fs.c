@@ -709,8 +709,10 @@ int rktio_file_type(rktio_t *rktio, rktio_const_string_t filename)
     while (1) {
       if (!MSC_W_IZE(lstat)(filename, &buf))
 	break;
-      else if (errno != EINTR)
+      else if (errno != EINTR) {
+        get_posix_error();
 	return RKTIO_FILE_TYPE_ERROR;
+      }
     }
 
     if (S_ISLNK(buf.st_mode))
