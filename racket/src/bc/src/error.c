@@ -118,6 +118,7 @@ static Scheme_Object *error_print_context_length(int, Scheme_Object *[]);
 static Scheme_Object *error_print_srcloc(int, Scheme_Object *[]);
 static Scheme_Object *error_message_to_adjusted_string(int, Scheme_Object *[]);
 static Scheme_Object *error_contract_to_adjusted_string(int, Scheme_Object *[]);
+static Scheme_Object *exn_classify_errno(int, Scheme_Object *[]);
 static MZ_NORETURN void def_error_escape_proc(int, Scheme_Object *[]);
 static Scheme_Object *def_error_display_proc(int, Scheme_Object *[]);
 static Scheme_Object *emergency_error_display_proc(int, Scheme_Object *[]);
@@ -864,6 +865,8 @@ void scheme_init_error(Scheme_Startup_Env *env)
 
   ADD_PRIM_W_ARITY("error-message->adjusted-string",  error_message_to_adjusted_string, 4, 4, env);
   ADD_PRIM_W_ARITY("error-contract->adjusted-string", error_contract_to_adjusted_string, 2, 2, env);
+
+  ADD_PRIM_W_ARITY("exn-classify-errno", exn_classify_errno, 1, 1, env);
 
   ADD_NONCM_PRIM("exit",              scheme_do_exit,  0, 1, env);
 
@@ -5108,6 +5111,34 @@ static Scheme_Object *error_contract_to_adjusted_string(int argc, Scheme_Object 
   base_adjr = scheme_get_param(scheme_current_config(), MZCONFIG_ERROR_MESSAGE_ADJUSTER);
 
   return apply_adjusters(argv[0], argv[1], NULL, NULL, base_adjr, adjust_CONTRACT_MODE);
+}
+
+static Scheme_Object *exn_classify_errno(int argc, Scheme_Object *argv[])
+{
+  Scheme_Object *p = argv[0];
+  const char *s;
+
+  if (!SCHEME_PAIRP(p)
+      || !(SCHEME_INTP(SCHEME_CAR(p)) || SCHEME_BIGNUMP(SCHEME_CAR(p)))
+      || !(SAME_OBJ(SCHEME_CDR(p), posix_symbol)
+           || SAME_OBJ(SCHEME_CDR(p), windows_symbol)
+           || SAME_OBJ(SCHEME_CDR(p), gai_symbol)))
+    scheme_wrong_contract("exn-classify-errno", "(cons/c exact-integer? (or/c 'posix 'windows 'gai))", 0, argc, argv);
+
+  if (!SCHEME_INTP(SCHEME_CAR(p)))
+    return scheme_false;
+
+  s = rktio_classify_error(SAME_OBJ(SCHEME_CDR(p), posix_symbol)
+                           ? RKTIO_ERROR_KIND_POSIX
+                           : (SAME_OBJ(SCHEME_CDR(p), windows_symbol)
+                              ? RKTIO_ERROR_KIND_WINDOWS
+                              : RKTIO_ERROR_KIND_GAI),
+                           SCHEME_INT_VAL(SCHEME_CAR(p)));
+
+  if (!s)
+    return scheme_false;
+
+  return scheme_intern_symbol(s);
 }
 
 /***********************************************************************/

@@ -1027,7 +1027,9 @@ code (under Windows, only), and @racket['gai] indicates a
 @tt{getaddrinfo} error code (which shows up only in
 @racket[exn:fail:network:errno] exceptions for operations that resolve
 hostnames, but is allowed in @racket[exn:fail:filesystem:errno]
-instances for consistency).}
+instances for consistency).
+
+See also @racket[exn-classify-errno].}
 
 @defstruct[(exn:fail:filesystem:missing-module exn:fail:filesystem) ([path module-path?])
            #:inspector #f]{
@@ -1054,7 +1056,9 @@ Raised for TCP and UDP errors.}
 
 Raised for a TCP or UDP error for which a system error code is
 available, where the @racket[errno] field is as for
-@racket[exn:fail:filesystem:errno].}
+@racket[exn:fail:filesystem:errno].
+
+See also @racket[exn-classify-errno].}
 
 
 @defstruct[(exn:fail:out-of-memory exn:fail) ()
@@ -1246,6 +1250,24 @@ property, @racket[#f] otherwise.}
          (exn:missing-module? . -> . module-path?)]{
 
 Returns the @tech{module path}-getting procedure associated with @racket[v].}
+
+@defproc[(exn-classify-errno [errno (cons/c exact-integer? (or/c 'posix 'windows 'gai))])
+         (or/c symbol? #f)]{
+
+Attempts to normalize a value from
+@racket[exn:fail:filesystem:errno-errno] or
+@racket[exn:fail:network:errno-errno], which has a platform-specific
+meaning. The @racket[errno] value is normalized to a symbol, when
+possible, so that the same kind of error on different platforms
+converts to the same symbol. The result is @racket[#f] if a
+normalization of @racket[errno] is unknown.
+
+When a symbol is returned, it uses a Posix-like convention. Potential
+result symbols include @racket['ENOENT] as ``file not found,''
+@racket['EEXIST] as ``file exists already,'' and @racket['EACCESS] as
+``permission denied.''
+
+@history[#:added "9.0.0.7"]}
 
 @;------------------------------------------------------------------------
 @section{Additional Exception Functions}

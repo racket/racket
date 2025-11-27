@@ -1584,6 +1584,12 @@ RKTIO_EXTERN_NOERR const char *rktio_get_error_string(rktio_t *rktio, int kind, 
    deallocated, but it only lasts reliably until the next call to
    either of the functions. */
 
+RKTIO_EXTERN_ATOMIC_NOERR rktio_const_string_t rktio_classify_error(int errkind, int errid);
+/* Returns a best-effort classification of `errkind` plus `errid` into
+   a portable string name using Posix conventions. For example,
+   `RKTIO_ERROR_KIND_POSIX` plus `ENOENT` returns "ENOENT", as does
+   `RKTIO_ERROR_KIND_WINDOWS` plus `ERROR_FILE_NOT_FOUND`. */
+
 RKTIO_EXTERN_NOERR rktio_bool_t rktio_result_is_success(rktio_result_t *res);
 /* Detects a `rktio_result_t` pointer representing success. */
 

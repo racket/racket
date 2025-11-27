@@ -238,6 +238,7 @@ rktio_remap_last_error
 rktio_remap_error
 rktio_get_last_error_string
 rktio_get_error_string
+rktio_classify_error
 rktio_result_is_success
 rktio_result_integer
 rktio_result_string

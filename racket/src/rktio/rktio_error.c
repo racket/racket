@@ -134,7 +134,7 @@ static void do_remap_error(rktio_err_t *err)
       rktio_set_error(err, RKTIO_ERROR_KIND_POSIX, EEXIST);
 #endif
 #ifdef RKTIO_SYSTEM_WINDOWS
-      rktio_set_error(err, RKTIO_ERROR_KIND_WINDOWS, RKTIO_ERROR_EXISTS);
+      rktio_set_error(err, RKTIO_ERROR_KIND_WINDOWS, ERROR_FILE_EXISTS);
 #endif
       break;
     case RKTIO_ERROR_ACCESS_DENIED:
@@ -257,4 +257,333 @@ char *rktio_result_string(rktio_result_t *res)
 rktio_directory_list_t *rktio_result_directory_list(rktio_result_t *res)
 {
   return res->success.dir_list;
+}
+
+rktio_const_string_t rktio_classify_error(int errkind, int errid)
+{
+  rktio_err_t err;
+
+  err.errkind = errkind;
+  err.errid = errid;
+  err.errstep = 0;
+
+  do_remap_error(&err);
+
+  if (err.errkind == RKTIO_ERROR_KIND_POSIX) {
+    switch (err.errid) {
+# define case_errno(E) case E: return #E
+# ifdef E2BIG
+      case_errno(E2BIG);
+# endif
+# ifdef EACCES
+      case_errno(EACCES);
+# endif
+# ifdef EADDRINUSE
+      case_errno(EADDRINUSE);
+# endif
+# ifdef EADDRNOTAVAIL
+      case_errno(EADDRNOTAVAIL);
+# endif
+# ifdef EAFNOSUPPORT
+      case_errno(EAFNOSUPPORT);
+# endif
+# ifdef EAGAIN
+      case_errno(EAGAIN);
+# endif
+# ifdef EALREADY
+      case_errno(EALREADY);
+# endif
+# ifdef EBADF
+      case_errno(EBADF);
+# endif
+# ifdef EBADMSG
+      case_errno(EBADMSG);
+# endif
+# ifdef EBUSY
+      case_errno(EBUSY);
+# endif
+# ifdef ECANCELED
+      case_errno(ECANCELED);
+# endif
+# ifdef ECHILD
+      case_errno(ECHILD);
+# endif
+# ifdef ECONNABORTED
+      case_errno(ECONNABORTED);
+# endif
+# ifdef ECONNREFUSED
+      case_errno(ECONNREFUSED);
+# endif
+# ifdef ECONNRESET
+      case_errno(ECONNRESET);
+# endif
+# ifdef EDEADLK
+      case_errno(EDEADLK);
+# endif
+# ifdef EDESTADDRREQ
+      case_errno(EDESTADDRREQ);
+# endif
+# ifdef EDOM
+      case_errno(EDOM);
+# endif
+# ifdef EDQUOT
+      case_errno(EDQUOT);
+# endif
+# ifdef EEXIST
+      case_errno(EEXIST);
+# endif
+# ifdef EFAULT
+      case_errno(EFAULT);
+# endif
+# ifdef EFBIG
+      case_errno(EFBIG);
+# endif
+# ifdef EHOSTUNREACH
+      case_errno(EHOSTUNREACH);
+# endif
+# ifdef EIDRM
+      case_errno(EIDRM);
+# endif
+# ifdef EILSEQ
+      case_errno(EILSEQ);
+# endif
+# ifdef EINPROGRESS
+      case_errno(EINPROGRESS);
+# endif
+# ifdef EINTR
+      case_errno(EINTR);
+# endif
+# ifdef EINVAL
+      case_errno(EINVAL);
+# endif
+# ifdef EIO
+      case_errno(EIO);
+# endif
+# ifdef EISCONN
+      case_errno(EISCONN);
+# endif
+# ifdef EISDIR
+      case_errno(EISDIR);
+# endif
+# ifdef ELOOP
+      case_errno(ELOOP);
+# endif
+# ifdef EMFILE
+      case_errno(EMFILE);
+# endif
+# ifdef EMLINK
+      case_errno(EMLINK);
+# endif
+# ifdef EMSGSIZE
+      case_errno(EMSGSIZE);
+# endif
+# ifdef EMULTIHOP
+      case_errno(EMULTIHOP);
+# endif
+# ifdef ENAMETOOLONG
+      case_errno(ENAMETOOLONG);
+# endif
+# ifdef ENETDOWN
+      case_errno(ENETDOWN);
+# endif
+# ifdef ENETRESET
+      case_errno(ENETRESET);
+# endif
+# ifdef ENETUNREACH
+      case_errno(ENETUNREACH);
+# endif
+# ifdef ENFILE
+      case_errno(ENFILE);
+# endif
+# ifdef ENOBUFS
+      case_errno(ENOBUFS);
+# endif
+# ifdef ENODATA
+      case_errno(ENODATA);
+# endif
+# ifdef ENODEV
+      case_errno(ENODEV);
+# endif
+# ifdef ENOENT
+      case_errno(ENOENT);
+# endif
+# ifdef ENOEXEC
+      case_errno(ENOEXEC);
+# endif
+# ifdef ENOLCK
+      case_errno(ENOLCK);
+# endif
+# ifdef ENOLINK
+      case_errno(ENOLINK);
+# endif
+# ifdef ENOMEM
+      case_errno(ENOMEM);
+# endif
+# ifdef ENOMSG
+      case_errno(ENOMSG);
+# endif
+# ifdef ENOPROTOOPT
+      case_errno(ENOPROTOOPT);
+# endif
+# ifdef ENOSPC
+      case_errno(ENOSPC);
+# endif
+# ifdef ENOSR
+      case_errno(ENOSR);
+# endif
+# ifdef ENOSTR
+      case_errno(ENOSTR);
+# endif
+# ifdef ENOSYS
+      case_errno(ENOSYS);
+# endif
+# ifdef ENOTCONN
+      case_errno(ENOTCONN);
+# endif
+# ifdef ENOTDIR
+      case_errno(ENOTDIR);
+# endif
+# ifdef ENOTEMPTY
+      case_errno(ENOTEMPTY);
+# endif
+# ifdef ENOTRECOVERABLE
+      case_errno(ENOTRECOVERABLE);
+# endif
+# ifdef ENOTSOCK
+      case_errno(ENOTSOCK);
+# endif
+# ifdef ENOTSUP
+      case_errno(ENOTSUP);
+# endif
+# ifdef ENOTTY
+      case_errno(ENOTTY);
+# endif
+# ifdef ENXIO
+      case_errno(ENXIO);
+# endif
+# ifdef EOVERFLOW
+      case_errno(EOVERFLOW);
+# endif
+# ifdef EOWNERDEAD
+      case_errno(EOWNERDEAD);
+# endif
+# ifdef EPERM
+      case_errno(EPERM);
+# endif
+# ifdef EPIPE
+      case_errno(EPIPE);
+# endif
+# ifdef EPROTO
+      case_errno(EPROTO);
+# endif
+# ifdef EPROTONOSUPPORT
+      case_errno(EPROTONOSUPPORT);
+# endif
+# ifdef EPROTOTYPE
+      case_errno(EPROTOTYPE);
+# endif
+# ifdef ERANGE
+      case_errno(ERANGE);
+# endif
+# ifdef EROFS
+      case_errno(EROFS);
+# endif
+# ifdef ESPIPE
+      case_errno(ESPIPE);
+# endif
+# ifdef ESRCH
+      case_errno(ESRCH);
+# endif
+# ifdef ESTALE
+      case_errno(ESTALE);
+# endif
+# ifdef ETIME
+      case_errno(ETIME);
+# endif
+# ifdef ETIMEDOUT
+      case_errno(ETIMEDOUT);
+# endif
+# ifdef ETXTBSY
+      case_errno(ETXTBSY);
+# endif
+# ifdef EXDEV
+      case_errno(EXDEV);
+# endif
+# if defined(EWOULDBLOCK) && defined(EAGAIN)
+#  if  EWOULDBLOCK != EAGAIN
+    case EWOULDBLOCK: return "EAGAIN";
+#  endif
+# endif
+# if defined(EOPNOTSUPP) && defined(ENOTSUP)
+#  if  EOPNOTSUPP != ENOTSUP
+    case EOPNOTSUPP: return "ENOTSUP";
+#  endif
+# endif
+    }
+  } else if (err.errkind == RKTIO_ERROR_KIND_WINDOWS) {
+# ifdef RKTIO_SYSTEM_WINDOWS
+    switch (err.errid) {
+#  define case_winerr(ERR, E) case ERR: return #E
+      case_winerr(ERROR_FILE_NOT_FOUND, ENOENT);
+      case_winerr(ERROR_PATH_NOT_FOUND, ENOENT);
+      case_winerr(ERROR_TOO_MANY_OPEN_FILES, EMFILE);
+      case_winerr(ERROR_ACCESS_DENIED, EACCES);
+      case_winerr(ERROR_INVALID_HANDLE, EBADF);
+      case_winerr(ERROR_NOT_ENOUGH_MEMORY, ENOMEM);
+      case_winerr(ERROR_INVALID_ACCESS, EINVAL);
+      case_winerr(ERROR_INVALID_DRIVE, ENODEV);
+      case_winerr(ERROR_CURRENT_DIRECTORY, EBUSY);
+      case_winerr(ERROR_NOT_SAME_DEVICE, EXDEV);
+      case_winerr(ERROR_NO_MORE_FILES, ENOENT);
+      case_winerr(ERROR_WRITE_PROTECT, EROFS);
+      case_winerr(ERROR_BAD_UNIT, ENODEV);
+      case_winerr(ERROR_NOT_READY, EBUSY);
+      case_winerr(ERROR_SHARING_VIOLATION, EACCES);
+      case_winerr(ERROR_LOCK_VIOLATION, EACCES);
+      case_winerr(ERROR_HANDLE_DISK_FULL, ENOSPC);
+      case_winerr(ERROR_NOT_SUPPORTED, ENOTSUP);
+      case_winerr(ERROR_FILE_EXISTS, EEXIST);
+      case_winerr(ERROR_INVALID_PARAMETER, EINVAL);
+      case_winerr(ERROR_BROKEN_PIPE, EPIPE);
+      case_winerr(ERROR_DISK_FULL, ENOSPC);
+      case_winerr(ERROR_CALL_NOT_IMPLEMENTED, ENOSYS);
+      case_winerr(ERROR_INVALID_NAME, EINVAL);
+      case_winerr(ERROR_DIR_NOT_EMPTY, ENOTEMPTY);
+      case_winerr(ERROR_ALREADY_EXISTS, EEXIST);
+      case_winerr(ERROR_FILENAME_EXCED_RANGE, ENAMETOOLONG);
+      case_winerr(ERROR_DIRECTORY, ENOTDIR);
+      case_winerr(ERROR_TOO_MANY_LINKS, EMLINK);
+      case_winerr(ERROR_WAIT_NO_CHILDREN, ECHILD);
+      case_winerr(ERROR_CHILD_NOT_COMPLETE, ECHILD);
+      case_winerr(ERROR_BUSY, EBUSY);
+      case_winerr(ERROR_NO_PROC_SLOTS, EAGAIN);
+      case_winerr(ERROR_PRIVILEGE_NOT_HELD, EPERM);
+      case_winerr(ERROR_INVALID_OWNER, EPERM);
+      case_winerr(ERROR_INVALID_PRIMARY_GROUP, EPERM);
+      case_winerr(ERROR_SEM_TIMEOUT, ETIMEDOUT);
+      case_winerr(ERROR_OPERATION_ABORTED, ECANCELED);
+      case_winerr(ERROR_IO_INCOMPLETE, EAGAIN);
+      case_winerr(ERROR_IO_PENDING, EINPROGRESS);
+      case_winerr(ERROR_INVALID_FUNCTION, EINVAL);
+      case_winerr(ERROR_BAD_LENGTH, EINVAL);
+      case_winerr(ERROR_SEEK, EINVAL);
+      case_winerr(ERROR_NEGATIVE_SEEK, EINVAL);
+      case_winerr(ERROR_BUSY_DRIVE, EBUSY);
+      case_winerr(ERROR_BAD_PIPE, EPIPE);
+      case_winerr(ERROR_PIPE_BUSY, EBUSY);
+      case_winerr(ERROR_NO_DATA, EPIPE);
+      case_winerr(ERROR_PIPE_NOT_CONNECTED, EPIPE);
+      case_winerr(ERROR_MORE_DATA, EMSGSIZE);
+      case_winerr(ERROR_NO_MORE_ITEMS, ENOENT);
+      case_winerr(ERROR_PARTIAL_COPY, EIO);
+      case_winerr(ERROR_INVALID_ADDRESS, EFAULT);
+      case_winerr(ERROR_ARITHMETIC_OVERFLOW, ERANGE);
+      case_winerr(ERROR_PIPE_CONNECTED, EBUSY);
+      case_winerr(ERROR_PIPE_LISTENING, EBUSY);
+      case_winerr(ERROR_INVALID_AT_INTERRUPT_TIME, EINTR);
+    }
+# endif
+  }
+
+  return NULL;
 }

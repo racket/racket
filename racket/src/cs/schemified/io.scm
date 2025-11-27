@@ -80,6 +80,7 @@
                 (1/error-print-source-location error-print-source-location)
                 (error-value->string error-value->string)
                 (1/executable-yield-handler executable-yield-handler)
+                (exn-classify-errno exn-classify-errno)
                 (1/expand-user-path expand-user-path)
                 (1/explode-path explode-path)
                 (ffi-get-lib ffi-get-lib)
@@ -3238,6 +3239,7 @@
 (define rktio_get_last_error_string
   (hash-ref rktio-table 'rktio_get_last_error_string))
 (define rktio_get_error_string (hash-ref rktio-table 'rktio_get_error_string))
+(define rktio_classify_error (hash-ref rktio-table 'rktio_classify_error))
 (define rktio_result_is_success
   (hash-ref rktio-table 'rktio_result_is_success))
 (define rktio_result_integer (hash-ref rktio-table 'rktio_result_integer))
@@ -32640,6 +32642,29 @@
         (begin
           (do-write 'default-error-value->string-handler v_0 o_0 len_0)
           (1/get-output-string o_0))))))
+(define exn-classify-errno
+  (lambda (errno_0)
+    (begin
+      (if (if (pair? errno_0)
+            (if (exact-integer? (car errno_0))
+              (memq (cdr errno_0) '(posix windows gai))
+              #f)
+            #f)
+        (void)
+        (raise-argument-error
+         'exn-classify-errno
+         "(cons/c exact-integer? (or/c 'posix 'windows 'gai))"
+         errno_0))
+      (if (fixnum? (car errno_0))
+        (let ((bstr_0
+               (let ((app_0
+                      (let ((tmp_0 (cdr errno_0)))
+                        (if (eq? tmp_0 'posix)
+                          0
+                          (if (eq? tmp_0 'windows) 1 2)))))
+                 (|#%app| rktio_classify_error app_0 (car errno_0)))))
+          (if bstr_0 (string->symbol (1/bytes->string/latin-1 bstr_0)) #f))
+        #f))))
 (define install-error-value->string-handler!
   (lambda ()
     (begin

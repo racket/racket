@@ -178,5 +178,16 @@
                     [else #f]))])
   (test-error-match #rx"^function call: bad call" (1 2))
   (test-error-match #rx"^function call: bad call" (1 #:x 2)))
-  
+
+(err/rt-test (exn-classify-errno (cons 0.5 'posix)))
+(err/rt-test (exn-classify-errno (cons 1 'x)))
+(test 'ENOENT
+      (let ([exn (with-handlers ([void values])
+                   (open-input-file "surely-this-file-does-not-exist"))])
+        (and (exn:fail:filesystem:errno? exn)
+             (exn-classify-errno (exn:fail:filesystem:errno-errno exn)))))
+(test #f (exn-classify-errno (cons (expt 2 100) 'posix)))
+(test #f (exn-classify-errno (cons (expt 2 100) 'windows)))
+(test #f (exn-classify-errno (cons (expt 2 100) 'gai)))
+
 (report-errs)
