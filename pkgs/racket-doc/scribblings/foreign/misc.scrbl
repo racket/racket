@@ -73,6 +73,8 @@ The recognized symbols currently consist of the 81 codes defined by
 Std 1003.1, 2013 Edition} (also known as POSIX.1), including
 @racket['EINTR], @racket['EEXIST], and @racket['EAGAIN].
 
+See also @racket[exn-classify-errno].
+
 @history[#:changed "6.6.0.5" @elem{Relaxed the contract and added
 support for more symbols.}]}
 

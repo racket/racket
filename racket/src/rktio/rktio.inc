@@ -238,6 +238,7 @@ Sforeign_symbol("rktio_remap_last_error", (void *)rktio_remap_last_error);
 Sforeign_symbol("rktio_remap_error", (void *)rktio_remap_error);
 Sforeign_symbol("rktio_get_last_error_string", (void *)rktio_get_last_error_string);
 Sforeign_symbol("rktio_get_error_string", (void *)rktio_get_error_string);
+Sforeign_symbol("rktio_classify_error", (void *)rktio_classify_error);
 Sforeign_symbol("rktio_result_is_success", (void *)rktio_result_is_success);
 Sforeign_symbol("rktio_result_integer", (void *)rktio_result_integer);
 Sforeign_symbol("rktio_result_string", (void *)rktio_result_string);

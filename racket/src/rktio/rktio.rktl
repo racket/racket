@@ -1657,6 +1657,11 @@
  (((ref rktio_t) rktio) (int kind) (int errid)))
 (define-function
  ()
+ rktio_const_string_t
+ rktio_classify_error
+ ((int errkind) (int errid)))
+(define-function
+ ()
  rktio_bool_t
  rktio_result_is_success
  (((ref rktio_result_t) res)))
