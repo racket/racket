@@ -15,7 +15,7 @@ jobs:
 # These jobs build each Racket component separately and tests on the component start as soon as each
 # component finishes building.
   buildtest-win:
-    runs-on: windows-latest
+    runs-on: windows-2022
 
     strategy:
       fail-fast: false
