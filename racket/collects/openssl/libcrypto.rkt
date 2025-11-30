@@ -82,7 +82,7 @@
 (define-runtime-path libcrypto-so
   #:runtime?-id runtime?
   (case (if runtime? (system-type) (cross-system-type))
-    [(windows) '(so "libeay32")]
+    [(windows) (if (system-type 'msvc) '(so "libcrypto-3-x64") '(so "libeay32"))]
     [(macosx)
      (case (if runtime? (system-type 'arch) (cross-system-type 'arch))
        [(i386 ppc)

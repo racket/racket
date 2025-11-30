@@ -16,7 +16,7 @@
 (define-runtime-path libssl-so
   #:runtime?-id runtime?
   (case (if runtime? (system-type) (cross-system-type))
-    [(windows) '(so "ssleay32")]
+    [(windows) (if (system-type 'msvc) '(so "libssl-3-x64") '(so "ssleay32"))]
     [(macosx)
      (case (if runtime? (system-type 'arch) (cross-system-type 'arch))
        [(i386 ppc)

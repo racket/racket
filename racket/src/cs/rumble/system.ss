@@ -9,6 +9,11 @@
    [(getenv "PLT_CS_MAKE_LINK_SHARED") 'shared]
    [else 'static]))
 
+(define msvc-build?
+ (meta-cond
+  [(getenv "VisualStudioVersion") #t]
+  [else #f]))
+
 (define cross-mode 'infer)
 (define (set-cross-mode! m) (set! cross-mode m))
 
@@ -176,6 +181,7 @@
        [(os) os-symbol]
        [(os*) os*-symbol]
        [(arch) arch-symbol]
+       [(msvc) msvc-build?]
        [(word) (if (> (fixnum-width) 32) 64 32)]
        [(gc) 'cs]
        [(link) link-symbol]
@@ -187,7 +193,7 @@
        [(cross) cross-mode]
        [else (raise-argument-error 'system-type
                                    (string-append
-                                    "(or/c 'os 'os* 'arch 'word 'vm 'gc 'link 'machine 'target-machine\n"
+                                    "(or/c 'os 'os* 'arch 'msvc 'word 'vm 'gc 'link 'machine 'target-machine\n"
                                     "      'so-suffix 'so-mode 'fs-change 'cross)")
                                    mode)])])))
 
