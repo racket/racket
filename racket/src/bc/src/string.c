@@ -189,7 +189,7 @@ static void cache_locale_or_close(int to_bytes, rktio_converter_t *cd, char *le)
 
 ROSYM static Scheme_Object *sys_symbol, *sys_os_symbol, *sys_arch_symbol;
 ROSYM static Scheme_Object *link_symbol, *machine_symbol, *vm_symbol, *gc_symbol;
-ROSYM static Scheme_Object *so_suffix_symbol, *so_mode_symbol, *word_symbol;
+ROSYM static Scheme_Object *so_suffix_symbol, *so_mode_symbol, *word_symbol, *msvc_symbol;
 ROSYM static Scheme_Object *os_symbol, *os_star_symbol, *arch_symbol;
 ROSYM static Scheme_Object *fs_change_symbol, *target_machine_symbol, *cross_symbol;
 ROSYM static Scheme_Object *racket_symbol, *cgc_symbol, *_3m_symbol, *cs_symbol;
@@ -251,6 +251,7 @@ scheme_init_string (Scheme_Startup_Env *env)
   REGISTER_SO(so_suffix_symbol);
   REGISTER_SO(so_mode_symbol);
   REGISTER_SO(word_symbol);
+  REGISTER_SO(msvc_symbol);
   REGISTER_SO(os_symbol);
   REGISTER_SO(os_star_symbol);
   REGISTER_SO(arch_symbol);
@@ -264,6 +265,7 @@ scheme_init_string (Scheme_Startup_Env *env)
   so_suffix_symbol = scheme_intern_symbol("so-suffix");
   so_mode_symbol = scheme_intern_symbol("so-mode");
   word_symbol = scheme_intern_symbol("word");
+  msvc_symbol = scheme_intern_symbol("msvc");
   os_symbol = scheme_intern_symbol("os");
   os_star_symbol = scheme_intern_symbol("os*");
   arch_symbol = scheme_intern_symbol("arch");
@@ -2569,9 +2571,16 @@ static Scheme_Object *system_type(int argc, Scheme_Object *argv[])
       return scheme_intern_symbol(MZ_SYSTEM_TYPE_SO_MODE);
     }
 
-
     if (SAME_OBJ(argv[0], word_symbol)) {
       return scheme_make_integer(sizeof(void*)*8);
+    }
+
+    if (SAME_OBJ(argv[0], msvc_symbol)) {
+#ifdef _MSVC
+      return scheme_true;
+#else
+      return scheme_false;
+#endif
     }
 
     if (SAME_OBJ(argv[0], fs_change_symbol)) {
@@ -2596,7 +2605,7 @@ static Scheme_Object *system_type(int argc, Scheme_Object *argv[])
 
     if (!SAME_OBJ(argv[0], os_symbol)) {
       scheme_wrong_contract("system-type",
-                            ("(or/c 'os 'os* 'arch 'word 'link 'machine 'target-machine\n"
+                            ("(or/c 'os 'os* 'arch 'word 'msvc 'link 'machine 'target-machine\n"
                              "      'vm 'gc 'so-suffix 'so-mode 'word 'fs-change 'cross)"),
                             0, argc, argv);
       return NULL;
