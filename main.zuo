@@ -102,6 +102,25 @@
   (define (get-mcr-args)
     (list "-MCR" (~a (path->complete-path (at-source "build/zo")) ":")))
 
+  (define (pkgs-to-install)
+    (define s (string-trim (lookup 'PKGS)))
+    (define f (at-source "build/PKGS"))
+    (shell->strings
+     (cond
+       [(glob-match? "{}*" s)
+        (if (file-exists? f)
+            (file->string f)
+            (substring s 2))]
+       [else s])))
+
+  ;; for distro-build steps, doesn't try to use "build/PKGS",
+  ;; but does strip a leading "{}"
+  (define (lookup-pkgs)
+    (define s (string-trim (lookup 'PKGS)))
+    (if (glob-match? "{}*" s)
+        (substring s 2)
+        s))
+
   ;; ------------------------------------------------------------
   ;; check consistent use of checkout
 
@@ -187,6 +206,10 @@
                                                (shell->strings (shell-subst-pwd (lookup 'CONFIGURE_ARGS_qq)
                                                                                 (at-source "racket/src/build" subdir)))
                                                (shell->strings (lookup 'CONFIGURE_ARGS))
+                                               (let ([f (at-source "build/CONFIGURE_ARGS")])
+                                                 (if (file-exists? f)
+                                                     (shell->strings (file->string f))
+                                                     '()))
                                                (if (hash-ref options 'server-compile-machine? #f)
                                                    '("--enable-crossany")
                                                    '())
@@ -366,7 +389,7 @@
                   (if jobs (list "-j" (~a jobs)) '())
                   "--catalog" unix-catalog "--auto" "-i"
                   required-pkgs
-                  (shell->strings (lookup 'PKGS)))
+                  (pkgs-to-install))
     ;; destdir fixups
     (define at-vm-dir (make-at-dir (at-source "racket/src/build" (if (eq? vm 'cs) "cs/c" "bc"))))
     (define config (config-file->hash (at-vm-dir "Makefile") vars))
@@ -401,7 +424,7 @@
             "--no-setup" "--pkgs" "--skip-installed" "--scope" "installation"
             "--deps" "search-auto"
             required-pkgs
-            (shell->strings (lookup 'PKGS)))
+            (pkgs-to-install))
       (setup vm "--only-foreign-libs"))
 
     (setup vm (shell->strings setup-extra-args)
@@ -537,7 +560,7 @@
     (built-racket options "-l-" "distro-build/pkg-info" "-o" "build/pkgs.rktd" "build/catalog-copy")
     (built-racket options "-l" "distro-build/start-site" config+mode)
     (built-racket options "-l" "distro-build/install-pkgs" config+mode
-                  (build-shell (lookup 'PKGS) (lookup 'TEST_PKGS))
+                  (build-shell (lookup-pkgs) (lookup 'TEST_PKGS))
                   source-user-auto
                   "--all-platforms")
     (built-raco options "setup" "--avoid-main" (get-job-options))
@@ -656,7 +679,7 @@
     (in-bundle-raco options "setup" "--no-user" (get-job-options) recompile-options (get-recompile-cache-options))
     (define pkg-source-flags (shell->strings (lookup 'PKG_SOURCE_MODE)))
     (in-bundle-raco options "pkg" "install" remote-inst-auto pkg-source-flags required-pkgs)
-    (in-bundle-raco options "pkg" "install" remote-inst-auto pkg-source-flags (shell->strings (lookup 'PKGS)))
+    (in-bundle-raco options "pkg" "install" remote-inst-auto pkg-source-flags (shell->strings (lookup-pkgs)))
     (built-racket* "-l" "setup/unixstyle-install" "post-adjust" (lookup 'SOURCE_MODE) (lookup 'PKG_SOURCE_MODE) "racket" "bundle/racket")
 
     (built-racket* "-l" "distro-build/set-config" "bundle/racket/etc/config.rktd"
@@ -761,7 +784,7 @@
           config+mode
           (lookup 'SERVER) (lookup 'SERVER_PORT)
           (lookup 'SERVER_HOSTS)
-          (lookup 'PKGS)
+          (lookup-pkgs)
           (lookup 'DOC_SEARCH) (lookup 'DIST_NAME)
           (lookup 'DIST_BASE) (lookup 'DIST_DIR)))
 
@@ -782,11 +805,11 @@
                      (apply build-path (cdr (explode-path (hash-ref (runtime-env) 'dir))))
                      "build/docs"))
     (built-racket options "-l-" "distro-build/install-for-docs" "build/docs"
-                  config+mode (lookup 'PKGS)
+                  config+mode (lookup-pkgs)
                   "build/built/catalog" "build/native/catalog")
     (built-racket options "-l-" "distro-build/assemble-site"
                   config+mode (lookup 'DIST_BASE)
-                  (build-shell (lookup 'PKGS) (lookup 'TEST_PKGS))))
+                  (build-shell (lookup-pkgs) (lookup 'TEST_PKGS))))
 
   (define (snapshot-site token)
     (site token)

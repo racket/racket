@@ -207,6 +207,10 @@ the build system](#3-zuo-and-the-racket-build-system).)
 If you would like to provide arguments to `configure` for the minimal
 Racket build, then you can supply them with by adding
 `CONFIGURE_ARGS="<options>"` to `make in-place` or `make unix-style`.
+You can also put <_options_> in a file `"build/CONFIGURE_ARGS"` relative
+to the repository’s root directory, and those are added to the end of
+any <_options_> provided as `CONFIGURE_ARGS="<options>"`. On Windows,
+the <_options_> are supplied to `winfig.bat` instead of `configure`.
 
 The `"pkgs"` directory contains packages that are tied to the Racket
 core implementation and are therefore kept in the same Git repository. A
@@ -214,16 +218,19 @@ core implementation and are therefore kept in the same Git repository. A
 copies packages out of `"pkgs"` to install them.
 
 To install a subset of the packages that would otherwise be installed,
-supply a `PKGS` value to `make`. For example,
+supply a `PKGS` value to `make` or put a list of packages in
+`"build/PKGS"` (relative to the repository’s root directory). For
+example,
 
   `make PKGS="gui-lib readline-lib"`
 
 installs only the `"gui-lib"` and `"readline-lib"` packages and their
-dependencies. The default value of `PKGS` is `"main-distribution
-main-distribution-test"`. If you run `make` a second time, all
-previously installed packages remain installed and are updated, while
-new packages are added. To uninstall previously selected package, use
-`raco pkg remove`.
+dependencies. The default value of `PKGS` is `"{} main-distribution
+main-distribution-test"`, where the leading `{}` means that if
+`"build/PKGS"` exists, its content is used as the list of packages. If
+you run `make` a second time, all previously installed packages remain
+installed and are updated, while new packages are added. To uninstall
+previously selected package, use `raco pkg remove`.
 
 To build anything other than the latest sources in the repository
 \(e.g., when building from the `v6.2.1` tag), you need a catalog that’s
@@ -315,10 +322,11 @@ options.
 If you don’t want any special configuration and you just want the base
 build, you can use `make base` with the top-level makefile.
 
-Minimal Racket does not require additional native libraries to run, but
-under Windows, encoding-conversion, extflonum, and SSL functionality is
-hobbled until native libraries from the `"racket-win32-i386"` or
-`"racket-win32-x86_64"` package are installed.
+Minimal Racket does not require additional native libraries to run.
+Under Windows, encoding-conversion, extflonum, and SSL functionality is
+hobbled until native libraries from the `"racket-lib"` package’s
+dependencies are installed; that package is installed as part of `nmake
+install`.
 
 On all platforms, from the top-level makefile, the `PLT_SETUP_OPTIONS`
 makefile variable is passed on to the `raco setup` that is used to build
@@ -330,7 +338,8 @@ passed on, but it is meant to be set by some makefile targets when
 For cross compilation, add configuration options to
 `CONFIGURE_ARGS="<options>"` as described in the `"README.txt"` of
 `"racket/src"`, but also add a `RACKET=...` argument for the top-level
-makefile instead of using  `--enable-racket=...` for `configure`.
+makefile instead of using  `--enable-racket=...` for `configure`. \(You
+can also put <_options_> in a file `"build/CONFIGURE_ARGS"`.)
 
 Specify `SETUP_MACHINE_FLAGS=<options>` to set Racket flags that control
 the target machine of compiled bytecode for `raco setup` and `raco pkg

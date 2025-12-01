@@ -166,8 +166,13 @@ that @seclink["zuo"]{drives the rest of the build system}.)
 
 If you would like to provide arguments to @exec{configure} for the
 minimal Racket build, then you can supply them with by adding
-@exec{CONFIGURE_ARGS="@nonterm{options}"} to @exec{make in-place}
-or @exec{make unix-style}.
+@exec{CONFIGURE_ARGS="@nonterm{options}"} to @exec{make in-place} or
+@exec{make unix-style}. You can also put @nonterm{options} in a file
+@filepath{build/CONFIGURE_ARGS} relative to the repository's root
+directory, and those are added to the end of any @nonterm{options}
+provided as @exec{CONFIGURE_ARGS="@nonterm{options}"}. On Windows, the
+@nonterm{options} are supplied to @exec{winfig.bat} instead of
+@exec{configure}.
 
 The @filepath{pkgs} directory contains packages that are tied to the
 Racket core implementation and are therefore kept in the same Git
@@ -176,13 +181,17 @@ while @exec{make unix-style} copies packages out of @filepath{pkgs} to
 install them.
 
 To install a subset of the packages that would otherwise be installed,
-supply a @exec{PKGS} value to @exec{make}. For example,
+supply a @exec{PKGS} value to @exec{make} or put a list of
+packages in @filepath{build/PKGS} (relative to the repository's root
+directory). For example,
 
 @commandline{make PKGS="gui-lib readline-lib"}
 
 installs only the @filepath{gui-lib} and @filepath{readline-lib} packages
 and their dependencies. The default value of @exec{PKGS} is
-@tt{"main-distribution main-distribution-test"}. If you run @tt{make}
+@tt{"{} main-distribution main-distribution-test"}, where the leading
+@litchar{{}} means that if @filepath{build/PKGS} exists, its content
+is used as the list of packages. If you run @tt{make}
 a second time, all previously installed packages remain installed and
 are updated, while new packages are added. To uninstall previously
 selected package, use @exec{raco pkg remove}.
@@ -283,11 +292,11 @@ If you don't want any special configuration and you just want the base
 build, you can use @exec{make base} with the
 top-level makefile.
 
-Minimal Racket does not require additional native libraries to run,
-but under Windows, encoding-conversion, extflonum, and SSL
+Minimal Racket does not require additional native libraries to run.
+Under Windows, encoding-conversion, extflonum, and SSL
 functionality is hobbled until native libraries from the
-@filepath{racket-win32-i386} or @filepath{racket-win32-x86_64} package
-are installed.
+@filepath{racket-lib} package's dependencies are installed;
+that package is installed as part of @exec{nmake install}.
 
 On all platforms, from the top-level makefile, the
 @exec{PLT_SETUP_OPTIONS} makefile variable is passed on to the
@@ -302,6 +311,8 @@ For cross compilation, add configuration options to
 @filepath{README.txt} of @filepath{racket/src}, but also add a
 @exec{RACKET=...} argument for the top-level makefile instead of
 using  @exec{--enable-racket=...} for @exec{configure}.
+(You can also put @nonterm{options} in a file
+@filepath{build/CONFIGURE_ARGS}.)
 
 Specify @exec{SETUP_MACHINE_FLAGS=@nonterm{options}} to set Racket
 flags that control the target machine of compiled bytecode for

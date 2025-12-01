@@ -126,8 +126,10 @@ EXTRA_REPOS_BASE =
 # Package update and setup options
 
 # Packages (separated by spaces) to link in development mode or
-# to include in a distribution:
-PKGS = main-distribution main-distribution-test
+# to include in a distribution; if "{}" appears at the start,
+# then the content of "build/PKGS" can override when that file
+# exists:
+PKGS = {} main-distribution main-distribution-test
 
 # Needed for any distribution (not meant to be configured):
 REQUIRED_PKGS = racket-lib
