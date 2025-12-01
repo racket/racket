@@ -1486,8 +1486,9 @@ Optional Features:
   --enable-pbchunk        enable C chunks for pb boot (enabled by default)
   --enable-check          enable extra safety checks for testing
   --enable-portable       prefer portable to host-specific
-  --enable-natipkg        add "-natipkg" to library subpath
-  --enable-nonatipkg      add "-nonatipkg" to library subpath
+  --enable-natipkg        use "natipkg" as shared-object convention
+  --enable-nonatipkg      use "nonatipkg" as shared-object convention
+  --enable-sofind=<conv>  use "<conv>" as shared-object convention
   --enable-sdk=<path>     use Mac OS 10.4 SDK directory
   --enable-sdk5=<path>    use Mac OS 10.5 SDK directory
   --enable-sdk6=<path>    use Mac OS 10.6 SDK directory
@@ -2703,6 +2704,11 @@ if test "${enable_natipkg+set}" = set; then :
   enableval=$enable_natipkg;
 fi
 
+# Check whether --enable-natipkg was given.
+if test "${enable_natipkg+set}" = set; then :
+  enableval=$enable_natipkg;
+fi
+
 
 # Check whether --enable-sdk was given.
 if test "${enable_sdk+set}" = set; then :
@@ -2965,8 +2971,11 @@ show_explicitly_set "${enable_pb}" "pb machine type"
 show_explicitly_disabled "${enable_pbchunk}" "pbchunk"
 show_explicitly_enabled "${enable_portable}" "portable"
 
-show_explicitly_enabled "${enable_natipkg}" "Adding \"-natipkg\" suffix to library subpath"
-show_explicitly_enabled "${enable_nonatipkg}" "Adding \"-nonatipkg\" suffix to library subpath"
+show_explicitly_enabled "${enable_natipkg}" "Adding \"natipkg\" as shared-object convention and library subpath"
+show_explicitly_enabled "${enable_nonatipkg}" "Adding \"nonatipkg\" as shared-object convention and library subpath"
+if test "${enable_sofind}" != "" ; then
+   echo "=== Setting shared-object convention and library-subpath suffix to ${enable_sofind}"
+fi
 
 show_explicitly_enabled "${enable_libz}" "Installed libz"
 show_explicitly_disabled "${enable_libz}" "Installed libz"
@@ -5189,6 +5198,41 @@ fi
 
 ############## natipkg ################
 
+if test "${enable_natipkg}" = "no" ; then
+  if "${enable_nonatipkg}" = "" ; then
+    if "${enable_sofind}" = "" ; then
+       enable_nonatipkg=yes
+    fi
+  fi
+fi
+
+if test "${enable_nonatipkg}" = "yes" ; then
+  if test "${enable_natipkg}" = "yes" ; then
+     echo 'cannot specify both `--enable-natipkg` and `--enable-nonatipkg`'
+     exit 1
+  fi
+elif test "${enable_nonatipkg}" = "no" ; then
+  if "${enable_nonatipkg}" = "no" ; then
+    if "${enable_sofind}" = "" ; then
+       echo 'cannot specify both `--disable-natipkg` and `--disable-nonatipkg`'
+       echo 'without `--enable-sofind=<sofind>`'
+       exit 1
+    fi
+  fi
+fi
+
+if test "${enable_sofind}" != "" ; then
+  if test "${enable_natipkg}" = "yes" ; then
+     echo 'cannot specify both `--enable-natipkg` and `--enable-sofind`'
+     exit 1
+  fi
+  if test "${enable_nonatipkg}" = "yes" ; then
+     echo 'cannot specify both `--enable-nonatipkg` and `--enable-sofind`'
+     exit 1
+  fi
+fi
+
+
 if test "${enable_natipkg}" = "yes" ; then
   CONFIGURE_RACKET_SO_COMPILE="${CONFIGURE_RACKET_SO_COMPILE} PLT_CS_SLSP_SUFFIX=-natipkg"
   PLT_CS_SLSP_SUFFIX="-natipkg"
@@ -5196,14 +5240,14 @@ if test "${enable_natipkg}" = "yes" ; then
   use_own_zlibs=yes
 fi
 if test "${enable_nonatipkg}" = "yes" ; then
-  if test "${enable_natipkg}" = "yes" ; then
-     echo 'cannot specify both `--enable-natipkg` and `--enable-nonatipkg`'
-     exit 1
-  fi
   CONFIGURE_RACKET_SO_COMPILE="${CONFIGURE_RACKET_SO_COMPILE} PLT_CS_SLSP_SUFFIX=-nonatipkg"
   PLT_CS_SLSP_SUFFIX="-nonatipkg"
   dist_install_missing_pkgs=no
   use_own_zlibs=no
+fi
+if test "${enable_sofind}" != "" ; then
+  CONFIGURE_RACKET_SO_COMPILE="${CONFIGURE_RACKET_SO_COMPILE} PLT_CS_SLSP_SUFFIX=-${enable_sofind}"
+  PLT_CS_SLSP_SUFFIX="-${enable_sofind}"
 fi
 
 ############## ubsan ################

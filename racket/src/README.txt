@@ -1191,19 +1191,30 @@ Target configuration and cross compilation
  Normally, this mode should not be used outside of debugging Racket
  itself.
 
+--enable-sofind=<conv>
+
+ Reports the symbol form of <conv> from `(system-type 'so-find)` and
+ adds "-<conv>" to the result of `(system-type 'platform)`. The intent
+ is primarily to affect platform-specific package dependencies and the
+ way that native shared objects (i.e., "foreign libraries" from the
+ Racket perspective) are located at run time.
+
 --enable-natipkg
 
- Adds "-natipkg" to the result of `system-library-subpath`. The intent
- is primarily to effect platform-specific package dependencies,
- perhaps causing the "racket-x86_64-linux-natipkg-3" dependency of the
- "racket-lib" package to be activated, for example.
+ Reports `'natipkg` from `(system-type 'so-find)` and adds "-natipkg"
+ to the result of `(system-type 'platform)`. The intent is primarily
+ to affect platform-specific package dependencies, perhaps causing the
+ "racket-x86_64-linux-natipkg-3" dependency of the "racket-lib"
+ package to be activated, for example. Implies `--enable-missingpkgs`.
 
 --enable-nonatipkg
 
- Adds "-nonatipkg" to the result of `system-library-subpath`. Like
+ Reports `no'natipkg` from `(system-type 'so-find)` and adds
+ "-nonatipkg" to the result of `(system-type 'platform)`. Like
  `--enable-natipkg`, the intent is to affect package dependencies,
  perhaps causing the "racket-x86_64-macosx-3" dependency of the
- "racket-lib" package to *not* be activated, for example.
+ "racket-lib" package to *not* be activated, for example. Implies
+ `--disable-missingpkgs`.
 
 --enable-xonx
 

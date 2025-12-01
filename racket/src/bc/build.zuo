@@ -1340,7 +1340,10 @@
         ;; Windows file-suffix-selection helper
         [:target ,bc_suffix.h (,(input-data-target 'bc-suffix 3m-cap-installed-suffix))
                  ,(lambda (path token)
-                    (display-to-file (~a "#define COMPILED_PATH_AS_" 3m-cap-installed-suffix)
+                    (display-to-file (~a (~a "#define COMPILED_PATH_AS_" 3m-cap-installed-suffix)
+                                         "\n"
+                                         (~a "#define SPLS_SUFFIX \"" (hash-ref config 'SPLS_SUFFIX "") "\"")
+                                         "\n")
                                      bc_suffix.h
                                      :truncate))]
 

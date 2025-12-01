@@ -617,6 +617,8 @@ m4_include(../ac/postlink.m4)
 
 ############## natipkg ################
 
+m4_include(../ac/natipkg.m4)
+
 if test "${enable_natipkg}" = "yes" ; then
   CONFIGURE_RACKET_SO_COMPILE="${CONFIGURE_RACKET_SO_COMPILE} PLT_CS_SLSP_SUFFIX=-natipkg"
   PLT_CS_SLSP_SUFFIX="-natipkg"
@@ -624,14 +626,14 @@ if test "${enable_natipkg}" = "yes" ; then
   use_own_zlibs=yes
 fi
 if test "${enable_nonatipkg}" = "yes" ; then
-  if test "${enable_natipkg}" = "yes" ; then
-     echo 'cannot specify both `--enable-natipkg` and `--enable-nonatipkg`'
-     exit 1
-  fi
   CONFIGURE_RACKET_SO_COMPILE="${CONFIGURE_RACKET_SO_COMPILE} PLT_CS_SLSP_SUFFIX=-nonatipkg"
   PLT_CS_SLSP_SUFFIX="-nonatipkg"
   dist_install_missing_pkgs=no
   use_own_zlibs=no
+fi
+if test "${enable_sofind}" != "" ; then
+  CONFIGURE_RACKET_SO_COMPILE="${CONFIGURE_RACKET_SO_COMPILE} PLT_CS_SLSP_SUFFIX=-${enable_sofind}"
+  PLT_CS_SLSP_SUFFIX="-${enable_sofind}"
 fi
 
 ############## ubsan ################

@@ -195,6 +195,7 @@
   (define (build-base subdir token [options (hash)])
     (define also? (hash-ref options 'also? #f))
     (define prefix (hash-ref options 'prefix #f))
+    (define msvc? (eq? 'windows (hash-ref (runtime-env) 'toolchain-type)))
     (define targets
       (configured-targets-at (hash
                               'configure (if (eq? 'windows (hash-ref (runtime-env) 'toolchain-type))
@@ -203,8 +204,10 @@
                               'inputs (list (at-source "racket/src" subdir "Makefile.in"))
                               'outputs (list (at-source "racket/src/build" subdir "Makefile"))
                               'configure-args (append
-                                               (shell->strings (shell-subst-pwd (lookup 'CONFIGURE_ARGS_qq)
-                                                                                (at-source "racket/src/build" subdir)))
+                                               (if msvc?
+                                                   '()
+                                                   (shell->strings (shell-subst-pwd (lookup 'CONFIGURE_ARGS_qq)
+                                                                                    (at-source "racket/src/build" subdir))))
                                                (shell->strings (lookup 'CONFIGURE_ARGS))
                                                (let ([f (at-source "build/CONFIGURE_ARGS")])
                                                  (if (file-exists? f)
@@ -215,6 +218,8 @@
                                                    '())
                                                (shell->strings (lookup 'DISABLE_STATIC_LIBS))
                                                (cond
+                                                 [msvc?
+						  '()]
                                                  [(and (equal? subdir "cs/c")
                                                        (equal? (lookup 'RACKETCS_SUFFIX) ""))
                                                   '("--enable-csdefault")]
@@ -223,7 +228,7 @@
                                                   '("--enable-bcdefault")]
                                                  [else '()])
                                                (cond
-                                                 [(eq? 'windows (hash-ref (runtime-env) 'toolchain-type))
+                                                 [msvc?
 						  '()]
                                                  [prefix (list (~a "--prefix=" prefix)
                                                                "--enable-macprefix")]

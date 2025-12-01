@@ -1232,17 +1232,18 @@ fi
 
 ############## natipkg ################
 
+m4_include(../ac/natipkg.m4)
+
 if test "${enable_natipkg}" = "yes" ; then
   AC_DEFINE(SPLS_SUFFIX,"-natipkg",[Library subpath suffix])
   dist_install_missing_pkgs=yes
 fi
 if test "${enable_nonatipkg}" = "yes" ; then
-  if test "${enable_natipkg}" = "yes" ; then
-     echo 'cannot specify both `--enable-natipkg` and `--enable-nonatipkg`'
-     exit 1
-  fi
   AC_DEFINE(SPLS_SUFFIX,"-nonatipkg",[Library subpath suffix])
   dist_install_missing_pkgs=no
+fi
+if test "${enable_sofind}" != "" ; then
+  AC_DEFINE_UNQUOTED(SPLS_SUFFIX,"-${enable_sofind}",[Library subpath suffix])
 fi
 
 ############## Racket for Racket ################

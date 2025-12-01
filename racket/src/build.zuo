@@ -13,10 +13,11 @@
         (mkdir-p dir)
         (shell/wait (find-relative-path (at-dir dir)
                                         (at-source dir "winfig.bat"))
-                    (hash 'dir (at-dir dir)
-                          'env (cons (cons "INSTALL_MISSING_PKGS"
-                                           (hash-ref config 'INSTALL_MISSING_PKGS ""))
-                                     (hash-ref (runtime-env) 'env)))))))
+                    (let ([suffix (hash-ref config 'SLSP_SUFFIX "")])
+                      (if (equal? suffix "")
+                          '()
+                          '("/env" (substring suffix 1))))
+                    (hash 'dir (at-dir dir))))))
 
   (define (get-cs-targets)
     (msvc-prep-makefile "cs/c")

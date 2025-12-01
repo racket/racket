@@ -182,3 +182,34 @@ libraries to embed Racket in an application.
 If you need Racket to link to a DLL-based C library (instead of
 statically linking to the C library within the Racket DLL), then
 compile Racket with the /MD flag.
+
+========================================================================
+ Winfig flags
+========================================================================
+
+The "..\winfig.bat" script recognizes flags to select and configure CS
+versus BC:
+
+ * /both --- build both Racket CS and Racket BC
+
+ * /csonly --- build only Racket CS (the default)
+
+ * /bconly --- build only Racket BC
+
+ * /suffix <suffix> --- use <suffix> at the end of the executable name,
+                        instead of the default "bc" for Racket BC or
+                        "" for Racket CS
+
+The "..\winfig.bat", "..\cs\c\winfix.bat", and "..\bc\winfig.bat"
+scripts all recognize the following flags to configure the build:
+
+ * /sofind <conv> --- report <conv> from `(system 'so-find)`, which
+                      affects how external dynamic libraries are
+                      found, and add "-<conv>" to the result of
+                      `(system 'platform)`, which affects
+                      platform-specific package selection (so Racket
+                      packages that supply native libraries will not
+                      be installed)
+
+ * /nocify --- BC only, disables Cify on a platform with no JIT
+               support (64-bit Arm)

@@ -1,9 +1,14 @@
 @echo off
 setlocal
 
+REM This script is run only directly; when `nmake` is used in the root
+REM of a checkout of the Git repository for Racket, then
+REM "cs/c/winfig.bat" or "bc/winfig.bat" is run directly
+
 set SRCDIR=%~dp0
 set BUILDMODE=cs
 set USE_SUFFIX=
+set SLSP_SUFFIX=
 
 :argloop
 shift
@@ -13,6 +18,7 @@ if defined ARG (
   if "%ARG%"=="/csonly" set BUILDMODE=cs && goto argloop
   if "%ARG%"=="/bconly" set BUILDMODE=bc && goto argloop
   if "%ARG%"=="/suffix" set USE_SUFFIX=%1 && shift && goto argloop
+  if "%ARG%"=="/sofind" set SLSP_SUFFIX=-%1 && shift && goto argloop
   echo Unrecognized argument %ARG%
   exit /B 1
 )
@@ -32,6 +38,8 @@ echo default_vm=%default_vm% >> Makefile
 
 if %BUILDMODE%==bc echo MMM_CAP_INSTALLED=%USE_SUFFIX% >> Makefile
 if %BUILDMODE%==cs echo CS_CAP_INSTALLED=%USE_SUFFIX% >> Makefile
+
+echo SLSP_SUFFIX=%SLSP_SUFFIX% >> Makefile
 
 type "%SRCDIR%\Makefile.nt" >> Makefile
 
