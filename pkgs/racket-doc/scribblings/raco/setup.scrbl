@@ -2434,7 +2434,8 @@ for @DFlag{compile-any}, @Flag{R} is short for @DFlag{compiled},
 
 @history[#:added "6.3"]
 
-@defproc[(cross-system-type [mode (or/c 'os 'word 'gc 'vm 'link 'machine
+@defproc[(cross-system-type [mode (or/c 'os 'os* 'arch 'word 'so-find 'platform
+                                        'gc 'vm 'link 'machine 'target-machine
                                         'so-suffix 'so-mode 'fs-change)
                             'os])
          (or/c symbol? string? bytes? exact-positive-integer? vector?)]{

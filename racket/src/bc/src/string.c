@@ -187,14 +187,14 @@ static void cache_locale_or_close(int to_bytes, rktio_converter_t *cd, char *le)
 
 #define portable_isspace(x) (((x) < 128) && isspace(x))
 
-ROSYM static Scheme_Object *sys_symbol, *sys_os_symbol, *sys_arch_symbol;
+ROSYM static Scheme_Object *sys_symbol, *sys_os_symbol, *sys_arch_symbol, *sys_so_find_symbol;
 ROSYM static Scheme_Object *link_symbol, *machine_symbol, *vm_symbol, *gc_symbol;
 ROSYM static Scheme_Object *so_suffix_symbol, *so_mode_symbol, *word_symbol;
-ROSYM static Scheme_Object *os_symbol, *os_star_symbol, *arch_symbol;
+ROSYM static Scheme_Object *os_symbol, *os_star_symbol, *arch_symbol, *so_find_symbol, *platform_symbol;
 ROSYM static Scheme_Object *fs_change_symbol, *target_machine_symbol, *cross_symbol;
 ROSYM static Scheme_Object *racket_symbol, *cgc_symbol, *_3m_symbol, *cs_symbol;
 ROSYM static Scheme_Object *force_symbol, *infer_symbol;
-ROSYM static Scheme_Object *platform_3m_path, *platform_cgc_path, *platform_cs_path;
+ROSYM static Scheme_Object *platform_3m_path, *platform_cgc_path, *platform_cs_path, *platform_str;
 READ_ONLY Scheme_Object *scheme_zero_length_char_string;
 READ_ONLY Scheme_Object *scheme_zero_length_char_immutable_string;
 READ_ONLY Scheme_Object *scheme_zero_length_byte_string;
@@ -240,9 +240,21 @@ scheme_init_string (Scheme_Startup_Env *env)
   REGISTER_SO(sys_symbol);
   REGISTER_SO(sys_os_symbol);
   REGISTER_SO(sys_arch_symbol);
+  REGISTER_SO(sys_so_find_symbol);
   sys_symbol = scheme_intern_symbol(SYSTEM_TYPE_NAME);
   sys_os_symbol = scheme_intern_symbol(SCHEME_OS);
   sys_arch_symbol = scheme_intern_symbol(SCHEME_ARCH);
+  if (SPLS_SUFFIX[0] == 0) {
+# if defined(DOS_FILE_SYSTEM) || defined(OS_X)
+    sys_so_find_symbol = scheme_intern_symbol("natipkg");
+# else
+    sys_so_find_symbol = scheme_intern_symbol("system");
+# endif
+  } else {
+    const char *s = SPLS_SUFFIX;
+    s++;
+    sys_so_find_symbol = scheme_intern_symbol(s);
+  }
 
   REGISTER_SO(link_symbol);
   REGISTER_SO(machine_symbol);
@@ -254,6 +266,8 @@ scheme_init_string (Scheme_Startup_Env *env)
   REGISTER_SO(os_symbol);
   REGISTER_SO(os_star_symbol);
   REGISTER_SO(arch_symbol);
+  REGISTER_SO(so_find_symbol);
+  REGISTER_SO(platform_symbol);
   REGISTER_SO(fs_change_symbol);
   REGISTER_SO(target_machine_symbol);
   REGISTER_SO(cross_symbol);
@@ -267,6 +281,8 @@ scheme_init_string (Scheme_Startup_Env *env)
   os_symbol = scheme_intern_symbol("os");
   os_star_symbol = scheme_intern_symbol("os*");
   arch_symbol = scheme_intern_symbol("arch");
+  so_find_symbol = scheme_intern_symbol("so-find");
+  platform_symbol = scheme_intern_symbol("platform");
   fs_change_symbol = scheme_intern_symbol("fs-change");
   target_machine_symbol = scheme_intern_symbol("target-machine");
   cross_symbol = scheme_intern_symbol("cross");
@@ -313,9 +329,12 @@ scheme_init_string (Scheme_Startup_Env *env)
   REGISTER_SO(platform_3m_path);
   REGISTER_SO(platform_cgc_path);
   REGISTER_SO(platform_cs_path);
+  REGISTER_SO(platform_str);
   platform_cgc_path = scheme_make_path(SCHEME_PLATFORM_LIBRARY_SUBPATH SPLS_SUFFIX);
   platform_3m_path = scheme_make_path(SCHEME_PLATFORM_LIBRARY_SUBPATH SPLS_SUFFIX MZ3M_SUBDIR);
   platform_cs_path = scheme_make_path(SCHEME_PLATFORM_LIBRARY_SUBPATH SPLS_SUFFIX MZCS_SUBDIR);
+  platform_str = scheme_make_utf8_string(SCHEME_PLATFORM_LIBRARY_SUBPATH SPLS_SUFFIX);
+  SCHEME_SET_CHAR_STRING_IMMUTABLE(platform_str);
 
   REGISTER_SO(embedding_banner);
   REGISTER_SO(vers_str);
@@ -2594,9 +2613,18 @@ static Scheme_Object *system_type(int argc, Scheme_Object *argv[])
       return sys_arch_symbol;
     }
 
+    if (SAME_OBJ(argv[0], so_find_symbol)) {
+      return sys_so_find_symbol;
+    }
+
+    if (SAME_OBJ(argv[0], platform_symbol)) {
+      return platform_str;
+    }
+
     if (!SAME_OBJ(argv[0], os_symbol)) {
       scheme_wrong_contract("system-type",
-                            ("(or/c 'os 'os* 'arch 'word 'link 'machine 'target-machine\n"
+                            ("(or/c 'os 'os* 'arch 'word 'so-find 'platform\n"
+                             "      'link 'machine 'target-machine\n"
                              "      'vm 'gc 'so-suffix 'so-mode 'word 'fs-change 'cross)"),
                             0, argc, argv);
       return NULL;

@@ -125,6 +125,25 @@
      'unknown]
     [else (error 'system-type "internal error: unknown architecture")]))
 
+(define so-find-symbol
+  (let-syntax ([suffix-sym
+                (lambda (stx)
+                  (let ([s (or (getenv "PLT_CS_SLSP_SUFFIX")
+                               "")])
+                    (if (string=? s "")
+                        #'#f
+                        (datum->syntax
+                         #'here
+                        `(quote ,(string->symbol (#%substring s 1 (string-length s))))))))])
+    (or (suffix-sym)
+          (case (reflect-machine-type)
+            [(a6ios ta6ios arm64ios tarm64ios
+                    a6osx ta6osx i3osx ti3osx arm64osx tarm64osx
+                    a6nt ta6nt i3nt ti3nt arm64nt tarm64nt)
+             'natipkg]
+            [else
+             'system]))))
+
 (define link-symbol
   (case (reflect-machine-type)
     [(a6ios ta6ios arm64ios tarm64ios
@@ -177,6 +196,8 @@
        [(os*) os*-symbol]
        [(arch) arch-symbol]
        [(word) (if (> (fixnum-width) 32) 64 32)]
+       [(so-find) so-find-symbol]
+       [(platform) system-library-subpath-string]
        [(gc) 'cs]
        [(link) link-symbol]
        [(machine) (get-machine-info)]
@@ -187,7 +208,8 @@
        [(cross) cross-mode]
        [else (raise-argument-error 'system-type
                                    (string-append
-                                    "(or/c 'os 'os* 'arch 'word 'vm 'gc 'link 'machine 'target-machine\n"
+                                    "(or/c 'os 'os* 'arch 'word 'so-find 'platform
+                                           'vm 'gc 'link 'machine 'target-machine\n"
                                     "      'so-suffix 'so-mode 'fs-change 'cross)")
                                    mode)])])))
 
@@ -197,19 +219,20 @@
     [else 'unix]))
 
 (define system-library-subpath-string
-  (string-append
-   (case (reflect-machine-type)
-     [(a6nt ta6nt) "win32\\x86_64"]
-     [(i3nt ti3nt) "win32\\i386"]
-     [(arm64nt tarm64nt) "win32\\arm64"]
-     [else (string-append (symbol->string arch-symbol)
-                          "-"
-                          (symbol->string os*-symbol))])
-   (let-syntax ([suffix
-                 (lambda (stx)
-                   (or (getenv "PLT_CS_SLSP_SUFFIX")
-                       ""))])
-     (suffix))))
+  (string->immutable-string
+   (string-append
+    (case (reflect-machine-type)
+      [(a6nt ta6nt) "win32\\x86_64"]
+      [(i3nt ti3nt) "win32\\i386"]
+      [(arm64nt tarm64nt) "win32\\arm64"]
+      [else (string-append (symbol->string arch-symbol)
+                           "-"
+                           (symbol->string os*-symbol))])
+    (let-syntax ([suffix
+                  (lambda (stx)
+                    (or (getenv "PLT_CS_SLSP_SUFFIX")
+                        ""))])
+      (suffix)))))
 
 (define get-machine-info (lambda () "localhost info..."))
 (define (set-get-machine-info! proc)

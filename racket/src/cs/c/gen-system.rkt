@@ -127,6 +127,12 @@
                         (if (eq? arch 'ppc)
                             32
                             64)))
+          'so-find (if (equal? slsp-suffix "")
+                       (if (eq? os 'unix)
+                           'system
+                           'natipkg)
+                       (string->symbol (substring slsp-suffix 1)))
+          'platform lib-subpath
           'gc 'cs
           'vm 'chez-scheme
           'link link

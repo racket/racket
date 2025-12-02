@@ -1189,7 +1189,7 @@ for @nonterm{key}.
  @item{@DFlag{include-deps-platform} @nonterm{sys} @nonterm{subpath} --- Modifies @DFlag{include-deps}
        to imply only dependencies that match the platform @nonterm{sys}, which should be
        a possible result of @racket[(system-type)], and @nonterm{subpath}, which should be
-       a possible result of @racket[(system-library-subpath #f)]}
+       a possible result of @racket[(system-type 'platform)]}
  @item{@DFlag{exclude} @nonterm{pkg} --- Can be specified multiple times. Removes @nonterm{pkg}
        from the set of packages in the archive and generated catalog. If @DFlag{include} is
        used for the same @nonterm{pkg}, then @DFlag{exclude} takes
@@ -1327,8 +1327,7 @@ The following @filepath{info.rkt} fields are used by the package manager:
                A @racket[_platform-spec] indicates that the dependency
                applies only for platforms with a matching result from
                @racket[(system-type)] when @racket[_platforms-spec] is
-               a symbol or @racket[(path->string
-               (system-library-subpath #f))] when
+               a symbol or @racket[(system-type 'platform)] when
                @racket[_platform-spec] is a string or regular expression.
                See also @racket[matching-platform?]. For
                example, platform-specific binaries can be placed into

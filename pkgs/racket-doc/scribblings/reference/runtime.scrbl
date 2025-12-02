@@ -7,7 +7,8 @@
  
 @title[#:tag "runtime"]{Environment and Runtime Information}
 
-@defproc[(system-type [mode (or/c 'os 'os* 'arch 'word 'vm 'gc 'link 'machine 'target-machine
+@defproc[(system-type [mode (or/c 'os 'os* 'arch 'word 'so-find 'platform
+                                  'vm 'gc 'link 'machine 'target-machine
                                   'so-suffix 'so-mode 'fs-change 'cross)
                             'os])
          (or/c symbol? string? bytes? exact-positive-integer? vector? #f)]{
@@ -41,6 +42,23 @@ architecture. Possible results include @racket['x86_64], @racket['i386],
 In @indexed-racket['word] mode, the result is either @racket[32] or
 @racket[64] to indicate whether Racket is running as a 32-bit program
 or 64-bit program.
+
+In @indexed-racket['so-find] mode, the result is a symbol that
+identifies a convention for finding and managing platform-specific
+shared objects (i.e., dynamic libraries). Possible results include
+@racket['natipkg], meaning that native libraries are normally supplied
+through Racket packages, and @racket['system], meaning that they are
+normally managed through the operating system. Racket builds that are
+intended for use with other package managers can report symbols other
+than @racket['natipkg] or @racket['system].
+
+In @indexed-racket['platform] mode, the result is a string that has
+the same information at the combination of @racket['os*],
+@racket['arch], and @racket['so-find] to represent the platform. The
+@racket['so-find] mode is omitted if it is the default for an
+@racket['os*]: @racket['natipkg] for Windows and Mac OS,
+@racket['system] otherwise. A @tech{path} form of the same string is
+returned by @racket[(system-library-subpath #f)].
 
 @margin-note{See @guidesecref["virtual-machines"] for more information
  about the @racket['vm] and @racket['gc] mode results.}
@@ -135,7 +153,8 @@ The possible symbols are:
 @history[#:changed "6.8.0.2" @elem{Added @racket['vm] mode.}
          #:changed "6.9.0.1" @elem{Added @racket['cross] mode.}
          #:changed "7.1.0.6" @elem{Added @racket['target-machine] mode.}
-         #:changed "7.9.0.6" @elem{Added @racket['os*] and @racket['arch] modes.}]}
+         #:changed "7.9.0.6" @elem{Added @racket['os*] and @racket['arch] modes.}
+         #:changed "9.0.0.8" @elem{Added @racket['so-find] and @racket['platform] modes.}]}
 
 
 @defproc[(system-language+country) string?]{
@@ -172,7 +191,8 @@ The optional @racket[mode] argument specifies the relevant
 garbage-collection variant, which one of the possible results of
 @racket[(system-type 'gc)]: @racket['cgc], @racket['3m], or @racket['cs]. It can also
 be @racket[#f], in which case the result is independent of the
-garbage-collection variant.
+garbage-collection variant, and its string form is the same as the
+result of @racket[(system-type 'platform)].
 
 Installation tools should use @racket[cross-system-library-subpath],
 instead, to support cross-installation.
