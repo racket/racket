@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-22.04
 
     steps:
-    - uses: actions/checkout@v5
+    - uses: actions/checkout@v6
     - name: Build
       run: make CPUS="$(nproc)" PKGS=""
     - name: Extend PATH with Racket executable
@@ -28,7 +28,7 @@ jobs:
     runs-on: macos-14
 
     steps:
-    - uses: actions/checkout@v5
+    - uses: actions/checkout@v6
     - name: Build
       run: make CPUS="$(sysctl -n hw.physicalcpu)" PKGS=""
     - name: Extend PATH with Racket executable
@@ -46,7 +46,7 @@ jobs:
     runs-on: macos-14
     needs: buildtest-macos
     steps:
-    - uses: actions/checkout@v5
+    - uses: actions/checkout@v6
     - uses: actions/download-artifact@v5
       with:
         name: racketcs-macos-aarch64_git${{ github.sha }}
@@ -71,7 +71,7 @@ jobs:
   build-pb-ios:
     runs-on: macos-14
     steps:
-    - uses: actions/checkout@v5
+    - uses: actions/checkout@v6
     - name: Build LibFFI
       run: |
         set -euxo pipefail
