@@ -9,6 +9,7 @@ set SRCDIR=%~dp0
 set BUILDMODE=cs
 set USE_SUFFIX=
 set SLSP_SUFFIX=
+set ENABLE_CIFY=auto
 
 :argloop
 shift
@@ -19,6 +20,8 @@ if defined ARG (
   if "%ARG%"=="/bconly" set BUILDMODE=bc && goto argloop
   if "%ARG%"=="/suffix" set USE_SUFFIX=%1 && shift && goto argloop
   if "%ARG%"=="/sofind" set SLSP_SUFFIX=-%1 && shift && goto argloop
+  if "%ARG%"=="/cify" set ENABLE_CIFY=yes && goto argloop
+  if "%ARG%"=="/nocify" set ENABLE_CIFY=no && goto argloop
   echo Unrecognized argument %ARG%
   exit /B 1
 )
@@ -40,6 +43,7 @@ if %BUILDMODE%==bc echo MMM_CAP_INSTALLED=%USE_SUFFIX% >> Makefile
 if %BUILDMODE%==cs echo CS_CAP_INSTALLED=%USE_SUFFIX% >> Makefile
 
 echo SLSP_SUFFIX=%SLSP_SUFFIX% >> Makefile
+echo ENABLE_CIFY=%ENABLE_CIFY% >> Makefile
 
 type "%SRCDIR%\Makefile.nt" >> Makefile
 

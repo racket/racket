@@ -687,6 +687,12 @@
                                     [(equal? cify-mode "yes") #t]
                                     [(equal? cify-mode "no") #f]
                                     [provided-racket? #f]
+				    [(eq? windows-arch 'arm64)
+				     ;; The cified expander on Arm64 triggers frequent C stack
+				     ;; overflows, which is especially bad for RacketCGC, but
+				     ;; generally causes trouble. It doesn't seem work sorting out
+				     ;; this problem, so just don't use cify there.
+				     #f]
                                     [else
                                      (define p (process (if provided-racket?
                                                             (get-host-racket)
@@ -1338,7 +1344,8 @@
                                config))]
 
         ;; Windows file-suffix-selection helper
-        [:target ,bc_suffix.h (,(input-data-target 'bc-suffix 3m-cap-installed-suffix))
+        [:target ,bc_suffix.h (,(input-data-target 'bc-suffix 3m-cap-installed-suffix)
+			       ,(input-data-target 'spsl-suffix (hash-ref config 'SPLS_SUFFIX "")))
                  ,(lambda (path token)
                     (display-to-file (~a (~a "#define COMPILED_PATH_AS_" 3m-cap-installed-suffix)
                                          "\n"

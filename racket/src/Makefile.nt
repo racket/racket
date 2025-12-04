@@ -10,7 +10,7 @@ install: .\zuo.exe
 plain-install: .\zuo.exe
 	.\zuo.exe . plain-install
 
-cs: .\zuo.exe
+cs: .\zuo.exe .phony
 	.\zuo.exe . cs
 
 cs-install: .\zuo.exe
@@ -19,7 +19,7 @@ cs-install: .\zuo.exe
 plain-cs-install: .\zuo.exe
 	.\zuo.exe . plain-cs-install
 
-bc: .\zuo.exe
+bc: .\zuo.exe .phony
 	.\zuo.exe . bc
 
 bc-install: .\zuo.exe
@@ -32,3 +32,5 @@ zuo.exe: "$(srcdir)\zuo\zuo.c"
 	cl.exe /O2 /Fe:pre_zuo.exe "$(srcdir)\zuo\zuo.c"
 	.\pre_zuo.exe -X "$(srcdir)\zuo\lib" "$(srcdir)\ChezScheme\makefiles\libpath.zuo" "$(srcdir)\zuo"
 	cl.exe /O2 /Fe:zuo.exe zuo.c
+
+.phony:

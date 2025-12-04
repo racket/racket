@@ -3,7 +3,7 @@ setlocal
 
 set SRCDIR=%~dp0
 
-REM This script can be run directlly, but it is normally run when
+REM This script can be run directly, but it is normally run when
 REM `nmake` is used in the root of a checkout of the Git repository for
 REM Racket, or by "../../build.zuo" after "../../winfig.bat" is used
 

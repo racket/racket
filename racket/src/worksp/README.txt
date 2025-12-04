@@ -211,5 +211,6 @@ scripts all recognize the following flags to configure the build:
                       packages that supply native libraries will not
                       be installed)
 
+ * /cify --- BC only, enables Cify on a platform with no JIT (64-bit Arm)
+
  * /nocify --- BC only, disables Cify on a platform with no JIT
-               support (64-bit Arm)
