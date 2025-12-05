@@ -426,6 +426,7 @@ void scheme_init_port_places(void);
 void scheme_init_regexp_places(void);
 void scheme_init_stx_places(int initial_main_os_thread);
 void scheme_init_fun_places(void);
+void scheme_init_char_places(void);
 void scheme_init_sema_places(void);
 void scheme_init_gmp_places(void);
 void scheme_init_variable_references_constants(void);

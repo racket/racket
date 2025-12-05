@@ -372,6 +372,7 @@ typedef struct Thread_Local_Variables {
   struct Scheme_Object *expander_syntax_to_datum_proc_;
   struct Scheme_Hash_Table *local_primitive_tables_;
   struct Scheme_Object *current_linklet_native_lambdas_;
+  struct Scheme_Hash_Table *interned_char_table_;
 } Thread_Local_Variables;
 
 #if defined(IMPLEMENT_THREAD_LOCAL_VIA_PTHREADS)
@@ -762,6 +763,7 @@ XFORM_GC_VARIABLE_STACK_THROUGH_THREAD_LOCAL;
 #define expander_syntax_to_datum_proc XOA (scheme_get_thread_local_variables()->expander_syntax_to_datum_proc_)
 #define local_primitive_tables XOA (scheme_get_thread_local_variables()->local_primitive_tables_)
 #define current_linklet_native_lambdas XOA (scheme_get_thread_local_variables()->current_linklet_native_lambdas_)
+#define interned_char_table XOA (scheme_get_thread_local_variables()->interned_char_table_)
 
 /* **************************************** */
 
