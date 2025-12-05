@@ -479,6 +479,7 @@ static Scheme_Env *place_instance_init(void *stack_base, int initial_main_os_thr
   /* error handling and buffers */
   /* this check prevents initializing orig ports twice for the first initial
    * place.  The kernel initializes orig_ports early. */
+  scheme_init_char_places();
   scheme_init_fun_places();
   scheme_init_port_places();
   scheme_init_error_escape_proc(NULL);

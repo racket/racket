@@ -17,6 +17,8 @@ READ_ONLY Scheme_Object *scheme_unsafe_char_lt_eq_proc;
 READ_ONLY Scheme_Object *scheme_unsafe_char_gt_eq_proc;
 READ_ONLY Scheme_Object *scheme_unsafe_char_to_integer_proc;
 
+THREAD_LOCAL_DECL(static Scheme_Hash_Table *interned_char_table);
+
 /* locals */
 static Scheme_Object *char_p (int argc, Scheme_Object *argv[]);
 static Scheme_Object *interned_char_p (int argc, Scheme_Object *argv[]);
@@ -233,17 +235,27 @@ void scheme_init_unsafe_char(Scheme_Startup_Env *env)
   scheme_unsafe_char_to_integer_proc = p;
 }
 
+void scheme_init_char_places(void)
+{
+  REGISTER_SO(interned_char_table);
+  interned_char_table = scheme_make_hash_table(SCHEME_hash_ptr);
+}
+
 Scheme_Object *scheme_make_char(mzchar ch)
 {
   Scheme_Object *o;
 
   if (ch < 256)
     return scheme_char_constants[ch];
-  
-  o = scheme_malloc_small_atomic_tagged(sizeof(Scheme_Small_Object));
-  CLEAR_KEY_FIELD(o);
-  o->type = scheme_char_type;
-  SCHEME_CHAR_VAL(o) = ch;
+
+  o = scheme_eq_hash_get(interned_char_table, scheme_make_integer(ch));
+  if (!o) {
+    o = scheme_malloc_small_atomic_tagged(sizeof(Scheme_Small_Object));
+    CLEAR_KEY_FIELD(o);
+    o->type = scheme_char_type;
+    SCHEME_CHAR_VAL(o) = ch;
+    scheme_hash_set(interned_char_table, scheme_make_integer(ch), o);
+  }
 
   return o;
 }
