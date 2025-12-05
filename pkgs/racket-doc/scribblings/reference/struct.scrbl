@@ -91,8 +91,8 @@ override the default @racket[equal?] definition through the
                            [props (listof (cons/c struct-type-property?
                                                   any/c))
                                   null]
-                           [inspector (or/c inspector? #f 'prefab)
-                                      (current-inspector)]
+                           [inspector (or/c inspector? #f 'current 'prefab)
+                                      'current]
                            [proc-spec (or/c procedure?
                                             exact-nonnegative-integer?
                                             #f)
@@ -137,6 +137,8 @@ information about the structure type and its instances; see
 @racket['prefab], then the resulting @tech{prefab} structure type and
 its instances are always transparent. If @racket[inspector] is
 @racket[#f], then the structure type's instances are transparent.
+If @racket[inspector] is @racket['current] (the default), then the
+@racket[(current-inspector)] is used.
 
 If @racket[proc-spec] is an integer or procedure, instances of the
 structure type act as procedures. See @racket[prop:procedure] for
@@ -242,7 +244,9 @@ The result of @racket[make-struct-type] is five values:
 (p? p1)
 (p-ref p1 0)
 (make-p 'x 'y 'z)
-]}
+]
+
+@history[#:changed "9.0.0.6" @elem{Added @racket['current] as an allowed value for @racket[inspector].}]}
 
 @defproc[(make-struct-field-accessor [accessor-proc struct-accessor-procedure?]
                                      [field-pos exact-nonnegative-integer?]

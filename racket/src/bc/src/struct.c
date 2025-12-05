@@ -43,6 +43,7 @@ READ_ONLY static Scheme_Object *scheme_checked_proc_property;
 READ_ONLY static Scheme_Object *struct_info_proc;
 ROSYM static Scheme_Object *ellipses_symbol;
 ROSYM static Scheme_Object *prefab_symbol;
+ROSYM static Scheme_Object *current_symbol;
 
 /* locals */
 
@@ -721,6 +722,9 @@ scheme_init_struct (Scheme_Startup_Env *env)
 
   REGISTER_SO(prefab_symbol);
   prefab_symbol = scheme_intern_symbol("prefab");
+
+  REGISTER_SO(current_symbol);
+  current_symbol = scheme_intern_symbol("current");
 
 
   REGISTER_SO(scheme_source_property);
@@ -5558,9 +5562,9 @@ static Scheme_Object *make_struct_type(int argc, Scheme_Object **argv)
         if (SAME_OBJ(inspector, prefab_symbol)) {
           prefab = 1;
           inspector = scheme_false;
-	} else if (!SCHEME_FALSEP(inspector)) {
+	} else if (!SCHEME_FALSEP(inspector) && !SAME_OBJ(inspector, current_symbol)) {
 	  if (!SAME_TYPE(SCHEME_TYPE(argv[6]), scheme_inspector_type))
-	    scheme_wrong_contract("make-struct-type", "(or/c inspector? #f 'prefab)", 6, argc, argv);
+	    scheme_wrong_contract("make-struct-type", "(or/c inspector? #f 'current 'prefab)", 6, argc, argv);
 	}
 
 	if (argc > 7) {
@@ -5612,8 +5616,11 @@ static Scheme_Object *make_struct_type(int argc, Scheme_Object **argv)
   if (!uninitc)
     uninit_val = scheme_false;
 
-  if (!inspector)
+  if (!inspector || SAME_OBJ(inspector, current_symbol))
     inspector = scheme_get_param(scheme_current_config(), MZCONFIG_INSPECTOR);
+
+  MZ_ASSERT(SCHEME_FALSEP(inspector) || SAME_OBJ(inspector, prefab_symbol)
+         || SAME_TYPE(SCHEME_TYPE(inspector), scheme_inspector_type));
 
   immutable_array = immutable_pos_list_to_immutable_array(immutable_pos_list, initc + uninitc);
 
