@@ -1067,22 +1067,35 @@
                  [(field expr)
                   (list (find-accessor the-struct-info maybe-field-info #'field stx)
                         #'expr
-                        (car (generate-temporaries (list #'field))))]
+                        (car (generate-temporaries (list #'field)))
+                        #'field)]
                  [(field #:parent id expr)
                   (begin
                     (ensure-really-parent #'id)
                     (let-values ([(the-struct-info maybe-field-info) (id->struct-info #'id stx)])
                       (list (find-accessor the-struct-info maybe-field-info #'field stx)
                             #'expr
-                            (car (generate-temporaries (list #'field))))))]))
+                            (car (generate-temporaries (list #'field)))
+                            #'field)))]))
              ans))
 
       ;; new-binding-for : syntax[field-name] -> (union syntax[expression] #f)
       (define (new-binding-for f)
         (ormap (lambda (new-field)
                  (and (free-identifier=? (car new-field) f)
-                      (caddr new-field)))
+                      (syntax-property (caddr new-field)
+                                       'disappeared-use
+                                       (syntax-local-introduce
+                                        (syntax-property
+                                         (datum->syntax (list-ref new-field 3)
+                                                        (syntax-e (car new-field))
+                                                        (list-ref new-field 3)
+                                                        (list-ref new-field 3))
+                                         'sub-range-binding
+                                         (vector field-subrange-start
+                                                 (string-length (symbol->string (syntax-e (list-ref new-field 3))))))))))
                new-fields))
+      (define field-subrange-start (+ (string-length (symbol->string (syntax-e #'info))) 1))
 
       (unless construct
         (raise-syntax-error #f
