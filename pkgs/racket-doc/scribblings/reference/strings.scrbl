@@ -620,8 +620,8 @@ and @racket[repeat?]  controls matching repeated sequences.
                       [#:repeat? repeat? any/c #f])
          string?]{
 
-Trims the input @racket[str] by removing prefix and suffix @racket[sep],
-which defaults to whitespace. A string @racket[sep] is matched literally
+Trims the input @racket[str] by removing prefix and suffix matching @racket[sep],
+where @racket[sep] defaults to matching whitespace. A string @racket[sep] is matched literally
 (as opposed to being used as a @tech{regular expression}).
 
 Use @racket[#:left? #f] or @racket[#:right? #f] to suppress trimming
@@ -630,6 +630,11 @@ default), only one match is removed from each side; when
 @racket[repeat?] is true, all initial or trailing matches are
 trimmed (which is an alternative to using a @tech{regular expression}
 @racket[sep] that contains @litchar{+}).
+
+When trimming both left and right ends of the string, both matches are
+performed on the original string, as opposed to first trimming on the
+left and then trimming on the right. If the left and right matches
+overlap, then the trimmed result string is empty.
 
 @mz-examples[#:eval string-eval
   (string-trim "  foo bar  baz \r\n\t")
