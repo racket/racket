@@ -907,6 +907,12 @@
   (err/rt-test (integer->char #xDFFF) exn:fail:contract? rx))
 (err/rt-test (char->integer 5) exn:fail:contract? #rx"char[?]")
 
+(test #t
+      (for/and ([i (in-range 1000)])
+        (define c (random #x110000))
+        (or (<= #xD800 c #xDFFF)
+            (eq? (integer->char c) (integer->char c)))))
+
 (define (test-up/down case case-name members memassoc)
   (let loop ([n 0])
     (unless (= n 128)

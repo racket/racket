@@ -14,14 +14,14 @@ characters whose values range from @racketvalfont{#x0} to
 @racketvalfont{#xDFFF}. The scalar values are a subset of the Unicode
 @index['("code point")]{code points}.
 
-Two characters are @racket[eqv?] if they correspond to the same scalar
-value. For each scalar value less than 256, character values that are
-@racket[eqv?] are also @racket[eq?]. Characters produced by the default
-reader are @tech{interned} in @racket[read-syntax] mode.
+Two characters are @racket[equal?], @racket[eqv?], and @racket[eq?] if
+they correspond to the same scalar value.
 
 @see-read-print["character"]{characters}
 
-@history[#:changed "6.1.1.8" @elem{Updated from Unicode 5.0.1 to Unicode 7.0.0.}]
+@history[#:changed "9.0.0.10" @elem{Guarantee that
+                                    @racket[equal?] characters are
+                                    also @racket[eq?].}]
 
 @; ----------------------------------------
 @section{Characters and Scalar Values}

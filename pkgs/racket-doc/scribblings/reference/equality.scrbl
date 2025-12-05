@@ -83,14 +83,13 @@ preferred for most uses.
  Two values are @racket[eqv?] if and only if they are @racket[eq?],
  unless otherwise specified for a particular datatype.
 
- The @tech{number} and @tech{character} datatypes are the only ones for which
+ The @tech{number} datatypes are the only ones for which
  @racket[eqv?] differs from @racket[eq?]. Two numbers are @racket[eqv?] when
  they have the same exactness, precision, and are both equal and non-zero, both
  @racketvalfont{+0.0}, both @racketvalfont{+0.0f0}, both @racketvalfont{-0.0},
  both @racketvalfont{-0.0f0}, both @racketvalfont{+nan.0}, or both
  @racketvalfont{+nan.f}---considering real and imaginary components separately
- in the case of @tech{complex numbers}. Two characters are @racket[eqv?] when
- their @racket[char->integer] results are equal.
+ in the case of @tech{complex numbers}.
 
  Generally, @racket[eqv?] is identical to @racket[equal?] except that the former
  cannot recursively compare the contents of compound data types (such as lists
@@ -107,7 +106,11 @@ preferred for most uses.
    (eqv? (mcons 1 2) (mcons 1 2))
    (eqv? (integer->char 955) (integer->char 955))
    (eqv? (make-string 3 #\z) (make-string 3 #\z))
-   (eqv? #t #t))}
+   (eqv? #t #t))
+
+@history[#:changed "9.0.0.10" @elem{For characters,
+                                    @racket[equal?] implies @racket[eq?],
+                                    not just @racket[eqv?].}]}
 
 
 @defproc[(eq? [v1 any/c] [v2 any/c]) boolean?]{
