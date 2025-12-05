@@ -1957,19 +1957,27 @@
 ;; ----------------------------------------
 
 (let-values ([(insp) (make-inspector)])
-  (let-values ([(type1 make1 pred1 sel1 set1) (make-struct-type 'foo1 #f 0 0 #f null insp)]
+  (let-values ([(type0 make0 pred0 sel0 set0) (make-struct-type 'foo1 #f 0 0 #f null)]
+               [(type0x make0x pred0x sel0x set0x) (make-struct-type 'foo1 #f 0 0 #f null (current-inspector))]
+               [(type1 make1 pred1 sel1 set1) (make-struct-type 'foo1 #f 0 0 #f null insp)]
                [(type2 make2 pred2 sel2 set2) (make-struct-type 'foo2 #f 0 0 #f null 'current)]
                [(type3 make3 pred3 sel3 set3) (parameterize ([current-inspector insp])
                                                 (make-struct-type 'foo3 #f 0 0 #f null))]
+               [(type3x make3x pred3x sel3x set3x) (parameterize ([current-inspector insp])
+                                                     (make-struct-type 'foo3 #f 0 0 #f null (current-inspector)))]
                [(type4 make4 pred4 sel4 set4) (parameterize ([current-inspector insp])
                                                 (make-struct-type 'foo4 #f 0 0 #f null 'current))])
+    (err/rt-test (begin (struct-type-info type0) #t) exn? "inspector")
+    (err/rt-test (begin (struct-type-info type0x) #t) exn? "inspector")
     (test '#t (begin (struct-type-info type1) #t))
     (err/rt-test (begin (struct-type-info type2) #t) exn? "inspector")
     (test '#t (begin (struct-type-info type3) #t))
+    (test '#t (begin (struct-type-info type3x) #t))
     (test '#t (begin (struct-type-info type4) #t))
     (parameterize ([current-inspector insp])
       (err/rt-test (begin (struct-type-info type1) #t) exn:fail? "inspector")
       (err/rt-test (begin (struct-type-info type3) #t) exn:fail? "inspector")
+      (err/rt-test (begin (struct-type-info type3x) #t) exn:fail? "inspector")
       (err/rt-test (begin (struct-type-info type4) #t) exn:fail? "inspector"))))
 
 ; We also try with a module which we hope gets the optimization which does

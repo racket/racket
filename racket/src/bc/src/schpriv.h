@@ -3152,6 +3152,7 @@ int scheme_omittable_expr(Scheme_Object *o, int vals, int fuel, int flags,
 #define OMITTABLE_KEEP_MUTABLE_VARS 0x4
 #define OMITTABLE_IGNORE_APPN_OMIT  0x8
 #define OMITTABLE_IGNORE_MAKE_STRUCT_TYPE 0x10
+#define OMITTABLE_REALLY_NO_MARKS   0x20
 
 int scheme_might_invoke_call_cc(Scheme_Object *value);
 int scheme_is_liftable(Scheme_Object *o, Scheme_Hash_Tree *exclude_vars, int fuel, int as_rator, int or_escape);
@@ -3194,6 +3195,7 @@ int scheme_is_simple_make_struct_type_property(Scheme_Object *app, int vals, int
 #define CHECK_STRUCT_TYPE_ALWAYS_SUCCEED   0x2
 #define CHECK_STRUCT_TYPE_DELAY_AUTO_CHECK 0x4
 #define CHECK_STRUCT_TYPE_NONCALLING_PROP  0x8
+#define CHECK_STRUCT_TYPE_NO_MARKS         0x10
 
 int scheme_known_noncalling_guard_struct_type_property(Scheme_Object *v);
 
