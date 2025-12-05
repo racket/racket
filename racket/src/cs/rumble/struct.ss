@@ -226,8 +226,9 @@
   (check who
          :test (or (not insp)
                    (inspector? insp)
+                   (eq? insp 'current)
                    (eq? insp 'prefab))
-         :contract "(or/c inspector? #f 'prefab)"
+         :contract "(or/c inspector? #f 'current 'prefab)"
          insp)
   (check who
          :test (and (#%list? immutables)
@@ -392,7 +393,10 @@
          
          ;; Record inspector
          (unless (and system? insp)
-           (inspector-set! rtd insp))
+           (inspector-set! rtd (if (eq? insp 'current)
+                                   (current-inspector)
+                                   insp)))
+
          ;; Register guard
          (register-guards! rtd parent-rtd guard 'at-start)))]))
 
@@ -451,9 +455,9 @@
 (define make-struct-type-install-properties
   (case-lambda
    [(name init-count auto-count parent-rtd)
-    (make-struct-type-install-properties name init-count auto-count parent-rtd '() (current-inspector) #f '() #f #f)]
+    (make-struct-type-install-properties name init-count auto-count parent-rtd '() 'current #f '() #f #f)]
    [(name init-count auto-count parent-rtd props)
-    (make-struct-type-install-properties name init-count auto-count parent-rtd props (current-inspector) #f '() #f #f)]
+    (make-struct-type-install-properties name init-count auto-count parent-rtd props 'current #f '() #f #f)]
    [(name init-count auto-count parent-rtd props insp)
     (make-struct-type-install-properties name init-count auto-count parent-rtd props insp #f '() #f #f)]
    [(name init-count auto-count parent-rtd props insp proc-spec)
@@ -635,11 +639,11 @@
 (define make-struct-type
   (case-lambda 
     [(name parent-rtd init-count auto-count)
-     (make-struct-type name parent-rtd init-count auto-count #f '() (current-inspector) #f '() #f #f)]
+     (make-struct-type name parent-rtd init-count auto-count #f '() 'current #f '() #f #f)]
     [(name parent-rtd init-count auto-count auto-val)
-     (make-struct-type name parent-rtd init-count auto-count auto-val '() (current-inspector) #f '() #f #f)]
+     (make-struct-type name parent-rtd init-count auto-count auto-val '() 'current #f '() #f #f)]
     [(name parent-rtd init-count auto-count auto-val props)
-     (make-struct-type name parent-rtd init-count auto-count auto-val props (current-inspector) #f '() #f #f)]
+     (make-struct-type name parent-rtd init-count auto-count auto-val props 'current #f '() #f #f)]
     [(name parent-rtd init-count auto-count auto-val props insp)
      (make-struct-type name parent-rtd init-count auto-count auto-val props insp #f '() #f #f)]
     [(name parent-rtd init-count auto-count auto-val props insp proc-spec)
