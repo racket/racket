@@ -114,7 +114,7 @@ static const char *startup_source =
 "(begin"
 "(if(if(procedure? eql?_0)(procedure-arity-includes? eql?_0 2) #f)"
 "(void)"
-"          (raise-argument-error 'member \"(procedure-arity-includes/c 2)\" eq?))"
+"          (raise-argument-error 'member \"(procedure-arity-includes/c 2)\" eql?_0))"
 "(member_0 v_0 ls_0 eql?_0))))))"
 "(define-values(current-parameterization)(lambda()(begin(continuation-mark-set-first #f parameterization-key))))"
 "(define-values"
