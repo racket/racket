@@ -35,7 +35,7 @@
              (raise-argument-error
               'member
               "(procedure-arity-includes/c 2)"
-              eq?))
+              eql?))
          (member v ls eql?)])))
          
   (define-values (memw)
