@@ -3714,11 +3714,8 @@ static Scheme_Object *do_expr_implies_predicate(Scheme_Object *expr, Optimize_In
       return scheme_keyword_p_proc;
     if (SCHEME_SYMBOLP(expr))
       return scheme_symbol_p_proc;
-    if (SCHEME_CHARP(expr)) {
-      if (SCHEME_CHAR_VAL(expr) < 256)
-        return scheme_interned_char_p_proc;
+    if (SCHEME_CHARP(expr))
       return scheme_char_p_proc;
-    }
     if (SAME_OBJ(expr, scheme_true))
       return scheme_true_object_p_proc;
     if (SCHEME_FALSEP(expr))
@@ -5891,9 +5888,12 @@ static int predicate_implies(Scheme_Object *pred1, Scheme_Object *pred2)
       && SAME_OBJ(pred1, scheme_list_pair_p_proc))
     return 1;
 
-  /* interned-char? => char? */
+  /* interned-char? <=> char? */
   if (SAME_OBJ(pred2, scheme_char_p_proc)
       && SAME_OBJ(pred1, scheme_interned_char_p_proc))
+    return 1;
+  if (SAME_OBJ(pred2, scheme_interned_char_p_proc)
+      && SAME_OBJ(pred1, scheme_char_p_proc))
     return 1;
 
   /* not, true-object? => boolean? */
