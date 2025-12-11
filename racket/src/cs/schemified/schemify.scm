@@ -7458,18 +7458,18 @@
           (if (hash-ref prim-knowns_0 (unwrap id_0) #f) id_0 #f))))))
 (define find-known+import
   (lambda (key_0 prim-knowns_0 knowns_0 imports_0 mutated_0)
-    (let ((c2_0 (hash-ref prim-knowns_0 key_0 #f)))
-      (if c2_0
-        (values c2_0 #f)
-        (let ((c1_0 (hash-ref-either knowns_0 imports_0 key_0)))
-          (if c1_0
+    (let ((cond-val_0 (hash-ref prim-knowns_0 key_0 #f)))
+      (if cond-val_0
+        (values cond-val_0 #f)
+        (let ((cond-val_1 (hash-ref-either knowns_0 imports_0 key_0)))
+          (if cond-val_1
             (if (not (simple-mutated-state? (hash-ref mutated_0 key_0 #f)))
               (values #f #f)
-              (if (known-copy? c1_0)
+              (if (known-copy? cond-val_1)
                 (let ((new-key_0
                        (unwrap
                         (known-copy->local-id
-                         c1_0
+                         cond-val_1
                          key_0
                          imports_0
                          prim-knowns_0))))
@@ -7479,7 +7479,7 @@
                    knowns_0
                    imports_0
                    mutated_0))
-                (values c1_0 (hash-ref imports_0 key_0 #f))))
+                (values cond-val_1 (hash-ref imports_0 key_0 #f))))
             (values #f #f)))))))
 (define find-known
   (lambda (key_0 prim-knowns_0 knowns_0 imports_0 mutated_0)
@@ -11134,7 +11134,7 @@
                                                u-rator_0
                                                #f)
                                               #f)))
-                                       (let ((c1_0
+                                       (let ((cond-val_0
                                               (if k_0
                                                 (if (let ((or-part_0
                                                            (known-procedure/folding?
@@ -11195,7 +11195,9 @@
                                                     #f)
                                                   #f)
                                                 #f)))
-                                         (if c1_0 (car c1_0) v_1))))))
+                                         (if cond-val_0
+                                           (car cond-val_0)
+                                           v_1))))))
                                 (let ((u_0 (unwrap v_1)))
                                   (if (symbol? u_0)
                                     (let ((k_0
@@ -12939,13 +12941,13 @@
                                         rest_1))))))
                              fold-var_0)))))
                       (for-loop_0 null argss_0 bodyss_0))))))
-                (let ((c1_0 (hash-ref imports_0 (unwrap v_0) #f)))
-                  (if c1_0
-                    (let ((i-k_0 (import-lookup c1_0)))
+                (let ((cond-val_0 (hash-ref imports_0 (unwrap v_0) #f)))
+                  (if cond-val_0
+                    (let ((i-k_0 (import-lookup cond-val_0)))
                       (if (known-procedure/can-inline? i-k_0)
                         (inline-clone
                          i-k_0
-                         c1_0
+                         cond-val_0
                          add-import!_0
                          mutated_0
                          imports_0)
@@ -14133,26 +14135,28 @@
                                                    u-v_0
                                                    #f)))))
                                         needed_0
-                                        (let ((c3_0
+                                        (let ((cond-val_0
                                                (hash-ref exports_0 u-v_0 #f)))
-                                          (if c3_0
+                                          (if cond-val_0
                                             (hash-set
                                              needed_0
                                              u-v_0
-                                             (cons (export-ext-id c3_0) #f))
-                                            (let ((c2_0
+                                             (cons
+                                              (export-ext-id cond-val_0)
+                                              #f))
+                                            (let ((cond-val_1
                                                    (hash-ref
                                                     imports_0
                                                     u-v_0
                                                     #f)))
-                                              (if c2_0
+                                              (if cond-val_1
                                                 (hash-set
                                                  needed_0
                                                  u-v_0
                                                  (cons
-                                                  (import-ext-id c2_0)
+                                                  (import-ext-id cond-val_1)
                                                   (import-group-index
-                                                   (import-grp c2_0))))
+                                                   (import-grp cond-val_1))))
                                                 #f)))))
                                       needed_0))))))))))))))))
       #f)))
@@ -14878,55 +14882,57 @@
                      (not (hash-ref mutated12_0 (unwrap id8_0) #f))
                      #f)
                  (let ((u-rhs_0 (unwrap rhs_0)))
-                   (let ((c4_0 (hash-ref prim-knowns10_0 u-rhs_0 #f)))
-                     (if c4_0
+                   (let ((cond-val_0 (hash-ref prim-knowns10_0 u-rhs_0 #f)))
+                     (if cond-val_0
                        (known-copy u-rhs_0)
                        (if (not
                             (simple-mutated-state?
                              (hash-ref mutated12_0 u-rhs_0 #f)))
                          (if defn3_0 a-known-constant #f)
-                         (let ((c3_0
+                         (let ((cond-val_1
                                 (hash-ref-either
                                  knowns9_0
                                  imports11_0
                                  u-rhs_0)))
-                           (if c3_0
+                           (if cond-val_1
                              (if (known-procedure/can-inline/need-imports?
-                                  c3_0)
+                                  cond-val_1)
                                (known-procedure/can-inline
-                                (known-procedure-arity-mask c3_0)
+                                (known-procedure-arity-mask cond-val_1)
                                 rhs_0)
                                (if (let ((or-part_0
-                                          (known-procedure/can-inline? c3_0)))
+                                          (known-procedure/can-inline?
+                                           cond-val_1)))
                                      (if or-part_0
                                        or-part_0
-                                       (known-literal? c3_0)))
-                                 c3_0
+                                       (known-literal? cond-val_1)))
+                                 cond-val_1
                                  (if (let ((or-part_0 (not defn3_0)))
                                        (if or-part_0
                                          or-part_0
-                                         (let ((or-part_1 (known-copy? c3_0)))
+                                         (let ((or-part_1
+                                                (known-copy? cond-val_1)))
                                            (if or-part_1
                                              or-part_1
                                              (let ((or-part_2
                                                     (known-struct-constructor/need-imports?
-                                                     c3_0)))
+                                                     cond-val_1)))
                                                (if or-part_2
                                                  or-part_2
                                                  (let ((or-part_3
                                                         (known-struct-predicate/need-imports?
-                                                         c3_0)))
+                                                         cond-val_1)))
                                                    (if or-part_3
                                                      or-part_3
                                                      (let ((or-part_4
                                                             (known-field-accessor/need-imports?
-                                                             c3_0)))
+                                                             cond-val_1)))
                                                        (if or-part_4
                                                          or-part_4
                                                          (known-field-mutator/need-imports?
-                                                          c3_0)))))))))))
+                                                          cond-val_1)))))))))))
                                    (known-copy rhs_0)
-                                   c3_0)))
+                                   cond-val_1)))
                              (if defn3_0
                                a-known-constant
                                (if (hash-ref imports11_0 u-rhs_0 #f)
@@ -14938,18 +14944,19 @@
                       knowns9_0
                       mutated12_0)
                    (known-procedure 3)
-                   (let ((c2_0
+                   (let ((cond-val_0
                           (make-ctype?/rep
                            rhs_0
                            prim-knowns10_0
                            knowns9_0
                            imports11_0
                            mutated12_0)))
-                     (if c2_0
-                       (known-ctype c2_0)
-                       (let ((c1_0 (constructed-procedure-arity-mask rhs_0)))
-                         (if c1_0
-                           (known-procedure c1_0)
+                     (if cond-val_0
+                       (known-ctype cond-val_0)
+                       (let ((cond-val_1
+                              (constructed-procedure-arity-mask rhs_0)))
+                         (if cond-val_1
+                           (known-procedure cond-val_1)
                            (let ((hd_0
                                   (let ((p_0 (unwrap rhs_0)))
                                     (if (pair? p_0) (unwrap (car p_0)) #f))))
@@ -14986,13 +14993,15 @@
                                       (if (known-copy? k_0)
                                         (let ((u-rhs_0
                                                (unwrap (known-copy-id k_0))))
-                                          (let ((c6_0
+                                          (let ((cond-val_2
                                                  (hash-ref
                                                   prim-knowns10_0
                                                   u-rhs_0
                                                   #f)))
-                                            (if c6_0
-                                              (if (known-ctype? c6_0) c6_0 #f)
+                                            (if cond-val_2
+                                              (if (known-ctype? cond-val_2)
+                                                cond-val_2
+                                                #f)
                                               (if (not
                                                    (simple-mutated-state?
                                                     (hash-ref
@@ -15000,14 +15009,15 @@
                                                      u-rhs_0
                                                      #f)))
                                                 #f
-                                                (let ((c5_0
+                                                (let ((cond-val_3
                                                        (hash-ref-either
                                                         knowns9_0
                                                         imports11_0
                                                         u-rhs_0)))
-                                                  (if c5_0
-                                                    (if (known-ctype? c5_0)
-                                                      c5_0
+                                                  (if cond-val_3
+                                                    (if (known-ctype?
+                                                         cond-val_3)
+                                                      cond-val_3
                                                       #f)
                                                     #f))))))
                                         #f)))))
@@ -19036,10 +19046,10 @@
                                                           (arithmetic-shift
                                                            1
                                                            n_0))))
-                                                    (let ((c1_0
+                                                    (let ((cond-val_0
                                                            (struct-type-info-non-prefab-immutables
                                                             sti_0)))
-                                                      (if c1_0
+                                                      (if cond-val_0
                                                         (letrec*
                                                          ((loop_0
                                                            (|#%name|
@@ -19063,7 +19073,9 @@
                                                                      (bitwise-and
                                                                       mask_1
                                                                       m_0)))))))))
-                                                         (loop_0 c1_0 mask_0))
+                                                         (loop_0
+                                                          cond-val_0
+                                                          mask_0))
                                                         mask_0))))))))))))))
                                (list*
                                 app_1
@@ -22868,7 +22880,7 @@
                                                                                                 (|#%name|
                                                                                                  add-too-early-name!
                                                                                                  (lambda ()
-                                                                                                   (let ((c2_0
+                                                                                                   (let ((cond-val_0
                                                                                                           (if (eq?
                                                                                                                'too-early
                                                                                                                state_0)
@@ -22876,14 +22888,14 @@
                                                                                                              id_1
                                                                                                              'undefined-error-name)
                                                                                                             #f)))
-                                                                                                     (if c2_0
+                                                                                                     (if cond-val_0
                                                                                                        (hash-set!
                                                                                                         mutated_0
                                                                                                         u-id_0
                                                                                                         (too-early1.1
-                                                                                                         c2_0
+                                                                                                         cond-val_0
                                                                                                          #f))
-                                                                                                       (let ((c1_0
+                                                                                                       (let ((cond-val_1
                                                                                                               (if (eq?
                                                                                                                    'set!ed-too-early
                                                                                                                    state_0)
@@ -22891,12 +22903,12 @@
                                                                                                                  id_1
                                                                                                                  'undefined-error-name)
                                                                                                                 #f)))
-                                                                                                         (if c1_0
+                                                                                                         (if cond-val_1
                                                                                                            (hash-set!
                                                                                                             mutated_0
                                                                                                             u-id_0
                                                                                                             (too-early1.1
-                                                                                                             c1_0
+                                                                                                             cond-val_1
                                                                                                              #t))
                                                                                                            (void)))))))))
                                                                                            (if new-maybe-cc?_0
@@ -24791,30 +24803,30 @@
                   (if (not
                        (simple-mutated-state? (hash-ref mutated_0 u-v_0 #f)))
                     #f
-                    (let ((c1_0
+                    (let ((cond-val_0
                            (let ((or-part_0 (hash-ref prim-knowns_0 u-v_0 #f)))
                              (if or-part_0
                                or-part_0
                                (hash-ref-either knowns_0 imports_0 u-v_0)))))
-                      (if c1_0
-                        (let ((or-part_0 (known-authentic? c1_0)))
+                      (if cond-val_0
+                        (let ((or-part_0 (known-authentic? cond-val_0)))
                           (if or-part_0
                             or-part_0
-                            (let ((or-part_1 (known-procedure? c1_0)))
+                            (let ((or-part_1 (known-procedure? cond-val_0)))
                               (if or-part_1
                                 or-part_1
                                 (let ((or-part_2
-                                       (if (known-literal? c1_0)
+                                       (if (known-literal? cond-val_0)
                                          (not
                                           (impersonator?
-                                           (known-literal-value c1_0)))
+                                           (known-literal-value cond-val_0)))
                                          #f)))
                                   (if or-part_2
                                     or-part_2
-                                    (if (known-copy? c1_0)
+                                    (if (known-copy? cond-val_0)
                                       (authentic-valued?_0
                                        (known-copy->local-id
-                                        c1_0
+                                        cond-val_0
                                         u-v_0
                                         imports_0
                                         prim-knowns_0))
@@ -30036,7 +30048,7 @@
                                                                          'fresh
                                                                          unsafe-mode?_2
                                                                          v_2))))
-                                                                 (let ((c1_0
+                                                                 (let ((cond-val_0
                                                                         (struct-convert-local.1
                                                                          #t
                                                                          target_0
@@ -30048,8 +30060,8 @@
                                                                          mutated_0
                                                                          simples_0
                                                                          temp144_0)))
-                                                                   (if c1_0
-                                                                     c1_0
+                                                                   (if cond-val_0
+                                                                     cond-val_0
                                                                      (if (letrec-splitable-values-binding?
                                                                           idss_0
                                                                           rhss_0)
@@ -31553,7 +31565,7 @@
                                                                                                           receiver_0)))))))
                                                                                              (lambda (generator_0
                                                                                                       receiver_0)
-                                                                                               (let ((c2_0
+                                                                                               (let ((cond-val_0
                                                                                                       (if (single-valued-lambda?
                                                                                                            generator_0
                                                                                                            knowns_1
@@ -31789,8 +31801,8 @@
                                                                                                                      'fresh)))))
                                                                                                               #f)))
                                                                                                         #f)))
-                                                                                                 (if c2_0
-                                                                                                   c2_0
+                                                                                                 (if cond-val_0
+                                                                                                   cond-val_0
                                                                                                    (if (if (lambda?.1
                                                                                                             #f
                                                                                                             generator_0)
@@ -32648,7 +32660,7 @@
                                                                                                                                         mutated_0))
                                                                                                                                      (lambda (k_0
                                                                                                                                               im_0)
-                                                                                                                                       (let ((c7_0
+                                                                                                                                       (let ((cond-val_0
                                                                                                                                               (let ((or-part_2
                                                                                                                                                      (if (eq?
                                                                                                                                                           rator_0
@@ -32664,14 +32676,14 @@
                                                                                                                                                     (inline-ptr-set
                                                                                                                                                      args_1)
                                                                                                                                                     #f)))))
-                                                                                                                                         (if c7_0
+                                                                                                                                         (if cond-val_0
                                                                                                                                            (let ((app_0
                                                                                                                                                   (car
-                                                                                                                                                   c7_0)))
+                                                                                                                                                   cond-val_0)))
                                                                                                                                              (left-to-right/app
                                                                                                                                               app_0
                                                                                                                                               (cdr
-                                                                                                                                               c7_0)
+                                                                                                                                               cond-val_0)
                                                                                                                                               #f
                                                                                                                                               target_0
                                                                                                                                               prim-knowns_0
@@ -32680,7 +32692,7 @@
                                                                                                                                               mutated_0
                                                                                                                                               simples_0
                                                                                                                                               unsafe-mode?_2))
-                                                                                                                                           (let ((c6_0
+                                                                                                                                           (let ((cond-val_1
                                                                                                                                                   (if (not
                                                                                                                                                        (let ((or-part_2
                                                                                                                                                               (eq?
@@ -32700,9 +32712,9 @@
                                                                                                                                                        args_1)
                                                                                                                                                       #f)
                                                                                                                                                     #f)))
-                                                                                                                                             (if c6_0
-                                                                                                                                               c6_0
-                                                                                                                                               (let ((c5_0
+                                                                                                                                             (if cond-val_1
+                                                                                                                                               cond-val_1
+                                                                                                                                               (let ((cond-val_2
                                                                                                                                                       (if (not
                                                                                                                                                            (let ((or-part_2
                                                                                                                                                                   (eq?
@@ -32722,9 +32734,9 @@
                                                                                                                                                            args_1)
                                                                                                                                                           #f)
                                                                                                                                                         #f)))
-                                                                                                                                                 (if c5_0
-                                                                                                                                                   c5_0
-                                                                                                                                                   (let ((c4_0
+                                                                                                                                                 (if cond-val_2
+                                                                                                                                                   cond-val_2
+                                                                                                                                                   (let ((cond-val_3
                                                                                                                                                           (if (not
                                                                                                                                                                (let ((or-part_2
                                                                                                                                                                       (eq?
@@ -32744,9 +32756,9 @@
                                                                                                                                                                args_1)
                                                                                                                                                               #f)
                                                                                                                                                             #f)))
-                                                                                                                                                     (if c4_0
-                                                                                                                                                       c4_0
-                                                                                                                                                       (let ((c3_0
+                                                                                                                                                     (if cond-val_3
+                                                                                                                                                       cond-val_3
+                                                                                                                                                       (let ((cond-val_4
                                                                                                                                                               (if (not
                                                                                                                                                                    (let ((or-part_2
                                                                                                                                                                           (eq?
@@ -32766,8 +32778,8 @@
                                                                                                                                                                    args_1)
                                                                                                                                                                   #f)
                                                                                                                                                                 #f)))
-                                                                                                                                                         (if c3_0
-                                                                                                                                                           c3_0
+                                                                                                                                                         (if cond-val_4
+                                                                                                                                                           cond-val_4
                                                                                                                                                            (if (if unsafe-mode?_2
                                                                                                                                                                  (known-procedure/has-unsafe?
                                                                                                                                                                   k_0)
@@ -32840,7 +32852,7 @@
                                                                                                                 mutated_0
                                                                                                                 u-v_0
                                                                                                                 #f)))
-                                                                                                          (let ((c10_0
+                                                                                                          (let ((cond-val_0
                                                                                                                  (if (via-variable-mutated-state?
                                                                                                                       state_0)
                                                                                                                    (let ((or-part_0
@@ -32855,26 +32867,26 @@
                                                                                                                         u-v_0
                                                                                                                         #f)))
                                                                                                                    #f)))
-                                                                                                            (if c10_0
+                                                                                                            (if cond-val_0
                                                                                                               (if (too-early-mutated-state?
                                                                                                                    state_0)
                                                                                                                 (list
                                                                                                                  'variable-ref
                                                                                                                  (export-id
-                                                                                                                  c10_0))
+                                                                                                                  cond-val_0))
                                                                                                                 (list
                                                                                                                  'variable-ref/no-check
                                                                                                                  (export-id
-                                                                                                                  c10_0)))
-                                                                                                              (let ((c9_0
+                                                                                                                  cond-val_0)))
+                                                                                                              (let ((cond-val_1
                                                                                                                      (hash-ref
                                                                                                                       imports_0
                                                                                                                       u-v_0
                                                                                                                       #f)))
-                                                                                                                (if c9_0
+                                                                                                                (if cond-val_1
                                                                                                                   (let ((k_0
                                                                                                                          (import-lookup
-                                                                                                                          c9_0)))
+                                                                                                                          cond-val_1)))
                                                                                                                     (if (known-constant?
                                                                                                                          k_0)
                                                                                                                       (if (known-literal?
@@ -32893,19 +32905,19 @@
                                                                                                                           (known-copy-id
                                                                                                                            k_0)
                                                                                                                           (import-id
-                                                                                                                           c9_0)))
+                                                                                                                           cond-val_1)))
                                                                                                                       (list
                                                                                                                        'variable-ref/no-check
                                                                                                                        (import-id
-                                                                                                                        c9_0))))
-                                                                                                                  (let ((c8_0
+                                                                                                                        cond-val_1))))
+                                                                                                                  (let ((cond-val_2
                                                                                                                          (hash-ref
                                                                                                                           knowns_1
                                                                                                                           u-v_0
                                                                                                                           #f)))
-                                                                                                                    (if c8_0
+                                                                                                                    (if cond-val_2
                                                                                                                       (if (if (known-copy?
-                                                                                                                               c8_0)
+                                                                                                                               cond-val_2)
                                                                                                                             (simple-mutated-state?
                                                                                                                              (hash-ref
                                                                                                                               mutated_0
@@ -32914,7 +32926,7 @@
                                                                                                                             #f)
                                                                                                                         (schemify_1
                                                                                                                          (known-copy-id
-                                                                                                                          c8_0)
+                                                                                                                          cond-val_2)
                                                                                                                          wcm-state85_0)
                                                                                                                         v84_0)
                                                                                                                       (if (if (too-early-mutated-state?
@@ -39237,10 +39249,11 @@
                                         #t)
                                        (if (box? v_0)
                                          (loop_0 (unbox v_0))
-                                         (let ((c2_0 (prefab-struct-key v_0)))
-                                           (if c2_0
+                                         (let ((cond-val_0
+                                                (prefab-struct-key v_0)))
+                                           (if cond-val_0
                                              (begin
-                                               (loop_0 c2_0)
+                                               (loop_0 cond-val_0)
                                                (call-with-values
                                                 (lambda ()
                                                   (unsafe-normalise-inputs
@@ -39314,15 +39327,17 @@
                                                              (values))))))
                                                       (for-loop_0 lst_0)))
                                                    (void))
-                                                 (let ((c1_0
+                                                 (let ((cond-val_1
                                                         (if (struct-type? v_0)
                                                           (prefab-struct-type-key+field-count
                                                            v_0)
                                                           #f)))
-                                                   (if c1_0
+                                                   (if cond-val_1
                                                      (begin
-                                                       (loop_0 (car c1_0))
-                                                       (loop_0 (cdr c1_0)))
+                                                       (loop_0
+                                                        (car cond-val_1))
+                                                       (loop_0
+                                                        (cdr cond-val_1)))
                                                      (void))))))))))))))))))
                       (loop_0 v14_0))
                      (let ((treat-immutable?_0
@@ -39858,17 +39873,17 @@
                                                                                               (loop_0
                                                                                                (unbox
                                                                                                 v_0)))
-                                                                                            (let ((c4_0
+                                                                                            (let ((cond-val_0
                                                                                                    (prefab-struct-key
                                                                                                     v_0)))
-                                                                                              (if c4_0
+                                                                                              (if cond-val_0
                                                                                                 (begin
                                                                                                   (write-byte
                                                                                                    35
                                                                                                    o_1)
                                                                                                   (begin
                                                                                                     (loop_0
-                                                                                                     c4_0)
+                                                                                                     cond-val_0)
                                                                                                     (let ((vec_0
                                                                                                            (struct->vector
                                                                                                             v_0)))
@@ -40063,23 +40078,23 @@
                                                                                                           (write-byte
                                                                                                            41
                                                                                                            o_1)
-                                                                                                          (let ((c3_0
+                                                                                                          (let ((cond-val_1
                                                                                                                  (if (struct-type?
                                                                                                                       v_0)
                                                                                                                    (prefab-struct-type-key+field-count
                                                                                                                     v_0)
                                                                                                                    #f)))
-                                                                                                            (if c3_0
+                                                                                                            (if cond-val_1
                                                                                                               (begin
                                                                                                                 (write-byte
                                                                                                                  42
                                                                                                                  o_1)
                                                                                                                 (loop_0
                                                                                                                  (car
-                                                                                                                  c3_0))
+                                                                                                                  cond-val_1))
                                                                                                                 (loop_0
                                                                                                                  (cdr
-                                                                                                                  c3_0)))
+                                                                                                                  cond-val_1)))
                                                                                                               (if handle-fail6_0
                                                                                                                 (loop_0
                                                                                                                  (|#%app|
@@ -41349,13 +41364,13 @@
                 i14_0
                 (if (>= i14_0 capture-depth_0)
                   (- i14_0 capture-depth_0)
-                  (let ((c1_0
+                  (let ((cond-val_0
                          (hash-ref
                           (stack-info-closure-map stk-i15_0)
                           i14_0
                           #f)))
-                    (if c1_0
-                      c1_0
+                    (if cond-val_0
+                      cond-val_0
                       (let ((cmap_0 (stack-info-closure-map stk-i15_0)))
                         (let ((pos_0 (- -1 (hash-count cmap_0))))
                           (begin (hash-set! cmap_0 i14_0 pos_0) pos_0)))))))))
@@ -45181,7 +45196,7 @@
                                                                               (vector
                                                                                'quote
                                                                                u_0)
-                                                                              (let ((c1_0
+                                                                              (let ((cond-val_0
                                                                                      (if (symbol?
                                                                                           u_0)
                                                                                        (if (not
@@ -45192,13 +45207,13 @@
                                                                                           #f)
                                                                                          #f)
                                                                                        #f)))
-                                                                                (if c1_0
+                                                                                (if cond-val_0
                                                                                   (if (procedure?
-                                                                                       c1_0)
-                                                                                    c1_0
+                                                                                       cond-val_0)
+                                                                                    cond-val_0
                                                                                     (vector
                                                                                      'quote
-                                                                                     c1_0))
+                                                                                     cond-val_0))
                                                                                   u_0)))
                                                                             (if (indirect?
                                                                                  var_0)

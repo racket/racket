@@ -5,7 +5,7 @@
   (#%require "stx.rkt" "define-et-al.rkt" "qq-and-or.rkt" "cond.rkt" '#%paramz '#%unsafe
              "ellipses.rkt"
              (for-syntax "stx.rkt" "define-et-al.rkt" "qq-and-or.rkt" "cond.rkt"
-                          "gen-temp.rkt" "sc.rkt" '#%kernel))
+                          "stx.rkt" "sc.rkt" '#%kernel))
 
   (-define interp-match
      (lambda (pat e literals immediate=?)
@@ -146,6 +146,7 @@
 
   (-define-syntax syntax-case**
     (lambda (x)
+      (-define gen-temp-id (make-stx-id-counter 'sc))
       (-define l (and (stx-list? x) (cdr (stx->list x))))
       (unless (and (stx-list? x)
 		   (> (length l) 3))
@@ -242,7 +243,7 @@
                                           unflat-pattern-vars))
                             (-define temp-vars
                                      (map
-                                      (lambda (p) (gen-temp-id 'sc))
+                                      (lambda (p) (gen-temp-id))
                                       pattern-vars))
                             (-define tail-pattern-var (sub1 (length pattern-vars)))
                             ;; Here's the result expression for one match:

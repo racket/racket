@@ -197,6 +197,15 @@
                       (loop s))])
 	(values pre post (= m n)))))
 
+  ; Used to generate identifiers in low-level macros which need a variable number
+  ; of temporaries
+  (define-values (make-stx-id-counter)
+    (lambda (prefix)
+      (let-values ([(counter) 0])
+        (lambda ()
+          (set! counter (add1 counter))
+          (string->uninterned-symbol (format "~a~a" prefix counter))))))
+
   (#%provide identifier? stx-null? stx-null/#f stx-pair? stx-list?
              stx-car stx-cdr stx->list
              stx-vector? stx-vector-ref
@@ -204,4 +213,5 @@
              stx-prefab?
              stx-check/esc cons/#f append/#f
              stx-rotate stx-rotate*
-             split-stx-list))
+             split-stx-list
+             make-stx-id-counter))
