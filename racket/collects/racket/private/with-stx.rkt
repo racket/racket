@@ -4,7 +4,7 @@
 (module with-stx '#%kernel
   (#%require "stx.rkt" "define-et-al.rkt" "qq-and-or.rkt" "cond.rkt" "stxcase.rkt"
              (for-syntax '#%kernel "stxcase.rkt" "stxloc.rkt" 
-                         "gen-temp.rkt" "sc.rkt" "qq-and-or.rkt" "cond.rkt"))
+                         "stx.rkt" "sc.rkt" "qq-and-or.rkt" "cond.rkt"))
 
   (-define (with-syntax-fail stx)
     (raise-syntax-error
@@ -27,11 +27,12 @@
            ((_ () e1 e2 ...)
             (syntax/loc x (let () e1 e2 ...)))
            ((_ ((out in) ...) e1 e2 ...)
-            (let ([ins (syntax->list (syntax (in ...)))])
+            (let ([ins (syntax->list (syntax (in ...)))]
+                  [gen-temp-id (make-stx-id-counter 'ws)])
               ;; Check for duplicates or other syntax errors:
               (get-match-vars (syntax _) x (syntax (out ...)) null)
               ;; Generate temps and contexts:
-              (let ([tmps (map (lambda (x) (gen-temp-id 'ws)) ins)]
+              (let ([tmps (map (lambda (x) (gen-temp-id)) ins)]
                     [heres (map (lambda (x)
                                   (datum->syntax
                                    x

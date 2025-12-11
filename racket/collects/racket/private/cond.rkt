@@ -3,7 +3,7 @@
 ;; cond
 
 (module cond '#%kernel
-  (#%require (for-syntax "stx.rkt" "qq-and-or.rkt" '#%kernel "gen-temp.rkt"))
+  (#%require (for-syntax '#%kernel "stx.rkt" "qq-and-or.rkt"))
 
   (define-syntaxes (=>)
     (lambda (stx)
@@ -55,7 +55,7 @@
                                              (if (and (stx-pair? (stx-cdr value))
                                                       (stx-null? (stx-cdr (stx-cdr value))))
                                                  (let-values ([(exp d-u) (loop rest)])
-                                                   (let ([gen (gen-temp-id 'c)])
+                                                   (let ([gen 'cond-val])
                                                      (values
                                                       `(,(quote-syntax let-values) ([(,gen) ,test])
                                                          (,(quote-syntax if)
@@ -79,7 +79,7 @@
                                                  (let-values ([(exp d-u) (loop rest)])
                                                    (values
                                                     (if (stx-null? value)
-                                                        (let ([gen (gen-temp-id 'c)])
+                                                        (let ([gen 'cond-val])
                                                           `(,(quote-syntax let-values)
                                                             ([(,gen) ,test])
                                                             (,(quote-syntax if) ,gen ,gen ,exp)))
