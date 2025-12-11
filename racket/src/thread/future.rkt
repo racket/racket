@@ -319,7 +319,7 @@
   (thread-pool-departure pool 0)
   (unsafe-custodian-unregister pool (parallel-thread-pool-custodian-reference pool)))
 
-(define-place-local parallel-thread-will-executor (host:make-will-executor void))
+(define-place-local parallel-thread-will-executor (host:make-late-will-executor void))
 
 (define (init-parallel-thread-will-executor!)
   (set! parallel-thread-will-executor (host:make-will-executor void)))
@@ -389,23 +389,26 @@
                             (lambda args
                               (loop)))))))
      (set-future*-parallel! me-f (parallel* pool th #f cells))
+     (define departure-box (box pool))
      (thread-init-kill-callback! th (lambda ()
                                       (future-external-stop me-f)
                                       (unless (eq? (future*-state me-f) 'failed)
+                                        (set-box! departure-box #f)
                                         (thread-pool-departure pool -1))))
      (thread-push-suspend+resume-callbacks! (lambda () (future-external-stop me-f))
                                             (lambda () (future-external-resume me-f))
                                             th)
      ;; if the thread becomes unreachable, need an explicit termination
      ;; to exit the pool (which will maybe cause the pool to be shut down)
-     (host:will-register parallel-thread-will-executor th parallel-thread-unreachable)
+     (host:will-register parallel-thread-will-executor departure-box parallel-thread-unreachable)
      ;; this is the step (internally atomic) that commits the thread to running:
      (schedule-future! me-f #:check-pool-open? #t)
      th]))
 
 ;; called in scheduler thread
-(define (parallel-thread-unreachable th)
-  (do-kill-thread th))
+(define (parallel-thread-unreachable departure-box)
+  (define pool (unbox departure-box))
+  (when pool (thread-pool-departure pool -1)))
 
 ;; in Racket thread
 ;; used to implement `fsemaphore-wait` when not in a future

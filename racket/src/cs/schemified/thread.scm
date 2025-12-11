@@ -12335,7 +12335,7 @@
          pool_0
          (parallel-thread-pool-custodian-reference pool_0))))))
 (define cell.2$3
-  (unsafe-make-place-local (|#%app| host:make-will-executor void)))
+  (unsafe-make-place-local (|#%app| host:make-late-will-executor void)))
 (define init-parallel-thread-will-executor!
   (lambda ()
     (unsafe-place-local-set! cell.2$3 (|#%app| host:make-will-executor void))))
@@ -12446,31 +12446,38 @@
                                  (set-future*-parallel!
                                   me-f_0
                                   (parallel*3.1 pool_0 th_0 #f cells_0))
-                                 (let ((cb_0
-                                        (lambda ()
-                                          (begin
-                                            (future-external-stop me-f_0)
-                                            (if (eq?
-                                                 (future*-state me-f_0)
-                                                 'failed)
-                                              (void)
-                                              (thread-pool-departure
-                                               pool_0
-                                               -1))))))
-                                   (set-thread-kill-callbacks!
-                                    th_0
-                                    (vector null cb_0)))
-                                 (thread-push-suspend+resume-callbacks!
-                                  (lambda () (future-external-stop me-f_0))
-                                  (lambda () (future-external-resume me-f_0))
-                                  th_0)
-                                 (|#%app|
-                                  host:will-register
-                                  (unsafe-place-local-ref cell.2$3)
-                                  th_0
-                                  parallel-thread-unreachable)
-                                 (schedule-future!.1 #t #f me-f_0)
-                                 th_0)))))))))))))))
+                                 (let ((departure-box_0 (box pool_0)))
+                                   (begin
+                                     (let ((cb_0
+                                            (lambda ()
+                                              (begin
+                                                (future-external-stop me-f_0)
+                                                (if (eq?
+                                                     (future*-state me-f_0)
+                                                     'failed)
+                                                  (void)
+                                                  (begin
+                                                    (set-box!
+                                                     departure-box_0
+                                                     #f)
+                                                    (thread-pool-departure
+                                                     pool_0
+                                                     -1)))))))
+                                       (set-thread-kill-callbacks!
+                                        th_0
+                                        (vector null cb_0)))
+                                     (thread-push-suspend+resume-callbacks!
+                                      (lambda () (future-external-stop me-f_0))
+                                      (lambda ()
+                                        (future-external-resume me-f_0))
+                                      th_0)
+                                     (|#%app|
+                                      host:will-register
+                                      (unsafe-place-local-ref cell.2$3)
+                                      departure-box_0
+                                      parallel-thread-unreachable)
+                                     (schedule-future!.1 #t #f me-f_0)
+                                     th_0)))))))))))))))))
     (|#%name|
      thread/parallel
      (case-lambda
@@ -12478,7 +12485,10 @@
       ((thunk_0 pool-in_0 keep-result?10_0)
        (thread/parallel_0 thunk_0 pool-in_0 keep-result?10_0))
       ((thunk_0 pool-in9_0) (thread/parallel_0 thunk_0 pool-in9_0 #f))))))
-(define parallel-thread-unreachable (lambda (th_0) (do-kill-thread th_0)))
+(define parallel-thread-unreachable
+  (lambda (departure-box_0)
+    (let ((pool_0 (unbox departure-box_0)))
+      (if pool_0 (thread-pool-departure pool_0 -1) (void)))))
 (define call-in-future
   (lambda (thunk_0)
     (let ((me-f_0

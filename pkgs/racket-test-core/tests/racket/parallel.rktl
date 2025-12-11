@@ -1541,6 +1541,29 @@
     (run #f)
     (run #t)))
 
+
+;; Make sure a finalization related to pool registration
+;; does not kick a parallel thread out of a semaphore's queue
+;; when the semaphore is unreachable but finalized
+(unless (eq? 'cgc (system-type 'gc))
+  (local-require ffi/unsafe)
+  (define done-sema (make-semaphore 0))
+  (define (make-obj)
+    (define req-sema (make-semaphore 0))
+    (thread #:pool 'own
+            (lambda ()
+              (semaphore-wait req-sema)
+              (semaphore-post done-sema)))
+    (define obj (list req-sema 'workers))
+    (register-finalizer obj (lambda (v) (semaphore-post (car v))))
+    obj)
+  (void (make-obj))
+  (sync (system-idle-evt))
+  (collect-garbage)
+  (collect-garbage)
+  (sync (system-idle-evt))
+  (test done-sema sync/timeout 0 done-sema))
+
 ; --------------------
 
 ;; Check that the default uncaught-exception handler falls
