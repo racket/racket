@@ -364,72 +364,6 @@ static int generate_inlined_type_test(mz_jit_state *jitter, Scheme_App2_Rec *app
   return 1;
 }
 
-static int generate_inlined_interned_char_test(mz_jit_state *jitter, Scheme_App2_Rec *app,
-                                            Branch_Info *for_branch, int branch_short,
-                                            int dest)
-{
-  GC_CAN_IGNORE jit_insn *ref1, *ref2, *ref3;
-  int reg_valid;
-
-  LOG_IT(("inlined interned-char?\n"));
-
-  mz_runstack_skipped(jitter, 1);
-
-  scheme_generate_non_tail(app->rand, jitter, 0, 1, 0);
-  CHECK_LIMIT();
-
-  mz_runstack_unskipped(jitter, 1);
-
-  mz_rs_sync();
-
-  __START_SHORT_JUMPS__(branch_short);
-
-  reg_valid = 0;
-  if (for_branch) {
-    reg_valid = mz_CURRENT_REG_STATUS_VALID();
-    scheme_prepare_branch_jump(jitter, for_branch);
-    CHECK_LIMIT();
-  }
-
-  /* Test that it's not a fixnum */
-  ref1 = jit_bmsi_ul(jit_forward(), JIT_R0, 0x1);
-  /* Test that it's a char */
-#ifdef jit_bxnei_s
-  ref2 = jit_bxnei_s(jit_forward(), JIT_R0, scheme_char_type);
-#else
-  jit_ldxi_s(JIT_R1, JIT_R0, &((Scheme_Object *)0x0)->type);
-  ref2 = jit_bnei_i(jit_forward(), JIT_R1, scheme_char_type);
-#endif
-  /* Test that it's < 256 */
-  jit_ldxi_s(JIT_R1, JIT_R0, &SCHEME_CHAR_VAL(0x0));
-  ref3 = jit_blti_i(jit_forward(), JIT_R1, 256);
-
-  if (for_branch) {
-    scheme_add_branch_false(for_branch, ref1);
-    scheme_add_branch_false(for_branch, ref2);
-    scheme_add_branch_false(for_branch, ref3);
-
-    /* Note that the test didn't disturb R0: */
-    mz_SET_R0_STATUS_VALID(reg_valid);
-
-    scheme_branch_for_true(jitter, for_branch);
-    CHECK_LIMIT();
-  } else {
-    GC_CAN_IGNORE jit_insn *ref_ucfinish;
-    (void)jit_movi_p(dest, scheme_true);
-    ref_ucfinish = jit_jmpi(jit_forward());
-    mz_patch_branch(ref1);
-    mz_patch_branch(ref2);
-    mz_patch_branch(ref3);
-    (void)jit_movi_p(dest, scheme_false);
-    mz_patch_ucbranch(ref_ucfinish);
-  }
-
-  __END_SHORT_JUMPS__(branch_short);
-
-  return 1;
-}
-
 static int generate_inlined_immutable_test(mz_jit_state *jitter, Scheme_App2_Rec *app,
                                            Branch_Info *for_branch, int branch_short,
                                            int dest)
@@ -1317,11 +1251,9 @@ int scheme_generate_inlined_unary(mz_jit_state *jitter, Scheme_App2_Rec *app, in
   } else if(IS_NAMED_PRIM(rator, "variable-reference?")) {
     generate_inlined_type_test(jitter, app, scheme_global_ref_type, scheme_global_ref_type, 0, for_branch, branch_short, dest);
     return 1;
-  } else if (IS_NAMED_PRIM(rator, "char?")) {
+  } else if (IS_NAMED_PRIM(rator, "char?")
+             || IS_NAMED_PRIM(rator, "interned-char?")) {
     generate_inlined_type_test(jitter, app, scheme_char_type, scheme_char_type, 0, for_branch, branch_short, dest);
-    return 1;
-  } else if (IS_NAMED_PRIM(rator, "interned-char?")) {
-    generate_inlined_interned_char_test(jitter, app, for_branch, branch_short, dest);
     return 1;
   } else if (IS_NAMED_PRIM(rator, "boolean?")) {
     generate_inlined_constant_test(jitter, app, scheme_false, scheme_true, for_branch, branch_short, dest);

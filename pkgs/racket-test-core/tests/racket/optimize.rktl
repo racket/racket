@@ -2732,7 +2732,7 @@
   (test-implies 'k:list-pair? 'pair?)
   (test-implies 'k:list-pair? 'list?)
   (test-implies 'list? 'pair? '?)
-  (test-implies 'k:interned-char? 'char? (if (eq? 'chez-scheme (system-type 'vm)) '= '=>))
+  (test-implies 'k:interned-char? 'char? '=)
   (test-implies 'not 'boolean?)
   (test-implies 'k:true-object? 'boolean?)
 )

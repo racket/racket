@@ -111,7 +111,7 @@ void scheme_init_char (Scheme_Startup_Env *env)
   scheme_addto_prim_instance("char?", p, env);
 
   REGISTER_SO(scheme_interned_char_p_proc);
-  p = scheme_make_folding_prim(interned_char_p, "interned-char?", 1, 1, 1);
+  p = scheme_make_folding_prim(char_p, "interned-char?", 1, 1, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNARY_INLINED
                                                             | SCHEME_PRIM_IS_OMITABLE
                                                             | SCHEME_PRIM_PRODUCES_BOOL);
@@ -275,12 +275,6 @@ static Scheme_Object *
 char_p (int argc, Scheme_Object *argv[])
 {
   return (SCHEME_CHARP(argv[0]) ? scheme_true : scheme_false);
-}
-
-static Scheme_Object *
-interned_char_p (int argc, Scheme_Object *argv[])
-{
-  return (SCHEME_CHARP(argv[0]) && SCHEME_CHAR_VAL(argv[0]) < 256) ? scheme_true : scheme_false;
 }
 
 #define charSTD_FOLDCASE(nl) nl;

@@ -670,7 +670,7 @@
   (test #t k:interned-char? #\()
   (test #t k:interned-char? #\ )
   (test #t k:interned-char? '#\newline)
-  (test (eq? 'chez-scheme (system-type 'vm)) k:interned-char? #\u100)
+  (test #t k:interned-char? #\u100)
   (test #f k:interned-char? 7)
   (test #f k:interned-char? #t)
   (test #f k:interned-char? #t)
