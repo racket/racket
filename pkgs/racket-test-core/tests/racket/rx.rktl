@@ -631,6 +631,7 @@
        (#"(^.|\\1){2}" #"aa" (#"aa" #"a")) ; self backreferences are allowed
        (#"(^.|\\1){2}" #"baa" #f)
        (#"(.\\1)" #"aa" #f)
+       (#"(x*)y(?:\\1 )*" #"xyx x " (#"xyx x " #"x"))
        (#"ab{1,3}bc" #"abbbbc" (#"abbbbc"))
        (#"ab{1,3}bc" #"abbbc" (#"abbbc"))
        (#"ab{1,3}bc" #"abbc" (#"abbc"))

@@ -81,7 +81,7 @@
         (define n (rx:reference-n rx))
         (unless (n . <= . num-groups)
           (regexp-error "backreference number is larger than the highest-numbered cluster"))
-        (define min-size (hash-ref group-sizes n #f))
+        (define min-size (hash-ref group-sizes (sub1 n) #f))
         (cond
          [min-size
           ;; known minimum:

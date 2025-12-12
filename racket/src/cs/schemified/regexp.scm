@@ -3024,10 +3024,12 @@
                                                            (regexp-error
                                                             "backreference number is larger than the highest-numbered cluster"))
                                                          (let ((min-size_0
-                                                                (hash-ref
-                                                                 group-sizes_0
-                                                                 n_0
-                                                                 #f)))
+                                                                (let ((app_0
+                                                                       group-sizes_0))
+                                                                  (hash-ref
+                                                                   app_0
+                                                                   (sub1 n_0)
+                                                                   #f))))
                                                            (if min-size_0
                                                              (values
                                                               min-size_0
