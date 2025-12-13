@@ -3447,14 +3447,14 @@
                                (bytes->immutable-bytes v_1))
                              (begin
                                (if graph_0 (void) (set! graph_0 (make-hasheq)))
-                               (let ((c2_0 (hash-ref graph_0 v_1 #f)))
-                                 (if c2_0
+                               (let ((cond-val_0 (hash-ref graph_0 v_1 #f)))
+                                 (if cond-val_0
                                    (begin
                                      (if used_0
                                        (void)
                                        (set! used_0 (make-hasheq)))
-                                     (hash-set! used_0 c2_0 #t)
-                                     c2_0)
+                                     (hash-set! used_0 cond-val_0 #t)
+                                     cond-val_0)
                                    (if (pair? v_1)
                                      (let ((ph_0 (make-placeholder #f)))
                                        (begin
@@ -3549,10 +3549,10 @@
                                                              0
                                                              0)))))
                                                       v_2)))))))
-                                         (let ((c1_0
+                                         (let ((cond-val_1
                                                 (immutable-prefab-struct-key
                                                  v_1)))
-                                           (if c1_0
+                                           (if cond-val_1
                                              (let ((ph_0
                                                     (make-placeholder #f)))
                                                (begin
@@ -3562,7 +3562,7 @@
                                                   v_1
                                                   (apply
                                                    make-prefab-struct
-                                                   c1_0
+                                                   cond-val_1
                                                    (reverse$1
                                                     (call-with-values
                                                      (lambda ()
@@ -3670,9 +3670,9 @@
               (let ((ph_0 (make-placeholder #f)))
                 (begin
                   (if graph_0 (void) (set! graph_0 (make-hasheq)))
-                  (let ((c4_0 (hash-ref graph_0 v_1 #f)))
-                    (if c4_0
-                      c4_0
+                  (let ((cond-val_0 (hash-ref graph_0 v_1 #f)))
+                    (if cond-val_0
+                      cond-val_0
                       (begin
                         (hash-set! graph_0 v_1 ph_0)
                         (placeholder-set! ph_0 (loop_0 (placeholder-get v_1)))
@@ -3735,11 +3735,11 @@
                                           i_0)))))
                                    (for-loop_0 0 0)))))
                              v_2)))))
-                    (let ((c3_0 (immutable-prefab-struct-key v_1)))
-                      (if c3_0
+                    (let ((cond-val_0 (immutable-prefab-struct-key v_1)))
+                      (if cond-val_0
                         (apply
                          make-prefab-struct
-                         c3_0
+                         cond-val_0
                          (reverse$1
                           (call-with-values
                            (lambda ()
@@ -5549,11 +5549,11 @@
       (unlock-custodians))))
 (define poll-custodian-will-executor
   (lambda ()
-    (let ((c1_0
+    (let ((cond-val_0
            (|#%app| host:will-try-execute (unsafe-place-local-ref cell.1$7))))
-      (if c1_0
+      (if cond-val_0
         (begin
-          (let ((app_0 (car c1_0))) (|#%app| app_0 (cdr c1_0)))
+          (let ((app_0 (car cond-val_0))) (|#%app| app_0 (cdr cond-val_0)))
           (poll-custodian-will-executor))
         (void)))))
 (define post-shutdown-action void)
@@ -6094,7 +6094,7 @@
 (define memory-limit-lock (make-mutex))
 (define compute-memory-sizes 0)
 (define computed-memory-sizes? #f)
-(define effect_2274
+(define effect_2616
   (begin
     (void
      (|#%app|
@@ -6249,15 +6249,15 @@
                                                                more-local-roots_0))
                                                            new-local-roots_0)))
                                                     (let ((even-more-local-roots_0
-                                                           (let ((c2_0
+                                                           (let ((cond-val_0
                                                                   (|#%app|
                                                                    thread-engine-for-roots
                                                                    root_0)))
-                                                             (if c2_0
+                                                             (if cond-val_0
                                                                (append
                                                                 (|#%app|
                                                                  engine-roots
-                                                                 c2_0)
+                                                                 cond-val_0)
                                                                 more-local-roots_0)
                                                                more-local-roots_0))))
                                                       (loop_0
@@ -6682,9 +6682,9 @@
   (|#%name|
    current-thread
    (lambda ()
-     (let ((c1_0 (1/current-future)))
-       (if c1_0
-         (let ((or-part_0 (|#%app| future->thread c1_0)))
+     (let ((cond-val_0 (1/current-future)))
+       (if cond-val_0
+         (let ((or-part_0 (|#%app| future->thread cond-val_0)))
            (if or-part_0
              or-part_0
              (begin (future-barrier) (current-thread/in-racket))))
@@ -8316,9 +8316,9 @@
          (begin0
            (if (is-thread-dead? t_0)
              void
-             (let ((c2_0 (thread-forward-break-to t_0)))
-               (if c2_0
-                 (lambda () (do-break-thread c2_0 kind_0 check-t_0))
+             (let ((cond-val_0 (thread-forward-break-to t_0)))
+               (if cond-val_0
+                 (lambda () (do-break-thread cond-val_0 kind_0 check-t_0))
                  (begin
                    (if (if (thread-pending-break t_0)
                          (break>? kind_0 (thread-pending-break t_0))
@@ -10329,9 +10329,9 @@
          (|#%name|
           loop
           (lambda (new-syncers_1)
-            (let ((c1_0 (syncer-next new-syncers_1)))
-              (if c1_0
-                (loop_0 c1_0)
+            (let ((cond-val_0 (syncer-next new-syncers_1)))
+              (if cond-val_0
+                (loop_0 cond-val_0)
                 (let ((next_0 (syncer-next sr_0)))
                   (begin
                     (set-syncer-next! new-syncers_1 next_0)
@@ -10363,9 +10363,12 @@
              (begin
                (start-atomic)
                (if (syncing-need-retry? s32_0) (syncing-retry! s32_0) (void))
-               (let ((c2_0 (syncing-selected s32_0)))
-                 (if c2_0
-                   (make-result c2_0 (list (syncer-evt c2_0)) success-k19_0)
+               (let ((cond-val_0 (syncing-selected s32_0)))
+                 (if cond-val_0
+                   (make-result
+                    cond-val_0
+                    (list (syncer-evt cond-val_0))
+                    success-k19_0)
                    (if (not sr_0)
                      (begin
                        (if (if just-poll?20_0
@@ -11737,11 +11740,11 @@
             (if (eq? timestamp5_0 unsafe-undefined)
               (current-inexact-milliseconds)
               timestamp5_0)))
-       (let ((c1_0 (1/current-future)))
-         (if c1_0
+       (let ((cond-val_0 (1/current-future)))
+         (if cond-val_0
            (let ((e_0
                   (future-event1.1
-                   (if future-id10_0 future-id10_0 (future*-id c1_0))
+                   (if future-id10_0 future-id10_0 (future*-id cond-val_0))
                    (if pthread-id3_0 pthread-id3_0 (get-thread-id))
                    action11_0
                    timestamp_0
@@ -12341,11 +12344,11 @@
     (unsafe-place-local-set! cell.2$3 (|#%app| host:make-will-executor void))))
 (define poll-parallel-thread-will-executor
   (lambda ()
-    (let ((c1_0
+    (let ((cond-val_0
            (|#%app| host:will-try-execute (unsafe-place-local-ref cell.2$3))))
-      (if c1_0
+      (if cond-val_0
         (begin
-          (let ((app_0 (car c1_0))) (|#%app| app_0 (cdr c1_0)))
+          (let ((app_0 (car cond-val_0))) (|#%app| app_0 (cdr cond-val_0)))
           (poll-parallel-thread-will-executor))
         (void)))))
 (define 1/thread/parallel
@@ -13251,25 +13254,28 @@
                           (set-worker-state! w_0 'exited)
                           (mutex-release (scheduler-mutex s_0))
                           (|#%app| wakeup-this-place))
-                        (let ((c2_0 (scheduler-futures-head s_0)))
-                          (if c2_0
+                        (let ((cond-val_0 (scheduler-futures-head s_0)))
+                          (if cond-val_0
                             (begin
                               (worker-check-in w_0)
                               (mutex-release (scheduler-mutex s_0))
-                              (lock-acquire (future*-lock c2_0))
-                              (if (try-deschedule-future?.1 #f c2_0)
+                              (lock-acquire (future*-lock cond-val_0))
+                              (if (try-deschedule-future?.1 #f cond-val_0)
                                 (begin
                                   (set-scheduler-capacity!
                                    s_0
                                    (- (scheduler-capacity s_0) 1))
-                                  (maybe-run-future-in-worker c2_0 w_0 s_0)
+                                  (maybe-run-future-in-worker
+                                   cond-val_0
+                                   w_0
+                                   s_0)
                                   (mutex-acquire (scheduler-mutex s_0))
                                   (set-scheduler-capacity!
                                    s_0
                                    (+ (scheduler-capacity s_0) 1))
                                   (loop_0))
                                 (begin
-                                  (lock-release (future*-lock c2_0))
+                                  (lock-release (future*-lock cond-val_0))
                                   (mutex-acquire (scheduler-mutex s_0))
                                   (loop_0))))
                             (begin
@@ -13713,14 +13719,14 @@
                                         (poll-and-select-thread!
                                          TICKS
                                          callbacks_0)
-                                        (let ((c1_0 (try-post-idle)))
-                                          (if c1_0
-                                            (if (null? c1_0)
+                                        (let ((cond-val_0 (try-post-idle)))
+                                          (if cond-val_0
+                                            (if (null? cond-val_0)
                                               (select-thread!
                                                leftover-ticks2_0
-                                               c1_0)
+                                               cond-val_0)
                                               (run-callbacks-in-new-thread_0
-                                               c1_0))
+                                               cond-val_0))
                                             (begin
                                               (process-sleep)
                                               (poll-and-select-thread!
@@ -14681,15 +14687,16 @@
        (begin
          (start-atomic)
          (begin0
-           (let ((c1_0
+           (let ((cond-val_0
                   (|#%app|
                    host:will-try-execute
                    (will-executor-host-we we_0))))
-             (if c1_0
+             (if cond-val_0
                (begin
                  (semaphore-wait/atomic (will-executor-sema we_0))
                  (lambda ()
-                   (let ((app_0 (car c1_0))) (|#%app| app_0 (cdr c1_0)))))
+                   (let ((app_0 (car cond-val_0)))
+                     (|#%app| app_0 (cdr cond-val_0)))))
                fail-k_0))
            (end-atomic)))))))
 (define 1/will-execute
@@ -15866,13 +15873,15 @@
             (let ((q_0 (message-queue-q mq_0)))
               (if (null? q_0)
                 (let ((waiters_0 (message-queue-waiters mq_0)))
-                  (let ((c1_0
+                  (let ((cond-val_0
                          (hash-ref
                           waiters_0
                           (unsafe-place-local-ref cell.1$2)
                           #f)))
-                    (if c1_0
-                      (begin (mutex-release lock_0) (|#%app| fail-k_0 c1_0))
+                    (if cond-val_0
+                      (begin
+                        (mutex-release lock_0)
+                        (|#%app| fail-k_0 cond-val_0))
                       (let ((s_0 (1/make-semaphore)))
                         (begin
                           (set-message-queue-waiters!

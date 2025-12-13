@@ -4356,12 +4356,12 @@
               default1_0)))
        (if (core-input-port? v4_0)
          v4_0
-         (let ((c1_0 (input-port-ref v4_0 #f)))
-           (if c1_0
-             (if (struct-accessor-procedure? c1_0)
-               (let ((temp8_0 (|#%app| c1_0 v4_0)))
+         (let ((cond-val_0 (input-port-ref v4_0 #f)))
+           (if cond-val_0
+             (if (struct-accessor-procedure? cond-val_0)
+               (let ((temp8_0 (|#%app| cond-val_0 v4_0)))
                  (->core-input-port.1 unsafe-undefined temp8_0 #f))
-               (->core-input-port.1 unsafe-undefined c1_0 #f))
+               (->core-input-port.1 unsafe-undefined cond-val_0 #f))
              (if who3_0
                (raise-argument-error who3_0 "input-port?" v4_0)
                default_0))))))))
@@ -4681,12 +4681,12 @@
               default1_0)))
        (if (core-output-port? v4_0)
          v4_0
-         (let ((c1_0 (output-port-ref v4_0 #f)))
-           (if c1_0
-             (if (struct-accessor-procedure? c1_0)
-               (let ((temp9_0 (|#%app| c1_0 v4_0)))
+         (let ((cond-val_0 (output-port-ref v4_0 #f)))
+           (if cond-val_0
+             (if (struct-accessor-procedure? cond-val_0)
+               (let ((temp9_0 (|#%app| cond-val_0 v4_0)))
                  (->core-output-port.1 unsafe-undefined temp9_0 #f))
-               (->core-output-port.1 unsafe-undefined c1_0 #f))
+               (->core-output-port.1 unsafe-undefined cond-val_0 #f))
              (if who3_0
                (raise-argument-error who3_0 "output-port?" v4_0)
                default_0))))))))
@@ -7192,14 +7192,16 @@
                         #t
                         (if (peek-via-read-input-port-peeked-eof? this-id_0)
                           #t
-                          (let ((c1_0
+                          (let ((cond-val_0
                                  (|#%app|
                                   (peek-via-read-input-port-methods-byte-ready/inner.1
                                    (core-port-vtable this-id_0))
                                   this-id_0
                                   work-done!215_0)))
-                            (if c1_0
-                              (if (not (eq? c1_0 'not-ready)) c1_0 #f)
+                            (if cond-val_0
+                              (if (not (eq? cond-val_0 'not-ready))
+                                cond-val_0
+                                #f)
                               (begin
                                 (temp5.1$2 this-id_0)
                                 (let ((v_0 (temp1.1$2 this-id_0)))
@@ -9680,7 +9682,7 @@
                        'racket/primitive))))
                (|#%app| exn:fail app_0 (current-continuation-marks))))))
         (void)))))
-(define finish_2659
+(define finish_2998
   (make-struct-type-install-properties
    '(fd-evt)
    3
@@ -9719,7 +9721,7 @@
                            #f)))))
                 (if ready?_0
                   (begin (end-rktio) (values '(0) #f))
-                  (let ((c1_0
+                  (let ((cond-val_0
                          (if (not (|#%app| poll-ctx-poll? ctx_0))
                            (let ((app_0 (fd-evt-fd fde_0)))
                              (fd-semaphore-update!
@@ -9728,10 +9730,10 @@
                                 'read
                                 'write)))
                            #f)))
-                    (if c1_0
+                    (if cond-val_0
                       (begin
                         (end-rktio)
-                        (values #f (wrap-evt c1_0 (lambda (s_0) 0))))
+                        (values #f (wrap-evt cond-val_0 (lambda (s_0) 0))))
                       (begin
                         (end-rktio)
                         (sandman-poll-ctx-add-poll-set-adder!
@@ -9762,7 +9764,7 @@
    #f
    #f
    '(3 . 0)))
-(define effect_2660 (finish_2659 struct:fd-evt))
+(define effect_2660 (finish_2998 struct:fd-evt))
 (define fd-evt47.1
   (|#%name|
    fd-evt
@@ -11106,17 +11108,17 @@
    pipe-content-length
    (lambda (p_0)
      (let ((d_0
-            (let ((c2_0
+            (let ((cond-val_0
                    (let ((p_1 (->core-input-port.1 unsafe-undefined p_0 #f)))
                      (if p_1 (if (pipe-input-port? p_1) p_1 #f) #f))))
-              (if c2_0
-                (pipe-input-port-d c2_0)
-                (let ((c1_0
+              (if cond-val_0
+                (pipe-input-port-d cond-val_0)
+                (let ((cond-val_1
                        (let ((p_1
                               (->core-output-port.1 unsafe-undefined p_0 #f)))
                          (if p_1 (if (pipe-output-port? p_1) p_1 #f) #f))))
-                  (if c1_0
-                    (pipe-output-port-d c1_0)
+                  (if cond-val_1
+                    (pipe-output-port-d cond-val_1)
                     (raise-argument-error
                      'pipe-content-length
                      "pipe-port?"
@@ -15302,15 +15304,15 @@
                                      (eq? mode2_0 'any))
                                  #t
                                  #f)))
-                          (let ((c1_0
+                          (let ((cond-val_0
                                  (maybe-read-a-line
                                   in_0
                                   cr?_0
                                   lf?_0
                                   crlf?_0
                                   #t)))
-                            (if c1_0
-                              c1_0
+                            (if cond-val_0
+                              cond-val_0
                               (letrec*
                                ((loop_0
                                  (|#%name|
@@ -15433,15 +15435,15 @@
                                      (eq? mode4_0 'any))
                                  #t
                                  #f)))
-                          (let ((c2_0
+                          (let ((cond-val_0
                                  (maybe-read-a-line
                                   in_0
                                   cr?_0
                                   lf?_0
                                   crlf?_0
                                   #f)))
-                            (if c2_0
-                              c2_0
+                            (if cond-val_0
+                              cond-val_0
                               (letrec*
                                ((loop_0
                                  (|#%name|
@@ -18184,7 +18186,7 @@
                  (if (not (eqv? (unsafe-bytes-ref bstr_0 (- len_0 3)) 92))
                    #vu8(92)
                    #vu8()))
-                (let ((c2_0
+                (let ((cond-val_0
                        (if (> len_0 6)
                          (letrec*
                           ((loop_0
@@ -18211,8 +18213,9 @@
                                      (loop_0 i_0))))))))
                           (loop_0 len_0))
                          #f)))
-                  (if c2_0
-                    (let ((i+1_0 (add1 c2_0))) (values 'abs c2_0 i+1_0 i+1_0 #vu8()))
+                  (if cond-val_0
+                    (let ((i+1_0 (add1 cond-val_0)))
+                      (values 'abs cond-val_0 i+1_0 i+1_0 #vu8()))
                     (if (if (> len_0 6)
                           (if (drive-letter? (unsafe-bytes-ref bstr_0 base_0))
                             (if (eqv?
@@ -18241,7 +18244,7 @@
                            orig-drive-len_0
                            (+ base_0 2)
                            #vu8())))
-                      (let ((c1_0
+                      (let ((cond-val_1
                              (if (> len_0 (+ base_0 3))
                                (if (let ((b_0
                                           (unsafe-bytes-ref bstr_0 base_0)))
@@ -18286,16 +18289,18 @@
                                    #f)
                                  #f)
                                #f)))
-                        (if c1_0
+                        (if cond-val_1
                           (let ((orig-drive-len_0
-                                 (if (if (> len_0 c1_0)
-                                       (eqv? (unsafe-bytes-ref bstr_0 c1_0) 92)
+                                 (if (if (> len_0 cond-val_1)
+                                       (eqv?
+                                        (unsafe-bytes-ref bstr_0 cond-val_1)
+                                        92)
                                        #f)
-                                   (add1 c1_0)
-                                   c1_0)))
+                                   (add1 cond-val_1)
+                                   cond-val_1)))
                             (values
                              'unc
-                             c1_0
+                             cond-val_1
                              orig-drive-len_0
                              (+ base_0 3)
                              #vu8(92)))
@@ -18575,9 +18580,9 @@
                 clean-start-pos_0
                 add-sep-pos_0)
          (subbytes bstr_0 0 drive-len_0)))
-      (let ((c3_0 (parse-unc.1 #f #f bstr_0 0)))
-        (if c3_0
-          (subbytes bstr_0 0 c3_0)
+      (let ((cond-val_0 (parse-unc.1 #f #f bstr_0 0)))
+        (if cond-val_0
+          (subbytes bstr_0 0 cond-val_0)
           (subbytes bstr_0 0 (min 3 (unsafe-bytes-length bstr_0))))))))
 (define strip-trailing-spaces
   (lambda (bstr_0)
@@ -21016,31 +21021,34 @@
                       (lambda (v_1 mode_1)
                         (if (not v_1)
                           #f
-                          (let ((c1_0 (hash-ref ht_0 v_1 #f)))
-                            (if c1_0
+                          (let ((cond-val_0 (hash-ref ht_0 v_1 #f)))
+                            (if cond-val_0
                               (begin
-                                (if (let ((or-part_0 (eq? c1_0 'checking)))
+                                (if (let ((or-part_0
+                                           (eq? cond-val_0 'checking)))
                                       (if or-part_0
                                         or-part_0
-                                        (let ((or-part_1 (eq? c1_0 'checked)))
+                                        (let ((or-part_1
+                                               (eq? cond-val_0 'checked)))
                                           (if or-part_1
                                             or-part_1
-                                            (if (as-constructor? c1_0)
-                                              (not (as-constructor-tag c1_0))
+                                            (if (as-constructor? cond-val_0)
+                                              (not
+                                               (as-constructor-tag cond-val_0))
                                               #f)))))
                                   (begin
                                     (hash-set!
                                      ht_0
                                      v_1
-                                     (if (as-constructor? c1_0)
+                                     (if (as-constructor? cond-val_0)
                                        (as-constructor1.1 counter_0)
                                        counter_0))
                                     (set! counter_0 (add1 counter_0))
-                                    (if (eq? c1_0 'checking)
+                                    (if (eq? cond-val_0 'checking)
                                       (set! cycle?_0 #t)
                                       (void)))
                                   (void))
-                                (as-constructor? c1_0))
+                                (as-constructor? cond-val_0))
                               (if (pair? v_1)
                                 (begin
                                   (checking!_0 v_1)
@@ -21466,8 +21474,8 @@
                                 #f)
                               #f)
                             #f)))))
-                  (let ((c1_0 (abbreviation_0 v4_0)))
-                    (if c1_0
+                  (let ((cond-val_0 (abbreviation_0 v4_0)))
+                    (if cond-val_0
                       (let ((app_0 (cadr v4_0)))
                         (|#%app|
                          p2_0
@@ -21475,7 +21483,7 @@
                          app_0
                          mode5_0
                          o6_0
-                         (write-string/max c1_0 o6_0 max-length7_0)
+                         (write-string/max cond-val_0 o6_0 max-length7_0)
                          graph8_0
                          config9_0))
                       (let ((max-length_0
@@ -21568,8 +21576,8 @@
                                             " "
                                             o6_0
                                             max-length_2))))
-                                      (let ((c2_0 (abbreviation_0 v_0)))
-                                        (if c2_0
+                                      (let ((cond-val_1 (abbreviation_0 v_0)))
+                                        (if cond-val_1
                                           (let ((app_0 (cadr v_0)))
                                             (|#%app|
                                              p2_0
@@ -21578,7 +21586,7 @@
                                              mode5_0
                                              o6_0
                                              (write-string/max
-                                              c2_0
+                                              cond-val_1
                                               o6_0
                                               max-length_1)
                                              graph8_0
@@ -22261,9 +22269,11 @@
         (void)))))
 (define p
   (lambda (who_0 v_0 mode_0 o_0 max-length_0 graph_0 config_0)
-    (let ((c1_0 (if graph_0 (hash-ref graph_0 v_0 #f) #f)))
-      (if c1_0
-        (if (if (as-constructor? c1_0) (not (as-constructor-tag c1_0)) #f)
+    (let ((cond-val_0 (if graph_0 (hash-ref graph_0 v_0 #f) #f)))
+      (if cond-val_0
+        (if (if (as-constructor? cond-val_0)
+              (not (as-constructor-tag cond-val_0))
+              #f)
           (p/no-graph-no-quote
            who_0
            v_0
@@ -22272,21 +22282,22 @@
            max-length_0
            graph_0
            config_0)
-          (if (string? c1_0)
+          (if (string? cond-val_0)
             (let ((max-length_1 (write-string/max "#" o_0 max-length_0)))
-              (let ((max-length_2 (write-string/max c1_0 o_0 max-length_1)))
+              (let ((max-length_2
+                     (write-string/max cond-val_0 o_0 max-length_1)))
                 (write-string/max "#" o_0 max-length_2)))
             (let ((gs_0
                    (number->string
-                    (if (as-constructor? c1_0)
-                      (as-constructor-tag c1_0)
-                      c1_0))))
+                    (if (as-constructor? cond-val_0)
+                      (as-constructor-tag cond-val_0)
+                      cond-val_0))))
               (let ((max-length_1 (write-string/max "#" o_0 max-length_0)))
                 (let ((max-length_2 (write-string/max gs_0 o_0 max-length_1)))
                   (let ((max-length_3 (write-string/max "=" o_0 max-length_2)))
                     (begin
                       (hash-set! graph_0 v_0 gs_0)
-                      (if (as-constructor? c1_0)
+                      (if (as-constructor? cond-val_0)
                         (p/no-graph-no-quote
                          who_0
                          v_0
@@ -22680,13 +22691,13 @@
                                                      config_0
                                                      #f
                                                      alt-list-constructor_0)))
-                                                (let ((c2_0
+                                                (let ((cond-val_0
                                                        (prefab-struct-key
                                                         v_0)))
-                                                  (if c2_0
+                                                  (if cond-val_0
                                                     (let ((l_0
                                                            (cons
-                                                            c2_0
+                                                            cond-val_0
                                                             (cdr
                                                              (vector->list
                                                               (struct->vector
@@ -23755,12 +23766,15 @@
                                              bstr_0
                                              drive-len_0)
                                             #f))))))
-                                  (let ((c1_0 (parse-unc.1 #f #f bstr_0 0)))
-                                    (if c1_0
+                                  (let ((cond-val_0
+                                         (parse-unc.1 #f #f bstr_0 0)))
+                                    (if cond-val_0
                                       (combine_0
                                        #t
                                        #t
-                                       (just-separators-after? bstr_0 c1_0))
+                                       (just-separators-after?
+                                        bstr_0
+                                        cond-val_0))
                                       (combine_0 #f #f #f))))
                                 (if (letter-drive-start? bstr_0 len_0)
                                   (combine_0
@@ -23898,9 +23912,9 @@
   (lambda (s_0)
     (if (starting-point? s_0)
       (starting-point-drive? s_0)
-      (let ((c2_0 (parse-unc.1 #f #f s_0 0)))
-        (if c2_0
-          (just-separators-after? s_0 c2_0)
+      (let ((cond-val_0 (parse-unc.1 #f #f s_0 0)))
+        (if cond-val_0
+          (just-separators-after? s_0 cond-val_0)
           (if (letter-drive-start? s_0 (unsafe-bytes-length s_0))
             (just-separators-after? s_0 2)
             #f))))))
@@ -24166,19 +24180,23 @@
                       kind_0
                       bstr_0
                       temp72_0))))))))))
-      (let ((c3_0 (parse-unc.1 #f #f bstr_0 0)))
-        (if c3_0
+      (let ((cond-val_0 (parse-unc.1 #f #f bstr_0 0)))
+        (if cond-val_0
           (call-with-values
            (lambda ()
              (let ((l_0
-                    (let ((temp77_0 (subbytes bstr_0 0 c3_0)))
+                    (let ((temp77_0 (subbytes bstr_0 0 cond-val_0)))
                       (extract-separate-parts.1 #f #f temp77_0 0))))
                (let ((app_0 (car l_0))) (values app_0 (cadr l_0)))))
            (lambda (machine_0 volume_0)
              (let ((app_0
                     (1/reverse
                      (let ((temp79_0
-                            (extract-separate-parts.1 #f #f bstr_0 c3_0)))
+                            (extract-separate-parts.1
+                             #f
+                             #f
+                             bstr_0
+                             cond-val_0)))
                        (simplify-dots.1 #t temp79_0)))))
                (append
                 app_0
@@ -24571,10 +24589,10 @@
                                     (subbytes
                                      new-bstr_0
                                      literal-start_0)))))))))))))
-                (let ((c1_0 (parse-unc.1 #f #f bstr_0 0)))
-                  (if c1_0
+                (let ((cond-val_0 (parse-unc.1 #f #f bstr_0 0)))
+                  (if cond-val_0
                     (return_0
-                     (let ((temp25_0 (sub1 c1_0)))
+                     (let ((temp25_0 (sub1 cond-val_0)))
                        (let ((temp26_0 (if convert-slashes?_0 0 #f)))
                          (let ((temp25_1 temp25_0))
                            (clean-double-slashes.1
@@ -25437,12 +25455,12 @@
                 (if (= len_0 2) (letter-drive-start? bstr_0 2) #f)
                 #f)
             #f
-            (let ((c1_0
+            (let ((cond-val_0
                    (if (eq? convention_0 'windows)
                      (backslash-backslash-questionmark-simple-status bstr_0)
                      #f)))
-              (if c1_0
-                (eq? c1_0 'simple)
+              (if cond-val_0
+                (eq? cond-val_0 'simple)
                 (letrec*
                  ((loop_0
                    (|#%name|
@@ -34008,7 +34026,7 @@
                          (values max-level_0 topic-max-level_0))))))
                   (for-loop_0 old-max-level_0 old-topic-max-level_0 lst_0))))
              (lambda (max-level_0 topic-max-level_0)
-               (let ((c1_0
+               (let ((cond-val_0
                       (if (let ((or-part_0
                                  (let ((app_0 (level->value ceiling-level_0)))
                                    (>= app_0 (level->value max-level_0)))))
@@ -34020,7 +34038,7 @@
                                 #f)))
                         (logger-parent parent_0)
                         #f)))
-                 (if c1_0
+                 (if cond-val_0
                    (let ((filters_0 (logger-propagate-filters parent_0)))
                      (let ((ceiling-level_1
                             (level-min
@@ -34034,7 +34052,7 @@
                                 topic-ceiling-level_0)))
                          (let ((ceiling-level_2 ceiling-level_1))
                            (loop_0
-                            c1_0
+                            cond-val_0
                             ceiling-level_2
                             max-level_0
                             topic-ceiling-level_1
@@ -34396,9 +34414,9 @@
                 (unsafe-uninterruptible-lock-acquire
                  (unsafe-place-local-ref cell.1$7))
                 (begin0
-                  (let ((c1_0 (unbox (logger-level-sema-box logger_0))))
-                    (if c1_0
-                      c1_0
+                  (let ((cond-val_0 (unbox (logger-level-sema-box logger_0))))
+                    (if cond-val_0
+                      cond-val_0
                       (let ((s_0 (make-semaphore)))
                         (begin
                           (set-box! (logger-level-sema-box logger_0) s_0)
@@ -38899,15 +38917,16 @@
      (begin
        (unsafe-start-uninterruptible)
        (let ((result_0
-              (let ((c1_0 (address-bytes-cache-ref hostname47_0 port-no48_0)))
-                (if c1_0
+              (let ((cond-val_0
+                     (address-bytes-cache-ref hostname47_0 port-no48_0)))
+                (if cond-val_0
                   (do-udp-maybe-send-to-addr.1
                    enable-break?42_0
                    unsafe-undefined
                    wait?41_0
                    who45_0
                    u46_0
-                   c1_0
+                   cond-val_0
                    bstr49_0
                    start50_0
                    end51_0)

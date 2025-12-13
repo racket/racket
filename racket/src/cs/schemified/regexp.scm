@@ -1305,9 +1305,9 @@
                     (if (eq? rx_0 'unicode-grapheme) #t #f)))))))))))
 (define rx-range
   (lambda (range_0 limit-c_0)
-    (let ((c1_0 (range-singleton range_0)))
-      (if c1_0
-        c1_0
+    (let ((cond-val_0 (range-singleton range_0)))
+      (if cond-val_0
+        cond-val_0
         (if (range-includes? range_0 0 limit-c_0)
           'any
           (rx:range11.1 range_0))))))

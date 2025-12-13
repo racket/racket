@@ -557,7 +557,6 @@
              #f
              ((s4 s5) (s6 (s7 s2 s5)))
              (s4 (s8 s2 (s9 (s5)))))))
-        (track-syntax s0 #s(stx-boundary s1) . #s(stx-boundary s1))
         (macro-post-x
          #s(stx-boundary
             (s0
