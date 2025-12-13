@@ -260,6 +260,21 @@ Scheme_Object *scheme_make_char(mzchar ch)
   return o;
 }
 
+Scheme_Object *scheme_make_uninterned_char(mzchar ch)
+{
+  Scheme_Object *o;
+
+  if (ch < 256)
+    return scheme_char_constants[ch];
+
+  o = scheme_malloc_small_atomic_tagged(sizeof(Scheme_Small_Object));
+  CLEAR_KEY_FIELD(o);
+  o->type = scheme_char_type;
+  SCHEME_CHAR_VAL(o) = ch;
+
+  return o;
+}
+
 Scheme_Object *scheme_make_char_or_nul(mzchar v)
 {
   if ((v <= 0x10FFFF)

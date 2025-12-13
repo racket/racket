@@ -2719,6 +2719,7 @@ Scheme_Object *scheme_named_map_1(char *,
 XFORM_NONGCING int scheme_strncmp(const char *a, const char *b, int len);
 
 #define _scheme_make_char(ch) scheme_make_character(ch)
+Scheme_Object *scheme_make_uninterned_char(mzchar ch);
 
 Scheme_Object *scheme_default_print_handler(int, Scheme_Object *[]);
 Scheme_Object *scheme_default_prompt_read_handler(int, Scheme_Object *[]);

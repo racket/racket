@@ -939,8 +939,11 @@ static Scheme_Object *shallow_types_copy(Scheme_Object *so, Scheme_Hash_Table *h
       }
       break;
     case scheme_char_type:
-      if (copy_mode)
-        new_so = scheme_make_char(SCHEME_CHAR_VAL(so));
+      if ((mode == mzPDC_UNCOPY) || (mode == mzPDC_DIRECT_UNCOPY) || (mode == mzPDC_DESER)) {
+          new_so = scheme_make_char(SCHEME_CHAR_VAL(so));
+      } else if (copy_mode) {
+        new_so = scheme_make_uninterned_char(SCHEME_CHAR_VAL(so));
+      }
       break;
     case scheme_bignum_type:
       if (copy_mode)
