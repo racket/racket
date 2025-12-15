@@ -47,7 +47,7 @@ jobs:
     needs: buildtest-macos
     steps:
     - uses: actions/checkout@v6
-    - uses: actions/download-artifact@v5
+    - uses: actions/download-artifact@v7
       with:
         name: racketcs-macos-aarch64_git${{ github.sha }}
         path: ${{ github.workspace }}
