@@ -257,8 +257,11 @@ flags:
 
   @item{@FlagFirst{V} @DFlagFirst{no-yield} : Skips final
         @racket[executable-yield-handler] action, which normally waits until all
-        frames are closed, @|etc| in the main @|eventspace| before
-        exiting for programs that use @racketmodname[racket/gui/base].}
+        frames are closed, @|etc|, in the main @|eventspace| before
+        exiting for programs that use @racketmodname[racket/gui/base].
+        For historical reasons, this flag also implies @Flag{v},
+        which makes it less useful but means that @Flag{V} by itself
+        behaves like @Flag{v} by iself.}
 
  ]}
 

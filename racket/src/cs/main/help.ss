@@ -56,7 +56,7 @@
   (#%printf
    (string-append
     "  -V, --no-yield\n"
-    "     Skip `((executable-yield-handler) <status>)` on exit\n"
+    "     Skip `((executable-yield-handler) <status>)` on exit; implies -v\n"
     "\n"
     "Configuration options:\n\n"
     "  -y, --make\n"

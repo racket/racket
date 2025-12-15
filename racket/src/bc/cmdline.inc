@@ -1527,7 +1527,7 @@ static int run_from_cmd_line(int argc, char *_argv[],
 # endif
 # ifndef NO_YIELD_BEFORE_EXIT
   "  -V, --no-yield\n"
-  "     Skip `((executable-yield-handler) <status>)` on exit\n"
+  "     Skip `((executable-yield-handler) <status>)` on exit; implies -v\n"
 # endif
   "\n"
   "Configuration options:\n\n"
