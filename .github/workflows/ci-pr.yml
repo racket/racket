@@ -37,7 +37,7 @@ jobs:
       run: bash .github/scripts/run-racket-tests.sh
     - name: Tarball
       run: tar -cvjf racketcs-macos-aarch64_git${{ github.sha }}.tar.bz2 racket
-    - uses: actions/upload-artifact@v5
+    - uses: actions/upload-artifact@v6
       with:
         name: racketcs-macos-aarch64_git${{ github.sha }}
         path: racketcs-macos-aarch64_git${{ github.sha }}.tar.bz2
