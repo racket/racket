@@ -1476,32 +1476,75 @@
             (make-doc-index)))
       (doc:setup-scribblings #f auto-start-doc?)))
 
-  (define (doc-pdf-dest-step)
-    (setup-printf #f (add-time "--- building PDF documentation (via pdflatex) ---"))
-    (define dest-dir (path->complete-path (doc-pdf-dest)))
+  (define (doc-with-temp-step label tmp-prefix dest-path make-dest-arg after-build)
+    (setup-printf #f (add-time label))
+    (define dest-dir (path->complete-path dest-path))
     (unless (directory-exists? dest-dir)
       (make-directory dest-dir))
     (define tmp-dir
       (build-path (find-system-path 'temp-dir)
-                  (format "pltpdfdoc~a" (current-seconds))))
+                  (format "~a~a" tmp-prefix (current-seconds))))
     (dynamic-wind
       void
       (lambda ()
         (make-directory tmp-dir)
         (set-doc:verbose)
-        (doc:setup-scribblings tmp-dir #f)
-        (parameterize ([current-directory tmp-dir])
-          (for ([f (directory-list)]
-                #:when (path-has-extension? f #".tex"))
-            (define pdf (scr:call 'run-pdflatex f
-                                  (lambda (fmt . xs)
-                                    (apply setup-printf #f fmt xs))))
-            (define target (build-path dest-dir pdf))
-            (when (file-exists? target) (delete-file target))
-            (copy-file pdf target))))
+        (doc:setup-scribblings (make-dest-arg tmp-dir) #f)
+        (after-build tmp-dir dest-dir))
       (lambda ()
         (when (directory-exists? tmp-dir)
           (delete-directory/files tmp-dir)))))
+
+  (define (doc-pdf-dest-step)
+    (doc-with-temp-step
+     "--- building PDF documentation (via pdflatex) ---"
+     "pltpdfdoc"
+     (doc-pdf-dest)
+     (lambda (tmp-dir) tmp-dir)
+     (lambda (tmp-dir dest-dir)
+       (parameterize ([current-directory tmp-dir])
+         (for ([f (directory-list)]
+               #:when (path-has-extension? f #".tex"))
+           (define pdf (scr:call 'run-pdflatex f
+                                 (lambda (fmt . xs)
+                                   (apply setup-printf #f fmt xs))))
+           (define target (build-path dest-dir pdf))
+           (when (file-exists? target) (delete-file target))
+           (copy-file pdf target))))))
+
+  (define (doc-markdown-dest-step)
+    (define (markdown-skip-path? p)
+      (and (file-exists? p)
+           (not (directory-exists? p))
+           (let ([name (path->bytes (file-name-from-path p))])
+             (or (path-has-extension? p #".sxref")
+                 (bytes=? name #"docindex.sqlite")
+                 (bytes=? name #"synced.rktd")))))
+    (define (clean-dest dest-dir)
+      (for ([entry (in-list (directory-list dest-dir))])
+        (define target (build-path dest-dir entry))
+        (when (markdown-skip-path? target)
+          (delete-file target))))
+    (define (copy-entry src dest)
+      (unless (markdown-skip-path? src)
+        (define target (build-path dest (file-name-from-path src)))
+        (cond
+          [(directory-exists? src)
+           (when (directory-exists? target)
+             (delete-directory/files target))
+           (copy-directory/files src target #:keep-modify-seconds? #t)]
+          [else
+           (when (file-exists? target) (delete-file target))
+           (copy-file src target)])))
+    (doc-with-temp-step
+     "--- building Markdown documentation ---"
+     "pltmdoc"
+     (doc-markdown-dest)
+     (lambda (tmp-dir) (vector 'markdown tmp-dir))
+     (lambda (tmp-dir dest-dir)
+       (clean-dest dest-dir)
+       (for ([entry (in-list (directory-list tmp-dir))])
+         (copy-entry (build-path tmp-dir entry) dest-dir)))))
 
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;;                  Make Launchers               ;;
@@ -2214,6 +2257,7 @@
   (when make-docs?
     (make-docs-step))
   (when (doc-pdf-dest) (doc-pdf-dest-step))
+  (when (doc-markdown-dest) (doc-markdown-dest-step))
   
   (do-install-part 'general)
   (do-install-part 'post)

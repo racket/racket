@@ -101,9 +101,11 @@
      [("-d" "--no-info-domain") "Do not produce info-domain caches"
       (add-flags '((make-info-domain #f)))]
      [("-D" "--no-docs") "Do not compile .scrbl files and do not build documentation"
-      (add-flags '((make-docs #f)))]
+     (add-flags '((make-docs #f)))]
      [("--doc-pdf") dir "Build documentation PDFs, write to <dir>"
       (add-flags `((doc-pdf-dest ,dir)))]
+     [("--doc-markdown") dir "Build documentation Markdown, write to <dir>"
+      (add-flags `((doc-markdown-dest ,dir)))]
      [("-K" "--no-pkg-deps") "Do not check package dependencies"
       (add-flags '((check-dependencies #f)))]
      [("--check-pkg-deps") "Check package dependencies when collections specified"
