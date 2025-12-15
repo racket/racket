@@ -88,7 +88,7 @@ jobs:
     - name: Setup cify if disabled
       if: matrix.cify == 'nocify'
       run: echo "CIFY_OPTION=--disable-cify" >> $GITHUB_ENV
-    - uses: actions/download-artifact@v5
+    - uses: actions/download-artifact@v7
       with:
         name: racketcgc-macos-nocify-aarch64_git${{ github.sha }}
         path: ${{ runner.temp }}
@@ -137,7 +137,7 @@ jobs:
     - uses: actions/checkout@v6
       with:
         fetch-depth: 100
-    - uses: actions/download-artifact@v5
+    - uses: actions/download-artifact@v7
       with:
         name: racketcgc-macos-nocify-aarch64_git${{ github.sha }}
         path: ${{ runner.temp }}
@@ -181,7 +181,7 @@ jobs:
     needs: build-racketcs
     steps:
       - uses: actions/checkout@v6
-      - uses: actions/download-artifact@v5
+      - uses: actions/download-artifact@v7
         with:
           name: racketcs-macos-aarch64_git${{ github.sha }}
           path: ${{ github.workspace }}
@@ -217,7 +217,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v6
-      - uses: actions/download-artifact@v5
+      - uses: actions/download-artifact@v7
         with:
           name: racketcgc-macos-${{ matrix.cify }}-aarch64_git${{ github.sha }}
           path: ${{ github.workspace }}
@@ -248,7 +248,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v6
-      - uses: actions/download-artifact@v5
+      - uses: actions/download-artifact@v7
         with:
           name: racket3m-macos-${{ matrix.cify }}-aarch64_git${{ github.sha }}
           path: ${{ github.workspace }}
@@ -274,7 +274,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v6
-      - uses: actions/download-artifact@v5
+      - uses: actions/download-artifact@v7
         with:
           name: racketcs-macos-aarch64_git${{ github.sha }}
           path: ${{ github.workspace }}
