@@ -47,7 +47,7 @@
       (,test ctc value-contract (contract ctc (new object%) 'pos 'neg))))
   
   (test/spec-passed/result
-   'value-contract
+   'value-contract.1
    '(let ()
       (define c (-> integer? integer?))
       (define f (contract c (λ (x) x) 'pos 'neg))
@@ -56,6 +56,27 @@
       (or (and (has-contract? f)
                (equal? c (value-contract f)))
           #t))
+   #t)
+
+  (test/spec-passed/result
+   'value-contract.2
+   '(let ()
+      (define ctc (class/c [m (->m integer? integer?)]))
+      (define cls (contract ctc (class object% (define/public (m x) x) (super-new)) 'pos 'neg))
+      ;; opt/c version doesn't yet have blame, so
+      ;; we require only that when there is blame, that the blame is right.
+      (equal? ctc (value-contract cls)))
+   #t)
+
+  (test/spec-passed/result
+   'value-contract.3
+   '(let ()
+      (define ctc (class/c [m (->m integer? integer?)]))
+      (define cls (contract ctc (class object% (define/public (m x) x) (super-new)) 'pos 'neg))
+      (define obj (new cls))
+      ;; opt/c version doesn't yet have blame, so
+      ;; we require only that when there is blame, that the blame is right.
+      (not (equal? #f (value-contract cls))))
    #t)
   
   (test/spec-passed/result

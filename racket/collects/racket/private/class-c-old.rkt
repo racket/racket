@@ -164,7 +164,7 @@
 
 (define (class/c-late-neg-proj ctc)
   (define ep (class/c-external-late-neg-proj ctc))
-  (define ip (internal-class/c-late-neg-proj (class/c-internal ctc)))
+  (define ip (internal-class/c-late-neg-proj ctc (class/c-internal ctc)))
   (λ (blame)
     (define eb (ep blame))
     (define ib (ip blame))
@@ -437,7 +437,7 @@
         
         (copy-seals cls c)))))
 
-(define (internal-class/c-late-neg-proj internal-ctc)
+(define (internal-class/c-late-neg-proj ctc-for-property internal-ctc)
   (define dynamic-features
     (append (internal-class/c-overrides internal-ctc)
             (internal-class/c-augments internal-ctc)
@@ -650,7 +650,8 @@
                                         0 ;; No new fields in this class replacement
                                         undefined
                                         ;; Map object property to class:
-                                        (list (cons prop:object c))
+                                        (list (cons prop:object c)
+                                              (cons prop:contracted (instanceof/c ctc-for-property)))
                                         (class-obj-inspector cls))])
           (set-class-struct:object! c struct:object)
           (set-class-object?! c object?)
@@ -778,7 +779,10 @@
                (super-go the-obj si_c si_inited? init-args null null)
                (init the-obj super-go si_c si_inited? init-args init-args))))
 
-        (copy-seals cls c)))))
+        (impersonate-struct (copy-seals cls c)
+                            class-object? #f
+                            set-class-object?! #f
+                            impersonator-prop:contracted ctc-for-property)))))
 
 (define (blame-add-init-context blame name)
   (blame-add-context blame
