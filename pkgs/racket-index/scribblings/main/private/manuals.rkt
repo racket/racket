@@ -2,6 +2,7 @@
 
 (require scribble/manual
          scribble/struct
+         scribble/tag
          setup/getinfo
          setup/main-collects
          setup/dirs
@@ -12,11 +13,36 @@
 (provide make-start-page)
 
 (define-struct sec (cat label))
+(struct doc (category? category priority fam path spec))
+(struct category (lang cat str) #:transparent)
 
 (define sections
   (map (lambda (xs) (apply make-sec xs)) manual-sections))
 
-(define (add-sections cat mk-sep l)
+(define (rename-category lang cat)
+  (cond
+    [(box? cat) (category lang 'other-library (unbox cat))]
+    [(string? cat) (category lang 'other-library (string-append lang " " cat))]
+    [(memq cat '(language teaching experimental legacy other racket-core omit omit-start)) cat]
+    [(eq? cat 'getting-started) (category lang 'getting-started (format "~a Getting Started" lang))]
+    [(and (eq? cat 'core) (equal? lang "Racket")) 'racket-core]
+    [else
+     (define str (string-append lang " " (cadr (or (assq cat manual-sections) '(_ "Other")))))
+     (category lang cat str)]))
+
+(define (maybe-rename-category main-language-family fam cat)
+  (if (member main-language-family fam)
+      (if (box? cat)
+          (unbox cat)
+          cat)
+      (rename-category (car fam) cat)))
+
+(define (racketize-category cat)
+  (if (eq? cat 'core)
+      'racket-core
+      cat))
+
+(define (add-sections mk-sep l)
   (if (null? l)
     null
     (let loop ([l l] [key (if (equal? "" (caddar l)) (caar l) +inf.0)])
@@ -28,7 +54,8 @@
                                       (truncate (/ (caar l) 10))))])
                     (if sep? (cons (mk-sep lbl) l) l))]))))
 
-(define (get-docs all? tag #:custom-secs [custom-secs (make-hash)])
+(define (get-docs all? tag
+                  #:custom-secs [custom-secs (make-hash)])
   (let* ([recs (find-relevant-directory-records (list tag) (if all? 'all-available 'no-user))]
          [infos (map get-info/full (map directory-record-path recs))]
          [docs (append-map
@@ -45,19 +72,29 @@
                                 (or (memq 'user-doc (cadr d))
                                     (memq 'user-doc-root (cadr d))))
                          #f
-                         (let* ([new-cat (if ((length d) . > . 2)
-                                           (caddr d)
-                                           '(library))]
+                         (let* ([new-cat (or (and ((length d) . > . 2)
+                                                  (let ([cat (caddr d)])
+                                                    (and (pair? cat)
+                                                         (list? cat)
+                                                         cat)))
+                                             '(library))]
                                 [sub-cat (and (list? new-cat)
                                               ((length new-cat) . > . 1)
-                                              (cadr new-cat))])
-                           (list
-                            ;; Category
+                                              (cadr new-cat))]
+                                [fam (and (list? new-cat)
+                                          ((length new-cat) . > . 2)
+                                          (caddr new-cat))])
+                           (doc
+                            ;; Whether a category is present via `scribblings`
+                            ((length d) . > . 2)
+                            ;; Category (tenative)
                             (let ([the-cat
                                    (if (pair? new-cat) (car new-cat) 'unknown)])
                               (or (and (string? the-cat)
-                                       (let ([the-cat-sym (gensym)])
-                                         (hash-ref! custom-secs the-cat the-cat-sym)))
+                                       the-cat)
+                                  (and (box? the-cat)
+                                       (string? (unbox the-cat))
+                                       the-cat)
                                   (and (or (eq? the-cat 'omit) 
                                            (eq? the-cat 'omit-start))
                                        the-cat)
@@ -66,10 +103,12 @@
                                                 the-cat))
                                          sections)
                                   'library))
-                            ;; Priority
+                            ;; Priority (tentative)
                             (if (and sub-cat (real? sub-cat)) sub-cat 0)
-                            ;; Priority label (not used):
-                            ""
+                            ;; Language family (tentative)
+                            (if (and (pair? fam) (list? fam) (andmap string? fam))
+                                fam
+                                '("Racket"))
                             ;; Path
                             (build-path dir (if (pair? d) (car d) "???"))
                             ;; Spec
@@ -92,19 +131,10 @@
       null
       (cdr l)))
 
-(define (make-start-page all?)
+(define (make-start-page all?
+                         #:main-language-family [main-language-family (get-main-language-family)])
   (let* ([custom-secs (make-hash)]
-         [docs (get-docs all? 'scribblings
-                         #:custom-secs custom-secs)]
-         [sections+custom
-          (append-map (λ (sec)
-                        (if (eq? 'library (sec-cat sec))
-                            (append (for/list ([label (sort (hash-keys custom-secs)
-                                                            string<=?)])
-                                      (make-sec (hash-ref custom-secs label) label))
-                                    (list sec))
-                            (list sec)))
-                      sections)]
+         [docs/orig (get-docs all? 'scribblings #:custom-secs custom-secs)]
          [plain-line
           (lambda content
             (list (make-flow (list (make-paragraph content)))))]
@@ -113,14 +143,104 @@
             (plain-line (if indent? (hspace 2) null)
                         (if (element? spec)
                             spec
-                            (other-manual spec #:underline? #f))))])
+                            (other-manual spec #:underline? #f))))]
+         [cat-order (for/hasheq ([sec (in-list manual-sections)]
+                                 [i (in-naturals)])
+                      (values (car sec) i))])
     (define (contents renderer part resolve-info)
+      ;; Update categories based on cross-reference information
+      (define docs
+        (for/list ([d (in-list docs/orig)])
+          (cond
+            [(element? (doc-spec d)) d]
+            [else
+             (define props* (resolve-get part resolve-info `(doc-properties ,(doc-prefix (doc-spec d) #f "top"))))
+             (define props (cond
+                             [(hash? props*) props*]
+                             [else #hasheq()]))
+             (define fam (let ([l (hash-ref props 'language-family #f)])
+                           (if (and (pair? l) (list? l) (andmap string? l))
+                               l
+                               (doc-fam d))))
+             (define cat+priority (let* ([ht* (hash-ref props 'category #f)]
+                                         [ht (if (hash? ht*) ht* #hasheq())])
+                                    (or (hash-ref ht main-language-family #f)
+                                        (hash-ref ht 'default #f)
+                                        (list (doc-category d) (doc-priority d)))))
+             (define cat (maybe-rename-category
+                          main-language-family fam
+                          (or (and (pair? cat+priority)
+                                   (let ([s (car cat+priority)])
+                                     (and (or (symbol? s)
+                                              (string? s)
+                                              (and (box? s) (string? (unbox s))))
+                                          s)))
+                              'library)))
+             (define priority (or (and (pair? cat+priority)
+                                       (pair? (cdr cat+priority))
+                                       (let ([p (cadr cat+priority)])
+                                         (and (real? p)
+                                              p)))
+                                  0))
+             (struct-copy doc d
+                          [category (cond
+                                      [(or (string? cat) (category? cat))
+                                       (hash-ref! custom-secs cat (gensym))]
+                                      [else cat])]
+                          [priority priority])])))
+      (define sections+custom
+        (let ([sections
+               (append-map (λ (sec)
+                             (if (eq? 'library (sec-cat sec))
+                                 (append (for/list ([label (in-list
+                                                            (sort (filter string? (hash-keys custom-secs))
+                                                                  string<?))])
+                                           (make-sec (hash-ref custom-secs label)
+                                                     label))
+                                         (list sec)
+                                         (for/list ([label (in-list
+                                                            (sort (filter category? (hash-keys custom-secs))
+                                                                  (lambda (a b)
+                                                                    (cond
+                                                                      [(equal? (category-lang a)
+                                                                               (category-lang b))
+                                                                       (define oa (hash-ref cat-order (category-cat a) 100))
+                                                                       (define ob (hash-ref cat-order (category-cat b) 100))
+                                                                       (if (eqv? oa ob)
+                                                                           (string<=? (category-str a) (category-str b))
+                                                                           (< oa ob))]
+                                                                      [else
+                                                                       (cond
+                                                                         [(equal? (category-lang a) "Racket") #t]
+                                                                         [(equal? (category-lang b) "Racket") #f]
+                                                                         [else (string<=? (category-lang a) (category-lang b))])]))))])
+                                           (make-sec (hash-ref custom-secs label)
+                                                     label)))
+                                 (list sec)))
+                           sections)])
+          (if (equal? main-language-family "Racket")
+              sections
+              ;; move 'racket-core, 'language, and 'teaching to just after 'library
+              (let loop ([l sections])
+                (define (find name)
+                  (ormap (lambda (s) (and (eq? (sec-cat s) name) s)) sections))
+                (cond
+                  [(null? l) null]
+                  [(eq? (sec-cat (car l)) 'library)
+                   (list* (car l)
+                          (find 'racket-core)
+                          (find 'language)
+                          (find 'teaching)
+                          (loop (cdr l)))]
+                  [(memq (sec-cat (car l)) '(racket-core teaching language))
+                   (loop (cdr l))]
+                  [else (cons (car l) (loop (cdr l)))])))))
       (make-table
        #f
        (maybe-cdr
         (append-map
          (lambda (sec)
-           (let ([docs (filter (lambda (doc) (eq? (car doc) (sec-cat sec)))
+           (let ([docs (filter (lambda (doc) (eq? (doc-category doc) (sec-cat sec)))
                                docs)])
              (cond [(null? docs)
                     ;; Drop section if it contains no manuals.
@@ -133,8 +253,8 @@
                      (if (sec-label sec)
                          (list
                           (plain-line (let loop ([s (sec-label sec)])
-
                                         (match s
+                                          [(category lang cat str) str]
                                           [(list 'elem parts ...)
                                            (apply elem (map loop parts))]
                                           [(list 'link text doc-mod-path)
@@ -145,16 +265,15 @@
                          null)
                      ;; Documents in section:
                      (add-sections
-                      (sec-cat sec)
                       (lambda (str)
                         (plain-line
                          (make-element (if (string=? str "") "sepspace" "septitle")
                                        (list 'nbsp str))))
                       (sort (map (lambda (doc)
-                                   (list (cadr doc)
-                                         (line (cadddr (cdr doc))
+                                   (list (doc-priority doc)
+                                         (line (doc-spec doc)
                                                (and (sec-label sec) #t))
-                                         (caddr doc)))
+                                         ""))
                                  docs)
                             (lambda (ad bd)
                               (if (= (car ad) (car bd))

@@ -67,8 +67,9 @@
   #:transparent)
 (define-serializable-struct info (doc       ; doc structure above
                                   undef     ; unresolved requires
-                                  searches 
-                                  deps       ; (listof (cons <path-or-info> hash))
+                                  searches
+                                  props     ; hash table of properties from the document
+                                  deps      ; (listof (cons <path-or-info> hash))
                                   build?
                                   out-hash
                                   start-time done-time
@@ -707,10 +708,11 @@
           (define (update-info! info response)
             (match response 
               [#f (set-info-failed?! info #t)]
-              [(list undef searches out-delta?)
+              [(list undef searches props out-delta?)
                (set-info-rendered?! info #t)
                (set-info-undef! info undef)
                (set-info-searches! info searches)
+               (set-info-props! info props)
                (set-info-need-in-write?! info #f)
                (when out-delta?
                  (set-info-out-hash! info (get-info-out-hash (info-doc info) latex-dest))
@@ -769,6 +771,7 @@
                                                           (lock-via-channel lock-ch) void
                                                           main-doc-exists?
                                                           pkg-cache))))])))))
+  
         ;; If we only build 1, then it reaches it own fixpoint
         ;; even if the info doesn't seem to converge immediately.
         ;; This is a useful shortcut when re-building a single
@@ -785,6 +788,8 @@
 
   (when infos
     (make-loop #t 0)
+    (unless latex-dest
+      (perform-supplants infos))
     ;; cache info to disk
     (for ([i infos] #:when (info-need-in-write? i))
       (write-in/info latex-dest i no-lock main-doc-exists? pkg-cache))))
@@ -884,6 +889,9 @@
                          [else
                           ;; user-installed and not a package, so hard link is ok:
                           (build-path (find-user-doc-dir) "index.html")])]
+               [search-up-path (cond
+                                 [root? #f]
+                                 [else #t])]
 
                ;; In cross-reference information, use paths that are relative
                ;; to the target rendering directory for documentation that might
@@ -981,25 +989,34 @@
                old-tag-prefix
                src-spec
                p))
-      (let ([tag-prefix (let* ([ht (if (hash? old-prefix)
-                                       old-prefix
-                                       #hash())]
-                               [ht (hash-set ht 'tag-prefix p)]
-                               [fam (or (doc-language-family doc)
-                                        (hash-ref ht 'default-language-family #f))]
-                               [ht (if fam
-                                       (hash-set ht 'index-extras
-                                                 (cons
-                                                  ;; keep any existing mappings
-                                                  (hash-ref ht 'index-extras #hash())
-                                                  ;; add lower-precedence default
-                                                  (hash 'language-family fam)))
-                                       ht)])
-                          ht)]
-            [tags (if (member '(part "top") (part-tags v))
-                      (part-tags v)
-                      (cons '(part "top") (part-tags v)))]
-            [style (part-style v)])
+      (let* ([tag-prefix (let* ([ht (if (hash? old-prefix)
+                                        old-prefix
+                                        #hash())]
+                                [ht (hash-set ht 'tag-prefix p)]
+                                [fam (or (doc-language-family doc)
+                                         (hash-ref ht 'default-language-family #f))]
+                                [ht (if fam
+                                        (hash-set ht 'index-extras
+                                                  (cons
+                                                   ;; keep any existing mappings
+                                                   (hash-ref ht 'index-extras #hash())
+                                                   ;; add lower-precedence default
+                                                   (hash 'language-family fam)))
+                                        ht)])
+                           ht)]
+             [tags (if (member '(part "top") (part-tags v))
+                       (part-tags v)
+                       (cons '(part "top") (part-tags v)))]
+             [to-collect (let ([ex (hash-ref tag-prefix 'doc-properties #f)])
+                           (cond
+                             [(not (hash? ex))
+                              (part-to-collect v)]
+                             [else
+                              (define key `(doc-properties (,p "top")))
+                              (cons (collect-element #f null (lambda (ci)
+                                                               (collect-put! ci key ex)))
+                                    (part-to-collect v))]))]
+             [style (part-style v)])
         (make-part
          tag-prefix
          tags
@@ -1018,7 +1035,7 @@
                                                 'scribble))
                          v)])
            (make-style (style-name style) v))
-         (part-to-collect v)
+         to-collect
          (part-blocks v)
          (part-parts v)))))
   (ensure-doc-prefix
@@ -1212,7 +1229,7 @@
                                        doc))])
            (let ([v-in  (load-sxref info-in-file)])
              (unless (equal? (car v-in) (list vers (doc-flags doc)))
-               (error "old info has wrong version or flags"))
+               (error "old info has wrong version or flags" (car v-in)))
              (when (and (or (not provides-time)
                             (provides-time . < . info-out-time))
                         (can-build? only-dirs avoid-main? doc))
@@ -1227,6 +1244,7 @@
              (define out-hash (get-info-out-hash doc latex-dest))
              (make-info
               doc
+              'delayed
               'delayed
               'delayed
               ;; expected deps, in case we don't need to build:
@@ -1268,7 +1286,7 @@
                                        (for/list ([info-out-file info-out-files])
                                          (let ([v (load-sxref info-out-file)])
                                            (unless (equal? (car v) (list vers (doc-flags doc)))
-                                             (error "old info has wrong version or flags"))
+                                             (error "old info has wrong version or flags" (car v)))
                                            v))))]
                         [scis (send renderer serialize-infos ri (add1 (doc-out-count doc)) v)]
                         [defss (send renderer get-defineds ci (add1 (doc-out-count doc)) v)]
@@ -1294,6 +1312,7 @@
                           (make-info doc
                                      undef
                                      searches
+                                     (extract-doc-props v)
                                      null ; haven't figured out deps, yet
                                      can-run?
                                      (and (not need-out-write)
@@ -1449,11 +1468,15 @@
                   (lambda ()
                     (deserialize v))))])
           (set-info-undef! info (car undef+searches))
-          (set-info-searches! info (cadr undef+searches)))
+          (set-info-searches! info (cadr undef+searches))
+          (set-info-props! info (if (pair? (cddr undef+searches))
+                                    (caddr undef+searches)
+                                    #hasheq())))
         ;; version was bad:
         (begin
           (set-info-undef! info null)
-          (set-info-searches! info #hash())))))
+          (set-info-searches! info #hash())
+          (set-info-props! info #hasheq())))))
 
 (define (make-prod-thread)
   ;; periodically dumps a stack trace, which can give us some idea of
@@ -1494,15 +1517,16 @@
                   (equal? in-version2 expected)
                   (for/and ([out-version out-versions])
                     (equal? out-version expected)))
-       (error "old info has wrong version or flags"))
+       (error "old info has wrong version or flags" in-version in-version2 out-versions expected))
      (match (with-my-namespace
              (lambda ()
                (deserialize undef+searches)))
-       [(list undef searches)
+       [(list* undef searches maybe-props)
         (with-my-namespace*
          (values undef
                  new-deps-rel
                  searches
+                 (if (pair? maybe-props) (car maybe-props) #hasheq())
                  scis))])]))
 
 (define (build-again! latex-dest info-or-list with-record-error
@@ -1532,7 +1556,7 @@
    (doc-src-file doc)
    (lambda ()
      (define vers (send renderer get-serialize-version))
-     (define-values (ff-undef ff-deps-rel ff-searches ff-scis)
+     (define-values (ff-undef ff-deps-rel ff-searches ff-props ff-scis)
        (if info
            (begin
              (when (eq? 'delayed (info-undef info))
@@ -1540,6 +1564,7 @@
              (values (info-undef info)
                      (info-deps->rel-doc-src-file info)
                      (info-searches info)
+                     (info-props info)
                      (load-doc-scis doc)))
            (load-sxrefs latex-dest doc vers (cadr info-or-list))))
      
@@ -1554,6 +1579,7 @@
               [defss (render-time "defined" (send renderer get-defineds ci (add1 (doc-out-count doc)) v))]
               [undef (render-time "undefined" (send renderer get-external ri))]
               [searches (render-time "searches" (resolve-info-searches ri))]
+              [props (extract-doc-props v)]
               [in-delta? (not (and (equal? (any-order undef) (any-order ff-undef))
                                    (equal? searches ff-searches)))]
               [out-delta? (not (for/and ([sci scis]
@@ -1570,7 +1596,7 @@
          (when (or in-delta?
                    (and info (info-need-in-write? info))
                    (and (not info) (caddr info-or-list)))
-           (render-time "xref-in" (write-in latex-dest vers doc undef ff-deps-rel searches db-file lock pkg-cache)))
+           (render-time "xref-in" (write-in latex-dest vers doc undef props ff-deps-rel searches db-file lock pkg-cache)))
          (when out-delta?
            (render-time "xref-out" (write-out latex-dest vers doc scis defss db-file lock pkg-cache)))
 
@@ -1591,7 +1617,7 @@
                (close-output-port (open-output-file synced)))))
          (db-shutdown)
          (gc-point)
-         (list undef searches out-delta?))))
+         (list undef searches props out-delta?))))
    (lambda () #f)))
 
 (define (gc-point)
@@ -1686,11 +1712,12 @@
 (define (write-out/info latex-dest info scis providess db-file lock pkg-cache)
   (write-out latex-dest (info-vers info) (info-doc info) scis providess db-file lock pkg-cache))
 
-(define (write-in latex-dest vers doc undef rels searches db-file lock pkg-cache)
+(define (write-in latex-dest vers doc undef props rels searches db-file lock pkg-cache)
   (write- latex-dest vers doc "in.sxref" 
           (list (list rels)
                 (list (serialize (list undef
-                                       searches))))
+                                       searches
+                                       props))))
           (lambda (filename)
             (define pkg (doc-pkg doc pkg-cache))
             (call-with-lock
@@ -1709,6 +1736,7 @@
             (info-vers info)
             (info-doc info)
             (info-undef info)
+            (info-props info)
             (info-deps->rel-doc-src-file info)
             (info-searches info)
             (find-db-file (info-doc info) latex-dest main-doc-exists?)
@@ -1761,3 +1789,31 @@
 
 (define (doc-pkg doc path-pkg-cache)
   (path->pkg (doc-src-file doc) #:cache path-pkg-cache))
+
+(define (extract-doc-props v)
+  ;; currently, the only relevant property is 'supplant
+  (define tp (part-tag-prefix v))
+  (define dp (and (hash? tp)
+                  (hash-ref tp 'doc-properties #f)))
+  (define s (and dp (hash-ref dp 'supplant #f)))
+  (let* ([ht #hasheq()]
+         [ht (if (string? s)
+                 (hash-set ht 'supplant s)
+                 ht)])
+    ht))
+
+(define (perform-supplants infos)
+  (for ([info (in-list infos)])
+    (define props (info-props info))
+    (unless (eq? 'delayed props) ; 'delayed implies wasn't built
+      (define supplant (hash-ref props 'supplant #f))
+      (when supplant
+        (define dest-dir (doc-dest-dir (info-doc info)))
+        (define here (build-path dest-dir "index.html"))
+        (define there-dir (build-path dest-dir 'up supplant))
+        (define there (build-path there-dir "index.html"))
+        (when (file-exists? here)
+          (unless (equal? (file->bytes here) (and (file-exists? there)
+                                                  (file->bytes there)))
+            (make-directory* there-dir)
+            (copy-file here there #:exists-ok? #t)))))))

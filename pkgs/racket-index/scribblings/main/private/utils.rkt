@@ -1,5 +1,4 @@
-#reader scribble/reader
-#lang scheme/base
+#lang at-exp racket/base
 
 (require "../config.rkt"
          scribble/manual
@@ -41,34 +40,50 @@
 ;; the second argument specifies installation/user specific, and if
 ;; it's missing, then it's a page with a single version
 (define (main-page id [installation-specific? '?]
+                   #:style [style-in #f]
+                   #:title-content [title-content-in #f]
+                   #:self-path [self-path #f]
+                   #:bug-url [bug-url #f]
                    #:force-racket-css? [force-racket-css? #f]
                    #:show-root-info? [show-root-info? #f]
-                   #:extra-additions [extra-additions '()])
+                   #:extra-additions [extra-additions '()]
+                   #:doc-properties [doc-properties #f]
+                   #:can-find-inst? [can-find-inst? #t])
   (define info (page-info id))
-  (define title-string (car info))
+  (define title-content (or title-content-in (car info)))
   (define root (cadr info))
-  (define path (caddr info))
+  (define path (or self-path (caddr info)))
   (define user-doc? (eq? installation-specific? #f))
   (define inst-doc? (eq? installation-specific? #t))
-  (define as-plt-rel? (eq? root 'plt))
   (define up-path
     ;; massage the current path to an up string
     (regexp-replace* #rx"[^/]*/" (regexp-replace #rx"[^/]+$" path "") "../"))
   (define page-title
-    (title #:style (make-style #f (list*
-                                   'no-toc
-                                   'toc-hidden
-                                   (append
-                                    (if force-racket-css?
-                                        (list (make-css-addition (collection-file-path "racket.css" "scribble")))
-                                        null)
-                                    (if (not show-root-info?)
-                                        null
-                                        (list
-                                         (make-css-addition (collection-file-path "root-info.css" "scribblings/main/private"))
-                                         (make-js-addition (collection-file-path "root-info.js" "scribblings/main/private"))))
-                                    extra-additions)))
-           title-string
+    (title #:style (make-style (cond
+                                 [(style? style-in) (style-name style-in)]
+                                 [(string? style-in) style-in]
+                                 [(symbol? style-in) style-in]
+                                 [else #f])
+                               (list*
+                                'no-toc
+                                'toc-hidden
+                                (append
+                                 (cond
+                                   [(list? style-in) style-in]
+                                   [(style? style-in) (style-properties style-in)]
+                                   [else null])
+                                 (if force-racket-css?
+                                     (list (make-css-addition (collection-file-path "racket.css" "scribble")))
+                                     null)
+                                 (if (not show-root-info?)
+                                     null
+                                     (list
+                                      (make-css-addition (collection-file-path "root-info.css" "scribblings/main/private"))
+                                      (make-js-addition (collection-file-path "root-info.js" "scribblings/main/private"))))
+                                 extra-additions)))
+           title-content
+           #:tag-prefix (and doc-properties
+                             (hash 'doc-properties doc-properties))
            #;
            ;; the "(installation)" part shouldn't be visible on the web, but
            ;; there's no way (currently) to not have it in the window title
@@ -81,14 +96,14 @@
     (map (lambda (item)
            (let ([link-id (if (pair? item) (car item) item)])
              ((if (eq? id link-id) caddr cadr) item)))
-         (front-toc-items up-path as-plt-rel?)))
+         (front-toc-items id up-path (and (eq? id 'start) title-content) bug-url inst-doc? can-find-inst?)))
   (make-splice `(,page-title
                  ,@toc
                  ,@(if show-root-info?
-                     (list @script{var racket_root_version = "@(version)"@";"})
+                     (list @script{var racket_root_version = "@(get-installation-name)"@";"})
                      '())
                  ,@(if user-doc?
-                     (list @script{SetPLTRoot("@(version)", "@up-path")@";"})
+                     (list @script{SetPLTRoot("@(get-installation-name)", "@up-path")@";"})
                      '()))))
 
 ;; FIXME: Use this to avoid hard-wiring manual titles and paths in config.rkt
@@ -98,28 +113,35 @@
     (module-path-index-join `(lib ,(format "scribblings/~a/~a.scrbl" s f))
                             #f))))
 
-(define (front-toc-items up as-plt-rel?)
+(define (front-toc-items for-id up title-content bug-url inst-doc? can-find-inst?)
   (map (lambda (item)
          (if (eq? item '---)
            (list '--- (make-toc-element #f null '(nbsp)))
            (let ()
              (define id    (car item))
              (define info  (page-info id))
-             (define label (car info))
-             (define root  (cadr info))
-             (define path  (caddr info))
+             (define label (if (and title-content (eq? id 'start))
+                               title-content
+                               (car info)))
+             (define root  (if (eq? id for-id)
+                               #f
+                               (cadr info)))
+             (define path  (cond
+                             [(and bug-url (eq? id 'bugreport))
+                              bug-url]
+                             [(eq? id for-id)
+                              "index.html"]
+                             [else
+                              (caddr info)]))
              (define text  (make-element "tocsubseclink" (list label)))
              (define dest
                (case root
-                 [(plt)  (if as-plt-rel?
-                             ;; Things that are normally installed in 'plt
-                             ;; should reference by relative paths other things
-                             ;; installed in 'plt, even if those things are together
-                             ;; installed in user space:
-                             (string-append up path)
-                             ;; Otherwise, if we're installing a user space copy,
-                             ;; to this target as 'plt space:
-                             (build-path (find-doc-dir) path))]
+                 [(plt) (if (and can-find-inst? (not inst-doc?))
+                            (let ([m (regexp-match "^[^/]*" path)])
+                              (if m
+                                  `(lib ,(format "scribblings/main/~a.scrbl" (car m)))
+                                  (string-append up path)))
+                            (string-append up path))]
                  [(user) (string-append up path)]
                  [(#f)   path]
                  [else (error "internal error (main-page)")]))
@@ -127,17 +149,30 @@
                (make-style
                 style
                 (list (make-attributes
-                       `(,@(if (eq? root 'user)
-                             `([onclick
-                                . ,(format "return GotoPLTRoot(\"~a\", \"~a\");"
-                                           (version) path)])
-                             `())
+                       `(,@(case root
+                             [(user)
+                              `([onclick . ,(format "return GotoPLTRoot(\"~a\", \"~a\");"
+                                                    (get-installation-name) path)])]
+                             [(plt)
+                              (if inst-doc?
+                                  '()
+                                  ;; workaround specific to searcg page to find "license",
+                                  ;; which may be adjacent or may be in main "doc"
+                                  (let ([m (regexp-match "^[^/]*" path)])
+                                    (if m
+                                        `([onclick . ,(format "return GotoDocIndex(\"~a\", \"~a\");"
+                                                              (get-installation-name) (car m))])
+                                        '())))]
+                             [else '()])
+                         [id . ,(format "~a-link" id)]
                          ;; note: root=#f means an external link, but in this
                          ;; case this is the bugs link, so *keep* it and later
                          ;; use it on the bugs page
                          [data-pltdoc . "x"])))))
              (define (elt style)
                (make-toc-element
-                #f null (list (hyperlink dest #:style (onclick style) text))))
+                #f null (list (if (string? dest)
+                                  (hyperlink dest #:style (onclick style) text)
+                                  (seclink "top" #:doc dest text)))))
              (list id (elt "tocviewlink") (elt "tocviewselflink")))))
        links))

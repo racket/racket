@@ -258,14 +258,16 @@
                                                 (lookup-extra 'language-family '("Racket")))))
       (define kind (let ([kind (lookup-extra 'kind #f)])
                      (if kind (quote-string kind) "false")))
+      (define long-text (let ([long-text (lookup-extra 'long-key #f)])
+                          (if long-text (quote-string long-text) "false")))
       (and href
            ;; Array order matches `IDX_KEY`, etc., in "search.js"
            (string-append "[" (quote-string text) ","
                           (quote-string href) ","
                           html "," from-libs ","
                           pkg-name "," sort-order "," language-family ","
-                          display-from-libs "," key-from-libs
-                          "," kind "]"))))
+                          display-from-libs "," key-from-libs ","
+                          kind "," long-text "]"))))
   (define l (filter values l-all))
 
   (define user (if user-dir? "user_" ""))

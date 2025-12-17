@@ -450,7 +450,12 @@
         (define scribblings (if i
                                 (i 'scribblings (lambda () null))
                                 null))
-        (for ([s (in-list scribblings)])
+        (for ([s (in-list scribblings)]
+              #:unless (and ((length s) . > . 1)
+                            (let ([flags (list-ref s 1)])
+                              (or (memq 'depends-all flags)
+                                  (memq 'depends-all-main flags)
+                                  (memq 'depends-all-user flags)))))
           (define src (path->complete-path (car s) path))
           (define name (if ((length s) . > . 3)
                            (list-ref s 3)

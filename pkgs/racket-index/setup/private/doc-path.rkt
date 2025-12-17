@@ -19,6 +19,12 @@
                                          (user-doc (build-path "main" name)))]
         [(memq 'user-doc-root flags) (user-doc)]
         [(memq 'user-doc flags)      (user-doc name)]
+        [(and (not under-main?)
+              (not (memq 'every-main-layer flags))
+              (and (or (memq 'depends-all flags)
+                       (memq 'depends-all-main flags)
+                       (memq 'depends-all-user flags))))
+         (user-doc name)]
         [(or under-main?
              (memq 'main-doc flags)
              (pair? (path->main-collects-relative dir)))

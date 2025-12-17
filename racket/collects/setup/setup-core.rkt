@@ -45,6 +45,7 @@
          "private/encode-relative.rkt"
          "private/time.rkt"
          "private/setup-fprintf.rkt"
+         "private/relevant-collects.rkt"
          compiler/private/dep
          (only-in pkg/lib pkg-directory
                   pkg-single-collection))
@@ -260,6 +261,26 @@
          (set! exit-code 0)])))
       
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  ;;               info and cache                  ;;
+  ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define pkg-path-cache (make-hash))
+
+  (define info-ns (make-base-namespace))
+  (define getinfo (make-getinfo info-ns))
+
+  (define info-failures (make-hash))
+  (define (getinfo/log-failure path)
+    (with-handlers ([exn:fail? (lambda (exn)
+                                 (if (hash-ref info-failures path #f)
+                                     #f
+                                     (begin
+                                       (hash-set! info-failures path #t)
+                                       (handle-error path "load of info.rkt" exn "" "" "error")
+                                       #f)))])
+      (getinfo path)))
+
+  ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;;               Archive Unpacking               ;;
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   
@@ -296,10 +317,22 @@
                       make-docs?)
                  (append
                   (if (not (avoid-main-installation))
-                      '(("scribblings/main"))
+                      (append
+                       '(("scribblings/main"))
+                       (map
+                        list
+                        (get-relevant-collections 'main-doc-index getinfo/log-failure
+                                                  #:mode (cond
+                                                           [(make-user) 'preferred]
+                                                           [else 'no-user]))))
                       null)
                   (if (make-user)
-                      '(("scribblings/main/user"))
+                      (append
+                       '(("scribblings/main/user"))
+                       (map
+                        list
+                        (get-relevant-collections 'user-doc-index getinfo/log-failure
+                                                  #:mode 'preferred)))
                       null))
                  null)
              (for/list ([x (in-list (archives))])
@@ -325,22 +358,6 @@
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;;              Find Collections                 ;;
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-  (define pkg-path-cache (make-hash))
-
-  (define info-ns (make-base-namespace))
-  (define getinfo (make-getinfo info-ns))
-
-  (define info-failures (make-hash))
-  (define (getinfo/log-failure path)
-    (with-handlers ([exn:fail? (lambda (exn)
-                                 (if (hash-ref info-failures path #f)
-                                     #f
-                                     (begin
-                                       (hash-set! info-failures path #t)
-                                       (handle-error path "load of info.rkt" exn "" "" "error")
-                                       #f)))])
-      (getinfo path)))
 
   (define (make-cc* collection parent path omit-root info-root 
                     info-path info-path-mode shadowing-policy 

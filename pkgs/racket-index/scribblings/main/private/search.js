@@ -2,7 +2,7 @@
 var key_handler, toggle_panel, hide_prefs, new_query, refine_query,
     set_ctx_query, set_context_query, set_show_manuals, set_show_manual_titles,
     set_results_num, set_type_delay, set_highlight_color, status_line,
-    saved_status = false, ctx_query_label_line;
+    saved_status = false, ctx_query_label_line, language_family;
 
 var descriptions = new Array();
 
@@ -266,10 +266,24 @@ function InitializeSearch() {
   // get search string
   var init_q = GetPageArg("q",false);
   if (init_q && init_q != "") query.value = init_q;
+  language_family = GetPageArg("fam",false);
+  if (!language_family) language_family = plt_main_language_family
+  AdjustMainLink(GetPageArg("famroot",false));
   ContextFilter();
   DoSearch();
   query.focus();
   query.select();
+}
+
+function AdjustMainLink(famroot) {
+    if (!famroot) return;
+    var s = document.getElementById("start-link");
+    if (!s) return;
+    var c = s.firstChild
+    if (!c) return;
+    if (c.innerHTML == "Racket Documentation") { // sanity check
+        c.innerHTML = language_family + " Documentation"
+    }
 }
 
 function makeProtoSearchResult() {
@@ -443,6 +457,16 @@ const IDX_LANG_FAMILY = 6;
 const IDX_LIBS_HTML = 7;
 const IDX_LIBS_TEXT = 8;
 const IDX_KIND = 9;
+const IDX_LONG_KEY = 10;
+
+function CompareKey(term, x){
+    var c = Compare(term, x[IDX_KEY]);
+    if (x[IDX_LONG_KEY]) {
+        var c2 = Compare(term, x[IDX_LONG_KEY]);
+        if (c2 > c) return c2;
+    }
+    return c;
+}
     
 // Tests for matches and highlights:
 //   "append"
@@ -477,25 +501,25 @@ function CompileTerm(term) {
     return function(x) {
       if (!x[IDX_LIBS_SEXP]) return C_fail;
       if (x[IDX_LIBS_SEXP] == "module" || x[IDX_LIBS_SEXP] == "language" || x[IDX_LIBS_SEXP] == "reader") // rexact allowed, show partial module matches
-        return Compare(term,x[IDX_KEY]);
+        return CompareKey(term, x);
       return (MaxCompares(term,x[IDX_LIBS_SEXP]) >= C_exact) ? C_exact : C_fail;
     };
   case "M":
     return function(x) {
       if (!x[IDX_LIBS_SEXP]) return C_fail;
-      if (x[IDX_LIBS_SEXP] == "module" || x[IDX_LIBS_SEXP] == "language" || x[IDX_LIBS_SEXP] == "reader") return Compare(term,x[IDX_KEY]); // rexact allowed
-        return (MaxCompares(term,x[IDX_LIBS_TEXT]?x[IDX_LIBS_TEXT]:x[IDX_LIBS_SEXP]) >= C_match) ? C_exact : C_fail;
+      if (x[IDX_LIBS_SEXP] == "module" || x[IDX_LIBS_SEXP] == "language" || x[IDX_LIBS_SEXP] == "reader") return CompareKey(term, x); // rexact allowed
+      return (MaxCompares(term,x[IDX_LIBS_TEXT]?x[IDX_LIBS_TEXT]:x[IDX_LIBS_SEXP]) >= C_match) ? C_exact : C_fail;
     };
   case "H":
     return function(x) {
       if (!x[IDX_LIBS_SEXP]) return C_fail;
-      if (x[IDX_LIBS_SEXP] == "language") return Compare(term,x[IDX_KEY]);
-        return (MaxCompares(term,x[IDX_LIBS_TEXT]?x[IDX_LIBS_TEXT]:x[IDX_LIBS_SEXP]) >= C_exact) ? C_exact : C_fail;
+      if (x[IDX_LIBS_SEXP] == "language") return CompareKey(term, x);
+      return (MaxCompares(term,x[IDX_LIBS_TEXT]?x[IDX_LIBS_TEXT]:x[IDX_LIBS_SEXP]) >= C_exact) ? C_exact : C_fail;
     };
   case "R":
     return function(x) {
       if (!x[IDX_LIBS_SEXP]) return C_fail;
-      if (x[IDX_LIBS_SEXP] == "reader") return Compare(term,x[IDX_KEY]);
+      if (x[IDX_LIBS_SEXP] == "reader") return CompareKey(term, x);
       return (MaxCompares(term,x[IDX_LIBS_TEXT]?x[IDX_LIBS_TEXT]:x[IDX_LIBS_SEXP]) >= C_exact) ? C_exact : C_fail;
     };
   case "T":
@@ -514,7 +538,7 @@ function CompileTerm(term) {
     var compare_words = CompileWordCompare(term);
     return CompileOrTerms([
       function(x) {
-        var r = Compare(term,x[IDX_KEY]);
+        var r = CompareKey(term, x);
         // only bindings can be used for rexact matches
         if (r >= C_rexact) return (x[IDX_LIBS_SEXP] ? r : C_exact);
         if (r > C_words3) return r;
@@ -605,6 +629,13 @@ function MakeShowProgress() {
 }
 
 function packageAndOrderCompare(a, b) {
+  var a_is_lang = a[IDX_LANG_FAMILY] ==language_family;
+  var b_is_lang = b[IDX_LANG_FAMILY] ==language_family;
+  if (a_is_lang != b_is_lang) {
+      if (a_is_lang) return -1;
+      if (b_is_lang) return 1;
+  }
+
   var a_is_base = plt_base_pkgs.indexOf(a[IDX_PACKAGE]) >= 0;
   var b_is_base = plt_base_pkgs.indexOf(b[IDX_PACKAGE]) >= 0;
   if (a_is_base && b_is_base) return 0;
@@ -647,7 +678,7 @@ function Search(data, term, is_pre, K) {
   var i = 0;
   var matches = new Array(C_max-C_min);
   for (i=0; i<matches.length; i++) matches[i] = new Array();
-  var chunk_fuel = K ? Math.round(data.length/10) : data.length;
+  var chunk_fuel = K ? Math.ceil(data.length/10) : data.length;
   var progress = K ? MakeShowProgress() : Id;
   i = 0;
   function DoChunk() {
@@ -849,7 +880,7 @@ function UpdateResults() {
       }
       if (note)
         note = '&nbsp;&nbsp;<span class="smaller">' + note + '</span>';
-      if (show_family && (lang_fams[0] != plt_main_language_family))
+      if (show_family && (lang_fams[0] != language_family))
         note = '<div class="language-family">' + lang_fams[0] + "</div>" + note;
       var href = UncompactUrl(res[IDX_URL]);
       if (link_args) {
@@ -1117,3 +1148,12 @@ set_highlight_color = SetHighlightColor;
 AddOnLoad(InitializeSearch);
 
 })();
+
+
+function GotoDocIndex(ver, name) {
+  if (plt_base_pkgs.indexOf("racket-index") >= 0) {
+    location = MergePageArgsIntoUrl(plt_main_url + name + "/index.html");
+    return false;
+  }
+  return true;
+}

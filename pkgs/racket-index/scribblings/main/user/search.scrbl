@@ -7,6 +7,7 @@
 @main-page['search #f
            ;; "racket.css" needs to be installed for search results:
            #:force-racket-css? #t
+           #:can-find-inst? #f ; because 'depends-all-user means we may not see "license"
            #:extra-additions
            (list (make-css-addition
                   (collection-file-path
