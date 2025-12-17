@@ -880,14 +880,15 @@
 (define (get/build-late-neg-projection ctc)
   (cond
     [(contract-struct-late-neg-projection ctc) => values]
+    [(contract-struct-collapsible-late-neg-projection ctc)
+     =>
+     (lambda (f)
+       (lambda (blame)
+         (define-values (proj _) (f blame))
+         proj))]
     [else
      (log-racket/contract-info "no late-neg-projection for ~s" ctc)
      (cond
-       [(contract-struct-collapsible-late-neg-projection ctc) =>
-        (lambda (f)
-          (lambda (blame)
-            (define-values (proj _) (f blame))
-            proj))]
        [(contract-struct-projection ctc)
         =>
         (λ (projection)
