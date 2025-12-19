@@ -716,11 +716,20 @@ the level of CSS or Latex.
                          [#:doc-properties doc-properties hash? (make-default-doc-properties
                                                                  main-family
                                                                  default-category
-                                                                 supplan)])
+                                                                 supplant)]
+                         [#:default-language-family default-language-family (or/c #f (nonempty-listof string?)) #f]
+                         [#:version doc-version (or/c #f string?) #f]
+                         [#:date doc-date (or/c #f string?) #f])
            pre-part?]{
 
 Creates the content of a document that lists all installed
 documentation from the perspective of @racket[main-family].
+
+The @racket[language-family] argument selects the language family used
+to render the document (i.e., compared to language families of listed
+documents), while the @racket[default-language-family] argument
+specifies the language families that the document listing declares for
+itself.
 
 Use this function as follows:
 

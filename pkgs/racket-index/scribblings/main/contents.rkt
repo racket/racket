@@ -24,7 +24,10 @@
                         #:default-category [default-category '(language)]
                         #:doc-properties [doc-properties (make-default-doc-properties #:language-family main-language-family
                                                                                       #:default-category default-category
-                                                                                      #:supplant supplant)])
+                                                                                      #:supplant supplant)]
+                        #:default-language-family [default-language-family #f]
+                        #:version [doc-version #f]
+                        #:date [doc-date #f])
   (list
    @main-page['start (not user?)
                      #:style style-in
@@ -32,7 +35,10 @@
                      #:title-content title-content
                      #:self-path self-path
                      #:bug-url bug-url
-                     #:doc-properties doc-properties]
+                     #:doc-properties doc-properties
+                     #:default-language-family default-language-family
+                     #:version doc-version
+                     #:date doc-date]
 
    (if user?
        @margin-note{This is an installation- and user-specific listing,

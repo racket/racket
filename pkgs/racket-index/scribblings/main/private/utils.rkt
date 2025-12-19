@@ -47,7 +47,10 @@
                    #:force-racket-css? [force-racket-css? #f]
                    #:show-root-info? [show-root-info? #f]
                    #:extra-additions [extra-additions '()]
+                   #:default-language-family [default-language-family #f]
                    #:doc-properties [doc-properties #f]
+                   #:version [doc-version #f]
+                   #:date [doc-date #f]
                    #:can-find-inst? [can-find-inst? #t])
   (define info (page-info id))
   (define title-content (or title-content-in (car info)))
@@ -82,8 +85,16 @@
                                       (make-js-addition (collection-file-path "root-info.js" "scribblings/main/private"))))
                                  extra-additions)))
            title-content
-           #:tag-prefix (and doc-properties
-                             (hash 'doc-properties doc-properties))
+           #:tag-prefix (let* ([ht #hasheq()]
+                               [ht (if doc-properties
+                                       (hash-set ht 'doc-properties doc-properties)
+                                       ht)]
+                               [ht (if default-language-family
+                                       (hash-set ht 'default-language-family default-language-family)
+                                       ht)])
+                          (and (positive? (hash-count ht)) ht))
+           #:version doc-version
+           #:date doc-date
            #;
            ;; the "(installation)" part shouldn't be visible on the web, but
            ;; there's no way (currently) to not have it in the window title
