@@ -1321,8 +1321,9 @@
     (if (base-instanceof/c? ctc)
         (contract-late-neg-projection (base-instanceof/c-class-ctc ctc))
         (object/c-late-neg-class-proj ctc)))
+  (define val-to-edge-hash-and-ctc (make-weak-hasheq))
   (λ (blame)
-    (define p (proj (blame-add-context blame #f)))
+    (define p (proj blame))
     (λ (val neg-party)
       (unless (object? val)
         (raise-blame-error blame #:missing-party neg-party
@@ -1334,119 +1335,213 @@
                                (λ args (apply raise-blame-error blame #:missing-party neg-party
                                               val args))))
       (define original-obj (if (has-original-object? val) (original-object val) val))
-      (define new-cls (p (object-ref val) neg-party))
-      (define p-closed-over-neg-party (λ (v) (p v neg-party)))
+      (define contracts-already-on-object
+        (if (has-impersonator-prop:instanceof/c-ctcs? val)
+            (get-impersonator-prop:instanceof/c-ctcs val)
+            '()))
+      (define blames-already-on-object
+        (if (has-impersonator-prop:instanceof/c-blames? val)
+            (get-impersonator-prop:instanceof/c-blames val)
+            '()))
+      ;; if this table starts getting big, stop using it....
+      (define graph-edges-from-val
+        (cond
+          [(has-impersonator-prop:instanceof/c-graph-edges? val)
+           (get-impersonator-prop:instanceof/c-graph-edges val)]
+          [(hash-ref val-to-edge-hash-and-ctc val #f)
+           =>
+           values]
+          [else #f]))
+      (define contract-on-is-same-as-this-one?
+        (and (pair? contracts-already-on-object)
+             (null? (cdr contracts-already-on-object))
+             (contract-equivalent? (car contracts-already-on-object) ctc)))
+      (define complete-blame (blame-add-missing-party blame neg-party))
+      (define existing-wrapper
+        (cond
+          [(not graph-edges-from-val)
+           ;(printf "fail; no graph hash val: ~s ctc: ~s\n" (eq-hash-code val) (eq-hash-code ctc))
+           #f]
+          [(null? contracts-already-on-object)
+           (cond
+             [(hash-ref graph-edges-from-val complete-blame #f)
+              => values]
+             [else
+              ;(printf "fail; no edge with matching blame; value has no contract\n")
+              #f])]
+          [(and (pair? contracts-already-on-object)
+                (null? (cdr contracts-already-on-object)))
+           (cond
+             [(not contract-on-is-same-as-this-one?)
+              ;(printf "fail; contract not equivalent.1\n")
+              #f]
+             [(hash-ref graph-edges-from-val complete-blame #f)
+              => values]
+             [else
+              ;(printf "fail; no edge with matching blame; value has one contract\n")
+              #f])]
+          [else
+           ;(printf "fail; more than one contract on the object\n")
+           #f]))
       (cond
-        [(impersonator-prop:has-wrapped-class-neg-party? new-cls)
-         (define the-info (impersonator-prop:get-wrapped-class-info new-cls))
-         (define neg-party (impersonator-prop:get-wrapped-class-neg-party new-cls))
-         (wrapped-object
-          val
-          (wrapped-class-info-neg-extra-arg-vec the-info)
-          (wrapped-class-info-pos-field-projs the-info)
-          (wrapped-class-info-neg-field-projs the-info)
-          neg-party)]
+        [existing-wrapper existing-wrapper]
         [else
-         (define interposed-val
-           (if (has-impersonator-prop:instanceof/c-original-object? val)
-               (get-impersonator-prop:instanceof/c-original-object val)
-               (impersonate-struct 
-                val object-ref
-                (λ (o c) (get-impersonator-prop:instanceof/c-wrapped-class o)))))
-	
+         (define new-cls (p (object-ref val) neg-party))
+         (cond
+           [(impersonator-prop:has-wrapped-class-neg-party? new-cls)
+            (define the-info (impersonator-prop:get-wrapped-class-info new-cls))
+            (define neg-party (impersonator-prop:get-wrapped-class-neg-party new-cls))
+            (wrapped-object
+             val
+             (wrapped-class-info-neg-extra-arg-vec the-info)
+             (wrapped-class-info-pos-field-projs the-info)
+             (wrapped-class-info-neg-field-projs the-info)
+             neg-party)]
+           [else
+            (define p-closed-over-neg-party (λ (v) (p v neg-party)))
+            (define interposed-val
+              (if (has-impersonator-prop:instanceof/c-original-object? val)
+                  (get-impersonator-prop:instanceof/c-original-object val)
+                  (impersonate-struct
+                   val object-ref
+                   (λ (o c) (get-impersonator-prop:instanceof/c-wrapped-class o)))))
 
-         ;; this code is doing a fairly complicated dance to 
-         ;; accomplish a fairly simple purpose. In particular,
-         ;; instanceof/c contracts keep all of the contracts
-         ;; that they've put on a value in a property on the
-         ;; value and then, when a new contract comes along,
-         ;; try to avoid growing the list of contracts, in the
-         ;; case that there is already checking that subsumes 
-         ;; some of the contracts. It does this by building up
-         ;; the new list of contracts (the old one, plus this one)
-         ;; and then looking for a sublist of that list like this:
-         ;;   c1, ..., ci, ..., cj, ..., ck, ... cn
-         ;; such that ci <: cj and ck <: cj. When that's the case,
-         ;; case then we know that cj is redundant (regardless of
-         ;; the blame it might assign). So this code is looking
-         ;; for such things, but the complication of the code comes
-         ;; from trying to avoid re-creating too many contracts
-         (define all-new-ctcs
-           (cons ctc
-                 (if (has-impersonator-prop:instanceof/c-ctcs? val)
-                     (get-impersonator-prop:instanceof/c-ctcs val)
-                     '())))
-         
-         (define all-new-projs
-           (cons p-closed-over-neg-party
-                 (if (has-impersonator-prop:instanceof/c-projs? val)
-                     (get-impersonator-prop:instanceof/c-projs val)
-                     '())))
+            ;; this code is doing a fairly complicated dance to
+            ;; accomplish a fairly simple purpose. In particular,
+            ;; instanceof/c contracts keep all of the contracts
+            ;; that they've put on a value in a property on the
+            ;; value and then, when a new contract comes along,
+            ;; try to avoid growing the list of contracts, in the
+            ;; case that there is already checking that subsumes
+            ;; some of the contracts. It does this by building up
+            ;; the new list of contracts (the old one, plus this one)
+            ;; and then looking for a sublist of that list like this:
+            ;;   c1, ..., ci, ..., cj, ..., ck, ... cn
+            ;; such that ci <: cj and ck <: cj. When that's the case,
+            ;; case then we know that cj is redundant (regardless of
+            ;; the blame it might assign). So this code is looking
+            ;; for such things, but the complication of the code comes
+            ;; from trying to avoid re-creating too many contracts
+            (define all-new-ctcs (cons ctc contracts-already-on-object))
+            (define all-new-blames (cons complete-blame blames-already-on-object))
+            (define all-new-projs
+              (cons p-closed-over-neg-party
+                    (if (has-impersonator-prop:instanceof/c-projs? val)
+                        (get-impersonator-prop:instanceof/c-projs val)
+                        '())))
 
-         (define (stronger? x y)
-           (and (contract? x) ; could instead get a `just-check-existence`
-                (contract? y)
-                (contract-stronger? x y)))
+            (define-values (reverse-without-redundant-ctcs
+                            reverse-without-redundant-blames
+                            reverse-without-redundant-projs
+                            dropped-something?)
+              (cond
+                ;; in a special case that we have exactly
+                ;; one contract and it is the same as the
+                ;; contract we're already putting on
+                ;; (although possibly with different blame)
+                ;; we know that this contract is only one
+                ;; we need to use; the code below won't
+                ;; drop as much in that case.
+                [contract-on-is-same-as-this-one?
+                 (define new-blame (blame-replace-negative (car blames-already-on-object) (blame-negative complete-blame)))
+                 (define new-p (proj new-blame))
+                 (define new-p-closed-over-neg-party (λ (v) (new-p v #f)))
+                 (values (list ctc)
+                         (list new-blame)
+                         (list new-p-closed-over-neg-party)
+                         #t)]
+                [else
+                 (define (stronger? x y)
+                   (and (contract? x) ; could instead get a `just-check-existence`
+                        (contract? y)
+                        (contract-stronger? x y)))
+                 (let loop ([prior-ctcs '()]
+                            [prior-blames '()]
+                            [prior-projs '()]
+                            [this-ctc (car all-new-ctcs)]
+                            [next-ctcs (cdr all-new-ctcs)]
+                            [this-blame (car all-new-blames)]
+                            [next-blames (cdr all-new-blames)]
+                            [this-proj (car all-new-projs)]
+                            [next-projs (cdr all-new-projs)]
+                            [dropped-something? #f]
+                            [n 0])
+                   (cond
+                     [(null? next-ctcs)
+                      (when (n . > . 10)
+                        (log-racket/contract-info
+                         "class-c-old.rkt: wrappers seem to be accumulating; found ~a; here is one of them:\n  ~.s"
+                         n
+                         this-ctc))
+                      (values (cons this-ctc prior-ctcs)
+                              (cons this-blame prior-blames)
+                              (cons this-proj prior-projs)
+                              dropped-something?)]
+                     [else
+                      (if (and (ormap (λ (x) (stronger? x this-ctc)) prior-ctcs)
+                               (ormap (λ (x) (stronger? this-ctc x)) next-ctcs))
+                          (loop prior-ctcs prior-blames prior-projs
+                                (car next-ctcs) (cdr next-ctcs) (car next-blames) (cdr next-blames) (car next-projs) (cdr next-projs)
+                                #t
+                                (+ n 1))
+                          (loop (cons this-ctc prior-ctcs) (cons this-blame prior-blames) (cons this-proj prior-projs)
+                                (car next-ctcs) (cdr next-ctcs) (car next-blames) (cdr next-blames) (car next-projs) (cdr next-projs)
+                                dropped-something?
+                                (+ n 1)))]))]))
 
-         (define-values (reverse-without-redundant-ctcs
-                         reverse-without-redundant-projs
-                         dropped-something?)
-           (let loop ([prior-ctcs '()]
-                      [prior-projs '()]
-                      [this-ctc (car all-new-ctcs)]
-                      [next-ctcs (cdr all-new-ctcs)]
-                      [this-proj (car all-new-projs)]
-                      [next-projs (cdr all-new-projs)]
-                      [dropped-something? #f]
-                      [n 0])
-             (cond
-               [(null? next-ctcs)
-                (when (n . > . 10)
-                  (log-racket/contract-info
-                   "class-c-old.rkt: wrappers seem to be accumulating; found ~a; here is one of them:\n  ~.s"
-                   n
-                   this-ctc))
-                (values (cons this-ctc prior-ctcs)
-                        (cons this-proj prior-projs)
-                        dropped-something?)]
-               [else
-                (if (and (ormap (λ (x) (stronger? x this-ctc)) prior-ctcs)
-                         (ormap (λ (x) (stronger? this-ctc x)) next-ctcs))
-                    (loop prior-ctcs prior-projs
-                          (car next-ctcs) (cdr next-ctcs) (car next-projs) (cdr next-projs)
-                          #t
-                          (+ n 1))
-                    (loop (cons this-ctc prior-ctcs) (cons this-proj prior-projs)
-                          (car next-ctcs) (cdr next-ctcs) (car next-projs) (cdr next-projs)
-                          dropped-something?
-                          (+ n 1)))])))
+            (define unwrapped-class
+              (if (has-impersonator-prop:instanceof/c-unwrapped-class? val)
+                  (get-impersonator-prop:instanceof/c-unwrapped-class val)
+                  (object-ref val)))
 
-         (define unwrapped-class
-           (if (has-impersonator-prop:instanceof/c-unwrapped-class? val)
-               (get-impersonator-prop:instanceof/c-unwrapped-class val)
-               (object-ref val)))
+            (define wrapped-class
+              (if dropped-something?
+                  (for/fold ([class unwrapped-class])
+                            ([proj (in-list reverse-without-redundant-projs)])
+                    (proj class))
+                  new-cls))
 
-         (define wrapped-class
-           (if dropped-something?
-               (for/fold ([class unwrapped-class])
-                         ([proj (in-list reverse-without-redundant-projs)])
-                 (proj class))
-               new-cls))
-         
-         (impersonate-struct
-          interposed-val object-ref
+            (define new-graph-edges
+              (cond
+                [(and (pair? reverse-without-redundant-ctcs)
+                      (null? (cdr reverse-without-redundant-ctcs)))
+                 (or graph-edges-from-val
+                     (make-weak-hash))]
+                [else #f]))
+
+            (define wrapped-value
+              (impersonate-struct
+               interposed-val object-ref
           
-          ;FIXME: this should be #f, but right now that triggers 
-          ;; a bug in the impersonator implementation
-          (λ (x y) y) 
-          
-          impersonator-prop:instanceof/c-original-object interposed-val
-          impersonator-prop:instanceof/c-ctcs (reverse reverse-without-redundant-ctcs)
-          impersonator-prop:instanceof/c-projs (reverse reverse-without-redundant-projs)
-          impersonator-prop:instanceof/c-wrapped-class wrapped-class
-          impersonator-prop:instanceof/c-unwrapped-class unwrapped-class
-          impersonator-prop:contracted ctc
-          impersonator-prop:original-object original-obj)]))))
+               ;FIXME: this should be #f, but right now that triggers
+               ;; a bug in the impersonator implementation
+               (λ (x y) y)
+
+               impersonator-prop:instanceof/c-graph-edges new-graph-edges
+               impersonator-prop:instanceof/c-original-object interposed-val
+               impersonator-prop:instanceof/c-ctcs (reverse reverse-without-redundant-ctcs)
+               impersonator-prop:instanceof/c-blames (reverse reverse-without-redundant-blames)
+               impersonator-prop:instanceof/c-projs (reverse reverse-without-redundant-projs)
+               impersonator-prop:instanceof/c-wrapped-class wrapped-class
+               impersonator-prop:instanceof/c-unwrapped-class unwrapped-class
+               impersonator-prop:contracted ctc
+               impersonator-prop:original-object original-obj))
+
+            (when new-graph-edges
+              (hash-set! new-graph-edges complete-blame wrapped-value)
+              ;; be conservative with this table; if there are too many
+              ;; different values getting this same contract, stop using
+              ;; the table;
+              ;;
+              ;; also, sometimes we'll put the same value back into the
+              ;; hash a second time because we've added something to the table
+              ;; (although the table didn't change) but sometimes we'll
+              ;; be putting a new contract on the same value, so we want the
+              ;; new table in that case
+              (when (< (hash-count val-to-edge-hash-and-ctc) 20)
+                (hash-set! val-to-edge-hash-and-ctc val new-graph-edges)))
+
+            wrapped-value])]))))
 
 (define-logger racket/contract)
 
@@ -1454,6 +1549,23 @@
                 has-impersonator-prop:instanceof/c-ctcs?
                 get-impersonator-prop:instanceof/c-ctcs)
   (make-impersonator-property 'impersonator-prop:instanceof/c-ctcs))
+(define-values (impersonator-prop:instanceof/c-blames
+                has-impersonator-prop:instanceof/c-blames?
+                get-impersonator-prop:instanceof/c-blames)
+  (make-impersonator-property 'impersonator-prop:instanceof/c-blames))
+
+;; this should be a weak hash-table mapping blame objects
+;; to wrapped versions of the object; it should be set only
+;; when the instanceof/c-ctcs property is a singleton
+;; list; in that case the hash maps blame objects to other
+;; objects that started as the same object and got wrapped
+;; with that same contract, but with different blame objects
+;; we can avoid rewrapping the object by reusing the values
+;; in this hash.
+(define-values (impersonator-prop:instanceof/c-graph-edges
+                has-impersonator-prop:instanceof/c-graph-edges?
+                get-impersonator-prop:instanceof/c-graph-edges)
+  (make-impersonator-property 'impersonator-prop:instanceof/c-graph-edges))
 
 (define-values (impersonator-prop:instanceof/c-projs
                 has-impersonator-prop:instanceof/c-projs?
