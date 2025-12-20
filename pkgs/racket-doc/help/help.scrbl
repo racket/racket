@@ -16,10 +16,11 @@ and to support bug reports. See also @racketmodname[scribble/xref].
 
 @defmodule[help/search]
 
-@defproc[(send-main-page [#:sub sub path-string? "index.html"]
+@defproc[(send-main-page [#:sub sub string? "index.html"]
                          [#:notify notify (-> (or/c path? string?) void) void]
                          [#:fragment fragment (or/c #f string?) #f]
-                         [#:query query (or/c #f string?) #f])
+                         [#:query query (or/c #f string?) #f]
+                         [#:query-table query-table (hash/c symbol? string? #:immutable #t) (hash)])
          any]{
   Visits the documentation file @racket[sub] in the user's browser. 
   
@@ -28,25 +29,32 @@ and to support bug reports. See also @racketmodname[scribble/xref].
   or into the user-specific documentation, depending on the @racket[sub] argument.
   Once it finds the path, @racket[send-main-page] passes the path to
   @racket[notify]. The @racket[fragment] and @racket[query] arguments are passed
-  to @racket[send-url/file], along with the URL.
+  to @racket[send-url/file], along with the URL. The keys and values in
+  @racket[query-table] are used as additional query parameters.
 
   When @racket[get-doc-open-url] returns a URL string,
   @racket[send-main-page] appends @racket[sub] to the URL and passes
   it to @racket[notify]. It then appends @racket[fragment] and
   @racket[query] to the URL and passes it on to @racket[send-url].
 
-  @history[#:changed "1.2" @elem{Added @racket[get-doc-open-url] support.}]
+  @history[#:changed "1.2" @elem{Added @racket[get-doc-open-url] support.}
+           #:changed "1.60" @elem{Added the @racket[query-table] argument.}]
 }
 
 @defproc[(perform-search [str string?]
                          [context (or/c #f
                                         string?
                                         (list/c string? string?))
-                                  #f])
+                                  #f]
+                         [#:query-table query-table (hash/c symbol? string? #:immutable? #t) (hash)])
          void?]{
   Searches for @racket[str] in the documentation. The @racket[context] argument
   supplies a context for the search or, if it is two strings, a context for
-  the search and a label for that context.
+  the search and a label for that context. The search involves visiting a url
+  with a webpage that performs the search; the keys values in
+  @racket[query-table] are used as additional query parameters to that url.
+
+  @history[#:changed "1.60" @elem{Added the @racket[query-table] argument.}]
 }
 
 @; ------------------------------------------------------------
