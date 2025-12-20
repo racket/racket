@@ -35,7 +35,7 @@ and to support bug reports. See also @racketmodname[scribble/xref].
   it to @racket[notify]. It then appends @racket[fragment] and
   @racket[query] to the URL and passes it on to @racket[send-url].
 
-  @history[#:changed "6.0.1.6" @elem{Added @racket[get-doc-open-url] support.}]
+  @history[#:changed "1.2" @elem{Added @racket[get-doc-open-url] support.}]
 }
 
 @defproc[(perform-search [str string?]
