@@ -1,4 +1,6 @@
 (module kw-syntax-binding "pre-base.rkt"
+  (#%declare #:require=define)
+
   (require (prefix-in k: '#%kernel))
 
   (provide syntax-binding-set-extend)

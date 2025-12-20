@@ -1,4 +1,6 @@
 (module module-reader racket/private/base
+  (#%declare #:require=define)
+
   (require syntax/readerr
            (for-syntax racket/private/base))
 

@@ -1,4 +1,6 @@
 (module submodule '#%kernel
+  (#%declare #:require=define)
+
   (#%require (for-syntax '#%kernel
                          "stxcase-scheme.rkt"
                          "more-scheme.rkt"

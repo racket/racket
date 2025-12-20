@@ -1,6 +1,8 @@
 (module generic-methods '#%kernel
 
-  (#%require (for-syntax '#%kernel "qq-and-or.rkt" "define-et-al.rkt" "cond.rkt" "define.rkt"
+  (#%declare #:require=define)
+
+  (#%require (for-syntax '#%kernel "core-macros.rkt" "core-macros.rkt" "core-macros.rkt" "define.rkt"
                          "stx.rkt" "stxcase-scheme.rkt")
              "define.rkt" "../stxparam.rkt")
 

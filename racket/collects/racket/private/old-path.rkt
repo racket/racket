@@ -2,7 +2,9 @@
 ;; `path-add-extension` that do the wrong thing with
 ;; file names that start "."
 (module path '#%kernel
-  (#%require "qq-and-or.rkt" "define-et-al.rkt")
+  (#%declare #:require=define)
+
+  (#%require "core-macros.rkt" "core-macros.rkt")
 
   (#%provide path-replace-suffix
              path-add-suffix)

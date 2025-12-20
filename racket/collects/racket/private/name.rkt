@@ -1,6 +1,8 @@
 
 (module name '#%kernel
-  (#%require "define.rkt" "qq-and-or.rkt" "cond.rkt")
+  (#%declare #:require=define)
+
+  (#%require "define.rkt" "core-macros.rkt" "core-macros.rkt")
   (#%provide syntax-local-infer-name
              simplify-inferred-name)
 

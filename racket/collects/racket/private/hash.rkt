@@ -1,4 +1,5 @@
 (module hash "pre-base.rkt"
+  (#%declare #:require=define)
   (require '#%unsafe
            (for-syntax "ellipses.rkt"))
 

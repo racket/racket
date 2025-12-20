@@ -2,8 +2,10 @@
 ;; #%qqstx : quasisyntax
 
 (module qqstx '#%kernel
-  (#%require "define-et-al.rkt" "stxcase-scheme.rkt" "stx.rkt" "template.rkt"
-             (for-syntax '#%kernel "qq-and-or.rkt" "cond.rkt" "stxcase-scheme.rkt" "stx.rkt"))
+  (#%declare #:require=define)
+
+  (#%require "core-macros.rkt" "stxcase-scheme.rkt" "stx.rkt" "template.rkt"
+             (for-syntax '#%kernel "core-macros.rkt" "core-macros.rkt" "stxcase-scheme.rkt" "stx.rkt"))
 
   (#%provide quasisyntax
              quasisyntax/loc

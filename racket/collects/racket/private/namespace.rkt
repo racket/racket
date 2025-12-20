@@ -1,7 +1,9 @@
 (module namespace "pre-base.rkt"
+  (#%declare #:require=define)
+
   (require (for-syntax '#%kernel "define.rkt"
-                       "member.rkt"
-                       "stx.rkt" "stxcase-scheme.rkt" "define-et-al.rkt" "qq-and-or.rkt"
+                       (only-in "pico.rkt" member memw)
+                       "stx.rkt" "stxcase-scheme.rkt" "core-macros.rkt" "core-macros.rkt"
                        "stxloc.rkt"))
 
   (provide make-base-empty-namespace

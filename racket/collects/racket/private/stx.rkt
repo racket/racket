@@ -3,6 +3,8 @@
 
 (module stx '#%kernel
   (#%declare #:cross-phase-persistent)
+  (#%declare #:require=define)
+  
   ;; These utilities facilitate operations on syntax objects.
   ;; A syntax object that represents a parenthesized sequence
   ;; can contain a mixture of cons cells and syntax objects,
@@ -206,6 +208,75 @@
           (set! counter (add1 counter))
           (string->uninterned-symbol (format "~a~a" prefix counter))))))
 
+ 
+; (stx-make-id context chunk ...)
+;   context : (or/c syntax? #f)
+;   chunk   : (or/c symbol? string? identifier?)
+;  -> identifier?
+;
+; Concatenates all the chunks together to form the textual component of an
+; identifier; the lexical context is taken from `context`. For chunks which
+; were identifiers, a `'sub-range-binders` property is added to the output
+; identifier. When `syntax-transforming?`, it is assumed that all input
+; identifiers and the output identifier need to be `syntax-local-introduce`'d
+; before including in the sub-range-binders list.
+;
+; The call `(stx-make-id context chunk ...)` is similar in spirit to
+; `(format-id context "~a~a~a...~a" chunk ... #:subs? #t)`.
+(define-values (stx-make-id)
+  (lambda (lex . all-chunks)
+    (define-values (intro)
+      (if (syntax-transforming?) syntax-local-introduce values))
+    ; args
+    (if (if lex (syntax? lex) #t)
+        (void)
+        (raise-argument-error 'format-identifier- "(or/c syntax? #f)" lex))
+    (for-each (lambda (chunk)
+                (if (if (identifier? chunk) #t
+                        (if (symbol? chunk) #t
+                            (string? chunk)))
+                    (void)
+                    (raise-argument-error 'format-identifier- "(or/c symbol? string? identifier?)" chunk)))
+              all-chunks)
+    ; Prepare for loop
+    (define-values (loop)
+      (lambda (strings-reversed  ; strings to concat (reverse order) into the output identifier
+               srb-specs         ; (listof (list/c from-start from-end to-id to-start to-end))
+               next-index        ; cumulative length of strings-reversed
+               remaining-chunks) ; chunks not yet processed into strings-reversed+srb-specs
+        (if (null? remaining-chunks)
+            ; If no chunks left, construct tentative output...
+            (let-values ([(syn) (datum->syntax lex
+                                               (string->symbol (apply string-append-immutable
+                                                                      (reverse strings-reversed))))])
+              (if (null? srb-specs)
+                  syn
+                  ; ...and, if there were any sub-range-binders, add them; need to add the
+                  ; output id (now that we know it) onto the front of each sub-range-binders.
+                  (syntax-property syn
+                                   'sub-range-binders
+                                   (map (lambda (srb-spec)
+                                          (list->vector (cons (intro syn) srb-spec)))
+                                        srb-specs))))
+            ; Else...
+            (let-values ()
+              ; Stringify first chunk...
+              (define-values (fst rst-chunks) (values (car remaining-chunks) (cdr remaining-chunks)))
+              (define-values (fst/not-syn) (if (syntax? fst) (syntax-e fst) fst))
+              (define-values (fst/str) (if (symbol? fst/not-syn) (symbol->immutable-string fst/not-syn) fst/not-syn))
+              ; ...derive new sub-range-binder list....
+              (define-values (len) (string-length fst/str))
+              (define-values (new-srbs) (if (syntax? fst)
+                                            (cons (list next-index (+ next-index len) (intro fst) 0 len)
+                                                  srb-specs)
+                                            srb-specs))
+              ; ...and loop.
+              (loop (cons fst/str strings-reversed)
+                    new-srbs
+                    (+ next-index len)
+                    rst-chunks)))))
+    (loop null null 0 all-chunks)))
+
   (#%provide identifier? stx-null? stx-null/#f stx-pair? stx-list?
              stx-car stx-cdr stx->list
              stx-vector? stx-vector-ref
@@ -214,4 +285,5 @@
              stx-check/esc cons/#f append/#f
              stx-rotate stx-rotate*
              split-stx-list
-             make-stx-id-counter))
+             make-stx-id-counter
+             stx-make-id))

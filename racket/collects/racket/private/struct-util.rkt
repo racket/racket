@@ -1,6 +1,8 @@
 (module struct-util '#%kernel
+  (#%declare #:require=define)
+
   (#%require "define.rkt"
-             "cond.rkt")
+             "core-macros.rkt")
 
   (#%provide predicate->struct-name)
 

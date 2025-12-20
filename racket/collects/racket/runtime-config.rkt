@@ -1,4 +1,5 @@
 (module runtime-config '#%kernel
+  (#%declare #:require=define)
 
   (#%provide configure)
 
