@@ -5118,12 +5118,21 @@ static Scheme_Object *exn_classify_errno(int argc, Scheme_Object *argv[])
   Scheme_Object *p = argv[0];
   const char *s;
 
-  if (!SCHEME_PAIRP(p)
-      || !(SCHEME_INTP(SCHEME_CAR(p)) || SCHEME_BIGNUMP(SCHEME_CAR(p)))
-      || !(SAME_OBJ(SCHEME_CDR(p), posix_symbol)
-           || SAME_OBJ(SCHEME_CDR(p), windows_symbol)
-           || SAME_OBJ(SCHEME_CDR(p), gai_symbol)))
-    scheme_wrong_contract("exn-classify-errno", "(cons/c exact-integer? (or/c 'posix 'windows 'gai))", 0, argc, argv);
+  if (SCHEME_CHAPERONE_STRUCTP(p)
+      && scheme_is_struct_instance(exn_table[MZEXN].type, p)) {
+    if (scheme_is_struct_instance(exn_table[MZEXN_FAIL_FILESYSTEM_ERRNO].type, p)
+        || scheme_is_struct_instance(exn_table[MZEXN_FAIL_NETWORK_ERRNO].type, p))
+      p = scheme_struct_ref(p, 2);
+    else
+      return scheme_false;
+  } else  {
+    if (!SCHEME_PAIRP(p)
+        || !(SCHEME_INTP(SCHEME_CAR(p)) || SCHEME_BIGNUMP(SCHEME_CAR(p)))
+        || !(SAME_OBJ(SCHEME_CDR(p), posix_symbol)
+             || SAME_OBJ(SCHEME_CDR(p), windows_symbol)
+             || SAME_OBJ(SCHEME_CDR(p), gai_symbol)))
+      scheme_wrong_contract("exn-classify-errno", "(or/c exn? (cons/c exact-integer? (or/c 'posix 'windows 'gai)))", 0, argc, argv);
+  }
 
   if (!SCHEME_INTP(SCHEME_CAR(p)))
     return scheme_false;

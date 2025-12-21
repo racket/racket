@@ -71,13 +71,22 @@
   (do-write 'default-error-value->string-handler v o len)
   (get-output-string o))
 
-(define (exn-classify-errno errno)
-  (unless (and (pair? errno)
-               (exact-integer? (car errno))
-               (memq (cdr errno) '(posix windows gai)))
+(define (exn-classify-errno errno/exn)
+  (unless (or (exn? errno/exn)
+              (and (pair? errno/exn)
+                   (exact-integer? (car errno/exn))
+                   (memq (cdr errno/exn) '(posix windows gai))))
     (raise-argument-error 'exn-classify-errno
-                          "(cons/c exact-integer? (or/c 'posix 'windows 'gai))"
-                          errno))
+                          "(or/c exn? (cons/c exact-integer? (or/c 'posix 'windows 'gai)))"
+                          errno/exn))
+  (define errno
+    (cond
+      [(pair? errno/exn) errno/exn]
+      [(exn:fail:filesystem:errno? errno/exn)
+       (exn:fail:filesystem:errno-errno errno/exn)]
+      [(exn:fail:network:errno? errno/exn)
+       (exn:fail:network:errno-errno errno/exn)]
+      [else '(#f . #f)]))
   (and (fixnum? (car errno))
        (let ([bstr (rktio_classify_error (case (cdr errno)
                                            [(posix) RKTIO_ERROR_KIND_POSIX]

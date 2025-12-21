@@ -1251,16 +1251,17 @@ property, @racket[#f] otherwise.}
 
 Returns the @tech{module path}-getting procedure associated with @racket[v].}
 
-@defproc[(exn-classify-errno [errno (cons/c exact-integer? (or/c 'posix 'windows 'gai))])
+@defproc[(exn-classify-errno [exn/errno (or/c exn? (cons/c exact-integer? (or/c 'posix 'windows 'gai)))])
          (or/c symbol? #f)]{
 
-Attempts to normalize a value from
-@racket[exn:fail:filesystem:errno-errno] or
-@racket[exn:fail:network:errno-errno], which has a platform-specific
-meaning. The @racket[errno] value is normalized to a symbol, when
-possible, so that the same kind of error on different platforms
-converts to the same symbol. The result is @racket[#f] if a
-normalization of @racket[errno] is unknown.
+Attempts to normalize @racket[exn/errno] to a symbol so that the same
+kind of error on different platforms converts to the same symbol. The
+result is @racket[#f] if a normalization is unknown. Currently, the
+result will be @racket[#false] unless @racket[exn/errno] is an
+@racket[exn:fail:filesystem:errno] instance, an
+@racket[exn:fail:network:errno] instance, or a value that might be
+produced by @racket[exn:fail:filesystem:errno-errno] or
+@racket[exn:fail:network:errno-errno].
 
 When a symbol is returned, it uses a Posix-like convention. Potential
 result symbols include @racket['ENOENT] as ``file not found,''

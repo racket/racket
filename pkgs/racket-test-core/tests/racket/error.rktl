@@ -181,11 +181,22 @@
 
 (err/rt-test (exn-classify-errno (cons 0.5 'posix)))
 (err/rt-test (exn-classify-errno (cons 1 'x)))
-(test 'ENOENT
-      (let ([exn (with-handlers ([void values])
-                   (open-input-file "surely-this-file-does-not-exist"))])
-        (and (exn:fail:filesystem:errno? exn)
-             (exn-classify-errno (exn:fail:filesystem:errno-errno exn)))))
+(err/rt-test (exn-classify-errno (seconds->date 0)))
+(define ENOENT-exn
+  (let ([exn (with-handlers ([void values])
+               (open-input-file "surely-this-file-does-not-exist"))])
+    (and (exn:fail:filesystem:errno? exn)
+         exn)))
+(define ENOENT-errno
+  (and ENOENT-exn
+       (exn:fail:filesystem:errno-errno ENOENT-exn)))
+(test #t exn? ENOENT-exn)
+(test #t pair? ENOENT-errno)
+(test 'ENOENT exn-classify-errno ENOENT-errno)
+(test 'ENOENT exn-classify-errno ENOENT-exn)
+(test 'ENOENT exn-classify-errno (exn:fail:network:errno "oops"
+                                                         (current-continuation-marks)
+                                                         ENOENT-errno))
 (test #f (exn-classify-errno (cons (expt 2 100) 'posix)))
 (test #f (exn-classify-errno (cons (expt 2 100) 'windows)))
 (test #f (exn-classify-errno (cons (expt 2 100) 'gai)))

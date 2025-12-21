@@ -32663,28 +32663,39 @@
 (define 1/exn-classify-errno
   (|#%name|
    exn-classify-errno
-   (lambda (errno_0)
+   (lambda (errno/exn_0)
      (begin
-       (if (if (pair? errno_0)
-             (if (exact-integer? (car errno_0))
-               (memq (cdr errno_0) '(posix windows gai))
-               #f)
-             #f)
+       (if (let ((or-part_0 (exn? errno/exn_0)))
+             (if or-part_0
+               or-part_0
+               (if (pair? errno/exn_0)
+                 (if (exact-integer? (car errno/exn_0))
+                   (memq (cdr errno/exn_0) '(posix windows gai))
+                   #f)
+                 #f)))
          (void)
          (raise-argument-error
           'exn-classify-errno
-          "(cons/c exact-integer? (or/c 'posix 'windows 'gai))"
-          errno_0))
-       (if (fixnum? (car errno_0))
-         (let ((bstr_0
-                (let ((app_0
-                       (let ((tmp_0 (cdr errno_0)))
-                         (if (eq? tmp_0 'posix)
-                           0
-                           (if (eq? tmp_0 'windows) 1 2)))))
-                  (|#%app| rktio_classify_error app_0 (car errno_0)))))
-           (if bstr_0 (string->symbol (1/bytes->string/latin-1 bstr_0)) #f))
-         #f)))))
+          "(or/c exn? (cons/c exact-integer? (or/c 'posix 'windows 'gai)))"
+          errno/exn_0))
+       (let ((errno_0
+              (if (pair? errno/exn_0)
+                errno/exn_0
+                (if (exn:fail:filesystem:errno? errno/exn_0)
+                  (exn:fail:filesystem:errno-errno errno/exn_0)
+                  (if (exn:fail:network:errno? errno/exn_0)
+                    (exn:fail:network:errno-errno errno/exn_0)
+                    '(#f . #f))))))
+         (if (fixnum? (car errno_0))
+           (let ((bstr_0
+                  (let ((app_0
+                         (let ((tmp_0 (cdr errno_0)))
+                           (if (eq? tmp_0 'posix)
+                             0
+                             (if (eq? tmp_0 'windows) 1 2)))))
+                    (|#%app| rktio_classify_error app_0 (car errno_0)))))
+             (if bstr_0 (string->symbol (1/bytes->string/latin-1 bstr_0)) #f))
+           #f))))))
 (define install-error-value->string-handler!
   (lambda ()
     (begin
