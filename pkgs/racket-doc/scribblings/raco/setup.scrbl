@@ -1322,19 +1322,12 @@ current-system paths while @racket[get-cross-lib-search-dirs] and
 
 @defproc[(get-main-language-family) string?]{
 
-  Returns a string that names the installation's main language family.
-  A @deftech{language family} is a classification used in
-  documentation, and the main language family configuration affects
-  the way that documentation search results are printed. A language
-  family is not merely a module-based language, but instead stands
-  for a set of languages that share a module-naming convention; as a
-  rule of thumb, a language family is distinct enough that it might
-  have its own downloadable distribution. The default is
-  @racket["Racket"].
+  Returns a string that names the installation's main @tech{language
+  family}. The default is @racket["Racket"].
 
   @see-config[main-language-family]
 
-  @history[#:added "8.14.0.5"]}
+  @history[#:added "8.14.0.5"]
 }
 
 @deftogether[(

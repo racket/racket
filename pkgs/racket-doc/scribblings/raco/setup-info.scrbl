@@ -12,6 +12,8 @@
                     scribble/core
                     scribble/base
                     scribble/decode
+                    (only-in scribble/manual-struct
+                             index-desc)
                     (only-in scribble/html-properties
                              body-id
                              document-source)
@@ -21,6 +23,7 @@
                     racket/path
                     setup/collects
                     compiler/compiler
+                    launcher/launcher
                     racket/runtime-path
                     pkg/path
                     scribblings/main/contents))
@@ -449,7 +452,7 @@ the document's main @racket[part], but we first consider
    determines where the manual appears in a document listing such as
    the root documentation page. A category is a symbol, string, or a
    boxed string. If it is a string or a boxed string, then the string is the category label on
-   the root page (when the document's language families include the
+   the root page (when the document's @tech{language families} include the
    language family used for the listing, which is @racket["Racket"]
    for the root documentation page). If it is a symbol, then it should
    be one of the following categories listed below:
@@ -466,7 +469,7 @@ the document's main @racket[part], but we first consider
      @item{@racket['racket-core] : A core reference or library for
         Racket. This category normally should be used only by specific
         packages in the main Racket distribution. When rendering a
-        listing for a language family other than @racket["Racket"],
+        listing for a @tech{language family} other than @racket["Racket"],
         these documents appear after @racket['library] instead of
         after @racket['core].}
 
@@ -507,7 +510,7 @@ the document's main @racket[part], but we first consider
 
      @item{@racket['library] : Documentation for miscellaneous libraries.}
 
-     @item{All documents whose language families do not include the
+     @item{All documents whose @tech{language families} do not include the
         current language family appear at this point, at least for
         most categories. Documents are ordered by @racket[string<=?]
         on the first family name; within a language family, they are
@@ -553,13 +556,13 @@ the document's main @racket[part], but we first consider
    @item{If the category list has a third element, @racket[_lang-fam], then
    it must be a list of strings, where each string names a language
    family. The default for @racket[_lang-fam] is @racket[(list "Racket")].
-   This language family list is used to organize a listing of all documentation,
+   This @tech{language family} list is used to organize a listing of all documentation,
    and is also used for index entries that are extracted from the
    document and used for searching. For index entries, the
    document, a part within the document, or an individual index
    entry may specify its own language family, and @racket[_lang-fam]
    provides only a default for entries that do not otherwise specify a
-   language family. See @secref["doc-adjust"] for more information.}
+   language family.}
 
    @item{If a document's main @racket[part] has a @racket[tag-prefix]
    hash table that maps @racket['doc-properties] to another hash
@@ -573,7 +576,7 @@ the document's main @racket[part], but we first consider
 
     @item{If @racket['category] is mapped to a hash table
     @racket[_cat-ht], it is used to get a @racket[_category]
-    replacement specific to a language family. If @racket[_cat-ht]
+    replacement specific to a @tech{language family}. If @racket[_cat-ht]
     maps the listing's language family name to a list, that list is
     used of @racket[_category]. Otherwise, if @racket[_cat-ht] maps
     @racket['default] to a list, that list is used instead of
@@ -671,7 +674,7 @@ Before a document is rendered by @exec{raco setup}, its main
   @item{A @racket[document-source] style property is added with
   the document's module path.}
 
-  @item{A default language family is determined as
+  @item{A default @tech{language family} is determined as
   @racket[_lang-fam] from @racket[_category] in a
   @racket[scribblings] entry or (if not present) the value of a
   @racket['default-language-family] key in the @racket[part]'s
@@ -698,6 +701,69 @@ The document's rendering may be further adjusted at the renderer level
 (see @secref["renderer" #:doc '(lib
 "scribblings/scribble/scribble.scrbl")]), including configuration at
 the level of CSS or Latex.
+
+
+@section[#:tag "lang-fam"]{Documentation Language Families}
+
+A @deftech{language family} is a classification used in documentation
+that affects the way that search results are shown and filtered, and
+it also affects the way that documentation is categorized and shown in
+a listing of all documentation. A language family is not merely a
+module-based language, but instead stands for a set of languages that
+share a module-naming convention. As a rule of thumb, a language
+family is distinct enough that it might have its own downloadable
+distribution.
+
+A Racket installation is configured with a default language family,
+where the default is @racket["Racket"]; see
+@racket[get-main-language-family]. This default is used by the main
+documentation listing, and it is used by the documentation-search page
+as the default language family.
+
+A language family might have its own document that serves as an entry
+point, particularly in an installation that is otherwise configured
+for a different language family (such as @racket["Racket"]). For
+example, the Rhombus language includes a document that lists of all
+other installed documentation, including Racket documentation, but
+categorized from a Rhombus perspective; that document is implemented
+with @racket[build-contents].
+
+Each regular document rendered via @exec{raco setup} declares a list
+of language families. The document is considered in each of those
+families for the purposes of generating a listing, prioritizing search
+results, or filtering search results. A document's language family can
+be declared by the @racket[_lang-fam] part of the document's
+@racketidfont{scribblings} entry in an @filepath{info.rkt} file (see
+@secref["doc-info"]), or it can be declared with the document source
+via the document's main @racket[part], and specifically within the
+@racket[tag-prefix] of the part. The default is normally @racket[(list
+"Racket")], but the analog of @racket[title] for Rhombus's Scribble
+dialect injects @racket[(list "Rhombus")] by default, for example.
+Individual index entries in a document, which correspond to different
+results that can be shown by a search, can specify their own language
+families, so a document that bridges languages can declare different
+language families for different parts of the document; per-entry
+information is in a @racket[index-desc], where a function like
+@racket[index] picks up configuration via @tech[#:doc '(lib
+"scribblings/scribble/scribble.scrbl")]{part context}.
+
+Navigation and searching for HTML can be adapted to a language family
+at viewing time (as opposed to rendering time) via query parameters:
+
+@itemlist[
+
+  @item{@tt{fam}: A language family, normally a capitalized name like
+  @litchar{Racket} or @litchar{Rhombus}. This query parameter adjust
+  the prioritization and printing of search results, but it does not
+  filter those results.}
+
+  @item{@tt{famroot}: A document name, normally a case-folded name
+  like @litchar{rhombus}, representing an entry point for a language
+  family. This query parameter adjust the document to be reached by
+  following ``up'' or ``top'' links while navigating documents, and it
+  is used only when a @tt{fam} query is also present.}
+  
+]
 
 @section[#:tag "doc-listing"]{Rendering Documentation Listings}
 
@@ -801,7 +867,7 @@ Use this function as follows:
                                       [#:supplant supplant (or/c #f string?) #f])
          hash?]{
 
-Constructs a hash table suitable for th2 @racket[#:doc-properties]
+Constructs a hash table suitable for the @racket[#:doc-properties]
 argument of @racket[build-contents].
 
 }
