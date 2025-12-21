@@ -31,6 +31,7 @@
   (list
    @main-page['start (not user?)
                      #:style style-in
+                     #:family-navigation? #t
                      #:show-root-info? (not user?)
                      #:title-content title-content
                      #:self-path self-path

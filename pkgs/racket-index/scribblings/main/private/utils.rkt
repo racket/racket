@@ -41,6 +41,7 @@
 ;; it's missing, then it's a page with a single version
 (define (main-page id [installation-specific? '?]
                    #:style [style-in #f]
+                   #:family-navigation? [family-navigation? #f]
                    #:title-content [title-content-in #f]
                    #:self-path [self-path #f]
                    #:bug-url [bug-url #f]
@@ -71,6 +72,9 @@
                                 'no-toc
                                 'toc-hidden
                                 (append
+                                 (if family-navigation?
+                                     (list 'family-navigation)
+                                     null)
                                  (cond
                                    [(list? style-in) style-in]
                                    [(style? style-in) (style-properties style-in)]
@@ -162,12 +166,16 @@
                 (list (make-attributes
                        `(,@(case root
                              [(user)
-                              `([onclick . ,(format "return GotoPLTRoot(\"~a\", \"~a\");"
-                                                    (get-installation-name) path)])]
+                              `([onclick . ,(format "return GotoPLTRoot(\"~a\", \"~a\", \"~a\");"
+                                                    (get-installation-name)
+                                                    path
+                                                    (if (eq? for-id 'start)
+                                                        ""
+                                                        "../"))])]
                              [(plt)
                               (if inst-doc?
                                   '()
-                                  ;; workaround specific to searcg page to find "license",
+                                  ;; workaround specific to search page to find "license",
                                   ;; which may be adjacent or may be in main "doc"
                                   (let ([m (regexp-match "^[^/]*" path)])
                                     (if m

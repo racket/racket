@@ -880,11 +880,15 @@
                          [root? #f] ; no up from root
                          [main?
                           ;; #t make the "up" link go to the (user's) start page
-                          ;; using cookies:
+                          ;; using query or cookies:
                           #t]
                          [allow-indirect?
-                          ;; building a package, so also rely on cookies in this
+                          ;; building a package, so also rely on query or cookies in this
                           ;; case:
+                          #t]
+                         [(and (memq 'user-doc flags)
+                               (memq 'no-depend-on flags))
+                          ;; in main user doc directory; use query or cookies
                           #t]
                          [else
                           ;; user-installed and not a package, so hard link is ok:

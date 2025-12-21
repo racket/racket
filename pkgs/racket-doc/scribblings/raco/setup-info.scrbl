@@ -20,6 +20,7 @@
                     (only-in ffi/unsafe ffi-lib)
                     racket/path
                     setup/collects
+                    compiler/compiler
                     racket/runtime-path
                     pkg/path
                     scribblings/main/contents))
