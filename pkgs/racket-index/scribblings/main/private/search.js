@@ -837,7 +837,7 @@ function UpdateResults() {
       first_search_result >= search_results.length)
     first_search_result = 0;
   var link_args = GetPageQueryString() && StripQArg("?" + GetPageQueryString());
-  var show_family = (plt_language_families.length > 1) && !(ctx_query.includes("F:"))
+  var show_family = ((plt_language_families.length > 1) && !(ctx_query.includes("F:"))) || (language_family != plt_main_language_family)
   for (var i=0; i<result_links.length; i++) {
     var n = i + first_search_result;
     if (n < search_results.length) {
