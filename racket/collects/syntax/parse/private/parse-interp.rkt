@@ -34,6 +34,9 @@
 ;; expressions collected together in a vector, used to implement `~do` scoping.
 ;; The AEnv and REnv are both ordered with the most recent matched first.
 
+;; The order of calls to `compile-*` and `wrap-exprs` matters, due to
+;; mutation of `current-bundle` and its contents.
+
 (begin-for-syntax
 
   (define SIMPLIFY? #t)
@@ -363,8 +366,8 @@
          (values (cons (compile-a p aenv) acc)
                  (append (reverse (pattern-attrs* p)) aenv)))]
       [(action:parse sp expr)
-       (define sp-expr (compile-s sp aenv))
        (with-syntax ([-expr (wrap-exprs aenv (list expr))])
+         (define sp-expr (compile-s sp aenv))
          (D #`(a-parse #,(F sp-expr) -expr)))]
       [(action:do stmts)
        (define b (current-bundle))

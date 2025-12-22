@@ -1189,3 +1189,11 @@
    (lambda ()
      (syntax-parse '(m (1 3) 4)
        [(_ a:nofail 0) 'ok]))))
+
+;; issue #5405 (12/2025)
+(test-case "order of compile vs wrap-exprs (interp)"
+  (syntax-parse #'0
+    [(~parse (~and a
+                   (~do (define c #f)))
+             (syntax b))
+     "ok"]))
