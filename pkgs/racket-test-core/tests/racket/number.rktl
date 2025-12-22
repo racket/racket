@@ -2585,6 +2585,18 @@
 (test "0" number->string 0 16)
 (test "30000000" number->string #x30000000 16)
 
+(test "9223372036854775807" number->string (sub1 (expt 2 63)))
+(test "-9223372036854775808" number->string (- (expt 2 63)))
+(test "4611686018427387903" number->string (sub1 (expt 2 62)))
+(test "-4611686018427387904" number->string (- (expt 2 62)))
+(test "1152921504606846975" number->string (sub1 (expt 2 60)))
+(test "-1152921504606846976" number->string (- (expt 2 60)))
+(test "2147483647" number->string (sub1 (expt 2 31)))
+(test "-2147483648" number->string (- (expt 2 31)))
+(test "1073741823" number->string (sub1 (expt 2 30)))
+(test "-1073741824" number->string (- (expt 2 30)))
+(test "536870911" number->string (sub1 (expt 2 29)))
+(test "-536870912" number->string (- (expt 2 29)))
 
 (test "0" number->string 0)
 (test "100" number->string 100)
