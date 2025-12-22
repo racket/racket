@@ -79,6 +79,9 @@
   #:transparent
   #:mutable)
 
+(define (info-no-depend? i)
+  (memq 'no-depend-on (doc-flags (info-doc i))))
+
 (define (main-doc? doc)
   (pair? (path->main-doc-relative (doc-dest-dir doc))))
 
@@ -530,7 +533,8 @@
             (let ([i (if (info? d) d (hash-ref src->info d #f))])
               (if i
                   ;; Normal case:
-                  (hash-set! deps i #t)
+                  (unless (info-no-depend? i)
+                    (hash-set! deps i #t))
                   ;; Path has no info; normally keep it as expected, and it gets
                   ;; removed later.
                   (unless (or all?
@@ -624,7 +628,7 @@
                   (setup-printf
                    "WARNING" "failed to find info for path: ~a"
                    found-dep))
-                (when i
+                (when (and i (not (info-no-depend? i)))
                   ;; Record this known dependency:
                   (when (not (hash-ref known-deps i #f))
                     (hash-set! known-deps i #t))
