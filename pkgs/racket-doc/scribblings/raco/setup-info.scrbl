@@ -309,6 +309,19 @@ Optional @filepath{info.rkt} fields trigger additional actions by
  @item{@racket[module-suffixes] and @racket[doc-module-suffixes] ---
    Used indirectly via @racket[get-module-suffixes].}
 
+ @item{@indexed-racket[language-family] --- A list of hash tables,
+   where each hash table describes a @tech{language family}. The
+   recognized keys for the table are @racket['fam] for the
+   language-family name, @racket['famroot] for the name of the
+   document (if any) that should be considered the starting listing
+   for the language family, @racket['doc] for the name of a document
+   that describes the language family or its representative language,
+   and @racket['order] for a real number that orders the family
+   relative to other families (higher is earlier in the list, the
+   Racket language is @racket[100], and the default is @racket[0]).
+
+   @history[#:added "9.0.0.11"]}
+
  @item{@indexed-racket[main-doc-index] --- A collection name (in the
    sense of @racket[collection-name?]) or a list of collection names to
    be added to a @exec{raco setup} request when @DFlag{doc-index}
@@ -405,6 +418,14 @@ where only @racket['multi-page] is commonly used:
         should be rebuilt if any other document is rebuilt that is
         installed into the user's space---except for documents
         that have the @racket['no-depend-on] flag.}
+
+  @item{@racket['depend-family] : Indicates that the document should
+        be rebuilt if the set of registered language families changes.
+        This flag normally should be combined with
+        @racket['depends-all], @racket['depends-all-main], or
+        @racket['depends-all-user]; if it is combined with
+        @racket['depends-all-main], then it depends only on language
+        families in the main installation. }
 
   @item{@racket['always-run] : Build the document every time that
         @exec{raco setup} is run, even if none of its dependencies
@@ -643,7 +664,8 @@ support document listing as described in @secref["doc-listing"].
                                    category symbol.}
          #:changed "8.14.0.5" @elem{Added optional @racket[_lang-fam]
                                     within @racket[_category].}
-         #:changed "9.0.0.11" @elem{Added support for @racket['doc-properties]
+         #:changed "9.0.0.11" @elem{Added support for @racket['depend-family]
+                                    and for @racket['doc-properties]
                                     in a document's main @racket[part] and for
                                     boxed-string category names.}]
 
@@ -673,6 +695,8 @@ Before a document is rendered by @exec{raco setup}, its main
 
   @item{A @racket[document-source] style property is added with
   the document's module path.}
+
+  @item{A @racket['show-language-family] style property is added.}
 
   @item{A default @tech{language family} is determined as
   @racket[_lang-fam] from @racket[_category] in a
