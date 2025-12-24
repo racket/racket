@@ -76,13 +76,25 @@ function MakeContextQueryItem(qry, desc) {
 }
 
 function MakeLanguageFamilySuggestions() {
+    var all_families = false;
+
     if (plt_language_families.length == 1) {
         return "";
     }
     accum = ""
-    for (i = 0; i < plt_language_families.length; i++) {
-        accum += MakeContextQueryItem("F:" + plt_language_families[i],
-                                      plt_language_families[i] + " language family");
+
+    if (all_families) {
+        for (i = 0; i < plt_language_families.length; i++) {
+            accum += MakeContextQueryItem("F:" + plt_language_families[i],
+                                          plt_language_families[i] + " language family");
+        }
+    } else {
+        accum += MakeContextQueryItem("F:" + language_family,
+                                      language_family + " language family");
+        if (language_family != plt_main_language_family) {
+            accum += MakeContextQueryItem("F:" + plt_main_language_family,
+                                          plt_main_language_family + " language family");
+        }
     }
     return accum;
 }
@@ -109,6 +121,8 @@ function MakePageIcon(img,label) {
 
 function InitializeSearch() {
   var n;
+  language_family = GetPageArg("fam",false);
+  if (!language_family) language_family = plt_main_language_family
   n = document.getElementById("plt_search_container");
   // hack the dom widgets in
   var panelbgcolor = "background-color: #f0f0f0;";
@@ -266,8 +280,6 @@ function InitializeSearch() {
   // get search string
   var init_q = GetPageArg("q",false);
   if (init_q && init_q != "") query.value = init_q;
-  language_family = GetPageArg("fam",false);
-  if (!language_family) language_family = plt_main_language_family
   AdjustMainLink(GetPageArg("famroot",false));
   ContextFilter();
   DoSearch();
@@ -629,8 +641,8 @@ function MakeShowProgress() {
 }
 
 function packageAndOrderCompare(a, b) {
-  var a_is_lang = a[IDX_LANG_FAMILY] ==language_family;
-  var b_is_lang = b[IDX_LANG_FAMILY] ==language_family;
+  var a_is_lang = (a[IDX_LANG_FAMILY].indexOf(language_family) >= 0);
+  var b_is_lang = (b[IDX_LANG_FAMILY].indexOf(language_family) >= 0);
   if (a_is_lang != b_is_lang) {
       if (a_is_lang) return -1;
       if (b_is_lang) return 1;
@@ -833,6 +845,20 @@ function UpdateResults() {
   new_url.searchParams.set("q", term);
   window.history.replaceState({}, "", new_url);
 
+  // Also update the "navigating as <Family>" link
+  var es = document.getElementsByClassName("navfamily");
+  for (var i=0; i < es.length; i++) {
+    var e = es[i];
+    if (e.dataset.fam != undefined) {
+      var nav_as = e.children[0];
+      var link = nav_as.children[0];
+      var url = new URL(link.href);
+      url.searchParams.delete("qfrom");
+      url.searchParams.set("qfrom", new_url);
+      link.href = url;
+    }
+  }
+
   if (first_search_result < 0 ||
       first_search_result >= search_results.length)
     first_search_result = 0;
@@ -899,12 +925,16 @@ function UpdateResults() {
         'search-result-wrapper-pkg-base',
         'search-result-wrapper-pkg-main-dist'
       );
-      if (plt_base_pkgs.indexOf(res[IDX_PACKAGE]) >= 0) {
-        result_links[i].classList.add('search-result-wrapper-pkg-base');
-        result_links[i].title = "from base language's official documentation";
-      } else if (plt_main_dist_pkgs.indexOf(res[IDX_PACKAGE]) >= 0) {
-        result_links[i].classList.add('search-result-wrapper-pkg-main-dist');
-        result_links[i].title = "from distribution's official documentation";
+      if (language_family == plt_main_language_family) {
+        if (plt_base_pkgs.indexOf(res[IDX_PACKAGE]) >= 0) {
+          result_links[i].classList.add('search-result-wrapper-pkg-base');
+          result_links[i].title = "from base language's official documentation";
+        } else if (plt_main_dist_pkgs.indexOf(res[IDX_PACKAGE]) >= 0) {
+          result_links[i].classList.add('search-result-wrapper-pkg-main-dist');
+          result_links[i].title = "from distribution's official documentation";
+        } else {
+          result_links[i].title = '';
+        }
       } else {
         result_links[i].title = '';
       }
