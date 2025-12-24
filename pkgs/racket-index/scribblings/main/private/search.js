@@ -669,6 +669,20 @@ function packageAndOrderCompare(a, b) {
   return 0;
 }
 
+// intended to refine an existing sort, relying on a stable stort
+function languageFamilyCompare(a, b) {
+  if (a[0] == (C_max - C_rexact) || b[0] == (C_max - C_rexact)) {
+    return a[0] - b[0];
+  }
+  var a_is_lang = (a[1][IDX_LANG_FAMILY].indexOf(language_family) >= 0);
+  var b_is_lang = (b[1][IDX_LANG_FAMILY].indexOf(language_family) >= 0);
+  if (a_is_lang != b_is_lang) {
+      if (a_is_lang) return -1;
+      if (b_is_lang) return 1;
+  }
+  return 0;
+}
+
 function splitWithQuotes(input) {
   return input.match(/(?:[^\s"]|"[^"]*")+/g).map(token =>
     token.replace(/"([^"]*)"/g, "$1")
@@ -717,7 +731,17 @@ function Search(data, term, is_pre, K) {
         matches[i].sort(packageAndOrderCompare);
       }
 
-      r = [matches[0].length, [].concat.apply([],matches)];
+      // matches per C_x are sorted nicely, be we want to
+      // elevate language-fail matches above C_x matching
+      var all_matches = []
+      for (i = 0; i < matches.length; i++) {
+        for (j = 0; j < matches[i].length; j++) {
+          all_matches.push([i, matches[i][j]]);
+        }
+      }
+      all_matches.sort(languageFamilyCompare);
+
+      r = [matches[0].length, all_matches.map(function (l) { return l[1]; })];
       if (K) K(r); else return r;
     }
   };
