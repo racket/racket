@@ -9,6 +9,7 @@
          setup/main-doc
          setup/parallel-do
          setup/doc-db
+         setup/language-family
          racket/class
          racket/list
          racket/file
@@ -1858,15 +1859,7 @@
 
 (define (find-all-families all-main?)
   (log-setup-info "getting language families")
-  (define dirs (find-relevant-directories '(language-family)
-                                          (cond
-                                            [all-main? 'no-user]
-                                            [else 'preferred])))
-  (define infos (map get-info/full dirs))
-  (for/hash ([info (in-list infos)]
-             #:when info
-             #:do [(define fams (info 'language-family (lambda () null)))]
-             #:when (and (list? fams) (andmap hash? fams))
-             [fam (in-list fams)]
-             #:do [(define name (hash-ref fam 'fam #f))])
+  (for/hash ([fam (in-list (get-language-families #:user? (not all-main?)))]
+             #:do [(define name (hash-ref fam 'fam #f))]
+             #:when name)
     (values name #t)))

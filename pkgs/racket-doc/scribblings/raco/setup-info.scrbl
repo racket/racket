@@ -9,6 +9,7 @@
                     setup/main-collects
                     setup/collection-name
                     setup/matching-platform
+                    setup/language-family
                     scribble/core
                     scribble/base
                     scribble/decode
@@ -729,6 +730,10 @@ the level of CSS or Latex.
 
 @section[#:tag "lang-fam"]{Documentation Language Families}
 
+@defmodule[setup/language-family]
+
+@history[#:added "9.0.0.11"]
+
 A @deftech{language family} is a classification used in documentation
 that affects the way that search results are shown and filtered, and
 it also affects the way that documentation is categorized and shown in
@@ -788,6 +793,19 @@ at viewing time (as opposed to rendering time) via query parameters:
   is used only when a @tt{fam} query is also present.}
   
 ]
+
+@defproc[(get-language-families [#:user? user? any/c #t]
+                                [#:namespace namespace (or/c #f namespace?) #f])
+         (listof hash?)]{
+
+ Finds @racketidfont{language-family} declarations in
+ @filepath{info.rkt} files and returns the hash tables for well-formed
+ entries. The @racket[user?] argument determines whether user-scope
+ language families are included as well as installation-scope
+ declarations. The @racket[namespace] argument is passed along to
+ @racket[get-info/full].
+
+}
 
 @section[#:tag "doc-listing"]{Rendering Documentation Listings}
 

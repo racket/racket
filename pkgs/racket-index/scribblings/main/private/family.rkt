@@ -3,26 +3,22 @@
          scribble/manual
          scribble/core
          scribble/html-properties
-         setup/getinfo)
+         setup/language-family)
 
 (provide make-family-page)
 
 (define family-js (collection-file-path "family.js" "scribblings/main/private"))
 
 (define (make-family-page mode)
-  (define dirs (find-relevant-directories '(language-family) (if (eq? mode 'user)
-                                                                 'preferred
-                                                                 'no-user)))
   (define fams
     (sort
-     (for/list ([dir (in-list dirs)]
-                #:do [(define info (get-info/full dir))]
-                #:when info
-                #:do [(define fams (info 'language-family (lambda () null)))]
-                #:when (and (list? fams) (andmap hash? fams))
-                [fam (in-list fams)])
-       fam)
-     (lambda (a b) (> (hash-ref a 'order 0) (hash-ref b 'order 0)))))
+     (get-language-families #:user? (eq? mode 'user))
+     (lambda (a b)
+       (define ao (hash-ref a 'order 0))
+       (define bo (hash-ref b 'order 0))
+       (if (= ao bo)
+           (string<? (hash-ref a 'fam "???") (hash-ref b 'fam "???"))
+           (> ao bo)))))
   
   (list
    @title[#:style (style #f (list (js-addition family-js)))]{Language Family}
