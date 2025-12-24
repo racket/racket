@@ -359,9 +359,14 @@
      plain
      (append
       (if user-dir?
-          (list (script-ref (url->string
-                             (path->url
-                              (build-path (find-doc-dir) "search" "plt-index.js")))))
+          (list (script-ref (let ([main-file (build-path (find-doc-dir) "search" "plt-index.js")])
+                              (if (file-exists? main-file)
+                                  (url->string (path->url main-file))
+                                  (list
+                                   "var plt_span_classes  = [];"
+                                   "var plt_language_families  = [];"
+                                   "var plt_manual_ptrs = [];"
+                                   "var plt_search_data = [];")))))
           null)
       (list
        (script-ref "plt-index.js"

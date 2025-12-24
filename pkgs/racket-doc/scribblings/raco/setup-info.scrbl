@@ -311,15 +311,9 @@ Optional @filepath{info.rkt} fields trigger additional actions by
    Used indirectly via @racket[get-module-suffixes].}
 
  @item{@indexed-racket[language-family] --- A list of hash tables,
-   where each hash table describes a @tech{language family}. The
-   recognized keys for the table are @racket['fam] for the
-   language-family name, @racket['famroot] for the name of the
-   document (if any) that should be considered the starting listing
-   for the language family, @racket['doc] for the name of a document
-   that describes the language family or its representative language,
-   and @racket['order] for a real number that orders the family
-   relative to other families (higher is earlier in the list, the
-   Racket language is @racket[100], and the default is @racket[0]).
+   where each hash table describes a @tech{language family}. See
+   @secref["lang-fam"] for information about the content of ach hash
+   table.
 
    @history[#:added "9.0.0.11"]}
 
@@ -743,38 +737,91 @@ share a module-naming convention. As a rule of thumb, a language
 family is distinct enough that it might have its own downloadable
 distribution.
 
-A Racket installation is configured with a default language family,
-where the default is @racket["Racket"]; see
-@racket[get-main-language-family]. This default is used by the main
-documentation listing, and it is used by the documentation-search page
-as the default language family.
+Language families are declared and used in several ways and places:
 
-A language family might have its own document that serves as an entry
-point, particularly in an installation that is otherwise configured
-for a different language family (such as @racket["Racket"]). For
-example, the Rhombus language includes a document that lists of all
-other installed documentation, including Racket documentation, but
-categorized from a Rhombus perspective; that document is implemented
-with @racket[build-contents].
+@itemlist[
 
-Each regular document rendered via @exec{raco setup} declares a list
-of language families. The document is considered in each of those
-families for the purposes of generating a listing, prioritizing search
-results, or filtering search results. A document's language family can
-be declared by the @racket[_lang-fam] part of the document's
-@racketidfont{scribblings} entry in an @filepath{info.rkt} file (see
-@secref["doc-info"]), or it can be declared with the document source
-via the document's main @racket[part], and specifically within the
-@racket[tag-prefix] of the part. The default is normally @racket[(list
-"Racket")], but the analog of @racket[title] for Rhombus's Scribble
-dialect injects @racket[(list "Rhombus")] by default, for example.
-Individual index entries in a document, which correspond to different
-results that can be shown by a search, can specify their own language
-families, so a document that bridges languages can declare different
-language families for different parts of the document; per-entry
-information is in a @racket[index-desc], where a function like
-@racket[index] picks up configuration via @tech[#:doc '(lib
-"scribblings/scribble/scribble.scrbl")]{part context}.
+ @item{A Racket installation is configured with a default language
+ family, where the default is @racket["Racket"]; see
+ @racket[get-main-language-family]. This default is used by the main
+ documentation listing, and it is used by the documentation-search
+ page as the default language family.}
+
+ @item{A @racketidfont{language-family} definition in an
+ @filepath{info.rkt} file in a collection can declare a language
+ family. This declaration is used in rendered documentation to list
+ language families for navigation, and it is used by
+ @seclink["docs"]{@exec{raco docs}} to map a language family name to
+ an entry point into documentation and configuration for navigation.
+
+ A @racketidfont{language-family} definition's value is a list of hash
+ tables, where each table can have the following keys:
+
+ @itemlist[
+
+  @item{@racket['fam]: The language-family name as a
+  string---technically optional, but effectively required.}
+
+  @item{@racket['describe-doc]: A module path for the source of a
+  document that describes the language family or its representative
+  language. If @racket['describe-doc] is not mapped, then
+  @racket['doc] (if mapped) is used for the description document, or
+  else no description link is provided for the language family.}
+
+  @item{@racket['start-doc]: A module path for the starting document
+  for the language family or its representative language. If
+  @racket['start-doc] is not mapped, then @racket['doc] (if mapped) is
+  used for the starting document. If neither @racket['start-doc] nor
+  @racket['doc] is mapped, but @racket['famroot] is present, then
+  @racket['famroot] determines the starting page. If none of those
+  keys are mapped, a default starting page is used.}
+
+  @item{@racket['doc]: A module path for a document used as
+  @racket['describe-doc] and/or @racket['start-doc] when those are not
+  mapped.}
+
+  @item{@racket['order]: A real number that orders the family relative
+  to other families (higher is earlier in the list, the Racket
+  language is @racket[100], and the default is @racket[0]).}
+
+  @item{@racket['famroot]: The name of the document (if any) that
+  should be considered the starting listing for the language family,
+  so that ``top'' and ``up'' navigations arrive at this document. It
+  must be a document with the @racket['main-doc] style and also a
+  @racket['user-doc] plus @racket['supplant] in the
+  @racket['doc-properties] table in @racket[tag-prefix] for the
+  document's main @racket[part].}
+
+ ]}
+
+ @item{Each regular document rendered via @exec{raco setup} declares a
+ list of language families. The document is considered in each of
+ those families for the purposes of generating a listing, prioritizing
+ search results, or filtering search results. A document's language
+ family can be declared by the @racket[_lang-fam] part of the
+ document's @racketidfont{scribblings} entry in an @filepath{info.rkt}
+ file (see @secref["doc-info"]), or it can be declared with the
+ document source via the document's main @racket[part], and
+ specifically within the @racket[tag-prefix] of the part. The default
+ is normally @racket[(list "Racket")], but the analog of
+ @racket[title] for Rhombus's Scribble dialect injects @racket[(list
+ "Rhombus")] by default, for example. Individual index entries in a
+ document, which correspond to different results that can be shown by
+ a search, can specify their own language families, so a document that
+ bridges languages can declare different language families for
+ different parts of the document; per-entry information is in a
+ @racket[index-desc], where a function like @racket[index] picks up
+ configuration via @tech[#:doc '(lib
+ "scribblings/scribble/scribble.scrbl")]{part context}.}
+
+ @item{A module-based language used via @hash-lang[] can specify a
+ language family for navigating from a programming environment to
+ documentation. See @racket[’documentation-language-family] in
+ @seclink["sec:documentation-language-family"
+          #:doc '(lib "scribblings/tools/tools.scrbl")
+          #:indirect? #t]{DrRacket's documentation} for more information.}
+
+]
 
 Navigation and searching for HTML can be adapted to a language family
 at viewing time (as opposed to rendering time) via query parameters:

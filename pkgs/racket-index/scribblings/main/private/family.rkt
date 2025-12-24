@@ -44,7 +44,8 @@
                                "")))
       (define desc
         (cond
-          [(hash-ref fam 'doc #f)
+          [(or (hash-ref fam 'describe-doc #f)
+               (hash-ref fam 'doc #f))
            => (lambda (doc) @elem{ --- see @other-doc[doc]})]
           [else null]))
       @para{@hspace[1]@hyperlink[#:style "famlink" href]{@(hash-ref fam 'fam "???")}@desc})))
