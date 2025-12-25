@@ -3,10 +3,12 @@
 ;; #%misc : file utilities, etc. - remaining functions
 
 (module misc '#%kernel
-  (#%require "define-et-al.rkt" "qq-and-or.rkt" "cond.rkt" "define.rkt" "path.rkt" "old-path.rkt"
+  (#%declare #:require=define)
+
+  (#%require "core-macros.rkt" "core-macros.rkt" "core-macros.rkt" "define.rkt" "path.rkt" "old-path.rkt"
              "path-list.rkt" "executable-path.rkt"
              "reading-param.rkt" "../repl.rkt"
-             (for-syntax '#%kernel "qq-and-or.rkt" "stx.rkt" "stxcase-scheme.rkt" "stxcase.rkt"))
+             (for-syntax '#%kernel "core-macros.rkt" "stx.rkt" "stxcase-scheme.rkt" "stxcase.rkt"))
   
   ;; -------------------------------------------------------------------------
 

@@ -1,10 +1,12 @@
 (module provide-transform '#%kernel
+  (#%declare #:require=define)
+
   (#%require "private/stxcase-scheme.rkt"
              "private/stx.rkt"
              "private/define-struct.rkt"
-             "private/define-et-al.rkt"
-             "private/qq-and-or.rkt"
-             "private/cond.rkt"
+             "private/core-macros.rkt"
+             "private/core-macros.rkt"
+             "private/core-macros.rkt"
              "private/define.rkt"
              "phase+space.rkt")
   

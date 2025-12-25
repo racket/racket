@@ -3,8 +3,10 @@
 ;;       [http://scheme2006.cs.uchicago.edu/07-clinger.pdf]
 
 (module case '#%kernel
-  (#%require '#%paramz '#%unsafe "qq-and-or.rkt" "cond.rkt" "define.rkt" "fixnum.rkt"
-             (for-syntax '#%kernel "define-et-al.rkt" "qq-and-or.rkt" "cond.rkt"
+  (#%declare #:require=define)
+
+  (#%require '#%paramz '#%unsafe "core-macros.rkt" "core-macros.rkt" "define.rkt" "fixnum.rkt"
+             (for-syntax '#%kernel "core-macros.rkt" "core-macros.rkt" "core-macros.rkt"
                          "stxcase-scheme.rkt"
                          "qqstx.rkt" "define.rkt" "sort.rkt" "fixnum.rkt"
                          "stx.rkt"))
@@ -89,6 +91,21 @@
                       "bad syntax (not a datum sequence)\n"
                       "  expected: a datum sequence or the binding 'else' from racket/base\n"
                       "  given: "
+                      (let ([binding (identifier-binding (syntax bad))])
+                        (cond
+                          [(not binding) "an unbound identifier"]
+                          [(eq? binding 'lexical) "a locally bound identifier"]
+                          [else
+                           (let*-values ([(src) (car binding)]
+                                         [(mpath base) (module-path-index-split src)])
+                             (cond
+                               [(not mpath)
+                                "an identifier bound by the current module"]
+                               [else
+                                (format "an identifier required from the module ~a"
+                                        (resolved-module-path-name
+                                         (module-path-index-resolve src)))]))]))
+                      "  else is: "
                       (let ([binding (identifier-binding (syntax bad))])
                         (cond
                           [(not binding) "an unbound identifier"]

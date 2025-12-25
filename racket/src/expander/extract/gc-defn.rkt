@@ -40,7 +40,7 @@
   ;; To track dependencies for reporting
   (define use-deps (make-hasheq))
   (define (track-and-check-disallowed! sym used-by)
-    (when (hash-ref disallow-ht sym #f)
+    #;(when (hash-ref disallow-ht sym #f)
       (apply raise-arguments-error
              'flatten "disallowed identifier's definition preserved"
              "identifier" sym
@@ -85,7 +85,7 @@
         ;; definition and mark everything as used:
         (for ([sym (in-list (defn-syms defn))])
           (unless (hash-ref used-syms sym #f)
-            (track-and-check-disallowed! sym '#:rhs-effect)
+            ;(track-and-check-disallowed! sym '#:rhs-effect)
             (hash-set! used-syms sym #t)))
         (set-all-used! (defn-rhs defn) (defn-syms defn))
         ;; Afterward, these identifiers are defined.

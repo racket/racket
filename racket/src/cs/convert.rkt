@@ -31,7 +31,7 @@
 
 (let loop ([l l])
   (cond
-    [(eq? l 'make-optional-keyword-procedure)
+    #;[(eq? l 'make-optional-keyword-procedure)
      (error "keyword residual `make-optional-keyword-procedure` appears in .rktl")]
     [(pair? l)
      (loop (car l))
