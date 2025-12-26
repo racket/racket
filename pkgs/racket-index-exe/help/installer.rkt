@@ -47,7 +47,7 @@
         (unless (exists-in-another-layer? exe-path user? tethered? #:gui? mr?)
           (mk-launcher #:tether-mode (and tethered? (if user? 'addon 'config))
                        (append
-                        '("-l-" "help/help"))
+                        '("-l-" "help"))
                        (prep-dir exe-path)
                        `([exe-name . ,(if mr? "Racket Documentation" "plt-help")]
                          [relative? . ,(not user?)]

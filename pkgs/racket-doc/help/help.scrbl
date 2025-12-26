@@ -1,7 +1,7 @@
 #lang scribble/doc
 @(require scribble/manual
           (for-label racket
-                     help/search
+                     help
                      help/help-utils
                      net/sendurl
                      setup/dirs))
@@ -14,7 +14,9 @@ and to support bug reports. See also @racketmodname[scribble/xref].
 
 @section{Searching in the Documentation}
 
-@defmodule[help/search]
+@defmodule[help]
+
+@history[#:added "1.4"]
 
 @defproc[(send-main-page [#:sub sub path-string? "index.html"]
                          [#:notify notify (-> (or/c path? string?) void) void]
@@ -39,9 +41,6 @@ and to support bug reports. See also @racketmodname[scribble/xref].
   @racket[send-main-page] appends @racket[sub] to the URL and passes
   it to @racket[notify]. It then appends @racket[fragment] and
   @racket[query] to the URL and passes it on to @racket[send-url].
-
-  @history[#:changed "1.2" @elem{Added @racket[get-doc-open-url] support.}
-           #:changed "1.60" @elem{Added the @racket[query-table] argument.}]
 }
 
 @defproc[(send-language-family-page [language-family (or/c #f string?) #f])
@@ -54,8 +53,6 @@ and to support bug reports. See also @racketmodname[scribble/xref].
   configuration for the language family are incoprorated into the
   call. Otherwise, @racket[send-main-page] is called with no
   arguments.
-
-  @history[#:added "1.60"]
 }
 
 @defproc[(perform-search [str string?]
@@ -75,8 +72,6 @@ and to support bug reports. See also @racketmodname[scribble/xref].
   collection's @filepath{info.rkt}, then search and navigation
   configuration for the language family are incoprorated into the
   search request.
-
-  @history[#:changed "1.60" @elem{Added the @racket[language-family] argument.}]
 }
 
 @; ------------------------------------------------------------
@@ -102,3 +97,7 @@ available by default in @exec{racket}.}
 @defproc[(go-to-main-page) void?]{
   Visits the main entry page for the documentation.
 }
+
+@; ------------------------------------------------------------
+
+@include-section["compat.scrbl"]
