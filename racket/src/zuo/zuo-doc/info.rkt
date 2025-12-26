@@ -13,5 +13,5 @@
 
 (define license '(Apache-2.0 OR MIT))
 
-(define language-family (list (hash 'fam "Zuo"
+(define language-family (list (hash 'family "Zuo"
                                     'doc '(lib "zuo-doc/zuo.scrbl"))))

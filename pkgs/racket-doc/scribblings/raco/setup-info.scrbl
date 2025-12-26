@@ -759,7 +759,7 @@ Language families are declared and used in several ways and places:
 
  @itemlist[
 
-  @item{@racket['fam]: The language-family name as a
+  @item{@racket['family]: The language-family name as a
   string---technically optional, but effectively required.}
 
   @item{@racket['describe-doc]: A module path for the source of a
@@ -772,8 +772,8 @@ Language families are declared and used in several ways and places:
   for the language family or its representative language. If
   @racket['start-doc] is not mapped, then @racket['doc] (if mapped) is
   used for the starting document. If neither @racket['start-doc] nor
-  @racket['doc] is mapped, but @racket['famroot] is present, then
-  @racket['famroot] determines the starting page. If none of those
+  @racket['doc] is mapped, but @racket['family-root] is present, then
+  @racket['family-root] determines the starting page. If none of those
   keys are mapped, a default starting page is used.}
 
   @item{@racket['doc]: A module path for a document used as
@@ -784,7 +784,7 @@ Language families are declared and used in several ways and places:
   to other families (higher is earlier in the list, the Racket
   language is @racket[100], and the default is @racket[0]).}
 
-  @item{@racket['famroot]: The name of the document (if any) that
+  @item{@racket['family-root]: The name of the document (if any) that
   should be considered the starting listing for the language family,
   so that ``top'' and ``up'' navigations arrive at this document. It
   must be a document with the @racket['main-doc] style and also a

@@ -17,7 +17,7 @@
        (define ao (hash-ref a 'order 0))
        (define bo (hash-ref b 'order 0))
        (if (= ao bo)
-           (string<? (hash-ref a 'fam "???") (hash-ref b 'fam "???"))
+           (string<? (hash-ref a 'family "???") (hash-ref b 'family "???"))
            (> ao bo)))))
   
   (list
@@ -35,10 +35,10 @@
    @para{Select a language family for navigation:}
 
    @(for/list ([fam (in-list fams)])
-      (define famroot (hash-ref fam 'famroot #f))
+      (define famroot (hash-ref fam 'family-root #f))
       (define href (format "../~aindex.html?fam=~a~a"
                            (if famroot (format "~a/" famroot) "")
-                           (hash-ref fam 'fam)
+                           (hash-ref fam 'family)
                            (if famroot
                                (format "&famroot=~a" famroot)
                                "")))
@@ -48,4 +48,4 @@
                (hash-ref fam 'doc #f))
            => (lambda (doc) @elem{ --- see @other-doc[doc]})]
           [else null]))
-      @para{@hspace[1]@hyperlink[#:style "famlink" href]{@(hash-ref fam 'fam "???")}@desc})))
+      @para{@hspace[1]@hyperlink[#:style "famlink" href]{@(hash-ref fam 'family "???")}@desc})))

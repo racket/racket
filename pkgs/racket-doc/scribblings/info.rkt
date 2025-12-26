@@ -5,6 +5,6 @@
 
 (define test-responsibles '((all (mflatt eli robby matthias))))
 
-(define language-family (list (hash 'fam "Racket"
+(define language-family (list (hash 'family "Racket"
                                     'describe-doc '(lib "scribblings/guide/guide.scrbl")
                                     'order 100)))

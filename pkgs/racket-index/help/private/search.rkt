@@ -142,7 +142,7 @@
                               ""))
                     query)]
          [fam (and language-family (get-language-family language-family))]
-         [famroot (and fam (hash-ref fam 'famroot #f))])
+         [famroot (and fam (hash-ref fam 'family-root #f))])
     (send-main-page #:sub (string-append search-dir page)
                     #:query query
                     #:query-table (if fam
@@ -154,7 +154,7 @@
   (define start-doc (and fam
                          (or (hash-ref fam 'start-doc #f)
                              (hash-ref fam 'doc #f))))
-  (define famroot (and fam (hash-ref fam 'famroot #f)))
+  (define famroot (and fam (hash-ref fam 'family-root #f)))
   (cond
     [start-doc
      (define xref ((dynamic-require 'setup/xref 'load-collections-xref)))
@@ -171,12 +171,12 @@
 (define (get-language-family name)
   (define fams (get-language-families))
   (for/or ([fam (in-list fams)])
-    (and (equal? name (hash-ref fam 'fam #f))
+    (and (equal? name (hash-ref fam 'family #f))
          fam)))
 
 (define (family-query-table fam name)
-  (define ht (hash 'fam (hash-ref fam 'fam name)))
-  (define famroot (hash-ref fam 'famroot #f))
+  (define ht (hash 'fam (hash-ref fam 'family name)))
+  (define famroot (hash-ref fam 'family-root #f))
   (if famroot
       (hash-set ht 'famroot famroot)
       ht))
