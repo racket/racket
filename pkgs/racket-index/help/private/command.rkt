@@ -14,7 +14,8 @@
 (command-line
  #:program (short-program+command-name)
  #:once-each
- [("-f" "--family") name "Navigate documentation as language family <name>"
+ [("-f" "--family") name ("Navigate documentation as language family <name>"
+                          "or the best found match to <name>")
                     (set! language-family name)]
  #:handlers
  (lambda (_ . ts)
