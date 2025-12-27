@@ -1,3 +1,7 @@
+Version 9.1, January 2026
+Added support for configuraing a language family to navigate
+ documentation
+
 Version 9.0, October 2025
 Add support for recording a thread's results via the `#:keep` option
  to `thread`; results are returned by `thread-wait`
