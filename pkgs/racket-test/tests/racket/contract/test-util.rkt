@@ -392,7 +392,8 @@
                     (,has-proper-blame? (exn-message exn))
                     (,has-right-header? (exn-message exn))))))))))
   (rewrite-test rewrite-to-add-opt/c  "rewrite-to-add-opt/c"   "opt/c")
-  (rewrite-test rewrite-to-multi-wrap "rewrite-to-double-wrap" "double"))
+  (rewrite-test rewrite-to-multi-wrap "rewrite-to-double-wrap" "double")
+  (void))
 
 (define (test/pos-blame name expression #:header-of-message [header-of-message #f])
   (test/spec-failed name expression 'pos
