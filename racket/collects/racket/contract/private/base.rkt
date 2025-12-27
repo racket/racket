@@ -254,7 +254,7 @@
            [else
             (update-cache blame-accepting-func-cell blame
                           (λ (val neg-party)
-                            ((thread-cell-ref val-neg-party-acceptor) val neg-party)))
+                            (f-of-blame val neg-party)))
             (do-list-check val neg-party blame)
             (define f-of-blame 'f-of-blame-not-yet-set)
             (thread-cell-set! val-neg-party-acceptor
