@@ -1773,8 +1773,8 @@ be blamed using the above contract:
 @declare-exporting-ctc[racket/contract/parametric]
 
 The most convenient way to use parametric contract is to use
-@racket[contract-out]'s @racket[#:exists] keyword.
-The @racketmodname[racket/contract/parametric] provides a few more,
+@racket[contract-out]'s @racket[#:∃], @racket[#:exists], @racket[#:∀], and @racket[#:forall] keywords.
+The @racketmodname[racket/contract/parametric] library provides a few more,
 general-purpose parametric contracts.
 
 @defform[(parametric->/c (x ...) c)]{
@@ -1871,7 +1871,7 @@ if they do not, a contract violation is signaled.
   Then, when the function returns, it is checked to see if the result is wrapped, since
   the second @racket[a] appears in a negative position.
 
-  The @racket[new-∃/c] construct constructor is dual to @racket[new-∀/c].
+  The @racket[new-∃/c] contract constructor is dual to @racket[new-∀/c].
 }
 
 
