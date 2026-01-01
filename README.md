@@ -12,11 +12,10 @@ Other parts of the Racket distribution are maintained in separate repositories u
 
 ---
 
-## 📌 Table of Contents 
+## Table of Contents 
 
 - [What is Racket?](#what-is-racket)
 - [Install](#install)
-- [Building from Source](#building-from-source)
 - [Documentation](#documentation)
 - [Example Code](#example-code)
 - [Contributing](#contributing)
@@ -37,28 +36,11 @@ Racket is a mature, functional-first language with support for multiple paradigm
 - Used in education, research, and production
 - Includes a package ecosystem, module system, and REPL
 
-For detailed instructions, see the [Build Guide](https://github.com/racket/racket/blob/master/build.md)
-
 ## Install
 
 Prebuilt binaries for major platforms are available at:
 - 👉  [https://download.racket-lang.org](https://download.racket-lang.org)
 > **Note**: Prebuilt packages are available for most operating systems.
-
-## Building from Source
-
-To build Racket from this repository:
-- This repository is intended for Racket development or contributions.
-- Follow the instructions in the [Build Guide](https://github.com/racket/racket/blob/master/build.md)
-  
-```bash
-git clone https://github.com/racket/racket
-cd racket
-make
-```
-
-> **Note**: For detailed instructions, see the [Build Guide](build.md).
-> - ※ To build the released version of Racket from source tarballs, visit [https://download.racket-lang.org](https://download.racket-lang.org).
 
 ## Documentation
 
@@ -72,14 +54,16 @@ make
 ```racket
 #lang racket
 
-(define-syntax-rule (factorial n)
-  (let loop ([i n] [acc 1])
-    (if (<= i 1)
-        acc
-        (loop (sub1 i) (* acc i)))))
+;; Fibonacci sequence using recursion
+(define (fib n)
+  (cond
+    [(zero? n) 0]
+    [(= n 1) 1]
+    [else (+ (fib (- n 1))
+             (fib (- n 2)))]))
 
-(factorial 5)
-; => 120
+(fib 10) ; => 55
+
 ```
 
 For more Racket examples, visit the [Official Racket Examples page](https://docs.racket-lang.org/quick/index.html)
@@ -100,6 +84,21 @@ By contributing, you agree to license your work under the following licenses:
 See the [LICENSE.txt](LICENSE.txt) file and the LICENSE files in `racket/src/` for more information.
 
 Please read our [Friendly Environment Policy](https://racket-lang.org/friendly.html) to ensure respectful and inclusive communication.
+
+### Building from Source
+
+To build Racket from this repository:
+- This repository is intended for Racket development or contributions.
+- Follow the instructions in the [Build Guide](https://github.com/racket/racket/blob/master/build.md)
+  
+```bash
+git clone https://github.com/racket/racket
+cd racket
+make
+```
+
+> **Note**: For detailed instructions, see the [Build Guide](build.md).
+> - ※ To build the released version of Racket from source tarballs, visit [https://download.racket-lang.org](https://download.racket-lang.org).
 
 ## Community
 
