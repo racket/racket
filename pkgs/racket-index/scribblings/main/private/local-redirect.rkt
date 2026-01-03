@@ -107,7 +107,7 @@
                        if (|@|prefix|link_target_prefix) {
                          p = |@|prefix|link_target_prefix + p;
                        }
-                       elem.href = p + "/" + decodeURIComponent(rel[0].substring(4));
+                       elem.href = MergePageArgsIntoUrl(p + "/" + decodeURIComponent(rel[0].substring(4)));
                        tag = false;
                      }
                  }
@@ -125,7 +125,7 @@
                      if (|@|prefix|link_target_prefix) {
                        p = |@|prefix|link_target_prefix + p;
                      }
-                     elem.href = p;
+                     elem.href = MergePageArgsIntoUrl(p);
                    }
                  }|
                  @indent[7]|{
