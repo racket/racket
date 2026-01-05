@@ -604,7 +604,6 @@
             (hash-set! known-deps 'family fams)
             (when (not (hash-ref deps 'family #f))
               (hash-set! deps 'family #t)
-              (log-error "added")
               (set-info-deps! info (cons (cons 'family fams)
                                          (info-deps info)))
               (set! added? #t)))
