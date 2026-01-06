@@ -19,7 +19,9 @@
    #:args (file)
    file))
 
-(void
- (if remove?
-     (remove-signature file)
-     (add-ad-hoc-signature file #:entitlements entitlements)))
+;; Ok if no signature is present, and remove first
+;; even if we're going to add (back) and ad hoc signature
+(void (remove-signature file))
+
+(unless remove?
+  (void (add-ad-hoc-signature file #:entitlements entitlements)))

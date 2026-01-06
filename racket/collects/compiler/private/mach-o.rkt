@@ -5,7 +5,8 @@
          remove-signature
          add-ad-hoc-signature
          get/set-dylib-path
-         executable-for-signing?)
+         executable-for-signing?
+         file-has-signature?)
 
 (define current-big-endian (make-parameter (system-big-endian?)))
 
@@ -746,7 +747,6 @@
           (when out
             (close-output-port out))))))
 
-
 (define (executable-for-signing? path)
   (call-with-input-file*
    path
@@ -758,3 +758,32 @@
           (sign-machine-id? (read-ulong p))
           (begin (read-ulong p) #t)
           (equal? MH_EXECUTE (read-ulong p))))))
+
+(define (file-has-signature? file)
+  (call-with-input-file*
+   file
+   (lambda (p)
+     (define exe-id (read-ulong p))
+     (check-exe-id exe-id)
+     (define machine-id (read-ulong p))
+     (read-ulong p)
+     (check-member (read-ulong p) (list MH_EXECUTE MH_DYLIB))
+     (let* ([total-cnt (read-ulong p)]
+            [cmdssz (read-ulong p)])
+       (read-ulong p) ; flags
+       (when (equal? exe-id #xFeedFacf)
+         (read-ulong p)) ; extra reserved word for 64-bit header
+       (let loop ([cnt total-cnt])
+         (cond
+           [(zero? cnt) #f]
+           [else
+            (let ([pos (file-position p)]
+                  [cmd (read-ulong p)]
+                  [sz (read-ulong p)])
+              (case cmd
+                [(#x1D)
+                 ;; LC_CODE_SIGNATURE
+                 #t]
+                [else
+                 (file-position p (+ pos sz))
+                 (loop (sub1 cnt))]))]))))))
