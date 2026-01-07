@@ -4065,25 +4065,81 @@ An example
      ;; send/keyword-apply
      send/keyword-apply)))
 
-(define dynamic-send
-  (make-keyword-procedure
-   (lambda (kws kw-vals obj method-name . args)
-     (unless (object? obj) (raise-argument-error 'dynamic-send "object?" obj))
-     (unless (symbol? method-name) (raise-argument-error 'dynamic-send "symbol?" method-name))
-     (define mtd (find-method/who 'dynamic-send obj method-name))
-     (cond
-       [(wrapped-object? obj)
-        (if mtd
-            (keyword-apply mtd kws kw-vals 
-                           (wrapped-object-neg-party obj) 
-                           (wrapped-object-object obj)
-                           args)
-            (keyword-apply dynamic-send kws kw-vals
-                           (wrapped-object-object obj)
-                           method-name
-                           args))]
-       [else
-        (keyword-apply mtd kws kw-vals obj args)]))))
+(define-syntax-rule
+  (dynamic-send-specialized obj method-name args ...)
+  (let ([mtd (dynamic-send-checks-and-get-method obj method-name)])
+    (cond
+      [(wrapped-object? obj)
+       (if mtd
+           (mtd (wrapped-object-neg-party obj)
+                (wrapped-object-object obj)
+                args ...)
+           (dynamic-send (wrapped-object-object obj)
+                         method-name
+                         args ...))]
+      [else
+       (mtd obj args ...)])))
+
+(define (dynamic-send-checks-and-get-method obj method-name)
+  (unless (object? obj) (raise-argument-error 'dynamic-send "object?" obj))
+  (unless (symbol? method-name) (raise-argument-error 'dynamic-send "symbol?" method-name))
+  (find-method/who 'dynamic-send obj method-name))
+
+(define dynamic-send-no-keywords
+  (let ([dynamic-send
+         (case-lambda
+           [(obj method-name) (dynamic-send-specialized obj method-name)]
+           [(obj method-name arg1) (dynamic-send-specialized obj method-name arg1)]
+           [(obj method-name arg1 arg2) (dynamic-send-specialized obj method-name arg1 arg2)]
+           [(obj method-name arg1 arg2 arg3) (dynamic-send-specialized obj method-name arg1 arg2 arg3)]
+           [(obj method-name . args)
+            (define mtd (dynamic-send-checks-and-get-method obj method-name))
+            (cond
+              [(wrapped-object? obj)
+               (if mtd
+                   (apply mtd (wrapped-object-neg-party obj)
+                          (wrapped-object-object obj)
+                          args)
+                   (apply dynamic-send
+                          (wrapped-object-object obj)
+                          method-name
+                          args))]
+              [else
+               (apply mtd obj args)])])])
+    dynamic-send))
+
+(define dynamic-send/proc
+  (let ([dynamic-send
+         (make-keyword-procedure
+          (lambda (kws kw-vals obj method-name . args)
+            (define mtd (dynamic-send-checks-and-get-method obj method-name))
+            (cond
+              [(wrapped-object? obj)
+               (if mtd
+                   (keyword-apply mtd kws kw-vals
+                                  (wrapped-object-neg-party obj)
+                                  (wrapped-object-object obj)
+                                  args)
+                   (keyword-apply dynamic-send kws kw-vals
+                                  (wrapped-object-object obj)
+                                  method-name
+                                  args))]
+              [else
+               (keyword-apply mtd kws kw-vals obj args)]))
+          dynamic-send-no-keywords)])
+    dynamic-send))
+
+(define-syntax (dynamic-send stx)
+  (syntax-case stx ()
+    [(_ args ...)
+     (for/and ([arg (in-list (syntax->list #'(args ...)))])
+       (not (keyword? (syntax-e arg))))
+     (with-syntax ([app (datum->syntax stx '#%app)])
+       (syntax/loc stx (app dynamic-send-no-keywords args ...)))]
+    [(_ . args)
+     (with-syntax ([app (datum->syntax stx '#%app)])
+       (syntax/loc stx (app dynamic-send/proc . args)))]
+    [x (identifier? #'x) (syntax/loc stx dynamic-send/proc)]))
 
 ;; imperative chained send
 (define-syntax (send* stx)
