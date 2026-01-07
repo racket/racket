@@ -913,6 +913,8 @@
 		      (f . w)))
 		  (define (h x #:y [y 12])
 		    (list x y))
+                  (define/public (many-args a b c d e f g h i j k l m n o p)
+                    (+ a b c d e f g h i j k l m n o p))
 		  (super-make-object)))
 (define dotted (make-object dotted%))
 (test '(3 2 1) 'dotted (send dotted f 1 2 3))
@@ -934,6 +936,8 @@
 (test '(e 12) apply dynamic-send dotted 'h '(e))
 (test '(f 13) 'dotted (apply dynamic-send dotted 'h '(f) #:y 13))
 (test '(g 14) keyword-apply dynamic-send '(#:y) '(14) dotted 'h '(g))
+(test 136 (dynamic-send dotted 'many-args 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16))
+(test 'dynamic-send object-name dynamic-send)
 
 (syntax-test #'(send/apply dotted f 2 . l))
 
