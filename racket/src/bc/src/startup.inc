@@ -83525,7 +83525,7 @@ static const char *startup_source =
 " '(#:cross-phase-persistent"
 " #:empty-namespace"
 " #:unsafe"
-" #:unlimited-require"
+" #:unlimited-compile"
 " #:realm"
 " #:require=define"
 " #:flatten-requires))"

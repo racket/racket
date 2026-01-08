@@ -24,6 +24,8 @@
                      "classidmap.rkt"
                      "intdef-util.rkt"))
 
+(#%declare #:unlimited-compile)
+
 (define insp (current-inspector)) ; for all opaque structures
 
 ;;--------------------------------------------------------------------
@@ -4761,7 +4763,7 @@ An example
        (object=-original-object o2)))
 
 (define (object=-original-object o)
-  (define orig-o (if (has-original-object? o) (original-object o) o))
+  (define orig-o (if (impersonator? o) (original-object o o) o))
   (define orig-orig-o
     (if (wrapped-object? orig-o)
         (wrapped-object-object orig-o)
