@@ -587,6 +587,18 @@
          (object/c (m (-> any/c (<=/c 4))))
          (object/c (m (-> any/c (<=/c 3)))
                    (n (-> any/c any/c))))
+  (ctest #f contract-equivalent?
+         (object/c [m1 (-> any/c integer? integer?)] #:opaque #t)
+         (object/c [m1 (-> any/c integer? integer?)]))
+  (ctest #f contract-equivalent?
+         (object/c [m1 (-> any/c integer? integer?)])
+         (object/c [m1 (-> any/c integer? integer?)] #:opaque #t))
+  (ctest #f contract-equivalent?
+         (object/c [m1 (-> any/c integer? integer?)] #:opaque-fields #t)
+         (object/c [m1 (-> any/c integer? integer?)]))
+  (ctest #f contract-equivalent?
+         (object/c [m1 (-> any/c integer? integer?)])
+         (object/c [m1 (-> any/c integer? integer?)] #:opaque-fields #t))
   
   (ctest #t contract-equivalent? (is-a?/c object%) (is-a?/c object%))
   (ctest #f contract-equivalent? (is-a?/c (class object% (super-new))) (is-a?/c object%))

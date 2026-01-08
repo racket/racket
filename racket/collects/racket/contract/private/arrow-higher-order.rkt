@@ -206,10 +206,10 @@
                               #'(dom-x ... [opt-dom-x arrow:unspecified-dom] ...)])]
                           [opt+rest-uses
                            (for/fold ([i (if dom-rest #'(rest-ctc rest-x neg-party) #'null)])
-                             ([o (in-list (reverse
-                                           (syntax->list
-                                            #'((opt-dom-ctc opt-dom-x neg-party) ...))))]
-                              [opt-dom-x (in-list (reverse (syntax->list #'(opt-dom-x ...))))])
+                                     ([o (in-list (reverse
+                                                   (syntax->list
+                                                    #'((opt-dom-ctc opt-dom-x neg-party) ...))))]
+                                      [opt-dom-x (in-list (reverse (syntax->list #'(opt-dom-x ...))))])
                              #`(let ([r #,i])
                                  (if (eq? arrow:unspecified-dom #,opt-dom-x) r (cons #,o r))))]
                           [(kwd-param ...)
@@ -234,7 +234,7 @@
                                                         (λ (k1 k2) (keyword<? k2 k1))
                                                         #:key car)])
                              (for/fold ([s #'null])
-                               ([tx (in-list (map cdr put-in-reverse))])
+                                       ([tx (in-list (map cdr put-in-reverse))])
                                (tx s)))])
               
               (with-syntax ([kwd-lam-params

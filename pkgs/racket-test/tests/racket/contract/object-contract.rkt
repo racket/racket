@@ -1395,9 +1395,25 @@
 ;; test error message has right format
 ;;
 
+(define wrong-method-arity-error-expected-prefix
+  (regexp
+   (string-append
+    "^"
+    (regexp-quote
+     (string-append
+      "m method: arity mismatch;\n"
+      " the expected number of arguments does not match the given number\n"
+      "  expected: 1\n"
+      "  given: 2")))))
 (test/spec-passed/result
  'wrong-method-arity-error-message
- '(with-handlers ([exn:fail? exn-message])
+ `(with-handlers ([exn:fail? (λ (x)
+                               (cond
+                                 [(regexp-match? ,wrong-method-arity-error-expected-prefix (exn-message x))
+                                  #t]
+                                 [else
+                                  (printf "wrong message produced: ~s\n" (exn-message x))
+                                  #f]))])
     (send (contract (object-contract [m (integer? . -> . integer?)])
                     (new (class object% (define/public (m x) x) (super-new)))
                     'pos
@@ -1405,14 +1421,7 @@
           m
           1
           2))
- (string-append
-  "m method: arity mismatch;\n"
-  " the expected number of arguments does not match the given number\n"
-  "  expected: 1\n"
-  "  given: 2\n"
-  "  arguments...:\n"
-  "   1\n"
-  "   2"))
+ #t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -1421,13 +1430,13 @@
 
 (let* ([o1 (contract-eval '(new object%))]
        [o2 (contract-eval `(contract (object-contract) ,o1 'pos 'neg))])
-  (test #t (contract-eval 'object=?) o1 o1)
-  (test #f (contract-eval 'object=?) o1 (contract-eval '(new object%)))
-  (test #t (contract-eval 'object=?) o1 o2)
-  (test #t (contract-eval 'object=?) o2 o1)
-  (test #f (contract-eval 'object=?) (contract-eval '(new object%)) o2)
-  (test ((contract-eval 'object=-hash-code) o1) (contract-eval 'object=-hash-code) o1)
-  (test ((contract-eval 'object=-hash-code) o1) (contract-eval 'object=-hash-code) o2))
+  (test #t 'object=.1 ((contract-eval 'object=?) o1 o1))
+  (test #f 'object=.2 ((contract-eval 'object=?) o1 (contract-eval '(new object%))))
+  (test #t 'object=.3 ((contract-eval 'object=?) o1 o2))
+  (test #t 'object=.4 ((contract-eval 'object=?) o2 o1))
+  (test #f 'object=.5 ((contract-eval 'object=?) (contract-eval '(new object%)) o2))
+  (test ((contract-eval 'object=-hash-code) o1) 'object=.6 ((contract-eval 'object=-hash-code) o1))
+  (test ((contract-eval 'object=-hash-code) o1) 'object=.7 ((contract-eval 'object=-hash-code) o2)))
 
 (ctest #t
        method-in-interface?

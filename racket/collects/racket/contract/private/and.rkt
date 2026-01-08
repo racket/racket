@@ -14,7 +14,9 @@
          "misc.rkt"
          "list.rkt")
 
-(provide (rename-out [_and/c and/c]) integer-in)
+(provide (rename-out [_and/c and/c]) integer-in
+         base-and/c?
+         base-and/c-ctcs)
 
 (define (and-name ctc)
   (apply build-compound-type-name 'and/c (base-and/c-ctcs ctc)))
