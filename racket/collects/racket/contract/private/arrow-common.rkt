@@ -37,10 +37,11 @@
 ;; rngs : (listof contract?)
 ;; post? : (or/c #f 'post 'post/desc)
 ;; post-thunk : (or/c #f thunk)
-;; chaperone-constructor ; procedure? -- function that builds a projection tailored to this arrow
+;; chaperone-constructor : procedure? -- function that builds a projection tailored to this arrow
 ;; method? : boolean?
+;; object/c-wrapper : procedure? -- function that builds a method projection tailored to this arrow
 (define-struct base-> (min-arity doms kwd-infos rest pre? pre-thunk rngs post? post-thunk
-                                 chaperone-constructor method?)
+                                 chaperone-constructor method? object/c-wrapper)
   #:property prop:custom-write custom-write-property-proc)
 
 (define-struct unsupplied-arg ())

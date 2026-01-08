@@ -18,7 +18,7 @@
          racket/stxparam
          racket/unsafe/ops
          "serialize-structs.rkt"
-         "class-wrapped.rkt"
+         "class-struct.rkt"
          racket/runtime-path
          (only-in "../contract/region.rkt" current-contract-region)
          "../contract/base.rkt"
@@ -48,7 +48,8 @@
 
 (provide provide-public-names
          ;; needed for Typed Racket
-         (protect-out do-make-object find-method/who))
+         find-method/who
+         (protect-out do-make-object))
 (define-syntax (provide-public-names stx)
   (class-syntax-protect
    (datum->syntax
@@ -2044,111 +2045,7 @@
      a))
   (eq-hash-code (member-key-id a)))
 
-;;--------------------------------------------------------------------
-;;  class implementation
-;;--------------------------------------------------------------------
 
-(define-struct class (name
-                      pos supers     ; pos is subclass depth, supers is vector
-                      self-interface ; self interface
-                      insp-mk        ; dummy struct maker to control inspection access
-                      obj-inspector  ; the inspector used for instances of this class
-                      
-                      method-width   ; total number of methods
-                      method-ht      ; maps public names to vector positions
-                      method-ids     ; reverse-ordered list of public method names
-                      abstract-ids   ; list of abstract method names
-                      method-ictcs   ; list of indices of methods to fix for interface ctcs
-
-                      [ictc-classes  ; #f or weak hash of cached classes keyed by blame
-                       #:mutable]
-
-                      methods        ; vector of methods (for external dynamic dispatch)
-                                     ; vector might also contain lists; see comment below from Stevie
-                      super-methods  ; vector of methods (for subclass super calls)
-                      int-methods    ; vector of vector of methods (for internal dynamic dispatch)
-                      beta-methods   ; vector of vector of methods
-                      meth-flags     ; vector: #f => primitive-implemented
-                      ;         'final => final
-                      ;         'augmentable => can augment
-                      
-                      inner-projs    ; vector of projections for the last inner slot
-                      dynamic-idxs   ; vector of indexs for access into int-methods
-                      dynamic-projs  ; vector of vector of projections for internal dynamic dispatch
-                      
-                      field-width    ; total number of fields
-                      field-pub-width ; total number of public fields
-                      field-ht       ; maps public field names to field-infos (see make-field-info above)
-                      field-ids      ; list of public field names
-                      all-field-ids  ; list of field names in reverse order, used for `undefined` error reporting
-                      
-                      [struct:object ; structure type for instances
-                       #:mutable]
-                      [object?       ; predicate
-                       #:mutable]
-                      [make-object   ; : (-> object), constructor that creates an uninitialized object
-                          #:mutable]
-                      [field-ref     ; accessor
-                       #:mutable]
-                      [field-set!    ; mutator
-                       #:mutable]
-                      
-                      init-args      ; list of symbols in order; #f => only by position
-                      init-mode      ; 'normal, 'stop (don't accept by-pos for super), or 'list
-                      
-                      [init          ; initializer
-                       #:mutable]    ; :   object
-                      ;     (object class (box boolean) leftover-args new-by-pos-args new-named-args 
-                      ;      -> void) // always continue-make-super?
-                      ;     class
-                      ;     (box boolean)
-                      ;     leftover-args
-                      ;     named-args
-                      ;  -> void
-                      
-                      [orig-cls      ; uncontracted version of this class (or same class)
-                       #:mutable]
-                      [serializer    ; proc => serializer, #f => not serializable
-                       #:mutable]
-                      [fixup         ; for deserialization
-                       #:mutable]
-
-                      check-undef?   ; objects need an unsafe-undefined guarding chaperone?
-                      
-                      no-super-init?); #t => no super-init needed
-  #:inspector insp
-  #:property prop:equal+hash
-  (list (λ (cls-a cls-b recur) (eq? (class-orig-cls cls-a) (class-orig-cls cls-b)))
-        (λ (cls recur) (eq-hash-code (class-orig-cls cls)))
-        (λ (cls recur) (eq-hash-code (class-orig-cls cls)))))
-
-#|
-
-From Stevie, explaining the shape of the elements of the vector in the 'methods' field:
-
-For each level of interface, we build up the following structure:
-
-(list <contract> <name of interface that contains this contract> <pos blame or #f> <neg blame or #f>)
-
-The second part of the list is used for certain types of failure reporting, I think, 
-whereas the other parts are what we need to build the correct contract forms (once we
-have the method implementation to contract).  In the interface contract info returned
-from a list of contracts, the info for the leaves contains #f negative blame (which 
-will be filled in with the class that implements the interface) and the info for the
-"roots" (more on that later) contains #f positive blame (which is filled in with the 
-info for the client of the class).
-
-When we have a particular class, we can fill in the neg. blame for the leaves in the hierarchy, and
-then we also apply as much of these structures have complete data to the method implementation
- (that is, non-#f pos and neg blames so we can appropriately construct the correct `contract' forms).
-
-What's left is a list of non-complete data for the root(s) of the hierarchy (by roots, I mean
-the first interfaces where this method is mentioned in the interface hierarchy).  We store that
-list along with the method implementation, so that once we have the neg. blame (the blame region
-that instantiates the class in question), we can complete this data and apply those 
-last few projections.
-
-|#
 
 ;; compose-class: produces one result if `deserialize-id' is #f, two
 ;;                results if `deserialize-id' is not #f
@@ -2523,28 +2420,6 @@ last few projections.
             (setup-all-implemented! i)
             (vector-set! (class-supers c) (add1 (class-pos super)) c)
             (set-class-orig-cls! c c)
-
-            
-            ;; --- Make the new external method contract records ---
-            ;; (they are just copies of the super at this point, updated below)
-            (define wci-neg-extra-arg-vec 
-              (if (impersonator-prop:has-wrapped-class-neg-party? super)
-                  (let* ([the-info (impersonator-prop:get-wrapped-class-info super)]
-                         [ov (wrapped-class-info-neg-extra-arg-vec the-info)])
-                    (if no-method-changes?
-                        ov
-                        (let ([v (make-vector method-width #f)])
-                          (vector-copy! v 0 ov)
-                          v)))
-                  #f))
-            (define wci-neg-acceptors-ht
-              (if (impersonator-prop:has-wrapped-class-neg-party? super)
-                  (let* ([the-info (impersonator-prop:get-wrapped-class-info super)]
-                         [oh (wrapped-class-info-neg-acceptors-ht the-info)])
-                    (if no-method-changes?
-                        oh
-                        (hash-copy oh)))
-                  #f))
             
             ;; --- Make the new object struct ---
             (let*-values ([(prim-object-make prim-object? struct:prim-object)
@@ -2694,7 +2569,7 @@ last few projections.
                          (map (lambda (index)
                                 (let ([dyn-idx (vector-ref dynamic-idxs index)])
                                   (lambda (obj)
-                                    (vector-ref (vector-ref (class-int-methods (object-ref obj))
+                                    (vector-ref (vector-ref (class-int-methods (object-ref/unwrap obj))
                                                             index)
                                                 dyn-idx))))
                               (append new-normal-indices replace-normal-indices refine-normal-indices
@@ -2769,12 +2644,7 @@ last few projections.
                                                        (make-method ((vector-ref inner-projs index) method) id))
                                           (vector-set! beta-methods index v))))
                                   (unless (vector-ref meth-flags index)
-                                    (vector-set! meth-flags index (not make-struct:prim)))
-                                  
-                                  ;; clear out external contracts for methods that are overridden
-                                  (when wci-neg-extra-arg-vec
-                                    (vector-set! wci-neg-extra-arg-vec index #f)
-                                    (hash-remove! wci-neg-acceptors-ht method)))
+                                    (vector-set! meth-flags index (not make-struct:prim))))
                                 (append replace-augonly-indices replace-final-indices replace-normal-indices
                                         refine-augonly-indices refine-final-indices refine-normal-indices)
                                 (append override-methods augride-methods)
@@ -2859,67 +2729,11 @@ last few projections.
                                    (loop (add1 i))))))))
                       
                       ;; --- Install initializer into class ---
-                      ;;     and create contract-wrapped subclass
-                      (define c+ctc
-                        (cond
-                          [wci-neg-extra-arg-vec
-                           (define neg-party (impersonator-prop:get-wrapped-class-neg-party super))
-                           (define info (impersonator-prop:get-wrapped-class-info super))
-                           (define blame (wrapped-class-info-blame info))
-                           (define sub-init-proj-pairs
-                             (let loop ([proj-pairs (wrapped-class-info-init-proj-pairs info)])
-                               (cond
-                                 [(null? proj-pairs) '()]
-                                 [else
-                                  (define pr (car proj-pairs))
-                                  (if (member (list-ref pr 0) init-args)
-                                      (loop (cdr proj-pairs))
-                                      (cons pr (loop (cdr proj-pairs))))])))
-                           (define super-init-proj-pairs (wrapped-class-info-init-proj-pairs info))
-                           
-                           ;; use an init that checks the super contracts on a super call
-                           (set-class-init!
-                            c
-                            (λ (o continue-make-super c inited? leftovers named-args)
-                              (define (contract-checking-continue-make-super o c inited?
-                                                                             leftovers
-                                                                             by-pos-args
-                                                                             new-named-args)
-                                (check-arg-contracts blame neg-party c
-                                                     super-init-proj-pairs
-                                                     new-named-args)
-                                (continue-make-super o c inited?
-                                                     leftovers
-                                                     by-pos-args
-                                                     new-named-args))
-                              (init o contract-checking-continue-make-super
-                                    c inited? leftovers named-args)))
-                           
-                           ;; add properties to the subclass that
-                           ;; check the residual external contracts
-                           (impersonate-struct
-                            c
-                            
-                            set-class-orig-cls! (λ (a b) b)
-                            
-                            impersonator-prop:wrapped-class-neg-party
-                            neg-party
-                            
-                            impersonator-prop:wrapped-class-info
-                            (wrapped-class-info 
-                             blame
-                             wci-neg-extra-arg-vec
-                             wci-neg-acceptors-ht
-                             (wrapped-class-info-pos-field-projs info)
-                             (wrapped-class-info-neg-field-projs info)
-                             sub-init-proj-pairs))]
-                          [else
-                           (set-class-init! c init)
-                           c]))
+                      (set-class-init! c init)
 
                       ;; -- result is the class, and maybe deserialize-info ---
                       (if deserialize-id
-                          (values c+ctc
+                          (values c
                                   (make-deserialize-info
                                    (if (interface-extension? i externalizable<%>)
                                        (lambda (args)
@@ -2940,7 +2754,7 @@ last few projections.
                                            (values o
                                                    (lambda (o2)
                                                      ((class-fixup c) o o2))))))))
-                          (copy-seals super c+ctc)))))))))))))
+                          (copy-seals super c)))))))))))))
 
 ;; (listof interface?) -> (listof symbol?)
 ;; traverse the interfaces and figure out contracted methods
@@ -3071,19 +2885,16 @@ An example
                       (make-struct-type 'props struct-type 0 0 #f props #f)])
           struct:))))
 
-(define-values (prop:object _object? object-ref) 
-  (make-struct-type-property 'object 'can-impersonate))
-(define (object? o)
-  (or (object-struct? o)
-      (wrapped-object? o)))
+(define (object? o) (object-struct? o))
 (define (object-ref/unwrap o)
+  (define cls-or-object/c-wrapper-info (object-ref o))
   (cond
-    [(object-struct? o) (object-ref o)]
-    [(wrapped-object? o) (object-ref/unwrap (wrapped-object-object o))]
-    [else 
-     ;; error case
-     (object-ref o)]))
-
+    [(class? cls-or-object/c-wrapper-info)
+     cls-or-object/c-wrapper-info]
+    [else
+     (object-ref/unwrap
+      (object/c-wrapper-info-val
+       cls-or-object/c-wrapper-info))]))
 
 
 ;;--------------------------------------------------------------------
@@ -3781,20 +3592,6 @@ An example
 
 (define (do-make-object blame class by-pos-args named-args)
   (cond
-    [(impersonator-prop:has-wrapped-class-neg-party? class)
-     (define the-info (impersonator-prop:get-wrapped-class-info class))
-     (define neg-party (impersonator-prop:get-wrapped-class-neg-party class))
-     (define unwrapped-o 
-       (do-make-object/real-class blame class by-pos-args named-args
-                                  (wrapped-class-info-blame the-info)
-                                  neg-party
-                                  (wrapped-class-info-init-proj-pairs the-info)))
-     (wrapped-object
-      unwrapped-o
-      (wrapped-class-info-neg-extra-arg-vec the-info)
-      (wrapped-class-info-pos-field-projs the-info)
-      (wrapped-class-info-neg-field-projs the-info)
-      neg-party)]
     [(class? class)
      (do-make-object/real-class blame class by-pos-args named-args #f #f '())]
     [else
@@ -4033,8 +3830,7 @@ An example
                 (unsyntax
                  (make-method-call-to-possibly-wrapped-object
                   stx kw-args/var arg-list rest-arg?
-                  #'sym #'method #'receiver
-                  (quasisyntax/loc stx (find-method/who '(unsyntax form) receiver sym)))))))
+                  #'sym #'method #'receiver)))))
           'feature-profile:send-dispatch #t))))
     
     (define (core-send apply? kws?)
@@ -4085,17 +3881,7 @@ An example
 (define-syntax-rule
   (dynamic-send-specialized obj method-name args ...)
   (let ([mtd (dynamic-send-checks-and-get-method obj method-name)])
-    (cond
-      [(wrapped-object? obj)
-       (if mtd
-           (mtd (wrapped-object-neg-party obj)
-                (wrapped-object-object obj)
-                args ...)
-           (dynamic-send (wrapped-object-object obj)
-                         method-name
-                         args ...))]
-      [else
-       (mtd obj args ...)])))
+    (mtd obj args ...)))
 
 (define (dynamic-send-checks-and-get-method obj method-name)
   (unless (object? obj) (raise-argument-error 'dynamic-send "object?" obj))
@@ -4111,18 +3897,7 @@ An example
            [(obj method-name arg1 arg2 arg3) (dynamic-send-specialized obj method-name arg1 arg2 arg3)]
            [(obj method-name . args)
             (define mtd (dynamic-send-checks-and-get-method obj method-name))
-            (cond
-              [(wrapped-object? obj)
-               (if mtd
-                   (apply mtd (wrapped-object-neg-party obj)
-                          (wrapped-object-object obj)
-                          args)
-                   (apply dynamic-send
-                          (wrapped-object-object obj)
-                          method-name
-                          args))]
-              [else
-               (apply mtd obj args)])])])
+            (apply mtd obj args)])])
     dynamic-send))
 
 (define dynamic-send/proc
@@ -4130,19 +3905,7 @@ An example
          (make-keyword-procedure
           (lambda (kws kw-vals obj method-name . args)
             (define mtd (dynamic-send-checks-and-get-method obj method-name))
-            (cond
-              [(wrapped-object? obj)
-               (if mtd
-                   (keyword-apply mtd kws kw-vals
-                                  (wrapped-object-neg-party obj)
-                                  (wrapped-object-object obj)
-                                  args)
-                   (keyword-apply dynamic-send kws kw-vals
-                                  (wrapped-object-object obj)
-                                  method-name
-                                  args))]
-              [else
-               (keyword-apply mtd kws kw-vals obj args)]))
+            (keyword-apply mtd kws kw-vals obj args))
           dynamic-send-no-keywords)])
     dynamic-send))
 
@@ -4190,40 +3953,7 @@ An example
     [(_ obj:expr) (class-syntax-protect
                    (syntax/loc stx obj))]))
 
-;; find-method/who : symbol[top-level-form/proc-name]
-;;                   any[object] 
-;;                   symbol[method-name] 
-;;               -> method-proc
-;; returns the method's procedure
 
-(define (find-method/who who in-object name)
-  (cond
-    [(object-ref in-object #f) ; non-#f result implies `_object?`
-     => (lambda (cls)
-          (define mth-idx (hash-ref (class-method-ht cls) name #f))
-          (if mth-idx
-              (vector-ref (class-methods cls) mth-idx)
-              (no-such-method who name cls)))]
-    [(wrapped-object? in-object)
-     (define cls
-       (let loop ([obj in-object])
-         (cond
-           [(wrapped-object? obj) (loop (wrapped-object-object obj))]
-           [else 
-            (object-ref obj #f)])))
-     (define mth-idx (hash-ref (class-method-ht cls) name #f))
-     (unless mth-idx (no-such-method who name (object-ref in-object)))
-     (vector-ref (wrapped-object-neg-extra-arg-vec in-object) mth-idx)]
-    [else
-     (obj-error who "target is not an object"
-                "target" in-object 
-                "method name" (as-write name))]))
-
-(define (no-such-method who name cls)
-  (obj-error who 
-             "no such method"
-             "method name" (as-write name)
-             #:class-name (class-name cls)))
 
 (define-values (make-class-field-accessor make-class-field-mutator)
   (let ()
@@ -4233,10 +3963,6 @@ An example
       (unless (symbol? name)
         (raise-argument-error who "symbol?" name))
       (define field-info-external-X (if get? field-info-external-ref field-info-external-set!))
-      (define wrapped-class-info-X-field-projs
-        (if get? 
-            wrapped-class-info-pos-field-projs
-            wrapped-class-info-neg-field-projs))
       (define (get-accessor)
         (field-info-external-X
          (hash-ref (class-field-ht class) name
@@ -4244,51 +3970,69 @@ An example
                      (obj-error who "no such field"
                                 "field-name" (as-write name)
                                 #:class-name (class-name class))))))
-      (cond
-        [(impersonator-prop:has-wrapped-class-neg-party? class)
-         (define the-info (impersonator-prop:get-wrapped-class-info class))
-         (define projs (hash-ref (wrapped-class-info-X-field-projs the-info) name #f))
-         (define np (impersonator-prop:get-wrapped-class-neg-party class))
-         (cond
-           [projs 
-            (if get?
-                (let loop ([projs projs])
-                  (cond
-                    [(pair? projs)
-                     (define f-rest (loop (cdr projs)))
-                     (define f-this (car projs))
-                     (λ (val) ((f-this (f-rest val)) np))]
-                    [else projs]))
-                (let loop ([projs projs])
-                  (cond
-                    [(pair? projs)
-                     (define f-rest (loop (cdr projs)))
-                     (define f-this (car projs))
-                     (λ (o val) ((f-this (f-rest o val)) np))]
-                    [else projs])))]
-           [else (get-accessor)])]
-        [else
-         (get-accessor)]))
+      (get-accessor))
     (values (λ (class name)
               (define ref (check-and-get-proc 'class-field-accessor class name #t))
               (λ (o)
-                (cond
-                  [(_object? o)
-                   (ref o)]
-                  [(wrapped-object? o)
-                   (ref (wrapped-object-object o))]
-                  [else
-                   (raise-argument-error 'class-field-accessor "object?" o)])))
+                (unless (_object? o)
+                  (raise-argument-error 'class-field-accessor "object?" o))
+                (let loop ([o o])
+                  (define cls-or-object/c-wrapper-info (object-ref o))
+                  (cond
+                    [(class? cls-or-object/c-wrapper-info)
+                     (ref o)]
+                    [else
+                     (define do-not-check-class-field-accessor-or-mutator-access?
+                       (object/c-wrapper-info-do-not-check-class-field-accessor-or-mutator-access?
+                        cls-or-object/c-wrapper-info))
+                     (define pos-fields (object/c-wrapper-info-pos-fields cls-or-object/c-wrapper-info))
+                     (define unwrapped (object/c-wrapper-info-val cls-or-object/c-wrapper-info))
+                     (define blame+neg-party (object/c-wrapper-info-blame+neg-party cls-or-object/c-wrapper-info))
+                     (define neg-party (cdr blame+neg-party))
+                     (cond
+                       [do-not-check-class-field-accessor-or-mutator-access?
+                        (loop unwrapped)]
+                       [(hash-ref pos-fields name #f)
+                        =>
+                        (λ (lnp)
+                          (define o (loop unwrapped))
+                          (with-contract-continuation-mark
+                              blame+neg-party
+                            (lnp o neg-party)))]
+                       [else
+                        (do-opaque-field-access-check cls-or-object/c-wrapper-info o name)
+                        (loop unwrapped)])]))))
             (λ (class name)
               (define setter! (check-and-get-proc 'class-field-mutator class name #f))
-              (λ (o v) 
-                (cond
-                  [(_object? o)
-                   (setter! o v)]
-                  [(wrapped-object? o)
-                   (setter! (unwrap-object o) v)]
-                  [else
-                   (raise-argument-error 'class-field-mutator "object?" o)]))))))
+              (λ (o v)
+                (unless (_object? o)
+                  (raise-argument-error 'class-field-mutator "object?" o))
+                (let loop ([o o]
+                           [v v])
+                  (define cls-or-object/c-wrapper-info (object-ref o))
+                  (cond
+                    [(class? cls-or-object/c-wrapper-info)
+                     (setter! o v)]
+                    [else
+                     (define do-not-check-class-field-accessor-or-mutator-access?
+                       (object/c-wrapper-info-do-not-check-class-field-accessor-or-mutator-access?
+                        cls-or-object/c-wrapper-info))
+                     (define neg-fields (object/c-wrapper-info-neg-fields cls-or-object/c-wrapper-info))
+                     (define unwrapped (object/c-wrapper-info-val cls-or-object/c-wrapper-info))
+                     (define blame+neg-party (object/c-wrapper-info-blame+neg-party cls-or-object/c-wrapper-info))
+                     (define neg-party (cdr blame+neg-party))
+                     (cond
+                       [do-not-check-class-field-accessor-or-mutator-access?
+                        (loop unwrapped v)]
+                       [(hash-ref neg-fields name #f)
+                        =>
+                        (λ (lnp)
+                          (loop unwrapped (with-contract-continuation-mark
+                                              blame+neg-party
+                                            (lnp v neg-party))))]
+                       [else
+                        (do-opaque-field-mutation-check cls-or-object/c-wrapper-info o name v)
+                        (loop unwrapped v)])])))))))
 
 (define-struct generic (name applicable))
 
@@ -4333,16 +4077,26 @@ An example
                        [dynamic-generic
                         (lambda (obj)
                           (cond
-                            [(wrapped-object? obj)
-                             (vector-ref (wrapped-object-neg-extra-arg-vec obj) pos)]
                             [(instance? obj)
-                             (vector-ref (class-methods (object-ref obj)) pos)]
+                             (define cls-or-object/c-wrapper-info (object-ref obj))
+                             (cond
+                               [(class? cls-or-object/c-wrapper-info)
+                                (vector-ref (class-methods (object-ref obj)) pos)]
+                               [else
+                                ((object/c-wrapper-info-methods-proc cls-or-object/c-wrapper-info) name)])]
                             [else (fail obj)]))])
                   (if (eq? 'final (vector-ref (class-meth-flags class) pos))
                       (let ([method (vector-ref (class-methods class) pos)])
                         (lambda (obj)
-                          (unless (instance? obj) (fail obj))
-                          method))
+                          (cond
+                            [(instance? obj)
+                             (define cls-or-object/c-wrapper-info (object-ref obj))
+                             (cond
+                               [(class? cls-or-object/c-wrapper-info)
+                                method]
+                               [else
+                                ((object/c-wrapper-info-methods-proc cls-or-object/c-wrapper-info) name)])]
+                            [else (fail obj)])))
                       dynamic-generic)))))])
     make-generic))
 
@@ -4362,10 +4116,9 @@ An example
               (unsyntax
                (make-method-call-to-possibly-wrapped-object
                 stx #f flat-stx (not proper?)
-                #'(generic-name gen) 
-                #'((generic-applicable gen) obj) 
-                #'obj
-                #'((generic-applicable gen) obj))))))))]))
+                #'(generic-name gen)
+                #'((generic-applicable gen) obj)
+                #'obj)))))))]))
 
 (define (check-generic gen)
   (unless (generic? gen)
@@ -4415,32 +4168,45 @@ An example
   (do-set-field! 'set-field! id obj val))
 
 (define (do-set-field! who id obj val)
+  (define cls-or-object/c-wrapper-info (object-ref obj #f))
   (cond
-    [(_object? obj) 
-     (do-set-field!/raw-object who id obj val)]
-    [(wrapped-object? obj)
-     (define projs+set! (hash-ref (wrapped-object-neg-field-projs obj) id #f))
+    [(class? cls-or-object/c-wrapper-info)
+     (do-set-field!/raw-object who cls-or-object/c-wrapper-info id obj val)]
+    [(object/c-wrapper-info? cls-or-object/c-wrapper-info)
+     (define unwrapped (object/c-wrapper-info-val cls-or-object/c-wrapper-info))
+     (define blame+neg-party (object/c-wrapper-info-blame+neg-party cls-or-object/c-wrapper-info))
+     (define neg-party (cdr blame+neg-party))
      (cond
-       [projs+set! 
-        (define np (wrapped-object-neg-party obj))
-        (let loop ([projs+set! projs+set!]
-                   [val val])
-          (cond
-            [(pair? projs+set!)
-             (define the-proj (car projs+set!))
-             (loop (cdr projs+set!)
-                   ((the-proj val) np))]
-            [else
-             (projs+set! (wrapped-object-object obj) val)]))]
+       [(hash-ref (object/c-wrapper-info-neg-fields cls-or-object/c-wrapper-info) id #f)
+        =>
+        (λ (lnp)
+          (do-set-field! who id unwrapped (with-contract-continuation-mark
+                                              blame+neg-party
+                                            (lnp val neg-party))))]
        [else
-        (do-field-get/raw-object who id (wrapped-object-object obj))])]    
+        (do-opaque-field-mutation-check cls-or-object/c-wrapper-info obj id val)
+        (do-set-field! who id unwrapped val)])]
     [else
      (raise-argument-error who
                            "object?"
                            obj)]))
 
-(define (do-set-field!/raw-object who id obj val)
-  (define cls (object-ref obj))
+(define (do-opaque-field-mutation-check cls-or-object/c-wrapper-info obj id val)
+  (when (object/c-wrapper-info-opaque-fields cls-or-object/c-wrapper-info)
+    (define blame+neg-party (object/c-wrapper-info-blame+neg-party cls-or-object/c-wrapper-info))
+    (define blame (car blame+neg-party))
+    (define neg-party (cdr blame+neg-party))
+    (raise-blame-error (blame-swap blame)
+                       #:missing-party neg-party
+                       obj
+                       `(expected:
+                         "to not mutate fields except those listed in the contract\n"
+                         "  field: ~a"
+                         given: "~e")
+                       id
+                       val)))
+
+(define (do-set-field!/raw-object who cls id obj val)
   (define field-ht (class-field-ht cls))
   (define fi (hash-ref field-ht id #f))
   (if fi
@@ -4470,32 +4236,44 @@ An example
   (do-get-field 'get-field id obj))
 
 (define (do-get-field who id obj)
+  (define cls-or-object/c-wrapper-info (object-ref obj #f))
   (cond
-    [(_object? obj)
-     (do-field-get/raw-object who id obj)]
-    [(wrapped-object? obj)
-     (define projs+ref (hash-ref (wrapped-object-pos-field-projs obj) id #f))
+    [(class? cls-or-object/c-wrapper-info)
+     (do-field-get/raw-object who cls-or-object/c-wrapper-info id obj)]
+    [(object/c-wrapper-info? cls-or-object/c-wrapper-info)
+     (define unwrapped (object/c-wrapper-info-val cls-or-object/c-wrapper-info))
      (cond
-       [projs+ref
-        (define np (wrapped-object-neg-party obj))
-        (let loop ([projs+ref projs+ref])
-          (cond
-            [(pair? projs+ref)
-             (define the-proj (car projs+ref))
-             (define field-val-with-other-contracts (loop (cdr projs+ref)))
-             ((the-proj field-val-with-other-contracts) np)]
-            [else
-             ;; projs+ref is the struct field accessor
-             (projs+ref (wrapped-object-object obj))]))]
+       [(hash-ref (object/c-wrapper-info-pos-fields cls-or-object/c-wrapper-info) id #f)
+        =>
+        (λ (lnp)
+          (define blame+neg-party (object/c-wrapper-info-blame+neg-party cls-or-object/c-wrapper-info))
+          (define neg-party (cdr blame+neg-party))
+          (define fv (do-get-field who id unwrapped))
+          (with-contract-continuation-mark
+              blame+neg-party
+            (lnp fv neg-party)))]
        [else
-        (do-field-get/raw-object who id (wrapped-object-object obj))])]
-    [else 
+        (do-opaque-field-access-check cls-or-object/c-wrapper-info obj id)
+        (do-get-field who id unwrapped)])]
+    [else
      (raise-argument-error who
                            "object?"
                            obj)]))
 
-(define (do-field-get/raw-object who id obj)
-  (define cls (object-ref obj))
+(define (do-opaque-field-access-check cls-or-object/c-wrapper-info obj id)
+  (when (object/c-wrapper-info-opaque-fields cls-or-object/c-wrapper-info)
+    (define blame+neg-party (object/c-wrapper-info-blame+neg-party cls-or-object/c-wrapper-info))
+    (define blame (car blame+neg-party))
+    (define neg-party (cdr blame+neg-party))
+    (raise-blame-error (blame-swap blame)
+                       #:missing-party neg-party
+                       obj
+                       `(expected:
+                         "to not access fields except those listed in the contract\n"
+                         "  field: ~a")
+                       id)))
+
+(define (do-field-get/raw-object who cls id obj)
   (define field-ht (class-field-ht cls))
   (define fi (hash-ref field-ht id #f))
   (if fi
@@ -4621,7 +4399,8 @@ An example
 (define (is-a? v c)
   (cond
     [(class? c) 
-     (and (object? v) ((class-object? (class-orig-cls c)) (unwrap-object v)))]
+     (and (object? v)
+          ((class-object? (class-orig-cls c)) (unwrap-object v)))]
     [(interface? c) (and (object? v) (implementation? (object-ref/unwrap v) c))]
     [else (raise-argument-error 'is-a? "(or/c class? interface?)" 1 v c)]))
 
@@ -4692,15 +4471,14 @@ An example
 (define (object-info o)
   (unless (object? o)
     (raise-argument-error 'object-info "object?" o))
-  (let ([o* (if (has-original-object? o) (original-object o) o)])
-    (let loop ([c (object-ref/unwrap o*)]
-               [skipped? #f])
-      (if (struct? ((class-insp-mk c)))
-          ;; current objec can inspect this object
-          (values c skipped?)
-          (if (zero? (class-pos c))
-              (values #f #t)
-              (loop (vector-ref (class-supers c) (sub1 (class-pos c))) #t))))))
+  (let loop ([c (object-ref/unwrap o)]
+             [skipped? #f])
+    (if (struct? ((class-insp-mk c)))
+        ;; current objec can inspect this object
+        (values c skipped?)
+        (if (zero? (class-pos c))
+            (values #f #t)
+            (loop (vector-ref (class-supers c) (sub1 (class-pos c))) #t)))))
 
 (define (to-sym s)
   (if (string? s)
@@ -4732,27 +4510,26 @@ An example
   (lambda (in-o [opaque-v '...])
     (unless (object? in-o)
       (raise-argument-error 'object->vector "object?" in-o))
-    (let ([o in-o])
-      (list->vector
-       (cons
-        (string->symbol (format "object:~a" (class-name (object-ref/unwrap o))))
-        (reverse
-         (let-values ([(c skipped?) (object-info o)])
-           (let loop ([c c][skipped? skipped?])
-             (cond
-               [(not c) (if skipped? (list opaque-v) null)]
-               [else (let-values ([(name num-fields field-ids field-ref
-                                         field-set next next-skipped?)
-                                   (class-info c)])
-                       (let ([rest (loop next next-skipped?)]
-                             [here (let loop ([n num-fields])
-                                     (if (zero? n)
-                                         null
-                                         (cons (field-ref o (sub1 n))
-                                               (loop (sub1 n)))))])
-                         (append (if skipped? (list opaque-v) null)
-                                 here
-                                 rest)))])))))))))
+    (define o-unwrapped (unwrap-object in-o))
+    (define-values (c skipped?) (object-info o-unwrapped))
+    (list->vector
+     (cons
+      (string->symbol (format "object:~a" (class-name (object-ref o-unwrapped))))
+      (reverse
+       (let loop ([c c][skipped? skipped?])
+         (cond
+           [(not c) (if skipped? (list opaque-v) null)]
+           [else
+            (define-values (name num-fields field-ids field-ref field-set next next-skipped?)
+              (class-info c))
+            (define rest (loop next next-skipped?))
+            (define here
+              (for/list ([field-id (in-list field-ids)])
+                (do-get-field 'object->vector field-id in-o)))
+            (append (if skipped? (list opaque-v) null)
+                    here
+                    rest)])))))))
+
 
 (define (object=? o1 o2)
   (cond
@@ -4774,21 +4551,23 @@ An example
         (and o1 o2 (-object=? o1 o2)))]))
 
 (define (-object=? o1 o2)
-  (eq? (object=-original-object o1)
-       (object=-original-object o2)))
-
-(define (object=-original-object o)
-  (define orig-o (if (impersonator? o) (original-object o o) o))
-  (define orig-orig-o
-    (if (wrapped-object? orig-o)
-        (wrapped-object-object orig-o)
-        orig-o))
-  orig-orig-o)
+  (eq? (unwrap-object o1)
+       (unwrap-object o2)))
 
 (define (object=-hash-code o)
   (unless (object? o)
     (raise-argument-error 'object=-hash-code "object?" 0 o))
-  (eq-hash-code (object=-original-object o)))
+  (eq-hash-code (unwrap-object o)))
+
+(define (unwrap-object o)
+  (cond
+    [(impersonator? o)
+     (let loop ([o o])
+       (define cls-or-object/c-wrapper-info (object-ref o))
+       (cond
+         [(class? cls-or-object/c-wrapper-info) o]
+         [else (loop (object/c-wrapper-info-val cls-or-object/c-wrapper-info))]))]
+    [else o]))
 
 ;;--------------------------------------------------------------------
 ;;  primitive classes
@@ -4796,13 +4575,6 @@ An example
 
 (define (make-primitive-class  . args)
   (error 'make-primitive-class "no longer supported"))
-
-;;--------------------------------------------------------------------
-;;  wrapper for contracts
-;;--------------------------------------------------------------------
-
-(define-values (impersonator-prop:original-object has-original-object? original-object)
-  (make-impersonator-property 'impersonator-prop:original-object))
 
 
 (define (check-arg-contracts wrapped-blame wrapped-neg-party val init-proj-pairs orig-named-args)
@@ -4856,78 +4628,6 @@ An example
                 (cons (car named-args) named-skipped-args)
                 progress?)])])))
                           
-
-;;--------------------------------------------------------------------
-;;  misc utils
-;;--------------------------------------------------------------------
-
-(define-struct (exn:fail:object exn:fail) () #:inspector insp)
-
-(struct as-write (content))
-(struct as-write-list (content))
-(struct as-value-list (content))
-(struct as-lines (content))
-
-(define (obj-error where 
-                   msg
-                   #:class-name [class-name #f]
-                   #:intf-name [intf-name #f]
-                   #:which-class [which-class ""]
-                   . fields)
-  (define all-fields
-    (append fields
-            (if class-name
-                (list (string-append which-class "class name")
-                      (as-write class-name))
-                null)
-            (if intf-name
-                (list "interface name"
-                      (as-write intf-name))
-                null)))
-  (raise (make-exn:fail:object
-          (format "~a: ~a~a" where msg
-                  (apply
-                   string-append
-                   (let loop ([fields all-fields])
-                     (cond
-                      [(null? fields) null]
-                      [else
-                       (define field (car fields))
-                       (define val (cadr fields))
-                       (list*
-                        "\n  "
-                        field
-                        (if (or (as-write-list? val)
-                                (as-lines? val))
-                            ":"
-                            ": ")
-                        (cond
-                         [(or (as-write-list? val)
-                              (as-value-list? val))
-                          (apply string-append
-                                 (for/list ([v (in-list (if (as-write-list? val)
-                                                            (as-write-list-content val)
-                                                            (as-value-list-content val)))])
-                                   (format (if (as-write-list? val)
-                                               "\n   ~s"
-                                               "\n   ~e")
-                                           v)))]
-                         [(as-write? val)
-                          (format "~s" (as-write-content val))]
-                         [(as-lines? val)
-                          (as-lines-content val)]
-                         [else
-                          (format "~e" val)])
-                        (loop (cddr fields)))]))))
-          (current-continuation-marks))))
-
-(define (for-class name)
-  (if name (format " for class: ~a" name) ""))
-(define (for-class/which which name)
-  (if name (format " for ~a class: ~a" which name) ""))
-(define (for-intf name)
-  (if name (format " for interface: ~a" name) ""))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 ;; mixin
@@ -5084,12 +4784,13 @@ An example
 ;; Providing normal functionality:
 (provide (protect-out get-field/proc)
          
-         ;; for class-c-old.rkt:
+         ;; for class-c.rkt:
+         prop:object _object? object-ref
          (protect-out
-          make-naming-constructor prop:object _object? object-ref replace-ictc-blame
+          make-naming-constructor replace-ictc-blame
           concretize-ictc-method field-info-extend-external field-info-extend-internal this-param
-          object-ref/unwrap impersonator-prop:original-object has-original-object? original-object)
-         ;; end class-c-old.rkt requirements
+          object-ref/unwrap)
+         ;; end class-c.rkt requirements
 
          field-info-internal-ref
          field-info-internal-set!
@@ -5126,5 +4827,4 @@ An example
          make-primitive-class 
          (for-syntax localize) 
          (except-out (struct-out class) class class?)
-         (rename-out [class? class-struct-predicate?])
-         (struct-out wrapped-object))
+         (rename-out [class? class-struct-predicate?]))

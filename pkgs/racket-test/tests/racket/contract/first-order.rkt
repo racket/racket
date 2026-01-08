@@ -239,6 +239,25 @@
   
   (ctest #f contract-first-order-passes? (->m integer? integer?) (λ (x) 1))
   (ctest #t contract-first-order-passes? (->m integer? integer?) (λ (this x) 1))
+
+  (ctest #f contract-first-order-passes? (object/c) 1)
+  (ctest #t contract-first-order-passes? (object/c) (new object%))
+  (ctest #f contract-first-order-passes? (object/c [m (-> any/c integer? integer?)]) (new object%))
+  (ctest #t contract-first-order-passes?
+         (object/c [m (-> any/c integer? integer?)])
+         (new (class object% (define/public (m x) x) (super-new))))
+  (ctest #f contract-first-order-passes?
+         (object/c [m (-> any/c integer? integer?)])
+         (new (class object% (define/public (m x y) x) (super-new))))
+  (ctest #f contract-first-order-passes?
+         (object/c (field [f integer?]))
+         (new (class object% (field [not-f 1]) (super-new))))
+  (ctest #t contract-first-order-passes?
+         (object/c (field [f integer?]))
+         (new (class object% (field [f 1]) (super-new))))
+  (ctest #t contract-first-order-passes?
+         (object/c (field [f integer?]))
+         (new (class object% (field [f "not an integer"]) (super-new))))
   
   (ctest #f contract-first-order-passes? (class/c) 1)
   (ctest #f contract-first-order-passes? (class/c [m (-> any/c integer? integer?)]) object%)
