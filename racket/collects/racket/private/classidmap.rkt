@@ -5,7 +5,7 @@
          (for-template racket/stxparam
                        racket/base
                        racket/unsafe/undefined
-                       "class-wrapped.rkt"
+                       "class-struct.rkt"
                        "class-undef.rkt"))
 
 (define insp (variable-reference->module-declaration-inspector
@@ -389,7 +389,7 @@
                 [flat-args-stx (if proper? args-stx (flatten-args args-stx))])
            (make-method-call-to-possibly-wrapped-object
             stx #f flat-args-stx (not proper?)
-            #''id method-stx method-obj-stx method-obj-stx))]
+            #''id method-stx method-obj-stx))]
         [id
          (identifier? (syntax id))
          (raise-syntax-error 
@@ -415,7 +415,7 @@
                 [method-obj-stx (find the-finder the-obj stx)])
            (make-method-call-to-possibly-wrapped-object
             stx #f flat-args-stx (not proper?)
-            #''id #`(#,find-method-who-stx 'interface #,method-obj-stx 'id) method-obj-stx method-obj-stx))]
+            #''id #`(#,find-method-who-stx 'interface #,method-obj-stx 'id) method-obj-stx))]
         [id
          (identifier? (syntax id))
          (raise-syntax-error
@@ -476,6 +476,21 @@
        [else localized])]
     [else id]))
 
+;; refers-to-same-member-name? : identifier identifer -> boolean
+;; returns #t if these identifiers name the same field or method,
+;;   when used in a class declaration and #f otherwise
+(define (refers-to-same-member-name? id1 id2)
+  (define idl1 (syntax-local-value id1 (λ () #f)))
+  (define idl2 (syntax-local-value id2 (λ () #f)))
+  (cond
+    [(and (private-name? idl1)
+          (private-name? idl2))
+     (free-identifier=? id1 id2)]
+    [(or (private-name? idl1)
+         (private-name? idl2))
+     #f]
+    [else (equal? (syntax-e id1) (syntax-e id2))]))
+
 (define (build-disappeared-use-of-local-member-name id)
   (let/ec escape
     (define (fail) (escape #f))
@@ -531,49 +546,21 @@
 
 (define (make-method-call-to-possibly-wrapped-object
          stx kw-args/var arg-list rest-arg?
-         sym method receiver method-in-wrapper-fallback-case)
+         sym method receiver)
   (with-syntax ([sym sym]
                 [method method]
-                [receiver receiver]
-                [method-in-wrapper-fallback-case method-in-wrapper-fallback-case])
-    (quasisyntax/loc stx
-      (if (wrapped-object? receiver)
-          (if method
-              ;; this is a hack: passing the neg party in
-              ;; as the object to 'make-method-call' so that the
-              ;; arguments end up in the right order.
-              (unsyntax
-               (syntax-property
-                (make-method-call
-                 stx
-                 #`(wrapped-object-neg-party receiver)
-                 (syntax/loc stx method)
-                 (syntax/loc stx sym)
-                 #`((wrapped-object-object #,(syntax/loc stx receiver)) #,@arg-list)
-                 rest-arg?
-                 kw-args/var)
-                'feature-profile:send-dispatch 'antimark))
-              (let ([receiver (wrapped-object-object receiver)])
-                (unsyntax
-                 (syntax-property
-                  (make-method-call
-                   stx
-                   (syntax/loc stx receiver)
-                   (syntax/loc stx method-in-wrapper-fallback-case)
-                   (syntax/loc stx sym)
-                   arg-list
-                   rest-arg?
-                   kw-args/var)
-                  'feature-profile:send-dispatch 'antimark))))
-          (unsyntax
-           (make-method-call
-            stx
-            (syntax/loc stx receiver)
-            (syntax/loc stx method)
-            (syntax/loc stx sym)
-            arg-list
-            rest-arg?
-            kw-args/var))))))
+                [receiver receiver])
+    ;; if the shape of this expansion of this changes, then there
+    ;; needds to be a change in TR, specifically in tc-expr-unit.rkt
+    ;; around line 282 (where it says "send") to match how this changes
+    (make-method-call
+     stx
+     (syntax/loc stx receiver)
+     (syntax/loc stx method)
+     (syntax/loc stx sym)
+     arg-list
+     rest-arg?
+     kw-args/var)))
 
 (provide (protect-out make-this-map make-this%-map make-field-map make-method-map 
                       make-direct-method-map 
@@ -583,7 +570,7 @@
                       make-interface-method-map
                       flatten-args make-method-call 
                       make-method-call-to-possibly-wrapped-object
-                      do-localize make-private-name
+                      do-localize make-private-name refers-to-same-member-name?
                       generate-super-call generate-inner-call
                       generate-class-expand-context class-top-level-context?
                       class-syntax-protect))

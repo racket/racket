@@ -32,6 +32,7 @@
          prop:contracted prop:blame
          impersonator-prop:contracted
          impersonator-prop:blame
+         get-impersonator-prop:blame
 
          has-contract? value-contract
          has-blame? value-blame
@@ -782,7 +783,8 @@
    #:trusted trust-me
    #:stronger predicate-contract-equivalent
    #:equivalent predicate-contract-equivalent
-   #:name (λ (ctc) (predicate-contract-name ctc))
+   #:name (λ (ctc)
+            (predicate-contract-name ctc))
    #:first-order (λ (ctc) (predicate-contract-pred ctc))
    #:late-neg-projection
    (λ (ctc)
