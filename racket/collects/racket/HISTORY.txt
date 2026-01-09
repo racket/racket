@@ -1,3 +1,16 @@
+Version 9.1, January 2026
+Added support for configuring a language family to navigate
+ documentation
+Add `exn-classify-errno`
+BC: Change all characters to be interned, so `interned-char?`
+ implies `char?` and `eqv?` implies `eq?` on characters
+Change `make-struct-type` to accept `'current` for inspector
+Add `#:on-length-mismatch` to `for` and variants
+Add `--enable-sofind=<conv>` configuration mode to generalize
+ `--enable-[no]natipkg`
+Add `'platform` and `'so-find` modes to `system`
+Add `openssl/legacy`
+
 Version 9.0, October 2025
 Add support for recording a thread's results via the `#:keep` option
  to `thread`; results are returned by `thread-wait`
