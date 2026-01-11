@@ -96,8 +96,9 @@
                   who
                   "delayed expression produced a non-stream"
                   "result" v)
-                 (raise-arguments-error
+                 (raise-arguments-error*
                   'stream-cons
+                  'racket/primitive
                   "rest expression produced a non-stream"
                   "rest result" v))])]))]
     [(for:stream? s) s]
