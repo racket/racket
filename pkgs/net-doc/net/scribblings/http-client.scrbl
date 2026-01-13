@@ -191,11 +191,17 @@ response, which is why there is no @racket[#:closed?] argument like
                                    [proxy-port (between/c 1 65535)]
                                    [target-host (or/c bytes? string?)]
                                    [target-port (between/c 1 65535)]
-                                   [#:ssl? ssl? base-ssl?/c #f])
+                                   [#:ssl? ssl? base-ssl?/c #f]
+                                   [#:proxy-auth proxy-auth (or/c #f string?) #f])
          (values base-ssl?/c input-port? output-port? (-> port? void?))]{
  Creates an HTTP connection to @racket[proxy-host] (on port
  @racket[proxy-port]) and invokes the HTTP ``CONNECT'' method to provide
  a tunnel to @racket[target-host] (on port @racket[target-port]).
+
+ If @racket[proxy-auth] is not @racket[#f], it should be a string of the
+ form @racket["username:password"]. The credentials will be Base64-encoded
+ and sent as a @litchar{Proxy-Authorization} header for HTTP Basic
+ authentication with the proxy server.
 
  The SSL context or symbol, if any, provided in @racket[ssl?] is
  applied to the gateway ports using @racket[ports->ssl-ports] (or
@@ -223,6 +229,7 @@ response, which is why there is no @racket[#:closed?] argument like
      @racket[tcp-abandon-port].}
  ]
 
+@history[#:changed "9.1.0.2" @elem{Added the @racket[#:proxy-auth] argument.}]
 }
 
 @defthing[data-procedure/c chaperone-contract?]{

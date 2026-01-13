@@ -41,6 +41,7 @@
 ;;
 ;; proxying-scheme is therefore always "http" (no "s") -- although the meaning thereof depends on the
 ;; proxied-scheme
+
 (define (env->c-p-s-entries . envarses)
   (define (in1 proxied-scheme envvar)
     (match (let ([s (getenv envvar)])
@@ -50,12 +51,16 @@
       [(app string->url*
             (url (and proxying-scheme "http") #f (? string? host) (? integer? port)
                  _ (list) (list) #f))
-       (list (list proxied-scheme host port))]
+       (list (list proxied-scheme host port #f))]
+      [(app string->url*
+            (url (and proxying-scheme "http") (? string? user) (? string? host) (? integer? port)
+                 _ _ _ _))
+       (list (list proxied-scheme host port user))]
       [(app string->url*
             (url (and proxying-scheme "http") _ (? string? host) (? integer? port)
                  _ _ _ _))
        (log-net/url-warning "~s contains somewhat invalid proxy URL format" envvar)
-       (list (list proxied-scheme host port))]
+       (list (list proxied-scheme host port #f))]
       [inv
        (log-net/url-error "~s contained invalid proxy URL format: ~s" envvar inv)
        null]))
@@ -81,21 +86,26 @@
 (define (proxy-servers-guard v)
   (unless (and (list? v)
                (andmap (lambda (v)
-                         (and (list? v)
-                              (= 3 (length v))
-                              (member (car v) proxiable-url-schemes)
-                              (string? (car v))
-                              (exact-integer? (caddr v))
-                              (<= 1 (caddr v) 65535)))
+			 (match v
+			   [(list-rest s (? string?) (? exact-integer? p)
+				       (or '()
+					   (list #f)
+					   (list (? string?))))
+			    (and (member s proxiable-url-schemes)
+				 (<= 1 p 65535))]
+			   [_ #f]))
                        v))
     (raise-type-error
      'current-proxy-servers
-     "list of list of scheme, string, and exact integer in [1,65535]"
+     "list of list of scheme, string, exact integer in [1,65535], and optional credentials string"
      v))
   (map (lambda (v)
          (list (string->immutable-string (car v))
                (string->immutable-string (cadr v))
-               (caddr v)))
+               (caddr v)
+               (and (= 4 (length v))
+		    (let ([cred (cadddr v)])
+		      (and cred (string->immutable-string cred))))))
        v))
 
 (define current-proxy-servers
@@ -175,7 +185,8 @@
                                    #f)))]
     [(proxy-tunneled? url)
      (let ([proxy-port-number (caddr proxy)]
-           [proxy-host (cadr proxy)])
+           [proxy-host (cadr proxy)]
+           [proxy-auth (cadddr proxy)])
        (define-values (tnl:ssl? tnl:from-port tnl:to-port tnl:abandon-p)
          (hc:http-conn-CONNECT-tunnel proxy-host
                                       proxy-port-number
@@ -183,7 +194,8 @@
                                       (or (url-port url) (url->default-port url))
                                       #:ssl? (if (equal? "https" (url-scheme url))
                                                (current-https-protocol)
-                                               #f)))
+                                               #f)
+                                      #:proxy-auth proxy-auth))
        (hc:http-conn-open (url-host url)
                           #:port (or (url-port url) (url->default-port url))
                           #:ssl? (list tnl:ssl? tnl:from-port tnl:to-port tnl:abandon-p)))]
@@ -514,11 +526,12 @@
                              (listof string?)
                              any)))
  (current-proxy-servers
-  (parameter/c (or/c false/c (listof (list/c string? string? number?)))))
+  (parameter/c (or/c false/c (listof (or/c (list/c string? string? number?)
+                                           (list/c string? string? number? (or/c false/c string?)))))))
  (current-no-proxy-servers
   (parameter/c (or/c false/c (listof (or/c string? regexp?)))))
  (proxy-server-for (->* (string?) ((or/c false/c string?))
-                        (or/c false/c (list/c string? string? number?))))
+                        (or/c false/c (list/c string? string? number? (or/c false/c string?)))))
  (proxiable-url-schemes (listof string?)))
 
 (define (http-sendrecv/url u
@@ -569,9 +582,11 @@
 ;; tcp-or-tunnel-connect : string string number -> (values input-port? output-port?)
 (define (tcp-or-tunnel-connect scheme host port)
   (match (proxy-server-for scheme host)
-         [(list _ proxy-host proxy-port)
+         [(list _ proxy-host proxy-port proxy-auth)
           (define-values (t:ssl-ctx t:from t:to t:abandon-p)
-            (hc:http-conn-CONNECT-tunnel proxy-host proxy-port host port #:ssl? #f))
+            (hc:http-conn-CONNECT-tunnel proxy-host proxy-port host port
+                                         #:ssl? #f
+                                         #:proxy-auth proxy-auth))
           (values t:from t:to)]
          [_ (tcp-connect host port)]))
 
