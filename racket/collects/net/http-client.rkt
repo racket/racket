@@ -10,7 +10,8 @@
          (rename-in racket/tcp
                     [tcp-connect plain-tcp-connect]
                     [tcp-abandon-port plain-tcp-abandon-port])
-         "platform-ssl.rkt")
+         "platform-ssl.rkt"
+         net/base64)
 
 (define tolerant? #t)
 (define eol-type
@@ -359,13 +360,20 @@
   (http-conn-open! hc host-bs #:ssl? ssl? #:port port #:auto-reconnect? auto-reconnect?)
   hc)
 
-(define (http-conn-CONNECT-tunnel proxy-host proxy-port target-host target-port #:ssl? [ssl? #f])
+(define (http-conn-CONNECT-tunnel proxy-host proxy-port target-host target-port
+                                  #:ssl? [ssl? #f]
+                                  #:proxy-auth [proxy-auth #f])
   (define hc (http-conn-open proxy-host #:port proxy-port #:ssl? #f))
   (define connect-string (format "~a:~a" target-host target-port))
-  (http-conn-send! hc #:method "CONNECT" connect-string #:headers
-                   (list (format "Host: ~a" connect-string)
-                         "Proxy-Connection: Keep-Alive"
-                         "Connection: Keep-Alive"))
+  (http-conn-send! hc #:method "CONNECT" connect-string
+                   #:headers (append (if proxy-auth
+                                         (list (format "Proxy-Authorization: Basic ~a"
+                                                       (bytes->string/utf-8
+                                                        (base64-encode (string->bytes/utf-8 proxy-auth) #""))))
+                                         null)
+                                     (list (format "Host: ~a" connect-string)
+                                           "Proxy-Connection: Keep-Alive"
+                                           "Connection: Keep-Alive")))
 
   (let ((tunnel-status (http-conn-status! hc))
         (tunnel-headers (http-conn-headers! hc)))
@@ -604,7 +612,8 @@
           (between/c 1 65535)
           (or/c bytes? string?)
           (between/c 1 65535))
-         (#:ssl? base-ssl?/c)
+         (#:ssl? base-ssl?/c
+          #:proxy-auth (or/c #f string?))
          (values base-ssl?/c input-port? output-port? (-> port? void?)))]
   [http-conn-recv!
    (->* (http-conn-liveable?)

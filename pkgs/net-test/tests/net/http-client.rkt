@@ -393,6 +393,55 @@
         (abandon-p from)))
     "MONKEYS")
 
+  ;; Test http-conn-CONNECT-tunnel with proxy authentication
+  ;; This test creates a simple server that captures the request and verifies
+  ;; that the Proxy-Authorization header is sent correctly
+  (let ()
+    (local-require (prefix-in gs: "http-proxy/generic-server.rkt")
+                   net/base64)
+    (define captured-request #f)
+    (define-values (auth-proxy-port auth-proxy-thread auth-proxy-kill)
+      (gs:serve
+       (lambda (inp outp)
+         ;; Read and capture the CONNECT request
+         (set! captured-request
+               (for/list ((l (in-lines inp 'return-linefeed))
+                          #:break (string=? l ""))
+                 l))
+         ;; Send a 200 response to establish the tunnel
+         (display "HTTP/1.1 200 Connection Established\r\n\r\n" outp)
+         (flush-output outp)
+         ;; Echo back whatever is sent through the tunnel
+         (define line (read-line inp))
+         (unless (eof-object? line)
+           (displayln line outp)
+           (flush-output outp)))))
+
+    (define test-credentials "testuser:testpassword")
+    (define expected-auth-header
+      (format "Proxy-Authorization: Basic ~a"
+              (bytes->string/utf-8 (base64-encode (string->bytes/utf-8 test-credentials) #""))))
+
+    (define-values (ssl-ctx from to abandon-p)
+      (hc:http-conn-CONNECT-tunnel "localhost" auth-proxy-port
+                                   "targethost" 443
+                                   #:ssl? #f
+                                   #:proxy-auth test-credentials))
+
+    ;; Send something through the tunnel and read it back
+    (fprintf to "TEST\n")
+    (flush-output to)
+    (define response (read-line from))
+    (abandon-p to)
+    (abandon-p from)
+    (auth-proxy-kill)
+
+    ;; Verify the CONNECT request included the Proxy-Authorization header
+    (check-true (list? captured-request))
+    (check-not-false (member expected-auth-header captured-request)
+                     (format "Expected Proxy-Authorization header not found. Got: ~a" captured-request))
+    (check-equal? response "TEST"))
+
   (let ([c (hc:http-conn)])
     (check-false (hc:http-conn-live? c))
     (check-false (hc:http-conn-liveable? c))

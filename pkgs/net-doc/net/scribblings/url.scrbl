@@ -486,21 +486,25 @@ the connection process is interrupted by an asynchronous break
 exception.}
 
 @deftogether[(
-@defparam[current-proxy-servers mapping (listof (list/c string? string? (integer-in 0 65535)))]
+@defparam[current-proxy-servers mapping (listof (or/c (list/c string? string? (integer-in 0 65535))
+                                                      (list/c string? string? (integer-in 0 65535) (or/c #f string?))))]
 @defthing[proxiable-url-schemes (listof string?) #:value '("http" "https" "git")]
  )]{
 
 The @racket[current-proxy-servers] parameter determines a mapping of proxy servers used for
-connections. Each mapping is a list of three elements:
+connections. Each mapping is a list of three or four elements:
 
 @itemize[
 
  @item{the URL scheme, such as @racket["http"], where @racket[proxiable-url-schemes] lists the URL schemes
   that can be proxied}
 
- @item{the proxy server address; and}
+ @item{the proxy server address;}
 
- @item{the proxy server port number.}
+ @item{the proxy server port number; and}
+
+ @item{optionally, authentication credentials as a string of the form
+  @racket["username:password"], or @racket[#f] for no authentication.}
 
 ]
 
@@ -533,11 +537,17 @@ connections are proxied using an HTTP ``CONNECT'' tunnel}
 ]
 
 Each environment variable contains a single URL of the form
-@litchar{http://}@nonterm{hostname}@litchar{:}@nonterm{portno}.
+@litchar{http://}@nonterm{hostname}@litchar{:}@nonterm{portno} or
+@litchar{http://}@nonterm{user}@litchar{:}@nonterm{password}@litchar["@"]@nonterm{hostname}@litchar{:}@nonterm{portno}.
+If authentication credentials are included in the URL, they will be used
+for HTTP Basic authentication with the proxy server when making CONNECT
+tunnel connections for HTTPS or Git URLs.
 If any other components of the URL are provided, a warning will be logged to a @racket[net/url]
 logger.
 
-The default mapping is the empty list (i.e., no proxies).}
+The default mapping is the empty list (i.e., no proxies).
+
+@history[#:changed "9.1.0.2" @elem{Added support for proxy authentication credentials.}]}
 
 @defparam[current-no-proxy-servers dest-hosts-list (listof (or/c string? regexp?))]{
 
