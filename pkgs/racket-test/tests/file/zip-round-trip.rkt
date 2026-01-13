@@ -28,9 +28,11 @@
     (parameterize ([current-directory dir])
       (zip->output (list "x" "y" "d" "d/z") out))))
 
-;; ".zip" dates are even numbers
+;; ".zip" dates are rounded to even numbers, but second 59 caps at 58 (MS-DOS time format)
 (define (rounded v)
-  (+ v (modulo v 2)))
+  (cond
+    [(= (modulo v 60) 59) (- v 1)]
+    [else (+ v (modulo v 2))]))
 
 (define (test unzip)
   (define dir2 (make-temporary-directory))
