@@ -59,8 +59,11 @@
   ;; ===========================================================================
 
   ;; date->msdos-time : date -> msdos-time
+  ;; See https://formats.kaitai.io/dos_datetime/ for format specification.
   (define (date->msdos-time date round-down?)
-    (bitwise-ior (arithmetic-shift (+ (if round-down? 0 1) (date-second date)) -1)
+    ;; MS-DOS time format uses 5 bits for seconds (0-29, representing 0-58 in 2-sec increments).
+    ;; When rounding up with seconds=59, cap at 29 to avoid overflow to invalid value 60.
+    (bitwise-ior (min 29 (arithmetic-shift (+ (if round-down? 0 1) (date-second date)) -1))
                  (arithmetic-shift (date-minute date) 5)
                  (arithmetic-shift (date-hour date) 11)))
 
