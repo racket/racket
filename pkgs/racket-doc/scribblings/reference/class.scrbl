@@ -1562,10 +1562,38 @@ field, the @exnraise[exn:fail:object].}
 
 @; - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-@subsection{Generics}
+@subsection[#:tag "sec:generics"]{Generics}
 
 A @deftech{generic} can be used instead of a method name to avoid the
-cost of relocating a method by name within a class.
+cost of relocating a method by name within a class, making method
+invocation more efficient.
+
+@examples[
+ #:eval class-eval
+ (eval:no-prompt
+  (define woody%
+    (class object%
+      (define/public (draw who)
+        (format "reach for the sky, ~a" who))
+      (super-new))))
+ 
+ (eval:no-prompt
+  (define gen-draw (generic woody% draw)))
+
+ (eval:no-prompt
+  (define (call-draw o)
+    (send-generic o gen-draw "partner")))
+
+ (call-draw (new woody%))
+
+ (eval:no-prompt
+  (define woody2%
+    (class woody%
+      (define/override (draw who)
+        (string-append (super draw who)
+                       "–there's a snake in my boot!"))
+      (super-new))))
+ (call-draw (new woody2%))]
 
 @defform[(generic class-or-interface-expr id)]{
 
@@ -1577,7 +1605,10 @@ method with (external) name @racket[id].
 If @racket[class-or-interface-expr] does not produce a class or
 interface, the @exnraise[exn:fail:contract]. If the resulting class or
 interface does not contain a method named @racket[id], the
-@exnraise[exn:fail:object].}
+@exnraise[exn:fail:object].
+
+See the introduction to @secref["sec:generics"] for some examples.
+}
 
 @defform*[[(send-generic obj-expr generic-expr arg ...)
            (send-generic obj-expr generic-expr arg ... . arg-list-expr)]]{
@@ -1593,7 +1624,10 @@ If @racket[obj-expr] does not produce an object, or if
 @racket[generic-expr] does not produce a generic, the
 @exnraise[exn:fail:contract]. If the result of @racket[obj-expr] is
 not an instance of the class or interface encapsulated by the result
-of @racket[generic-expr], the @exnraise[exn:fail:object].}
+of @racket[generic-expr], the @exnraise[exn:fail:object].
+
+See the introduction to @secref["sec:generics"] for some examples.
+}
 
 @defproc[(make-generic [type (or/c class? interface?)]
                        [method-name symbol?])
