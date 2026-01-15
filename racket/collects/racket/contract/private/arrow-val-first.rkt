@@ -24,6 +24,7 @@ plus1 arg list construction: build-plus-one-arity-function/real
          "arrow-collapsible.rkt"
          "collapsible-common.rkt"
          "list.rkt"
+         "arity-checking.rkt"
          racket/stxparam)
 
 (provide (rename-out [->/c ->]) ->*
@@ -1655,20 +1656,19 @@ plus1 arg list construction: build-plus-one-arity-function/real
                     [(post/desc) (list '#:post/desc '...)]
                     [(#f)        (list)]))])]))
 
-(define ((->-first-order ctc) x)
-  (define l (base->-min-arity ctc))
-  (define man-kwds (for/list ([kwd-info (base->-kwd-infos ctc)]
-                              #:when (kwd-info-mandatory? kwd-info))
-                     (kwd-info-kwd kwd-info)))
-  (define opt-kwds (for/list ([kwd-info (base->-kwd-infos ctc)]
-                              #:unless (kwd-info-mandatory? kwd-info))
-                     (kwd-info-kwd kwd-info)))
-  (and (procedure? x) 
-       (if (base->-rest ctc)
-           (procedure-accepts-and-more? x l)
-           (procedure-arity-includes? x l #t))
-       (keywords-match man-kwds opt-kwds x)
-       #t))
+(define (->-first-order ctc)
+  (define ->stct-doms (base->-doms ctc))
+  (define ->stct-rest (base->-rest ctc))
+  (define ->stct-min-arity (base->-min-arity ctc))
+  (define ->stct-kwd-infos (base->-kwd-infos ctc))
+  (define method? (base->-method? ctc))
+  (λ (val)
+    (do-arity-checking #f val
+                       ->stct-doms
+                       ->stct-rest
+                       ->stct-min-arity
+                       ->stct-kwd-infos
+                       method?)))
 
 (define (make-property is-impersonator?)
   (define build-X-property

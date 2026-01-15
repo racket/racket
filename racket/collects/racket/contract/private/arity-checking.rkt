@@ -9,21 +9,25 @@
          arity-as-string
          raw-arity-as-string)
 
-(define (do-arity-checking blame val 
+;; do-arity-checking : (or/c #f blame) any/c .... -> (or/c boolean? proc)
+;; if blame is #f, then returns a boolean indicating if the first-order checks passed for val
+;; if blame is a blame object, then return a #f if the arity checking passed and a procedure if not
+(define (do-arity-checking blame val
                            ->stct-doms
                            ->stct-rest
                            ->stct-min-arity
                            ->stct-kwd-infos
                            method?)
   (define proc/meth (if method? "a method" "a procedure"))
-  (let/ec k
+  (let/ec escape
     (unless (procedure? val)
-      (k
-       (λ (neg-party)
-         (raise-blame-error blame #:missing-party neg-party val
-                            `(expected: ,proc/meth
-                                        given: "~e")
-                            val))))
+      (escape
+       (and blame
+            (λ (neg-party)
+              (raise-blame-error blame #:missing-party neg-party val
+                                 `(expected: ,proc/meth
+                                             given: "~e")
+                                 val)))))
      (define-values (actual-mandatory-kwds actual-optional-kwds) (procedure-keywords val))
      (define arity (if (list? (procedure-arity val))
                        (procedure-arity val)
@@ -47,47 +51,50 @@
                          (<= (arity-at-least-value lst) (+ exra-required-args ->stct-min-arity))))
                   #t)))
        (unless matching-arity?
-         (k
-          (λ (neg-party)
-            (define expected-number-of-non-keyword-args*
-              ((if method? sub1 values) expected-number-of-non-keyword-args))
-            (raise-blame-error blame #:missing-party neg-party val
-                               `(expected:
-                                 ,(string-append proc/meth
-                                                 " that accepts ~a non-keyword argument~a~a")
-                                 given: "~e"
-                                 "\n  ~a")
-                               expected-number-of-non-keyword-args*
-                               (if (= expected-number-of-non-keyword-args* 1) "" "s")
-                               (if ->stct-rest
-                                   " and arbitrarily many more"
-                                   "")
-                               val
-                               (arity-as-string val))))))
+         (escape
+          (and blame
+               (λ (neg-party)
+                 (define expected-number-of-non-keyword-args*
+                   ((if method? sub1 values) expected-number-of-non-keyword-args))
+                 (raise-blame-error blame #:missing-party neg-party val
+                                    `(expected:
+                                      ,(string-append proc/meth
+                                                      " that accepts ~a non-keyword argument~a~a")
+                                      given: "~e"
+                                      "\n  ~a")
+                                    expected-number-of-non-keyword-args*
+                                    (if (= expected-number-of-non-keyword-args* 1) "" "s")
+                                    (if ->stct-rest
+                                        " and arbitrarily many more"
+                                        "")
+                                    val
+                                    (arity-as-string val)))))))
 
     (define (should-have-supplied kwd)
-      (k
-       (λ (neg-party)
-         (raise-blame-error blame #:missing-party neg-party val
-                            `(expected: 
-                              ,(string-append proc/meth " that accepts the ~a keyword argument")
-                              given: "~e"
-                              "\n  ~a")
-                            kwd
-                            val
-                            (arity-as-string val method?)))))
+      (escape
+       (and blame
+            (λ (neg-party)
+              (raise-blame-error blame #:missing-party neg-party val
+                                 `(expected:
+                                   ,(string-append proc/meth " that accepts the ~a keyword argument")
+                                   given: "~e"
+                                   "\n  ~a")
+                                 kwd
+                                 val
+                                 (arity-as-string val method?))))))
     
     (define (should-not-have-supplied kwd)
-      (k
-       (λ (neg-party)
-         (raise-blame-error blame #:missing-party neg-party val
-                            `(expected: 
-                              ,(string-append proc/meth " that does not require the ~a keyword argument")
-                              given: "~e"
-                              "\n  ~a")
-                            kwd
-                            val
-                            (arity-as-string val method?)))))
+      (escape
+       (and blame
+            (λ (neg-party)
+              (raise-blame-error blame #:missing-party neg-party val
+                                 `(expected:
+                                   ,(string-append proc/meth " that does not require the ~a keyword argument")
+                                   given: "~e"
+                                   "\n  ~a")
+                                 kwd
+                                 val
+                                 (arity-as-string val method?))))))
     
     (when actual-optional-kwds ;; when all kwds are okay, no checking required
       (let loop ([mandatory-kwds actual-mandatory-kwds]
@@ -117,17 +124,18 @@
              [(equal? kwd (kwd-info-kwd kwd-info))
               (when (and (not (kwd-info-mandatory? kwd-info))
                          mandatory?)
-                (k
-                 (λ (neg-party)
-                   (raise-blame-error 
-                    blame #:missing-party neg-party val
-                    `(expected:
-                      ,(string-append proc/meth " that optionally accepts the keyword ~a (this one is mandatory)")
-                      given: "~e"
-                      "\n  ~a")
-                    val
-                    kwd
-                    (arity-as-string val method?)))))
+                (escape
+                 (and blame
+                      (λ (neg-party)
+                        (raise-blame-error
+                         blame #:missing-party neg-party val
+                         `(expected:
+                           ,(string-append proc/meth " that optionally accepts the keyword ~a (this one is mandatory)")
+                           given: "~e"
+                           "\n  ~a")
+                         val
+                         kwd
+                         (arity-as-string val method?))))))
               (loop new-mandatory-kwds new-all-kwds (cdr kwd-infos))]
              [(keyword<? kwd (kwd-info-kwd kwd-info))
               (when mandatory?
@@ -136,7 +144,7 @@
              [else
               (loop new-mandatory-kwds new-all-kwds kwd-infos)])])))
     
-    #f))
+    (if blame #f #t)))
 
 
 (define (arity-as-string v [method? #f])

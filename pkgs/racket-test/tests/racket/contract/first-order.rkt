@@ -40,6 +40,9 @@
   (ctest #t contract-first-order-passes? 
          (->* (integer?) () #:rest any/c (values char? any/c))
          (λ x #f))
+  (ctest #f contract-first-order-passes?
+         (->* (integer?) (symbol? boolean?) number?)
+         (lambda (x [y 'a]) x))
 
   (ctest #t contract-first-order-passes? (->d ((z any/c)) () (result any/c)) (λ (x) x))
   (ctest #f contract-first-order-passes? (->d ((z any/c)) () (result any/c)) (λ (x y) x))
