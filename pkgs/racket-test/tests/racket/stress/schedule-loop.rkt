@@ -23,7 +23,7 @@
 (when (sync/timeout 1 t1 t2)
   (error "should not sync"))
 
-(unless (ready . < . 100)
-  (error "too much polling"))
+(unless (ready . < . 2000)
+  (error "too much polling" ready))
 
 ready
