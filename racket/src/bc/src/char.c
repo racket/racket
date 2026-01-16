@@ -93,7 +93,7 @@ void scheme_init_char_constants(void)
 
   for (i = 0; i < NUM_GRAPHEME_BREAK_PROPERTIES; i++) {
     Scheme_Object *s;
-    s = scheme_intern_symbol(grapheme_break_propoerty_names[i]);
+    s = scheme_intern_symbol(grapheme_break_property_names[i]);
     grapheme_break_property_symbols[i] = s;    
   }
 }

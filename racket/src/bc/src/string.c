@@ -3615,18 +3615,35 @@ int scheme_grapheme_cluster_step(mzchar c, int *_state) {
      So, if you get to the end of a string with a non-0 state, then
      "flush" the state by consuming that last grapheme cluster. */
 
+#define MZ_EXT_STATE_SHIFT 3
+  
   int old_state = *_state;
   int prev = (int)((old_state - 1) & ((1 << (MZ_GRAPHBREAK_BITS+1))-1));
-  int ext_pict = (int)((old_state) >> (MZ_GRAPHBREAK_BITS+1));
-  int prop;
+  int ind_state = (int)(((old_state) >> (MZ_GRAPHBREAK_BITS+1)) & 0x3);
+  int ext_pict = (int)((old_state) >> (MZ_GRAPHBREAK_BITS+MZ_EXT_STATE_SHIFT));
+  int prop, indc;
 
   prop = scheme_grapheme_cluster_break(c);
+  indc = scheme_indic_conjunct_break(c);
+
+#define MZ_EXT_IND1 1
+#define MZ_EXT_IND2 2
+#define MZG_NEXT_INDIC_STATE()  ((indc == MZ_INDIC_CONJUNCT_NONE)       \
+                                 ? 0                                    \
+                                 : ((indc == MZ_INDIC_CONJUNCT_CONSONANT) \
+                                    ? MZ_EXT_IND1                       \
+                                    : ((indc == MZ_INDIC_CONJUNCT_LINKER) && (ind_state == MZ_EXT_IND1) \
+                                       ? MZ_EXT_IND2                    \
+                                       : ind_state)))
 
 #define MZ_GRAPHBREAK_EXTENDED_PICTOGRAPHIC MZ_GRAPHBREAK_COUNT  
-#define MZG_PROP_STATE() (prop+1)
-#define MZG_NEXT_STATE() ((prop+1) | (scheme_isextpict(c) \
-                                      ? (MZ_GRAPHBREAK_EXTENDED_PICTOGRAPHIC << (MZ_GRAPHBREAK_BITS+1)) \
-                                      : 0))
+#define MZG_PROP0_STATE() (prop+1)
+#define MZG_PROP_STATE() ((prop+1) | (MZG_NEXT_INDIC_STATE() << (MZ_GRAPHBREAK_BITS+1)))
+#define MZG_NEXT_STATE() ((prop+1)                                         \
+                          | (MZG_NEXT_INDIC_STATE() << (MZ_GRAPHBREAK_BITS+1)) \
+                          | (scheme_isextpict(c)                           \
+                             ? (MZ_GRAPHBREAK_EXTENDED_PICTOGRAPHIC << (MZ_GRAPHBREAK_BITS+MZ_EXT_STATE_SHIFT)) \
+                             : 0))
   
   if (prev == MZ_GRAPHBREAK_CR) { /* some of GB3 and some of GB4 */
     if (prop == MZ_GRAPHBREAK_LF)
@@ -3635,7 +3652,7 @@ int scheme_grapheme_cluster_step(mzchar c, int *_state) {
       *_state = MZG_NEXT_STATE();
     return 1;
   } else if (prop == MZ_GRAPHBREAK_CR) { /* some of GB3 and some of GB5 */
-    *_state = MZG_PROP_STATE();
+    *_state = MZG_PROP0_STATE();
     return (old_state > 0);
   } else if ((prev == MZ_GRAPHBREAK_CONTROL) || (prev == MZ_GRAPHBREAK_LF)) { /* rest of GB4 */
     *_state = MZG_NEXT_STATE();
@@ -3644,32 +3661,33 @@ int scheme_grapheme_cluster_step(mzchar c, int *_state) {
     if (old_state == 0)
       *_state = 0;
     else
-      *_state = MZG_PROP_STATE();
+      *_state = MZG_PROP0_STATE();
     return 1;
   } else if ((prev == MZ_GRAPHBREAK_L)
              && ((prop == MZ_GRAPHBREAK_L)
                  || (prop == MZ_GRAPHBREAK_V)
                  || (prop == MZ_GRAPHBREAK_LV)
                  || (prop == MZ_GRAPHBREAK_LVT))) { /* GB6 */
-    *_state = MZG_PROP_STATE();
+    *_state = MZG_PROP0_STATE();
     return 0;
   } else if (((prev == MZ_GRAPHBREAK_LV)
               || (prev == MZ_GRAPHBREAK_V))
              && ((prop == MZ_GRAPHBREAK_V)
                  || (prop == MZ_GRAPHBREAK_T))) { /* GB7 */
-    *_state = MZG_PROP_STATE();
+    *_state = MZG_PROP0_STATE();
     return 0;
   } else if (((prev == MZ_GRAPHBREAK_LVT)
               || (prev == MZ_GRAPHBREAK_T))
              && (prop == MZ_GRAPHBREAK_T)) { /* GB8 */
-    *_state = MZG_PROP_STATE();
+    *_state = MZG_PROP0_STATE();
     return 0;
   } else if ((prop == MZ_GRAPHBREAK_EXTEND)
              || (prop == MZ_GRAPHBREAK_ZWJ)) { /* GB9 */
     if ((ext_pict == MZ_GRAPHBREAK_EXTENDED_PICTOGRAPHIC)
         || (ext_pict == MZ_GRAPHBREAK_EXTEND)) {
       *_state = (MZG_PROP_STATE()
-                 | (prop << (MZ_GRAPHBREAK_BITS+1)));
+                 | (MZG_NEXT_INDIC_STATE() << (MZ_GRAPHBREAK_BITS+1))
+                 | (prop << (MZ_GRAPHBREAK_BITS+MZ_EXT_STATE_SHIFT)));
     } else
       *_state = MZG_PROP_STATE();
     return 0;
@@ -3679,10 +3697,14 @@ int scheme_grapheme_cluster_step(mzchar c, int *_state) {
   } else if (prev == MZ_GRAPHBREAK_PREPEND) { /* GB9b */
     *_state = MZG_NEXT_STATE();
     return 0;
+  } else if ((ind_state == MZ_EXT_IND2)
+             && (indc == MZ_INDIC_CONJUNCT_CONSONANT)) {  /* GB9c */
+    *_state = MZG_NEXT_STATE();
+    return 0;
   } else if ((ext_pict == MZ_GRAPHBREAK_ZWJ)
              && scheme_isextpict(c)) { /* GB11 */
     *_state = (MZG_PROP_STATE()
-               | (MZ_GRAPHBREAK_EXTENDED_PICTOGRAPHIC << (MZ_GRAPHBREAK_BITS+1)));
+               | (MZ_GRAPHBREAK_EXTENDED_PICTOGRAPHIC << (MZ_GRAPHBREAK_BITS+MZ_EXT_STATE_SHIFT)));
     return 0;
   } else if (prev == MZ_GRAPHBREAK_REGIONAL_INDICATOR) { /* GB12 and GB13 */
     if (prop == MZ_GRAPHBREAK_REGIONAL_INDICATOR) {

@@ -754,8 +754,10 @@ typedef struct Scheme_Offset_Cptr
 #define scheme_general_category(x) ((scheme_uchar_find(scheme_uchar_cats_table, x)) & 0x1F)
 /* Note: 3 bits available in the cats table */
 
-#define scheme_grapheme_cluster_break(x) (scheme_uchar_find(scheme_uchar_graphbreaks_table, x))
+#define scheme_grapheme_cluster_break(x) (scheme_uchar_find(scheme_uchar_graphbreaks_table, x) & MZ_GRAPHBREAK_MASK)
 #define scheme_isextend(x) ((scheme_grapheme_cluster_break(x)) == MZ_GRAPHBREAK_EXTEND)
+
+#define scheme_indic_conjunct_break(x) (scheme_uchar_find(scheme_uchar_graphbreaks_table, x) >> MZ_INDIC_CONJUNCT_SHIFT)
 
 /*========================================================================*/
 /*                          procedure values                              */

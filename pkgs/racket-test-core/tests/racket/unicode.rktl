@@ -2597,7 +2597,7 @@
                            [(= i (string-length s)) '()]
                            [else
                             (cons i (loop (+ i (string-grapheme-span s i))))]))])
-                  (test pieces 'pieces str-pieces))
+                  (test (cons s pieces) 'pieces (cons s str-pieces)))
                 (let ([stream-str-pieces
                        (let loop ([i 0] [start 0] [state 0])
                          (cond
