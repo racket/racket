@@ -372,7 +372,7 @@
 
 (define (binding-table-prune-to-reachable bt state)
   (or (hash-ref (serialize-state-bindings-intern state) bt #f)
-      (let ([reachable-scopes (serialize-state-reachable-scopes state)])
+      (let ([reachable-scopes (serialize-state-all-reachable-scopes state)])
         (define new-syms
           (for*/hasheq ([(sym bindings-for-sym) (in-immutable-hash
                                                  (if (hash? bt)

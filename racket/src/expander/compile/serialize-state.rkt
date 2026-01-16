@@ -19,6 +19,7 @@
 
 (struct serialize-state (reachable-scopes       ; the set of all reachable scopes
                          implicitly-reachable-scopes ; not necessarily reachable, but contibutes to binding scope sets
+                         all-reachable-scopes   ; union of reachable and implicitly reachable
                          bindings-intern        ; to record pruned binding tables
                          bulk-bindings-intern   ; to record pruned bulk-binding lists
                          scopes                 ; interned scope sets
@@ -45,6 +46,7 @@
   (define state
     (serialize-state reachable-scopes
                      implicitly-reachable-scopes
+                     (set-union reachable-scopes implicitly-reachable-scopes)
                      (make-hasheq)   ; bindings-intern
                      (make-hasheq)   ; bulk-bindings-intern
                      (make-hash)     ; scopes
