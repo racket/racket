@@ -105,7 +105,7 @@
                          [(procedure? fail) (|#%app| fail)]
                          [else fail])]
                        [(impersonator? v)
-                        (impersonate-struct-or-property-ref val #f #|key1:|# acc #|key2:|# #f v #f #f #f)]
+                        (impersonate-struct-property-ref val acc v)]
                        [else val]))]
                    [(v) (acc v none)])
                   6

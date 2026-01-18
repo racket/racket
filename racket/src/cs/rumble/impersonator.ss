@@ -24,16 +24,60 @@
    "original" orig
    "received" naya))
 
-(define (hash-ref2 ht key1 key2 default)
-  (let ([ht/val (intmap-ref ht key1 #f)])
-    (if (and key2 ht/val)
-        (intmap-ref ht/val key2 #f)
-        ht/val)))
+;; keep impersonator mapping as a list up to some size, then
+;; start using `eq?`-based hash tables; we need two layers of
+;; of keys in the struct-type accessor case, or just one layer for
+;; struct-type property accessors
+(define (imp-procs-set2 procs key1 key2 val)
+  (cond
+    [(list? procs)
+     (cond
+       [(< (length procs) 3)
+        (cons (cons (if key2
+                        (cons key1 key2)
+                        key1)
+                    val)
+              procs)]
+       [else
+        (let loop ([lst procs] [procs (imp-procs-set2 empty-hasheq key1 key2 val)])
+          (cond
+            [(null? lst) procs]
+            [else
+             (loop (cdr lst)
+                   (let* ([p (car lst)]
+                          [k (car p)])
+                     (if (pair? k)
+                         (imp-procs-set2 procs (car k) (cdr k) (cdr p))
+                         (imp-procs-set2 procs k #f (cdr p)))))]))])]
+    [else
+     (intmap-set procs key1 (if key2
+                                (intmap-set (intmap-ref procs key1 empty-hasheq) key2 val)
+                                val))]))
 
-(define (hash-set2 ht key1 key2 val)
-  (intmap-set ht key1 (if key2
-                          (intmap-set (intmap-ref ht key1 empty-hasheq) key2 val)
-                          val)))
+;; see `imp-procs-set2`
+(define (imp-procs-ref2 procs key1 key2)
+  (cond
+    [(null? procs) #f]
+    [(pair? procs) (let* ([p (car procs)]
+                          [pk (car p)])
+                     (if (and (pair? pk)
+                              (eq? key1 (car pk))
+                              (eq? key2 (cdr pk)))
+                         (cdr p)
+                         (imp-procs-ref2 (cdr procs) key1 key2)))]
+    [else (let ([procs/val (intmap-ref procs key1 #f)])
+            (and procs/val
+                 (intmap-ref procs/val key2 #f)))]))
+
+;; see `imp-procs-set2`
+(define (imp-procs-ref1 procs key1)
+  (cond
+    [(null? procs) #f]
+    [(pair? procs) (let ([p (car procs)])
+                     (if (eq? key1 (car p))
+                         (cdr p)
+                         (imp-procs-ref1 (cdr procs) key1)))]
+    [else (intmap-ref procs key1 #f)]))
 
 (define impersonate-ref
   (case-lambda
@@ -42,29 +86,24 @@
    [(acc rtd pos orig proc-name contract realm)
     (#%$app/no-inline do-impersonate-ref acc rtd pos orig proc-name contract realm)]))
 
-(define (do-impersonate-ref acc rtd pos orig proc-name contract realm)
-  (impersonate-struct-or-property-ref acc rtd rtd pos orig proc-name contract realm))
-
 ;; `val/acc` is an accessor if `rtd`, a value otherwise;
 ;; `key2/pos` is a pos if `rtd`
-(define (impersonate-struct-or-property-ref val/acc rtd key1 key2/pos orig field/proc-name contract realm)
+(define (do-impersonate-ref acc rtd pos orig proc-name contract realm)
   (cond
    [(and (impersonator? orig)
-         (or (not rtd)
-             (record? (impersonator-val orig) rtd)))
+         (record? (impersonator-val orig) rtd))
     (let loop ([v orig])
       (cond
-       [(and rtd
-             (struct-undefined-chaperone? v))
+       [(struct-undefined-chaperone? v)
         ;; Must be the only wrapper left
-        (let ([abs-pos (fx+ key2/pos (struct-type-parent-total*-count rtd))])
+        (let ([abs-pos (fx+ pos (struct-type-parent-total*-count rtd))])
           (let ([r (unsafe-struct*-ref (impersonator-val v) abs-pos)])
             (when (eq? r unsafe-undefined)
-              (raise-unsafe-undefined 'struct-ref "undefined" "use" val/acc (impersonator-val v) abs-pos))
+              (raise-unsafe-undefined 'struct-ref "undefined" "use" acc (impersonator-val v) abs-pos))
             r))]
        [(or (struct-impersonator? v)
             (struct-chaperone? v))
-        (let ([wrapper (hash-ref2 (struct-impersonator/chaperone-procs v) key1 key2/pos #f)])
+        (let ([wrapper (imp-procs-ref2 (struct-impersonator/chaperone-procs v) rtd pos)])
           (cond
            [wrapper
             (let* ([r (cond
@@ -85,15 +124,51 @@
        [(impersonator? v)
         (loop (impersonator-next v))]
        [else
-        (cond
-         [rtd
-          (let ([abs-pos (fx+ key2/pos (struct-type-parent-total*-count rtd))])
-            (unsafe-struct*-ref v abs-pos))]
-         [else val/acc])]))]
+        (let ([abs-pos (fx+ pos (struct-type-parent-total*-count rtd))])
+          (unsafe-struct*-ref v abs-pos))]))]
    [else
     (if contract
-        (struct-ref-error orig field/proc-name contract realm)
-        (struct-ref-error orig (record-type-name rtd) field/proc-name))]))
+        (struct-ref-error orig proc-name contract realm)
+        (struct-ref-error orig (record-type-name rtd) proc-name))]))
+
+;; `orig` is known to be an impersonator, `acc` is a struct-type
+;; property accessor (but we use just it just as a key), and `val`
+;; is the result that would be returned without impersonators
+(define (impersonate-struct-property-ref val acc orig)
+  (let loop ([v orig])
+    (cond
+      [(not (impersonator? v)) val]
+      [(struct-impersonator? v)
+       (let ([wrapper (imp-procs-ref1 (struct-impersonator-procs v) acc)])
+         (cond
+           [(pair? wrapper)
+            (let ([r (|#%app| (car wrapper) (impersonator-next v))])
+              (|#%app| (cdr wrapper) orig r))]
+           [wrapper
+            (let ([r (loop (impersonator-next v))])
+              (|#%app| wrapper orig r))]
+           [else
+            (loop (impersonator-next v))]))]
+      [(struct-chaperone? v)
+       (let ([wrapper (imp-procs-ref1 (struct-chaperone-procs v) acc)])
+         (cond
+           [wrapper
+            (let* ([r (cond
+                        [(pair? wrapper)
+                         (|#%app| (car wrapper) (impersonator-next v))]
+                        [else
+                         (loop (impersonator-next v))])]
+                   [new-r (cond
+                            [(pair? wrapper)
+                             (|#%app| (cdr wrapper) orig r)]
+                            [else (|#%app| wrapper orig r)])])
+              (unless (chaperone-of? new-r r)
+                (raise-chaperone-error 'struct-ref "value" r new-r))
+              new-r)]
+           [else
+            (loop (impersonator-next v))]))]
+      [else
+       (loop (impersonator-next v))])))
 
 (define impersonate-set!
   (case-lambda
@@ -122,7 +197,7 @@
             (unsafe-struct*-set! v abs-pos a))]
          [(or (struct-impersonator? v)
               (struct-chaperone? v))
-          (let ([wrapper (hash-ref2 (struct-impersonator/chaperone-procs v) key1 key2 #f)])
+          (let ([wrapper (imp-procs-ref2 (struct-impersonator/chaperone-procs v) key1 key2)])
             (cond
              [wrapper
               (let ([new-a (cond
@@ -153,7 +228,7 @@
   (let loop ([v orig])
     (cond
      [(struct-chaperone? v)
-      (let ([wrapper (hash-ref (struct-impersonator/chaperone-procs v) struct-info #f)])
+      (let ([wrapper (imp-procs-ref1 (struct-impersonator/chaperone-procs v) struct-info)])
         (cond
          [wrapper
           (let-values ([(rtd skipped?) (loop (impersonator-next v))])
@@ -356,7 +431,7 @@
 
 ;; ----------------------------------------
 
-(define-record struct-impersonator impersonator (procs)) ; hash of proc -> (cons orig-orig wrapper-proc)
+(define-record struct-impersonator impersonator (procs)) ; list/hash to map proc -> wrapper-proc-or-(cons orig-proc wrapper-proc)
 (define-record struct-chaperone chaperone (procs))
 
 (define (struct-impersonator/chaperone-procs i)
@@ -391,8 +466,8 @@
                                "value" v))
       (let loop ([first? (not st)]
                  [args orig-args]
-                 [props empty-hasheq]
-                 [saw-props empty-hasheq]
+                 [props '()]
+                 [saw-props '()]
                  [witnessed? (and st #t)]
                  [iprops orig-iprops])
         (let ([get-proc
@@ -403,7 +478,7 @@
                                           "operation kind" (make-unquoted-printing-string what)
                                           "operation procedure" orig-proc
                                           "value" v))
-                 (when (hash-ref2 saw-props key1 key2 #f)
+                 (when (imp-procs-ref2 saw-props key1 key2)
                    (raise-arguments-error who
                                           "given operation accesses the same value as a previous operation argument"
                                           "operation kind" (make-unquoted-printing-string what)
@@ -434,13 +509,13 @@
                      (loop #f
                            new-args
                            (if proc
-                               (hash-set2 props key1 key2
+                               (imp-procs-set2 props key1 key2
                                           (if (impersonator? orig-proc)
                                               (cons orig-proc ; save original accessor, in case it's impersonated
                                                     proc)     ; the interposition proc
                                               proc))
                                props)
-                           (if (null? new-args) saw-props (hash-set2 saw-props key1 key2 #t))
+                           (if (null? new-args) saw-props (imp-procs-set2 saw-props key1 key2 #t))
                            (or witnessed? now-witnessed?)
                            iprops))))])
           (cond
@@ -464,7 +539,7 @@
                                                     " instance of an authentic structure type")
                                      "given value" v))
             (cond
-             [(eq? props empty-hasheq)
+             [(null? props)
               ;; No structure operations chaperoned, so either unchanged or
               ;; a properties-only impersonator
               (cond
