@@ -177,12 +177,12 @@ For @tech{flonums}: Unchecked (potentially) version of
 
 @history[#:added "7.8.0.7"]}
 
-@defproc[(flbit-field [a flonum?] [start (integer-in 0 64)] [end (integer-in 0 64)])
+@defproc[(unsafe-flbit-field [a flonum?] [start (integer-in 0 64)] [end (integer-in 0 64)])
          exact-nonnegative-integer?]{
 
 For @tech{flonums}: Unchecked version of @racket[flbit-field].
 
-@history[#:added "7.8.0.7"]}
+@history[#:added "8.15.03"]}
 
 
 @deftogether[(
