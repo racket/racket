@@ -3068,9 +3068,7 @@ static Scheme_Object *complex_tan(Scheme_Object *z)
   ay = fabs(y);
   if ( THETA_4 < ay ) {
     i = ( IS_NEG(y) ? -1.0 : 1.0 );
-    if ( MZ_IS_NAN(x) ) {
-      return scheme_make_complex(scheme_nan_object, scheme_nan_object);
-    } else if ( THETA_1 < ay) {
+    if ( THETA_1 < ay) {
       r = ( IS_NEG(x) ? -0.0 : 0.0);
     } else {
       double s, c;
