@@ -182,7 +182,7 @@ For @tech{flonums}: Unchecked (potentially) version of
 
 For @tech{flonums}: Unchecked version of @racket[flbit-field].
 
-@history[#:added "8.15.03"]}
+@history[#:added "8.15.0.3"]}
 
 
 @deftogether[(
