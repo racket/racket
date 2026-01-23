@@ -8,6 +8,7 @@
          setup/dirs
          scheme/list
          scheme/match
+         setup/private/validate-scribblings
          "../config.rkt")
 
 (provide make-start-page)
@@ -63,14 +64,17 @@
                   (define dir (directory-record-path rec))
                   (define s (and i
                                  (i tag)))
-                  (if (not s)
+                  (if (or (not s)
+                          (not (validate-scribblings-infos s)))
                     null
                     (filter-map
                      (lambda (d)
-                       (if (and (not all?)
-                                (pair? (cdr d))
-                                (or (memq 'user-doc (cadr d))
-                                    (memq 'user-doc-root (cadr d))))
+                       (if (or (and (not all?)
+                                    (pair? d)
+                                    (pair? (cdr d))
+                                    (or (memq 'user-doc (cadr d))
+                                        (memq 'user-doc-root (cadr d))))
+                               (not (list? d)))
                          #f
                          (let* ([new-cat (or (and ((length d) . > . 2)
                                                   (let ([cat (caddr d)])
