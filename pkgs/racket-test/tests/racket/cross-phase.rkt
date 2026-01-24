@@ -64,6 +64,80 @@
                      "was cross-phase"))))))
 
 
+;
+; Test cross-datum
+;
+
+(define (check-cross-datum is? datum)
+  (check-cross-phase is? `(define-values (x) (quote ,datum)) #:why-not-message #rx"parsed-quote"))
+
+; Atomic cross-data
+(check-cross-datum #t 'foo)
+(check-cross-datum #t 5)
+(check-cross-datum #t 5.0)
+(check-cross-datum #t 5/2)
+(check-cross-datum #t 5t2) ; extflonums are not regular `number?`s
+(check-cross-datum #t #t)
+(check-cross-datum #t #f)
+(check-cross-datum #t "foo")
+(check-cross-datum #t #"foo")
+(check-cross-datum #t #\x)
+(check-cross-datum #t '#:boop)
+(check-cross-datum #t #rx"foo")
+(check-cross-datum #t #px"foo")
+(check-cross-datum #t '())
+
+; Permitted non-atomic cross-data with cross-data parts
+(check-cross-datum #t '(1 2 . 3))
+(check-cross-datum #t '(1 2 3))
+(check-cross-datum #t #(1 2 3))
+(check-cross-datum #t #s(some-struct 1 2))
+(check-cross-datum #t #s((some-struct 2 (0 #f) #() supertype 1) 0 1 2))
+(check-cross-datum #t #hasheq((1 . a) (2 . b)))
+(check-cross-datum #t #&42)
+
+; Forbidden as cross-data
+(check-cross-datum #f #hash())
+(check-cross-datum #f #hasheqv())
+(check-cross-datum #f eof)
+(check-cross-datum #f (void))
+
+; Check that non-atomic data with permitted shapes are rejected if they have non-permitted
+; values
+(check-cross-datum #t (list* 1 2 3))
+(check-cross-datum #t (list 1 2 3))
+(check-cross-datum #t (vector 1 2 3))  ; vector->immutable-vector implicit
+(check-cross-datum #t (make-prefab-struct 'some-struct 1 2))
+(check-cross-datum #t (hasheq 'k 'v))
+(check-cross-datum #t (box-immutable #f))
+(check-cross-datum #f (list* 1 2 (void)))
+(check-cross-datum #f (list 1 (void) 3))
+(check-cross-datum #f (vector 1 (void) 3))  ; vector->immutable-vector implicit
+(check-cross-datum #f (make-prefab-struct 'some-struct 1 (void)))
+(check-cross-datum #f (hasheq 'k (void)))
+(check-cross-datum #f (hasheq (void) 'v))
+(check-cross-datum #f (box-immutable (void)))
+
+; Check mutable versus immutable variants of various data. (Note that we have to
+; hide the mutable variants of things which would otherwise be permitted as the
+; keys in a hasheq, since that's the only position where they won't get converted
+; to immutable by datum->syntax. Mutable prefab structs are an exception.)
+(check-cross-datum #t (hasheq (vector->immutable-vector (vector 'foo)) 'val))
+(check-cross-datum #t (hasheq (make-prefab-struct '(some-struct 1 (0 #f) #()) 'e) 'val))
+(check-cross-datum #t (hasheq (hasheq) 'val))
+(check-cross-datum #t (hasheq (box-immutable #f) 'val))
+(check-cross-datum #t (make-prefab-struct '(some-struct 1 (0 #f) #()) 'e))
+(check-cross-datum #f (hasheq (vector 'foo) 'val))
+(check-cross-datum #f (hasheq (make-prefab-struct '(some-struct 1 (0 #f) #(0)) 'e) 'val))
+(check-cross-datum #f (hasheq (make-hasheq) 'val))
+(check-cross-datum #f (hasheq (box #f) 'val))
+(check-cross-datum #f (make-prefab-struct '(some-struct 1 (0 #f) #(0)) 'e))
+
+
+;
+; Other tests
+;
+
 (check-cross-phase #t '(define-values (x) 5))
 (check-cross-phase #t '(define-values (x) '5))
 (check-cross-phase #t '(define-values (x) (#%datum . 5)))
@@ -71,6 +145,8 @@
 (check-cross-phase #t '(define-values (x) 'x))
 (check-cross-phase #t '(define-values (x) "x"))
 (check-cross-phase #t '(define-values (x) #"x"))
+(check-cross-phase #t '(define-values (x) #(x)))
+(check-cross-phase #t '(define-values (x) '(x)))
 (check-cross-phase #t '(define-values (x) cons))
 (check-cross-phase #t '(define-values (x) (cons 1 2)))
 (check-cross-phase #t '(define-values (x) (list 1 2)))
@@ -94,8 +170,6 @@
 (check-cross-phase #t '(define-values (x) (string->uninterned-symbol '"s")))
 (check-cross-phase #t '(define-values (x) (#%app string->uninterned-symbol '"s")))
 
-(check-cross-phase #f '(define-values (x) #(x)))
-(check-cross-phase #f '(define-values (x) '(x)))
 (check-cross-phase #f '(define-values (x) (lambda () (set! x 8))))
 (check-cross-phase #f '(define-values (x) (quote-syntax x)))
 (check-cross-phase #f '(define-values (x) (lambda () (quote-syntax x))))
