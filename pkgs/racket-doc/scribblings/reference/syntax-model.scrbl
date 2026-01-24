@@ -1301,7 +1301,8 @@ This grammar applies after @tech{expansion}, but because a @tech{cross-phase per
 module imports only from other cross-phase persistent modules, the only relevant
 expansion steps are the implicit introduction of
 @racket[#%plain-module-begin], implicit introduction of @racket[#%plain-app],
-and implicit introduction and/or expansion of @racket[#%datum].
+implicit introduction and/or expansion of @racket[#%datum],
+and splicing of @racket[begin] forms.
 
 @history[#:changed "7.5.0.12" @elem{Allow @racket[(#%plain-app variable-reference-from-unsafe? (#%variable-reference))].}
          #:changed "8.15.0.4" @elem{Allow @racket[(#%plain-app hasheq cross-expr ...+)] and @racket[(#%plain-app make-parameter cross-expr ...+)].}]
