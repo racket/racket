@@ -385,8 +385,9 @@ module:
 
  @item{@indexed-racket[#:cross-phase-persistent] --- declares the
        module as @tech{cross-phase persistent}, and reports a syntax
-       error if the module does not meet the import or syntactic
-       constraints of a @tech{cross-phase persistent} module.}
+       error if the module does not meet the
+       @seclink["cross-phase persistent-grammar"]{constraints
+       of cross-phase persistent modules}.}
 
 @item{@indexed-racket[#:empty-namespace] --- declares that
        @racket[module->namespace] for this module should produce a
