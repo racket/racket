@@ -1289,13 +1289,20 @@ and only if no module-level binding is @racket[set!]ed.
                 (#%plain-app string->uninterned-symbol string)
 		(#%plain-app variable-reference-from-unsafe?
 		             (#%variable-reference))]
-[cross-datum     number
-                 boolean
-                 identifier
-                 string
-                 bytes
-                 ()]
 ]
+
+In the grammar above, a @racket[_cross-datum] roughly correspond to data which can be
+read by the @secref["reader"] in its standard @racket[read-syntax] configuration, except
+that @tech{hash tables} are restricted to those using @racket[eq?] as the key comparison
+predicate (see @racket[hash-eq?].) More precisely, a @racket[_cross-datum] is either a
+@tech{number}, @tech{extflonum}, @tech{boolean}, @tech{symbol}, @tech{character},
+@tech{keyword}, empty list, @tech{string}, @tech{byte string},
+@tech{vector} where every value is also a @racket[_cross-datum],
+@racket[hash-eq?] where every key and every value is also a @racket[_cross-datum],
+@tech{box} where the value is also a @racket[_cross-datum], or
+@tech{prefab} structure where every field's value is also a @racket[_cross-datum].
+Furthermore, strings, byte strings, vectors, hash tables, boxes, and structures must
+be immutable.
 
 This grammar applies after @tech{expansion}, but because a @tech{cross-phase persistent}
 module imports only from other cross-phase persistent modules, the only relevant
@@ -1305,7 +1312,11 @@ implicit introduction and/or expansion of @racket[#%datum],
 and splicing of @racket[begin] forms.
 
 @history[#:changed "7.5.0.12" @elem{Allow @racket[(#%plain-app variable-reference-from-unsafe? (#%variable-reference))].}
-         #:changed "8.15.0.4" @elem{Allow @racket[(#%plain-app hasheq cross-expr ...+)] and @racket[(#%plain-app make-parameter cross-expr ...+)].}]
+         #:changed "8.15.0.4" @elem{Allow @racket[(#%plain-app hasheq cross-expr ...+)] and @racket[(#%plain-app make-parameter cross-expr ...+)].}
+         #:changed "9.1.0.4" @elem{Allow @tech{extflonums}, @tech{symbols}, @tech{characters},
+                                   @tech{keywords}, @tech{vectors}, @racket[hash-eq?]s,
+                                   @tech[#:key "box"]{boxes}, and @tech{prefab} structures
+                                   as @racket[_cross-datum].}]
 
 @;----------------------------------------
 
