@@ -3,27 +3,66 @@
 (require racket/string
          racket/exn)
 
-(define (check-cross-phase is? form #:why-not-message [why-not-regexp #f])
+
+; (try-compile-module module-body-form-sexp)
+;  ->  (values exn:fail:syntax? #f)
+;   or (values #f compiled-module-expression?)
+(define (try-compile-module module-sexp)
   (parameterize ([current-namespace (make-base-namespace)])
     (define o (open-output-bytes))
     (define syntax-error
       (with-handlers ([exn:fail:syntax? (lambda (exn) exn)])
-        (write (compile `(module m racket/kernel (#%declare #:cross-phase-persistent) ,form)) o)
+        (write (compile module-sexp) o)
         #f))
     (close-output-port o)
     (define i (open-input-bytes (get-output-bytes o)))
     (define e (parameterize ([read-accept-compiled #t])
                 (read i)))
-    (unless
-        (if is?
-            (and (not syntax-error)
-                 (not (eof-object? e))
-                 (module-compiled-cross-phase-persistent? e))
-            (and syntax-error
-                 (string-contains? (exn->string syntax-error) "cross-phase")
-                 (or (not why-not-regexp) (regexp-match? why-not-regexp (exn->string syntax-error)))
-                 (eof-object? e)))
-      (error 'cross-phase "failed: ~s ~s" is? form))))
+    (cond
+      [(and syntax-error
+            (eof-object? e))
+       (values syntax-error #f)]
+      [(and (not syntax-error)
+            (compiled-module-expression? e))
+       (values #f e)]
+      [else
+       (error 'try-compile-module "internal error")])))
+
+
+; (check-cross-phase #t module-body-form-sexp)
+; (check-cross-phase #f module-body-form-sexp #:why-not-message [why-not-regexp #f])
+;  -> void?
+(define (check-cross-phase expected? form #:why-not-message [why-not-regexp #f])
+  (let-values ([(syntax-error _mod) (try-compile-module `(module m racket/kernel
+                                                           ,form))])
+    (when syntax-error
+      (error 'cross-phase
+             "invalid test;~n  form...: ~s~n  syntax error: ~s"
+             form
+             syntax-error)))
+  (let-values ([(syntax-error mod) (try-compile-module `(module m racket/kernel
+                                                          (#%declare #:cross-phase-persistent)
+                                                          ,form))])
+    (if expected?
+        (unless (and mod
+                     (module-compiled-cross-phase-persistent? mod))
+          (error 'cross-phase
+                 "test failed;~n  form...: ~s~n  expected: to be cross-phased~n  actual: syntax error: ~a"
+                 form
+                 syntax-error))
+        (unless (and syntax-error
+                     (string-contains? (exn->string syntax-error) "cross-phase")
+                     (or (not why-not-regexp) (regexp-match? why-not-regexp (exn->string syntax-error))))
+          (error 'cross-phase
+                 "test failed;~n  form...: ~s~n  expected: ~a~n  actual: ~a"
+                 form
+                 (if why-not-regexp
+                     (format "not cross-phase (with error matching ~s)" why-not-regexp)
+                     "not cross-phase")
+                 (if syntax-error
+                     syntax-error
+                     "was cross-phase"))))))
+
 
 (check-cross-phase #t '(define-values (x) 5))
 (check-cross-phase #t '(define-values (x) '5))
@@ -70,10 +109,10 @@
 (check-cross-phase #f '(define-values (x) (lambda () (with-continuation-mark 1 2 (set! x x)))))
 (check-cross-phase #f '(define-values (x) (lambda () (begin 1 2 (set! x x)))))
 (check-cross-phase #f '(define-values (x) (lambda () (begin0 1 2 (set! x x)))))
-(check-cross-phase #f '(define-values (x) (lambda () (let-values ([q (set! x x)]) q))))
-(check-cross-phase #f '(define-values (x) (lambda () (let-values ([q 'ok]) (set! x x)))))
-(check-cross-phase #f '(define-values (x) (lambda () (letrec-values ([q (set! x x)]) q))))
-(check-cross-phase #f '(define-values (x) (lambda () (letrec-values ([q 'ok]) (set! x x)))))
+(check-cross-phase #f '(define-values (x) (lambda () (let-values ([(q) (set! x x)]) q))))
+(check-cross-phase #f '(define-values (x) (lambda () (let-values ([(q) 'ok]) (set! x x)))))
+(check-cross-phase #f '(define-values (x) (lambda () (letrec-values ([(q) (set! x x)]) q))))
+(check-cross-phase #f '(define-values (x) (lambda () (letrec-values ([(q) 'ok]) (set! x x)))))
 (check-cross-phase #f '(define-values (x) (#%variable-reference x)))
 (check-cross-phase #f '(#%require racket/base) #:why-not-message #rx"required.*module.*racket/base")
 (check-cross-phase #f '(define-values (x) (gensym 1)))
