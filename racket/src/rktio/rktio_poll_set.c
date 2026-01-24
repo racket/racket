@@ -1242,7 +1242,7 @@ void rkio_reset_sleep_backoff(rktio_t *rktio)
 
 static void prepare_windows_sleep(DWORD msec)
 {
-  /* The default scheduling granilaity is usually 16ms, which
+  /* The default scheduling granularity is usually 16ms, which
      means that a request to sleep 16ms could easily end up being 31ms,
      and a request to sleep 2ms is likely at least 16ms. We can
      request a finer granularity of scheduling, but do that only
@@ -1257,6 +1257,27 @@ static void finish_windows_sleep(DWORD msec)
     timeEndPeriod((msec >> 1) | 1);
 }
 
+#endif
+
+/****************** timeout converion  *****************/
+
+#ifdef RKTIO_SYSTEM_UNIX
+static void nanoseconds_to_timeval(float nsecs, struct timeval *time)
+{
+
+  intptr_t secs = (intptr_t)nsecs;
+  intptr_t usecs = (intptr_t)(fmod(nsecs, 1.0) * 1000000);
+
+  if (nsecs && (nsecs > 100000))
+    secs = 100000;
+  if (usecs < 0)
+    usecs = 0;
+  if (usecs >= 1000000)
+    usecs = 999999;
+
+  time->tv_sec = secs;
+  time->tv_usec = usecs;
+}
 #endif
 
 /******************** Main sleep function  *****************/
@@ -1361,7 +1382,7 @@ void rktio_sleep(rktio_t *rktio, float nsecs, rktio_poll_set_t *fds, rktio_ltps_
     {
       struct rktio_fd_set_data_t *data = fds->data;
       intptr_t count = data->count;
-      int timeout;
+      int timeout, r;
 
       if (nsecs <= 0.0)
         timeout = -1;
@@ -1379,7 +1400,15 @@ void rktio_sleep(rktio_t *rktio, float nsecs, rktio_poll_set_t *fds, rktio_ltps_
         count++;
       }
 
-      poll(data->pfd, count, timeout);
+      r = poll(data->pfd, count, timeout);
+
+      if (!r && (timeout == 0) && (nsecs >= 0.000001)) {
+        /* if we're supposed to sleep for at least a microsecond,
+           then avoid spinning by sleeping a little */
+        struct timeval time, rem_time;
+        nanoseconds_to_timeval(nsecs, &time);
+        nanosleep(&time, &rem_time);
+      }
     }
 #elif !defined(RKTIO_SYSTEM_WINDOWS)
 
@@ -1389,18 +1418,8 @@ void rktio_sleep(rktio_t *rktio, float nsecs, rktio_poll_set_t *fds, rktio_ltps_
       int actual_limit;
       fd_set *rd, *wr, *ex;
       struct timeval time;
-      intptr_t secs = (intptr_t)nsecs;
-      intptr_t usecs = (intptr_t)(fmod(nsecs, 1.0) * 1000000);
 
-      if (nsecs && (nsecs > 100000))
-	secs = 100000;
-      if (usecs < 0)
-	usecs = 0;
-      if (usecs >= 1000000)
-	usecs = 999999;
-
-      time.tv_sec = secs;
-      time.tv_usec = usecs;
+      nanoseconds_to_timeval(nsecs, &time);
 
       rd = RKTIO_FDS(fds);
       wr = RKTIO_FDS(RKTIO_GET_FDSET(fds, 1));
@@ -1445,7 +1464,7 @@ void rktio_sleep(rktio_t *rktio, float nsecs, rktio_poll_set_t *fds, rktio_ltps_
 	 everything's ok.
 
 	 Otherwise, we have trouble sleeping until an event is ready. We
-	 sometimes leave events on th queue because, say, an eventspace is
+	 sometimes leave events on the queue because, say, an eventspace is
 	 not ready. The problem is that MsgWait... only unblocks when a new
 	 event appears. Since extensions may check the queue using a sequence of
 	 PeekMessages, it's possible that an event is added during the

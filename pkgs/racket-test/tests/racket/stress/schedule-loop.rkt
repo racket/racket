@@ -10,7 +10,8 @@
   #:property prop:evt (unsafe-poller
                        (lambda (self wakeups)
                          #;(log-error "~s ~s" ready (and wakeups))
-                         (set! ready (add1 ready))
+                         (unless wakeups ; <- non-#f means on same polling iteration
+                           (set! ready (add1 ready)))
                          (values #f self))))
 (define t1
  (thread (lambda ()
@@ -23,7 +24,7 @@
 (when (sync/timeout 1 t1 t2)
   (error "should not sync"))
 
-(unless (ready . < . 2000)
-  (error "too much polling" ready))
-
 ready
+
+(unless (ready . < . 100)
+  (error "too much polling" ready))
