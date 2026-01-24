@@ -1259,27 +1259,6 @@ static void finish_windows_sleep(DWORD msec)
 
 #endif
 
-/****************** timeout converion  *****************/
-
-#ifdef RKTIO_SYSTEM_UNIX
-static void nanoseconds_to_timeval(float nsecs, struct timeval *time)
-{
-
-  intptr_t secs = (intptr_t)nsecs;
-  intptr_t usecs = (intptr_t)(fmod(nsecs, 1.0) * 1000000);
-
-  if (nsecs && (nsecs > 100000))
-    secs = 100000;
-  if (usecs < 0)
-    usecs = 0;
-  if (usecs >= 1000000)
-    usecs = 999999;
-
-  time->tv_sec = secs;
-  time->tv_usec = usecs;
-}
-#endif
-
 /******************** Main sleep function  *****************/
 /* The simple select() stuff is buried in various kinds of complexity. */
 
@@ -1405,8 +1384,9 @@ void rktio_sleep(rktio_t *rktio, float nsecs, rktio_poll_set_t *fds, rktio_ltps_
       if (!r && (timeout == 0) && (nsecs >= 0.000001)) {
         /* if we're supposed to sleep for at least a microsecond,
            then avoid spinning by sleeping a little */
-        struct timeval time, rem_time;
-        nanoseconds_to_timeval(nsecs, &time);
+        struct timespec time, rem_time;
+        time.tv_sec = (time_t)nsecs;
+        time.tv_nsec = (fmod(nsecs, 1.0) * 1000000000);
         nanosleep(&time, &rem_time);
       }
     }
@@ -1418,8 +1398,18 @@ void rktio_sleep(rktio_t *rktio, float nsecs, rktio_poll_set_t *fds, rktio_ltps_
       int actual_limit;
       fd_set *rd, *wr, *ex;
       struct timeval time;
+      intptr_t secs = (intptr_t)nsecs;
+      intptr_t usecs = (intptr_t)(fmod(nsecs, 1.0) * 1000000);
 
-      nanoseconds_to_timeval(nsecs, &time);
+      if (nsecs && (nsecs > 100000))
+        secs = 100000;
+      if (usecs < 0)
+        usecs = 0;
+      if (usecs >= 1000000)
+        usecs = 999999;
+
+      time.tv_sec = secs;
+      time.tv_usec = usecs;
 
       rd = RKTIO_FDS(fds);
       wr = RKTIO_FDS(RKTIO_GET_FDSET(fds, 1));
