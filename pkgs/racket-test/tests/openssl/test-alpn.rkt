@@ -64,7 +64,10 @@
 (ssl-load-private-key! sctx server-key)
 (ssl-load-certificate-chain! sctx server-crt)
 (ssl-set-server-alpn! sctx '(#"rkt-proto" #"other") #t)
-(define listener (ssl-listen PORT 5 #t #f sctx))
+(define listener (ssl-listen 0 5 #f #f sctx))
+
+(define-values (listener-addr listener-port ignore-addr ignore-port)
+   (ssl-addresses listener #t))
 
 (define server2-cust (make-custodian))
 (define server2-chan (make-channel))
@@ -81,20 +84,20 @@
 (let ()
   ;; Shared proto is selected.
   (define-values (in out)
-    (ssl-connect "localhost" PORT #:alpn '(#"unsupported" #"rkt-proto")))
+    (ssl-connect "localhost" listener-port #:alpn '(#"unsupported" #"rkt-proto")))
   (check-equal? (ssl-get-alpn-selected in) #"rkt-proto")
   (check-equal? (channel-get server2-chan) #"rkt-proto"))
 
 (let ()
   ;; Server selects shared proto according to its priorities.
   (define-values (in out)
-    (ssl-connect "localhost" PORT #:alpn '(#"other" #"rkt-proto")))
+    (ssl-connect "localhost" listener-port #:alpn '(#"other" #"rkt-proto")))
   (check-equal? (ssl-get-alpn-selected in) #"rkt-proto")
   (check-equal? (channel-get server2-chan) #"rkt-proto"))
 
 (let ()
   ;; Client w/o ALPN can still connect.
-  (define-values (in out) (ssl-connect "localhost" PORT))
+  (define-values (in out) (ssl-connect "localhost" listener-port))
   (check-equal? (ssl-get-alpn-selected in) #f)
   (check-equal? (channel-get server2-chan) #f))
 
@@ -106,7 +109,7 @@
   ;; - https://bugs.chromium.org/p/chromium/issues/detail?id=497770
   ;; - https://github.com/postmanlabs/httpbin/issues/497
   (define-values (in out)
-    (ssl-connect "localhost" PORT #:alpn '(#"stuff" #"nonsense")))
+    (ssl-connect "localhost" listener-port #:alpn '(#"stuff" #"nonsense")))
   (check-equal? (ssl-get-alpn-selected in) #f)
   (check-equal? (channel-get server2-chan) #f))
 
