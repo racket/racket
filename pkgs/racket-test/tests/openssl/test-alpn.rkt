@@ -64,7 +64,7 @@
 (ssl-load-private-key! sctx server-key)
 (ssl-load-certificate-chain! sctx server-crt)
 (ssl-set-server-alpn! sctx '(#"rkt-proto" #"other") #t)
-(define listener (ssl-listen PORT 5 #f #f sctx))
+(define listener (ssl-listen PORT 5 #t #f sctx))
 
 (define server2-cust (make-custodian))
 (define server2-chan (make-channel))
