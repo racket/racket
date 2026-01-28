@@ -1045,6 +1045,21 @@ rem_mod (int argc, Scheme_Object *argv[], char *name, int first_sign)
     return scheme_make_integer(v);
   }
 
+  if (!SCHEME_FLOATP(n1) && SCHEME_FLOATP(n2)) {
+    /* avoid roundoff that might happen converting `n1` to inexact */
+    Scheme_Object *a[2], *r;
+    a[0] = n2;
+    a[1] = scheme_inexact_to_exact(1, a);
+    a[0] = n1;
+    a[0] = rem_mod(2, a, name, first_sign);
+    r = scheme_exact_to_inexact(1, a);
+#ifdef MZ_USE_SINGLE_FLOATS
+    if (SCHEME_FLTP(n2))
+      return scheme_make_float(SCHEME_DBL_VAL(r));
+#endif
+    return r;
+  }
+
   if (SCHEME_FLOATP(n1) || SCHEME_FLOATP(n2)) {
     double a, b, na, nb, v;
 #ifdef MZ_USE_SINGLE_FLOATS
