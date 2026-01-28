@@ -235,10 +235,6 @@
 
 (define SQLITE_DBCONFIG_ENABLE_LOAD_EXTENSION 1005) ;; int int*
 
-(define-sqlite sqlite3_db_config
-  (_fun _sqlite3_database _int _int (out : (_ptr o _int))
-        -> (r : _int) -> r)) ;; FIXME: return out?
-
 (define-sqlite sqlite3_enable_load_extension
   (_fun _sqlite3_database _int -> _int))
 
