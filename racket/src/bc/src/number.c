@@ -1013,7 +1013,6 @@ void scheme_init_flfxnum_number(Scheme_Startup_Env *env)
   scheme_addto_prim_instance("flsingle", p, env);
 
   p = scheme_make_folding_prim(fl_bit_field, "flbit-field", 3, 3, 1);
-  SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_PRODUCES_FLONUM);
   scheme_addto_prim_instance("flbit-field", p, env);
 
   p = scheme_make_folding_prim(fl_sin, "flsin", 1, 1, 1);
@@ -1608,7 +1607,6 @@ void scheme_init_unsafe_number(Scheme_Startup_Env *env)
   scheme_addto_prim_instance("unsafe-flsingle", p, env);
 
   p = scheme_make_folding_prim(unsafe_flbit_field, "unsafe-flbit-field", 3, 3, 1);
-  SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_PRODUCES_FLONUM);
   scheme_addto_prim_instance("unsafe-flbit-field", p, env);
 }
 
