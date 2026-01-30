@@ -444,6 +444,14 @@
           flbit-field 3.141579e132 i j)))
 
 ;; ----------------------------------------
+;; Regression test to make sure that flbit-field does not internally
+;; claim to produce a flonum
+(let ([f (black-box (lambda (v) (fixnum? (flbit-field v 52 63))))])
+  (test #t f 1.0))
+(let ([f (black-box (lambda (v) (fixnum? (unsafe-flbit-field v 52 63))))])
+  (test #t f 1.0))
+
+;; ----------------------------------------
 ;; Make sure `flvector` is not incorrectly constant-folded
 
 (let ([v (flvector 1.0 2.0 3.0)])
