@@ -29,6 +29,8 @@
 
 (struct exn:fail:git exn:fail () #:transparent)
 
+(struct repo-addr (ssl? host port))
+
 (define (raise-git-error name fmt . vals)
   (raise (exn:fail:git (apply format (string-append "~s: " fmt) name vals)
                        (current-continuation-marks))))
@@ -829,40 +831,64 @@
 (define (read-dumb-objects id-strs tmp
                            transport host verify? port repo
                            status maybe-save-objects)
+  (define ssl? (if (eq? transport 'https)
+                   (ssl-context verify?)
+                   #f))
+
+  (define addr (repo-addr ssl? host port)) ;; fallback for forwarding
+
   (define conn (http-conn))
   (http-conn-open! conn
                    host
-                   #:ssl? (if (eq? transport 'https)
-                              (ssl-context verify?)
-                              #f)
+                   #:ssl? ssl?
                    #:port port
                    #:auto-reconnect? #t)
   
   (define packfiles
-    (get-packfile-list conn repo))
+    (get-packfile-list conn addr repo))
   
   (define packed-objects
     (for/fold ([objects (hash)]) ([packfile (in-list packfiles)])
-      (read-dumb-packfile packfile objects tmp conn repo status)))
+      (read-dumb-packfile packfile objects tmp conn addr repo status)))
   
   (maybe-save-objects packed-objects "packed-objs")
 
   (status "Downloading loose objects")
   (define objects
     (read-dumb-loose-objects id-strs packed-objects (make-hash)
-                             tmp conn repo status))
+                             tmp conn addr repo status))
   
   (http-conn-close! conn)
-  
+
   (for/hash ([obj (in-hash-values objects)])
     (values (object-id obj) obj)))
 
-;; get-packfile-list : conn string -> (listof string)
+(define (http-conn-sendrecv!/redirect conn addr path)
+  (define at (combine-url/relative
+              (url (if (repo-addr-ssl? addr) "https" "http")
+                   #f
+                   (repo-addr-host addr)
+                   (repo-addr-port addr)
+                   #t
+                   null
+                   null
+                   #f)
+              path))
+  (define-values (i headers)
+    (get-pure-port/headers at
+                           #:redirections 5
+                           #:status? #t
+                           #:connection conn))
+  (define header-bytes (map string->bytes/utf-8 (string-split headers "\r\n")))
+  (values (car header-bytes) (cdr header-bytes) i))
+
+;; get-packfile-list : conn addr string -> (listof string)
 ;;  Get a list of packfiles available from the server
-(define (get-packfile-list conn repo)
+(define (get-packfile-list conn addr repo)
   (define-values (status-line headers i)
-    (http-conn-sendrecv! conn
-                         (~a "/" repo "/objects/info/packs")))
+    (http-conn-sendrecv!/redirect conn
+                                  addr
+                                  (~a "/" repo "/objects/info/packs")))
   (check-status status-line "error getting packfile list")
   
   (for/list ([l (in-lines i)]
@@ -875,10 +901,11 @@
 ;;   -> (hashof string object)
 ;; Read a packfile and apply its deltas, producing an updated mapping of objects
 ;; that we have unpacked so far.
-(define (read-dumb-packfile packfile objects tmp conn repo status)
+(define (read-dumb-packfile packfile objects tmp conn addr repo status)
   (define-values (status-line headers i)
-    (http-conn-sendrecv! conn
-                         (~a "/" repo "/objects/pack/" packfile)))
+    (http-conn-sendrecv!/redirect conn
+                                  addr
+                                  (~a "/" repo "/objects/pack/" packfile)))
   (check-status status-line (~a "error getting packfile " packfile))
   
   (define obj-list (read-packfile i tmp status #f))
@@ -890,11 +917,11 @@
   
 ;; read-dumb-loose-objects : (listof string) (hash-of string object)
 ;;                           (mutable-hash-of string #t)
-;;                           conn string status
+;;                           conn addr string status
 ;;                           -> (hash-of string object)
 ;;  Traverse the tree, looking for extra objects (not supplied by a packfile)
 ;;  that we need to download
-(define (read-dumb-loose-objects id-strs objects seen tmp conn repo status)
+(define (read-dumb-loose-objects id-strs objects seen tmp conn addr repo status)
   (for/fold ([objects objects]) ([id-str (in-list id-strs)])
     (cond
      [(hash-ref seen id-str #f) objects]
@@ -905,10 +932,11 @@
           => (lambda (obj) obj)]
          [else
           (define-values (status-line headers compressed-i)
-            (http-conn-sendrecv! conn
-                                 (~a "/" repo
-                                     "/objects/" (substring id-str 0 2)
-                                     "/" (substring id-str 2))))
+            (http-conn-sendrecv!/redirect conn
+                                          addr
+                                          (~a "/" repo
+                                              "/objects/" (substring id-str 0 2)
+                                              "/" (substring id-str 2))))
           (check-status status-line (format "error getting object ~a" id-str))
           
           ;; Set up decompression of stream:
@@ -984,7 +1012,7 @@
            null]))
       
       (read-dumb-loose-objects more-id-strs new-objects seen
-                               tmp conn repo status)])))
+                               tmp conn addr repo status)])))
 
 ;; check-status : string string -> any
 ;;  Check an HTTP status result and complain if there's a problem
