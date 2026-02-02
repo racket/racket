@@ -1,11 +1,13 @@
 (module template '#%kernel
-(#%require "stx.rkt" "define-et-al.rkt" "qq-and-or.rkt" "cond.rkt" "performance-hint.rkt"
-           (rename "define-et-al.rkt" define -define)
-           (rename "define-et-al.rkt" define-syntax -define-syntax)
+(#%declare #:require=define)
+
+(#%require "stx.rkt" "core-macros.rkt" "core-macros.rkt" "core-macros.rkt" "performance-hint.rkt"
+           (rename "core-macros.rkt" define -define)
+           (rename "core-macros.rkt" define-syntax -define-syntax)
            "ellipses.rkt"
-           (for-syntax "stx.rkt" "define-et-al.rkt" "qq-and-or.rkt" "cond.rkt"
-                       (rename "define-et-al.rkt" define -define)
-                       (rename "define-et-al.rkt" define-syntax -define-syntax)
+           (for-syntax "stx.rkt" "core-macros.rkt" "core-macros.rkt" "core-macros.rkt"
+                       #;(rename "core-macros.rkt" define -define)
+                       #;(rename "core-macros.rkt" define-syntax -define-syntax)
                        #;"member.rkt" "sc.rkt" '#%kernel))
 (#%provide syntax
            syntax/loc

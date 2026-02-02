@@ -1,4 +1,5 @@
 (module string "pre-base.rkt"
+  (#%declare #:require=define)
 
   (provide real->decimal-string
            regexp-quote

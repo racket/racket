@@ -2,9 +2,11 @@
 ;; with-syntax, generate-temporaries
 
 (module with-stx '#%kernel
-  (#%require "stx.rkt" "define-et-al.rkt" "qq-and-or.rkt" "cond.rkt" "stxcase.rkt"
+  (#%declare #:require=define)
+
+  (#%require "stx.rkt" "core-macros.rkt" "core-macros.rkt" "core-macros.rkt" "stxcase.rkt"
              (for-syntax '#%kernel "stxcase.rkt" "stxloc.rkt" 
-                         "stx.rkt" "sc.rkt" "qq-and-or.rkt" "cond.rkt"))
+                         "stx.rkt" "sc.rkt" "core-macros.rkt" "core-macros.rkt"))
 
   (-define (with-syntax-fail stx)
     (raise-syntax-error

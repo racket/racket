@@ -1,5 +1,7 @@
 (module phase+space '#%kernel
-  (#%require "private/qq-and-or.rkt")
+  (#%declare #:require=define)
+
+  (#%require "private/core-macros.rkt")
   
   (#%provide phase?
              space?

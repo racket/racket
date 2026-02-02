@@ -3,7 +3,9 @@
 ;; record for static info produced by `define-struct'
 
 (module struct-info '#%kernel
-  (#%require "define-et-al.rkt" "qq-and-or.rkt" "cond.rkt")
+  (#%declare #:require=define)
+
+  (#%require "core-macros.rkt" "core-macros.rkt" "core-macros.rkt")
 
   (#%provide make-struct-info
              struct-info?

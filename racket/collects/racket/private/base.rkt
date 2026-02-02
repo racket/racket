@@ -1,5 +1,6 @@
 (module base "pre-base.rkt"
   (#%declare #:flatten-requires)
+  (#%declare #:require=define)
 
   (#%require "hash.rkt"
              "list.rkt" ; shadows `reverse', `mem{q,v,ber}'

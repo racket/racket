@@ -3,7 +3,8 @@
 ;;  but the JIT generates faster code, especially for the common cases.
 
 (module map '#%kernel
-  (#%require "define-et-al.rkt" "qq-and-or.rkt" "cond.rkt" "define.rkt"
+  (#%declare #:require=define)
+  (#%require "core-macros.rkt" "core-macros.rkt" "core-macros.rkt" "define.rkt"
              "performance-hint.rkt"
              "kw.rkt"
              '#%paramz

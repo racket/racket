@@ -2,6 +2,8 @@
 ;;  `print-value'.
 
 (module modbeg '#%kernel
+  (#%declare #:require=define)
+
   (#%require syntax/wrap-modbeg
              (for-syntax '#%kernel))
 

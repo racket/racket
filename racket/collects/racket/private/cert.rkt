@@ -1,5 +1,7 @@
 (module base "pre-base.rkt"
 
+  (#%declare #:require=define)
+
   ;; Backward compatibility
   (#%provide syntax-recertify
              syntax-local-certifier)

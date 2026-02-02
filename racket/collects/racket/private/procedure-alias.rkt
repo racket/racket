@@ -1,4 +1,5 @@
 (module procedure-alias '#%kernel
+  (#%declare #:require=define)
   (#%declare #:cross-phase-persistent)
   (#%require "kw-prop-key.rkt")
   

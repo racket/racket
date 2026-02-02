@@ -1,5 +1,7 @@
 
 (module inline '#%kernel
+  (#%declare #:require=define)
+
   (#%require (for-syntax '#%kernel))
   (#%provide begin-encourage-inline)
 

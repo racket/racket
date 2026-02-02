@@ -3,6 +3,8 @@
 
 (module stx '#%kernel
   (#%declare #:cross-phase-persistent)
+  (#%declare #:require=define)
+  
   ;; These utilities facilitate operations on syntax objects.
   ;; A syntax object that represents a parenthesized sequence
   ;; can contain a mixture of cons cells and syntax objects,

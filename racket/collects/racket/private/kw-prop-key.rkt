@@ -1,4 +1,6 @@
 (module kw-prop-key '#%kernel
+  (#%declare #:require=define)
+
   (#%provide (protect alias-of
                       kw-converted-arguments-variant-of))
 

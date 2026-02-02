@@ -1,12 +1,14 @@
 
 (module stxparam '#%kernel
+  (#%declare #:require=define)
+
   (#%require "private/letstx-scheme.rkt"
              "private/define.rkt"
              "private/stxparam.rkt"
              (for-syntax '#%kernel 
                          "stxparam-exptime.rkt"
                          "private/stxcase-scheme.rkt" 
-                         "private/qq-and-or.rkt" 
+                         "private/core-macros.rkt" 
                          "private/stxloc.rkt"
                          "private/stxparamkey.rkt"))
 

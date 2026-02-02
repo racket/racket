@@ -1,7 +1,7 @@
 (module config '#%kernel
   (#%require '#%paramz ; for cache-configuration
-             "cond.rkt"
-             "qq-and-or.rkt"
+             "core-macros.rkt"
+             "core-macros.rkt"
              "executable-path.rkt")
 
   (#%provide find-main-collects

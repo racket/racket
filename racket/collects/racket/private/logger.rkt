@@ -1,7 +1,9 @@
 
 (module logger '#%kernel
-  (#%require "define-et-al.rkt" "qq-and-or.rkt" "define.rkt"
-             (for-syntax '#%kernel "stx.rkt" "define-et-al.rkt" "qq-and-or.rkt"
+  (#%declare #:require=define)
+
+  (#%require "core-macros.rkt" "core-macros.rkt" "define.rkt"
+             (for-syntax '#%kernel "stx.rkt" "core-macros.rkt" "core-macros.rkt"
                          "stxcase-scheme.rkt"))
 
   (#%provide log-fatal log-error log-warning log-info log-debug

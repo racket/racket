@@ -1,7 +1,9 @@
 (module path-list '#%kernel
-  (#%require "qq-and-or.rkt"
-             "cond.rkt"
-             "define-et-al.rkt"
+  (#%declare #:require=define)
+
+  (#%require "core-macros.rkt"
+             "core-macros.rkt"
+             "core-macros.rkt"
              "path.rkt"
              "path-list.rkt")
   

@@ -2,6 +2,8 @@
 
   (#%provide (all-from '#%kernel))
 
+  (#%declare #:require=define)
+
   (#%declare #:cross-phase-persistent)
 
 

@@ -1,5 +1,7 @@
 (module generic-interfaces "pre-base.rkt"
 
+  (#%declare #:require=define)
+
   ;; Defines (forgeries of) generic interfaces that correspond to struct
   ;; properties that come from racket/base.
   ;; Since racket/base can't depend on racket/generics, we can't use
