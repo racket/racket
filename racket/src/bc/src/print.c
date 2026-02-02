@@ -3712,7 +3712,7 @@ print_pair(Scheme_Object *pair, int notdisplay, int compact,
 
   cdr = SCHEME_CDR(pair);
   while (SAME_TYPE(SCHEME_TYPE(cdr), pair_type)
-         && !is_special_reader_form(pp, notdisplay, pair)) {
+         && (compact || !is_special_reader_form(pp, notdisplay, pair))) {
     if (ht && !super_compact) {
       if (is_graph_point(ht, cdr)) {
 	/* This needs a tag */

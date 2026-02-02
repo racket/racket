@@ -4451,5 +4451,34 @@ case of module-leve bindings; it doesn't cover local bindings.
   (namespace-require ''uses-local-expand-as-inlinable))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; regression test to make sure print parameters do not
+;; break compilation marshaling
+
+(let ()
+  (define mods
+    '((module to-be-required-for-compilation-test racket/base
+        (require syntax/parse/pre)
+        (provide arguments+rest)
+        (define-syntax-class arguments+rest
+          (pattern (arg:id ...))))
+      (module also-to-be-required-for-compilation-test racket/base
+        (require (for-syntax 'to-be-required-for-compilation-test
+                             racket/base
+                             syntax/parse/pre))
+        (provide foo)
+        (define-syntax (foo stx)
+          (syntax-parse stx
+            [(_ args:arguments+rest) #'"hi"])))
+      (module m racket/base
+        (require 'also-to-be-required-for-compilation-test))))
+  (for ([mod (in-list mods)])
+    (parameterize ([print-reader-abbreviations #t])
+      (define o (open-output-bytes))
+      (write (compile mod) o)
+      (eval
+       (parameterize ([read-accept-compiled #t])
+         (read (open-input-bytes (get-output-bytes o))))))))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)
