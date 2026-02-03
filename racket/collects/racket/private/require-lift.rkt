@@ -1,4 +1,6 @@
 (module require-transform '#%kernel
+  (#%declare #:require=define)
+
   (#%require "define.rkt")
 
   (#%provide syntax-local-lift-require-definition-param)

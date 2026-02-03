@@ -1,9 +1,10 @@
 ;; A sane "core" for finishing up the "racket/base" library
 
 (module pre-base '#%kernel
+  (#%declare #:require=define)
   (#%require (for-syntax '#%kernel
                          "stx.rkt"
-                         "qq-and-or.rkt"))
+                         "core-macros.rkt"))
   (#%require "more-scheme.rkt"
              "misc.rkt"
              (all-except "define.rkt" define define-syntax define-for-syntax)
@@ -14,7 +15,7 @@
              (prefix printing: "modbeg.rkt")
              "for.rkt"
              "map.rkt" ; shadows #%kernel bindings
-             "member.rkt"
+             (only "pico.rkt" member memw)
              "kernstruct.rkt"
              "performance-hint.rkt"
              "top-int.rkt"
@@ -185,10 +186,10 @@
              stx)
             (raise-syntax-error #f "bad syntax" stx)))))
 
-  (#%provide (all-from-except "more-scheme.rkt" old-case fluid-let)
-             (all-from-except "misc.rkt" collection-path collection-file-path)
-             (all-from "define.rkt")
-             (all-from-except "letstx-scheme.rkt" -define -define-syntax -define-struct old-cond)
+  (#%provide (all-from-except "more-scheme.rkt" old-case fluid-let )
+             (all-from-except "misc.rkt" collection-path collection-file-path )
+             (all-from-except "define.rkt" )
+             (all-from-except "letstx-scheme.rkt" -define -define-syntax define define-syntax old-cond define-for-syntax)
              (rename new-lambda lambda)
              (rename new-λ λ)
              (rename new-define define)
@@ -246,7 +247,7 @@
                               split-for-body
                               expand-for-clause)
              (all-from "kernstruct.rkt")
-             (all-from "member.rkt")
+             #;(all-from "member.rkt") member memw
              #%top-interaction
 
              map for-each andmap ormap

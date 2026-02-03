@@ -1,6 +1,8 @@
 (module sort '#%kernel
 
-(#%require "define-et-al.rkt" "qq-and-or.rkt" "cond.rkt" "define.rkt" (for-syntax "stxcase-scheme.rkt"))
+(#%declare #:require=define)
+
+(#%require "core-macros.rkt" "core-macros.rkt" "core-macros.rkt" "define.rkt" (for-syntax "stxcase-scheme.rkt"))
 
 ;; note, these are the raw interfaces --- user-facing definitions
 ;; are exported from private/list.rkt and vector.rkt

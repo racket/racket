@@ -1,6 +1,8 @@
 (module kw '#%kernel
+  (#%declare #:require=define)
+
   (#%require "define.rkt"
-             "define-et-al.rkt" "qq-and-or.rkt"
+             "core-macros.rkt" "core-macros.rkt"
              "stxcase-scheme.rkt"
              (for-template '#%kernel))
 

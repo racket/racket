@@ -3,9 +3,11 @@
 ;; more-scheme : case, do, etc. - remaining syntax
 
 (module more-scheme '#%kernel
-  (#%require "define-et-al.rkt" "qq-and-or.rkt" "cond.rkt" "define.rkt" '#%paramz "case.rkt" "logger.rkt"
-             "member.rkt"
-             (for-syntax '#%kernel "stx.rkt" "define-et-al.rkt" "qq-and-or.rkt" "cond.rkt" "stxcase-scheme.rkt" "qqstx.rkt"))
+  (#%declare #:require=define)
+  
+  (#%require "core-macros.rkt" "core-macros.rkt" "core-macros.rkt" "define.rkt" '#%paramz "case.rkt" "logger.rkt"
+             (only "pico.rkt" member memw)
+             (for-syntax '#%kernel "stx.rkt" "core-macros.rkt" "core-macros.rkt" "core-macros.rkt" "stxcase-scheme.rkt" "qqstx.rkt"))
 
   ;; For `old-case`:
   (define-syntax case-test
@@ -140,8 +142,6 @@
   (define-values (struct:break-paramz make-break-paramz break-paramz? break-paramz-ref break-paramz-set!)
     (make-struct-type 'break-parameterization #f 1 0 #f))
 
-  (-define-struct break-parameterization (cell))
-  
   (define (current-break-parameterization)
     (make-break-paramz (continuation-mark-set-first #f break-enabled-key)))
   

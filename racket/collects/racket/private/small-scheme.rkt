@@ -5,9 +5,9 @@
 ;; Not used in racket/base but kept for backwards-compatibility
 
 (module small-scheme '#%kernel
-  (#%require "qq-and-or.rkt" "cond.rkt" "define-et-al.rkt")
+  (#%require "core-macros.rkt" "core-macros.rkt" "core-macros.rkt")
   
-  (#%provide (all-from "qq-and-or.rkt")
-             (all-from "cond.rkt")
-             (all-from "define-et-al.rkt")))
+  (#%provide (all-from "core-macros.rkt")
+             (all-from "core-macros.rkt")
+             (all-from "core-macros.rkt")))
 

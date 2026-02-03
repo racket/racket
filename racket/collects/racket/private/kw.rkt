@@ -1,8 +1,10 @@
 (module kw '#%kernel
+  (#%declare #:require=define)
+
   (#%require "define.rkt"
-             "qq-and-or.rkt"
-             "cond.rkt"
-             "define-et-al.rkt"
+             "core-macros.rkt"
+             "core-macros.rkt"
+             "core-macros.rkt"
              "more-scheme.rkt"
              (only '#%unsafe
                    unsafe-chaperone-procedure
@@ -12,11 +14,11 @@
                          '#%unsafe
                          "procedure-alias.rkt"
                          "stx.rkt"
-                         "qq-and-or.rkt"
-                         "define-et-al.rkt"
-                         "cond.rkt"
+                         "core-macros.rkt"
+                         "core-macros.rkt"
+                         "core-macros.rkt"
                          "stxcase-scheme.rkt"
-                         "member.rkt"
+                         (only "pico.rkt" member memw)
                          "name.rkt"
                          "norm-define.rkt"
                          "qqstx.rkt"
@@ -24,8 +26,8 @@
                          "kw-prop-key.rkt"
                          "immediate-default.rkt")
              (for-meta 2 '#%kernel
-                       "qq-and-or.rkt"
-                       "cond.rkt"
+                       "core-macros.rkt"
+                       "core-macros.rkt"
                        "stxcase-scheme.rkt"
                        "qqstx.rkt"))
 

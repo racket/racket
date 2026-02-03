@@ -1,4 +1,6 @@
 (module ellipses '#%kernel
+  (#%declare #:require=define)
+
   (#%require (for-syntax '#%kernel))
 
   (#%provide ... _ ~? ~@)

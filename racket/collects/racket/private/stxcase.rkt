@@ -2,9 +2,11 @@
 ;; syntax-case and syntax
 
 (module stxcase '#%kernel
-  (#%require "stx.rkt" "define-et-al.rkt" "qq-and-or.rkt" "cond.rkt" '#%paramz '#%unsafe
+  (#%declare #:require=define)
+  
+  (#%require "stx.rkt" "core-macros.rkt" "core-macros.rkt" "core-macros.rkt" '#%paramz '#%unsafe
              "ellipses.rkt"
-             (for-syntax "stx.rkt" "define-et-al.rkt" "qq-and-or.rkt" "cond.rkt"
+             (for-syntax "stx.rkt" "core-macros.rkt" "core-macros.rkt" "core-macros.rkt"
                           "stx.rkt" "sc.rkt" '#%kernel))
 
   (-define interp-match
