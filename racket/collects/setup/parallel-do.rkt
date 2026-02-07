@@ -67,6 +67,7 @@
            [out null]
            [in null]
            [err null]
+           [err-th #f]
            [module-path null]
            [funcname null])
 
@@ -88,12 +89,15 @@
                                         "-R" (paths->string (current-compiled-file-roots))
                                         "-e" "(eval(read))"))
       (define dynamic-require-cmd `((dynamic-require (string->path ,module-path) (quote ,funcname)) #f))
-      (let-values ([(_process-handle _out _in _err) (apply subprocess #f #f (current-error-port) worker-cmdline-list)])
+      (let-values ([(_process-handle _out _in _err) (apply subprocess #f #f #f worker-cmdline-list)])
         (set! id _id)
         (set! process-handle _process-handle)
         (set! out _out)
         (set! in _in)
         (set! err _err)
+        (set! err-th (lambda () ; manual copy bumps `terminal-file-position`
+                       (copy-port err (current-error-port))
+                       (close-output-port err)))
         (send/msg dynamic-require-cmd)
         (when initialmsg (send/msg (initialmsg id)))))
     (define/public (send/msg msg) 
@@ -128,6 +132,8 @@
       (DEBUG_COMM (eprintf "KILLING WORKER ~a\n" id))
       (close-output-port in)
       (close-input-port out)
+      (when err-th (kill-thread err-th))
+      (close-input-port err)
       (subprocess-kill process-handle #t))
     (define/public (break) (kill))
     (define/public (kill/respawn worker-cmdline-list [initialmsg #f])

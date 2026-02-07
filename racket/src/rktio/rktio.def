@@ -46,6 +46,7 @@ rktio_set_file_size
 rktio_fd_detach
 rktio_fd_attach
 rktio_fd_close_transfer
+rktio_current_terminal_position
 rktio_make_pipe
 rktio_start_addrinfo_lookup
 rktio_get_ipv4_family

@@ -4569,6 +4569,11 @@ Scheme_Object *scheme_file_unlock(int argc, Scheme_Object **argv)
   return scheme_void;
 }
 
+Scheme_Object *scheme_terminal_file_position(int argc, Scheme_Object *argv[])
+{
+  return scheme_make_integer(rktio_current_terminal_position());
+}
+
 /*========================================================================*/
 /*                        filesystem change events                        */
 /*========================================================================*/

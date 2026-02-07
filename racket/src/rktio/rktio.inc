@@ -46,6 +46,7 @@ Sforeign_symbol("rktio_set_file_size", (void *)rktio_set_file_size);
 Sforeign_symbol("rktio_fd_detach", (void *)rktio_fd_detach);
 Sforeign_symbol("rktio_fd_attach", (void *)rktio_fd_attach);
 Sforeign_symbol("rktio_fd_close_transfer", (void *)rktio_fd_close_transfer);
+Sforeign_symbol("rktio_current_terminal_position", (void *)rktio_current_terminal_position);
 Sforeign_symbol("rktio_make_pipe", (void *)rktio_make_pipe);
 Sforeign_symbol("rktio_start_addrinfo_lookup", (void *)rktio_start_addrinfo_lookup);
 Sforeign_symbol("rktio_get_ipv4_family", (void *)rktio_get_ipv4_family);

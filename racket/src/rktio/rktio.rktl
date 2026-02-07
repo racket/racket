@@ -16,6 +16,7 @@
 (define-constant RKTIO_OPEN_INIT (<< 1 13))
 (define-constant RKTIO_OPEN_OWN (<< 1 14))
 (define-constant RKTIO_OPEN_REPLACE_PERMS (<< 1 15))
+(define-constant RKTIO_OPEN_TRACK_TERMINAL_OUTPUT (<< 1 16))
 (define-constant RKTIO_DEFAULT_PERM_BITS 438)
 (define-constant RKTIO_STDIN 0)
 (define-constant RKTIO_STDOUT 1)
@@ -524,6 +525,7 @@
  void
  rktio_fd_close_transfer
  (((ref rktio_fd_transfer_t) rfdt)))
+(define-function () uintptr_t rktio_current_terminal_position ())
 (define-function/errno
  NULL
  ()

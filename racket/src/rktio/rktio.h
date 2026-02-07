@@ -221,7 +221,7 @@ typedef struct rktio_fd_t rktio_fd_t;
 #define RKTIO_OPEN_UDP         (1<<8)
 #define RKTIO_OPEN_REGFILE     (1<<9)
 #define RKTIO_OPEN_NOT_REGFILE (1<<10)
-/* If neither RKTIO_OPEN_REGFILE nor RKTIO_OPEN_NOT_REGFILE
+/* If neither `RKTIO_OPEN_REGFILE` nor `RKTIO_OPEN_NOT_REGFILE`
    are specified, then the value is inferred by `rtkio_system_fd`. */
 #define RKTIO_OPEN_DIR         (1<<11)
 #define RKTIO_OPEN_NOT_DIR     (1<<12)
@@ -234,6 +234,10 @@ typedef struct rktio_fd_t rktio_fd_t;
 
 /* Used for `rktio_open` with `RKTIO_OPEN_WRITE`: */
 #define RKTIO_OPEN_REPLACE_PERMS (1<<15)
+
+#define RKTIO_OPEN_TRACK_TERMINAL_OUTPUT (1<<16)
+/* Inferred when `RKTIO_OPEN_[NOT_]REGFILE` is inferred,
+   and set when the file descriptor is a terminal. */
 
 RKTIO_EXTERN rktio_fd_t *rktio_system_fd(rktio_t *rktio, intptr_t system_fd, int modes);
 /* A socket (as opposed to other file descriptors) registered this way
@@ -460,6 +464,10 @@ RKTIO_EXTERN_NOERR rktio_fd_t *rktio_fd_attach(rktio_t *rktio, rktio_fd_transfer
 RKTIO_EXTERN void rktio_fd_close_transfer(rktio_fd_transfer_t *rfdt);
 /* Closes and frees a detached file descriptor without having to
    attach it to a `rktio_t`. */
+
+RKTIO_EXTERN_NOERR uintptr_t rktio_current_terminal_position(void);
+/* Returns the total number of bytes that have been written to file
+   descriptors that have `RKTIO_OPEN_TRACK_TERMINAL_OUTPUT`. */
 
 /*************************************************/
 /* Pipes                                         */

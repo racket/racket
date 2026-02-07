@@ -302,6 +302,7 @@
                 (1/tcp-listen tcp-listen)
                 (1/tcp-listener? tcp-listener?)
                 (1/tcp-port? tcp-port?)
+                (terminal-file-position terminal-file-position)
                 (1/terminal-port? terminal-port?)
                 (1/udp-bind! udp-bind!)
                 (1/udp-bound? udp-bound?)
@@ -2806,6 +2807,7 @@
 (define RKTIO_OPEN_INIT 8192)
 (define RKTIO_OPEN_OWN 16384)
 (define RKTIO_OPEN_REPLACE_PERMS 32768)
+(define RKTIO_OPEN_TRACK_TERMINAL_OUTPUT 65536)
 (define RKTIO_STDIN 0)
 (define RKTIO_STDOUT 1)
 (define RKTIO_STDERR 2)
@@ -2971,6 +2973,8 @@
 (define rktio_fd_attach (hash-ref rktio-table 'rktio_fd_attach))
 (define rktio_fd_close_transfer
   (hash-ref rktio-table 'rktio_fd_close_transfer))
+(define rktio_current_terminal_position
+  (hash-ref rktio-table 'rktio_current_terminal_position))
 (define rktio_make_pipe (hash-ref rktio-table 'rktio_make_pipe))
 (define rktio_start_addrinfo_lookup
   (hash-ref rktio-table 'rktio_start_addrinfo_lookup))
@@ -7974,6 +7978,8 @@
                     (assert-pop-lock-level! 'port)
                     (unsafe-end-atomic))
                   (if pos_0 pos_0 (|#%app| fail-k_0)))))))))))
+(define terminal-file-position
+  (lambda () (|#%app| rktio_current_terminal_position)))
 (define 1/port-count-lines-enabled
   (make-parameter #f (lambda (v_0) (if v_0 #t #f)) 'port-count-lines-enabled))
 (define finish-port/count

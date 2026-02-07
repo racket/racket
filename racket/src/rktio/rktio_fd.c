@@ -173,6 +173,8 @@ static int read_console_via_wide(HANDLE fd,
 
 #endif
 
+static void wrote_to_terminal(intptr_t amt);
+
 /*========================================================================*/
 /* returning a result                                                     */
 /*========================================================================*/
@@ -213,6 +215,10 @@ rktio_fd_t *rktio_system_fd(rktio_t *rktio, intptr_t system_fd, int modes)
    if (!(modes & (RKTIO_OPEN_DIR | RKTIO_OPEN_NOT_DIR)))
      if (S_ISDIR(buf.st_mode))
        rfd->modes |= RKTIO_OPEN_DIR;
+   if (!(rfd->modes & RKTIO_OPEN_REGFILE)) {
+     if (rktio_system_fd_is_terminal(rktio, system_fd))
+       rfd->modes |= RKTIO_OPEN_TRACK_TERMINAL_OUTPUT;
+   }
   }
 #endif
 
@@ -232,6 +238,10 @@ rktio_fd_t *rktio_system_fd(rktio_t *rktio, intptr_t system_fd, int modes)
           rfd->modes |= RKTIO_OPEN_DIR;
         }
       }
+    }
+    if (!(rfd->modes & RKTIO_OPEN_REGFILE)) {
+      if (rktio_system_fd_is_terminal(rktio, system_fd))
+        rfd->modes |= RKTIO_OPEN_TRACK_TERMINAL_OUTPUT;
     }
   }
 #endif
@@ -390,6 +400,7 @@ int rktio_fd_is_terminal(rktio_t *rktio, rktio_fd_t *rfd)
 #ifdef RKTIO_USE_PENDING_OPEN
   if (rfd->pending) return 0;
 #endif
+  if (rfd->modes & RKTIO_OPEN_TRACK_TERMINAL_OUTPUT) return 1;
   return rktio_system_fd_is_terminal(rktio, (intptr_t)rfd->fd);
 }
 
@@ -1590,6 +1601,9 @@ static intptr_t do_write(rktio_t *rktio, rktio_fd_t *rfd, const char *buffer, in
   if (!(flags & RKTIO_NONBLOCKING))
     fcntl(rfd->fd, F_SETFL, flags);
 
+  if ((rfd->modes & RKTIO_OPEN_TRACK_TERMINAL_OUTPUT) && (len > 0))
+    wrote_to_terminal(len);
+
   if (len == -1) {
     if (errsaved == EAGAIN)
       return 0;
@@ -1699,6 +1713,9 @@ static intptr_t do_write(rktio_t *rktio, rktio_fd_t *rfd, const char *buffer, in
       winwrote = recount_output_text(orig_buffer, buffer, winwrote);
       free((char *)buffer);
     }
+
+    if ((rfd->modes & RKTIO_OPEN_TRACK_TERMINAL_OUTPUT) && (winwrote > 0))
+      wrote_to_terminal(winwrote);
 
     return winwrote;
   } else {
@@ -1963,6 +1980,9 @@ void rktio_std_write_in_best_effort(rktio_t *rktio, int which, char *buffer, int
     if (len == -1)
       return;
 
+    if (len > 0)
+      wrote_to_terminal(len);
+
     start += len;
   }
 #endif
@@ -2021,6 +2041,8 @@ void rktio_std_write_in_best_effort(rktio_t *rktio, int which, char *buffer, int
         start += winwrote;
         towrite -= winwrote;
         amt = towrite;
+        if (winwrote > 0)
+          wrote_to_terminal(winwrote);
       }
     }
 
@@ -2053,6 +2075,7 @@ void rktio_std_write_in_best_effort(rktio_t *rktio, int which, char *buffer, int
     } else {
       can_leftover -= winwrote;
       amt = can_leftover;
+      wrote_to_terminal(winwrote);
     }
   }
 #endif
@@ -2332,6 +2355,54 @@ static void WindowsFDOCleanup(Win_FD_Output_Thread *oth, int close_mode)
 }
 
 #endif
+
+#if defined(RKTIO_SYSTEM_WINDOWS)
+static long terminal_writes;
+#else
+static uintptr_t terminal_writes;
+#endif
+
+#if defined(RKTIO_SYSTEM_UNIX) && defined(RKTIO_USE_PTHREADS)
+static int terminal_write_initialzed = 0;
+static pthread_mutex_t terminal_writes_lock;
+#endif
+
+void rktio_init_terminal_tracking(void) {
+#if defined(RKTIO_SYSTEM_UNIX) && defined(RKTIO_USE_PTHREADS)
+  if (!terminal_write_initialzed) {
+    pthread_mutex_init(&terminal_writes_lock, NULL);
+    terminal_write_initialzed = 1;
+  }
+#endif
+}
+
+static void wrote_to_terminal(intptr_t amt)
+{
+#if defined(RKTIO_SYSTEM_UNIX) && defined(RKTIO_USE_PTHREADS)
+  pthread_mutex_lock(&terminal_writes_lock);
+  terminal_writes += (uintptr_t)amt;
+  pthread_mutex_unlock(&terminal_writes_lock);
+#elif defined(RKTIO_SYSTEM_WINDOWS)
+  InterlockedExchangeAdd(&terminal_writes, (long)amt);
+#else
+  terminal_writes += amt;
+#endif
+}
+
+uintptr_t rktio_current_terminal_position(void)
+{
+  uintptr_t c;
+#if defined(RKTIO_SYSTEM_UNIX) && defined(RKTIO_USE_PTHREADS)
+  pthread_mutex_lock(&terminal_writes_lock);
+  c = terminal_writes;
+  pthread_mutex_unlock(&terminal_writes_lock);
+#elif defined(RKTIO_SYSTEM_WINDOWS)
+  c = (uintptr_t)InterlockedExchangeAdd(&terminal_writes, 0);
+#else
+  c = terminal_writes;
+#endif
+  return c;
+}
 
 /*========================================================================*/
 /* console                                                                */

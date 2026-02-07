@@ -988,6 +988,7 @@
   [system-path-convention-type (known-procedure/pure 1)]
   [system-type (known-procedure/no-prompt 3)]
   [tan (known-procedure/folding 2)]
+  [terminal-file-position (known-procedure/no-prompt 1)]
   [terminal-port? (known-procedure/no-prompt 2)]
   [thread (known-procedure/single-valued 6)]
   [thread-cell-ref (known-procedure/no-prompt 2)]

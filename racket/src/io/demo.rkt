@@ -985,3 +985,4 @@
                   (write-bytes #"a" o))))))
    (bytes-length (get-output-bytes o))))
 
+(terminal-file-position)

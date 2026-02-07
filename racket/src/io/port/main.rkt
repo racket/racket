@@ -146,7 +146,8 @@
          file-position
          file-position*
          file-truncate
-         
+         terminal-file-position
+
          port-count-lines!
          port-counts-lines?
          port-next-location

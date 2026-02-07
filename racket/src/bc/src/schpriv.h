@@ -3716,6 +3716,7 @@ Scheme_Object *scheme_file_identity(int argc, Scheme_Object *argv[]);
 Scheme_Object *scheme_file_stat(int argc, Scheme_Object *argv[]);
 Scheme_Object *scheme_file_try_lock(int argc, Scheme_Object **argv);
 Scheme_Object *scheme_file_unlock(int argc, Scheme_Object **argv);
+Scheme_Object *scheme_terminal_file_position(int argc, Scheme_Object *argv[]);
 
 void scheme_reserve_file_descriptor(void);
 void scheme_release_file_descriptor(void);

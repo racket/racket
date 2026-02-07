@@ -54,6 +54,8 @@ rktio_t *rktio_init(void)
 
   rktio_convert_init(rktio);
 
+  rktio_init_terminal_tracking();
+
 #ifdef OS_X
   {
     int a[2], i, k = 0;

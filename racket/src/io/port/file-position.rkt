@@ -2,6 +2,7 @@
 (require "../common/check.rkt"
          "../common/class.rkt"
          "../host/thread.rkt"
+         "../host/rktio.rkt"
          "../error/message.rkt"
          "../error/value-string.rkt"
          "port.rkt"
@@ -12,6 +13,7 @@
 
 (provide file-position
          file-position*
+         terminal-file-position
 
          do-simple-file-position)
 
@@ -72,3 +74,6 @@
                        (get-core-port-offset p)))
        (port-unlock p)
        (or pos (fail-k))])))
+
+(define (terminal-file-position)
+  (rktio_current_terminal_position))

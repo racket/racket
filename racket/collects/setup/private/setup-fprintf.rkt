@@ -71,12 +71,12 @@
         [(and terminal-available?
               (eq? p op)
               (or n lines-status))
-         (define-values (_1 _2 pos-before) (port-next-location op))
+         (define pos-before (terminal-file-position))
          (define output-moved? (and last-position (not (= pos-before last-position))))
          (when output-moved?
            (set! last-%age #f))
          (write-nth-line ip n %age formatted-st only-if-terminal? output-moved?)
-         (define-values (_3 _4 pos-after) (port-next-location op))
+         (define pos-after (terminal-file-position))
          (set! last-position pos-after)
          (when %age
            (set! last-%age %age))]

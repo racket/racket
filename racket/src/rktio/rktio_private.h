@@ -456,6 +456,8 @@ void rktio_syslog_clean(rktio_t* rktio);
 
 void rktio_stop_background(rktio_t *rktio);
 
+void rktio_init_terminal_tracking(void);
+
 #ifdef USE_TRANSITIONAL_64_FILE_OPS
 # define BIG_OFF_T_IZE(n) n ## 64
 #else
