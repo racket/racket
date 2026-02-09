@@ -205,7 +205,9 @@
          (when (and %age (not last-%age))
            ;; we have a percentage but we haven't had one before,
            ;; allocate the blank line for it.
-           (printf "\n"))
+           (unless output-moved?
+             ;; if the output moved, we already made a blank space
+             (printf "\n")))
          (when have-a-spot?
            ;; now we've got space for this line, let's write it
            (define pr (hash-ref lines-status n))
