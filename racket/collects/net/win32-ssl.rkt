@@ -1,5 +1,5 @@
 #lang racket/base
-(require ffi/unsafe/static
+(require ffi/unsafe
          ffi/unsafe/define
          ffi/winapi
          ffi/unsafe/atomic

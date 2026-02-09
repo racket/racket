@@ -1,5 +1,5 @@
 #lang racket/base
-(require ffi/unsafe/static
+(require ffi/unsafe
          ffi/unsafe/define
          ffi/unsafe/alloc
          "add-cert.rkt"

@@ -4,7 +4,7 @@
 
 (require (prefix-in c: racket/contract)
          racket/promise
-         ffi/unsafe/static
+         ffi/unsafe
          ffi/cvector
          ffi/winapi)
 
