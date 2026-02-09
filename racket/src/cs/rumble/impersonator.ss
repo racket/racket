@@ -322,6 +322,11 @@
 (define-record-type (impersonator-property create-impersonator-property impersonator-property?)
   (fields name))
 
+(define-record-type (impersonator-property-predicate-procedure
+                     make-impersonator-property-predicate-procedure
+                     raw:impersonator-property-predicate-procedure?)
+  (fields proc name realm))
+
 (define-record-type (impersonator-property-accessor-procedure
                      make-impersonator-property-accessor-procedure
                      raw:impersonator-property-accessor-procedure?)
@@ -378,8 +383,12 @@
                                 (fail)))))]
                    [(v) (accessor v none)])])
           (values p
-                  (make-named-procedure predicate predicate-name realm)
+                  (make-impersonator-property-predicate-procedure predicate predicate-name realm)
                   (make-impersonator-property-accessor-procedure accessor accessor-name realm)))))]))
+
+(define (impersonator-property-predicate-procedure? v)
+  (or (raw:impersonator-property-predicate-procedure? v)
+      (and (impersonator? v) (raw:impersonator-property-predicate-procedure? (impersonator-val v)))))
 
 (define (impersonator-property-accessor-procedure? v)
   (or (raw:impersonator-property-accessor-procedure? v)
@@ -758,6 +767,13 @@
     (add (record-type-descriptor props-procedure-chaperone))
     (add (record-type-descriptor props-procedure~-impersonator))
     (add (record-type-descriptor props-procedure~-chaperone)))
+
+  (struct-property-set! prop:procedure
+                        (record-type-descriptor impersonator-property-predicate-procedure)
+                        0)
+  (struct-property-set! prop:object-name
+                        (record-type-descriptor impersonator-property-predicate-procedure)
+                        1)
 
   (struct-property-set! prop:procedure
                         (record-type-descriptor impersonator-property-accessor-procedure)

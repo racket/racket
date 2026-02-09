@@ -1145,6 +1145,13 @@ Creates a new @tech{impersonator property} and returns three values:
 Returns @racket[#t] if @racket[v] is a @tech{impersonator property
 descriptor} value, @racket[#f] otherwise.}
 
+@defproc[(impersonator-property-predicate-procedure? [v any/c]) boolean?]{
+
+Returns @racket[#t] if @racket[v] is a predicate procedure produced
+by @racket[make-impersonator-property], @racket[#f] otherwise.
+
+@history[#:added "9.1.0.6"]}
+
 @defproc[(impersonator-property-accessor-procedure? [v any/c]) boolean?]{
 
 Returns @racket[#t] if @racket[v] is an accessor procedure produced

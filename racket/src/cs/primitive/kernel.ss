@@ -483,6 +483,7 @@
   [impersonator-of? (known-procedure/single-valued 4)]
   [impersonator-prop:application-mark (known-constant)]
   [impersonator-property-accessor-procedure? (known-procedure/single-valued 2)]
+  [impersonator-property-predicate-procedure? (known-procedure/single-valued 2)]
   [impersonator-property? (known-procedure/pure/folding 2)]
   [impersonator? (known-procedure/pure/folding 2)]
   [inexact->exact (known-procedure/folding 2)]

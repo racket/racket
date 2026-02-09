@@ -134,6 +134,7 @@ static Scheme_Object *struct_constr_p(int argc, Scheme_Object *argv[]);
 static Scheme_Object *struct_prop_getter_p(int argc, Scheme_Object *argv[]);
 static Scheme_Object *struct_prop_pred_p(int argc, Scheme_Object *argv[]);
 static Scheme_Object *chaperone_prop_getter_p(int argc, Scheme_Object *argv[]);
+static Scheme_Object *chaperone_prop_pred_p(int argc, Scheme_Object *argv[]);
 
 static Scheme_Object *make_struct_proc(Scheme_Struct_Type *struct_type, char *func_name,
 				       Scheme_ProcT proc_type, int field_num);
@@ -678,6 +679,11 @@ scheme_init_struct (Scheme_Startup_Env *env)
   scheme_addto_prim_instance("impersonator-property-accessor-procedure?",
 			     scheme_make_immed_prim(chaperone_prop_getter_p,
                                                     "impersonator-property-accessor-procedure?",
+                                                    1, 1),
+			     env);
+  scheme_addto_prim_instance("impersonator-property-predicate-procedure?",
+			     scheme_make_immed_prim(chaperone_prop_pred_p,
+                                                    "impersonator-property-predicate-procedure?",
                                                     1, 1),
 			     env);
 
@@ -3562,6 +3568,16 @@ chaperone_prop_getter_p(int argc, Scheme_Object *argv[])
   Scheme_Object *v = argv[0];
   if (SCHEME_CHAPERONEP(v)) v = SCHEME_CHAPERONE_VAL(v);
   return ((STRUCT_mPROCP(v, SCHEME_PRIM_TYPE_STRUCT_PROP_GETTER)
+           && SAME_TYPE(SCHEME_TYPE(SCHEME_PRIM_CLOSURE_ELS(v)[0]), scheme_chaperone_property_type))
+	  ? scheme_true : scheme_false);
+}
+
+static Scheme_Object *
+chaperone_prop_pred_p(int argc, Scheme_Object *argv[])
+{
+  Scheme_Object *v = argv[0];
+  if (SCHEME_CHAPERONEP(v)) v = SCHEME_CHAPERONE_VAL(v);
+  return ((STRUCT_mPROCP(v, SCHEME_PRIM_STRUCT_TYPE_STRUCT_PROP_PRED)
            && SAME_TYPE(SCHEME_TYPE(SCHEME_PRIM_CLOSURE_ELS(v)[0]), scheme_chaperone_property_type))
 	  ? scheme_true : scheme_false);
 }

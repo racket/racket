@@ -375,6 +375,10 @@
 (define chaperone-vector-name "chaperone-vector")
 (define impersonate-vector-name "impersonate-vector")
 
+(test #f impersonator-property-predicate-procedure? void)
+(test #f impersonator-property-predicate-procedure? (lambda (x) x))
+(test #f impersonator-property-accessor-procedure? void)
+(test #f impersonator-property-accessor-procedure? (lambda (x) x))
 
 ;; properties and chaperones
 (as-chaperone-or-impersonator
@@ -385,6 +389,16 @@
 
    (define-values (p1 has1 get1) (make-impersonator-property 'p1))
    (define-values (p2 has2 get2) (make-impersonator-property 'p2))
+
+   (test #t impersonator-property-predicate-procedure? has1)
+   (test #t impersonator-property-predicate-procedure? has2)
+   (test #f impersonator-property-predicate-procedure? get1)
+   (test #f impersonator-property-predicate-procedure? get2)
+
+   (test #t impersonator-property-accessor-procedure? get1)
+   (test #t impersonator-property-accessor-procedure? get2)
+   (test #f impersonator-property-accessor-procedure? has1)
+   (test #f impersonator-property-accessor-procedure? has2)
 
    (define v (vector 1 2 3))
    (define u (vector 7 8 9))

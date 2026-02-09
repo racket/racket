@@ -196,6 +196,7 @@
           impersonate-set! ; not exported to Racket
           impersonator-property?
           make-impersonator-property
+          impersonator-property-predicate-procedure?
           impersonator-property-accessor-procedure?
           impersonator-ephemeron
           prop:impersonator-of
