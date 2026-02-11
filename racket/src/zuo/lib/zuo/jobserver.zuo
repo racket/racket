@@ -22,31 +22,46 @@
                                      (lambda (s) (or (fds? s) (auth? s))))])
                        (lambda (arg)
                          (and (match? arg)
-                              (let ([fds (map string->integer
-                                              (string-split (cadr (string-split arg "=")) ","))])
-                                (and (= (length fds) 2)
-                                     (andmap integer? fds)
-                                     ;; read in all available job tokens, then give them back up,
-                                     ;; just so we can infer the number of tokens that would be available
-                                     (let ([in-no (car fds)]
-                                           [out-no (cadr fds)])
-                                       (let ([in (fd-open-input in-no)]
-                                             [out (fd-open-output out-no)])
-                                         (and (fd-valid? in)
-                                              (fd-valid? out)
-                                              (create-jobserver-client in out in-no out-no)))))))))
+			      (let ([rhs (cadr (string-split arg "="))])
+				(cond
+				 [(glob-match? "fifo:?*" rhs)
+				  (define path (substring rhs (string-length "fifo:")))
+				  (and (file-exists? path)
+				       (create-jobserver-client (lambda () (fd-open-input path))
+                                                                (lambda () (fd-open-output path  (hash 'exists 'update)))
+                                                                fd-close
+                                                                path))]
+				 [else
+				  (define fds (map string->integer (string-split rhs ",")))
+                                  (and (= (length fds) 2)
+				       (andmap integer? fds)
+				       ;; read in all available job tokens, then give them back up,
+				       ;; just so we can infer the number of tokens that would be available
+				       (let ([in-no (car fds)]
+                                             [out-no (cadr fds)])
+					 (let ([in (fd-open-input in-no)]
+					       [out (fd-open-output out-no)])
+                                           (and (fd-valid? in)
+						(fd-valid? out)
+						(create-jobserver-client (lambda () in)
+                                                                         (lambda () out)
+                                                                         void
+                                                                         (~a in-no) (~a out-no))))))])))))
                      args)))))
 
-(define (poll-jobserver-client in out in-no/ignored out-no/ignored)
+(define (poll-jobserver-client get-in get-out close . manager-args/ignored)
+  (define in (get-in))
   (let ([s (fd-read in 'avail)])
     (and (string? s)
-         (begin
+         (let ([out (get-out)])
            (fd-write out s)
+           (close in)
+           (close out)
            (+ 1 (string-length s))))))
 
-(define (create-jobserver-client in/ignored out/ignored in-no out-no)
+(define (create-jobserver-client get-in/ignored get-out/ignored close/ignored . manager-args)
   (define msg-ch (channel))
-  (define manager-in+out (launch-manager in-no out-no))
+  (define manager-in+out (launch-manager manager-args))
   (thread (lambda ()
             (let loop ([reader? #f]
                        [held 0]
@@ -96,7 +111,7 @@
 (define jobserver-manager
   (hash-ref (module->hash 'zuo/private/jobserver-manager) 'datums))
 
-(define (launch-manager in-no out-no)
+(define (launch-manager args)
   ;; The job of the manager process is just to survive at a point where
   ;; the enclosing process is trying to exit, possibly due to an error.
   ;; It will notice that the stdin pipe is closed and clean up.
@@ -104,8 +119,7 @@
                      "-c"
                      (~a (car jobserver-manager) "\n"
                          (string-join (map ~s (cdr jobserver-manager))))
-                     (~a in-no)
-                     (~a out-no)
+                     args
                      (hash 'stdin 'pipe
                            'stdout 'pipe)))
   (cons (hash-ref p 'stdout)
