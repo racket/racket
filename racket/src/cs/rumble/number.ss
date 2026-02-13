@@ -77,7 +77,7 @@
      #'(let ([x x-expr]
              [n n-expr])
          (if (and (fixnum? n)
-                  (#3%fx< n 10000))
+                  (#3%fx< (fxabs n) 10000))
              (#2%expt x n)
              (general-expt x n)))]
     [(_ expr ...) #'(general-expt expr ...)]
@@ -91,16 +91,18 @@
       [(not (number? x))
        (#2%expt x n)]
       [(and (fixnum? n)
-            (fxpositive? n)
             (exact? x))
        (unless (or (#3%fx< (fxabs n) 10000)
                    (eqv? x 0)
                    (eqv? x 1)
                    (eqv? x -1))
-         (guard-large-allocation 'expt 'number n 1))
+         (guard-large-allocation 'expt 'number (fxabs n)
+                                 (fxmax (integer-length (numerator (real-part x)))
+                                        (integer-length (denominator (real-part x)))
+                                        (integer-length (numerator (imag-part x)))
+                                        (integer-length (denominator (imag-part x))))))
        (#2%expt x n)]
       [(and (bignum? n)
-            (positive? n)
             (exact? x)
             (not (or (eqv? x 0)
                      (eqv? x 1)

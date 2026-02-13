@@ -302,7 +302,7 @@
                 (1/tcp-listen tcp-listen)
                 (1/tcp-listener? tcp-listener?)
                 (1/tcp-port? tcp-port?)
-                (terminal-file-position terminal-file-position)
+                (1/terminal-file-position terminal-file-position)
                 (1/terminal-port? terminal-port?)
                 (1/udp-bind! udp-bind!)
                 (1/udp-bound? udp-bound?)
@@ -7978,8 +7978,10 @@
                     (assert-pop-lock-level! 'port)
                     (unsafe-end-atomic))
                   (if pos_0 pos_0 (|#%app| fail-k_0)))))))))))
-(define terminal-file-position
-  (lambda () (|#%app| rktio_current_terminal_position)))
+(define 1/terminal-file-position
+  (|#%name|
+   terminal-file-position
+   (lambda () (|#%app| rktio_current_terminal_position))))
 (define 1/port-count-lines-enabled
   (make-parameter #f (lambda (v_0) (if v_0 #t #f)) 'port-count-lines-enabled))
 (define finish-port/count

@@ -646,6 +646,8 @@
 (err/rt-test (eval '(expt 2 (expt 2 80))) exn:fail:out-of-memory?)
 (err/rt-test (eval '(expt 1+1i (expt 2 80))) exn:fail:out-of-memory?)
 (err/rt-test (eval '(expt 1/2 (expt 2 80))) exn:fail:out-of-memory?)
+(err/rt-test (eval '(expt 2 (- (expt 2 80)))) exn:fail:out-of-memory?)
+(err/rt-test (eval '(expt (- 2) (expt 2 80))) exn:fail:out-of-memory?)
 (test 1 expt 1 (expt 2 80))
 (test 1 expt -1 (expt 2 80))
 (test -1 expt -1 (add1 (expt 2 80)))

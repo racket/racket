@@ -6197,6 +6197,30 @@
 (unless (eq? 'cgc (system-type 'gc))
   (void (dynamic-require ''uses-too-much-memory-for-shift #f)))
 
+(module uses-too-much-memory-for-expt racket/base
+  (define c (make-custodian))
+  (custodian-limit-memory c (* 1024 1024 10))
+  (parameterize ([current-custodian c])
+    (sync
+     (thread
+      (lambda ()
+        (with-handlers ([exn:fail:out-of-memory? void])
+          (expt 2 (expt -19 11))))))))
+(unless (eq? 'cgc (system-type 'gc))
+  (void (dynamic-require ''uses-too-much-memory-for-expt #f)))
+
+(module uses-too-much-memory-for-fraction-expt racket/base
+  (define c (make-custodian))
+  (custodian-limit-memory c (* 1024 1024 10))
+  (parameterize ([current-custodian c])
+    (sync
+     (thread
+      (lambda ()
+        (with-handlers ([exn:fail:out-of-memory? void])
+          (expt 1/2 (expt -19 11))))))))
+(unless (eq? 'cgc (system-type 'gc))
+  (void (dynamic-require ''uses-too-much-memory-for-fraction-expt #f)))
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Make sure that closure fields are correctly type-tagged
 ;; when a function has an unused rest arg:

@@ -10163,14 +10163,35 @@
         (if (eq? kind_0 'expt)
           (if (not
                (if (= 2 (length vals_0))
-                 (if (exact-integer? (car vals_0))
-                   (if (exact-integer? (cadr vals_0))
-                     (>
-                      (let ((app_0 (integer-length (car vals_0))))
-                        (* app_0 (cadr vals_0)))
-                      1000)
-                     #f)
-                   #f)
+                 (let ((x_0 (car vals_0)))
+                   (let ((n_0 (cadr vals_0)))
+                     (let ((x_1 x_0))
+                       (if (number? x_1)
+                         (if (exact? x_1)
+                           (if (exact-integer? n_0)
+                             (>
+                              (abs
+                               (*
+                                (let ((app_0
+                                       (integer-length
+                                        (numerator (real-part x_1)))))
+                                  (let ((app_1
+                                         (integer-length
+                                          (denominator (real-part x_1)))))
+                                    (let ((app_2
+                                           (integer-length
+                                            (numerator (imag-part x_1)))))
+                                      (max
+                                       app_0
+                                       app_1
+                                       app_2
+                                       (integer-length
+                                        (denominator (imag-part x_1)))))))
+                                n_0))
+                              1000)
+                             #f)
+                           #f)
+                         #f))))
                  #f))
             void
             #f)
