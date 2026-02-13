@@ -43,32 +43,39 @@
 
 (parameterize ([current-contract-namespace
                 (make-basic-contract-namespace 'racket/contract)])
-  ;; have to do this here so that errortrace is loaded
-  ;; in the right context (cannot put 'errortrace into 
-  ;; the argument to make-basic-contract-namespace)
-  (parameterize ([current-namespace (current-contract-namespace)])
-    (dynamic-require 'errortrace #f))
+  (thread-wait
+   (thread
+    (λ ()
+      ;; have to do this here so that errortrace is loaded
+      ;; in the right context (cannot put 'errortrace into
+      ;; the argument to make-basic-contract-namespace)
+      ;;
+      ;; also, doing the require in a new thread means that
+      ;; all the parameter settings that it does don't pollute
+      ;; other tests
+      (parameterize ([current-namespace (current-contract-namespace)])
+        (dynamic-require 'errortrace #f))
 
-  (test-errortrace-has-name
-   #:name 'whereitsat
-   '(-> (λ (a b c) #f) any))
+      (test-errortrace-has-name
+       #:name 'whereitsat
+       '(-> (λ (a b c) #f) any))
 
-  (test-errortrace-has-name
-   #:name 'whereitsat-star
-   '(->* ((λ (a b c) #f)) any))
+      (test-errortrace-has-name
+       #:name 'whereitsat-star
+       '(->* ((λ (a b c) #f)) any))
 
-  (test-errortrace-has-name
-   #:name 'whereitsat-mod
-   #:target-name 'whereitsat-mod.0
-   '(module anon-mod1 racket/base
-      (require racket/contract)
-      (-> (λ (a b c) #f) any))
-   '(require 'anon-mod1))
+      (test-errortrace-has-name
+       #:name 'whereitsat-mod
+       #:target-name 'whereitsat-mod.0
+       '(module anon-mod1 racket/base
+          (require racket/contract)
+          (-> (λ (a b c) #f) any))
+       '(require 'anon-mod1))
 
-  (test-errortrace-has-name
-   #:name 'whereitsat-mod-star
-   #:target-name 'whereitsat-mod-star.0
-   '(module anon-mod2 racket/base
-      (require racket/contract)
-      (->* ((λ (a b c) #f)) any))
-   '(require 'anon-mod2)))
+      (test-errortrace-has-name
+       #:name 'whereitsat-mod-star
+       #:target-name 'whereitsat-mod-star.0
+       '(module anon-mod2 racket/base
+          (require racket/contract)
+          (->* ((λ (a b c) #f)) any))
+       '(require 'anon-mod2))))))
