@@ -116,7 +116,7 @@
 
 ;; procedure that always succeeds, has no side effect, and would return the same value anytime later,
 ;; so can be reordered with later things, but can't be reordered before things that might raise an
-;; exception; used for unsafe accessors
+;; exception; used for unsafe accessors of immutable fields
 (struct known-procedure/then-pure () #:prefab #:omit-define-syntaxes #:super struct:known-procedure/succeeds)
 (struct known-procedure/then-pure/folding-unsafe (safe) #:prefab #:omit-define-syntaxes #:super struct:known-procedure/then-pure)
 
