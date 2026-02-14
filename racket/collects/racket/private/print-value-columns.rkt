@@ -1,4 +1,6 @@
 (module print-value-columns "pre-base.rkt"
+  (#%declare #:require=define)
+
   (#%provide print-value-columns)
   
   (define print-value-columns

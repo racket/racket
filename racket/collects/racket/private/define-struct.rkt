@@ -2,13 +2,15 @@
 ;;  (planet "struct.ss" ("ryanc" "macros.plt" 1 0)))
 
 (module define-struct '#%kernel
-  (#%require "define-et-al.rkt" "qq-and-or.rkt" "define.rkt" "../stxparam.rkt"
+  (#%declare #:require=define)
+
+  (#%require "core-macros.rkt" "core-macros.rkt" "define.rkt" "../stxparam.rkt"
              "generic-methods.rkt"
              (for-syntax '#%kernel "define.rkt"
                          "procedure-alias.rkt"
-                         "member.rkt"
-                         "stx.rkt" "stxcase-scheme.rkt" "qq-and-or.rkt" "cond.rkt"
-                         "define-et-al.rkt"
+                         (only "pico.rkt" member memw)
+                         "stx.rkt" "stxcase-scheme.rkt" "core-macros.rkt" "core-macros.rkt"
+                         "core-macros.rkt"
                          "stxloc.rkt" "qqstx.rkt"
                          "struct-info.rkt"
                          "struct-util.rkt"))

@@ -175,6 +175,19 @@
                 (1/would-be-future would-be-future)
                 (1/wrap-evt wrap-evt)))
 (define hash2610 (hasheq))
+(define reverse$1
+  (|#%name|
+   reverse
+   (lambda (l_0)
+     (letrec*
+      ((loop_0
+        (|#%name|
+         loop
+         (lambda (a_0 l_1)
+           (if (null? l_1)
+             a_0
+             (let ((app_0 (cons (car l_1) a_0))) (loop_0 app_0 (cdr l_1))))))))
+      (loop_0 null l_0)))))
 (define current-parameterization
   (lambda () (continuation-mark-set-first #f parameterization-key)))
 (define select-handler/no-breaks
@@ -290,19 +303,6 @@
          'racket/primitive
          "procedure?"
          p_0)))))
-(define reverse$1
-  (|#%name|
-   reverse
-   (lambda (l_0)
-     (letrec*
-      ((loop_0
-        (|#%name|
-         loop
-         (lambda (a_0 l_1)
-           (if (null? l_1)
-             a_0
-             (let ((app_0 (cons (car l_1) a_0))) (loop_0 app_0 (cdr l_1))))))))
-      (loop_0 null l_0)))))
 (define 1/raise-argument-error
   (|#%name|
    raise-argument-error

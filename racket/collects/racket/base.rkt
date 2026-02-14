@@ -2,5 +2,7 @@
 
   (provide (all-from-out "private/base.rkt"))
 
+  (#%declare #:require=define)
+
   (module reader syntax/module-reader
     racket/base))

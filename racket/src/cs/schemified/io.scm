@@ -463,6 +463,19 @@
    '11
    'sw_shownormal
    '12))
+(define 1/reverse
+  (|#%name|
+   reverse
+   (lambda (l_0)
+     (letrec*
+      ((loop_0
+        (|#%name|
+         loop
+         (lambda (a_0 l_1)
+           (if (null? l_1)
+             a_0
+             (let ((app_0 (cons (car l_1) a_0))) (loop_0 app_0 (cdr l_1))))))))
+      (loop_0 null l_0)))))
 (define-values
  (prop:keyword-impersonator keyword-impersonator? keyword-impersonator-ref)
  (make-struct-type-property 'keyword-impersonator))
@@ -530,19 +543,6 @@
          'racket/primitive
          "procedure?"
          p_0)))))
-(define 1/reverse
-  (|#%name|
-   reverse
-   (lambda (l_0)
-     (letrec*
-      ((loop_0
-        (|#%name|
-         loop
-         (lambda (a_0 l_1)
-           (if (null? l_1)
-             a_0
-             (let ((app_0 (cons (car l_1) a_0))) (loop_0 app_0 (cdr l_1))))))))
-      (loop_0 null l_0)))))
 (define-values
  (sort vector-sort vector-sort!)
  (let ((generic-sort_0

@@ -1,5 +1,7 @@
 (module collect '#%kernel
-  (#%require "qq-and-or.rkt"
+  (#%declare #:require=define)
+
+  (#%require "core-macros.rkt"
              "path.rkt"
              "kw.rkt"
 	     (prefix k: '#%kernel))

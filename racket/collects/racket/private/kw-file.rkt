@@ -1,5 +1,7 @@
 (module kw-file "pre-base.rkt" 
 
+  (#%declare #:require=define)
+
   (require (prefix-in k: "pre-base.rkt")
            "sort.rkt")
 

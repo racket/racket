@@ -3,7 +3,6 @@
 (define kw2846 (string->keyword "direct"))
 (define kw2615 (string->keyword "anonymous"))
 (define hash2589 (hasheqv))
-(define call/ec call-with-escape-continuation)
 (define qq-append
   (lambda (a_0 b_0)
     (if (list? a_0)
@@ -12,6 +11,19 @@
 (define fixnum-for-every-system?
   (lambda (v_0)
     (if (fixnum? v_0) (if (fx>= v_0 -536870912) (fx<= v_0 536870911) #f) #f)))
+(define reverse$1
+  (|#%name|
+   reverse
+   (lambda (l_0)
+     (letrec*
+      ((loop_0
+        (|#%name|
+         loop
+         (lambda (a_0 l_1)
+           (if (null? l_1)
+             a_0
+             (let ((app_0 (cons (car l_1) a_0))) (loop_0 app_0 (cdr l_1))))))))
+      (loop_0 null l_0)))))
 (define call-with-exception-handler
   (lambda (exnh_0 thunk_0)
     (begin0
@@ -119,19 +131,6 @@
           (raise-argument-error name_0 "(or/c struct-type? #f)" what_0))
         (void))
       what_0)))
-(define reverse$1
-  (|#%name|
-   reverse
-   (lambda (l_0)
-     (letrec*
-      ((loop_0
-        (|#%name|
-         loop
-         (lambda (a_0 l_1)
-           (if (null? l_1)
-             a_0
-             (let ((app_0 (cons (car l_1) a_0))) (loop_0 app_0 (cdr l_1))))))))
-      (loop_0 null l_0)))))
 (define-values
  (sort vector-sort vector-sort!)
  (let ((generic-sort_0

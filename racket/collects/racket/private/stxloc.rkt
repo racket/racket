@@ -3,7 +3,9 @@
 ;; syntax/loc
 
 (module stxloc '#%kernel
-  (#%require "stxcase.rkt" "define-et-al.rkt"
+  (#%declare #:require=define)
+
+  (#%require "stxcase.rkt" "core-macros.rkt"
              (for-syntax '#%kernel "stxcase.rkt"))
 
   (begin-for-syntax

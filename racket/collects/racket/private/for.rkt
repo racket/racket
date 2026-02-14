@@ -1,9 +1,10 @@
 (module for '#%kernel
+  (#%declare #:require=define)
 
   (#%require "misc.rkt"
              "define.rkt"
              "letstx-scheme.rkt"
-             "reverse.rkt"
+             (only "pico.rkt" alt-reverse)
              "sort.rkt"
              "performance-hint.rkt"
              "promise.rkt"
@@ -14,7 +15,7 @@
                          "qqstx.rkt"
                          "define.rkt"
                          "fixnum.rkt"
-                         "define-et-al.rkt" "qq-and-or.rkt" "cond.rkt"
+                         "core-macros.rkt" "core-macros.rkt" "core-macros.rkt"
                          "stxcase-scheme.rkt"
                          "more-scheme.rkt"))
 

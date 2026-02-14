@@ -4,8 +4,10 @@
 ;;  check-duplicate-identifier, and assembles everything we have so far
 
 (module stxcase-scheme '#%kernel
-  (#%require "define-et-al.rkt" "qq-and-or.rkt" "stx.rkt" "stxcase.rkt" "with-stx.rkt" "stxloc.rkt"
-             (for-syntax '#%kernel "define-et-al.rkt" "stx.rkt" "stxcase.rkt"
+  (#%declare #:require=define)
+
+  (#%require "core-macros.rkt" "core-macros.rkt" "stx.rkt" "stxcase.rkt" "with-stx.rkt" "stxloc.rkt"
+             (for-syntax '#%kernel "core-macros.rkt" "stx.rkt" "stxcase.rkt"
                          "stxloc.rkt"))
 
   (-define (check-duplicate-identifier names)

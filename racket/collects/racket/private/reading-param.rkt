@@ -1,5 +1,7 @@
 (module reading-params '#%kernel
   (#%declare #:cross-phase-persistent)
+  (#%declare #:require=define)
+
   (#%require '#%paramz)
   (#%provide call-with-default-reading-parameterization)
   

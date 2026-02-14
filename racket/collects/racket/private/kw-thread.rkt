@@ -1,4 +1,6 @@
 (module kw-thread "pre-base.rkt"
+  (#%declare #:require=define)
+
   (require (prefix-in k: '#%kernel)
            '#%futures)
   

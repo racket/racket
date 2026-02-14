@@ -1,9 +1,11 @@
 
 (module struct '#%kernel
+  (#%declare #:require=define)
+
   (#%require "define.rkt"
              "define-struct.rkt"
              (for-syntax '#%kernel "define.rkt"
-                         "stx.rkt" "stxcase-scheme.rkt" "qq-and-or.rkt" "cond.rkt"
+                         "stx.rkt" "stxcase-scheme.rkt" "core-macros.rkt" "core-macros.rkt"
                          "stxloc.rkt"))
 
   (#%provide struct)
