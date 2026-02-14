@@ -294,10 +294,30 @@
 ;; The caller gives the class and relative position (in the
 ;; new object struct layer), and this function fills
 ;; in the projections.
-(define (make-field-info cls rpos)
+(define (make-field-info cls rpos field-id acc-chap mut-chap)
   (let ([field-ref (make-struct-field-accessor (class-field-ref cls) rpos)]
         [field-set! (make-struct-field-mutator (class-field-set! cls) rpos)])
-    (vector field-ref field-set! field-ref field-set!)))
+    (define (maybe-chaperone what chap proc)
+      (cond
+        [chap
+         (unless (and (procedure? chap)
+                      (procedure-arity-includes? chap 1))
+           (obj-error 'class (format "chaperoner of field ~a is not a procedure of one argument" what)
+                      (and (class-name cls) "class name") (as-write (class-name cls))
+                      "field name" (as-write field-id)
+                      "chaperoner" proc))
+         (define new-proc (chap proc))
+         (unless (chaperone-of? new-proc proc)
+           (obj-error 'class (format "chaperoner of field ~a did not produce a chaperone" what)
+                      (and (class-name cls) "class name") (as-write (class-name cls))
+                      "field name" (as-write field-id)
+                      (format "original ~a" what) proc
+                      "chaperoner result" new-proc))
+         new-proc]
+        [else proc]))
+    (let ([field-ref (maybe-chaperone "accessor" acc-chap field-ref)]
+          [field-set! (maybe-chaperone "mutator" mut-chap field-set!)])
+      (vector field-ref field-set! field-ref field-set!))))
 
 (define (field-info-extend-internal fi ppos pneg neg-party)
   (let* ([old-ref (unsafe-vector-ref fi 0)]
@@ -426,7 +446,13 @@
     (define (extract* kws l)
       (let-values ([(in out) (extract kws l void)])
         in))
-    
+
+    (define (extract-chaperoner norm chaperoner-kw)
+      (syntax-case norm ()
+        [(_ _ kw expr . _) (eq? (syntax-e #'kw) chaperoner-kw) #'expr]
+        [(_ _ _ _ kw expr) (eq? (syntax-e #'kw) chaperoner-kw) #'expr]
+        [_ #f]))
+
     (define ((flatten/def-ctx def-ctx) alone l)
       (apply append
              (map (lambda (i)
@@ -556,14 +582,23 @@
                            (bad "ill-formed init-field clause" #'orig)]
                           [(-field orig idp ...)
                            (for-each (lambda (idp)
+                                       (define (parse-chap chap)
+                                         (syntax-case chap ()
+                                           [() 'ok]
+                                           [(#:chaperone-accessor expr) #t]
+                                           [(#:chaperone-mutator expr) #t]
+                                           [(#:chaperone-accessor expr1 #:chaperone-mutator expr2) #t]
+                                           [(#:chaperone-mutator expr1 #:chaperone-accessor expr2) #t]
+                                           [_ #f]))
                                        (syntax-case idp ()
-                                         [(id expr) (identifier? (syntax id)) 'ok]
-                                         [((iid eid) expr) (and (identifier? (syntax iid))
-                                                                (identifier? (syntax eid)))
-                                                           'ok]
+                                         [(id expr . chap) (and (identifier? (syntax id)) (parse-chap #'chap)) 'ok]
+                                         [((iid eid) expr . chap) (and (identifier? (syntax iid))
+                                                                       (identifier? (syntax eid))
+                                                                       (parse-chap #'chap))
+                                                                  'ok]
                                          [else
                                           (bad 
-                                           "field element is not an optionally renamed identifier-expression pair"
+                                           "field element is not an optionally renamed identifier-expression pair with optional chaperoners"
                                            idp)]))
                                      (syntax->list (syntax (idp ...))))]
                           [(-field orig . rest)
@@ -1043,7 +1078,7 @@
                                           [(-fld orig idp ...)
                                            (and (identifier? #'-fld)
 					        (free-identifier=? #'-fld #'-field))
-                                           (with-syntax ([(((iid eid) expr) ...)
+                                           (with-syntax ([(((iid eid) expr . _) ...)
                                                           (map normalize-init/field (syntax->list #'(idp ...)))])
                                              (syntax-track-origin
                                               (syntax/loc e (begin 
@@ -1249,27 +1284,51 @@
                                                        (make-init-error-map (quote-syntax plain-init-name-localized))
                                                        ...)]))])
                           
-                          (let ([find-method 
-                                 (lambda (methods)
-                                   (lambda (name)
-                                     (ormap 
-                                      (lambda (m)
-                                        (and (bound-identifier=? (car m) name)
-                                             (with-syntax ([proc (proc-shape (car m) (cdr m) #t 
-                                                                             the-obj the-finder
-                                                                             bad class-name expand-stop-names
-                                                                             def-ctx lookup-localize)]
-                                                           [extra-init-mappings extra-init-mappings])
-                                               (syntax
-                                                (syntax-parameterize 
-                                                 ([super-instantiate-param super-error-map]
-                                                  [super-make-object-param super-error-map]
-                                                  [super-new-param super-error-map])
-                                                 (letrec-syntaxes+values extra-init-mappings ()
-                                                   proc))))))
-                                      methods)))]
-                                [lookup-localize-cdr (lambda (p) (lookup-localize (cdr p)))])
-                            
+                          (let* ([find-method 
+                                  (lambda (methods)
+                                    (lambda (name)
+                                      (ormap 
+                                       (lambda (m)
+                                         (and (bound-identifier=? (car m) name)
+                                              (with-syntax ([proc (proc-shape (car m) (cdr m) #t 
+                                                                              the-obj the-finder
+                                                                              bad class-name expand-stop-names
+                                                                              def-ctx lookup-localize)]
+                                                            [extra-init-mappings extra-init-mappings])
+                                                (syntax
+                                                 (syntax-parameterize 
+                                                     ([super-instantiate-param super-error-map]
+                                                      [super-make-object-param super-error-map]
+                                                      [super-new-param super-error-map])
+                                                   (letrec-syntaxes+values extra-init-mappings ()
+                                                     proc))))))
+                                       methods)))]
+                                 [lookup-localize-cdr (lambda (p) (lookup-localize (cdr p)))]
+                                 [accessor-chaper+poss (for/list ([norm (in-list normal-plain-fields)]
+                                                                [i (in-naturals)]
+                                                                #:do [(define chaper
+                                                                        (extract-chaperoner norm '#:chaperone-accessor))]
+                                                                #:when chaper)
+                                                       (cons chaper i))]
+                                 [mutator-chaper+poss (for/list ([norm (in-list normal-plain-fields)]
+                                                                 [i (in-naturals)]
+                                                                 #:do [(define chaper
+                                                                         (extract-chaperoner norm '#:chaperone-mutator))]
+                                                                 #:when chaper)
+                                                        (cons chaper i))]
+                                 [chap-accessors (generate-temporaries accessor-chaper+poss)]
+                                 [chap-mutators (generate-temporaries mutator-chaper+poss)]
+                                 [each-chaperoned-if-given (lambda (names chap+poss chap-ids)
+                                                             (let loop ([i 0] [names names] [chap+poss chap+poss] [chap-ids chap-ids])
+                                                               (cond
+                                                                 [(null? names) null]
+                                                                 [(null? chap+poss) (cons #'#f (loop i (cdr names) null null))]
+                                                                 [(eqv? i (cdar chap+poss))
+                                                                  (cons (car chap-ids)
+                                                                        (loop (add1 i) (cdr names) (cdr chap+poss) (cdr chap-ids)))]
+                                                                 [else
+                                                                  (cons #'#f (loop (add1 i) (cdr names) chap+poss chap-ids))])))])
+
                             ;; ---- build final result ----
                             (with-syntax ([public-names (map lookup-localize-cdr publics)]
                                           [public-final-names (map lookup-localize-cdr public-finals)]
@@ -1296,6 +1355,18 @@
                                                             (append
                                                              normal-plain-fields
                                                              normal-plain-init-fields))]
+                                          [((acc-chaper . acc-chap-pos) ...) accessor-chaper+poss]
+                                          [((mut-chaper . mut-chap-pos) ...) mutator-chaper+poss]
+                                          [(chap-accessor ...) chap-accessors] ; identifiers
+                                          [(chap-mutator ...) chap-mutators]   ; identifiers
+                                          [(local-chap-accessor ...) (each-chaperoned-if-given
+                                                                      (append field-names private-field-names)
+                                                                      accessor-chaper+poss
+                                                                      chap-accessors)]
+                                          [(local-chap-mutator ...) (each-chaperoned-if-given
+                                                                     (append field-names private-field-names)
+                                                                     mutator-chaper+poss
+                                                                     chap-mutators)]
                                           [inherit-field-names (map lookup-localize (map cdr inherit-fields))]
                                           [init-names (map (lambda (norm)
                                                              (lookup-localize
@@ -1348,6 +1419,8 @@
                                    `field-names
                                    `inherit-field-names
                                    `private-field-names ; for undefined-checking property
+                                   (hasheqv (~@ acc-chap-pos acc-chaper) ...)
+                                   (hasheqv (~@ mut-chap-pos mut-chaper) ...)
                                    ;; Method names:
                                    `(rename-super-name ... rename-super-extra-name ...)
                                    `(rename-inner-name ... rename-inner-extra-name ...)
@@ -1370,6 +1443,8 @@
                                    (quasisyntax/loc stx
                                      (lambda (local-accessor
                                               local-mutator
+                                              chap-accessor ...
+                                              chap-mutator ...
                                               inherit-field-accessor ...  ; inherit
                                               inherit-field-mutator ...
                                               rename-super-temp ... rename-super-extra-temp ...
@@ -1377,10 +1452,14 @@
                                               method-accessor ...) ; for a local call that needs a dynamic lookup
                                        (define-syntax-parameter the-finder #f)
                                        (let ([local-field-accessor
-                                              (make-struct-field-accessor local-accessor local-field-pos #f)]
+                                              (maybe-chaperoned
+                                               local-chap-accessor ; #f or a `chap-accessor`
+                                               (make-struct-field-accessor local-accessor local-field-pos #f))]
                                              ...
                                              [local-field-mutator
-                                              (make-struct-field-mutator local-mutator local-field-pos #f)]
+                                              (maybe-chaperoned
+                                               local-chap-mutator ; #f or a `chap-mutator`
+                                               (make-struct-field-mutator local-mutator local-field-pos #f))]
                                              ...)
                                          (syntax-parameterize
                                           ([this-param (make-this-map (quote-syntax this-id)
@@ -1564,6 +1643,11 @@
                  (syntax->list #'(interface-expr ...))
                  (syntax->list #'(defn-or-expr ...)))]))
      )))
+
+(define-syntax maybe-chaperoned
+  (syntax-rules ()
+    [(_ #f make) make]
+    [(_ id _) id]))
 
 (begin-for-syntax
   ;; expands an expression enough that we can check whether it has
@@ -2149,7 +2233,10 @@ last few projections.
                        public-field-names  ; list of symbols (shorter than num-fields)
                        inherit-field-names ; list of symbols (not included in num-fields)
                        private-field-names ; list of symbols (the rest of num-fields)
-                       
+
+                       acc-chapers         ; hash of pos -> accessor chaperoner
+                       mut-chapers         ; hash of pos -> mutator chaperoner
+
                        rename-super-names  ; list of symbols
                        rename-inner-names
                        pubment-names
@@ -2588,8 +2675,20 @@ last few projections.
                 (unless no-new-fields?
                   (for ([id (in-list public-field-names)]
                         [i (in-naturals)])
-                    (hash-set! field-ht id (make-field-info c i))))
-                
+                    (hash-set! field-ht id (make-field-info c i id
+                                                            (hash-ref acc-chapers i #f)
+                                                            (hash-ref mut-chapers i #f)))))
+                (define chap-accessors
+                  (for/list ([id (in-list public-field-names)]
+                             [i (in-naturals)]
+                             #:when (hash-ref acc-chapers i #f))
+                    (field-info-internal-ref (hash-ref field-ht id))))
+                (define chap-mutators
+                  (for/list ([id (in-list public-field-names)]
+                             [i (in-naturals)]
+                             #:when (hash-ref mut-chapers i #f))
+                    (field-info-internal-set! (hash-ref field-ht id))))
+
                 ;; -- Extract superclass methods and make rename-inners ---
                 (let ([rename-supers (map (lambda (index mname)
                                             (cond
@@ -2691,7 +2790,9 @@ last few projections.
                     ;; -- Get new methods and initializers --
                     (let-values ([(new-methods override-methods augride-methods init)
                                   (apply make-methods object-field-ref object-field-set!
-                                         (append inh-accessors
+                                         (append chap-accessors
+                                                 chap-mutators
+                                                 inh-accessors
                                                  inh-mutators
                                                  rename-supers
                                                  rename-inners
