@@ -11,8 +11,9 @@
          "opt.rkt"
          "blame.rkt"
          (for-syntax "opt-guts.rkt")
-         racket/private/class-internal
-         racket/private/class-c-old
+         "../../private/class-internal.rkt"
+         "../../private/object-c.rkt"
+         "../../private/class-c.rkt"
          racket/stxparam)
 
 (require (for-syntax racket/base))
@@ -29,7 +30,7 @@
              [mtds '()]
              [flds '()])
     (cond
-      [(null? args) (list mtds flds)]
+      [(null? args) (list (reverse mtds) (reverse flds))]
       [else (syntax-case (car args) (field)
               [(field id ctc)
                (identifier? #'id)
@@ -52,38 +53,6 @@
           [(contract-struct? sub) (contract-struct-name sub)]
           [else sub])))
 
-(define-struct object-contract (methods method-ctcs fields field-ctcs)
-  #:property prop:custom-write custom-write-property-proc
-  #:omit-define-syntaxes
-  #:property prop:contract
-  (build-contract-property
-   #:trusted trust-me
-   #:late-neg-projection
-   (λ (ctc)
-     (define flds (object-contract-fields ctc))
-     (define fld-ctcs (object-contract-field-ctcs ctc))
-     (define mtds (object-contract-methods ctc))
-     (define mtd-ctcs (object-contract-method-ctcs ctc))
-     (λ (blame)
-       (define p-app
-         (make-wrapper-object blame mtds mtd-ctcs flds fld-ctcs))
-       (λ (val neg-party)
-         (p-app ctc val neg-party))))
-   #:name
-   (λ (ctc) `(object-contract ,@(map (λ (fld ctc) (build-compound-type-name 'field fld ctc))
-                                     (object-contract-fields ctc)
-                                     (object-contract-field-ctcs ctc))
-                              ,@(map (λ (mtd ctc) (object-contract-sub-name mtd ctc))
-                                     (object-contract-methods ctc)
-                                     (object-contract-method-ctcs ctc))))
-
-   #:first-order 
-   (λ (ctc)
-     (λ (val)
-       (let/ec ret
-         (check-object-contract val (object-contract-methods ctc) (object-contract-fields ctc)
-                                (λ args (ret #f))))))))
-
 (define-syntax (object-contract stx)
   (syntax-case stx ()
     [(_ spec ...)
@@ -93,10 +62,14 @@
        (with-syntax ([(method-name ...)
                       (map (λ (x) (string->symbol (format "~a method" (syntax-e x))))
                            (syntax->list #'(method-id ...)))])
-         #'(build-object-contract '(method-id ...)
-                                  (list (let ([method-name (fun->meth method-ctc)]) method-name) ...)
-                                  '(field-id ...)
-                                  (list field-ctc ...))))]))
+         (do-object/c
+          'object-contract
+          stx
+          #f
+          #'make-object-contract
+          #'([method-id (let ([method-name (fun->meth method-ctc)]) method-name)] ...
+             (field [field-id field-ctc] ...)))))]))
+
 (define-syntax (fun->meth stx)
   (syntax-case stx ()
     [(_ ctc)
@@ -106,13 +79,6 @@
        [(->d . args)      #'(->dm . args)]
        [(case-> case ...) #'(case->m case ...)]
        [(->i . args)      (->i-internal #'ctc #|method?|# #t)])])) ; there's no ->im. could be, though, code is there
-
-(define (build-object-contract methods method-ctcs fields field-ctcs)
-  (make-object-contract methods 
-                        (map (λ (x) (coerce-contract 'object-contract x)) method-ctcs)
-                        fields 
-                        (map (λ (x) (coerce-contract 'object-contract x)) field-ctcs)))
-
 
 (define (make-mixin-contract . %/<%>s)
   (->i ([c% (and/c (flat-contract class?)
