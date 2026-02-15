@@ -1481,7 +1481,8 @@
                      variable-ref variable-ref/no-check
                      variable-set! variable-set!/define
                      make-interp-procedure
-                     decode-procedure-name)
+                     decode-procedure-name
+                     interpret*)
 
   (set-foreign-eval! eval/foreign)
 

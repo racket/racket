@@ -26,6 +26,7 @@
        [`(letrec* ([,ids ,rhss] ...) . ,body)
         (xify-let 'letrec* ids rhss body env)]
        [`(quote ,v) e]
+       [`(#%foreign-inline . ,_) e]
        ;; Although this next group could be covered by `xify-body`,
        ;; they seem common enough to handle faster as special cases
        [`(begin . ,body)

@@ -8,6 +8,7 @@
          known-authentic known-authentic?
          known-copy? known-copy known-copy-id
          known-literal known-literal? known-literal-value
+         known-foreign-inline known-foreign-inline? known-foreign-inline-expr
          known-ctype known-ctype? known-ctype-rep
          known-procedure known-procedure? known-procedure-arity-mask
          known-procedure/single-valued known-procedure/single-valued?
@@ -70,6 +71,9 @@
 
 ;; literal for constant propagation:
 (struct known-literal (value) #:prefab #:omit-define-syntaxes #:super struct:known-consistent)
+
+;; foreign-inline for constant propagation:
+(struct known-foreign-inline (expr) #:prefab #:omit-define-syntaxes #:super struct:known-consistent)
 
 ;; ctype for constant propagation:
 (struct known-ctype (rep) #:prefab #:omit-define-syntaxes #:super struct:known-constant)

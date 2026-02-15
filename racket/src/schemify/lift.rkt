@@ -106,6 +106,7 @@
       [`(with-continuation-mark* ,_ ,key ,val ,body)
        (or (lift-in-expr? key) (lift-in-expr? val) (lift-in-expr? body))]
       [`(quote ,_) #f]
+      [`(#%foreign-inline . ,_) #f]
       [`(#%variable-reference . ,_) (error 'internal-error "unexpected variable reference")]
       [`(set! ,_ ,rhs)
        (lift-in-expr? rhs)]
@@ -150,6 +151,7 @@
       [`(set! ,_ ,rhs) (lift? rhs)]
       [`(#%variable-reference) #f]
       [`(#%variable-reference ,id) #f]
+      [`(#%foreign-inline . ,_) #f]
       [`(,rator . ,rands)
        (or (lift? rator) (lift?/seq rands))]
       [`,_ #f]))
@@ -242,6 +244,7 @@
                         ,(lift-in-expr body)))]
       [`(quote ,_) v]
       [`(#%variable-reference . ,_) (error 'internal-error "unexpected variable reference")]
+      [`(#%foreign-inline . ,_) v]
       [`(set! ,id ,rhs)
        (reannotate v `(set! ,id ,(lift-in-expr rhs)))]
       [`(,_ ...)
@@ -335,6 +338,7 @@
          (compute-lifts! rhs frees+binds lifts locals))]
       [`(#%variable-reference . ,_)
        (error 'internal-error "lift: unexpected variable reference")]
+      [`(#%foreign-inline . ,_) frees+binds]
       [`(call-with-values ,producer ,consumer)
        (let* ([frees+binds (compute-lifts! producer frees+binds lifts locals #t)]
               [frees+binds (compute-lifts! consumer frees+binds lifts locals #t)])
@@ -469,6 +473,7 @@
        (find-loops rhs lifts #hasheq() loops)]
       [`(#%variable-reference . ,_)
        (error 'internal-error "lift: unexpected variable reference")]
+      [`(#%foreign-inline . ,_) loops]
       [`(call-with-values ,producer ,consumer)
        (let ([loops (find-loops producer lifts #hasheq() loops)])
          (find-loops-in-tail-called consumer lifts loop-if-tail loops))]
@@ -678,6 +683,7 @@
             (reannotate v `(set! ,id ,(convert rhs)))])]
         [`(#%variable-reference . ,_)
          (error 'internal-error "lift: unexpected variable reference")]
+        [`(#%foreign-inline . ,_) v]
         [`(,rator . ,rands)
          (let ([rands (convert-lifted-calls-in-seq rands lifts frees empties)])
            (define f (unwrap rator))

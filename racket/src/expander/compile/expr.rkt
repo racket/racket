@@ -111,6 +111,10 @@
           ;; Note: the datum form of `s` has probably been pruned away,
           ;; so don't try to use it here:
           (correlate~ s `(quote syntax)))]
+     [(parsed-foreign-inline? p)
+      (define datum (parsed-foreign-inline-datum p))
+      (define mode (parsed-foreign-inline-mode p))
+      (correlate~ s `(#%foreign-inline ,datum ,mode))]
      [(parsed-#%variable-reference? p)
       (define id (parsed-#%variable-reference-id p))
       (correlate~ s 

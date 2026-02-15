@@ -3396,3 +3396,47 @@ dependency on the runtime support module.
 }
 
 @(close-eval lazy-require-eval)
+
+@;------------------------------------------------------------------------
+@section[#:tag "foreign-inline"]{Unsafe Access to Core Compiler Forms}
+
+
+@defform[(#%foreign-inline datum maybe-mode)
+         #:grammar
+         ([maybe-mode code:blank
+                      #:effect
+                      #:pure
+                      #:copy])]{
+
+The @racket[#%foreign-inline] form @tech[#:key "unsafe"]{unsafely}
+inlines an expression form that is supported by the core compiler and
+runtime system that Racket runs on, which is Chez Scheme in the case
+of Racket @tech{CS}. Omitting @racket[maybe-mode] is equivalent to
+supplying @racket[#:effect].
+
+Ensuring that @racket[datum] is supported and has appropriate behavior
+(consistent with @racket[maybe-mode]) is up to the user of this form:
+
+@itemlist[
+
+ @item{The @racket[datum] must not refer to any variable that is bound
+ in the enclosing scope.}
+
+ @item{Evaluating @racket[datum] must not raise an exception or
+ otherwise inspect the current @tech{continuation}, and it must return
+ a single value.}
+
+ @item{If @racket[#:pure] or @racket[#:copy] is specified, then
+ evaluating @racket[datum] must not have any side effects or depend on
+ preceding effects.}
+
+ @item{If @racket[#:copy] is specified, then the compilation may
+ duplicate the entire @racket[(#%foreign-inline datum maybe-mode)]
+ expression one or more times to inline its implementation at
+ different uses of its value.}
+
+]
+
+@history[#:added "9.1.0.8"]
+
+}

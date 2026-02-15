@@ -107,6 +107,11 @@
       [`(case-lambda . ,_) (returns 1)]
       [`(quote . ,_) (returns 1)]
       [`(#%variable-reference . ,_) (returns 1)]
+      [`(#%foreign-inline ,_ ,mode) (and (case mode
+                                           [(copy) #t]
+                                           [(pure) (not no-alloc?)]
+                                           [else (not (or pure? no-alloc?))])
+                                         (returns 1))]
       [`(let-values ([,idss ,rhss] ...) ,body)
        (cached
         (and (for/and ([ids (in-list idss)]

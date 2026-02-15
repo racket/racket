@@ -8,6 +8,8 @@
          wrap-literal
          register-literal-serialization)
 
+;; A "literal" value here is one that can be constant-propagated
+;; and used for constant-folding
 (define (literal? v)
   (define u (unwrap v))
   (or (number? u)

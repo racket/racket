@@ -561,7 +561,8 @@
                    (define k (infer-known rhs id knowns prim-knowns imports mutated simples unsafe-mode? target))
                    (define (merely-a-copy? k)
                      (and (or (known-copy? k)
-                              (known-literal? k))
+                              (known-literal? k)
+                              (known-foreign-inline? k))
                           (simple-mutated-state? (hash-ref mutated (unwrap id) #f))))
                    (cond
                      [(merely-a-copy? k)
@@ -816,6 +817,7 @@
                       [(hash-ref mutated u #f) 'mutable]
                       [(hash-ref prim-knowns u #f) u] ; assuming that `mutable` and `constant` are not primitives
                       [else 'constant])))]
+           [`(#%foreign-inline . ,_) v]
            [`(equal? ,exp1 ,exp2)
             (optimize-equal 'equal? (schemify exp1 'fresh) (schemify exp2 'fresh)
                             target prim-knowns knowns imports mutated simples unsafe-mode?)]
@@ -1078,6 +1080,9 @@
                                 ;; need to handle it here before generating a
                                 ;; reference to the renamed identifier
                                 (wrap-literal (known-literal-value k))]
+                               [(known-foreign-inline? k)
+                                ;; Ditto
+                                (known-foreign-inline-expr k)]
                                [(and (known-copy? k)
                                      (hash-ref prim-knowns (known-copy-id k) #f))
                                 ;; Directly reference primitive

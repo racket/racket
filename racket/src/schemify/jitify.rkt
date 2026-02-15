@@ -208,6 +208,11 @@
   ;;  for the current expression. It might be mapped to '(self ...)
   ;;  and need to be unmapped for a more nested function.
   (define (jitify-expr v env mutables free lifts convert-mode name in-name)
+    ;; For a form that must be compiled, but also has no subexpressions
+    (define (must-compile-form)
+      (if (convert-mode-within-conversion? convert-mode)
+          (values v free lifts)
+          (jitify-expr `(#%app (lambda () ,v)) env mutables free lifts (convert-mode-always convert-mode) #f in-name)))
     (match v
       [`(lambda ,args . ,body)
        (define convert? (convert-mode-convert-lambda? convert-mode v))
@@ -308,7 +313,10 @@
        (values (reannotate v `(with-continuation-mark* ,mode ,new-key ,new-val ,new-body))
                new-free/body
                new-lifts/body)]
-      [`(quote ,_) (values v free lifts)]
+      [`(quote ,datum)
+       (values v free lifts)]
+      [`(#%foreign-inline . ,_)
+       (must-compile-form)]
       [`(set! ,var ,rhs)
        (define-values (new-rhs new-free new-lifts)
          (jitify-expr rhs env mutables free lifts (convert-mode-non-tail convert-mode) var in-name))
@@ -354,10 +362,7 @@
                new-free
                new-lifts)]
       [`(ffi-static-call-and-callback-core ,_ ...)
-       ;; This form must be compiled, but it has no subexpressions
-       (if (convert-mode-within-conversion? convert-mode)
-           v
-           (jitify-expr `(#%app (lambda () ,v)) env mutables free lifts (convert-mode-always convert-mode) #f in-name))]
+       (must-compile-form)]
       [`(#%app ,_ ...)
        (define-values (new-vs new-free new-lifts)
          (jitify-body (wrap-cdr v) env mutables free lifts (convert-mode-non-tail convert-mode) #f in-name))
@@ -677,6 +682,7 @@
                      (find-mutable env val
                                    (find-mutable env body accum)))]
       [`(quote ,_) accum]
+      [`(#%foreign-inline . ,_) accum]
       [`(set! ,var ,rhs)
        (define id (unwrap var))
        (find-mutable env rhs (if (hash-ref env id #f)
@@ -833,6 +839,7 @@
           (record-sizes! val sizes)
           (record-sizes! body sizes))]
       [`(quote ,_) 1]
+      [`(#%foreign-inline . ,_) 1]
       [`(set! ,_ ,rhs)
        (add1 (record-sizes! rhs sizes))]
       [`(ffi-static-call-and-callback-core ,_ ...) 1]

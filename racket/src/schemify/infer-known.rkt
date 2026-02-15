@@ -110,6 +110,8 @@
                      (and (known-ctype? k) k))]
                [else #f])]
             [else #f])]
+         [`(#%foreign-inline ,_ copy)
+          (known-foreign-inline rhs)]
          [`,_
           (cond
             [(and defn

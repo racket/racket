@@ -60,6 +60,7 @@
             [`(#%variable-reference ,id)
              `(#%variable-reference ,(remap-name id))]
             [`(#%variable-reference . ,_) b]
+            [`(#%foreign-inline . ,_) b]
             [`(,rator ,rands ...)
              (or (application-hook rator rands loop)
                  `(,(loop rator) ,@(map loop rands)))]

@@ -174,6 +174,9 @@
             [(and (known-literal? k)
                   (simple-mutated-state? (hash-ref mutated u #f)))
              (wrap-literal (known-literal-value k))]
+            [(and (known-foreign-inline? k)
+                  (simple-mutated-state? (hash-ref mutated u #f)))
+             (known-foreign-inline-expr k)]
             ;; Note: we can't do `known-copy?` here, because a copy of
             ;; an imported or exported name will need to be schemified
             ;; to a different name
@@ -268,6 +271,7 @@
           unsafe-mode?]
          [`(#%variable-reference) v]
          [`(#%variable-reference ,id) v]
+         [`(#%foreign-inline . ,_) v]
          [`(quote ,_) v]
          [`(,rator ,exps ...)
           `(,(optimize* rator) ,@(optimize*-body exps))]

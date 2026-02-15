@@ -14,6 +14,7 @@
     [`(quote ,_) v]
     [`(lambda . ,_) v]
     [`(case-lambda . ,_) v]
+    [`(#%foreign-inline . ,_) v]
     [`(,proc-or-form . ,_)
      (define u (unwrap proc-or-form))
      (cond
@@ -62,6 +63,7 @@
        [`(case-lambda . ,_) #t]
        [`(quote . ,_) #t]
        [`(#%variable-reference . ,_) #t]
+       [`(#%foreign-inline . ,_) #t]
        [`(let-values ,_ . ,body)
         (single-valued-body? body knowns prim-knowns imports mutated (fx- fuel 1))]
        [`(let ,_ . ,body)
