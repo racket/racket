@@ -139,8 +139,6 @@
   
   (define-values (struct:break-paramz make-break-paramz break-paramz? break-paramz-ref break-paramz-set!)
     (make-struct-type 'break-parameterization #f 1 0 #f))
-
-  (-define-struct break-parameterization (cell))
   
   (define (current-break-parameterization)
     (make-break-paramz (continuation-mark-set-first #f break-enabled-key)))
