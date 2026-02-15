@@ -34,7 +34,8 @@
                 let-values letrec-values
                 set! quote
                 with-continuation-mark
-                #%variable-reference))
+                #%variable-reference
+                #%foreign-inline))
 
    ;; Source-mode linklet glue
    (for-each register-built-in-symbol!

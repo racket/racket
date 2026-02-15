@@ -47,6 +47,10 @@
                           (symbol-unreadable? v)))
                  (sub1 size)
                  0))]
+          [(eq? (unwrap (wrap-car v)) '#%foreign-inline)
+           (if (eq? (unwrap (wrap-car (wrap-cdr (wrap-cdr v)))) 'copy)
+               (sub1 size)
+               0)]
           [else
            (loop (wrap-cdr v) (loop (wrap-car v) size))])]
        [else (sub1 size)]))))
@@ -213,6 +217,7 @@
      [`(#%variable-reference) v]
      [`(#%variable-reference ,id)
       `(#%variable-reference ,(clone-expr id env mutated))]
+     [`(#%foreign-inline . ,_) v]
      [`(,rator . ,_)
       (clone-body v env mutated)]
      [`,_
@@ -344,6 +349,8 @@
      [`(#%variable-reference . ,_)
       ;; Cannot inline a variable reference
       #f]
+     [`(#%foreign-inline ,_ ,mode)
+      (and (eq? (unwrap mode) 'copy) needed)]
      [`(,rator . ,_)
       (body-needed-imports v prim-knowns imports exports env needed)]
      [`,_

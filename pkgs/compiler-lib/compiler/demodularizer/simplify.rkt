@@ -78,7 +78,8 @@
               ;; don't bother keeping track
               (hash-set! mutated id #t)
               (loop rhs)]
-             [`(quote . _) (void)]
+             [`(quote . ,_) (void)]
+             [`(#%foreign-inline . ,_) (void)]
              [`(with-continuation-mark ,key ,val ,body)
               (loop key)
               (loop val)
@@ -109,6 +110,7 @@
       (let ([rhs (unwrap rhs)])
         (match rhs
           [`(quote ,_) #t]
+          [`(#%foreign-inline ,_ ,mode) (memq mode '(copy pure))]
           [`(lambda . ,_) #t]
           [`(case-lambda ., _) #t]
           [`(let-values ([,ids ,rhs] ...)
@@ -270,6 +272,7 @@
                [`(set! ,id ,rhs)
                 `(set! ,id ,(loop rhs))]
                [`(quote . ,_) b]
+               [`(#%foreign-inline . ,_) b]
                [`(with-continuation-mark ,key ,val ,body)
                 `(with-continuation-mark ,(loop key) ,(loop val) ,(loop body))]
                [`(#%variable-reference ,id) b]

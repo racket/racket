@@ -255,6 +255,7 @@
            (old-state)))
        (find-mutated! rhs #f)]
       [`(#%variable-reference . ,_) (void)]
+      [`(#%foreign-inline . ,_) (void)]
       [`(values ,exp) (find-mutated! exp ids)]
       [`(,rator ,exps ...)
        (cond
