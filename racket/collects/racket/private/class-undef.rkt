@@ -189,6 +189,7 @@
 
       [(quote . _) #f]
       [(quote-syntax . _) #f]
+      [(#%foreign-inline . _) #f]
       
       [(with-continuation-mark key val exp)
        (loop #'(begin key val exp))]

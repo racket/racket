@@ -84,7 +84,8 @@
               `(begin0 ,(rloop e) ,@(map rloop body))]
              [`(set! ,id ,rhs)
               `(set! ,(lookup id) ,(rloop rhs))]
-             [`(quote . _) b]
+             [`(quote . ,_) b]
+             [`(#%foreign-inline . ,_) b]
              [`(with-continuation-mark ,key ,val ,body)
               `(with-continuation-mark ,(rloop key) ,(rloop val) ,(rloop body))]
              [`(#%variable-reference ,id)

@@ -131,6 +131,7 @@
                (used! rhs)])]
            [`(void ,e) (used! e)]
            [`(quote . ,_) (void)]
+           [`(#%foreign-inline . ,_) (void)]
            [`(with-continuation-mark ,key ,val ,body)
             (used! key)
             (used! val)
@@ -255,6 +256,7 @@
       [`(begin ,b) (pure? b)]
       [`(begin-unsafe ,b) (pure? b)]
       [`(quote . ,_) #t]
+      [`(#%foreign-inline . ,_) #t]
       [`(let-values ([,idss ,rhss] ...) ,body)
        (and (andmap pure? rhss)
             (pure? body))]
