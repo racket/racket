@@ -6,4 +6,5 @@
   (syntax-rules (cify interp system)
     [(_ e 'cify) (eq? e 'cify)]
     [(_ e 'interp) (eq? e 'interp)]
+    [(_ e 'compile) (eq? e 'compile)]
     [(_ e 'system) (eq? e 'system)]))

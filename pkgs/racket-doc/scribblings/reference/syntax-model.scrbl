@@ -264,7 +264,7 @@ the binding (according to @racket[free-identifier=?]) matters.}
             #%require #%declare
             #%plain-lambda case-lambda if begin begin0 let-values letrec-values
             set! quote-syntax quote with-continuation-mark
-            #%plain-app #%top #%variable-reference)
+            #%plain-app #%top #%variable-reference #%foreign-inline)
 [top-level-form general-top-level-form
                 (#%expression expr)
                 (module id module-path
@@ -309,7 +309,8 @@ the binding (according to @racket[free-identifier=?]) matters.}
       (#%top . id)
       (#%variable-reference id)
       (#%variable-reference (#%top . id))
-      (#%variable-reference)]
+      (#%variable-reference)
+      (#%foreign-inline datum keyword)]
 [formals (id ...)
          (id ...+ . id)
          id]]

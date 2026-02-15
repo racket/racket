@@ -25,6 +25,7 @@
 (struct parsed-begin0 parsed (body) #:authentic)
 (struct parsed-quote parsed (datum) #:authentic)
 (struct parsed-quote-syntax parsed (datum) #:authentic)
+(struct parsed-foreign-inline parsed (datum mode) #:authentic)
 
 (struct parsed-let_-values parsed (idss clauses body) #:authentic)
 (struct parsed-let-values parsed-let_-values () #:authentic)

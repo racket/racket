@@ -75,6 +75,7 @@
        [(#%top . id) null]
        [(quote q) null]
        [(quote-syntax . _) null]
+       [(#%foreign-inline . _) null]
        [(#%plain-lambda formals expr ...)
         (let ([ids (formals->ids #'formals)])
           (for ([id (in-list ids)])

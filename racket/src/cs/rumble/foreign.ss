@@ -2089,3 +2089,8 @@
                                   (ftype-pointer-address m)))))
   (inherit-equal+hash! (record-type-descriptor cpointer+offset)
                        (record-type-descriptor cpointer)))
+
+;; ----------------------------------------
+
+(define-syntax-rule (|#%foreign-inline| e copy-mode)
+  e)

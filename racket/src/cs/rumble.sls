@@ -182,6 +182,8 @@
           |#%name|              ; not exported to racket
           |#%method-arity|      ; not exported to racket
 
+          |#%foreign-inline|
+
           equal?
           equal?/recur
           equal-always?
