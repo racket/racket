@@ -11,7 +11,7 @@
 ;; consider whether a public API is appropriate, or if a currently-private
 ;; API should be made public. If not, then make a new file
 ;; "racket/private/for-yourpackage.rkt" which exports the necessary
-;; definitions. See "racket/private/for-compatability-lib.rkt" for an example.
+;; definitions. See "racket/private/for-compatibility-lib.rkt" for an example.
 
 (require (for-syntax racket/base
                      syntax/kerncase
