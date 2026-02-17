@@ -37,6 +37,11 @@
   (check (hash? s))
   (check (hash-ref s 'type) 'file)
   (check (hash-ref s 'size) 3)
+  (check (integer? (hash-ref s 'modify-time-seconds)) #t)
+  (check (integer? (hash-ref s (if (eq? 'unix (hash-ref (runtime-env) 'system-type))
+                                   'change-time-seconds
+                                   'creation-time-seconds)))
+         #t)
   ;; Seems to be too precise for some Linux configurations:
   #;
   (check (or (> (hash-ref s 'modify-time-seconds) (car now))
