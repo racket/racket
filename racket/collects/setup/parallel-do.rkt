@@ -301,7 +301,11 @@
                               (loop (cons wrkr idle) (remove node-worker inflight) (add1 count) error-count)
                               (loop idle inflight count error-count))
                           (begin
-                            (queue/work-done work-queue node wrkr (string-append msg (wrkr/read-all wrkr)))
+                            (queue/work-done work-queue node wrkr
+                                             (string-append (if (eof-object? msg)
+                                                                "worker process died unexpectedly"
+                                                                msg)
+                                                            (wrkr/read-all wrkr)))
                             (kill/remove-dead-worker node-worker wrkr))))))]
                [_
                 (log-error (format "parallel-do-event-loop match node-worker failed trying to match: ~e" 
