@@ -34,3 +34,28 @@ if test "${skip_iconv_check}" = "no" ; then
  iconv_usage_result="$enable_iconv$iconv_lib_flag"
  AC_MSG_RESULT($iconv_usage_result)
 fi
+case "$host_os" in
+  *mingw*|cygwin*)
+    icu_platform_windows=yes
+    ;;
+  *)
+    icu_platform_windows=no
+    ;;
+esac
+if test "${enable_icu}" = "" ; then
+  if test "${icu_platform_windows}" = "yes" ; then
+    enable_icu=yes
+  else
+    enable_icu=no
+  fi
+fi
+icu_lib_flags=""
+if test "${enable_icu}" = "yes"; then
+  if test "${icu_platform_windows}" = "no" ; then
+    icu_lib_flags=`pkg-config icu-uc --libs 2> /dev/null`
+    if test "$?" != 0 ; then
+      AC_MSG_WARN([unable to infer LIBS for ICU via pkg-config])
+    fi
+    LIBS="${LIBS} ${icu_lib_flags}"
+  fi
+fi

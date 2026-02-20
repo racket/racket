@@ -17200,7 +17200,7 @@
       (if (utf-8-converter? c_0)
         (void)
         (|#%app| rktio_convert_reset (unsafe-place-local-ref cell.1) c_0)))))
-(define ucs-4-encoding (if (system-big-endian?) "UCS-4BE" "UCS-4LE"))
+(define ucs-4-encoding (if (system-big-endian?) "UTF-32BE" "UTF-32LE"))
 (define string->bytes/ucs-4
   (lambda (str_0 start_0 end_0)
     (let ((len_0 (* 4 (- end_0 start_0))))
