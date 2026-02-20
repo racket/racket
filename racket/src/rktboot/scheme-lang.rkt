@@ -215,6 +215,7 @@
          bytevector-u64-ref
          $integer-64?
          $integer-32?
+         cflonum?
          $flonum->digits
          $flonum-sign
          syntax-error
@@ -929,6 +930,12 @@
 
 (define ($integer-32? x)
   (<= (- (expt 2 31)) (sub1 (expt 2 32))))
+
+(define (cflonum? n)
+  (and (number? n)
+       (flonum? (real-part n))
+       (or (real? n)
+           (flonum? (imag-part n)))))
 
 (define ($flonum->digits . args)
   (error '$flonum->digits "not ready"))
