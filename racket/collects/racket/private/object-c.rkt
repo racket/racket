@@ -609,15 +609,68 @@
           [already-got
            already-got]
           [else
+           (define without-redundant-wrappers (remove-redundant-wrappers val ctc))
            (define blame+neg-party (cons blame neg-party))
-           (define wrapper-info (object/c-wrapper-info val methods-proc blame+neg-party pos-fields neg-fields
+           (define wrapper-info (object/c-wrapper-info without-redundant-wrappers methods-proc blame+neg-party pos-fields neg-fields
                                                        opaque-methods opaque-fields ctc
                                                        do-not-check-class-field-accessor-or-mutator-access?))
            (impersonate-struct
-            val
+            without-redundant-wrappers
             object-ref
             (λ (self val) wrapper-info)
             impersonator-prop:contracted ctc)])))))
+
+;; this searches for redundant contract wrappers around `val`
+;; specifically, we know that `ctc` is going to be wrapped
+;; around `val` and if just that happened, we'd have a set
+;; of wrappers that look like this:
+;;
+;;   val -> ctc1 -> ... -> ctc-i -> ... -> ctc-j -> ... -> ctc
+;;
+;; in order to do a check that ignores the blame assignment,
+;; we need to find a contract in the middle that is subsumed
+;; both by one before it and one after it. So this loop looks
+;; for a ctc-i and ctc-j (with i<j as in the diagram) that
+;; are both equivalent to ctc and then drops the ctc-j.
+;;
+(define (remove-redundant-wrappers val ctc)
+  ;; loop : object -> (values boolean object)
+  ;; the boolean result indicates if there is a contract
+  ;; that's already wrapped around the result that
+  ;; is equivalent to `ctc`. The object result is
+  ;; the rewrapped version of object
+  (define-values (inner-equivalent? rewrapped-o)
+    (let loop ([o val])
+      (define cls-or-object/c-wrapper-info (object-ref o))
+      (cond
+        [(class? cls-or-object/c-wrapper-info)
+         (values #f o)]
+        [else
+         (define-values (inner-equivalent? rewrapped-o)
+           (loop (object/c-wrapper-info-val cls-or-object/c-wrapper-info)))
+         (cond
+           [inner-equivalent?
+            ;; here we know that there is a contract inside that's equivalent
+            ;; to ctc so we can drop wrappers that are equivalent to ctc
+            (cond
+              [(contract-equivalent-or-eq? ctc (object/c-wrapper-info-ctc cls-or-object/c-wrapper-info))
+               ;; here we can drop this layer
+               (values #t rewrapped-o)]
+              [else
+               ;; here we have to preserve this layer
+               (define updated-object/c-wrapper-info
+                 (struct-copy object/c-wrapper-info cls-or-object/c-wrapper-info
+                              [val rewrapped-o]))
+               (values #t
+                       (impersonate-struct
+                        rewrapped-o
+                        object-ref
+                        (λ (self val)
+                          updated-object/c-wrapper-info)))])]
+           [else
+            (values (contract-equivalent-or-eq? ctc (object/c-wrapper-info-ctc cls-or-object/c-wrapper-info))
+                    o)])])))
+  rewrapped-o)
 
 (define (find-same-ctc+blame val ctc blame neg-party)
   (let loop ([o val])
@@ -627,8 +680,7 @@
        #f]
       [else
        (cond
-         [(or (eq? ctc (object/c-wrapper-info-ctc cls-or-object/c-wrapper-info))
-              (contract-equivalent? ctc (object/c-wrapper-info-ctc cls-or-object/c-wrapper-info)))
+         [(contract-equivalent-or-eq? ctc (object/c-wrapper-info-ctc cls-or-object/c-wrapper-info))
           (define blame+neg-party (object/c-wrapper-info-blame+neg-party cls-or-object/c-wrapper-info))
           (cond
             [(and (eq? neg-party (cdr blame+neg-party))
@@ -638,18 +690,7 @@
          [else
           #f])])))
 
-(define (wrapper-depth o)
-  (let loop ([o o]
-             [n 0])
-    (define cls-or-object/c-wrapper-info (object-ref o))
-    (cond
-      [(class? cls-or-object/c-wrapper-info)
-       n]
-      [else
-       (loop
-        (object/c-wrapper-info-val
-         cls-or-object/c-wrapper-info)
-        (+ n 1))])))
+(define (contract-equivalent-or-eq? ctc1 ctc2) (or (eq? ctc1 ctc2) (contract-equivalent? ctc1 ctc2)))
 
 (define (blame-add-field-context blame f #:swap? swap?)
   (blame-add-context blame (format "the ~a field in" f) #:swap? swap?))

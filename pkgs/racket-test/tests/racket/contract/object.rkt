@@ -1782,4 +1782,72 @@
 
    '((a a) (a a))
    do-not-double-wrap)
+
+  (test/spec-passed/result
+   'object/c-avoid-redundancy.3
+   '(let ()
+      (define log '())
+
+      (struct logging/c (name)
+        #:property prop:chaperone-contract
+        (build-chaperone-contract-property
+         #:late-neg-projection
+         (λ (this)
+           (λ (blame)
+             (λ (val missing-party)
+               (set! log (cons (logging/c-name this) log))
+               val)))
+         #:name (λ (x) `(logging/c ,(logging/c-name x)))
+         #:first-order (λ (ctc) (λ (val) #t))
+         #:stronger
+         (λ (this that)
+           (and (logging/c? that)
+                (equal? (logging/c-name this) (logging/c-name that))))
+         #:equivalent
+         (λ (this that)
+           (and (logging/c? that)
+                (equal? (logging/c-name this) (logging/c-name that))))))
+
+      (define foo%
+        (class object%
+          (super-new)
+          (define/public (m) #f)))
+
+      (define printing-a
+        (object/c [m (logging/c 'a)]))
+      (define printing-b
+        (object/c [m (logging/c 'b)]))
+
+      (define a->b (-> printing-a printing-b))
+      (define f (contract a->b (λ (x) x) 'pos 'neg))
+
+      (define o1 (new foo%))
+      (define o2 (f o1))
+      (void (send o2 m))
+      (define log1 log)
+      (set! log '())
+
+      (define o3 (f o2))
+      (void (send o3 m))
+      (define log2 log)
+      (set! log '())
+
+      (define o4 (f o3))
+      (void (send o4 m))
+      (define log3 log)
+      (set! log '())
+
+      (define o5 (f o4))
+      (void (send o5 m))
+      (define log4 log)
+      (set! log '())
+
+      (list log1 log2 log3 log4))
+
+   '((a b)     ;; log1
+     (a b a b) ;; log2
+     (a b a b) ;; log3
+     (a b a b) ;; log4
+     )
+   do-not-double-wrap)
 )
