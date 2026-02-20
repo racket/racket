@@ -25,6 +25,7 @@
 
 (define aq1 (make-aq/mode (make-fish 6) #f))
 (set-aq-d! aq1 aq1)
+(collect-garbage)
 (check-equal? (let ([a (deserialize (serialize aq1))])
                 (list (ptr-equal? a (aq-d a))
                       (fish-color (aq-a (aq-d a)))))
@@ -67,6 +68,7 @@
  8.0)
 
 
+(collect-garbage)
 (define old-aq
   (parameterize ([current-namespace (make-base-namespace)])
     (eval
@@ -76,7 +78,7 @@
        (provide make-aq/mode make-fish set-aq-d!)
        (define-serializable-cstruct _fish ([color _int]))
        (define-serializable-cstruct _aq ([a _fish-pointer]
-                                         [d _aq-pointer/null])
+                                         [d (_gcable _aq-pointer/null)])
          #:malloc-mode 'nonatomic)))
     (eval '(require 'aq racket/serialize))
     (eval '(serialize
@@ -98,7 +100,7 @@
         #:malloc-mode 'nonatomic)
       (define-serializable-cstruct _aq ([a _fish-pointer]
                                         [b _fish-pointer]
-                                        [d _aq-pointer/null])
+                                        [d (_gcable _aq-pointer/null)])
         #:malloc-mode 'nonatomic
         #:version 1
         #:other-versions ([0 deserialize-chain:cstruct:old-aq
@@ -120,3 +122,31 @@
    (eval '(require 'aq racket/serialize))
    (eval `(fish-color (aq-b (aq-d (deserialize ',old-aq))))))
  7)
+
+; Regression test: without _gcable on a pointer field in a nonatomic cstruct,
+; GC can move the struct while a non-gcable wrapper still points to the old
+; address, producing garbage data or crashing with "invalid memory reference".
+; The _gcable annotation ensures the wrapper is GC-traced and updated when the
+; struct moves.
+(define-serializable-cstruct _rfish ([color _int]))
+(define-serializable-cstruct _raq ([a _rfish-pointer]
+                                   [d (_gcable _raq-pointer/null)])
+  #:malloc-mode 'nonatomic)
+
+(for ([_ (in-range 20)])
+  ;; Allocate garbage to pressure GC into moving the struct
+  (for ([__ (in-range 100)])
+    (make-raq/mode (make-rfish 0) #f))
+  (define raq1 (make-raq/mode (make-rfish 42) #f))
+  (set-raq-d! raq1 raq1)
+  ;; Save a wrapper, then force GC which may move the struct
+  (define wrapper (raq-d raq1))
+  (collect-garbage)
+  ;; Wrapper must still read correct data (not garbage from stale address)
+  (check-equal? (rfish-color (raq-a wrapper)) 42)
+  ;; Serialize/deserialize must preserve the cycle
+  (check-equal?
+   (let ([a (deserialize (serialize raq1))])
+     (list (ptr-equal? a (raq-d a))
+           (rfish-color (raq-a a))))
+   (list #t 42)))
