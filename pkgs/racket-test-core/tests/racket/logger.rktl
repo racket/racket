@@ -280,6 +280,35 @@
     warning-counter))
 (test 2 test-intercepted-logging2)
 
+;; From issue #3167
+(define (test-intercepted-logging3)
+  (define-logger bar)
+  (define ok? #t)
+  (with-intercepted-logging
+    (λ (l) (set! ok? #f))
+    (λ () (log-warning "hello"))
+    #:logger bar-logger
+    'warning)
+  ok?)
+(test #t test-intercepted-logging3)
+
+(define (test-intercepted-logging4)
+  (define msg #f)
+  (define kont #f)
+  (call-with-continuation-prompt
+   (λ ()
+     (with-intercepted-logging
+       (λ (l) (set! msg l))
+       (λ ()
+         (when (call-with-composable-continuation
+                (λ (k)
+                  (set! kont k) #f))
+           (log-warning "hello")))
+       'warning)))
+  (kont #t)
+  (and msg #t))
+(test #t test-intercepted-logging4)
+
 ; --------------------
 ;; Check that a blocked log receiver is not GCed if
 ;; if might receiver something
