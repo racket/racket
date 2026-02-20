@@ -170,6 +170,21 @@
                         stream-count)
 
 (test 3 'sequence-length (sequence-length #hasheq((1 . 'a) (2 . 'b) (3 . 'c))))
+(let ([v 0])
+  (define s
+    (make-do-sequence
+     (λ ()
+       (define (pos->element _) (set! v (add1 v)) v)
+       (define (continue-with-pos? _) (< v 100))
+       (values pos->element void (void) continue-with-pos? #f #f))))
+  (define-values (more? get) (sequence-generate s))
+  (test 1 'sequence-ref (get))
+  (test 2 'sequence-ref (sequence-ref s 0))
+  (test 3 'sequence-ref (sequence-ref s 0))
+  (test 5 'sequence-ref (sequence-ref s 1))
+  (test 7 'sequence-ref (sequence-ref s 1))
+  (test 8 'sequence-ref (get))
+  (test 92 'sequence-length (sequence-length s)))
 
 (test-values '(2 3) (lambda () (sequence-ref (in-parallel '(2) '(3)) 0)))
 (test-values '(8 12) (lambda () (sequence-ref (in-parallel '(2 5 8 -1) '(3 9 12 0)) 2)))
