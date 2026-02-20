@@ -1842,6 +1842,37 @@
 (test 7 apply (lambda (a b) (+ a b)) (list 3 4))
 (test 17 apply + 10 (list 3 4))
 (test '() apply list '())
+;; Ensure `(apply apply ...)` routes the second `apply` to kernel `apply`.
+(test '(0 1 2 3)
+      (lambda ()
+        (apply apply append '((0 1) ((2) (3))))))
+(test "abcd"
+      (lambda ()
+        (apply apply string-append '("ab" ("cd")))))
+;; Ensure `(apply apply ...)` expands with kernel `apply` in argument position.
+(test #t
+      (lambda ()
+        (let* ([expanded (expand #'(apply apply append '((0 1) ((2) (3)))))]
+               [parts (syntax->list expanded)])
+          (and parts
+               (identifier? (list-ref parts 2))
+               (let-values ([(b) (identifier-binding (list-ref parts 2))])
+                 (and b
+                      (eq? (cadr b) 'apply)
+                      (eq? (cadddr b) 'apply)
+                      (eq? (resolved-module-path-name
+                            (module-path-index-resolve (caddr b)))
+                           '#%kernel)))))))
+;; But preserve lexical shadowing when `apply` is locally bound.
+(let ([kernel-apply apply])
+  (test '(shadow a)
+        (lambda ()
+          (let ([apply (lambda (x) (list 'shadow x))])
+            (kernel-apply apply '(a)))))
+  (test "shadow:abc"
+        (lambda ()
+          (let ([apply (lambda (s) (string-append "shadow:" s))])
+            (kernel-apply apply '("abc"))))))
 (define compose (lambda (f g) (lambda args (f (apply g args)))))
 (test 30 (compose sqrt *) 12 75)
 (err/rt-test (apply) exn:application:arity?)

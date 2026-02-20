@@ -31,23 +31,41 @@
 
   (define-syntaxes (new-apply)
     ;; Convert (apply ...) without keyword args to primitive `apply',
-    ;;  so that oher optimizations are available.
+    ;;  so that other optimizations are available.
     (lambda (stx)
       (let-values ([(here) (quote-syntax here)])
-        (if (symbol? (syntax-e stx))
-            (datum->syntax here 'new-apply-proc stx)
-            (let-values ([(l) (syntax->list stx)])
-              (let-values ([(app) (if (if l
-                                          (ormap (lambda (x) (keyword? (syntax-e x))) l)
-                                          #t)
-                                      'new-apply-proc
-                                      'apply)]
-                           [(fst) (car (syntax-e stx))])
-                (datum->syntax
-                 stx
-                 (cons (datum->syntax here app fst fst)
-                       (cdr (syntax-e stx)))
-                 stx)))))))
+	(let-values ([(l) (syntax->list stx)])
+	  ; a real application with at least a function and argument
+	  (if (and l (pair? (cdr l)) (pair? (cdr (cdr l))))
+	      (let-values ([(keywords?) (ormap (lambda (x) (keyword? (syntax-e x))) l)]
+			   [(fst) (car l)]
+			   [(tail) (cdr l)])
+		(datum->syntax
+		 stx
+		 (cons (datum->syntax here
+				      (if keywords? 'new-apply-proc 'apply)
+				      fst
+				      fst)
+			       ;; Recognize `(apply apply ...)` and rewrite the
+			       ;; second `apply` to the kernel binding so it
+			       ;; doesn't expand to `new-apply-proc`.
+			       (if (and (not keywords?)
+					(identifier? (car tail))
+					(free-identifier=? (car tail) fst))
+				   (cons (datum->syntax here 'apply (car tail) (car tail))
+					 (cdr tail))
+				   tail))
+		 stx
+		 stx))
+	      (if (pair? (syntax-e stx))
+		  (let-values ([(fst) (car (syntax-e stx))]
+			       [(tail) (cdr (syntax-e stx))])
+		    (datum->syntax
+		     stx
+		     (cons (datum->syntax here 'new-apply-proc fst fst)
+			   tail)
+		     stx))
+		  (datum->syntax here 'new-apply-proc stx)))))))
 
   (define-values (new-keyword-apply)
     (make-keyword-procedure
