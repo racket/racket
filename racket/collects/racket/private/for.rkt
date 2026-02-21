@@ -1638,7 +1638,7 @@
       [(_ () [expr ...] next-k)
        (with-syntax ([(fold-var ...) (map syntax-local-introduce fold-vars)]
                      [delayed-id (syntax-local-introduce delayed-id)]
-                     [delayer-id delayer-id])
+                     [delayer-id (syntax-local-introduce delayer-id)])
          #`(let*-values
                ([(delayed-id) (delayer-id next-k)]
                 #,@(cond
