@@ -1232,6 +1232,24 @@
                         'pos
                         'neg)])
       (send (new c%) m 3)))
+
+  (test/neg-blame
+   'class/c-repeated-methods
+   '(let ([c% (contract (class/c [m (-> any/c number? number?)]
+                                 [m (-> any/c string? number?)])
+                        (class object% (super-new) (define/public (m x) x))
+                        'pos
+                        'neg)])
+      (send (new c%) m 3)))
+
+  (test/neg-blame
+   'class/c-repeated-methods
+   '(let ([c% (contract (class/c [m (-> any/c number? number?)]
+                                 [m (-> any/c string? number?)])
+                        (class object% (super-new) (define/public (m x) x))
+                        'pos
+                        'neg)])
+      (send (new c%) m "three")))
   
   ;; test that unspecified inits and fields aren't internally conflating #f with the contract #f
   (test/spec-passed

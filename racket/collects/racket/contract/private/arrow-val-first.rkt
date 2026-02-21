@@ -25,6 +25,8 @@ plus1 arg list construction: build-plus-one-arity-function/real
          "collapsible-common.rkt"
          "list.rkt"
          "arity-checking.rkt"
+         "object-c-wrapper.rkt"
+         "../../private/class-struct.rkt"
          racket/stxparam)
 
 (provide (rename-out [->/c ->]) ->*
@@ -152,11 +154,13 @@ plus1 arg list construction: build-plus-one-arity-function/real
   (syntax-case stx ()
     [(_ popular-key-ids)
      #`(define-for-syntax popular-key-ids
-         (list #,@(map (λ (x y) #`(list (quote-syntax #,x) (quote-syntax #,y)))
+         (list #,@(map (λ (x y z) #`(list (quote-syntax #,x) (quote-syntax #,y) (quote-syntax #,z)))
                        (generate-temporaries (for/list ([e (in-list popular-keys)])
                                                'popular-plus-one-key-id))
                        (generate-temporaries (for/list ([e (in-list popular-keys)])
-                                               'popular-chaperone-key-id)))))]))
+                                               'popular-chaperone-key-id))
+                       (generate-temporaries (for/list ([e (in-list popular-keys)])
+                                               'popular-object/c-wrapper)))))]))
 (generate-popular-key-ids popular-key-ids)
 
 (define-for-syntax (argument-details->popular-keys-table-entry/info
@@ -196,7 +200,7 @@ plus1 arg list construction: build-plus-one-arity-function/real
           regular-args/no-any/c
           regular-args))
 
-(define-for-syntax (build-code-for-chaperone-constructor
+(define-for-syntax (build-code-for-chaperone-constructor-and-object/c-wrapper
                     a-parsed->*
                     method?)
 
@@ -228,18 +232,28 @@ plus1 arg list construction: build-plus-one-arity-function/real
                                                      post post/desc
                                                      method?))
   (cond
-    [ids (list-ref ids 1)]
+    [ids (values (list-ref ids 1) (list-ref ids 2))]
     [else
-     (build-chaperone-constructor/real
-      regular-args/no-any/c
-      optional-args
-      mandatory-kwds
-      optional-kwds
-      pre pre/desc
-      rest
-      rngs
-      post post/desc
-      method?)]))
+     (values (build-chaperone-constructor/real
+              regular-args/no-any/c
+              optional-args
+              mandatory-kwds
+              optional-kwds
+              pre pre/desc
+              rest
+              rngs
+              post post/desc
+              method?)
+             (build-object/c-wrapper/real
+              regular-args
+              optional-args
+              mandatory-kwds
+              optional-kwds
+              pre pre/desc
+              rest
+              rngs
+              post post/desc
+              method?))]))
 
 (define-for-syntax (build-code-for-plus-one-arity-function
                     a-parsed->*
@@ -295,6 +309,7 @@ plus1 arg list construction: build-plus-one-arity-function/real
                        [key (in-list popular-keys)])
               (define plus-one-id (list-ref ids 0))
               (define chaperone-id (list-ref ids 1))
+              (define object/c-wrapper-id (list-ref ids 2))
               (define-values (regular-arg-any/c-or-not?s
                               optional-arg-count
                               mandatory-kwds
@@ -317,6 +332,15 @@ plus1 arg list construction: build-plus-one-arity-function/real
                   (define #,(syntax-local-introduce plus-one-id)
                     #,(build-plus-one-arity-function/real
                        mans opts
+                       mandatory-kwds
+                       optional-kwds
+                       #f #f
+                       rest
+                       rng-vars
+                       #f #f #f))
+                  (define #,(syntax-local-introduce object/c-wrapper-id)
+                    #,(build-object/c-wrapper/real
+                       mans/no-any/c opts
                        mandatory-kwds
                        optional-kwds
                        #f #f
@@ -849,14 +873,16 @@ plus1 arg list construction: build-plus-one-arity-function/real
                                (list arg-count))
                            (map syntax->datum kwds)
                            '()))
+       (define the-parsed->*
+         (with-syntax ([(kwds ...) kwds]
+                       [(kwd-args ...) kwd-args])
+           (parsed->* regular-args #'((kwds kwd-args) ...)
+                      '() '()
+                      (and ellipsis-info #t)
+                      #f #f rngs #f #f '())))
        (values app-shapes
                (build-code-for-plus-one-arity-function
-                (with-syntax ([(kwds ...) kwds]
-                              [(kwd-args ...) kwd-args])
-                  (parsed->* regular-args #'((kwds kwd-args) ...)
-                             '() '()
-                             (and ellipsis-info #t)
-                             #f #f rngs #f #f '()))
+                the-parsed->*
                 #f)))]))
 
 (define-syntax (->/c stx)
@@ -871,8 +897,8 @@ plus1 arg list construction: build-plus-one-arity-function/real
        (define this-> (gensym 'this->))
        (define-values (regular-args kwds kwd-args let-bindings ellipsis-info rngs)
          (parse-> stx this->))
-       (define chaperone-constructor
-         (build-code-for-chaperone-constructor
+       (define-values (chaperone-constructor object/c-wrapper)
+         (build-code-for-chaperone-constructor-and-object/c-wrapper
           (with-syntax ([(kwds ...) kwds]
                         [(kwd-args ...) kwd-args])
             (parsed->* regular-args #'((kwds kwd-args) ...)
@@ -894,13 +920,15 @@ plus1 arg list construction: build-plus-one-arity-function/real
                     (quasisyntax/loc stx
                       (build-nullary-very-simple-->
                        #,(car rngs)
-                       #,chaperone-constructor))]
+                       #,chaperone-constructor
+                       #,object/c-wrapper))]
                    [(and (equal? rng-count 1) (= doms-count 1))
                     (quasisyntax/loc stx
                       (build-unary-very-simple-->
                        #,(car regular-args)
                        #,(car rngs)
-                       #,chaperone-constructor))]
+                       #,chaperone-constructor
+                       #,object/c-wrapper))]
                    [else
                     (quasisyntax/loc stx
                       (build-very-simple-->
@@ -908,7 +936,8 @@ plus1 arg list construction: build-plus-one-arity-function/real
                        #,(if rngs
                              #`(list #,@rngs)
                              #'#f)
-                       #,chaperone-constructor))])]
+                       #,chaperone-constructor
+                       #,object/c-wrapper))])]
                 [else
                  (quasisyntax/loc stx
                    (build-simple-->
@@ -922,7 +951,9 @@ plus1 arg list construction: build-plus-one-arity-function/real
                     #,(if ellipsis-info
                           #`(ellipsis-rest-arg #,(length regular-args) #,@ellipsis-info)
                           #'#f)
-                    #,method?))])))
+                    #,method?
+                    #,object/c-wrapper
+                    ))])))
         'racket/contract:contract
         (vector this->
                 ;; the -> in the original input to this guy
@@ -1109,7 +1140,8 @@ plus1 arg list construction: build-plus-one-arity-function/real
     (define post/desc (parsed->*-post/desc a-parsed->*))
     (define rest-ctc (parsed->*-rest-ctc a-parsed->*))
     (define rng-ctcs (parsed->*-rng-ctcs a-parsed->*))
-    (define chaperone-constructor (build-code-for-chaperone-constructor a-parsed->* method?))
+    (define-values (chaperone-constructor object/c-wrapper)
+      (build-code-for-chaperone-constructor-and-object/c-wrapper a-parsed->* method?))
     (syntax-property
      (quasisyntax/loc stx
        (let (let-bindings ...)
@@ -1133,7 +1165,8 @@ plus1 arg list construction: build-plus-one-arity-function/real
                        #,(cond [post #''post] [post/desc #''post/desc] [else #'#f])
                        #,(or post post/desc #'#f)
                        #,chaperone-constructor
-                       #,method?))))
+                       #,method?
+                       #,object/c-wrapper))))
 
      'racket/contract:contract
      (vector this->*
@@ -1141,18 +1174,9 @@ plus1 arg list construction: build-plus-one-arity-function/real
              (list (car (syntax-e stx)))
              '()))))
 
-(define (wrong-number-of-results-blame blame neg-party val reses expected-values)
-  (define length-reses (length reses))
-  (raise-blame-error 
-   blame #:missing-party neg-party val
-   '("received ~a value~a" expected: "~a value~a")
-   length-reses
-   (if (= 1 length-reses) "" "s")
-   expected-values
-   (if (= 1 expected-values) "" "s")))
-
 (define (build-nullary-very-simple--> _rng
-                                      chaperone-constructor)
+                                      chaperone-constructor
+                                      object/c-wrapper)
   (define rng (coerce-contract '-> _rng))
   (cond
     [(and (flat-contract? rng)
@@ -1163,15 +1187,18 @@ plus1 arg list construction: build-plus-one-arity-function/real
               '() '() #f #f #f
               (list rng) #f #f
               chaperone-constructor
-              #f)]
+              #f
+              object/c-wrapper)]
     [else
      (make-impersonator-> 0 '() '() #f #f #f
                           (list rng) #f #f
                           chaperone-constructor
-                          #f)]))
+                          #f
+                          object/c-wrapper)]))
 
 (define (build-unary-very-simple--> _dom _rng
-                                    chaperone-constructor)
+                                    chaperone-constructor
+                                    object/c-wrapper)
   (define dom (coerce-contract '-> _dom))
   (define rng (coerce-contract '-> _rng))
   (cond
@@ -1185,18 +1212,21 @@ plus1 arg list construction: build-plus-one-arity-function/real
               (list dom) '() #f #f #f
               (list rng) #f #f
               chaperone-constructor
-              #f)]
+              #f
+              object/c-wrapper)]
     [else
      (make-impersonator-> 1
                           (list dom) '() #f #f #f
                           (list rng) #f #f
                           chaperone-constructor
-                          #f)]))
+                          #f
+                          object/c-wrapper)]))
 
 ;; INVARIANT: this is not called when `build-unary-very-simple-->`
 ;; or `build-nullary-very-simple-->` could have been
 (define (build-very-simple--> raw-regular-doms raw-rngs
-                              chaperone-constructor)
+                              chaperone-constructor
+                              object/c-wrapper)
   (define regular-doms
     (for/list ([dom (in-list raw-regular-doms)])
       (coerce-contract '-> dom)))
@@ -1211,20 +1241,23 @@ plus1 arg list construction: build-plus-one-arity-function/real
               regular-doms '() #f #f #f
               rngs #f #f
               chaperone-constructor
-              #f)]
+              #f
+              object/c-wrapper)]
     [else
      (make-impersonator-> (length raw-regular-doms)
                           regular-doms '() #f #f #f
                           rngs #f #f
                           chaperone-constructor
-                          #f)]))
+                          #f
+                          object/c-wrapper)]))
 
 (define (build-simple--> raw-regular-doms
                          mandatory-kwds mandatory-raw-kwd-doms
                          raw-rngs
                          chaperone-constructor
                          raw-rest-ctc
-                         method?)
+                         method?
+                         object/c-wrapper)
   (build--> '->
             raw-regular-doms '() 
             mandatory-kwds mandatory-raw-kwd-doms
@@ -1232,9 +1265,10 @@ plus1 arg list construction: build-plus-one-arity-function/real
             raw-rest-ctc
             #f #f raw-rngs #f #f
             chaperone-constructor
-            method?))
+            method?
+            object/c-wrapper))
 
-(define (build--> who 
+(define (build--> who
                   pre-raw-regular-doms raw-optional-doms 
                   mandatory-kwds mandatory-raw-kwd-doms
                   optional-kwds optional-raw-kwd-doms
@@ -1243,7 +1277,8 @@ plus1 arg list construction: build-plus-one-arity-function/real
                   raw-rngs
                   post-cond post-cond-thunk
                   chaperone-constructor
-                  method?)
+                  method?
+                  object/c-wrapper)
   (define raw-regular-doms
     (if method?
         (cons any/c pre-raw-regular-doms) ; `this` argument
@@ -1298,14 +1333,16 @@ plus1 arg list construction: build-plus-one-arity-function/real
               pre-cond pre-cond-thunk
               rngs post-cond post-cond-thunk
               chaperone-constructor
-              method?)]
+              method?
+              object/c-wrapper)]
     [else
      (make-impersonator-> (length raw-regular-doms)
                           regular-doms kwd-infos rest-ctc
                           pre-cond pre-cond-thunk
                           rngs post-cond post-cond-thunk
                           chaperone-constructor
-                          method?)]))
+                          method?
+                          object/c-wrapper)]))
 
 (define (dynamic->* #:mandatory-domain-contracts [mandatory-domain-contracts '()]
                     #:optional-domain-contracts [optional-domain-contracts '()]
@@ -1464,8 +1501,8 @@ plus1 arg list construction: build-plus-one-arity-function/real
             rest-contract
             pre-cond pre-cond-thunk range-contracts post-cond post-cond-thunk
             build-chaperone-constructor
-            #f)) ; not a method contract
-
+            #f    ; not a method contract
+            #f))  ; take a slow path in object/c
 (define (->-generate ctc)
   (cond
     [(and (equal? (length (base->-doms ctc))
@@ -1790,7 +1827,9 @@ plus1 arg list construction: build-plus-one-arity-function/real
              (list (coerce-contract 'whatever void?))
              #f #f
              (get-chaperone-constructor)
-             #f))) ; not a method contract
+             #f    ; not a method contract
+             #f))) ; don't optimize in object/c (technically this can't be used there)
+
 
 (define (mk-any/c->boolean-contract constructor)
   (define (check-result blame neg-party rng)
@@ -1805,6 +1844,13 @@ plus1 arg list construction: build-plus-one-arity-function/real
        (check-result blame neg-party rng)]
       [args
        (wrong-number-of-results-blame blame neg-party f args 1)]))
+  (define (anyc->boolean-arity-check f blame neg-party)
+    (unless (procedure-arity-includes? f 1)
+      (raise-blame-error
+       blame #:missing-party neg-party f
+       '(expected: "a procedure that accepts 1 non-keyword argument"
+                   given: "~e")
+       f)))
   (constructor 1 (list any/c) '() #f #f #f
                (list (coerce-contract 'whatever boolean?))
                #f #f
@@ -1819,12 +1865,7 @@ plus1 arg list construction: build-plus-one-arity-function/real
                     blame #:missing-party neg-party f
                     '(expected: "a procedure" given: "~e")
                     f))
-                 (unless (procedure-arity-includes? f 1)
-                   (raise-blame-error
-                    blame #:missing-party neg-party f
-                    '(expected: "a procedure that accepts 1 non-keyword argument"
-                                given: "~e")
-                    f))
+                 (anyc->boolean-arity-check f blame neg-party)
                  (values (cond
                            [(and (struct-predicate-procedure? f)
                                  (not (impersonator? f)))
@@ -1847,7 +1888,24 @@ plus1 arg list construction: build-plus-one-arity-function/real
                                   #f)) ; not a method contract
                                (values (rng-checker f blame neg-party) (car other))))])
                          #f))
-               #f)) ; not a method contract
+               #f   ; not a method contract
+               (λ (meth-name ;; the name of the method
+                   blame     ;; blame object without neg-party
+                   dom-ctc   ;; this'll be any/c, but as a contract
+                   rng-ctc)  ;; this'll be boolean?, but as a contract
+                 ;; return the the method that gets a object/c wrapped object as argument
+                 (λ (this)
+                   (define an-object/c-wrapper-info (object-ref this))
+                   (define unwrapped (object/c-wrapper-info-val an-object/c-wrapper-info))
+                   (define meth (find-method/who 'object/c-should-never-fail.any/c->bool unwrapped meth-name))
+                   (define blame+neg-party (object/c-wrapper-info-blame+neg-party an-object/c-wrapper-info))
+                   (define blame (car blame+neg-party))
+                   (define neg-party (cdr blame+neg-party))
+                   (anyc->boolean-arity-check meth blame neg-party)
+                   ;; check the result
+                   (call-with-values
+                    (λ () (meth unwrapped))
+                    (rng-checker meth blame neg-party))))))
 
 (define -predicate/c (mk-any/c->boolean-contract predicate/c))
 (define any/c->boolean-contract (mk-any/c->boolean-contract make-->))

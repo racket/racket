@@ -2205,7 +2205,11 @@ of @racket[this] need to be checked.}
 
 ([member-spec
   method-spec
-  (field field-spec ...)]
+  (field field-spec ...)
+  (code:line #:opaque opaque-expr)
+  (code:line #:opaque-except opaque-expr)
+  (code:line #:opaque-fields opaque-fields-expr)
+  #:do-not-check-class-field-accessor-or-mutator-access]
  
  [method-spec
   method-id
@@ -2213,16 +2217,73 @@ of @racket[this] need to be checked.}
  [field-spec
   field-id
   (field-id contract-expr)])]{
-Produces a contract for an object.
+Produces a contract for an object. Each field and method is checked
+against the supplied contract. Note that each method contract should
+be written to accept an extra, “this” argument; consider using @racket[->m]
+or @racket[->*m] contract combinators.
 
-Unlike the older form @racket[object-contract], but like
-@racket[class/c], arbitrary contract expressions are allowed.
-Also, method contracts for @racket[object/c] follow those for
-@racket[class/c].  An object wrapped with @racket[object/c]
-behaves as if its class had been wrapped with the equivalent
-@racket[class/c] contract.
+ If present, the @racket[opaque-expr] controls how methods
+ that are present in the object but not listed in
+ the contract are handled:
+ @itemlist[
+ @item{If the @racket[opaque-expr] follows the keyword
+   @racket[#:opaque] and it evaluates to @racket[#f], then
+   calls to such methods are always allowed.}
+ @item{If it follows @racket[#:opaque] and it evaluates to
+   @racket[#t], then such methods are never allowed.}
+ @item{If it follows @racket[#:opaque] and it
+   evaluates to a predicate procedure produced by
+   @racket[make-impersonator-property], then method procedures
+   that have that property set are allowed.}
+ @item{If the @racket[opaque-expr]
+   follows the keyword @racket[#:opaque-except] then
+   it must evaluate to a predicate procedure produced by
+   @racket[make-impersonator-property]. In that case, methods that have
+   that property are disallowed and others are allowed.}
+ @item{ If no @racket[opaque-expr] is not present, then
+   method methods calls to methods not listed in the contract
+   are always allowed.}]
+
+ In a manner analogous to @racket[opaque-expr] but for fields, the
+ @racket[opaque-fields-expr] controls how fields that are
+ present in the object, but not listed in the contract, are
+ handled:
+ @itemlist[
+ @item{If @racket[opaque-fields-expr] is present and
+   evaluates to @racket[#true], fields not listed in the
+   contract are not allowed to be accessed.}
+ @item{If @racket[opaque-fields-expr] is present and
+   evaluates to @racket[#false], such fields are allowed to be
+   accessed.}
+ @item{ If @racket[opaque-fields-expr] is not present and
+   @racket[opaque-expr] evaluates to a predicate procedure
+   produced by @racket[make-impersonator-property] then the
+   fields are disallowed if @racket[#:opaque] is present and
+   allowed if @racket[#:opaque-except] is present. }
+ @item{If @racket[opaque-fields-expr] is not present but
+   @racket[opaque-expr] is, then @racket[opaque-fields-expr]
+   defaults based on the value of @racket[opaque-expr],
+   disallowing fields if @racket[opaque-expr] disallowed
+   methods and allowing them if it does not. }]
+
+ If neither @racket[opaque-fields-expr] nor
+ @racket[opaque-expr] are present, all unlisted fields and
+ methods are allowed to be accessed.
+
+ If
+ @racket[#:do-not-check-class-field-accessor-or-mutator-access]
+ is present, then field accesses accesses via the procedures
+ returned from @racket[class-field-mutator] and
+ @racket[class-field-accessor] are always allowed, even if
+ they would otherwise be diallowed (either because field
+ access is not allowed or because the field violates the
+ contract). This behavior is questionable but corresponds to
+ a bug that existed in previous versions of @racket[object/c]
+ for more than a decade, so this option is here to give
+ flexibility in the timing of the transition to
+ properly-checked contracts.
+
 }
-
 @defproc[(instanceof/c [class-contract contract?]) contract?]{
 Produces a contract for an object, where the object is an
 instance of a class that conforms to @racket[class-contract].
