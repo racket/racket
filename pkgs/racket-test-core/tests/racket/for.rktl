@@ -1395,6 +1395,23 @@
 (err/rt-test (for/list ([x -1]) x))
 (err/rt-test (for/list ([x 1.5]) x))
 
+;; regression test for `#:delay-with` identifier as non-introduced
+(test
+ #t
+ (let ([s (expand #'(for/foldr ([s empty-stream] #:delay-with delay)
+                               ([n (in-naturals)])
+                      (stream-cons (* n n) (force s))))])
+   (let loop ([s s])
+     (cond
+       [(and (identifier? s)
+             (eq? 'delay (syntax-e s)))
+        (or (syntax-original? s)
+            (loop (syntax-property s 'origin)))]
+       [(syntax? s) (or (loop (syntax-e s))
+                        (loop (syntax-property s 'origin)))]
+       [(pair? s) (or (loop (car s)) (loop (cdr s)))]
+       [else #f]))))
+
 ;; ----------------------------------------
 ;; splicing clauses
 
