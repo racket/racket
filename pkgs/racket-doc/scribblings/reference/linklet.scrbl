@@ -95,7 +95,8 @@ with some exceptions: @racket[quote-syntax] and @racket[#%top] are not allowed;
 @racket[lambda], @racket[case-lambda], @racket[let-values], and
 @racket[letrec-values] can have only a single body expression;
 @racket[begin-unsafe] is like @racket[begin] in an expression position,
-but its body is compiled in @tech{unsafe mode}; and
+but its body is compiled in @tech{unsafe mode}; @racket[#%foreign-inline]
+uses a symbol instead of a keyword for its mode; and
 numbers, booleans, strings, and byte strings are self-quoting.
 Primitives are accessed directly by name, and shadowing is not allowed
 within a @racketidfont{linklet} form for primitive names (see

@@ -41,6 +41,7 @@
 (define variable-set!/define (lambda (var v) (set-box! var v)))
 (define make-interp-procedure* (lambda (proc mask name+realm) proc))
 (define decode-procedure-name (lambda (name) name))
+(define foreign-inline-eval (lambda (e) e))
 
 (define (interpreter-link! prims
                            strip
@@ -48,7 +49,8 @@
                            var-ref var-ref/no-check
                            var-set! var-set!/def
                            make-proc
-                           decode-proc-name)
+                           decode-proc-name
+                           foreign-eval)
   (set! primitives prims)
   (set! strip-annotations strip)
   (set! make-internal-variable make-var)
@@ -57,7 +59,8 @@
   (set! variable-set! var-set!)
   (set! variable-set!/define var-set!/def)
   (set! make-interp-procedure* make-proc)
-  (set! decode-procedure-name decode-proc-name))
+  (set! decode-procedure-name decode-proc-name)
+  (set! foreign-inline-eval foreign-eval))
 
 (define (interpretable-jitified-linklet linklet-e serializable? realm)
   ;; Return a compiled linklet as an expression for the linklet body.
@@ -308,6 +311,9 @@
                  (box? v))
              (vector 'quote v)
              v))]
+      [`(#%foreign-inline ,e ,_)
+       (let ([e (strip-annotations e)])
+         (vector 'foreign-inline e))]
       [`(set! ,id ,rhs)
        (compile-assignment id rhs env stack-depth stk-i mutated)]
       [`(define ,id ,rhs)
@@ -495,6 +501,8 @@
        (extract-expr-mutated body val-mutated)]
       [`(quote ,v)
        mutated]
+      [`(#%foreign-inline . ,_)
+       mutated]
       [`(set! ,id ,rhs)
        (define new-mutated (hash-set mutated (unwrap id) #t))
        (extract-expr-mutated rhs new-mutated)]
@@ -623,6 +631,7 @@
        (interp-match
         e
         [#(quote) e]
+        [#(foreign-inline) e]
         [#($value) e]
         [#(lambda) e]
         [#(case-lambda) e]
@@ -753,6 +762,11 @@
          (if return-mode
              (values stack v)
              v)]
+        [#(foreign-inline ,e)
+         (let ([v (foreign-inline-eval e)])
+           (if return-mode
+               (values stack v)
+               v))]
         [#(unbox ,s)
          (define-values (new-stack bx) (stack-ref stack s))
          (define val (unbox* bx))

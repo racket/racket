@@ -7173,6 +7173,71 @@
               3))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; #%foreign-inline should not get in the way of backend optimizations
+
+(test-comp 5 '(if (#%foreign-inline #f #:pure) (cons 1 2) 5))
+(test-comp '(list 7 7) '(let ([x (#%foreign-inline 7 #:copy)])
+                          (list x x)))
+
+(register-top-level-module
+ (module module-that-provides-foreign-inline racket/base
+   (provide seven)
+   (define seven (#%foreign-inline 7 #:copy))))
+
+(test-comp `(module m racket/base
+              (require 'module-that-provides-foreign-inline)
+              (list seven seven seven))
+           `(module m racket/base
+              (require 'module-that-provides-foreign-inline)
+              (list 7 7 seven)))
+
+(register-top-level-module
+ (module module-that-provides-foreign-inline-pure racket/base
+   (provide seven)
+   (define seven (#%foreign-inline 7 #:pure))))
+
+(test-comp `(module m racket/base
+              (require 'module-that-provides-foreign-inline-pure)
+              (list seven seven seven))
+           `(module m racket/base
+              (require 'module-that-provides-foreign-inline-pure)
+              (list 7 7 seven))
+           ;; BC effectively ignores `#:pure` for the purpose of
+           ;; exporting constant
+           (eq? 'racket (system-type 'vm)))
+
+(register-top-level-module
+ (module module-that-provides-foreign-inline-effect racket/base
+   (provide seven)
+   (define seven (#%foreign-inline 7 #:effect))))
+
+(test-comp `(module m racket/base
+              (require 'module-that-provides-foreign-inline-effect)
+              (list seven seven seven))
+           `(module m racket/base
+              (require 'module-that-provides-foreign-inline-effect)
+              (list 7 7 seven))
+           ;; BC effectively ignores `#:effect` for the purpose of
+           ;; exporting constants
+           (eq? 'racket (system-type 'vm)))
+
+(register-top-level-module
+ (module module-that-provides-foreign-inline racket/base
+   (provide seven)
+   (define seven (#%foreign-inline (/ 7 0) #:copy))))
+
+(test-comp `(module m racket/base
+              (require 'module-that-provides-foreign-inline)
+              (list seven seven))
+           `(module m racket/base
+              (require 'module-that-provides-foreign-inline)
+              (list (/ 7 0) seven))
+           ;; CS (really, schemify) believes the `#:copy` annotation,
+           ;; while BC ignores it and makes its own inference that
+           ;; `(/ 7 0)` should not be copied
+           (eq? 'chez-scheme (system-type 'vm)))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Try a program that triggers lots of inlining, which at one point
 ;; exposed a bug related to the closing of `lambda` forms within
 ;; an inlined function. Thanks to Tom Gilray for the test.
