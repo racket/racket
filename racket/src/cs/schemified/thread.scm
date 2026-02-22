@@ -1919,16 +1919,17 @@
      (begin
        (unsafe-place-local-set!
         cell.3$1
-        (insert
-         (unsafe-place-local-ref cell.3$1)
-         sleep-until_0
-         (hash-set
-          (let ((or-part_0
-                 (lookup (unsafe-place-local-ref cell.3$1) sleep-until_0 <)))
-            (if or-part_0 or-part_0 hash2610))
-          t_0
-          #t)
-         <))
+        (let ((app_0 (unsafe-place-local-ref cell.3$1)))
+          (insert
+           app_0
+           sleep-until_0
+           (hash-set
+            (let ((or-part_0
+                   (lookup (unsafe-place-local-ref cell.3$1) sleep-until_0 <)))
+              (if or-part_0 or-part_0 hash2610))
+            t_0
+            #t)
+           <)))
        sleep-until_0))
    (lambda (t_0 sleep-until_0)
      (let ((threads_0
@@ -11757,10 +11758,11 @@
                  (lambda ()
                    (let ((old-events_0
                           (unbox (unsafe-place-local-ref cell.1$5))))
-                     (if (unsafe-box*-cas!
-                          (unsafe-place-local-ref cell.1$5)
-                          old-events_0
-                          (cons e_0 old-events_0))
+                     (if (let ((app_0 (unsafe-place-local-ref cell.1$5)))
+                           (unsafe-box*-cas!
+                            app_0
+                            old-events_0
+                            (cons e_0 old-events_0)))
                        (void)
                        (loop_0)))))))
               (loop_0)))
@@ -12282,12 +12284,13 @@
              (begin0
                (let ((s_0 (start-scheduler n_0 #t)))
                  (begin
-                   (set-place-schedulers!
-                    (unsafe-place-local-ref cell.1$2)
-                    (hash-set
-                     (place-schedulers (unsafe-place-local-ref cell.1$2))
-                     s_0
-                     #t))
+                   (let ((app_0 (unsafe-place-local-ref cell.1$2)))
+                     (set-place-schedulers!
+                      app_0
+                      (hash-set
+                       (place-schedulers (unsafe-place-local-ref cell.1$2))
+                       s_0
+                       #t)))
                    (let ((pool_0
                           (parallel-thread-pool2.1 s_0 capacity_0 0 #f)))
                      (if own?_0
@@ -13081,7 +13084,8 @@
                   (values))))))
            (for-loop_0 (hash-iterate-first ht_0))))
         (void)
-        (set-place-schedulers! (unsafe-place-local-ref cell.1$2) (hasheq))))))
+        (let ((app_0 (unsafe-place-local-ref cell.1$2)))
+          (set-place-schedulers! app_0 (hasheq)))))))
 (define kill-future-scheduler.1
   (|#%name|
    kill-future-scheduler
@@ -13228,11 +13232,12 @@
                 (if (if (zero? swimmers_0) (zero? capacity_0) #f)
                   (begin
                     (kill-future-scheduler.1 #t s_0)
-                    (set-place-schedulers!
-                     (unsafe-place-local-ref cell.1$2)
-                     (hash-remove
-                      (place-schedulers (unsafe-place-local-ref cell.1$2))
-                      s_0)))
+                    (let ((app_0 (unsafe-place-local-ref cell.1$2)))
+                      (set-place-schedulers!
+                       app_0
+                       (hash-remove
+                        (place-schedulers (unsafe-place-local-ref cell.1$2))
+                        s_0))))
                   (void))))))))))
 (define start-worker
   (lambda (w_0 s_0)
@@ -13853,7 +13858,8 @@
 (define check-for-atomic-timeout
   (lambda ()
     (if (unsafe-place-local-ref cell.4)
-      (if (eq? (unsafe-place-local-ref cell.5) (current-atomic))
+      (if (let ((app_0 (unsafe-place-local-ref cell.5)))
+            (eq? app_0 (current-atomic)))
         (|#%app| (unsafe-place-local-ref cell.4) #f)
         (void))
       (void))))
@@ -14038,13 +14044,14 @@
       (unsafe-place-local-ref cell.4)
       (unsafe-place-local-set! cell.5 (current-atomic))
       (unsafe-place-local-set! cell.4 cb_0))))
-(define effect_2472
+(define effect_2656
   (begin
     (void
      (let ((proc_0
             (lambda ()
               (if (unsafe-place-local-ref cell.4)
-                (if (eq? (unsafe-place-local-ref cell.5) (current-atomic))
+                (if (let ((app_0 (unsafe-place-local-ref cell.5)))
+                      (eq? app_0 (current-atomic)))
                   (begin (|#%app| (unsafe-place-local-ref cell.4) #t) #t)
                   #f)
                 #f))))
@@ -16138,9 +16145,8 @@
   (lambda ()
     (if (place-wakeup-handle (unsafe-place-local-ref cell.1$2))
       (void)
-      (set-place-wakeup-handle!
-       (unsafe-place-local-ref cell.1$2)
-       (sandman-get-wakeup-handle)))))
+      (let ((app_0 (unsafe-place-local-ref cell.1$2)))
+        (set-place-wakeup-handle! app_0 (sandman-get-wakeup-handle))))))
 (define wakeup-waiting
   (lambda (pl_0)
     (begin
