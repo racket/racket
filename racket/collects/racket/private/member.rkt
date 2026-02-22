@@ -1,5 +1,4 @@
 (module member '#%kernel
-  (#%require "cond.rkt" "qq-and-or.rkt")
   (#%provide member memw)
 
   ;; helper for member error cases
@@ -8,36 +7,40 @@
       (raise-arguments-error who "not a proper list"
                              "in" orig-l)))
 
+  (define-values (member-impl)
+    (lambda (who v orig-l eql?)
+      (define-values (loop)
+        (lambda (ls turtle)
+          (if (null? ls)
+              #f
+              (if (not (pair? ls))
+                  (bad-list who orig-l)
+                  (if (eql? v (car ls))
+                      ls
+                      (let-values ([(ls) (cdr ls)])
+                        (if (null? ls)
+                            #f
+                            (if (if (not (pair? ls)) #t (eq? ls turtle))
+                                (bad-list who orig-l)
+                                (if (eql? v (car ls))
+                                    ls
+                                    (loop (cdr ls) (cdr turtle)))))))))))
+      (loop orig-l orig-l)))
+
   (define-values (member)
-    (letrec-values ([(member)
-                     (lambda (v orig-l eql?)
-                       (let loop ([ls orig-l] [turtle orig-l])
-                         (cond
-                           [(null? ls) #f]
-                           [(not (pair? ls))
-                            (bad-list 'member orig-l)]
-                           [(eql? v (car ls)) ls]
-                           [else
-                            (let ([ls (cdr ls)])
-                              (cond
-                                [(null? ls) #f]
-                                [(or (not (pair? ls))
-                                     (eq? ls turtle))
-                                 (bad-list 'member orig-l)]
-                                [(eql? v (car ls)) ls]
-                                [else (loop (cdr ls) (cdr turtle))]))])))])
-      (case-lambda
-        [(v ls) (member v ls equal?)]
+    (case-lambda
+        [(v ls)
+         (member-impl 'member v ls equal?)]
         [(v ls eql?)
-         (if (and (procedure? eql?)
-                  (procedure-arity-includes? eql? 2))
+         (if (if (procedure? eql?)
+                 (procedure-arity-includes? eql? 2)
+                 #f)
              (void)
-             (raise-argument-error
-              'member
-              "(procedure-arity-includes/c 2)"
-              eql?))
-         (member v ls eql?)])))
+             (raise-argument-error 'member
+                                   "(procedure-arity-includes/c 2)"
+                                   eql?))
+         (member-impl 'member v ls eql?)]))
          
   (define-values (memw)
     (lambda (v ls)
-      (member v ls equal-always?))))
+      (member-impl 'memw v ls equal-always?))))
