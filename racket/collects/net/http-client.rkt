@@ -485,13 +485,15 @@
   (define decoded-response-port
     (let ([decode-response
            (λ (raw-response-port decode-function)
-             (define-values (in out) (make-pipe PIPE-SIZE))
+             (define-values (in out set-err!)
+               (make-pipe/err PIPE-SIZE))
              (define decode-t
                (thread
-                (λ ()
-                  (decode-function raw-response-port out))))
+                (lambda ()
+                  (with-handlers ([exn:fail? set-err!])
+                    (decode-function raw-response-port out)))))
              (thread
-              (λ ()
+              (lambda ()
                 (thread-wait decode-t)
                 (when wait-for-close?
                   ;; Wait for an EOF from the raw port before we send an
