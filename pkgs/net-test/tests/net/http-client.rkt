@@ -508,6 +508,32 @@
       (with-check-info (['response-raw raw])
         (test-colon-field-lws raw))))
 
+  ;; Ensure decoding errors are raised in the http-conn-recv!ing thread.
+  ;; xref: https://github.com/Bogdanp/racket-http-easy/issues/35
+  (let ()
+    (for ([coding (in-list '(deflate gzip))]
+          [exn-re (in-list '(#rx"inflate: error in compressed data"
+                             #rx"gnu-unzip: bad header"))])
+      (local-require (prefix-in gs: "http-proxy/generic-server.rkt"))
+      (define-values (gs:port _gs:thread gs:kill)
+        (gs:serve
+         (lambda (in out)
+           (void (read-request in))
+           (fprintf out "HTTP/1.1 200 OK\r\n")
+           (fprintf out "Content-Encoding: ~a\r\n" coding)
+           (fprintf out "\r\n")
+           (fprintf out "abc123")
+           (flush-output out))))
+      (define c (hc:http-conn-open "localhost" #:port gs:port))
+      (check-exn
+       exn-re
+       (lambda ()
+         (define-values (status _headers in)
+           (hc:http-conn-sendrecv! c ""))
+         (check-equal? status #"HTTP/1.1 200 OK")
+         (read-line in)))
+      (gs:kill)))
+
   ;; Test that a RST from a client during body transfer doesn't deadlock.
   (when (memq (system-type 'os) '(unix macosx))
     (for ([chunked? (in-list '(#f #t))])
