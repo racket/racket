@@ -14,7 +14,7 @@
              (prefix printing: "modbeg.rkt")
              "for.rkt"
              "map.rkt" ; shadows #%kernel bindings
-             "member.rkt"
+             (only "pico.rkt" member memw)
              "kernstruct.rkt"
              "performance-hint.rkt"
              "top-int.rkt"
@@ -264,7 +264,7 @@
                               split-for-body
                               expand-for-clause)
              (all-from "kernstruct.rkt")
-             (all-from "member.rkt")
+             (all-from "pico.rkt")
              #%top-interaction
 
              map for-each andmap ormap
