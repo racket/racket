@@ -6,7 +6,6 @@
              "generic-methods.rkt"
              (for-syntax '#%kernel "define.rkt"
                          "procedure-alias.rkt"
-                         "member.rkt"
                          "stx.rkt" "stxcase-scheme.rkt" "qq-and-or.rkt" "cond.rkt"
                          "define-et-al.rkt"
                          "stxloc.rkt" "qqstx.rkt"
