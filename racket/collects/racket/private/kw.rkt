@@ -16,7 +16,6 @@
                          "define-et-al.rkt"
                          "cond.rkt"
                          "stxcase-scheme.rkt"
-                         "member.rkt"
                          "name.rkt"
                          "norm-define.rkt"
                          "qqstx.rkt"
