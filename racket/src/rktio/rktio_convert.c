@@ -164,11 +164,11 @@ static void init_iconv()
       iconv_errno = (errno_proc_t)GetProcAddress(m, "_errno");
     if (!iconv_errno) {
       /* The iconv.dll distributed with Racket links to "msvcrt.dll"
-	 on x86 and x86_64, and to "API-MS-WIN-CRT-RUNTIME-L1-1-1.0.DLL"
+	 on x86 and x86_64, and to "ucrtbase.dll"
 	 for Arm64. It's a slightly dangerous assumption that whatever
 	 iconv we found also uses that DLL. */
 # if defined(_M_ARM64)
-      m = LoadLibraryW(L"API-MS-WIN-CRT-RUNTIME-L1-1-1.0.DLL");
+      m = LoadLibraryW(L"ucrtbase.dll");
 # else
       m = LoadLibraryW(L"msvcrt.dll");
 # endif

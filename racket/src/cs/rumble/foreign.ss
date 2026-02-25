@@ -2043,7 +2043,7 @@
     ;; See `save_errno_values` in `foreign.c` from Racket BC for more
     ;; information.
     (load-shared-object (if (#%memq (machine-type) '(arm64nt tarm64nt))
-			    "API-MS-WIN-CRT-RUNTIME-L1-1-1.0.DLL"
+			    "ucrtbase.dll"
 			    "msvcrt.dll"))
     (let ([get-&errno (foreign-procedure "_errno" () void*)])
       (lambda ()
