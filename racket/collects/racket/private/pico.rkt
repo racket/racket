@@ -2,7 +2,8 @@
 
   (#%declare #:cross-phase-persistent)
 
-  (#%provide member memw)
+  (#%provide member memw
+             (rename reverse alt-reverse))
 
   ; ======================================================================
   ; Various functions which are straightforward to write in kernel,
@@ -55,6 +56,25 @@
   (define-values (memw)
     (lambda (v ls)
       (member-impl 'memw v ls equal-always?)))
+
+
+  ; --------------------------------------------------
+  ; reverse
+  ; (shadows the `reverse` from kernel, which is not as optimizable)
+
+  (define-values (reverse)
+    (lambda (l)
+      (if (variable-reference-from-unsafe? (#%variable-reference))
+          (void)
+          (if (list? l)
+              (void)
+              (raise-argument-error 'reverse "list?" l)))
+      (letrec-values ([(loop)
+                       (lambda (a l)
+                         (if (null? l)
+                             a
+                             (loop (cons (car l) a) (cdr l))))])
+                     (loop null l))))
 
   ;
   ; --------------------------------------------------

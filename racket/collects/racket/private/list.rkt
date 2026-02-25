@@ -1,5 +1,5 @@
 (module list "pre-base.rkt"
-  (require (rename-in "reverse.rkt" [alt-reverse reverse]))
+  (require (rename-in "pico.rkt" [alt-reverse reverse]))
 
   (provide foldl
            foldr
