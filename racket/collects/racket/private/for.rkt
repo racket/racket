@@ -3,7 +3,7 @@
   (#%require "misc.rkt"
              "define.rkt"
              "letstx-scheme.rkt"
-             "reverse.rkt"
+             (only "pico.rkt" alt-reverse)
              "sort.rkt"
              "performance-hint.rkt"
              "promise.rkt"
