@@ -1681,6 +1681,37 @@
        foo))
    0)
 
+  (test/spec-passed/result
+   'object/c-equal?.1
+   '(let ()
+      (define ctc1 (object/c [m (-> any/c integer? integer?)]))
+      (define ctc2 (object/c [m (-> any/c string? integer?)]))
+      (define c% (class object% (inspect #f) (init-field f) (define/public (m x) x) (super-new)))
+      (list (equal? (new c% [f 1])
+                    (contract ctc1 (new c% [f 1]) 'pos 'neg))
+            (equal? (contract ctc1 (new c% [f 1]) 'pos 'neg)
+                    (new c% [f 1]))
+            (equal? (contract ctc1 (new c% [f 1]) 'pos 'neg)
+                    (contract ctc1 (new c% [f 1]) 'pos 'neg))
+            (equal? (contract ctc2 (contract ctc1 (new c% [f 2]) 'pos 'neg) 'pos2 'neg2)
+                    (contract ctc1 (contract ctc2 (new c% [f 2]) 'pos 'neg) 'pos2 'neg2))))
+   (list #t #t #t #t))
+
+  (test/spec-passed/result
+   'object/c-equal?.2
+   '(let ()
+      (define ctc1 (object/c [m (-> any/c integer? integer?)]))
+      (define ctc2 (object/c [m (-> any/c string? integer?)]))
+      (define c% (class object% (inspect #f) (init-field f) (define/public (m x) x) (super-new)))
+      (list (equal? (new c% [f 1])
+                    (contract ctc1 (new c% [f 2]) 'pos 'neg))
+            (equal? (contract ctc1 (new c% [f 2]) 'pos 'neg)
+                    (new c% [f 1]))
+            (equal? (contract ctc1 (new c% [f 2]) 'pos 'neg)
+                    (contract ctc1 (new c% [f 1]) 'pos 'neg))
+            (equal? (contract ctc2 (contract ctc1 (new c% [f 1]) 'pos 'neg) 'pos2 'neg2)
+                    (contract ctc1 (contract ctc2 (new c% [f 2]) 'pos 'neg) 'pos2 'neg2))))
+   (list #f #f #f #f))
 
   ;; this test makes sure that we don't rewrap
   ;; contracts when we are just putting three

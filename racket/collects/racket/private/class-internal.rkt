@@ -3292,7 +3292,14 @@ An example
 ; different types are never equal? (without a custom prop:equal+hash), even if one is a subtype of the
 ; other. Therefore, we need to emulate what the behavior of equal? would have been if class contracts
 ; didn’t create new struct types. (This can go away if class/c is ever rewritten to use chaperones.)
-(define (object-equal? obj-a obj-b recur)
+;
+; the paragraph above suggests that `object-equal?` should be just
+; (λ (a b recur) (recur (unwrap-object a) (unwrap-object b)))
+; but this doesn't appear to work, as raco setup breaks (in a
+; way that's not obviously connected to object equality, alas)
+(define (object-equal? wrapped-obj-a wrapped-obj-b recur)
+  (define obj-a (unwrap-object wrapped-obj-a))
+  (define obj-b (unwrap-object wrapped-obj-b))
   (and (equal? (object-ref obj-a) (object-ref obj-b))
        (let ([vec-a (inspectable-struct->vector obj-a)])
          (and vec-a (let ([vec-b (inspectable-struct->vector obj-b)])
