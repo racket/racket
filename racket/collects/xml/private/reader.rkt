@@ -100,7 +100,9 @@
            (if (read-comments)
                (values (cons x lst) next)
                (values lst next)))]
-        [(and (pcdata? x) (andmap char-whitespace? (string->list (pcdata-string x))))
+        [(and (pcdata? x)
+              (for/and ([c (in-string (pcdata-string x))])
+                (char-whitespace? c)))
          (read-more)]
         [else (values null x)]))))
 
