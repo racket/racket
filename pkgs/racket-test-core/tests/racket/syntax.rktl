@@ -1002,9 +1002,13 @@
   (test (void) sync/timeout 0 pr))
 
 (let* ([p (delay/sync (sync never-evt))]
-       [th (thread (lambda () (force p)))])
+       [sem (make-semaphore)]
+       [th (thread (lambda ()
+                     (semaphore-wait sem)
+                     (force p)))])
   (test #f promise-forced? p)
   (test #f promise-running? p)
+  (semaphore-post sem)
   (sync (system-idle-evt))
   (test #f promise-forced? p)
   (test #t promise-running? p)
