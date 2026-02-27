@@ -9,7 +9,7 @@
 (provide make-ffi-static-core)
 
 (define (make-ffi-static-core arg-types result-type
-                              abi varargs-after blocking? async-apply
+                              abi varargs-after blocking? async-apply save-errno
                               prim-knowns primitives knowns imports mutated)
   (define (lookup id)
     (define u (unwrap id))
@@ -47,11 +47,13 @@
        (let ([abi-k (get-literal abi)]
              [varargs-after-k (get-literal varargs-after)]
              [blocking?-k (get-boolean-literal blocking?)]
-             [async-apply-k (get-boolean-literal async-apply)])
+             [async-apply-k (get-boolean-literal async-apply)]
+             [save-errno-k (get-literal save-errno)])
          (and (known-literal? abi-k)
               (known-literal? varargs-after-k)
               (known-literal? blocking?-k)
               (known-literal? async-apply-k)
+              (known-literal? save-errno-k)
               `(values (ffi-static-call-and-callback-core
                         ,(map known-ctype-rep arg-ks)
                         ,(known-ctype-rep result-k)
@@ -59,6 +61,8 @@
                         ,(known-literal-value varargs-after-k)
                         ,(and (or (known-literal-value blocking?-k)
                                   (known-literal-value async-apply-k))
-                              #t))
+                              #t)
+                        ',(known-literal-value save-errno-k))
                        (list ,@arg-types) ,result-type
-                       ,abi ,varargs-after ,blocking? ,async-apply)))))
+                       ,abi ,varargs-after ,blocking? ,async-apply
+                       ,save-errno)))))

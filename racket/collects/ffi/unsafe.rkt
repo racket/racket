@@ -756,13 +756,14 @@
            (lambda (wrapper)
              #`(assert-ctype-representation
                 _fpointer
-                (let-values ([(core ins out abi varargs-after blocking? async-apply)
+                (let-values ([(core ins out abi varargs-after blocking? async-apply save-errno)
                               (ffi-maybe-call-and-callback-core
                                #,(and static? #`(quote #,stx))
                                #,(kwd-ref '#:abi)
                                #,(kwd-ref '#:varargs-after)
                                #,(kwd-ref '#:blocking?)
                                #,(kwd-ref '#:async-apply)
+                               #,(kwd-ref '#:save-errno)
                                #,(car output)
                                #,@(filter-map car inputs))])
                   (_cprocedure* core
@@ -777,7 +778,7 @@
                                 blocking?
                                 #,(kwd-ref '#:callback-exns?)
                                 async-apply
-                                #,(kwd-ref '#:save-errno)
+                                save-errno
                                 #,(kwd-ref '#:lock-name)))))])
       (if (or (caddr output) input-names (ormap caddr inputs)
               (ormap (lambda (x) (not (car x))) inputs)

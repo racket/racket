@@ -87,12 +87,13 @@
                                           ,varargs-after
                                           ,blocking?
                                           ,async-apply
+                                          ,save-errno
                                           ,result-type
                                           . ,arg-types)
        ;; This case is aided by an ad hoc ffi-maybe-call-and-callback-core
        (or (and (eq? target 'compile)
                 (or (make-ffi-static-core arg-types result-type
-                                          abi varargs-after blocking? async-apply
+                                          abi varargs-after blocking? async-apply save-errno
                                           prim-knowns primitives knowns imports mutated)
                     (and (unwrap must-at)
                          (error 'compile "unable to generate foreign function statically: ~s"

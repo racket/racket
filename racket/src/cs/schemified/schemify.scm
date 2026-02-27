@@ -10385,6 +10385,7 @@
            varargs-after_0
            blocking?_0
            async-apply_0
+           save-errno_0
            prim-knowns_0
            primitives_0
            knowns_0
@@ -10479,57 +10480,68 @@
                      (let ((blocking?-k_0 (get-boolean-literal_0 blocking?_0)))
                        (let ((async-apply-k_0
                               (get-boolean-literal_0 async-apply_0)))
-                         (let ((blocking?-k_1 blocking?-k_0)
-                               (varargs-after-k_1 varargs-after-k_0)
-                               (abi-k_1 abi-k_0))
-                           (if (known-literal? abi-k_1)
-                             (if (known-literal? varargs-after-k_1)
-                               (if (known-literal? blocking?-k_1)
-                                 (if (known-literal? async-apply-k_0)
-                                   (let ((app_0
-                                          (let ((app_0
-                                                 (map_2353
-                                                  known-ctype-rep
-                                                  arg-ks_0)))
-                                            (let ((app_1
-                                                   (known-ctype-rep
-                                                    result-k_0)))
-                                              (let ((app_2
-                                                     (list
-                                                      'quote
-                                                      (known-literal-value
-                                                       abi-k_1))))
-                                                (let ((app_3
-                                                       (known-literal-value
-                                                        varargs-after-k_1)))
-                                                  (list
-                                                   'ffi-static-call-and-callback-core
-                                                   app_0
-                                                   app_1
-                                                   app_2
-                                                   app_3
-                                                   (if (let ((or-part_0
-                                                              (known-literal-value
-                                                               blocking?-k_1)))
-                                                         (if or-part_0
-                                                           or-part_0
+                         (let ((save-errno-k_0 (get-literal_0 save-errno_0)))
+                           (let ((async-apply-k_1 async-apply-k_0)
+                                 (blocking?-k_1 blocking?-k_0)
+                                 (varargs-after-k_1 varargs-after-k_0)
+                                 (abi-k_1 abi-k_0))
+                             (if (known-literal? abi-k_1)
+                               (if (known-literal? varargs-after-k_1)
+                                 (if (known-literal? blocking?-k_1)
+                                   (if (known-literal? async-apply-k_1)
+                                     (if (known-literal? save-errno-k_0)
+                                       (let ((app_0
+                                              (let ((app_0
+                                                     (map_2353
+                                                      known-ctype-rep
+                                                      arg-ks_0)))
+                                                (let ((app_1
+                                                       (known-ctype-rep
+                                                        result-k_0)))
+                                                  (let ((app_2
+                                                         (list
+                                                          'quote
+                                                          (known-literal-value
+                                                           abi-k_1))))
+                                                    (let ((app_3
                                                            (known-literal-value
-                                                            async-apply-k_0)))
-                                                     #t
-                                                     #f))))))))
-                                     (list
-                                      'values
-                                      app_0
-                                      (list* 'list arg-types_0)
-                                      result-type_0
-                                      abi_0
-                                      varargs-after_0
-                                      blocking?_0
-                                      async-apply_0))
+                                                            varargs-after-k_1)))
+                                                      (let ((app_4
+                                                             (if (let ((or-part_0
+                                                                        (known-literal-value
+                                                                         blocking?-k_1)))
+                                                                   (if or-part_0
+                                                                     or-part_0
+                                                                     (known-literal-value
+                                                                      async-apply-k_1)))
+                                                               #t
+                                                               #f)))
+                                                        (list
+                                                         'ffi-static-call-and-callback-core
+                                                         app_0
+                                                         app_1
+                                                         app_2
+                                                         app_3
+                                                         app_4
+                                                         (list
+                                                          'quote
+                                                          (known-literal-value
+                                                           save-errno-k_0))))))))))
+                                         (list
+                                          'values
+                                          app_0
+                                          (list* 'list arg-types_0)
+                                          result-type_0
+                                          abi_0
+                                          varargs-after_0
+                                          blocking?_0
+                                          async-apply_0
+                                          save-errno_0))
+                                       #f)
+                                     #f)
                                    #f)
                                  #f)
-                               #f)
-                             #f))))))
+                               #f)))))))
                  #f)
                #f))))))))
 (define optimize
@@ -10791,7 +10803,16 @@
                                                                    (unwrap
                                                                     a_5)))
                                                               (if (pair? p_5)
-                                                                #t
+                                                                (let ((a_6
+                                                                       (cdr
+                                                                        p_5)))
+                                                                  (let ((p_6
+                                                                         (unwrap
+                                                                          a_6)))
+                                                                    (if (pair?
+                                                                         p_6)
+                                                                      #t
+                                                                      #f)))
                                                                 #f)))
                                                           #f)))
                                                     #f)))
@@ -10848,30 +10869,54 @@
                                                                           (let ((p_5
                                                                                  (unwrap
                                                                                   d_5)))
-                                                                            (let ((result-type_0
+                                                                            (let ((save-errno_0
                                                                                    (let ((a_0
                                                                                           (car
                                                                                            p_5)))
                                                                                      a_0)))
-                                                                              (let ((arg-types_0
-                                                                                     (let ((d_6
-                                                                                            (cdr
-                                                                                             p_5)))
-                                                                                       d_6)))
-                                                                                (let ((result-type_1
-                                                                                       result-type_0))
-                                                                                  (values
-                                                                                   result-type_1
-                                                                                   arg-types_0)))))))
-                                                                      (lambda (result-type_0
+                                                                              (call-with-values
+                                                                               (lambda ()
+                                                                                 (let ((d_6
+                                                                                        (cdr
+                                                                                         p_5)))
+                                                                                   (let ((p_6
+                                                                                          (unwrap
+                                                                                           d_6)))
+                                                                                     (let ((result-type_0
+                                                                                            (let ((a_0
+                                                                                                   (car
+                                                                                                    p_6)))
+                                                                                              a_0)))
+                                                                                       (let ((arg-types_0
+                                                                                              (let ((d_7
+                                                                                                     (cdr
+                                                                                                      p_6)))
+                                                                                                d_7)))
+                                                                                         (let ((result-type_1
+                                                                                                result-type_0))
+                                                                                           (values
+                                                                                            result-type_1
+                                                                                            arg-types_0)))))))
+                                                                               (lambda (result-type_0
+                                                                                        arg-types_0)
+                                                                                 (let ((save-errno_1
+                                                                                        save-errno_0))
+                                                                                   (values
+                                                                                    save-errno_1
+                                                                                    result-type_0
+                                                                                    arg-types_0))))))))
+                                                                      (lambda (save-errno_0
+                                                                               result-type_0
                                                                                arg-types_0)
                                                                         (let ((async-apply_1
                                                                                async-apply_0))
                                                                           (values
                                                                            async-apply_1
+                                                                           save-errno_0
                                                                            result-type_0
                                                                            arg-types_0))))))))
                                                              (lambda (async-apply_0
+                                                                      save-errno_0
                                                                       result-type_0
                                                                       arg-types_0)
                                                                (let ((blocking?_1
@@ -10879,10 +10924,12 @@
                                                                  (values
                                                                   blocking?_1
                                                                   async-apply_0
+                                                                  save-errno_0
                                                                   result-type_0
                                                                   arg-types_0))))))))
                                                     (lambda (blocking?_0
                                                              async-apply_0
+                                                             save-errno_0
                                                              result-type_0
                                                              arg-types_0)
                                                       (let ((varargs-after_1
@@ -10891,11 +10938,13 @@
                                                          varargs-after_1
                                                          blocking?_0
                                                          async-apply_0
+                                                         save-errno_0
                                                          result-type_0
                                                          arg-types_0))))))))
                                            (lambda (varargs-after_0
                                                     blocking?_0
                                                     async-apply_0
+                                                    save-errno_0
                                                     result-type_0
                                                     arg-types_0)
                                              (let ((abi_1 abi_0))
@@ -10904,12 +10953,14 @@
                                                 varargs-after_0
                                                 blocking?_0
                                                 async-apply_0
+                                                save-errno_0
                                                 result-type_0
                                                 arg-types_0))))))))
                                   (lambda (abi_0
                                            varargs-after_0
                                            blocking?_0
                                            async-apply_0
+                                           save-errno_0
                                            result-type_0
                                            arg-types_0)
                                     (let ((must-at_1 must-at_0))
@@ -10919,6 +10970,7 @@
                                        varargs-after_0
                                        blocking?_0
                                        async-apply_0
+                                       save-errno_0
                                        result-type_0
                                        arg-types_0))))))))
                          (lambda (must-at_0
@@ -10926,6 +10978,7 @@
                                   varargs-after_0
                                   blocking?_0
                                   async-apply_0
+                                  save-errno_0
                                   result-type_0
                                   arg-types_0)
                            (let ((or-part_0
@@ -10938,6 +10991,7 @@
                                             varargs-after_0
                                             blocking?_0
                                             async-apply_0
+                                            save-errno_0
                                             prim-knowns_0
                                             primitives_0
                                             knowns_0
