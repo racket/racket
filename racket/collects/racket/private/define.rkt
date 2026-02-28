@@ -3,7 +3,7 @@
 ;; #%define : define and define-syntax
 
 (module define '#%kernel
-  (#%require "define-et-al.rkt")
+  (#%require "core-syntax.rkt")
 
   (#%provide define 
              define-syntax 

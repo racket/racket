@@ -2,7 +2,7 @@
 ;; with-syntax, generate-temporaries
 
 (module with-stx '#%kernel
-  (#%require "stx.rkt" "define-et-al.rkt" "core-syntax.rkt" "cond.rkt" "stxcase.rkt"
+  (#%require "stx.rkt" "core-syntax.rkt" "core-syntax.rkt" "cond.rkt" "stxcase.rkt"
              (for-syntax '#%kernel "stxcase.rkt" "stxloc.rkt" 
                          "stx.rkt" "sc.rkt" "core-syntax.rkt" "cond.rkt"))
 

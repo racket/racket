@@ -1,6 +1,6 @@
 (module kw '#%kernel
   (#%require "define.rkt"
-             "define-et-al.rkt" "core-syntax.rkt"
+             "core-syntax.rkt" "core-syntax.rkt"
              "stxcase-scheme.rkt"
              (for-template '#%kernel))
 

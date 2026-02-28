@@ -3,7 +3,7 @@
 ;; record for static info produced by `define-struct'
 
 (module struct-info '#%kernel
-  (#%require "define-et-al.rkt" "core-syntax.rkt" "cond.rkt")
+  (#%require "core-syntax.rkt" "core-syntax.rkt" "cond.rkt")
 
   (#%provide make-struct-info
              struct-info?
