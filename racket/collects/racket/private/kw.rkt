@@ -1,7 +1,7 @@
 (module kw '#%kernel
   (#%require "define.rkt"
              "core-syntax.rkt"
-             "cond.rkt"
+             "core-syntax.rkt"
              "core-syntax.rkt"
              "more-scheme.rkt"
              (only '#%unsafe
@@ -14,7 +14,7 @@
                          "stx.rkt"
                          "core-syntax.rkt"
                          "core-syntax.rkt"
-                         "cond.rkt"
+                         "core-syntax.rkt"
                          "stxcase-scheme.rkt"
                          "name.rkt"
                          "norm-define.rkt"
@@ -24,7 +24,7 @@
                          "immediate-default.rkt")
              (for-meta 2 '#%kernel
                        "core-syntax.rkt"
-                       "cond.rkt"
+                       "core-syntax.rkt"
                        "stxcase-scheme.rkt"
                        "qqstx.rkt"))
 

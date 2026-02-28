@@ -1,6 +1,6 @@
 
 (module name '#%kernel
-  (#%require "define.rkt" "core-syntax.rkt" "cond.rkt")
+  (#%require "define.rkt" "core-syntax.rkt" "core-syntax.rkt")
   (#%provide syntax-local-infer-name
              simplify-inferred-name)
 

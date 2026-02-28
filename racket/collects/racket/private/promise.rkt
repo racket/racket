@@ -12,12 +12,12 @@
 ;; definitions. See "racket/private/for-compatibility-lib.rkt" for an example.
 
 (module promise '#%kernel
-(#%require "core-syntax.rkt" "core-syntax.rkt" "cond.rkt"
+(#%require "core-syntax.rkt" "core-syntax.rkt" "core-syntax.rkt"
            "more-scheme.rkt"
            "define.rkt"
            (rename "define-struct.rkt" define-struct define-struct*)
            (for-syntax '#%kernel
-                       "cond.rkt" "core-syntax.rkt"
+                       "core-syntax.rkt" "core-syntax.rkt"
                        "define.rkt"
                        "struct.rkt"
                        "stxcase-scheme.rkt"

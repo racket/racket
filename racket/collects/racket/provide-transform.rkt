@@ -4,7 +4,7 @@
              "private/define-struct.rkt"
              "private/core-syntax.rkt"
              "private/core-syntax.rkt"
-             "private/cond.rkt"
+             "private/core-syntax.rkt"
              "private/define.rkt"
              "phase+space.rkt")
   

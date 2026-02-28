@@ -3,7 +3,7 @@
 
 (module qqstx '#%kernel
   (#%require "core-syntax.rkt" "stxcase-scheme.rkt" "stx.rkt" "template.rkt"
-             (for-syntax '#%kernel "core-syntax.rkt" "cond.rkt" "stxcase-scheme.rkt" "stx.rkt"))
+             (for-syntax '#%kernel "core-syntax.rkt" "core-syntax.rkt" "stxcase-scheme.rkt" "stx.rkt"))
 
   (#%provide quasisyntax
              quasisyntax/loc

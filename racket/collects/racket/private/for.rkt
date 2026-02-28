@@ -14,7 +14,7 @@
                          "qqstx.rkt"
                          "define.rkt"
                          "fixnum.rkt"
-                         "core-syntax.rkt" "core-syntax.rkt" "cond.rkt"
+                         "core-syntax.rkt" "core-syntax.rkt" "core-syntax.rkt"
                          "stxcase-scheme.rkt"
                          "more-scheme.rkt"))
 

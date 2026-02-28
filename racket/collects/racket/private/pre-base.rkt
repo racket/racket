@@ -208,7 +208,6 @@
              (all-from "define.rkt")
              (all-from-except "letstx-scheme.rkt"
                               -define -define-syntax
-                              old-cond
                               define define-syntax define-for-syntax)
              (rename new-lambda lambda)
              (rename new-λ λ)

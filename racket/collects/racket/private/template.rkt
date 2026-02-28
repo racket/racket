@@ -1,9 +1,9 @@
 (module template '#%kernel
-(#%require "stx.rkt" "core-syntax.rkt" "core-syntax.rkt" "cond.rkt" "performance-hint.rkt"
+(#%require "stx.rkt" "core-syntax.rkt" "core-syntax.rkt" "core-syntax.rkt" "performance-hint.rkt"
            (rename "core-syntax.rkt" define -define)
            (rename "core-syntax.rkt" define-syntax -define-syntax)
            "ellipses.rkt"
-           (for-syntax "stx.rkt" "core-syntax.rkt" "core-syntax.rkt" "cond.rkt"
+           (for-syntax "stx.rkt" "core-syntax.rkt" "core-syntax.rkt" "core-syntax.rkt"
                        (rename "core-syntax.rkt" define -define)
                        (rename "core-syntax.rkt" define-syntax -define-syntax)
                        "sc.rkt" '#%kernel))

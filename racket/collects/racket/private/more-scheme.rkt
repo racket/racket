@@ -3,8 +3,8 @@
 ;; more-scheme : case, do, etc. - remaining syntax
 
 (module more-scheme '#%kernel
-  (#%require "core-syntax.rkt" "core-syntax.rkt" "cond.rkt" "define.rkt" '#%paramz "case.rkt" "logger.rkt"
-             (for-syntax '#%kernel "stx.rkt" "core-syntax.rkt" "core-syntax.rkt" "cond.rkt" "stxcase-scheme.rkt" "qqstx.rkt"))
+  (#%require "core-syntax.rkt" "core-syntax.rkt" "core-syntax.rkt" "define.rkt" '#%paramz "case.rkt" "logger.rkt"
+             (for-syntax '#%kernel "stx.rkt" "core-syntax.rkt" "core-syntax.rkt" "core-syntax.rkt" "stxcase-scheme.rkt" "qqstx.rkt"))
 
   ;; For `old-case`:
   (define-syntax case-test

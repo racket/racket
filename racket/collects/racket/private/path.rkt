@@ -1,5 +1,5 @@
 (module path '#%kernel
-  (#%require "core-syntax.rkt" "cond.rkt" "core-syntax.rkt")
+  (#%require "core-syntax.rkt" "core-syntax.rkt" "core-syntax.rkt")
 
   (#%provide path-string?
              normal-case-path
