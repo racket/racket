@@ -17,8 +17,6 @@
              call/ec let/ec
              let let* letrec
              let*-values  ; {let,letrec}-values are kernel
-             let-syntax letrec-syntax
-             let-syntaxes letrec-syntaxes
              quasiquote
              and or)
 
@@ -382,258 +380,160 @@
   ; let, let*, letrec, let-values, let-syntax, ...
   ;
 
-  (begin-for-syntax
-    (define-values (raise-if-duplicate-ids)
-      (lambda (ids context-stx)
-        (define-values (dup) (stx-first-duplicate-id ids))
-        (raise-syntax-error-if dup "duplicate identifier" context-stx dup)))
-
-    ; ((parse-and-validate-letlike-clause* context-stx multi? allow-crossclause-dups?) clause-stx)
-    ;   context-stx              : syntax?   full form, for error reporting
-    ;   multi?                   : boolean?  #t if bindings should be lists of ids, #f if a single id
-    ;   allow-crossclause-dups?  : boolean?  if #t, check bindings within any single clause are distinct
-    ;                                        if #f, do nothing; caller responsible for checking all clauses together
-    ;   clause-stx               : syntax?   if multi?, then expected #'[(id ...) bound-expr]
-    ;                                        else expected #'[id bound-expr]
-    ;  -> (list/c (listof identifier?) syntax?)
-    (define-values (parse-and-validate-letlike-clause*)
-      (lambda (context-stx multi? allow-crossclause-dups?)
-        (lambda (clause-stx)
-          (define-values (clause-lst) (syntax->list clause-stx))
-          (raise-syntax-error-unless (if clause-lst
-                                         (= 2 (length clause-lst))
-                                         #f)
-                                     (if multi?
-                                         "bad syntax (not an identifier list and expression for bindings)"
-                                         "bad syntax (not an identifier and expression for a binding)")
-                                     context-stx
-                                     clause-stx)
-          (define-values (ids) (if multi?
-                                   (syntax->list (car clause-lst))
-                                   (list (car clause-lst))))
-          (if multi?
-              (raise-syntax-error-unless ids
-                                         "bad syntax (not a list of identifiers)"
-                                         context-stx
-                                         (car clause-lst))
-              (void))
-          (for-each (lambda (id)
-                      (raise-syntax-error-unless (identifier? id)
-                                                 "bad syntax (not an identifier)"
-                                                 context-stx
-                                                 id))
-                    ids)
-          (if allow-crossclause-dups?
-              (raise-if-duplicate-ids ids context-stx)
-              (void))
-          (list ids (cadr clause-lst)))))
-  
-    ; (parse-and-validate-letlike stx allow-named? multi? allow-crossclause-dups?)
-    ;    stx of the form #'(letlike [maybe-name] ([binding/bindings bound-expr] ...) body ...+)
-    ;    allow-named?           : boolean?    #t for just let
-    ;    multi?                 : boolean?    #t for {let,let*,letrec}-{values,syntaxes}
-    ;    allow-crossclause-dups : boolean?    #t for let*{,-syntaxes,-values}
-    ;  -> (values
-    ;       (if/c allow-named? (or/c identifier? #f) #f)     name, if was named let
-    ;       (listof (list/c (listof identifier?) syntax?))   binding clauses, normalized and dup-checked
-    ;       (listof syntax?))                                nonempty listof body clauses
-    (define-values (parse-and-validate-letlike)
-      (lambda (stx allow-named? multi? allow-crossclause-dups?)
-        (raise-syntax-error-unless (stx-list? stx)
-                                   "bad syntax (illegal use of `.')"
-                                   stx)
-        (let-values ([(me) (stx-car stx)]
-                     [(tail) (stx-cdr stx)])
-          (raise-syntax-error-unless (stx-pair? tail)
-                                     (if allow-named?
-                                         "bad syntax (missing name or binding pairs)"
-                                         "bad syntax (missing binding pairs)")
-                                     stx)
-          (let-values ([(maybe-name tail) (if (if allow-named? (identifier? (stx-car tail)) #f)
-                                              (values (stx-car tail) (stx-cdr tail))
-                                              (values #f tail))])
-            (raise-syntax-error-unless (stx-pair? tail)  ; redundant check when not named; this is fine
-                                       "bad syntax (missing binding pairs)"
-                                       stx)
-            (let-values ([(clauses-stx) (stx-car tail)]
-                         [(body-stxl) (stx-cdr tail)])
-              (define-values (clause-stxs) (syntax->list clauses-stx))
-              (raise-syntax-error-unless clause-stxs
-                                         (if multi?
-                                             "bad syntax (not a sequence of identifier-list--expression bindings)"
-                                             "bad syntax (not a sequence of identifier--expression bindings)")
-                                         stx
-                                         clauses-stx)
-              (define-values (bindings)
-                (map (parse-and-validate-letlike-clause* stx multi? allow-crossclause-dups?)
-                     clause-stxs))
-              (if allow-crossclause-dups?
-                  (void)
-                  (raise-if-duplicate-ids (apply append (map car bindings))
-                                          stx))
-              (raise-syntax-error-unless (stx-pair? body-stxl)
-                                         "bad syntax (missing body)"
-                                         stx)
-              (values maybe-name
-                      bindings
-                      body-stxl))))))
-
-    ; (gen-named-let name initial-bindings body)
-    ;   name             : identifier?
-    ;   initial-bindings : (listof (list/c (list/c identifier?) syntax?))
-    ;   body             : syntax?
-    ;  -> any/c
-    ; Generate the syntax (suitable to be `datum->syntax`'d) for a named let.
-    ; This function assumes that each clause in the binding list has only a
-    ; single identifier; hence `(list/c identifier?)` in the contract instead
-    ; of a `listof`. This is ensured by `parse-and-validate-letlike`.
-    (define-values (gen-named-let)
-      (lambda (name initial-bindings body)
-        (list* (quote-syntax #%app)
-               (list (quote-syntax letrec-values)
-                     (list (list (list name)
-                                 (list* (quote-syntax lambda)
-                                        (map caar initial-bindings)
-                                        body)))
-                     name)
-               (map cadr initial-bindings))))
-
-    ; (gen-boring-let target bindings body)
-    ;   target   : (or/c #'let-values #'letrec-values)
-    ;   bindings : (listof (list/c (listof identifier?) syntax?))
-    ;   body     : syntax?
-    ;  -> any/c
-    ; Generate the syntax (suitable to be `datum->syntax`'d) for a standard
-    ; value let (either let-values or letrec-values, which are the two kernel
-    ; forms for value bindings).
-    (define-values (gen-boring-let)
-      (lambda (target bindings body)
-        (list* target bindings body)))
-
-    ; (gen-boring-let target bindings body)
-    ;   target   : #'let-values
-    ;   bindings : (listof (list/c (listof identifier?) syntax?))
-    ;   body     : syntax?
-    ;  -> any/c
-    ; Generate the syntax (suitable to be `datum->syntax`'d) for a `let*`
-    ; or a `let*-values`. The only value which makes sense for target is
-    ; #'let-values.
-    (define-values (gen-star-let)
-      (lambda (target bindings body)
-        (if (null? bindings)
-            (list* target null body)
-            (letrec-values ([(gen)  ; -> (listof body-expression)
-                             (lambda (bindings)
-                               (if (null? bindings)
-                                   body
-                                   (list (list* target
-                                                (list (car bindings))
-                                                (gen (cdr bindings))))))])
-              (car (gen bindings))))))
-
-    ; (gen-syntaxes-let target bindings body)
-    ;   target   : ignored
-    ;   bindings : (listof (list/c (listof identifier?) syntax?))
-    ;   body     : syntax?
-    ;  -> any/c
-    ;
-    ; Generate the syntax to implement a `let-syntax` or `let-syntaxes`. The
-    ; expansion is
-    ;
-    ;      (let-syntax ([id bound-expr] ...) body ...)
-    ;      (let-syntaxes ([(id ...) bound-expr] ...) body ...)
-    ;
-    ; to
-    ;
-    ;    (letrec-syntaxes+values
-    ;        ([(id/tmp ...) bound-expr] ...)
-    ;        ()
-    ;      (letrec-syntaxes+values
-    ;         ([(id ...) (values (make-rename-transformer (quote-syntax id/tmp)) ...)] ...)
-    ;         ()
-    ;       body ...))
-    ;
-    ; This is necessary because the only kernel form for local syntax bindings is
-    ; letrec-syntaxes+values, and the rename transformers make the scope work right.
-    ; For the `id/tmp`, we use a temporary with the same spelling and location as the
-    ; original, but with a fresh scope. (Note that avoiding ambiguous bindings requires
-    ; stripping the old scopes from the ids, which in turn requires using a fresh scope
-    ; for each individual id.)
-    (define-values (gen-syntaxes-let)
-      (lambda (_target bindings body)
-        (define-values (tmp-bindings)
-          (map (lambda (binding)
-                 (list (map (lambda (id)
-                              ((make-syntax-introducer) (datum->syntax #f (syntax-e id) id)))
-                            (car binding))
-                       (cadr binding)))
-               bindings))
-        (define-values (rename-bindings)
-          (map (lambda (binding tmp-binding)
-                 (list (car binding)
-                       (list* (quote-syntax #%app)
-                              (quote-syntax values)
-                              (map (lambda (tmp-id)
-                                     (list (quote-syntax #%app)
-                                           (quote-syntax make-rename-transformer)
-                                           (list (quote-syntax quote-syntax) tmp-id)))
-                                   (car tmp-binding)))))
-               bindings
-               tmp-bindings))
-        (list (quote-syntax letrec-syntaxes+values)
-              tmp-bindings
-              null
-              (list* (quote-syntax letrec-syntaxes+values)
-                     rename-bindings
-                     null
-                     body))))
-
-    ; (gen-recsyntaxes-let target bindings body)
-    ;   target   : ignored
-    ;   bindings : (listof (list/c (listof identifier?) syntax?))
-    ;   body     : syntax?
-    ;  -> any/c
-    (define-values (gen-recsyntaxes-let)
-      (lambda (_target bindings body)
-        (list* (quote-syntax letrec-syntaxes+values)
-               bindings
-               null
-               body)))
-
-    ; (make-let-transformer allow-named? star? multi? gen target)
-    ;   allow-named? : boolean?
-    ;   star?        : (if/c allow-named? #f boolean?)
-    ;   multi?       : (if/c allow-named? #f boolean?)
-    ;   gen          : one of the gen-something-let functions above
-    ;   target       : value suitable for `gen`'s first argument
-    ;  -> (-> syntax? syntax?)
-    ; Makes a transformer for handling a let-like form where the form's syntax
-    ; is determined by `allow-named?`, `star?`, and `multi?` and the output is
-    ; determined by `gen` and `target`. Note that `allow-named?` should be true
-    ; only for `let` and the transformer assumes this.
-    (define-values (make-let-transformer)
-      (lambda (allow-named? star? multi? gen target)
-        (lambda (stx)
-          (define-values (name bindings body)
-            (parse-and-validate-letlike stx allow-named? multi? star?))
-          (datum->syntax #f
-                         (if name
-                             (gen-named-let name bindings body)
-                             (gen target bindings body))
-                         stx
-                         stx)))))
-
-  (define-syntaxes (let)               (make-let-transformer #t #f #f gen-boring-let (quote-syntax let-values)))
-  (define-syntaxes (let*)              (make-let-transformer #f #t #f gen-star-let (quote-syntax let-values)))
-  (define-syntaxes (letrec)            (make-let-transformer #f #f #f gen-boring-let (quote-syntax letrec-values)))
-
-  (define-syntaxes (let*-values)       (make-let-transformer #f #t #t gen-star-let (quote-syntax let-values)))
-
-  (define-syntaxes (let-syntax)        (make-let-transformer #f #f #f gen-syntaxes-let 'ignored))
-  (define-syntaxes (letrec-syntax)     (make-let-transformer #f #f #f gen-recsyntaxes-let 'ignored))
-
-  (define-syntaxes (let-syntaxes)      (make-let-transformer #f #f #t gen-syntaxes-let 'ignored))
-  (define-syntaxes (letrec-syntaxes)   (make-let-transformer #f #f #t gen-recsyntaxes-let 'ignored))
+  (define-syntaxes (let*-values let let* letrec)
+    (let-values ([(lambda-stx) (quote-syntax lambda-stx)]
+                 [(letrec-values-stx) (quote-syntax letrec-values)]
+                 [(check-for-duplicates)
+                  (lambda (new-bindings sel stx)
+                    (define-values (dup) (stx-first-duplicate-id (map sel new-bindings)))
+                    (raise-syntax-error-if dup "duplicate identifier" stx dup))])
+      (let-values ([(go)
+                    (lambda (stx named? star? target)
+                      (define-values (stx-cadr) (lambda (x) (stx-car (stx-cdr x))))
+                      (define-values (stx-2list?)
+                        (lambda (x)
+                          (if (stx-pair? x)
+                              (if (stx-pair? (stx-cdr x))
+                                  (stx-null? (stx-cdr (stx-cdr x)))
+                                  #f)
+                              #f)))
+                      (let-values ([(maybe-msg)
+                                    (if (not (stx-list? stx))
+                                        ""
+                                        (let-values ([(tail1) (stx-cdr stx)])
+                                          (if (stx-null? tail1)
+                                              (if named?
+                                                  "(missing name or binding pairs)"
+                                                  "(missing binding pairs)")
+                                              (if (stx-null? (stx-cdr tail1))
+                                                  (if named?
+                                                      "(missing binding pairs or body)"
+                                                      "(missing body)")
+                                                  (if named?
+                                                      (if (symbol? (syntax-e (stx-car tail1)))
+                                                          (if (stx-null? (stx-cdr (stx-cdr tail1)))
+                                                              "(missing body)"
+                                                              #f)
+                                                          #f)
+                                                      #f)))))])
+                        (if maybe-msg
+                            (raise-syntax-error #f (string-append "bad syntax " maybe-msg) stx)
+                            (void)))
+                      (let-values ([(name) (if named?
+                                               (let-values ([(n) (stx-cadr stx)])
+                                                 (if (symbol? (syntax-e n))
+                                                     n
+                                                     #f))
+                                               #f)])
+                        (let-values ([(bindings) (stx->list (stx-cadr (if name
+                                                                          (stx-cdr stx)
+                                                                          stx)))]
+                                     [(body) (stx-cdr (stx-cdr (if name
+                                                                   (stx-cdr stx)
+                                                                   stx)))])
+                          (if (not bindings)
+                              (raise-syntax-error 
+                               #f 
+                               "bad syntax (not a sequence of identifier--expression bindings)" 
+                               stx
+                               (stx-cadr stx))
+                              (let-values ([(new-bindings)
+                                            (letrec-values ([(loop)
+                                                             (lambda (l)
+                                                               (if (null? l)
+                                                                   null
+                                                                   (let-values ([(binding) (car l)])
+                                                                     (cons
+                                                                      (if (stx-2list? binding)
+                                                                          (if (symbol? (syntax-e (stx-car binding)))
+                                                                              (if name
+                                                                                  (cons (stx-car binding)
+                                                                                        (stx-cadr binding))
+                                                                                  (datum->syntax
+                                                                                   lambda-stx
+                                                                                   (cons (cons (stx-car binding)
+                                                                                               null)
+                                                                                         (stx-cdr binding))
+                                                                                   binding))
+                                                                              (raise-syntax-error 
+                                                                               #f 
+                                                                               "bad syntax (not an identifier)" 
+                                                                               stx
+                                                                               (stx-car binding)))
+                                                                          (raise-syntax-error 
+                                                                           #f 
+                                                                           "bad syntax (not an identifier and expression for a binding)" 
+                                                                           stx
+                                                                           binding))
+                                                                      (loop (cdr l))))))])
+                                              (loop bindings))])
+                                (if star?
+                                    (void)
+                                    (check-for-duplicates new-bindings 
+                                                          (if name
+                                                              car
+                                                              (lambda (v) (stx-car (stx-car v))))
+                                                          stx))
+                                (datum->syntax
+                                 lambda-stx
+                                 (if name
+                                     (apply list
+                                            (list 
+                                             (quote-syntax letrec-values)
+                                             (list
+                                              (list
+                                               (list name)
+                                               (list* (quote-syntax lambda)
+                                                      (apply list (map car new-bindings))
+                                                      body)))
+                                             name)
+                                            (map cdr new-bindings))
+                                     (list* target
+                                            new-bindings
+                                            body))
+                                 stx))))))])
+        (values
+         (lambda (stx)
+           (define-values (bad-syntax)
+             (lambda ()
+               (raise-syntax-error #f "bad syntax" stx)))
+           (define-values (l) (syntax->list stx))
+           (if (not l) (bad-syntax) (void))
+           (if ((length l) . < . 3) (bad-syntax) (void))
+           (define-values (bindings) (syntax->list (cadr l)))
+           (if (not bindings) (raise-syntax-error #f "bad syntax" stx (cadr l)) (void))
+           (for-each (lambda (binding)
+                       (define-values (l) (syntax->list binding))
+                       (if (if (not l)
+                               #t
+                               (not (= 2 (length l))))
+                           (raise-syntax-error #f "bad syntax" stx binding)
+                           (void))
+                       (define-values (vars) (syntax->list (car l)))
+                       (if (not vars) (raise-syntax-error #f "bad syntax" stx (car l)) (void))
+                       (for-each (lambda (var)
+                                   (if (not (symbol? (syntax-e var)))
+                                       (raise-syntax-error 
+                                        #f 
+                                        "bad syntax (not an identifier)" 
+                                        stx
+                                        var)
+                                       (void)))
+                                 vars)
+                       (check-for-duplicates vars values stx))
+                     bindings)
+           (define-values (gen)
+             (lambda (bindings nested?)
+               (if (null? bindings)
+                   (if nested?
+                       (cddr l)
+                       (list* (quote-syntax let-values) '() (cddr l)))
+                   ((if nested? list values)
+                    (list* (quote-syntax let-values) (list (car bindings)) (gen (cdr bindings) #t))))))
+           (datum->syntax #f (gen bindings #f) stx stx))
+         (lambda (stx) (go stx #t #f (quote-syntax let-values)))
+         (lambda (stx) (go stx #f #t (quote-syntax let*-values)))
+         (lambda (stx) (go stx #f #f (quote-syntax letrec-values)))))))
 
   ; --------------------------------------------------
   ;
