@@ -4601,17 +4601,18 @@ static Scheme_Object *foreign_ffi_callback_maker(int argc, Scheme_Object *argv[]
 #define MYNAME "ffi-maybe-call-and-callback-core"
 static Scheme_Object *foreign_ffi_maybe_call_and_callback_core(int argc, Scheme_Object *argv[])
 {
-  Scheme_Object *v[7];
+  Scheme_Object *v[8];
 
   v[0] = scheme_false;
-  v[1] = scheme_build_list_offset(argc, argv, 6);
-  v[2] = argv[5];
+  v[1] = scheme_build_list_offset(argc, argv, 7);
+  v[2] = argv[6];
   v[3] = argv[1];
   v[4] = argv[2];
   v[5] = argv[3];
   v[6] = argv[4];
+  v[7] = argv[5];
 
-  return scheme_values(7, v);
+  return scheme_values(8, v);
 }
 #undef MYNAME
 
@@ -5271,7 +5272,7 @@ void scheme_init_foreign(Scheme_Startup_Env *env)
   scheme_addto_prim_instance("ffi-callback-maker",
     scheme_make_noncm_prim(foreign_ffi_callback_maker, "ffi-callback-maker", 2, 7), env);
   scheme_addto_prim_instance("ffi-maybe-call-and-callback-core",
-    scheme_make_noncm_prim(foreign_ffi_maybe_call_and_callback_core, "ffi-maybe-call-and-callback-core", 6, -1), env);
+    scheme_make_noncm_prim(foreign_ffi_maybe_call_and_callback_core, "ffi-maybe-call-and-callback-core", 7, -1), env);
   scheme_addto_prim_instance("assert-ctype-representation",
     scheme_make_immed_prim(foreign_assert_ctype_representation, "assert-ctype-representation", 2, 2), env);
   scheme_addto_prim_instance("saved-errno",
@@ -5642,7 +5643,7 @@ void scheme_init_foreign(Scheme_Env *env)
   scheme_addto_primitive_instance("ffi-callback-maker",
    scheme_make_noncm_prim((Scheme_Prim *)unimplemented, "ffi-callback-maker", 2, 7), env);
   scheme_addto_primitive_instance("ffi-maybe-call-and-callback-core",
-   scheme_make_noncm_prim((Scheme_Prim *)unimplemented, "ffi-maybe-call-and-callback-core", 6, -1), env);
+   scheme_make_noncm_prim((Scheme_Prim *)unimplemented, "ffi-maybe-call-and-callback-core", 7, -1), env);
   scheme_addto_primitive_instance("assert-ctype-representation",
    scheme_make_immed_prim((Scheme_Prim *)unimplemented, "assert-ctype-representation", 2, 2), env);
   scheme_addto_primitive_instance("saved-errno",
