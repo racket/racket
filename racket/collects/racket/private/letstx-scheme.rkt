@@ -29,10 +29,12 @@
     (lambda (stx)
       (syntax-case stx ()
 	[(_ ([(id ...) expr] ...) body1 body ...)
-	 (with-syntax ([((tmp ...) ...) 
-			(map
-			 generate-temporaries 
-                         (syntax->list (syntax ((id ...) ...))))])
+	 (with-syntax ([((tmp ...) ...)
+                        (map (lambda (idl)
+                               (map (lambda (id)
+                                      ((make-syntax-introducer) (datum->syntax #f (syntax-e id) id id)))
+                                    (syntax->list idl)))
+                             (syntax->list (syntax ((id ...) ...))))])
            (with-syntax ([let-syntaxes-body/loc
                           (syntax/loc stx
                             (letrec-syntaxes+values ([(id ...)
