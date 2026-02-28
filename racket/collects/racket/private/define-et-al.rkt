@@ -127,22 +127,21 @@
 
   (define-values (call/ec) call-with-escape-continuation)
 
-  (-define-syntax let/ec 
-    (lambda (code)
-      (let ([l (syntax->list code)])
-	(if (and l
-		 (> (length l) 2)
-		 (identifier? (cadr l)))
-	    (let ([var (cadr l)]
-		  [exprs (stx-cdr (stx-cdr code))])
-	      (datum->syntax
-	       (quote-syntax here)
-	       `(call/ec (lambda (,var) ,@(stx->list exprs)))
-	       code))
-	    (raise-syntax-error
-	     #f
-	     "bad syntax"
-	     code)))))
+  (define-syntaxes (let/ec)
+    (lambda (stx)
+      (define-values (lst) (syntax->list stx))
+      (raise-syntax-error-unless (pair? lst) "bad syntax (illegal use of `.')" stx)
+      (define-values (len) (length lst))
+      (raise-syntax-error-if (= len 1) "bad syntax (missing identifier and body)" stx)
+      (raise-syntax-error-if (= len 2) "bad syntax (missing body)" stx)
+      (datum->syntax (quote-syntax here)
+                     (list (quote-syntax call-with-escape-continuation)
+                           (datum->syntax #f
+                                          (list* (quote-syntax lambda)
+                                                 (list (cadr lst))
+                                                 (stx-cdr (stx-cdr stx)))
+                                          stx))
+                     stx)))
 
   ;
   ; --------------------------------------------------
