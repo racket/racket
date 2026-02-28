@@ -173,6 +173,10 @@
                             (with-handlers ([exn:fail? (lambda (exn)
                                                          (exn-message exn))])
                               (apply (car p) bad-args)))
+                      (test #t regexp-match? rx
+                            (with-handlers ([exn:fail? (lambda (exn)
+                                                         (exn-message exn))])
+                              (apply (procedure-rename (car p) 'other) bad-args)))
                       (unless (= a 1)
                         (test #t regexp-match? rx
                               (with-handlers ([exn:fail? (lambda (exn)

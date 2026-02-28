@@ -3384,6 +3384,7 @@ static Scheme_Object *procedure_reduce_arity_mask(int argc, Scheme_Object *argv[
 static Scheme_Object *procedure_rename(int argc, Scheme_Object *argv[])
 {
   Scheme_Object *p, *mask, *realm;
+  int is_method;
 
   if (!SCHEME_PROCP(argv[0]))
     scheme_wrong_contract("procedure-rename", "procedure?", 0, argc, argv);
@@ -3400,8 +3401,9 @@ static Scheme_Object *procedure_rename(int argc, Scheme_Object *argv[])
   if (p) return p;
 
   mask = get_or_check_arity(argv[0], -4, NULL, 1);
+  is_method = proc_is_method(argv[0]);
 
-  return make_reduced_proc(argv[0], mask, argv[1], realm, NULL);
+  return make_reduced_proc(argv[0], mask, argv[1], realm, is_method ? scheme_true : scheme_false);
 }
 
 static Scheme_Object *procedure_to_method(int argc, Scheme_Object *argv[])
