@@ -206,6 +206,33 @@
           (set! counter (add1 counter))
           (string->uninterned-symbol (format "~a~a" prefix counter))))))
 
+  ; (raise-syntax-error-if condition msg stx [part-stx])
+  ;   condition : boolean?
+  ;   msg       : string?   (suitable for 2nd argument of `raise-syntax-error`)
+  ;   stx       : syntax?   (suitable for 3rd argument of `raise-syntax-error`)
+  ;   part-stx  : (or/c syntax? #f) = #f  (suitable for 4th argument of `raise-syntax-error`)
+  ;  -> (if/c condition none/c void?)
+  (define-values (raise-syntax-error-if)
+    (case-lambda
+      [(condition msg stx part-stx)
+       (if condition (raise-syntax-error #f msg stx part-stx) (void))]
+      [(condition msg stx)
+       (if condition (raise-syntax-error #f msg stx #f) (void))]))
+
+  ; (raise-syntax-error-if condition msg stx [part-stx])
+  ;   condition : boolean?
+  ;   msg       : string?   (suitable for 2nd argument of `raise-syntax-error`)
+  ;   stx       : syntax?   (suitable for 3rd argument of `raise-syntax-error`)
+  ;   part-stx  : (or/c syntax? #f) = #f  (suitable for 4th argument of `raise-syntax-error`)
+  ;  -> (if/c condition void? none/c)
+  (define-values (raise-syntax-error-unless)
+    (case-lambda
+      [(condition msg stx part-stx)
+       (if condition (void) (raise-syntax-error #f msg stx part-stx))]
+      [(condition msg stx)
+       (if condition (void) (raise-syntax-error #f msg stx #f))]))
+
+
   (#%provide identifier? stx-null? stx-null/#f stx-pair? stx-list?
              stx-car stx-cdr stx->list
              stx-vector? stx-vector-ref
@@ -214,4 +241,6 @@
              stx-check/esc cons/#f append/#f
              stx-rotate stx-rotate*
              split-stx-list
-             make-stx-id-counter))
+             make-stx-id-counter
+             raise-syntax-error-if
+             raise-syntax-error-unless))
