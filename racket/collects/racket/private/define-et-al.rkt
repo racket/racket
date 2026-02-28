@@ -3,8 +3,7 @@
 ;; -define, when, unless, let/ec, define-struct
 
 (module define-et-al '#%kernel
-  (#%require (for-syntax '#%kernel "stx.rkt" "qq-and-or.rkt" 
-                         "cond.rkt"))
+  (#%require (for-syntax '#%kernel "stx.rkt"))
 
   (#%provide -define -define-syntax
              define define-syntax define-for-syntax define-values-for-syntax
@@ -31,7 +30,7 @@
   ;
   ; non-keyword define* forms
   ;
-  
+
   (define-syntaxes (define-values-for-syntax)
     (lambda (stx)
       (define-values (lst) (syntax->list stx))
