@@ -76,67 +76,35 @@
   ; when and unless
   ;
 
-  (-define-syntax when
-    (lambda (x)
-      (let ([l (syntax->list x)])
-        (cond
-          [(or (not l) (null? l))
-           (raise-syntax-error
-            #f
-            "bad syntax"
-            x)]
-          [(null? (cdr l))
-           (raise-syntax-error
-            #f
-            "missing test expression and body"
-            x)]
-          [(null? (cddr l))
-           (raise-syntax-error
-            #f
-            "missing body"
-            x)]
-          [else
-           (datum->syntax
-            (quote-syntax here)
-            (list (quote-syntax if)
-                  (stx-car (stx-cdr x))
-                  (list*
-                   (quote-syntax let-values)
-                   (quote-syntax ())
-                   (stx-cdr (stx-cdr x)))
-                  (quote-syntax (void)))
-            x)]))))
+  (define-syntaxes (when)
+    (lambda (stx)
+      (define-values (lst) (syntax->list stx))
+      (raise-syntax-error-unless (pair? lst) "bad syntax (illegal use of `.')" stx)
+      (raise-syntax-error-if (null? (cdr lst)) "bad syntax (missing test expression and body)" stx)
+      (raise-syntax-error-if (null? (cddr lst)) "bad syntax (missing body)" stx)
+      (datum->syntax (quote-syntax here)
+                     (list (quote-syntax if)
+                           (cadr lst)
+                           (list* (quote-syntax let-values)
+                                  (quote-syntax ())
+                                  (cddr lst))
+                           (quote-syntax (void)))
+                     stx)))
 
-  (-define-syntax unless
-    (lambda (x)
-      (let ([l (syntax->list x)])
-        (cond
-          [(or (not l) (null? l))
-           (raise-syntax-error
-            #f
-            "bad syntax"
-            x)]
-          [(null? (cdr l))
-           (raise-syntax-error
-            #f
-            "missing test expression and body"
-            x)]
-          [(null? (cddr l))
-           (raise-syntax-error
-            #f
-            "missing body"
-            x)]
-          [else
-           (datum->syntax
-            (quote-syntax here)
-            (list (quote-syntax if)
-                  (cadr l)
-                  (quote-syntax (void))
-                  (list*
-                   (quote-syntax let-values)
-                   (quote-syntax ())
-                   (cddr l)))
-            x)]))))
+  (define-syntaxes (unless)
+    (lambda (stx)
+      (define-values (lst) (syntax->list stx))
+      (raise-syntax-error-unless (pair? lst) "bad syntax (illegal use of `.')" stx)
+      (raise-syntax-error-if (null? (cdr lst)) "bad syntax (missing test expression and body)" stx)
+      (raise-syntax-error-if (null? (cddr lst)) "bad syntax (missing body)" stx)
+      (datum->syntax (quote-syntax here)
+                     (list (quote-syntax if)
+                           (cadr lst)
+                           (quote-syntax (void))
+                           (list* (quote-syntax let-values)
+                                  (quote-syntax ())
+                                  (cddr lst)))
+                     stx)))
 
   ; --------------------------------------------------
   ;
