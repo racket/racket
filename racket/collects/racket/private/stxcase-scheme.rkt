@@ -11,19 +11,7 @@
   (-define (check-duplicate-identifier names)
     (unless (and (list? names) (andmap identifier? names))
       (raise-argument-error 'check-duplicate-identifier "(listof identifier?)" names))
-    (let/ec escape
-      (let ([ht (make-hasheq)])
-	(for-each
-	 (lambda (defined-name)
-	   (unless (identifier? defined-name)
-	     (raise-argument-error 'check-duplicate-identifier
-                                   "(listof identifier?)" names))
-	   (let ([l (hash-ref ht (syntax-e defined-name) null)])
-	     (when (ormap (lambda (i) (bound-identifier=? i defined-name)) l)
-	       (escape defined-name))
-	     (hash-set! ht (syntax-e defined-name) (cons defined-name l))))
-	 names)
-	#f)))
+    (stx-first-duplicate-id names))
 
   (begin-for-syntax
    (define-values (check-sr-rules)

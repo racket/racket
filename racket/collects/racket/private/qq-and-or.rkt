@@ -10,42 +10,8 @@
                  [(letrec-values-stx) (quote-syntax letrec-values)]
                  [(check-for-duplicates)
                   (lambda (new-bindings sel stx)
-                    (define-values (id-in-list?)
-                      (lambda (id l)
-                        (if (null? l)
-                            #f
-                            (if (bound-identifier=? id (car l)) 
-                                #t
-                                (id-in-list? id (cdr l))))))
-                    (if ((length new-bindings) . > . 5)
-                        (let-values ([(ht) (make-hasheq)])
-                          (letrec-values ([(check) (lambda (l)
-                                                     (if (null? l)
-                                                         (void)
-                                                         (let-values ([(id) (sel (car l))])
-                                                           (let-values ([(idl) (hash-ref ht (syntax-e id) null)])
-                                                             (if (id-in-list? id idl)
-                                                                 (raise-syntax-error
-                                                                  #f
-                                                                  "duplicate identifier"
-                                                                  stx
-                                                                  id)
-                                                                 (begin
-                                                                   (hash-set! ht (syntax-e id) (cons id idl))
-                                                                   (check (cdr l))))))))])
-                                         (check new-bindings)))
-                        (letrec-values ([(check) (lambda (l accum)
-                                                   (if (null? l)
-                                                       (void)
-                                                       (let-values ([(id) (sel (car l))])
-                                                         (if (id-in-list? id accum)
-                                                             (raise-syntax-error
-                                                              #f
-                                                              "duplicate identifier"
-                                                              stx
-                                                              id)
-                                                             (check (cdr l) (cons id accum))))))])
-                                       (check new-bindings null))))])
+                    (define-values (dup) (stx-first-duplicate-id (map sel new-bindings)))
+                    (raise-syntax-error-if dup "duplicate identifier" stx dup))])
       (let-values ([(go)
                     (lambda (stx named? star? target)
                       (define-values (stx-cadr) (lambda (x) (stx-car (stx-cdr x))))
