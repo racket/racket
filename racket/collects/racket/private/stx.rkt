@@ -252,7 +252,7 @@
   ; identifier in `id-list`. This is identical to `check-duplicate-identifier`
   ; from racket/base, but does not do explicit argument type checks. This
   ; implementation is based on a previous implementation which lived in a file
-  ; `qq-and-or.rkt` and was used for let handling. The choice of length 5 to
+  ; `core-syntax.rkt` and was used for let handling. The choice of length 5 to
   ; decide between the hash-based and quadratic implementations has not been
   ; benchmarked recently and perhaps should be.
   (define-values (stx-first-duplicate-id)

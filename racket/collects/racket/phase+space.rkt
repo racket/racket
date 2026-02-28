@@ -1,5 +1,5 @@
 (module phase+space '#%kernel
-  (#%require "private/qq-and-or.rkt")
+  (#%require "private/core-syntax.rkt")
   
   (#%provide phase?
              space?

@@ -1,9 +1,39 @@
+(module core-syntax '#%kernel
 
-;;----------------------------------------------------------------------
-;; quasiquote, and, or
+  ; ======================================================================
+  ; Many of the base syntactic forms of Racket-- things like `and`, `let`,
+  ; and `cond`. These are written together in a single module for startup
+  ; time reasons, and this module forms a nice base for defining the rest
+  ; of `#lang racket/base`.
+  ; ======================================================================
+  ;
 
-(module qq-and-or '#%kernel
   (#%require (for-syntax "stx.rkt" '#%kernel))
+
+  (#%provide let*-values
+             let let* letrec
+             quasiquote
+             and or)
+
+  ; --------------------------------------------------
+  ;
+  ;
+  ;   ;;;                                ;;;;
+  ;     ;               ;               ;
+  ;     ;               ;               ;
+  ;     ;       ;;;     ;               ;       ;;     ; ;;; ; ;; ;;   ;;;;
+  ;     ;      ;   ;  ;;;;;;          ;;;;;;   ;  ;    ;;  ; ;; ;; ;  ;    ;
+  ;     ;     ;    ;    ;               ;     ;    ;   ;   ; ;  ;  ;  ;
+  ;     ;     ;;;;;;    ;               ;     ;    ;   ;     ;  ;  ;   ;;
+  ;     ;     ;         ;               ;     ;    ;   ;     ;  ;  ;     ;;
+  ;     ;     ;         ;               ;     ;    ;   ;     ;  ;  ;       ;
+  ;     ;      ;        ;               ;      ;  ;    ;     ;  ;  ;  ;    ;
+  ;     ;;;     ;;;;     ;;;            ;       ;;     ;     ;  ;  ;   ;;;;
+  ;
+  ;
+  ; let, let*, letrec, let-values, let-syntax, ...
+  ;
+
   
   (define-syntaxes (let*-values let let* letrec)
     (let-values ([(lambda-stx) (quote-syntax lambda-stx)]
@@ -159,6 +189,25 @@
          (lambda (stx) (go stx #t #f (quote-syntax let-values)))
          (lambda (stx) (go stx #f #t (quote-syntax let*-values)))
          (lambda (stx) (go stx #f #f (quote-syntax letrec-values)))))))
+
+  ; --------------------------------------------------
+  ;
+  ;
+  ;     ;;;;    ;;;;
+  ;    ;   ;   ;   ;
+  ;   ;    ;  ;    ;
+  ;   ;    ;  ;    ;
+  ;   ;    ;  ;    ;
+  ;   ;    ;  ;    ;
+  ;   ;   ;;  ;   ;;
+  ;    ;;; ;   ;;; ;
+  ;        ;       ;
+  ;        ;       ;
+  ;        ;       ;
+  ;
+  ;
+  ; quasiquote
+  ;
 
   (define-values (qq-append)
     (lambda (a b)
@@ -405,6 +454,25 @@
 	    form)
 	   in-form)))))
 
+  ; --------------------------------------------------
+  ;
+  ;
+  ;                        ;       ;
+  ;                        ;       ;
+  ;                        ;      ;
+  ;     ;;;;  ; ;;;     ;;;;      ;     ;;     ; ;;;
+  ;    ;   ;  ;;   ;   ;   ;     ;     ;  ;    ;;  ;
+  ;   ;    ;  ;    ;  ;    ;    ;     ;    ;   ;   ;
+  ;   ;    ;  ;    ;  ;    ;    ;     ;    ;   ;
+  ;   ;    ;  ;    ;  ;    ;   ;      ;    ;   ;
+  ;   ;    ;  ;    ;  ;    ;   ;      ;    ;   ;
+  ;   ;   ;;  ;    ;  ;   ;;  ;        ;  ;    ;
+  ;    ;;; ;  ;    ;   ;;; ;  ;         ;;     ;
+  ;
+  ;
+  ; `and` and `or`
+  ;
+
   (define-syntaxes (and)
     (let-values ([(here) (quote-syntax here)])
       (lambda (x)
@@ -467,6 +535,6 @@
 		       "bad syntax"
 		       x))))))))
 
-  (#%provide let*-values
-             let let* letrec
-             quasiquote and or))
+  ;
+  ; --------------------------------------------------
+  )
