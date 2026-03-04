@@ -6,7 +6,7 @@
              (for-syntax '#%kernel 
                          "stxparam-exptime.rkt"
                          "private/stxcase-scheme.rkt" 
-                         "private/qq-and-or.rkt" 
+                         "private/core-syntax.rkt"
                          "private/stxloc.rkt"
                          "private/stxparamkey.rkt"))
 

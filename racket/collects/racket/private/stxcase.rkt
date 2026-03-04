@@ -2,9 +2,9 @@
 ;; syntax-case and syntax
 
 (module stxcase '#%kernel
-  (#%require "stx.rkt" "define-et-al.rkt" "qq-and-or.rkt" "cond.rkt" '#%paramz '#%unsafe
+  (#%require "stx.rkt" "define-et-al.rkt" "core-syntax.rkt" "cond.rkt" '#%paramz '#%unsafe
              "ellipses.rkt"
-             (for-syntax "stx.rkt" "define-et-al.rkt" "qq-and-or.rkt" "cond.rkt"
+             (for-syntax "stx.rkt" "define-et-al.rkt" "core-syntax.rkt" "cond.rkt"
                           "stx.rkt" "sc.rkt" '#%kernel))
 
   (-define interp-match

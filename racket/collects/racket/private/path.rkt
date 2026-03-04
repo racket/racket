@@ -1,5 +1,5 @@
 (module path '#%kernel
-  (#%require "qq-and-or.rkt" "cond.rkt" "define-et-al.rkt")
+  (#%require "core-syntax.rkt" "cond.rkt" "define-et-al.rkt")
 
   (#%provide path-string?
              normal-case-path

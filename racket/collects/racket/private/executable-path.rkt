@@ -1,5 +1,5 @@
 (module path-list '#%kernel
-  (#%require "qq-and-or.rkt"
+  (#%require "core-syntax.rkt"
              "cond.rkt"
              "define-et-al.rkt"
              "path.rkt"
