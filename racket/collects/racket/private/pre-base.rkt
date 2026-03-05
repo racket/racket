@@ -3,7 +3,7 @@
 (module pre-base '#%kernel
   (#%require (for-syntax '#%kernel
                          "stx.rkt"
-                         "qq-and-or.rkt"))
+                         "core-syntax.rkt"))
   (#%require "more-scheme.rkt"
              "misc.rkt"
              (all-except "define.rkt" define define-syntax define-for-syntax)
