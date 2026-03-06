@@ -46,7 +46,7 @@ left-to-right, and each must produce a sequence value (see
 
 The @racket[for] form iterates by drawing an element from each
 sequence; if any sequence is empty, then the iteration stops
-(but see @racket[#:on-length-mistmatch] below), and
+(but see @racket[#:on-length-mismatch] below), and
 @|void-const| is the result of the @racket[for] expression. Otherwise,
 a location is created for each @racket[id] to hold the values of each
 element; the sequence produced by a @racket[seq-expr] must return as
