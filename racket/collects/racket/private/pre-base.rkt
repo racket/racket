@@ -3,7 +3,7 @@
 (module pre-base '#%kernel
   (#%require (for-syntax '#%kernel
                          "stx.rkt"
-                         "qq-and-or.rkt"))
+                         "core-syntax.rkt"))
   (#%require "more-scheme.rkt"
              "misc.rkt"
              (all-except "define.rkt" define define-syntax define-for-syntax)
@@ -206,7 +206,9 @@
   (#%provide (all-from-except "more-scheme.rkt" old-case fluid-let)
              (all-from-except "misc.rkt" collection-path collection-file-path)
              (all-from "define.rkt")
-             (all-from-except "letstx-scheme.rkt" -define -define-syntax old-cond)
+             (all-from-except "letstx-scheme.rkt"
+                              -define -define-syntax
+                              define define-syntax define-for-syntax)
              (rename new-lambda lambda)
              (rename new-λ λ)
              (rename new-define define)
