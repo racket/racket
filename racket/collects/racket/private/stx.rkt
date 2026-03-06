@@ -206,6 +206,39 @@
           (set! counter (add1 counter))
           (string->uninterned-symbol (format "~a~a" prefix counter))))))
 
+  ; (raise-syntax-error-if condition msg expr [sub-expr] [extra-sources])
+  ;   condition     : any/c                     (used for true/false)
+  ;   message       : string?                   (suitable for 2nd argument of `raise-syntax-error`)
+  ;   expr          : syntax?                   (suitable for 3rd argument of `raise-syntax-error`)
+  ;   sub-expr      : syntax? = #f              (suitable for 4th argument of `raise-syntax-error`)
+  ;   extra-sources : (listof syntax?) = null   (suitable for 5th argument of `raise-syntax-error`)
+  ;  -> (if/c condition none/c void?)
+  (define-values (raise-syntax-error-if)
+    (case-lambda
+      [(condition message expr sub-expr extra-sources)
+       (if condition (raise-syntax-error #f message expr sub-expr extra-sources) (void))]
+      [(condition message expr sub-expr)
+       (if condition (raise-syntax-error #f message expr sub-expr) (void))]
+      [(condition message expr)
+       (if condition (raise-syntax-error #f message expr) (void))]))
+
+  ; (raise-syntax-error-unless condition msg expr [sub-expr] [extra-sources])
+  ;   condition     : any/c                     (used for true/false)
+  ;   message       : string?                   (suitable for 2nd argument of `raise-syntax-error`)
+  ;   expr          : syntax?                   (suitable for 3rd argument of `raise-syntax-error`)
+  ;   sub-expr      : syntax? = #f              (suitable for 4th argument of `raise-syntax-error`)
+  ;   extra-sources : (listof syntax?) = null   (suitable for 5th argument of `raise-syntax-error`)
+  ;  -> (if/c condition none/c void?)
+  (define-values (raise-syntax-error-unless)
+    (case-lambda
+      [(condition message expr sub-expr extra-sources)
+       (if condition (void) (raise-syntax-error #f message expr sub-expr extra-sources))]
+      [(condition message expr sub-expr)
+       (if condition (void) (raise-syntax-error #f message expr sub-expr))]
+      [(condition message expr)
+       (if condition (void) (raise-syntax-error #f message expr))]))
+
+
   (#%provide identifier? stx-null? stx-null/#f stx-pair? stx-list?
              stx-car stx-cdr stx->list
              stx-vector? stx-vector-ref
@@ -214,4 +247,6 @@
              stx-check/esc cons/#f append/#f
              stx-rotate stx-rotate*
              split-stx-list
-             make-stx-id-counter))
+             make-stx-id-counter
+             raise-syntax-error-if
+             raise-syntax-error-unless))
