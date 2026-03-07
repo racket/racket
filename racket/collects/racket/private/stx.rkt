@@ -238,6 +238,53 @@
       [(condition message expr)
        (if condition (void) (raise-syntax-error #f message expr))]))
 
+  ; (stx-bound-id-member? id id-list)
+  ;   id      : identifier?
+  ;   id-list : (listof identifier?)
+  ;  -> (or/c identifier? #f)
+  ; Returns the first id in `id-list` which is `bound-identifier=?` to `id`
+  (define-values (stx-bound-id-member?)
+    (lambda (id l)
+      (if (null? l)
+          #f
+          (if (bound-identifier=? id (car l))
+              (car l)
+              (stx-bound-id-member? id (cdr l))))))
+
+  ; (stx-find-duplicate-identifiers id-list)
+  ;   id-list : (listof identifier?)
+  ;  ->  (values identifier? (list/c identifier?))
+  ;   or (values #f null)
+  ; Searches id-list for two identifiers which are `bound-identifier=?`. If
+  ; two such identifiers are found, let `fst` and `snd` be the first two
+  ; identifiers in the order they appear in the list; then, `stx-find-duplicate-identifiers`
+  ; returns `(values snd (list fst))`. Else it returns `(values #f null)`. This
+  ; return convention is odd, but enables code such as
+  ;
+  ;   (let-values ([(dup-id origs) (stx-find-duplicate-identifiers ids)])
+  ;     (when dup-id
+  ;       (raise-syntax-error #f "duplicate identifier" stx dup-id origs)))
+  ;
+  ; The choice to use a hash-based for all sizes was based on benchmarks done
+  ; in 2026; see PR TODO
+  (define-values (stx-find-duplicate-identifiers)
+    (lambda (lst)
+      (if (if (null? lst) #t (null? (cdr lst)))
+          (values #f null) ; optimization: size 0 or 1 can have no duplicates
+          (let-values ([(ht) (make-hasheq)])
+            (define-values (loop)
+              (lambda (lst)
+                (if (null? lst)
+                    (values #f null)
+                    (let-values ([(id) (car lst)])
+                      (let-values ([(potentials) (hash-ref ht (syntax-e id) null)])
+                        (let-values ([(alt) (stx-bound-id-member? id potentials)])
+                          (if alt
+                              (values id (list alt))
+                              (begin
+                                (hash-set! ht (syntax-e id) (cons id potentials))
+                                (loop (cdr lst))))))))))
+            (loop lst)))))
 
   (#%provide identifier? stx-null? stx-null/#f stx-pair? stx-list?
              stx-car stx-cdr stx->list
@@ -249,4 +296,5 @@
              split-stx-list
              make-stx-id-counter
              raise-syntax-error-if
-             raise-syntax-error-unless))
+             raise-syntax-error-unless
+             stx-find-duplicate-identifiers))
