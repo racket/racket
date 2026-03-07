@@ -120,13 +120,7 @@
                                                       stx
                                                       a)))
                                                  all-args)
-                                       (let ([dup (check-duplicate-identifier all-args)])
-                                         (when dup
-                                           (raise-syntax-error
-                                            #f
-                                            "duplicate argument identifier"
-                                            stx
-                                            dup)))
+                                       (raise-if-duplicate-identifiers "duplicate argument identifier" stx all-args)
                                        mk-rhs)))]
 				[general-proto
 				 ;; proto is guaranteed to be a stx-pair

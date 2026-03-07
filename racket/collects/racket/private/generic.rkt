@@ -16,6 +16,7 @@
 (require (for-syntax racket/base
                      racket/local
                      racket/syntax
+                     racket/private/stx
                      syntax/stx
                      (only-in syntax/private/boundmap
                               [make-module-identifier-mapping make-free-identifier-mapping]
@@ -260,8 +261,11 @@
   (define (method-formals/application name-stx proc-stx self-id sig-stx)
 
     (define (check-method-signature!)
-      (define dup (check-duplicate-identifier ids))
-      (when dup (wrong-syntax dup "duplicate method argument"))
+      (let-values ([(dup origs) (stx-find-duplicate-identifiers ids)])
+        (when dup
+          (raise-syntax-error #f "duplicate method argument"
+                              (current-syntax-context)
+                              dup origs)))
       (for ([id (in-list non-req)]
             #:when (free-identifier=? id self-id))
         (wrong-syntax id
