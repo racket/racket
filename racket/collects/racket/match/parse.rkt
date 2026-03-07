@@ -4,6 +4,7 @@
          racket/syntax
          racket/list
          racket/stxparam-exptime
+         racket/private/stx
          "patterns.rkt"
          "parse-helper.rkt"
          "parse-quasi.rkt"
@@ -425,9 +426,9 @@
   ;; So, duplicate identifiers in the appended list must be
   ;; duplicates across multiple.
   (define vars (apply append (map bound-vars pats)))
-  (define dup (check-duplicate-identifier vars))
+  (define-values (dup origs) (stx-find-duplicate-identifiers vars))
   (when dup
-    (raise-syntax-error 'list-no-order "unexpected duplicate identifier" dup)))
+    (raise-syntax-error 'list-no-order "unexpected duplicate identifier" dup origs)))
 
 ;; --------------------------------------------------------------
 
