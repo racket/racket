@@ -1,7 +1,7 @@
 
 (load-relative "loadtest.rktl")
 
-(require racket/syntax-srcloc)
+(require racket/syntax-srcloc racket/private/stx)
 
 (Section 'stx)
 
@@ -2919,6 +2919,17 @@
   (check '((require (for-label racket/base))) #f 0)
   (check '() 1 1)
   (check '() #f  #f))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; test some helper functions
+
+(test #f check-duplicate-identifier empty)
+(test #f check-duplicate-identifier (list #'a #'b))
+(test/compare bound-identifier=? #'a check-duplicate-identifier (list #'a #'a))
+(test/compare bound-identifier=? #'a check-duplicate-identifier (list #'a #'b #'a))
+(test/compare bound-identifier=? #'a check-duplicate-identifier (list #'b #'a #'a))
+(test #f check-duplicate-identifier (list #'a ((make-syntax-introducer) #'a)))
+
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
