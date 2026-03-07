@@ -286,6 +286,16 @@
                                 (loop (cdr lst))))))))))
             (loop lst)))))
 
+  ; (raise-if-duplicate-identifiers msg context-stx id-list)
+  ;   message       : string?                   (suitable for 2nd argument of `raise-syntax-error`)
+  ;   context-stx   : syntax?                   (suitable for 3rd argument of `raise-syntax-error`)
+  ;   id-list       : (listof identifier?)
+  ;  -> (or/c void? none/c)
+  (define-values (raise-if-duplicate-identifiers)
+    (lambda (msg context-stx id-list)
+      (let-values ([(dup-id orig-id-in-list) (stx-find-duplicate-identifiers id-list)])
+        (raise-syntax-error-if dup-id msg context-stx dup-id orig-id-in-list))))
+
   (#%provide identifier? stx-null? stx-null/#f stx-pair? stx-list?
              stx-car stx-cdr stx->list
              stx-vector? stx-vector-ref
@@ -297,4 +307,5 @@
              make-stx-id-counter
              raise-syntax-error-if
              raise-syntax-error-unless
-             stx-find-duplicate-identifiers))
+             stx-find-duplicate-identifiers
+             raise-if-duplicate-identifiers))
