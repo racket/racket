@@ -206,6 +206,81 @@
           (set! counter (add1 counter))
           (string->uninterned-symbol (format "~a~a" prefix counter))))))
 
+  ; (raise-syntax-error-if condition msg stx [part-stx])
+  ;   condition : boolean?
+  ;   msg       : string?   (suitable for 2nd argument of `raise-syntax-error`)
+  ;   stx       : syntax?   (suitable for 3rd argument of `raise-syntax-error`)
+  ;   part-stx  : (or/c syntax? #f) = #f  (suitable for 4th argument of `raise-syntax-error`)
+  ;  -> (if/c condition none/c void?)
+  (define-values (raise-syntax-error-if)
+    (case-lambda
+      [(condition msg stx part-stx)
+       (if condition (raise-syntax-error #f msg stx part-stx) (void))]
+      [(condition msg stx)
+       (if condition (raise-syntax-error #f msg stx #f) (void))]))
+
+  ; (raise-syntax-error-if condition msg stx [part-stx])
+  ;   condition : boolean?
+  ;   msg       : string?   (suitable for 2nd argument of `raise-syntax-error`)
+  ;   stx       : syntax?   (suitable for 3rd argument of `raise-syntax-error`)
+  ;   part-stx  : (or/c syntax? #f) = #f  (suitable for 4th argument of `raise-syntax-error`)
+  ;  -> (if/c condition void? none/c)
+  (define-values (raise-syntax-error-unless)
+    (case-lambda
+      [(condition msg stx part-stx)
+       (if condition (void) (raise-syntax-error #f msg stx part-stx))]
+      [(condition msg stx)
+       (if condition (void) (raise-syntax-error #f msg stx #f))]))
+
+  ; (stx-bound-id-member? id id-list)
+  ;   id      : identifier?
+  ;   id-list : (listof identifier?)
+  ;  -> (or/c identifier? #f)
+  ; Returns the first id in `id-list` which is `bound-identifier=?` to `id`
+  (define-values (stx-bound-id-member?)
+    (lambda (id l)
+      (if (null? l)
+          #f
+          (if (bound-identifier=? id (car l))
+              (car l)
+              (stx-bound-id-member? id (cdr l))))))
+
+  ; (stx-first-duplicate-id id-list)
+  ;   id-list : (listof identifier?)
+  ;  -> (or/c identifier? #f)
+  ; Returns the first id in `id-list` which is bound-identifier=? a preceding
+  ; identifier in `id-list`. This is identical to `check-duplicate-identifier`
+  ; from racket/base, but does not do explicit argument type checks. This
+  ; implementation is based on a previous implementation which lived in a file
+  ; `core-syntax.rkt` and was used for let handling. The choice of length 5 to
+  ; decide between the hash-based and quadratic implementations has not been
+  ; benchmarked recently and perhaps should be.
+  (define-values (stx-first-duplicate-id)
+    (lambda (lst)
+      (if ((length lst) . > . 5)
+          (let-values ([(ht) (make-hasheq)])
+            (letrec-values ([(check) (lambda (lst)
+                                       (if (null? lst)
+                                           #f
+                                           (let-values ([(id) (car lst)])
+                                             (let-values ([(alts) (hash-ref ht (syntax-e id) null)])
+                                               (let-values ([(alt) (stx-bound-id-member? id alts)])
+                                               (if (stx-bound-id-member? id alts)
+                                                   alt
+                                                   (begin
+                                                     (hash-set! ht (syntax-e id) (cons id alts))
+                                                     (check (cdr lst)))))))))])
+              (check lst)))
+          (letrec-values ([(check) (lambda (lst)
+                                     (if (null? lst)
+                                         #f
+                                         (let-values ([(alt) (stx-bound-id-member? (car lst) (cdr lst))])
+                                           (if alt
+                                               alt
+                                               (check (cdr lst))))))])
+            (check lst)))))
+
+
   (#%provide identifier? stx-null? stx-null/#f stx-pair? stx-list?
              stx-car stx-cdr stx->list
              stx-vector? stx-vector-ref
@@ -214,4 +289,8 @@
              stx-check/esc cons/#f append/#f
              stx-rotate stx-rotate*
              split-stx-list
-             make-stx-id-counter))
+             make-stx-id-counter
+             raise-syntax-error-if
+             raise-syntax-error-unless
+             stx-bound-id-member?
+             stx-first-duplicate-id))

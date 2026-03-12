@@ -3,7 +3,6 @@
 (define kw2846 (string->keyword "direct"))
 (define kw2615 (string->keyword "anonymous"))
 (define hash2589 (hasheqv))
-(define call/ec call-with-escape-continuation)
 (define qq-append
   (lambda (a_0 b_0)
     (if (list? a_0)

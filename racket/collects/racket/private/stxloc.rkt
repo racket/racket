@@ -3,7 +3,7 @@
 ;; syntax/loc
 
 (module stxloc '#%kernel
-  (#%require "stxcase.rkt" "define-et-al.rkt"
+  (#%require "stxcase.rkt" "core-syntax.rkt"
              (for-syntax '#%kernel "stxcase.rkt"))
 
   (begin-for-syntax

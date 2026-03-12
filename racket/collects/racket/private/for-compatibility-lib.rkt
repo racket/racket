@@ -9,7 +9,8 @@
 
 (module for-compatibility-lib '#%kernel
   (#%require "more-scheme.rkt"
-             "cond.rkt"
+             "core-syntax.rkt"
+             (submod "core-syntax.rkt" old-cond)
              "define.rkt"
              "stx.rkt")
   (#%provide define define-syntax define-for-syntax

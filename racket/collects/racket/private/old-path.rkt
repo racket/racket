@@ -2,7 +2,7 @@
 ;; `path-add-extension` that do the wrong thing with
 ;; file names that start "."
 (module path '#%kernel
-  (#%require "qq-and-or.rkt" "define-et-al.rkt")
+  (#%require "core-syntax.rkt" "core-syntax.rkt")
 
   (#%provide path-replace-suffix
              path-add-suffix)
