@@ -346,7 +346,8 @@
     (test #t single-flonum? (tanh -0.11100646f0))
     (test #t single-flonum? (tanh 0.11100646f0))
     (test #t single-flonum? (tanh 0.61100646f0))
-    (test #t single-flonum? (tanh 20.61100646f0))))
+    (test #t single-flonum? (tanh 20.61100646f0))
+    (test #t single-flonum? (real-part (tanh 2f0+20.61100646f0i)))))
 
 (test +nan.0 tanh +nan.0)
 (test -1.0 tanh -inf.0)
@@ -361,6 +362,7 @@
 (test 1.0 tanh 20.0)
 (test 1.0 tanh +max.0)
 (test 1.0 tanh +inf.0)
+(test -1637. round (imag-part (* 1e180 (tanh 200.6576-1.57i))))
 
 ;; =========================================================================
 ;; degrees->radians
