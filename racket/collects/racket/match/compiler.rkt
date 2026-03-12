@@ -217,21 +217,23 @@
                  =>
                  (lambda (id)
                    (if (identifier? id)
-                       (make-Row ps
-                                 #`(if ((match-equality-test) #,x #,id)
-                                       #,(Row-rhs row)
-                                       (fail))
-                                 (Row-unmatch row)
-                                 seen)
-                       (begin
-                         (log-error "non-linear pattern used in `match` with ... at ~a and ~a"
-                                    (car id) (cadr id)) 
-                         (let ([v* (free-identifier-mapping-get
-                                    (current-renaming) v (lambda () v))])
-                           (make-Row ps
-                                     #`(let ([#,v* #,x]) #,(Row-rhs row))
-                                     (Row-unmatch row)
-                                     (cons (cons v x) (Row-vars-seen row)))))))]
+                       (let ([v* (free-identifier-mapping-get
+                                  (current-renaming) v (lambda () v))])
+                         (make-Row ps
+                                   #`(if ((match-equality-test) #,x #,id)
+                                         (let ([#,v* #,x]) #,(Row-rhs row))
+                                         (fail))
+                                   (Row-unmatch row)
+                                   seen))
+                       ;; id is (list v v*): variable was first bound under
+                      ;; ... and is now used outside it. This is a non-linear
+                      ;; pattern with mismatched ellipsis depths.
+                      ;; Include both occurrences in extra-sources so the
+                      ;; error can point to both locations.
+                      (raise-syntax-error
+                       'match
+                       "non-linear pattern used in `match` with ..."
+                       (car id) #f (list (cadr id)))))]
                 ;; otherwise, bind the matched variable to x, and add it to the
                 ;; list of vars we've seen
                 [else (let ([v* (free-identifier-mapping-get
@@ -378,6 +380,47 @@
     [(GSeq? first)
      (unless (null? (cdr block))
        (error 'compile-one "GSeq block with multiple rows: ~a" block))
+     ;; Optimization: (list x ...) where x is a fresh variable can be
+     ;; compiled as (and (? list?) x) instead of a full GSeq loop,
+     ;; since binding x to the whole list is equivalent to collecting
+     ;; each element. But this is only valid when x is NOT a repeated
+     ;; (non-linear) variable, because non-linear matching needs to
+     ;; compare each element individually.
+     (define (simple-var-gseq?)
+       (and (= (length (GSeq-headss first)) 1)
+            (= (length (car (GSeq-headss first))) 1)
+            (Var? (caar (GSeq-headss first)))
+            (not (Dummy? (caar (GSeq-headss first))))
+            (Null? (GSeq-tail first))
+            (not (car (GSeq-mins first)))
+            (not (car (GSeq-maxs first)))
+            (not (car (GSeq-onces? first)))
+            (not (GSeq-mutable? first))
+            (let ([v (Var-v (caar (GSeq-headss first)))])
+              (not (for/or ([e (in-list (Row-vars-seen (car block)))])
+                     (bound-identifier=? v (car e)))))))
+     (cond
+      [(simple-var-gseq?)
+       ;; Compile as (and (? list?) x) — just check list? and bind
+       (define-values (_p rest-pats) (Row-split-pats (car block)))
+       (define row (car block))
+       (define v (Var-v (caar (GSeq-headss first))))
+       (define v* (free-identifier-mapping-get
+                   (current-renaming) v (lambda () v)))
+       ;; Mark v with #f in vars-seen (like heads-seen does in the
+       ;; full GSeq path) so that if v appears again in rest-pats,
+       ;; it triggers a syntax error for mismatched ellipsis depth.
+       (with-syntax ([body (compile**
+                            xs
+                            (list (make-Row rest-pats
+                                            (Row-rhs row)
+                                            (Row-unmatch row)
+                                            (cons (cons v #f) (Row-vars-seen row))))
+                            esc)])
+         #`(if (list? #,x)
+               (let ([#,v* #,x]) body)
+               (#,esc)))]
+      [else
      (let* ([headss (GSeq-headss first)]
             [mins (GSeq-mins first)]
             [maxs (GSeq-maxs first)]
@@ -403,6 +446,16 @@
             [heads-seen
              (map (lambda (x) (cons x #f))
                   (apply append (map bound-vars heads)))]
+            [_ (for* ([hids (in-list head-idss)]
+                      [hv (in-list hids)])
+                 (define prev
+                   (for/or ([e (in-list (Row-vars-seen (car block)))])
+                     (and (bound-identifier=? hv (car e)) (car e))))
+                 (when prev
+                   (raise-syntax-error
+                    'match
+                    "non-linear pattern used in `match` with ..."
+                    hv #f (list prev))))]
             [tail-seen
              (map (lambda (x) (cons x x))
                   (bound-vars tail))]
@@ -486,7 +539,7 @@
                                       heads-seen
                                       (Row-vars-seen
                                        (car block))))))
-                    #'failkv))))))]
+                    #'failkv))))))])]
     [else (error 'compile "unsupported pattern: ~a\n" first)]))
 
 (define (generate-block esc rhs unmatch)
