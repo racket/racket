@@ -126,6 +126,12 @@ In more detail, patterns match as follows:
        @racketidfont{not} sub-patterns are independent. The binding for @racket[_id] is
        not available in other parts of the same pattern.
 
+       If @racket[_id] is used multiple times at different ellipsis
+       depths---that is, some uses are under @racketidfont{...} and
+       others are not, or they are under different @racketidfont{...}
+       patterns---a syntax error is raised.
+       See @secref["match-nonlinear-ellipsis"] for details and examples.
+
        @examples[
        #:eval match-eval
        (match '(1 2 3)
@@ -942,6 +948,56 @@ sub-expression to be used as the source for all syntax errors within the form.
 For example, @racket[match-lambda] expands to @racket[match/derived] so that
 errors in the body of the form are reported in terms of @racket[match-lambda]
 instead of @racket[match].}
+
+@; ----------------------------------------------------------------------
+
+@section[#:tag "match-nonlinear-ellipsis"]{Non-linear Patterns and Ellipses}
+
+When the same identifier is used multiple times within a pattern (a
+@deftech{non-linear pattern}), each occurrence must be within the same
+@racketidfont{...}, otherwise a syntax error is raised.  In order for
+the entire pattern to match, each occurrence must match the same value
+according to @racket[(match-equality-test)],
+
+When both occurrences of an identifier are under the same
+@racketidfont{...}, each repetition of the pattern checks equality
+between the occurrences within that repetition, but the identifier can
+match different values in different repetitions. The identifier
+is bound to a list of the matched values.
+
+For example, @racket[(list (list a a) ...)] matches
+@racket['((1 1) (2 2) (3 3))] successfully because within each
+repetition both @racket[a]s are equal, even though @racket[a] is
+@racket[1] in the first repetition, @racket[2] in the second, and
+@racket[3] in the third. In this case, @racket[a] is bound to @racket['(1 2 3)] on the right-hand side.
+
+@examples[
+#:eval match-eval
+(code:comment "each pair must have equal elements")
+(match '((1 1) (2 2) (3 3))
+  [(list (list a a) ...) a]
+  [_ 'no])
+(code:comment "second pair doesn't match: 2 != 3")
+(match '((1 1) (2 3) (3 3))
+  [(list (list a a) ...) a]
+  [_ 'no])
+]
+
+If an identifier is used at different ellipsis depths---for example,
+once outside @racketidfont{...} and once inside, or under different
+@racketidfont{...} patterns---a syntax error is raised.
+
+@examples[
+#:eval match-eval
+(eval:error (match '(1 1 1 1) [(cons t (list t ...)) t]))
+(eval:error (match '(1 2 3 4) [(list a ... a) a]))
+(eval:error (match '((1 2) 3) [(list (list a ...) a) a]))
+]
+
+@history[#:changed "9.1.0.9" @elem{Added equality checking for
+non-linear patterns under @racketidfont{...}, and changed
+non-linear patterns with differing ellipsis depth to raise a syntax
+error.}]
 
 @; ----------------------------------------------------------------------
 

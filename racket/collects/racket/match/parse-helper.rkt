@@ -58,7 +58,7 @@
   (cond [(and (not (in-splicing?)) ;; when we're inside splicing, rest-pat isn't the rest
               (not min) ;; if we have a count, better generate general code
               (Null? rest-pat)
-              (or (Var? pat) (Dummy? pat)))
+              (Dummy? pat))
          (make-OrderedAnd (list (make-Pred pred?)
                                 (if to-list
                                     (make-App to-list (list pat))

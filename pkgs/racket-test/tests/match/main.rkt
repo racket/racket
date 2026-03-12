@@ -254,7 +254,191 @@
                     [_ #f]))
      (check-equal? (match '((1 1 2 3) (2 1 2 3) (3 1 2 3))
                      [(list (cons a (list pre ... a post ...)) ...) (list a pre post)])
-                   '((1 2 3) (() (1) (1 2)) ((2 3) (3) ()))))))
+                   '((1 2 3) (() (1) (1 2)) ((2 3) (3) ()))))
+
+   (test-case "Non-linear under ... still works"
+     ;; Both occurrences of a are under the same ...
+     (check-equal? (match '((1 1) (2 2) (3 3))
+                     [(list (list a a) ...) a]
+                     [_ 'no])
+                   '(1 2 3))
+     (check-equal? (match '((1 2) (2 2) (3 3))
+                     [(list (list a a) ...) a]
+                     [_ 'no])
+                   'no))
+
+   (test-case "Non-linear under ... with three occurrences"
+     (check-equal? (match '((1 1 1) (2 2 2))
+                     [(list (list a a a) ...) a]
+                     [_ 'no])
+                   '(1 2))
+     (check-equal? (match '((1 1 2) (2 2 2))
+                     [(list (list a a a) ...) a]
+                     [_ 'no])
+                   'no))
+
+   (test-case "Non-linear under ... with cons"
+     ;; Both uses of a inside the same ... via cons
+     (check-equal? (match '((1 . 1) (2 . 2) (3 . 3))
+                     [(list (cons a a) ...) a]
+                     [_ 'no])
+                   '(1 2 3))
+     (check-equal? (match '((1 . 1) (2 . 9) (3 . 3))
+                     [(list (cons a a) ...) a]
+                     [_ 'no])
+                   'no))
+
+   (test-case "Non-linear under ... with nested list"
+     ;; a appears twice in nested structure, both under same ...
+     (check-equal? (match '((1 (1)) (2 (2)))
+                     [(list (list a (list a)) ...) a]
+                     [_ 'no])
+                   '(1 2))
+     (check-equal? (match '((1 (1)) (2 (3)))
+                     [(list (list a (list a)) ...) a]
+                     [_ 'no])
+                   'no))
+
+   (test-case "Non-linear under ... empty list"
+     ;; Vacuously true: zero repetitions
+     (check-equal? (match '()
+                     [(list (list a a) ...) a]
+                     [_ 'no])
+                   '()))
+
+   (test-case "Non-linear under ... with other bindings"
+     ;; a is non-linear under ..., b is a separate binding
+     (check-equal? (match '((1 2 1) (3 4 3))
+                     [(list (list a b a) ...) (list a b)]
+                     [_ 'no])
+                   '((1 3) (2 4)))
+     (check-equal? (match '((1 2 1) (3 4 5))
+                     [(list (list a b a) ...) (list a b)]
+                     [_ 'no])
+                   'no))
+
+   (test-case "Non-linear under ... with match-equality-test"
+     ;; Custom equality for non-linear under ...
+     (check-equal? (parameterize ([match-equality-test
+                                   (lambda (a b) (= (modulo a 3) (modulo b 3)))])
+                     (match '((1 4) (2 5))
+                       [(list (list a a) ...) a]
+                       [_ 'no]))
+                   '(1 2)))
+
+   (test-case "Non-linear under nested ..."
+     ;; Both uses of a under the same nested ...
+     (check-equal? (match '(((1 1) (2 2)) ((3 3)))
+                     [(list (list (list a a) ...) ...) a]
+                     [_ 'no])
+                   '((1 2) (3)))
+     (check-equal? (match '(((1 1) (2 9)) ((3 3)))
+                     [(list (list (list a a) ...) ...) a]
+                     [_ 'no])
+                   'no))
+
+   ;; Patterns where an identifier appears at different ellipsis depths
+   ;; should be syntax errors, regardless of direction.
+
+   (test-case "Syntax error: cons x (list (cons x _) ...)"
+     ;; Regression for issue #5442
+     (check-exn exn:fail:syntax?
+                (lambda ()
+                  (expand #'(match '((1 . 2) (1 . 3)) [(cons (cons x _) (list (cons x _) ___)) x])))))
+
+   (test-case "Syntax error: quasiquote ,t ,t ..."
+     ;; Regression for issue #2152
+     (check-exn exn:fail:syntax?
+                (lambda ()
+                  (expand #'(match '(1 1 1) [`(,t ,t ___) t])))))
+
+   (test-case "Syntax error: cons t (list t ...)"
+     (check-exn exn:fail:syntax?
+                (lambda ()
+                  (expand #'(match '(1 1 1) [(cons t (list t ___)) t])))))
+
+   (test-case "Syntax error: list-no-order across ..."
+     (check-exn exn:fail:syntax?
+                (lambda ()
+                  (expand #'(match '(2 1 2 3) [(cons a (list-no-order a rst ___)) (list a rst)])))))
+
+   (test-case "Syntax error: list x x ..."
+     (check-exn exn:fail:syntax?
+                (lambda ()
+                  (expand #'(match '(1 1 1) [(list x x ___) x])))))
+
+   ;; Patterns where the first use of an identifier is under ...
+   ;; and a later use is not under the same ... should be syntax errors.
+   ;; We use ___ (alias for ...) to avoid template ellipsis issues in #'(...).
+   (test-case "Syntax error: list a ... a"
+     (check-exn exn:fail:syntax?
+                (lambda ()
+                  (expand #'(match '(1 2 3 4) [(list a ___ a) a])))))
+
+   (test-case "Syntax error: list (list a ...) a"
+     (check-exn exn:fail:syntax?
+                (lambda ()
+                  (expand #'(match '((1 2) 3) [(list (list a ___) a) a])))))
+
+   (test-case "Syntax error: list (list a ... _) a"
+     (check-exn exn:fail:syntax?
+                (lambda ()
+                  (expand #'(match '((1 2 3) 4) [(list (list a ___ _) a) a])))))
+
+   (test-case "Syntax error: list (list x ...) (list x ...)"
+     (check-exn exn:fail:syntax?
+                (lambda ()
+                  (expand #'(match '((1 2) (1 2)) [(list (list x ___) (list x ___)) x])))))
+
+   (test-case "Syntax error: list (list x _) ... x"
+     (check-exn exn:fail:syntax?
+                (lambda ()
+                  (expand #'(match '((1 a) (1 b) 99) [(list (list x _) ___ x) x])))))
+
+   ;; ..k variants
+   (test-case "Syntax error: list a ..2 a"
+     (check-exn exn:fail:syntax?
+                (lambda ()
+                  (expand #'(match '(1 2 3) [(list a ..2 a) a])))))
+
+   (test-case "Syntax error: list (list a ..3) a"
+     (check-exn exn:fail:syntax?
+                (lambda ()
+                  (expand #'(match '((1 2 3) 4) [(list (list a ..3) a) a])))))
+
+   ;; list-rest
+   (test-case "Syntax error: list-rest with mismatched depth"
+     (check-exn exn:fail:syntax?
+                (lambda ()
+                  (expand #'(match '((1 2) 3) [(list-rest (list a ___) a) a])))))
+
+   ;; quasipatterns
+   (test-case "Syntax error: quasipattern ,a ... ,a"
+     (check-exn exn:fail:syntax?
+                (lambda ()
+                  (expand #'(match '(1 2 3 4) [`(,a ___ ,a) a])))))
+
+   (test-case "Syntax error: list-rest with mismatched depth (other direction)"
+     (check-exn exn:fail:syntax?
+                (lambda ()
+                  (expand #'(match '(1 1 1) [(list-rest a (list a ___)) a])))))
+
+   ;; Check that errors reference both occurrences of the identifier
+   (test-case "Syntax error exprs include both occurrences (first outside, then under ...)"
+     (check-equal?
+      (with-handlers ([exn:fail:syntax?
+                       (lambda (e)
+                         (length (exn:fail:syntax-exprs e)))])
+        (expand #'(match '(1 1 1) [(cons t (list t ___)) t])))
+      2))
+
+   (test-case "Syntax error exprs include both occurrences (first under ..., then outside)"
+     (check-equal?
+      (with-handlers ([exn:fail:syntax?
+                       (lambda (e)
+                         (length (exn:fail:syntax-exprs e)))])
+        (expand #'(match '(1 2 3 4) [(list a ___ a) a])))
+      2))))
 
 
 (define doc-tests
