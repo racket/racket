@@ -532,6 +532,14 @@
                                         ;; point at host compiled code for dependencies
                                         (parameterize ([current-compiled-file-roots (list (car (current-compiled-file-roots)))])
                                           (compiler e)))]
+                                     [(cross-compiling?)
+                                      ;; compile to machine-independent first, then recompile; this
+                                      ;; two-step process is needed to compile submodules that may
+                                      ;; refer to each other
+                                      (lambda (e)
+                                        (compiled-expression-recompile
+                                         (parameterize ([current-compile-target-machine (system-type 'target-machine)])
+                                           (compiler e))))]
                                      [else
                                       compiler])
                                    (if on-extension
