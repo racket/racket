@@ -324,7 +324,7 @@ not instantiate the module.
 
 @history[#:added "8.3.0.8"]}
 
-@defproc[(syntax-bound-symbols [stx stx?]
+@defproc[(syntax-bound-symbols [stx syntax?]
                                [phase-level (or/c exact-integer? #f)
                                             (syntax-local-phase-level)]
                                [exact-scopes? any/c #f])
@@ -340,7 +340,7 @@ of the result list.
          #:changed "8.6.0.9" @elem{Added the @racket[exact-scopes?] argument.}]}
 
 
-@defproc[(syntax-bound-interned-scope-symbols [stx stx?]
+@defproc[(syntax-bound-interned-scope-symbols [stx syntax?]
                                               [phase-level (or/c exact-integer? #f)
                                                            (syntax-local-phase-level)]
                                               [exact-scopes? any/c #f])
@@ -355,7 +355,7 @@ of the result list.
 @history[#:added "8.13.0.8"]}
 
 
-@defproc[(syntax-bound-phases [stx stx?])
+@defproc[(syntax-bound-phases [stx syntax?])
          (listof (or/c exact-integer? #f))]{
 
 Returns a list that includes all @racket[_phase-level]s for which
