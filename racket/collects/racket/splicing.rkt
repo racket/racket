@@ -1,6 +1,7 @@
 #lang racket/base
 (require (for-syntax racket/base
                      syntax/kerncase
+                     "private/stx.rkt"
                      "private/stxparamkey.rkt")
          (for-meta 2  ; for wrap-et-param
                    racket/base
@@ -257,9 +258,7 @@
     ids))
 
 (define-for-syntax (check-dup-binding stx idss)
-  (let ([dup-id (check-duplicate-identifier (apply append idss))])
-    (when dup-id
-      (raise-syntax-error #f "duplicate binding" stx dup-id))))
+  (raise-if-duplicate-identifiers "duplicate binding" stx (apply append idss)))
 
 ;; ----------------------------------------
 

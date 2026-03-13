@@ -285,12 +285,7 @@
 				    stx
 				    id)))
 	    ids)
-	   (let ([dup (check-duplicate-identifier ids)])
-	     (when dup
-	       (raise-syntax-error #f
-				   "duplicate identifier"
-				   stx
-				   dup))))
+           (raise-if-duplicate-identifiers "duplicate identifier" stx ids))
 	 (with-syntax ([(temp ...) (generate-temporaries (syntax (id ...)))])
 	   (syntax/loc
 	    stx

@@ -9,6 +9,7 @@
                   unsafe-start-uninterruptible
                   unsafe-end-uninterruptible)
          (for-syntax racket/base racket/list syntax/stx racket/syntax
+                     racket/private/stx
                      racket/struct-info))
 
 (provide ctype-sizeof ctype-alignof compiler-sizeof
@@ -805,9 +806,10 @@
                       [(retry-id [arg-id arg-val] ...)
                        (and (identifier? #'retry-id)
                             (andmap identifier? (syntax->list #'(arg-id ...))))
-                       (let ([dup (check-duplicate-identifier (syntax->list #'(arg-id ...)))])
+                       (let-values ([(dup origs)
+                                     (stx-find-duplicate-identifiers (syntax->list #'(arg-id ...)))])
                          (when dup
-                           (err "duplicate identifier in retry specification" dup))
+                           (err "duplicate identifier in retry specification" dup origs))
                          r)]
                       [_
                        (err "ill-formed retry specification" r)]))

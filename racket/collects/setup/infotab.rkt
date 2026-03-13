@@ -3,7 +3,7 @@
 ;; an "info.rkt" file tries to load this module, and a reader
 ;; guard disallows anything but `setup/infotab'.
 (module infotab racket/base 
-  (require (for-syntax racket/base))
+  (require (for-syntax racket/base racket/private/stx))
 
   (define-syntax info-module-begin
     (lambda (stx)
@@ -26,9 +26,9 @@
                                             'infotab-module
                                             "not a well-formed definition"
                                             stx (car defns))]))))])
-           (let ([dup (check-duplicate-identifier names)])
+           (let-values ([(dup origs) (stx-find-duplicate-identifiers names)])
              (when dup
-               (raise-syntax-error 'infotab-module "duplicate definition" stx dup)))
+               (raise-syntax-error 'infotab-module "duplicate definition" stx dup origs)))
            (with-syntax ([(name ...) names])
              (syntax
               (#%plain-module-begin
