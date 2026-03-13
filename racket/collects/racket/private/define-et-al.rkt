@@ -3,7 +3,7 @@
 ;; -define, when, unless, let/ec, define-struct
 
 (module define-et-al '#%kernel
-  (#%require (for-syntax '#%kernel "stx.rkt" "qq-and-or.rkt" 
+  (#%require (for-syntax '#%kernel "stx.rkt" "core-syntax.rkt"
                          "cond.rkt"))
 
   (#%provide -define -define-syntax

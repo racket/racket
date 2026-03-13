@@ -14,7 +14,7 @@
                          "qqstx.rkt"
                          "define.rkt"
                          "fixnum.rkt"
-                         "define-et-al.rkt" "qq-and-or.rkt" "cond.rkt"
+                         "define-et-al.rkt" "core-syntax.rkt" "cond.rkt"
                          "stxcase-scheme.rkt"
                          "more-scheme.rkt"))
 
