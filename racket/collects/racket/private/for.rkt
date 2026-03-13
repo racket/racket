@@ -194,10 +194,13 @@
                        orig-stx
                        id)))
                   ids)
-        (let ([dup (check-duplicate-identifier ids)])
+        (let-values ([(dup origs) (stx-find-duplicate-identifiers ids)])
           (when dup
             (raise-syntax-error #f
-                                (format "duplicate identifier as ~a binding" kind) orig-stx dup)))
+                                (format "duplicate identifier as ~a binding" kind)
+                                orig-stx
+                                dup
+                                origs)))
         result))
 
     (define lst-sym (string->uninterned-symbol "lst"))
