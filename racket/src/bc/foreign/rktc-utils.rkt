@@ -40,7 +40,8 @@
 (define (racket-id->c-name str)
   (set! str (format "~a" str))
   (for ([subst '([#rx"->" "_to_"] [#rx"[-/]" "_"] [#rx"\\*" "S"]
-                 [#rx"\\?$" "_p"] [#rx"!$" "_bang"])])
+                 [#rx"\\?$" "_p"] [#rx"!$" "_bang"]
+                 [#rx"\\?" "Q"] [#rx"!" "B"])])
     (set! str (regexp-replace* (car subst) str (cadr subst))))
   str)
 
@@ -49,11 +50,15 @@
 (define hush @'{return NULL@";" /* hush the compiler */})
 
 ;; User function definition
-(provide cfunctions)
+(provide cfunctions internal-cfunctions)
 (define cfunctions (make-parameter '()))
-(define (_cdefine name minargs maxargs kind . body)
+(define internal-cfunctions (make-parameter '()))
+(define (_cdefine name minargs maxargs kind #:internal? [internal? #f] . body)
   (define cname @list{foreign_@(racket-id->c-name name)})
-  (cfunctions (cons (list name cname minargs maxargs kind) (cfunctions)))
+  (define def (list name cname minargs maxargs kind))
+  (if internal?
+      (internal-cfunctions (cons def (internal-cfunctions)))
+      (cfunctions (cons def (cfunctions))))
   @list{@disable-prefix{#define MYNAME "@name"}
         static Scheme_Object *@|cname|(int argc, Scheme_Object *argv[])
         {
@@ -136,7 +141,7 @@
 (define (add-symbols syms)
   (maplines (lambda (s)
               (define new
-                @list{@(regexp-replace* #rx"-" (symbol->string s) "_")_sym})
+                @list{@(racket-id->c-name (symbol->string s))_sym})
               (when (assq s (symbols))
                 (error 'add-symbols "symbol ~s already defined" s))
               (symbols (cons (list s new) (symbols)))

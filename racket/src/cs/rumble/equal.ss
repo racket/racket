@@ -124,6 +124,16 @@
                            (and
                             (equal? (mcar a) (mcar b) ctx)
                             (equal? (mcdr a) (mcdr b) ctx))))))]
+           [(ftype-pointer? a)
+            (and (ftype-pointer? b)
+                 (if (and (ftype-scheme-object-pointer? a)
+                          (ftype-scheme-object-pointer? b))
+                     (and (eq? (ftype-scheme-object-pointer-object a)
+                               (ftype-scheme-object-pointer-object b))
+                          (eqv? (ftype-scheme-object-pointer-offset a)
+                                (ftype-scheme-object-pointer-offset b)))
+                     (eqv? (ftype-pointer-address a)
+                           (ftype-pointer-address b))))]
            [(record? a)
             (and (record? b)
                  ;; Check for `prop:impersonator-of`

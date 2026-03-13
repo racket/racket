@@ -1222,7 +1222,7 @@
   (current-exception-state (create-exception-state))
   (base-exception-handler
    (lambda (v)
-     #;(#%printf "~s\n" (exn->string v))
+     #;(#%printf "~s\n" (parameterize () (exn->string v)))
      #;(#%printf "~s\n" (continuation-mark-set-traces (current-continuation-marks)))
      (cond
       [(and (warning? v)

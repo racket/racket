@@ -405,6 +405,7 @@ void scheme_init_terminal(Scheme_Startup_Env *env);
 void scheme_init_foreign_globals();
 #endif
 void scheme_init_foreign(Scheme_Startup_Env *env);
+void scheme_init_internal_foreign(Scheme_Startup_Env *env);
 void scheme_init_place(Scheme_Startup_Env *env);
 void scheme_init_place_per_place();
 void scheme_init_places_once();
@@ -840,6 +841,7 @@ XFORM_NONGCING extern void *scheme_extract_pointer(Scheme_Object *v);
 
 Scheme_Object *scheme_foreign_ptr_ref(int argc, Scheme_Object **argv);
 void scheme_foreign_ptr_set(int argc, Scheme_Object **argv);
+Scheme_Object *scheme_expand_foreign_form(Scheme_Object *form);
 
 Scheme_Object *scheme_cpointer_tag(Scheme_Object *ptr);
 void scheme_set_cpointer_tag(Scheme_Object *ptr, Scheme_Object *val);
@@ -3880,6 +3882,7 @@ Scheme_Object *scheme_checked_hash_count(int argc, Scheme_Object *argv[]);
 Scheme_Object *scheme_checked_hash_count(int argc, Scheme_Object *argv[]);
 Scheme_Object *scheme_unbox_star(Scheme_Object *b);
 void scheme_set_box_star(Scheme_Object *b, Scheme_Object *v);
+Scheme_Object *scheme_make_cache_wrap(Scheme_Object *v);
 
 Scheme_Object *scheme_check_not_undefined (int argc, Scheme_Object *argv[]);
 Scheme_Object *scheme_check_assign_not_undefined (int argc, Scheme_Object *argv[]);

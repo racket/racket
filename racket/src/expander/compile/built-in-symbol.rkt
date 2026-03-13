@@ -127,4 +127,14 @@
                ptr-ref/uint64 ptr-set!/uint64
                ptr-ref/double ptr-set!/double
                ptr-ref/float ptr-set!/float
-               ffi-static-call-and-callback-core))))
+               ffi-static-call-and-callback-core
+               ffi2-ptr?-maker
+               ffi2-procedure-maker
+               ffi2-callback-maker
+               ffi2-ptr-ref-maker
+               ffi2-ptr-set!-maker
+               ffi2-malloc-maker
+               ffi2-ptr-cast-maker
+               ffi2-sizeof
+               ffi2-offsetof
+               ffi2-system-type-select))))

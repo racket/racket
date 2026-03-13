@@ -3285,6 +3285,10 @@ static Scheme_Object *read_compact(CPort *port, int use_stack)
 
             return v;
           }
+        case scheme_cache_wrap_type:
+          {
+            return scheme_make_cache_wrap(read_compact(port, 1));
+          }
         default:
           scheme_ill_formed_code(port);
           return NULL;

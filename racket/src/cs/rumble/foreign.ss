@@ -847,21 +847,28 @@
 
 (define-record-type (ffi-lib make-ffi-lib ffi-lib?)
   (fields handle name))
+;; Just to make printing say "ffi2-lib":
+(define-record-type (ffi2-lib make-ffi2-lib ffi2-lib?)
+  (parent ffi-lib)
+  (fields))
 
 (define ffi-lib*
   (case-lambda
-   [(name) (ffi-lib* name #f #f)]
-   [(name fail-as-false?) (ffi-lib* name fail-as-false? #f)]
-   [(name fail-as-false? as-global?)
+   [(name) (ffi-lib* name #f #f 'ffi-lib)]
+   [(name fail-as-false?) (ffi-lib* name fail-as-false? #f 'ffi-lib)]
+   [(name fail-as-false? as-global?) (ffi-lib* name fail-as-false? as-global? 'ffi-lib)]
+   [(name fail-as-false? as-global? who)
     (let ([name (if (string? name)
                     (string->immutable-string name)
                     name)])
-      (ffi-get-lib 'ffi-lib
+      (ffi-get-lib who
                    name
                    as-global?
                    fail-as-false?
                    (lambda (h)
-                     (make-ffi-lib h name))))]))
+                     (if (eq? name 'ffi2-lib)
+                         (make-ffi2-lib h name)
+                         (make-ffi-lib h name)))))]))
 
 (define/who (ffi-lib-unload lib)
   (check who ffi-lib? lib)
@@ -871,7 +878,7 @@
   (parent cpointer)
   (fields lib name))
 
-(define/who (ffi-obj name lib)
+(define (ffi-obj* who name lib wrap)
   (check who bytes? name)
   (check who ffi-lib? lib)
   (let ([name (bytes->immutable-bytes name)])
@@ -879,8 +886,17 @@
                  (ffi-lib-handle lib)
                  (ffi-lib-name lib)
                  name
-                 (lambda (ptr)
-                   (make-ffi-obj (make-ftype-pointer integer-8 (ffi-ptr->address ptr)) #f lib name)))))
+                 wrap)))
+
+(define/who (ffi-obj name lib)
+  (ffi-obj* who name lib
+            (lambda (ptr)
+              (make-ffi-obj (make-ftype-pointer integer-8 (ffi-ptr->address ptr)) #f lib name))))
+
+(define/who (ffi2-lib-ref lib name)
+  (ffi-obj* who name lib
+            (lambda (ptr)
+              (make-ftype-pointer integer-8 (ffi-ptr->address ptr)))))
 
 (define (ffi-obj-name obj)
   (cpointer/ffi-obj-name obj))
@@ -1039,15 +1055,31 @@
 (define-fast-ptr-ops ptr-ref/double ptr-set!/double _double flonum? bytevector-ieee-double-native-ref bytevector-ieee-double-native-set! double 3)
 (define-fast-ptr-ops ptr-ref/float ptr-set!/float _float flonum? bytevector-ieee-single-native-ref bytevector-ieee-single-native-set! float 2)
 
-(define byte-copy (foreign-procedure "(cs)byte-copy" (ftype-pointer iptr ftype-pointer iptr iptr) void))
-(define byte-copy/addr (foreign-procedure "(cs)byte-copy" (uptr iptr uptr iptr iptr) void))
+(define byte-copy (foreign-procedure __atomic "(cs)byte-copy" (ftype-pointer iptr ftype-pointer iptr iptr) void))
+(define byte-copy/addr (foreign-procedure __atomic "(cs)byte-copy" (uptr iptr uptr iptr iptr) void))
 
 (define (memcpy* to to-offset from from-offset len move?)
-  (if move?
-      (with-interrupts-disabled*
-       (let ([to-addr (ftype-pointer-address to)])
-         (byte-copy/addr to-addr (+ from-offset (- (ftype-pointer-address from) to-addr)) to-addr to-offset len)))
-      (byte-copy from from-offset to to-offset len)))
+  (cond
+    [(and (ftype-scheme-object-pointer? to)
+          (reference-bytevector? (ftype-scheme-object-pointer-object to))
+          (ftype-scheme-object-pointer? from)
+          (reference-bytevector? (ftype-scheme-object-pointer-object from))
+          (eqv? 0 (bitwise-and len (sub1 (foreign-sizeof 'ptr)))))
+     ;; use `bytevector-reference-set!` to get write barrier
+     (let ([dest (ftype-scheme-object-pointer-object to)]
+           [src (ftype-scheme-object-pointer-object from)]
+           [to-offset (+ to-offset (ftype-scheme-object-pointer-offset to))]
+           [from-offset (+ to-offset (ftype-scheme-object-pointer-offset to))])
+       (let loop ([i 0])
+         (unless (eqv? i len)
+           (bytevector-reference-set! dest (+ to-offset i) (bytevector-reference-ref src (+ from-offset i)))
+           (loop (+ i (foreign-sizeof 'ptr))))))]
+    [else
+     (if move?
+         (with-interrupts-disabled*
+          (let ([to-addr (ftype-pointer-address to)])
+            (byte-copy/addr to-addr (+ from-offset (- (ftype-pointer-address from) to-addr)) to-addr to-offset len)))
+         (byte-copy from from-offset to to-offset len))]))
 
 (define memcpy/memmove
   (case-lambda
@@ -1125,12 +1157,14 @@
 
 ;; ----------------------------------------
 
+(define (memset** to to-offset byte len)
+  (let loop ([i to-offset] [len len])
+    (unless (fx= len 0)
+      (ftype-any-set! unsigned-8 () to i byte)
+      (loop (+ i 1) (fx- len 1)))))
+
 (define (memset* to to-offset byte len)
-  (let ([to (cptr->fptr 'memset to)])
-    (let loop ([i to-offset] [len len])
-      (unless (fx= len 0)
-        (ftype-any-set! unsigned-8 () to i byte)
-        (loop (+ i 1) (fx- len 1))))))
+  (memset** (cptr->fptr 'memset to) to-offset byte len))
 
 (define/who memset
   (case-lambda
@@ -2016,6 +2050,359 @@
                                "varargs-after value is too large"
                                "given value" varargs-after
                                "argument count" len)))))
+
+;; ----------------------------------------
+
+(meta define (build-pointer-gensym-id names gcable?)
+      (let ([name-str (#%apply #%string-append
+                               (let loop ([names (reverse names)])
+                                 (if (null? (cdr names))
+                                     (list (#%symbol->string (car names))
+                                           (if gcable?
+                                               "/gcable"
+                                               ""))
+                                     (cons* (#%symbol->string (car names))
+                                            ":"
+                                            (loop (cdr names))))))])
+        (#%datum->syntax
+         #'here
+         (#%gensym name-str
+                   (#%string-append "ffi2:"
+                                    ;; record component sizes to avoid ambiguisty in encoding
+                                    (#%apply #%string-append
+                                             (#%map (lambda (name)
+                                                      (#%string-append
+                                                       (#%number->string (string-length (#%symbol->string name)))
+                                                       ":"))
+                                                    names))
+                                    name-str)))))
+
+(define-ftype void_t* ftype-pointer (nongenerative #{void_t* ffi2:void_t*}))
+(define-ftype void_t*/gcable ftype-scheme-object-pointer (nongenerative #{void_t*/gcable ffi2:void_t*/gcable}))
+
+(meta define (matching-target? key vals)
+      (case key
+        [(target-machine) (memq (reflect-machine-type) vals)]
+        [(os) (memq (reflect-os-symbol) vals)]
+        [(os*) (memq (reflect-os*-symbol) vals)]
+        [(arch) (memq (reflect-arch-symbol) vals)]
+        [(word) (memv (reflect-word-size) vals)]
+        [else #f]))
+
+(meta define (convert-types in-types out-types for-struct? counter)
+      ;; A `type` is each one of these:
+      ;;    - primitive Chez Scheme ftype names, like `int`
+      ;;    - `pointer` like `ftype-pointer`
+      ;;    - `pointer/gc` like `ftype-scheme-object-pointer`
+      ;;    - `(pointer [<sym> ...])` is like `ftype-pointer` but with a uid gensym based on <sym>
+      ;;    - `(pointer/gc [<sym> ...])` is like `ftype-scheme-object-pointer`
+      ;;    - `(struct [<sym> ...] (<field-name> <field-type>) ...)` creates a uid gensym based on <sym>
+      ;;    - `(union [<sym> ...] (<field-name> <field-type>))`
+      ;;    - `(array <int> <elem-type>)`
+      ;;    - `(select <sym> (<val> ...) <then-type> <else-type>)` picks one; see `matching-target?`
+      (let* ([decls '()]
+             [counter counter]
+             [add-decl! (lambda (names type-stx to-c? for-struct?)
+                          (let ([gcable? (eq? (syntax->datum type-stx) 'ftype-scheme-object-pointer)])
+                            (let loop ([names names])
+                              (cond
+                                [to-c? #'ftype-pointer]
+                                [(and (null? names) (not for-struct?)) type-stx]
+                                [else
+                                 (let ([name (car names)]
+                                       [type-stx (if for-struct?
+                                                     type-stx
+                                                     (loop (cdr names)))])
+                                   (set! counter (add1 counter))
+                                   (with-syntax ([id (#%datum->syntax
+                                                      #'here
+                                                      (#%string->symbol (#%string-append "type_" (#%number->string counter))))]
+                                                 [uid (if for-struct?
+                                                          #'#f
+                                                          (build-pointer-gensym-id names gcable?))]
+                                                 [type type-stx])
+                                     (set! decls (cons (if for-struct?
+                                                           #'(define-ftype id type)
+                                                           #'(define-ftype id type (nongenerative uid)))
+                                                       decls))
+                                     #'id))]))))]
+             [convert-fields (lambda (fields)
+                               (map (lambda (field)
+                                      (syntax-case field ()
+                                        [(name type)
+                                         (with-syntax ([((decl ...) () (type)) (convert-types '() (list #'type) #t counter)])
+                                           (set! decls (append (reverse #'(decl ...)) decls))
+                                           (set! counter (+ counter (length #'(decl ...))))
+                                           (list #'name #'type))]))
+                                    (syntax->list fields)))]
+             [translate (lambda (type-stx to-c?)
+                          (let-syntax ([syntax-case/head
+                                        (lambda (stx)
+                                          (syntax-case stx ()
+                                            [(_ expr [pat rhs] ...)
+                                             (with-syntax ([(pat ...)
+                                                            (map (lambda (pat)
+                                                                   (syntax-case pat (else)
+                                                                     [else pat]
+                                                                     [(id . rest) #'(head . rest)]
+                                                                     [id (symbol? (datum id)) #'head]
+                                                                     [_ pat]))
+                                                                 #'(pat ...))]
+                                                           [(guard ...)
+                                                            (map (lambda (pat)
+                                                                   (syntax-case pat (else)
+                                                                     [else #'#t]
+                                                                     [(id . rest) #'(eq? (datum head) 'id)]
+                                                                     [id (symbol? (datum id)) #'(eq? (datum head) 'id)]
+                                                                     [_ #'#t]))
+                                                                 #'(pat ...))])
+                                               #'(syntax-case expr ()
+                                                   [pat guard rhs]
+                                                   ...))]))])
+                            (let loop ([type-stx type-stx])
+                              (syntax-case/head
+                               type-stx
+                               [pointer (if to-c?
+                                            #'ftype-pointer
+                                            #'void_t*)]
+                               [pointer/gc (if to-c?
+                                               #'ftype-pointer
+                                               #'void_t*/gcable)]
+                               [(pointer names) (add-decl! (datum names) #'ftype-pointer to-c? #f)]
+                               [(pointer/gc names) (add-decl! (datum names) #'ftype-scheme-object-pointer to-c? #f)]
+                               [(struct names . fields) (with-syntax ([fields (convert-fields #'fields)])
+                                                          (if for-struct?
+                                                              (add-decl! (datum names) #'(struct . fields) #f #t)
+                                                              (with-syntax ([id (add-decl! (datum names) #'ftype-pointer #t #f)]
+                                                                            [st-id (add-decl! (datum names) #'(struct . fields) #f #t)])
+                                                                #'(& st-id id))))]
+                               [(union names . fields) (with-syntax ([fields (convert-fields #'fields)])
+                                                         (if for-struct?
+                                                             (add-decl! (datum names) #'(union . fields) #f #t)
+                                                             (with-syntax ([id (add-decl! (datum names) #'ftype-pointer #t #f)]
+                                                                           [un-id (add-decl! (datum names) #'(union . fields) #f #t)])
+                                                               #'(& un-id id))))]
+                               [(array names n elem-type) (if for-struct?
+                                                              (with-syntax ([((_ elem-type)) (convert-fields #'([_ elem-type]))])
+                                                                (add-decl! (datum names) #`(array n elem-type) #f for-struct?))
+                                                              (add-decl! (datum names) #'ftype-pointer #t #f))]
+                               [(select key vals same different) (if (matching-target? (datum key) (datum vals))
+                                                                     (loop #'same)
+                                                                     (loop #'different))]
+                               [integer-wchar (case (ftype-sizeof wchar_t)
+                                                [(1) #'unsigned-8]
+                                                [(2) #'unsigned-16]
+                                                [(4) #'unsigned-32]
+                                                [else #'unsigned-64])]
+                               [else type-stx]))))])
+        (let* ([in-types (map (lambda (type-stx) (translate type-stx #t)) in-types)]
+               [out-types (map (lambda (type-stx) (translate type-stx #f)) out-types)])
+          (list (reverse decls)
+                in-types
+                out-types))))
+
+(meta define (convert-convention conv)
+      (syntax-case conv ()
+        [(__select key vals same different)
+         (eq? '__select (datum __select))
+         (if (matching-target? (datum key) (datum vals))
+             (convert-convention #'same)
+             (convert-convention #'different))]
+        [_ conv]))
+
+(define (ffi2-ptr? v)
+  (ftype-pointer? v))
+
+(define (ffi2-ptr/gcable? v)
+  (ftype-scheme-object-pointer? v))
+
+(define (cpointer->ffi2-ptr who p)
+  (cptr->fptr who p))
+
+(define (ffi2-ptr->cpointer p)
+  (fptr->cptr p))
+
+(define (ffi2-ptr->uintptr p)
+  (ftype-pointer-address p))
+
+(define (ffi2-uintptr->ptr i)
+  (make-ftype-pointer integer-8 i))
+
+(define-syntax (ffi2-ptr?-maker stx)
+  (syntax-case stx ()
+    [(_ kind names)
+     (with-syntax ([(new-type . defs)
+                    (let loop ([names (datum names)])
+                      (cond
+                        [(null? names) (if (eq? (datum kind) 'pointer/gc)
+                                           #'(ftype-scheme-object-pointer)
+                                           #'(ftype-pointer))]
+                        [else
+                         (with-syntax ([uid (build-pointer-gensym-id names (eq? (datum kind) 'pointer/gc))]
+                                       [(base-type . defs) (loop (cdr names))]
+                                       [new-type (car (generate-temporaries '(tagged)))])
+                           #'(new-type
+                              (define-ftype new-type base-type (nongenerative uid))
+                              . defs))]))])
+       #`(let ()
+           #,@(reverse (syntax->list #'defs))
+           (lambda (v) (ftype-pointer? new-type v))))]))
+
+(define-syntax (ffi2-procedure-maker stx)
+  (syntax-case stx (quote)
+    [(_  (conv ...) (in-type ...) out-type)
+     (with-syntax ([((decl ...) (in-type ...) (out-type)) (convert-types #'(in-type ...) (list #'out-type) #f 0)]
+                   [(conv ...) (map convert-convention #'(conv ...))])
+       #'(let ()
+           decl
+           ...
+           (lambda (ptr)
+             (foreign-procedure conv ... (ftype-pointer-address ptr) (in-type ...) out-type))))]))
+
+(define-syntax (ffi2-callback-maker stx)
+  (syntax-case stx (quote)
+    [(_  (conv ...) (in-type ...) out-type)
+     (with-syntax ([((decl ...) (in-type ...) (out-type)) (convert-types #'(in-type ...) (list #'out-type) #f 0)]
+                   [(conv ...) (map convert-convention #'(conv ...))])
+       #'(let ()
+           decl
+           ...
+           (lambda (proc async-apply)
+             (let ([proc (wrap-atomic-callback proc async-apply)])
+               (callable-to-ftype-pointer
+                (foreign-callable conv ... proc (in-type ...) out-type))))))]))
+
+(define (wrap-atomic-callback proc async-apply)
+  (let ([async-callback-queue (and (procedure? async-apply) (current-async-callback-queue))])
+    (lambda args
+      (call-as-atomic-callback
+       (lambda ()
+         (apply proc args))
+       #t
+       async-apply
+       async-callback-queue))))
+
+(define (callable-to-ftype-pointer callable)
+  ;; The callable is immobile, and its entry point is within the
+  ;; immediate immoblile object. Turn the callbale into a pointer
+  ;; using `make-ftype-scheme-object-pointer` so that the callable
+  ;; is retained as long as the pointer object is retained.
+  (define addr (object->reference-address callable))
+  (define ep-addr (foreign-callable-entry-point callable))
+  (make-ftype-scheme-object-pointer callable (- ep-addr addr)))
+
+(define-syntax (ffi2-ptr-ref-maker stx)
+  (syntax-case stx (quote)
+    [(_  out-type)
+     (with-syntax ([((decl ...) () (out-type)) (convert-types '() (list #'out-type) #f 0)])
+       #'(let ()
+           decl
+           ...
+           (lambda (ptr offset)
+             (ftype-any-ref out-type () ptr offset))))]))
+
+(define-syntax (ffi2-ptr-set!-maker stx)
+  (syntax-case stx (quote)
+    [(_  in-type)
+     (with-syntax ([((decl ...) (in-type) ()) (convert-types (list #'in-type) '() #f 0)])
+       #`(let ()
+           decl
+           ...
+           (lambda (ptr offset val)
+             #,(if (eq? (syntax->datum #'in-type) 'ftype-pointer)
+                   #`(if (and (ftype-scheme-object-pointer? ptr)
+                              (reference-bytevector? (ftype-scheme-object-pointer-object ptr))
+                              (ftype-scheme-object-pointer? val)
+                              (eqv? (ftype-scheme-object-pointer-offset val) 0))
+                         ;; use `bytevector-reference-set!` to get write barrier
+                         (let ([offset (+ offset (ftype-scheme-object-pointer-offset ptr))])
+                           (bytevector-reference-set! (ftype-scheme-object-pointer-object ptr) offset (ftype-scheme-object-pointer-object val)))
+                         ;; if `ptr` or `val` is a scheme-object pointer, this can make sense
+                         ;; in the case that `val` is immobile and retained elsewhere
+                         (ftype-any-set! in-type () ptr offset val))
+                   #`(ftype-any-set! in-type () ptr offset val)))))]))
+
+(define-syntax (ffi2-malloc-maker stx)
+  (syntax-case stx (quote)
+    [(_  size-type ptr-type kind)
+     (with-syntax ([((decl ...) () (size-type ptr-type)) (convert-types '() (list #'size-type #'ptr-type) #t 0)])
+       (if (eq? (datum kind) 'manual)
+           #'(let ()
+               decl
+               ...
+               (lambda (n)
+                 (make-ftype-pointer ptr-type (foreign-alloc (* n (ftype-sizeof size-type))))))
+           (with-syntax ([alloc (case (datum kind)
+                                  [(gcable) #'make-bytevector]
+                                  [(gcable-immobile) #'make-immobile-bytevector]
+                                  [(gcable-traced) #'make-reference-bytevector]
+                                  [(gcable-traced-immobile) #'make-immobile-reference-bytevector])])
+             #'(let ()
+                 decl
+                 ...
+                 (lambda (n)
+                   (make-ftype-scheme-object-pointer (alloc (* n (ftype-sizeof size-type))) 0 ptr-type))))))]))
+
+(define (ffi2-free ptr)
+  (foreign-free (ftype-pointer-address ptr)))
+
+(define-syntax (ffi2-ptr-cast-maker stx)
+  (syntax-case stx (quote)
+    [(_  #f out-type/gcable)
+     (with-syntax ([((decl ...) () (out-type/gcable)) (convert-types '() (list #'out-type/gcable) #f 0)])
+       #'(let ()
+           decl
+           ...
+           (lambda (ptr offset)
+             (make-ftype-scheme-object-pointer (ftype-scheme-object-pointer-object ptr)
+                                               (+ (ftype-scheme-object-pointer-offset ptr) offset)
+                                               out-type/gcable))))]
+    [(_  out-type out-type/gcable)
+     (with-syntax ([((decl ...) () (out-type out-type/gcable)) (convert-types '() (list #'out-type #'out-type/gcable) #f 0)])
+       #'(let ()
+           decl
+           ...
+           (lambda (ptr offset)
+             (if (ftype-scheme-object-pointer? ptr)
+                 (make-ftype-scheme-object-pointer (ftype-scheme-object-pointer-object ptr)
+                                                   (+ (ftype-scheme-object-pointer-offset ptr) offset)
+                                                   out-type/gcable)
+                 (make-ftype-pointer out-type (+ (ftype-pointer-address ptr) offset))))))]))
+
+(define-syntax (ffi2-sizeof stx)
+  (syntax-case stx (quote)
+    [(_  in-type)
+     (with-syntax ([((decl ...) (in-type) ()) (convert-types (list #'in-type) '() #t 0)])
+       #'(let ()
+           decl
+           ...
+           (ftype-sizeof in-type)))]))
+
+(define-syntax (ffi2-offsetof stx)
+  (syntax-case stx (quote)
+    [(_  in-type field)
+     (with-syntax ([((decl ...) (in-type) ()) (convert-types (list #'in-type) '() #t 0)])
+       #'(let ()
+           decl
+           ...
+           (ftype-pointer-address
+            (ftype-&ref in-type (field) (make-ftype-pointer in-type 0)))))]))
+
+(define (ffi2-memcpy to to-offset from from-offset len)
+  (memcpy* to to-offset from from-offset len #f))
+
+(define (ffi2-memmove to to-offset from from-offset len)
+  (memcpy* to to-offset from from-offset len #t))
+
+(define (ffi2-memset to to-offset byte len)
+  (memset** to to-offset byte len))
+
+(define-syntax (ffi2-system-type-select stx)
+  (syntax-case stx ()
+    [(_ key (val ...) same different)
+     (if (matching-target? (datum key) (datum (val ...)))
+         #'same
+         #'different)]))
 
 ;; ----------------------------------------
 

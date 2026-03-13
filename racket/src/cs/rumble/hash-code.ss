@@ -208,6 +208,13 @@
      (let-values ([(hc0 burn) (recur-hash-loop (mcar x) (fx+ burn 2) 0 mode recur)])
        (let ([hc (fx+/wraparound hc (fx+/wraparound hc0 5))])
          (recur-hash-loop (mcdr x) burn (mix-hash-code hc) mode recur)))]
+    [(ftype-pointer? x)
+     (if (ftype-scheme-object-pointer? x)
+         (values (fx+/wraparound (fx+/wraparound hc (eq-hash-code (ftype-scheme-object-pointer-object x)))
+                                 (number-hash (ftype-scheme-object-pointer-offset x)))
+                 burn)
+         (values (number-hash (ftype-pointer-address x))
+                 burn))]
     [(and (#%$record? x)
           (let ([eq+hash (struct-property-ref prop:equal+hash (#%$record-type-descriptor x) #f)])
             (and eq+hash

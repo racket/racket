@@ -1917,8 +1917,12 @@ Scheme_Object *compile_expr(Scheme_Object *form, Scheme_Comp_Env *env, int app_p
         return foreign_inline_compile(form, env);
       else if (SAME_OBJ(name, ref_symbol))
         return ref_compile(form, env);
-      else if (SAME_OBJ(name, ref_symbol))
-        return ref_compile(form, env);
+      else {
+        Scheme_Object *e_form;
+        e_form = scheme_expand_foreign_form(form);
+        if (e_form)
+          return compile_expr(e_form, env, app_position);
+      }
     }
   }
 

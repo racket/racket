@@ -32,7 +32,13 @@
                                    (if (eq? key (cadr a))
                                        (parse-cond (caddr a))
                                        (loop (cdr l)))
-                                   (loop (cdr l))))))])
+                                   (if (if (eq? 'define-syntax (car a))
+                                           (if (pair? (cadr a))
+                                               (eq? (caadr a) key)
+                                               #f)
+                                           #f)
+                                       (parse-macro (caddr a))
+                                       (loop (cdr l)))))))])
         (loop definitions))))
 
   (define-values (parse-cond)
@@ -61,7 +67,9 @@
           (cadr e)
           (if (matches? e '(string->utf8 _))
               (string->bytes/utf-8 (cadr e))
-              (if (matches? e '(if unix-style-macos? _ _))
+              (if (if (matches? e '(if unix-style-macos? _ _))
+                      #t
+                      (matches? e '(if (reflect-unix-style-macos?) _ _)))
                   (if macosx?
                       (parse-expr (cadddr e))
                       (parse-expr (caddr e)))
@@ -71,6 +79,12 @@
                           'shared
                           'static)
                       (error 'parse-expr "could not parse ~e" e)))))))
+
+  (define-values (parse-macro)
+    (lambda (e)
+      (if (matches? e '#`(quote #,(datum->syntax #'here _)))
+          (parse-cond (caddr (cadr (cadr (cadr e)))))
+          (error 'parse-macro "could not parse ~e" e))))
 
   (define-values (matches?)
     (lambda (e pat)
@@ -92,9 +106,9 @@
               #t
               (memq a (cdr l))))))
 
-  (define-values (os) (lookup 'os-symbol))
-  (define-values (os*) (lookup 'os*-symbol))
-  (define-values (arch) (lookup 'arch-symbol))
+  (define-values (os) (lookup 'reflect-os-symbol))
+  (define-values (os*) (lookup 'reflect-os*-symbol))
+  (define-values (arch) (lookup 'reflect-arch-symbol))
   (define-values (link) (lookup 'link-symbol))
   (define-values (so-suffix) (lookup 'so-suffix-bytes))
   (define-values (so-mode) (lookup 'so-mode))

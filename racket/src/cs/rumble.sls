@@ -734,6 +734,29 @@
 
           ffi-static-call-and-callback-core ; not exported to Racket
 
+          ffi2-lib-ref
+          ffi2-ptr?
+          ffi2-ptr/gcable?
+          ffi2-free
+          ffi2-memcpy
+          ffi2-memmove
+          ffi2-memset
+          cpointer->ffi2-ptr
+          ffi2-ptr->cpointer
+          ffi2-ptr->uintptr
+          ffi2-uintptr->ptr
+
+          ffi2-ptr?-maker
+          ffi2-procedure-maker
+          ffi2-callback-maker
+          ffi2-ptr-ref-maker
+          ffi2-ptr-set!-maker
+          ffi2-malloc-maker
+          ffi2-ptr-cast-maker
+          ffi2-sizeof
+          ffi2-offsetof
+          ffi2-system-type-select
+
           (rename [inline:unsafe-unbox unsafe-unbox]
                   [inline:unsafe-set-box! unsafe-set-box!])
           unsafe-unbox*

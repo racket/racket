@@ -90,7 +90,7 @@
          (with-syntax ([(old-type ...) (map convert-type #'(old-type ...))])
            #'(define-ftype type (struct [field old-type] ...)))]))
 
-    ;; Wrap foreign-pointer addressed in a record so that
+    ;; Wrap foreign-pointer addresses in a record so that
     ;; the value can be finalized
     (define-record ptr (address))
     (define (ptr->address v) (if (eqv? v NULL) v (ptr-address v)))

@@ -1,8 +1,11 @@
 
-(define unix-style-macos?
+(define-syntax (reflect-unix-style-macos? stx)
   (meta-cond
    [(getenv "PLT_CS_MAKE_UNIX_STYLE_MACOS") #t]
    [else #f]))
+
+(define unix-style-macos?
+  (reflect-unix-style-macos?))
 
 (define unix-link
   (meta-cond
@@ -27,103 +30,129 @@
        #`(quote #,(#%datum->syntax #'here (string->symbol s))))]
     [else #'(machine-type)]))
 
+(define-syntax (reflect-os-symbol stx)
+  #`(quote
+     #,(datum->syntax
+        #'here
+        (case (reflect-machine-type)
+          [(a6ios ta6ios arm64ios tarm64ios
+                  a6osx ta6osx i3osx ti3osx arm64osx tarm64osx ppc32osx tppc32osx)
+           (if (reflect-unix-style-macos?) 'unix 'macosx)]
+          [(a6nt ta6nt i3nt ti3nt arm64nt tarm64nt) 'windows]
+          [else 'unix]))))
+
 (define os-symbol
-  (case (reflect-machine-type)
-    [(a6ios ta6ios arm64ios tarm64ios
-            a6osx ta6osx i3osx ti3osx arm64osx tarm64osx ppc32osx tppc32osx)
-     (if unix-style-macos? 'unix 'macosx)]
-    [(a6nt ta6nt i3nt ti3nt arm64nt tarm64nt) 'windows]
-    [else 'unix]))
+  (reflect-os-symbol))
+
+(define-syntax (reflect-os*-symbol stx)
+  #`(quote
+     #,(datum->syntax
+        #'here
+        (case (reflect-machine-type)
+          [(a6ios ta6ios arm64ios tarm64ios)
+           'ios]
+          [(a6osx ta6osx
+                  i3osx ti3osx
+                  arm64osx tarm64osx
+                  ppc32osx tppc32osx)
+           (if (reflect-unix-style-macos?)
+               'darwin
+               'macosx)]
+          [(a6nt ta6nt i3nt ti3nt arm64nt tarm64nt) 'windows]
+          [(a6le ta6le i3le ti3le
+                 arm32le tarm32le arm64le tarm64le
+                 ppc32le tppc32le
+                 rv64le trv64le
+	         la64le tla64le)
+           'linux]
+          [(i3gnu ti3gnu)
+           'gnu-hurd]
+          [(a6fb ta6fb i3fb ti3fb
+                 arm32fb tarm32fb arm64fb tarm64fb
+                 ppc32fb tppc32fb)
+           'freebsd]
+          [(a6ob ta6ob i3ob ti3ob
+                 arm32ob tarm32ob arm64ob tarm64ob
+                 ppc32ob tppc32ob)
+           'openbsd]
+          [(a6nb ta6nb i3nb ti3nb
+                 arm32nb tarm32nb arm64nb tarm64nb
+                 ppc32nb tppc32nb)
+           'netbsd]
+          [(a6s2 ta6s2 i3s2 ti3s2) 'solaris]
+          [(i3qnx) 'qnx]
+          [(pb tpb
+               pb64l tpb64l pb64b tpb64b
+               pb32l tpb32l pb32b tpb32b)
+           'unknown]
+          [else (error 'system-type "internal error: unknown operating system")]))))
 
 (define os*-symbol
-  (case (reflect-machine-type)
-    [(a6ios ta6ios arm64ios tarm64ios)
-     'ios]
-    [(a6osx ta6osx
-            i3osx ti3osx
-            arm64osx tarm64osx
-            ppc32osx tppc32osx)
-     (if unix-style-macos?
-         'darwin
-         'macosx)]
-    [(a6nt ta6nt i3nt ti3nt arm64nt tarm64nt) 'windows]
-    [(a6le ta6le i3le ti3le
-           arm32le tarm32le arm64le tarm64le
-           ppc32le tppc32le
-           rv64le trv64le
-	   la64le tla64le)
-     'linux]
-    [(i3gnu ti3gnu)
-     'gnu-hurd]
-    [(a6fb ta6fb i3fb ti3fb
-           arm32fb tarm32fb arm64fb tarm64fb
-           ppc32fb tppc32fb)
-     'freebsd]
-    [(a6ob ta6ob i3ob ti3ob
-           arm32ob tarm32ob arm64ob tarm64ob
-           ppc32ob tppc32ob)
-     'openbsd]
-    [(a6nb ta6nb i3nb ti3nb
-           arm32nb tarm32nb arm64nb tarm64nb
-           ppc32nb tppc32nb)
-     'netbsd]
-    [(a6s2 ta6s2 i3s2 ti3s2) 'solaris]
-    [(i3qnx) 'qnx]
-    [(pb tpb
-         pb64l tpb64l pb64b tpb64b
-         pb32l tpb32l pb32b tpb32b)
-     'unknown]
-    [else (error 'system-type "internal error: unknown operating system")]))
+  (reflect-os*-symbol))
+
+(define-syntax (reflect-arch-symbol stx)
+  #`(quote
+     #,(datum->syntax
+        #'here
+        (case (reflect-machine-type)
+          [(a6osx ta6osx
+                  a6ios ta6ios
+                  a6nt ta6nt
+                  a6le ta6le
+                  a6ob ta6ob
+                  a6nb ta6nb
+                  a6fb ta6fb
+                  a6s2 ta6s2)
+           'x86_64]
+          [(i3osx ti3osx
+                  i3nt ti3nt
+                  i3le ti3le
+                  i3ob ti3ob
+                  i3nb ti3nb
+                  i3fb ti3fb
+                  i3s2 ti3s2
+                  i3gnu ti3gnu
+                  i3qnx)
+           'i386]
+          [(arm32le tarm32le
+                    arm32fb tarm32fb
+                    arm32ob tarm32ob
+                    arm32nb tarm32nb)
+           'arm]
+          [(arm64le tarm64le
+                    arm64osx tarm64osx
+                    arm64ios tarm64ios
+                    arm64fb tarm64fb
+                    arm64ob tarm64ob
+                    arm64nb tarm64nb
+	            arm64nt tarm64nt)
+           'aarch64]
+          [(ppc32le tppc32le
+                    ppc32osx tppc32osx
+                    ppc32fb tppc32fb
+                    ppc32ob tppc32ob
+                    ppc32nb tppc32nb)
+           'ppc]
+          [(rv64le trv64le)
+           'riscv64]
+          [(la64le tla64le)
+           'loongarch64]
+          [(pb tpb
+               pb64l tpb64l pb64b tpb64b
+               pb32l tpb32l pb32b tpb32b)
+           'unknown]
+          [else (error 'system-type "internal error: unknown architecture")]))))
 
 (define arch-symbol
-  (case (reflect-machine-type)
-    [(a6osx ta6osx
-            a6ios ta6ios
-            a6nt ta6nt
-            a6le ta6le
-            a6ob ta6ob
-            a6nb ta6nb
-            a6fb ta6fb
-            a6s2 ta6s2)
-     'x86_64]
-    [(i3osx ti3osx
-            i3nt ti3nt
-            i3le ti3le
-            i3ob ti3ob
-            i3nb ti3nb
-            i3fb ti3fb
-            i3s2 ti3s2
-            i3gnu ti3gnu
-            i3qnx)
-     'i386]
-    [(arm32le tarm32le
-              arm32fb tarm32fb
-              arm32ob tarm32ob
-              arm32nb tarm32nb)
-     'arm]
-    [(arm64le tarm64le
-              arm64osx tarm64osx
-              arm64ios tarm64ios
-              arm64fb tarm64fb
-              arm64ob tarm64ob
-              arm64nb tarm64nb
-	      arm64nt tarm64nt)
-     'aarch64]
-    [(ppc32le tppc32le
-              ppc32osx tppc32osx
-              ppc32fb tppc32fb
-              ppc32ob tppc32ob
-              ppc32nb tppc32nb)
-     'ppc]
-    [(rv64le trv64le)
-     'riscv64]
-    [(la64le tla64le)
-     'loongarch64]
-    [(pb tpb
-         pb64l tpb64l pb64b tpb64b
-         pb32l tpb32l pb32b tpb32b)
-     'unknown]
-    [else (error 'system-type "internal error: unknown architecture")]))
+  (reflect-arch-symbol))
+
+(define-syntax (reflect-word-size stx)
+  #`(quote
+     #,(datum->syntax
+        #'here
+        (case (reflect-arch-symbol)
+          [(i386 arm ppc) 32]
+          [else 64]))))
 
 (define so-find-symbol
   (let-syntax ([suffix-sym

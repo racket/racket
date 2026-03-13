@@ -239,6 +239,7 @@ scheme_init_type ()
   set_name(scheme_thread_cell_values_type, "<thread-cell-values>");
 
   set_name(scheme_parallel_pool_type, "<parallel-thread-pool>");
+  set_name(scheme_cache_wrap_type, "<cache-wrapper>");
 
   set_name(scheme_prompt_tag_type, "<continuation-prompt-tag>");
   set_name(scheme_continuation_mark_key_type, "<continuation-mark-key>");
@@ -548,6 +549,7 @@ void scheme_register_traversers(void)
   GC_REG_TRAV(scheme_ir_let_header_type, let_header);
 
   GC_REG_TRAV(scheme_quote_compilation_type, small_object);
+  GC_REG_TRAV(scheme_cache_wrap_type, twoptr_obj);
 
   GC_REG_TRAV(scheme_linklet_type, linklet_val);
   GC_REG_TRAV(scheme_instance_type, instance_val);
