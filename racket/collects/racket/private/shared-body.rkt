@@ -14,6 +14,7 @@
 ;; definitions. See "racket/private/for-compatibility-lib.rkt" for an example.
 
 (require (for-syntax racket/base
+                     racket/private/stx
                      syntax/kerncase
                      syntax/private/struct
                      racket/struct-info)
@@ -34,13 +35,14 @@
                       stx
                       name)))
                  names)
-       (let ([dup (check-duplicate-identifier names)])
+       (let-values ([(dup origs) (stx-find-duplicate-identifiers names)])
          (when dup
            (raise-syntax-error
             'shared
             "duplicate identifier"
             stx
-            dup)))
+            dup
+            origs)))
        (let ([exprs (map (lambda (expr)
                            (let ([e (local-expand
                                      expr

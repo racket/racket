@@ -499,14 +499,10 @@
               stx
               super-id))
            (let* ([field-stxes (syntax->list #'(field ...))]
-                  [fields (map parse-field field-stxes)]
-                  [dup (check-duplicate-identifier (map field-id fields))])
-             (when dup
-               (raise-syntax-error
-                #f
-                "duplicate field identifier"
-                stx
-                dup))
+                  [fields (map parse-field field-stxes)])
+             (raise-if-duplicate-identifiers "duplicate field identifier"
+                                             stx
+                                             (map field-id fields))
              (let ([auto-count
                     (let loop ([fields fields] [field-stxes field-stxes] [auto? #f])
                       (cond

@@ -687,13 +687,9 @@
                            need-kw
                            rest)
                           (parse-formals stx #'args)])
-             (let ([dup-id (check-duplicate-identifier (syntax->list #'(id ... . rest)))])
-               (when dup-id
-                 (raise-syntax-error
-                  #f
-                  "duplicate argument identifier"
-                  stx
-                  dup-id)))
+             (raise-if-duplicate-identifiers "duplicate argument identifier"
+                                             stx
+                                             (syntax->list #'(id ... . rest)))
              (let* ([kws (syntax->list #'(kw ...))]
                     [opts (syntax->list #'(opt-id ...))]
                     [ids (syntax->list #'(id ...))]

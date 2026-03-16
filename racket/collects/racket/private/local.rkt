@@ -1,6 +1,7 @@
 #lang racket/base
 (require (for-syntax racket/base)
          (for-syntax syntax/kerncase
+                     racket/private/stx
                      "intdef-util.rkt"))
 (provide (for-syntax do-local))
 
@@ -100,9 +101,7 @@
                                            (list #'(ids rhs)))]
                                         [_ null]))
                                     defs))])
-         (let ([dup (check-duplicate-identifier ids)])
-           (when dup
-             (raise-syntax-error #f "duplicate identifier" stx dup)))
+         (raise-if-duplicate-identifiers "duplicate identifier" stx ids)
          (with-syntax ([sbindings sbindings]
                        [vbindings vbindings]
                        [(body ...)

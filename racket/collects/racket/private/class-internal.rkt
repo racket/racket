@@ -27,6 +27,7 @@
          "class-undef.rkt"
          (for-syntax racket/stxparam
                      racket/private/immediate-default
+                     racket/private/stx
                      syntax/kerncase
                      syntax/stx
                      syntax/name
@@ -514,8 +515,8 @@
           
           ;; ----- Expand definitions -----
           (let ([defn-and-exprs (expand-all-forms stx defn-and-exprs def-ctx bind-local-id)]
-                [bad (lambda (msg expr)
-                       (raise-syntax-error #f msg stx expr))]
+                [bad (lambda (msg expr . rest)
+                       (apply raise-syntax-error #f msg stx expr rest))]
                 [class-name (if name-id
                                 (syntax-e name-id)
                                 (let ([s (syntax-local-infer-name stx)])
@@ -910,25 +911,26 @@
                                      [else 'list])])
                     
                     ;; -- Look for duplicates --
-                    (let ([dup (check-duplicate-identifier
-                                (append defined-syntax-names
-                                        defined-method-names
-                                        private-field-names
-                                        field-names
-                                        inherit-field-names
-                                        plain-init-names
-                                        inherit-names
-                                        inherit/super-names
-                                        inherit/inner-names
-                                        rename-super-names
-                                        rename-inner-names))])
+                    (let-values ([(dup origs)
+                                  (stx-find-duplicate-identifiers
+                                    (append defined-syntax-names
+                                            defined-method-names
+                                            private-field-names
+                                            field-names
+                                            inherit-field-names
+                                            plain-init-names
+                                            inherit-names
+                                            inherit/super-names
+                                            inherit/inner-names
+                                            rename-super-names
+                                            rename-inner-names))])
                       (when dup
-                        (bad "duplicate declared identifier" dup)))
+                        (bad "duplicate declared identifier" dup origs)))
                     
                     ;; -- Could still have duplicates within private/public/override/augride --
-                    (let ([dup (check-duplicate-identifier local-method-names)])
+                    (let-values ([(dup origs) (stx-find-duplicate-identifiers local-method-names)])
                       (when dup
-                        (bad "duplicate declared identifier" dup)))
+                        (bad "duplicate declared identifier" dup origs)))
                     
                     ;; -- Check for duplicate external method names, init names, or field names
                     (let ([check-dup
@@ -1943,13 +1945,7 @@
                       stx
                       id)))
                  ids)
-       (let ([dup (check-duplicate-identifier ids)])
-         (when dup
-           (raise-syntax-error
-            #f
-            "duplicate identifier"
-            stx
-            dup)))
+       (raise-if-duplicate-identifiers "duplicate identifier" stx ids)
        (if (eq? (syntax-local-context) 'top-level)
            ;; Does nothing in particular at the top level:
            (syntax/loc stx (define-syntaxes (id ...) (values 'id ...)))
@@ -3024,12 +3020,7 @@ An example
                                                      " not an identifier or parenthesized sequence of identifier,\n"
                                                      " optional contract, and optional method implementation")
                                       stx v)])))
-         (let ([dup (check-duplicate-identifier vars)])
-           (when dup
-             (raise-syntax-error #f
-                                 "duplicate name"
-                                 stx
-                                 dup)))
+         (raise-if-duplicate-identifiers "duplicate name" stx vars)
          (let ([the-obj (datum->syntax (quote-syntax here) (gensym 'self))]
                [the-finder (datum->syntax #f (gensym 'find-self))])
            (with-syntax ([name (datum->syntax #f name #f)]
