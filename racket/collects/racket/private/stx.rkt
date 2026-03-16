@@ -238,6 +238,78 @@
       [(condition message expr)
        (if condition (void) (raise-syntax-error #f message expr))]))
 
+  ; (stx-filter-bound-identifier= id id-list)
+  ;   id      : identifier?
+  ;   id-list : (listof identifier?)
+  ;  -> (listof identifier?)
+  ; Returns all ids in `id-list` which are `bound-identifier=?` to `id`
+  (define-values (stx-filter-bound-identifier=)
+    (lambda (id l)
+      (if (null? l)
+          null
+          (if (bound-identifier=? id (car l))
+              (cons (car l) (stx-filter-bound-identifier= id (cdr l)))
+              (stx-filter-bound-identifier= id (cdr l))))))
+
+  ; (stx-find-duplicate-identifiers id-list)
+  ;   id-list : (listof identifier?)
+  ;  ->  (values identifier? (listof identifier?))
+  ;   or (values #f null)
+  ; Searches id-list for two identifiers which are `bound-identifier=?`.
+  ;
+  ; If two such identifiers are found, then: let `fst` be the first identifier in
+  ; the list which has some duplicate; let `rst` be all identifiers in the rest of
+  ; the list which are `bound-identifier=?` to `i`; and this procedure returns
+  ; `(values fst rst)`.
+  ;
+  ; Otherwise, this procedure returns `(values #f null)`.
+  ;
+  ; This return convention is odd, but enables code such as
+  ;
+  ;   (let-values ([(dup-id origs) (stx-find-duplicate-identifiers ids)])
+  ;     (when dup-id
+  ;       (raise-syntax-error #f "duplicate identifier" stx dup-id origs)))
+  ;
+  ; The choice to use a hash-based for all sizes >= 2 was based on some casual
+  ; benchmarks in March 2026 with no-duplicate lists on CS at 9.1-ish (HEAD at
+  ; c42ebbf7bd761e843de77a8311dc3c3b4faa5bdd); see
+  ; https://gist.github.com/jesboat/a47f090dca2094b5cd36598ebb5e6406
+  (define-values (stx-find-duplicate-identifiers)
+    (lambda (lst)
+      (if (if (null? lst) #t (null? (cdr lst)))
+          (values #f null) ; optimization: size 0 or 1 can have no duplicates
+          (let-values ([(ht) (make-hasheq)])
+            (define-values (loop)
+              (lambda (lst)
+                (if (null? lst)
+                    (values #f null)
+                    (let-values ([(id) (car lst)])
+                      (let-values ([(potentials) (hash-ref ht (syntax-e id) null)])
+                        (let-values ([(fst) (ormap (lambda (id2)
+                                                     (if (bound-identifier=? id id2) id2 #f))
+                                                   potentials)])
+                          ; original-lst = (append* processed-head lst)
+                          ;              = (append* processed-head (list id) (cdr lst))
+                          ; where `potentials` is the subset of `processed-head` which
+                          ; might be bound-identifier=? to `id`, and `fst` is the
+                          ; (unique if it exists) identifier in `potentials` which is
+                          ; bound-identifier=? to `id`
+                          (if fst
+                              (values fst (stx-filter-bound-identifier= id lst))
+                              (begin
+                                (hash-set! ht (syntax-e id) (cons id potentials))
+                                (loop (cdr lst))))))))))
+            (loop lst)))))
+
+  ; (raise-if-duplicate-identifiers msg context-stx id-list)
+  ;   message       : string?                   (suitable for 2nd argument of `raise-syntax-error`)
+  ;   context-stx   : syntax?                   (suitable for 3rd argument of `raise-syntax-error`)
+  ;   id-list       : (listof identifier?)
+  ;  -> (or/c void? none/c)
+  (define-values (raise-if-duplicate-identifiers)
+    (lambda (msg context-stx id-list)
+      (let-values ([(dup-id orig-id-in-list) (stx-find-duplicate-identifiers id-list)])
+        (raise-syntax-error-if dup-id msg context-stx dup-id orig-id-in-list))))
 
   (#%provide identifier? stx-null? stx-null/#f stx-pair? stx-list?
              stx-car stx-cdr stx->list
@@ -249,4 +321,6 @@
              split-stx-list
              make-stx-id-counter
              raise-syntax-error-if
-             raise-syntax-error-unless))
+             raise-syntax-error-unless
+             stx-find-duplicate-identifiers
+             raise-if-duplicate-identifiers))
