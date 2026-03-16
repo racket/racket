@@ -34,13 +34,7 @@
                               (and (rename-transformer-parameter? sp)
                                    #'-syntax-parameterize))))
                          ids)])
-	   (let ([dup (check-duplicate-identifier ids)])
-	     (when dup
-	       (raise-syntax-error
-		#f
-		"duplicate binding"
-		stx
-		dup)))
+           (raise-if-duplicate-identifiers "duplicate binding" stx ids)
            (if finish-k
                (finish-k #'(id ...)
                          #'(gen-id ...)

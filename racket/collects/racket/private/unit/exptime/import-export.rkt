@@ -8,6 +8,7 @@
                      syntax/parse/private/pattern-expander)
          racket/list
          racket/syntax
+         racket/private/stx
          syntax/private/id-table
          syntax/parse/pre
          syntax/parse/experimental/specialize
@@ -432,19 +433,22 @@ parsed `signature-ie?` value. |#
   (define import-names (append-map signature-ie-int-names import-sigs))
   (define export-names (append-map signature-ie-int-names export-sigs))
 
-  (let ([dup (check-duplicate-identifier import-names)])
+  (let-values ([(dup origs) (stx-find-duplicate-identifiers import-names)])
     (when dup
       (raise-stx-err
-       (format "~a is imported by multiple signatures" (syntax-e dup)))))
+       (format "~a is imported by multiple signatures" (syntax-e dup))
+       dup origs)))
 
-  (let ([dup (check-duplicate-identifier export-names)])
+  (let-values ([(dup origs) (stx-find-duplicate-identifiers export-names)])
     (when dup
       (raise-stx-err (format "~a is exported by multiple signatures"
-                             (syntax-e dup)))))
+                             (syntax-e dup))
+                     dup origs)))
 
-  (let ([dup (check-duplicate-identifier (append import-names export-names))])
+  (let-values ([(dup origs) (stx-find-duplicate-identifiers (append import-names export-names))])
     (when dup
-      (raise-stx-err (format "import ~a is exported" (syntax-e dup))))))
+      (raise-stx-err (format "import ~a is exported" (syntax-e dup))
+                     dup origs))))
 
 ;; build-val+macro-defs : (syntax? -> syntax?)
 ;;                     -> (signature-ie? -> (list/c syntax? syntax? syntax?))

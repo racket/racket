@@ -4,6 +4,7 @@
                      racket/syntax
                      syntax/name
                      syntax/parse/pre
+                     racket/private/stx
                      "exptime/import-export.rkt"
                      "exptime/signature.rkt"
                      "contract-syntax.rkt")
@@ -69,11 +70,11 @@
         {~optional b:body-clause/c})
        
        (define (process-sig sig-stx sig-var-ids xs cs)
-         (let ([dup (check-duplicate-identifier xs)])
+         (let-values ([(dup origs) (stx-find-duplicate-identifiers xs)])
            (when dup
              (raise-stx-err (format "duplicate identifier found for signature ~a"
                                     (syntax->datum sig-stx))
-                            dup)))
+                            dup origs)))
          (for ([x (in-list xs)]
                [c (in-list cs)])
            (unless (memf (λ (i) (bound-identifier=? x i)) sig-var-ids)

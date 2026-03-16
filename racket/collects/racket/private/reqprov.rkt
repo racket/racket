@@ -531,13 +531,7 @@
                                       id
                                       (cadr (syntax->list id))))
                                 ids)])
-              (let ([dup-id (check-duplicate-identifier new-ids)])
-                (when dup-id
-                  (raise-syntax-error
-                   #f
-                   "duplicate identifier"
-                   stx
-                   dup-id)))
+              (raise-if-duplicate-identifiers "duplicate identifier" stx new-ids)
               (values
                (apply
                 append
@@ -582,13 +576,7 @@
                            stx
                            id)))
                       ids)
-            (let ([dup-id (check-duplicate-identifier ids)])
-              (when dup-id
-                (raise-syntax-error
-                 #f
-                 "duplicate identifier"
-                 stx
-                 dup-id)))
+            (raise-if-duplicate-identifiers "duplicate identifier" stx ids)
             (for-each (lambda (id)
                         (or (ormap (lambda (import)
                                      (import-identifier=? id (import-local-id import)))
@@ -680,13 +668,7 @@
                            stx
                            id)))
                       (append orig-ids bind-ids))
-            (let ([dup-id (check-duplicate-identifier bind-ids)])
-              (when dup-id
-                (raise-syntax-error
-                 #f
-                 "duplicate identifier"
-                 stx
-                 dup-id)))
+            (raise-if-duplicate-identifiers "duplicate identifier" stx bind-ids)
             (let ([new+olds
                    (apply
                     append
