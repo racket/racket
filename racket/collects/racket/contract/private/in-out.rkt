@@ -6,6 +6,7 @@
                      racket/list
                      racket/string
                      racket/struct-info
+                     racket/private/stx
                      setup/path-to-relative
                      "../../private/struct-util.rkt"
                      (prefix-in a: "helpers.rkt")
@@ -784,36 +785,17 @@
                     struct-name-remappings)
   (define mangled-id-scope (make-syntax-introducer))
 
-  ;; ids : table[id -o> (listof id)]
-  ;; code-for-each-clause adds identifiers to this map.
+  ;; bound-id-list : (listof identifier?) [mutated]
+  ;; code-for-each-clause adds identifiers to this list
   ;; when it binds things; they are then used to signal
-  ;; a syntax error for duplicates
-  (define dups-table (make-hash))
-  (define (add-to-dups-table id)
-    (hash-update!
-     dups-table
-     (syntax-e id)
-     (λ (ids) (cons id ids))
-     '()))
-  (define (signal-dup-syntax-error)
-    (hash-for-each
-     dups-table
-     (λ (k ids)
-       (let loop ([ids ids])
-         (cond
-           [(null? ids) (void)]
-           [else
-            (cond
-              [(ormap (λ (x) (bound-identifier=? (car ids) x)) (cdr ids))
-               (let ([dups (filter (λ (x) (bound-identifier=? (car ids) x))
-                                   ids)])
-                 (raise-syntax-error who
-                                     "duplicate identifiers"
-                                     stx
-                                     (car dups)
-                                     (cdr dups)))]
-              [else
-               (loop (cdr ids))])])))))
+  ;; a syntax error for duplicates (if a dup is present)
+  (define bound-id-list null)
+  (define (add-to-bound-id-list! id)
+    (set! bound-id-list (cons id bound-id-list)))
+  (define (signal-dup-syntax-error!)
+    (define-values (dup origs) (stx-find-duplicate-identifiers (reverse bound-id-list)))
+    (when dup
+     (raise-syntax-error who "duplicate identifiers" stx dup origs)))
 
   ;; code-for-each-clause : (listof syntax) -> (listof syntax)
   ;; constructs code for each clause of a contract-in/contract-out
@@ -880,7 +862,7 @@
               (and (identifier? (syntax this-name))
                    (identifier? (syntax new-name)))
               (begin
-                (add-to-dups-table #'new-name)
+                (add-to-bound-id-list! #'new-name)
                 (if just-check-errors?
                     (loop (cdr clauses) exists-binders)
                     (cons (code-for-one-id who stx
@@ -979,7 +961,7 @@
              [(name contract)
               (identifier? (syntax name))
               (begin
-                (add-to-dups-table #'name)
+                (add-to-bound-id-list! #'name)
                 (if just-check-errors?
                     (loop (cdr clauses) exists-binders)
                     (cons (code-for-one-id who stx
@@ -1029,7 +1011,7 @@
       [just-check-errors?
        (begin0
          (code-for-each-clause p/c-clauses)
-         (signal-dup-syntax-error))]
+         (signal-dup-syntax-error!))]
       [else
        (with-syntax ([(bodies ...) (code-for-each-clause p/c-clauses)]
                      [pos-module-source-id pos-module-source-id])
