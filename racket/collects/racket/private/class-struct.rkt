@@ -253,16 +253,22 @@ last few projections.
                                        given:
                                        "a method invocation of ~e")
                                      meth))
-                (case (procedure-arity meth)
-                  [(1) (λ (this) (meth unwrapped))]
-                  [(2) (λ (this x) (meth unwrapped x))]
-                  [(3) (λ (this x y) (meth unwrapped x y))]
-                  [else
-                   (make-keyword-procedure
-                    (λ (kwds kwd-args this . args)
-                      (keyword-apply meth kwds kwd-args unwrapped args))
-                    (λ (this . args)
-                      (apply meth unwrapped args)))])])]))]
+                (define (slow-path)
+                  (make-keyword-procedure
+                   (λ (kwds kwd-args this . args)
+                     (keyword-apply meth kwds kwd-args unwrapped args))
+                   (λ (this . args)
+                     (apply meth unwrapped args))))
+                (define-values (mandatory-kwds allowed-kwds)
+                  (procedure-keywords meth))
+                (cond
+                  [(equal? '() allowed-kwds)
+                   (case (procedure-arity meth)
+                     [(1) (λ (this) (meth unwrapped))]
+                     [(2) (λ (this x) (meth unwrapped x))]
+                     [(3) (λ (this x y) (meth unwrapped x y))]
+                     [else (slow-path)])]
+                  [else (slow-path)])])]))]
     [else
      (obj-error who "target is not an object"
                 "target" in-object 

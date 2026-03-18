@@ -1713,6 +1713,30 @@
                     (contract ctc1 (contract ctc2 (new c% [f 2]) 'pos 'neg) 'pos2 'neg2))))
    (list #f #f #f #f))
 
+  (test/spec-passed/result
+   'object/c-non-opaque-kwd-args
+   '(send (contract (object/c)
+                    (new
+                     (class object%
+                       (super-new)
+                       (define/public (do-something #:name name)
+                         name)))
+                    'pos 'neg)
+          do-something #:name "test")
+   "test")
+
+  (test/spec-passed/result
+   'object/c-non-opaque-kwd-args
+   '(send (contract (object/c)
+                    (new
+                     (class object%
+                       (super-new)
+                       (define/public (do-something #:name [name "wrong"])
+                         name)))
+                    'pos 'neg)
+          do-something #:name "test")
+   "test")
+
   ;; this test makes sure that we don't rewrap
   ;; contracts when we are just putting three
   ;; different contracts on
