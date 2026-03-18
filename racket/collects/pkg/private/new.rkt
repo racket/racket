@@ -140,13 +140,13 @@ jobs:
       fail-fast: false
       matrix:
         racket-version: ["stable", "current"]
-        racket-variant: ["BC", "CS"]
+        racket-variant: ["CS"]
         include:
           - racket-version: current
             experimental: true
     steps:
-      - uses: actions/checkout@v4
-      - uses: Bogdanp/setup-racket@v1.12
+      - uses: actions/checkout@v6
+      - uses: Bogdanp/setup-racket@v1.15
         with:
           architecture: x64
           distribution: full
