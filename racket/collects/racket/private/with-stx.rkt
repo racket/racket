@@ -26,11 +26,11 @@
          (syntax-case x ()
            ((_ () e1 e2 ...)
             (syntax/loc x (let () e1 e2 ...)))
-           ((_ ((out in) ...) e1 e2 ...)
+           ((who ((out in) ...) e1 e2 ...)
             (let ([ins (syntax->list (syntax (in ...)))]
                   [gen-temp-id (make-stx-id-counter 'ws)])
               ;; Check for duplicates or other syntax errors:
-              (get-match-vars (syntax _) x (syntax (out ...)) null)
+              (get-match-vars (syntax who) x (syntax (out ...)) null)
               ;; Generate temps and contexts:
               (let ([tmps (map (lambda (x) (gen-temp-id)) ins)]
                     [heres (map (lambda (x)
