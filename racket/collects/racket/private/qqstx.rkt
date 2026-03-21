@@ -33,7 +33,7 @@
     (unless (stx-list? l)
       (raise-argument-error
        'unsyntax-splicing
-       "syntax->list"
+       "stx->list"
        l))
     (datum->syntax ctx l ctx))
 
