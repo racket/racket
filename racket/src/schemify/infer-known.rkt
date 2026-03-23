@@ -112,6 +112,8 @@
             [else #f])]
          [`(#%foreign-inline ,_ copy)
           (known-foreign-inline rhs)]
+         [`(#%foreign-inline ,_ copy*)
+          (known-foreign-inline rhs)]
          [`,_
           (cond
             [(and defn

@@ -108,8 +108,8 @@
       [`(quote . ,_) (returns 1)]
       [`(#%variable-reference . ,_) (returns 1)]
       [`(#%foreign-inline ,_ ,mode) (and (case mode
-                                           [(copy) #t]
-                                           [(pure) (not no-alloc?)]
+                                           [(copy copy*) #t]
+                                           [(pure pure*) (not no-alloc?)]
                                            [else (not (or pure? no-alloc?))])
                                          (returns 1))]
       [`(let-values ([,idss ,rhss] ...) ,body)
@@ -171,14 +171,23 @@
       [`(,proc . ,args)
        (cached
         (let ([proc (unwrap proc)])
-          (and (symbol? proc)
-               (let ([v (or (hash-ref-either knowns imports proc)
-                            (hash-ref prim-knowns proc #f))])
-                 (and (ok-to-call? proc v (length args))
-                      (bitwise-bit-set? (known-procedure-arity-mask v) (length args))))
-               (simple-mutated-state? (hash-ref mutated proc #f))
-               (for/and ([arg (in-list args)])
-                 (simple? arg 1)))))]
+          (and
+           (or (and (symbol? proc)
+                    (let ([v (or (hash-ref-either knowns imports proc)
+                                 (hash-ref prim-knowns proc #f))])
+                      (and (ok-to-call? proc v (length args))
+                           (bitwise-bit-set? (known-procedure-arity-mask v) (length args))))
+                    (simple-mutated-state? (hash-ref mutated proc #f)))
+               (match proc
+                 [`(#%foreign-inline ,_ ,mode)
+                  (and (case mode
+                         [(copy*) #t]
+                         [(pure*) (not no-alloc?)]
+                         [else #f])
+                       (returns 1))]
+                 [`,_ #f]))
+           (for/and ([arg (in-list args)])
+             (simple? arg 1)))))]
       [`,_
        (let ([e (unwrap e)])
          (and (returns 1)

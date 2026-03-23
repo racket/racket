@@ -13,6 +13,8 @@
 (test #t procedure? (#%foreign-inline (lambda (x) x) #:copy))
 (test #t procedure? (#%foreign-inline (lambda (x) x) #:pure))
 (test #t procedure? (#%foreign-inline (lambda (x) x) #:effect))
+(test 7 values ((#%foreign-inline (lambda (x) x) #:copy*) 7))
+(test 8 values ((#%foreign-inline (lambda (x) x) #:pure*) 8))
 
 (syntax-test #'#%foreign-inline)
 (syntax-test #'(#%foreign-inline))

@@ -495,7 +495,7 @@
    (define-match m-mode s #:try '(foreign-inline datum mode))
    (define-match m s #:unless (m-mode) '(foreign-inline datum))
    (when (m-mode)
-     (unless (memq (syntax-e (m-mode 'mode)) '(#:copy #:pure #:effect))
+     (unless (memq (syntax-e (m-mode 'mode)) '(#:copy* #:copy #:pure* #:pure #:effect))
        (raise-syntax-error #f "invalid foreign-inline mode keyword" s (m-mode 'mode))))
    (unless (eq? (current-code-inspector) initial-code-inspector)
      (raise-syntax-error #f "unsafe compilation disallowed by code inspector" s))

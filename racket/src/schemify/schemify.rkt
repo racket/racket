@@ -1050,6 +1050,12 @@
                                           [(or (known-procedure? k)
                                                (lambda? rator))
                                            #f]
+                                          [(match (or (and (known-foreign-inline? k)
+                                                           (known-foreign-inline-expr k))
+                                                      rator)
+                                             [`(#%foreign-inline ,_ ,mode) (memq mode '(copy* pure*))]
+                                             [`,_ #f])
+                                           #f]
                                           [else '|#%app|])
                                         target
                                         prim-knowns knowns imports mutated simples unsafe-mode?)])))]

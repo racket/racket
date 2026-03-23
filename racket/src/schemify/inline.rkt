@@ -48,7 +48,7 @@
                  (sub1 size)
                  0))]
           [(eq? (unwrap (wrap-car v)) '#%foreign-inline)
-           (if (eq? (unwrap (wrap-car (wrap-cdr (wrap-cdr v)))) 'copy)
+           (if (memq (unwrap (wrap-car (wrap-cdr (wrap-cdr v)))) '(copy copy*))
                (sub1 size)
                0)]
           [else
@@ -350,7 +350,7 @@
       ;; Cannot inline a variable reference
       #f]
      [`(#%foreign-inline ,_ ,mode)
-      (and (eq? (unwrap mode) 'copy) needed)]
+      (and (memq (unwrap mode) '(copy copy*)) needed)]
      [`(,rator . ,_)
       (body-needed-imports v prim-knowns imports exports env needed)]
      [`,_

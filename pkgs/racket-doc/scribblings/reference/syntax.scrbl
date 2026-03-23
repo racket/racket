@@ -3406,7 +3406,9 @@ dependency on the runtime support module.
          ([maybe-mode code:blank
                       #:effect
                       #:pure
-                      #:copy])]{
+                      #:pure*
+                      #:copy
+                      #:copy*])]{
 
 The @racket[#%foreign-inline] form @tech[#:key "unsafe"]{unsafely}
 inlines an expression form that is supported by the core compiler and
@@ -3430,10 +3432,16 @@ Ensuring that @racket[datum] is supported and has appropriate behavior
  evaluating @racket[datum] must not have any side effects or depend on
  preceding effects.}
 
- @item{If @racket[#:copy] is specified, then the compilation may
- duplicate the entire @racket[(#%foreign-inline datum maybe-mode)]
- expression one or more times to inline its implementation at
- different uses of its value.}
+ @item{If @racket[#:pure*] or @racket[#:copy*] is specified, then not
+ only must evaluating @racket[datum] have no side effects or
+ dependencies on preceding effects, the expression must be applied to
+ arguments where the application has no side effects or dependencies
+ on preceding effects.}
+
+ @item{If @racket[#:copy] or @racket[#:copy*] is specified, then the
+ compilation may duplicate the entire @racket[(#%foreign-inline datum
+ maybe-mode)] expression one or more times to inline its
+ implementation at different uses of its value.}
 
 ]
 

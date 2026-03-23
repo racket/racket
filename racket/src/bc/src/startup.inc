@@ -75047,7 +75047,7 @@ static const char *startup_source =
 "(values #f #f #f)))))"
 "(begin"
 "(if ok?_0"
-"(if(memq(syntax-e$1 mode281_0) '(#:copy #:pure #:effect))"
+"(if(memq(syntax-e$1 mode281_0) '(#:copy* #:copy #:pure* #:pure #:effect))"
 "(void)"
 "                 (raise-syntax-error$1 #f \"invalid foreign-inline mode keyword\" s_0 mode281_0))"
 "(void))"

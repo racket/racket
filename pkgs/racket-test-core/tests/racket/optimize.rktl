@@ -7176,8 +7176,11 @@
 ;; #%foreign-inline should not get in the way of backend optimizations
 
 (test-comp 5 '(if (#%foreign-inline #f #:pure) (cons 1 2) 5))
+(test-comp 5 '(if ((#%foreign-inline (lambda () #f) #:pure*)) (cons 1 2) 5))
 (test-comp '(list 7 7) '(let ([x (#%foreign-inline 7 #:copy)])
                           (list x x)))
+(test-comp '(list 7 7) '(let ([x (#%foreign-inline (lambda () 7) #:copy*)])
+                          (list (x) (x))))
 
 (register-top-level-module
  (module module-that-provides-foreign-inline racket/base

@@ -64,6 +64,7 @@
        [`(quote . ,_) #t]
        [`(#%variable-reference . ,_) #t]
        [`(#%foreign-inline . ,_) #t]
+       [`((#%foreign-inline ,_ ,mode) . ,args) (memq (unwrap mode) '(copy* pure*))]
        [`(let-values ,_ . ,body)
         (single-valued-body? body knowns prim-knowns imports mutated (fx- fuel 1))]
        [`(let ,_ . ,body)

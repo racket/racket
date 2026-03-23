@@ -110,7 +110,11 @@
       (let ([rhs (unwrap rhs)])
         (match rhs
           [`(quote ,_) #t]
-          [`(#%foreign-inline ,_ ,mode) (memq mode '(copy pure))]
+          [`(#%foreign-inline ,_ ,mode) (memq mode '(copy pure copy* pure*))]
+          [`((#%foreign-inline ,_ ,mode) ,args ...)
+           (and (memq mode '(copy* pure*))
+                (for/and ([arg (in-list args)])
+                  (immediate? arg)))]
           [`(lambda . ,_) #t]
           [`(case-lambda ., _) #t]
           [`(let-values ([,ids ,rhs] ...)
