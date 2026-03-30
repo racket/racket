@@ -17,3 +17,6 @@
 
 (define license
   '(Apache-2.0 OR MIT))
+
+;; disable DrDr testing of files in this directory, for now
+(define test-omit-paths 'all)
