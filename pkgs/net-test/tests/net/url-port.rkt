@@ -138,6 +138,17 @@
              "Content-Type: text/plain\r\nTransfer-Encoding: chunked\r\nAnother-Header: ta-daa\r\n\r\n")))
 
   (test
+    (get-impure
+     "HTTP/1.0 200 OK\r\n\r\nok")
+   =>
+   "HTTP/1.0 200 OK\r\n\r\nok"
+
+    (get-pure
+     "HTTP/1.0 200 OK\r\n\r\nok")
+   =>
+   "ok")
+
+  (test
    (put-pure
     "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nTransfer-Encoding: chunked\r\n\r\n24\r\nThis is the data in the first chunk \r\n1A\r\nand this is the second one\r\n0\r\n")
    =>
