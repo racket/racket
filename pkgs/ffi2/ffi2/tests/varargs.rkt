@@ -2,7 +2,12 @@
 (require ffi2
          rackunit)
 
-(define c-lib (ffi2-lib #f))
+(define c-lib (ffi2-lib (if (eq? 'windows (system-type))
+                            ;; use msvcrt, because `sprintf` found when linked
+                            ;; via ucrt doesn't seem to be the usual one,
+                            ;; but msvcrt's has the expected ABI
+                            "msvcrt.dll"
+                            #f)))
 
 (define c-sprintf-ptr (ffi2-lib-ref c-lib "sprintf"))
 (define c-sprintf (ffi2-procedure c-sprintf-ptr

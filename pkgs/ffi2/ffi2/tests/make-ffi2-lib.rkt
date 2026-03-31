@@ -4,7 +4,8 @@
          racket/place
          dynext/compile
          dynext/link
-         racket/runtime-path)
+         racket/runtime-path
+         ffi2)
 
 (provide build-ffi2-lib
          test-async?)
@@ -44,9 +45,14 @@
       (compile-extension #t c o '())
       (link-extension #t (list o) so))
 
+    (define cust (make-custodian))
+
+    (define test-lib (ffi2-lib so #:custodian cust))
+    
     (values
-     so
+     test-lib
      (lambda ()
+       (custodian-shutdown-all cust)
        (with-handlers ([exn:fail:filesystem?
                         (lambda (e)
                           (eprintf "warning: could not delete ~e\n" test-tmp-dir))])

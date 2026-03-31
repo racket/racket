@@ -4,10 +4,8 @@
          racket/flonum
          "make-ffi2-lib.rkt")
 
-(define-values (ffi2.so clean-ffi2-lib)
+(define-values (test-lib clean-ffi2-lib)
   (build-ffi2-lib))
-
-(define test-lib (ffi2-lib ffi2.so))
 
 (define N 10000000)
 

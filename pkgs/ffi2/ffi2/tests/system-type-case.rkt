@@ -12,7 +12,7 @@
 
 (check-equal? (ffi2-sizeof (system-type-case
                             os*
-                            [(window) int8_t]
+                            [(windows) int8_t]
                             [else int32_t]))
               (if (eq? (system-type 'os*) 'windows)
                   1

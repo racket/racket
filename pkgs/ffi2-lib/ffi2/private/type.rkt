@@ -125,5 +125,5 @@
   (raise-syntax-error #f "allowed only in an ffi2 type or abi context" stx))
 
 (define-syntax default_abi (procedure-abi #f))
-(define-syntax stdcall_abi (procedure-abi '(__select os (windows) __stdcall #f)))
-(define-syntax cdecl_abi (procedure-abi '(__select os (windows) __cdecl #f)))
+(define-syntax stdcall_abi (procedure-abi '(__select os (windows) (__select word (32) __stdcall #f) #f)))
+(define-syntax cdecl_abi (procedure-abi '(__select os (windows) (__select word (32) __cdecl #f) #f)))
