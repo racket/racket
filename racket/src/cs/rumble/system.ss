@@ -28,13 +28,18 @@
      (let ([s (getenv "PLT_CS_MACHINE_TYPE")])
        (unless s (error 'machine-type "need PLT_CS_MACHINE_TYPE"))
        #`(quote #,(#%datum->syntax #'here (string->symbol s))))]
-    [else #'(machine-type)]))
+    [else
+     (syntax-case stx (meta)
+       [(_ meta)
+        #'(#%$target-machine)]
+       [_
+        #'(machine-type)])]))
 
 (define-syntax (reflect-os-symbol stx)
   #`(quote
      #,(datum->syntax
         #'here
-        (case (reflect-machine-type)
+        (case (reflect-machine-type meta)
           [(a6ios ta6ios arm64ios tarm64ios
                   a6osx ta6osx i3osx ti3osx arm64osx tarm64osx ppc32osx tppc32osx)
            (if (reflect-unix-style-macos?) 'unix 'macosx)]
@@ -48,7 +53,7 @@
   #`(quote
      #,(datum->syntax
         #'here
-        (case (reflect-machine-type)
+        (case (reflect-machine-type meta)
           [(a6ios ta6ios arm64ios tarm64ios)
            'ios]
           [(a6osx ta6osx
@@ -94,7 +99,7 @@
   #`(quote
      #,(datum->syntax
         #'here
-        (case (reflect-machine-type)
+        (case (reflect-machine-type meta)
           [(a6osx ta6osx
                   a6ios ta6ios
                   a6nt ta6nt

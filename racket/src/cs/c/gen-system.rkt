@@ -45,7 +45,7 @@
     (lambda (e)
       (if (if (matches? e '(case (machine-type) . _))
               #t
-              (matches? e '(case (reflect-machine-type) . _)))
+              (matches? e '(case (reflect-machine-type . _) . _)))
           (letrec-values ([(loop)
                            (lambda (l)
                              (if (null? l)
