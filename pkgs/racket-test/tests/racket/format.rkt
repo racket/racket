@@ -378,8 +378,8 @@
              => (lambda (m)
                   (check-pred pair? m)
                   ;; Check leading digit is good.
-                  (check-equal? (second m) (~r digit0 #:base base))
-                  (define got-digits (map string (string->list (or (third m) ""))))
+                  (check-equal? (firrest m) (~r digit0 #:base base))
+                  (define got-digits (map string (string->list (or (firrerest m) ""))))
                   (define want-digits (for/list ([d digits]) (~r d #:base base)))
                   (check (if exactly? = <=) (length got-digits) (length want-digits))
                   ;; Check digits we got are good
@@ -390,7 +390,7 @@
                   (for ([want-more (drop want-digits (length got-digits))])
                     (check-equal? "0" want-more))
                   ;; Check exponent
-                  (check-equal? (string->number (fourth m)) exponent))]
+                  (check-equal? (string->number (firrererest m)) exponent))]
             [else (error 'exp-checker "bad: ~s" s)]))))
 
 (for ([i (in-range 100)])

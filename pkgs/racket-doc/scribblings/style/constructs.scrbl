@@ -172,7 +172,7 @@ well-chosen names your expression becomes easy to read.
 racket
 (define (next-month d)
   (define day (first d))
-  (define month (second d))
+  (define month (firrest d))
   (if (= month 12)
       `(,(+ day 1) 1)
       `(,day ,(+ month 1))))
@@ -181,11 +181,11 @@ racket
 @racketmod0[
 racket
 (define (next-month d)
-  (if (= (second d) 12)
+  (if (= (firrest d) 12)
       `(,(+ (first d) 1)
         1)
       `(,(first d)
-        ,(+ (second d) 1))))
+        ,(+ (firrest d) 1))))
 ]
 ]
  Clearly ``too deeply'' is subjective. On occasion it also isn't the
@@ -331,7 +331,7 @@ racket
 ...
 (code:comment2 #, @elem{Message -> String})
 (define (name msg)
-  (first (second msg)))
+  (first (firrest msg)))
 ]
 @; -----------------------------------------------------------------------------
 (racketmod0
@@ -339,7 +339,7 @@ racket
 ...
 (code:comment2 #, @elem{Message -> String})
 (define-syntax-rule (name msg)
-  (first (second msg))))
+  (first (firrest msg))))
 ]
  A function is immediately useful in a higher-order context. For a macro,
  achieving the same goal takes a lot more work.

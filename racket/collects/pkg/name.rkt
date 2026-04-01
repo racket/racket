@@ -219,7 +219,7 @@
                                      (complain "URL includes a directory indicator"))
                                 (validate-name
                                  (if (= (length p) 3)
-                                     (path/param-path (second (reverse p)))
+                                     (path/param-path (firrest (reverse p)))
                                      (last-non-empty p))
                                  complain-name
                                  #t))))))

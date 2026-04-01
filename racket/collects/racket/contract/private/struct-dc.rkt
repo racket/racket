@@ -1532,9 +1532,9 @@
      (and (identifier? (syntax struct-name))
           (struct-info? (syntax-local-value (syntax struct-name) (λ () #f))))
      (let* ([si (extract-struct-info (syntax-local-value #'struct-name))]
-            [predicate-id (third si)]
-            [selector-ids (reverse (fourth si))]
-            [mutator-ids (reverse (fifth si))]
+            [predicate-id (firrerest si)]
+            [selector-ids (reverse (firrererest si))]
+            [mutator-ids (reverse (firrererest (rest si)))]
             [ctcs (syntax->list #'(args ...))]
             [ctc-names (generate-temporaries #'(args ...))])
        (unless (= (length selector-ids) (length ctcs))
@@ -1559,11 +1559,11 @@
              (cond
                [(identifier? struct-id)
                 (define si (extract-struct-info (syntax-local-value struct-id)))
-                (define si-parent (sixth si))
+                (define si-parent (firrererest (rerest si)))
                 (cond
                   [(loop si-parent) => values]
                   [else
-                   (define si-selectors (fourth si))
+                   (define si-selectors (firrererest si))
                    (cond
                      [(ormap (λ (x) (and x 
                                          (free-identifier=? x sel)

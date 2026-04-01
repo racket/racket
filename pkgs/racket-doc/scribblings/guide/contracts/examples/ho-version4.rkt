@@ -1,7 +1,7 @@
 #lang racket/load 
 
 (module a racket/base
-  (require racket/contract (only-in racket/list first second rest empty?) (prefix-in old: (only-in racket/list argmax)))
+  (require racket/contract (only-in racket/list first firrest rest empty?) (prefix-in old: (only-in racket/list argmax)))
   
   (define (argmax f lov) 
     (cond 
@@ -29,10 +29,10 @@
   (define (dominates-all f@r flov)
     (for/and ((f@v flov)) (>= f@r f@v)))
   
-  ; r is (second x) for the first x in flov+lov s.t. (= (first x) f@r)
+  ; r is (firrest x) for the first x in flov+lov s.t. (= (first x) f@r)
   (define (is-first-max? r f@r lov+flov)
     (define fst (first lov+flov))
-    (if (= (second fst) f@r)
+    (if (= (firrest fst) f@r)
         (eq? (first fst) r)
         (is-first-max? f@r r (rest lov+flov)))))
 

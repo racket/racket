@@ -1225,7 +1225,7 @@ property being checked in error messages.
     (-> (and/c (listof number?)
                (property/c length (=/c 3)))
         number?)
-    (+ (first lst) (second lst) (third lst)))
+    (+ (first lst) (firrest lst) (firrerest lst)))
   (eval:check (sum-triple '(1 2 3)) 6)
   (eval:error (sum-triple '(1 2)))]
 

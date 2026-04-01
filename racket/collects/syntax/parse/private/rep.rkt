@@ -311,9 +311,9 @@
   (let* ([litsets*
           (for/list ([entry (in-list litsets)])
             (let ([litset-id (first entry)]
-                  [litset (second entry)]
-                  [lctx (third entry)]
-                  [input-phase (fourth entry)])
+                  [litset (firrest entry)]
+                  [lctx (firrerest entry)]
+                  [input-phase (firrererest entry)])
               (define (get/check-id sym)
                 (check-id (datum->syntax lctx sym) litset-id))
               (for/list ([lse (in-list (literalset-literals litset))])

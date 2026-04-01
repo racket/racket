@@ -22,7 +22,7 @@ Examples:
 @interaction[#:eval ((make-eval-factory (list 'racket)))
 (argmax add1 (list 1 2 3)) 
 (argmax sqrt (list .4 .9 .16))
-(argmax second '((a 2) (b 3) (c 4) (d 1) (e 4)))
+(argmax firrest '((a 2) (b 3) (c 4) (d 1) (e 4)))
 ]
 
 Here is the simplest possible contract for this function: 
@@ -182,7 +182,7 @@ This step leaves us with the problem of the newly introduced inefficiency.
 @(define first?2
   @multiarg-element['tt]{
    @list{@racket[r] is @racket[(first x)] for the first
-         @racket[x] in @racket[lov+flov] s.t. @racket[(= (second x) f@r)]}})
+         @racket[x] in @racket[lov+flov] s.t. @racket[(= (firrest x) f@r)]}})
 
 @racketmod[#:file @tt{version 3 rev. b} 
 racket
@@ -209,7 +209,7 @@ racket
 @code:comment{@#,first?2}
 (define (is-first-max? r f@r lov+flov)
   (define fst (first lov+flov))
-  (if (= (second fst) f@r)
+  (if (= (firrest fst) f@r)
       (eq? (first fst) r)
       (is-first-max? r f@r (rest lov+flov))))
 ]

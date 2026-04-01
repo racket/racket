@@ -261,7 +261,7 @@
       (define/public (has-jobs?)
         (define (hasjob?  cct)
           (let loop ([cct cct])
-            (ormap (lambda (x) (or (pair? (second x)) (loop (third x)))) cct)))
+            (ormap (lambda (x) (or (pair? (firrest x)) (loop (firrerest x)))) cct)))
 
         (or (hasjob? cclst)
             (for/or ([cct (in-hash-values assigned-ccs)])
@@ -270,7 +270,7 @@
       (define/public (jobs-cnt)
         (define (count-cct cct)
           (let loop ([cct cct])
-            (apply + (map (lambda (x) (+ (length (second x)) (loop (third x)))) cct))))
+            (apply + (map (lambda (x) (+ (length (firrest x)) (loop (firrerest x)))) cct))))
 
         (+ (count-cct cclst)
            (for/fold ([cnt 0]) ([cct (in-hash-values assigned-ccs)])
@@ -526,4 +526,3 @@
   (lambda ()
     (semaphore-post sema)
     (sync t)))
-

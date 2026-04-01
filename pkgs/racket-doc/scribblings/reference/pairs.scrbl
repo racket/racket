@@ -921,10 +921,34 @@ The same as @racket[(cdr lst)], but only for lists (that are not empty).
 @mz-examples[#:eval list-eval
   (rest '(1 2 3 4 5 6 7 8 9 10 11 12 13 14 15))]}
 
+The @racket[first]/@racket[rest] vocabulary is also available in a
+compositional family through depth 4. The names are formed from
+@litchar{fir} and @litchar{re} with a final @litchar{st}, and they are
+read from right to left in the same style as @racket[cadr] and friends.
+
+Representative selectors include:
+
+@itemlist[
+ @item{@racket[firfirst] is the same as @racket[(first (first lst))].}
+ @item{@racket[firrest] is the same as @racket[(first (rest lst))].}
+ @item{@racket[refirst] is the same as @racket[(rest (first lst))].}
+ @item{@racket[rerest] is the same as @racket[(rest (rest lst))].}
+ @item{@racket[firrerest] is the same as @racket[(first (rest (rest lst)))].}
+ @item{@racket[firrererest] is the same as @racket[(first (rest (rest (rest lst))))].}
+]
+
+All depth-2, depth-3, and depth-4 combinations of @litchar{fir} and
+@litchar{re} are provided.
+
+@mz-examples[#:eval list-eval
+  (firrest '(1 2 3 4 5 6 7 8 9 10 11 12 13 14 15))
+  (refirst '((1 2 3 4) 5 6 7))
+  (firrererest '(1 2 3 4 5 6 7 8 9 10 11 12 13 14 15))]
+
 
 @defproc[(second [lst list?]) any/c]{
 
-Returns the second element of the list.
+Compatibility alias for @racket[firrest].
 
 @mz-examples[#:eval list-eval
   (second '(1 2 3 4 5 6 7 8 9 10 11 12 13 14 15))]}
@@ -932,7 +956,7 @@ Returns the second element of the list.
 
 @defproc[(third [lst list?]) any/c]{
 
-Returns the third element of the list.
+Compatibility alias for @racket[firrerest].
 
 @mz-examples[#:eval list-eval
   (third '(1 2 3 4 5 6 7 8 9 10 11 12 13 14 15))]}
@@ -940,7 +964,7 @@ Returns the third element of the list.
 
 @defproc[(fourth [lst list?]) any/c]{
 
-Returns the fourth element of the list.
+Compatibility alias for @racket[firrererest].
 
 @mz-examples[#:eval list-eval
   (fourth '(1 2 3 4 5 6 7 8 9 10 11 12 13 14 15))]}
@@ -948,7 +972,8 @@ Returns the fourth element of the list.
 
 @defproc[(fifth [lst list?]) any/c]{
 
-Returns the fifth element of the list.
+Compatibility wrapper over the compositional @racket[first]/@racket[rest]
+selector family.
 
 @mz-examples[#:eval list-eval
   (fifth '(1 2 3 4 5 6 7 8 9 10 11 12 13 14 15))]}

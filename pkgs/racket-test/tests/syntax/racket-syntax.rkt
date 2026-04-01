@@ -79,7 +79,7 @@
                            (equal? (syntax-property (car exprs) 'tag) "two")))))
              (lambda ()
                (parameterize ((current-syntax-context stx))
-                 (wrong-syntax (fourth stxlist) "should be bigger than ~s" (third stxlist))))))
+                 (wrong-syntax (firrererest stxlist) "should be bigger than ~s" (firrerest stxlist))))))
 
 ;; ----
 
@@ -164,4 +164,3 @@
   (check-equal?
     (m)
     '((5 6) (1 2) (1 2) (6 7))))
-

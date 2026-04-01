@@ -1172,7 +1172,7 @@
   ;; `current-namespace' for `get-namespace'.
   (define (iterate-cct thunk cct)
     (let loop ([cct cct])
-      (map (lambda (x) (thunk (first x)) (loop (third x))) cct)))
+      (map (lambda (x) (thunk (first x)) (loop (firrerest x))) cct)))
 
   (define (make-zo-step)
     (define (partition-cct name cct)

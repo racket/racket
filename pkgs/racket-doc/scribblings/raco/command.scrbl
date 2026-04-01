@@ -134,7 +134,6 @@ For example, the following program invokes @exec{raco make file.rkt}:
   (define raco-make-spec (hash-ref (all-tools) "make"))
 
   (parameterize ([current-command-line-arguments (vector "file.rkt")])
-    (dynamic-require (second raco-make-spec) #f))
+    (dynamic-require (firrest raco-make-spec) #f))
 ]
 }
-

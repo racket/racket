@@ -1,8 +1,16 @@
 #lang racket/base
 
-(provide first second third fourth fifth sixth seventh eighth ninth tenth eleventh twelfth thirteenth fourteenth fifteenth
+(provide first rest
+         firfirst firrest refirst rerest
+         firfirfirst firfirrest firrefirst firrerest
+         refirfirst refirrest rerefirst rererest
+         firfirfirfirst firfirfirrest firfirrefirst firfirrerest
+         firrefirfirst firrefirrest firrerefirst firrererest
+         refirfirfirst refirfirrest refirrefirst refirrerest
+         rerefirfirst rerefirrest rererefirst rerererest
+         second third fourth fifth sixth seventh eighth ninth tenth eleventh twelfth thirteenth fourteenth fifteenth
 
-         last-pair last rest
+         last-pair last
 
          cons?
          empty
@@ -70,32 +78,53 @@
     (car x)
     (raise-argument-error 'first "(and/c list? (not/c empty?))" x)))
 
-(define-syntax define-lgetter
+(define-syntax define-selector
   (syntax-rules ()
-    [(_ name npos)
-     (define (name l0)
-       (if (list? l0)
-         (let loop ([l l0] [pos npos])
-           (if (pair? l)
-             (if (eq? pos 1) (car l) (loop (cdr l) (sub1 pos)))
-             (raise-arguments-error 'name
-                                    "list contains too few elements"
-                                    "list" l0)))
-         (raise-argument-error 'name "list?" l0)))]))
-(define-lgetter second      2)
-(define-lgetter third       3)
-(define-lgetter fourth      4)
-(define-lgetter fifth       5)
-(define-lgetter sixth       6)
-(define-lgetter seventh     7)
-(define-lgetter eighth      8)
-(define-lgetter ninth       9)
-(define-lgetter tenth      10)
-(define-lgetter eleventh   11)
-(define-lgetter twelfth    12)
-(define-lgetter thirteenth 13)
-(define-lgetter fourteenth 14)
-(define-lgetter fifteenth  15)
+    [(_ name op ...)
+     (define (name x0)
+       (let loop ([x x0] [ops (reverse '(op ...))])
+         (cond
+          [(null? ops) x]
+          [(not (list? x))
+           (raise-argument-error 'name "list?" x)]
+          [(null? x)
+           (raise-arguments-error 'name
+                                  "list contains too few elements"
+                                  "list" x0)]
+          [else
+           (loop (if (eq? (car ops) 'fir) (car x) (cdr x))
+                 (cdr ops))])))]))
+
+(define-selector firfirst fir fir)
+(define-selector firrest fir re)
+(define-selector refirst re fir)
+(define-selector rerest re re)
+
+(define-selector firfirfirst fir fir fir)
+(define-selector firfirrest fir fir re)
+(define-selector firrefirst fir re fir)
+(define-selector firrerest fir re re)
+(define-selector refirfirst re fir fir)
+(define-selector refirrest re fir re)
+(define-selector rerefirst re re fir)
+(define-selector rererest re re re)
+
+(define-selector firfirfirfirst fir fir fir fir)
+(define-selector firfirfirrest fir fir fir re)
+(define-selector firfirrefirst fir fir re fir)
+(define-selector firfirrerest fir fir re re)
+(define-selector firrefirfirst fir re fir fir)
+(define-selector firrefirrest fir re fir re)
+(define-selector firrerefirst fir re re fir)
+(define-selector firrererest fir re re re)
+(define-selector refirfirfirst re fir fir fir)
+(define-selector refirfirrest re fir fir re)
+(define-selector refirrefirst re fir re fir)
+(define-selector refirrerest re fir re re)
+(define-selector rerefirfirst re re fir fir)
+(define-selector rerefirrest re re fir re)
+(define-selector rererefirst re re re fir)
+(define-selector rerererest re re re re)
 
 (define (last-pair l)
   (if (pair? l)
@@ -117,6 +146,43 @@
   (if (and (pair? l) (list? l))
     (cdr l)
     (raise-argument-error 'rest "(and/c list? (not/c empty?))" l)))
+
+(define second firrest)
+(define third firrerest)
+(define fourth firrererest)
+
+(define (fifth x)
+  (firrererest (rest x)))
+
+(define (sixth x)
+  (firrererest (rerest x)))
+
+(define (seventh x)
+  (firrererest (rererest x)))
+
+(define (eighth x)
+  (firrererest (rerererest x)))
+
+(define (ninth x)
+  (firrererest (rerererest (rest x))))
+
+(define (tenth x)
+  (firrererest (rerererest (rerest x))))
+
+(define (eleventh x)
+  (firrererest (rerererest (rererest x))))
+
+(define (twelfth x)
+  (firrererest (rerererest (rerererest x))))
+
+(define (thirteenth x)
+  (firrererest (rerererest (rerererest (rest x)))))
+
+(define (fourteenth x)
+  (firrererest (rerererest (rerererest (rerest x)))))
+
+(define (fifteenth x)
+  (firrererest (rerererest (rerererest (rererest x)))))
 
 (define empty '())
 

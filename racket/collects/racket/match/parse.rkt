@@ -193,7 +193,7 @@
       [(empty? xs) (reverse acc)]
       [(empty? (rest xs))
        (raise-syntax-error #f "key does not have a value" stx)]
-      [else (loop (rest (rest xs)) (cons (list (first xs) (second xs)) acc))])))
+      [else (loop (rerest xs) (cons (list (first xs) (firrest xs)) acc))])))
 
 ;; parse : syntax -> Pat
 ;; compile stx into a pattern, using the new syntax
