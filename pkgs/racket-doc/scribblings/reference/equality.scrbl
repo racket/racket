@@ -37,6 +37,10 @@ preferred for most uses.
    (equal? #t #t))}
 
 
+For equality on user-defined structure types, see
+@secref["trans-struct" #:doc '(lib "scribblings/guide/guide.scrbl")].
+
+
 @defproc[(equal-always? [v1 any/c] [v2 any/c]) boolean?]{
 
  Indicates whether @racket[v1] and @racket[v2] are equal and will always stay
