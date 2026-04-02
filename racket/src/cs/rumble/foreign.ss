@@ -2208,6 +2208,12 @@
          (if (matching-target? (datum key) (datum vals))
              (convert-convention #'same)
              (convert-convention #'different))]
+        [__callback_exns
+         (eq? '__callback_exns (datum __callback_exns))
+         #f]
+        [__original_place
+         (eq? '__original_place (datum __original_place))
+         #f]
         [_ conv]))
 
 (define (ffi2-ptr? v)
@@ -2251,13 +2257,49 @@
 (define-syntax (ffi2-procedure-maker stx)
   (syntax-case stx (quote)
     [(_  (conv ...) (in-type ...) out-type)
-     (with-syntax ([((decl ...) (in-type ...) (out-type)) (convert-types #'(in-type ...) (list #'out-type) #f 0)]
-                   [(conv ...) (map convert-convention #'(conv ...))])
+     (let ([convs (datum (conv ...))])
+       (with-syntax ([((decl ...) (in-type ...) (out-type)) (convert-types #'(in-type ...) (list #'out-type) #f 0)]
+                     [(conv ...) (#%filter
+                                  (lambda (v) v)
+                                  (map convert-convention #'(conv ...)))]
+                     [wrap (cond
+                             [(memq '__callback_exns convs)
+                              #'make-call-guarding-foreign-escape]
+                             [(memq '__original_place convs)
+                              (if (or (memq '__errno convs)
+                                      (memq '__get_last_error convs))
+                                  #'make-call-in-original-place/errno
+                                  #'make-call-in-original-place)]
+                             [else
+                              #'begin])])
        #'(let ()
            decl
            ...
            (lambda (ptr)
-             (foreign-procedure conv ... (ftype-pointer-address ptr) (in-type ...) out-type))))]))
+             (wrap (foreign-procedure conv ... (ftype-pointer-address ptr) (in-type ...) out-type))))))]))
+
+(define (make-call-guarding-foreign-escape proc)
+  (lambda args
+    (call-guarding-foreign-escape
+     (lambda () (#%apply proc args))
+     (lambda () (void)))))
+
+(define (make-call-in-original-place proc)
+  (lambda args
+    (if (not (eqv? 0 (get-thread-id)))
+        (async-callback-queue-call orig-place-async-callback-queue (lambda (th) (th)) (lambda () (#%apply proc args))
+                                   #f #t #t #t)
+        (#%apply proc args))))
+
+(define (make-call-in-original-place/errno proc)
+  (lambda args
+    (if (not (eqv? 0 (get-thread-id)))
+        (let ([p (async-callback-queue-call orig-place-async-callback-queue (lambda (th) (th)) (lambda ()
+                                                                                                 (let-values ([(r e) (#%apply proc args)])
+                                                                                                   (cons r e)))
+                                            #f #t #t #t)])
+          (values (car p) (cdr p)))
+        (#%apply proc args))))
 
 (define-syntax (ffi2-callback-maker stx)
   (syntax-case stx (quote)

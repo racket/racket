@@ -6,12 +6,19 @@
 @defform[#:kind "ffi2 type"
          (-> arg-type ...
              maybe-vararg-types
-             result-type
-             maybe-abi)
+             result-type maybe-errno
+             option
+             ...)
          #:grammar ([maybe-vararg-types (code:line #:varargs arg-type ...)
                                         ϵ]
-                    [maybe-abi (code:line #:abi abi)
-                               ϵ])]{
+                    [maybe-errno #:errno
+                                 #:get-last-error
+                                 ϵ]
+                    [option (code:line #:abi abi)
+                            (code:line #:atomic)
+                            (code:line #:collect-safe)
+                            (code:line #:allow-callback-exn)
+                            (code:line #:in-original)])]{
 
 Describes the type of a procedure. The C representation of a procedure
 is an address, while the Racket representation is a Racket procedure.
@@ -20,10 +27,70 @@ A @racket[->] type is normally used with @racket[ffi2-procedure] or
 @racket[define-ffi2-procedure] to obtain a Racket produce that calls a
 C function. That use of @racket[->] creates a @deftech{foreign callout}.
 
-A @racket[->] type can also be used with @racket[ffi2-callback] to turn
-a Racket procedure into a function callable by C as represented by a
-@tech{pointer} object. That of use of @racket[->] creates a
-@deftech{foreign callback}.
+A @racket[->] type can also be used with @racket[ffi2-callback] to
+turn a Racket procedure into a function callback by C as represented
+by a @tech{pointer} object. That of use of @racket[->] creates a
+@deftech{foreign callback}. A callback always runs in @deftech{atomic
+mode}, which means that it must not attempt any synchronization
+operations and generally must not raise an exception (unless
+@racket[#:allow-callback-exn] is used for a callout that reaches the
+callback).
+
+If @racket[#:errno] or @racket[#:get-last-error] is specified after
+@racket[result-type], then calling a function produced by
+@racket[ffi2-procedure] returns two values: the foreign procedure's
+return value and the value of the C library's @tt{errno} or the result
+of the @tt{GetLastError} function on Windows. The @tt{errno} or
+@tt{GetLastError} result is obtained just after the foreign procedure
+call returns and before it can be changed. On platforms other than
+Windows, @racket[#:get-last-error] is treated as @racket[#:errno]. A
+@racket[#:errno] or @racket[#:get-last-error] specification has no
+effect on the result of @racket[ffi2-callback].
+
+Each @racket[option] affects the way a foreign procedure is called or
+how a callback is handled:
+
+@itemlist[
+
+ @item{@racket[#:abi]: Uses @racket[abi] as the @tech{ABI} for a
+ @tech{foreign callout} or @tech{foreign callback}. See
+ @racket[default_abi], @racket[cdecl_abi], and @racket[stdcall_abi].}
+
+ @item{@racket[#:atomic]: Adjusts a @tech{foreign callout} to
+ potentially improve performance. The foreign procedure must not
+ invoke any callbacks or other reach the Racket run-time system, so it
+ can be considered an atomic operation from the perspective of Racket.
+ This option has no effect on @tech{foreign callbacks}.}
+
+ @item{@racket[#:collect-safe]: Adjusts a @tech{foreign callout}
+ to allow Racket garbage collection concurrent with the call, or
+ adjusts a @tech{foreign callback} to re-enable synchronization with
+ the garbage collector during the callback (i.e., only collect-safe
+ callbacks are allowed to be invoked via a collect-safe procedure
+ call; a collect-safe callback can be invoked through a
+ non-collect-safe foreign procedure call). Note that a collect-safe
+ call makes sense only when arguments to the foreign procedure are not
+ managed by the Racket garbage collector or are immobile and reliably
+ retained.}
+
+ @item{@racket[#:allow-callback-exn]: Adjusts a @tech{foreign callout}
+ so that a foreign callback is allowed to raise an exception that
+ escape the foreign-procedure call. This option has no effect on
+ @tech{foreign callbacks} themselves. A foreign callback must never
+ raise an exception unless it is invoked via foreign procedure call
+ using this option.}
+
+ @item{@racket[#:in-original]: Adjusts a @tech{foreign callout} to
+ take place in a @tech[#:doc ref-doc]{coroutine thread} within
+ Racket's main @tech[#:doc ref-doc]{place} (which is useful if the
+ foreign procedure is not thread-safe), or adjusts a @tech{foreign
+ callback} invocation so that it takes place in a coroutine thread
+ within the current place (which can be useful if the callback might
+ otherwise run in a thread not created by Racket). The callout or
+ callback happens in the context of an unspecified Racket coroutine
+ thread, so it must not raise an exception.}
+
+]
 
 }
 
@@ -78,5 +145,28 @@ callout}. The @racket[#:lib] option must be provided.
 Defines @racket[id] as a definition form with the same syntax as
 @racket[define-ffi2-procedure], except that a definition using
 @racket[id] cannot have a @racket[#:lib] clause.
+
+}
+
+
+@deftogether[(
+@defidform[#:kind "ffi2 abi" default_abi]
+@defidform[#:kind "ffi2 abi" cdecl_abi]
+@defidform[#:kind "ffi2 abi" stdcall_abi]
+@defform[(define-ffi2-abi name abi)]
+)]{
+
+An @deftech{ABI} specifies a calling convention to use for a foreign
+procedure or callback. On most platforms, the only meaningful ABI is
+@racket[default_abi], because most platforms have only a single
+standard ABI for C procedures. Windows for 32-bit x86 defines multiple
+procedure ABIs, and @racket[cdecl_abi] and @racket[stdcall_abi]
+specify alternative ABIs for that platform; on other platforms,
+@racket[cdecl_abi] and @racket[stdcall_abi] are treated the same as
+@racket[default_abi].
+
+Use @racket[define-ffi2-abi] to define an alias for an ABI. The
+@racket[system-type-case] form works as an ABI to support a
+platform-dependent choice.
 
 }

@@ -3024,7 +3024,14 @@ static Scheme_Object *ffi_do_call(int argc, Scheme_Object *argv[], Scheme_Object
     p = *(void **)p;
     break;
   }
-  return C2SCHEME(NULL, otype, p, 0, 1, 1);
+
+  if (save_errno < 0) {
+    Scheme_Object *args[2];
+    args[0] = C2SCHEME(NULL, otype, p, 0, 1, 1);
+    args[1] = scheme_make_integer(scheme_current_thread->saved_errno);
+    return scheme_values(2, args);
+  } else
+    return C2SCHEME(NULL, otype, p, 0, 1, 1);
 }
 
 static Scheme_Object *ffi_do_call_k()
@@ -3146,7 +3153,7 @@ static Scheme_Object *ffi_call_or_curry(const char *who, int curry, int argc, Sc
   rtype = CTYPE_ARG_PRIMTYPE(base);
   abi = GET_ABI(who, ARGPOS(3));
   if (argc > ARGPOS(4)) {
-    save_errno = -1;
+    save_errno = -100;
     if (SCHEME_FALSEP(argv[ARGPOS(4)]))
       save_errno = 0;
     else if (SCHEME_SYMBOLP(argv[ARGPOS(4)])
@@ -3155,8 +3162,11 @@ static Scheme_Object *ffi_call_or_curry(const char *who, int curry, int argc, Sc
         save_errno = 1;
       else if (!strcmp(SCHEME_SYM_VAL(argv[ARGPOS(4)]), "windows"))
         save_errno = 2;
-    }
-    if (save_errno == -1) {
+    } else if ((argc > ARGPOS(7))
+               && SAME_OBJ(scheme_undefined, argv[ARGPOS(7)])
+               && SCHEME_INTP(argv[ARGPOS(4)]))
+      save_errno = SCHEME_INT_VAL(argv[ARGPOS(4)]);
+    if (save_errno == -100) {
       scheme_wrong_contract(who, "(or/c 'posix 'windows #f)", ARGPOS(4), argc, argv);
     }
   } else
@@ -3172,7 +3182,7 @@ static Scheme_Object *ffi_call_or_curry(const char *who, int curry, int argc, Sc
       lock = name_to_ffi_lock(scheme_char_string_to_byte_string(argv[ARGPOS(6)]));
     }
   }
-  /* ARGPOS(7) is `blocking?`, but we don't use that */
+  /* ARGPOS(7) is `blocking?`, but we don't use that except to indicate internal mode */
   if (argc > ARGPOS(8)) {
     varargs_after = extract_varargs_after(who, argc, argv, ARGPOS(8), nargs);
   } else
@@ -3951,12 +3961,25 @@ static Scheme_Object *add_tagging(Scheme_Object *type, Scheme_Object *ctype);
     Scheme_Object *out_type = argv[3];
     Scheme_Object *ret_provided = argv[5];
     Scheme_Object *varargs_after = scheme_false, *abi = scheme_false;
+    Scheme_Object *save_errno = scheme_false;
+    Scheme_Object *orig_place = scheme_false;
+    Scheme_Object *exns = scheme_false;
 
     for (l = convs; !SCHEME_NULLP(l); l = SCHEME_CDR(l)) {
       a = SCHEME_CAR(l);
       a = expand_abi_select(a);
       varargs_after = maybe_varargs_after(a, varargs_after);
       abi = maybe_abi(a, abi);
+      if (SCHEME_SYMBOLP(a)) {
+        if (!strcmp(SCHEME_SYM_VAL(a), "__errno"))
+          save_errno = scheme_make_integer(-1);
+        else if (!strcmp(SCHEME_SYM_VAL(a), "__get_last_error"))
+          save_errno = scheme_make_integer(-2);
+        else if (!strcmp(SCHEME_SYM_VAL(a), "__original_place"))
+          orig_place = scheme_true;
+        else if (!strcmp(SCHEME_SYM_VAL(a), "__callback_exns"))
+          exns = scheme_true;
+      }
     }
 
     in_types = scheme_map_1(unwrap_type, in_types);
@@ -3965,12 +3988,12 @@ static Scheme_Object *add_tagging(Scheme_Object *type, Scheme_Object *ctype);
     args[0] = in_types;
     args[1] = out_type;
     args[2] = abi;
-    args[3] = scheme_false; /* save-errno? */
-    args[4] = scheme_false; /* orig-place? */
+    args[3] = save_errno;
+    args[4] = orig_place;
     args[5] = scheme_false; /* lock-name */
-    args[6] = scheme_false; /* blocking? */
+    args[6] = scheme_undefined; /* `blocking?` - but hijacked to indicate internal mode */
     args[7] = varargs_after;
-    args[8] = scheme_false; /* exns? */
+    args[8] = exns;
     args[9] = ret_provided;
 
     maker = foreign_ffi_call_maker(10, args);
@@ -4537,6 +4560,8 @@ Scheme_Object *scheme_expand_foreign_form(Scheme_Object *form) {
 static void save_errno_values(int kind)
 {
   Scheme_Thread *p = scheme_current_thread;
+
+  if (kind < 0) kind = -kind;
 
   if (kind == 2) {
     intptr_t v = 0;

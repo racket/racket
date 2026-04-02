@@ -14,7 +14,6 @@
 
 (define-ffi2-type to_double_t (int_t float_t . -> . double_t))
 
-
 (define-test-procedure intfloat_sum (intfloat_t . -> . double_t))
 (define-test-procedure intfloat_sum_content (intfloat_t* . -> . double_t))
 (define-test-procedure intfloat_build (int_t float_t . -> . intfloat_t))

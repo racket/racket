@@ -1,4 +1,6 @@
 #include <stdio.h>
+#include <errno.h>
+#include <unistd.h>
 
 #ifdef _WIN32
 # define EXPORT __declspec (dllexport)
@@ -60,4 +62,13 @@ EXPORT double multiply_built2(double_build_t proc, double_build_t proc2, int n) 
 
 EXPORT double intfloat_sum_built(intfloat_build_t proc) {
   return intfloat_sum(proc(10, 100.0));
+}
+
+EXPORT int add1_and_errno(int v) {
+  errno = v;
+  return v + 1;
+}
+
+EXPORT void sleep_seconds(int n) {
+  sleep(n);
 }

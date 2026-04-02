@@ -77,7 +77,7 @@
     (pattern (union _ ...))
     (pattern (array _ ...)))
 
-  (struct arrow-type (in-ts out-t convs))
+  (struct arrow-type (in-ts out-t convs errno? async-apply?))
 
   (define-syntax-class (:arrow-type stx)
     #:description "an ffi2 arrow type"
@@ -86,9 +86,13 @@
     (pattern (-> ~!
                  in-maybe-type::maybe-type ...
                  (~optional (~seq #:varargs var-in-maybe-type::maybe-type ...))
-                 out-maybe-type::maybe-type
+                 out-maybe-type::maybe-type (~optional (~and errno (~or #:errno
+                                                                        #:get-last-error)))
                  (~alt (~optional (~seq #:abi (~var abi (:abi stx))))
-                       (~optional (~and atomic #:atomic)))
+                       (~optional (~and atomic #:atomic))
+                       (~optional (~and collect-safe #:collect-safe))
+                       (~optional (~and callback-exns #:allow-callback-exn))
+                       (~optional (~and in-original #:in-original)))
                  ...)
              #:with ((~var in-type (:type stx #f #t)) ...) #'(in-maybe-type ...)
              #:with ((~var var-in-type (:type stx #f #t)) ...) (if (attribute var-in-maybe-type)
@@ -105,9 +109,33 @@
                                    (if (attribute var-in-maybe-type)
                                        (list (list '__varargs_after (length (attribute in-maybe-type))))
                                        null)
-                                   (if (attribute atomic)
+                                   (if (and (attribute atomic)
+                                            ;; not inherently incompatible with `atomic`,
+                                            ;; but not supported in combination at lower levels:
+                                            (not (attribute collect-safe)))
                                        (list '__atomic)
-                                       null)))))
+                                       null)
+                                   (if (attribute collect-safe)
+                                       (list '__collect_safe)
+                                       null)
+                                   (if (attribute callback-exns)
+                                       (list '__callback_exns)
+                                       null)
+                                   (if (attribute in-original)
+                                       (if (attribute callback-exns)
+                                           (raise-syntax-error #f
+                                                               "incompatible with collect-safe mode"
+                                                               stx
+                                                               #'in-original)
+                                           (list '__original_place))
+                                       null)
+                                   (if (attribute errno)
+                                       (list (if (eq? (syntax-e #'errno) '#:errno)
+                                                 '__errno
+                                                 '(__select os (windows) __get_last_error __errno)))
+                                       null))
+                                  (and (attribute errno) #t)
+                                  (and (attribute in-original) #t))))
 
   (define-syntax-class (:type stx [for-return? #f] [for-argument? #f])
     #:description "an ffi2 type"
@@ -637,6 +665,9 @@
                 [(in_t-name ...) (map ffi2-type-name in-ts)]
                 [(in-racket->c ...) (map ffi2-type-racket->c in-ts)]
                 [(in-release ...) (map ffi2-type-release in-ts)]
+                [(out-errno ...) (if (arrow-type-errno? a-t)
+                                     #'(out-errno)
+                                     #'())]
                 [(conv ...) (arrow-type-convs a-t)])
     (with-syntax ([adjust-proc (cond
                                  [(ffi2-type-compound? out-t)
@@ -648,8 +679,9 @@
                                   #`(lambda (in ...)
                                       (define r
                                         ((#%foreign-inline (ffi2-malloc-maker #,(ffi2-type-vm-type out-t) #,ptr-vm-type #,kind-sym) #:copy) 1))
-                                      (proc r in ...)
-                                      r)]
+                                      (define-values (out-void out-errno ...)
+                                        (proc r in ...))
+                                      (values r out-errno ...))]
                                  [else #'proc])])
       #`(let ([ptr ptr-expr])
           #,@(if check-ptr?
@@ -666,13 +698,12 @@
               (lambda (in ...)
                 (unless (in-ok? in) (bad-argument 'in_t-name in))
                 ...
-                (#,(ffi2-type-c->racket out-t)
-                 (let ([in (in-racket->c in)] ...)
-                   (let ([out (proc in ...)])
-                     ;; the `release` function can usefully be something like `black-box` to
-                     ;; retain a converted argument until the foreign procedure returns
-                     (in-release in) ...
-                     out))))))))))
+                (let ([in (in-racket->c in)] ...)
+                  (let-values ([(out out-errno ...) (proc in ...)])
+                    ;; the `release` function can usefully be something like `black-box` to
+                    ;; retain a converted argument until the foreign procedure returns
+                    (in-release in) ...
+                    (values (#,(ffi2-type-c->racket out-t) out) out-errno ...))))))))))
 
 (define-for-syntax (parse-define-ffi2-procedure stx use-lib-expr
                                                 #:default-fail [default-fail #f]
@@ -766,7 +797,10 @@
                 [proc-expr proc-expr]
                 [(in ...) (generate-temporaries in-ts)]
                 [(in-c->racket ...) (map ffi2-type-c->racket in-ts)]
-                [(conv ...) (arrow-type-convs a-t)])
+                [(conv ...) (arrow-type-convs a-t)]
+                [async-apply-expr (if (arrow-type-async-apply? a-t)
+                                      #'async-apply-for-callback
+                                      #'#f)])
     (with-syntax ([adjust-proc (cond
                                  [(ffi2-type-compound? out-t)
                                   #`(lambda (r in ...)
@@ -777,11 +811,11 @@
                                       r)]
                                  [else #'proc])])
       #`(let ([proc proc-expr]
-              [async-apply #f])
+              [async-apply async-apply-expr])
           (let ([proc (lambda (in ...)
                         (define out (proc (in-c->racket in) ...))
                         (unless (#,(ffi2-type-predicate out-t) out)
-                          (bad-result '#,(ffi2-type-name out-t)) out)
+                          (bad-result '#,(ffi2-type-name out-t) out))
                         (#,(ffi2-type-racket->c out-t) out))])
             (let ([proc adjust-proc])
               ((#%foreign-inline (ffi2-callback-maker (__disable_interrupts conv ...)
@@ -790,6 +824,9 @@
                                  #:copy*)
                proc
                async-apply)))))))
+
+(define (async-apply-for-callback thunk)
+  (thunk))
 
 (define-syntax (ffi2-cast stx)
   (syntax-parse stx
