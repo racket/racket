@@ -17,33 +17,50 @@
 
 (begin-for-syntax
   (provide (struct-out ffi2-type)
+           (struct-out ffi2-type-constructor)
+           (struct-out ffi2-type-macro)
+           ffi2-type-or-constructor-or-macro?
            make-ffi2-type
+           make-ffi2-type-macro
            ffi2-type-compound?
            ffi2-type-pointer?
            ffi2-type-pointer-vm-type
            pointer-vm-type->gcable
            ffi2-type-immediate-pointer?
            ffi2-type-scalar?
-           lookup-type
+           expand-type
            :malloc-kind
            :tag
            :array-size
            (struct-out procedure-abi))
 
-  (struct ffi2-type (name vm-type category predicate racket->c c->racket release))
+  (struct ffi2-type (name vm-type category defns predicate racket->c c->racket release))
+  (struct ffi2-type-constructor (make))
+  (struct ffi2-type-macro (transformer))
+
+  (define (ffi2-type-or-constructor-or-macro? v) (or (ffi2-type? v)
+                                                     (ffi2-type-constructor? v)
+                                                     (ffi2-type-macro? v)))
 
   (struct ffi2-type/proc ffi2-type (proc)
     #:property prop:procedure 0)
 
   (define (make-ffi2-type name vm-type predicate
+                          #:defns [defns null]
                           #:category [category #f]
                           #:procedure [proc #f]
                           #:racket->c [racket->c #'values]
                           #:c->racket [c->racket #'values]
                           #:release [release #'drop])
     (if proc
-        (ffi2-type/proc name vm-type category predicate racket->c c->racket release proc)
-        (ffi2-type name vm-type category predicate racket->c c->racket release)))
+        (ffi2-type/proc name vm-type category defns predicate racket->c c->racket release proc)
+        (ffi2-type name vm-type category defns predicate racket->c c->racket release)))
+
+  (define (make-ffi2-type-macro who proc)
+    (unless (and (procedure? proc)
+                 (procedure-arity-includes? proc 1))
+      (raise-argument-error who "(procedure-arity-includes/c 1)" proc))
+    (ffi2-type-macro proc))
 
   (define (ffi2-type-compound? t)
     (define vm-type (ffi2-type-vm-type t))
@@ -83,16 +100,57 @@
   (define (ffi2-type-scalar? t)
     (eq? (ffi2-type-category t) 'scalar))
 
-  (define (lookup-type stx t-id
+  (define (expand-type stx t-id t-stx
                        #:for-return? [for-return? #f]
                        #:for-argument? [for-argument? #f])
+    (let loop ([t-id t-id] [t-stx t-stx])
+      (define v (syntax-local-value t-id (lambda () #f)))
+      (define (check-ok-type v)
+        (unless (or for-return? (ffi2-type-racket->c v))
+          (raise-syntax-error #f "ffi2 type allowed only as a procedure return" stx t-id))
+        (unless (or for-argument? for-return? (not (eq? 'racket (ffi2-type-category v))))
+          (raise-syntax-error #f "ffi2 type allowed only as a procedure argument or return" stx t-id))
+        v)
+      (cond
+        [(ffi2-type? v)
+         (unless (identifier? t-stx)
+           (raise-syntax-error #f "not an ffi2 type constructor that expects arguments" stx t-id))
+         (check-ok-type v)]
+        [(ffi2-type-constructor? v)
+         (when (identifier? t-stx)
+           (raise-syntax-error #f "ffi2 type constructor needs arguments" stx t-stx))
+         (syntax-parse t-stx
+           [(_ arg:expr ...)
+            (check-ok-type ((ffi2-type-constructor-make v) t-id (attribute arg)))]
+           [_
+            (raise-syntax-error #f "ffi2 type constructor expects a sequence of argument expressions" stx t-stx)])]
+        [(ffi2-type-macro? v)
+         (define new-t-stx (syntax-local-apply-transformer
+                            (ffi2-type-macro-transformer v)
+                            t-id
+                            ;; use contexts that imply no use-site scopes:
+                            (if (eq? 'top-level (syntax-local-context))
+                                'top-level
+                                'expression)
+                            #f
+                            t-stx))
+         (syntax-parse new-t-stx
+           [id:identifier (loop #'id #'id)]
+           [(id:identifier . _) (loop #'id new-t-stx)]
+           [else (raise-syntax-error #f
+                                     "invalid expansion of type syntax"
+                                     stx
+                                     t-stx)])]
+        [else
+         (raise-syntax-error #f
+                             (if (identifier? t-id) "not an ffi2 type" "not an ffi2 type constructor")
+                             stx
+                             t-id)])))
+
+  (define (lookup-type-constructor stx t-id)
     (define v (syntax-local-value t-id (lambda () #f)))
-    (unless (ffi2-type? v)
-      (raise-syntax-error #f "not an ffi2 type" stx t-id))
-    (unless (or for-return? (ffi2-type-racket->c v))
-      (raise-syntax-error #f "ffi2 type allowed only as a procedure return" stx t-id))
-    (unless (or for-argument? for-return? (not (eq? 'racket (ffi2-type-category v))))
-      (raise-syntax-error #f "ffi2 type allowed only as a procedure argument or return" stx t-id))
+    (unless (ffi2-type-constructor? v)
+      (raise-syntax-error #f "not an ffi2 type constructor" stx t-id))
     v)
 
   (define-syntax-class :malloc-kind
@@ -112,7 +170,10 @@
 
   (void))
 
-(define-syntax (drop stx) #'(void))
+(define-syntax (drop stx)
+  (syntax-parse stx
+    [(_ ...) #'(void)]
+    [_ #'void]))
 
 (define-for-syntax (raise-only-as-ffi-type stx)
   (raise-syntax-error #f "allowed only in an ffi2 type context" stx))

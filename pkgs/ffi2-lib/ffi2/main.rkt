@@ -20,6 +20,7 @@
          ffi2-lib?
          ffi2-lib-ref
          define-ffi2-type
+         define-ffi2-type-syntax
          define-ffi2-abi
          (protect-out
           ffi2-procedure
@@ -71,7 +72,9 @@
     #:description "an ffi2 type"
     #:literals (-> struct union array)
     (pattern t:id
-             #:when (ffi2-type? (syntax-local-value #'t (lambda () #f))))
+             #:when (ffi2-type-or-constructor-or-macro? (syntax-local-value #'t (lambda () #f))))
+    (pattern (t:id _ ...)
+             #:when (ffi2-type-or-constructor-or-macro? (syntax-local-value #'t (lambda () #f))))
     (pattern (-> _ ...))
     (pattern (struct _ ...))
     (pattern (union _ ...))
@@ -142,10 +145,11 @@
     #:attributes (t)
     #:literals (-> struct union array system-type-case)
     (pattern type-name:id
-             #:attr t (lookup-type stx #'type-name
+             #:attr t (expand-type stx #'type-name #'type-name
                                    #:for-return? for-return?
                                    #:for-argument? for-argument?))
-    (pattern (~var a (:arrow-type stx))
+    (pattern (~and all (-> ~! . _))
+             #:with (~var a (:arrow-type stx)) #'all
              #:with arity #`#,(length (arrow-type-in-ts (attribute a.t)))
              #:attr t (make-ffi2-type #f 'pointer #'(lambda (proc)
                                                       (and (procedure? proc)
@@ -156,7 +160,8 @@
                                                       #,(build-ffi2-procedure '-> #'ptr (attribute a.t) #t))
                                       #:release #'black-box
                                       #:category 'arrow))
-    (pattern ((~and compound (~or struct union)) (~optional tag:id)
+    (pattern ((~and compound (~or struct union)) ~!
+                                                 (~optional tag:id)
                                                  [field-name:id (~var field-type (:type stx))]
                                                  ...)
              #:with (field-vm-type ...) (map ffi2-type-vm-type (attribute field-type.t))
@@ -170,14 +175,14 @@
                                                   ((#%foreign-inline (ffi2-ptr?-maker pointer/gc tag*s) #:copy*) v)))
                                           #'ffi2-ptr?)
                                       #:release #'black-box))
-    (pattern (array (~var elem-type (:type stx)) n::array-size)
+    (pattern (array ~! (~var elem-type (:type stx)) n::array-size)
              #:with tag*s (let ([ptr-vm-type (ffi2-type-pointer-vm-type (attribute elem-type.t))])
                             (if (pair? ptr-vm-type)
                                 (cadr ptr-vm-type)
                                 '()))
              #:attr t (make-ffi2-type #f (if (eq? '* (syntax-e #'n))
                                              `(pointer ,(syntax->datum #'tag*s))
-                                             `(array ,(syntax->datum #'tag*s) #,(syntax-e n)))
+                                             `(array ,(syntax->datum #'tag*s) ,(syntax-e #'n) ,(ffi2-type-vm-type (attribute elem-type.t))))
                                       (if (null? (syntax-e #'tag*s))
                                           #'ffi2-ptr?
                                           #'(lambda (v)
@@ -185,7 +190,11 @@
                                                   ((#%foreign-inline (ffi2-ptr?-maker pointer/gc tag*s) #:copy*) v))))
                                       #:release #'black-box))
     (pattern (~and all (system-type-case . _))
-             #:attr t (parse-system-type-case/type #'all))))
+             #:attr t (parse-system-type-case/type #'all))
+    (pattern (~and all (type-ctr-name:id . _))
+             #:attr t (expand-type stx #'type-ctr-name #'all
+                                   #:for-return? for-return?
+                                   #:for-argument? for-argument?))))
 
 (define-syntax (define-ffi2-abi stx)
   (syntax-parse stx
@@ -217,12 +226,13 @@
                                             (string->symbol (format "~a*?" (syntax-e #'name)))
                                             #'name)]
                    [tag-ptr?-str (format "~a*?" (syntax-e #'name))]
-                   [([field-vm-type field-c->racket field-racket->c field-ok? field-type-name
+                   [([field-vm-type (field-defn ...) field-c->racket field-racket->c field-ok? field-type-name
                                     field-compound? field-ptr-vm-type
                                     field-release]
                      ...)
                     (map (lambda (t)
                            (list (ffi2-type-vm-type t)
+                                 (ffi2-type-defns t)
                                  (ffi2-type-c->racket t)
                                  (ffi2-type-racket->c t)
                                  (ffi2-type-predicate t)
@@ -268,6 +278,7 @@
                                         #'(fill-field-name (ffi2-malloc kind name)
                                                            expr))]
                                      ...)))))
+           field-defn ... ...
            (define (name-field v)
              (unless (tag-ptr? v) (raise-argument-error 'name-field tag-ptr?-str v))
              (do-ffi2-ptr-ref field-compound?
@@ -349,6 +360,7 @@
                                        #:release #'black-box
                                        #:category 'ptr)))
                   '())
+           #,@(ffi2-type-defns elem-t)
            (define (name-ref ptr idx)
              (unless (tag-ptr? ptr) (raise-argument-error 'name-ref tag-ptr?-str ptr))
              #,(if (eq? '* (syntax-e #'n))
@@ -368,7 +380,8 @@
                                #,(ffi2-type-racket->c elem-t) #,(ffi2-type-vm-type elem-t)
                                ptr (* idx (#%foreign-inline (ffi2-sizeof #,(ffi2-type-vm-type elem-t)) #:copy)) val
                                #,(ffi2-type-release elem-t)))))]
-    [(form-id name:id
+    [(form-id (~or name:id
+                   (name:id arg:id ...))
               (~var parent (:type stx))
               (~alt (~optional (~seq #:tag tag::tag))
                     (~optional (~seq #:predicate predicate-expr:expr))
@@ -382,7 +395,8 @@
                                          #'name)])
        (cond
          [(and (ffi2-type-immediate-pointer? parent-t)
-               (not (or (attribute racket->c-expr)
+               (not (or (attribute arg)
+                        (attribute racket->c-expr)
                         (attribute c->racket-expr)
                         (attribute release-expr))))
           (with-syntax ([name/gcable (datum->syntax #'name
@@ -404,13 +418,13 @@
             #'(begin
                 (define (name-ptr? v) (or ((#%foreign-inline (ffi2-ptr?-maker pointer tags) #:copy*) v)
                                           ((#%foreign-inline (ffi2-ptr?-maker pointer/gc tags) #:copy*) v)))
-                predicate-def ...
                 (define-syntax name (make-ffi2-type 'name '(pointer tags) #'name?
                                                     #:release #'black-box
                                                     #:category 'ptr))
                 (define-syntax name/gcable (make-ffi2-type 'name/gcable '(pointer/gc tags) #'name?
                                                            #:release #'black-box
-                                                           #:category 'ptr))))]
+                                                           #:category 'ptr))
+                predicate-def ...))]
          [else
           (when (and (attribute tag)
                      (syntax-e #'tag))
@@ -418,9 +432,12 @@
           (with-syntax ([([wrapper-pre-def wrapper-def wrapper ...] ...)
                          (append (if (attribute racket->c-expr)
                                      (list
-                                      #'((define-syntaxes (new-racket->c) (values))
-                                         (define new-racket->c (compose-racket->c 'form-id racket->c-expr name-ptr?))
-                                         #:racket->c (quote-syntax new-racket->c)))
+                                      (with-syntax ([name-ptr? (if (attribute predicate-expr)
+                                                                   #'name-ptr?
+                                                                   #'name?)])
+                                        #'((define-syntaxes (new-racket->c) (values))
+                                           (define new-racket->c (compose-racket->c 'form-id racket->c-expr name-ptr?))
+                                           #:racket->c (quote-syntax new-racket->c))))
                                      null)
                                  (if (attribute c->racket-expr)
                                      (list
@@ -448,18 +465,64 @@
                              #'(name-ptr?
                                 (define name? predicate-expr))
                              #'(name?))])
-            #`(begin
-                (define (name-ptr? v) (#,(ffi2-type-predicate parent-t) v))
-                wrapper-def ...
-                predicate-def ...
-                (define-syntax name (make-ffi2-type 'name '#,(ffi2-type-vm-type parent-t) #'name?
-                                                    #:category '#,(ffi2-type-category parent-t)
-                                                    #:racket->c #'racket->c
-                                                    #:c->racket #'c->racket
-                                                    #:release #'release))
-                (define (racket->c v) (#,(ffi2-type-racket->c parent-t) (new-racket->c v)))
-                (define (c->racket v) (new-c->racket (#,(ffi2-type-c->racket parent-t) v)))
-                (define (release v) (new-release (#,(ffi2-type-release parent-t) v)))))]))]))
+            (with-syntax ([(body-defn ...)
+                           #`(wrapper-def
+                              ...
+                              predicate-def
+                              ...
+                              (define (racket->c v) (#,(ffi2-type-racket->c parent-t) (new-racket->c v)))
+                              (define (c->racket v) (new-c->racket (#,(ffi2-type-c->racket parent-t) v)))
+                              (define (release v) (new-release (#,(ffi2-type-release parent-t) v))))])
+              (if (attribute arg)
+                  (with-syntax ([arity (length (attribute arg))])
+                    #`(begin
+                        (define-syntax name (ffi2-type-constructor
+                                             (make-type-maker #'make-procs arity
+                                                              'name
+                                                              '#,(ffi2-type-vm-type parent-t)
+                                                              '#,(ffi2-type-category parent-t))))
+                        (define (make-procs arg ...)
+                          #,@(ffi2-type-defns parent-t)
+                          (define (name-ptr? v) (#,(ffi2-type-predicate parent-t) v))
+                          body-defn
+                          ...
+                          (values name?
+                                  racket->c
+                                  c->racket
+                                  release))))
+                #`(begin
+                    #,@(ffi2-type-defns parent-t)
+                    (define (name-ptr? v) (#,(ffi2-type-predicate parent-t) v))
+                    (define-syntax name (make-ffi2-type 'name '#,(ffi2-type-vm-type parent-t) #'name?
+                                                        #:category '#,(ffi2-type-category parent-t)
+                                                        #:racket->c #'racket->c
+                                                        #:c->racket #'c->racket
+                                                        #:release #'release))
+                    body-defn
+                    ...))))]))]))
+
+(define-syntax (define-ffi2-type-syntax stx)
+  (syntax-parse stx
+    [(form-id name:id rhs:expr)
+     #'(define-syntax name (make-ffi2-type-macro 'form-id rhs))]
+    [(form-id (name:id arg ...) body ...)
+     #'(define-syntax name (make-ffi2-type-macro 'form-id (lambda (arg ...) body ...)))]))
+
+(define-for-syntax (make-type-maker maker-id arity name vm-type category)
+  (lambda (stx arg-exprs)
+    (unless (= (length arg-exprs) arity)
+      (raise-syntax-error #f
+                          "incorrect number of arguments to ffi2 type constructor"
+                          stx))
+    (with-syntax ([(name? racket->c c->racket release)
+                   (generate-temporaries '(name? racket->c c->racket release))])
+      (make-ffi2-type name vm-type #'name?
+                      #:category category
+                      #:defns #`((define-values (name? racket->c c->racket release)
+                                   (#,maker-id #,@arg-exprs)))
+                      #:racket->c #'racket->c
+                      #:c->racket #'c->racket
+                      #:release #'release))))
 
 (define-syntax (ffi2-ref stx)
   (syntax-parse stx
@@ -470,6 +533,7 @@
          (unless (variable-reference-from-unsafe? (#%variable-reference))
            (unless (ffi2-ptr? ptr) (raise-argument-error 'form-id "ptr_t?" ptr))
            (unless (exact-integer? offset) (raise-argument-error 'form-id "exact-integer?" offset)))
+         #,@(ffi2-type-defns t)
          (do-ffi2-ptr-ref #,(ffi2-type-compound? t)
                           #,(ffi2-type-pointer-vm-type t)
                           #,(ffi2-type-c->racket t)  #,(ffi2-type-vm-type t)
@@ -506,6 +570,7 @@
            (unless (ffi2-ptr? ptr) (raise-argument-error 'form-id "ptr_t?" ptr))
            (unless (exact-integer? offset) (raise-argument-error 'form-id "exact-integer?" offset))
            (unless (#,(ffi2-type-predicate t) val) (bad-assign-value 'form-id '#,(ffi2-type-name t) val)))
+         #,@(ffi2-type-defns t)
          (do-ffi2-ptr-set! #,(ffi2-type-compound? t)
                            #,(ffi2-type-racket->c t)  #,(ffi2-type-vm-type t)
                            ptr
@@ -553,6 +618,9 @@
                           [else 'pointer/gc]))
     #`(let ([n #,n-expr-stx])
         (unless (exact-nonnegative-integer? n) (raise-argument-error '#,form-id "exact-nonnegative-integer?" n))
+        #,@(if as-t
+               (ffi2-type-defns as-t)
+               '())
         (#,(if as-t
                (ffi2-type-c->racket as-t)
                #'values)
@@ -641,7 +709,6 @@
   
 (define-for-syntax (parse-ffi2-procedure stx stx-for-type check-ptr?)
   (syntax-parse stx
-    #:literals (->)
     [(form-id ptr-expr:expr (~var a (:arrow-type stx-for-type)))
      (build-ffi2-procedure #'form-id #'ptr-expr (attribute a.t) check-ptr?)]
     [(form-id ptr-expr:expr (~var type (:type stx-for-type)))
@@ -653,6 +720,7 @@
                 #`((unless (variable-reference-from-unsafe? (#%variable-reference))
                      (unless (ffi2-ptr? ptr) (raise-argument-error 'form-id "ptr_t?" ptr))))
                 #'())
+         #,@(ffi2-type-defns t)
          (#,(ffi2-type-c->racket t) ptr))]))
 
 (define-for-syntax (build-ffi2-procedure form-id ptr-expr a-t check-ptr?)
@@ -663,6 +731,7 @@
                 [(in ...) (generate-temporaries in-ts)]
                 [(in-ok? ...) (map ffi2-type-predicate in-ts)]
                 [(in_t-name ...) (map ffi2-type-name in-ts)]
+                [((in-defn ...) ...) (map ffi2-type-defns in-ts)]
                 [(in-racket->c ...) (map ffi2-type-racket->c in-ts)]
                 [(in-release ...) (map ffi2-type-release in-ts)]
                 [(out-errno ...) (if (arrow-type-errno? a-t)
@@ -688,6 +757,8 @@
                  #`((unless (variable-reference-from-unsafe? (#%variable-reference))
                       (unless (ffi2-ptr? ptr) (raise-argument-error 'form-id "ptr_t?" ptr))))
                  '())
+          in-defn ... ...
+          #,@(ffi2-type-defns out-t)
           (let ([proc ((#%foreign-inline (begin-unsafe
                                            (ffi2-procedure-maker (conv ...)
                                                                  #,(map ffi2-type-vm-type in-ts)
@@ -788,6 +859,7 @@
      #`(let ([proc proc-expr])
          (unless (variable-reference-from-unsafe? (#%variable-reference))
            (unless (procedure? proc) (raise-argument-error 'form-id "procedure?" proc)))
+         #,@(ffi2-type-defns t)
          (#,(ffi2-type-racket->c t) proc))]))
 
 (define-for-syntax (build-ffi2-callback form-id proc-expr a-t)
@@ -850,6 +922,9 @@
      (define gcable-vm-type (pointer-vm-type->gcable vm-type))
      #`(let ([ptr expr]
              [offset (~? offset-expr 0)])
+         #,@(if from-t
+                (ffi2-type-defns from-t)
+                '())
          (unless (variable-reference-from-unsafe? (#%variable-reference))
            #,(if from-t
                  #`(unless (#,(ffi2-type-predicate from-t) ptr) (bad-cast-value 'form-id '#,(ffi2-type-name from-t) ptr))
@@ -865,6 +940,9 @@
                            #`(* offset (#%foreign-inline (ffi2-sizeof #,(ffi2-type-vm-type offset-t)) #:copy))))])
              #,@(if from-t
                     #`(#,(ffi2-type-release from-t) c)
+                    '())
+             #,@(if t
+                    (ffi2-type-defns t)
                     '())
              #,(if t
                    #`(#,(ffi2-type-c->racket t) v)

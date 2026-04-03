@@ -8,10 +8,12 @@
 
 @title[#:tag "define-ffi2-type"]{Defining Foreign Types}
 
-@defform[(define-ffi2-type name parent-type
+@defform[(define-ffi2-type name-or-constructor parent-type
            option
            ...)
-         #:grammar ([option (code:line #:tag tag)
+         #:grammar ([name-or-constructor name
+                                         (name arg-id ...)]
+                    [option (code:line #:tag tag)
                             (code:line #:predicate predicate-expr)
                             (code:line #:racket->c racket->c-expr)
                             (code:line #:release release-expr)
@@ -19,20 +21,29 @@
                     [tag identifier
                          #f])]{
 
-Defines a type @racket[name] that is an alias or extension of
-@racket[parent-type].
+Defines a type @racket[name] or a type constructor @racket[name] that
+is (or creates) an alias or extension of @racket[parent-type].
 
-When @racket[parent-type] is a @racket[struct] or @racket[union] form
+If @racket[name-or-constructor] is @racket[(name arg-id ...)], then
+@racket[name] is defined as a type constructor that receives
+expression arguments when applied in a type position, and the remainder
+of the @racket[define-ffi2-type] can refer to the @racket[arg-id]s to
+parameterize the definition over supplied values.
+
+When @racket[parent-type] is a @racket[struct] or @racket[union] form,
+a type (as opposed to a type constructor) is being defined,
 and no @racket[option]s are provided, then the @racket[parent-type]
 affects the definitions created by @racket[define-ffi2-type]. See
 @racket[struct] and @racket[union] for more information.
 
-When @racket[parent-type] is an @racket[array] form and no
+When @racket[parent-type] is an @racket[array] form,
+a type (as opposed to a type constructor) is being defined, and no
 @racket[option]s are provided other than @racket[#:tag], then the
 @racket[array] also affects the definitions created by
 @racket[define-ffi2-type]. See @racket[array] for more information.
 
-When @racket[parent-type] is an @deftech{immediate pointer} type and
+When @racket[parent-type] is an @deftech{immediate pointer} type,
+a type (as opposed to a type constructor) is being defined, and
 no @racket[option]s are provided other than @racket[#:tag] and
 @racket[#:predicate], then @racket[define-ffi2-type] creates a new
 immediate pointer type that is a subtype of @racket[parent-type]. The
@@ -45,7 +56,8 @@ tags for @racket[parent-type], which creates a @tech{pointer subtype}.
 If @racket[tag] is provided as @racket[#f], Racket representation of
 the new type is a generic pointer with no tags.
 
-When @racket[parent-type] is an @tech{scalar} type and no
+When @racket[parent-type] is an @tech{scalar} type,
+a type (as opposed to a type constructor) is being defined, and no
 @racket[option]s are provided, the defined @racket[name] is a scalar
 type.
 
@@ -54,7 +66,8 @@ is an immediate pointer type or @racket[array] form. In the case of an
 @racket[array] form with a constant size, @racket[#:tag] cannot be
 mixed with any other @racket[option] form.
 
-In all cases, the new type @racket[name] has the same C representation
+In all cases, the new type @racket[name] (or the type that it constructs)
+has the same C representation
 as @racket[parent-type]. The Racket representation can be adjusted via
 @racket[#:racket->c] and @racket[#:c->racket] options, which often
 need accompanying @racket[#:predicate] and @racket[#:release]
@@ -128,6 +141,31 @@ functions:
 (ffi2-ref p percentage_box_t)
 (ffi2-ref (ffi2-ref p ptr_t) double_t)
 ]
+
+@examples[
+#:eval ffi2-eval
+#:label #f
+(define-ffi2-type (offset_double_t delta) double_t
+  #:c->racket (lambda (v) (+ v delta))
+  #:racket->c (lambda (v) (- v delta)))
+(define-ffi2-type posn_t (struct
+                           [x (offset_double_t 1.0)]
+                           [y (offset_double_t 2.0)]))
+(define p (posn_t 10.0 20.0))
+(ffi2-ref p double_t 0)
+(ffi2-ref p double_t 1)
+(set-posn_t-x! p 100.0)
+(posn_t-x p)
+(ffi2-ref p double_t 0)
+]
+
+}
+
+@defform*[[(define-ffi2-type-syntax name proc-expr)
+           (define-ffi2-type-syntax (name arg-id ...) body ...)]]{
+
+Like @racket[define-syntax], but binds @racket[name] as a macro that
+is expanded in type positions, instead of expression positions.
 
 }
 
