@@ -32,4 +32,35 @@
 
 ;; ----------------------------------------
 
+(define-ffi2-definer define-test
+  #:lib test-lib)
+
+(let ()
+  (define-test double_sum ([double_t = 1.0] [double_t = 10.0] . -> . double_t))
+  (check-equal? (double_sum) 11.0))
+
+(let ()
+  (define-test double_sum (double_t double_t . -> . [r : double_t]
+                                    #:result (list r)))
+  (check-equal? (double_sum 2.0 9.0) (list 11.0)))
+
+(let ()
+  (define-test double_sum ([a : double_t] [double_t = (* 10 a)] . -> . [r : double_t]
+                                          #:result (list a r)))
+  (check-equal? (double_sum 3.0) (list 3.0 33.0)))
+
+(let ()
+  (define-test double_sum ([double_t = 1.0] [b : double_t]
+                                            . -> .
+                                            [r : double_t] [e : #:errno]
+                           #:result (list b r (integer? e))))
+  (check-equal? (double_sum 3.0) (list 3.0 4.0 #t)))
+
+(let ()
+  (define-test double_sum ([a : double_t] [b : double_t = (* 10 a)] . -> . double_t
+                                          #:result b))
+  (check-equal? (double_sum 3.0) 30.0))
+
+;; ----------------------------------------
+
 (clean-ffi2-lib)

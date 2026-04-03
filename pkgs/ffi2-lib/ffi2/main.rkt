@@ -80,37 +80,77 @@
     (pattern (union _ ...))
     (pattern (array _ ...)))
 
-  (struct arrow-type (in-ts out-t convs errno? async-apply?))
+  (define-syntax-class :arg
+    #:description "an ffi2 arrow-type argument"
+    #:attributes (name maybe-type auto)
+    #:datum-literals (: =)
+    (pattern [name:id : maybe-type::maybe-type]
+             #:attr auto #f)
+    (pattern [name:id : maybe-type::maybe-type = auto:expr])
+    (pattern [maybe-type::maybe-type = auto:expr]
+             #:attr name (car (generate-temporaries (list #'maybe-type))))
+    (pattern maybe-type::maybe-type
+             #:attr name (car (generate-temporaries (list #'maybe-type)))
+             #:attr auto #f))
+
+  (define-syntax-class :result
+    #:description "an ffi2 arrow-type result"
+    #:attributes (name maybe-type)
+    #:datum-literals (:)
+    (pattern maybe-type::maybe-type
+             #:attr name (car (generate-temporaries (list #'maybe-type))))
+    (pattern [name:id : maybe-type::maybe-type]))
+
+  (define-syntax-class :errno
+    #:description "an ffi2 arrow-type errno specification"
+    #:attributes (mode name)
+    #:datum-literals (:)
+    (pattern (~and mode #:errno)
+             #:attr name (car (generate-temporaries '(errno))))
+    (pattern (~and mode #:get-last-error)
+             #:attr name  (car (generate-temporaries '(last-error))))
+    (pattern [name:id : (~and mode #:errno)])
+    (pattern [name:id : (~and mode #:get-last-error)]))
+
+  (struct arrow-type (wrapper in-ts out-t convs errno? async-apply?))
 
   (define-syntax-class (:arrow-type stx)
     #:description "an ffi2 arrow type"
     #:literals (->)
     #:attributes (t)
     (pattern (-> ~!
-                 in-maybe-type::maybe-type ...
-                 (~optional (~seq #:varargs var-in-maybe-type::maybe-type ...))
-                 out-maybe-type::maybe-type (~optional (~and errno (~or #:errno
-                                                                        #:get-last-error)))
-                 (~alt (~optional (~seq #:abi (~var abi (:abi stx))))
+                 in-arg::arg ...
+                 (~optional (~seq #:varargs var-in-arg::arg ...))
+                 out-result::result (~optional out-errno::errno)
+                 (~alt (~optional (~seq #:result result:expr))
+                       (~optional (~seq #:abi (~var abi (:abi stx))))
                        (~optional (~and atomic #:atomic))
                        (~optional (~and collect-safe #:collect-safe))
                        (~optional (~and callback-exns #:allow-callback-exn))
                        (~optional (~and in-original #:in-original)))
                  ...)
-             #:with ((~var in-type (:type stx #f #t)) ...) #'(in-maybe-type ...)
-             #:with ((~var var-in-type (:type stx #f #t)) ...) (if (attribute var-in-maybe-type)
-                                                                   #'(var-in-maybe-type ...)
+             #:with ((~var in-type (:type stx #f #t)) ...) #'(in-arg.maybe-type ...)
+             #:with ((~var var-in-type (:type stx #f #t)) ...) (if (attribute var-in-arg)
+                                                                   #'(var-in-arg.maybe-type ...)
                                                                    #'())
-             #:with (~var out-type (:type stx #t)) #'out-maybe-type
-             #:attr t (arrow-type (append (attribute in-type.t)
+             #:with (~var out-type (:type stx #t)) #'out-result.maybe-type
+             #:attr t (arrow-type (build-arrow-wrapper (append (attribute in-arg.name) (or (attribute var-in-arg.name)
+                                                                                           null))
+                                                       (append (attribute in-arg.auto) (or (attribute var-in-arg.auto)
+                                                                                           null))
+                                                       #'out-result.name
+                                                       (and (attribute out-errno)
+                                                            #'out-errno.name)
+                                                       (attribute result))
+                                  (append (attribute in-type.t)
                                           (attribute var-in-type.t))
                                   (attribute out-type.t)
                                   (append
                                    (if (attribute abi)
                                        (list (attribute abi.a))
                                        null)
-                                   (if (attribute var-in-maybe-type)
-                                       (list (list '__varargs_after (length (attribute in-maybe-type))))
+                                   (if (attribute var-in-arg)
+                                       (list (list '__varargs_after (length (attribute in-arg))))
                                        null)
                                    (if (and (attribute atomic)
                                             ;; not inherently incompatible with `atomic`,
@@ -132,13 +172,40 @@
                                                                #'in-original)
                                            (list '__original_place))
                                        null)
-                                   (if (attribute errno)
-                                       (list (if (eq? (syntax-e #'errno) '#:errno)
+                                   (if (attribute out-errno)
+                                       (list (if (eq? (syntax-e #'out-errno.mode) '#:errno)
                                                  '__errno
                                                  '(__select os (windows) __get_last_error __errno)))
                                        null))
-                                  (and (attribute errno) #t)
+                                  (and (attribute out-errno) #t)
                                   (and (attribute in-original) #t))))
+
+  (define (build-arrow-wrapper in-names in-autos
+                               out-name errno-name
+                               result-expr)
+    (cond
+      [(and (not result-expr)
+            (for/and ([auto (in-list in-autos)]) (not auto)))
+       #'begin]
+      [else
+       #`(lambda (proc)
+           (lambda #,(for/list ([name (in-list in-names)]
+                                [auto (in-list in-autos)]
+                                #:unless auto)
+                       name)
+             (let* #,(for/list ([name (in-list in-names)]
+                                [auto (in-list in-autos)]
+                                #:when auto)
+                       #`[#,name #,auto])
+                 #,(cond
+                     [(not result-expr)
+                      #`(proc #,@in-names)]
+                     [(not errno-name)
+                      #`(let ([#,out-name (proc #,@in-names)])
+                          #,result-expr)]
+                     [else
+                      #`(let-values ([(#,out-name #,errno-name) (proc #,@in-names)])
+                          #,result-expr)]))))]))
 
   (define-syntax-class (:type stx [for-return? #f] [for-argument? #f])
     #:description "an ffi2 type"
@@ -766,15 +833,16 @@
                                          #:copy*)
                        ptr)])
             (let ([proc adjust-proc])
-              (lambda (in ...)
-                (unless (in-ok? in) (bad-argument 'in_t-name in))
-                ...
-                (let ([in (in-racket->c in)] ...)
-                  (let-values ([(out out-errno ...) (proc in ...)])
-                    ;; the `release` function can usefully be something like `black-box` to
-                    ;; retain a converted argument until the foreign procedure returns
-                    (in-release in) ...
-                    (values (#,(ffi2-type-c->racket out-t) out) out-errno ...))))))))))
+              (#,(arrow-type-wrapper a-t)
+               (lambda (in ...)
+                 (unless (in-ok? in) (bad-argument 'in_t-name in))
+                 ...
+                 (let ([in (in-racket->c in)] ...)
+                   (let-values ([(out out-errno ...) (proc in ...)])
+                     ;; the `release` function can usefully be something like `black-box` to
+                     ;; retain a converted argument until the foreign procedure returns
+                     (in-release in) ...
+                     (values (#,(ffi2-type-c->racket out-t) out) out-errno ...)))))))))))
 
 (define-for-syntax (parse-define-ffi2-procedure stx use-lib-expr
                                                 #:default-fail [default-fail #f]

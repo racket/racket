@@ -4,17 +4,27 @@
 @title[#:tag "procedure"]{Foreign Procedures}
 
 @defform[#:kind "ffi2 type"
-         (-> arg-type ...
-             maybe-vararg-types
-             result-type maybe-errno
+         #:literals (: =)
+         (-> arg ...
+             maybe-varargs
+             result maybe-errno
              option
              ...)
-         #:grammar ([maybe-vararg-types (code:line #:varargs arg-type ...)
-                                        ϵ]
+         #:grammar ([arg type
+                         [arg-id : type]
+                         [type = auto-expr]
+                         [arg-id : type = auto-expr]]
+                    [maybe-varargs (code:line #:varargs arg ...)
+                                   ϵ]
+                    [result result-type
+                            [result-id : result-type]]
                     [maybe-errno #:errno
                                  #:get-last-error
+                                 [errno-id : #:errno]
+                                 [errno-id : #:get-last-error]
                                  ϵ]
-                    [option (code:line #:abi abi)
+                    [option (code:line #:result result-expr)
+                            (code:line #:abi abi)
                             (code:line #:atomic)
                             (code:line #:collect-safe)
                             (code:line #:allow-callback-exn)
@@ -36,16 +46,35 @@ operations and generally must not raise an exception (unless
 @racket[#:allow-callback-exn] is used for a callout that reaches the
 callback).
 
-If @racket[#:errno] or @racket[#:get-last-error] is specified after
+Each @racket[arg] describes a type for an argument, each with an
+optional name @racket[arg-id] and an optional @racket[auto-expr]. When
+an argument has an @racket[auto-expr], no corresponding argument is
+provided to a callout. Each @racket[auto-expr] can refer to
+@racket[arg-id]s for arguments without @racket[auto-expr]s and for
+earlier arguments that have @racket[auto-expr]s. When an arrow type
+is used for a foreign callback (instead of a callout), @racket[arg-id]s
+and @racket[auto-expr]s have no effect.
+
+A @racket[result] can similarly have a @racket[result-id]. That
+identifier can be used (along with the @racket[arg-id]s) in a
+@racket[result-expr] supplied with @racket[#:result]. The value of
+@racket[#:result] becomes the result for a callout, and it is not
+used for a callback.
+
+If @racket[#:errno] or @racket[#:get-last-error] (optionally
+with a @racket[errno-id]) is specified after
 @racket[result-type], then calling a function produced by
-@racket[ffi2-procedure] returns two values: the foreign procedure's
+@racket[ffi2-procedure] returns two values (absent a
+@racket[#:result] expression): the foreign procedure's
 return value and the value of the C library's @tt{errno} or the result
 of the @tt{GetLastError} function on Windows. The @tt{errno} or
 @tt{GetLastError} result is obtained just after the foreign procedure
 call returns and before it can be changed. On platforms other than
 Windows, @racket[#:get-last-error] is treated as @racket[#:errno]. A
 @racket[#:errno] or @racket[#:get-last-error] specification has no
-effect on the result of @racket[ffi2-callback].
+effect for a callback. If @racket[errno-id] is specified, it
+can be referenced in a @racket[result-expr] to determine a
+callout result.
 
 Each @racket[option] affects the way a foreign procedure is called or
 how a callback is handled:
