@@ -4,7 +4,8 @@
 (library (tests unit-tests)
   (export run-unit-tests run-ensure-correct-identifiers run-maybe-tests
     run-maybe-dots-tests run-language-dot-support run-maybe-unparse-tests
-    run-argument-name-matching run-error-messages run-pass-parser-unparser)
+    run-argument-name-matching run-error-messages run-pass-parser-unparser
+    run-parser-regression)
   (import (rnrs)
           (nanopass helpers)
           (nanopass language)
@@ -917,11 +918,11 @@
    (test-suite error-messages
      (test run-time-error-messages
        (assert-error
-         (format-error-message "Exception in with-output-language: expected list of symbol but received x in field x* of (lambda (x* ...) body* ... body) from expression ~s at line 922, char 23 of ~a" ''x test-file)
+         (format-error-message "Exception in with-output-language: expected list of symbol but received x in field x* of (lambda (x* ...) body* ... body) from expression ~s at line 923, char 23 of ~a" ''x test-file)
          (with-output-language (L-error Expr)
            `(lambda (,'x ...) z)))
        (assert-error
-         (format-error-message "Exception in with-output-language: expected list of list of symbol but received x** in field x** of ~s from expression ~s at line 926, char 29 of ~a" '(let-values (((x** ...) e*) ...) body* ... body) ''x** test-file)
+         (format-error-message "Exception in with-output-language: expected list of list of symbol but received x** in field x** of ~s from expression ~s at line 927, char 29 of ~a" '(let-values (((x** ...) e*) ...) body* ... body) ''x** test-file)
          (with-output-language (L-error Expr)
            `(let-values ([(,'x** ...) ,'(y)] ...) z)))
        ))
@@ -1152,4 +1153,20 @@
          '(((lambda (x.0) (lambda (y.1) x.0)) (lambda (x.2) x.2)) (lambda (x.3) x.3))
          ((pass-output-unparser ski->lc) (ski->lc ((pass-input-parser ski->lc) '((K I) I)))))))
 
+   (define-language Leach-any
+     (terminals
+       (symbol (x)))
+     (Program (p)
+       (locals ((x** ...) ...) e))
+     (Expr (e)
+       x))
+
+   (define-parser parse-Leach-any Leach-any)
+
+   (test-suite parser-regression
+     (test each-any-regression
+       (let ([ts '(locals ((x y z) (w k v l)) x)])
+         (assert-equal?
+           ts
+           (unparse-Leach-any (parse-Leach-any ts))))))
    )

@@ -12,7 +12,8 @@
        [succeeded? (and (run-language-dot-support) succeeded?)]
        [succeeded? (and (run-argument-name-matching) succeeded?)]
        [succeeded? (and (run-error-messages) succeeded?)]
-       [succeeded? (and (run-pass-parser-unparser) succeeded?)])
+       [succeeded? (and (run-pass-parser-unparser) succeeded?)]
+       [succeeded? (and (run-parser-regression) succeeded?)])
   (printf "Compiler loaded, running all tests (quietly)\n")
   (time
     (begin

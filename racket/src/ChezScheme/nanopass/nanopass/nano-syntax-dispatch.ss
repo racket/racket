@@ -56,11 +56,12 @@
         (lambda (p)
           (syntax-case p (any each-any each each+)
             [() #'(lambda (r) r)]
-            [any #`(lambda (r) (cons '() r))]
+            [any #'(lambda (r) (cons '() r))]
             [(a . d)
              (with-syntax ([matcher-a (match-empty #'a)]
                            [matcher-d (match-empty #'d)])
                #'(lambda (r) (matcher-a (matcher-d r))))]
+            [each-any #'(lambda (r) (cons '() r))]
             [#(each p) (match-empty #'p)]
             [#(each+ p1 (p2 ...) p3)
              (with-syntax ([matcher-p1 (match-empty #'p1)]

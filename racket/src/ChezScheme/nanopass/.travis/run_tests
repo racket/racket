@@ -3,6 +3,10 @@
 case $SCHEME in
   vicare) vicare --more-file-extensions --source-path "." --r6rs-script test-all.ss ;;
   ikarus) ikarus --r6rs-script test-all.ss ;;
-  chez) petite --program test-all.ss ;;
+  chez) scheme --program test-all.ss ;;
+  ironscheme)
+    export -p PATH="$HOME/.dotnet:$PATH"
+    dotnet ./IronScheme/IronScheme.ConsoleCore.dll -- test-all.ss
+    ;;
   *) echo "unexpected scheme implementation $SCHEME" ; exit 1 ;;
 esac

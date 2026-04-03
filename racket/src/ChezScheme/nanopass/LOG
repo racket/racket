@@ -845,3 +845,9 @@ LATEST
   * Added syntax-violation when parsing a clause pattern does not produce a
     nanopass record decription.
       nanopass/pass.ss
+2025-12-29 -
+  * Fix to `nano-syntax-dispatch` where the `each-any` case had been missed
+    in the 2021 commit that reworked `nano-syntax-dispatch` to remove the
+    run-time dependency. The original code handled `each-any` in `match-empty`,
+    but the `each-any` clause was accidentally dropped when this was reworked.
+      nanopass/nano-syntax-dispatch.ss, test-all.ss, tests/unit-tests.ss
