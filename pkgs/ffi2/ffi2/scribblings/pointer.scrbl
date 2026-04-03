@@ -144,7 +144,54 @@ Converts the Racket representation produced by @racket[expr] from one
 foreign type's representation to another. If @racket[from-type] or
 @racket[to-type] is not specified, each defaults to @racket[void_t*].
 
+If the @racket[#:offset] option is provided, the resulting pointer is
+shifted to represent an address that is @racket[_n] bytes later, where
+@racket[_n] is the result of @racket[n-expr] multiplied by
+@racket[(ffi2-sizeof maybe-type)] or by @racket[1] if
+@racket[maybe-type] is empty.
+
 }
+
+@defform*[[(ffi2-add ptr-expr n-expr)
+           (ffi2-add ptr-expr type n-expr)]]{
+
+A shorthand for @racket[(ffi2-cast ptr-expr #:offset n-expr)]
+or @racket[(ffi2-cast ptr-expr #:offset type n-expr #:to (array type *))].
+
+}
+
+@deftogether[(
+@defproc[(ffi2-memcpy [dest ptr_t?]
+                      [src ptr_t?]
+                      [len exact-nonnegative-integer?]
+                      [#:dest-offset dest-offset exact-nonnegative-integer? 0]
+                      [#:src-offset src-offset exact-nonnegative-integer? 0])
+         void?]
+@defproc[(ffi2-memmove [dest ptr_t?]
+                       [src ptr_t?]
+                       [len exact-nonnegative-integer?]
+                       [#:dest-offset dest-offset exact-nonnegative-integer? 0]
+                       [#:src-offset src-offset exact-nonnegative-integer? 0])
+         void?]
+@defproc[(ffi2-memset [dest ptr_t?]
+                      [byte byte_t?]
+                      [len exact-nonnegative-integer?]
+                      [#:dest-offset dest-offset exact-nonnegative-integer? 0])
+         void?]
+)]{
+
+The @racket[ffi2-memcpy] and @racket[ffi2-memmove] functions copy
+@racket[len] bytes from the address represented by @racket[(ffi2-add
+src src-offset)] to the address represented by @racket[(ffi2-add dest
+dest-offset)]. In the case of @racket[ffi2-memcpy], the source and
+destination regions must not overlap.
+
+The @racket[ffi2-memcpy] function sets @racket[len] bytes at the
+address represented by @racket[(ffi2-add dest dest-offset)] so that
+each byte's value is @racket[byte].
+
+}
+
 
 @deftogether[(
 @defproc[(ptr_t->uintptr [ptr ptr_t?]) exact-nonnegative-integer?]

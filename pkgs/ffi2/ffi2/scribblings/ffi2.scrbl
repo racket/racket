@@ -8,6 +8,7 @@ C-based API.}
 
 @table-of-contents[]
 
+@include-section["lib.scrbl"]
 @include-section["base-type.scrbl"]
 @include-section["compound-type.scrbl"]
 @include-section["define-type.scrbl"]

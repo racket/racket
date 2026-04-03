@@ -129,7 +129,7 @@ Creates a @tech{foreign callout}. The @racket[arrow-type] must be
 either an immediate @racket[->] type or a type name that is defined as
 an @racket[->] type.
 
-Using @racket[ffi-procedure] is equivalent to @racket[(ffi2-cast
+Using @racket[ffi2-procedure] is equivalent to @racket[(ffi2-cast
 ptr-expr #:from ptr_t #:to arrow-type)] to convert a foreign
 function pointer to a procedure that can be called from Racket.
 
@@ -146,9 +146,11 @@ proc-expr #:from arrow-type #:to ptr_t)] to convert a Racket
 procedure to a function pointer to be called in a foreign context.
 
 A foreign callback is managed by the Racket garbage collector. A
-callback is always immobile in the sense of using @racket[ffi-malloc]
+callback is always immobile in the sense of using @racket[ffi2-malloc]
 in @racket[#:gcable-immobile] mode, but the callback must be retained
 somehow as long as it is relevant for calls from a foreign context.
+A callback is automatically retained in that sense if it is passed to
+a foreign callout that uses the callback only until the callout returns.
 
 }
 
@@ -160,7 +162,19 @@ somehow as long as it is relevant for calls from a foreign context.
                             (code:line #:wrap wrap-expr)])]{
 
 A convenience form for binding @racket[id] as a @tech{foreign
-callout}. The @racket[#:lib] option must be provided.
+callout}. The @racket[#:lib] option must be provided, and an exported
+object with name @racket[c-id] is found in the library produced by
+@racket[lib-expr]. If @racket[c-id] is not declared using
+@racket[#:c-id], then @racket[id] is used.
+
+If @racket[c-id] (or @racket[id]) is not exported from
+@racket[ffi-lib], then if @racket[fail-expr] is called with
+@racket['#,(racket id)] as its argument, and @racket[id] is defined
+as that result instead of a callout based on @racket[arrow-type].
+
+If @racket[wrap-expr] is provided, then the value that otherwise would
+be bound to @racket[id] is passed to the result of @racket[wrap-expr],
+and @racket[id] is defined as the result of that call.
 
 }
 
@@ -174,6 +188,23 @@ callout}. The @racket[#:lib] option must be provided.
 Defines @racket[id] as a definition form with the same syntax as
 @racket[define-ffi2-procedure], except that a definition using
 @racket[id] cannot have a @racket[#:lib] clause.
+
+If @racket[#:default-fail] or @racket[#:default-wrap] are provided,
+they supply expressions that are used as @racket[#:fail] or
+@racket[#:wrap] defaults for @racket[id].
+
+If @racket[#:provide] is specified, then a name defined by @racket[id]
+is also exported using @racket[provide] with @racket[protect-out].
+
+}
+
+@defproc[(make-not-available [name symbol?]) procedure?]{
+
+Returns a procedure that takes any number of arguments, including
+keyword arguments, and reports an error message from @racket[name].
+This function is intended for using with @racket[#:fail] in
+@racket[define-ffi2-procedure] or @racket[#:default-fail] in
+@racket[define-ffi2-definer].
 
 }
 
