@@ -49,6 +49,8 @@
  [int64_t #:good (#x-8000000000000000 0 #x7FFFFFFFFFFFFFFF) #:bad (#x-8000000000000001 #x8000000000000000 1.0 "oops")]
  [uint64_t #:good (0 #x7FFFFFFFFFFFFFFF #xFFFFFFFFFFFFFFFF) #:bad (-1 #x10000000000000000 1.0 "oops")]
  [byte_t #:good (0 127 255) #:bad (-1 256 1.0 "oops")]
+ [short_t #:good (#x-8000 0 #x7FFF) #:bad (#x-8001 #x8000 1.0 "oops")]
+ [ushort_t #:good (0 #x7FFF #xFFFF) #:bad (-1 #x10000 1.0 "oops")]
  [int_t #:good (#x-80000000 0 #x7FFFFFFF) #:bad (#x-80000001 #x80000000 1.0 "oops")]
  [uint_t #:good (0 #x7FFFFFFF #xFFFFFFFF) #:bad (-1 #x100000000 1.0 "oops")]
  [long_t #:good (-256 0 256) #:bad (#x-8000000000000001 #x8000000000000000 1.0 "oops")]

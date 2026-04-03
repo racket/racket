@@ -50,6 +50,8 @@ complement bit representation.
 }
 
 @deftogether[(
+@deftypeform[short_t]
+@deftypeform[ushort_t]
 @deftypeform[int_t]
 @deftypeform[uint_t]
 @deftypeform[long_t]

@@ -35,6 +35,8 @@
 (define-ffi2-base-type uint32_t 'unsigned-32 #'uint32? #:category 'scalar)
 (define-ffi2-base-type int64_t 'integer-64 #'int64? #:category 'scalar)
 (define-ffi2-base-type uint64_t 'unsigned-64 #'uint64? #:category 'scalar)
+(define-ffi2-base-type short_t 'integer-16 #'int16? #:category 'scalar)
+(define-ffi2-base-type ushort_t 'unsigned-16 #'uint16? #:category 'scalar)
 (define-ffi2-base-type int_t 'int #'int32? #:category 'scalar)
 (define-ffi2-base-type uint_t 'unsigned #'uint32? #:category 'scalar)
 (define-ffi2-base-type long_t 'long #'long? #:category 'scalar)
