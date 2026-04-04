@@ -207,6 +207,15 @@
                       #`(let-values ([(#,out-name #,errno-name) (proc #,@in-names)])
                           #,result-expr)]))))]))
 
+  (define (compound->prim compound)
+    ;; name used for `free-identifier=?` might not symbolically match the original name
+    (syntax-parse compound
+      #:literals (-> struct union array system-type-case)
+      [struct 'struct]
+      [union 'union]
+      [array 'array]
+      [system-type-case 'system-type-case]))
+
   (define-syntax-class (:type stx [for-return? #f] [for-argument? #f])
     #:description "an ffi2 type"
     #:attributes (t)
@@ -218,9 +227,9 @@
     (pattern (~and all (-> ~! . _))
              #:with (~var a (:arrow-type stx)) #'all
              #:with arity #`#,(length (arrow-type-in-ts (attribute a.t)))
-             #:attr t (make-ffi2-type #f 'pointer #'(lambda (proc)
-                                                      (and (procedure? proc)
-                                                           (procedure-arity-includes? proc arity)))
+             #:attr t (make-ffi2-type '(-> ...) 'pointer #'(lambda (proc)
+                                                             (and (procedure? proc)
+                                                                  (procedure-arity-includes? proc arity)))
                                       #:racket->c #`(lambda (proc)
                                                       #,(build-ffi2-callback '-> #'proc (attribute a.t)))
                                       #:c->racket #`(lambda (ptr)
@@ -235,7 +244,8 @@
              #:with tag*s (if (attribute tag)
                               #`(#,(string->symbol (format "~a*" (syntax-e #'tag))))
                               #'())
-             #:attr t (make-ffi2-type (syntax-e #'(~? tag compound)) (syntax->datum #'(compound tag*s (field-name field-vm-type) ...))
+             #:with compound-prim (compound->prim #'compound)
+             #:attr t (make-ffi2-type (syntax-e #'(~? tag compound)) (syntax->datum #'(compound-prim tag*s (field-name field-vm-type) ...))
                                       (if (attribute tag)
                                           #'(lambda (v)
                                               (or ((#%foreign-inline (ffi2-ptr?-maker pointer tag*s) #:copy*) v)
@@ -247,9 +257,11 @@
                             (if (pair? ptr-vm-type)
                                 (cadr ptr-vm-type)
                                 '()))
-             #:attr t (make-ffi2-type #f (if (eq? '* (syntax-e #'n))
-                                             `(pointer ,(syntax->datum #'tag*s))
-                                             `(array ,(syntax->datum #'tag*s) ,(syntax-e #'n) ,(ffi2-type-vm-type (attribute elem-type.t))))
+             #:attr t (make-ffi2-type (let ([tags (syntax->datum #'tag*s)])
+                                        (and (pair? tags) (car tags)))
+                                      (if (eq? '* (syntax-e #'n))
+                                          `(pointer ,(syntax->datum #'tag*s))
+                                          `(array ,(syntax->datum #'tag*s) ,(syntax-e #'n) ,(ffi2-type-vm-type (attribute elem-type.t))))
                                       (if (null? (syntax-e #'tag*s))
                                           #'ffi2-ptr?
                                           #'(lambda (v)
@@ -318,7 +330,8 @@
                                                                 (string->symbol (format "set-~a-~a!" (syntax-e #'name) (syntax-e field-name)))
                                                                 field-name))
                                                (attribute field-name))]
-                   [(set-name-field!/unchecked ...) (generate-temporaries #'(field-name ...))])
+                   [(set-name-field!/unchecked ...) (generate-temporaries #'(field-name ...))]
+                   [compound-prim (compound->prim #'compound)])
        #'(begin
            (define (tag-ptr? v) (or ((#%foreign-inline (ffi2-ptr?-maker pointer (tag*)) #:copy*) v)
                                     ((#%foreign-inline (ffi2-ptr?-maker pointer/gc (tag*)) #:copy*) v)))
@@ -329,7 +342,7 @@
                                                        #:release #'black-box
                                                        #:category 'ptr))
            (define-syntax name
-             (make-ffi2-type 'name '(compound (tag*) (field-name field-vm-type) ...) #'tag-ptr?
+             (make-ffi2-type 'name '(compound-prim (tag*) (field-name field-vm-type) ...) #'tag-ptr?
                              #:release #'black-box
                              #:procedure
                              (lambda (stx)
@@ -352,13 +365,13 @@
                               field-ptr-vm-type
                               field-c->racket field-vm-type
                               v (~? (begin 'is-u? 0)
-                                    (#%foreign-inline (ffi2-offsetof (compound (tag*) (field-name field-vm-type) ...) field-name) #:copy))))
+                                    (#%foreign-inline (ffi2-offsetof (compound-prim (tag*) (field-name field-vm-type) ...) field-name) #:copy))))
            ...
            (define (set-name-field!/unchecked v val)
              (do-ffi2-ptr-set! field-compound?
                                field-racket->c field-vm-type
                                v (~? (begin 'is-u? 0)
-                                     (#%foreign-inline (ffi2-offsetof (compound (tag*) (field-name field-vm-type) ...) field-name) #:copy))
+                                     (#%foreign-inline (ffi2-offsetof (compound-prim (tag*) (field-name field-vm-type) ...) field-name) #:copy))
                                val
                                field-release))
            ...

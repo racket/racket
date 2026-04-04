@@ -72,3 +72,7 @@ EXPORT int add1_and_errno(int v) {
 EXPORT void sleep_seconds(int n) {
   sleep(n);
 }
+
+EXPORT void *ptr_to_ptr(void *p) {
+  return p;
+}

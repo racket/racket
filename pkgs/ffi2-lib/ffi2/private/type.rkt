@@ -87,6 +87,11 @@
            'pointer)]
       [(ffi2-type-name t)
        (list 'pointer (list (string->symbol (format "~a*" (ffi2-type-name t)))))]
+      [(and (pair? vm-type)
+            (memq (car vm-type) '(pointer gcpointer))
+            (pair? (cdr vm-type))
+            (pair? (cadr vm-type)))
+       (list 'pointer (list (string->symbol (format "~a*" (caadr vm-type)))))]
       [else 'pointer]))
 
   (define (pointer-vm-type->gcable vm-type)
