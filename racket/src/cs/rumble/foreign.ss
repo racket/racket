@@ -896,7 +896,7 @@
 (define/who (ffi2-lib-ref lib name)
   (ffi-obj* who name lib
             (lambda (ptr)
-              (make-ftype-pointer integer-8 (ffi-ptr->address ptr)))))
+              (make-ftype-pointer ptr_t (ffi-ptr->address ptr)))))
 
 (define (ffi-obj-name obj)
   (cpointer/ffi-obj-name obj))
@@ -2077,8 +2077,8 @@
                                                     names))
                                     name-str)))))
 
-(define-ftype void_t* ftype-pointer (nongenerative #{void_t* ffi2:void_t*}))
-(define-ftype void_t*/gcable ftype-scheme-object-pointer (nongenerative #{void_t*/gcable ffi2:void_t*/gcable}))
+(define-ftype ptr_t ftype-pointer (nongenerative #{ptr_t ffi2:ptr_t}))
+(define-ftype ptr_t/gcable ftype-scheme-object-pointer (nongenerative #{ptr_t/gcable ffi2:ptr_t/gcable}))
 
 (meta define (matching-target? key vals)
       (case key
@@ -2164,10 +2164,10 @@
                                type-stx
                                [pointer (if to-c?
                                             #'ftype-pointer
-                                            #'void_t*)]
+                                            #'ptr_t)]
                                [pointer/gc (if to-c?
                                                #'ftype-pointer
-                                               #'void_t*/gcable)]
+                                               #'ptr_t/gcable)]
                                [(pointer names) (add-decl! (datum names) #'ftype-pointer to-c? #f)]
                                [(pointer/gc names) (add-decl! (datum names) #'ftype-scheme-object-pointer to-c? #f)]
                                [(struct names . fields) (with-syntax ([fields (convert-fields #'fields)])
