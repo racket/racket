@@ -5,8 +5,8 @@
          tests/eli-tester)
 
 (define (run-tests scheme wrap-ports skip-actual-redirect?)
+  (define first-port-no (+ 10000 (random 50000)))
   (define ((make-tester url->port) response . responses)
-    (define first-port-no 9001)
     (define server-cust
       (make-custodian))
     (define wait-sema
@@ -126,7 +126,8 @@
   (unless skip-actual-redirect?
     (test
      (get-pure/redirect
-      "HTTP/1.1 301 Moved Permanently\r\nLocation: http://localhost:9002/whatever\r\n\r\nstuff"
+      (format "HTTP/1.1 301 Moved Permanently\r\nLocation: http://localhost:~a/whatever\r\n\r\nstuff"
+              (+ first-port-no 1))
       (string-append
        "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nTransfer-Encoding: chunked\r\n\r\n"
        "24\r\nThis is the data in the first chunk \r\n1A\r\nand this is the second one\r\n0\r\n"))
