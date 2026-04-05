@@ -58,6 +58,17 @@
          make-not-available
          (all-from-out "private/base-type.rkt"))
 
+(module+ unsafe
+  (provide unsafe-ffi2-ref
+           unsafe-ffi2-set!
+           unsafe-ffi2-procedure
+           unsafe-ffi2-callback
+           unsafe-ffi2-malloc
+           unsafe-ffi2-cast
+           unsafe-ffi2-memcpy
+           unsafe-ffi2-memmove
+           unsafe-ffi2-memset))
+
 (begin-for-syntax
   (define-syntax-class (:abi stx)
     #:attributes (a)
@@ -190,24 +201,26 @@
             (for/and ([auto (in-list in-autos)]) (not auto)))
        #'begin]
       [else
+       (define (no-srcloc stx) (datum->syntax stx (syntax-e stx) #f stx))
        #`(lambda (proc)
-           (lambda #,(for/list ([name (in-list in-names)]
-                                [auto (in-list in-autos)]
-                                #:unless auto)
-                       name)
-             (let* #,(for/list ([name (in-list in-names)]
-                                [auto (in-list in-autos)]
-                                #:when auto)
-                       #`[#,name #,auto])
-                 #,(cond
-                     [(not result-expr)
-                      #`(proc #,@in-names)]
-                     [(not errno-name)
-                      #`(let ([#,out-name (proc #,@in-names)])
-                          #,result-expr)]
-                     [else
-                      #`(let-values ([(#,out-name #,errno-name) (proc #,@in-names)])
-                          #,result-expr)]))))]))
+           #,(no-srcloc
+              #`(lambda #,(for/list ([name (in-list in-names)]
+                                     [auto (in-list in-autos)]
+                                     #:unless auto)
+                            name)
+                  (let* #,(for/list ([name (in-list in-names)]
+                                     [auto (in-list in-autos)]
+                                     #:when auto)
+                            #`[#,name #,auto])
+                    #,(cond
+                        [(not result-expr)
+                         #`(proc #,@in-names)]
+                        [(not errno-name)
+                         #`(let ([#,out-name (proc #,@in-names)])
+                             #,result-expr)]
+                        [else
+                         #`(let-values ([(#,out-name #,errno-name) (proc #,@in-names)])
+                             #,result-expr)])))))]))
 
   (define (compound->prim compound)
     ;; name used for `free-identifier=?` might not symbolically match the original name
@@ -233,9 +246,9 @@
                                                              (and (procedure? proc)
                                                                   (procedure-arity-includes? proc arity)))
                                       #:racket->c #`(lambda (proc)
-                                                      #,(build-ffi2-callback '-> #'proc (attribute a.t)))
+                                                      #,(build-ffi2-callback '-> 'procedure #'proc (attribute a.t)))
                                       #:c->racket #`(lambda (ptr)
-                                                      #,(build-ffi2-procedure '-> #'ptr (attribute a.t) #t))
+                                                      #,(build-ffi2-procedure '-> 'procedure #'ptr (attribute a.t) #t))
                                       #:release #'black-box
                                       #:category 'arrow))
     (pattern ((~and compound (~or struct union)) ~!
@@ -369,7 +382,8 @@
                                      ...)))))
            field-defn ... ...
            (define (name-field v)
-             (unless (tag-ptr? v) (raise-argument-error 'name-field tag-ptr?-str v))
+             (unless (variable-reference-from-unsafe? (#%variable-reference))
+               (unless (tag-ptr? v) (raise-argument-error 'name-field tag-ptr?-str v)))
              (do-ffi2-ptr-ref field-compound?
                               field-ptr-vm-type
                               field-c->racket field-vm-type
@@ -385,20 +399,24 @@
                                field-release))
            ...
            (define (set-name-field! v val)
-             (unless (tag-ptr? v) (raise-argument-error 'set-name-field! tag-ptr?-str v))
-             (unless (field-ok? val) (bad-assign-value 'set-name-field! 'field-type-name val))
+             (unless (variable-reference-from-unsafe? (#%variable-reference))
+               (unless (tag-ptr? v) (raise-argument-error 'set-name-field! tag-ptr?-str v))
+               (unless (field-ok? val) (bad-assign-value 'set-name-field! 'field-type-name val)))
              (set-name-field!/unchecked v val))
            ...
            (~? (define (fill-name p field-name ...)
                  'is-s?
-                 (unless (field-ok? field-name) (bad-assign-value 'name 'field-type-name field-name))
-                 ...
+                 (unless (variable-reference-from-unsafe? (#%variable-reference))
+                   (unless (field-ok? field-name) (bad-assign-value 'name 'field-type-name field-name))
+                   ...
+                   (void))
                  (set-name-field!/unchecked p field-name)
                  ...
                  p)
                (begin
                  (define (fill-field-name p v)
-                   (unless (field-ok? v) (bad-assign-value 'name 'field-type-name v))
+                   (unless (variable-reference-from-unsafe? (#%variable-reference))
+                     (unless (field-ok? v) (bad-assign-value 'name 'field-type-name v)))
                    (set-name-field!/unchecked p v)
                    p)
                  ...))))]
@@ -451,20 +469,22 @@
                   '())
            #,@(ffi2-type-defns elem-t)
            (define (name-ref ptr idx)
-             (unless (tag-ptr? ptr) (raise-argument-error 'name-ref tag-ptr?-str ptr))
-             #,(if (eq? '* (syntax-e #'n))
-                   #`(unless (exact-integer? idx) (raise-argument-error 'name-ref "exact-integer?" idx))
-                   #`(unless (and (fixnum? idx) (fx<= 0 idx (sub1 n))) (raise-argument-error 'name-ref 'range-str idx)))
+             (unless (variable-reference-from-unsafe? (#%variable-reference))
+               (unless (tag-ptr? ptr) (raise-argument-error 'name-ref tag-ptr?-str ptr))
+               #,(if (eq? '* (syntax-e #'n))
+                     #`(unless (exact-integer? idx) (raise-argument-error 'name-ref "exact-integer?" idx))
+                     #`(unless (and (fixnum? idx) (fx<= 0 idx (sub1 n))) (raise-argument-error 'name-ref 'range-str idx))))
              (do-ffi2-ptr-ref #,(ffi2-type-compound? elem-t)
                               #,(ffi2-type-pointer-vm-type elem-t)
                               #,(ffi2-type-c->racket elem-t) #,(ffi2-type-vm-type elem-t)
                               ptr (* idx (#%foreign-inline (ffi2-sizeof #,(ffi2-type-vm-type elem-t)) #:copy))))
            (define (name-set! ptr idx val)
-             (unless (tag-ptr? ptr) (raise-argument-error 'name-set! tag-ptr?-str ptr))
-             #,(if (eq? '* (syntax-e #'n))
-                   #`(unless (exact-integer? idx) (raise-argument-error 'name-ref "exact-integer?" idx))
-                   #`(unless (and (fixnum? idx) (fx<= 0 idx (sub1 n))) (raise-argument-error 'name-set! 'range-str idx)))
-             (unless (#,(ffi2-type-predicate elem-t) val) (bad-assign-value 'name-set! '#,(ffi2-type-name elem-t) val))
+             (unless (variable-reference-from-unsafe? (#%variable-reference))
+               (unless (tag-ptr? ptr) (raise-argument-error 'name-set! tag-ptr?-str ptr))
+               #,(if (eq? '* (syntax-e #'n))
+                     #`(unless (exact-integer? idx) (raise-argument-error 'name-ref "exact-integer?" idx))
+                     #`(unless (and (fixnum? idx) (fx<= 0 idx (sub1 n))) (raise-argument-error 'name-set! 'range-str idx)))
+               (unless (#,(ffi2-type-predicate elem-t) val) (bad-assign-value 'name-set! '#,(ffi2-type-name elem-t) val)))
              (do-ffi2-ptr-set! #,(ffi2-type-compound? elem-t)
                                #,(ffi2-type-racket->c elem-t) #,(ffi2-type-vm-type elem-t)
                                ptr (* idx (#%foreign-inline (ffi2-sizeof #,(ffi2-type-vm-type elem-t)) #:copy)) val
@@ -613,15 +633,17 @@
                       #:c->racket #'c->racket
                       #:release #'release))))
 
-(define-syntax (ffi2-ref stx)
+(define-for-syntax (parse-ffi2-ref stx unsafe?)
   (syntax-parse stx
     [(form-id ptr-expr:expr (~var type (:type stx)) (~optional (~seq offset-expr:expr (~optional (~and abs #:bytes)))))
      (define t (attribute type.t))
      #`(let ([ptr ptr-expr]
              [offset (~? offset-expr 0)])
-         (unless (variable-reference-from-unsafe? (#%variable-reference))
-           (unless (ffi2-ptr? ptr) (raise-argument-error 'form-id "ptr_t?" ptr))
-           (unless (exact-integer? offset) (raise-argument-error 'form-id "exact-integer?" offset)))
+         #,@(if unsafe?
+                #'()
+                #`((unless (variable-reference-from-unsafe? (#%variable-reference))
+                     (unless (ffi2-ptr? ptr) (raise-argument-error 'form-id "ptr_t?" ptr))
+                     (unless (exact-integer? offset) (raise-argument-error 'form-id "exact-integer?" offset)))))
          #,@(ffi2-type-defns t)
          (do-ffi2-ptr-ref #,(ffi2-type-compound? t)
                           #,(ffi2-type-pointer-vm-type t)
@@ -629,6 +651,12 @@
                           ptr #,(if (attribute abs)
                                     #'offset
                                     #`(* offset (#%foreign-inline (ffi2-sizeof #,(ffi2-type-vm-type t)) #:copy)))))]))
+
+(define-syntax (ffi2-ref stx)
+  (parse-ffi2-ref stx #f))
+
+(define-syntax (unsafe-ffi2-ref stx)
+  (parse-ffi2-ref stx #t))
 
 (define-syntax (do-ffi2-ptr-ref stx)
   (syntax-parse stx
@@ -646,7 +674,7 @@
              ptr
              offset)))]))
 
-(define-syntax (ffi2-set! stx)
+(define-for-syntax (parse-ffi2-set! stx unsafe?)
   (syntax-parse stx
     [(form-id ptr-expr:expr (~var type (:type stx))
               (~optional (~seq offset-expr:expr (~optional (~and abs #:bytes))))
@@ -656,8 +684,10 @@
              [offset (~? offset-expr 0)]
              [val val-expr])
          (unless (variable-reference-from-unsafe? (#%variable-reference))
-           (unless (ffi2-ptr? ptr) (raise-argument-error 'form-id "ptr_t?" ptr))
-           (unless (exact-integer? offset) (raise-argument-error 'form-id "exact-integer?" offset))
+           #,@(if unsafe?
+                #'()
+                #`((unless (ffi2-ptr? ptr) (raise-argument-error 'form-id "ptr_t?" ptr))
+                   (unless (exact-integer? offset) (raise-argument-error 'form-id "exact-integer?" offset))))
            (unless (#,(ffi2-type-predicate t) val) (bad-assign-value 'form-id '#,(ffi2-type-name t) val)))
          #,@(ffi2-type-defns t)
          (do-ffi2-ptr-set! #,(ffi2-type-compound? t)
@@ -668,6 +698,12 @@
                                  #`(* offset (#%foreign-inline (ffi2-sizeof #,(ffi2-type-vm-type t)) #:copy)))
                            val
                            #,(ffi2-type-release t)))]))
+
+(define-syntax (ffi2-set! stx)
+  (parse-ffi2-set! stx #f))
+
+(define-syntax (unsafe-ffi2-set! stx)
+  (parse-ffi2-set! stx #f))
 
 (define-syntax (do-ffi2-ptr-set! stx)
   (syntax-parse stx
@@ -686,7 +722,7 @@
          (field-release c)
          (void))]))
 
-(define-syntax (ffi2-malloc stx)
+(define-for-syntax (parse-ffi2-malloc stx unsafe?)
   (define (build form-id kind-stx t n-expr-stx abs? as-t as-t-stx)
     (define kind-sym (string->symbol (keyword->string (syntax-e kind-stx))))
     (define size-vm-type (if abs?
@@ -706,7 +742,10 @@
                           [(eq? kind-sym 'manual) 'pointer]
                           [else 'pointer/gc]))
     #`(let ([n #,n-expr-stx])
-        (unless (exact-nonnegative-integer? n) (raise-argument-error '#,form-id "exact-nonnegative-integer?" n))
+        #,@(if unsafe?
+               #'()
+               #`((unless (variable-reference-from-unsafe? (#%variable-reference))
+                    (unless (exact-nonnegative-integer? n) (raise-argument-error '#,form-id "exact-nonnegative-integer?" n)))))
         #,@(if as-t
                (ffi2-type-defns as-t)
                '())
@@ -738,6 +777,12 @@
             (attribute as-type.t)
             (attribute as-type))]))
 
+(define-syntax (ffi2-malloc stx)
+  (parse-ffi2-malloc stx #f))
+
+(define-syntax (unsafe-ffi2-malloc stx)
+  (parse-ffi2-malloc stx #t))
+
 (define (ffi2-free v)
   (unless (ffi2-ptr? v) (raise-argument-error 'ffi2-free "ptr_t?" v))
   (ffi2-free* v))
@@ -753,6 +798,11 @@
   (unless (exact-integer? src-offset) (raise-argument-error who "exact-integer?" src-offset))
   (ffi2-memcpy* dest dest-offset src src-offset len))
 
+(define (unsafe-ffi2-memcpy dest src len
+                            #:dest-offset [dest-offset 0]
+                            #:src-offset [src-offset 0])
+  (ffi2-memcpy* dest dest-offset src src-offset len))
+
 (define (ffi2-memmove dest src len
                       #:dest-offset [dest-offset 0]
                       #:src-offset [src-offset 0])
@@ -764,6 +814,11 @@
   (unless (exact-integer? src-offset) (raise-argument-error who "exact-integer?" src-offset))
   (ffi2-memmove* dest dest-offset src src-offset len))
 
+(define (unsafe-ffi2-memmove dest src len
+                             #:dest-offset [dest-offset 0]
+                             #:src-offset [src-offset 0])
+  (ffi2-memmove* dest dest-offset src src-offset len))
+
 (define (ffi2-memset dest byte len
                      #:dest-offset [dest-offset 0])
   (define who 'ffi2-memset)
@@ -771,6 +826,10 @@
   (unless (byte? byte) (raise-argument-error who "byte?" byte))
   (unless (exact-integer? len) (raise-argument-error who "exact-integer?" len))
   (unless (exact-integer? dest-offset) (raise-argument-error who "exact-integer?" dest-offset))
+  (ffi2-memset* dest dest-offset byte len))
+
+(define (unsafe-ffi2-memset dest byte len
+                            #:dest-offset [dest-offset 0])
   (ffi2-memset* dest dest-offset byte len))
 
 (define-syntax (ffi2-sizeof stx)
@@ -794,12 +853,15 @@
         #`(#%foreign-inline (ffi2-offsetof #,vm-type field-name) #:copy)])]))
 
 (define-syntax (ffi2-procedure stx)
-  (parse-ffi2-procedure stx stx #t))
+  (parse-ffi2-procedure stx stx #f #t))
+
+(define-syntax (unsafe-ffi2-procedure stx)
+  (parse-ffi2-procedure stx stx #f #f))
   
-(define-for-syntax (parse-ffi2-procedure stx stx-for-type check-ptr?)
+(define-for-syntax (parse-ffi2-procedure stx stx-for-type proc-name check-ptr?)
   (syntax-parse stx
     [(form-id ptr-expr:expr (~var a (:arrow-type stx-for-type)))
-     (build-ffi2-procedure #'form-id #'ptr-expr (attribute a.t) check-ptr?)]
+     (build-ffi2-procedure #'form-id (or proc-name 'procedure) #'ptr-expr (attribute a.t) check-ptr?)]
     [(form-id ptr-expr:expr (~var type (:type stx-for-type)))
      (define t (attribute type.t))
      (unless (eq? (ffi2-type-category t) 'arrow)
@@ -812,7 +874,7 @@
          #,@(ffi2-type-defns t)
          (#,(ffi2-type-c->racket t) ptr))]))
 
-(define-for-syntax (build-ffi2-procedure form-id ptr-expr a-t check-ptr?)
+(define-for-syntax (build-ffi2-procedure form-id proc-name ptr-expr a-t check-ptr?)
   (define in-ts (arrow-type-in-ts a-t))
   (define out-t (arrow-type-out-t a-t))
   (with-syntax ([form-id form-id]
@@ -826,7 +888,8 @@
                 [(out-errno ...) (if (arrow-type-errno? a-t)
                                      #'(out-errno)
                                      #'())]
-                [(conv ...) (arrow-type-convs a-t)])
+                [(conv ...) (arrow-type-convs a-t)]
+                [proc-name proc-name])
     (with-syntax ([adjust-proc (cond
                                  [(ffi2-type-compound? out-t)
                                   (define kind-sym 'gcable-immobile)
@@ -857,8 +920,10 @@
             (let ([proc adjust-proc])
               (#,(arrow-type-wrapper a-t)
                (lambda (in ...)
-                 (unless (in-ok? in) (bad-argument 'in_t-name in))
-                 ...
+                 (unless (variable-reference-from-unsafe? (#%variable-reference))
+                   (unless (in-ok? in) (bad-argument 'proc-name 'in_t-name in))
+                   ...
+                   (void))
                  (let ([in (in-racket->c in)] ...)
                    (let-values ([(out out-errno ...) (proc in ...)])
                      ;; the `release` function can usefully be something like `black-box` to
@@ -903,6 +968,7 @@
              (define name (wrapper
                            #,(let ([proc (parse-ffi2-procedure #'(form-id name-ptr maybe-type)
                                                                stx
+                                                               #'name
                                                                #f)])
                                (if (or (attribute fail-expr) default-fail)
                                    #`(if (failure-result? name-ptr)
@@ -937,22 +1003,37 @@
                                             #:default-wrap wrap-id
                                             #:provide? 'provide?)))))]))
 
-(define-syntax (ffi2-callback stx)
+(define-for-syntax (parse-ffi2-callback stx unsafe?)
   (syntax-parse stx
     #:literals (->)
     [(form-id proc-expr:expr (~var a (:arrow-type stx)))
-     (build-ffi2-callback #'form-id #'proc-expr (attribute a.t))]
+     (build-ffi2-callback #'form-id 'procedure
+                          (if unsafe?
+                              #'proc-expr
+                              #`(let ([proc proc-expr])
+                                  (unless (variable-reference-from-unsafe? (#%variable-reference))
+                                    (unless (procedure? proc) (raise-argument-error 'form-id "procedure?" proc)))
+                                  proc))
+                          (attribute a.t))]
     [(form-id proc-expr:expr (~var type (:type stx)))
      (define t (attribute type.t))
      (unless (eq? (ffi2-type-category t) 'arrow)
        (raise-syntax-error #f "not a procedure type" stx #'type))
      #`(let ([proc proc-expr])
-         (unless (variable-reference-from-unsafe? (#%variable-reference))
-           (unless (procedure? proc) (raise-argument-error 'form-id "procedure?" proc)))
+         #,@(if unsafe?
+                #'()
+                #`((unless (variable-reference-from-unsafe? (#%variable-reference))
+                     (unless (procedure? proc) (raise-argument-error 'form-id "procedure?" proc)))))
          #,@(ffi2-type-defns t)
          (#,(ffi2-type-racket->c t) proc))]))
 
-(define-for-syntax (build-ffi2-callback form-id proc-expr a-t)
+(define-syntax (ffi2-callback stx)
+  (parse-ffi2-callback stx #f))
+
+(define-syntax (unsafe-ffi2-callback stx)
+  (parse-ffi2-callback stx #t))
+
+(define-for-syntax (build-ffi2-callback form-id proc-name proc-expr a-t)
   (define in-ts (arrow-type-in-ts a-t))
   (define out-t (arrow-type-out-t a-t))
   (with-syntax ([form-id form-id]
@@ -962,7 +1043,8 @@
                 [(conv ...) (arrow-type-convs a-t)]
                 [async-apply-expr (if (arrow-type-async-apply? a-t)
                                       #'async-apply-for-callback
-                                      #'#f)])
+                                      #'#f)]
+                [proc-name proc-name])
     (with-syntax ([adjust-proc (cond
                                  [(ffi2-type-compound? out-t)
                                   #`(lambda (r in ...)
@@ -976,8 +1058,9 @@
               [async-apply async-apply-expr])
           (let ([proc (lambda (in ...)
                         (define out (proc (in-c->racket in) ...))
-                        (unless (#,(ffi2-type-predicate out-t) out)
-                          (bad-result '#,(ffi2-type-name out-t) out))
+                        (unless (variable-reference-from-unsafe? (#%variable-reference))
+                          (unless (#,(ffi2-type-predicate out-t) out)
+                            (bad-result 'proc-name '#,(ffi2-type-name out-t) out)))
                         (#,(ffi2-type-racket->c out-t) out))])
             (let ([proc adjust-proc])
               ((#%foreign-inline (ffi2-callback-maker (__disable_interrupts conv ...)
@@ -990,7 +1073,7 @@
 (define (async-apply-for-callback thunk)
   (thunk))
 
-(define-syntax (ffi2-cast stx)
+(define-for-syntax (parse-ffi2-cast stx unsafe?)
   (syntax-parse stx
     [(form-id expr:expr
               (~alt (~optional (~seq #:from (~var from (:type stx))))
@@ -1018,8 +1101,12 @@
          (unless (variable-reference-from-unsafe? (#%variable-reference))
            #,(if from-t
                  #`(unless (#,(ffi2-type-predicate from-t) ptr) (bad-cast-value 'form-id '#,(ffi2-type-name from-t) ptr))
-                 #`(unless (ffi2-ptr? ptr) (raise-argument-error 'form-id "ptr_t?" ptr)))
-           (unless (exact-integer? offset) (raise-argument-error 'form-id "exact-integer?" offset)))
+                 (if unsafe?
+                     #'(void)
+                     #`(unless (ffi2-ptr? ptr) (raise-argument-error 'form-id "ptr_t?" ptr))))
+           #,(if unsafe?
+                 #'(void)
+                 #`(unless (exact-integer? offset) (raise-argument-error 'form-id "exact-integer?" offset))))
          (let ([c #,(if from-t
                         #`(#,(ffi2-type-racket->c from-t) ptr)
                         #`ptr)])
@@ -1037,6 +1124,12 @@
              #,(if t
                    #`(#,(ffi2-type-c->racket t) v)
                    #'v))))]))
+
+(define-syntax (ffi2-cast stx)
+  (parse-ffi2-cast stx #f))
+
+(define-syntax (unsafe-ffi2-cast stx)
+  (parse-ffi2-cast stx #t))
 
 (define-syntax (ffi2-add stx)
   (syntax-parse stx

@@ -22,22 +22,22 @@
   (discourage-inline)
   (raise-arguments-error who "value does not match type"
                          "value" val
-                         "ffi2 type" (unquoted-printing-string (type-name->string what))))
+                         "type" (unquoted-printing-string (type-name->string what))))
 
 (define (bad-cast-value who what val)
   (bad-assign-value who what val))
 
-(define (bad-argument what val)
+(define (bad-argument who what val)
   (discourage-inline)
-  (raise-arguments-error 'ffi2 "foreign-procedure argument does not match type"
+  (raise-arguments-error who "foreign-procedure argument does not match type"
                          "argument" val
-                         "argument ffi2 type" (unquoted-printing-string (type-name->string what))))
+                         "argument type" (unquoted-printing-string (type-name->string what))))
 
-(define (bad-result what val)
+(define (bad-result who what val)
   (discourage-inline)
-  (raise-arguments-error 'ffi2 "foreign-callback result does not match type"
+  (raise-arguments-error who "foreign-callback result does not match type"
                          "result" val
-                         "result ffi2 type" (unquoted-printing-string (type-name->string what))))
+                         "result type" (unquoted-printing-string (type-name->string what))))
 
 (define (type-name->string what)
   (if what
@@ -92,6 +92,6 @@
 
 (define (bad-convert-result who v r)
   (raise-arguments-error who
-                         "ffi type converter result does not satisfy next type's predicate"
+                         "foreign type converter result does not satisfy next type's predicate"
                          "converter input" v
                          "converter result" r))
