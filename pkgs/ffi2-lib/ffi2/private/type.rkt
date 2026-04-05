@@ -10,6 +10,7 @@
           struct
           union
           array
+          gcable
           system-type-case
           default_abi
           stdcall_abi
@@ -22,6 +23,7 @@
            ffi2-type-or-constructor-or-macro?
            make-ffi2-type
            make-ffi2-type-macro
+           remake-ffi2-type
            ffi2-type-compound?
            ffi2-type-pointer?
            ffi2-type-pointer-vm-type
@@ -61,6 +63,11 @@
                  (procedure-arity-includes? proc 1))
       (raise-argument-error who "(procedure-arity-includes/c 1)" proc))
     (ffi2-type-macro proc))
+
+  (define (remake-ffi2-type t name vm-type)
+    (struct-copy ffi2-type t
+                 [name name]
+                 [vm-type vm-type]))
 
   (define (ffi2-type-compound? t)
     (define vm-type (ffi2-type-vm-type t))
@@ -187,6 +194,7 @@
 (define-syntax (struct stx) (raise-only-as-ffi-type stx))
 (define-syntax (union stx) (raise-only-as-ffi-type stx))
 (define-syntax (array stx) (raise-only-as-ffi-type stx))
+(define-syntax (gcable stx) (raise-only-as-ffi-type stx))
 (define-syntax (system-type-case stx)
   (raise-syntax-error #f "allowed only in an ffi2 type or abi context" stx))
 

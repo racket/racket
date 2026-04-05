@@ -61,3 +61,10 @@
 (define pp0 (ffi2-ref tp point_t 0))
 (check-equal? (point_t-x pp0) 2)
 (check-equal? (point_t-y pp0) 20)
+
+(define-ffi2-type int_pointers_t (array ptr_t/gcable 3))
+(define ips (ffi2-malloc #:gcable-traced int_pointers_t))
+(define p1 (ffi2-malloc int_t 3))
+(int_pointers_t-set! ips 0 p1)
+(check-true (ptr_t/gcable? (int_pointers_t-ref ips 0)))
+(check-false (ptr_t/gcable? (int_pointers_t-ref ips 1))) ; should be null pointer

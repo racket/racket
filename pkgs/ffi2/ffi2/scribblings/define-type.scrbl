@@ -54,7 +54,10 @@ object. Unless @racket[tag] is supplied as @racket[#f], each pointer's
 tags add @racket[tag] (if present) or @racket[name] to the end of the
 tags for @racket[parent-type], which creates a @tech{pointer subtype}.
 If @racket[tag] is provided as @racket[#f], Racket representation of
-the new type is a generic pointer with no tags.
+the new type is a generic pointer with no tags. The type
+@racketidfont{@racket[name]/gcable} is defined in addition to
+@racket[name], and @racketidfont{@racket[name]/gcable} is equivalent
+to @racket[(gcable name)].
 
 When @racket[parent-type] is an @tech{scalar} type,
 a type (as opposed to a type constructor) is being defined, and no

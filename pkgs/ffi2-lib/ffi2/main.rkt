@@ -42,6 +42,7 @@
          struct
          union
          array
+         gcable
          system-type-case
          default_abi
          cdecl_abi
@@ -70,7 +71,7 @@
 
   (define-syntax-class :maybe-type
     #:description "an ffi2 type"
-    #:literals (-> struct union array)
+    #:literals (-> struct union array gcable)
     (pattern t:id
              #:when (ffi2-type-or-constructor-or-macro? (syntax-local-value #'t (lambda () #f))))
     (pattern (t:id _ ...)
@@ -78,7 +79,8 @@
     (pattern (-> _ ...))
     (pattern (struct _ ...))
     (pattern (union _ ...))
-    (pattern (array _ ...)))
+    (pattern (array _ ...))
+    (pattern (gcable _ ...)))
 
   (define-syntax-class :arg
     #:description "an ffi2 arrow-type argument"
@@ -219,7 +221,7 @@
   (define-syntax-class (:type stx [for-return? #f] [for-argument? #f])
     #:description "an ffi2 type"
     #:attributes (t)
-    #:literals (-> struct union array system-type-case)
+    #:literals (-> struct union array gcable system-type-case)
     (pattern type-name:id
              #:attr t (expand-type stx #'type-name #'type-name
                                    #:for-return? for-return?
@@ -268,6 +270,13 @@
                                               (or ((#%foreign-inline (ffi2-ptr?-maker pointer tag*s) #:copy*) v)
                                                   ((#%foreign-inline (ffi2-ptr?-maker pointer/gc tag*s) #:copy*) v))))
                                       #:release #'black-box))
+    (pattern (gcable ~! (~var base-type (:type stx)))
+             #:do [(define base-t (attribute base-type.t))
+                   (unless (ffi2-type-pointer? base-t)
+                     (raise-syntax-error #f "target type is not a pointer type" stx #'base-type))]
+             #:attr t (remake-ffi2-type base-t
+                                        (format "~a/gcable" (ffi2-type-name base-t))
+                                        (pointer-vm-type->gcable (ffi2-type-vm-type base-t))))
     (pattern (~and all (system-type-case . _))
              #:attr t (parse-system-type-case/type #'all))
     (pattern (~and all (type-ctr-name:id . _))

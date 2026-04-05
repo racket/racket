@@ -236,6 +236,21 @@ p
 (triple_t-ref p 1)
 ]
 
+}
+
+@defform[#:kind "ffi2 type"
+         (gcable ptr-type)]{
+
+Describes a type that is the same as @racket[ptr-type], which must
+describe a pointer type, except that conversion from C to Scheme creates
+a reference to an address that is managed by the Racket garbage collector.
+A @racket[gcable] adjustment has no effect on conversion from Scheme to C.
+
+The type @racket[(gcable ptr_t)] is equivalent to
+@racket[ptr_t/gcable]. More generally, when defining a pointer type with
+@racket[define-ffi2-type], a type name with a @racketidfont{/gcable}
+suffix is defined, and that name describes the same type as using
+@racket[gcable].
 
 }
 
