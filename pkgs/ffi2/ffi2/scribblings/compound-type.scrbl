@@ -244,13 +244,17 @@ p
 Describes a type that is the same as @racket[ptr-type], which must
 describe a pointer type, except that conversion from C to Scheme creates
 a reference to an address that is managed by the Racket garbage collector.
-A @racket[gcable] adjustment has no effect on conversion from Scheme to C.
+A @racket[gcable] adjustment has no effect on conversion from Scheme to C
+or on predicates formed with @racket[ffi2-is-a?].
 
 The type @racket[(gcable ptr_t)] is equivalent to
 @racket[ptr_t/gcable]. More generally, when defining a pointer type with
 @racket[define-ffi2-type], a type name with a @racketidfont{/gcable}
 suffix is defined, and that name describes the same type as using
-@racket[gcable].
+@racket[gcable]. The predicate @racket[ptr_t/gcable?] is @emph{not}
+the same as @racket[(lambda (x) (ffi2-is-a? x ptr_t/gcable?))], because
+@racket[ptr_t/gcable?] checks specifically for a pointer into a region
+managed by the Racket garbage collector.
 
 }
 

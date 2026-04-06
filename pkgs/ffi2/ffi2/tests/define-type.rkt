@@ -86,6 +86,7 @@
     (check-equal? (ffi2-ref (ffi2-ref p ptr_t) double_t) 0.505)
     (define also-p (ffi2-ref p percentage_box_t))
     (check-true (percentage_box_t? also-p))
+    (check-true (ffi2-is-a? also-p percentage_box_t))
     (check-equal? also-p (box 50.5))))
 
 (let ()
@@ -110,7 +111,9 @@
   (define p (ffi2-malloc double_t #:as percentage_t*))
   (ffi2-set! p double_t 10.0)
   (check-false (percentage_t*? p))  
+  (check-false (ffi2-is-a? p percentage_t*))
   (ffi2-set! p0 double_t 0.75)
   (ffi2-set! p double_t 0.75)
   (check-false (percentage_t*? p0))
-  (check-true (percentage_t*? p)))
+  (check-true (percentage_t*? p))
+  (check-true (ffi2-is-a? p percentage_t*)))

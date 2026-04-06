@@ -189,6 +189,13 @@ type.
 
 }
 
+@defform[(ffi2-is-a? expr type)]{
+
+Returns @racket[#t] or @racket[#f] indicating whether the result of
+@racket[expr] is a Racket representation for @racket[type].
+
+}
+
 @defform[#:kind "ffi2 type/abi"
          #:literals (else)
          (system-type-case key

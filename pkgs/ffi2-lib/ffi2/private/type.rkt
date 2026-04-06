@@ -36,7 +36,10 @@
            :array-size
            (struct-out procedure-abi))
 
-  (struct ffi2-type (name vm-type category defns predicate racket->c c->racket release))
+  (struct ffi2-type (name ; don't include "/gcable" in the name, since predicates don't consider that
+                     vm-type category defns
+                     predicate racket->c c->racket release
+                     definitely-bool-predicate?))
   (struct ffi2-type-constructor (make))
   (struct ffi2-type-macro (transformer))
 
@@ -53,10 +56,18 @@
                           #:procedure [proc #f]
                           #:racket->c [racket->c #'values]
                           #:c->racket [c->racket #'values]
-                          #:release [release #'drop])
+                          #:release [release #'drop]
+                          #:definitely-bool-predicate? [definitely-bool-predicate? #t])
     (if proc
-        (ffi2-type/proc name vm-type category defns predicate racket->c c->racket release proc)
-        (ffi2-type name vm-type category defns predicate racket->c c->racket release)))
+        (ffi2-type/proc name
+                        vm-type category defns
+                        predicate racket->c c->racket release
+                        definitely-bool-predicate?
+                        proc)
+        (ffi2-type name
+                   vm-type category defns
+                   predicate racket->c c->racket release
+                   definitely-bool-predicate?)))
 
   (define (make-ffi2-type-macro who proc)
     (unless (and (procedure? proc)
@@ -64,9 +75,8 @@
       (raise-argument-error who "(procedure-arity-includes/c 1)" proc))
     (ffi2-type-macro proc))
 
-  (define (remake-ffi2-type t name vm-type)
+  (define (remake-ffi2-type t vm-type)
     (struct-copy ffi2-type t
-                 [name name]
                  [vm-type vm-type]))
 
   (define (ffi2-type-compound? t)

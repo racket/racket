@@ -35,6 +35,7 @@
           ffi2-free
           ffi2-sizeof
           ffi2-offsetof
+          ffi2-is-a?
           ffi2-memcpy
           ffi2-memmove
           ffi2-memset)
@@ -288,7 +289,6 @@
                    (unless (ffi2-type-pointer? base-t)
                      (raise-syntax-error #f "target type is not a pointer type" stx #'base-type))]
              #:attr t (remake-ffi2-type base-t
-                                        (format "~a/gcable" (ffi2-type-name base-t))
                                         (pointer-vm-type->gcable (ffi2-type-vm-type base-t))))
     (pattern (~and all (system-type-case . _))
              #:attr t (parse-system-type-case/type #'all))
@@ -520,19 +520,23 @@
                                     (cons #'(~? tag name)
                                           parent-tags)
                                     parent-tags))]
-                        [(name-ptr? predicate-def ...) (if (attribute predicate-expr)
-                                                           #'(name-ptr?
-                                                              (define name? predicate-expr))
-                                                           #'(name?))])
+                        [(pred-bool? name-ptr? predicate-def ...) (if (attribute predicate-expr)
+                                                                      #'(#f
+                                                                         name-ptr?
+                                                                         (define name? predicate-expr))
+                                                                      #'(#t
+                                                                         name?))])
             #'(begin
                 (define (name-ptr? v) (or ((#%foreign-inline (ffi2-ptr?-maker pointer tags) #:copy*) v)
                                           ((#%foreign-inline (ffi2-ptr?-maker pointer/gc tags) #:copy*) v)))
                 (define-syntax name (make-ffi2-type 'name '(pointer tags) #'name?
                                                     #:release #'black-box
-                                                    #:category 'ptr))
+                                                    #:category 'ptr
+                                                    #:definitely-bool-predicate? pred-bool?))
                 (define-syntax name/gcable (make-ffi2-type 'name/gcable '(pointer/gc tags) #'name?
                                                            #:release #'black-box
-                                                           #:category 'ptr))
+                                                           #:category 'ptr
+                                                           #:definitely-bool-predicate? pred-bool?))
                 predicate-def ...))]
          [else
           (when (and (attribute tag)
@@ -569,11 +573,13 @@
                         [new-release (if (attribute release-expr)
                                          #'new-release
                                          #'begin)]
-                        [(name-ptr? predicate-def ...)
+                        [(pred-bool? name-ptr? predicate-def ...)
                          (if (attribute predicate-expr)
-                             #'(name-ptr?
+                             #'(#f
+                                name-ptr?
                                 (define name? predicate-expr))
-                             #'(name?))])
+                             #'(#t
+                                name?))])
             (with-syntax ([(body-defn ...)
                            #`(wrapper-def
                               ...
@@ -606,7 +612,8 @@
                                                         #:category '#,(ffi2-type-category parent-t)
                                                         #:racket->c #'racket->c
                                                         #:c->racket #'c->racket
-                                                        #:release #'release))
+                                                        #:release #'release
+                                                        #:definitely-bool-predicate? pred-bool?))
                     body-defn
                     ...))))]))]))
 
@@ -851,6 +858,15 @@
         #'0]
        [else
         #`(#%foreign-inline (ffi2-offsetof #,vm-type field-name) #:copy)])]))
+
+(define-syntax (ffi2-is-a? stx)
+  (syntax-parse stx
+    [(form-id arg (~var type (:type stx)))
+     (define t (attribute type.t))
+     (define e #`(#,(ffi2-type-predicate t) arg))
+     (if (ffi2-type-definitely-bool-predicate? t)
+         e
+         #`(and #,e #t))]))
 
 (define-syntax (ffi2-procedure stx)
   (parse-ffi2-procedure stx stx #f #t))

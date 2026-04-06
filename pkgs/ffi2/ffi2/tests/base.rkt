@@ -15,13 +15,19 @@
          (let ([p (if (eq? 'kind '#:copy)
                       (ffi2-malloc #:gcable-traced type_t)
                       (ffi2-malloc type_t))])
+           (define (is-a? v)
+             (ffi2-is-a? v type_t))
            (define (set v)
              (ffi2-set! p type_t v)
              (when (eq? 'kind '#:copy) (copy-content-to-immobile p)))
            (define (ref) (ffi2-ref p type_t))
+           (check-true (is-a? good-val))
+           ...
            (begin
              (set good-val)
              (check-equal? (ref) good-val))
+           ...
+           (check-false (is-a? bad-val))
            ...
            (check-exn exn:fail:contract? (lambda () (set bad-val)))
            ...
