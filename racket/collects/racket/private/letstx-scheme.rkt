@@ -4,6 +4,8 @@
 
 (module letstx-scheme '#%kernel
   (#%require "define-et-al.rkt" "qq-and-or.rkt" "cond.rkt"
+             (rename "define-et-al.rkt" -define define)
+             (rename "define-et-al.rkt" -define-syntax define-syntax)
              (for-syntax '#%kernel "stxcase.rkt" 
                          "with-stx.rkt" "stxloc.rkt"))
   

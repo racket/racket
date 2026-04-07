@@ -4,6 +4,8 @@
 
 (module stxloc '#%kernel
   (#%require "stxcase.rkt" "define-et-al.rkt"
+             (rename "define-et-al.rkt" -define define)
+             (rename "define-et-al.rkt" -define-syntax define-syntax)
              (for-syntax '#%kernel "stxcase.rkt"))
 
   (begin-for-syntax

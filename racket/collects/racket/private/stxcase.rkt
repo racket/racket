@@ -4,8 +4,12 @@
 (module stxcase '#%kernel
   (#%require "stx.rkt" "define-et-al.rkt" "qq-and-or.rkt" "cond.rkt" '#%paramz '#%unsafe
              "ellipses.rkt"
+             (rename "define-et-al.rkt" -define define)
+             (rename "define-et-al.rkt" -define-syntax define-syntax)
              (for-syntax "stx.rkt" "define-et-al.rkt" "qq-and-or.rkt" "cond.rkt"
-                          "stx.rkt" "sc.rkt" '#%kernel))
+                          "stx.rkt" "sc.rkt" '#%kernel
+                          (rename "define-et-al.rkt" -define define)
+                          (rename "define-et-al.rkt" -define-syntax define-syntax)))
 
   (-define interp-match
      (lambda (pat e literals immediate=?)

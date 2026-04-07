@@ -3,6 +3,8 @@
 
 (module with-stx '#%kernel
   (#%require "stx.rkt" "define-et-al.rkt" "qq-and-or.rkt" "cond.rkt" "stxcase.rkt"
+             (rename "define-et-al.rkt" -define define)
+             (rename "define-et-al.rkt" -define-syntax define-syntax)
              (for-syntax '#%kernel "stxcase.rkt" "stxloc.rkt" 
                          "stx.rkt" "sc.rkt" "qq-and-or.rkt" "cond.rkt"))
 

@@ -3,10 +3,9 @@
 ;; -define, when, unless, let/ec, define-struct
 
 (module define-et-al '#%kernel
-  (#%require (for-syntax '#%kernel "stx.rkt" "qq-and-or.rkt" 
-                         "cond.rkt"))
+  (#%require (for-syntax '#%kernel "stx.rkt"))
 
-  (#%provide -define -define-syntax
+  (#%provide define define-syntax define-for-syntax
              when unless
              call/ec let/ec)
 
@@ -31,31 +30,51 @@
   ; non-keyword define* forms
   ;
 
-  
-  ;; No error checking here, because these macros merely help
-  ;;  us write macros before the real define and define-syntax
-  (define-syntaxes (-define -define-syntax)
-    (let ([here (quote-syntax here)])
-      (let ([mk-define
-	     (lambda (base)
-	       (lambda (code)
-		 (let ([body (stx-cdr code)])
-		   (let ([first (stx-car body)])
-		     (cond
-		      [(identifier? first)
-		       (datum->syntax
-			here
-			`(,base (,first) ,@(stx->list (stx-cdr body)))
-			code)]
-		      [else
-		       (let ([pbody (stx-cdr body)])
-			 (datum->syntax
-			  (quote-syntax here)
-			  `(,base (,(stx-car first)) 
-				  (lambda ,(stx-cdr first) ,@(stx->list pbody)))
-			  code))])))))])
-	(values (mk-define (quote-syntax define-values))
-		(mk-define (quote-syntax define-syntaxes))))))
+
+  ; define, define-syntax, and define-for-syntax
+  ;
+  ; These are not user-visible (they get replaced by the full versions which
+  ; use the norm-define.rkt machinery and support keywords) and so we put
+  ; minimal effort into having user-friendly error reporting.
+  (define-syntaxes (define define-syntax define-for-syntax)
+    (let-values ()
+      (define-values (process-define*)
+        (lambda (full-stx id-or-prototype body-list)
+          (if (identifier? id-or-prototype)
+              (values id-or-prototype body-list)
+              (if (stx-pair? id-or-prototype)
+                  (let-values ([(nested) (stx-car id-or-prototype)]
+                               [(arg-spec) (stx-cdr id-or-prototype)])
+                    (process-define* full-stx
+                                     nested
+                                     (list (datum->syntax #f
+                                                          (list* (quote-syntax lambda)
+                                                                 arg-spec
+                                                                 body-list)
+                                                          full-stx))))
+                  (raise-syntax-error #f "bad syntax" full-stx id-or-prototype)))))
+
+      (define-values (process-define)
+        (lambda (head-for-output-form stx)
+          (define-values (lst) (syntax->list stx))
+          (raise-syntax-error-unless lst "bad syntax" stx)
+          (raise-syntax-error-unless (pair? (cdr lst)) "bad syntax" stx)
+          (define-values (id rhs-list)
+            (process-define* stx (cadr lst) (cddr lst)))
+          (datum->syntax #f
+                         (list* head-for-output-form (list id) rhs-list)
+                         stx)))
+
+    (values
+     (lambda (stx)
+       (process-define (quote-syntax define-values) stx))
+     (lambda (stx)
+      (process-define (quote-syntax define-syntaxes) stx))
+     (lambda (stx)
+      (datum->syntax #f
+                     (list (quote-syntax begin-for-syntax)
+                           (process-define (quote-syntax define-values) stx))
+                     stx)))))
 
   ; --------------------------------------------------
   ;
