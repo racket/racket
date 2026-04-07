@@ -3,6 +3,8 @@
 
 (module qqstx '#%kernel
   (#%require "define-et-al.rkt" "stxcase-scheme.rkt" "stx.rkt" "template.rkt"
+             (rename "define-et-al.rkt" -define define)
+             (rename "define-et-al.rkt" -define-syntax define-syntax)
              (for-syntax '#%kernel "qq-and-or.rkt" "cond.rkt" "stxcase-scheme.rkt" "stx.rkt"))
 
   (#%provide quasisyntax
