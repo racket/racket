@@ -137,7 +137,7 @@ be used for the result of a foreign procedure for foreign callback.
 )]{
 
 Types that are represented on the C side like @racket[ptr_t], but
-that are represented in Scheme by conversion to and from strings, byte
+that are represented in Racket by conversion to and from strings, byte
 strings, and paths. The @racket[string_t] type converts a Racket
 string to a null-terminated byte string and passes the address of the
 start of the byte string. The @racket[bytes_t] type similarly copies a
