@@ -14,7 +14,7 @@
 
 ;; In the Racket source repo, this version should change exactly when
 ;; "racket_version.h" changes:
-(define version "9.1.0.12")
+(define version "9.1.900")
 
 (define deps `("racket-lib"
                ["racket" #:version ,version]))
