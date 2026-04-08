@@ -1,3 +1,23 @@
+Version 9.2, April 2026
+Allow more types of `quote`d data in cross-phase persistent modules
+Change `match` to reject non-linear patterns with mismatched ellipsis
+ depth
+Add a `#%foreign-inline` core syntactic form for unsafe access to
+ facilities provided at the linklet layer by a Racket implementation
+Change `object/c` implementation to improve performance
+Reduce foreign-procedure call overhead in some cases by internally
+ shifting interrupt-disabling responsibility to callbacks
+Add internal "ffi2" support for a more static FFI (to be used in
+ a future package)
+Correct some error messages from `memw`, `with-syntax`,
+  and `unquote-splicing`
+Reorganize, tidy, and merge various `racket/private` modules
+Rewrite the implementations of `member`, `memw`, `when`, `unless`,
+  `let/ec`, and `cond` to use only racket/kernel syntax  
+Add `impersonator-property-predicate-procedure?`
+Add `terminal-file-position`
+Use Unicode 17.0 for character and string operations
+
 Version 9.1, January 2026
 Added support for configuring a language family to navigate
  documentation
