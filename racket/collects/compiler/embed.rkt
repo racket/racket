@@ -444,7 +444,7 @@
 
 ;; Loads module code, using .zo if there, compiling from .scm if not
 (define (get-code filename module-path ready-code use-submods codes file-mod-names verbose? collects-dest on-extension 
-                  compiler expand-namespace src-filter get-extra-imports working gen-state)
+                  compiler expand-namespace src-filter get-extra-imports working gen-state compile-cache)
   ;; filename can have the form `(submod ,filename ,sym ...)
   (let* ([a (assoc filename (unbox codes))]
          ;; If we didn't fine `filename` as-is, check now for
@@ -515,6 +515,14 @@
                 ;; Re-used when swapping code during cross-compilation.
                 (lambda (#:roots [roots (current-compiled-file-roots)]
                          #:host? [host? #f])
+                  (define (cache-compiled-module get)
+                    ;; caching is useful when a module has submodules, because we
+                    ;; may need multiple submodules of the to-be-compiled source module
+                    (define cache-key (list just-filename roots host?))
+                    (or (hash-ref compile-cache cache-key #f)
+                        (let ([c (get)])
+                          (hash-set! compile-cache cache-key c)
+                          c)))
                   (get-module-code just-filename
                                    #:roots roots
                                    #:submodule-path submod-path
@@ -525,21 +533,27 @@
                                    (cond
                                      [(and host? (cross-compiling?))
                                       (lambda (e)
-                                        (parameterize ([current-compile-target-machine (system-type 'target-machine)])
-                                          (compiler e)))]
+                                        (cache-compiled-module
+                                         (lambda ()
+                                           (parameterize ([current-compile-target-machine (system-type 'target-machine)])
+                                             (compiler e)))))]
                                      [host?
                                       (lambda (e)
                                         ;; point at host compiled code for dependencies
-                                        (parameterize ([current-compiled-file-roots (list (car (current-compiled-file-roots)))])
-                                          (compiler e)))]
+                                        (cache-compiled-module
+                                         (lambda ()
+                                           (parameterize ([current-compiled-file-roots (list (car (current-compiled-file-roots)))])
+                                             (compiler e)))))]
                                      [(cross-compiling?)
                                       ;; compile to machine-independent first, then recompile; this
                                       ;; two-step process is needed to compile submodules that may
                                       ;; refer to each other
                                       (lambda (e)
-                                        (compiled-expression-recompile
-                                         (parameterize ([current-compile-target-machine (system-type 'target-machine)])
-                                           (compiler e))))]
+                                        (cache-compiled-module
+                                         (lambda ()
+                                           (compiled-expression-recompile
+                                            (parameterize ([current-compile-target-machine (system-type 'target-machine)])
+                                              (compiler e))))))]
                                      [else
                                       compiler])
                                    (if on-extension
@@ -674,7 +688,8 @@
                                 expand-namespace
                                 src-filter get-extra-imports
                                 working
-                                gen-state))
+                                gen-state
+                                compile-cache))
                     (define (get-one-submodule-code m)
                       (define name (cadr (module-compiled-name m)))
                       (define mp `(submod "." ,name))
@@ -1232,6 +1247,7 @@
                                                    "bad prefix: ~e"
                                                    p)]))))
                               files modules)]
+         [compile-cache (make-hash)]
          ;; Each element is created with `make-mod'.
          ;; As we descend the module tree, we append to the front after
          ;; loading imports, so the list in the right order.
@@ -1240,7 +1256,7 @@
                         (get-code f mp #f submods codes file-mod-names verbose? collects-dest
                                   on-extension compiler expand-namespace
                                   src-filter get-extra-imports
-                                  (make-hash) gen-state))]
+                                  (make-hash) gen-state compile-cache))]
          [__
           ;; Load all code:
           (for-each get-code-at files collapsed-mps use-submoduless)]
