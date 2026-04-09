@@ -38,6 +38,8 @@
     (arity-test makex 0 0)
     (arity-test sel 2 2)
     (arity-test set 3 3)
+    (test #t struct-constructor-procedure? make)
+    (test #t struct-predicate-procedure? pred)
     (test #t struct-mutator-procedure? set)
     (test #t struct-accessor-procedure? sel)
     (test #f struct-mutator-procedure? sel)
@@ -704,6 +706,10 @@
 (test #t struct-accessor-procedure? exn-message)
 (test #t struct-accessor-procedure? srcloc-line)
 (test #t struct-accessor-procedure? date-month)
+
+(test #t struct-constructor-procedure? exn)
+(test #t struct-constructor-procedure? date)
+(test #t struct-constructor-procedure? srcloc)
 
 ;; ------------------------------------------------------------
 ;; Property accessor errors
