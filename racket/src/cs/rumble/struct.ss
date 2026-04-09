@@ -1478,7 +1478,9 @@
              #'(begin
                  (define struct:name (make-record-type-descriptor 'name struct:parent 'uid #f #f '(field-count . 0)))
                  (define unsafe-make-name (record-constructor (make-record-constructor-descriptor struct:name #f #f)))
-                 (define name ctr-expr)
+                 (define name
+                   (let ([ctr ctr-expr])
+                     (|#%struct-constructor| ctr (procedure-arity-mask ctr))))
                  (define authentic-name? (record-predicate struct:name))
                  (define name? (|#%struct-predicate|
                                 (|#%name|
