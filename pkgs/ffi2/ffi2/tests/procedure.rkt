@@ -61,6 +61,26 @@
                                           #:result b))
   (check-equal? (double_sum 3.0) 30.0))
 
+(let ()
+  (define-test double_sum ([a : double_t]
+                           #:do [(define a2 (list a))]
+                           [b : double_t = (* 10 (car a2))]
+                           #:do [(define b2 (list b))]
+                           . -> . double_t
+                           #:result (vector a a2 b b2)))
+  (check-equal? (double_sum 3.0) (vector 3.0 (list 3.0) 30.0 (list 30.0))))
+
+(let ()
+  (define-test double_sum (#:do [(define-syntax-rule (top) 'ok)]
+                           double_t
+                           #:do [(define-syntax-rule (middle) (list (top)))]
+                           #:do [(define extra 'extra)]
+                           double_t
+                           #:do [(define-syntax-rule (bottom) (list (top) (middle)))]
+                           . -> . double_t
+                           #:result (list (top) (middle) extra (bottom))))
+  (check-equal? (double_sum 3.0 4.0) (list 'ok (list 'ok) 'extra (list 'ok (list 'ok)))))
+
 ;; ----------------------------------------
 
 (let ()

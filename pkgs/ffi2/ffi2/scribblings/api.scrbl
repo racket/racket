@@ -1,6 +1,8 @@
 #lang scribble/manual
 
-@title{Foreign Types, Pointers, and Procedures}
+@title[#:style 'toc]{Foreign Types, Pointers, and Procedures}
+
+@local-table-of-contents[]
 
 @include-section["lib.scrbl"]
 @include-section["base-type.scrbl"]

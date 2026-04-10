@@ -60,11 +60,13 @@ complement bit representation.
 @deftypeform[uintptr_t]
 @deftypeform[size_t]
 @deftypeform[ssize_t]
+@deftypeform[byte_t]
 )]{
 
-Signed and unsigned integer @tech{scalar} types of platform-specific
-bit widths. For consistently, a @litchar{_t} is added to the end of C
-type names like @tt{int} to form a type name like @racket[int_t].
+Signed and unsigned integer @tech{scalar} types of (in some cases)
+platform-specific bit widths. For consistently, a @litchar{_t} is
+added to the end of C type names like @tt{int} to form a type name
+like @racket[int_t].
 
 All are represented as exact integers on the Racket side, constrained
 to a range that fits in the platform-specific C representation.

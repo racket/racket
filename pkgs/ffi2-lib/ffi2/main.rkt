@@ -95,18 +95,39 @@
     (pattern (array _ ...))
     (pattern (gcable _ ...)))
 
-  (define-syntax-class :arg
+  (define-splicing-syntax-class :arg
     #:description "an ffi2 arrow-type argument"
-    #:attributes (name maybe-type auto)
+    #:attributes (name maybe-type auto do-forms)
     #:datum-literals (: =)
+    (pattern (~seq #:do [do-form ...])
+             #:attr do-forms (attribute do-form)
+             #:attr name 'do
+             #:attr maybe-type #f
+             #:attr auto 'do)
     (pattern [name:id : maybe-type::maybe-type]
-             #:attr auto #f)
-    (pattern [name:id : maybe-type::maybe-type = auto:expr])
+             #:attr auto #f
+             #:attr do-forms #f)
+    (pattern [name:id : maybe-type::maybe-type = auto:expr]
+             #:attr do-forms #f)
     (pattern [maybe-type::maybe-type = auto:expr]
-             #:attr name (car (generate-temporaries (list #'maybe-type))))
+             #:attr name (car (generate-temporaries (list #'maybe-type)))
+             #:attr do-forms #f)
     (pattern maybe-type::maybe-type
              #:attr name (car (generate-temporaries (list #'maybe-type)))
-             #:attr auto #f))
+             #:attr auto #f
+             #:attr do-forms #f))
+
+  (define (not-do? v) (not (eq? v 'do)))
+  (define (align-do-forms do-formss)
+    ;; converts a list of `#:do`s interleaved with argumens to
+    ;; a preambel do list and then a do list to follow each argument
+    (let loop ([do-formss do-formss] [accum '()])
+      (cond
+        [(null? do-formss) (list (reverse accum))]
+        [(not (car do-formss)) ; => an argument       
+         (cons (reverse accum) (loop (cdr do-formss) '()))]
+        [else
+         (loop (cdr do-formss) (append (reverse (car do-formss)) accum))])))
 
   (define-syntax-class :result
     #:description "an ffi2 arrow-type result"
@@ -144,15 +165,20 @@
                        (~optional (~and callback-exns #:allow-callback-exn))
                        (~optional (~and in-original #:in-original)))
                  ...)
-             #:with ((~var in-type (:type stx #f #t)) ...) #'(in-arg.maybe-type ...)
+             #:with ((~var in-type (:type stx #f #t)) ...) (filter values (attribute in-arg.maybe-type))
              #:with ((~var var-in-type (:type stx #f #t)) ...) (if (attribute var-in-arg)
-                                                                   #'(var-in-arg.maybe-type ...)
-                                                                   #'())
+                                                                   (filter values (attribute var-in-arg.maybe-type))
+                                                                   '())
              #:with (~var out-type (:type stx #t)) #'out-result.maybe-type
-             #:attr t (arrow-type (build-arrow-wrapper (append (attribute in-arg.name) (or (attribute var-in-arg.name)
-                                                                                           null))
-                                                       (append (attribute in-arg.auto) (or (attribute var-in-arg.auto)
-                                                                                           null))
+             #:attr t (arrow-type (build-arrow-wrapper (filter not-do?
+                                                               (append (attribute in-arg.name) (or (attribute var-in-arg.name)
+                                                                                                   null)))
+                                                       (filter not-do?
+                                                               (append (attribute in-arg.auto) (or (attribute var-in-arg.auto)
+                                                                                                   null)))
+                                                       (align-do-forms
+                                                        (append (attribute in-arg.do-forms) (or (attribute var-in-arg.do-forms)
+                                                                                                null)))
                                                        #'out-result.name
                                                        (and (attribute out-errno)
                                                             #'out-errno.name)
@@ -165,7 +191,7 @@
                                        (list (attribute abi.a))
                                        null)
                                    (if (attribute var-in-arg)
-                                       (list (list '__varargs_after (length (attribute in-arg))))
+                                       (list (list '__varargs_after (length (filter values (attribute in-arg.maybe-type)))))
                                        null)
                                    (if (and (attribute atomic)
                                             ;; not inherently incompatible with `atomic`,
@@ -195,7 +221,7 @@
                                   (and (attribute out-errno) #t)
                                   (and (attribute in-original) #t))))
 
-  (define (build-arrow-wrapper in-names in-autos
+  (define (build-arrow-wrapper in-all-names in-autos in-do-formss
                                out-name errno-name
                                result-expr)
     (cond
@@ -206,23 +232,35 @@
        (define (no-srcloc stx) (datum->syntax stx (syntax-e stx) #f stx))
        #`(lambda (proc)
            #,(no-srcloc
-              #`(lambda #,(for/list ([name (in-list in-names)]
+              #`(lambda #,(for/list ([name (in-list in-all-names)]
                                      [auto (in-list in-autos)]
                                      #:unless auto)
                             name)
-                  (let* #,(for/list ([name (in-list in-names)]
-                                     [auto (in-list in-autos)]
-                                     #:when auto)
-                            #`[#,name #,auto])
-                    #,(cond
-                        [(not result-expr)
-                         #`(proc #,@in-names)]
-                        [(not errno-name)
-                         #`(let ([#,out-name (proc #,@in-names)])
-                             #,result-expr)]
+                  #,@(car in-do-formss)
+                  #,(let loop ([in-names in-all-names]
+                               [in-autos in-autos]
+                               [in-do-formss (cdr in-do-formss)])
+                      (cond
+                        [(null? in-names)
+                         (cond
+                           [(not result-expr)
+                            #`(proc #,@in-all-names)]
+                           [(not errno-name)
+                            #`(let ([#,out-name (proc #,@in-all-names)])
+                                #,result-expr)]
+                           [else
+                            #`(let-values ([(#,out-name #,errno-name) (proc #,@in-all-names)])
+                                #,result-expr)])]
+                        [(car in-autos)
+                         #`(let ([#,(car in-names) #,(car in-autos)])
+                             #,@(car in-do-formss)
+                             #,(loop (cdr in-names) (cdr in-autos) (cdr in-do-formss)))]
+                        [(null? (car in-do-formss))
+                         (loop (cdr in-names) (cdr in-autos) (cdr in-do-formss))]
                         [else
-                         #`(let-values ([(#,out-name #,errno-name) (proc #,@in-names)])
-                             #,result-expr)])))))]))
+                         #`(let ()
+                             #,@(car in-do-formss)
+                             #,(loop (cdr in-names) (cdr in-autos) (cdr in-do-formss)))])))))]))
 
   (define (compound->prim compound)
     ;; name used for `free-identifier=?` might not symbolically match the original name
