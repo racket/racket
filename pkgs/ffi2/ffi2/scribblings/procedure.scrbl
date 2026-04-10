@@ -87,7 +87,7 @@ how a callback is handled:
 
  @item{@racket[#:atomic]: Adjusts a @tech{foreign callout} to
  potentially improve performance. The foreign procedure must not
- invoke any callbacks or other reach the Racket run-time system, so it
+ invoke any callbacks or otherwise reach the Racket run-time system, so it
  can be considered an atomic operation from the perspective of Racket.
  This option has no effect on @tech{foreign callbacks}.}
 

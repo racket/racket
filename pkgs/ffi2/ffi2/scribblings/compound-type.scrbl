@@ -177,8 +177,8 @@ to indicate a C pointer.
 
 The Racket-side pointer representation uses a @tech{tag} formed by adding a
 @litchar{*} suffix on the name of @racket[elem_type], as long as it
-has a name. If 2rhombus[elem-type] is an immediate @racket[struct],
-@racket[union], @racket[array], or @racket[->] for, then it has no
+has a name. If @racket[elem-type] is an immediate @racket[struct],
+@racket[union], @racket[array], or @racket[->] form, then it has no
 name, and the Racket-side representation is a generic pointer.
 
 When @racket[array] is used as the @racket[_parent-type] in a

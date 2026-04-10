@@ -66,6 +66,7 @@
            unsafe-ffi2-callback
            unsafe-ffi2-malloc
            unsafe-ffi2-cast
+           unsafe-ffi2-add
            unsafe-ffi2-memcpy
            unsafe-ffi2-memmove
            unsafe-ffi2-memset))
@@ -800,7 +801,7 @@
   (define who 'ffi2-memcpy)
   (unless (ffi2-ptr? dest) (raise-argument-error who "ptr_t?" dest))
   (unless (ffi2-ptr? src) (raise-argument-error who "ptr_t?" src))
-  (unless (exact-integer? len) (raise-argument-error who "exact-integer?" len))
+  (unless (exact-nonnegative-integer? len) (raise-argument-error who "exact-nonnegative-integer?" len))
   (unless (exact-integer? dest-offset) (raise-argument-error who "exact-integer?" dest-offset))
   (unless (exact-integer? src-offset) (raise-argument-error who "exact-integer?" src-offset))
   (ffi2-memcpy* dest dest-offset src src-offset len))
@@ -816,7 +817,7 @@
   (define who 'ffi2-memmove)
   (unless (ffi2-ptr? dest) (raise-argument-error who "ptr_t?" dest))
   (unless (ffi2-ptr? src) (raise-argument-error who "ptr_t?" src))
-  (unless (exact-integer? len) (raise-argument-error who "exact-integer?" len))
+  (unless (exact-nonnegative-integer? len) (raise-argument-error who "exact-nonnegative-integer?" len))
   (unless (exact-integer? dest-offset) (raise-argument-error who "exact-integer?" dest-offset))
   (unless (exact-integer? src-offset) (raise-argument-error who "exact-integer?" src-offset))
   (ffi2-memmove* dest dest-offset src src-offset len))
@@ -831,7 +832,7 @@
   (define who 'ffi2-memset)
   (unless (ffi2-ptr? dest) (raise-argument-error who "ptr_t?" dest))
   (unless (byte? byte) (raise-argument-error who "byte?" byte))
-  (unless (exact-integer? len) (raise-argument-error who "exact-integer?" len))
+  (unless (exact-nonnegative-integer? len) (raise-argument-error who "exact-nonnegative-integer?" len))
   (unless (exact-integer? dest-offset) (raise-argument-error who "exact-integer?" dest-offset))
   (ffi2-memset* dest dest-offset byte len))
 
@@ -1147,14 +1148,16 @@
 (define-syntax (unsafe-ffi2-cast stx)
   (parse-ffi2-cast stx #t))
 
-(define-syntax (ffi2-add stx)
+(define-for-syntax (parse-ffi2-add stx unsafe?)
   (syntax-parse stx
     [(form-id expr:expr offset-expr:expr)
      #`(let ([ptr expr]
              [offset offset-expr])
-         (unless (variable-reference-from-unsafe? (#%variable-reference))
-           (unless (ffi2-ptr? ptr) (raise-argument-error 'form-id "ptr_t?" ptr))
-           (unless (exact-integer? offset) (raise-argument-error 'form-id "exact-integer?" offset)))
+         #,@(if unsafe?
+                #'()
+                #`((unless (variable-reference-from-unsafe? (#%variable-reference))
+                     (unless (ffi2-ptr? ptr) (raise-argument-error 'form-id "ptr_t?" ptr))
+                     (unless (exact-integer? offset) (raise-argument-error 'form-id "exact-integer?" offset)))))
          ((#%foreign-inline (ffi2-ptr-cast-maker pointer pointer/gc) #:copy*)
           ptr
           offset))]
@@ -1164,12 +1167,20 @@
      (define gcable-vm-type (pointer-vm-type->gcable vm-type))
      #`(let ([ptr expr]
              [offset (~? offset-expr 0)])
-         (unless (variable-reference-from-unsafe? (#%variable-reference))
-           (unless (ffi2-ptr? ptr) (raise-argument-error 'form-id "ptr_t?" ptr))
-           (unless (exact-integer? offset) (raise-argument-error 'form-id "exact-integer?" offset)))
+         #,@(if unsafe?
+                #'()
+                #`((unless (variable-reference-from-unsafe? (#%variable-reference))
+                     (unless (ffi2-ptr? ptr) (raise-argument-error 'form-id "ptr_t?" ptr))
+                     (unless (exact-integer? offset) (raise-argument-error 'form-id "exact-integer?" offset)))))
          ((#%foreign-inline (ffi2-ptr-cast-maker #,vm-type #,gcable-vm-type) #:copy*)
           ptr
           (* offset (#%foreign-inline (ffi2-sizeof #,(ffi2-type-vm-type t)) #:copy))))]))
+
+(define-syntax (ffi2-add stx)
+  (parse-ffi2-add stx #f))
+
+(define-syntax (unsafe-ffi2-add stx)
+  (parse-ffi2-add stx #t))
 
 (define-for-syntax (parse-system-type-case/type stx)
   (define p

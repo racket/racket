@@ -210,7 +210,7 @@ Describes a type with a platform-specific representation or a
 platform-specific choice of procedure @tech{ABI}, enabling a compile-time
 (later than expand-time) choice. The symbol form of @racket[key]
 corresponds to a symbol argument to @racket[system-type], and each
-@racket[val] just be a potential result: an identifier for
+@racket[val] must be a potential result: an identifier for
 @racket[key]s other than @racket[word], or either @racket[32] or
 @racket[64] in the case of @racket[word].
 
