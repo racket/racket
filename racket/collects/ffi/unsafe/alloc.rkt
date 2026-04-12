@@ -1,5 +1,8 @@
 #lang racket/base
-(require ffi/unsafe
+(require (only-in '#%foreign
+                  make-late-weak-hasheq
+                  make-late-weak-box)
+         "private/finalizer.rkt"
          (only-in '#%unsafe
                   unsafe-add-post-custodian-shutdown
                   unsafe-start-atomic

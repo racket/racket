@@ -1,7 +1,6 @@
 #lang racket/base
 (require '#%unsafe
-         racket/private/place-local
-         (for-syntax racket/base))
+         racket/private/place-local)
 
 (provide (protect-out in-atomic-mode?
                       start-atomic

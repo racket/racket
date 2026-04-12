@@ -1,6 +1,6 @@
 #lang racket/base
-(require ffi/unsafe
-         ffi/unsafe/atomic
+(require ffi/unsafe/atomic
+         "private/finalizer.rkt"
          (only-in '#%unsafe
                   unsafe-make-custodian-at-root
                   unsafe-custodian-register
