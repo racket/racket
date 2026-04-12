@@ -393,7 +393,7 @@ Frees an immobile cell created by @racket[malloc-immobile-cell].}
 
 @defproc[(register-finalizer [obj any/c] [finalizer (any/c . -> . any)]) void?]{
 
-Registers a finalizer procedure @racket[finalizer-proc] with the given
+Registers a finalizer procedure @racket[finalizer] with the given
 @racket[obj], which can be any Racket (GC-able) object. The finalizer
 is registered with a ``late'' @tech[#:doc reference.scrbl]{will
 executor} that makes wills ready for a value only after all

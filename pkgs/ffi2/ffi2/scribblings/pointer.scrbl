@@ -80,13 +80,13 @@ By default, allocation uses @racket[#:gcable] mode, but a
 
 @itemlist[
 
- @item{@racket[#:gcable]: Allocates in Racket's garbage-collected
-       space. The allocated memory becomes eligible for garbage
-       collection when it is not referenced by any reachable pointer
-       object or @tech{traced} allocated memory. Even before
-       collection, the memory manager may relocate the object, but
-       garbage collection or relocation cannot happen with a
-       foreign-procedure call is active.}
+ @item{@racket[#:gcable]: Allocates uninitialized memory in Racket's
+       garbage-collected space, i.e., GCable memory. The allocated
+       memory becomes eligible for garbage collection when it is not
+       referenced by any reachable pointer object or @tech{traced}
+       allocated memory. Even before collection, the memory manager
+       may relocate the object, but garbage collection or relocation
+       cannot happen with a foreign-procedure call is active.}
 
  @item{@racket[#:gcable-immobile]: Like @racket[#:gcable], but the
        allocated memory will not be relocated by a different address
@@ -94,14 +94,19 @@ By default, allocation uses @racket[#:gcable] mode, but a
 
  @item{@racket[#:gcable-traced]: Like @racket[#:gcable], but the
        allocated memory is @deftech{traced}, meaning that it can
-       itself contain references to other allocated memory. The
-       references are updated by the memory manager if it moved the
-       referenced objects.}
+       itself contain references to other memory that is allocated
+       using @racket[#:gcable] variants. In particular, references
+       from traced memory are updated by the memory manager if it
+       moves the referenced objects. Traced memory can also contain
+       references to non-GCable memory, but beware of the possibility
+       that Racket's garbage collector takes over an an address range
+       that was formerly under external control but deallocated.}
 
  @item{@racket[#:gcable-traced-immobile]: Like
        @racket[#:gcable-traced], but the allocated memory will not be
        relocated by a different address by the memory manager as long
-       as it is not collected.}
+       as it is not collected (but it can contain references to mobile
+       objects).}
 
  @item{@racket[#:manual]: Allocates outside of Racket's
        garbage-collected space. The allocated memory is never
@@ -124,12 +129,36 @@ Deallocates memory that was allocated with @racket[ffi2-malloc] in
                                   (code:line offset-expr #:bytes)
                                   ϵ])]{
 
+Extracts a value from the address referenced by @racket[ptr-expr] plus
+(potentially) @racket[maybe-offset]. The extracted value in memory
+uses the C representation of @racket[type], and the result is the
+value converted to the Racket representation of @racket[type].
+No @tech{tags} of the result of @racket[ptr-expr] are checked; it
+assumed to be a valid pointer to a @racket[type] representation.
+
+If @racket[offset-expr] is followed by @racket[#:bytes], it the result
+of @racket[offset-expr] is used as an offset to add to the address
+represented by the result of @racket[ptr-expr]. If @racket[#:bytes] is
+not present, that offset is multiplied by @racket[(ffi2-sizeof type)].
+
 }
 
 @defform[(ffi2-set! ptr-expr type maybe-offset val-expr)
          #:grammar ([maybe-offset offset-expr
                                   (code:line offset-expr #:bytes)
                                   ϵ])]{
+
+Install a value at the address referenced by @racket[ptr-expr] plus
+(potentially) @racket[maybe-offset]. The installed value in memory
+uses the C representation of @racket[type], and it is converted from
+the result of @racket[val-expr] as the Racket representation for
+@racket[type]. No @tech{tags} of the result of @racket[ptr-expr] are
+checked; it assumed to be a valid destination for a @racket[type]
+representation.
+
+When @racket[maybe-offset] is not empty, it specifies an address
+offset in the same way as for @racket[ffi2-ref].
+
 
 }
 
@@ -142,7 +171,8 @@ Deallocates memory that was allocated with @racket[ffi2-malloc] in
 
 Converts the Racket representation produced by @racket[expr] from one
 foreign type's representation to another. If @racket[from-type] or
-@racket[to-type] is not specified, each defaults to @racket[void_t*].
+@racket[to-type] is not specified, each defaults to @racket[ptr_t].
+Both @racket[from-type] and @racket[to-type] must be pointer types.
 
 If the @racket[#:offset] option is provided, the resulting pointer is
 shifted to represent an address that is @racket[_n] bytes later, where
@@ -204,15 +234,5 @@ represented as integers.
 Beware that the integer form of an address managed by Racket's garbage
 collector can become immediately invalid, unless an object at the
 address was allocated as immobile.
-
-}
-
-@deftogether[(
-@defproc[(ptr_t->cpointer [ptr ptr_t?]) cpointer?]
-@defproc[(cpointer->ptr_t [cptr cpointer?]) ptr_t?]
-)]{
-
-Conversions between @racketmodname[ffi2] pointer representations
-and @racketmodname[ffi/unsafe] pointer representations.
 
 }

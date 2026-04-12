@@ -20,7 +20,7 @@ on @racket[_v]---unless the call has been canceled by applying a
 @tech{deallocator} (produced by @racket[deallocator]) to @racket[_v].
 Any existing @racket[dealloc] registered for @racket[_v] is canceled.
 If and only if @racket[alloc] is @racket[#f], @racket[((allocator
-alloc) dealloc)] produces @racket[#f].
+dealloc) alloc)] produces @racket[#f].
 
 The resulting @tech{allocator} calls @racket[alloc] in @tech{atomic
 mode} (see @racket[call-as-atomic]), unless @racket[uninterruptible?]

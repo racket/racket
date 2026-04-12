@@ -74,44 +74,44 @@ has the same C representation
 as @racket[parent-type]. The Racket representation can be adjusted via
 @racket[#:racket->c] and @racket[#:c->racket] options, which often
 need accompanying @racket[#:predicate] and @racket[#:release]
-functions:
+procedures:
 
 @itemlist[
 
- @item{@racket[#:predicate] provides a predicate function as the
+ @item{@racket[#:predicate] provides a predicate procedure as the
  result of @racket[predicate-expr]. This predicate is used when checks
  are enabled for Racket values to be converted to C for the type
  @racket[name], but the predicate can be skipped on request. The
  predicate determines whether a value is suitable as an argument to a
- function provided by @racket[#:racket->c]. If @racket[#:predicate] is
+ procedure provided by @racket[#:racket->c]. If @racket[#:predicate] is
  not provided, then the predicate associated with @racket[parent-type]
  is used.}
 
- @item{@racket[#:c->racket] provides a conversion function toward
+ @item{@racket[#:racket->c] provides a conversion procedure toward C as
+ the result of @racket[racket->c-expr]. This converter is applied to a
+ Racket value that is supplied for a @racket[name] type. The result of
+ conversion should be a Racket representation for
+ @racket[parent-type]. If @racket[#:racket->c] is not provided,
+ conversion is the identity procedure.}
+
+ @item{@racket[#:release] provides a procedure that finalizes
+ conversion from Racket to C. The procedure is applied to the result of
+ @racket[parent-type]'s release procedure after the C value is
+ delivered (e.g., passed in a foreign procedure call that has
+ returned). For base pointer types, the release procedure is
+ @racket[black-box], which is useful because it keeps a pointer live
+ in case it is subject to garbage collection. A release procedure could
+ explicitly deallocate a pointer that was allocated by the
+ @racket[#:racket->c] procedure, but beware that a release procedure is
+ not called if control somehow escapes or the current thread is
+ forcibly terminated.}
+
+ @item{@racket[#:c->racket] provides a conversion procedure toward
  Racket as the result of @racket[c->racket-expr]. This converter is
  applied to a Racket representation of @racket[parent-type] as
  extracted from a C representation. The result of conversion should be
  a Racket representation for @racket[name]. If @racket[#:c->racket] is
  not provided, conversion is the identity function.}
-
- @item{@racket[#:release] provides a function that finalizes
- conversion from Racket to C. The function is applied to the result of
- @racket[parent-type]'s release function after the C value is
- delivered (e.g., passed in a foreign procedure call that has
- returned). For base pointer types, the release function is
- @racket[black-box], which is useful because it keeps a pointer live
- if it is subject to garbage collection. A release procedure could
- explicitly deallocate a pointer that was allocated by the
- @racket[#:racket->c] procedure, but a release function is not called
- if control somehow escapes or the current thread is forcibly
- terminated.}
-
- @item{@racket[#:racket->c] provides a conversion function toward C as
- the result of @racket[racket->c-expr]. This converter is applied to a
- Racket value that is supplied for a @racket[name] type. The result of
- conversion should be a Racket representation for
- @racket[parent-type]. If @racket[#:racket->c] is not provided,
- conversion is the identity function.}
 
 ]
 

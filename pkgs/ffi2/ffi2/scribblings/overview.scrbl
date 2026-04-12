@@ -1,5 +1,6 @@
 #lang scribble/manual
-@(require "common.rkt")
+@(require "common.rkt"
+          (for-label ffi/unsafe/alloc))
 
 @(define cpp tt)
 @(define (tech-place)
@@ -13,10 +14,11 @@ face related to safety and memory management. An FFI programmer must
 be particularly aware of memory management issues for data that spans
 the Racket--C divide. Although the library name @racketmodname[ffi2]
 and its exported bindings do not include the word
-@racketidfont{unsafe}, importing the library should be considered as a
+``unsafe,'' importing the library should be considered as a
 declaration that your code is itself unsafe, therefore can lead to
-serious problems in case of bugs; it is the responsibility of each
-user of @racketmodname[ffi2] to provide a safe interface.
+serious problems in case of bugs. It is the responsibility of each
+user of @racketmodname[ffi2] to provide a safe interface to its
+own clients.
 
 @; --------------------------------------------------
 
@@ -126,7 +128,7 @@ the defining module or called directly:
 
 @; --------------------------------------------------
 
-@section{Function-Type Bells and Whistles}
+@section{Defining a Type Conversion}
 
 Our initial use of functions like @racket[waddstr] is sloppy, because
 we ignore return codes. C functions often return error
@@ -141,22 +143,22 @@ define a type constructor that is parameterized over a name to use
 when reporting an error.
 
 @racketblock[
-(define-ffi2-type (ok_int_t who) int_t
+(define-ffi2-type (status_t who) int_t
   #:c->racket (lambda (v)
                 (unless (zero? v)
                   (error who "failed: ~a" v))))
 
 (define-curses initscr (-> WINDOW_t*))
-(define-curses waddstr (WINDOW_t* string_t . -> . (ok_int_t 'waddstr)))
-(define-curses wrefresh (WINDOW_t* . -> . (ok_int_t 'wrefresh)))
-(define-curses endwin (-> (ok_int_t 'endwin)))
+(define-curses waddstr (WINDOW_t* string_t . -> . (status_t 'waddstr)))
+(define-curses wrefresh (WINDOW_t* . -> . (status_t 'wrefresh)))
+(define-curses endwin (-> (status_t 'endwin)))
 ]
 
-Using @racket[(ok_int_t 'waddstr)] as a result type is the same as
-using @racket[int_t] in terms of it's C representation, but the
+Using @racket[(status_t 'waddstr)] as a result type is the same as
+using @racket[int_t] in terms of its C representation, but the
 function specified with @racket[#:c->racket] is applied to the Racket
-representation of an @racket[int_t] result, and that it can inspect or
-convert the value. In this case, @racket[(ok_int_t 'waddstr)] returns
+representation of an @racket[int_t] result, and that function can inspect or
+convert the value. In this case, @racket[(status_t 'waddstr)] returns
 @racket[(void)], since the status result is not needed after checking,
 so @racket[waddstr], @racket[wrefresh], and @racket[endwin] will all
 either return @racket[(void)] or raise an exception when they are
@@ -445,7 +447,7 @@ Let's look a few possibilities related to allocation and pointers:
 
   This is ok because @racket[p] itself stays accessible, so that
   the data it references isn't reclaimed. Allocating with
-  @racket[#:gcable-interior] puts data at a particular address and
+  @racket[#:gcable-immobile] puts data at a particular address and
   keeps it there.  A garbage collection will not change the address in
   @racket[p], and so @racket[i] (cast back to a pointer) will always
   refer to the data.}
@@ -458,9 +460,64 @@ result values can move in memory during a garbage collection. The same
 is true of byte strings allocated with @racket[make-bytes], which (as
 a convenience) can be used directly as a pointer value via the
 @racket[byte_ptr_t] type (unlike character strings, which are always
-copied for UTF-8 encoding or decoding). Constructor like
+copied for UTF-8 encoding or decoding). Constructors like
 @racket[MEVENT_t] accept an allocation mode in the same way as
 @racket[ffi2-malloc].
+
+@; --------------------------------------------------
+
+@section{Reliable Release of Resources}
+
+Using GC-managed memory saves you from manual @racket[ffi2-free]s for
+plain memory blocks, but C libraries often allocate resources and
+require a matching call to a function that releases the resources. For
+example, @filepath{libcurses} supports windows on the screen that are
+created with @racket[newwin] and released with @racket[delwin]:
+
+@verbatim[#:indent 2]{
+WINDOW *newwin(int lines, int ncols, int y, int x);
+int delwin(WINDOW *win);
+}
+
+In a sufficiently complex program, ensuring that every @racket[newwin]
+is paired with @racket[delwin] can be challenging, especially if the
+functions are wrapped by otherwise safe functions that are provided
+from a library. A library that is intended to be safe for use in a
+sandbox, say, must protect against resource leaks within the Racket
+process as a whole when a sandboxed program misbehaves or is
+terminated.
+
+The @racketmodname[ffi/unsafe/alloc] library provides functions to
+connect resource-allocating functions and resource-releasing
+functions. The library then arranges for finalization to release a resource if
+it becomes inaccessible (according to the GC) before it is explicitly
+released. At the same time, the library handles tricky atomicity
+requirements to ensure that the finalization is properly registered
+and never run multiple times.
+
+Using @racketmodname[ffi/unsafe/alloc], the @racket[newwin] and
+@racket[delwin] functions can be defined with @racket[allocator]
+and @racket[deallocator] wrappers, respectively:
+
+@racketblock[
+(require ffi/unsafe/alloc)
+
+(define-curses delwin (WINDOW_t* . -> . (status_t 'delwin))
+  #:wrap (deallocator))
+
+(define-curses newwin (int_t int_t int_t int_t -> WINDOW_t*)
+  #:wrap (allocator delwin))
+]
+
+A @racket[deallocator] wrapper makes a function cancel any existing
+finalizer for the function's argument.  An @racket[allocator] wrapper
+refers to the deallocator, so that the deallocator can be run if
+necessary by a finalizer.
+
+If a resource is scarce or visible to end users, then @tech[#:doc
+ref-doc]{custodian} management is more appropriate than mere
+finalization as implemented by @racket[allocator]. See the
+@racketmodname[ffi/unsafe/custodian] library.
 
 @; --------------------------------------------------
 
@@ -487,22 +544,33 @@ simply:
 (define-curses initscr
   (-> WINDOW_t* #:in-original))
 (define-curses wrefresh
-  (WINDOW_t* . -> . (ok_int_t 'wrefresh) #:in-original))
+  (WINDOW_t* . -> . (status_t 'wrefresh) #:in-original))
 (define-curses endwin
-  (-> (ok_int_t 'endwin) #:in-original))
+  (-> (status_t 'endwin) #:in-original))
 ]
 
-The @racket[waddstr] function is not quite as straightforward. The
-problem with
+The @racket[waddstr] function is not quite as straightforward,
+depending on how much concurrency is needed. The problem with
 
 @racketblock[
 (define-curses waddstr
-  (WINDOW_t* string_t . -> . (ok_int_t 'waddstr) #:in-original))
+  (WINDOW_t* string_t . -> . (status_t 'waddstr) #:in-original))
 ]
 
-is that the string argument to @racket[waddstr] might move in the
-calling thread before the @racket[waddstr] call completes in the
-original thread. To safely call @racket[waddstr], we can define a
+is that it will block all threads from garbage collection until
+@racket[waddstr] returns. Adding @racket[#:collect-safe] addresses
+that problem:
+
+@racketblock[
+(define-curses waddstr
+  (WINDOW_t* string_t . -> . (status_t 'waddstr)
+             #:in-original
+             #:collect-safe))
+]
+
+Now, however, the string argument to @racket[waddstr] might move
+before the @racket[waddstr] call completes. To safely call
+@racket[waddstr] while allowing garbage collection, we can define a
 @racket[string_t/immobile] type that allocates bytes for the string
 argument with @racket[#:gcable-immobile]:
 
@@ -520,5 +588,7 @@ argument with @racket[#:gcable-immobile]:
                 (ffi2-cast p #:to string_t)))
 
 (define-curses waddstr
-  (WINDOW_t* string_t/immobile . -> .  (ok_int_t 'waddstr) #:in-original))
+  (WINDOW_t* string_t/immobile . -> .  (status_t 'waddstr)
+             #:in-original
+             #:collect-safe))
 ]
