@@ -103,7 +103,7 @@ If the result is a symbol, then @racket[compile-target-machine?] returns
 @racket[#t] when applied to the symbol; see also
 @racket[current-compile-target-machine].
 
-In @indexed-racket['so-suffix] mode, then the result is a byte string
+In @indexed-racket['so-suffix] mode, then the result is an immutable byte string
 that represents the file extension used for shared objects on the
 current platform. The byte string starts with a period, so it is
 suitable as a second argument to @racket[path-replace-suffix].

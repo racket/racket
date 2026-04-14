@@ -3684,6 +3684,7 @@
 (test #t relative-path? (system-library-subpath))
 (test #t relative-path? (system-library-subpath #f))
 (test (system-type 'platform) (path->string (system-library-subpath #f)))
+(test #t (lambda (v) (and (bytes? v) (immutable? v))) (system-type 'so-suffix))
 
 (test #t pair? (memv (system-type 'word) '(32 64)))
 (test (fixnum? (expt 2 32)) = (system-type 'word) 64)

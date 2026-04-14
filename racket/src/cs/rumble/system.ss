@@ -192,11 +192,11 @@
   (case (reflect-machine-type)
     [(a6ios ta6ios arm64ios tarm64ios
             a6osx ta6osx i3osx ti3osx arm64osx tarm64osx ppc32osx tppc32osx)
-     (string->utf8 ".dylib")]
+     (bytes->immutable-bytes (string->utf8 ".dylib"))]
     [(a6nt ta6nt i3nt ti3nt arm64nt tarm64nt)
-     (string->utf8 ".dll")]
+     (bytes->immutable-bytes (string->utf8 ".dll"))]
     [else
-     (string->utf8 ".so")]))
+     (bytes->immutable-bytes (string->utf8 ".so"))]))
 
 (define so-mode
   (case (reflect-machine-type)

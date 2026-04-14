@@ -65,20 +65,22 @@
     (lambda (e)
       (if (matches? e '(quote _))
           (cadr e)
-          (if (matches? e '(string->utf8 _))
-              (string->bytes/utf-8 (cadr e))
-              (if (if (matches? e '(if unix-style-macos? _ _))
-                      #t
-                      (matches? e '(if (reflect-unix-style-macos?) _ _)))
-                  (if macosx?
-                      (parse-expr (cadddr e))
-                      (parse-expr (caddr e)))
-                  (if (matches? e 'unix-link)
-                      ;; Currently assuming shared-library mode is not a cross compile:
-                      (if (eq? (system-type 'link) 'shared)
-                          'shared
-                          'static)
-                      (error 'parse-expr "could not parse ~e" e)))))))
+          (if (matches? e '(bytes->immutable-bytes _))
+              (parse-expr (cadr e))
+              (if (matches? e '(string->utf8 _))
+                  (string->bytes/utf-8 (cadr e))
+                  (if (if (matches? e '(if unix-style-macos? _ _))
+                          #t
+                          (matches? e '(if (reflect-unix-style-macos?) _ _)))
+                      (if macosx?
+                          (parse-expr (cadddr e))
+                          (parse-expr (caddr e)))
+                      (if (matches? e 'unix-link)
+                          ;; Currently assuming shared-library mode is not a cross compile:
+                          (if (eq? (system-type 'link) 'shared)
+                              'shared
+                              'static)
+                          (error 'parse-expr "could not parse ~e" e))))))))
 
   (define-values (parse-macro)
     (lambda (e)
