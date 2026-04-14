@@ -106,3 +106,14 @@
   (check-equal? (integer->char (ffi2-ref ptr byte_t 0)) #\p)
   (check-equal? (integer->char (ffi2-ref ptr byte_t 1)) #\i)
   (check-equal? (integer->char (ffi2-ref ptr byte_t 2)) #\e))
+
+(check-equal? (ffi2-cast (uintptr->ptr_t 0) #:to bytes_t) #false)
+(check-equal? (ffi2-cast (uintptr->ptr_t 0) #:to bytes_ptr_t) #false)
+(check-equal? (ffi2-cast (uintptr->ptr_t 0) #:to string_t) #false)
+(check-equal? (ffi2-cast (uintptr->ptr_t 0) #:to path_t) #false)
+
+(check-equal? (ptr_t->uintptr (ffi2-cast #false #:from bytes_t)) 0)
+(check-equal? (ptr_t->uintptr (ffi2-cast #false #:from bytes_ptr_t)) 0)
+(check-equal? (ptr_t->uintptr (ffi2-cast #false #:from string_t)) 0)
+(check-equal? (ptr_t->uintptr (ffi2-cast #false #:from path_t)) 0)
+

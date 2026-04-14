@@ -48,8 +48,6 @@
                                                         "      cpointer?)")
                                                        v)]))))
 
-(define null-fptr (make-ftype-pointer integer-8 0))
-
 ;; Follows `prop:cpointer` properties as needed, in two parts to
 ;; encourage inlining of the common case
 (define (cptr->fptr who p)
@@ -2080,6 +2078,8 @@
 (define-ftype ptr_t ftype-pointer (nongenerative #{ptr_t ffi2:ptr_t}))
 (define-ftype ptr_t/gcable ftype-scheme-object-pointer (nongenerative #{ptr_t/gcable ffi2:ptr_t/gcable}))
 
+(define null-fptr (make-ftype-pointer ptr_t 0))
+
 (meta define (matching-target? key vals)
       (case key
         [(target-machine) (memq (reflect-machine-type) vals)]
@@ -2232,7 +2232,7 @@
   (ftype-pointer-address p))
 
 (define (ffi2-uintptr->ptr i)
-  (make-ftype-pointer integer-8 i))
+  (make-ftype-pointer ptr_t i))
 
 (define-syntax (ffi2-ptr?-maker stx)
   (syntax-case stx ()
