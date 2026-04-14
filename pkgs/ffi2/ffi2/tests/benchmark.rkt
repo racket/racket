@@ -60,6 +60,13 @@
        (fl+ v)
        (loop (fx- i 1) ((black-box fl+) 0.0 0.0)))))
 
+(time*
+ ri-double-sum
+ (let loop ([i N] [v 0.0])
+   (if (eqv? i 0)
+       (fl+ v)
+       (loop (fx- i 1) (fl+ 0.0 0.0)))))
+
 ;; ----------------------------------------
 
 (let ()

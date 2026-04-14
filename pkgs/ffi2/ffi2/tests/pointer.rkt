@@ -19,6 +19,7 @@
   (check-false (mine_t*? p))
   (check-true (ffi2-is-a? p void_t*))
   (check-true (ffi2-is-a? p (gcable void_t*))) ; does not check gcableness
+  (check-true (ffi2-is-a? p void_t*/gcable)) ; does not check gcableness
   (check-false (ffi2-is-a? p ours_t*))
   (check-false (ffi2-is-a? p mine_t*))
   (ffi2-free p))

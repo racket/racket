@@ -54,9 +54,9 @@
 (define-ffi2-base-type bool_t 'stdbool #'any? #:category 'scalar)
 (define-ffi2-base-type boolint_t 'boolean #'any? #:category 'scalar)
 (define-ffi2-base-type ptr_t 'pointer #'ffi2-ptr? #:release #'black-box #:category 'ptr)
-(define-ffi2-base-type ptr_t/gcable 'pointer/gc #'ffi2-ptr/gcable? #:release #'black-box #:category 'ptr)
+(define-ffi2-base-type ptr_t/gcable 'pointer/gc #'ffi2-ptr? #:release #'black-box #:category 'ptr)
 (define-ffi2-base-type void_t* 'pointer #'ffi2-ptr? #:release #'black-box #:category 'ptr)
-(define-ffi2-base-type void_t*/gcable 'pointer/gc #'ffi2-ptr/gcable? #:release #'black-box #:category 'ptr)
+(define-ffi2-base-type void_t*/gcable 'pointer/gc #'ffi2-ptr? #:release #'black-box #:category 'ptr)
 (define-ffi2-base-type racket_t 'scheme-object #'any? #:release #'black-box #:category 'racket)
 (define-ffi2-base-type string_t 'pointer #'string-or-false? #:release #'black-box
   #:racket->c #'maybe-string->pointer

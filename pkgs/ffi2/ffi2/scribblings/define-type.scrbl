@@ -194,6 +194,12 @@ type.
 Returns @racket[#t] or @racket[#f] indicating whether the result of
 @racket[expr] is a Racket representation for @racket[type].
 
+Note that @racket[(ptr_t/gcable? expr)] is a more specific test than
+@racket[(ffi2-is-a? expr ptr_t/gcable)], because @racket[ptr_t/gcable]
+accepts any pointer object for conversion to C, while
+@racket[ptr_t/gcable?] recognizes only pointers that are allowed to
+reference memory managed by Racket's garbage collection.
+
 }
 
 @defform[#:kind "ffi2 type/abi"
