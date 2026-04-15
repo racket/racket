@@ -2051,7 +2051,7 @@
 
 ;; ----------------------------------------
 
-(meta define (build-pointer-gensym-id names gcable?)
+(meta define (build-pointer-gensym-id names gcable? root?)
       (let ([name-str (#%apply #%string-append
                                (let loop ([names (reverse names)])
                                  (if (null? (cdr names))
@@ -2066,17 +2066,25 @@
          #'here
          (#%gensym name-str
                    (#%string-append "ffi2:"
-                                    ;; record component sizes to avoid ambiguisty in encoding
-                                    (#%apply #%string-append
-                                             (#%map (lambda (name)
-                                                      (#%string-append
-                                                       (#%number->string (string-length (#%symbol->string name)))
-                                                       ":"))
-                                                    names))
+                                    (#%symbol->string (#%$target-machine)) ":"
+                                    ;; record component sizes and distinguish root to avoid ambiguity in encoding
+                                    (if root?
+                                        ""
+                                        (#%apply #%string-append
+                                                 (#%map (lambda (name)
+                                                          (#%string-append
+                                                           (#%number->string (string-length (#%symbol->string name)))
+                                                           ":"))
+                                                        names)))
                                     name-str)))))
 
-(define-ftype ptr_t ftype-pointer (nongenerative #{ptr_t ffi2:ptr_t}))
-(define-ftype ptr_t/gcable ftype-scheme-object-pointer (nongenerative #{ptr_t/gcable ffi2:ptr_t/gcable}))
+(define-syntax (define-pointer-types stx)
+  (syntax-case stx ()
+    [(_ ptr_t ptr_t/gcable)
+     #`(begin
+         (define-ftype ptr_t ftype-pointer (nongenerative #,(build-pointer-gensym-id '(ptr_t) #f #t)))
+         (define-ftype ptr_t/gcable ftype-scheme-object-pointer (nongenerative #,(build-pointer-gensym-id '(ptr_t) #t #t))))]))
+(define-pointer-types ptr_t ptr_t/gcable)
 
 (define null-fptr (make-ftype-pointer ptr_t 0))
 
@@ -2119,7 +2127,7 @@
                                                       (#%string->symbol (#%string-append "type_" (#%number->string counter))))]
                                                  [uid (if for-struct?
                                                           #'#f
-                                                          (build-pointer-gensym-id names gcable?))]
+                                                          (build-pointer-gensym-id names gcable? #f))]
                                                  [type type-stx])
                                      (set! decls (cons (if for-struct?
                                                            #'(define-ftype id type)
@@ -2244,7 +2252,7 @@
                                            #'(ftype-scheme-object-pointer)
                                            #'(ftype-pointer))]
                         [else
-                         (with-syntax ([uid (build-pointer-gensym-id names (eq? (datum kind) 'pointer/gc))]
+                         (with-syntax ([uid (build-pointer-gensym-id names (eq? (datum kind) 'pointer/gc) #f)]
                                        [(base-type . defs) (loop (cdr names))]
                                        [new-type (car (generate-temporaries '(tagged)))])
                            #'(new-type
