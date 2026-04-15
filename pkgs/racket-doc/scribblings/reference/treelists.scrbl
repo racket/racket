@@ -809,12 +809,8 @@ items
 )]{
 
 Modifies @racket[tl] by appending or prepending all of the elements of
-@racket[other-tl]. If @racket[other-tl] is a @tech{mutable treelist},
-it is first converted to an immutable @tech{treelist} with
-@racket[mutable-treelist-snapshot], which takes @math{O(N)} time
-if @racket[other-tl] has @math{N} elements. If @racket[other-tl] is an
-immutable treelist but chaperoned, then appending or prepending takes
-@math{O(N)} time for @math{N} elements.
+@racket[other-tl], which takes @math{O(N)} time
+if @racket[other-tl] has @math{N} elements.
 
 @examples[
 #:eval the-eval
@@ -827,7 +823,8 @@ items
 items
 ]
 
-@history[#:changed "8.15.0.11" @elem{Added @racket[mutable-treelist-prepend!].}]}
+@history[#:changed "8.15.0.11" @elem{Added @racket[mutable-treelist-prepend!].}
+         #:changed "9.2.0.2" @elem{Repair to implementation implies @math{O(N)} time always.}]}
 
 @deftogether[(
 @defproc[(mutable-treelist-take! [tl mutable-treelist?] [n exact-nonnegative-integer?]) void?]

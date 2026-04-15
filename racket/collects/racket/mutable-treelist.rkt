@@ -182,9 +182,9 @@
   (define tl (mutable-treelist-tl mtl))
   (define tl2
     (cond
-      [(treelist? m/tl) m/tl]
+      [(treelist? m/tl) (treelist-copy-for-mutable m/tl)]
       [(mutable-treelist? m/tl) (mutable-treelist-snapshot m/tl)]
-      [else (raise-argument-error* 'mutable-treelist-append! 'racket/primitive "mutable-treelist?" m/tl)]))
+      [else (raise-argument-error* 'mutable-treelist-append! 'racket/primitive "(or/c treelist? mutable-treelist?)" m/tl)]))
   (define new-tl (treelist-append tl tl2))
   (set-mutable-treelist-tl! mtl new-tl))
 
@@ -192,9 +192,9 @@
   (check-mutable-treelist 'mutable-treelist-prepend! mtl)
   (define tl
     (cond
-      [(treelist? m/tl) m/tl]
+      [(treelist? m/tl) (treelist-copy-for-mutable m/tl)]
       [(mutable-treelist? m/tl) (mutable-treelist-snapshot m/tl)]
-      [else (raise-argument-error* 'mutable-treelist-prepend! 'racket/primitive "mutable-treelist?" m/tl)]))
+      [else (raise-argument-error* 'mutable-treelist-prepend! 'racket/primitive "(or/c treelist? mutable-treelist?)" m/tl)]))
   (define tl2 (mutable-treelist-tl mtl))
   (define new-tl (treelist-append tl tl2))
   (set-mutable-treelist-tl! mtl new-tl))

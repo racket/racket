@@ -1701,12 +1701,12 @@ minimum required storage. |#
        i)]
     [else
      (struct-copy treelist tl
-                  [root(let copy-node ([n (treelist-root tl)] [height (treelist-height tl)])
-                         (cond
-                           [(fx= height 0) (vector*-copy n)]
-                           [else
-                            (for/vector #:length (vector-length n) ([e (in-vector n)])
-                                        (copy-node e (fx- height 1)))]))])]))
+                  [root (let copy-node ([n (treelist-root tl)] [height (treelist-height tl)])
+                          (cond
+                            [(fx= height 0) (vector*-copy n)]
+                            [else
+                             (for/vector #:length (vector-length n) ([e (in-vector n)])
+                                         (copy-node e (fx- height 1)))]))])]))
 
 (define (treelist-set! tl index el)
   (cond

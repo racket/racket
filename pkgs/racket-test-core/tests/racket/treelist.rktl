@@ -539,7 +539,7 @@
     (test 2 'ok (vector-ref (treelist-last (treelist-append (mk-tl) (check-on-read (treelist (vector 1 2 1))))) 1))
     (err/rt-test (vector-ref (treelist-ref (treelist-append (check-on-read (treelist (vector 1 2 1))) (mk-tl)) 2) 1) exn:no?)
     (test 4 'len (treelist-length (treelist-append (check-on-read (mk-tl)) (check-on-read (treelist (vector 1 1 1))))))
-    (test 4 'len (treelist-length (treelist-append (check-on-read (mk-tl)) (check-on-read (treelist (mk-tl))))))
+    (test 6 'len (treelist-length (treelist-append (check-on-read (mk-tl)) (check-on-read (mk-tl)))))
     (unless (mutable-treelist? (mk-tl))
       (test '(#f #f) 'keys (treelist-chaperone-state (treelist-append (check-on-read (mk-tl)) (check-on-read (treelist (vector 1 1 1))))
                                                      'check-on-read)))
@@ -623,6 +623,24 @@
     (test #t 'all-one
           (for/and ([i (in-range 0 n2)])
             (= 1 (treelist-ref tl i))))))
+
+;; ----------------------------------------
+
+(let ()
+  (define tl  (apply treelist (range 40)))
+  (define mtl (mutable-treelist 'x))
+  (mutable-treelist-append! mtl tl)
+  (mutable-treelist-set! mtl 10 'CHANGED)
+  (test '(9 CHANGED) (list (treelist-ref tl 9)
+                           (mutable-treelist-ref mtl 10))))
+
+(let ()
+  (define tl  (apply treelist (range 40)))
+  (define mtl (mutable-treelist 'x))
+  (mutable-treelist-prepend! mtl tl)
+  (mutable-treelist-set! mtl 10 'CHANGED)
+  (test '(10 CHANGED) (list (treelist-ref tl 10)
+                            (mutable-treelist-ref mtl 10))))
 
 ;; ----------------------------------------
 
