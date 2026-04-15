@@ -34,7 +34,7 @@ static char *CreateUniqueName()
 	  pTS = (PTOKEN_STATISTICS)malloc(cbBytes);
 	  
 	  if(GetTokenInformation(hToken, TokenStatistics, (LPVOID)pTS, cbBytes, &cbBytes)) {
-	    sprintf(session, "-%08x%08x-",
+	    sprintf(session, "-%08lx%08lx-",
 		    pTS->AuthenticationId.HighPart, 
 		    pTS->AuthenticationId.LowPart);
 	  } else

@@ -448,7 +448,7 @@ static BOOL
 RegisterExceptionHandling(PMEMORYMODULE module)
 {
     PIMAGE_DATA_DIRECTORY pDir = GET_HEADER_DICTIONARY(module, IMAGE_DIRECTORY_ENTRY_EXCEPTION);
-    PIMAGE_RUNTIME_FUNCTION_ENTRY pEntry = (PIMAGE_RUNTIME_FUNCTION_ENTRY)(module->codeBase + pDir->VirtualAddress);
+    PRUNTIME_FUNCTION pEntry = (PRUNTIME_FUNCTION)(module->codeBase + pDir->VirtualAddress);
     UINT count = (pDir->Size / sizeof(IMAGE_RUNTIME_FUNCTION_ENTRY)) - 1;
     return RtlAddFunctionTable(pEntry, count, (DWORD64)module->codeBase);
 }

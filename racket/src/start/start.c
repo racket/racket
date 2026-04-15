@@ -10,6 +10,7 @@
 #include <sys/stat.h>
 #include <process.h>
 #include <ctype.h>
+#include <wchar.h>
 
 #ifndef MRSTART
 # ifndef MZSTART
@@ -198,6 +199,10 @@ void WriteStr(HANDLE h, const char *s) {
   DWORD done;
   WriteFile(h, s, strlen(s), &done, NULL);
 }
+void WriteStrW(HANDLE h, const wchar_t *s) {
+  DWORD done;
+  WriteFile(h, s, wcslen(s), &done, NULL);
+}
 #endif
 
 #ifdef DUPLICATE_INPUT
@@ -331,10 +336,10 @@ int wmain(int argc_in, wchar_t **argv_in)
 	     cl_len, MAXCOMMANDLEN,command_line);
     MessageBoxW(NULL,errbuff,L"Error",MB_OK);
 #else
-    char errbuff[MAXCOMMANDLEN * 2];
-    sprintf(errbuff,"Command line of %d characters exceeds %d characters: %.1024S\n",
+    wchar_t errbuff[MAXCOMMANDLEN * 2];
+    swprintf(errbuff,sizeof(errbuff),L"Command line of %d characters exceeds %d characters: %1024S\n",
 	    cl_len, MAXCOMMANDLEN,command_line);
-    WriteStr(out,errbuff);
+    WriteStrW(out,errbuff);
 #endif
     exit(1);
   } 

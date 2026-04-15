@@ -1678,7 +1678,7 @@ static intptr_t do_write(rktio_t *rktio, rktio_fd_t *rfd, const char *buffer, in
     }
 
     if (!ok) {
-      rktio_get_windows_error(errv);
+      rktio_get_windows_error(err);
       if (buffer != orig_buffer)
 	free((char *)buffer);
       return RKTIO_WRITE_ERROR;

@@ -1982,7 +1982,7 @@ rktio_file_copy_t *rktio_copy_file_start_permissions(rktio_t *rktio, const char 
   else
     dest_w = WIDE_PATH_temp(dest);
   if (!dest_w) {
-    rktio_set_last_error_step(&rktio->err, RKTIO_COPY_STEP_OPEN_DEST);
+    rktio_set_last_error_step(rktio, RKTIO_COPY_STEP_OPEN_DEST);
     return NULL;
   }
 
