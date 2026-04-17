@@ -28,13 +28,13 @@ rktio_t *rktio_init(void)
     return NULL;
   }
 
-  rktio_alloc_global_poll_set(rktio);
-  if (!rktio_initialize_signal(rktio)) {
+  if (!rktio_process_init(rktio)) {
     rktio_destroy(rktio);
     return NULL;
   }
-  
-  if (!rktio_process_init(rktio)) {
+
+  rktio_alloc_global_poll_set(rktio);
+  if (!rktio_initialize_signal(rktio)) {
     rktio_destroy(rktio);
     return NULL;
   }
