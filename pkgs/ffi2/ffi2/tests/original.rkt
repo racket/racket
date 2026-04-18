@@ -60,7 +60,7 @@
   (provide go)
 
   (define (go pch)
-    (define double_built_ptr (uintptr->ptr_t (place-channel-get pch)))
+    (define double_built_ptr (uintptr_t->ptr_t (place-channel-get pch)))
 
     (define-ffi2-type to_double_t (int_t float_t . -> . double_t))
     (define-ffi2-type to_double_in_orig_t (int_t float_t . -> . double_t #:in-original))
@@ -83,7 +83,7 @@
     (check double_built_in_orig_cb_orig)))
 
 (define pl (dynamic-place '(submod (lib "ffi2/tests/original.rkt") run-in-place) 'go))
-(place-channel-put pl (ptr_t->uintptr (ffi2-lib-ref test-lib #"double_built")))
+(place-channel-put pl (ptr_t->uintptr_t (ffi2-lib-ref test-lib #"double_built")))
 (void (place-wait pl))
 
 (clean-ffi2-lib)

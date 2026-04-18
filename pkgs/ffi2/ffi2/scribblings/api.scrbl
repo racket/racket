@@ -1,6 +1,6 @@
 #lang scribble/manual
 
-@title[#:style 'toc]{Foreign Types, Pointers, and Procedures}
+@title[#:tag "api" #:style 'toc]{Reference}
 
 @local-table-of-contents[]
 

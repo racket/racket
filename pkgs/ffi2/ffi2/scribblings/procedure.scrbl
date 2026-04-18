@@ -1,7 +1,7 @@
 #lang scribble/manual
 @(require "common.rkt")
 
-@title[#:tag "procedure"]{Foreign Procedures}
+@title[#:tag "procedure"]{Foreign Procedures and Callbacks}
 
 @defform[#:kind "ffi2 type"
          #:literals (: =)

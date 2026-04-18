@@ -202,6 +202,40 @@ reference memory managed by Racket's garbage collection.
 
 }
 
+@defform[(define-ffi2-enum name parent_type
+            enum-case
+            ...)
+         #:grammar ([enum-case symbol
+                               (code:line symbol = exact-integer)])]{
+
+Defines @racket[name] as a new type that extends @racket[parent_type],
+which should be an integer type. The Racket representation of the new
+type is a symbol that is one of the @racket[symbol] identifiers listed
+as an @racket[enum-case]. Each symbol is converted to the
+corresponding @racket[exact-integer] if supplied, otherwise it is
+converted to @racket[0] for the first symbol or one more than the
+preceding symbol's value.
+
+The set of @racket[symbol]s must be unique, but multiple symbols can
+make to the same integer, and conversion from C chooses the last
+matching symbol in the declaration sequence. When a C representation
+to convert is not an integer value for one of the symbols, then the
+value is kept in integer form.
+
+@examples[
+#:eval ffi2-eval
+#:label #f
+(define-ffi2-enum shape_t int_t
+   circle
+   square
+   triangle)
+(ffi2-cast 'triangle #:from shape_t #:to int_t)
+(ffi2-cast 1 #:from int_t #:to shape_t)
+(ffi2-cast -1 #:from int_t #:to shape_t)
+]
+
+}
+
 @defform[#:kind "ffi2 type/abi"
          #:literals (else)
          (system-type-case key

@@ -4,7 +4,17 @@
            (only-in ffi/unsafe
                     register-finalizer)))
 
-@title{Interoperability with @racketmodname[ffi/unsafe]}
+@title[#:tag "interop"]{Interoperability with @racketmodname[ffi/unsafe]}
+
+The @racketmodname[ffi2] library is designed to provide better
+performance than @racketmodname[ffi/unsafe] for calling foreign
+functions and manipulating point objects. The main difference is that
+@racketmodname[ffi2] is more static (e.g., argument types for
+functions are not represented by run-time values), so it can compile
+foreign calls more directls. Another difference is that the
+representation of @tech{pointer} objects is simplified, requiring less
+allocation for pointer objects and less internal branching to perform
+pointer operations.
 
 The @racketmodname[ffi2] and @racketmodname[ffi/unsafe] libraries can
 coexist within a single Racket application. Libraries like

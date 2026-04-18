@@ -3,7 +3,7 @@
                      syntax/parse/pre)
          "core.rkt")
 
-(provide enum)
+(provide define-ffi2-enum)
 
 (begin-for-syntax
   (define-splicing-syntax-class :enum-case
@@ -14,7 +14,7 @@
     (pattern (~seq sym:identifier)
              #:attr int #f)))
 
-(define-syntax (enum stx)
+(define-syntax (define-ffi2-enum stx)
   (syntax-parse stx
     [(_ name:identifier parent_t
         c::enum-case
@@ -41,5 +41,5 @@
            (define-ffi2-type name parent_t
              #:predicate (lambda (v) (hash-ref syms->int v #f))
              #:racket->c (lambda (sym) (hash-ref syms->int sym 0))
-             #:c->racket (lambda (i) (hash-ref int->syms i #false)))))]))
+             #:c->racket (lambda (i) (hash-ref int->syms i i)))))]))
 

@@ -1,6 +1,7 @@
 #lang scribble/manual
 @(require "common.rkt"
-          (for-label (only-in ffi/unsafe cpointer?)))
+          (for-label (only-in ffi/unsafe cpointer?)
+                     (only-in racket/contract/base any/c)))
 
 @title[#:tag "pointer"]{Foreign Pointers}
 
@@ -224,10 +225,25 @@ each byte's value is @racket[byte].
 
 }
 
+@deftogether[(
+@defproc[(ffi2-malloc-manual-box [v any/c]) ptr_t?]
+@defproc[(ffi2-free-manual-box [p ptr_t?]) void?]
+@defproc[(ffi2-manual-box-ref [p ptr_t?]) any/c]
+@defproc[(ffi2-manual-box-set! [p ptr_t?] [v any/c]) void]
+)]{
+
+The @racket[ffi2-malloc-manual-box] function allocates an initializes
+a @defterm{manual box}, which is manually allocated memory that holds a
+single Racket value. The box must be explicitly freed with
+@racket[ffi2-free-manual-box]. The value in the box can be accessed
+with @racket[ffi2-manual-box-ref] or changed with
+@racket[ffi2-manual-box-set!].
+
+}
 
 @deftogether[(
-@defproc[(ptr_t->uintptr [ptr ptr_t?]) exact-nonnegative-integer?]
-@defproc[(uintptr->ptr_t [int exact-nonnegative-integer?]) ptr_t?]
+@defproc[(ptr_t->uintptr_t [ptr ptr_t?]) exact-nonnegative-integer?]
+@defproc[(uintptr_t->ptr_t [int exact-nonnegative-integer?]) ptr_t?]
 )]{
 
 Conversions between addresses represented as pointers and addresses as

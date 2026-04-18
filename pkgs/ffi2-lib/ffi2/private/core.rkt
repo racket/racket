@@ -52,8 +52,8 @@
          ptr_t/gcable?
          void_t*?
          void_t*/gcable?
-         uintptr->ptr_t
-         ptr_t->uintptr
+         uintptr_t->ptr_t
+         ptr_t->uintptr_t
          ptr_t->cpointer
          cpointer->ptr_t
          make-not-available

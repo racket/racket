@@ -15,8 +15,8 @@
          ptr_t/gcable?
          void_t*?
          void_t*/gcable?
-         uintptr->ptr_t
-         ptr_t->uintptr)
+         uintptr_t->ptr_t
+         ptr_t->uintptr_t)
 
 (define-syntax (define-ffi2-base-type stx)
   (syntax-parse stx
@@ -80,5 +80,5 @@
 (define (void_t*? v) (ffi2-ptr? v))
 (define (void_t*/gcable? v) (ffi2-ptr/gcable? v))
 
-(define (uintptr->ptr_t v) (ffi2-uintptr->ptr v))
-(define (ptr_t->uintptr v) (ffi2-ptr->uintptr v))
+(define (uintptr_t->ptr_t v) (ffi2-uintptr->ptr v))
+(define (ptr_t->uintptr_t v) (ffi2-ptr->uintptr v))
