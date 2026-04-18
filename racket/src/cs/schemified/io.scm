@@ -15556,7 +15556,7 @@
         (void)
         (raise-argument-error
          'guard-for-prop:custom-write
-         "(procedure-arity-includes?/c 3)"
+         "(procedure-arity-includes/c 3)"
          v_0))
       v_0))))
 (define-values
