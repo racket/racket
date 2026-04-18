@@ -40,10 +40,10 @@
           ffi2-memmove
           ffi2-memset)
          ->
-         struct
-         union
-         array
-         gcable
+         struct_t
+         union_t
+         array_t
+         gcable_t
          system-type-case
          default_abi
          cdecl_abi
@@ -84,16 +84,16 @@
 
   (define-syntax-class :maybe-type
     #:description "an ffi2 type"
-    #:literals (-> struct union array gcable)
+    #:literals (-> struct_t union_t array_t gcable_t)
     (pattern t:id
              #:when (ffi2-type-or-constructor-or-macro? (syntax-local-value #'t (lambda () #f))))
     (pattern (t:id _ ...)
              #:when (ffi2-type-or-constructor-or-macro? (syntax-local-value #'t (lambda () #f))))
     (pattern (-> _ ...))
-    (pattern (struct _ ...))
-    (pattern (union _ ...))
-    (pattern (array _ ...))
-    (pattern (gcable _ ...)))
+    (pattern (struct_t _ ...))
+    (pattern (union_t _ ...))
+    (pattern (array_t _ ...))
+    (pattern (gcable_t _ ...)))
 
   (define-splicing-syntax-class :arg
     #:description "an ffi2 arrow-type argument"
@@ -265,16 +265,16 @@
   (define (compound->prim compound)
     ;; name used for `free-identifier=?` might not symbolically match the original name
     (syntax-parse compound
-      #:literals (-> struct union array system-type-case)
-      [struct 'struct]
-      [union 'union]
-      [array 'array]
+      #:literals (-> struct_t union_t array_t system-type-case)
+      [struct_t 'struct]
+      [union_t 'union]
+      [array_t 'array]
       [system-type-case 'system-type-case]))
 
   (define-syntax-class (:type stx [for-return? #f] [for-argument? #f])
     #:description "an ffi2 type"
     #:attributes (t)
-    #:literals (-> struct union array gcable system-type-case)
+    #:literals (-> struct_t union_t array_t gcable_t system-type-case)
     (pattern type-name:id
              #:attr t (expand-type stx #'type-name #'type-name
                                    #:for-return? for-return?
@@ -291,10 +291,10 @@
                                                       #,(build-ffi2-procedure '-> 'procedure #'ptr (attribute a.t) #t))
                                       #:release #'black-box
                                       #:category 'arrow))
-    (pattern ((~and compound (~or struct union)) ~!
-                                                 (~optional tag:id)
-                                                 [field-name:id (~var field-type (:type stx))]
-                                                 ...)
+    (pattern ((~and compound (~or struct_t union_t)) ~!
+                                                     (~optional tag:id)
+                                                     [field-name:id (~var field-type (:type stx))]
+                                                     ...)
              #:with (field-vm-type ...) (map ffi2-type-vm-type (attribute field-type.t))
              #:with tag*s (if (attribute tag)
                               #`(#,(string->symbol (format "~a*" (syntax-e #'tag))))
@@ -307,7 +307,7 @@
                                                   ((#%foreign-inline (ffi2-ptr?-maker pointer/gc tag*s) #:copy*) v)))
                                           #'ffi2-ptr?)
                                       #:release #'black-box))
-    (pattern (array ~! (~var elem-type (:type stx)) n::array-size)
+    (pattern (array_t ~! (~var elem-type (:type stx)) n::array-size)
              #:with tag*s (let ([ptr-vm-type (ffi2-type-pointer-vm-type (attribute elem-type.t))])
                             (if (pair? ptr-vm-type)
                                 (cadr ptr-vm-type)
@@ -323,7 +323,7 @@
                                               (or ((#%foreign-inline (ffi2-ptr?-maker pointer tag*s) #:copy*) v)
                                                   ((#%foreign-inline (ffi2-ptr?-maker pointer/gc tag*s) #:copy*) v))))
                                       #:release #'black-box))
-    (pattern (gcable ~! (~var base-type (:type stx)))
+    (pattern (gcable_t ~! (~var base-type (:type stx)))
              #:do [(define base-t (attribute base-type.t))
                    (unless (ffi2-type-pointer? base-t)
                      (raise-syntax-error #f "target type is not a pointer type" stx #'base-type))]
@@ -343,8 +343,8 @@
 
 (define-syntax (define-ffi2-type stx)
   (syntax-parse stx
-    #:literals (struct union array)
-    [(_ name:id ((~and compound (~or (~and is-s? struct) (~and is-u? union)))
+    #:literals (struct_t union_t array_t)
+    [(_ name:id ((~and compound (~or (~and is-s? struct_t) (~and is-u? union_t)))
                  (~optional tag:id)
                  [field-name:id (~var field-type (:type stx))]
                  ...))
@@ -464,7 +464,7 @@
                    (set-name-field!/unchecked p v)
                    p)
                  ...))))]
-    [(_ name:id (array (~var elem-type (:type stx)) n::array-size)
+    [(_ name:id (array_t (~var elem-type (:type stx)) n::array-size)
         (~optional (~seq #:tag tag:id)))
      (define elem-t (attribute elem-type.t))
      (with-syntax ([tag*s (if (attribute tag)

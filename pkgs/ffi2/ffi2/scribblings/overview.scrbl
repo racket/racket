@@ -193,7 +193,7 @@ more Racket-like interface.
 
 @racketblock[
 (define-ffi2-type mmask_t ulong_t)
-(define-ffi2-type mmask_t* (array mmask_t *))
+(define-ffi2-type mmask_t* (array_t mmask_t *))
 
 (define-curses mousemask
   (mmask_t [old : mmask_t* = (ffi2-malloc mmask_t)]
@@ -233,10 +233,10 @@ a @cpp{MEVENT} struct to fill with mouse-event information:
 }
 
 To work with @cpp{MEVENT} values, we use @racket[define-ffi2-type]
-with a @racket[struct] type:
+with a @racket[struct_t] type:
 
 @racketblock[
-(define-ffi2-type MEVENT_t (struct
+(define-ffi2-type MEVENT_t (struct_t
                              [id short_t]
                              [x int_t]
                              [y int_t]

@@ -2,7 +2,7 @@
 (require ffi2
          rackunit)
 
-(define-ffi2-type int_t* (array int_t *))
+(define-ffi2-type int_t* (array_t int_t *))
 
 (define p (ffi2-cast '(1 2 3) #:from (list_t int_t) #:to int_t*))
 (check-equal? (int_t*-ref p 0) 1)

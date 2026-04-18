@@ -12,34 +12,28 @@
 @title[#:tag "compound-ffi2-type"]{Compound Foreign Types}
 
 @defform[#:kind "ffi2 type"
-         (struct maybe-tag
+         (struct_t maybe-tag
            [field-id field-type]
            ...)
          #:grammar ([maybe-tag id
                                ϵ])]{
 
-@margin-note{The @racket[struct] FFI2 type constructor conflicts with
-or shadows the @racket-struct form that is provided by
-@racketmodname[racket/base]. Consider using @racket[define-struct]
-instead of @racket-struct, or rename one or the other @racket[struct]
-bindings on import.}
-
 Describes a type that is represented by a @tt{struct} declaration on
 the C side and a @tech{pointer} object in the Racket side. If
 @racket[maybe-tag] is an identifier, the symbol form of the identifier
 with a @litchar{*} suffix added is used as a @tech{tag} for pointers that
-represent instances of the @racket[struct] type, otherwise a generic
+represent instances of the @racket[struct_t] type, otherwise a generic
 @racket[ptr_t] pointer is used.
 
 Each @racket[field-id] must be distinct, and the corresponding
 @racket[field-type] describes the field's representation on the C side
 and the representation used on the Racket side if the field's value is
-extracted from a representation of the @racket[struct] type.
+extracted from a representation of the @racket[struct_t] type.
 
-When @racket[struct] is used as the @racket[_parent-type] in a
+When @racket[struct_t] is used as the @racket[_parent-type] in a
 @racket[define-ffi2-type] definition of @racket[_name] without any
 options (such as @racket[#:tag] or @racket[#:racket->c]), then
-@racket[struct] and @racket[define-ffi2-type] influence each other:
+@racket[struct_t] and @racket[define-ffi2-type] influence each other:
 
 @itemlist[
 
@@ -61,21 +55,21 @@ options (such as @racket[#:tag] or @racket[#:racket->c]), then
 
  @item{@racketidfont{@racket[_name]-@racket[field-id]} is defined for
       each @racket[field-id] as an accessor: it takes a pointer for a
-      @racket[struct] instance and extracts a representation of the
+      @racket[struct_t] instance and extracts a representation of the
       corresponding field value based on the conversion implied by the
       associated @racket[field-type].}
 
  @item{@racketidfont{set-@racket[_name]-@racket[field-id]!} is defined
       for each @racket[field-id] as a mutator: it takes a pointer for
-      a @racket[struct] instance and a representation of the
+      a @racket[struct_t] instance and a representation of the
       corresponding field value, and it installs a converted value
       (based the associated @racket[field-type]) into the
-      @racket[struct] instance.}
+      @racket[struct_t] instance.}
 
  @item{@racket[_name] is defined both as a type and as an expression
        form. As an expression, it accepts as may subexpressions as
        @racket[field-id]s, it allocates an instance of the
-       @racket[struct] type via @racket[ffi2-malloc], and it installs
+       @racket[struct_t] type via @racket[ffi2-malloc], and it installs
        each subexpression's result into the allocated memory in the
        same way as
        @racketidfont{set-@racket[_name]-@racket[field-id]!}. An
@@ -91,7 +85,7 @@ C-side representation differs.
 
 @examples[
 #:eval ffi2-eval
-(define-ffi2-type point_t (struct
+(define-ffi2-type point_t (struct_t
                             [x double_t]
                             [y double_t]))
 (ffi2-sizeof point_t)
@@ -106,12 +100,12 @@ p1
 ]
 
 With this example's definition of @racket[point_t], a field in another
-@racket[struct] type would take up 16 bytes, while a @racket[point_t*]
+@racket[struct_t] type would take up 16 bytes, while a @racket[point_t*]
 field would take up 8 bytes. Accessing the field in either case would
 produce a Racket representation that is a @tech{pointer} tagged as
 @racket[point_t*]. In the case of a @racket[point_t] field, the
 returned pointer would refer to memory within the accessed
-@racket[struct] instance.
+@racket[struct_t] instance.
 
 Along similar lines, a pointer tagged with @racket[point_t*] is
 suitable as an argument to a C function that has either a
@@ -124,17 +118,17 @@ pointer.
 }
 
 @defform[#:kind "ffi2 type"
-         (union maybe-tag
+         (union_t maybe-tag
            [field-id field-type]
            ...)
          #:grammar ([maybe-tag id
                                ϵ])]{
 
-Similar to @racket[struct], but for a type that uses @tt{union} on the
+Similar to @racket[struct_t], but for a type that uses @tt{union} on the
 C side.
 
-The interaction of @racket[define-ffi2-type] and @racket[union] is
-like the interaction of @racket[define-ffi2-type] and @racket[struct],
+The interaction of @racket[define-ffi2-type] and @racket[union_t] is
+like the interaction of @racket[define-ffi2-type] and @racket[struct_t],
 except for the way the defined @racket[_name] is bound as an
 expression form:
 
@@ -142,7 +136,7 @@ expression form:
 
  @item{@racket[_name] an expression expects a single field name
        followed by a single field subexpression, and it installs that
-       field's value after allocating the @racket[union]
+       field's value after allocating the @racket[union_t]
        representation. An optional allocation mode can be provided
        before the field name.}
 
@@ -150,7 +144,7 @@ expression form:
 
 @examples[
 #:eval ffi2-eval
-(define-ffi2-type grade_t (union
+(define-ffi2-type grade_t (union_t
                             [score double_t]
                             [pass-fail bool_t]))
 (ffi2-sizeof grade_t)
@@ -165,7 +159,7 @@ expression form:
 }
 
 @defform[#:kind "ffi2 type"
-         (array elem_type count)
+         (array_t elem_type count)
          #:grammar ([count exact-nonnegative-integer
                            *])]{
 
@@ -177,14 +171,14 @@ to indicate a C pointer.
 
 The Racket-side pointer representation uses a @tech{tag} formed by adding a
 @litchar{*} suffix on the name of @racket[elem_type], as long as it
-has a name. If @racket[elem-type] is an immediate @racket[struct],
-@racket[union], @racket[array], or @racket[->] form, then it has no
+has a name. If @racket[elem-type] is an immediate @racket[struct_t],
+@racket[union_t], @racket[array_t], or @racket[->] form, then it has no
 name, and the Racket-side representation is a generic pointer.
 
-When @racket[array] is used as the @racket[_parent-type] in a
+When @racket[array_t] is used as the @racket[_parent-type] in a
 @racket[define-ffi2-type] definition of @racket[_name] without any
 options (such as @racket[#:racket->c]) other than @racket[#:tag], then
-@racket[array] and @racket[define-ffi2-type] influence each other:
+@racket[array_t] and @racket[define-ffi2-type] influence each other:
 
 @itemlist[
 
@@ -206,7 +200,7 @@ options (such as @racket[#:racket->c]) other than @racket[#:tag], then
        suitably tagged Racket @tech{pointer} representations.}
 
  @item{@racketidfont{@racket[_name]-ref} is defined as an accessor: it
-      takes a pointer for a @racket[array] instance and an exact
+      takes a pointer for a @racket[array_t] instance and an exact
       integer, and it extracts a representation of the corresponding
       element value based on the conversion implied by
       @racket[elem-type]. If @racket[count] is not @racket[*], the
@@ -214,9 +208,9 @@ options (such as @racket[#:racket->c]) other than @racket[#:tag], then
       @racket[0] (inclusive) to @racket[count] (exclusive).}
 
  @item{@racketidfont{@racket[_name]-ref} is defined as a mutator: it
-      takes a pointer for a @racket[array] instance, an exact integer,
+      takes a pointer for a @racket[array_t] instance, an exact integer,
       and a field value; it installs a converted value
-      (based @racket[elem-type]) into the @racket[array] instance.
+      (based @racket[elem-type]) into the @racket[array_t] instance.
       If @racket[count] is not @racket[*], the
       integer passed to @racketidfont{@racket[_name]-set!} is
       constrained in the same way as for @racketidfont{@racket[_name]-ref}.}
@@ -225,7 +219,7 @@ options (such as @racket[#:racket->c]) other than @racket[#:tag], then
 
 @examples[
 #:eval ffi2-eval
-(define-ffi2-type triple_t (array double_t 3))
+(define-ffi2-type triple_t (array_t double_t 3))
 (ffi2-sizeof triple_t)
 (define p (ffi2-malloc triple_t))
 p
@@ -239,19 +233,19 @@ p
 }
 
 @defform[#:kind "ffi2 type"
-         (gcable ptr-type)]{
+         (gcable_t ptr-type)]{
 
 Describes a type that is the same as @racket[ptr-type], which must
 describe a pointer type, except that conversion from C to Scheme creates
 a reference to an address that is managed by the Racket garbage collector.
-A @racket[gcable] adjustment has no effect on conversion from Scheme to C
+A @racket[gcable_t] adjustment has no effect on conversion from Scheme to C
 or on predicates formed with @racket[ffi2-is-a?].
 
-The type @racket[(gcable ptr_t)] is equivalent to
+The type @racket[(gcable_t ptr_t)] is equivalent to
 @racket[ptr_t/gcable]. More generally, when defining a pointer type with
 @racket[define-ffi2-type], a type name with a @racketidfont{/gcable}
 suffix is defined, and that name describes the same type as using
-@racket[gcable]. The predicate @racket[ptr_t/gcable?] is @emph{not}
+@racket[gcable_t]. The predicate @racket[ptr_t/gcable?] is @emph{not}
 the same as @racket[(lambda (x) (ffi2-is-a? x ptr_t/gcable?))], because
 @racket[ptr_t/gcable?] checks specifically for a pointer into a region
 managed by the Racket garbage collector.
@@ -263,7 +257,7 @@ managed by the Racket garbage collector.
          #:grammar ([maybe-length (code:line #:length len-expr)
                                   ϵ])]{
 
-Constructs a type that is like @racket[(array elem-type *)], but where
+Constructs a type that is like @racket[(array_t elem-type *)], but where
 the Racket-side representation is a list of array values. Conversion
 from Racket to C allocates an array based on the list's length. For
 conversion from C, the array length must be specified by

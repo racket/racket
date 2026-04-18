@@ -84,14 +84,14 @@
 ;; ----------------------------------------
 
 (let ()
-  (define-test ptr_to_ptr ((array double_t *) . -> . ptr_t))
+  (define-test ptr_to_ptr ((array_t double_t *) . -> . ptr_t))
   (define a (ffi2-malloc double_t))
   (check-equal? (ptr_to_ptr a) a)
   (check-exn exn:fail:contract? (lambda () (ptr_to_ptr ptr_to_ptr))))
 
 (let ()
-  (define-test ptr_to_ptr ((array (array double_t *) *) . -> . ptr_t))
-  (define a (ffi2-malloc (array double_t *)))
+  (define-test ptr_to_ptr ((array_t (array_t double_t *) *) . -> . ptr_t))
+  (define a (ffi2-malloc (array_t double_t *)))
   (check-equal? (ptr_to_ptr a) a)
   (check-exn (lambda (exn)
                (and (exn:fail:contract? exn)

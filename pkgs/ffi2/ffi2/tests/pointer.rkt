@@ -5,8 +5,8 @@
 (define-ffi2-type ours_t* void_t*)
 (define-ffi2-type mine_t* ours_t*)
 
-(define-ffi2-type ours_t** (array ours_t* *))
-(define-ffi2-type mine_t** (array mine_t* *))
+(define-ffi2-type ours_t** (array_t ours_t* *))
+(define-ffi2-type mine_t** (array_t mine_t* *))
 
 (define-ffi2-type also_ours_t* ours_t*
   #:tag #f)
@@ -18,7 +18,7 @@
   (check-false (ours_t*? p))
   (check-false (mine_t*? p))
   (check-true (ffi2-is-a? p void_t*))
-  (check-true (ffi2-is-a? p (gcable void_t*))) ; does not check gcableness
+  (check-true (ffi2-is-a? p (gcable_t void_t*))) ; does not check gcableness
   (check-true (ffi2-is-a? p void_t*/gcable)) ; does not check gcableness
   (check-false (ffi2-is-a? p ours_t*))
   (check-false (ffi2-is-a? p mine_t*))
@@ -87,25 +87,25 @@
   (define pp (ffi2-malloc #:gcable-traced ours_t*))
   (define p (ffi2-malloc 10 #:as ours_t*))
   (ffi2-set! pp ours_t* p)
-  (define p2 (ffi2-ref pp (gcable ours_t*)))
+  (define p2 (ffi2-ref pp (gcable_t ours_t*)))
   (collect-garbage)
   (check-equal? p p2)
   (check-true (void_t*? p2))
   (check-true (void_t*/gcable? p2))
   (check-true (ours_t*? p2))
-  (define p3 (ffi2-ref pp (gcable mine_t*)))
+  (define p3 (ffi2-ref pp (gcable_t mine_t*)))
   (check-equal? p p3)
   (check-true (void_t*? p3))
   (check-true (void_t*/gcable? p3))
   (check-true (ours_t*? p3)))
 
 (let ()
-  (define-ffi2-type int_t* (array int_t *))
-  (check-true (ffi2-is-a? (ffi2-malloc int_t) (array int_t *)))
-  (check-true (ffi2-is-a? (ffi2-malloc int_t) (gcable (array int_t *))))
+  (define-ffi2-type int_t* (array_t int_t *))
+  (check-true (ffi2-is-a? (ffi2-malloc int_t) (array_t int_t *)))
+  (check-true (ffi2-is-a? (ffi2-malloc int_t) (gcable_t (array_t int_t *))))
   (define p (ffi2-malloc #:manual int_t))
-  (check-true (ffi2-is-a? p (gcable (array int_t *))))
+  (check-true (ffi2-is-a? p (gcable_t (array_t int_t *))))
   (check-true (int_t*? p))
   (ffi2-free p)
-  (check-true (ffi2-is-a? (ffi2-malloc int_t*) (array (gcable (array int_t *)) *)))
+  (check-true (ffi2-is-a? (ffi2-malloc int_t*) (array_t (gcable_t (array_t int_t *)) *)))
   (void))

@@ -17,7 +17,7 @@
 (define-test-procedure double_sum ((offset_double_t 1.0) (offset_double_t 2.0) . -> . (offset_double_t 4.0)))
 (check-equal? (double_sum 10.0 20.0) 31.0)
 
-(define-ffi2-type posn_t (struct
+(define-ffi2-type posn_t (struct_t
                            [x (offset_double_t 1.0)]
                            [y (offset_double_t 2.0)]))
 (define p1 (posn_t 10.0 20.0))
@@ -27,9 +27,9 @@
 (check-equal? (posn_t-x p1) 100.0)
 (check-equal? (ffi2-ref p1 double_t 0) 99.0)
 
-(define-ffi2-type od_array_t (array (offset_double_t 0.5) 3))
+(define-ffi2-type od_array_t (array_t (offset_double_t 0.5) 3))
 (define-ffi2-type od_array_t* void_t*)
-(define a0 (ffi2-malloc (array (offset_double_t 0.5) 3)))
+(define a0 (ffi2-malloc (array_t (offset_double_t 0.5) 3)))
 (define a1 (ffi2-malloc od_array_t))
 (od_array_t-set! a1 0 3.0)
 (check-equal? (od_array_t-ref a1 0) 3.0)

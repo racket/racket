@@ -2,26 +2,26 @@
 (require ffi2
          rackunit)
 
-(define-ffi2-type point_t (struct
+(define-ffi2-type point_t (struct_t
                             [x int_t]
                             [y int_t]))
 
-(define-ffi2-type dimen_t (struct
+(define-ffi2-type dimen_t (struct_t
                             [width double_t]
                             [height double_t]))
 
-(define-ffi2-type rect_t (struct
+(define-ffi2-type rect_t (struct_t
                            [topleft point_t]
                            [size dimen_t]))
 
-(define-ffi2-type rect_shape_t (struct
+(define-ffi2-type rect_shape_t (struct_t
                                  ;; no tag of `struct`s means that any pointer is assumed ok
-                                 [topleft (struct [x int_t] [y int_t])]
-                                 [size (struct [width double_t] [height double_t])]))
+                                 [topleft (struct_t [x int_t] [y int_t])]
+                                 [size (struct_t [width double_t] [height double_t])]))
 
-(define-ffi2-type picky_rect_shape_t (struct
-                                       [topleft (struct a_point_t [x int_t] [y int_t])]
-                                       [size (struct a_dimen_t [width double_t] [height double_t])]))
+(define-ffi2-type picky_rect_shape_t (struct_t
+                                       [topleft (struct_t a_point_t [x int_t] [y int_t])]
+                                       [size (struct_t a_dimen_t [width double_t] [height double_t])]))
 (define-ffi2-type a_point_t* void_t*)
 (define-ffi2-type a_dimen_t* void_t*)
 

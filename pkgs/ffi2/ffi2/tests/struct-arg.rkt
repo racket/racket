@@ -8,7 +8,7 @@
 
 (define-ffi2-definer define-test-procedure #:lib test-lib)
 
-(define-ffi2-type intfloat_t (struct
+(define-ffi2-type intfloat_t (struct_t
                                [i int_t]
                                [f float_t]))
 

@@ -2,7 +2,7 @@
 (require ffi2
          rackunit)
 
-(define-ffi2-type num_t (union
+(define-ffi2-type num_t (union_t
                          [i int64_t]
                          [d double_t]))
 

@@ -4,4 +4,4 @@
 
 (provide racket-struct)
 
-(define racket-struct @racket[struct])
+(define racket-struct @racket[struct_t])

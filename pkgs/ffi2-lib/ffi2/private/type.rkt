@@ -7,10 +7,10 @@
 
 (provide (protect-out
           ->
-          struct
-          union
-          array
-          gcable
+          struct_t
+          union_t
+          array_t
+          gcable_t
           system-type-case
           default_abi
           stdcall_abi
@@ -201,10 +201,10 @@
   (raise-syntax-error #f "allowed only in an ffi2 type context" stx))
 
 (define-syntax (-> stx) (raise-only-as-ffi-type stx))
-(define-syntax (struct stx) (raise-only-as-ffi-type stx))
-(define-syntax (union stx) (raise-only-as-ffi-type stx))
-(define-syntax (array stx) (raise-only-as-ffi-type stx))
-(define-syntax (gcable stx) (raise-only-as-ffi-type stx))
+(define-syntax (struct_t stx) (raise-only-as-ffi-type stx))
+(define-syntax (union_t stx) (raise-only-as-ffi-type stx))
+(define-syntax (array_t stx) (raise-only-as-ffi-type stx))
+(define-syntax (gcable_t stx) (raise-only-as-ffi-type stx))
 (define-syntax (system-type-case stx)
   (raise-syntax-error #f "allowed only in an ffi2 type or abi context" stx))
 

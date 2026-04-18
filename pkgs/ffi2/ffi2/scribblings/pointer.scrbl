@@ -13,7 +13,7 @@ managed externally.
 The base type for pointers is @racket[ptr_t] (aliased as
 @racket[void_t*]), and new pointer types can be created via
 @racket[define-ffi2-type] with either an existing pointer type, a
-@racket[struct] type, a @racket[union] type, or an a @racket[array]
+@racket[struct_t] type, a @racket[union_t] type, or an a @racket[array_t]
 type.
 
 A pointer's @deftech{tags} enable sanity checking that the right kind
@@ -69,8 +69,8 @@ the result of @racket[(* n-expr (ffi2-sizeof maybe-type))].
 If @racket[maybe-as] is specified, then the result is cast to
 @racket[as-type] in the sense of @racket[ffi2-cast]. Otherwise, the
 result is a @tech{pointer} object encapsulating the address of
-allocated memory. If @racket[maybe-type] is a @racket[struct],
-@racket[union], or size @racket[array] type (and @racket[maybe-as] is
+allocated memory. If @racket[maybe-type] is a @racket[struct_t],
+@racket[union_t], or size @racket[array_t] type (and @racket[maybe-as] is
 not specified), the result is a pointer object using the
 representation of @racket[maybe-type]. Otherwise, the result is a
 pointer object using the representation of @racket[void_t*].
@@ -188,7 +188,7 @@ provided for casting between scalar types.
            (ffi2-add ptr-expr type n-expr)]]{
 
 A shorthand for @racket[(ffi2-cast ptr-expr #:offset n-expr)]
-or @racket[(ffi2-cast ptr-expr #:offset type n-expr #:to (array type *))].
+or @racket[(ffi2-cast ptr-expr #:offset type n-expr #:to (array_t type *))].
 
 }
 

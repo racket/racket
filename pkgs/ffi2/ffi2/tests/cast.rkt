@@ -2,7 +2,7 @@
 (require ffi2
          rackunit)
 
-(define-ffi2-type int32_t* (array int32_t *))
+(define-ffi2-type int32_t* (array_t int32_t *))
 
 (define p (ffi2-malloc 32))
 

@@ -30,17 +30,17 @@ expression arguments when applied in a type position, and the remainder
 of the @racket[define-ffi2-type] can refer to the @racket[arg-id]s to
 parameterize the definition over supplied values.
 
-When @racket[parent-type] is a @racket[struct] or @racket[union] form,
+When @racket[parent-type] is a @racket[struct_t] or @racket[union_t] form,
 a type (as opposed to a type constructor) is being defined,
 and no @racket[option]s are provided, then the @racket[parent-type]
 affects the definitions created by @racket[define-ffi2-type]. See
-@racket[struct] and @racket[union] for more information.
+@racket[struct_t] and @racket[union_t] for more information.
 
-When @racket[parent-type] is an @racket[array] form,
+When @racket[parent-type] is an @racket[array_t] form,
 a type (as opposed to a type constructor) is being defined, and no
 @racket[option]s are provided other than @racket[#:tag], then the
-@racket[array] also affects the definitions created by
-@racket[define-ffi2-type]. See @racket[array] for more information.
+@racket[array_t] also affects the definitions created by
+@racket[define-ffi2-type]. See @racket[array_t] for more information.
 
 When @racket[parent-type] is an @deftech{immediate pointer} type,
 a type (as opposed to a type constructor) is being defined, and
@@ -57,7 +57,7 @@ If @racket[tag] is provided as @racket[#f], Racket representation of
 the new type is a generic pointer with no tags. The type
 @racketidfont{@racket[name]/gcable} is defined in addition to
 @racket[name], and @racketidfont{@racket[name]/gcable} is equivalent
-to @racket[(gcable name)].
+to @racket[(gcable_t name)].
 
 When @racket[parent-type] is an @tech{scalar} type,
 a type (as opposed to a type constructor) is being defined, and no
@@ -65,8 +65,8 @@ a type (as opposed to a type constructor) is being defined, and no
 type.
 
 The @racket[#:tag] option can be used only when @racket[parent-type]
-is an immediate pointer type or @racket[array] form. In the case of an
-@racket[array] form with a constant size, @racket[#:tag] cannot be
+is an immediate pointer type or @racket[array_t] form. In the case of an
+@racket[array_t] form with a constant size, @racket[#:tag] cannot be
 mixed with any other @racket[option] form.
 
 In all cases, the new type @racket[name] (or the type that it constructs)
@@ -151,7 +151,7 @@ procedures:
 (define-ffi2-type (offset_double_t delta) double_t
   #:c->racket (lambda (v) (+ v delta))
   #:racket->c (lambda (v) (- v delta)))
-(define-ffi2-type posn_t (struct
+(define-ffi2-type posn_t (struct_t
                            [x (offset_double_t 1.0)]
                            [y (offset_double_t 2.0)]))
 (define p (posn_t 10.0 20.0))
@@ -183,8 +183,8 @@ Returns the number of bytes used for the C representation of
 
 Returns the number of bytes in the C representation of @racket[type]
 that precede the field named @racket[field-id]. The @racket[type] must
-be have the C representation of a @racket[struct] or @racket[union]
-type; the result is always @racket[0] in the case of a @racket[union]
+be have the C representation of a @racket[struct_t] or @racket[union_t]
+type; the result is always @racket[0] in the case of a @racket[union_t]
 type.
 
 }
