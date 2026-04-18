@@ -258,4 +258,28 @@ managed by the Racket garbage collector.
 
 }
 
+@defform[#:kind "ffi2 type"
+         (list_t maybe-mode elem-type maybe-length)
+         #:grammar ([maybe-length (code:line #:length len-expr)
+                                  ϵ])]{
+
+Constructs a type that is like @racket[(array elem-type *)], but where
+the Racket-side representation is a list of array values. Conversion
+from Racket to C allocates an array based on the list's length. For
+conversion from C, the array length must be specified by
+@racket[maybe-length], which default to a @racket[0] length.
+
+If @racket[maybe-mode] is non-empty, it is used like
+@racket[ffi2-malloc] when allocating for a Racket to C conversion.
+
+}
+
+@defform[#:kind "ffi2 type"
+         (vector_t maybe-mode elem-type maybe-length)]{
+
+Like @racket[list_t], but for a Racket representation as a vector
+instead of a list.
+
+}
+
 @close-eval[ffi2-eval]

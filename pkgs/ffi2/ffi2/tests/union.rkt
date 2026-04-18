@@ -31,3 +31,9 @@
   (check-true (num_t*? n))
   (check-equal? (num_t-i n) 4636737291354636288)
   (check-equal? (num_t-d n) 100.0))
+
+(let ()
+  (define ns (ffi2-malloc num_t))
+  (check-true (num_t*? ns))
+  (check-equal? (num_t*-ref ns 0) ns)
+  (check-equal? (num_t*-ref ns 1) (ffi2-add ns num_t 1)))

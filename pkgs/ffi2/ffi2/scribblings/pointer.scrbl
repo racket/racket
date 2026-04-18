@@ -172,13 +172,15 @@ offset in the same way as for @racket[ffi2-ref].
 Converts the Racket representation produced by @racket[expr] from one
 foreign type's representation to another. If @racket[from-type] or
 @racket[to-type] is not specified, each defaults to @racket[ptr_t].
-Both @racket[from-type] and @racket[to-type] must be pointer types.
+Both @racket[from-type] and @racket[to-type] must be pointer types,
+or they must both be @tech{scalar} types.
 
 If the @racket[#:offset] option is provided, the resulting pointer is
 shifted to represent an address that is @racket[_n] bytes later, where
 @racket[_n] is the result of @racket[n-expr] multiplied by
 @racket[(ffi2-sizeof maybe-type)] or by @racket[1] if
-@racket[maybe-type] is empty.
+@racket[maybe-type] is empty. An @racket[#:offset] option cannot be
+provided for casting between scalar types.
 
 }
 

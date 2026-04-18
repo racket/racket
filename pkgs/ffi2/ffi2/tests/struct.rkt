@@ -60,6 +60,13 @@
 (check-exn exn:fail:contract? (lambda () (set-point_t-x! pt 0.0)))
 
 (let ()
+  (define pts (ffi2-malloc point_t 2))
+  (check-equal? (point_t*-ref pts 0) pts)
+  (check-true (point_t*? (point_t*-ref pts 0)))
+  (check-equal? (point_t*-ref pts 1) (ffi2-add pts point_t 1))
+  (check-true (point_t*? (point_t*-ref pts 1))))
+
+(let ()
   (define p (ffi2-malloc 1))
   (check-exn exn:fail:contract? (lambda () (point_t-x p)))
   (check-exn exn:fail:contract? (lambda () (set-point_t-x! p 0))))
