@@ -61,6 +61,9 @@
 (define-ffi2-base-type string_t 'pointer #'string-or-false? #:release #'black-box
   #:racket->c #'maybe-string->pointer
   #:c->racket #'maybe-pointer->string)
+(define-ffi2-base-type string_utf16_t 'pointer #'string-or-false? #:release #'black-box
+  #:racket->c #'maybe-string->pointer/utf-16
+  #:c->racket #'maybe-pointer->string/utf-16)
 (define-ffi2-base-type bytes_t 'pointer #'bytes-or-false? #:release #'black-box
   #:racket->c #'maybe-bytes->pointer/add-terminator
   #:c->racket #'maybe-pointer->bytes)
