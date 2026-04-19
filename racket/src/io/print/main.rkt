@@ -209,7 +209,7 @@
               (pair? v)
               (vector? v)
               (box? v)
-              (hash? v)
+              (printing-hash? v config)
               (prefab-struct-key v)
               (and (custom-write? v)
                    (not (struct-type? v))
@@ -298,8 +298,7 @@
         (write-string/max "#<box>" o max-length)])]
     [(hash? v)
      (cond
-       [(and (config-get config print-hash-table)
-             (not (hash-weak? v)))
+       [(printing-hash? v config)
         (cond
           [(eq? mode PRINT-MODE/UNQUOTED)
            (define l (apply append (hash-map v list #t)))
@@ -384,5 +383,11 @@
   (when (and (eq? mode WRITE-MODE)
              (not (config-get config print-unreadable)))
     (fail-unreadable who v)))
+
+(define (printing-hash? v config)
+  (and (hash? v)
+       (not (or (hash-weak? v)
+                (hash-ephemeron? v)))
+       (config-get config print-hash-table)))
 
 (define struct-dots (unquoted-printing-string "..."))

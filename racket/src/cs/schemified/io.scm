@@ -22364,7 +22364,8 @@
                               (let ((or-part_5 (box? v_0)))
                                 (if or-part_5
                                   or-part_5
-                                  (let ((or-part_6 (hash? v_0)))
+                                  (let ((or-part_6
+                                         (printing-hash? v_0 config_0)))
                                     (if or-part_6
                                       or-part_6
                                       (let ((or-part_7
@@ -22586,11 +22587,7 @@
                                          o_0
                                          max-length_0)))
                                     (if (hash? v_0)
-                                      (if (if (config-get
-                                               config_0
-                                               1/print-hash-table)
-                                            (not (hash-weak? v_0))
-                                            #f)
+                                      (if (printing-hash? v_0 config_0)
                                         (if (eq? mode_0 0)
                                           (let ((l_0
                                                  (apply
@@ -22855,6 +22852,15 @@
     (if (if (eq? mode_0 #t) (not (config-get config_0 1/print-unreadable)) #f)
       (fail-unreadable who_0 v_0)
       (void))))
+(define printing-hash?
+  (lambda (v_0 config_0)
+    (if (hash? v_0)
+      (if (not
+           (let ((or-part_0 (hash-weak? v_0)))
+             (if or-part_0 or-part_0 (hash-ephemeron? v_0))))
+        (config-get config_0 1/print-hash-table)
+        #f)
+      #f)))
 (define struct-dots (unquoted-printing-string "..."))
 (define do-printf
   (lambda (who_0 o_0 fmt_0 all-args_0)

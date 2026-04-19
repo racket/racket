@@ -1192,4 +1192,17 @@
 
 ;; ----------------------------------------
 
+(let ([ht (make-hasheq)]
+      [w-ht (make-weak-hasheq)]
+      [e-ht (make-ephemeron-hasheq)])
+  (test "'#hasheq()" format "~v" ht)
+  (test "#<hash>" format "~v" w-ht)
+  (test "#<hash>" format "~v" e-ht)
+  (parameterize ([print-hash-table #f])
+    (test "#<hash>" format "~v" ht)
+    (test "#<hash>" format "~v" w-ht)
+    (test "#<hash>" format "~v" e-ht)))
+
+;; ----------------------------------------
+
 (report-errs)
