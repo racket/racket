@@ -1203,6 +1203,28 @@
     (test "#<hash>" format "~v" w-ht)
     (test "#<hash>" format "~v" e-ht)))
 
+
+;; ----------------------------------------
+
+;; check that iterating in a weak or ephemeron
+;; table does not end up retaining values
+(unless (eq? 'cgc (system-type 'gc))
+  (for ([make (in-list (list make-weak-hash
+                             make-ephemeron-hash))])
+    (define ht (make))
+    (define key (gensym))
+    (define val (gensym))
+    (define b (make-weak-box val))
+    (hash-set! ht key val)
+    (black-box
+     (for/fold ([v #f]) ([k (in-hash-keys ht)])
+       k))
+    (set! key #f)
+    (collect-garbage)
+    (collect-garbage)
+    (test #f weak-box-value b)
+    (black-box ht)))
+
 ;; ----------------------------------------
 
 (report-errs)

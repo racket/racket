@@ -527,7 +527,7 @@
                   (vec-loop i (fx> i old-n))
                   (if map? '() (void)))]
              [else
-              (let ([p (#%vector-ref vec i)])
+              (let* ([p (extract-weak-cell (#%vector-ref vec i))])
                 (let ([key (car p)]
                       [val (cdr p)])
                   (cond
@@ -762,7 +762,29 @@
           vec))])))
 
 (define (get-locked-iterable-hash-cells ht n)
-  (hashtable-cells (mutable-hash-ht ht) n))
+  (let* ([vec (hashtable-cells (mutable-hash-ht ht) n)]
+         [len (#%vector-length vec)])
+    (when (and (fx> len 0)
+               (weak-pair? (#%vector-ref vec 0)))
+      ;; for a weak hash table, we cannot hold the table's cells
+      ;; strongly, because that will strongly retain the value;
+      ;; add a weak indirection by referring to the cell itself weakly
+      (let loop ([i 0])
+        (unless (fx= i len)
+          (#%vector-set! vec i (weak-cons (#%vector-ref vec i) #f))
+          (loop (fx+ i 1)))))
+    vec))
+
+(define (extract-weak-cell p)
+  ;; if `p` is a weak pair, then it corresponds to a weak hash table,
+  ;; and we've added a level of indirection to avoid retaining values
+  ;; strongly when a key becomes unreachable
+  (if (weak-pair? p)
+      (let ([p (car p)])
+        (if (bwp-object? p)
+            '(#!bwp . #!bwp)
+            p))
+      p))
 
 ;; Separate calls to `hashtable-cells` may return the
 ;; cells in a different order, so we have to merge the
@@ -778,7 +800,7 @@
       (and (fx= len (#%vector-length new-vec))
            (let loop ([i 0])
              (or (fx= i len)
-                 (and (eq? (#%vector-ref vec i) (#%vector-ref new-vec i))
+                 (and (eq? (extract-weak-cell (#%vector-ref vec i)) (extract-weak-cell (#%vector-ref new-vec i)))
                       (loop (fx+ i 1)))))))
     new-vec]
    [else
@@ -787,7 +809,7 @@
                    (values (#%vector-length vec) (#%vector-length new-vec))]
                   [(vec-is-smallest?) (fx<= vec-len new-vec-len)]
                   [(new-ht) (make-eq-hashtable)])
-      (vector-for-each (lambda (p) (hashtable-set! new-ht p #t))
+      (vector-for-each (lambda (p) (hashtable-set! new-ht (extract-weak-cell p) #t))
                        (if vec-is-smallest? vec new-vec))
       (let*-values ([(duplicate-count predicate)
                      (cond
@@ -796,15 +818,15 @@
                          (cond
                           [(fx= i new-vec-len)
                            (values count (lambda (_ p) (not (eq? p none))))]
-                          [(hashtable-contains? new-ht (#%vector-ref new-vec i))
+                          [(hashtable-contains? new-ht (extract-weak-cell (#%vector-ref new-vec i)))
                            (#%vector-set! new-vec i none)
                            (loop (fx+ i 1) (fx+ count 1))]
                           [else
                            (loop (fx+ i 1) count)]))]
                       [else
-                       (vector-for-each (lambda (p) (hashtable-delete! new-ht p)) vec)
+                       (vector-for-each (lambda (p) (hashtable-delete! new-ht (extract-weak-cell p))) vec)
                        (values (fx- new-vec-len (hashtable-size new-ht))
-                               hashtable-contains?)])]
+                               (lambda (ht p) (hashtable-contains? ht (extract-weak-cell p))))])]
                     [(merge-vec-len)
                      (fx+ vec-len (fx- new-vec-len duplicate-count))]
                     [(merge-vec)
@@ -870,7 +892,7 @@
        [(= i len)
         #f]
        [else
-        (let* ([p (#%vector-ref vec i)]
+        (let* ([p (extract-weak-cell (#%vector-ref vec i))]
                [key (car p)])
           (cond
            [(bwp-object? key)
@@ -899,7 +921,7 @@
     (let* ([vec (prepare-iterate! ht i)]
            [len (#%vector-length vec)]
            [p (if (fx< i len)
-                  (#%vector-ref vec i)
+                  (extract-weak-cell (#%vector-ref vec i))
                   '(#!bwp . #!bwp))]
            [key (car p)]
            [v (cdr p)])
