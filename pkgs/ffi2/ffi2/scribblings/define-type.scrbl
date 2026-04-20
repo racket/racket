@@ -237,7 +237,7 @@ value is kept in integer form.
 }
 
 @defform[#:kind "ffi2 type/abi"
-         #:literals (else)
+         #:literals (else os os* arch word)
          (system-type-case key
            [(val ...) type/abi]
            [else type/abi])
