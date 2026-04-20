@@ -950,8 +950,8 @@ some explicit indicator of which choice applies at any given point.
 
 This level of representation detail and punning is closely related to
 pointer arithmetic, which also ends up being used in similar places. As
-in C, the @racket[ffi2] library can provides a convenient veneer for
-certain forms of pointer arithmetic by view pointers as references to
+in C, the @racketmodname[ffi2] library can provides a convenient veneer for
+certain forms of pointer arithmetic by viewing pointers as references to
 arrays.
 
 @; --------------------------------------------------
