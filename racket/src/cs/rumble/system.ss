@@ -84,6 +84,7 @@
                  arm32nb tarm32nb arm64nb tarm64nb
                  ppc32nb tppc32nb)
            'netbsd]
+          [(a6hk ta6hk) 'haiku]
           [(a6s2 ta6s2 i3s2 ti3s2) 'solaris]
           [(i3qnx) 'qnx]
           [(pb tpb
@@ -107,7 +108,8 @@
                   a6ob ta6ob
                   a6nb ta6nb
                   a6fb ta6fb
-                  a6s2 ta6s2)
+                  a6s2 ta6s2
+                  a6hk ta6hk)
            'x86_64]
           [(i3osx ti3osx
                   i3nt ti3nt
