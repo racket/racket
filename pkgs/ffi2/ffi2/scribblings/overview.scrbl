@@ -143,12 +143,19 @@ is likely to find the library as bundled with Racket or as supplied by
 the operating system---usually something like
 @filepath{/usr/lib/libcairo.2.so} on a Unix installation.
 
+On Windows, if you are not running in DrRacket, then
+@filepath{libcairo-2.dll} will be found, but loading it may fail
+because its dependencies cannot be found; the DLLs bundled with Racket
+are not in the operating system's search path. The easy solution is to
+require @racketmodname[racket/draw/unsafe/cairo-lib #:indirect], which
+will load all dependencies.
+
 @; --------------------------------------------------
 
 @subsection{Finding C Functions}
 
 Assuming that @racket[cairo-lib] is successful defined for the loaded
-Cairo shared library, we can use it extract the addresses of functions
+Cairo shared library, we can use it to extract the addresses of functions
 from the library. Let's start with @cpp{cairo_create}, which accepts a
 surface (like the one we have from a Racket bitmap) to create a drawing
 context.
@@ -169,8 +176,9 @@ the function the simplest possible type, which is a function type using
 @racket[->] that expects a generic pointer argument and returns a
 generic pointer argument:
 @;
-@margin-note*{The @racket[->] form is used here with Racket's ``infix
- dot'' notation. Surrounding the @racket[->] with space-separated dots
+@margin-note*{The @racket[->] form is used here with Racket's
+ @seclink[#:doc guide-doc "lists-and-syntax"]{``infix dot''} notation.
+ Surrounding the @racket[->] with space-separated dots
  causes the @racket[->] to be moved to the front of the parenthesized
  form.}
 

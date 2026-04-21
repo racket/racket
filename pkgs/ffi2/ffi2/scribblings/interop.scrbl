@@ -8,13 +8,17 @@
 
 The @racketmodname[ffi2] library is designed to provide better
 performance than @racketmodname[ffi/unsafe] for calling foreign
-functions and manipulating point objects. The main difference is that
+functions and working with @tech{pointer} objects. It also relies less on
+dynamic code generation for calling foreign functions.
+The main difference is that
 @racketmodname[ffi2] is more static (e.g., argument types for
 functions are not represented by run-time values), so it can compile
-foreign calls more directls. Another difference is that the
-representation of @tech{pointer} objects is simplified, requiring less
-allocation for pointer objects and less internal branching to perform
-pointer operations.
+foreign calls more directly, and it can generate the code for those
+calls when Racket programs are compiled ahead of time
+(by using @exec{raco make}, for example). Another difference is that the
+representation of pointer objects is simplified, requiring less
+allocation to create pointer objects and less internal branching to work
+with them.
 
 The @racketmodname[ffi2] and @racketmodname[ffi/unsafe] libraries can
 coexist within a single Racket application. Libraries like

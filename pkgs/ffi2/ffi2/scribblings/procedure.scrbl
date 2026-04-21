@@ -1,5 +1,6 @@
 #lang scribble/manual
-@(require "common.rkt")
+@(require "common.rkt"
+          "racket-id.rkt")
 
 @title[#:tag "procedure"]{Foreign Procedures and Callbacks}
 
@@ -16,15 +17,15 @@
                          [arg-id : type]
                          [type = auto-expr]
                          [arg-id : type = auto-expr]]
-                    [maybe-varargs (code:line #:varargs arg-or-do ...)
-                                   ϵ]
+                    [maybe-varargs code:blank
+                                   (code:line #:varargs arg-or-do ...)]
                     [result result-type
                             [result-id : result-type]]
-                    [maybe-errno #:errno
+                    [maybe-errno code:blank
+                                 #:errno
                                  #:get-last-error
                                  [errno-id : #:errno]
-                                 [errno-id : #:get-last-error]
-                                 ϵ]
+                                 [errno-id : #:get-last-error]]
                     [option (code:line #:result result-expr)
                             (code:line #:abi abi)
                             (code:line #:atomic)
@@ -34,6 +35,10 @@
 
 Describes the type of a procedure. The C representation of a procedure
 is an address, while the Racket representation is a Racket procedure.
+
+@margin-note{The @racketmodname[racket/contract] library also provides
+@|contract-arrow|. To avoid conflicts, consider renaming the
+@racketmodname[racket/contract] binding to @racket[->/c] on import.}
 
 A @racket[->] type is normally used with @racket[ffi2-procedure] or
 @racket[define-ffi2-procedure] to obtain a Racket produce that calls a

@@ -15,8 +15,8 @@ from @racketmodname[ffi/unsafe].}
 
 @defproc[(ffi2-lib [path (or/c path-string? #f)]
                    [version (or/c string? (listof (or/c string? #f)) #f) #f]
-                   [#:get-lib-dirs get-lib-dirs (-> (listof path?)) get-lib-search-dirs]
-                   [#:fail fail (or/c #f (-> any)) #f]
+                   [#:get-lib-dirs get-lib-dirs (->/c (listof path?)) get-lib-search-dirs]
+                   [#:fail fail (or/c #f (->/c any)) #f]
                    [#:global? global? any/c (eq? 'global (system-type 'so-mode))]
                    [#:custodian custodian (or/c 'place custodian? #f) #f])
          any]{
@@ -31,7 +31,7 @@ is called to produce a result.
 
 @defproc[(ffi2-lib-ref [name (or/c string? bytes? symbol?)]
                        [lib ffi2-lib?]
-                       [#:fail fail (or/c (-> any) #f) #f])
+                       [#:fail fail (or/c (->/c any) #f) #f])
          any]{
 
 Gets the address for @racket[name] as exported by the foreign library

@@ -46,18 +46,18 @@ reference to memory that is managed by Racket's garbage collector.
                       maybe-type
                       n-expr maybe-bytes
                       maybe-as-type)
-         #:grammar ([maybe-mode #:gcable
+         #:grammar ([maybe-mode code:blank
+                                #:gcable
                                 #:gcable-traced
                                 #:gcable-immobile
                                 #:gcable-traced-immobile
-                                #:manual
-                                ϵ]
-                    [maybe-type type
-                                ϵ]
-                    [maybe-bytes #:bytes
-                                 ϵ]
-                    [maybe-as-type (code:line #:as as-type)
-                                   ϵ])]{
+                                #:manual]
+                    [maybe-type code:blank
+                                type]
+                    [maybe-bytes code:blank
+                                 #:bytes]
+                    [maybe-as-type code:blank
+                                   (code:line #:as as-type)])]{
 
 Allocates memory.
 
@@ -126,9 +126,9 @@ Deallocates memory that was allocated with @racket[ffi2-malloc] in
 }
 
 @defform[(ffi2-ref ptr-expr type maybe-offset)
-         #:grammar ([maybe-offset offset-expr
-                                  (code:line offset-expr #:bytes)
-                                  ϵ])]{
+         #:grammar ([maybe-offset code:blank
+                                  offset-expr
+                                  (code:line offset-expr #:bytes)])]{
 
 Extracts a value from the address referenced by @racket[ptr-expr] plus
 (potentially) @racket[maybe-offset]. The extracted value in memory
@@ -145,9 +145,9 @@ not present, that offset is multiplied by @racket[(ffi2-sizeof type)].
 }
 
 @defform[(ffi2-set! ptr-expr type maybe-offset val-expr)
-         #:grammar ([maybe-offset offset-expr
-                                  (code:line offset-expr #:bytes)
-                                  ϵ])]{
+         #:grammar ([maybe-offset (code:bank)
+                                  offset-expr
+                                  (code:line offset-expr #:bytes)])]{
 
 Install a value at the address referenced by @racket[ptr-expr] plus
 (potentially) @racket[maybe-offset]. The installed value in memory
@@ -167,8 +167,8 @@ offset in the same way as for @racket[ffi2-ref].
          #:grammar ([option (code:line #:from from-type)
                             (code:line #:to to-type)
                             (code:line #:offset maybe-type n-expr)]
-                    [maybe-type type
-                                ϵ])]{
+                    [maybe-type code:blank
+                                type])]{
 
 Converts the Racket representation produced by @racket[expr] from one
 foreign type's representation to another. If @racket[from-type] or
