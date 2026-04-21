@@ -745,12 +745,17 @@ interesting part is the function pointer passed as @cpp{write_func}.
 
 For the type of the function argument to
 @racket[cairo_surface_write_to_png_stream], we can nest a @racket[->]
-type for the argument inside a @racket[->] type for the function:
+type for the argument inside a @racket[->] type for the function.
+We'll also handle the result status by raising an
+exception if the status is not @racket[0].
 
 @ffi2-examples[
  #:no-prompt
 (define-cairo cairo_surface_write_to_png_stream
-  (cairo_surface_t* (ptr_t ptr_t int_t . -> . int_t) ptr_t . -> . int_t))
+  (cairo_surface_t* (ptr_t ptr_t int_t . -> . int_t) ptr_t
+                           . -> . (r : int_t)
+                           #:result (unless (zero? r)
+                                      (error "write failed"))))
 ]
 
 Then, when we pass a Racket function as the second argument to
@@ -769,6 +774,7 @@ write out bytes of the PNG encoding:
     (define png-data (make-bytes len))
     (ffi2-memcpy (ffi2-cast png-data #:from bytes_ptr_t) data len)
     (write-bytes png-data png-out)
+    (code:comment "return 0 to mean \"success\"")
     0)
   (uintptr_t->ptr_t 0))
  (eval:alts #,(hspace 1) (void))
