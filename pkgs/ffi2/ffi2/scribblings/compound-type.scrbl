@@ -75,7 +75,10 @@ options (such as @racket[#:tag] or @racket[#:racket->c]), then
        @racketidfont{set-@racket[_name]-@racket[field-id]!}. An
        optional allocation mode can be provided before the field
        subexpressions, and the default allocation mode is
-       @racket[#:gcable].}
+       @racket[#:gcable]. The @racket[_name] expression can also
+       be used not in a application position, in which case it returns
+       a procedure that accepts field values and allocates an
+       instance.}
 
 ]
 

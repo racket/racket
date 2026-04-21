@@ -94,7 +94,7 @@
   (define path (bytes->path #"apple"))
   (ffi2-set! p path_t path)
   (copy-content-to-immobile p)
-  (check-equal? (ffi2-ref p path_t) path)
+  (check-equal? (ffi2-ref p path_t) (path->complete-path path))
   (void (black-box p)))
 
 (let ()

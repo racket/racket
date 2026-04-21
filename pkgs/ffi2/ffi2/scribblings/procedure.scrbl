@@ -214,8 +214,9 @@ is also exported using @racket[provide] with @racket[protect-out].
 @defproc[(make-not-available [name symbol?]) procedure?]{
 
 Returns a procedure that takes any number of arguments, including
-keyword arguments, and reports an error message from @racket[name].
-This function is intended for using with @racket[#:fail] in
+keyword arguments, and raises an @racket[exn:fail:unsupported]
+exception from @racket[name].
+This function is intended for use with @racket[#:fail] in
 @racket[define-ffi2-procedure] or @racket[#:default-fail] in
 @racket[define-ffi2-definer].
 

@@ -118,12 +118,14 @@ is reported only when @racket[gtk_rc_parse] is called.
 
 @defproc[(make-not-available [name symbol?]) procedure?]{
 
-Returns a procedure that takes any number of arguments, including keyword arguments, and reports an
-error message from @racket[name]. This function is intended for using
+Returns a procedure that takes any number of arguments, including keyword arguments, and
+raises and @racket[exn:fail:unsupported]
+exception from @racket[name]. This function is intended for using
 with @racket[#:make-fail] or @racket[#:default-make-fail] in
 @racket[define-ffi-definer]
 
-@history[#:changed "8.3.0.5" @elem{Added support for keyword arguments.}]}
+@history[#:changed "8.3.0.5" @elem{Added support for keyword arguments.}
+         #:changed "9.2.0.2" @elem{Changed to raise @racket[exn:fail:unsupported].}]}
 
 @defform[(provide-protected provide-spec ...)]{
 

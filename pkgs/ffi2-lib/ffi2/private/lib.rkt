@@ -30,17 +30,25 @@
 
 (define (ffi2-lib-ref lib name-in #:fail [failure #f])
   (define who 'ffi2-lib-ref)
-  (unless (ffi-lib? lib) (raise-argument-error who "ffi2-lib?" lib))
+  (unless (or (not lib) (ffi-lib? lib)) (raise-argument-error who "(or/c ffi2-lib? #f)" lib))
   (when (and failure (not (and (procedure? failure) (procedure-arity-includes? failure 0))))
     (raise-argument-error who "(procedure-arity-includes/c 0)" failure))
-  (define name
-    (cond
-      [(bytes? name-in) name-in]
-      [(string? name-in) (string->bytes/utf-8 name-in)]
-      [(symbol? name-in) (string->bytes/utf-8 (symbol->immutable-string name-in))]
-      [else (raise-argument-error who "(or/c bytes? string? symbol?)" name-in)]))
-  (if failure
-      (with-handlers ([exn:fail:filesystem? (lambda (e) (failure))])
-        (ffi2-lib-ref* lib name))
-      (ffi2-lib-ref* lib name)))
-
+  (cond
+    [(not lib)
+     (if failure
+         (failure)
+         (raise-arguments-error who
+                                "cannot find exported name due to missing library"
+                                "library" lib
+                                "name to find" name-in))]
+    [else
+     (define name
+       (cond
+         [(bytes? name-in) name-in]
+         [(string? name-in) (string->bytes/utf-8 name-in)]
+         [(symbol? name-in) (string->bytes/utf-8 (symbol->immutable-string name-in))]
+         [else (raise-argument-error who "(or/c bytes? string? symbol?)" name-in)]))
+     (if failure
+         (with-handlers ([exn:fail:filesystem? (lambda (e) (failure))])
+           (ffi2-lib-ref* lib name))
+         (ffi2-lib-ref* lib name))]))

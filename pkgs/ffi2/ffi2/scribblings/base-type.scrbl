@@ -155,7 +155,8 @@ while @racket[bytes_ptr_t] passes the start of a Racket byte string
 as-is, without adding a terminator (and where mutation of pointer
 content on the C side is reflected as changes to the byte string
 content). The @racket[path_t] is like @racket[string_t], but for paths
-in the sense of @racket[path-for-some-system?]. All of these types
+in the sense of @racket[path-for-some-system?], and Racket to C conversion
+adjusts relative paths using @racket[path->complete-path]. All of these types
 convert @racket[#f] on the Racket side to @tt{NULL} on the C side.
 
 When converting from C to Racket, a non-@tt{NULL} pointer received

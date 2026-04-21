@@ -415,6 +415,10 @@
                                       'is-s?
                                       (with-syntax ([kind (or (attribute kind) #'#:gcable)])
                                         #'(fill-name (ffi2-malloc kind name)
+                                                     field-name ...))]
+                                     [_:identifier
+                                      #'(lambda (field-name ...)
+                                          (fill-name (ffi2-malloc #:gcable name)
                                                      field-name ...))])
                                    (syntax-parse stx
                                      [(_ (~datum field-name) (~optional kind::malloc-kind) expr)

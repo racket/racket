@@ -59,6 +59,8 @@
 (check-equal? (point_t-y pt) 11)
 (check-exn exn:fail:contract? (lambda () (set-point_t-x! pt 0.0)))
 
+(check-equal? (point_t-x ((black-box point_t) 1 2)) 1)
+
 (let ()
   (define pts (ffi2-malloc point_t 2))
   (check-equal? (point_t*-ref pts 0) pts)

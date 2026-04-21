@@ -30,14 +30,14 @@ is called to produce a result.
 }
 
 @defproc[(ffi2-lib-ref [name (or/c string? bytes? symbol?)]
-                       [lib ffi2-lib?]
+                       [lib (or/c ffi2-lib? #f)]
                        [#:fail fail (or/c (->/c any) #f) #f])
          any]{
 
 Gets the address for @racket[name] as exported by the foreign library
-@racket[lib]. If no such export is found, the @racket[fail] is called
-to produce the result, or an exception is raised if @racket[fail] is
-@racket[#f].
+@racket[lib]. If @racket[lib] is racket[#f] or if no such export is
+found, the @racket[fail] is called to produce the result, or an
+exception is raised if @racket[fail] is @racket[#f].
 
 The result is normally a @tech{pointer} recognized by @racket[ptr_t?],
 but the result can be anything if @racket[fail] is called to produce a

@@ -67,7 +67,9 @@
   
 (define (maybe-path->pointer path)
   (if path
-      (maybe-bytes->pointer/add-terminator (path->bytes path))
+      (maybe-bytes->pointer/add-terminator (path->bytes (if (complete-path? path)
+                                                            path
+                                                            (path->complete-path path))))
       null-pointer))
 
 (define (maybe-pointer->path ptr)

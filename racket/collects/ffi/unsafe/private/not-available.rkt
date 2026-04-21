@@ -6,25 +6,27 @@
   (lambda ()
     (make-keyword-procedure
      (lambda (kws kw-args . args)
-       (error id
-              (string-append
-               "implementation not found"
-               (if (null? args)
-                   ";\n no arguments provided"
-                   (apply
-                    string-append
-                    "\n  arguments...:"
-                    (append
-                     (let loop ([kws kws] [kw-args kw-args])
-                       (if (null? kws)
-                           null
-                           (cons (format "\n   ~a ~e"
-                                         (car kws)
-                                         (car kw-args))
-                                 (loop (cdr kws) (cdr kw-args)))))
-                     (let loop ([args args])
-                       (if (null? args)
-                           null
-                           (cons (format "\n   ~e"
-                                         (car args))
-                                 (loop (cdr args))))))))))))))
+       (raise
+        (exn:fail:unsupported
+         (string-append
+          "implementation not found"
+          (if (null? args)
+              ";\n no arguments provided"
+              (apply
+               string-append
+               "\n  arguments...:"
+               (append
+                (let loop ([kws kws] [kw-args kw-args])
+                  (if (null? kws)
+                      null
+                      (cons (format "\n   ~a ~e"
+                                    (car kws)
+                                    (car kw-args))
+                            (loop (cdr kws) (cdr kw-args)))))
+                (let loop ([args args])
+                  (if (null? args)
+                      null
+                      (cons (format "\n   ~e"
+                                    (car args))
+                            (loop (cdr args)))))))))
+         (current-continuation-marks)))))))
