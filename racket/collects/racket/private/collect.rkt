@@ -1,5 +1,5 @@
 (module collect '#%kernel
-  (#%require "qq-and-or.rkt"
+  (#%require "core-syntax.rkt"
              "path.rkt"
              "kw.rkt"
 	     (prefix k: '#%kernel))
