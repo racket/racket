@@ -285,11 +285,19 @@ Composes @racket[target-path] with @racket[string->shell]. Use this
 when getting a target name to include in a shell command.}
 
 
-@defproc[(input-file-target [path path-string?]) target?]{
+@defproc[(input-file-target [path path-string?]
+                            [missing=>changed? any/c #f]) target?]{
 
 Creates a @tech{target} that represents an input file. An input-file
 target has no build procedure, and it's state is summarized as a hash
-via @racket[file-sha256].}
+via @racket[file-sha256].
+
+If @racket[missing=>changed?] is @racket[#f] (the default), then an
+error is reported if the file does not exist. Otherwise, it simply
+counts as not built. A @racket[#t] value is particularly appropriate
+for dependencies that are discovered while building a target.
+
+@history[#:changed "1.14" @elem{Added the @racket[missing=>changed?] argument.}]}
 
 
 @defproc[(input-data-target [name symbol?] [content any/c]) target?]{

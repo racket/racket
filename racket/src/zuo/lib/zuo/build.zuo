@@ -116,13 +116,15 @@
     rule))
 
 ;; An input-file target has no dependencies
-(define (input-file-target path)
+(define (input-file-target path [missing-counts-as-changed? #f])
   (unless (path-string? path) (arg-error 'input-file-target "path string" path))
   (target (string->symbol path)
           path
           (lambda (path token)
             (rule '()
-                  (lambda () (error "missing input file" path))
+                  (lambda () (if missing-counts-as-changed?
+                                 #f
+                                 (error "missing input file" path)))
                   #f))
           'input
           (hash)))
@@ -431,8 +433,8 @@
 
   ;; calling the build step for `t` might generate more dependencies, but those
   ;; extra dependencies are supposed to be determined only by the ones declared
-  ;; so far; so, if the dependencies declares so far are consistent with recorded
-  ;; dependencies, and if the target's current hash matches the prvious result,
+  ;; so far; so, if the dependencies declared so far are consistent with recorded
+  ;; dependencies, and if the target's current hash matches the previous result,
   ;; then we can assume that the extra dependencies generated previously are still
   ;; the extra dependencies this time
   (define same-so-far?
@@ -448,11 +450,13 @@
     (if same-so-far?
         (foldl (lambda (dep-key more-sha256s)
                  ;; currently, we assume that any additional dependencies
-                 ;; added in the build phase were and would be inputs
+                 ;; added in the build phase were and will be inputs --- but
+                 ;; disppearing is ok, and just needs to trigger a rebuild
+                 ;; of dependents, which may then end up with new dependencies
                  (if (or (hash-ref dep-sha256s dep-key #f)
                          (symbol-key? dep-key))
                      more-sha256s
-                     (cons (input-file-target (symbol->string dep-key))
+                     (cons (input-file-target (symbol->string dep-key) #t)
                            more-sha256s)))
                '()
                (hash-keys prev-dep-sha256s))
