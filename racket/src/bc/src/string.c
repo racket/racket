@@ -2336,9 +2336,10 @@ static Scheme_Object *sch_getenv(int argc, Scheme_Object *argv[])
     value = rktio_getenv(scheme_rktio, name);
     if (value) {
       val = scheme_make_byte_string(value);
+      SCHEME_SET_BYTE_STRING_IMMUTABLE(val);
       free(value);
     } else
-    val = scheme_false;
+      val = scheme_false;
 
     return val;
   } else {
