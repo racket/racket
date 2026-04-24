@@ -31269,7 +31269,9 @@
                             (|#%app| rktio_to_bytes v_0)
                             (|#%app| rktio_free v_0))
                           #f)))
-                   (begin (end-rktio) s_0))))
+                   (begin
+                     (end-rktio)
+                     (if s_0 (unsafe-bytes->immutable-bytes! s_0) #f)))))
              (cdr (hash-ref ht_0 (normalize-key k_0) '(#f . #f))))))))))
 (define none (gensym 'none))
 (define 1/environment-variables-set!

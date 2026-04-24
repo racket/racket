@@ -1,5 +1,7 @@
 #lang racket/base
-(require "../common/check.rkt"
+(require (only-in racket/unsafe/ops
+                  unsafe-bytes->immutable-bytes!)
+         "../common/check.rkt"
          "../host/rktio.rkt"
          "../host/thread.rkt"
          "../host/error.rkt"
@@ -62,7 +64,7 @@
                       (rktio_to_bytes v)
                       (rktio_free v))))
      (end-rktio)
-     s]
+     (and s (unsafe-bytes->immutable-bytes! s))]
     [else
      (cdr (hash-ref ht (normalize-key k) '(#f . #f)))]))
 
