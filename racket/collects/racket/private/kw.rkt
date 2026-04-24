@@ -1,6 +1,6 @@
 (module kw '#%kernel
   (#%require "define.rkt"
-             "qq-and-or.rkt"
+             "core-syntax.rkt"
              "cond.rkt"
              "define-et-al.rkt"
              "more-scheme.rkt"
@@ -12,7 +12,7 @@
                          '#%unsafe
                          "procedure-alias.rkt"
                          "stx.rkt"
-                         "qq-and-or.rkt"
+                         "core-syntax.rkt"
                          "define-et-al.rkt"
                          "cond.rkt"
                          "stxcase-scheme.rkt"
@@ -23,7 +23,7 @@
                          "kw-prop-key.rkt"
                          "immediate-default.rkt")
              (for-meta 2 '#%kernel
-                       "qq-and-or.rkt"
+                       "core-syntax.rkt"
                        "cond.rkt"
                        "stxcase-scheme.rkt"
                        "qqstx.rkt"))

@@ -4,7 +4,7 @@
 ;;  check-duplicate-identifier, and assembles everything we have so far
 
 (module stxcase-scheme '#%kernel
-  (#%require "define-et-al.rkt" "qq-and-or.rkt" "stx.rkt" "stxcase.rkt" "with-stx.rkt" "stxloc.rkt"
+  (#%require "define-et-al.rkt" "core-syntax.rkt" "stx.rkt" "stxcase.rkt" "with-stx.rkt" "stxloc.rkt"
              (rename "define-et-al.rkt" -define define)
              (rename "define-et-al.rkt" -define-syntax define-syntax)
              (for-syntax '#%kernel "define-et-al.rkt" "stx.rkt" "stxcase.rkt"

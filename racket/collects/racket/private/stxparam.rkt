@@ -3,7 +3,7 @@
   (#%require "define.rkt"
              (for-syntax '#%kernel 
                          "stx.rkt" "stxcase-scheme.rkt" 
-                         "define-et-al.rkt" "qq-and-or.rkt"
+                         "define-et-al.rkt" "core-syntax.rkt"
                          "stxloc.rkt" "stxparamkey.rkt"))
 
   (#%provide (for-syntax do-syntax-parameterize)

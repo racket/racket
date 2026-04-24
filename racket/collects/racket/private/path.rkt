@@ -1,5 +1,5 @@
 (module path '#%kernel
-  (#%require "qq-and-or.rkt" "cond.rkt" "define-et-al.rkt"
+  (#%require "core-syntax.rkt" "cond.rkt" "define-et-al.rkt"
              (rename "define-et-al.rkt" -define define)
              (rename "define-et-al.rkt" -define-syntax define-syntax))
 
