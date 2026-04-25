@@ -642,6 +642,11 @@
      (when otherwise-available?
        (set-module-instance-made-available?! mi #t))
 
+     (when (label-phase? instance-phase)
+       ;; no phase is run for the label phase, so we still need to make
+       ;; sure bulk bindings are registered
+       (module-force-bulk-binding! m ns))
+
      (unless skip-run?
        ;; In case there's no such phase for this module instance, claim 'started
        ;; to short-circuit future attempts:
