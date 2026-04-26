@@ -1342,7 +1342,6 @@
   (define (check-can-reuse read-bytes-evt read-bytes write-bytes integer->byte list->bytes bytes?)
     (define N 10)
     (define M 160)
-    (define PORT 5999)
 
     (define (make-alarm-e)
       (alarm-evt (+ (current-inexact-monotonic-milliseconds) 5) #t))
@@ -1365,7 +1364,10 @@
                           (close-input-port in)
                           (close-output-port out))))))
 
-    (define listener (tcp-listen PORT 4 #t))
+    (define listener (tcp-listen 0 4 #t))
+    (define port-no (let-values ([(addr port-no other-addr other-port-no)
+                                  (tcp-addresses listener #t)])
+                      port-no))
     (define server
       (thread
        (lambda ()
@@ -1377,7 +1379,7 @@
               (for/list ([i M])
                 (integer->byte (random 512))))])
       (for ([i N])
-        (define-values (i o) (tcp-connect "localhost" PORT))
+        (define-values (i o) (tcp-connect "localhost" port-no))
         (write-bytes s o)
         (close-output-port o)
         (test s read-bytes M i)
