@@ -123,14 +123,19 @@ how a callback is handled:
  using this option.}
 
  @item{@racket[#:in-original]: Adjusts a @tech{foreign callout} to
- take place in a @tech[#:doc ref-doc]{coroutine thread} within
+ run in a @tech[#:doc ref-doc]{coroutine thread} within
  Racket's main @tech[#:doc ref-doc]{place} (which is useful if the
  foreign procedure is not thread-safe), or adjusts a @tech{foreign
- callback} invocation so that it takes place in a coroutine thread
+ callback} invocation so that it runs in a coroutine thread
  within the current place (which can be useful if the callback might
- otherwise run in a thread not created by Racket). The callout or
+ otherwise run in a thread not created by Racket).@margin-note*{In the
+ @tech[#:doc ref-doc]{BC} variant of Racket, @racket[#:in-original] is
+ required if a callback may run in a thread not created by Racket.}
+ The callout or
  callback happens in the context of an unspecified Racket coroutine
- thread, so it must not raise an exception.}
+ thread, so it must not raise an exception, and it is still in
+ @tech{atomic mode}. The callback blocks the original thread
+ until it completes in a coroutine thread.}
 
 ]
 

@@ -35,7 +35,7 @@ is called to produce a result.
          any]{
 
 Gets the address for @racket[name] as exported by the foreign library
-@racket[lib]. If @racket[lib] is racket[#f] or if no such export is
+@racket[lib]. If @racket[lib] is @racket[#f] or if no such export is
 found, the @racket[fail] is called to produce the result, or an
 exception is raised if @racket[fail] is @racket[#f].
 

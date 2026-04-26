@@ -38,7 +38,7 @@
      (if failure
          (failure)
          (raise-arguments-error who
-                                "cannot find exported name due to missing library"
+                                "cannot find exported name without a library"
                                 "library" lib
                                 "name to find" name-in))]
     [else
