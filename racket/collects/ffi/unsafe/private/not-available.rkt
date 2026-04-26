@@ -9,6 +9,7 @@
        (raise
         (exn:fail:unsupported
          (string-append
+          (format "~a: " id)
           "implementation not found"
           (if (null? args)
               ";\n no arguments provided"
