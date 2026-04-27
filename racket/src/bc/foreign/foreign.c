@@ -100,6 +100,7 @@ static Scheme_Object *zeroed_atomic_interior_sym;
 static Scheme_Object *raw_sym;
 static Scheme_Object *tagged_sym;
 static Scheme_Object *fail_ok_sym;
+static Scheme_Object *failok_sym;
 static Scheme_Object *ffi2_ptrQ_maker_sym;
 static Scheme_Object *ffi2_procedure_maker_sym;
 static Scheme_Object *ffi2_callback_maker_sym;
@@ -2804,7 +2805,9 @@ static Scheme_Object *foreign_malloc(int argc, Scheme_Object *argv[])
       size = ctype_sizeof(a);
       if (size <= 0)
         wrong_void(MYNAME, NULL, 0, i, argc, argv);
-    } else if (SAME_OBJ(a, fail_ok_sym)) {
+    } else if (SAME_OBJ(a, fail_ok_sym) || SAME_OBJ(a, failok_sym)) {
+      if (failok)
+        scheme_signal_error(MYNAME": specifying a second failure mode symbol: %V", a);
       failok = 1;
     } else if (SCHEME_SYMBOLP(a)) {
       if (mode != NULL)
@@ -5972,6 +5975,8 @@ void scheme_init_foreign_globals()
   tagged_sym = scheme_intern_symbol("tagged");
   MZ_REGISTER_STATIC(fail_ok_sym);
   fail_ok_sym = scheme_intern_symbol("fail-ok");
+  MZ_REGISTER_STATIC(failok_sym);
+  failok_sym = scheme_intern_symbol("failok");
   MZ_REGISTER_STATIC(ffi2_ptrQ_maker_sym);
   ffi2_ptrQ_maker_sym = scheme_intern_symbol("ffi2-ptr?-maker");
   MZ_REGISTER_STATIC(ffi2_procedure_maker_sym);

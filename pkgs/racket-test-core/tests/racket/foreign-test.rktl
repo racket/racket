@@ -34,8 +34,11 @@
 (let ()
   (define data #"hello, world")
   (define dataptr (malloc _uint8 (bytes-length data) data 'atomic-interior 'failok))
+  (define dataptr2 (malloc _uint8 (bytes-length data) data 'atomic-interior 'fail-ok))
   (test (char->integer #\h) ptr-ref dataptr _byte)
-  (test (char->integer #\d) ptr-ref dataptr _byte 11))
+  (test (char->integer #\d) ptr-ref dataptr _byte 11)
+  (test (char->integer #\h) ptr-ref dataptr2 _byte)
+  (test (char->integer #\d) ptr-ref dataptr2 _byte 11))
 
 
 ;; Check integer-range checking:

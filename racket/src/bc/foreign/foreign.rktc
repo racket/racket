@@ -93,7 +93,7 @@ static Scheme_Malloc_Proc mode_to_allocator(const char *who, Scheme_Object *mode
 
 @defsymbols[nonatomic atomic stubborn uncollectable eternal
             interior atomic-interior zeroed-atomic zeroed-atomic-interior
-            raw tagged fail-ok
+            raw tagged fail-ok failok
             ffi2-ptr?-maker
             ffi2-procedure-maker
             ffi2-callback-maker
@@ -2034,7 +2034,9 @@ static Scheme_Malloc_Proc ctype_allocator(Scheme_Object *type)
       size = ctype_sizeof(a);
       if (size <= 0)
         wrong_void(MYNAME, NULL, 0, i, argc, argv);
-    } else if (SAME_OBJ(a, fail_ok_sym)) {
+    } else if (SAME_OBJ(a, fail_ok_sym) || SAME_OBJ(a, failok_sym)) {
+      if (failok)
+        scheme_signal_error(MYNAME": specifying a second failure mode symbol: %V", a);
       failok = 1;
     } else if (SCHEME_SYMBOLP(a)) {
       if (mode != NULL)

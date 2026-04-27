@@ -1265,7 +1265,8 @@
         (if mode
             (duplicate-argument "mode" mode (car args))
             (loop (cdr args) count type copy-from (car args) fail-mode))]
-       [(eq? (car args) 'failok)
+       [(or (eq? (car args) 'failok)
+            (eq? (car args) 'fail-ok))
         (if fail-mode
             (duplicate-argument "failure mode" fail-mode (car args))
             (loop (cdr args) count type copy-from mode (car args)))]

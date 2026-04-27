@@ -217,7 +217,7 @@ see @|InsideRacket|.
                              'zeroed-atomic 'zeroed-atomic-interior
                              'stubborn 'uncollectable 'eternal)
                        @#,elem{absent}]
-                 [fail-mode 'failok @#,elem{absent}])
+                 [fail-mode (or/c 'fail-ok 'failok) @#,elem{absent}])
          cpointer?]{
 
 Allocates a memory block of a specified size using a specified
@@ -337,7 +337,7 @@ specification is required at minimum:
 
    ]}
 
-  @item{If an additional @indexed-racket['failok] flag is given, then
+  @item{If an additional @indexed-racket['failok] or @indexed-racket['fail-ok] flag is given, then
         some effort may be made to detect an allocation failure and
         raise @racket[exn:fail:out-of-memory] instead of crashing.}
 
@@ -353,7 +353,10 @@ type, and @racket['atomic] allocation is used otherwise.
                                    with the @racket['nonatomic] and @racket['interior] allocation
                                    modes.}
          #:changed "8.14.0.4" @elem{Added the @racket['zeroed-atomic]
-                                    @racket['zeroed-atomic-interior] allocation modes.}]}
+                                    @racket['zeroed-atomic-interior] allocation modes.}
+         #:changed "9.2.0.2" @elem{Added support for both @racket['failok] and
+                                    @racket['fail-ok] to accomodate an earlier mismatch
+                                    between CS and BC implementations.}]}
 
 
 @defproc[(free [cptr cpointer?]) void]{
