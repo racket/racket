@@ -1247,7 +1247,7 @@
                [p (normalized-malloc len
                                      (or mode (if type (ctype-malloc-mode type) 'atomic)))])
           (when copy-from
-            (memcpy* p 0 copy-from 0 len #f))
+            (memcpy* (cptr->fptr 'malloc p) 0 (cptr->fptr 'malloc copy-from) 0 len #f))
           p)]
        [(nonnegative-fixnum? (car args))
         (if count
