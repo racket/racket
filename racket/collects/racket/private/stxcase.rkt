@@ -2,11 +2,11 @@
 ;; syntax-case and syntax
 
 (module stxcase '#%kernel
-  (#%require "stx.rkt" "core-syntax.rkt" "core-syntax.rkt" "core-syntax.rkt" '#%paramz '#%unsafe
+  (#%require "stx.rkt" "core-syntax.rkt" '#%paramz '#%unsafe
              "ellipses.rkt"
              (rename "core-syntax.rkt" -define define)
              (rename "core-syntax.rkt" -define-syntax define-syntax)
-             (for-syntax "stx.rkt" "core-syntax.rkt" "core-syntax.rkt" "core-syntax.rkt"
+             (for-syntax "stx.rkt" "core-syntax.rkt"
                           "stx.rkt" "sc.rkt" '#%kernel
                           (rename "core-syntax.rkt" -define define)
                           (rename "core-syntax.rkt" -define-syntax define-syntax)))

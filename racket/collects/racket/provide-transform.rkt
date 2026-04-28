@@ -3,9 +3,6 @@
              "private/stx.rkt"
              "private/define-struct.rkt"
              "private/core-syntax.rkt"
-             "private/core-syntax.rkt"
-             "private/core-syntax.rkt"
-             "private/core-syntax.rkt"
              "phase+space.rkt")
   
   (#%provide expand-export pre-expand-export 

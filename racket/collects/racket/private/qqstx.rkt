@@ -5,7 +5,7 @@
   (#%require "core-syntax.rkt" "stxcase-scheme.rkt" "stx.rkt" "template.rkt"
              (rename "core-syntax.rkt" -define define)
              (rename "core-syntax.rkt" -define-syntax define-syntax)
-             (for-syntax '#%kernel "core-syntax.rkt" "core-syntax.rkt" "stxcase-scheme.rkt" "stx.rkt"))
+             (for-syntax '#%kernel "core-syntax.rkt" "stxcase-scheme.rkt" "stx.rkt"))
 
   (#%provide quasisyntax
              quasisyntax/loc
