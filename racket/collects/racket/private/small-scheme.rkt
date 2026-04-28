@@ -5,8 +5,8 @@
 ;; Not used in racket/base but kept for backwards-compatibility
 
 (module small-scheme '#%kernel
-  (#%require "core-syntax.rkt" "core-syntax.rkt" "define-et-al.rkt")
+  (#%require "core-syntax.rkt" "core-syntax.rkt" "core-syntax.rkt")
   
   (#%provide (all-from "core-syntax.rkt")
-             (all-from "define-et-al.rkt")))
+             (all-from "core-syntax.rkt")))
 

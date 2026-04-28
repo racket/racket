@@ -4,7 +4,7 @@
 
 (module case '#%kernel
   (#%require '#%paramz '#%unsafe "core-syntax.rkt" "core-syntax.rkt" "define.rkt" "fixnum.rkt"
-             (for-syntax '#%kernel "define-et-al.rkt" "core-syntax.rkt" "core-syntax.rkt"
+             (for-syntax '#%kernel "core-syntax.rkt" "core-syntax.rkt" "core-syntax.rkt"
                          "stxcase-scheme.rkt"
                          "qqstx.rkt" "define.rkt" "sort.rkt" "fixnum.rkt"
                          "stx.rkt"))

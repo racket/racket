@@ -3,9 +3,9 @@
 ;; based on Shriram's pattern matcher for Zodiac
 
 (module sc '#%kernel
-  (#%require "stx.rkt" "define-et-al.rkt" "core-syntax.rkt" "core-syntax.rkt"
-             (rename "define-et-al.rkt" -define define)
-             (rename "define-et-al.rkt" -define-syntax define-syntax)
+  (#%require "stx.rkt" "core-syntax.rkt" "core-syntax.rkt" "core-syntax.rkt"
+             (rename "core-syntax.rkt" -define define)
+             (rename "core-syntax.rkt" -define-syntax define-syntax)
              (for-template (only '#%kernel set!)
                            "ellipses.rkt"))
 

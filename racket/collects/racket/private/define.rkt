@@ -4,7 +4,7 @@
 
 (module define '#%kernel
   (#%require (for-syntax '#%kernel "stx.rkt")
-             "define-et-al.rkt")
+             "core-syntax.rkt")
 
   (#%provide define 
              define-syntax 
