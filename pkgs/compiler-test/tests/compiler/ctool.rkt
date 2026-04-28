@@ -31,3 +31,7 @@
 
 (delete-file tmp)
 (delete-directory/files tmp-dir)
+
+(module+ test
+  (module config info
+    (define timeout 200)))

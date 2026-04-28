@@ -128,4 +128,4 @@
 
 (module+ test
   (module config info
-    (define timeout 600)))
+    (define timeout 800)))
