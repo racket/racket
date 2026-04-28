@@ -1,7 +1,7 @@
 (module for '#%kernel
 
   (#%require "misc.rkt"
-             "define.rkt"
+             "core-syntax.rkt"
              "letstx-scheme.rkt"
              (only "pico.rkt" alt-reverse)
              "sort.rkt"
@@ -12,7 +12,7 @@
              (for-syntax '#%kernel
                          "stx.rkt"
                          "qqstx.rkt"
-                         "define.rkt"
+                         "core-syntax.rkt"
                          "fixnum.rkt"
                          "core-syntax.rkt" "core-syntax.rkt" "core-syntax.rkt"
                          "stxcase-scheme.rkt"

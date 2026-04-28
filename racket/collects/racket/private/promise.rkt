@@ -14,11 +14,11 @@
 (module promise '#%kernel
 (#%require "core-syntax.rkt" "core-syntax.rkt" "core-syntax.rkt"
            "more-scheme.rkt"
-           "define.rkt"
+           "core-syntax.rkt"
            (rename "define-struct.rkt" define-struct define-struct*)
            (for-syntax '#%kernel
                        "core-syntax.rkt" "core-syntax.rkt"
-                       "define.rkt"
+                       "core-syntax.rkt"
                        "struct.rkt"
                        "stxcase-scheme.rkt"
                        "name.rkt")

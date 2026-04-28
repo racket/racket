@@ -1,8 +1,8 @@
 (module generic-methods '#%kernel
 
-  (#%require (for-syntax '#%kernel "core-syntax.rkt" "core-syntax.rkt" "core-syntax.rkt" "define.rkt"
+  (#%require (for-syntax '#%kernel "core-syntax.rkt" "core-syntax.rkt" "core-syntax.rkt" "core-syntax.rkt"
                          "stx.rkt" "stxcase-scheme.rkt")
-             "define.rkt" "../stxparam.rkt")
+             "core-syntax.rkt" "../stxparam.rkt")
 
   (#%provide define/generic
              generic-property

@@ -1,7 +1,7 @@
 
 (module stxparam '#%kernel
   (#%require "private/letstx-scheme.rkt"
-             "private/define.rkt"
+             "private/core-syntax.rkt"
              "private/stxparam.rkt"
              (for-syntax '#%kernel 
                          "stxparam-exptime.rkt"

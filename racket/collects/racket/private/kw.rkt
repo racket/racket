@@ -1,5 +1,5 @@
 (module kw '#%kernel
-  (#%require "define.rkt"
+  (#%require "core-syntax.rkt"
              "core-syntax.rkt"
              "core-syntax.rkt"
              "core-syntax.rkt"
