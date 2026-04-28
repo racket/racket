@@ -42,7 +42,7 @@ language.
                                racket/private/qqstx
                                racket/private/stxcase-scheme
                                racket/private/letstx-scheme
-                               racket/private/define
+                               racket/private/core-syntax
                                racket/private/stx
                                racket/private/map
                                racket/private/list

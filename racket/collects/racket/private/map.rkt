@@ -3,7 +3,7 @@
 ;;  but the JIT generates faster code, especially for the common cases.
 
 (module map '#%kernel
-  (#%require "core-syntax.rkt" "core-syntax.rkt" "core-syntax.rkt" "define.rkt"
+  (#%require "core-syntax.rkt" "core-syntax.rkt" "core-syntax.rkt" "core-syntax.rkt"
              "performance-hint.rkt"
              "kw.rkt"
              '#%paramz

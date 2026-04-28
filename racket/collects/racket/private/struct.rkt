@@ -1,8 +1,8 @@
 
 (module struct '#%kernel
-  (#%require "define.rkt"
+  (#%require "core-syntax.rkt"
              "define-struct.rkt"
-             (for-syntax '#%kernel "define.rkt"
+             (for-syntax '#%kernel "core-syntax.rkt"
                          "stx.rkt" "stxcase-scheme.rkt" "core-syntax.rkt" "core-syntax.rkt"
                          "stxloc.rkt"))
 

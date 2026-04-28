@@ -5,7 +5,7 @@
              "private/core-syntax.rkt"
              "private/core-syntax.rkt"
              "private/core-syntax.rkt"
-             "private/define.rkt"
+             "private/core-syntax.rkt"
              "private/require-lift.rkt"
              "phase+space.rkt"
              (for-template (only '#%kernel quote))

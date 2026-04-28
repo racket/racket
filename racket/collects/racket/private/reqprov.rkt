@@ -1,5 +1,5 @@
 (module reqprov '#%kernel
-  (#%require "define.rkt"
+  (#%require "core-syntax.rkt"
              (for-syntax '#%kernel
                          "stx.rkt" "stxcase-scheme.rkt" "core-syntax.rkt"
                          "core-syntax.rkt" "core-syntax.rkt"

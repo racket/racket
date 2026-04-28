@@ -3,10 +3,10 @@
 ;;       [http://scheme2006.cs.uchicago.edu/07-clinger.pdf]
 
 (module case '#%kernel
-  (#%require '#%paramz '#%unsafe "core-syntax.rkt" "core-syntax.rkt" "define.rkt" "fixnum.rkt"
+  (#%require '#%paramz '#%unsafe "core-syntax.rkt" "core-syntax.rkt" "core-syntax.rkt" "fixnum.rkt"
              (for-syntax '#%kernel "core-syntax.rkt" "core-syntax.rkt" "core-syntax.rkt"
                          "stxcase-scheme.rkt"
-                         "qqstx.rkt" "define.rkt" "sort.rkt" "fixnum.rkt"
+                         "qqstx.rkt" "core-syntax.rkt" "sort.rkt" "fixnum.rkt"
                          "stx.rkt"))
   (#%provide case)
 

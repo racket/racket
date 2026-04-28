@@ -1,6 +1,6 @@
 
 (module logger '#%kernel
-  (#%require "core-syntax.rkt" "core-syntax.rkt" "define.rkt"
+  (#%require "core-syntax.rkt" "core-syntax.rkt" "core-syntax.rkt"
              (for-syntax '#%kernel "stx.rkt" "core-syntax.rkt" "core-syntax.rkt"
                          "stxcase-scheme.rkt"))
 
