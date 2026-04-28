@@ -3,7 +3,7 @@
 ;; #%stxcase-scheme: adds let-syntax, letrec-syntax, etc.
 
 (module letstx-scheme '#%kernel
-  (#%require "core-syntax.rkt" "core-syntax.rkt" "core-syntax.rkt"
+  (#%require "core-syntax.rkt"
              (for-syntax '#%kernel "stxcase.rkt" 
                          "with-stx.rkt" "stxloc.rkt"))
   

@@ -3,7 +3,7 @@
 ;; based on Shriram's pattern matcher for Zodiac
 
 (module sc '#%kernel
-  (#%require "stx.rkt" "core-syntax.rkt" "core-syntax.rkt" "core-syntax.rkt"
+  (#%require "stx.rkt" "core-syntax.rkt"
              (rename "core-syntax.rkt" -define define)
              (rename "core-syntax.rkt" -define-syntax define-syntax)
              (for-template (only '#%kernel set!)

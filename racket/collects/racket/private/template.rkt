@@ -1,7 +1,7 @@
 (module template '#%kernel
-(#%require "stx.rkt" "core-syntax.rkt" "core-syntax.rkt" "core-syntax.rkt" "performance-hint.rkt"
+(#%require "stx.rkt" "core-syntax.rkt" "performance-hint.rkt"
            "ellipses.rkt"
-           (for-syntax "stx.rkt" "core-syntax.rkt" "core-syntax.rkt" "core-syntax.rkt"
+           (for-syntax "stx.rkt" "core-syntax.rkt"
                        "sc.rkt" '#%kernel))
 (#%provide syntax
            syntax/loc

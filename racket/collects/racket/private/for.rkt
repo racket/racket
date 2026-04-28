@@ -14,7 +14,6 @@
                          "qqstx.rkt"
                          "core-syntax.rkt"
                          "fixnum.rkt"
-                         "core-syntax.rkt" "core-syntax.rkt" "core-syntax.rkt"
                          "stxcase-scheme.rkt"
                          "more-scheme.rkt"))
 

@@ -1,7 +1,6 @@
 (module config '#%kernel
   (#%require '#%paramz ; for cache-configuration
              "core-syntax.rkt"
-             "core-syntax.rkt"
              "executable-path.rkt")
 
   (#%provide find-main-collects

@@ -1,6 +1,5 @@
 (module struct-util '#%kernel
-  (#%require "core-syntax.rkt"
-             "core-syntax.rkt")
+  (#%require "core-syntax.rkt")
 
   (#%provide predicate->struct-name)
 

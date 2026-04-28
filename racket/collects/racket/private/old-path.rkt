@@ -2,7 +2,7 @@
 ;; `path-add-extension` that do the wrong thing with
 ;; file names that start "."
 (module path '#%kernel
-  (#%require "core-syntax.rkt" "core-syntax.rkt"
+  (#%require "core-syntax.rkt"
              (rename "core-syntax.rkt" -define define)
              (rename "core-syntax.rkt" -define-syntax define-syntax))
 

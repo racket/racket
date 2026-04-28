@@ -1,6 +1,6 @@
 (module namespace "pre-base.rkt"
   (require (for-syntax '#%kernel "core-syntax.rkt"
-                       "stx.rkt" "stxcase-scheme.rkt" "core-syntax.rkt" "core-syntax.rkt"
+                       "stx.rkt" "stxcase-scheme.rkt"
                        "stxloc.rkt"))
 
   (provide make-base-empty-namespace

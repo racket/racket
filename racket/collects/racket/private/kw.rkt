@@ -1,8 +1,5 @@
 (module kw '#%kernel
   (#%require "core-syntax.rkt"
-             "core-syntax.rkt"
-             "core-syntax.rkt"
-             "core-syntax.rkt"
              "more-scheme.rkt"
              (only '#%unsafe
                    unsafe-chaperone-procedure
@@ -13,8 +10,6 @@
                          "procedure-alias.rkt"
                          "stx.rkt"
                          "core-syntax.rkt"
-                         "core-syntax.rkt"
-                         "core-syntax.rkt"
                          "stxcase-scheme.rkt"
                          "name.rkt"
                          "norm-define.rkt"
@@ -23,7 +18,6 @@
                          "kw-prop-key.rkt"
                          "immediate-default.rkt")
              (for-meta 2 '#%kernel
-                       "core-syntax.rkt"
                        "core-syntax.rkt"
                        "stxcase-scheme.rkt"
                        "qqstx.rkt"))
