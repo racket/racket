@@ -1,6 +1,6 @@
 (module config '#%kernel
   (#%require '#%paramz ; for cache-configuration
-             "cond.rkt"
+             "core-syntax.rkt"
              "core-syntax.rkt"
              "executable-path.rkt")
 

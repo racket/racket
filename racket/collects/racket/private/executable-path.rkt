@@ -1,6 +1,6 @@
 (module path-list '#%kernel
   (#%require "core-syntax.rkt"
-             "cond.rkt"
+             "core-syntax.rkt"
              "define-et-al.rkt"
              "path.rkt"
              "path-list.rkt")

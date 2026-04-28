@@ -2,7 +2,7 @@
   (#%require "define.rkt"
              (for-syntax '#%kernel
                          "stx.rkt" "stxcase-scheme.rkt" "define-et-al.rkt"
-                         "core-syntax.rkt" "cond.rkt"
+                         "core-syntax.rkt" "core-syntax.rkt"
                          "stxloc.rkt" "qqstx.rkt" "more-scheme.rkt"
                          "../require-transform.rkt" "require-lift.rkt"
                          "../provide-transform.rkt"
