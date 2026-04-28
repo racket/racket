@@ -2,14 +2,14 @@
 ;; syntax-case and syntax
 
 (module stxcase '#%kernel
-  (#%require "stx.rkt" "define-et-al.rkt" "core-syntax.rkt" "core-syntax.rkt" '#%paramz '#%unsafe
+  (#%require "stx.rkt" "core-syntax.rkt" "core-syntax.rkt" "core-syntax.rkt" '#%paramz '#%unsafe
              "ellipses.rkt"
-             (rename "define-et-al.rkt" -define define)
-             (rename "define-et-al.rkt" -define-syntax define-syntax)
-             (for-syntax "stx.rkt" "define-et-al.rkt" "core-syntax.rkt" "core-syntax.rkt"
+             (rename "core-syntax.rkt" -define define)
+             (rename "core-syntax.rkt" -define-syntax define-syntax)
+             (for-syntax "stx.rkt" "core-syntax.rkt" "core-syntax.rkt" "core-syntax.rkt"
                           "stx.rkt" "sc.rkt" '#%kernel
-                          (rename "define-et-al.rkt" -define define)
-                          (rename "define-et-al.rkt" -define-syntax define-syntax)))
+                          (rename "core-syntax.rkt" -define define)
+                          (rename "core-syntax.rkt" -define-syntax define-syntax)))
 
   (-define interp-match
      (lambda (pat e literals immediate=?)

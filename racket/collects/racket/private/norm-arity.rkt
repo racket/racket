@@ -1,5 +1,5 @@
 (module norm-arity '#%kernel
-  (#%require "define.rkt" "core-syntax.rkt" "define-et-al.rkt" "sort.rkt")
+  (#%require "define.rkt" "core-syntax.rkt" "core-syntax.rkt" "sort.rkt")
   (#%provide normalize-arity)
 
   ;; normalize-arity : (or/c arity (listof arity))

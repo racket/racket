@@ -2,7 +2,7 @@
   (#%require "define.rkt"
              "core-syntax.rkt"
              "core-syntax.rkt"
-             "define-et-al.rkt"
+             "core-syntax.rkt"
              "more-scheme.rkt"
              (only '#%unsafe
                    unsafe-chaperone-procedure
@@ -13,7 +13,7 @@
                          "procedure-alias.rkt"
                          "stx.rkt"
                          "core-syntax.rkt"
-                         "define-et-al.rkt"
+                         "core-syntax.rkt"
                          "core-syntax.rkt"
                          "stxcase-scheme.rkt"
                          "name.rkt"
