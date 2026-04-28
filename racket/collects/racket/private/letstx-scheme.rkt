@@ -3,7 +3,7 @@
 ;; #%stxcase-scheme: adds let-syntax, letrec-syntax, etc.
 
 (module letstx-scheme '#%kernel
-  (#%require "define-et-al.rkt" "core-syntax.rkt" "cond.rkt"
+  (#%require "define-et-al.rkt" "core-syntax.rkt" "core-syntax.rkt"
              (for-syntax '#%kernel "stxcase.rkt" 
                          "with-stx.rkt" "stxloc.rkt"))
   
@@ -53,5 +53,6 @@
 	     (let-syntaxes ([(id) expr] ...)
 	       body1 body ...))])))
 
-  (#%provide (all-from "define-et-al.rkt") (all-from "core-syntax.rkt") (all-from "cond.rkt")
+  (#%provide (all-from "define-et-al.rkt")
+             (all-from "core-syntax.rkt")
              letrec-syntaxes letrec-syntax let-syntaxes let-syntax))
