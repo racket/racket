@@ -7,6 +7,7 @@
 
 (provide ref-doc
          guide-doc
+         ffi-unsafe-doc
          (for-label
           (all-from-out racket/base
                         racket/contract/base
@@ -14,3 +15,4 @@
 
 (define ref-doc '(lib "scribblings/reference/reference.scrbl"))
 (define guide-doc '(lib "scribblings/guide/guide.scrbl"))
+(define ffi-unsafe-doc '(lib "scribblings/foreign/foreign.scrbl"))

@@ -1,6 +1,7 @@
 #lang scribble/manual
 @(require "common.rkt"
-          "racket-id.rkt")
+          "racket-id.rkt"
+          (for-label ffi/unsafe/os-thread))
 
 @title[#:tag "procedure"]{Foreign Procedures and Callbacks}
 
@@ -47,11 +48,13 @@ C function. That use of @racket[->] creates a @deftech{foreign callout}.
 A @racket[->] type can also be used with @racket[ffi2-callback] to
 turn a Racket procedure into a function callback by C as represented
 by a @tech{pointer} object. That of use of @racket[->] creates a
-@deftech{foreign callback}. A callback always runs in @deftech{atomic
+@deftech{foreign callback}. A callback always runs in @tech[#:doc ffi-unsafe-doc]{atomic
 mode}, which means that it must not attempt any synchronization
 operations and generally must not raise an exception (unless
 @racket[#:allow-callback-exn] is used for a callout that reaches the
-callback).
+callback). If a callback is run in an operating-system thread that was
+not started by Racket, then the callback is subject to the same
+constraints as a procedure passed to @racket[call-in-os-thread].
 
 Each @racket[arg] describes a type for an argument, each with an
 optional name @racket[arg-id] and an optional @racket[auto-expr]. When
@@ -132,9 +135,10 @@ how a callback is handled:
  @tech[#:doc ref-doc]{BC} variant of Racket, @racket[#:in-original] is
  required if a callback may run in a thread not created by Racket.}
  The callout or
- callback happens in the context of an unspecified Racket coroutine
- thread, so it must not raise an exception, and it is still in
- @tech{atomic mode}. The callback blocks the original thread
+ callback happens in the context of an
+ @seclink["Thread_Scheduling" #:doc '(lib "scribblings/foreign/foreign.scrbl")]{unspecified
+ Racket coroutine thread}, so it must not raise an exception, and it is still in
+ @tech[#:doc ffi-unsafe-doc]{atomic mode}. The callback blocks the original thread
  until it completes in a coroutine thread.}
 
 ]

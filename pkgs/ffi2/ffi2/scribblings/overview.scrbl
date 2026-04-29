@@ -791,7 +791,7 @@ instead of @racket[bytes_ptr_t], would make a copy of the byte string,
 which would not work.
 
 One catch here is that a callback from a foreign function is always in
-@tech{atomic mode}. In this case, the callback writes to a port
+@tech[#:doc ffi-unsafe-doc]{atomic mode}. In this case, the callback writes to a port
 @racket[png-out] that is not used from any other thread, so atomic mode
 causes no problems; writing will not get stuck trying to acquire a lock.
 
