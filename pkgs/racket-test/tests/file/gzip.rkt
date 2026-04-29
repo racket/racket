@@ -15,6 +15,11 @@
 
 (define deflate* (io->str-op deflate))
 (define inflate* (io->str-op inflate))
+(define ((deflate/level* level) buf)
+  (let* ([i (open-input-bytes buf)]
+         [o (open-output-bytes)])
+    (deflate i o #:level level)
+    (get-output-bytes o)))
 
 (define (id* buf [ratio #f])
   (test (inflate* (deflate* buf (and ratio (lambda (i o)
@@ -77,6 +82,10 @@
   ;; should be around 6 times smaller
   (id* (file->bytes big-file) 4))
 
+(define (test-level-0)
+  (define sample #"level-zero-deflate-level-zero-deflate-level-zero")
+  (test (inflate* ((deflate/level* 0) sample)) => sample))
+
 (define (test-hang-on-long-filename)
   ;; `tar-gzip` was crashing in a background thread due to a very long
   ;; filename, leading to a hang in the main thread. Trigger the bug
@@ -101,6 +110,7 @@
   (define (rand-bytes)
     (list->bytes (for/list ([j (in-range (random 1000))]) (random 256))))
   (test-big-file)
+  (test-level-0)
   (test-degenerate-input-1)
   (test-degenerate-input-2)
   (for ([i (in-range 100)]) (id* (rand-bytes)))
