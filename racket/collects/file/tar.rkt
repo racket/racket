@@ -49,9 +49,17 @@
 (provide (struct-out tar-entry))
 (struct tar-entry (kind path content size attribs))
 
+(define (normalize-path-string p)
+  (cond
+    [(path? p) p]
+    [(string? p) (string->path p)]
+    [(bytes? p) (bytes->path p)]
+    [else p]))
+
 (define ((tar-one-entry buf prefix get-timestamp follow-links? format) path-or-entry)
   (define entry (and (tar-entry? path-or-entry) path-or-entry))
-  (define path (if entry (tar-entry-path entry) path-or-entry))
+  (define path (normalize-path-string
+                (if entry (tar-entry-path entry) path-or-entry)))
   (let* ([link?   (if entry
                       (eq? 'link (tar-entry-kind entry))
                       (and (not follow-links?) (link-exists? path)))]
@@ -110,7 +118,7 @@
                path)))
     (define link-path-bytes (and link?
                                  (if entry
-                                     (path->bytes (tar-entry-content entry))
+                                     (path->bytes (normalize-path-string (tar-entry-content entry)))
                                      (path->bytes (resolve-path path)))))
     ;; see http://www.mkssoftware.com/docs/man4/tar.4.asp for format spec
     (define (write-a-block file-name-bytes file-prefix size type link-path-bytes)
