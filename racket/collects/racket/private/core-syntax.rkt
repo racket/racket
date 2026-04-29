@@ -14,11 +14,14 @@
              define-values-for-syntax
              when unless
              call/ec let/ec
-             cond old-cond else =>
+             cond else =>
              let*-values
              let let* letrec
              quasiquote
              and or)
+
+  (module* old-cond #f
+    (#%provide old-cond))
 
   ; --------------------------------------------------
   ;
