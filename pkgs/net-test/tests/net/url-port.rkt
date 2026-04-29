@@ -5,47 +5,64 @@
          tests/eli-tester)
 
 (define (run-tests scheme wrap-ports skip-actual-redirect?)
-  (define first-port-no (+ 10000 (random 50000)))
   (define ((make-tester url->port) response . responses)
     (define server-cust
       (make-custodian))
-    (define wait-sema
-      (make-semaphore))
-    (define my-accept
-      (λ (l)
-        (semaphore-post wait-sema)
-        (tcp-accept l)))
+    (define startup-ch
+      (make-channel))
+    (define listener-ports
+      (make-vector (add1 (length responses))))
+    (define (resolve-response response)
+      (if (procedure? response)
+          (response listener-ports)
+          response))
     (parameterize ([current-custodian server-cust])
       (for ([response (in-list (cons response responses))]
-            [port-no (in-naturals first-port-no)])
+            [i (in-naturals)])
         (thread
          (λ ()
-           (run-server port-no
-                       (lambda (ip op)
-                         (let-values ([(ip op) (wrap-ports ip op)])
-                           (regexp-match #rx"(\r\n|^)\r\n" ip)
-                           (display response op)
-                           (close-output-port op)
-                           (close-input-port ip)))
-                       +inf.0
-                       void
-                       tcp-listen
-                       tcp-close
-                       my-accept
-                       my-accept)))))
-    (for ([response (in-list (cons response responses))])
-      (semaphore-wait wait-sema))
+           (with-handlers ([exn:fail?
+                            (λ (e)
+                              (channel-put startup-ch e)
+                              (void))])
+             (run-server 0
+                         (lambda (ip op)
+                           (let-values ([(ip op) (wrap-ports ip op)])
+                             (regexp-match #rx"(\r\n|^)\r\n" ip)
+                             (display (resolve-response response) op)
+                             (close-output-port op)
+                             (close-input-port ip)))
+                         +inf.0
+                         void
+                         (λ (_port-no [max-allow-wait 4] [reuse? #f] [hostname #f])
+                           (define listener
+                             (tcp-listen 0 max-allow-wait reuse? hostname))
+                           (define-values (_local-addr port-no _remote-addr _remote-port)
+                             (tcp-addresses listener #t))
+                           (channel-put startup-ch (cons i port-no))
+                           listener)
+                         tcp-close
+                         tcp-accept
+                         tcp-accept)))))
+    (for ([_ (in-vector listener-ports)])
+      (match (sync/timeout 30 startup-ch)
+        [#f
+         (error 'run-tests "timed out waiting for server startup")]
+        [(cons i port-no)
+         (vector-set! listener-ports i port-no)]
+        [(? exn:fail? e)
+         (raise e)]))
     (dynamic-wind
         void
         (λ ()
           (call-with-values
               (λ ()
                 (url->port
-                 (url scheme #f "localhost" first-port-no
-                      #t empty empty #f)))
+                 (url scheme #f "localhost" (vector-ref listener-ports 0)
+                       #t empty empty #f)))
             (λ vals (apply values (cons (port->string (car vals)) (cdr vals))))))
         (λ ()
-          (custodian-shutdown-all server-cust))))
+          (custodian-shutdown-all server-cust)))))
 
   (define get-pure
     (make-tester get-pure-port))
@@ -126,8 +143,9 @@
   (unless skip-actual-redirect?
     (test
      (get-pure/redirect
-      (format "HTTP/1.1 301 Moved Permanently\r\nLocation: http://localhost:~a/whatever\r\n\r\nstuff"
-              (+ first-port-no 1))
+      (λ (listener-ports)
+        (format "HTTP/1.1 301 Moved Permanently\r\nLocation: http://localhost:~a/whatever\r\n\r\nstuff"
+                (vector-ref listener-ports 1)))
       (string-append
        "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nTransfer-Encoding: chunked\r\n\r\n"
        "24\r\nThis is the data in the first chunk \r\n1A\r\nand this is the second one\r\n0\r\n"))
