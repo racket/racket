@@ -118,11 +118,14 @@
     [else #f]))
 
 (define (extract-source-location s)
-  (and (syntax? s)
-       (syntax-srcloc s)
-       (let ([str (srcloc->string (syntax-srcloc s))])
-         (and str
-              (string-append str ": ")))))
+  (define loc (and s
+                   ((error-syntax->srcloc-handler) s)))
+  (cond
+    [(srcloc? loc)
+     (let ([str (srcloc->string loc)])
+       (and str
+            (string-append str ": ")))]
+    [else #f]))
 
 ;; `raise-syntax-error` is meant to accept either syntax objects or
 ;; S-expressions, and it has traditionally supported hybird values by
@@ -149,6 +152,9 @@
       (string-append " " str)))
 
 (define (install-error-syntax->string-handler!)
+  (error-syntax->srcloc-handler
+   (lambda (s)
+     (and (syntax? s) (syntax-srcloc s))))
   (error-syntax->name-handler
    (lambda (s)
      (unless (syntax? s)

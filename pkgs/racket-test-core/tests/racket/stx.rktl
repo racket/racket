@@ -2445,6 +2445,11 @@
                exn:fail:syntax?
                #rx"whatever: "))
 
+(test #t procedure? error-syntax->srcloc-handler)
+(test #f (error-syntax->srcloc-handler) 'anything)
+(let ([stx #'(hello world)])
+  (test (syntax-srcloc stx) (error-syntax->srcloc-handler) stx))
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Test prop:rename-transformer with procedure content
 

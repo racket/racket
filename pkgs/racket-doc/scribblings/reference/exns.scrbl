@@ -1,5 +1,7 @@
 #lang scribble/doc
-@(require scribble/bnf "mz.rkt" (for-label racket/fixnum))
+@(require scribble/bnf "mz.rkt"
+          (for-label racket/fixnum
+                     syntax/srcloc))
 
 @title[#:tag "exns"]{Exceptions}
 
@@ -853,6 +855,22 @@ a symbol if a name can be extracted from the syntax object,
 @racket[#f] otherwise.
 
 @history[#:added "8.15.0.2"]}
+
+
+@defparam[error-syntax->srcloc-handler proc (any/c . -> . (or/c srcloc? #f))]{
+
+A @tech{parameter} that determines the @deftech{error syntax source-location
+handler}, which is used to extract the source location of a syntactic form when
+@racket[raise-syntax-error] is called.
+
+The argument to the handler is typically a syntax object, such as when
+it is called by @racket[source-location->prefix], but it can be
+another representation of an expression, as in the third or fourth
+argument to @racket[raise-syntax-error]. The result should be a
+@racket[srcloc] instance or @racket[#f] to indicate that no source
+location is available for the argument.
+
+@history[#:added "9.2.0.3"]}
 
 
 @defparam[error-module-path->string-handler proc (any/c exact-nonnegative-integer?

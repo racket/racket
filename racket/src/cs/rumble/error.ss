@@ -72,6 +72,14 @@
                   'error-value->string-handler
                   primitive-realm))
 
+(define/who error-syntax->srcloc-handler
+  (make-parameter (lambda (v) #f)
+                  (lambda (v)
+                    (check who (procedure-arity-includes/c 1) v)
+                    v)
+                  'error-syntax->srcloc-handler
+                  primitive-realm))
+
 (define/who error-syntax->string-handler
   (make-parameter (lambda (v len)
                     (#%format "~s" v))

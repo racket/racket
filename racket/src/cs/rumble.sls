@@ -86,6 +86,7 @@
           raise
           error-print-width
           error-value->string-handler
+          error-syntax->srcloc-handler
           error-syntax->string-handler
           error-syntax->name-handler
           error-module-path->string-handler

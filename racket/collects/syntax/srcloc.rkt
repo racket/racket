@@ -261,7 +261,12 @@
    ;; vector
    [(vector? x) (process-vector x good bad name)]
    ;; syntax
-   [(syntax? x) (process-syntax x good bad name)]
+   [(syntax? x)
+    (define loc ((error-syntax->srcloc-handler) x))
+    (cond
+      [(not loc) (process-false loc good bad name)]
+      [(srcloc? loc) (process-srcloc loc good bad name)]
+      [else (process-syntax x good bad name)])]
    ;; other
    [else
     (bad
