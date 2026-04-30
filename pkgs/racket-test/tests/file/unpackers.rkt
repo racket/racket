@@ -2,7 +2,7 @@
 (require file/untar file/untgz file/unzip racket/file racket/system racket/set
          (except-in file/tar tar)
          tests/eli-tester)
-
+ 
 (provide tests)
 
 (define tmp      (find-system-path 'temp-dir))
@@ -140,6 +140,24 @@
                             (tar-entry-size e2)))
         (check 'attribs (equal? (tar-entry-attribs e1)
                                 (tar-entry-attribs e2))))))
+  (let ([synthetic-tar (build-path work-dir "synthetic.tar")])
+    (define tar* (dynamic-require 'file/tar 'tar))
+    (when (file-exists? synthetic-tar) (delete-file synthetic-tar))
+    (tar* synthetic-tar (tar-entry 'directory (string->path "tar-dir") #f 0 #hash()))
+    (define got (tar->entries synthetic-tar))
+    (unless (and (= 1 (length got))
+                 (eq? 'directory (tar-entry-kind (car got)))
+                 (equal? (string->path "tar-dir")
+                         (tar-entry-path (car got))))
+      (error "high-level tar did not preserve tar-entry correctly")))
+  (let ([synthetic-tgz (build-path work-dir "synthetic.tgz")])
+    (when (file-exists? synthetic-tgz) (delete-file synthetic-tgz))
+    (tar-gzip synthetic-tgz (tar-entry 'directory (string->path "tgz-dir") #f 0 #hash()))
+    (define synthetic-tgz-dest (build-path work-dir "synthetic-tgz-dest"))
+    (when (directory-exists? synthetic-tgz-dest) (delete-directory/files synthetic-tgz-dest))
+    (untgz synthetic-tgz #:dest synthetic-tgz-dest)
+    (unless (directory-exists? (build-path synthetic-tgz-dest "tgz-dir"))
+      (error "tar-gzip did not preserve tar-entry correctly")))
   (make-directory* "sub")
   (parameterize ([current-directory "sub"]) (untar a.tar))
   (test (diff "ex1" (build-path "sub" "ex1") #t))

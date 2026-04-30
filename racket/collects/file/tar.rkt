@@ -49,6 +49,26 @@
 (provide (struct-out tar-entry))
 (struct tar-entry (kind path content size attribs))
 
+;; Expand plain paths via `pathlist-closure` while preserving explicit `tar-entry`s.
+(define (close-paths-and-entries paths-and-entries
+                                 #:follow-links? [follow-links? #f]
+                                 #:path-filter [path-filter #f])
+  (define-values (seen closed)
+    (for/fold ([seen null] [closed null]) ([path-or-entry (in-list paths-and-entries)])
+      (cond
+        [(tar-entry? path-or-entry)
+         (values seen (cons path-or-entry closed))]
+        [else
+         (for/fold ([seen seen] [closed closed])
+                   ([path (in-list (pathlist-closure (list path-or-entry)
+                                                     #:follow-links? follow-links?
+                                                     #:path-filter path-filter))])
+           (if (member path seen)
+               (values seen closed)
+               (values (cons path seen)
+                       (cons path closed))))])))
+  (reverse closed))
+
 (define ((tar-one-entry buf prefix get-timestamp follow-links? format) path-or-entry)
   (define entry (and (tar-entry? path-or-entry) path-or-entry))
   (define path (if entry (tar-entry-path entry) path-or-entry))
@@ -261,9 +281,9 @@
   (when (null? paths) (error 'tar "no paths specified"))
   (with-output-to-file tar-file
     #:exists (if exists-ok? 'truncate/replace 'error)
-    (lambda () (tar->output (pathlist-closure paths
-                                         #:follow-links? follow-links?
-                                         #:path-filter path-filter)
+    (lambda () (tar->output (close-paths-and-entries paths
+                                                     #:follow-links? follow-links?
+                                                     #:path-filter path-filter)
                        #:get-timestamp get-timestamp
                        #:path-prefix prefix
                        #:follow-links? follow-links?
@@ -291,9 +311,9 @@
         (define tar-exn #f)
         (thread (lambda ()
                   (with-handlers [((lambda (exn) #t) (lambda (exn) (set! tar-exn exn)))]
-                    (tar->output (pathlist-closure paths
-                                                   #:follow-links? follow-links?
-                                                   #:path-filter path-filter)
+                    (tar->output (close-paths-and-entries paths
+                                                          #:follow-links? follow-links?
+                                                          #:path-filter path-filter)
                                  o
                                  #:path-prefix prefix
                                  #:follow-links? follow-links?
