@@ -54,6 +54,7 @@ Sforeign_symbol("rktio_poll_addrinfo_lookup_ready", (void *)rktio_poll_addrinfo_
 Sforeign_symbol("rktio_addrinfo_lookup_get", (void *)rktio_addrinfo_lookup_get);
 Sforeign_symbol("rktio_addrinfo_lookup_stop", (void *)rktio_addrinfo_lookup_stop);
 Sforeign_symbol("rktio_addrinfo_free", (void *)rktio_addrinfo_free);
+Sforeign_symbol("rktio_listen_opt", (void *)rktio_listen_opt);
 Sforeign_symbol("rktio_listen", (void *)rktio_listen);
 Sforeign_symbol("rktio_listen_stop", (void *)rktio_listen_stop);
 Sforeign_symbol("rktio_poll_accept_ready", (void *)rktio_poll_accept_ready);

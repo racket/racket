@@ -2820,6 +2820,8 @@
 (define RKTIO_NO_INHERIT_INPUT 1)
 (define RKTIO_NO_INHERIT_OUTPUT 2)
 (define RKTIO_FAMILY_ANY -1)
+(define RKTIO_LISTEN_REUSE 1)
+(define RKTIO_LISTEN_RETRY_ADDRINUSE 2)
 (define RKTIO_SHUTDOWN_READ 0)
 (define RKTIO_SHUTDOWN_WRITE 1)
 (define RKTIO_ADD_MEMBERSHIP 0)
@@ -2986,6 +2988,7 @@
 (define rktio_addrinfo_lookup_stop
   (hash-ref rktio-table 'rktio_addrinfo_lookup_stop))
 (define rktio_addrinfo_free (hash-ref rktio-table 'rktio_addrinfo_free))
+(define rktio_listen_opt (hash-ref rktio-table 'rktio_listen_opt))
 (define rktio_listen (hash-ref rktio-table 'rktio_listen))
 (define rktio_listen_stop (hash-ref rktio-table 'rktio_listen_stop))
 (define rktio_poll_accept_ready
@@ -37495,14 +37498,22 @@
                                                       (let ((app_0
                                                              (unsafe-place-local-ref
                                                               cell.1)))
-                                                        (|#%app|
-                                                         rktio_listen
-                                                         app_0
-                                                         addr_0
-                                                         (min
-                                                          max-allow-wait2_0
-                                                          10000)
-                                                         reuse?3_0))))
+                                                        (let ((app_1
+                                                               (min
+                                                                max-allow-wait2_0
+                                                                10000)))
+                                                          (|#%app|
+                                                           rktio_listen_opt
+                                                           app_0
+                                                           addr_0
+                                                           app_1
+                                                           (bitwise-ior
+                                                            (if reuse?3_0 1 0)
+                                                            (if (eqv?
+                                                                 port-no5_0
+                                                                 0)
+                                                              2
+                                                              0)))))))
                                                  (begin
                                                    (end-rktio)
                                                    (if (vector? lnr_0)

@@ -511,10 +511,16 @@ RKTIO_EXTERN void rktio_addrinfo_free(rktio_t *rktio, rktio_addrinfo_t *a);
 typedef struct rktio_listener_t rktio_listener_t;
 typedef struct rktio_connect_t rktio_connect_t;
 
-RKTIO_EXTERN rktio_listener_t *rktio_listen(rktio_t *rktio, rktio_addrinfo_t *local, int backlog, rktio_bool_t reuse);
+RKTIO_EXTERN rktio_listener_t *rktio_listen_opt(rktio_t *rktio, rktio_addrinfo_t *local, int backlog, int flags);
 /* Can fail with `RKTIO_ERROR_TRY_AGAIN_WITH_IPV4`, which suggests
    trying an address using the family reported by
    `rktio_get_ipv4_family` instead of `RKTIO_FAMILY_ANY`. */
+/* For `flags`: */
+#define RKTIO_LISTEN_REUSE           (1<<0)
+#define RKTIO_LISTEN_RETRY_ADDRINUSE (1<<1)
+
+RKTIO_EXTERN rktio_listener_t *rktio_listen(rktio_t *rktio, rktio_addrinfo_t *local, int backlog, rktio_bool_t reuse);
+/* Like `rktio_listen_opt`, but with just one flag. */
 
 RKTIO_EXTERN void rktio_listen_stop(rktio_t *rktio, rktio_listener_t *l);
 /* Stops a listener. */

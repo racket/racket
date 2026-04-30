@@ -56,7 +56,9 @@
             (check-current-custodian who #:unlock (lambda ()
                                                     (unsafe-uninterruptible-custodian-lock-release)
                                                     (end-uninterruptible)))
-            (define lnr (rktio_listen rktio addr (min max-allow-wait 10000) reuse?))
+            (define lnr (rktio_listen_opt rktio addr (min max-allow-wait 10000)
+                                          (bitwise-ior (if reuse? RKTIO_LISTEN_REUSE 0)
+                                                       (if (eqv? port-no 0) RKTIO_LISTEN_RETRY_ADDRINUSE 0))))
             (end-rktio)
             (cond
               [(rktio-error? lnr)

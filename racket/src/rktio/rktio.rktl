@@ -35,6 +35,8 @@
 (define-constant RKTIO_NO_INHERIT_INPUT (<< 1 0))
 (define-constant RKTIO_NO_INHERIT_OUTPUT (<< 1 1))
 (define-constant RKTIO_FAMILY_ANY -1)
+(define-constant RKTIO_LISTEN_REUSE (<< 1 0))
+(define-constant RKTIO_LISTEN_RETRY_ADDRINUSE (<< 1 1))
 (define-constant RKTIO_SHUTDOWN_READ 0)
 (define-constant RKTIO_SHUTDOWN_WRITE 1)
 (define-constant RKTIO_PROP_ERROR -2)
@@ -566,6 +568,15 @@
  void
  rktio_addrinfo_free
  (((ref rktio_t) rktio) ((ref rktio_addrinfo_t) a)))
+(define-function/errno
+ NULL
+ ()
+ (ref rktio_listener_t)
+ rktio_listen_opt
+ (((ref rktio_t) rktio)
+  ((ref rktio_addrinfo_t) local)
+  (int backlog)
+  (int flags)))
 (define-function/errno
  NULL
  ()

@@ -54,6 +54,7 @@ rktio_poll_addrinfo_lookup_ready
 rktio_addrinfo_lookup_get
 rktio_addrinfo_lookup_stop
 rktio_addrinfo_free
+rktio_listen_opt
 rktio_listen
 rktio_listen_stop
 rktio_poll_accept_ready
