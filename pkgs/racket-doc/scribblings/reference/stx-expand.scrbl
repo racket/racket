@@ -12,9 +12,19 @@ Expands all non-primitive syntax in @racket[top-level-form], and
 returns a syntax object for the expanded form that contains only core
 forms, matching the grammar specified by @secref["fully-expanded"].
 
+Due to the historical development of macro-expansion preceding notions
+of wrapped syntax objects, @racket[expand] is a @emph{procedure}, not a
+macro, and will eagerly evaluate its arguments. As such, unless invoking
+an expression which returns a syntax object, you will likely want to wrap
+the syntax you want expanded in @racket[quote-syntax] directly.
+
+@examples[
+(syntax->datum (expand #'(or x y)))
+]
+
 Before @racket[top-level-form] is expanded, its lexical context is
 enriched with @racket[namespace-syntax-introduce], just as for
-@racket[eval]. Use @racket[syntax->datum] to convert the returned
+@racket[eval]. @racket[syntax->datum] is useful to convert the returned
 syntax object into a printable datum.
 
 If @racket[insp] is not the original @tech{code inspector} (i.e., the
@@ -23,25 +33,21 @@ the result syntax object is @tech{tainted}.
 
 Here's an example of using @racket[expand] on a module:
 
-@racketblock[
+@examples[
 (parameterize ([current-namespace (make-base-namespace)])
- (expand
-  (datum->syntax
-   #f
-   '(module foo scheme
-      (define a 3)
-      (+ a 4)))))]
+ (syntax->datum
+  (expand
+   #'(module foo scheme (define a 3) (+ a 4)))))]
 
 Here's an example of using @racket[expand] on a non-top-level form:
 
-@racketblock[
+@examples[
 (define-namespace-anchor anchor)
 (parameterize ([current-namespace
                 (namespace-anchor->namespace anchor)])
- (expand
-  (datum->syntax
-   #f
-   '(delay (+ 1 2)))))]
+ (expand #'(delay (+ 1 2))))]
+
+See also: @racketmodname[syntax/toplevel], @racketmodname[macro-debugger].
 
 @history[#:changed "8.2.0.4" @elem{Added the @racket[insp] argument and tainting.}]}
 
@@ -50,7 +56,7 @@ Here's an example of using @racket[expand] on a non-top-level form:
                         [insp inspector? (current-code-inspector)])
          syntax?]{
 
-Like @racket[(expand stx insp)], except that the argument must be a
+Like @racket[(expand stx insp)], except that the argument @emph{must} be a
 @tech{syntax object}, and its lexical context is not enriched before
 expansion.
 
@@ -62,10 +68,16 @@ expansion.
          syntax?]{
 
 Partially expands @racket[top-level-form] and returns a syntax object
-for the partially-expanded expression. Due to limitations in the
-expansion mechanism, some context information may be lost. In
-particular, calling @racket[expand-once] on the result may produce a
-result that is different from expansion via @racket[expand].  
+for the partially-expanded expression. Contrasts with @racket[expand].
+
+@examples[
+(syntax->datum (expand #'(or x y)))
+(syntax->datum (expand-once #'(or x y)))
+]
+
+Due to limitations in the expansion mechanism, some context information
+may be lost. In particular, calling @racket[expand-once] on the result
+may produce a result that is different from expansion via @racket[expand].  
 
 Before @racket[top-level-form] is expanded, its lexical context is
 enriched with @racket[namespace-syntax-introduce], as for
