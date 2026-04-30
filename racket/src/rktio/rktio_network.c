@@ -30,6 +30,8 @@
 #define RKTIO_SHUT_RD SHUT_RD
 #define RKTIO_SHUT_WR SHUT_WR
 
+#define MAX_LISTEN_RETRY_ADDRINUSE_COUNT 4
+
 #define RKTIO_SOCKS(s) s
 
 typedef intptr_t rktio_socket_t;
