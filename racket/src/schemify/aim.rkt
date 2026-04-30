@@ -1,10 +1,11 @@
 #lang racket/base
+(require (for-syntax racket/base))
 (provide aim?)
 
 ;; macro statically ensures that the second argument is a valid target
-(define-syntax aim?
-  (syntax-rules (cify interp system)
-    [(_ e 'cify) (eq? e 'cify)]
-    [(_ e 'interp) (eq? e 'interp)]
-    [(_ e 'compile) (eq? e 'compile)]
-    [(_ e 'system) (eq? e 'system)]))
+(define-syntax (aim? stx)
+  (syntax-case stx (quote)
+    [(_ e 'target)
+     (and (identifier? #'target)
+          (memq (syntax->datum #'target) '(cify interp system)))
+     #'(eq? e 'target)]))
