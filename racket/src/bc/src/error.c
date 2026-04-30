@@ -56,6 +56,7 @@ ROSYM static Scheme_Object *arity_property;
 ROSYM static Scheme_Object *def_err_val_proc;
 ROSYM static Scheme_Object *def_err_stx_proc;
 ROSYM static Scheme_Object *def_err_stx_name_proc;
+ROSYM static Scheme_Object *def_err_stx_srcloc_proc;
 ROSYM static Scheme_Object *def_err_mod_path_proc;
 ROSYM static Scheme_Object *def_error_esc_proc;
 ROSYM static Scheme_Object *def_err_msg_adjust_proc;
@@ -913,8 +914,8 @@ void scheme_init_error(Scheme_Startup_Env *env)
   REGISTER_SO(def_err_stx_name_proc);
   def_err_stx_name_proc = scheme_make_prim_w_arity(def_error_syntax_name_proc, "default-error-name->string-handler", 1, 1);
 
-  REGISTER_SO(def_err_stx_name_proc);
-  def_err_stx_name_proc = scheme_make_prim_w_arity(def_error_syntax_srcloc_proc, "default-error-name->srcloc-handler", 1, 1);
+  REGISTER_SO(def_err_stx_srcloc_proc);
+  def_err_stx_srcloc_proc = scheme_make_prim_w_arity(def_error_syntax_srcloc_proc, "default-error-name->srcloc-handler", 1, 1);
 
   REGISTER_SO(def_err_mod_path_proc);
   def_err_mod_path_proc = scheme_make_prim_w_arity(def_error_module_path_string_proc, "default-error-module-path->string-handler", 2, 2);
@@ -1034,6 +1035,7 @@ void scheme_init_error_config(void)
   scheme_set_root_param(MZCONFIG_ERROR_PRINT_VALUE_HANDLER, def_err_val_proc);
   scheme_set_root_param(MZCONFIG_ERROR_PRINT_SYNTAX_HANDLER, def_err_stx_proc);
   scheme_set_root_param(MZCONFIG_ERROR_NAME_SYNTAX_HANDLER, def_err_stx_name_proc);
+  scheme_set_root_param(MZCONFIG_ERROR_SRCLOC_SYNTAX_HANDLER, def_err_stx_srcloc_proc);
   scheme_set_root_param(MZCONFIG_ERROR_PRINT_MODULE_PATH_HANDLER, def_err_mod_path_proc);
   scheme_set_root_param(MZCONFIG_ERROR_MESSAGE_ADJUSTER, def_err_msg_adjust_proc);
   scheme_set_root_param(MZCONFIG_EXE_YIELD_HANDLER, def_exe_yield_proc);

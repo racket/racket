@@ -263,10 +263,12 @@
    ;; syntax
    [(syntax? x)
     (define loc ((error-syntax->srcloc-handler) x))
-    (cond
-      [(not loc) (process-false loc good bad name)]
-      [(srcloc? loc) (process-srcloc loc good bad name)]
-      [else (process-syntax x good bad name)])]
+    (define x/new-loc
+      (cond
+        [(not loc) (datum->syntax x (syntax-e x) #f x)]
+        [(srcloc? loc) (datum->syntax x (syntax-e x) loc x)]
+        [else x]))
+    (process-syntax x/new-loc good bad name)]
    ;; other
    [else
     (bad
