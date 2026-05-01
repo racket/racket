@@ -25,6 +25,7 @@
 # define WAS_EBADADDRESS(e) (e == EINVAL)
 # define WAS_WSAEMSGSIZE(e) 0
 # define RKTIO_AFNOSUPPORT EAFNOSUPPORT
+# define RKTIO_EADDRINUSE EADDRINUSE
 
 #define RKTIO_SHUT_RD SHUT_RD
 #define RKTIO_SHUT_WR SHUT_WR
@@ -79,6 +80,7 @@ struct SOCKADDR_IN {
 # define WAS_ECONNREFUSED(e) (e == WSAECONNREFUSED)
 # define WAS_EBADADDRESS(e) 0
 # define RKTIO_AFNOSUPPORT WSAEAFNOSUPPORT
+# define RKTIO_EADDRINUSE WSAEADDRINUSE
 
 #define RKTIO_SHUT_RD SD_RECEIVE
 #define RKTIO_SHUT_WR SD_SEND
@@ -1540,7 +1542,7 @@ rktio_listener_t *rktio_listen_opt(rktio_t *rktio, rktio_addrinfo_t *src, int ba
               } else {
                 if ((flags & RKTIO_LISTEN_RETRY_ADDRINUSE)
                     && (retry_count < MAX_LISTEN_RETRY_ADDRINUSE_COUNT)
-                    && (SOCK_ERRNO() == EADDRINUSE)) {
+                    && (SOCK_ERRNO() == RKTIO_EADDRINUSE)) {
                   closesocket(s);
                   retry_socket = 1;
                   retry_count++;
