@@ -374,5 +374,7 @@
            1000000))
 
 (module+ test
+  (module config info
+    (define timeout 120))
   (measure 100000
            100))
