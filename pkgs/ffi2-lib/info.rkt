@@ -2,7 +2,7 @@
 
 (define collection 'multi)
 
-(define deps '(["base" #:version "9.1.0.12"]))
+(define deps '(["base" #:version "9.2"]))
 
 (define pkg-desc "implementation (no documentation) part of \"ffi2\"")
 
