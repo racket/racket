@@ -4,6 +4,18 @@
          openssl
          tests/eli-tester)
 
+(define (listen-on-ephemeral-port max-allow-wait hostname)
+  (let loop ([tries 8] [pause 0.01])
+    (with-handlers ([exn:fail:network?
+                     (λ (e)
+                       (cond
+                         [(zero? tries)
+                          (raise e)]
+                         [else
+                          (sleep pause)
+                          (loop (sub1 tries) (* 2 pause))]))])
+      (tcp-listen 0 max-allow-wait #f hostname))))
+
 (define (run-tests scheme wrap-ports skip-actual-redirect?)
   (define ((make-tester url->port) response . responses)
     (define server-cust
@@ -36,7 +48,10 @@
                          void
                          (λ (_port-no [max-allow-wait 4] [reuse? #f] [hostname #f])
                            (define listener
-                             (tcp-listen 0 max-allow-wait reuse? hostname))
+                             ;; `run-server` always requests reuse, but for an
+                             ;; ephemeral listener we do not need it. Retry a
+                             ;; few times to smooth over transient bind races.
+                             (listen-on-ephemeral-port max-allow-wait hostname))
                            (define-values (_local-addr port-no _remote-addr _remote-port)
                              (tcp-addresses listener #t))
                            (channel-put startup-ch (cons i port-no))
