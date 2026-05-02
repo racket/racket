@@ -102,7 +102,7 @@
                                                  |@|prefix|link_dirs,
                                                  0,
                                                  |@|prefix|link_dirs.length);
-                     if (pos) {
+                     if (pos !== false) {
                        var p = |@|prefix|link_dirs[pos][1];
                        if (|@|prefix|link_target_prefix) {
                          p = |@|prefix|link_target_prefix + p;
@@ -120,7 +120,7 @@
                                                |@|prefix|link_targets|@|lt-suffix|,
                                                0,
                                                |@|prefix|link_targets|@|lt-suffix|.length);
-                   if (pos) {
+                   if (pos !== false) {
                      var p = |@|prefix|link_targets|@|lt-suffix|[pos][1];
                      if (|@|prefix|link_target_prefix) {
                        p = |@|prefix|link_target_prefix + p;
@@ -159,7 +159,7 @@
     var rel = getParameterByName("rel");
     if (doc && rel) {
        var pos = bsearch(doc, link_dirs, 0, link_dirs.length);
-       if (pos) {
+       if (pos !== false) {
           window.onload = function() {
             window.location = link_dirs[pos][1] + "/" + rel;
           }
