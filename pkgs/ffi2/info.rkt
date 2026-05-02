@@ -2,7 +2,7 @@
 
 (define collection 'multi)
 
-(define deps '(["base" #:version "9.1.0.11"]
+(define deps '(["base" #:version "9.2"]
                "ffi2-lib"
                "dynext-lib"
                "rackunit-lib"
