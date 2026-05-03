@@ -104,6 +104,8 @@
       (add-flags '((make-docs #f)))]
      [("--doc-pdf") dir "Build documentation PDFs, write to <dir>"
       (add-flags `((doc-pdf-dest ,dir)))]
+     [("--doc-markdown") dir "Build documentation Markdown, write to <dir>"
+      (add-flags `((doc-markdown-dest ,dir)))]
      [("-K" "--no-pkg-deps") "Do not check package dependencies"
       (add-flags '((check-dependencies #f)))]
      [("--check-pkg-deps") "Check package dependencies when collections specified"

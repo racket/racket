@@ -30,6 +30,7 @@
      parallel-workers
      force-unpacks
      doc-pdf-dest
+     doc-markdown-dest
      specific-collections
      specific-planet-dirs
      archives
