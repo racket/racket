@@ -125,7 +125,7 @@
 
 |#
 
-(define LEVEL 6)
+(define DEFAULT_LEVEL 6)
 
 (define OUTBUFSIZ  16384);;   /* output buffer size */
 (define INBUFSIZ  #x8000);;   /* input buffer size */
@@ -370,6 +370,13 @@
     #x2d02ef8d))
 
 (define (code)
+
+  (define (check-level who level)
+    (unless (and (exact-integer? level)
+                 (<= 0 level 9))
+      (raise-argument-error who
+                            "(integer-in 0 9)"
+                            level)))
 
   ;; The gzip code wasn't defined for threads (or even to be
   ;;  multiply invoked), so we pack it up into a function to
@@ -1826,7 +1833,7 @@
 
         (or
          ;; /* Try to guess if it is profitable to stop the current block here */
-         (and (and (> LEVEL 2) (= (bitwise-and last_lit #xfff) 0))
+         (and (and (> current-level 2) (= (bitwise-and last_lit #xfff) 0))
               (let ()
                 ;; /* Compute an upper bound for the compressed length */
                 (define out_length (* last_lit 8))
@@ -2120,22 +2127,43 @@
     ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+    (define current-level DEFAULT_LEVEL)
+
     (define (deflate-inner in out)
       (do-deflate))
 
-    (define (deflate in out)
+    (define (store-deflate)
+      (let loop ()
+        (define len (read_buf 0 #xffff))
+        (cond
+          [(or (= len 0) (= len EOF-const))
+           (send_bits 1 3)
+           (copy_block window 0 #t)]
+          [else
+           (define last? (eof-object? (peek-byte ifd)))
+           (send_bits (if last? 1 0) 3)
+           (copy_block window len #t)
+           (unless last?
+             (loop))])))
+
+    (define (deflate in out [level DEFAULT_LEVEL])
+      (check-level 'deflate level)
 
       (set! bytes_in 0)
+      (set! current-level level)
 
       (set! ifd in)
       (set! ofd out)
       (set! outcnt 0)
 
+      (updcrc #f 0)
       (bi_init)
       (ct_init)
-      (lm_init LEVEL)
-
-      (deflate-inner in out)
+      (if (zero? level)
+          (store-deflate)
+          (begin
+            (lm_init level)
+            (deflate-inner in out)))
 
       (flush_outbuf)
 
@@ -2171,7 +2199,7 @@
       (bi_init)
       (ct_init)
 
-      (put_byte (lm_init LEVEL));; /* extra flags */
+      (put_byte (lm_init DEFAULT_LEVEL));; /* extra flags */
       (put_byte 3) ;; /* OS identifier */
 
       (when origname
@@ -2214,5 +2242,5 @@
 (define (gzip-through-ports in out origname time_stamp)
   ((cadr (code)) in out origname time_stamp))
 
-(define (deflate in out)
-  ((caddr (code)) in out))
+(define (deflate in out #:level [level DEFAULT_LEVEL])
+  ((caddr (code)) in out level))
