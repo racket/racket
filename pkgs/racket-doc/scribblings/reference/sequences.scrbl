@@ -1319,9 +1319,11 @@ stream, but plain lists can be used as streams, and functions such as
   but the @racket[tail-expr] pattern matches the ``rest'' of the stream after the last @racket[elem-expr].
 
 @history[#:added "6.3"
-         #:changed "8.0.0.12" @elem{Changed to delay @racket[rest-expr] even
-                                    if zero @racket[expr]s are provided.}
-         #:changed "8.8.0.7" @elem{Changed to allow multiple values.}]
+         #:changed "8.0.0.12"
+         @elem{Changed to delay @racket[tail-expr] even if zero
+               @racket[elem-expr]s are provided.}
+         #:changed "8.8.0.7"
+         @elem{Changed to allow multiple values.}]
 }
 
 @defproc[(in-stream [s stream?]) sequence?]{
