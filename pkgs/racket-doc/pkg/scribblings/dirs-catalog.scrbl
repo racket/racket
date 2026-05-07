@@ -49,6 +49,13 @@ are discovered in @racket[dirs] as subdirectories that have an
 directory in @racket[dirs] is checked for an immediate @filepath{info.rkt}
 file before checking subdirectories.
 
+If an @filepath{info.rkt} has a @racketidfont{dirs-catalog}
+definition, then it can adjust a directory traversal: an
+@racket['ignore] value causes the directory to be skipped, and a
+@racket['subdirs] value continues looking for packages as
+subdirectories while not treating the immediate directory as a
+package.
+
 If @racket[link?] is true, then the catalog specifies that the package
 should be installed as a directory link, as opposed to copies.
 
@@ -67,4 +74,5 @@ then the defined name is used as the package's name instead of the
 package directory's name.
 
 @history[#:changed "6.90.0.4" @elem{Added the @racket[#:immediate] argument.}
-         #:changed "7.3.0.2" @elem{Added support for @racket[pkg-name] to name a package.}]}
+         #:changed "7.3.0.2" @elem{Added support for @racket[pkg-name] to name a package.}
+         #:changed "9.2.0.3" @elem{Added support for @racketidfont{dirs-catalog} in @filepath{info.rkt}.}]}
