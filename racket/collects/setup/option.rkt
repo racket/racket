@@ -90,6 +90,7 @@
 (define-flag-param pause-on-errors #f)
 (define-flag-param force-unpacks #f)
 (define-flag-param doc-pdf-dest #f)
+(define-flag-param doc-markdown-dest #f)
 (define-flag-param fail-fast #f)
 (define-flag-param next-error-out-file #f)
 (define-flag-param previous-error-in-file #f)
