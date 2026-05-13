@@ -34,6 +34,12 @@ typedef long long rktio_int64_t;
 typedef unsigned long long rktio_uint64_t;
 #endif
 
+#ifdef RKTIO_SYSTEM_WINDOWS
+typedef int rktio_int32_t;
+#else
+typedef int32_t rktio_int32_t;
+#endif
+
 /* Endianness. */
 #undef RKTIO_BIG_ENDIAN
 
@@ -60,6 +66,7 @@ typedef unsigned long long rktio_uint64_t;
 
 /* In case iconv is not available: */
 #undef RKTIO_NO_ICONV
+#undef RKTIO_HAVE_ICU
 
 /* Fields of struct dirent */
 #undef HAVE_DIRENT_NAMLEN

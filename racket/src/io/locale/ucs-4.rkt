@@ -5,8 +5,8 @@
 
 (define ucs-4-encoding
   (if (system-big-endian?)
-      "UCS-4BE"
-      "UCS-4LE"))
+      "UTF-32BE"
+      "UTF-32LE"))
 
 (define (string->bytes/ucs-4 str start end)
   (define len (* 4 (- end start)))
