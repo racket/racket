@@ -50,6 +50,19 @@
 (check-equal? (interpolation-format-spec (car (template-interpolations formatted-template))) ".2f")
 
 (check-equal? (fpl "{(string-upcase name)}") "ALICE")
+(check-equal? (fpl "{2 03d}") "002")
+(check-equal? (fpl "{10 >2d}") "10")
+(check-equal? (fpl "{7 >3d}") "  7")
+(check-equal? (fpl "{7 <3d}") "7  ")
+(check-equal? (fpl "{1.234 .2f}") "1.23")
+(check-equal? (fpl "{2 .2f}") "2.00")
+(check-equal? (fpl "{\"hi\" r}") "\"hi\"")
+(check-exn
+ exn:fail?
+ (lambda ()
+   (fpl "{\"hi\" r .2f}")
+ ) ; end lambda
+) ; end check-exn string conversion numeric format
 
 (define evaluation-order '())
 

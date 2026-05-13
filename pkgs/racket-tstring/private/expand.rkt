@@ -55,13 +55,12 @@
   (define-values (strings expression-infos)
     (parse-template-parts who context-stx input-stx)
   ) ; end define-values
-  (define expression-stxs (map car expression-infos))
   (cond
-    ((null? expression-stxs)
+    ((null? expression-infos)
      (datum->syntax-literal (car strings))
     ) ; end static f-string
     (else
-     #`(string-append #,@(fstring-append-parts strings expression-stxs))
+     #`(string-append #,@(fstring-append-parts strings expression-infos))
     ) ; end dynamic f-string
   ) ; end cond
 ) ; end define-for-syntax expand-fstring
@@ -161,19 +160,19 @@
   ) ; end datum->syntax
 ) ; end define-for-syntax source-string->syntax
 
-(define-for-syntax (fstring-append-parts strings expression-stxs)
+(define-for-syntax (fstring-append-parts strings expression-infos)
   (let loop ((strings strings)
-             (expression-stxs expression-stxs)
+             (expression-infos expression-infos)
         ) ; end loop bindings
     (cond
-      ((null? expression-stxs)
+      ((null? expression-infos)
        (list (datum->syntax-literal (car strings)))
       ) ; end last static string
       (else
        (cons (datum->syntax-literal (car strings))
-             (cons #`(~a #,(car expression-stxs))
+             (cons (fstring-interpolation-syntax (car expression-infos))
                    (loop (cdr strings)
-                         (cdr expression-stxs)
+                         (cdr expression-infos)
                    ) ; end loop
              ) ; end cons expression
        ) ; end cons string
@@ -181,6 +180,16 @@
     ) ; end cond
   ) ; end let loop
 ) ; end define-for-syntax fstring-append-parts
+
+(define-for-syntax (fstring-interpolation-syntax expression-info)
+  (define expression-stx (list-ref expression-info 0))
+  (define format-spec (list-ref expression-info 1))
+  (define conversion (list-ref expression-info 2))
+  #`(format-fstring-value #,expression-stx
+                          '#,format-spec
+                          '#,conversion
+    ) ; end format-fstring-value
+) ; end define-for-syntax fstring-interpolation-syntax
 
 (define-for-syntax (interpolation-syntax expression-info)
   (define expression-stx (list-ref expression-info 0))
