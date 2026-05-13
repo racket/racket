@@ -7,7 +7,7 @@
 
 (define tpl-value
   (template (list "hello " "")
-            (list (interpolation "Alice" #'name 'identifier #'name))
+            (list (interpolation "Alice" #'name #f ""))
   ) ; end template
 ) ; end define tpl-value
 

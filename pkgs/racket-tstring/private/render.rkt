@@ -42,7 +42,10 @@
   (values strings interpolations)
 ) ; end define checked-template-parts
 
-(define (render-template tpl #:value->string (value->string ~a))
+(define (render-template tpl
+                         #:interpolation->string (interpolation->string interpolation-value)
+                         #:value->string (value->string ~a)
+        ) ; end define formals
   (define-values (strings interpolations)
     (checked-template-parts 'render-template tpl)
   ) ; end define-values
@@ -56,11 +59,11 @@
        (void)
       ) ; end no more interpolations
       (else
-       (write-string (value->string (interpolation-value (car interpolations))) out)
+       (write-string (value->string (interpolation->string (car interpolations))) out)
        (loop (cdr strings)
              (cdr interpolations)
        ) ; end loop
-      ) ; end interpolation case
+      ) ; end interpolation part
     ) ; end cond
   ) ; end let loop
   (get-output-string out)
@@ -85,21 +88,21 @@
          '()
         ) ; end no more interpolations
         (else
-         (define slot (car interpolations))
-         (unless (eq? (interpolation-kind slot) 'identifier)
+         (define part (car interpolations))
+         (unless (identifier? (interpolation-syntax part))
            (raise-arguments-error 'template->sql
                                   "SQL template only accepts identifier slots"
                                   "interpolation"
-                                  slot
+                                  part
            ) ; end raise-arguments-error
          ) ; end unless identifier
          (write-string "?" out)
-         (cons (interpolation-value slot)
+         (cons (interpolation-value part)
                (loop (cdr strings)
                      (cdr interpolations)
                ) ; end loop
          ) ; end cons
-        ) ; end interpolation case
+        ) ; end interpolation part
       ) ; end cond
     ) ; end let loop
   ) ; end define params
@@ -108,8 +111,11 @@
   ) ; end values
 ) ; end define template->sql
 
-(define (html-render tpl)
-  (render-template tpl #:value->string html-escape)
+(define (html-render tpl #:interpolation->string (interpolation->string interpolation-value))
+  (render-template tpl
+                   #:interpolation->string interpolation->string
+                   #:value->string html-escape
+  ) ; end render-template
 ) ; end define html-render
 
 (define (html-escape value)

@@ -7,36 +7,43 @@
 
 (define name "Alice")
 
+(define hello-interpolation
+  (interpolation name #'name #f "")
+) ; end define hello-interpolation
+
 (define hello-template
   (template (list "hello " "")
-            (list (interpolation name #'name 'identifier #'name))
+            (list hello-interpolation)
   ) ; end template
 ) ; end define hello-template
 
 (check-true (template? hello-template))
+(check-equal? (template-parts hello-template) (list "hello " hello-interpolation ""))
 (check-equal? (template-strings hello-template) (list "hello " ""))
-(check-equal? (map interpolation-value (template-interpolations hello-template))
-              (list "Alice")
-) ; end check-equal?
+(check-equal? (map interpolation-value (template-interpolations hello-template)) (list "Alice"))
 (check-equal? (render-template hello-template) "hello Alice")
 (check-equal? (render-fstring hello-template) "hello Alice")
 
 (define sum-template
   (template (list "sum = " "")
-            (list (interpolation 3 #'(+ 1 2) 'expression #'(+ 1 2)))
+            (list (interpolation 3 #'(+ 1 2) #f ""))
   ) ; end template
 ) ; end define sum-template
 
 (check-equal? (render-template sum-template) "sum = 3")
-(check-equal? (render-template sum-template #:value->string number->string) "sum = 3")
+(check-equal? (render-template sum-template
+                               #:value->string number->string
+              ) ; end render-template
+              "sum = 3"
+) ; end check-equal?
 
 (define id 42)
 (define status "active")
 
 (define sql-template
   (template (list "WHERE id = " " AND status = " "")
-            (list (interpolation id #'id 'identifier #'id)
-                  (interpolation status #'status 'identifier #'status)
+            (list (interpolation id #'id #f "")
+                  (interpolation status #'status #f "")
             ) ; end list
   ) ; end template
 ) ; end define sql-template
@@ -57,7 +64,7 @@
 
 (define html-template
   (template (list "<p>" "</p>")
-            (list (interpolation "<script>&\"" #'user-input 'identifier #'user-input))
+            (list (interpolation "<script>&\"" #'user-input #f ""))
   ) ; end template
 ) ; end define html-template
 
@@ -67,11 +74,11 @@
 
 (check-exn
  exn:fail:contract?
- (lambda ()
-   (render-template
-    (template (list "too " "many " "strings")
-              (list (interpolation 1 #'x 'identifier #'x))
-    ) ; end template
-   ) ; end render-template
- ) ; end lambda
+  (lambda ()
+    (render-template
+     (template (list "too " "many " "strings")
+               '()
+     ) ; end template
+    ) ; end render-template
+  ) ; end lambda
 ) ; end check-exn

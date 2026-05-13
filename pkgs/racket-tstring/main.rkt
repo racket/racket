@@ -10,14 +10,15 @@
 (provide
  template
  template?
+ template-parts
  template-strings
  template-interpolations
  interpolation
  interpolation?
  interpolation-value
  interpolation-syntax
- interpolation-kind
- interpolation-source
+ interpolation-format-spec
+ interpolation-conversion
  render-template
  render-fstring
  template->sql

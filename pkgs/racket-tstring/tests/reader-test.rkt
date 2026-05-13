@@ -9,7 +9,9 @@
 
 (check-equal? rendered "hello Alice")
 (check-true (template? template-value))
-(check-equal? (render-template template-value) "hello Alice")
+(check-equal? (interpolation-value (car (template-interpolations template-value))) "Alice")
+(check-equal? (interpolation-format-spec (car (template-interpolations template-value))) #f)
+(check-equal? (interpolation-conversion (car (template-interpolations template-value))) "")
 (check-equal? ordinary-string "f\"not a template\"")
 (check-equal? nested-rendered "outer inner 1")
 (check-true (template? nested-template))
