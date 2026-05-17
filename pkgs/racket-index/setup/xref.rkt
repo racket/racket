@@ -17,13 +17,14 @@
 
 (define cached-xref #f)
 
-(define (get-rendered-doc-directories no-user? no-main?)
-  (append (get-dests 'scribblings no-user? no-main? #f #f)
-          (get-dests 'rendered-scribblings no-user? no-main? #f #f)))
+(define (get-rendered-doc-directories no-user? no-main?
+                                      #:keep-omit? [keep-omit? #f])
+  (append (get-dests 'scribblings no-user? no-main? #f #f keep-omit?)
+          (get-dests 'rendered-scribblings no-user? no-main? #f #f keep-omit?)))
 
 (struct dest+pkg (dest pkg))
 
-(define (get-dests tag no-user? no-main? sxrefs? pkg-cache)
+(define (get-dests tag no-user? no-main? sxrefs? pkg-cache keep-omit?)
   (define main-dirs
     (for/hash ([k (in-list (find-relevant-directories (list tag) 'no-user))])
       (values k #t)))
@@ -46,7 +47,8 @@
             [out-count (if (len . >= . 5)
                            (list-ref d 4)
                            1)])
-       (if (not (and (len . >= . 3) (memq 'omit (caddr d))))
+       (if (or keep-omit?
+               (not (and (len . >= . 3) (memq 'omit (caddr d)))))
            (let ([d (doc-path dir name flags (hash-ref main-dirs dir #f) 
                               (if no-user? 'never 'false-if-missing)
                               #:main? (not no-main?))])
@@ -165,8 +167,8 @@
 (define (get-reader-thunks no-user? no-main? quiet-fail? done-ht)
   (define pkg-cache (make-hash))
   (map (dest->source done-ht quiet-fail?)
-       (filter values (append (get-dests 'scribblings no-user? no-main? #t pkg-cache)
-                              (get-dests 'rendered-scribblings no-user? no-main? #t pkg-cache)))))
+       (filter values (append (get-dests 'scribblings no-user? no-main? #t pkg-cache #f)
+                              (get-dests 'rendered-scribblings no-user? no-main? #t pkg-cache #f)))))
 
 (define (load-collections-xref [report-loading void])
   (or cached-xref

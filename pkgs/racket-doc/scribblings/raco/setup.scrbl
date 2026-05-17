@@ -1999,13 +1999,19 @@ be closed only though a @tech[#:doc reference-doc]{custodian}.}
 
 
 @defproc[(get-rendered-doc-directories [no-user? any/c]
-                                       [no-main? any/c])
+                                       [no-main? any/c]
+                                       [#:keep-omit? keep-omit? any/c #f])
          (listof path?)]{
 
 Returns a list of directories for all documentation for all installed
 collections, omitting documentation that is installed in the main
 installation or in a user-specific location, respectively, if
-@racket[no-main?] or @racket[no-user?] is @racket[#t].}
+@racket[no-main?] or @racket[no-user?] is @racket[#t].
+
+If @racket[keep-omit?] is true, then the result includes documentation
+that has the @racket['omit] category.
+
+@history[#:changed "1.5" @elem{Added the @racket[#:keep-omit?] argument.}]}
 
 
 @defproc[(get-current-doc-state) doc-state?]{

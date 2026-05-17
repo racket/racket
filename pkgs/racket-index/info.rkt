@@ -12,7 +12,7 @@
 
 (define pkg-authors '(eli jay matthias mflatt robby ryanc samth))
 
-(define version "1.4")
+(define version "1.5")
 
 ;; We need to be able to re-render this documentation even in
 ;; binary mode, since that's how we list new documentation:
