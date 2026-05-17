@@ -199,6 +199,9 @@ flags:
  @item{@DFlag{no-docs} or @Flag{D} --- refrain from building
    documentation.}
 
+ @item{@DFlag{only-extra-docs} --- disable actions other than
+   rendering for @DFlag{doc-pdf} or @DFlag{doc-markdown}.}
+
  @item{@DFlag{doc-pdf} @nonterm{dir} --- in addition to building HTML
    documentation, render documentation to PDF and place files in
    @nonterm{dir}.}
@@ -395,7 +398,9 @@ debugging:
          #:changed "7.9.0.3" @elem{Added @envvar{PLT_SETUP_NO_FORCE_GC},
                                    @envvar{PLT_SETUP_SHOW_TIMESTAMPS},
                                    and @DFlag{sync-docs-only}.}
-         #:changed "8.17.0.2" @elem{Added the @litchar{recompile-cache} flag.}]
+         #:changed "8.17.0.2" @elem{Added the @DFlag{recompile-cache} flag.}
+         #:changed "9.2.0.4" @elem{Added the @DFlag{doc-markdown} and
+                                   @DFlag{only-extra-docs} flags.}]
 
 @; ------------------------------------------------------------------------
 

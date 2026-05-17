@@ -980,7 +980,7 @@
 (define (sxref-path latex-dest doc file)
   (case (doc-dest-kind latex-dest)
     [(latex markdown)
-     (let-values ([(base name dir?) (split-path (doc-src-file doc))])
+     (let-values ([(base name dir?) (split-path (doc-dest-dir doc))])
        (build-path (doc-dest-path latex-dest)
                    (path-replace-suffix name (string-append "." file))))]
     [else (build-path (doc-dest-dir doc) file)]))
@@ -1562,7 +1562,10 @@
                   (equal? in-version2 expected)
                   (for/and ([out-version out-versions])
                     (equal? out-version expected)))
-       (error "old info has wrong version or flags" in-version in-version2 out-versions expected))
+       (error "old info has wrong version or flags"
+              (doc-src-dir doc)
+              in-filename
+              in-version in-version2 out-versions expected))
      (match (with-my-namespace
              (lambda ()
                (deserialize undef+searches)))

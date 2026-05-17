@@ -102,6 +102,8 @@
       (add-flags '((make-info-domain #f)))]
      [("-D" "--no-docs") "Do not compile .scrbl files and do not build documentation"
       (add-flags '((make-docs #f)))]
+     [("--only-extra-docs") "Only build requested PDF/Markdown docs"
+      (add-flags disable-action-flags)]
      [("--doc-pdf") dir "Build documentation PDFs, write to <dir>"
       (add-flags `((doc-pdf-dest ,dir)))]
      [("--doc-markdown") dir "Build documentation Markdown, write to <dir>"
