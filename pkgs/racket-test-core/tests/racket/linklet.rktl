@@ -109,4 +109,19 @@
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(let ()
+  (define l
+    (compile-linklet
+     '(linklet () (vr)
+        (define-values (vr) (#%variable-reference)))))
+  
+  (define inst (instantiate-linklet l '()))
+  (define vr (instance-variable-value inst 'vr))
+  
+  (err/rt-test (variable-reference->module-path-index vr))
+  (err/rt-test (variable-reference->resolved-module-path vr))
+  (err/rt-test (variable-reference->module-source vr)))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (report-errs)
