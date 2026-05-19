@@ -1394,192 +1394,206 @@ rktio_listener_t *rktio_listen_opt(rktio_t *rktio, rktio_addrinfo_t *src, int ba
 {
   {
     rktio_addrinfo_t *addr;
-    int count = 0, pos = 0;
+    int count = 0;
     rktio_listener_t *l = NULL;
 #ifdef RKTIO_TCP_LISTEN_IPV6_ONLY_SOCKOPT
     int any_v4 = 0, any_v6 = 0;
 #endif
+    int retry_socket = 0, retry_count = 0;
 
     for (addr = src; addr; addr = (rktio_addrinfo_t *)RKTIO_AS_ADDRINFO(addr)->ai_next) {
 #ifdef RKTIO_TCP_LISTEN_IPV6_ONLY_SOCKOPT
       if (RKTIO_AS_ADDRINFO(addr)->ai_family == RKTIO_PF_INET)
-	any_v4 = 1;
+        any_v4 = 1;
       else if (RKTIO_AS_ADDRINFO(addr)->ai_family == PF_INET6)
-	any_v6 = 1;
+        any_v6 = 1;
 #endif
       count++;
     }
 
-    {
+    do {
       rktio_socket_t s;
 #ifdef RKTIO_TCP_LISTEN_IPV6_ONLY_SOCKOPT
       /* Try IPv6 listeners first, so we can retry and use just IPv4 if
-	 IPv6 doesn't work right. */
+         IPv6 doesn't work right. */
       int v6_loop = (any_v6 && any_v4), skip_v6 = 0;
 #endif
+      int pos = 0;
       int first_time = 1;
       int first_was_zero = 0;
-      int retry_socket, retry_count;
       unsigned short no_port = 0;
+
+      retry_socket = 0;
 
       for (addr = src; addr; ) {
 #ifdef RKTIO_TCP_LISTEN_IPV6_ONLY_SOCKOPT
-	if ((v6_loop && (RKTIO_AS_ADDRINFO(addr)->ai_family != PF_INET6))
-	    || (skip_v6 && (RKTIO_AS_ADDRINFO(addr)->ai_family == PF_INET6))) {
-	  addr = (rktio_addrinfo_t *)RKTIO_AS_ADDRINFO(addr)->ai_next;
-	  if (v6_loop && !addr) {
-	    v6_loop = 0;
-	    skip_v6 = 1;
-	    addr = src;
-	  }
-	  continue;
-	}
+        if ((v6_loop && (RKTIO_AS_ADDRINFO(addr)->ai_family != PF_INET6))
+            || (skip_v6 && (RKTIO_AS_ADDRINFO(addr)->ai_family == PF_INET6))) {
+          addr = (rktio_addrinfo_t *)RKTIO_AS_ADDRINFO(addr)->ai_next;
+          if (v6_loop && !addr) {
+            v6_loop = 0;
+            skip_v6 = 1;
+            addr = src;
+          }
+          continue;
+        }
 #endif
 
-        retry_socket = 0;
-        retry_count = 0;
+        rktio_cloexec_lock();
 
-        do {
-          rktio_cloexec_lock();
+        s = socket(RKTIO_AS_ADDRINFO(addr)->ai_family,
+                   RKTIO_AS_ADDRINFO(addr)->ai_socktype,
+                   RKTIO_AS_ADDRINFO(addr)->ai_protocol);
 
-          s = socket(RKTIO_AS_ADDRINFO(addr)->ai_family,
-                     RKTIO_AS_ADDRINFO(addr)->ai_socktype,
-                     RKTIO_AS_ADDRINFO(addr)->ai_protocol);
+        if (s != INVALID_SOCKET)
+          rktio_fd_cloexec(s);
+        else
+          get_socket_error();
 
-          if (s != INVALID_SOCKET)
-            rktio_fd_cloexec(s);
-          else
-            get_socket_error();
-
-          rktio_cloexec_unlock();
+        rktio_cloexec_unlock();
 
 #ifdef RKTIO_TCP_LISTEN_IPV6_ONLY_SOCKOPT
-          if (s == INVALID_SOCKET) {
-            /* Maybe it failed because IPv6 is not available: */
-            if ((RKTIO_AS_ADDRINFO(addr)->ai_family == PF_INET6) && (errno == EAFNOSUPPORT)) {
-              if (any_v4 && !pos) {
-                /* Let client known that maybe we can make it work with just IPv4. */
-                set_racket_error(RKTIO_ERROR_TRY_AGAIN_WITH_IPV4);
-              }
+        if (s == INVALID_SOCKET) {
+          /* Maybe it failed because IPv6 is not available: */
+          if ((RKTIO_AS_ADDRINFO(addr)->ai_family == PF_INET6) && (errno == EAFNOSUPPORT)) {
+            if (any_v4 && !pos) {
+              /* Let client known that maybe we can make it work with just IPv4. */
+              set_racket_error(RKTIO_ERROR_TRY_AGAIN_WITH_IPV4);
             }
           }
-          if (s != INVALID_SOCKET) {
-            if (any_v4 && (RKTIO_AS_ADDRINFO(addr)->ai_family == PF_INET6)) {
-              int ok;
+        }
+        if (s != INVALID_SOCKET) {
+          if (any_v4 && (RKTIO_AS_ADDRINFO(addr)->ai_family == PF_INET6)) {
+            int ok;
 # ifdef IPV6_V6ONLY
-              int on = 1;
-              ok = setsockopt(s, IPPROTO_IPV6, IPV6_V6ONLY, (char *)&on, sizeof(on));
+            int on = 1;
+            ok = setsockopt(s, IPPROTO_IPV6, IPV6_V6ONLY, (char *)&on, sizeof(on));
 # else
-              ok = -1;
+            ok = -1;
 # endif
-              if (ok) {
-                if (!pos) {
-                  /* IPV6_V6ONLY doesn't work */
-                  set_racket_error(RKTIO_ERROR_TRY_AGAIN_WITH_IPV4);
-                  s = INVALID_SOCKET;
-                } else {
-                  get_socket_error();
-                  closesocket(s);
-                  s = INVALID_SOCKET;
-                }
+            if (ok) {
+              if (!pos) {
+                /* IPV6_V6ONLY doesn't work */
+                set_racket_error(RKTIO_ERROR_TRY_AGAIN_WITH_IPV4);
+                s = INVALID_SOCKET;
+              } else {
+                get_socket_error();
+                closesocket(s);
+                s = INVALID_SOCKET;
               }
             }
           }
+        }
 #endif
 
-          if (s != INVALID_SOCKET) {
+        if (s != INVALID_SOCKET) {
 #ifdef RKTIO_SYSTEM_WINDOWS
-            unsigned long ioarg = 1;
-            ioctlsocket(s, FIONBIO, &ioarg);
+          unsigned long ioarg = 1;
+          ioctlsocket(s, FIONBIO, &ioarg);
 #else
-            fcntl(s, F_SETFL, RKTIO_NONBLOCKING);
+          fcntl(s, F_SETFL, RKTIO_NONBLOCKING);
 #endif
 
-            if (flags & RKTIO_LISTEN_REUSE) {
-              int reuse = 1;
-              setsockopt(s, SOL_SOCKET, SO_REUSEADDR, (char *)(&reuse), sizeof(int));
-            }
+          if (flags & RKTIO_LISTEN_REUSE) {
+            int reuse = 1;
+            setsockopt(s, SOL_SOCKET, SO_REUSEADDR, (char *)(&reuse), sizeof(int));
+          }
       
-            if (first_was_zero) {
-              ((struct sockaddr_in *)RKTIO_AS_ADDRINFO(addr)->ai_addr)->sin_port = no_port;
-            }
-            if (!bind(s, RKTIO_AS_ADDRINFO(addr)->ai_addr, RKTIO_AS_ADDRINFO(addr)->ai_addrlen)) {
-              if (first_time) {
-                if (((struct sockaddr_in *)RKTIO_AS_ADDRINFO(addr)->ai_addr)->sin_port == 0) {
-                  no_port = get_no_portno(rktio, s);
-                  first_was_zero = 1;
-                  if (no_port < 0) {
-                    closesocket(s);
-                    break;
-                  }
-                }
-                first_time = 0;
-              }
-
-              if (!listen(s, backlog)) {
-                if (!pos) {
-                  l = malloc(sizeof(rktio_listener_t) + (count * sizeof(rktio_socket_t)));
-                  l->count = count;
-# ifdef HAVE_POLL_SYSCALL
-                  {
-                    struct pollfd *pfd;
-                    pfd = malloc(sizeof(struct pollfd) * count);
-                    l->pfd = pfd;
-                  }
-# endif
-                }
-# ifdef HAVE_POLL_SYSCALL
-                l->pfd[pos].fd = s;
-                l->pfd[pos].events = POLLIN;
-# endif
-                l->s[pos++] = s;
-	    
-                REGISTER_SOCKET(s);
-
-                if (pos == count) {
-                  return l;
-                }
-              } else {
-                if ((flags & RKTIO_LISTEN_RETRY_ADDRINUSE)
-                    && (retry_count < MAX_LISTEN_RETRY_ADDRINUSE_COUNT)
-                    && (SOCK_ERRNO() == RKTIO_EADDRINUSE)) {
-                  closesocket(s);
-                  retry_socket = 1;
-                  retry_count++;
-                } else {
-                  get_socket_error();
+          if (first_was_zero) {
+            /* as we bind multiple addresses, use the same port number in place of port 0 */
+            ((struct sockaddr_in *)RKTIO_AS_ADDRINFO(addr)->ai_addr)->sin_port = no_port;
+          }
+          if (!bind(s, RKTIO_AS_ADDRINFO(addr)->ai_addr, RKTIO_AS_ADDRINFO(addr)->ai_addrlen)) {
+            if (first_time) {
+              if (((struct sockaddr_in *)RKTIO_AS_ADDRINFO(addr)->ai_addr)->sin_port == 0) {
+                int no_port_r;
+                no_port_r = get_no_portno(rktio, s);
+                first_was_zero = 1;
+                if (no_port_r < 0) {
                   closesocket(s);
                   break;
                 }
+                no_port = (unsigned short)no_port_r;
               }
+              first_time = 0;
+            }
+
+            if (!listen(s, backlog)) {
+              if (!pos) {
+                l = malloc(sizeof(rktio_listener_t) + (count * sizeof(rktio_socket_t)));
+                l->count = count;
+# ifdef HAVE_POLL_SYSCALL
+                {
+                  struct pollfd *pfd;
+                  pfd = malloc(sizeof(struct pollfd) * count);
+                  l->pfd = pfd;
+                }
+# endif
+              }
+# ifdef HAVE_POLL_SYSCALL
+              l->pfd[pos].fd = s;
+              l->pfd[pos].events = POLLIN;
+# endif
+              l->s[pos++] = s;
+	    
+              REGISTER_SOCKET(s);
+
+              if (pos == count) {
+                return l;
+              }
+            } else {
+              if ((flags & RKTIO_LISTEN_RETRY_ADDRINUSE)
+                  && (retry_count < MAX_LISTEN_RETRY_ADDRINUSE_COUNT)
+                  && (SOCK_ERRNO() == RKTIO_EADDRINUSE)) {
+                closesocket(s);
+                retry_socket = 1;
+                retry_count++;
+              } else {
+                get_socket_error();
+                closesocket(s);
+                break;
+              }
+            }
+          } else {
+            if ((flags & RKTIO_LISTEN_RETRY_ADDRINUSE)
+                && (retry_count < MAX_LISTEN_RETRY_ADDRINUSE_COUNT)
+                && (SOCK_ERRNO() == RKTIO_EADDRINUSE)) {
+              closesocket(s);
+              retry_socket = 1;
+              retry_count++;
             } else {
               get_socket_error();
               closesocket(s);
-              break;
             }
-          } else {
             break;
           }
-        } while (retry_socket);
+        } else {
+          break;
+        }
 
-	addr = (rktio_addrinfo_t *)RKTIO_AS_ADDRINFO(addr)->ai_next;
+        if (retry_socket)
+          break; /* break out of `addr` loop */
+
+        addr = (rktio_addrinfo_t *)RKTIO_AS_ADDRINFO(addr)->ai_next;
 
 #ifdef RKTIO_TCP_LISTEN_IPV6_ONLY_SOCKOPT
-	if (!addr && v6_loop) {
-	  v6_loop = 0;
-	  skip_v6 = 1;
-	  addr = src;
-	}
+        if (!addr && v6_loop) {
+          v6_loop = 0;
+          skip_v6 = 1;
+          addr = src;
+        }
 #endif
       }
 
       if (l) {
         l->count = pos;
         rktio_listen_stop(rktio, l);
+        l = NULL;
+        pos = 0;
       }
+    } while (retry_socket);
 
-      return NULL;
-    }
+    return NULL;
   }
 }
 
