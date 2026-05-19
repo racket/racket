@@ -251,7 +251,7 @@ In more detail, the steps are as follows:
 
       The server provides README files from the
       @filepath{build/readmes} directory. If @filepath{README.txt}
-      does not exist when the sever is started, a default file is
+      does not exist when the server is started, a default file is
       created (and clients download @filepath{README.txt} by default).
 
       If you stop the server and want to restart it, use the
