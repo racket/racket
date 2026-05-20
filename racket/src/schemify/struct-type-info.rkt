@@ -52,6 +52,7 @@
                      [`(,_) 'non-prefab]
                      [`(,_ #f . ,_) 'non-prefab]
                      [`(,_ (current-inspector) . ,_) 'non-prefab]
+                     [`(,_ 'current . ,_) 'non-prefab]
                      [`(,_ 'prefab ,_ ',immutables . ,_) immutables]
                      [`(,_ 'prefab ,_) '()]
                      [`(,_ 'prefab) '()]
