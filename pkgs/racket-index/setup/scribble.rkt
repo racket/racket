@@ -62,9 +62,9 @@
 ;; one pass is not yet supported.
 
 (define (doc-dest-kind dests)
-  (if (null? dests)
-      'html
-      (car (car dests))))
+  (if (doc-dest? dests)
+      (car (car dests))
+      'html))
 
 (define (doc-dest-path dests)
   (and (pair? dests) (cadr (car dests))))
