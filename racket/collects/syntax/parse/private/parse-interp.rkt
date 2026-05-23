@@ -502,9 +502,17 @@
     (define n (find-bundle-offset aenv))
     (define naenv (if n (take aenv n) aenv))
     (define tmps (generate-temporaries naenv))
-    (with-syntax ([(a ...) naenv] [n n] [(tmp ...) tmps] [expr expr])
+    (with-syntax ([(a ...) naenv] [(tmp ...) tmps] [expr expr])
       #`(lambda (renv)
-          (let-values ([(tmp ...) (list->values 'n renv)])
+          (let-values ([(tmp ...)
+                        ;; small numbers of variables are fairly common
+                        #,(case (length naenv)
+                            [(0) #'(values)]
+                            [(1) #'(car renv)]
+                            [(2) #'(values (car renv) (cadr renv))]
+                            [(3) #'(values (car renv) (cadr renv) (caddr renv))]
+                            [else (with-syntax ([n n])
+                                    #`(list->values 'n renv))])])
             (let-attributes ([a tmp] ...) expr)))))
 
   (define (argu->exprs argu)
