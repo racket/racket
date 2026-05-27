@@ -35,8 +35,6 @@ Contribute to Racket by
 * visiting the Racket forums 
   * [Racket Discussions Discourse](https://racket.discourse.group/)
   * [Racket Discord](https://discord.gg/6Zq8sH5) #internals
-  * [Slack](https://racket-slack.herokuapp.com/)
-
 
 By making a contribution, you are agreeing that your contribution is
 licensed under the LGPLv3, Apache 2.0, and MIT licenses. Those
