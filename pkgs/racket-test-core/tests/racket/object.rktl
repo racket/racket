@@ -2614,5 +2614,198 @@
                #rx"method is implemented by multiple superinterfaces"))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; field chaperones
+
+(syntax-test #`(class object% (field [x 0 #:chaperone-accessor])))
+(syntax-test #`(class object% (field [x 0 #:chaperone-mutator])))
+(syntax-test #`(class object% (field [x 0 #:something-else x])))
+(syntax-test #`(class object% (field [x 0 #:chaperone-mutator #f #:chaperone-accessor])))
+(syntax-test #`(class object% (field [x 0 #:chaperone-accessor #f #:chaperone-mutator])))
+
+(err/rt-test (class object%
+               (field [x 0 #:chaperone-accessor 'oops]))
+             exn:fail:object?)
+(err/rt-test (class object%
+               (field [x 0 #:chaperone-accessor (lambda (proc) 'oops)]))
+             exn:fail:object?)
+(err/rt-test (class object%
+               (field [x 0 #:chaperone-accessor (lambda (proc) void)]))
+             exn:fail:object?)
+(err/rt-test (class object%
+               (field [x 0 #:chaperone-mutator 'oops]))
+             exn:fail:object?)
+(err/rt-test (class object%
+               (field [x 0 #:chaperone-mutator (lambda (proc) 'oops)]))
+             exn:fail:object?)
+(err/rt-test (class object%
+               (field [x 0 #:chaperone-mutator (lambda (proc) void)]))
+             exn:fail:object?)
+
+(let ()
+  (define c%
+    (class object%
+      (field
+       [w 'uu]
+       [x 10
+          #:chaperone-accessor (lambda (proc)
+                                 (chaperone-procedure proc (lambda (obj)
+                                                             (values (lambda (result)
+                                                                       (when (eq? result 'bad)
+                                                                         (error "bad"))
+                                                                       result)
+                                                                     obj))))
+          #:chaperone-mutator (lambda (proc)
+                                (chaperone-procedure proc (lambda (obj new-val)
+                                                            (when (eq? new-val 'invalid)
+                                                              (error "invalid"))
+                                                            (values obj new-val))))]
+       [y '?])
+      (init-field z)
+      (define/public (set-w v) (set! w v))
+      (define/public (get-w) w)
+      (define/public (set-x v) (set! x v))
+      (define/public (get-x) x)
+      (define/public (set-y v) (set! y v))
+      (define/public (get-y) y)
+      (super-new)))
+
+  (define d%
+    (class c%
+      (inherit-field w x y)
+      (define/public (also-set-w v) (set! w v))
+      (define/public (also-get-w) w)
+      (define/public (also-set-x v) (set! x v))
+      (define/public (also-get-x) x)
+      (define/public (also-set-y v) (set! y v))
+      (define/public (also-get-y) y)
+      (super-new)))
+
+  (define (check o)
+    (test 'zee (get-field z o))
+
+    (test 'uu (send o get-w))
+    (test (void) (send o set-w 'invalid))
+    (cond
+      [(o . is-a? . d%)
+       (test 'invalid (send o also-get-w))
+       (test (void) (send o also-set-w 'ok-uu))]
+      [else
+       (test (void) (send o set-w 'ok-uu))])
+    (test 'ok-uu ((class-field-accessor c% w) o))
+    (test 'ok-uu (get-field w o))
+
+    (test '? (send o get-y))
+    (test (void) (send o set-y 'invalid))
+    (cond
+      [(o . is-a? . d%)
+       (test 'invalid (send o also-get-y))
+       (test (void) (send o also-set-y 'ok-?))]
+      [else
+       (test (void) (send o set-y 'ok-?))])
+    (test 'ok-? ((class-field-accessor c% y) o))
+    (test 'ok-? (get-field y o))
+
+    (test 10 ((class-field-accessor c% x) o))
+    (err/rt-test ((class-field-mutator c% x) o 'invalid) exn:fail?)
+    (err/rt-test (set-field x o 'invalid) exn:fail?)
+    (err/rt-test (send o set-x 'invalid) exn:fail?)
+    (when (o . is-a? . d%)
+      (err/rt-test (send o also-set-x 'invalid) exn:fail?))
+    (test (void) ((class-field-mutator c% x) o 'bad))
+    (err/rt-test ((class-field-accessor c% x) o) exn:fail?)
+    (err/rt-test (get-field x o) exn:fail?)
+    (err/rt-test (send o get-x) exn:fail?)
+    (when (o . is-a? . d%)
+      (err/rt-test (send o also-get-x) exn:fail?))
+    (test (void) (set-field! x o 'pre-ok-x))
+    (test 'pre-ok-x (get-field x o))
+    (test (void) ((class-field-mutator c% x) o 'ok-x))
+    (test 'ok-x ((class-field-accessor c% x) o))
+    (test 'ok-x (get-field x o))
+    (test 'ok-x (send o get-x))
+    (when (o . is-a? . d%)
+      (test 'ok-x (send o also-get-x))
+      (test (void) (send o also-set-x 'still-ok-x))
+      (test 'still-ok-x (send o get-x))))
+
+  (check (new c% [z 'zee]))
+  (check (new d% [z 'zee])))
+
+(let ()
+  (define c%
+    (class object%
+      (field
+       [x 10
+          #:chaperone-accessor (lambda (proc)
+                                 (chaperone-procedure proc (lambda (obj)
+                                                             (values (lambda (result)
+                                                                       (when (eq? result 'bad)
+                                                                         (error "bad"))
+                                                                       result)
+                                                                     obj))))])
+      (super-new)))
+
+  (define o (new c%))
+  (test 10 (get-field x o))
+  (test (void) (set-field! x o 'bad))
+  (err/rt-test (get-field x o) exn:fail?))
+
+(let ()
+  (define c%
+    (class object%
+      (field
+       [x 10
+          #:chaperone-mutator (lambda (proc)
+                                (chaperone-procedure proc (lambda (obj new-val)
+                                                            (when (eq? new-val 'invalid)
+                                                              (error "invalid"))
+                                                            (values obj new-val))))])
+      (super-new)))
+
+  (define o (new c%))
+  (test 10 (get-field x o))
+  (err/rt-test (set-field! x o 'invalid) exn:fail?)
+  (test (void) (set-field! x o 'bad))
+  (test 'bad (get-field x o)))
+
+(let ()
+  (define c%
+    (class object%
+      (field
+       [(int-x ext-x)
+        10
+        #:chaperone-accessor (lambda (proc)
+                               (chaperone-procedure proc (lambda (obj)
+                                                           (values (lambda (result)
+                                                                     (when (eq? result 'bad)
+                                                                       (error "bad"))
+                                                                     result)
+                                                                   obj))))
+        #:chaperone-mutator (lambda (proc)
+                              (chaperone-procedure proc (lambda (obj new-val)
+                                                          (when (eq? new-val 'invalid)
+                                                            (error "invalid"))
+                                                          (values obj new-val))))])
+      (define/public (set-x v) (set! int-x v))
+      (define/public (get-x) int-x)
+      (super-new)))
+
+  (define o (new c%))
+  (test 10 ((class-field-accessor c% ext-x) o))
+  (err/rt-test ((class-field-mutator c% ext-x) o 'invalid) exn:fail?)
+  (err/rt-test (set-field ext-x o 'invalid) exn:fail?)
+  (err/rt-test (send o set-x 'invalid) exn:fail?)
+  (test (void) ((class-field-mutator c% ext-x) o 'bad))
+  (err/rt-test ((class-field-accessor c% ext-x) o) exn:fail?)
+  (err/rt-test (get-field ext-x o) exn:fail?)
+  (err/rt-test (send o get-x) exn:fail?)
+  (test (void) (set-field! ext-x o 'pre-ok-x))
+  (test 'pre-ok-x (get-field ext-x o))
+  (test (void) ((class-field-mutator c% ext-x) o 'ok-x))
+  (test 'ok-x ((class-field-accessor c% ext-x) o))
+  (test 'ok-x (get-field ext-x o))
+  (test 'ok-x (send o get-x)))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)
