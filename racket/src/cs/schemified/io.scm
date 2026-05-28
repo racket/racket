@@ -2870,9 +2870,9 @@
 (define RKTIO_PATH_INIT_DIR 8)
 (define RKTIO_PATH_INIT_FILE 9)
 (define RKTIO_PATH_CACHE_DIR 10)
-(define RKTIO_OS_SIGNAL_NONE -1)
 (define RKTIO_OS_SIGNAL_TERM 1)
 (define RKTIO_OS_SIGNAL_HUP 2)
+(define RKTIO_OS_SIGNAL_NONE -1)
 (define RKTIO_SW_HIDE 0)
 (define RKTIO_SW_MAXIMIZE 1)
 (define RKTIO_SW_MINIMIZE 2)
@@ -2929,9 +2929,9 @@
 (define rktio_fd_is_terminal (hash-ref rktio-table 'rktio_fd_is_terminal))
 (define rktio_fd_is_text_converted
   (hash-ref rktio-table 'rktio_fd_is_text_converted))
+(define rktio_fd_modes (hash-ref rktio-table 'rktio_fd_modes))
 (define rktio_fd_is_pending_open
   (hash-ref rktio-table 'rktio_fd_is_pending_open))
-(define rktio_fd_modes (hash-ref rktio-table 'rktio_fd_modes))
 (define rktio_open (hash-ref rktio-table 'rktio_open))
 (define rktio_open_with_create_permissions
   (hash-ref rktio-table 'rktio_open_with_create_permissions))
@@ -2949,9 +2949,9 @@
 (define rktio_read_converted_in
   (hash-ref rktio-table 'rktio_read_converted_in))
 (define rktio_read_in_r (hash-ref rktio-table 'rktio_read_in_r))
+(define rktio_write_in_r (hash-ref rktio-table 'rktio_write_in_r))
 (define rktio_read_converted_in_r
   (hash-ref rktio-table 'rktio_read_converted_in_r))
-(define rktio_write_in_r (hash-ref rktio-table 'rktio_write_in_r))
 (define rktio_buffered_byte_count
   (hash-ref rktio-table 'rktio_buffered_byte_count))
 (define rktio_poll_read_ready (hash-ref rktio-table 'rktio_poll_read_ready))
@@ -3004,9 +3004,9 @@
 (define rktio_tcp_nodelay (hash-ref rktio-table 'rktio_tcp_nodelay))
 (define rktio_tcp_keepalive (hash-ref rktio-table 'rktio_tcp_keepalive))
 (define rktio_udp_open (hash-ref rktio-table 'rktio_udp_open))
-(define rktio_udp_disconnect (hash-ref rktio-table 'rktio_udp_disconnect))
-(define rktio_udp_bind (hash-ref rktio-table 'rktio_udp_bind))
 (define rktio_udp_connect (hash-ref rktio-table 'rktio_udp_connect))
+(define rktio_udp_bind (hash-ref rktio-table 'rktio_udp_bind))
+(define rktio_udp_disconnect (hash-ref rktio-table 'rktio_udp_disconnect))
 (define rktio_udp_sendto (hash-ref rktio-table 'rktio_udp_sendto))
 (define rktio_udp_sendto_in (hash-ref rktio-table 'rktio_udp_sendto_in))
 (define rktio_udp_sendto_addr_bytes
@@ -3017,8 +3017,8 @@
   (hash-ref rktio-table 'rktio_udp_recvfrom_addr_bytes))
 (define rktio_udp_set_receive_buffer_size
   (hash-ref rktio-table 'rktio_udp_set_receive_buffer_size))
-(define rktio_udp_set_ttl (hash-ref rktio-table 'rktio_udp_set_ttl))
 (define rktio_udp_get_ttl (hash-ref rktio-table 'rktio_udp_get_ttl))
+(define rktio_udp_set_ttl (hash-ref rktio-table 'rktio_udp_set_ttl))
 (define rktio_udp_get_multicast_loopback
   (hash-ref rktio-table 'rktio_udp_get_multicast_loopback))
 (define rktio_udp_set_multicast_loopback
@@ -3094,10 +3094,10 @@
 (define rktio_ltps_open (hash-ref rktio-table 'rktio_ltps_open))
 (define rktio_ltps_close (hash-ref rktio-table 'rktio_ltps_close))
 (define rktio_ltps_add (hash-ref rktio-table 'rktio_ltps_add))
-(define rktio_ltps_handle_set_data
-  (hash-ref rktio-table 'rktio_ltps_handle_set_data))
 (define rktio_ltps_handle_get_data
   (hash-ref rktio-table 'rktio_ltps_handle_get_data))
+(define rktio_ltps_handle_set_data
+  (hash-ref rktio-table 'rktio_ltps_handle_set_data))
 (define rktio_ltps_remove_all (hash-ref rktio-table 'rktio_ltps_remove_all))
 (define rktio_ltps_poll (hash-ref rktio-table 'rktio_ltps_poll))
 (define rktio_ltps_get_signaled_handle

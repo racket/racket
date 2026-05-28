@@ -415,11 +415,11 @@
     (define (null-to-false v) (if (eqv? v NULL) #f v))
 
     (define (rktio_process_result_stdin_fd r)
-      (null-to-false (address->ptr (ftype-ref rktio_process_result_t (stdin_fd) (make-ftype-pointer rktio_process_result_t (ptr->address r))))))
+      (null-to-false (address->ptr (ftype-ref rktio_process_result_t (stdin_rfd) (make-ftype-pointer rktio_process_result_t (ptr->address r))))))
     (define (rktio_process_result_stdout_fd r)
-      (null-to-false (address->ptr (ftype-ref rktio_process_result_t (stdout_fd) (make-ftype-pointer rktio_process_result_t (ptr->address r))))))
+      (null-to-false (address->ptr (ftype-ref rktio_process_result_t (stdout_rfd) (make-ftype-pointer rktio_process_result_t (ptr->address r))))))
     (define (rktio_process_result_stderr_fd r)
-      (null-to-false (address->ptr (ftype-ref rktio_process_result_t (stderr_fd) (make-ftype-pointer rktio_process_result_t (ptr->address r))))))
+      (null-to-false (address->ptr (ftype-ref rktio_process_result_t (stderr_rfd) (make-ftype-pointer rktio_process_result_t (ptr->address r))))))
     (define (rktio_process_result_process r)
       (address->ptr (ftype-ref rktio_process_result_t (process) (make-ftype-pointer rktio_process_result_t (ptr->address r)))))
 

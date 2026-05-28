@@ -1789,17 +1789,17 @@ rktio_process_result_t *rktio_process(rktio_t *rktio,
   result = malloc(sizeof(rktio_process_result_t));
 
   if (!stdout_fd)
-    result->stdout_fd = rktio_system_fd(rktio, from_subprocess[0], RKTIO_OPEN_READ);
+    result->stdout_rfd = rktio_system_fd(rktio, from_subprocess[0], RKTIO_OPEN_READ);
   else
-    result->stdout_fd = NULL;
+    result->stdout_rfd = NULL;
   if (!stdin_fd)
-    result->stdin_fd = rktio_system_fd(rktio, to_subprocess[1], RKTIO_OPEN_WRITE);
+    result->stdin_rfd = rktio_system_fd(rktio, to_subprocess[1], RKTIO_OPEN_WRITE);
   else
-    result->stdin_fd = NULL;
+    result->stdin_rfd = NULL;
   if (!stderr_fd && !stderr_is_stdout)
-    result->stderr_fd = rktio_system_fd(rktio, err_subprocess[0], RKTIO_OPEN_READ);
+    result->stderr_rfd = rktio_system_fd(rktio, err_subprocess[0], RKTIO_OPEN_READ);
   else
-    result->stderr_fd = NULL;
+    result->stderr_rfd = NULL;
 
   /*--------------------------------------*/
   /*          Return result info          */

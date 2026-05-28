@@ -6485,12 +6485,12 @@ static Scheme_Object *subprocess(int c, Scheme_Object *args[])
   {
     Scheme_Object *in = scheme_false, *out = scheme_false, *err = scheme_false;
     
-    if (result->stdout_fd)
-      in = make_fd_input_port(result->stdout_fd, scheme_intern_symbol("subprocess-stdout"), NULL, 0);
-    if (result->stdin_fd)
-      out = make_fd_output_port(result->stdin_fd, scheme_intern_symbol("subprocess-stdin"), 0, -1, NULL);
-    if (result->stderr_fd)
-      err = make_fd_input_port(result->stderr_fd, scheme_intern_symbol("subprocess-stderr"), NULL, 0);
+    if (result->stdout_rfd)
+      in = make_fd_input_port(result->stdout_rfd, scheme_intern_symbol("subprocess-stdout"), NULL, 0);
+    if (result->stdin_rfd)
+      out = make_fd_output_port(result->stdin_rfd, scheme_intern_symbol("subprocess-stdin"), 0, -1, NULL);
+    if (result->stderr_rfd)
+      err = make_fd_input_port(result->stderr_rfd, scheme_intern_symbol("subprocess-stderr"), NULL, 0);
     
     /*--------------------------------------*/
     /*          Return result info          */
