@@ -12,8 +12,8 @@ rktio_fd_is_socket
 rktio_fd_is_udp
 rktio_fd_is_terminal
 rktio_fd_is_text_converted
-rktio_fd_is_pending_open
 rktio_fd_modes
+rktio_fd_is_pending_open
 rktio_open
 rktio_open_with_create_permissions
 rktio_close
@@ -29,8 +29,8 @@ rktio_read_in
 rktio_write_in
 rktio_read_converted_in
 rktio_read_in_r
-rktio_read_converted_in_r
 rktio_write_in_r
+rktio_read_converted_in_r
 rktio_buffered_byte_count
 rktio_poll_read_ready
 rktio_poll_write_ready
@@ -68,9 +68,9 @@ rktio_socket_shutdown
 rktio_tcp_nodelay
 rktio_tcp_keepalive
 rktio_udp_open
-rktio_udp_disconnect
-rktio_udp_bind
 rktio_udp_connect
+rktio_udp_bind
+rktio_udp_disconnect
 rktio_udp_sendto
 rktio_udp_sendto_in
 rktio_udp_sendto_addr_bytes
@@ -78,8 +78,8 @@ rktio_udp_recvfrom
 rktio_udp_recvfrom_in
 rktio_udp_recvfrom_addr_bytes
 rktio_udp_set_receive_buffer_size
-rktio_udp_set_ttl
 rktio_udp_get_ttl
+rktio_udp_set_ttl
 rktio_udp_get_multicast_loopback
 rktio_udp_set_multicast_loopback
 rktio_udp_get_multicast_ttl
@@ -132,8 +132,8 @@ rkio_reset_sleep_backoff
 rktio_ltps_open
 rktio_ltps_close
 rktio_ltps_add
-rktio_ltps_handle_set_data
 rktio_ltps_handle_get_data
+rktio_ltps_handle_set_data
 rktio_ltps_remove_all
 rktio_ltps_poll
 rktio_ltps_get_signaled_handle
