@@ -68,9 +68,9 @@
   (unless (sequence? s) (raise-argument-error 'sequence-ref "sequence?" s))
   (unless (exact-nonnegative-integer? i)
     (raise-argument-error 'sequence-ref "exact-nonnegative-integer?" i))
-  (let ([v (for/fold ([c #f]) ([v (in-values*-sequence s)]
-                               [j (in-range (add1 i))]
-                               #:unless (j . < . i))
+  (let ([v (for/first ([v (in-values*-sequence s)]
+                       [j (in-range (add1 i))]
+                       #:unless (j . < . i))
              (or v '(#f)))])
     (cond
      [(not v)
