@@ -793,7 +793,7 @@ See the scribble documentation on the planet/resolver module.
                (unless (and maj/str min/str
                             (nat? (string->number maj/str))
                             (nat? (string->number min/str)))
-                 (abort "Server did not include valid major and minor version information"))
+                 (abort (format "Server did not include valid major and minor version information\n  header: ~s" head)))
                (unless (and content-length/str
                             (nat? (string->number content-length/str)))
                  (abort "Server did not include content-length"))
