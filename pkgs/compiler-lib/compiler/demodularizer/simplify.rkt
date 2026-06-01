@@ -6,7 +6,7 @@
 
 (provide simplify-linklet)
 
-;; Simplifying is an optimization pass that is aimed at enabling
+;; Simplifying is an optimizaiton pass that is aimed at enabling
 ;; definition pruning. In particular, `(variable-reference-constant?
 ;; (#%variable-reference id))` is resolved to a boolean when `id`
 ;; refers to a ready defined variable, and that tends to enable
@@ -17,12 +17,6 @@
 ;; handle the case that a keyword-argument function is defined below
 ;; its use, we have to do the usual recognition of struct definitions
 ;; and abstract delayed function-call flows.
-
-;; This pass also makes simplifications that don't enable optimizations
-;; and that an optimizer could handle immediately, such as converting
-;; `(let-vaalues () e)` to `e`. That's useful for making machine-independent
-;; compiled files smaller and for reading decompiled machine-independent
-;; code to see what is preserved.
 
 (struct assigner (lhss))
 
@@ -128,7 +122,6 @@
            (and (for/and ([rhs (in-list rhs)])
                   (immediate? rhs))
                 (immediate? body))]
-          [`(void) #t]
           [`(,rator ,args ...)
            (or
             (and (or (memq rator
@@ -216,9 +209,9 @@
              [_ (void)]))]
         [_ (void)]))
 
-    ;; Update linklet body based on gathered information
-    ;; -------------------------------------------------
-
+    ;; Update linklet body based on gathers information
+    ;; ------------------------------------------------
+    
     (define new-body
       (for/list ([b (in-list body)])
         (let env-loop ([b b] [env #hasheq()])
@@ -237,16 +230,6 @@
                 `(case-lambda ,@(for/list ([args (in-list argss)]
                                            [body (in-list bodys)])
                                   `[,args ,(loop body)]))]
-               [`(let-values () ,body)
-                (loop body)]
-               [`(let-values ([() (values)])
-                   ,body)
-                (loop body)]
-               [`(let-values ([() (begin
-                                    ,e
-                                    (values))])
-                   ,body)
-                (loop `(begin ,e ,body))]
                [`(let-values ([,idss ,rhss] ...) ,body)
                 ;; Sometimes, a name that we'd like to drop is
                 ;; referenced in an unreachable branch, but through
@@ -257,6 +240,7 @@
                        (null? (cdr ids))
                        (not (hash-ref mutated (car ids) #f))
                        (symbol? rhs)
+                       (hash-ref defined-names rhs #f)
                        (not (hash-ref mutated rhs #f))))
                 (define new-env
                   (for/fold ([env env]) ([ids (in-list idss)]
@@ -264,17 +248,13 @@
                     (cond
                       [(copy-propagate? ids rhs)
                        ;; copy propagation:
-                       (hash-set env (car ids) (hash-ref env rhs rhs))]
+                       (hash-set env (car ids) rhs)]
                       [else env])))
-                (define binds
-                  (for/list ([ids (in-list idss)]
-                             [rhs (in-list rhss)]
-                             #:unless (copy-propagate? ids rhs))
-                    `[,ids ,(loop rhs)]))
-                (if (null? binds)
-                    (env-loop body new-env)
-                    `(let-values ,binds
-                       ,(env-loop body new-env)))]
+                `(let-values ,(for/list ([ids (in-list idss)]
+                                         [rhs (in-list rhss)]
+                                         #:unless (copy-propagate? ids rhs))
+                                `[,ids ,(loop rhs)])
+                   ,(env-loop body new-env))]
                [`(letrec-values ([,idss ,rhss] ...) ,body)
                 `(letrec-values ,(for/list ([ids (in-list idss)]
                                             [rhs (in-list rhss)])
@@ -288,15 +268,7 @@
                   [else
                    `(if ,new-tst ,(loop thn) ,(loop els))])]
                [`(begin . ,body)
-                (let begin-loop ([body body])
-                  (cond
-                    [(null? (cdr body))
-                     (loop (car body))]
-                    [else
-                     (define r (loop (car body)))
-                     (if (immediate? r)
-                         (begin-loop (cdr body))
-                         `(begin . ,(cons r (map loop (cdr body)))))]))]
+                `(begin ,@(map loop body))]
                [`(begin-unsafe . ,body)
                 `(begin-unsafe ,@(map loop body))]
                [`(begin0 ,e . ,body)
@@ -316,10 +288,6 @@
                    #t]
                   [else
                    `(variable-reference-constant? (#%variable-reference ,(loop id)))])]
-               [`(values ,e)
-                (if immediate?
-                    (loop e)
-                    `(values ,(loop e)))]
                [`(,rator ,rands ...)
                 (define a (hash-ref assigners rator #f))
                 (cond

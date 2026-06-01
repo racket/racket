@@ -48,9 +48,7 @@
 (define-struct glob-desc (vars))
 
 ;; Main entry:
-(define (decompile top
-                   #:to-linklets? [to-linklets? #f]
-                   #:skip-syntax-literals? [skip-syntax-literals? #f])
+(define (decompile top #:to-linklets? [to-linklets? #f])
   (cond
     [(linkl-directory? top)
      (cond
@@ -66,8 +64,7 @@
         (cond
           [(and main
                 (hash-ref (linkl-bundle-table main) 'decl #f))
-           (decompile-module-with-submodules top '() main
-                                             #:skip-syntax-literals? skip-syntax-literals?)]
+           (decompile-module-with-submodules top '() main)]
           [main
            (decompile-single-top main)]
           [else
@@ -86,7 +83,7 @@
               [else
                (list '#:key k '#:value (decompile v #:to-linklets? to-linklets?))]))))]
        [else
-        (decompile-module top #:skip-syntax-literals? skip-syntax-literals?)])]
+        (decompile-module top)])]
     [(or (linkl? top)
          (linklet? top))
      (decompile-linklet top)]
@@ -94,8 +91,7 @@
      (strip-correlated (faslable-correlated-linklet-expr top))]
     [else `(quote ,top)]))
 
-(define (decompile-module-with-submodules l-dir name-list main-l
-                                          #:skip-syntax-literals? [skip-syntax-literals? #f])
+(define (decompile-module-with-submodules l-dir name-list main-l)
   (decompile-module main-l
                     (lambda ()
                       (for/list ([(k l) (in-hash (linkl-directory-table l-dir))]
@@ -104,12 +100,9 @@
                                               (for/and ([s1 (in-list name-list)]
                                                         [s2 (in-list k)])
                                                 (eq? s1 s2))))
-                        (decompile-module-with-submodules l-dir k l
-                                                          #:skip-syntax-literals? skip-syntax-literals?)))
-                    #:skip-syntax-literals? skip-syntax-literals?))
+                        (decompile-module-with-submodules l-dir k l)))))
 
-(define (decompile-module l [get-nested (lambda () '())]
-                          #:skip-syntax-literals? [skip-syntax-literals? #f])
+(define (decompile-module l [get-nested (lambda () '())])
   (define ht (linkl-bundle-table l))
   (define phases (sort (for/list ([k (in-hash-keys ht)]
                                   #:when (exact-integer? k))
@@ -190,7 +183,7 @@
                    (loop (cdr l) (cons (car l) accum))]))]))
        ,@(get-nested)
        ,@(let ([l (hash-ref ht 'stx-data #f)])
-           (if (and l (not skip-syntax-literals?))
+           (if l
                `((begin-for-all
                    (define (.get-syntax-literal! pos)
                      ....
