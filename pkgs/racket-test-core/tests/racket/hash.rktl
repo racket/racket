@@ -1132,6 +1132,20 @@
   ;; writing, we expect collisions with chars, but not other collisions
   (test #t > (hash-count ht) 200000))
 
+(let ([ht
+       (for*/fold ([ht #hash()]) ([x (in-range 320)]
+                                  [y (in-range 320)])
+         (hash-set ht (equal-hash-code (make-rectangular x y)) #t))])
+  ;; 320*320 = 102400 distinct complex numbers; allow some collisions
+  (test #t > (hash-count ht) 100000))
+
+(let ([ht
+       (for*/fold ([ht #hash()]) ([n (in-range 1 321)]
+                                  [d (in-range 1 321)])
+         (hash-set ht (equal-hash-code (/ n d)) #t))])
+  ;; 62463 distinct rationals in the grid; allow some collisions
+  (test #t > (hash-count ht) 50000))
+
 ;; ----------------------------------------
 ;; Check that no keys are lost during mutating traversal
 ;; that doesn't add keys
