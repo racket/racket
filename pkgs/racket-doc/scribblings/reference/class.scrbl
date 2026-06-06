@@ -333,7 +333,7 @@ interface @racket[(class->interface object%)], and is transparent
   (maybe-renamed default-value-expr)]
 
 [field-decl
-  (maybe-renamed default-value-expr)]
+  (maybe-renamed default-value-expr chaperoner ...)]
 
 [maybe-renamed
   id
@@ -341,6 +341,10 @@ interface @racket[(class->interface object%)], and is transparent
 
 [renamed
   (internal-id external-id)]
+
+[chaperoner
+  (code:line #:chaperone-accessor proc-expr)
+  (code:line #:chaperone-mutator proc-expr)]
 
 [method-definition
   (define-values (id) method-procedure)]
@@ -871,6 +875,16 @@ and mutable via @racket[class-field-mutator] (see
 @secref["ivaraccess"]). Fields declared with @racket[define-values]
 are accessible only within the class.
 
+A field declared with @racket[field] can include a
+@racket[#:chaperone-accessor] clause and/or a
+@racket[#:chaperone-mutator] clause. The expression after
+@racket[#:chaperone-accessor] or @racket[#:chaperone-mutator] must
+produce a procedure of one argument, which will be an accessor or
+mutator procedure, respectively. The result must be a chaperone of the
+given accessor or mutator. The chaperoned accessor or mutator is used
+for all accesses or assignments to the field, including internal and
+inherited references.
+
 A field declared with @racket[init-field] is both a public field and
 an initialization variable. See @secref["clinitvars"] for
 information about initialization variables.
@@ -892,6 +906,10 @@ information.
 
 See also @secref["extnames"] for information about internal and
 external names.
+
+@history[#:changed "9.1.0.7" @elem{Added @racket[#:chaperone-accessor]
+                                   and @racket[#:chaperone-mutator] options
+                                   to @racket[field].}]
 
 @; - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 
