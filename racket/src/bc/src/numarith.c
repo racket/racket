@@ -898,9 +898,14 @@ do_bin_quotient(const char *name, const Scheme_Object *n1, const Scheme_Object *
 #ifdef MZ_USE_SINGLE_FLOATS
       (SCHEME_FLTP(n2) && (SCHEME_FLT_VAL(n2) == 0.0f)) ||
 #endif
-      (SCHEME_DBLP(n2) && (SCHEME_DBL_VAL(n2) == 0.0)))
+      (SCHEME_DBLP(n2) && (SCHEME_DBL_VAL(n2) == 0.0))) {
+    int neg;
+    neg = scheme_minus_zero_p(SCHEME_FLOAT_VAL(n2));
     scheme_raise_exn(MZEXN_FAIL_CONTRACT_DIVIDE_BY_ZERO,
-		     "%s: undefined for 0.0", name);
+		     "%s: undefined for %s0.0",
+		     name,
+		     neg ? "-" : "");
+  }
 
   if (SCHEME_INTP(n1) && SCHEME_INTP(n2)) {
     /* Beware that most negative fixnum divided by -1

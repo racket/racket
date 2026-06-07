@@ -11,12 +11,12 @@
     exn:fail:contract:arity]
    [(and (format-condition? v)
          (who-condition? v)
-         (#%memq (condition-who v) '(/ modulo remainder quotient atan angle log))
+         (#%memq (condition-who v) '(/ modulo remainder quotient atan angle log $quotient-remainder))
          (string=? "undefined for ~s" (condition-message v)))
     exn:fail:contract:divide-by-zero]
    [(and (format-condition? v)
          (who-condition? v)
-         (#%memq (condition-who v) '(expt atan2))
+         (#%memq (condition-who v) '(expt atan2 log))
          (string=? "undefined for values ~s and ~s" (condition-message v)))
     exn:fail:contract:divide-by-zero]
    [(and (format-condition? v)
@@ -70,7 +70,9 @@
                 exact inexact->exact
                 real->flonum ->fl
                 time-utc->date seconds->date
-                make-record-type-descriptor* make-struct-type)
+                make-record-type-descriptor* make-struct-type
+                atan2 atan
+                $quotient-remainder quotient/remainder)
         (set! rewrites-added? #t)))
     (getprop n 'error-rename n)))
 
@@ -86,9 +88,17 @@
              "~a: undefined;\n cannot reference an identifier before its definition"
              "\n  alert: compiler pass failed to add more specific guard!")
             irritants)]
-   [(and (equal? str "undefined for ~s")
+   [(and (eq? who '/)
+         (equal? str "undefined for ~s")
          (equal? irritants '(0)))
     (values "division by zero" null)]
+   [(equal? str "undefined for values ~s and ~s")
+    (cond
+     [(and (eq? who 'log)
+           (eqv? (cadr irritants) 1))
+      (values "undefined for base ~s" '(1))]
+     [else
+      (values "undefined for ~s and ~s" irritants)])]
    [(and (string-prefix? result-arity-msg-head str)
          (string-suffix? result-arity-msg-tail str))
     (values (string-append "result arity mismatch;\n"
