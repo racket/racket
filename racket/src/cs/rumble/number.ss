@@ -476,10 +476,24 @@
 (define/who (quotient/remainder n m)
   (check who integer? n)
   (check who integer? m)
-  (if (and (exact? n) (exact? m))
+  (let ([raise-undefined (lambda (what)
+                           (raise (|#%app|
+                                   exn:fail:contract:divide-by-zero
+                                   (error-message->adjusted-string
+                                    'quotient/remainder primitive-realm
+                                    (format "undefined for ~s" what)
+                                    primitive-realm)
+                                   (current-continuation-marks))))])
+    (cond
+     [(and (exact? n) (exact? m))
       (let ([q+r (#%$quotient-remainder n m)])
-        (values (car q+r) (cdr q+r)))
-      (values (quotient n m) (remainder n m))))
+        (values (car q+r) (cdr q+r)))]
+     [(eqv? m 0.0)
+      (raise-undefined 0.0)]
+     [(eqv? m -0.0)
+      (raise-undefined -0.0)]
+     [else
+      (values (quotient n m) (remainder n m))])))
 
 (define/who gcd
   (case-lambda

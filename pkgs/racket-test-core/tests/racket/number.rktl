@@ -1035,11 +1035,11 @@
 (test #t zero? (exact->inexact (* 5 (expt 10 -325))))
 (test #t positive? (exact->inexact (* 45 (expt 10 -325))))
 
-(err/rt-test (/ 0) exn:fail:contract:divide-by-zero?)
-(err/rt-test (/ 1 0) exn:fail:contract:divide-by-zero?)
-(err/rt-test (/ 1/2 0) exn:fail:contract:divide-by-zero?)
-(err/rt-test (/ 1+2i 0) exn:fail:contract:divide-by-zero?)
-(err/rt-test (/ 1.0 0) exn:fail:contract:divide-by-zero?)
+(err/rt-test (/ 0) exn:fail:contract:divide-by-zero? #rx"/: division by zero")
+(err/rt-test (/ 1 0) exn:fail:contract:divide-by-zero? #rx"/: division by zero")
+(err/rt-test (/ 1/2 0) exn:fail:contract:divide-by-zero? #rx"/: division by zero")
+(err/rt-test (/ 1+2i 0) exn:fail:contract:divide-by-zero? #rx"/: division by zero")
+(err/rt-test (/ 1.0 0) exn:fail:contract:divide-by-zero? #rx"/: division by zero")
 
 (test -1 - 3 4)
 (test -3 - 3)
@@ -1163,15 +1163,19 @@
 
 (test 13.0 quotient 1324.0 100)
 
-(err/rt-test (quotient 6 0) exn:fail:contract:divide-by-zero?)
-(err/rt-test (modulo 6 0) exn:fail:contract:divide-by-zero?)
-(err/rt-test (remainder 6 0) exn:fail:contract:divide-by-zero?)
-(err/rt-test (quotient 6 0.0) exn:fail:contract:divide-by-zero?)
-(err/rt-test (modulo 6 0.0) exn:fail:contract:divide-by-zero?)
-(err/rt-test (remainder 6 0.0) exn:fail:contract:divide-by-zero?)
-(err/rt-test (quotient 6 -0.0) exn:fail:contract:divide-by-zero?)
-(err/rt-test (modulo 6 -0.0) exn:fail:contract:divide-by-zero?)
-(err/rt-test (remainder 6 -0.0) exn:fail:contract:divide-by-zero?)
+(err/rt-test (quotient 6 0) exn:fail:contract:divide-by-zero? #rx"quotient: undefined for 0")
+(err/rt-test (modulo 6 0) exn:fail:contract:divide-by-zero? #rx"modulo: undefined for 0")
+(err/rt-test (remainder 6 0) exn:fail:contract:divide-by-zero? #rx"remainder: undefined for 0")
+(err/rt-test (quotient 6 0.0) exn:fail:contract:divide-by-zero? #rx"quotient: undefined for 0.0")
+(err/rt-test (modulo 6 0.0) exn:fail:contract:divide-by-zero? #rx"modulo: undefined for 0.0")
+(err/rt-test (remainder 6 0.0) exn:fail:contract:divide-by-zero? #rx"remainder: undefined for 0.0")
+(err/rt-test (quotient 6 -0.0) exn:fail:contract:divide-by-zero? #rx"quotient: undefined for -0.0")
+(err/rt-test (modulo 6 -0.0) exn:fail:contract:divide-by-zero? #rx"modulo: undefined for -0.0")
+(err/rt-test (remainder 6 -0.0) exn:fail:contract:divide-by-zero? #rx"remainder: undefined for -0.0")
+
+(err/rt-test (quotient/remainder 6 0) exn:fail:contract:divide-by-zero? #rx"quotient/remainder: undefined for 0")
+(err/rt-test (quotient/remainder 6 0.0) exn:fail:contract:divide-by-zero? #rx"quotient/remainder: undefined for 0.0")
+(err/rt-test (quotient/remainder 6 -0.0) exn:fail:contract:divide-by-zero? #rx"quotient/remainder: undefined for -0.0")
 
 (let ()
   (define (check-rem-mod a b rem mod)
@@ -1860,7 +1864,7 @@
   (test pi angle -3+0.0i))
 
 (err/rt-test (angle 'a))
-(err/rt-test (angle 0) exn:fail:contract:divide-by-zero?)
+(err/rt-test (angle 0) exn:fail:contract:divide-by-zero? #rx"angle: undefined for 0")
 (err/rt-test (magnitude 'a))
 (arity-test angle 1 1)
 (arity-test magnitude 1 1)
@@ -2111,16 +2115,18 @@
 
 (test 1.0-9.9998886718268e-321i expt 1+1.0e-320i -1)
 
-(err/rt-test (expt 0 -1) exn:fail:contract:divide-by-zero?)
-(err/rt-test (expt 0 -1.0) exn:fail:contract:divide-by-zero?)
-(err/rt-test (expt 0 -inf.0) exn:fail:contract:divide-by-zero?)
-(err/rt-test (expt 0 -1+2i) exn:fail:contract:divide-by-zero?)
-(err/rt-test (expt 0 -1.0+2i) exn:fail:contract:divide-by-zero?)
-(err/rt-test (expt 0 0+2i) exn:fail:contract:divide-by-zero?)
-(err/rt-test (expt 0 0.0+2i) exn:fail:contract:divide-by-zero?)
-(err/rt-test (expt 0 -0.0+2i) exn:fail:contract:divide-by-zero?)
-(err/rt-test (expt 0 0+0.0i) exn:fail:contract:divide-by-zero?)
-(err/rt-test (expt 0 +nan.0+1.0i) exn:fail:contract:divide-by-zero?)
+(err/rt-test (expt 0 -1) exn:fail:contract:divide-by-zero? #rx"expt: undefined for 0 and -1")
+(err/rt-test (expt 0 -1.0) exn:fail:contract:divide-by-zero? #rx"expt: undefined for 0 and -1.0")
+(err/rt-test (expt 0 -inf.0) exn:fail:contract:divide-by-zero? #rx"expt: undefined for 0 and -inf.0")
+(err/rt-test (expt 0 -1+2i) exn:fail:contract:divide-by-zero? #rx"expt: undefined for 0 and -1[+]2i")
+(err/rt-test (expt 0 -1.0+2i) exn:fail:contract:divide-by-zero? #rx"expt: undefined for 0 and -1.0[+]2.0i")
+(err/rt-test (expt 0 0+2i) exn:fail:contract:divide-by-zero? #rx"expt: undefined for 0 and 0[+]2i")
+(err/rt-test (expt 0 0.0+2i) exn:fail:contract:divide-by-zero? #rx"expt: undefined for 0 and 0.0[+]2.0i")
+(err/rt-test (expt 0 -0.0+2i) exn:fail:contract:divide-by-zero? #rx"expt: undefined for 0 and -0.0[+]2.0i")
+(err/rt-test (expt 0 0+0.0i) exn:fail:contract:divide-by-zero? (if has-exact-zero-inexact-complex?
+                                                                   #rx"expt: undefined for 0 and 0[+]0.0i"
+                                                                   #rx"expt: undefined for 0 and 0.0[+]0.0i"))
+(err/rt-test (expt 0 +nan.0+1.0i) exn:fail:contract:divide-by-zero? #rx"expt: undefined for 0 and [+]nan.0[+]1.0i")
 
 (err/rt-test (expt 'a 0))
 (err/rt-test (expt 'a 1))
@@ -2296,9 +2302,9 @@
 (test 0 atan 0 5/2)
 (test 0 atan 0 1.0)
 (test 314.0 round (* 100 (atan 0 -1)))
-(err/rt-test (atan 0 0) exn:fail:contract:divide-by-zero?)
-(err/rt-test (atan 0+i) exn:fail:contract:divide-by-zero?)
-(err/rt-test (atan 0-i) exn:fail:contract:divide-by-zero?)
+(err/rt-test (atan 0 0) exn:fail:contract:divide-by-zero? #rx"atan: undefined for 0 and 0")
+(err/rt-test (atan 0+i) exn:fail:contract:divide-by-zero? #rx"atan: undefined for 0[+]1i")
+(err/rt-test (atan 0-i) exn:fail:contract:divide-by-zero? #rx"atan: undefined for 0-1i")
 
 (when has-exact-zero-inexact-complex?
   (test -inf.0 atan 0+1.0i)
@@ -2402,8 +2408,8 @@
 (test 2.0 log 100 10)
 (test 3.0 log 8 2)
 (test 1.0 log 5 5)
-(err/rt-test (log 0) exn:fail:contract:divide-by-zero?)
-(err/rt-test (log 5 1) exn:fail:contract:divide-by-zero?)
+(err/rt-test (log 0) exn:fail:contract:divide-by-zero? #rx"log: undefined for 0")
+(err/rt-test (log 5 1) exn:fail:contract:divide-by-zero? #rx"log: undefined for base 1")
 
 (test 1 cos 0)
 (test 1.0 cos 0.0)

@@ -318,6 +318,9 @@ If @racket[z] is exact @racket[0] and no @racket[w] is exact
 
 Returns @racket[(truncate (/ n m))].
 
+If @racket[m] is exact @racket[0], @racket[0.0], or @racket[-0.0], the
+ @exnraise[exn:fail:contract:divide-by-zero].
+
 @mz-examples[(quotient 10 3) (quotient -10.0 3) (eval:error (quotient +inf.0 3))]}
 
 
@@ -333,7 +336,7 @@ Returns @racket[_q] with the same sign as @racket[n] such that
 
 ]
 
-If @racket[m] is exact @racket[0], the
+If @racket[m] is exact @racket[0], @racket[0.0], or @racket[-0.0], the
  @exnraise[exn:fail:contract:divide-by-zero].
 
 @mz-examples[(remainder 10 3) (remainder -10.0 3) (remainder 10.0 -3) (remainder -10 -3) (eval:error (remainder +inf.0 3))]}
@@ -344,6 +347,9 @@ If @racket[m] is exact @racket[0], the
 Returns @racket[(values (quotient n m) (remainder n m))], but the
  combination may be computed more efficiently than separate calls to
  @racket[quotient] and @racket[remainder].
+
+If @racket[m] is exact @racket[0], @racket[0.0], or @racket[-0.0], the
+ @exnraise[exn:fail:contract:divide-by-zero].
 
 @mz-examples[
 (quotient/remainder 10 3)
@@ -362,7 +368,7 @@ Returns @racket[_q] with the same sign as @racket[m] where
 
 ]
 
-If @racket[m] is exact @racket[0], the
+If @racket[m] is exact @racket[0], @racket[0.0], or @racket[-0.0], the
  @exnraise[exn:fail:contract:divide-by-zero].
 
 @mz-examples[(modulo 10 3) (modulo -10.0 3)  (modulo 10.0 -3) (modulo -10 -3) (eval:error (modulo +inf.0 3))]}
@@ -814,6 +820,9 @@ Returns the imaginary part of the complex number @racket[z] in
  The result is guaranteed to be between @racket[(- pi)] and
  @racket[pi], possibly equal to @racket[pi] (but never equal
  to @racket[(- pi)]).
+
+ If @racket[z] is exact @racket[0], the
+ @exnraise[exn:fail:contract:divide-by-zero].
 
 @mz-examples[(angle -3) (angle 3.0) (angle 3+4i) (angle +inf.0+inf.0i) (angle -1)]}
 
