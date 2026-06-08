@@ -738,13 +738,13 @@
      #`(let ([ptr ptr-expr]
              [offset (~? offset-expr 0)]
              [val val-expr])
+         #,@(ffi2-type-defns t)
          (unless (variable-reference-from-unsafe? (#%variable-reference))
            #,@(if unsafe?
                 #'()
                 #`((unless (ffi2-ptr? ptr) (raise-argument-error 'form-id "ptr_t?" ptr))
                    (unless (exact-integer? offset) (raise-argument-error 'form-id "exact-integer?" offset))))
            (unless (#,(ffi2-type-predicate t) val) (bad-assign-value 'form-id '#,(ffi2-type-name t) val)))
-         #,@(ffi2-type-defns t)
          (do-ffi2-ptr-set! #,(ffi2-type-compound? t)
                            #,(ffi2-type-racket->c t)  #,(ffi2-type-vm-type t)
                            ptr
