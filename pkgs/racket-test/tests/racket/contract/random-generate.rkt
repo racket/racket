@@ -590,6 +590,14 @@
 
 (check-exercise
  10
+ void?
+ (contract (-> (hash/c 1 2) (hash/c 1 2))
+           (λ (x) x)
+           'pos
+           'neg))
+
+(check-exercise
+ 10
  pos-exn?
  (contract (set/c (-> integer? boolean?))
            (set add1)

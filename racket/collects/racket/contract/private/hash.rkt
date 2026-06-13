@@ -233,7 +233,7 @@
        (for ([(k v) (in-hash h)])
          (exercise-list-dom-rng (list k v))
          (contract-random-generate-stash env dom k)
-         (contract-random-generate-stash env dom v)))
+         (contract-random-generate-stash env rng v)))
      (cons dom (cons rng available-ctcs)))))
 
 (define-struct (flat-hash/c base-hash/c) ()
