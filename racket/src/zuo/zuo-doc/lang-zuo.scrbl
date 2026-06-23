@@ -1194,11 +1194,21 @@ the start of @envvar{PATH}.}
 The @racket[string->shell] function converts a string to a
 command-line fragment that encodes the same string. The
 @racket[shell->strings] function takes a command-line fragment and
-parses it into a list of strings in the same way the shell would. On
-Windows, the shell parses an executable name differently than
+parses it into a list of strings in the same way the shell would.
+
+On Windows, the shell parses an executable name differently than
 arguments in a command, so provide a true value as
-@racket[starts-exe?] if the command-line fragment @racket[str] starts
-with an executable name.}
+@racket[starts-exe?] for @racket[shell->strings] if the command-line fragment @racket[str] starts
+with an executable name. Relatedly, Windows batch files parse
+arguments a little differently, effectively treating @litchar{,},
+@litchar{;}, and @litchar{=} like whitespace; the @racket[shell->strings]
+funciton does not support that parsing mode, but @racket[string->shell]
+quotes those characters to make them safe in arguments that end up
+being consumed by a batch file.
+
+@history[#:changed "1.15" @elem{On Windows, changed @racket[string->shell] to treat @litchar{,},
+                                @litchar{;}, and @litchar{=} like a space character
+                                among arguments.}]}
 
 
 @section{Filesystem}

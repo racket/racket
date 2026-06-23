@@ -3,7 +3,7 @@
    declarations. */
 
 #define ZUO_VERSION 1
-#define ZUO_MINOR_VERSION 14
+#define ZUO_MINOR_VERSION 15
 
 #if defined(_MSC_VER) || defined(__MINGW32__)
 # define ZUO_WINDOWS
@@ -5799,6 +5799,7 @@ static char **zuo_shell_to_strings_c(char *buf, int skip_exe, zuo_intptr_t *_len
 #endif
 
 #ifdef ZUO_WINDOWS
+
 static char *zuo_string_to_shell_c(const char *s) {
   char *naya;
   int ds;
@@ -5806,8 +5807,15 @@ static char *zuo_string_to_shell_c(const char *s) {
 
   if (!*s) return _strdup("\"\""); /* quote an empty argument */
 
+  /* Protect some non-space characters that are treated as split points by `.bat`
+     file processing of arguments into `%0`, `%1`, etc. We don't treat those
+     characters specially in `zuo_shell_to_strings_c`, because those are not
+     necessarily batch files arguments. Adding extra quotes here can make
+     arguments safe for batch files while still being valid for other consumers. */
+# define is_split_char(ch) (isspace(ch) || (ch == ',') || (ch == ';') || (ch == '='))
+
   for (ds = 0; s[ds]; ds++) {
-    if (isspace(s[ds]) || (s[ds] == '\'')) {
+    if (is_split_char(s[ds]) || (s[ds] == '\'')) {
       has_space = 1;
       was_slash = 0;
     } else if (s[ds] == '"') {
