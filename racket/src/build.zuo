@@ -23,7 +23,11 @@
 	       (cond
 		[(equal? cify "no") '("/nocify")]
 		[(equal? cify "yes") '("/cify")]
-		[else '()])))))
+		[else '()])))
+         (let ([more-cflags (string-trim (hash-ref config 'MORE_CFLAGS ""))])
+           (if (equal? more-cflags "")
+               '()
+               (list (string->shell (~a "CFLAGS+=" more-cflags)))))))
       (build
        (make-targets
 	`[(:target ,mf (,winfig ,(input-data-target 'winfig winfig-args))
