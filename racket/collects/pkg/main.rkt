@@ -172,7 +172,9 @@
         #:install-copy-flags/unclone (install-copy-flags/unclone ...)
         #:install-copy-flags/post-clone (install-copy-flags/post-clone ...)
         #:install-copy-defns (install-copy-defns ...)
-        #:install-copy-checks (install-copy-checks ...))
+        #:install-copy-checks (install-copy-checks ...)
+        #:bundle-mode-flags (bundle-mode-flags ...)
+        #:bundle-mode-flag-to-mode bundle-mode-flag-to-mode)
      (replace-context
       stx
        #`(commands
@@ -529,11 +531,7 @@
              "valid <fmt>s are: zip (the default), tgz, plt")]
            [#:bool manifest () "Creates a manifest file for a directory, rather than an archive"]
            #:once-any
-           [#:bool as-is () "Bundle the directory/package as-is (the default)"]
-           [#:bool source () "Bundle sources only"]
-           [#:bool binary () "Bundle bytecode and rendered documentation without sources"]
-           [#:bool binary-lib () "Bundle bytecode without sources or documentation"]
-           [#:bool built () "Bundle sources, bytecode and rendered documentation"]
+           bundle-mode-flags ...
            #:once-each
            [(#:str package #f) original () "Record <package> as original package source"]
            [(#:str dest-dir #f) dest () "Create output files in <dest-dir>"]
@@ -547,12 +545,7 @@
                          #:source (cond
                                    [from-install 'name]
                                    [else 'dir])
-                         #:mode (cond
-                                 [source 'source]
-                                 [binary 'binary]
-                                 [binary-lib 'binary-lib]
-                                 [built 'built]
-                                 [else 'as-is])
+                         #:mode bundle-mode-flag-to-mode
                          #:original original))]
           ;; ----------------------------------------
           [config
@@ -648,12 +641,23 @@
            [(#:strs sys subpath #f) include-deps-platform () "Include one platform's dependencies"]
            #:multi
            [(#:str pkg '()) exclude () "Exclude <pkg> from new catalog"]
+           #:once-any
+           bundle-mode-flags ...
            #:once-each
            [#:bool fast-file-copy () "Copy a local file package as-is"]
            #:args (dest-dir . src-catalog)
            (parameterize ([current-pkg-error (pkg-error 'catalog-archive)]
                           [current-pkg-lookup-version (or version
                                                           (current-pkg-lookup-version))])
+               (when (and fast-file-copy
+                          (or source binary binary-lib built))
+                 ((current-pkg-error)
+                  (~a "cannot combine `--fast-file-copy` with `--~a`")
+                  (cond
+                    [source "source"]
+                    [binary "binary"]
+                    [binary-lib "binary-lib"]
+                    [else "built"])))
                (define fail-at-end? #f)
                (pkg-catalog-archive dest-dir
                                     src-catalog
@@ -666,6 +670,7 @@
                                                                     (cons (string->symbol (car include-deps-platform))
                                                                           (string->path (cadr include-deps-platform))))
                                     #:exclude (as-list exclude)
+                                    #:mode bundle-mode-flag-to-mode
                                     #:fast-file-copy? fast-file-copy
                                     #:package-exn-handler (case pkg-fail
                                                             [(fail) (lambda (name exn) (raise exn))]
@@ -806,4 +811,17 @@
                                  (cond
                                   [link "link"]
                                   [static-link "static-link"]
-                                  [clone "clone"]))))])
+                                  [clone "clone"]))))]
+ #:bundle-mode-flags
+ ([#:bool as-is () "Bundle the directory/package as-is (the default)"]
+  [#:bool source () "Bundle sources only"]
+  [#:bool binary () "Bundle bytecode and rendered documentation without sources"]
+  [#:bool binary-lib () "Bundle bytecode without sources or documentation"]
+  [#:bool built () "Bundle sources, bytecode and rendered documentation"])
+ #:bundle-mode-flag-to-mode
+ (cond
+   [source 'source]
+   [binary 'binary]
+   [binary-lib 'binary-lib]
+   [built 'built]
+   [else 'as-is]))

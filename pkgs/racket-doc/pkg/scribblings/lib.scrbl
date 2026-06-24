@@ -258,9 +258,9 @@ The package lock must be held (allowing writes if @racket[set?] is true); see
 
 @defproc[(pkg-create [format (or/c 'zip 'tgz 'plt 'MANIFEST)]
                      [dir path-string?]
-                     [#:source source (or/c 'dir 'name)]
-                     [#:mode mode (or/c 'as-is 'source 'binary 'binary-lib 'built)]
                      [#:dest dest-dir (or/c (and/c path-string? complete-path?) #f)]
+                     [#:source source (or/c 'dir 'name) 'dir]
+                     [#:mode mode (or/c 'as-is 'source 'binary 'binary-lib 'built) 'as-is]
                      [#:original original-source (or/c string? #f) #f]
                      [#:quiet? quiet? boolean? #f]
                      [#:from-command-line? from-command-line? boolean? #f])
@@ -543,6 +543,7 @@ for extracting existing catalog information.
                                                                                                     path-for-some-system?))
                                                            #f]
                               [#:exclude excludes (listof string?) '()]
+                              [#:mode mode (or/c 'as-is 'source 'binary 'binary-lib 'built) 'as-is]
                               [#:fast-file-copy? fast-file-copy? boolean? #f]
                               [#:quiet? quiet? boolean? #f]
                               [#:package-exn-handler package-exn-handler (string? exn:fail? . -> . any) (lambda (_pkg-name _exn) (raise _exn))])
@@ -564,7 +565,8 @@ for extracting existing catalog information.
          #:changed "6.0.1.13" @elem{Added the @racket[#:package-exn-handler] argument.}
          #:changed "7.7.0.1" @elem{Added the @racket[#:include], @racket[#:include-deps?],
                                    @racket[#:include-deps-platform],
-                                   @racket[#:exclude], and @racket[#:fast-file-copy?] arguments.}]}
+                                   @racket[#:exclude], and @racket[#:fast-file-copy?] arguments.}
+         #:changed "9.2.0.5" @elem{Added the @racket[#:mode] argument.}]}
 
 @defproc[(pkg-archive-pkgs [dest-dir path-string?]
                            [pkgs (listof path-string?)]

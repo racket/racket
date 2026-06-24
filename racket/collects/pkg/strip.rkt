@@ -80,8 +80,9 @@
       [else #f]))
 
   (define drop-keep-ns (make-base-namespace))
+  (define bootstrap? (eq? mode 'source))
   (define (add-drop+keeps dir base drops keeps)
-    (define get-info (get-info/full dir #:namespace drop-keep-ns))
+    (define get-info (get-info/full dir #:namespace drop-keep-ns #:bootstrap? bootstrap?))
     (define (get-paths tag)
       (define l (if get-info
                     (get-info tag (lambda () null))
@@ -265,7 +266,7 @@
     (add-drop+keeps dir 'same #hash() #hash()))
 
   (define level
-    (let ([i (get-info/full dir #:namespace drop-keep-ns)])
+    (let ([i (get-info/full dir #:namespace drop-keep-ns #:bootstrap? bootstrap?)])
       (cond
        [(or (not i)
             (not (eq? 'multi (i 'collection (lambda () #t)))))
@@ -273,7 +274,7 @@
        [else 'package]))) 
   
   (explore 'same (directory-list dir) drops keeps #f level)
-  (unmove-files dir dest-dir drop-keep-ns)
+  (unmove-files dir dest-dir drop-keep-ns bootstrap?)
   (case mode
     [(built binary binary-lib)
      (create-info-as-needed mode dest-dir level)]
@@ -429,7 +430,7 @@
              [else defn])]
           [_ defn])])]))
 
-(define (unmove-files dir dest-dir metadata-ns)
+(define (unmove-files dir dest-dir metadata-ns bootstrap?)
   ;; Determine whether any files slated for movement by
   ;; `move-foreign-libs', etc., have been installed
   ;; and need to be uninstalled, and copies moved files
@@ -440,7 +441,7 @@
       (when (directory-exists? d)
         (unmove d (build-path dest-dir f)))))
   (define (unmove dir dest-dir)
-    (define info (get-info/full dir #:namespace metadata-ns))
+    (define info (get-info/full dir #:namespace metadata-ns #:bootstrap? bootstrap?))
     (define (unmove-tag tag find-dir fixup copy-one-file)
       (when info
         (define l (info tag (lambda () null)))

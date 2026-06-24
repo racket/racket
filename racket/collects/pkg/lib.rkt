@@ -202,7 +202,7 @@
                         #:relative-sources? boolean?)
         void?)]
   [pkg-catalog-archive
-   (->* (path-string? (listof string?))
+   (->* (path-string? (listof path-string?))
         (#:from-config? boolean?
                         #:state-catalog (or/c path-string? #f)
                         #:relative-sources? boolean?
@@ -211,6 +211,7 @@
                         #:include-deps? boolean?
                         #:include-deps-sys+subpath (or/c #f (cons/c symbol? path-for-some-system?))
                         #:exclude (or/c #f (listof string?))
+                        #:mode (or/c 'as-is 'source 'binary 'binary-lib 'built)
                         #:fast-file-copy? boolean?
                         #:package-exn-handler (string? exn:fail? . -> . any))
         void?)]

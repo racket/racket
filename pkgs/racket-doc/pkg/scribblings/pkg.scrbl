@@ -1151,7 +1151,7 @@ for @nonterm{key}.
     to a @filepath{catalog} directory catalog in @nonterm{dest-dir}, and also copies
     all package sources to a @filepath{pkgs} directory in @nonterm{dest-dir}.
 
-    Packages sources are downloaded and repacked as needed, so that
+    Packages sources are downloaded and re-bundled as needed, so that
     all packages are written to the @filepath{pkgs} directory as
     @filepath{.zip} archives. This conversion may change the checksum
     on each archived package.
@@ -1198,13 +1198,28 @@ for @nonterm{key}.
        then @DFlag{exclude} stops the consideration of @nonterm{pkg}'s
        dependencies (but does not necessarily exclude the dependencies, because they
        may be dependencies of an included package).}
+ @item{@DFlag{as-is} --- Bundles each package as is, with no filtering
+       of sources, compiled files, or repository elements in the package. This is the
+       default re-bundling mode.}
+ @item{@DFlag{source} --- Re-bundles only sources in each package; see @secref["strip"].}
+ @item{@DFlag{binary} --- Re-bundles compiled bytecode and rendered
+       documentation in each package; see @secref["strip"]. Any compiled files
+       in the package must be consistent with the running version of Racket.}
+ @item{@DFlag{binary-lib} --- Re-bundles compiled bytecode only in each package; see @secref["strip"].
+       Any compiled files in the package must be consistent with the running version of Racket.}
+ @item{@DFlag{built} --- Re-bundles compiled sources, bytecode, and rendered
+       documentation in each package, filtering repository elements; see @secref["strip"].
+       Any compiled files in the package must be consistent with the running version of Racket.}
  @item{@DFlag{fast-file-copy} --- Directly copies package files from the @nonterm{src-catalog}s
-       when available on the local filesystem, instead of extracting and repacking.}
+       when available on the local filesystem, instead of extracting and re-bundling.
+       This flag must be used only with @DFlag{as-is} mode.}
  ]
 
  @history[#:added "6.0.17"
           #:changed "7.7.0.1" @elem{Added @DFlag{include}, @DFlag{include-deps}, @DFlag{include-deps-platform},
-                                    @DFlag{exclude}, and @DFlag{fast-file-copy}.}]
+                                    @DFlag{exclude}, and @DFlag{fast-file-copy}.}
+          #:changed "9.2.0.5" @elem{Added @DFlag{as-is}, @DFlag{source}, @DFlag{binary},
+                                    @DFlag{binary-lib}, and @DFlag{built}.}]
 }
 
 @subcommand{@command/toc{archive} @nonterm{option} ... @nonterm{dest-dir} @nonterm{pkg} ...
