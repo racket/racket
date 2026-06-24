@@ -27,7 +27,11 @@
          (let ([more-cflags (string-trim (hash-ref config 'MORE_CFLAGS ""))])
            (if (equal? more-cflags "")
                '()
-               (list (string->shell (~a "CFLAGS+=" more-cflags)))))))
+               (list "/cflags" (string->shell more-cflags))))
+         (let ([more-ldflags (string-trim (hash-ref config 'MORE_LDFLAGS ""))])
+           (if (equal? more-ldflags "")
+               '()
+               (list "/ldflags" (string->shell more-ldflags))))))
       (build
        (make-targets
 	`[(:target ,mf (,winfig ,(input-data-target 'winfig winfig-args))

@@ -10,6 +10,7 @@ REM Racket, or by "../../build.zuo" after "../../winfig.bat" is used
 set SLSP_SUFFIX=
 set ENABLE_CIFY=auto
 set MORE_CFLAGS=
+set MORE_LDFLAGS=
 
 :argloop
 shift
@@ -18,10 +19,8 @@ if defined ARG (
   if "%ARG%"=="/sofind" set SLSP_SUFFIX=-%1 && shift && goto argloop
   if "%ARG%"=="/cify" set ENABLE_CIFY=yes && goto argloop
   if "%ARG%"=="/nocify" set ENABLE_CIFY=no && goto argloop
-  if "%ARG:~0,8%"=="CFLAGS+=" (
-    set "MORE_CFLAGS=%MORE_CFLAGS% %ARG:~8%"
-    goto argloop
-  )
+  if "%ARG%"=="/cflags" set MORE_CFLAGS=%MORE_CFLAGS% %~1 && shift && goto argloop
+  if "%ARG%"=="/ldflags" set MORE_LDFLAGS=%MORE_LDFLAGS% %~1 && shift && goto argloop
   echo Unrecognized argument %ARG%
   exit /B 1
 )
@@ -30,6 +29,7 @@ copy /y "%SRCDIR%\buildmain.zuo" main.zuo > NUL
 echo srcdir=%SRCDIR% > Makefile
 echo CPPFLAGS=/DWIN32 >> Makefile
 echo CFLAGS=/Ox /GS- %MORE_CFLAGS% >> Makefile
+echo LDFLAGS=%MORE_LDFLAGS% >> Makefile
 echo INSTALL_MISSING_PKGS=dist >> Makefile
 echo INSTALL_SETUP_FLAGS=--no-user >> Makefile
 echo SPLS_SUFFIX=%SLSP_SUFFIX% >> Makefile

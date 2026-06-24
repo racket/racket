@@ -215,4 +215,6 @@ scripts all recognize the following flags to configure the build:
 
  * /nocify --- BC only, disables Cify on a platform with no JIT
 
- * CFLAGS+=<flags> --- Add <flags> to pass to the C compiler
+ * /cflags <flags> --- Add <flags> to pass to the C compiler
+
+ * /ldflags <flags> --- Add <flags> to pass to the C linker

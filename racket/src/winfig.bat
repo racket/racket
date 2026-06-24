@@ -11,6 +11,7 @@ set USE_SUFFIX=
 set SLSP_SUFFIX=
 set ENABLE_CIFY=auto
 set MORE_CFLAGS=
+set MORE_LDFLAGS=
 
 :argloop
 shift
@@ -23,10 +24,8 @@ if defined ARG (
   if "%ARG%"=="/sofind" set SLSP_SUFFIX=-%1 && shift && goto argloop
   if "%ARG%"=="/cify" set ENABLE_CIFY=yes && goto argloop
   if "%ARG%"=="/nocify" set ENABLE_CIFY=no && goto argloop
-  if "%ARG:~0,8%"=="CFLAGS+=" (
-    set "MORE_CFLAGS=%MORE_CFLAGS% %ARG:~8%"
-    goto argloop
-  )
+  if "%ARG%"=="/cflags" set MORE_CFLAGS=%MORE_CFLAGS% %~1 && shift && goto argloop
+  if "%ARG%"=="/ldflags" set MORE_LDFLAGS=%MORE_LDFLAGS% %~1 && shift && goto argloop
   echo Unrecognized argument %ARG%
   exit /B 1
 )
@@ -50,6 +49,7 @@ if %BUILDMODE%==cs echo CS_CAP_INSTALLED=%USE_SUFFIX% >> Makefile
 echo SLSP_SUFFIX=%SLSP_SUFFIX% >> Makefile
 echo ENABLE_CIFY=%ENABLE_CIFY% >> Makefile
 echo MORE_CFLAGS=%MORE_CFLAGS% >> Makefile
+echo MORE_LDFLAGS=%MORE_LDFLAGS% >> Makefile
 
 type "%SRCDIR%\Makefile.nt" >> Makefile
 
