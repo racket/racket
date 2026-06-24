@@ -769,6 +769,26 @@
              exn:fail:contract:arity?
              #rx": arity mismatch")
 
+(err/rt-test
+ (let ()
+   (define tag
+     (chaperone-prompt-tag
+      (make-continuation-prompt-tag)
+      values
+      values
+      (lambda args (values))))
+
+   (define k #f)
+   (call-with-continuation-prompt
+    (lambda () (call/cc (lambda (c) (set! k c) 0) tag))
+    tag)
+
+   (call-with-continuation-prompt
+    (lambda () (k 5))
+    tag))
+ exn:fail:contract:arity?
+ #rx"expected: 1.*received: 0")
+
 ;;----------------------------------------
 
 (report-errs)
