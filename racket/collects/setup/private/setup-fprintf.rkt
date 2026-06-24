@@ -20,12 +20,16 @@
   (define op (current-output-port))
   (define ip (current-input-port))
   (define terminal-available?
-    (let ()
-      (define in-fd (unsafe-port->file-descriptor ip))
-      (define out-fd (unsafe-port->file-descriptor op))
-      (and in-fd
-           out-fd
-           (terminal-init in-fd out-fd))))
+    ;; check for terminal ports, first, because we don't want to
+    ;; for a Windows console in GUI mode if either port is redirected
+    (and (terminal-port? op)
+         (terminal-port? ip)
+         (let ()
+           (define in-fd (unsafe-port->file-descriptor ip))
+           (define out-fd (unsafe-port->file-descriptor op))
+           (and in-fd
+                out-fd
+                (terminal-init in-fd out-fd)))))
 
   (define last-position #f)
 
