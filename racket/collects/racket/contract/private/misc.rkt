@@ -843,8 +843,18 @@
     (define ho-pos-projs (for/list ([proj (in-list ho-projs)]) (proj blame)))
     (define cc-neg-projs (for/list ([proj (in-list call/cc-projs)]) (proj swapped)))
     (define cc-pos-projs (for/list ([proj (in-list call/cc-projs)]) (proj blame)))
-    (define (make-proj projs neg-party blame+neg-party)
+    (define (make-proj val projs neg-party blame+neg-party)
+      (define proj-len (length projs))
       (λ vs
+        (define vs-len (length vs))
+        (unless (= proj-len vs-len)
+          (raise-blame-error
+           (blame-swap blame) #:missing-party neg-party val
+           '(expected: "~a value~a" given: "~a value~a")
+           proj-len
+           (if (= proj-len 1) "" "s")
+           vs-len
+           (if (= vs-len 1) "" "s")))
         (with-contract-continuation-mark
          blame+neg-party
          (apply values
@@ -857,16 +867,16 @@
       (cond
         [(continuation-prompt-tag? val)
          ;; prompt/abort projections
-         (define proj1 (make-proj ho-pos-projs neg-party blame+neg-party))
-         (define proj2 (make-proj ho-neg-projs neg-party blame+neg-party))
+         (define proj1 (make-proj val ho-pos-projs neg-party blame+neg-party))
+         (define proj2 (make-proj val ho-neg-projs neg-party blame+neg-party))
          ;; call/cc projections
-         (define call/cc-guard (make-proj cc-pos-projs neg-party blame+neg-party))
+         (define call/cc-guard (make-proj val cc-pos-projs neg-party blame+neg-party))
          (define call/cc-proxy
            (λ (f)
              (proc-proxy
               f
               (λ args
-                (apply values (make-proj cc-neg-projs neg-party blame+neg-party) args)))))
+                (apply values (make-proj val cc-neg-projs neg-party blame+neg-party) args)))))
          (proxy val
                 proj1 proj2
                 call/cc-guard call/cc-proxy
