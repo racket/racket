@@ -252,11 +252,16 @@
    (lambda (x) (* x 2))
    (lambda (x) (+ x 1))))
 
+(define-values (prop:blue-tag blue-tag? blue-tag-ref) (make-impersonator-property 'blue))
+
 (define imp-tag-2
   (impersonate-prompt-tag
    (make-continuation-prompt-tag)
    (lambda (x y) (values (* x 2) (* y 2)))
-   (lambda (x y) (values (+ x 1) (+ y 1)))))
+   (lambda (x y) (values (+ x 1) (+ y 1)))
+   prop:blue-tag "azure"))
+
+(test #t blue-tag? imp-tag-2)
 
 (define imp-tag-3
   (impersonate-prompt-tag
@@ -475,6 +480,160 @@
          (other-k #f)
          str))
    other-tag))
+
+;; check imperonstated prompt tag with composable continuations
+
+(let ()
+  (define default-tag/add-z
+    (impersonate-prompt-tag (default-continuation-prompt-tag)
+                            values
+                            values
+                            values
+                            values
+                            (lambda (s) (string-append s "z"))))
+  (test
+   "aambzb"
+   call-with-continuation-prompt
+   (lambda ()
+     (string-append "a"
+                    (call-with-composable-continuation
+                     (lambda (k)
+                       (k "m"))
+                     default-tag/add-z)
+                    "b")))
+  (test
+   "aaambzbzb"
+   call-with-continuation-prompt
+   (lambda ()
+     (string-append "a"
+                    (call-with-composable-continuation
+                     (lambda (k)
+                       (k (k "m")))
+                     default-tag/add-z)
+                    "b")))
+  (test
+   "aaambZzbZzb"
+   call-with-continuation-prompt
+   (lambda ()
+     (string-append "a"
+                    (call-with-composable-continuation
+                     (lambda (k)
+                       (k (k "m")))
+                     (impersonate-prompt-tag default-tag/add-z
+                                             values
+                                             values
+                                             values
+                                             values
+                                             (lambda (s) (string-append s "Z"))))
+                    "b")))
+  (test
+   "aaambzbzb"
+   call-with-continuation-prompt
+   (lambda ()
+     (string-append "a"
+                    (call-with-composable-continuation
+                     (lambda (k)
+                       (call-in-continuation k (lambda () (call-in-continuation k (lambda () "m")))))
+                     default-tag/add-z)
+                    "b")))
+  (err/rt-test
+   (call-with-continuation-prompt
+    (lambda ()
+      (call-with-composable-continuation
+       (lambda (k)
+         (k "m"))
+       (chaperone-prompt-tag (default-continuation-prompt-tag)
+                             values
+                             values
+                             values
+                             values
+                             (lambda (s) (string-append s "z"))))))
+   exn:fail?
+   #rx"composable-continuation result guard: non-chaperone result")
+  (err/rt-test
+   (call-with-continuation-prompt
+    (lambda ()
+      (call-with-composable-continuation
+       (lambda (k)
+         (k "m"))
+       (chaperone-prompt-tag (default-continuation-prompt-tag)
+                             values
+                             values
+                             values
+                             values
+                             (lambda (s) (values s s))))))
+   exn:fail?
+   #rx"composable-continuation result guard: result arity mismatch")
+  (err/rt-test
+   (call-with-continuation-prompt
+    (lambda ()
+      (call-with-composable-continuation
+       (lambda (k)
+         (k "m"))
+       (chaperone-prompt-tag (default-continuation-prompt-tag)
+                             values
+                             values
+                             values
+                             values
+                             (lambda (s t) (values s t))))))
+   exn:fail?
+   #rx"arity mismatch"))
+
+(let ()
+  (define empty-k
+    (call-with-continuation-prompt
+     (lambda ()
+       (call-with-composable-continuation
+        (lambda (k)
+          k)))))
+  (test 'immed (with-continuation-mark
+                   'key 'immed
+                   (call-in-continuation
+                    empty-k
+                    (lambda ()
+                      (call-with-immediate-continuation-mark
+                       'key
+                       (lambda (v)
+                         v))))))
+  (test '(2) (with-continuation-mark
+                 'key 1
+                 (call-in-continuation
+                  empty-k
+                  (lambda ()
+                    (with-continuation-mark
+                        'key 2
+                        (continuation-mark-set->list #f 'key)))))))
+
+(let ()
+  (define empty-nontail-k
+    (call-with-continuation-prompt
+     (lambda ()
+       (call-with-composable-continuation
+        (lambda (k)
+          k)
+        (chaperone-prompt-tag (default-continuation-prompt-tag)
+                              values
+                              values
+                              values
+                              values
+                              (lambda (v) v))))))
+  (test #f (with-continuation-mark
+               'key 'immed
+               (call-in-continuation
+                empty-nontail-k
+                (lambda ()
+                  (call-with-immediate-continuation-mark
+                   'key
+                   (lambda (v)
+                     v))))))
+  (test '(2 1) (with-continuation-mark
+                   'key 1
+                   (call-in-continuation
+                    empty-nontail-k
+                    (lambda ()
+                      (with-continuation-mark
+                          'key 2
+                          (continuation-mark-set->list #f 'key)))))))
 
 ;;----------------------------------------
 ;; check clean-up when aborting to initial prompt:

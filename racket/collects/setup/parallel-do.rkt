@@ -95,9 +95,10 @@
         (set! out _out)
         (set! in _in)
         (set! err _err)
-        (set! err-th (lambda () ; manual copy bumps `terminal-file-position`
-                       (copy-port err (current-error-port))
-                       (close-output-port err)))
+        (set! err-th (thread
+                      (lambda () ; manual copy bumps `terminal-file-position`
+                        (copy-port err (current-error-port))
+                        (close-input-port err))))
         (send/msg dynamic-require-cmd)
         (when initialmsg (send/msg (initialmsg id)))))
     (define/public (send/msg msg) 

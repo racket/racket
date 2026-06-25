@@ -604,6 +604,7 @@ or override impersonator-property values of @racket[channel].}
                                  [abort-proc procedure?]
                                  [cc-guard-proc procedure? values]
                                  [callcc-impersonate-proc (procedure? . -> . procedure?) (lambda (p) p)]
+                                 [comp-guard-proc procedure? values]
                                  [prop impersonator-property?]
                                  [prop-val any/c] ... ...)
           (and/c continuation-prompt-tag? impersonator?)]{
@@ -644,6 +645,15 @@ application time is a thread's built-in initial prompt,
 @racket[callcc-impersonate-proc] is ignored (partly on the grounds
 that the initial prompt's result is ignored).
 
+The @racket[comp-guard-proc] procedure is similar to
+@racket[cc-guard-proc], but it is applied to the result of a
+composable continuation that is captured using the impersonated
+prompt. If @racket[comp-guard-proc] is procedure other than
+@racket[values], a composable continuation captured with
+the impersonated prompt will not be applied in tail position with
+respect to its call site, since the continuation's result will be
+passed to @racket[comp-guard-proc].
+
 Pairs of @racket[prop] and @racket[prop-val] (the number of arguments
 to @racket[impersonate-prompt-tag] must be odd) add impersonator properties
 or override impersonator-property values of @racket[prompt-tag].
@@ -661,7 +671,8 @@ or override impersonator-property values of @racket[prompt-tag].
     tag
     (lambda (n) n))
 ]
-}
+
+@history[#:changed "9.2.0.6" @elem{Added the @racket[comp-guard-proc] argument.}]}
 
 
 @defproc[(impersonate-continuation-mark-key
@@ -1020,6 +1031,7 @@ or override impersonator-property values of @racket[channel].}
                                [abort-proc procedure?]
                                [cc-guard-proc procedure? values]
                                [callcc-chaperone-proc (procedure? . -> . procedure?) (lambda (p) p)]
+                               [comp-guard-proc procedure? values]
                                [prop impersonator-property?]
                                [prop-val any/c] ... ...)
           (and/c continuation-prompt-tag? chaperone?)]{
@@ -1027,11 +1039,12 @@ or override impersonator-property values of @racket[channel].}
 Like @racket[impersonate-prompt-tag], but produces a chaperoned value.
 The @racket[handle-proc] procedure must produce the same values or
 chaperones of the original values, @racket[abort-proc] must produce
-the same values or chaperones of the values that it is given, and
+the same values or chaperones of the values that it is given,
 @racket[cc-guard-proc] must produce the same values or chaperones of
-the original result values, and @racket[callcc-chaperone-proc] must
+the original result values, @racket[callcc-chaperone-proc] must
 produce a procedure that is a chaperone or the same as the given
-procedure.
+procedure, and @racket[comp-guard-proc] must produce the same values
+or chaperones of the original result values.
 
 @examples[
   (define bad-chaperone
@@ -1059,7 +1072,8 @@ procedure.
     good-chaperone
     (lambda (n) n))
 ]
-}
+
+@history[#:changed "9.2.0.6" @elem{Added the @racket[comp-guard-proc] argument.}]}
 
 
 @defproc[(chaperone-continuation-mark-key

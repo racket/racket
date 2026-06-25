@@ -4648,6 +4648,22 @@ Scheme_Object *scheme_get_immediate_cc_mark(Scheme_Object *key, Scheme_Object *d
           return find->val;
       }
     }
+
+    if (MZ_CONT_MARK_POS == p->cont_mark_pos_bottom + 2) {
+      if (p->meta_continuation) {
+        if (key != scheme_stack_dump_key) {
+          /* Check the end of the meta-continuation's stack */
+          Scheme_Meta_Continuation *mc = p->meta_continuation;
+          for (findpos = (intptr_t)mc->cont_mark_total; findpos--; ) {
+            if (mc->cont_mark_stack_copied[findpos].pos != mc->cont_mark_pos)
+              break;
+            if (mc->cont_mark_stack_copied[findpos].key == key) {
+              return mc->cont_mark_stack_copied[findpos].val;
+            }
+          }
+        }
+      }
+    }
   }
 
   return def_val;
@@ -6414,7 +6430,7 @@ internal_call_cc (int argc, Scheme_Object *argv[])
         
         if (SCHEME_FALSEP(cc_guard))
           cc_guard = scheme_values_proc;
-        if (SCHEME_NP_CHAPERONEP(cont->prompt_tag))  
+        if (!composable && SCHEME_NP_CHAPERONEP(cont->prompt_tag))
           cc_guard = chaperone_wrap_cc_guard(cont->prompt_tag, cc_guard);
         
         get_set_cont_mark_by_pos(prompt_cc_guard_key, p, mc, pos, cc_guard);
@@ -6617,15 +6633,23 @@ Scheme_Object *do_chaperone_prompt_tag (const char *name, int is_impersonator, i
   if (!SCHEME_PROCP(argv[2]))
     scheme_wrong_contract(name, "procedure?", 2, argc, argv);
 
-  if ((argc > 3) && !SCHEME_CHAPERONEP(argv[3])) {
+  if ((argc > 3) && !SAME_TYPE(SCHEME_TYPE(argv[3]), scheme_chaperone_property_type)) {
     if (!SCHEME_PROCP(argv[3]))
       scheme_wrong_contract(name, "(or/c procedure? impersonator-property?)", 3, argc, argv);
     redirects = argv[3];
-    if ((argc > 4) && !SCHEME_CHAPERONEP(argv[4])) {
+    if ((argc > 4) && !SAME_TYPE(SCHEME_TYPE(argv[4]), scheme_chaperone_property_type)) {
+      Scheme_Object *tail = argv[4];
       if (!scheme_check_proc_arity(NULL, 1, 4, argc, argv))
         scheme_wrong_contract(name, "(or/c (procedure-arity-includes/c 1) impersonator-property?)", 4, argc, argv);
-      redirects = scheme_make_pair(redirects, argv[4]);
-      ppos = 5;
+      if ((argc > 5) && !SAME_TYPE(SCHEME_TYPE(argv[5]), scheme_chaperone_property_type)) {
+        if (!SCHEME_PROCP(argv[5]))
+          scheme_wrong_contract(name, "(or/c procedure? impersonator-property?)", 5, argc, argv);
+        if (!SAME_OBJ(argv[5], scheme_values_proc))
+          tail = scheme_make_pair(tail, argv[5]);
+        ppos = 6;
+      } else
+        ppos = 5;
+      redirects = scheme_make_pair(redirects, tail);
     } else
       ppos = 4;
     redirects = scheme_make_pair(argv[2], redirects);
@@ -6948,7 +6972,7 @@ static Scheme_Object *compose_continuation(Scheme_Cont *cont, int exec_chain,
             continuation.
          2. A trampoline to turn a composable-continuation
             application into a tail call; in this case,
-            jumping_to_continuation = #t. */
+            jumping_to_continuation is a vector. */
     if (!v && ((loop_prompt
                 && SAME_OBJ((Scheme_Object *)p->cjs.jumping_to_continuation,
                             loop_prompt)
@@ -7097,12 +7121,26 @@ static Scheme_Object **chaperone_do_control(const char *name, int mode,
             if (SCHEME_PAIRP(proc)) {
               proc = SCHEME_CDR(proc);
               if (mode == 2) {
-                if (SCHEME_PAIRP(proc))
+                if (SCHEME_PAIRP(proc)) {
                   proc = SCHEME_CAR(proc);
-              } else {
-                if (SCHEME_PAIRP(proc))
+                  if (SCHEME_PAIRP(proc))
+                    proc = SCHEME_CAR(proc);
+                }
+              } else if (mode == 3) {
+                if (SCHEME_PAIRP(proc)) {
                   proc = SCHEME_CDR(proc);
-                else
+                  if (SCHEME_PAIRP(proc))
+                    proc = SCHEME_CAR(proc);
+                } else
+                  proc = NULL;
+              } else if (mode == 4) {
+                if (SCHEME_PAIRP(proc)) {
+                  proc = SCHEME_CDR(proc);
+                  if (SCHEME_PAIRP(proc))
+                    proc = SCHEME_CDR(proc);
+                  else
+                    proc = NULL;
+                } else
                   proc = NULL;
               }
             } else
@@ -7111,7 +7149,9 @@ static Scheme_Object **chaperone_do_control(const char *name, int mode,
         }
       }
 
-      if (proc) {
+      if (mode == 4 && proc) {
+        vals = (Scheme_Object **)scheme_make_pair(proc, (Scheme_Object *)vals);
+      } else if (proc) {
         if (mode == 3)
           v = scheme_apply(proc, argc, argv); /* with barrier */
         else
@@ -7187,6 +7227,12 @@ static Scheme_Object *chaperone_wrap_cc_guard(Scheme_Object *obj, Scheme_Object 
   a2 = chaperone_do_control("call-with-current-continuation", 3, NULL, obj, 1, a);
 
   return a2[0];
+}
+
+static Scheme_Object *chaperone_get_comp_guards(Scheme_Object *obj)
+{
+  /* returns a list of guards to apply in order (which is innermost to outermost) */
+  return (Scheme_Object *)chaperone_do_control("call-with-continuation-prompt", 4, NULL, obj, 1, (Scheme_Object **)scheme_null);
 }
 
 static Scheme_Object *do_cc_guard(Scheme_Object *v, Scheme_Object *cc_guard, Scheme_Object *chaperone)
@@ -7595,7 +7641,8 @@ Scheme_Object *_scheme_call_with_prompt_multi(Scheme_Closed_Prim f, void *data)
 Scheme_Object *scheme_compose_continuation(Scheme_Cont *cont, int num_rands, Scheme_Object *value)
 {
   Scheme_Meta_Continuation *mc;
-  int empty_to_next_mc;
+  int empty_to_next_mc, guard_is_chaperone;
+  Scheme_Object *guard_procs;
 
   if (num_rands != 1) {
     value = scheme_values(num_rands, (Scheme_Object **)value);
@@ -7608,6 +7655,12 @@ Scheme_Object *scheme_compose_continuation(Scheme_Cont *cont, int num_rands, Sch
   cont->value = value;
   cont->common_dw_depth = -1;
   cont->skip_winds = 0;
+
+  guard_procs = chaperone_get_comp_guards(cont->prompt_tag);
+  if (SCHEME_PAIRP(guard_procs))
+    guard_is_chaperone = !(SCHEME_CHAPERONE_FLAGS((Scheme_Chaperone *)cont->prompt_tag) & SCHEME_CHAPERONE_IS_IMPERSONATOR);
+  else
+    guard_is_chaperone = 0;
 
   mc = scheme_current_thread->meta_continuation;
   if (mc && mc->pseudo && mc->meta_tail_pos == MZ_CONT_MARK_POS) {
@@ -7677,8 +7730,13 @@ Scheme_Object *scheme_compose_continuation(Scheme_Cont *cont, int num_rands, Sch
   /* Clear to avoid retaining a chain of meta-continuationss: */
   mc = NULL;
 
+  if (SCHEME_PAIRP(guard_procs)) {
+    /* not in tail position */
+    MZ_CONT_MARK_POS += 2;
+  }
+
   value = compose_continuation(cont, 0, NULL, empty_to_next_mc);
-  
+
   scheme_current_thread->next_meta -= 1;
 
   if (!value) {
@@ -7691,6 +7749,61 @@ Scheme_Object *scheme_compose_continuation(Scheme_Cont *cont, int num_rands, Sch
       continue_prompt_escape();
     } else {
       scheme_longjmp(*scheme_current_thread->error_buf, 1);
+    }
+  }
+
+  if (SCHEME_PAIRP(guard_procs)) {
+    const char *name = "composable-continuation result guard";
+    MZ_CONT_MARK_POS -= 2;
+    guard_procs = scheme_reverse(guard_procs);
+    while (!SCHEME_NULLP(guard_procs)) {
+      Scheme_Object **vals, **argv;
+      int num_args, argc;
+
+      if (value == SCHEME_MULTIPLE_VALUES) {
+        GC_CAN_IGNORE Scheme_Thread *p = scheme_current_thread;
+        if (SAME_OBJ(p->ku.multiple.array, p->values_buffer))
+          p->values_buffer = NULL;
+        argc = p->ku.multiple.count;
+        argv = p->ku.multiple.array;
+        p->ku.multiple.array = NULL;
+      } else {
+        argc = 1;
+        argv = MALLOC_N(Scheme_Object *, 1);
+        argv[0] = value;
+      }
+
+      value = _scheme_apply_multi(SCHEME_CAR(guard_procs), argc, argv);
+
+      if (value == SCHEME_MULTIPLE_VALUES) {
+        GC_CAN_IGNORE Scheme_Thread *p = scheme_current_thread;
+        if (SAME_OBJ(p->ku.multiple.array, p->values_buffer))
+          p->values_buffer = NULL;
+        num_args = p->ku.multiple.count;
+        vals = p->ku.multiple.array;
+        p->ku.multiple.array = NULL;
+      } else {
+        num_args = 1;
+        vals = MALLOC_N(Scheme_Object *, 1);
+        vals[0] = value;
+      }
+
+      if (num_args == 1 && num_args != argc)
+        scheme_wrong_return_arity(name, argc, 1, (Scheme_Object **)(vals[0]), "\n  in: use of redirecting procedure");
+      else if (num_args != argc)
+        scheme_wrong_return_arity(name, argc, num_args, vals, "\n   in: use of redirecting procedure");
+
+      if (guard_is_chaperone) {
+        int i;
+        for (i = 0; i < argc; i++) {
+          if (!scheme_chaperone_of(vals[i], argv[i]))
+            scheme_wrong_chaperoned(name, "value", argv[i], vals[i]);
+        }
+      }
+
+      guard_procs = SCHEME_CDR(guard_procs);
+
+      value = scheme_values(num_args, vals);
     }
   }
 
@@ -7799,23 +7912,24 @@ static Scheme_Object *unsafe_abort_continuation_no_dws(int argc, Scheme_Object *
 
 static Scheme_Object *do_call_with_control (int argc, Scheme_Object *argv[], int no_dws)
 {
-  Scheme_Object *prompt_tag;
+  Scheme_Object *prompt_tag, *pt;
   Scheme_Object *a[3];
 
   scheme_check_proc_arity("call-with-composable-continuation", 1, 0, argc, argv);
   if (argc > 1) {
     prompt_tag = argv[1];
+    pt = prompt_tag;
     if (!SAME_TYPE(scheme_prompt_tag_type, SCHEME_TYPE(prompt_tag))) {
-      if (SCHEME_NP_CHAPERONEP(prompt_tag)
-          && SCHEME_PROMPT_TAGP(SCHEME_CHAPERONE_VAL(prompt_tag)))
-        prompt_tag = SCHEME_CHAPERONE_VAL(prompt_tag);
+      if (SCHEME_NP_CHAPERONEP(pt)
+          && SCHEME_PROMPT_TAGP(SCHEME_CHAPERONE_VAL(pt)))
+        pt = SCHEME_CHAPERONE_VAL(pt);
       else {
         scheme_wrong_contract("call-with-composable-continuation", "continuation-prompt-tag?",
                               1, argc, argv);
         return NULL;
       }
     }
-    if (SAME_OBJ(prompt_tag, scheme_root_prompt_tag)) {
+    if (SAME_OBJ(pt, scheme_root_prompt_tag)) {
       root_prompt_tag_misuse("abort-current-continuation");
       return NULL;
     }
