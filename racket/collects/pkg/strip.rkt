@@ -538,3 +538,28 @@
             (file-or-directory-permissions pth old-mode))))]
     [else
      (run)]))
+
+(module+ main
+  (require racket/cmdline)
+
+  (define pkg-dir (current-directory))
+  (define mode 'built)
+
+  (command-line
+   #:once-each
+   ["--dir" dir "Strip packages in <dir>"
+            (set! pkg-dir dir)]
+   #:once-any
+   ["--source" "Source mode"
+               (set! mode 'source)]
+   ["--binary" "Binary mode"
+               (set! mode 'binary)]
+   ["--binary-lib" "Binary-library mode"
+                   (set! mode 'binary-lib)]
+   ["--built" "Built mode"
+              (set! mode 'built)]
+   #:args
+   pkg
+   (for ([pkg (in-list pkg)])
+     (define dir (build-path pkg-dir pkg))
+     (generate-stripped-directory mode dir dir))))

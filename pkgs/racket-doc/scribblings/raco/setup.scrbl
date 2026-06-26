@@ -31,7 +31,8 @@
                     setup/collects
                     syntax/modcollapse
                     racket/runtime-path
-                    pkg/path))
+                    pkg/path
+                    setup/doc-to-destdir))
 
 @(define-syntax-rule (local-module mod . body)
    (begin
@@ -48,6 +49,9 @@
    @elem{The default is @|v|.})
 
 @(define pkg-doc '(lib "pkg/scribblings/pkg.scrbl"))
+
+@(define raco-pkg-install
+   @seclink["raco-pkg-install" #:doc '(lib "pkg/scribblings/pkg.scrbl")]{@exec{raco pkg install}})
 
 @title[#:tag "setup" #:style 'toc]{@exec{raco setup}: Installation Management}
 
@@ -1021,7 +1025,7 @@ current-system paths while @racket[get-cross-lib-search-dirs] and
   Returns a list of paths to the directories containing packages in
   installation scope.  (Normally, the result includes the result of
   @racket[(find-pkgs-dir)], which is where new packages are installed
-  by @exec{raco pkg install}.) The result of @racket[find-user-pkgs-dir]
+  by @|raco-pkg-install|.) The result of @racket[find-user-pkgs-dir]
   is @emph{not} added to the returned list. The directories indicated by the returned
   paths may or may not exist.
 
@@ -2068,6 +2072,43 @@ The @racket[on-setup] argument is not called if the documentation entry
 point already exists in @racket[(find-user-doc-dir)].
 
 @history[#:changed "1.1" @list{Added the @racket[skip-user-doc-check?] argument.}]
+}
+
+@; ------------------------------------------------------------------------
+
+@section[#:tag "doc-to-destdir"]{API for Staging Documentation Installs}
+
+@defmodule[setup/doc-to-destdir]{The
+@racketmodname[setup/doc-to-destdir] module provides support for
+staging rendered documentation to better match the filesystem layout
+of a package installation.}
+
+When the @racketmodname[setup/doc-to-destdir] module is run directly,
+such as with @exec{racket -l}, it expects command-line arguments to
+pass along to @racket[move-rendered-docs-to-destdir]. Provide the
+@DFlag{help} flag for more information.
+
+@history[#:added "9.2.0.6"]
+
+@defproc[(move-rendered-docs-to-destdir [dir path-string?]
+                                        [doc-destdir path-string?])
+         void?]{
+
+Scans @racket[dir] for collections (typically within package
+implementations) that specify documentation through a
+@filepath{info.rkt} module, and where the specified documentation has
+been rendered to a local @filepath{doc} subdirectory. The rendered
+documentation is moved out of @filepath{doc} and into
+@racket[doc-destdir]. This movement imitates a @exec{raco setup} step
+of moving documentation that is already rendered within a collection
+into a centralized directory for installation-scoped packages.
+
+The @racket[move-rendered-docs-to-destdir] function is intended for
+use in combination with @exec{@|raco-pkg-install| @DFlag{destdir}}, where
+@racket[dir] is the same directory as provided after @DFlag{destdir},
+and @racket[doc-destdir] is an accompanying directory to be moved into
+place as rendered documentation instead of package implementation.
+
 }
 
 @; ------------------------------------------------------------------------

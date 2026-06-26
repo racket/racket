@@ -170,6 +170,7 @@
          #:clone-info clone-info
          #:pull-behavior pull-behavior
          #:dry-run? dry-run?
+         #:destdir destdir
          descs)
   (define download-printf (if quiet? void printf/flush))
   (define check-sums? (not ignore-checksums?))
@@ -181,7 +182,7 @@
                                  descs infos) ; these two are delays
     (match-define (pkg-desc pkg type orig-name given-checksum auto? pkg-extra-path) desc)
     (match-define
-     (install-info pkg-name orig-pkg pkg-dir git-dir clean? checksum module-paths additional-installs)
+     (install-info pkg-name orig-pkg pkg-dir git-dir clean? checksum checksum-file module-paths additional-installs)
      info)
     (define name? (eq? 'catalog (first orig-pkg)))
     (define this-dep-behavior (or dep-behavior
@@ -226,8 +227,9 @@
       [(and (not updating?)
             (hash-ref all-db pkg-name #f)
             ;; Already installed, but can force if the install is for
-            ;; a wider scope:
-            (not (and (not (hash-ref current-scope-db pkg-name #f))
+            ;; a wider scope or destdir:
+            (not (and (or destdir
+                          (not (hash-ref current-scope-db pkg-name #f)))
                       force?)))
        (define existing-pkg-info (hash-ref all-db pkg-name #f))
        (cond
@@ -242,6 +244,7 @@
           #f ; no repo change
           ;; The `do-it` thunk:
           (lambda (fail-repos)
+            (when destdir (destdir-error "cannot promote from auto-installed to explicitly installed" pkg-name))
             (unless quiet?
               (download-printf "Promoting ~a from auto-installed to explicitly installed~a\n"
                                pkg-name
@@ -468,6 +471,7 @@
           (and (not (empty? update-pkgs))
                update-pkgs
                (let ()
+                 (when destdir (destdir-error "cannot update package" pkg-name))
                  (define (continue conversation)
                    (raise (vector #t (force infos) (force descs) pkg-name update-pkgs
                                   (λ () (for-each (compose (remove-package #t quiet? use-trash? dry-run?) pkg-desc-name) update-pkgs))
@@ -574,7 +578,9 @@
                                                                   #:use-cache? use-cache?
                                                                   #:from-command-line? from-command-line?
                                                                   #:link-dirs? link-dirs?)])
-                                 (for ([pkg (in-list update-pkgs)]) (updater #:prefetch? #t pkg))
+                                 (for ([pkg (in-list update-pkgs)])
+                                   (when destdir (destdir-error "cannot update package" pkg))
+                                   (updater #:prefetch? #t pkg))
                                  (append-map updater update-pkgs))])
                 (λ () (for-each (compose (remove-package #t quiet? use-trash? dry-run?) pkg-desc-name) to-update))))
             (match this-dep-behavior
@@ -615,7 +621,7 @@
              [clean?
               (define final-pkg-dir (or git-dir
                                         (select-package-directory
-                                         (build-path (pkg-installed-dir) pkg-name)
+                                         (build-path (or destdir (pkg-installed-dir)) pkg-name)
                                          dry-run?)))
               (unless dry-run?
                 (unless git-dir
@@ -625,6 +631,9 @@
               final-pkg-dir]
              [else
               pkg-dir]))
+          (unless dry-run?
+            (when checksum-file
+              (delete-directory/files checksum-file)))
           (define single-collect (pkg-single-collection final-pkg-dir
                                                         #:name pkg-name
                                                         #:namespace post-metadata-ns))
@@ -632,7 +641,7 @@
                          (if single-collect "single-collection " "") 
                          final-pkg-dir)
           (define scope (current-pkg-scope))
-          (unless dry-run?
+          (unless (or dry-run? destdir)
             (links final-pkg-dir
                    #:name single-collect
                    #:user? (not (or (eq? 'installation scope)
@@ -653,10 +662,16 @@
                 ;; of the state of this package:
                 #f
                 checksum))
+          (when (and destdir new-checksum)
+            (call-with-output-file*
+             (let-values ([(base name dir?) (split-path final-pkg-dir)])
+               (build-path base (path-replace-suffix name ".CHECKSUM")))
+             #:exists 'truncate
+             (lambda (o) (display checksum o))))
           (define this-pkg-info
             (make-pkg-info orig-pkg new-checksum auto? single-collect alt-dir-name))
           (log-pkg-debug "updating db with ~e to ~e" pkg-name this-pkg-info)
-          (unless dry-run?
+          (unless (or dry-run? destdir)
             (update-pkg-db! pkg-name this-pkg-info))))]))
   (define metadata-ns (make-metadata-namespace))
   (define infos
@@ -671,7 +686,8 @@
                           #:remote-checksum-cache remote-checksum-cache
                           #:strip strip-mode
                           #:force-strip? force-strip?
-                          #:link-dirs? link-dirs?)))
+                          #:link-dirs? link-dirs?
+                          #:destdir destdir)))
   ;; For the top-level call, we need to double-check that all provided packages
   ;; were distinct:
   (for/fold ([ht (hash)]) ([i (in-list infos)]
@@ -815,7 +831,8 @@
   (cond
    [(or (null? repo+do-its)
         (and (not updating-any?) (andmap is-promote? all-infos))
-        dry-run?)
+        dry-run?
+        destdir)
     ;; No actions, so no setup:
     'skip]
    [else
@@ -913,7 +930,8 @@
                                                    (if quiet? void printf/flush))]
                      #:pull-behavior [pull-behavior 'ff-only]
                      #:convert-to-non-clone? [convert-to-non-clone? #f]
-                     #:dry-run? [dry-run? #f])
+                     #:dry-run? [dry-run? #f]
+                     #:destdir [destdir #f])
   (define download-printf (if quiet? void printf/flush))
   
   (define descs
@@ -987,6 +1005,7 @@
                          #:repo-descs (vector-ref clone-info 1)
                          #:pull-behavior pull-behavior
                          #:dry-run? dry-run?
+                         #:destdir destdir
                          (for/list ([dep (in-list deps)])
                            (if (pkg-desc? dep)
                                dep
@@ -1027,6 +1046,7 @@
                              repo-descs)
         #:pull-behavior pull-behavior
         #:dry-run? dry-run?
+        #:destdir destdir
         new-descs)
        (unless (empty? summary-deps)
          (unless quiet?
@@ -1479,3 +1499,10 @@
                        #:when (string? v))
               k))
   (for ([k (in-list l)]) (hash-remove! update-cache k)))
+
+;; ----------------------------------------
+
+(define (destdir-error cannot-msg pkg-name)
+  (pkg-error (~a cannot-msg " in DESTDIR mode\n"
+                 "  package: ~a")
+             pkg-name))

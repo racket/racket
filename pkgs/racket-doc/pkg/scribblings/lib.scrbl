@@ -172,7 +172,8 @@ scope}.}
 @defproc[(pkg-desc? [v any/c]) boolean?]
 @defproc[(pkg-desc [source string?]
                    [type (or/c #f 'name 'file 'dir 'link 'static-link
-                               'file-url 'dir-url 'git 'git-url 'github 'clone)]
+                               'file-url 'dir-url 'git 'git-url 'github
+                               'clone 'attach)]
                    [name (or/c string? #f)]
                    [checksum (or/c string? #f)]
                    [auto? boolean?]
@@ -293,7 +294,8 @@ is true, error messages may suggest specific command-line flags for
                            [#:multi-clone-mode multi-clone-mode (or/c 'fail 'force 'convert 'ask) 'fail]
                            [#:pull-mode pull-mode (or/c 'ff-only 'try 'rebase) 'ff-only]
                            [#:link-dirs? link-dirs? boolean? #f]
-                           [#:dry-run? dry-run? boolean? #f])
+                           [#:dry-run? dry-run? boolean? #f]
+                           [#:destdir destdir (or/c #f path-string?) #f])
          (or/c 'skip
                #f
                (listof (or/c path-string?
@@ -328,7 +330,8 @@ The package lock must be held; see @racket[with-pkg-lock].
                                    and @racket[#:infer-clone-from-dir?] arguments.}
          #:changed "6.1.1.6" @elem{Added the @racket[#:use-trash?] argument.}
          #:changed "6.1.1.8" @elem{Added the @racket[#:pull-mode] argument.}
-         #:changed "6.4.0.14" @elem{Added the @racket[#:dry-run] argument.}]}
+         #:changed "6.4.0.14" @elem{Added the @racket[#:dry-run] argument.}
+         #:changed "9.2.0.6" @elem{Added the @racket[#:destdir] argument.}]}
 
 
 @defproc[(pkg-update      [sources (listof (or/c string? pkg-desc?))]

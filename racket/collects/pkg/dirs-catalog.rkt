@@ -1,6 +1,5 @@
 #lang racket/base
-(require racket/cmdline
-         racket/file
+(require racket/file
          racket/format
          racket/string
          racket/path
@@ -14,6 +13,8 @@
 (provide create-dirs-catalog)
 
 (module+ main
+  (require racket/cmdline)
+
   (define immediate? #f)
   (define link? #f)
   (define merge? #f)

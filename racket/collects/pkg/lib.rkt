@@ -80,7 +80,7 @@
   [rename
    pkg-desc/opt pkg-desc
    (->* (string?
-         (or/c #f 'file 'dir 'link 'static-link 'file-url 'dir-url 'git 'git-url 'github 'clone 'name)
+         (or/c #f 'file 'dir 'link 'static-link 'file-url 'dir-url 'git 'git-url 'github 'clone 'name 'attach)
          (or/c string? #f)
          (or/c string? #f)
          boolean?)
@@ -169,7 +169,8 @@
                         #:link-dirs? boolean?
                         #:multi-clone-behavior (or/c 'fail 'force 'convert 'ask)
                         #:pull-behavior (or/c 'ff-only 'rebase 'try)
-                        #:dry-run? boolean?)
+                        #:dry-run? boolean?
+                        #:destdir (or/c #f path-string?))
         (or/c #f 'skip (listof (or/c path-string? (non-empty-listof path-string?)))))]
   [pkg-migrate
    (->* (string?)

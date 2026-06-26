@@ -13,9 +13,9 @@
 
 (define (desc->orig-pkg type src extra-path #:repo-url [repo-url #f])
   (case type
-    [(name) (if repo-url
-                `(catalog ,src ,repo-url)
-                `(catalog ,src))]
+    [(name attach) (if repo-url
+                       `(catalog ,src ,repo-url)
+                       `(catalog ,src))]
     [(link static-link) `(,type
                           ,(path->string
                             (find-relative-path (pkg-installed-dir)

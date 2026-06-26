@@ -177,6 +177,12 @@
                    =stderr> #rx"already installed")
 
    (shelly-case
+    "attach fails when not there"
+    $ "raco pkg install --attach pkg-test1-not-there"
+    =exit> 1
+    =stderr> #rx"directory does not exist for package to attach")
+
+   (shelly-case
     "conflicting package names disallowed"
     $ "raco pkg install --copy test-pkgs/pkg-test1/ test-pkgs/pkg-test1.zip" =exit> 1)
 
@@ -262,6 +268,28 @@
      $ "raco pkg install pkg-git" =exit> 1
      $ "raco pkg config --set git-checkout-credentials user:password"
      $ "raco pkg install pkg-git"))
+
+   (with-fake-root
+    (define tmpdir (path->directory-path (make-temporary-file "pkg~a" 'directory)))
+
+    (shelly-case
+     "Test --destdir installation"
+     $ "racket -e '(require pkg-test1)'" =exit> 1
+     $ (~a "raco pkg install --destdir "tmpdir"/pkgs test-pkgs/pkg-test1.tgz")
+     $ "racket -e '(require pkg-test1)'" =exit> 1
+     $ (~a "test -d "tmpdir"/pkgs/pkg-test1"))
+
+    (shelly-case
+     "Test --attach installation"
+     $ "racket -e '(require pkg-test1)'" =exit> 1
+     $ (~a "racket -l racket/base -l racket/file -l setup/dirs"
+           " -e '(make-directory* (find-user-pkgs-dir))'")
+     $ (~a "racket -l racket/base -l racket/file -l setup/dirs"
+           " -e '(copy-directory/files \""tmpdir"/pkgs/pkg-test1\" (build-path (find-user-pkgs-dir) \"pkg-test1\"))'")
+     $ (~a "raco pkg install -u --attach pkg-test1")
+     $ "racket -e '(require pkg-test1)'")
+
+    (delete-directory/files tmpdir))
 
    (parameterize ([current-directory test-source-directory])
      (with-fake-root
@@ -427,4 +455,6 @@
           $ "raco pkg install --binary-lib pkg-strip" =exit> 1
           $ (format "raco pkg install --catalog file:///~a --binary-lib pkg-strip" (path->string catalog-dir))
           $ "racket -l pkg-strip" =stdout> "this pkg can be stripped in multiple modes\n"
-          (delete-directory/files tmp-dir)))))))
+          (delete-directory/files tmp-dir)))))
+
+  ))

@@ -28,6 +28,9 @@
                    $ "raco pkg update pkg-test1" =exit> 1)
    (shelly-case "update of uninstalled with --skip-uninstalled"
                 $ "raco pkg update --skip-uninstalled nosuchpackage")
+   (shelly-case "no --attach mode for update"
+                $ "raco pkg update --attach bad" =exit> 1
+                =stderr> #rx"unknown switch: --attach")
 
    (define tmp-dir (path->directory-path (make-temporary-file "pkg~a" 'directory)))
    (shelly-wind

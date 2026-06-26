@@ -170,6 +170,7 @@
         #:update-deps-flags (update-deps-flags ...)
         #:install-copy-flags/pre-clone (install-copy-flags/pre-clone ...)
         #:install-copy-flags/unclone (install-copy-flags/unclone ...)
+        #:install-copy-flags/attach (install-copy-flags/attach ...)
         #:install-copy-flags/post-clone (install-copy-flags/post-clone ...)
         #:install-copy-defns (install-copy-defns ...)
         #:install-copy-checks (install-copy-checks ...)
@@ -196,6 +197,7 @@
            update-deps-flags ...
            #:once-any
            install-copy-flags/pre-clone ...
+           install-copy-flags/attach ...
            install-copy-flags/post-clone ...
            #:once-any
            scope-flags ...
@@ -207,6 +209,7 @@
            install-force-flags ...
            install-clone-flags ...
            dry-run-flags ...
+           [(#:str dir #f) destdir () ("Stage into <dir> instead of installing")]
            job-flags ...
            trash-flags ...
            [#:bool fail-fast () ("Break `raco setup' when it discovers an error")]
@@ -268,6 +271,7 @@
                                      #:pull-behavior pull
                                      #:link-dirs? link-dirs?
                                      #:dry-run? dry-run
+                                     #:destdir destdir
                                      #:use-trash? (not no-trash)
                                      (for/list ([p (in-list sources)])
                                        (pkg-desc p a-type* name checksum #f
@@ -307,6 +311,7 @@
            job-flags ...
            trash-flags ...
            #:args pkg-source
+           (define attach #f)
            install-copy-defns ...
            (let ([pkg-source
                   ;; Implement special rules for an empty list of package sources
@@ -375,7 +380,7 @@
                                                                    'ask))
                                     #:pull-behavior pull
                                     #:link-dirs? link-dirs?
-                                    #:infer-clone-from-dir? (not (or link static-link copy))
+                                    #:infer-clone-from-dir? (not (or link static-link copy attach))
                                     #:dry-run? dry-run
                                     #:use-trash? (not no-trash)))))
                 (setup "updated" no-setup no-docs recompile-only recompile-cache #f setup-collects jobs))))]
@@ -786,6 +791,8 @@
   [(#:str dir #f) clone () ("Clone Git and GitHub package sources to <dir> and link")])
  #:install-copy-flags/unclone
  ([#:bool unclone () ("Unclones when currently a clone; alias for --lookup")])
+ #:install-copy-flags/attach
+ ([#:bool attach () ("Attach package directory already staged in scope")])
  #:install-copy-flags/post-clone
  ([#:bool source () ("Strip packages' built elements before installing; implies --copy")]
   [#:bool binary () ("Strip packages' source elements before installing; implies --copy")]
@@ -794,6 +801,7 @@
  [(define link-dirs? (not (or copy source binary binary-lib)))
   (define link-type (or (and link 'link)
                         (and static-link 'static-link)
+                        (and attach 'attach)
                         (and (eq? type 'dir) link-dirs? 'link)
                         (and clone 'clone)))
   (define a-type (or link-type type))]
@@ -803,15 +811,18 @@
              (not (memq type
                         (case link-type
                           [(clone) '(git git-url github)]
+                          [(attach) '(name)]
                           [else '(dir)]))))
     ((current-pkg-error) (format "-t/--type value must be ~a with --~a"
                                  (cond
-                                  [clone "`git', `git-url', or `github'"]
+                                   [clone "`git', `git-url', or `github'"]
+                                   [attach "`name'"]
                                   [else "`dir'"])
                                  (cond
                                   [link "link"]
                                   [static-link "static-link"]
-                                  [clone "clone"]))))]
+                                  [clone "clone"]
+                                  [attach "attach"]))))]
  #:bundle-mode-flags
  ([#:bool as-is () "Bundle the directory/package as-is (the default)"]
   [#:bool source () "Bundle sources only"]

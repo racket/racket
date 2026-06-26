@@ -36,6 +36,7 @@
   (check-equal-values? (parse "fish/" 'name #rx"disallowed") (values #f 'name #f))
   (check-equal-values? (parse "fish123A_B-C" 'name) (values "fish123A_B-C" 'name #t))
   (check-equal-values? (parse "fish123A_B-C!" 'name #rx"disallowed") (values #f 'name #f))
+  (check-equal-values? (parse "fish" 'attach) (values "fish" 'attach #t))
 
   (check-equal-values? (parse "fish.plt" #f) (values "fish" 'file #t))
   (check-equal-values? (parse "fish.zip" #f) (values "fish" 'file #t))

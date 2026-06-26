@@ -43,6 +43,9 @@
          verbose
          run-pdflatex)
 
+(module+ docs-to-destdir
+  (provide move-rendered-docs-to-destdir))
+
 (define verbose (make-parameter #t))
 
 (define-logger setup)
@@ -182,52 +185,21 @@
                     (doc-dest-kind latex-dest)
                     (doc-dest-path latex-dest)))
   (define (get-docs main-dirs)
-    (define doc-dir (find-doc-dir))
     (lambda (i rec)
-      (let* ([pre-s (and i (i 'scribblings (λ () #f)))]
-	     [s (validate-scribblings-infos pre-s)]
-	     [dir (directory-record-path rec)])
-	(if s
-	    (map (lambda (d)
-		   (let* ([flags (cadr d)]
-			  [under-main?
-			   (and (not (memq 'user-doc-root flags))
-				(not (memq 'user-doc flags))
-				(or (memq 'main-doc flags)
-				    (hash-ref main-dirs dir #f)))])
-		     (define src (simplify-path (build-path dir (car d)) #f))
-		     (define name (cadddr d))
-                     (define cat (caddr d))
-                     (define lang-fam (and ((length cat) . >= . 3) (list-ref cat 2)))
-		     (define dest (doc-path dir name flags under-main?))
-		     (define via-search? (and under-main?
-					      (not (or (equal? (find-doc-dir) dest)
-						       (let-values ([(base name dir?) (split-path dest)])
-							 (equal? (path->directory-path (find-doc-dir))
-								 base))))))
-		     (make-doc dir
-			       (let ([spec (directory-record-spec rec)])
-				 (list* (car spec)
-					(car d)
-					(if (eq? 'planet (car spec))
-					    (list (append (cdr spec)
-							  (list (directory-record-maj rec)
-								(list '= (directory-record-min rec)))))
-					    (cdr spec))))
-			       src
-			       dest
-			       flags under-main? via-search?
-			       cat
-                               lang-fam
-			       (list-ref d 4)
-			       (if (path? name) (path-element->string name) name)
-			       (list-ref d 5))))
-		 s)
-	    (begin (setup-printf
-		    "WARNING"
-		    "bad 'scribblings info: ~e from: ~e" 
-		    pre-s dir)
-		   null)))))
+      (get-docs-from-info i
+                          (directory-record-path rec)
+                          #:setup-printf setup-printf
+                          #:get-spec (lambda (doc-src)
+                                       (let ([spec (directory-record-spec rec)])
+                                         (list* (car spec)
+                                                doc-src
+                                                (if (eq? 'planet (car spec))
+                                                    (list (append (cdr spec)
+                                                                  (list (directory-record-maj rec)
+                                                                        (list '= (directory-record-min rec)))))
+                                                    (cdr spec)))))
+                          #:is-main? (lambda (dir)
+                                       (hash-ref main-dirs dir #f)))))
   (log-setup-info "getting documents")
   (define docs
     (sort
@@ -811,6 +783,84 @@
     (for ([i infos] #:when (info-need-in-write? i))
       (write-in/info latex-dest i no-lock main-doc-exists? pkg-cache))))
 
+(define (move-rendered-docs-to-destdir dirs destdir)
+  ;; recursively scan `dirs` for built packages that have rendered documentation,
+  ;; and move the documentation to `destdir`, adding an "unsynced.rktd" file
+  ;; so that it will be synchronized when the directory is merged into an
+  ;; installation
+  (define (move dir)
+    (when (directory-exists? dir)
+      (define info.rkt (build-path dir "info.rkt"))
+      (when (file-exists? info.rkt)
+        (define info (get-info/full dir))
+        (when (info 'scribblings (λ () #f))
+          (define docs
+            (get-docs-from-info info dir
+                                #:setup-printf (lambda (prefix msg . args)
+                                                 (apply printf msg args)
+                                                 (newline))
+                                #:get-spec (lambda (x) #f)
+                                #:is-main? (lambda (dir) #t)
+                                #:user-doc-mode 'never
+                                #:doc-destdir destdir))
+          (for ([doc (in-list docs)])
+            (define dest-dir (doc-dest-dir doc))
+            (when dest-dir
+              (define rendered-dir (build-path dir "doc" (doc-name doc)))
+              (when (directory-exists? rendered-dir)
+                (make-directory* destdir)
+                (copy-directory/files rendered-dir dest-dir)
+                (let ([unprovided-path (build-path dest-dir "unsynced.rktd")])
+                  (unless (file-exists? unprovided-path)
+                    (call-with-output-file unprovided-path (lambda (o) (write '#t o)))))
+                (delete-directory/files rendered-dir))))))
+      (for ([f (in-list (directory-list dir #:build? #t))])
+        (move f))))
+  (for-each move dirs))
+
+(define (get-docs-from-info i dir
+                            #:setup-printf setup-printf
+                            #:get-spec get-spec
+                            #:is-main? is-main?
+                            #:user-doc-mode [user-doc-mode #f]
+                            #:doc-destdir [doc-destdir #f])
+  (let* ([pre-s (and i (i 'scribblings (λ () #f)))]
+         [s (validate-scribblings-infos pre-s)])
+    (if s
+        (map (lambda (d)
+               (let* ([flags (cadr d)]
+                      [under-main?
+                       (and (not (memq 'user-doc-root flags))
+                            (not (memq 'user-doc flags))
+                            (or (memq 'main-doc flags)
+                                (is-main? dir)))])
+                 (define src (simplify-path (build-path dir (car d)) #f))
+                 (define name (cadddr d))
+                 (define cat (caddr d))
+                 (define lang-fam (and ((length cat) . >= . 3) (list-ref cat 2)))
+                 (define dest (doc-path dir name flags under-main? user-doc-mode #:doc-destdir doc-destdir))
+                 (define via-search? (and under-main?
+                                          (not (or (equal? (find-doc-dir) dest)
+                                                   (let-values ([(base name dir?) (split-path dest)])
+                                                     (equal? (path->directory-path (find-doc-dir))
+                                                             base))))))
+                 (make-doc dir
+                           (get-spec (car d))
+                           src
+                           dest
+                           flags under-main? via-search?
+                           cat
+                           lang-fam
+                           (list-ref d 4)
+                           (if (path? name) (path-element->string name) name)
+                           (list-ref d 5))))
+             s)
+        (begin (setup-printf
+                "WARNING"
+                "bad 'scribblings info: ~e from: ~e"
+                pre-s dir)
+               null))))
+
 (define shared-style-files
   (list "scribble.css"
         "scribble-style.css"
@@ -1143,13 +1193,15 @@
   (let ([rendered-dir (let-values ([(base name dir?) (split-path (doc-dest-dir doc))])
                         (build-path (doc-src-dir doc) "doc" name))])
     (when (and (can-build? only-dirs avoid-main? doc)
-               (directory-exists? rendered-dir)
-               (not (file-exists? (build-path rendered-dir "synced.rktd")))
-               (or (not (directory-exists? (doc-dest-dir doc)))
-                   force-out-of-date?
-                   (not (file-exists? (build-path (doc-dest-dir doc) "synced.rktd")))))
-      (move-documentation-into-place doc rendered-dir setup-printf workerid lock
-                                     main-doc-exists? pkg-cache)))
+               (or (and (directory-exists? rendered-dir)
+                        (not (file-exists? (build-path rendered-dir "synced.rktd")))
+                        (or (not (directory-exists? (doc-dest-dir doc)))
+                            force-out-of-date?
+                            (not (file-exists? (build-path (doc-dest-dir doc) "synced.rktd")))))
+                   (and (file-exists? (build-path (doc-dest-dir doc) "unsynced.rktd")))))
+      (let ([rendered-dir (and (directory-exists? rendered-dir) rendered-dir)])
+        (move-documentation-into-place doc rendered-dir setup-printf workerid lock
+                                       main-doc-exists? pkg-cache))))
 
   (let* ([info-out-files (for/list ([i (add1 (doc-out-count doc))])
                            (sxref-path latex-dest doc (format "out~a.sxref" i)))]
@@ -1499,7 +1551,11 @@
     ;; with "provides.sxref" and ".html" files have been updated.
     (let ([provided-path (build-path dest-dir "synced.rktd")])
       (unless (file-exists? provided-path)
-        (call-with-output-file provided-path (lambda (o) (write '#t o)))))))
+        (call-with-output-file provided-path (lambda (o) (write '#t o)))))
+    ;; Make sure that "unsynced.rktd" doesn't exist
+    (let ([unprovided-path (build-path dest-dir "unsynced.rktd")])
+      (when (file-exists? unprovided-path)
+        (delete-file unprovided-path)))))
 
 (define (read-delayed-in! info latex-dest)
   (let* ([doc (info-doc info)]

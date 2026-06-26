@@ -218,6 +218,11 @@ support for copying a package-style directory to a given destination
 with the same file/directory omissions and updates as
 @command-ref{create}.}
 
+When the @racketmodname[pkg/strip] module is run directly, such as
+with @exec{racket -l}, it expects command-line arguments to pass along
+to @racket[generate-stripped-directory]. Provide the @DFlag{help} flag
+for more information.
+
 @defproc[(generate-stripped-directory [mode (or/c 'source 'binary 'binary-lib 'built)]
                                       [src-dir path-string?]
                                       [dest-dir path-string?])

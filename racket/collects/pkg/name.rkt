@@ -28,7 +28,7 @@
 (define rx:git #rx"[.]git$")
 
 (define package-source-format?
-  (or/c 'name 'file 'dir 'git 'github 'clone 'file-url 'dir-url 'git-url 'link 'static-link))
+  (or/c 'name 'file 'dir 'git 'github 'clone 'file-url 'dir-url 'git-url 'link 'static-link 'attach))
 
 (define (validate-name name complain inferred?)
   (and name
@@ -137,6 +137,8 @@
         (eq? type 'name)
         (regexp-match? rx:package-name s))
     (values (validate-name s complain #f) 'name)]
+   [(eq? type 'attach)
+    (values (validate-name s complain #f) 'attach)]
    [(and (eq? type 'clone)
          (not (regexp-match? #rx"^(?:https?|git(?:hub|[+]https?)?)://" s)))
     (complain "repository URL must start 'http', 'https', 'git', 'git+http', 'git+https', or 'github'")
