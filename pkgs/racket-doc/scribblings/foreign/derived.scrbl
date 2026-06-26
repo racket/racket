@@ -26,4 +26,4 @@
 @include-section["file.scrbl"]
 @include-section["winapi.scrbl"]
 @include-section["vm.scrbl"]
-
+@include-section["runtime-lib.scrbl"]
