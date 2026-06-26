@@ -34,6 +34,17 @@
        (λ () (abort-current-continuation pt 3))
        pt
        (λ (x) (+ x 1)))))
+
+  (test/neg-blame
+   'prompt-tag/c-ho-2b
+   '(let ([pt (contract (prompt-tag/c string?)
+                        (make-continuation-prompt-tag)
+                        'pos
+                        'neg)])
+      (call-with-continuation-prompt
+       (λ () (abort-current-continuation pt "x" "y"))
+       pt
+       (λ (x) (string-append x x)))))
   
   (test/neg-blame
    'prompt-tag/c-ho-3

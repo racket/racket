@@ -583,6 +583,14 @@
 
 ;; Applying a composable continuation calls this internal function:
 (define (apply-composable-continuation c args)
+  (let ([tag (full-continuation-tag c)])
+    (if (impersonator? tag)
+        (wrap-continuation-compose
+         tag
+         (lambda () (apply-composable-continuation* c args)))
+        (apply-composable-continuation* c args))))
+
+(define (apply-composable-continuation* c args)
   (start-engine-uninterrupted 'continue)
   ;; To compose the metacontinuation, first make sure the current
   ;; continuation is reified in `(current-metacontinuation)`:
@@ -592,23 +600,23 @@
      ;; empty continuation, so we can "replace" that
      ;; with the composable one:
      (cond
-      [(and (null? (continuation-mc c))
-            (null? (full-continuation-winders c))
-            (eq? (current-mark-splice) (full-continuation-mark-splice c))
-            (let ([marks (#%$continuation-attachments (full-continuation-k c))])
-              (or (null? marks)
-                  (and (null? (cdr marks))
-                       (eq? (car marks) 'empty)))))
-       ;; Shortcut for no winds and no change to break status:
-       (end-engine-uninterrupted 'cc)
-       (if (#%procedure? args)
-           (#%$call-in-continuation (full-continuation-k c) (full-continuation-mark-stack c)
-                                    (lambda () (args)))
-           (#%apply (full-continuation-k c) args))]
-      [(not (composable-continuation-wind? c))
-       (apply-immediate-continuation/no-wind c args)]
-      [else
-       (apply-immediate-continuation c (reverse (continuation-mc c)) args 0 0)]))))
+       [(and (null? (continuation-mc c))
+             (null? (full-continuation-winders c))
+             (eq? (current-mark-splice) (full-continuation-mark-splice c))
+             (let ([marks (#%$continuation-attachments (full-continuation-k c))])
+               (or (null? marks)
+                   (and (null? (cdr marks))
+                        (eq? (car marks) 'empty)))))
+        ;; Shortcut for no winds and no change to break status:
+        (end-engine-uninterrupted 'cc)
+        (if (#%procedure? args)
+            (#%$call-in-continuation (full-continuation-k c) (full-continuation-mark-stack c)
+                                     (lambda () (args)))
+            (#%apply (full-continuation-k c) args))]
+       [(not (composable-continuation-wind? c))
+        (apply-immediate-continuation/no-wind c args)]
+       [else
+        (apply-immediate-continuation c (reverse (continuation-mc c)) args 0 0)]))))
 
 ;; Applying an escape continuation calls this internal function:
 (define (apply-escape-continuation c args)
@@ -1712,7 +1720,7 @@
 (define-record continuation-prompt-tag-impersonator impersonator (procs))
 (define-record continuation-prompt-tag-chaperone chaperone (procs))
 
-(define-record continuation-prompt-tag-procs (handler abort cc-guard cc-impersonate))
+(define-record continuation-prompt-tag-procs (handler abort cc-guard cc-impersonate comp-impersonate))
 
 (define (continuation-prompt-tag-impersonator-or-chaperone? tag)
   (or (continuation-prompt-tag-impersonator? tag)
@@ -1744,7 +1752,11 @@
          [callcc-impersonate (and (pair? args)
                                   (procedure? (car args))
                                   (car args))]
-         [args (if callcc-impersonate (cdr args) args)])
+         [args (if callcc-impersonate (cdr args) args)]
+         [comp-impersonate (and (pair? args)
+                                (procedure? (car args))
+                                (car args))]
+         [args (if comp-impersonate (cdr args) args)])
     (when callcc-impersonate
       (check who (procedure-arity-includes/c 1) callcc-impersonate))
     (make-continuation-prompt-tag-impersonator
@@ -1755,7 +1767,10 @@
                                   (if (impersonator? tag)
                                       (impersonator-props tag)
                                       empty-hasheq))
-     (make-continuation-prompt-tag-procs handler abort cc-guard (or callcc-impersonate values)))))
+     (make-continuation-prompt-tag-procs handler abort cc-guard
+                                         (or callcc-impersonate values)
+                                         (and (not (eq? comp-impersonate values))
+                                              comp-impersonate)))))
 
 (define (apply-prompt-tag-interposition who at-when what
                                         wrapper args chaperone?)
@@ -1879,6 +1894,52 @@
    [(impersonator? tag)
     (wrap-cc-guard-for-impersonator (impersonator-next tag) cc-guard)]
    [else cc-guard]))
+
+(define (wrap-continuation-compose tag k)
+  (cond
+    [(continuation-prompt-tag-impersonator-or-chaperone? tag)
+     (let ([comp-impersonate
+            (continuation-prompt-tag-procs-comp-impersonate
+             (continuation-prompt-tag-impersonator-or-chaperone-procs tag))])
+       (cond
+         [comp-impersonate
+          (let ([chaperone? (continuation-prompt-tag-chaperone? tag)])
+            (wrap-continuation-compose
+             (impersonator-next tag)
+             (lambda ()
+               (call-with-values
+                 k
+                 (lambda results
+                   (if chaperone?
+                       (call-with-values
+                           (lambda () (apply comp-impersonate results))
+                         (lambda new-results
+                           (unless (= (length results) (length new-results))
+                             (raise
+                              (|#%app|
+                               exn:fail:contract:arity
+                               (string-append
+                                "composable-continuation result guard: result arity mismatch;\n"
+                                " expected number of results not received\n"
+                                "  guard: " (reindent/newline (error-value->string comp-impersonate)) "\n"
+                                "  expected: " (number->string (length results)) "\n"
+                                "  received: " (number->string (length new-results)))
+                               (current-continuation-marks))))
+                           (let loop ([results results] [new-results new-results])
+                             (unless (null? results)
+                               (unless (chaperone-of? (car results) (car new-results))
+                                 (raise-chaperone-error '|composable-continuation result guard| "result"
+                                                        (car results)
+                                                        (car new-results)))
+                               (loop (cdr results) (cdr new-results))))
+                           (apply values new-results)))
+                       (apply comp-impersonate results)))))))]
+         [else
+          (wrap-continuation-compose (impersonator-next tag) k)]))]
+    [(impersonator? tag)
+     (wrap-continuation-compose (impersonator-next tag) k)]
+    [else
+     (k)]))
 
 ;; ----------------------------------------
 
