@@ -433,7 +433,7 @@
       (setup vm "--only-foreign-libs"))
 
     (setup vm (shell->strings setup-extra-args)
-           (if also? "-D" '())))
+           (if also? "-DK" '())))
 
   (define (pkgs-catalog token vars)
     (racket vars
