@@ -206,6 +206,7 @@
            #:once-each
            [#:bool skip-installed () ("Skip a <pkg-source> if already installed")]
            [#:bool pkgs () ("Install only the specified packages, even when none are provided")]
+           [#:bool no-promote () ("Install as auto-installed")]
            install-force-flags ...
            install-clone-flags ...
            dry-run-flags ...
@@ -274,7 +275,7 @@
                                      #:destdir destdir
                                      #:use-trash? (not no-trash)
                                      (for/list ([p (in-list sources)])
-                                       (pkg-desc p a-type* name checksum #f
+                                       (pkg-desc p a-type* name checksum no-promote
                                                  #:path (and (eq? a-type* 'clone)
                                                              (path->complete-path clone))))))))
                 (setup "installed" no-setup no-docs recompile-only recompile-cache fail-fast setup-collects jobs))))]
@@ -531,27 +532,28 @@
            [#:bool from-dir () "Treat <directory-or-package> as a directory (the default)"]
            [#:bool from-install () "Treat <directory-or-package> as a package name"]
            #:once-any
-           [(#:sym fmt [zip tgz plt] #f) format ()
+           [(#:sym fmt [zip tgz plt dir] #f) format ()
             ("Select the format of the package to be created;"
-             "valid <fmt>s are: zip (the default), tgz, plt")]
+             "valid <fmt>s are: zip (the default), tgz, plt, dir")]
            [#:bool manifest () "Creates a manifest file for a directory, rather than an archive"]
            #:once-any
            bundle-mode-flags ...
            #:once-each
            [(#:str package #f) original () "Record <package> as original package source"]
            [(#:str dest-dir #f) dest () "Create output files in <dest-dir>"]
-           #:args (directory-or-package)
+           #:args directory-or-package
            (parameterize ([current-pkg-error (pkg-error 'create)])
-             (pkg-create (if manifest 'MANIFEST (or format 'zip))
-                         directory-or-package
-                         #:from-command-line? #t
-                         #:dest (and dest
-                                     (path->complete-path dest))
-                         #:source (cond
-                                   [from-install 'name]
-                                   [else 'dir])
-                         #:mode bundle-mode-flag-to-mode
-                         #:original original))]
+             (for ([directory-or-package (in-list directory-or-package)])
+               (pkg-create (if manifest 'MANIFEST (or format 'zip))
+                           directory-or-package
+                           #:from-command-line? #t
+                           #:dest (and dest
+                                       (path->complete-path dest))
+                           #:source (cond
+                                      [from-install 'name]
+                                      [else 'dir])
+                           #:mode bundle-mode-flag-to-mode
+                           #:original original)))]
           ;; ----------------------------------------
           [config
            "View and modify the package manager's configuration"

@@ -465,7 +465,7 @@ sub-commands.
 @subcommand{@command/toc{install} @nonterm{option} ... @nonterm{pkg-source} ...
  --- Installs the given @tech{package sources} (eliminating exact-duplicate @nonterm{pkg-source}s).
      If a given @nonterm{pkg-source} is @seclink["concept:auto"]{auto-installed} (to satisfy some other package's
-     dependency), then it is promoted to explicitly installed.
+     dependency), then it is promoted to explicitly installed unless the @DFlag{no-promote} flag is used.
 
      If no @nonterm{pkg-source}s are supplied and the @DFlag{clone}
      flag is not supplied, the current directory is installed as a
@@ -611,6 +611,9 @@ sub-commands.
   @item{@DFlag{pkgs} --- Disables default installation of the current directory when no @nonterm{pkg-source}s
         are supplied.}
 
+  @item{@DFlag{no-promote} --- Installs packages as @seclink["concept:auto"]{auto-installed} instead of explicitly
+        installed, and does not promote auto-installed packages.}
+
   @item{@DFlag{all-platforms} --- Considers package dependencies independent of the current platform
         (instead of filtering dependencies to platforms other than the current one).}
 
@@ -715,7 +718,7 @@ sub-commands.
          #:changed "8.0.0.13" @elem{Added @litchar{git-url} as a @DFlag{type} option.}
          #:changed "8.17.0.2" @elem{Added the @DFlag{recompile-cache} flag.}
          #:changed "8.18.0.7" @elem{Added the @DFlag{force-strip} flag.}
-         #:changed "9.2.0.6" @elem{Added the @DFlag{destdir} and @DFlag{attach} flags.}]}
+         #:changed "9.2.0.6" @elem{Added the @DFlag{destdir}, @DFlag{attach}, and @DFlag{no-promote} flags.}]}
 
 
 @subcommand{@command/toc{update} @nonterm{option} ... @nonterm{pkg-source} ...
@@ -1015,7 +1018,7 @@ package is created.
  @item{@DFlag{from-install} --- Treats @nonterm{directory-or-package} as the name of an installed package
        (instead of a directory).}
  @item{@DFlag{format} @nonterm{format} --- Specifies the archive format.
-      The allowed @nonterm{format}s are: @exec{zip} (the default), @exec{tgz}, and @exec{plt}.
+      The allowed @nonterm{format}s are: @exec{zip} (the default), @exec{tgz}, @exec{plt}, and @exec{dir}.
       This option must be specified if @DFlag{manifest} is not present.}
  @item{@DFlag{manifest} --- Creates a manifest file for a directory, rather than an archive.}
  @item{@DFlag{as-is} --- Bundles all content of the package directory as is, with no filtering
@@ -1032,7 +1035,8 @@ package is created.
  @item{@DFlag{dest} @nonterm{dest-dir} --- Writes generated bundles to @nonterm{dest-dir}.}
  ]
 
-@history[#:changed "8.14.0.2" @elem{Added the @DFlag{original} flag.}]
+@history[#:changed "8.14.0.2" @elem{Added the @DFlag{original} flag.}
+         #:changed "9.6.0.6" @elem{Added the @exec{dir} format.}]
 }
 
 @subcommand{@command/toc{config} @nonterm{option} ... @optional[@nonterm{key}] @nonterm{val} ... ---

@@ -97,7 +97,7 @@
   [pkg-new
    (-> path-string? void?)]
   [pkg-create
-   (->* ((or/c 'zip 'tgz 'plt 'MANIFEST)
+   (->* ((or/c 'zip 'tgz 'plt 'dir 'MANIFEST)
          path-string?)
         (#:source (or/c 'dir 'name)
                   #:pkg-name (or/c #f string?)

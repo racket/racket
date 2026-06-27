@@ -257,7 +257,7 @@ The package lock must be held (allowing writes if @racket[set?] is true); see
 @history[#:changed "7.7.0.9" @elem{Added the @racket[#:default-scope-scope] argument.}]}
 
 
-@defproc[(pkg-create [format (or/c 'zip 'tgz 'plt 'MANIFEST)]
+@defproc[(pkg-create [format (or/c 'zip 'tgz 'plt 'dir 'MANIFEST)]
                      [dir path-string?]
                      [#:dest dest-dir (or/c (and/c path-string? complete-path?) #f)]
                      [#:source source (or/c 'dir 'name) 'dir]
@@ -274,7 +274,8 @@ reported to the current output port. If @racket[from-command-line?]
 is true, error messages may suggest specific command-line flags for
 @command-ref{create}.
 
-@history[#:changed "8.14.0.2" @elem{Added the @racket[#:original] argument.}]}
+@history[#:changed "8.14.0.2" @elem{Added the @racket[#:original] argument.}
+         #:changed "9.6.0.6" @elem{Added the @racket['dir] format.}]}
 
 
 @defproc[(pkg-install      [descs (listof pkg-desc?)]

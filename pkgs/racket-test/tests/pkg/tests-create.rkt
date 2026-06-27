@@ -48,6 +48,17 @@
    (shelly-create "pkg-b-second" "plt")
    (shelly-create "pkg-a-first" "plt")
 
+   (define-syntax-rule (shelly-create-dir pkg)
+     (shelly-case
+      (format "create format dir")
+      $ (format "rm -rf test-pkgs/dir/~a test-pkgs/dir/~a.CHECKSUM"
+                pkg pkg)
+      $ (format "raco pkg create --dest test-pkgs/dir --format dir test-pkgs/~a"
+                pkg)
+      $ (format "test -d test-pkgs/dir/~a" pkg)
+      $ (format "test -f test-pkgs/dir/~a.CHECKSUM" pkg)))
+   (shelly-create-dir "pkg-test1")
+     
    $ "raco pkg create --format txt test-pkgs/pkg-test1" =exit> 1
 
    (when (directory-exists? "test-pkgs/pkg-test1b")

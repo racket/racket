@@ -120,6 +120,11 @@
                 (explode-path p))))
 
   (for ([(pkg-name dir) (in-hash found)])
+    (define checksum (or (let-values ([(base name dir?) (split-path dir)])
+                           (define checksum-file (build-path base (path-replace-suffix name ".CHECKSUM")))
+                           (and (file-exists? checksum-file)
+                                (file->string checksum-file)))
+                         ""))
     (define i (get-pkg-info dir))
     (define deps
       (extract-pkg-dependencies i))
@@ -146,7 +151,7 @@
                                            (format "~a@racket-lang.org" r)
                                            r))
                                      " "))
-             (checksum . "")
+             (checksum . ,checksum)
              (description . ,(or desc "???"))
              (tags . ())
              (dependencies . ,deps)

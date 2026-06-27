@@ -36,9 +36,13 @@
              (display f)
              (newline))))]
       [_
-       (define pkg (format "~a.~a" pkg-name create:format))
+       (define pkg (if (eq? create:format 'dir)
+                       pkg-name
+                       (format "~a.~a" pkg-name create:format)))
        (define actual-dest-dir (if dest-dir
-                                   (path->complete-path dest-dir)
+                                   (begin
+                                     (make-directory* dest-dir)
+                                     (path->complete-path dest-dir))
                                    (let-values ([(base name dir?) (split-path dir)])
                                      (cond
                                       [(path? base) (path->complete-path base)]
@@ -68,12 +72,29 @@
        (define (add-directory-layer? content)
          ;; We need to add a layer for zip/tgz if the package content
          ;; is a single directory, which is an unlikely case.
-         ;; That mode is not compatble with Racket v60.0.1.12 and earlier.
+         ;; That mode is not compatble with Racket v6.0.1.12 and earlier.
          ;; When only Racket v6.0.1.12 is later is relevant,
          ;; we might prefer to always add a layer for consistency and
          ;; because it's nicer for manual unpacking.
          (and (= 1 (length content))
               (directory-exists? (car content))))
+       (define (zip-directory dest)
+         (parameterize ([current-directory dir])
+           (with-handlers ([exn? (lambda (exn)
+                                   (when (file-exists? pkg/complete)
+                                     (delete-file pkg/complete))
+                                   (raise exn))])
+             (define content (directory-list))
+             (apply (if (path-string? dest) zip zip->output)
+                    (if (path-string? dest)
+                        (cons dest content)  ; for `zip`
+                        (list (pathlist-closure	content) dest)) ; for `zip->output`
+                    #:path-prefix (and (add-directory-layer? content)
+                                       pkg-name)
+                    #:system-type 'unix ; for consistency across platforms
+                    #:get-timestamp file-or-directory-timestamp
+                    #:utc-timestamps? #t
+                    #:round-timestamps-down? #t))))
        (match create:format
          ['tgz
           (when (file-exists? pkg/complete)
@@ -91,19 +112,7 @@
          ['zip
           (when (file-exists? pkg/complete)
             (delete-file pkg/complete))
-          (parameterize ([current-directory dir])
-            (with-handlers ([exn? (lambda (exn)
-                                    (when (file-exists? pkg/complete)
-                                      (delete-file pkg/complete))
-                                    (raise exn))])
-              (define content (directory-list))
-              (apply zip pkg/complete content
-                     #:path-prefix (and (add-directory-layer? content)
-                                        pkg-name)
-                     #:system-type 'unix ; for consistency across platforms
-                     #:get-timestamp file-or-directory-timestamp
-                     #:utc-timestamps? #t
-                     #:round-timestamps-down? #t)))]
+          (zip-directory pkg/complete)]
          ['plt
           (define dest pkg/complete)
           (when (pkg-single-collection #:name pkg-name dir)
@@ -118,6 +127,10 @@
                       #:plt-relative? #t
                       #:as-paths (map (lambda (v) (build-path "collects" v)) names)
                       #:collections (map list (map path->string dirs))))]
+         ['dir
+          (when (directory-exists? pkg/complete)
+            (delete-directory/files pkg/complete))
+          (copy-directory/files dir pkg/complete #:keep-modify-seconds? #t)]
          [x
           (pkg-error "invalid package format\n  format: ~a" x)])
        (define chk (format "~a.CHECKSUM" pkg))
@@ -127,9 +140,17 @@
                        (if dest-dir
                            chk/complete
                            chk)))
+       (define checksum (cond
+                          [(eq? create:format 'dir)
+                           ;; get the same checksum as for ".zip" mode
+                           (let ([o (open-output-bytes)])
+                             (zip-directory o)
+                             (sha1 (open-input-bytes (get-output-bytes o))))]
+                          [else
+                           (call-with-input-file pkg/complete sha1)]))
        (with-output-to-file chk/complete
          #:exists 'replace
-         (λ () (display (call-with-input-file pkg/complete sha1))))])))
+         (λ () (display checksum)))])))
 
 (define (stripped-create mode name dir
                         #:format [create:format 'zip]
