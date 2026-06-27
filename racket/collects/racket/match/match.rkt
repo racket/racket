@@ -19,13 +19,12 @@
                               prop:legacy-match-expander)))
 
 (begin-for-syntax
-  (lazy-require [racket/match/parse (parse)])
-  (lazy-require [racket/match/parse-legacy (parse/legacy)]))
+  (lazy-require [racket/match/parse (parse)]))
 
-(define-for-syntax (pattern-bound-identifiers pstx #:legacy? [legacy? #f])
+(define-for-syntax (pattern-bound-identifiers pstx)
   (unless (syntax? pstx)
     (raise-argument-error 'pattern-bound-identifiers "syntax?" pstx))
-  (pats->bound-vars (if legacy? parse/legacy parse) pstx))
+  (pats->bound-vars parse (list pstx)))
 
 (provide (for-syntax match-...-nesting match-expander? legacy-match-expander?
                      prop:match-expander prop:legacy-match-expander

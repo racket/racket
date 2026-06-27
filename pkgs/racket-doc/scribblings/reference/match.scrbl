@@ -938,13 +938,12 @@ This binding is provided @racket[for-syntax].
 @history[#:changed "6.90.0.29" @elem{Made equivalent to @racket[syntax-local-introduce].}]}
 
 
-@defproc[(pattern-bound-identifiers #:legacy? [legacy? any/c #f] [pat syntax?]) (listof identifier?)]{
-Parse @racket[pat] as a pattern, and compute the identifiers bound by
-that pattern. If @racket[legacy?] is @racket[#f], use the legacy match
-syntax instead of the standard syntax. 
+@defproc[(pattern-bound-identifiers [pat syntax?]) (listof identifier?)]{
+Parses @racket[pat] as a @racket[match] pattern, and returns a list of
+the identifiers bound by that pattern.
 
 This binding is provided @racket[for-syntax].
-@history[#:added "8.2.0.1"]
+@history[#:added "9.2.0.7"]
 }
 
 @defparam[match-equality-test comp-proc (any/c any/c . -> . any)]{
