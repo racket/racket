@@ -236,7 +236,8 @@
         [(and (pkg-info-auto? existing-pkg-info)
               (not (pkg-desc-auto? desc))
               ;; Don't confuse a promotion request with a different-source install:
-              (same-orig-pkg? (pkg-info-orig-pkg existing-pkg-info) orig-pkg)
+              (or skip-installed? ; => requesting promotion only (because no-promote mode filters auto-installed, too)
+                  (same-orig-pkg? (pkg-info-orig-pkg existing-pkg-info) orig-pkg))
               ;; Also, make sure it's installed in the scope that we're changing:
               (hash-ref current-scope-db pkg-name #f))
          ;; promote an auto-installed package to a normally installed one
@@ -1119,7 +1120,7 @@
       ;; Check that the package is installed, and get current checksum:
       (define info (package-info name #:db db (not skip-uninstalled?)))
       (cond
-       [(not info)
+       [(not info)<
         ;; Not installed, and we're skipping uninstalled
         null]
        [else

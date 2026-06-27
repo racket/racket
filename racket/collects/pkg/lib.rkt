@@ -161,6 +161,7 @@
                         #:strict-doc-conflicts? boolean?
                         #:use-cache? boolean?
                         #:skip-installed? boolean?
+                        #:skip-auto-installed? boolean?
                         #:quiet? boolean?
                         #:use-trash? boolean?
                         #:from-command-line? boolean?

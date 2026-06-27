@@ -718,7 +718,9 @@ sub-commands.
          #:changed "8.0.0.13" @elem{Added @litchar{git-url} as a @DFlag{type} option.}
          #:changed "8.17.0.2" @elem{Added the @DFlag{recompile-cache} flag.}
          #:changed "8.18.0.7" @elem{Added the @DFlag{force-strip} flag.}
-         #:changed "9.2.0.6" @elem{Added the @DFlag{destdir}, @DFlag{attach}, and @DFlag{no-promote} flags.}]}
+         #:changed "9.2.0.6" @elem{Added the @DFlag{destdir}, @DFlag{attach}, and @DFlag{no-promote} flags,
+                                   and adjusted @DFlag{skip-installed} to not complain about
+                                   a package installed from a different source when promoting.}]}
 
 
 @subcommand{@command/toc{update} @nonterm{option} ... @nonterm{pkg-source} ...

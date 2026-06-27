@@ -259,6 +259,7 @@
                                      #:strict-doc-conflicts? strict-doc-conflicts
                                      #:use-cache? (not no-cache)
                                      #:skip-installed? skip-installed
+                                     #:skip-auto-installed? (and skip-installed no-promote)
                                      #:update-deps? update-deps
                                      #:update-implies? (not ignore-implies)
                                      #:strip (or (and source 'source)

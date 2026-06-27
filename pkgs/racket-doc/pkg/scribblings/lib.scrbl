@@ -287,6 +287,8 @@ is true, error messages may suggest specific command-line flags for
                            [#:ignore-checksums? ignore-checksums? boolean? #f]
                            [#:strict-doc-conflicts? strict-doc-conflicts? boolean? #f]
                            [#:use-cache? use-cache? boolean? #t]
+                           [#:skip-installed? skip-installed? boolean? #f]
+                           [#:skip-auto-installed? skip-auto-installed? boolean? #f]
                            [#:quiet? quiet? boolean? #f]
                            [#:use-trash? use-trash? boolean? #f]
                            [#:from-command-line? from-command-line? boolean? #f]
@@ -332,7 +334,7 @@ The package lock must be held; see @racket[with-pkg-lock].
          #:changed "6.1.1.6" @elem{Added the @racket[#:use-trash?] argument.}
          #:changed "6.1.1.8" @elem{Added the @racket[#:pull-mode] argument.}
          #:changed "6.4.0.14" @elem{Added the @racket[#:dry-run] argument.}
-         #:changed "9.2.0.6" @elem{Added the @racket[#:destdir] argument.}]}
+         #:changed "9.2.0.6" @elem{Added the @racket[#:destdir] and @racket[skip-auto-installed?] arguments.}]}
 
 
 @defproc[(pkg-update      [sources (listof (or/c string? pkg-desc?))]
