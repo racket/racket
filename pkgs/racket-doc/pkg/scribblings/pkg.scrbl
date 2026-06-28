@@ -532,6 +532,12 @@ sub-commands.
         in @racketidfont{implies} or @racketidfont{update-implies} (see @secref["metadata"])
         for an installed or updated package.}
 
+  @item{@DFlag{adjacent-deps} --- When locating immediate dependencies of each given
+        @nonterm{pkg-source}, find @tech{adjacent} dependencies when possible: a directory or
+        file at the same place as @nonterm{pkg-source}, but using the dependent package's name
+        for the directory or file name (before any file extension). Dependencies of adjacent
+        dependencies re also found as adjacent when possible.}
+
   @item{@DFlag{link} --- Implies @exec{--type dir}
         and links the existing directory as an installed package, instead of copying the
         directory's content to install. Directory @tech{package sources} are treated as links
@@ -718,7 +724,8 @@ sub-commands.
          #:changed "8.0.0.13" @elem{Added @litchar{git-url} as a @DFlag{type} option.}
          #:changed "8.17.0.2" @elem{Added the @DFlag{recompile-cache} flag.}
          #:changed "8.18.0.7" @elem{Added the @DFlag{force-strip} flag.}
-         #:changed "9.2.0.6" @elem{Added the @DFlag{destdir}, @DFlag{attach}, and @DFlag{no-promote} flags,
+         #:changed "9.2.0.6" @elem{Added the @DFlag{destdir}, @DFlag{attach}, @DFlag{no-promote}
+                                   and @DFlag{adjacent-deps} flags,
                                    and adjusted @DFlag{skip-installed} to not complain about
                                    a package installed from a different source when promoting.}]}
 
@@ -1035,10 +1042,13 @@ package is created.
        package's @filepath{info.rkt} (but not in @DFlag{as-is} mode, since recording @nonterm{package}
        means updating @filepath{info.rkt}).}
  @item{@DFlag{dest} @nonterm{dest-dir} --- Writes generated bundles to @nonterm{dest-dir}.}
+ @item{@DFlag{adjacent-deps} --- Also write bundles of @tech{adjacent} dependencies of
+       @nonterm{directory-or-package}.}
+
  ]
 
 @history[#:changed "8.14.0.2" @elem{Added the @DFlag{original} flag.}
-         #:changed "9.6.0.6" @elem{Added the @exec{dir} format.}]
+         #:changed "9.6.0.6" @elem{Added the @exec{dir} format and the @DFlag{adjacent-deps} flag.}]
 }
 
 @subcommand{@command/toc{config} @nonterm{option} ... @optional[@nonterm{key}] @nonterm{val} ... ---

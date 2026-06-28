@@ -177,7 +177,8 @@ scope}.}
                    [name (or/c string? #f)]
                    [checksum (or/c string? #f)]
                    [auto? boolean?]
-                   [#:path path (or/c #f path-string?) #f])
+                   [#:path path (or/c #f path-string?) #f]
+                   [#:adjacent-deps? adjacent-deps? boolean #f])
          pkg-desc?]
 )]{
 
@@ -191,9 +192,20 @@ The optional @racket[path] argument is intended for use when
 directory containing the repository clone (where the repository itself
 is a directory within @racket[path]).
 
+If the optional @racket[adjacent-deps?] argument is true, then
+dependencies of the package should be found @deftech{adjacent} to the
+package, if possible. An adjacent dependency can be found when
+@racket[type] or the inferred type of @racket[source] is
+@racket['file], @racket['dir], @racket['link], @racket['static-link],
+or @racket['attach], and the search for an adjacent dependency uses
+@racket[source] with the last component of the path (not counting its
+extension) replaced by the dependency's name. Dependencies of a
+package found as adjacent are also found as adjacent, if possible.
+
 @history[#:changed "6.1.1.1" @elem{Added @racket['git] as a @racket[type].}
          #:changed "6.1.1.5" @elem{Added @racket['clone] as a @racket[type].}
-         #:changed "8.0.0.13" @elem{Added @racket['git-url] as a @racket[type].}]}
+         #:changed "8.0.0.13" @elem{Added @racket['git-url] as a @racket[type].}
+         #:changed "9.2.0.6" @elem{Added the @racket[adjacent-deps?] argument.}]}
 
 
 @defproc[(pkg-stage [desc pkg-desc?]
@@ -283,6 +295,7 @@ is true, error messages may suggest specific command-line flags for
                                            (or/c #f 'fail 'force 'search-ask 'search-auto)
                                            #f]
                            [#:update-deps? update-deps? boolean? #f]
+                           [#:update-implies? update-implies? boolean? #t]
                            [#:force? force? boolean? #f]
                            [#:ignore-checksums? ignore-checksums? boolean? #f]
                            [#:strict-doc-conflicts? strict-doc-conflicts? boolean? #f]

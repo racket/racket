@@ -267,7 +267,8 @@
             (pkg-desc src 'clone name
                       (pkg-desc-checksum desc)
                       (pkg-desc-auto? desc)
-                      (pkg-desc-extra-path desc))]
+                      (pkg-desc-extra-path desc)
+                      (pkg-desc-adjacent-deps? desc))]
            [else
             (pkg-error (~a "catalog mapping for package name is not a Git repository\n"
                            "  package name: ~a\n"
@@ -400,7 +401,7 @@
             ;; Might be a prefetch future in prefetch mode, so continue
             ;; only if possible:
             (and (string? src)
-                 (desc->repo (pkg-desc src #f name #f #f #f)
+                 (desc->repo (pkg-desc src #f name #f #f #f #f)
                              catalog-lookup-cache
                              download-printf
                              #:prefetch? prefetch?
@@ -428,7 +429,8 @@
                    checksum auto?
                    (enclosing-path-for-repo url-str
                                             (path->complete-path path
-                                                                 (pkg-installed-dir)))))]
+                                                                 (pkg-installed-dir)))
+                   #f))]
     [`(catalog ,lookup-name ,url-str)
      (pkg-desc url-str (if reject-existing?
                            'clone
@@ -438,7 +440,7 @@
                                [(git-url-scheme? scheme) 'git-url]
                                [else 'git])))
                name
-               checksum auto? extra-path)]
+               checksum auto? extra-path #f)]
     [`(url ,url-str)
      (define-values (current-name current-type)
        (package-source->name+type url-str #f))
@@ -446,13 +448,13 @@
        [(git github)
         ;; found a repo URL
         (pkg-desc url-str (if reject-existing? 'clone current-type) name
-                  checksum auto? extra-path)]
+                  checksum auto? extra-path #f)]
        [else #f])]
     [`(git ,url-str)
      (define-values (current-name current-type)
        (package-source->name+type url-str 'git-url))
      (pkg-desc url-str (if reject-existing? 'clone current-type) name
-               checksum auto? extra-path)]
+               checksum auto? extra-path #f)]
     [_ #f]))
 
 ;; For a `desc`, extract it's clone location, if it's a clone

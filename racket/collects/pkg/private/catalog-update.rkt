@@ -77,6 +77,7 @@
                                          #f
                                          name
                                          (hash-ref ht 'checksum #f)
+                                         #f
                                          #f)))
             (db:call-with-pkgs-transaction
              (lambda ()

@@ -39,8 +39,9 @@
 
 (define pkg-desc/opt
   (let ([pkg-desc (lambda (source type name checksum auto?
-                             #:path [path #f])
-                    (pkg-desc source type name checksum auto? path))])
+                                  #:path [path #f]
+                                  #:adjacent-deps? [adjacent-deps? #f])
+                    (pkg-desc source type name checksum auto? path adjacent-deps?))])
     pkg-desc))
 
 (provide
@@ -84,7 +85,8 @@
          (or/c string? #f)
          (or/c string? #f)
          boolean?)
-        (#:path (or/c #f path-string?))
+        (#:path (or/c #f path-string?)
+         #:adjacent-deps? boolean?)
         pkg-desc?)]
   [pkg-config
    (->* (boolean? (listof string?))

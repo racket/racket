@@ -11,6 +11,9 @@
          "name.rkt"
          "lib.rkt"
          "commands.rkt"
+         "private/adjacent-dep.rkt"
+         (only-in "private/create.rkt"
+                  package-name-and-dir-for-create)
          (prefix-in setup: setup/setup)
          (for-syntax racket/base
                      syntax/strip-context))
@@ -195,6 +198,7 @@
            [#:bool auto () "Shorthand for `--deps search-auto'"]
            #:once-each
            update-deps-flags ...
+           [#:bool adjacent-deps () "Look for dependencies adjacently before consulting catalog"]
            #:once-any
            install-copy-flags/pre-clone ...
            install-copy-flags/attach ...
@@ -278,7 +282,8 @@
                                      (for/list ([p (in-list sources)])
                                        (pkg-desc p a-type* name checksum no-promote
                                                  #:path (and (eq? a-type* 'clone)
-                                                             (path->complete-path clone))))))))
+                                                             (path->complete-path clone))
+                                                 #:adjacent-deps? adjacent-deps))))))
                 (setup "installed" no-setup no-docs recompile-only recompile-cache fail-fast setup-collects jobs))))]
           ;; ----------------------------------------
           [update
@@ -542,17 +547,23 @@
            #:once-each
            [(#:str package #f) original () "Record <package> as original package source"]
            [(#:str dest-dir #f) dest () "Create output files in <dest-dir>"]
+           [#:bool adjacent-deps () "Also bundle adjacent dependencies"]
            #:args directory-or-package
+           (define pkg-source
+             (cond
+               [from-install 'name]
+               [else 'dir]))
            (parameterize ([current-pkg-error (pkg-error 'create)])
-             (for ([directory-or-package (in-list directory-or-package)])
+             (for ([directory-or-package (in-list (if adjacent-deps
+                                                      (close-over-adjacent directory-or-package pkg-source
+                                                                           package-name-and-dir-for-create)
+                                                      directory-or-package))])
                (pkg-create (if manifest 'MANIFEST (or format 'zip))
                            directory-or-package
                            #:from-command-line? #t
                            #:dest (and dest
                                        (path->complete-path dest))
-                           #:source (cond
-                                      [from-install 'name]
-                                      [else 'dir])
+                           #:source pkg-source
                            #:mode bundle-mode-flag-to-mode
                            #:original original)))]
           ;; ----------------------------------------

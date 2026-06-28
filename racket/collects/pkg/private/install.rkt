@@ -33,7 +33,8 @@
          "info-to-desc.rkt"
          "git.rkt"
          "check-will-exist.rkt"
-         "prefetch.rkt")
+         "prefetch.rkt"
+         "adjacent-dep.rkt")
 
 (provide pkg-install
          pkg-update)
@@ -180,9 +181,9 @@
   (define (install-package/outer desc info
                                  all-infos simultaneous-installs
                                  descs infos) ; these two are delays
-    (match-define (pkg-desc pkg type orig-name given-checksum auto? pkg-extra-path) desc)
+    (match-define (pkg-desc pkg type orig-name given-checksum auto? pkg-extra-path adjacent-deps?/desc) desc)
     (match-define
-     (install-info pkg-name orig-pkg pkg-dir git-dir clean? checksum checksum-file module-paths additional-installs)
+     (install-info pkg-name orig-pkg pkg-dir git-dir clean? checksum checksum-file module-paths additional-installs adjacent-deps?)
      info)
     (define name? (eq? 'catalog (first orig-pkg)))
     (define this-dep-behavior (or dep-behavior
@@ -206,9 +207,7 @@
                                   (if auto? "automatically " "")
                                   (if update? "updated" "installed"))
                           "")
-                      (if update?
-                          (format-deps unique-deps)
-                          (format-list unique-deps)))))
+                      (format-deps unique-deps))))
 
     (when (and (pair? orig-pkg)
                (or (eq? (car orig-pkg) 'link)
@@ -397,6 +396,11 @@
                unsatisfied-deps)))
        =>
        (λ (unsatisfied-deps)
+         (define (unsatisfied-descs)
+           (if adjacent-deps?
+               (for/list ([dep (in-list unsatisfied-deps)])
+                 (find-adjacent-dependency dep desc destdir link-dirs?))
+               unsatisfied-deps))
           (match this-dep-behavior
            ['fail
             (clean!)
@@ -413,16 +417,16 @@
                        (format-list unsatisfied-deps))]
            ['search-auto
             ;; (show-dependencies unsatisfied-deps #f #t)
-            (raise (vector updating? (force infos) (force descs) pkg-name unsatisfied-deps void 'always-yes clone-info))]
+            (raise (vector updating? (force infos) (force descs) pkg-name (unsatisfied-descs) void 'always-yes clone-info))]
            ['search-ask
             (show-dependencies unsatisfied-deps #f #f)
             (case (if (eq? conversation 'always-yes)
                       'always-yes
                       (ask "Would you like to install these dependencies?"))
               [(yes)
-               (raise (vector updating? (force infos) (force descs) pkg-name unsatisfied-deps void 'again clone-info))]
+               (raise (vector updating? (force infos) (force descs) pkg-name (unsatisfied-descs) void 'again clone-info))]
               [(always-yes)
-               (raise (vector updating? (force infos) (force descs) pkg-name unsatisfied-deps void 'always-yes clone-info))]
+               (raise (vector updating? (force infos) (force descs) pkg-name (unsatisfied-descs) void 'always-yes clone-info))]
               [(cancel)
                (clean!)
                (pkg-error "canceled")]
@@ -688,7 +692,8 @@
                           #:strip strip-mode
                           #:force-strip? force-strip?
                           #:link-dirs? link-dirs?
-                          #:destdir destdir)))
+                          #:destdir destdir
+                          #:adjacent-deps? (pkg-desc-adjacent-deps? v))))
   ;; For the top-level call, we need to double-check that all provided packages
   ;; were distinct:
   (for/fold ([ht (hash)]) ([i (in-list infos)]
@@ -1010,7 +1015,7 @@
                          (for/list ([dep (in-list deps)])
                            (if (pkg-desc? dep)
                                dep
-                               (pkg-desc dep #f #f #f #t #f))))])])
+                               (pkg-desc dep #f #f #f #t #f #f))))])])
       (begin0
        (install-packages
         #:old-infos done-infos
@@ -1061,9 +1066,7 @@
                             (match-define (vector n ds) p*ds)
                             (format "\n dependencies of ~a:~a"
                                     n
-                                    (if updating?
-                                        (format-deps ds)
-                                        (format-list ds)))))))))))))
+                                    (format-deps ds))))))))))))
 
 ;; Determine packages to update, starting with `pkg-name'. If `pkg-name'
 ;; needs to be updated, return it in a list. Otherwise, if `deps?',
@@ -1170,7 +1173,8 @@
                                 (pkg-desc-auto? pkg-name)
                                 (or (pkg-desc-extra-path pkg-name)
                                     (and (eq? type 'clone)
-                                         (current-directory))))))
+                                         (current-directory)))
+                                (pkg-desc-adjacent-deps? pkg-name))))
               ;; No update needed, but maybe check dependencies:
               (if (or deps?
                       implies?)
@@ -1310,7 +1314,7 @@
                       ;; the catalog server:
                       (clear-checksums-in-cache! update-cache)
                       (list (pkg-desc orig-pkg-source orig-pkg-type pkg-name #f auto?
-                                      orig-pkg-dir))]))
+                                      orig-pkg-dir #f))]))
                ;; Continue with dependencies, maybe
                (check-missing-dependencies update-dependencies))]))]
      [else null])))

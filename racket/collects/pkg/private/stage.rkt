@@ -45,7 +45,7 @@
          github-client_secret
          github-client_id)
 
-(struct install-info (name orig-pkg directory git-directory clean? checksum checksum-file module-paths additional-installs)
+(struct install-info (name orig-pkg directory git-directory clean? checksum checksum-file module-paths additional-installs adjacent-deps?)
   #:prefab)
 
 (define (communication-type type)
@@ -137,7 +137,8 @@
                             #:in-place? [in-place? #f]
                             #:in-place-clean? [in-place-clean? #f]
                             #:link-dirs? [link-dirs? #f]
-                            #:destdir [destdir #f])
+                            #:destdir [destdir #f]
+                            #:adjacent-deps? [adjacent-deps? #f])
   (define-values (inferred-pkg-name type) 
     (if (path? pkg)
         (package-source->name+type (path->string pkg)
@@ -170,7 +171,9 @@
                         check-sums? download-printf
                         metadata-ns
                         #:strip strip-mode
-                        #:force-strip? force-strip?)]
+                        #:force-strip? force-strip?
+                        #:destdir destdir
+                        #:adjacent-deps? adjacent-deps?)]
    [(eq? type 'clone)
     (define pkg-url (string->url pkg))
     (define-values (transport host port repo branch-or-commit path)
@@ -289,7 +292,9 @@
                                #:strip strip-mode
                                #:force-strip? force-strip?
                                #:in-place? #t
-                               #:in-place-clean? (not working-dir))
+                               #:in-place-clean? (not working-dir)
+                               #:destdir destdir
+                               #:adjacent-deps? adjacent-deps?)
            (apply build-path clone-dir path))
           orig-pkg)
          checksum)
@@ -360,7 +365,9 @@
                                   #:strip strip-mode
                                   #:force-strip? force-strip?
                                   #:in-place? #t
-                                  #:in-place-clean? #t)
+                                  #:in-place-clean? #t
+                                  #:destdir destdir
+                                  #:adjacent-deps? adjacent-deps?)
               (set! staged? #t)))
            (λ ()
              (when (and use-cache? (not staged?))
@@ -433,7 +440,9 @@
                                              #:strip strip-mode
                                              #:force-strip? force-strip?
                                              #:in-place? #t
-                                             #:in-place-clean? #t)
+                                             #:in-place-clean? #t
+                                             #:destdir destdir
+                                             #:adjacent-deps? adjacent-deps?)
                          (set! staged? #t)))
                      (λ ()
                        (when (and use-cache? (not staged?))
@@ -532,7 +541,9 @@
                                       download-printf
                                       metadata-ns
                                       #:strip strip-mode
-                                      #:force-strip? force-strip?)
+                                      #:force-strip? force-strip?
+                                      #:destdir destdir
+                                      #:adjacent-deps? adjacent-deps?)
                   (set! staged? #t)))
               (λ ()
                  (when (or (file-exists? package-path)
@@ -640,7 +651,9 @@
                                   #:strip strip-mode
                                   #:force-strip? force-strip?
                                   #:in-place? (not strip-mode)
-                                  #:in-place-clean? #t)
+                                  #:in-place-clean? #t
+                                  #:destdir destdir
+                                  #:adjacent-deps? adjacent-deps?)
               `(file ,(simple-form-path* pkg-path)))
              checksum)
             (unless strip-mode
@@ -667,7 +680,8 @@
                     given-checksum ; if a checksum is provided, just use it
                     #f ; no checksum file to remove
                     (directory->module-paths pkg-path pkg-name metadata-ns)
-                    (directory->additional-installs pkg-path pkg-name metadata-ns))]
+                    (directory->additional-installs pkg-path pkg-name metadata-ns)
+                    adjacent-deps?)]
      [else
       (define pkg-dir
         (if in-place?
@@ -704,7 +718,8 @@
                     given-checksum ; if a checksum is provided, just use it
                     #f ; no checksum file to remove
                     (directory->module-paths pkg-dir pkg-name metadata-ns)
-                    (directory->additional-installs pkg-dir pkg-name metadata-ns))])]
+                    (directory->additional-installs pkg-dir pkg-name metadata-ns)
+                    adjacent-deps?)])]
    [(eq? type 'name)
     (define catalog-info (package-catalog-lookup pkg #f catalog-lookup-cache
                                                  download-printf))
@@ -723,7 +738,9 @@
                                      #:catalog-lookup-cache catalog-lookup-cache
                                      #:remote-checksum-cache remote-checksum-cache
                                      #:strip strip-mode
-                                     #:force-strip? force-strip?))
+                                     #:force-strip? force-strip?
+                                     #:destdir destdir
+                                     #:adjacent-deps? adjacent-deps?))
     (when check-sums?
       (check-checksum given-checksum checksum "unexpected" pkg #f)
       (check-checksum checksum (install-info-checksum info) "incorrect" pkg #f))
@@ -772,7 +789,8 @@
                   (or checksum given-checksum) ; if a checksum is provided, just use it
                   checksum-file
                   (directory->module-paths pkg-path pkg-name metadata-ns)
-                  (directory->additional-installs pkg-path pkg-name metadata-ns))]
+                  (directory->additional-installs pkg-path pkg-name metadata-ns)
+                  adjacent-deps?)]
    [else
     (pkg-error "cannot infer package source type\n  source: ~a" pkg)]))
 

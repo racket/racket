@@ -54,7 +54,7 @@
                                                        url
                                                        (path->complete-path path installed-dir)))]
            [(list 'git url) (values url 'git-url #f)]))
-       (pkg-desc source type name #f #f dir))
+       (pkg-desc source type name #f #f dir #f))
      string<?
      #:key pkg-desc-name))
   (unless quiet?

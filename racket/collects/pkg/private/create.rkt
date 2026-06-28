@@ -13,7 +13,8 @@
          "pkg-db.rkt"
          "lock.rkt")
 
-(provide pkg-create)
+(provide pkg-create
+         package-name-and-dir-for-create)
 
 (define (create-as-is create:format pkg-name dir orig-dir
                       #:quiet? [quiet? #f]
@@ -184,6 +185,22 @@
                     #:original [original-source #f]
                     #:quiet? [quiet? #f]
                     #:from-command-line? [from-command-line? #f])
+  (define-values (pkg-name dir)
+    (package-name-and-dir-for-create given-pkg-name dir-or-name source))
+  (case mode
+    [(as-is)
+     (create-as-is create:format pkg-name dir dir
+                   #:dest dest-dir
+                   #:quiet? quiet?
+                   #:from-command-line? from-command-line?)]
+    [else (stripped-create mode pkg-name dir
+                           #:dest dest-dir
+                           #:format create:format
+                           #:original-source original-source
+                           #:quiet? quiet?
+                           #:from-command-line? from-command-line?)]))
+
+(define (package-name-and-dir-for-create given-pkg-name dir-or-name source)
   (define pkg-name
     (or given-pkg-name
         (if (eq? source 'dir)
@@ -207,15 +224,4 @@
                                ""))
                        dir-or-name))
           dir)))
-  (case mode
-    [(as-is)
-     (create-as-is create:format pkg-name dir dir
-                   #:dest dest-dir
-                   #:quiet? quiet?
-                   #:from-command-line? from-command-line?)]
-    [else (stripped-create mode pkg-name dir
-                           #:dest dest-dir
-                           #:format create:format
-                           #:original-source original-source
-                           #:quiet? quiet?
-                           #:from-command-line? from-command-line?)]))
+  (values pkg-name dir))
