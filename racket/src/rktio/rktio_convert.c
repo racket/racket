@@ -501,6 +501,13 @@ rktio_converter_t *rktio_converter_open(rktio_t *rktio, const char *to_enc, cons
 
   cvt = malloc(sizeof(rktio_converter_t));
   cvt->cd = cd;
+  /* The converter (and the iconv state reachable through cvt->cd) is held
+     for the process lifetime via the Racket/Chez GC heap, which LeakSanitizer
+     does not scan; mark it ignored so it is not a false-positive leak.
+     (PR #3853 places this at the io/converter custodian layer so only
+     custodian-managed converters are ignored; this is the rktio-level
+     demonstration.) */
+  rktio_lsan_ignore_object(cvt);
   return cvt;
 }
 

@@ -1,0 +1,15 @@
+# LeakSanitizer suppressions for Racket CS.
+# These are intentional, process-lifetime allocations that are referenced
+# only from the Chez Scheme GC heap (which LSan does not scan), so LSan
+# reports them as leaks. Each matches a frame in the allocation stack.
+
+# --- rktio persistent state (held by the rktio_t / Racket) ---
+leak:rktio_converter_open
+leak:rktio_system_fd
+leak:rktio_ltps_open
+leak:rktio_get_current_directory
+
+# --- Chez Scheme runtime globals ---
+leak:S_make_mutex
+leak:S_make_condition
+leak:racket_boot
