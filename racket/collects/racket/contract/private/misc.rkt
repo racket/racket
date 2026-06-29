@@ -811,23 +811,32 @@
      (-prompt-tag/c (list ?ctc ...) (list ?call/cc ...))]
     [(_ ?ctc ... #:call/cc ?call/cc)
      (-prompt-tag/c (list ?ctc ...) (list ?call/cc))]
-    [(_ ?ctc ...) (-prompt-tag/c (list ?ctc ...) (list))]))
+    [(_ ?ctc ...) (-prompt-tag/c (list ?ctc ...) #f)]))
 
 ;; procedural part of the contract
 ;; takes two lists of contracts (abort & call/cc contracts)
 (define/subexpression-pos-prop (-prompt-tag/c ctc-args call/ccs)
   (define ctcs (coerce-contracts 'prompt-tag/c ctc-args))
-  (define call/cc-ctcs (coerce-contracts 'prompt-tag/c call/ccs))
+  (define call/cc-ctcs (and call/ccs (coerce-contracts 'prompt-tag/c call/ccs)))
   (cond [(and (andmap chaperone-contract? ctcs)
-              (andmap chaperone-contract? call/cc-ctcs))
+              (or (not call/cc-ctcs) (andmap chaperone-contract? call/cc-ctcs)))
          (chaperone-prompt-tag/c ctcs call/cc-ctcs)]
         [else
          (impersonator-prompt-tag/c ctcs call/cc-ctcs)]))
 
 (define (prompt-tag/c-name ctc)
+  (define call/ccs (base-prompt-tag/c-call/ccs ctc))
+  (define call/cc-lst
+    (cond
+      [(not call/ccs) '()]
+      [(= 1 (length call/ccs))
+       (cons '#:call/cc call/ccs)]
+      [else
+       (list '#:call/cc (apply build-compound-type-name 'values call/ccs))]))
   (apply build-compound-type-name
-         (append (list 'prompt-tag/c) (base-prompt-tag/c-ctcs ctc)
-                 (list '#:call/cc) (base-prompt-tag/c-call/ccs ctc))))
+         (append (list 'prompt-tag/c)
+                 (base-prompt-tag/c-ctcs ctc)
+                 call/cc-lst)))
 
 ;; build a projection for prompt tags
 (define ((prompt-tag/c-late-neg-proj chaperone?) ctc)
@@ -836,13 +845,14 @@
   (define ho-projs
     (map get/build-late-neg-projection (base-prompt-tag/c-ctcs ctc)))
   (define call/cc-projs
-    (map get/build-late-neg-projection (base-prompt-tag/c-call/ccs ctc)))
+    (and (base-prompt-tag/c-call/ccs ctc)
+         (map get/build-late-neg-projection (base-prompt-tag/c-call/ccs ctc))))
   (λ (blame)
     (define swapped (blame-swap blame))
     (define ho-neg-projs (for/list ([proj (in-list ho-projs)]) (proj swapped)))
     (define ho-pos-projs (for/list ([proj (in-list ho-projs)]) (proj blame)))
-    (define cc-neg-projs (for/list ([proj (in-list call/cc-projs)]) (proj swapped)))
-    (define cc-pos-projs (for/list ([proj (in-list call/cc-projs)]) (proj blame)))
+    (define cc-neg-projs (and call/cc-projs (for/list ([proj (in-list call/cc-projs)]) (proj swapped))))
+    (define cc-pos-projs (and call/cc-projs (for/list ([proj (in-list call/cc-projs)]) (proj blame))))
     (define (make-proj val projs neg-party blame+neg-party)
       (define proj-len (length projs))
       (λ vs
@@ -870,13 +880,15 @@
          (define proj1 (make-proj val ho-pos-projs neg-party blame+neg-party))
          (define proj2 (make-proj val ho-neg-projs neg-party blame+neg-party))
          ;; call/cc projections
-         (define call/cc-guard (make-proj val cc-pos-projs neg-party blame+neg-party))
+         (define call/cc-guard (if cc-pos-projs (make-proj val cc-pos-projs neg-party blame+neg-party) values))
          (define call/cc-proxy
-           (λ (f)
-             (proc-proxy
-              f
-              (λ args
-                (apply values (make-proj val cc-neg-projs neg-party blame+neg-party) args)))))
+           (if cc-neg-projs
+               (λ (f)
+                 (proc-proxy
+                  f
+                  (λ args
+                    (apply values (make-proj val cc-neg-projs neg-party blame+neg-party) args))))
+               (λ (p) p)))
          (proxy val
                 proj1 proj2
                 call/cc-guard call/cc-proxy

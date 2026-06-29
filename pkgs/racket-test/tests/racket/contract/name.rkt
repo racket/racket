@@ -367,6 +367,10 @@
   (test-name 'the-name (flat-rec-contract the-name))
   (test-name 'the-name (flat-murec-contract ([the-name none/c]) the-name))
 
+  (test-name '(prompt-tag/c integer?) (prompt-tag/c integer?))
+  (test-name '(prompt-tag/c integer? #:call/cc string?) (prompt-tag/c integer? #:call/cc string?))
+  (test-name '(prompt-tag/c integer? #:call/cc (values boolean? char?)) (prompt-tag/c integer? #:call/cc (values boolean? char?)))
+
   (test-name '(object-contract) (object-contract))
   (test-name '(object-contract (field x integer?)) (object-contract (field x integer?)))
   (test-name '(object-contract (m (-> integer? integer?)))
