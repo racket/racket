@@ -189,4 +189,31 @@
                         'pos
                         'neg)])
       (has-contract? pt))
-   #t))
+   #t)
+
+
+  (test/spec-passed/result
+   'prompt-tag/c-call/cc-default
+   '(let ()
+      (define tag
+        (contract (prompt-tag/c any/c)
+                  (make-continuation-prompt-tag)
+                  'pos 'neg))
+      (define *k #false)
+      (define-syntax-rule (tst x ...)
+        (begin
+          (call-with-continuation-prompt
+           (λ ()
+             (define-values (x ...) (call/cc (λ (k) (set! *k k) (values 'x ...))
+                                             tag))
+             (list x ...))
+           tag)
+          (call-with-continuation-prompt
+           (λ () (*k 'x ...))
+           tag)))
+
+      (list (tst)
+            (tst a)
+            (tst a b)))
+   '(() (a) (a b)))
+  )
