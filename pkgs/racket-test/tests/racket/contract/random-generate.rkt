@@ -439,6 +439,12 @@
            (λ (i b) 11)
            'pos 'neg))
 
+(check-not-exn
+ (λ ()
+   (contract (->i ([i integer?]) #:pre (i) #f any)
+             (λ (i) 11)
+             'pos 'neg)))
+
 ;; the tests below that use pos-exn? have a
 ;; (vanishingly small) probability of not passing. 
 
