@@ -583,7 +583,7 @@
       (delete-file path)))
   (let ([bp (current-break-parameterization)]
         [tmp-path (parameterize ([current-security-guard (or guard (current-security-guard))])
-                    (make-temporary-file #:base-dir (or (path-only path) (current-directory))))]
+                    (make-temporary-file* (bytes-append (path-element->bytes (file-name-from-path path)) #"-") #"-atomic-tmp" #:base-dir (or (path-only path) (current-directory))))]
         [ok? #f])
     (dynamic-wind
      void
