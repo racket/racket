@@ -795,7 +795,8 @@
                                                                              (add-scheme-kernel-config
                                                                               (adjust-linking-config config)))
                                                                             'm "pb"
-                                                                            'defaultm m))))
+                                                                            'defaultm m
+                                                                            'flagsm m))))
                           (build (find-target "reset" pb-targets) token)
                           (build (command-target->target (find-target "bootquick" pb-targets)
                                                          (list m))
