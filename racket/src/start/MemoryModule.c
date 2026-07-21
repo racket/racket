@@ -390,7 +390,7 @@ static BOOL
 PerformBaseRelocation(PMEMORYMODULE module, ptrdiff_t delta)
 {
     unsigned char *codeBase = module->codeBase;
-    PIMAGE_BASE_RELOCATION relocation;
+    PIMAGE_BASE_RELOCATION relocation, relocationEnd;
 
     PIMAGE_DATA_DIRECTORY directory = GET_HEADER_DICTIONARY(module, IMAGE_DIRECTORY_ENTRY_BASERELOC);
     if (directory->Size == 0) {
@@ -398,7 +398,11 @@ PerformBaseRelocation(PMEMORYMODULE module, ptrdiff_t delta)
     }
 
     relocation = (PIMAGE_BASE_RELOCATION) (codeBase + directory->VirtualAddress);
-    for (; relocation->VirtualAddress > 0; ) {
+
+    /* RACKET: fix termination condition to use directory size, and
+       use an extra `relocation->SizeOfBlock` guard as a sanity check */
+    relocationEnd = (PIMAGE_BASE_RELOCATION) OffsetPointer(relocation, directory->Size);
+    while (relocation < relocationEnd && relocation->SizeOfBlock > 0) {
         DWORD i;
         unsigned char *dest = codeBase + relocation->VirtualAddress;
         unsigned short *relInfo = (unsigned short*) OffsetPointer(relocation, IMAGE_SIZEOF_BASE_RELOCATION);
@@ -449,7 +453,7 @@ RegisterExceptionHandling(PMEMORYMODULE module)
 {
     PIMAGE_DATA_DIRECTORY pDir = GET_HEADER_DICTIONARY(module, IMAGE_DIRECTORY_ENTRY_EXCEPTION);
     PRUNTIME_FUNCTION pEntry = (PRUNTIME_FUNCTION)(module->codeBase + pDir->VirtualAddress);
-    UINT count = (pDir->Size / sizeof(IMAGE_RUNTIME_FUNCTION_ENTRY)) - 1;
+    UINT count = (pDir->Size / sizeof(IMAGE_RUNTIME_FUNCTION_ENTRY));
     return RtlAddFunctionTable(pEntry, count, (DWORD64)module->codeBase);
 }
 #endif
