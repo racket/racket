@@ -114,6 +114,16 @@ static void init_iconv()
     return;
   }
 
+  /* bundled iconv may depend on vcruntime140 as also bundled, so try
+     loading that as bundled, just in case */
+  if (!rktio_load_library("vcruntime140.dll")) {
+    p = rktio_get_dll_path(L"vcruntime140.dll");
+    if (p) {
+      (void)LoadLibraryW(p);
+      free(p);
+    }
+  }
+
   /* Try potentially embedded, first: */
   m = rktio_load_library(A_PRIMARY_ICONV_DLL);
   if (m)
