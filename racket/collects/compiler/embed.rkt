@@ -2004,6 +2004,8 @@
 		       ;; name array:
 		       (for/sum ([p (in-list names)])
 			 (+ 2 (bytes-length (string->bytes/utf-8 p))))
+		       ;; mode array:
+		       (* 4 (length names))
 		       ;; starting-position array:
 		       (* 4 (add1 (length names)))))
   (define-values (rev-offsets total)
@@ -2017,6 +2019,9 @@
     (for/list ([p (in-list names)])
       (define bstr (string->bytes/utf-8 p))
       (bytes-append (integer->integer-bytes (bytes-length bstr) 2 #t #f) bstr))
+    (for/list ([offset (in-list names)])
+      ;; 0 => default, 1 => in-memory, 2 => via file
+      (integer->integer-bytes 0 4 #t #f))
     (for/list ([offset (in-list (reverse rev-offsets))])
       (integer->integer-bytes offset 4 #t #f))
     (list (integer->integer-bytes total 4 #t #f))

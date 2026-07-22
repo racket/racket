@@ -50,16 +50,18 @@ typedef void (*CustomFreeLibraryFunc)(HCUSTOMMODULE, void *);
  *
  * All dependencies are resolved using default LoadLibrary/GetProcAddress
  * calls through the Windows API.
+ * RACKET: add name and mode
  */
-HMEMORYMODULE MemoryLoadLibrary(const void *, size_t);
+HMEMORYMODULE MemoryLoadLibrary(const char *name, int mode, const void *, size_t);
 
 /**
  * Load EXE/DLL from memory location with the given size using custom dependency
  * resolvers.
  *
  * Dependencies will be resolved using passed callback methods.
+ * RACKET: add name and mode
  */
-HMEMORYMODULE MemoryLoadLibraryEx(const void *, size_t,
+HMEMORYMODULE MemoryLoadLibraryEx(const char *name, int mode, const void *, size_t,
     CustomAllocFunc,
     CustomFreeFunc,
     CustomLoadLibraryFunc,

@@ -429,6 +429,7 @@
   (define windows-libs '("WS2_32.lib" "Shell32.lib" "User32.lib" "Winmm.lib"
                                       "RpCrt4.lib" "Ole32.lib" "Advapi32.lib"))
   (define MemoryModule.o (at-dir (.c->.o "MemoryModule.c")))
+  (define dll_via_temp.o (at-dir (.c->.o "dll_via_temp.c")))
 
   (define machine-link-str (and msvc?
                                 (cond
@@ -732,7 +733,7 @@
                                        (at-source "../worksp/gracket/gracket.manifest"))))
              `[:target ,racket.exe (,libracket.a ,@(if framework? '() link-inputs) ,main.o ,@extra-deps
                                                  ,@(if windows?
-                                                       (list MemoryModule.o)
+                                                       (list MemoryModule.o dll_via_temp.o)
                                                        '())
                                                  ,@(if manifest (list manifest) '()))
                        ,(lambda (path token)
@@ -744,7 +745,7 @@
                                        '()
                                        (cons libracket.a (map target->path link-inputs)))
                                    (if windows?
-                                       `(,MemoryModule.o ,@(if msvc? (cons "delayimp.lib" windows-libs) '()))
+                                       `(,MemoryModule.o ,dll_via_temp.o ,@(if msvc? (cons "delayimp.lib" windows-libs) '()))
                                        '()))
                                   (let ([config (adjust-linking-config config)])
                                     (if framework?
@@ -1341,6 +1342,11 @@
                  ,(lambda (path token)
                     (c-compile MemoryModule.o
                                (at-source "../start/MemoryModule.c")
+                               config))]
+        [:target ,dll_via_temp.o (,(at-source "../start/dll_via_temp.c"))
+                 ,(lambda (path token)
+                    (c-compile dll_via_temp.o
+                               (at-source "../start/dll_via_temp.c")
                                config))]
 
         ;; Windows file-suffix-selection helper

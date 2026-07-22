@@ -5,6 +5,7 @@
 typedef struct embedded_dll_entry_t {
   char *name;
   long pos;
+  int mode;
   HMEMORYMODULE loaded_h;
 } embedded_dll_entry_t;
 
@@ -44,6 +45,7 @@ static void parse_embedded_dlls()
     
     if (fd != INVALID_HANDLE_VALUE) {
       long pos;
+      int mode;
       DWORD count, got, i;
       short name_len;
       char *name;
@@ -62,6 +64,12 @@ static void parse_embedded_dlls()
 	  fprintf(stderr, "embedded %s\n", name);
       }
       embedded_dlls[count].name = NULL;
+
+      for (i = 0; i < count; i++) {
+	ReadFile(fd, &mode, sizeof(mode), &got, NULL);
+	embedded_dlls[i].mode = mode;
+      }
+      embedded_dlls[count].mode = 0;
 
       for (i = 0; i < count+1; i++) {
 	ReadFile(fd, &pos, sizeof(pos), &got, NULL);
@@ -99,10 +107,11 @@ static void *in_memory_open(const char *name, int as_global)
 	  if (got != len)
 	    fprintf(stderr, "partial load %ld vs %ld\n", got, len);
 
-	  loaded_h = MemoryLoadLibraryEx(p, len,
+	  loaded_h = MemoryLoadLibraryEx(name, embedded_dlls[i].mode, p, len,
 					 MemoryDefaultAlloc, MemoryDefaultFree,
 					 LoadLibraryHook, GetProcAddressHook,
 					 MemoryDefaultFreeLibrary, NULL);
+
 	  if (noisy_embedded) {
 	    if (!loaded_h) {
 	      fprintf(stderr, "failed %s %ld\n", name, GetLastError());
