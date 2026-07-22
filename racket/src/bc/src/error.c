@@ -627,7 +627,7 @@ static intptr_t sch_vsprintf(char *s, intptr_t maxlen, const char *msg, va_list 
 		  int i;
                   i = scheme_utf8_encode((const unsigned int *)mbuf, 0, len, NULL, 0, 1);
                   es = (char *)scheme_malloc_atomic(i + 1);
-                  (void)scheme_utf8_encode((const unsigned int *)mbuf, 0, len, es, 0, 1);
+                  (void)scheme_utf8_encode((const unsigned int *)mbuf, 0, len, (unsigned char *)es, 0, 1);
                   es[i] = 0;
 		  /* Remove newlines: */
 		  for (i = strlen(es) - 1; i > 0; i--) {

@@ -559,7 +559,7 @@ static int get_win32_os_error() {
 
 static int mzrt_rwlock_rdlock_worker(mzrt_rwlock *lock, DWORD millis) {
   DWORD rc = WaitForSingleObject(lock->writeMutex, millis);
-  if (rc == WAIT_FAILED || rc == WAIT_TIMEOUT );
+  if (rc == WAIT_FAILED || rc == WAIT_TIMEOUT )
     return 0;
 
   InterlockedIncrement(&lock->readers);
@@ -575,7 +575,7 @@ static int mzrt_rwlock_rdlock_worker(mzrt_rwlock *lock, DWORD millis) {
 
 static int mzrt_rwlock_wrlock_worker(mzrt_rwlock *lock, DWORD millis) {
   DWORD rc = WaitForSingleObject(lock->writeMutex, millis);
-  if (rc == WAIT_FAILED || rc == WAIT_TIMEOUT );
+  if (rc == WAIT_FAILED || rc == WAIT_TIMEOUT )
     return 0;
 
   if (lock->readers) {

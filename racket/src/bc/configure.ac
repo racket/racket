@@ -651,6 +651,7 @@ case "$host_os" in
         ;;
       aarch64*|arm64*)
         MACH="tarm64nt"
+        enable_parallel_by_default=no
         ;;
       *)
         echo "unknown Windows host CPU"
@@ -1171,6 +1172,9 @@ fi
 if test "${enable_libffi}" = "default" ; then
   case "$host_os" in
   darwin*)
+        enable_libffi=no
+  ;;
+  *mingw*)
         enable_libffi=no
   ;;
   *)

@@ -25,6 +25,10 @@
                                 [(equal? mach "ta6nt") 'x64]
                                 [(equal? mach "tarm64nt") 'arm64]
                                 [else 'x86]))))
+  (define clang-dlltool? (and windows?
+			      (not msvc?)
+			      (let ([mach (hash-ref config 'MACH)])
+                                (equal? mach "tarm64nt"))))
 
   (define foreign? (not (equal? (lookup 'FOREIGN_ENABLED) "no")))
   (define libffi? (and foreign? (not (equal? (lookup 'LIBFFI_BUILD_ENABLED) "no"))))
@@ -316,8 +320,8 @@
   (define libracket3m.def (if msvc?
                               (at-dir "lib/libracket3mxxxxxxx.lib")
                               (at-dir "libracket3m.def")))
-  ;; A ".dll.a" file is the import libraryl again, for MSVC, this
-  ;; is the ".lib" alerady generated
+  ;; A ".dll.a" file is the import library; again, for MSVC, this
+  ;; is the ".lib" already generated
   (define libmzgc.dll.a (if msvc?
                             (at-dir "libmzgcxxxxxxx.lib")
                             (at-dir "libmzgc.dll.a")))
@@ -743,9 +747,13 @@
                                    (list main.o)
                                    (if framework?
                                        '()
-                                       (cons libracket.a (map target->path link-inputs)))
+				       (cons libracket.a (map target->path link-inputs)))
+				   (if clang-dlltool?
+				       (map (lambda (s) (~a "-Wl,--delayload=" (file-name-from-path s))) delay-dlls)
+				       '())
                                    (if windows?
-                                       `(,MemoryModule.o ,dll_via_temp.o ,@(if msvc? (cons "delayimp.lib" windows-libs) '()))
+                                       `(,MemoryModule.o ,dll_via_temp.o
+							 ,@(if msvc? (cons "delayimp.lib" windows-libs) '()))
                                        '()))
                                   (let ([config (adjust-linking-config config)])
                                     (if framework?
@@ -943,12 +951,17 @@
                        ,(lambda (path token)
                           (if msvc?
                               (cp def dll.a)
-                              (shell/wait (lookup 'DLLTOOL)
-                                          "--def" (string->shell def)
-                                          "-D" (string->shell (file-name-from-path dll))
-                                          "--output-exp" (at-dir (path-replace-extension (file-name-from-path dll) ".exp"))
-                                          "--output-lib" (at-dir (path-replace-extension (file-name-from-path dll) ".lib"))
-                                          "--output-delaylib" dll.a)))])
+			      (if clang-dlltool?
+				  (shell/wait (lookup 'DLLTOOL)
+                                              "-d" (string->shell def)
+					      "-l" dll.a
+                                              "-D" (string->shell (file-name-from-path dll)))
+				  (shell/wait (lookup 'DLLTOOL)
+                                              "--def" (string->shell def)
+                                              "-D" (string->shell (file-name-from-path dll))
+                                              "--output-exp" (at-dir (path-replace-extension (file-name-from-path dll) ".exp"))
+                                              "--output-lib" (at-dir (path-replace-extension (file-name-from-path dll) ".lib"))
+                                              "--output-delaylib" dll.a))))])
            (list libmzgc.dll.a libracketcgc1.dll.a libracketcgc.dll.a libracket3m.dll.a)
            (list libmzgcxxxxxxx.dll libracketcgc1xxxxxxx.dll libracketcgcxxxxxxx.dll libracket3mxxxxxxx.dll)
            (list libmzgc.def libracketcgc1.def libracketcgc.def libracket3m.def))
@@ -1388,9 +1401,11 @@
                                                (~a "-def:" (string->shell (at-source "dynsrc/mzdyn.def")))
                                                (~a "-out:" (string->shell (path-replace-extension mzdyn.exp ".lib"))))]
                                   [else
-                                   (shell/wait (lookup 'DLLTOOL)
-                                               "--output-exp" (string->shell mzdyn.exp)
-                                               (string->shell mzdyn.o))])))])
+				   (if clang-dlltool?
+				       (shell/wait "touch" (string->shell mzdyn.exp))
+                                       (shell/wait (lookup 'DLLTOOL)
+						   "--output-exp" (string->shell mzdyn.exp)
+						   (string->shell mzdyn.o)))])))])
                (list mzdyncgc.o mzdyn3m.o)
                (list mzdyncgc.exp mzdyn3m.exp)
                (list #f #t))
