@@ -2128,54 +2128,59 @@ void rktio_copy_file_stop(rktio_t *rktio, rktio_file_copy_t *fc)
 /* filesystem root list                                                   */
 /*========================================================================*/
 
+/* returns a NULL-terminated array of strings, one for each filesystem root. */
 char **rktio_filesystem_roots(rktio_t *rktio)
-/* returns a NULL-terminated array of strings */
 {
 #ifdef RKTIO_SYSTEM_WINDOWS
-  {
-#   define DRIVE_BUF_SIZE 1024
-    char drives[DRIVE_BUF_SIZE], *s;
-    intptr_t len, ds, ss_len, ss_count = 0;
-    UINT oldmode;
-    char **ss, **new_ss;
 
-    len = GetLogicalDriveStringsA(DRIVE_BUF_SIZE, drives);
-    if (len <= DRIVE_BUF_SIZE)
-      s = drives;
-    else {
-      s = malloc(len + 1);
-      GetLogicalDriveStringsA(len + 1, s);
-    }
-
-    ss_len = 8;
-    ss = malloc(sizeof(char*) * ss_len);
-
-    ds = 0;
-    oldmode = SetErrorMode(SEM_FAILCRITICALERRORS);      
-    while (s[ds]) {
-      DWORD a, b, c, d;
-      /* GetDiskFreeSpace effectively checks whether we can read the disk: */
-      if (GetDiskFreeSpaceA(s + ds, &a, &b, &c, &d)) {
-        if ((ss_count + 1) == ss_len) {
-          new_ss = malloc(sizeof(char*) * ss_len * 2);
-          memcpy(ss, new_ss, ss_count * sizeof(char*));
-          ss = new_ss;
-          ss_len *= 2;
-        }
-
-        ss[ss_count++] = MSC_IZE(strdup)(s + ds);
-      }
-      ds += strlen(s + ds) + 1;
-    }
-    SetErrorMode(oldmode);
-
-    if (s != drives)
-      free(s);
-
-    ss[ss_count] = 0;
-
-    return ss;
+  // This returns a bitmask where a bit is set for each possible drive.
+  DWORD logicalDrivesBitMask = GetLogicalDrives();
+  if (logicalDrivesBitMask == 0) {
+      return NULL;
   }
+
+  int index = 0;
+  int driveCount = 0;
+  int driveMask = 1;
+
+  // Loop through the mask to get the number of drives. 
+  do {
+      if (driveMask & logicalDrivesBitMask) {
+          driveCount++;
+      }
+
+      driveMask <<= 1;
+      index++;
+  } while (index < 26); // We can't have more than 26 logical drives.
+
+  // Now, create an array of strings. The array is null terminated, so the
+  // size needs to be one more than the drive count.   
+  char **driveStrings = (char**) malloc(sizeof(char*) * (driveCount+1));
+
+  // Loop through the mask again, but add a drive to the driveStrings
+  // array for each set drive. 
+  char driveLetter = 'A';
+  index = 0;
+  driveMask = 1;
+
+  do {
+      if (driveMask & logicalDrivesBitMask) {        
+          driveStrings[index] = malloc(sizeof(char) * 4);
+          char* driveRoot = driveStrings[index];
+
+          driveRoot[0] = driveLetter;
+          driveRoot[1] = ':';
+          driveRoot[2] = '\\';
+          driveRoot[3] = (char) 0;
+          
+          index++;
+      }
+      driveLetter = (char) ((int) driveLetter + 1);
+      driveMask <<= 1;
+  } while (index < driveCount);
+  
+  driveStrings[driveCount] = NULL;
+  return driveStrings;
 #else
   char **ss;
   

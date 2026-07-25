@@ -802,8 +802,11 @@ The resulting paths are always sorted using @racket[path<?].}
 
 @defproc[(filesystem-root-list) (listof path?)]{
 
-Returns a list of all current root directories. Obtaining this list
-can be particularly slow on Windows.}
+Returns a list of all current root directories.
+
+@history[#:changed "9.3.0.2" @elem{Removed filtering of Windows root directories that are
+                                   currently inaccessible, which was intended to
+                                   avoid removable-storage devices that are empty.}]}
 
 @;------------------------------------------------------------------------
 @section[#:tag "filesystem-change"]{Detecting Filesystem Changes}
