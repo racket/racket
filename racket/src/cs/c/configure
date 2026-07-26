@@ -4801,6 +4801,14 @@ case "$host_os" in
     MACH_OS=qnx
     use_flag_pthread=no
     ;;
+  haiku*)
+    MACH_OS=hk
+    CFLAGS="${CFLAGS} -I/boot/system/develop/headers -I/boot/system/develop/headers/posix"
+    LDFLAGS="${LDFLAGS} -L/boot/system/develop/lib"
+    LIBS="${LIBS} -lm -lpthread -lroot -lnetwork -lposix_error_mapper"
+    LINK_DYNAMIC="-rdynamic"
+    add_iconv_lib="-liconv"
+    ;;
   *)
     ;;
 esac
